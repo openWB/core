@@ -1,16 +1,16 @@
 """Starten der benötigten Prozesse
 """
 
-import prepare
-import pubdata
+from threading import Thread
+
 import subdata
 
-def main(self):
-    prep=prepare.prepare()
+def main():
     #pub=pubdata.pullModules()
-    sub=subdata.mqtt()
-    
-    # timer-thread prep
-    #thread sub
+    sub=subdata.subData()
+    t = Thread(target=sub.sub_topics, args=())
+
+    t.start()
     #timer-thread pub
 
+main()
