@@ -45,7 +45,7 @@ class subData():
 
         client.on_connect = self.on_connect
         client.on_message = self.on_message
-        client.message_callback_add("openWB/vehicle/#", self.processVehicleTopic)
+        client.message_callback_add("openWB/vehicle/#", self.process_vehicle_topic)
         # client.message_callback_add("openWB/chargepoint/#", self.processChargepointTopic)
         # client.message_callback_add("openWB/pv/#", self.processPvTopic)
         # client.message_callback_add("openWB/bat/#", self.processBatTopic)
@@ -54,7 +54,7 @@ class subData():
         # client.message_callback_add("openWB/counter/#", self.processCounterTopic)
         # client.message_callback_add("openWB/graph/#", self.processGraphTopic)
         # client.message_callback_add("openWB/smarthome/#", self.processSmarthomeTopic)
-        #client.message_callback_add("openWB/lp/#", self.processTest)
+        client.message_callback_add("openWB/lp/#", self.processTest)
 
         client.connect(mqtt_broker_ip, 1883)
         client.loop_forever()
@@ -87,117 +87,155 @@ class subData():
         return index.group()
 
     def processTest(self, client, userdata, msg):
-        if msg.topic=="openWB/lp/1/boolChargePointConfigured":
-            if "lp1" not in self.cp_data:
-                self.cp_data["lp1"]=chargepoint.chargepoint()
-            self.cp_data["lp1"].data["boolChargePointConfigured"]=int(msg.payload)
-            print(self.cp_data)
-            print(self.cp_data["lp1"].data)
+        if re.search("^openWB/lp/1/.+$", msg.topic) != None:
+            index=self.get_index(msg.topic)
+            if "lp"+index not in self.cp_data:
+                self.cp_data["lp"+index]=chargepoint.chargepoint()
+            if (re.search("^.+/VPhase1$", msg.topic) or re.search("^.+/VPhase2$", msg.topic)) != None:
+                self.set_float_payload(self.cp_data["lp"+index].data, msg)
+                print(self.cp_data)
+                print(self.cp_data["lp1"].data)
+
+    def set_float_payload(self, dict, msg):
+        """ setzt den Payload als Float für den Value in das übergebene Dictionary, als Key wird der Name nach dem letzten / verwendet.
+        """
+        key=re.search("/([a-z,A-Z,0-9]+)(?!.*/)", msg.topic).group(1)
+        dict[key]=float(msg.payload)
+
+    def set_int_payload(self, dict, msg):
+        """ setzt den Payload als Float für den Value in das übergebene Dictionary, als Key wird der Name nach dem letzten / verwendet.
+        """
+        key=re.search("/([a-z,A-Z,0-9]+)(?!.*/)", msg.topic).group(1)
+        dict[key]=int(msg.payload)
+
+    def set_str_payload(self, dict, msg):
+        """ setzt den Payload als Str für den Value in das übergebene Dictionary, als Key wird der Name nach dem letzten / verwendet.
+        """
+        key=re.search("/([a-z,A-Z,0-9]+)(?!.*/)", msg.topic).group(1)
+        print("key"+key)
+        dict[key]=str(msg.payload.decode("utf-8"))
+
+    def set_strsplit_payload(self, dict, msg):
+        """ setzt den Payload als Liste (String wird an den Kommas getrennt) für den Value in das übergebene Dictionary, als Key wird der Name nach dem letzten / verwendet.
+        """
+        key=re.search("/([a-z,A-Z,0-9]+)(?!.*/)", msg.topic).group(1)
+        print("key"+key)
+        dict[key]=str(msg.payload.decode("utf-8")).split(",")
  
-    def processVehicleTopic(self, client, userdata, msg):
+    def process_vehicle_topic(self, client, userdata, msg):
         """
         """
-        if "openWB/vehicle/default" in msg.topic:
-            if "default" not in self.ev_data:
-                self.ev_data["default"]=ev.ev()
-            if "matchEV" in msg.topic:
-                self.ev_data["default"].data["match_ev"]=str(msg.payload.decode("utf-8"))
-            elif "chargetemplate" in msg.topic:
-                self.ev_data["default"].data["charge_template"]=str(msg.payload.decode("utf-8"))
-            elif "evTemplate" in msg.topic:
-                self.ev_data["default"].data["ev_template"]=str(msg.payload.decode("utf-8"))
+        if re.search("^openWB/vehicle/[0-9]+/.+$", msg.topic) != None:
+            index=self.get_index(msg.topic)
+            if re.search("^openWB/vehicle/[0-9]+$", msg.topic) != None:
+                if int(msg.payload)==1:
+                    if "ev"+index not in self.ev_data:
+                        self.ev_data["ev"+index]=ev.ev()
+                else:
+                    if "ev"+index in self.ev_data:
+                        self.ev_data.pop("ev"+index)
+            elif (re.search("^.+/match_ev$", msg.topic) 
+            or re.search("^.+/charge_template$", msg.topic) 
+            or re.search("^.+/ev_template$", msg.topic)) != None:
+                self.set_str_payload(self.ev_data["ev"+index].data, msg)
+            elif (re.search("^.+/tag_id$", msg.topic) 
+            or re.search("^.+/inactive$", msg.topic)
+            or re.search("^.+/request_interval_charging$", msg.topic) 
+            or re.search("^.+/reques_interval_not_charging$", msg.topic) 
+            or re.search("^.+/request_only_plugged$", msg.topic)) != None:
+                self.set_int_payload(self.ev_data["ev"+index].data, msg)
+            elif re.search("^openWB/vehicle/[0-9]+/get.+$", msg.topic) != None:
+                if "get" not in self.ev_data["ev"+index].data:
+                    self.ev_data["ev"+index].data["get"]={}
+                if (re.search("^.+/daily_charge_kwh$", msg.topic) 
+                or re.search("^.+/km_charged$", msg.topic)
+                or re.search("^.+/counter_kwh$", msg.topic) 
+                or re.search("^.+/charged_since_plugged_kwh$", msg.topic) ) != None:
+                            self.set_float_payload(self.ev_data["ev"+index].data["get"], msg)
         elif "openWB/vehicle/template/chargeTemplate" in msg.topic:
             index=self.get_index(msg.topic)
-            if "ct"+index not in self.ev_charge_template_data:
-                self.ev_charge_template_data["ct"+index] = ev.chargeTemplate()
-            if re.search("^openWB/vehicle/template/chargeTemplate/[1-9]+/name$", msg.topic) != None:
-                self.ev_charge_template_data["ct"+index].data["name"]=str(msg.payload.decode("utf-8"))
-            elif re.search("^openWB/vehicle/template/chargeTemplate/[1-9]+/loadDefault$", msg.topic) != None:
-                self.ev_charge_template_data["ct"+index].data["load_default"]=int(msg.payload)
-            elif re.search("^openWB/vehicle/template/chargeTemplate/[1-9]+/disableAfterUnplug$", msg.topic) != None:
-                self.ev_charge_template_data["ct"+index].data["disable_after_unplug"]=int(msg.payload)
-            elif re.search("^openWB/vehicle/template/chargeTemplate/[1-9]+/prio$", msg.topic) != None:
-                self.ev_charge_template_data["ct"+index].data["prio"]=int(msg.payload)
-            elif re.search("^openWB/vehicle/template/chargeTemplate/[1-9]+/chargeMode$", msg.topic) != None:
-                self.ev_charge_template_data["ct"+index].data["chargemode"]=str(msg.payload.decode("utf-8"))
+            if re.search("^openWB/vehicle/template/chargeTemplate/[0-9]+$", msg.topic) != None:
+                if int(msg.payload)==1:
+                    if "ct"+index not in self.ev_data:
+                        self.ev_charge_template_data["ct"+index]=ev.chargeTemplate()
+                else:
+                    if "ct"+index in self.ev_charge_template_data:
+                        self.ev_charge_template_data.pop("ct"+index)
+            elif (re.search("^.+/name$", msg.topic) 
+            or re.search("^.+/chargemode$", msg.topic)) != None:
+                self.set_str_payload(self.ev_charge_template_data["ct"+index].data, msg)
+            if (re.search("^.+/load_default$", msg.topic) 
+            or re.search("^.+/disable_after_unplug$", msg.topic) 
+            or re.search("^.+/prio$", msg.topic)) != None:
+                self.set_int_payload(self.ev_charge_template_data["ct"+index].data, msg)
             elif re.search("^openWB/vehicle/template/chargeTemplate/[1-9]+/chargeMode/instantLoad/.+$", msg.topic) != None:
                 if "instant_load" not in self.ev_charge_template_data["ct"+index].data:
                     self.ev_charge_template_data["ct"+index].data["instant_load"]={}
-                    if "current" in msg.topic:
-                        self.ev_charge_template_data["ct"+index].data["instant_load"]["current"]=int(msg.payload)
-                    elif "limit" in msg.topic:
-                        self.ev_charge_template_data["ct"+index].data["instant_load"]["limit"]=str(msg.payload.decode("utf-8"))
-                    elif "soc" in msg.topic:
-                        self.ev_charge_template_data["ct"+index].data["instant_load"]["soc"]=int(msg.payload)
-                    elif "amount" in msg.topic:
-                        self.ev_charge_template_data["ct"+index].data["instant_load"]["amount"]=int(msg.payload)
+                    if re.search("^.+/limit$", msg.topic) != None:
+                        self.set_str_payload(self.ev_charge_template_data["ct"+index].data["instant_load"], msg)
+                    elif re.search("^.+/soc$", msg.topic) != None:
+                        self.set_int_payload(self.ev_charge_template_data["ct"+index].data["instant_load"], msg)
+                    elif (re.search("^.+/current$", msg.topic) 
+                    or re.search("^.+/amount$", msg.topic)) != None:
+                        self.set_float_payload(self.ev_charge_template_data["ct"+index].data["instant_load"], msg)
             elif re.search("^openWB/vehicle/template/chargeTemplate/[1-9]+/chargeMode/pvLoad/.+$", msg.topic) != None:
                 if "pv_load" not in self.ev_charge_template_data["ct"+index].data:
                     self.ev_charge_template_data["ct"+index].data["pv_load"]={}
-                    if "batPrio" in msg.topic:
-                        self.ev_charge_template_data["ct"+index].data["pv_load"]["bat_prio"]=int(msg.payload)
-                    elif "feedInLimit" in msg.topic:
-                        self.ev_charge_template_data["ct"+index].data["pv_load"]["feed_in_limit"]=int(msg.payload)
-                    elif "minCurrent" in msg.topic:
-                        self.ev_charge_template_data["ct"+index].data["pv_load"]["min_current"]=int(msg.payload)
-                    elif "minSoc" in msg.topic:
-                        self.ev_charge_template_data["ct"+index].data["pv_load"]["min_soc"]=int(msg.payload)
-                    elif "minSocCurrent" in msg.topic:
-                        self.ev_charge_template_data["ct"+index].data["pv_load"]["min_soc_current"]=int(msg.payload)
-                    elif "maxSoc" in msg.topic:
-                        self.ev_charge_template_data["ct"+index].data["pv_load"]["max_soc"]=int(msg.payload)
+                if (re.search("^.+/bat_prio$", msg.topic) 
+                or re.search("^.+/feed_in_limit$", msg.topic) 
+                or re.search("^.+/min_current$", msg.topic) 
+                or re.search("^.+/min_soc$", msg.topic) 
+                or re.search("^.+/min_soc_current$", msg.topic) 
+                or re.search("^.+/max_soc$", msg.topic)) != None:
+                    self.set_int_payload(self.ev_charge_template_data["ct"+index].data["pv_load"], msg)
             elif re.search("^openWB/vehicle/template/chargeTemplate/[1-9]+/chargeMode/scheduledLoad/.+$", msg.topic) != None:
                 if "pv_load" not in self.ev_charge_template_data["ct"+index].data:
                     self.ev_charge_template_data["ct"+index].data["scheduled_load"]={}
-                    index_second=re.search(".+/([0-9]+)/.+/([0-9]+)/.+", msg.topic).group(2)
-                    if "plan"+index_second not in self.ev_charge_template_data["ct"+index].data["scheduled_load"]:
-                        self.ev_charge_template_data["ct"+index].data["scheduled_load"]["plan"+index_second]={}
-                    if "frequency" in msg.topic:
-                        self.ev_charge_template_data["ct"+index].data["scheduled_load"]["plan"+index_second]["frequency"]=str(msg.payload.decode("utf-8"))
-                    elif "once" in msg.topic:
-                        self.ev_charge_template_data["ct"+index].data["scheduled_load"]["plan"+index_second]["once"]=str(msg.payload.decode("utf-8"))
-                    elif "weekly" in msg.topic:
-                        self.ev_charge_template_data["ct"+index].data["scheduled_load"]["plan"+index_second]["weekly"]=str(msg.payload.decode("utf-8"))
-                    elif "time" in msg.topic:
-                        self.ev_charge_template_data["ct"+index].data["scheduled_load"]["plan"+index_second]["time"]=str(msg.payload.decode("utf-8"))
-                    elif "soc" in msg.topic:
-                        self.ev_charge_template_data["ct"+index].data["scheduled_load"]["plan"+index_second]["soc"]=int(msg.payload)
-            elif re.search("^openWB/vehicle/template/chargeTemplate/[1-9]+/timeLoad$", msg.topic) != None:
-                self.ev_charge_template_data["ct"+index].data["time_load"]=int(msg.payload)
+                index_second=re.search(".+/([0-9]+)/.+/([0-9]+)/.+", msg.topic).group(2)
+                if "plan"+index_second not in self.ev_charge_template_data["ct"+index].data["scheduled_load"]:
+                    self.ev_charge_template_data["ct"+index].data["scheduled_load"]["plan"+index_second]={}
+                if (re.search("^.+/frequency$", msg.topic) 
+                or re.search("^.+/time$", msg.topic)) != None:
+                    self.set_str_payload(self.ev_charge_template_data["ct"+index].data["scheduled_load"]["plan"+index_second], msg)
+                elif (re.search("^.+/once$", msg.topic) 
+                or re.search("^.+/weekly$", msg.topic)) != None:
+                    self.set_strsplit_payload(self.ev_charge_template_data["ct"+index].data["scheduled_load"]["plan"+index_second], msg)
+                elif re.search("^.+/soc$", msg.topic) != None:
+                    self.set_int_payload(self.ev_charge_template_data["ct"+index].data["scheduled_load"]["plan"+index_second], msg)
+            elif re.search("^openWB/vehicle/template/chargeTemplate/[1-9]+/time_load$", msg.topic) != None:
+                self.set_int_payload(self.ev_charge_template_data["ct"+index].data, msg)
             elif re.search("^openWB/vehicle/template/chargeTemplate/[1-9]+/timeLoad/.+$", msg.topic) != None:
                 if "pv_load" not in self.ev_charge_template_data["ct"+index].data:
                     self.ev_charge_template_data["ct"+index].data["time_load"]={}
-                    index_second=re.search(".+/([0-9]+)/.+/([0-9]+)/.+", msg.topic).group(2)
-                    if "plan"+index_second not in self.ev_charge_template_data["ct"+index].data["time_load"]:
-                        self.ev_charge_template_data["ct"+index].data["time_load"]["plan"+index_second]={}
-                    if "frequency" in msg.topic:
-                        self.ev_charge_template_data["ct"+index].data["time_load"]["plan"+index_second]["frequency"]=str(msg.payload.decode("utf-8"))
-                    elif "once" in msg.topic:
-                        self.ev_charge_template_data["ct"+index].data["time_load"]["plan"+index_second]["once"]=str(msg.payload.decode("utf-8"))
-                    elif "weekly" in msg.topic:
-                        self.ev_charge_template_data["ct"+index].data["time_load"]["plan"+index_second]["weekly"]=str(msg.payload.decode("utf-8"))
-                    elif "time" in msg.topic:
-                        self.ev_charge_template_data["ct"+index].data["time_load"]["plan"+index_second]["time"]=str(msg.payload.decode("utf-8"))
-                    elif "soc" in msg.topic:
-                        self.ev_charge_template_data["ct"+index].data["time_load"]["plan"+index_second]["soc"]=int(msg.payload)
+                index_second=re.search(".+/([0-9]+)/.+/([0-9]+)/.+", msg.topic).group(2)
+                if "plan"+index_second not in self.ev_charge_template_data["ct"+index].data["time_load"]:
+                    self.ev_charge_template_data["ct"+index].data["time_load"]["plan"+index_second]={}
+                if (re.search("^.+/frequency$", msg.topic) 
+                or re.search("^.+/time$", msg.topic)) != None:
+                    self.set_str_payload(self.ev_charge_template_data["ct"+index].data["time_load"]["plan"+index_second], msg)
+                elif (re.search("^.+/once$", msg.topic) 
+                or re.search("^.+/weekly$", msg.topic)) != None:
+                    self.set_strsplit_payload(self.ev_charge_template_data["ct"+index].data["time_load"]["plan"+index_second], msg)
+                elif re.search("^.+/soc$", msg.topic) != None:
+                    self.set_int_payload(self.ev_charge_template_data["ct"+index].data["time_load"]["plan"+index_second], msg)
         elif "openWB/vehicle/template/evTemplate" in msg.topic:
             index=self.get_index(msg.topic)
-            if "ct"+index not in self.ev_charge_template_data:
-                self.ev_template_data["ct"+index] = ev.evTemplate()
-            if re.search("^openWB/vehicle/template/evTemplate/[1-9]+/name$", msg.topic) != None:
-                self.ev_template_data["ct"+index].data["name"]=str(msg.payload.decode("utf-8"))
-            elif re.search("^openWB/vehicle/template/evTemplate/[1-9]+/averageConsump$", msg.topic) != None:
-                self.ev_template_data["ct"+index].data["average_consump"]=int(msg.payload)
-            elif re.search("^openWB/vehicle/template/evTemplate/[1-9]+/batteryCapcity$", msg.topic) != None:
-                self.ev_template_data["ct"+index].data["battery_capcity"]=int(msg.payload)
-            elif re.search("^openWB/vehicle/template/evTemplate/[1-9]+/maxPhases$", msg.topic) != None:
-                self.ev_template_data["ct"+index].data["max_phases"]=int(msg.payload)
-            elif re.search("^openWB/vehicle/template/evTemplate/[1-9]+/minCurrent$", msg.topic) != None:
-                self.ev_template_data["ct"+index].data["min_current"]=int(msg.payload)
-            elif re.search("^openWB/vehicle/template/evTemplate/[1-9]+/maxCurrent$", msg.topic) != None:
-                self.ev_template_data["ct"+index].data["max_current"]=int(msg.payload)
-            elif re.search("^openWB/vehicle/template/evTemplate/[1-9]+/controlPilotInterruption$", msg.topic) != None:
-                self.ev_template_data["ct"+index].data["control_pilot_interruption"]=int(msg.payload)
+            if re.search("^openWB/vehicle/template/evTemplate/[0-9]+$", msg.topic) != None:
+                if int(msg.payload)==1:
+                    if "et"+index not in self.ev_template_data:
+                        self.ev_template_data["et"+index]=ev.evTemplate()
+                else:
+                    if "et"+index in self.ev_template_data:
+                        self.ev_template_data.pop("et"+index)
+            elif re.search("^.+/name$", msg.topic) != None:
+                self.set_str_payload(self.ev_template_data["et"+index].data, msg)
+            elif (re.search("^.+/average_consump$", msg.topic) 
+            or re.search("^.+/battery_capcity$", msg.topic) 
+            or re.search("^.+/max_phases$", msg.topic) 
+            or re.search("^.+/min_current$", msg.topic) 
+            or re.search("^.+/max_current$", msg.topic) 
+            or re.search("^.+/control_pilot_interruption$", msg.topic)) != None:
+                self.set_int_payload(self.ev_template_data["et"+index].data, msg)
 
     # def processChargepointTopic(self, topic, payload):
     #     """
@@ -240,28 +278,9 @@ class subData():
     #     pass
 
     #     #keine Reihenfolge imner gucken, ob es Instanz schon gibt
-
-    #     if topic=="openWB/chargepoint/1":
-    #         if payload==True:
-    #             cp1=chargepoint()
-    #             data.cp_data.append(cp1)
-    #         else
-    #             data.cp_data[0].remove(cp1)
-    #     elif topic == "openWB/chargepoint/1/config/template/autolock":
-    #         if cp1 in data.cp_data:
-    #             cp1=chargepoint()
-    #             data.cp_data.append(cp1)
-    #         if payload == True:
-    #             data.cp_data[0].autolock=true
-    #         else
-    #             data.cp_data[0].autolock=false
-    #     elif topic=="openWB/chargepoint/1/config/template":
-    #         if payload!="none":
-    #             data.cp_data[0].template=payload
-    #     elif topic="openWB/general/controlInterval":
             
-    #         self.ticker_prepare.clear()
-    #         seconds = mqttpayload
-    #         self.ticker_prepare.set()
-    #         while not self.ticker_prepare.wait(seconds):
-    #             self.prep.setup_algorithm() 
+            # self.ticker_prepare.clear()
+            # seconds = mqttpayload
+            # self.ticker_prepare.set()
+            # while not self.ticker_prepare.wait(seconds):
+            #     self.prep.setup_algorithm() 
