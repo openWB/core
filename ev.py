@@ -14,18 +14,18 @@ class ev():
         self.charge_template=0
         
     def get_required_current(self):
-    """ ermittelt, ob und mit welchem Strom das EV geladen werden soll (unabhängig vom Lastmanagement)
-    """
-   if data.ev_charge_template_data[self.charge_template].time_load == True:
-        self.__time_load()
-    if data.ev_charge_template_data[self.charge_template].charge_mode == "immedate_load":
-        self.__immediat_load()
-    elif data.ev_charge_template_data[self.charge_template].charge_mode == "pv_load":
-        self.__pv_load()
-    elif data.ev_charge_template_data[self.charge_template].charge_mode == "mark_load":
-        self.__mark_load()
+        """ ermittelt, ob und mit welchem Strom das EV geladen werden soll (unabhängig vom Lastmanagement)
+        """
+        if data.ev_charge_template_data[self.charge_template].time_load == True:
+            self.__time_load()
+        if data.ev_charge_template_data[self.charge_template].charge_mode == "instant_load":
+            self.__instant_load()
+        elif data.ev_charge_template_data[self.charge_template].charge_mode == "pv_load":
+            self.__pv_load()
+        elif data.ev_charge_template_data[self.charge_template].charge_mode == "scheduled_load":
+            self.__scheduled_load()
 
-    self.__check_min_current()
+        self.__check_min_current()
     
 
     def get_soc(self):
@@ -43,12 +43,12 @@ class ev():
         """
         pass
 
-    def __immediat_load(self):
+    def __instant_load(self):
         """ prüft, ob die Lademengenbegrenzung erreicht wurde und setzt entsprechend den Ladestrom.
         """
         pass
 
-    def __mark_load(self):
+    def __scheduled_load(self):
         """ prüft, ob der Ziel-SoC erreicht wurde und stellt den zur Erreichung nötigen Ladestrom ein.
         """
         pass
@@ -59,7 +59,7 @@ class ev():
         """
         pass
 
-    def load_standard_profile(self):
+    def load_default_profile(self):
         """ prüft, ob nach dem Abstecken das Standardprofil geladen werden soll und lädt dieses ggf..
         """
         pass
@@ -73,10 +73,10 @@ class ev():
 class evTemplate():
     """ Klasse mit den EV-Daten
     """
-    pass
+    data={}
 
 
 class chargeTemplate():
     """ Klasse der Lademodus-Vorlage
     """
-    pass
+    data={}

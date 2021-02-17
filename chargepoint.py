@@ -4,9 +4,11 @@
 import data
 
 
-class chargepoint(self):
+class chargepoint():
     """ geht alle Ladepunkte durch, prüft, ob geladen werden darf und ruft die Funktion des angesteckten Autos auf. 
     """
+
+    data={}
 
     def __init__(self):
         self.ev=0
@@ -40,15 +42,16 @@ class chargepoint(self):
     def get_state(self):
         """prüft alle Bedingungen und ruft die EV-Logik auf
         """
-        if __is_cp_configured()==True:
-            if __is_cp_available()==True:
-                if __is_ev_plugged()==True:
-                    if __is_cp_locked()==True:
-                        if __is_autolock_active()==True:
-        return
+        # if __is_cp_configured()==True:
+        #     if __is_cp_available()==True:
+        #         if __is_ev_plugged()==True:
+        #             if __is_cp_locked()==True:
+        #                 if __is_autolock_active()==True:
+        #return
+        pass
 
 
-class cpTemplate(self):
-	""" Vorlage für einen LP.
-	"""
-	pass
+class cpTemplate():
+    """ Vorlage für einen LP.
+    """
+    pass
