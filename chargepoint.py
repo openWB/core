@@ -54,4 +54,4 @@ class chargepoint():
 class cpTemplate():
     """ Vorlage für einen LP.
     """
-    pass
+    data={}

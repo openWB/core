@@ -1,13 +1,19 @@
 """ Modul, um die Daten vom Broker zu erhalten.
 """
 
+import json
 import paho.mqtt.client as mqtt
 import re
-import threading
 
+import bat
 import chargepoint
+import counter
 import ev
+import general
+import graph
+import optional
 import prepare
+import pv
 import stats
 
 class subData():
@@ -23,36 +29,37 @@ class subData():
     ev_data={}
     ev_template_data={}
     ev_charge_template_data={}
-    meter_data={}
-    meter_module_data={}
-    bat_data={}
+    counter_data={}
+    counter_module_data={}
     bat_module_data={}
     evu_data={}
     evu_module_data={}
+    general_data={}
+    optional_data={}
+    graph_data={}
 
     def __init__(self):
-        self.ticker_prepare = threading.Event()
-        self.prep=prepare.prepare()
+        pass
 
     def sub_topics(self):
         """ abonniert alle Topics.
         """
         mqtt_broker_ip = "localhost"
         client = mqtt.Client("openWB-mqttsub-" + self.getserial())
-        ipallowed='^[0-9.]+$'
-        nameallowed='^[a-zA-Z ]+$'
-        namenumballowed='^[0-9a-zA-Z ]+$'
+        # ipallowed='^[0-9.]+$'
+        # nameallowed='^[a-zA-Z ]+$'
+        # namenumballowed='^[0-9a-zA-Z ]+$'
 
         client.on_connect = self.on_connect
         client.on_message = self.on_message
         client.message_callback_add("openWB/vehicle/#", self.process_vehicle_topic)
-        # client.message_callback_add("openWB/chargepoint/#", self.processChargepointTopic)
-        # client.message_callback_add("openWB/pv/#", self.processPvTopic)
-        # client.message_callback_add("openWB/bat/#", self.processBatTopic)
-        # client.message_callback_add("openWB/general/#", self.processGeneralTopic)
-        # client.message_callback_add("openWB/optional/#", self.processOptionalTopic)
-        # client.message_callback_add("openWB/counter/#", self.processCounterTopic)
-        # client.message_callback_add("openWB/graph/#", self.processGraphTopic)
+        client.message_callback_add("openWB/chargepoint/#", self.process_chargepoint_topic)
+        client.message_callback_add("openWB/pv/#", self.process_pv_topic)
+        client.message_callback_add("openWB/bat/#", self.process_bat_topic)
+        client.message_callback_add("openWB/general/#", self.process_general_topic)
+        client.message_callback_add("openWB/optional/#", self.process_optional_topic)
+        client.message_callback_add("openWB/counter/#", self.process_counter_topic)
+        client.message_callback_add("openWB/graph/#", self.process_graph_topic)
         # client.message_callback_add("openWB/smarthome/#", self.processSmarthomeTopic)
         client.message_callback_add("openWB/lp/#", self.processTest)
 
@@ -83,7 +90,7 @@ class subData():
     def get_index(self, topic):
         """extrahiert den Index aus einemTtopic (zwischen zwei //)
         """
-        index=re.search('(?!\/)([0-9]+)(?=\/)', topic)
+        index=re.search('(?!/)([0-9]+)(?=/)', topic)
         return index.group()
 
     def processTest(self, client, userdata, msg):
@@ -92,38 +99,18 @@ class subData():
             if "lp"+index not in self.cp_data:
                 self.cp_data["lp"+index]=chargepoint.chargepoint()
             if (re.search("^.+/VPhase1$", msg.topic) or re.search("^.+/VPhase2$", msg.topic)) != None:
-                self.set_float_payload(self.cp_data["lp"+index].data, msg)
-                print(self.cp_data)
-                print(self.cp_data["lp1"].data)
+                self.set_json_payload(self.cp_data["lp"+index].data, msg)
+                #print(self.cp_data)
+                #print(self.cp_data["lp1"].data)
 
-    def set_float_payload(self, dict, msg):
-        """ setzt den Payload als Float für den Value in das übergebene Dictionary, als Key wird der Name nach dem letzten / verwendet.
+    def set_json_payload(self, dict, msg):
+        """ dekodiert das JSON-Objekt und setzt diesen für den Value in das übergebene Dictionary, als Key wird der Name nach dem letzten / verwendet.
         """
         key=re.search("/([a-z,A-Z,0-9]+)(?!.*/)", msg.topic).group(1)
-        dict[key]=float(msg.payload)
-
-    def set_int_payload(self, dict, msg):
-        """ setzt den Payload als Float für den Value in das übergebene Dictionary, als Key wird der Name nach dem letzten / verwendet.
-        """
-        key=re.search("/([a-z,A-Z,0-9]+)(?!.*/)", msg.topic).group(1)
-        dict[key]=int(msg.payload)
-
-    def set_str_payload(self, dict, msg):
-        """ setzt den Payload als Str für den Value in das übergebene Dictionary, als Key wird der Name nach dem letzten / verwendet.
-        """
-        key=re.search("/([a-z,A-Z,0-9]+)(?!.*/)", msg.topic).group(1)
-        print("key"+key)
-        dict[key]=str(msg.payload.decode("utf-8"))
-
-    def set_strsplit_payload(self, dict, msg):
-        """ setzt den Payload als Liste (String wird an den Kommas getrennt) für den Value in das übergebene Dictionary, als Key wird der Name nach dem letzten / verwendet.
-        """
-        key=re.search("/([a-z,A-Z,0-9]+)(?!.*/)", msg.topic).group(1)
-        print("key"+key)
-        dict[key]=str(msg.payload.decode("utf-8")).split(",")
+        dict[key]=json.loads(str(msg.payload.decode("utf-8")))
  
     def process_vehicle_topic(self, client, userdata, msg):
-        """
+        """ Handler für die EV-Topics
         """
         if re.search("^openWB/vehicle/[0-9]+/.+$", msg.topic) != None:
             index=self.get_index(msg.topic)
@@ -134,153 +121,233 @@ class subData():
                 else:
                     if "ev"+index in self.ev_data:
                         self.ev_data.pop("ev"+index)
-            elif (re.search("^.+/match_ev$", msg.topic) 
-            or re.search("^.+/charge_template$", msg.topic) 
-            or re.search("^.+/ev_template$", msg.topic)) != None:
-                self.set_str_payload(self.ev_data["ev"+index].data, msg)
-            elif (re.search("^.+/tag_id$", msg.topic) 
-            or re.search("^.+/inactive$", msg.topic)
-            or re.search("^.+/request_interval_charging$", msg.topic) 
-            or re.search("^.+/reques_interval_not_charging$", msg.topic) 
-            or re.search("^.+/request_only_plugged$", msg.topic)) != None:
-                self.set_int_payload(self.ev_data["ev"+index].data, msg)
             elif re.search("^openWB/vehicle/[0-9]+/get.+$", msg.topic) != None:
                 if "get" not in self.ev_data["ev"+index].data:
                     self.ev_data["ev"+index].data["get"]={}
-                if (re.search("^.+/daily_charge_kwh$", msg.topic) 
-                or re.search("^.+/km_charged$", msg.topic)
-                or re.search("^.+/counter_kwh$", msg.topic) 
-                or re.search("^.+/charged_since_plugged_kwh$", msg.topic) ) != None:
-                            self.set_float_payload(self.ev_data["ev"+index].data["get"], msg)
-        elif "openWB/vehicle/template/chargeTemplate" in msg.topic:
+                self.set_json_payload(self.ev_data["ev"+index].data["get"], msg)
+            elif re.search("^openWB/vehicle/[0-9]+/soc_config.+$", msg.topic) != None:
+                if "soc_config" not in self.ev_data["ev"+index].data:
+                    self.ev_data["ev"+index].data["soc_config"]={}
+                self.set_json_payload(self.ev_data["ev"+index].data["soc_config"], msg)
+            else: 
+                self.set_json_payload(self.ev_data["ev"+index].data, msg)
+        elif re.search("^openWB/vehicle/default.+$", msg.topic) != None:
+            if "default" not in self.ev_data:
+                self.ev_data["default"]=ev.ev()
+            self.set_json_payload(self.ev_data["default"].data, msg)
+        elif "openWB/vehicle/template/charge_template" in msg.topic:
             index=self.get_index(msg.topic)
-            if re.search("^openWB/vehicle/template/chargeTemplate/[0-9]+$", msg.topic) != None:
+            if re.search("^openWB/vehicle/template/charge_template/[0-9]+$", msg.topic) != None:
                 if int(msg.payload)==1:
-                    if "ct"+index not in self.ev_data:
+                    if "ct"+index not in self.ev_charge_template_data:
                         self.ev_charge_template_data["ct"+index]=ev.chargeTemplate()
                 else:
                     if "ct"+index in self.ev_charge_template_data:
                         self.ev_charge_template_data.pop("ct"+index)
-            elif (re.search("^.+/name$", msg.topic) 
-            or re.search("^.+/chargemode$", msg.topic)) != None:
-                self.set_str_payload(self.ev_charge_template_data["ct"+index].data, msg)
-            if (re.search("^.+/load_default$", msg.topic) 
-            or re.search("^.+/disable_after_unplug$", msg.topic) 
-            or re.search("^.+/prio$", msg.topic)) != None:
-                self.set_int_payload(self.ev_charge_template_data["ct"+index].data, msg)
-            elif re.search("^openWB/vehicle/template/chargeTemplate/[1-9]+/chargeMode/instantLoad/.+$", msg.topic) != None:
+            elif re.search("^openWB/vehicle/template/charge_template/[0-9]+/charge_mode/instant_load/.+$", msg.topic) != None:
                 if "instant_load" not in self.ev_charge_template_data["ct"+index].data:
                     self.ev_charge_template_data["ct"+index].data["instant_load"]={}
-                    if re.search("^.+/limit$", msg.topic) != None:
-                        self.set_str_payload(self.ev_charge_template_data["ct"+index].data["instant_load"], msg)
-                    elif re.search("^.+/soc$", msg.topic) != None:
-                        self.set_int_payload(self.ev_charge_template_data["ct"+index].data["instant_load"], msg)
-                    elif (re.search("^.+/current$", msg.topic) 
-                    or re.search("^.+/amount$", msg.topic)) != None:
-                        self.set_float_payload(self.ev_charge_template_data["ct"+index].data["instant_load"], msg)
-            elif re.search("^openWB/vehicle/template/chargeTemplate/[1-9]+/chargeMode/pvLoad/.+$", msg.topic) != None:
+                self.set_json_payload(self.ev_charge_template_data["ct"+index].data["instant_load"], msg)
+            elif re.search("^openWB/vehicle/template/charge_template/[0-9]+/charge_mode/pv_load/.+$", msg.topic) != None:
                 if "pv_load" not in self.ev_charge_template_data["ct"+index].data:
                     self.ev_charge_template_data["ct"+index].data["pv_load"]={}
-                if (re.search("^.+/bat_prio$", msg.topic) 
-                or re.search("^.+/feed_in_limit$", msg.topic) 
-                or re.search("^.+/min_current$", msg.topic) 
-                or re.search("^.+/min_soc$", msg.topic) 
-                or re.search("^.+/min_soc_current$", msg.topic) 
-                or re.search("^.+/max_soc$", msg.topic)) != None:
-                    self.set_int_payload(self.ev_charge_template_data["ct"+index].data["pv_load"], msg)
-            elif re.search("^openWB/vehicle/template/chargeTemplate/[1-9]+/chargeMode/scheduledLoad/.+$", msg.topic) != None:
-                if "pv_load" not in self.ev_charge_template_data["ct"+index].data:
+                self.set_json_payload(self.ev_charge_template_data["ct"+index].data["pv_load"], msg)
+            elif re.search("^openWB/vehicle/template/charge_template/[0-9]+/charge_mode/scheduled_load/.+$", msg.topic) != None:
+                if "scheduled_load" not in self.ev_charge_template_data["ct"+index].data:
                     self.ev_charge_template_data["ct"+index].data["scheduled_load"]={}
                 index_second=re.search(".+/([0-9]+)/.+/([0-9]+)/.+", msg.topic).group(2)
-                if "plan"+index_second not in self.ev_charge_template_data["ct"+index].data["scheduled_load"]:
-                    self.ev_charge_template_data["ct"+index].data["scheduled_load"]["plan"+index_second]={}
-                if (re.search("^.+/frequency$", msg.topic) 
-                or re.search("^.+/time$", msg.topic)) != None:
-                    self.set_str_payload(self.ev_charge_template_data["ct"+index].data["scheduled_load"]["plan"+index_second], msg)
-                elif (re.search("^.+/once$", msg.topic) 
-                or re.search("^.+/weekly$", msg.topic)) != None:
-                    self.set_strsplit_payload(self.ev_charge_template_data["ct"+index].data["scheduled_load"]["plan"+index_second], msg)
-                elif re.search("^.+/soc$", msg.topic) != None:
-                    self.set_int_payload(self.ev_charge_template_data["ct"+index].data["scheduled_load"]["plan"+index_second], msg)
-            elif re.search("^openWB/vehicle/template/chargeTemplate/[1-9]+/time_load$", msg.topic) != None:
-                self.set_int_payload(self.ev_charge_template_data["ct"+index].data, msg)
-            elif re.search("^openWB/vehicle/template/chargeTemplate/[1-9]+/timeLoad/.+$", msg.topic) != None:
+                if re.search("^openWB/vehicle/template/charge_template/[0-9]+/charge_mode/scheduled_load/[0-9]+$", msg.topic) != None:
+                    if int(msg.payload)==1:
+                        if "plan"+index_second not in self.ev_charge_template_data["ct"+index].data["scheduled_load"]:
+                            self.ev_charge_template_data["ct"+index].data["scheduled_load"]["plan"+index_second]={}
+                    else:
+                        if "plan"+index_second in self.ev_charge_template_data["ct"+index].data["scheduled_load"]:
+                            self.ev_charge_template_data["ct"+index].data["scheduled_load"].pop("plan"+index_second)
+                self.set_json_payload(self.ev_charge_template_data["ct"+index].data["scheduled_load"]["plan"+index_second], msg)
+            elif re.search("^openWB/vehicle/template/chargeTecharge_templatemplate/[0-9]+/time_load/.+$", msg.topic) != None:
                 if "pv_load" not in self.ev_charge_template_data["ct"+index].data:
                     self.ev_charge_template_data["ct"+index].data["time_load"]={}
                 index_second=re.search(".+/([0-9]+)/.+/([0-9]+)/.+", msg.topic).group(2)
-                if "plan"+index_second not in self.ev_charge_template_data["ct"+index].data["time_load"]:
-                    self.ev_charge_template_data["ct"+index].data["time_load"]["plan"+index_second]={}
-                if (re.search("^.+/frequency$", msg.topic) 
-                or re.search("^.+/time$", msg.topic)) != None:
-                    self.set_str_payload(self.ev_charge_template_data["ct"+index].data["time_load"]["plan"+index_second], msg)
-                elif (re.search("^.+/once$", msg.topic) 
-                or re.search("^.+/weekly$", msg.topic)) != None:
-                    self.set_strsplit_payload(self.ev_charge_template_data["ct"+index].data["time_load"]["plan"+index_second], msg)
-                elif re.search("^.+/soc$", msg.topic) != None:
-                    self.set_int_payload(self.ev_charge_template_data["ct"+index].data["time_load"]["plan"+index_second], msg)
-        elif "openWB/vehicle/template/evTemplate" in msg.topic:
+                if re.search("^openWB/vehicle/template/charge_template/[0-9]+/time_load/[0-9]+$", msg.topic) != None:
+                    if int(msg.payload)==1:
+                        if "plan"+index_second not in self.ev_charge_template_data["ct"+index].data["time_load"]:
+                            self.ev_charge_template_data["ct"+index].data["time_load"]["plan"+index_second]={}
+                    else:
+                        if "plan"+index_second in self.ev_charge_template_data["ct"+index].data["time_load"]:
+                            self.ev_charge_template_data["ct"+index].data["time_load"].pop("plan"+index_second)
+                self.set_json_payload(self.ev_charge_template_data["ct"+index].data["time_load"]["plan"+index_second], msg)
+            else:
+                self.set_json_payload(self.ev_charge_template_data["ct"+index].data, msg)
+        elif "openWB/vehicle/template/ev_template" in msg.topic:
             index=self.get_index(msg.topic)
-            if re.search("^openWB/vehicle/template/evTemplate/[0-9]+$", msg.topic) != None:
+            if re.search("^openWB/vehicle/template/ev_template/[0-9]+$", msg.topic) != None:
                 if int(msg.payload)==1:
                     if "et"+index not in self.ev_template_data:
                         self.ev_template_data["et"+index]=ev.evTemplate()
                 else:
                     if "et"+index in self.ev_template_data:
                         self.ev_template_data.pop("et"+index)
-            elif re.search("^.+/name$", msg.topic) != None:
-                self.set_str_payload(self.ev_template_data["et"+index].data, msg)
-            elif (re.search("^.+/average_consump$", msg.topic) 
-            or re.search("^.+/battery_capcity$", msg.topic) 
-            or re.search("^.+/max_phases$", msg.topic) 
-            or re.search("^.+/min_current$", msg.topic) 
-            or re.search("^.+/max_current$", msg.topic) 
-            or re.search("^.+/control_pilot_interruption$", msg.topic)) != None:
-                self.set_int_payload(self.ev_template_data["et"+index].data, msg)
+                self.set_json_payload(self.ev_template_data["et"+index].data, msg)
 
-    # def processChargepointTopic(self, topic, payload):
+    def process_chargepoint_topic(self, client, userdata, msg):
+        """ Handler für die Ladepunkt-Topics
+        """
+        if re.search("^openWB/chargepoint/[0-9]+/.+$", msg.topic) != None:
+            index=self.get_index(msg.topic)
+            if re.search("^openWB/chargepoint/[0-9]+$", msg.topic) != None:
+                if int(msg.payload)==1:
+                    if "cp"+index not in self.cp_data:
+                        self.cp_data["cp"+index]=chargepoint.chargepoint()
+                else:
+                    if "cp"+index in self.cp_data:
+                        self.cp_data.pop("cp"+index)
+            elif re.search("^openWB/chargepoint/[0-9]+/get/.+$", msg.topic) != None:
+                if "get" not in self.cp_data["cp"+index].data:
+                    self.cp_data["cp"+index].data["get"]={}
+                self.set_json_payload(self.cp_data["cp"+index].data["get"], msg)
+            elif re.search("^openWB/chargepoint/[0-9]+/set/.+$", msg.topic) != None:
+                if "set" not in self.cp_data["cp"+index].data:
+                    self.cp_data["cp"+index].data["set"]={}
+                self.set_json_payload(self.cp_data["cp"+index].data["set"], msg)
+            elif re.search("^openWB/chargepoint/[0-9]+/config/.+$", msg.topic) != None:
+                if "config" not in self.cp_data["cp"+index].data:
+                    self.cp_data["cp"+index].data["config"]={}
+                self.set_json_payload(self.cp_data["cp"+index].data["config"], msg)
+        elif re.search("^openWB/chargepoint/template/[0-9]+/.+$", msg.topic) != None:
+            index=self.get_index(msg.topic)
+            if int(msg.payload)==1:
+                if "cpt"+index not in self.cp_template_data:
+                    self.cp_template_data["cpt"+index]=chargepoint.cpTemplate()
+            else:
+                if "cpt"+index in self.cp_template_data:
+                    self.cp_template_data.pop("cpt"+index)
+            self.set_json_payload(self.cp_template_data["cpt"+index].data, msg)
+
+    def process_pv_topic(self, client, userdata, msg):
+        """ Handler für die PV-Topics
+        """
+        if re.search("^openWB/pv/config/.+$", msg.topic) != None:
+            if "config" not in self.pv_data:
+                self.pv_data["config"]=pv.pv()
+            self.set_json_payload(self.pv_data["config"].data, msg)
+        elif re.search("^openWB/pv/modules/[0-9]+/.+$", msg.topic) != None:
+            index=self.get_index(msg.topic)
+            if re.search("^openWB/pv/modules/[0-9]+$", msg.topic) != None:
+                if int(msg.payload)==1:
+                    if "pv"+index not in self.pv_module_data:
+                        self.pv_module_data["pv"+index]=pv.pvModule()
+                else:
+                    if "pv"+index in self.pv_module_data:
+                        self.pv_module_data.pop("pv"+index)
+            elif re.search("^openWB/pv/modules/[0-9]+/config/.+$", msg.topic) != None:
+                if "config" not in self.pv_module_data["pv"+index].data:
+                    self.pv_module_data["pv"+index].data["config"]={}
+                self.set_json_payload(self.pv_module_data["pv"+index].data["config"], msg)
+            elif re.search("^openWB/pv/modules/[0-9]+/get/.+$", msg.topic) != None:
+                if "get" not in self.pv_module_data["pv"+index].data:
+                    self.pv_module_data["pv"+index].data["get"]={}
+                self.set_json_payload(self.pv_module_data["pv"+index].data["get"], msg)
+
+    def process_bat_topic(self, client, userdata, msg):
+        """ Handler für die Hausspeicher-Topics
+        """
+        if re.search("^openWB/bat/modules/[0-9]+/.+$", msg.topic) != None:
+            index=self.get_index(msg.topic)
+            if re.search("^openWB/bat/modules/[0-9]+$", msg.topic) != None:
+                if int(msg.payload)==1:
+                    if "bat"+index not in self.bat_module_data:
+                        self.bat_module_data["bat"+index]=bat.batModule()
+                else:
+                    if "bat"+index in self.bat_module_data:
+                        self.bat_module_data.pop("bat"+index)
+            elif re.search("^openWB/bat/modules/[0-9]+/config/.+$", msg.topic) != None:
+                if "config" not in self.bat_module_data["bat"+index].data:
+                    self.bat_module_data["bat"+index].data["config"]={}
+                self.set_json_payload(self.bat_module_data["bat"+index].data["config"], msg)
+            elif re.search("^openWB/bat/modules/[0-9]+/get/.+$", msg.topic) != None:
+                if "get" not in self.bat_module_data["bat"+index].data:
+                    self.bat_module_data["bat"+index].data["get"]={}
+                self.set_json_payload(self.bat_module_data["bat"+index].data["get"], msg)
+
+    def process_general_topic(self, client, userdata, msg):
+        """
+        """
+        if re.search("^openWB/general/.+$", msg.topic) != None:
+            if "general" not in self.general_data:
+                self.general_data["general"]=general.general()
+            if re.search("^openWB/general/notifications/.+$", msg.topic) != None:
+                if "notifications_config" not in self.general_data["general"].data:
+                    self.general_data["general"].data["notifications_config"]={}
+                self.set_json_payload(self.general_data["general"].data["notifications_config"], msg)
+            else: 
+                self.set_json_payload(self.general_data["general"].data, msg)
+
+    def process_optional_topic(self, client, userdata, msg):
+        """ Handler für die Optionalen-Topics
+        """
+        if re.search("^openWB/optional/.+$", msg.topic) != None:
+            if "optional" not in self.optional_data:
+                self.optional_data["optional"]=optional.optional()
+            if re.search("^openWB/optional/led/.+$", msg.topic) != None:
+                if "led" not in self.optional_data["optional"].data:
+                    self.optional_data["optional"].data["led"]={}
+                self.set_json_payload(self.optional_data["optional"].data["led"], msg)
+            elif re.search("^openWB/optional/int_display/.+$", msg.topic) != None:
+                if "int_display" not in self.optional_data["optional"].data:
+                    self.optional_data["optional"].data["int_display"]={}
+                self.set_json_payload(self.optional_data["optional"].data["int_display"], msg)
+            else: 
+                self.set_json_payload(self.optional_data["optional"].data, msg)
+
+    def process_counter_topic(self, client, userdata, msg):
+        """ Handler für die Zähler-Topics
+        """
+        if re.search("^openWB/counter/intermediate_counter/[0-9]+/.+$", msg.topic) != None:
+            index=self.get_index(msg.topic)
+            if re.search("^openWB/counter/intermediate_counter/[0-9]+$", msg.topic) != None:
+                if int(msg.payload)==1:
+                    if "counter"+index not in self.counter_module_data:
+                        self.counter_module_data["counter"+index]=counter.counterModule()
+                else:
+                    if "counter"+index in self.counter_module_data:
+                        self.counter_module_data.pop("counter"+index)
+            elif re.search("^openWB/counter/intermediate_counter/[0-9]+/get.+$", msg.topic) != None:
+                if "get" not in self.counter_module_data["counter"+index].data:
+                    self.counter_module_data["counter"+index].data["get"]={}
+                self.set_json_payload(self.counter_module_data["counter"+index].data["get"], msg)
+            elif re.search("^openWB/counter/intermediate_counter/[0-9]+/config.+$", msg.topic) != None:
+                if "config" not in self.counter_module_data["counter"+index].data:
+                    self.counter_module_data["counter"+index].data["config"]={}
+                self.set_json_payload(self.counter_module_data["counter"+index].data["config"], msg)
+        elif re.search("^openWB/counter/evu.+$", msg.topic) != None:
+            if "evu" not in self.counter_data:
+                self.counter_data["evu"]=counter.counter()
+            if re.search("^openWB/counter/evu/[0-9]+/get.+$", msg.topic) != None:
+                if "get" not in self.counter_data["counter"+index].data:
+                    self.counter_data["counter"+index].data["get"]={}
+                self.set_json_payload(self.counter_data["counter"+index].data["get"], msg)
+            elif re.search("^openWB/counter/evu/[0-9]+/config.+$", msg.topic) != None:
+                if "config" not in self.counter_data["counter"+index].data:
+                    self.counter_data["counter"+index].data["config"]={}
+                self.set_json_payload(self.counter_data["counter"+index].data["config"], msg)
+
+    def process_graph_topic(self, client, userdata, msg):
+        """ Handler für die Graph-Topics
+        """
+        if re.search("^openWB/graph/.+$", msg.topic) != None:
+            if "graph" not in self.graph_data:
+                self.graph_data["graph"]=graph.graph()
+            if re.search("^openWB/graph/config.+$", msg.topic) != None:
+                if "config" not in self.graph_data["graph"].data:
+                    self.graph_data["graph"].data["config"]={}
+                self.set_json_payload(self.graph_data["graph"].data["config"], msg)
+            elif re.search("^openWB/graph/values.+$", msg.topic) != None:
+                if "values" not in self.graph_data["graph"].data:
+                    self.graph_data["graph"].data["values"]={}
+                self.set_json_payload(self.graph_data["graph"].data["values"], msg)
+
+    # def processSmarthomeTopic(self, client, userdata, msg):
     #     """
     #     """
     #     pass
 
-    # def processPvTopic(self, topic, payload):
-    #     """
-    #     """
-    #     pass
-
-    # def processBatTopic(self, topic, payload):
-    #     """
-    #     """
-    #     pass
-
-    # def processGeneralTopic(self, topic, payload):
-    #     """
-    #     """
-    #     pass
-
-    # def processOptionalTopic(self, topic, payload):
-    #     """
-    #     """
-    #     pass
-
-    # def processCounterTopic(self, topic, payload):
-    #     """
-    #     """
-    #     pass
-
-    # def processGraphTopic(self, topic, payload):
-    #     """
-    #     """
-    #     pass
-
-    # def processSmarthomeTopic(self, topic, payload):
-    #     """
-    #     """
-    #     pass
-
-    #     #keine Reihenfolge imner gucken, ob es Instanz schon gibt
-            
-            # self.ticker_prepare.clear()
-            # seconds = mqttpayload
-            # self.ticker_prepare.set()
-            # while not self.ticker_prepare.wait(seconds):
-            #     self.prep.setup_algorithm() 

@@ -27,19 +27,23 @@ class prepare():
     def copy_data(self):
         """ kopiert die Daten, die per MQTT empfangen wurden.
         """
-        data.cp_data=copy.deepcopy(subdata.mqtt.cp_data)
-        data.cp_template_data=copy.deepcopy(subdata.mqtt.cp_template_data)
-        data.pv_data=copy.deepcopy(subdata.mqtt.pv_data)
-        data.pv_module_data=copy.deepcopy(subdata.mqtt.pv_module_data)
-        data.ev_data=copy.deepcopy(subdata.mqtt.ev_data)
-        data.ev_template_data=copy.deepcopy(subdata.mqtt.ev_template_data)
-        data.ev_charge_template_data=copy.deepcopy(subdata.mqtt.ev_charge_template_data)
-        data.meter_data=copy.deepcopy(subdata.mqtt.meter_data)
-        data.meter_module_data=copy.deepcopy(subdata.mqtt.meter_module_data)
-        data.bat_data=copy.deepcopy(subdata.mqtt.bat_data)
-        data.bat_module_data=copy.deepcopy(subdata.mqtt.bat_module_data)
-        data.evu_data=copy.deepcopy(subdata.mqtt.evu_data)
-        data.evu_module_data=copy.deepcopy(subdata.mqtt.evu_module_data)
+        data.cp_data=copy.deepcopy(subdata.subData.cp_data)
+        data.cp_template_data=copy.deepcopy(subdata.subData.cp_template_data)
+        data.pv_data=copy.deepcopy(subdata.subData.pv_data)
+        data.pv_module_data=copy.deepcopy(subdata.subData.pv_module_data)
+        data.ev_data=copy.deepcopy(subdata.subData.ev_data)
+        data.ev_template_data=copy.deepcopy(subdata.subData.ev_template_data)
+        data.ev_charge_template_data=copy.deepcopy(subdata.subData.ev_charge_template_data)
+        data.counter_data=copy.deepcopy(subdata.subData.counter_data)
+        data.counter_module_data=copy.deepcopy(subdata.subData.counter_module_data)
+        data.bat_module_data=copy.deepcopy(subdata.subData.bat_module_data)
+        data.evu_data=copy.deepcopy(subdata.subData.evu_data)
+        data.evu_module_data=copy.deepcopy(subdata.subData.evu_module_data)
+        data.general_data=copy.deepcopy(subdata.subData.general_data)
+        data.optional_data=copy.deepcopy(subdata.subData.optional_data)
+        data.graph_data=copy.deepcopy(subdata.subData.graph_data)
+
+        data.data.print_all()
 
     def check_chargepoints(self):
         """ ermittelt die gewünschte Stromstärke für jeden LP.
