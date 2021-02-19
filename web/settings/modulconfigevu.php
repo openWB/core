@@ -158,7 +158,7 @@
 								<span class="text-info">openWB/set/evu/VPhase1</span> Spannung in Volt für Phase 1, float, Punkt als Trenner<br>
 								<span class="text-info">openWB/set/evu/VPhase2</span> Spannung in Volt für Phase 2, float, Punkt als Trenner<br>
 								<span class="text-info">openWB/set/evu/VPhase3</span> Spannung in Volt für Phase 3, float, Punkt als Trenner<br>
-								<span class="text-info">openWB/set/evu/HzFrequenz</span> Netzfrequenz in Hz, float, Punkt als Trenner<br>
+								<span class="text-info">openWB/set/evu/HzFrequenz</span> Netzfrequenz in Hz, float, Punkt als Trenner
 							</div>
 						</div>
 						<div id="wattbezuglgessv1" class="hide">
@@ -958,11 +958,10 @@
 
 				<div class="row justify-content-center">
 					<div class="col-3 text-center">
-						<input type="hidden" name="wizzarddone" id="wizzarddoneInput" value="<?php echo $wizzarddoneold+1; ?>" disabled>
 						<button class="btn btn-success" type="submit" id="saveBtn">Speichern</button>
 					</div>
 					<div class="col-1 wizzard hide">
-						&nbsp;
+						<input type="hidden" name="wizzarddone" id="wizzarddoneInput" value="<?php echo $wizzarddoneold+1; ?>" disabled>
 					</div>
 					<div class="col-3 text-center wizzard hide">
 						<button class="btn btn-danger" id="abortWizzardBtn" type="button">Assistent beenden</button>

@@ -43,6 +43,8 @@ class WbData {
 			{ name: "Haus", power: 0, energy: 0, color: "white" }
 		];
 		this.usageDetails = [this.usageSummary[0]];
+		this.showLiveGraph = true;
+		this.prefs = {};
 	};
 
 	init() {
@@ -62,16 +64,33 @@ class WbData {
 		for (i = 0; i < 9; i++) {
 			this.shDevice[i].color = style.getPropertyValue('--color-sh' + (i + 1));
 		}
+			this.consumer[0].color = style.getPropertyValue('--color-co1');
+			this.consumer[1].color = style.getPropertyValue('--color-co2');
 		// read preferences stored in cookie
-		const myCookies = document.cookie.split(';');
-		const deviceCookie = myCookies.filter(entry => entry.split('=')[0] === "openWBColorThemeHideDevices");
-		if (deviceCookie.length > 0) {
-			const devicesToHideString = deviceCookie[0].split('=')[1];
-			if (devicesToHideString != "") {
-				const devicesToHide = JSON.parse(devicesToHideString);
-				devicesToHide.map(i => this.shDevice[i].showInGraph = false)
+		const wbCookies = document.cookie.split(';');
+		const myCookie = wbCookies.filter(entry => entry.split('=')[0] === "openWBColorTheme");
+		if (myCookie.length > 0) {
+			this.prefs = JSON.parse(myCookie[0].split('=')[1]);
+			if ('hideSH' in this.prefs) {
+				this.prefs.hideSH.map(i => this.shDevice[i].showInGraph = false)
+			}
+			if ('showLG' in this.prefs) {
+				this.showLiveGraph = this.prefs.showLG;
+			}
+			if ('maxPow' in this.prefs) {
+				powerMeter.maxPower = +this.prefs.maxPow;
+			}
+			if ('relPM' in this.prefs) {
+				powerMeter.showRelativeArcs = this.prefs.relPM;
 			}
 		}
+		if (this.showLiveGraph) {
+			powerGraph.deactivateDay();
+			powerGraph.activateLive();
+			} else {
+				powerGraph.deactivateLive();
+				powerGraph.activateDay();
+			}
 	}
 
 	updateEvu(field, value) {
@@ -107,6 +126,7 @@ class WbData {
 				this.updateUsageSummary(1, "energy", value)
 				break;
 			case 'houseEnergy':
+				console.log ("Update House Energy: " + value);
 				this.updateUsageSummary(4, "energy", value);
 				break;
 			case 'currentPowerPrice':
@@ -124,6 +144,7 @@ class WbData {
 				break;
 			case 'pvDailyYield':
 				this.updateSourceSummary("pv", "energy", this.pvDailyYield);
+				console.log ("Update PV Energy: " + value);
 				break;
 			default:
 				break;
@@ -149,10 +170,10 @@ class WbData {
 		this.shDevice[index - 1][field] = value;
 		switch (field) {
 			case 'power':
-				this.updateUsageSummary(2, "power", this.shDevice.filter(dev => dev.configured).reduce((sum, consumer) => sum + consumer.power, 0));
+				this.updateConsumerSummary("power");
 				break;
 			case 'energy':
-				this.updateUsageSummary(2, "energy", this.shDevice.filter(dev => dev.configured).reduce((sum, consumer) => sum + consumer.energy, 0));
+				this.updateConsumerSummary("energy");
 				break;
 			case 'showInGraph':
 				this.persistGraphPreferences();
@@ -176,6 +197,7 @@ class WbData {
 				break;
 			case 'soc':
 				powerMeter.update();
+				break;
 			default:
 				break;
 		}
@@ -243,51 +265,41 @@ class WbData {
 	}
 
 	updateConsumerSummary(cat) {
-		this.updateUsageSummary(3, cat, this.shDevice.filter(dev => dev.configured).reduce((sum, consumer) => sum + consumer[cat], 0)
+		this.updateUsageSummary(2, cat, this.shDevice.filter(dev => dev.configured).reduce((sum, consumer) => sum + consumer[cat], 0)
 			+ this.consumer.filter(dev => dev.configured).reduce((sum, consumer) => sum + consumer[cat], 0));
 	}
 
 	//update cookie
 	persistGraphPreferences() {
-		var idlist = "["
-			+ wbdata.shDevice.reduce((str, device, i) => {
-				var result = str;
-				if (!device.showInGraph) {
-					if (result === "") {
-						result = device.id;
-					} else {
-						result = result + "," + device.id;
-					}
-				}
-				return result
-			}, "")
-			+ "]";
-		document.cookie = "openWBColorThemeHideDevices=" + idlist + "; max-age=16000000";
+		this.prefs.hideSH = this.shDevice.filter(device => !device.showInGraph).map(device=>device.id);
+		this.prefs.showLG = this.showLiveGraph;
+		document.cookie = "openWBColorTheme=" + JSON.stringify(this.prefs) + "; max-age=16000000";
 	}
 }
 
 class Consumer {
-	constructor(name = "", power = 0, dailyYield = 0, configured = false) {
+	constructor(name = "", power = 0, dailyYield = 0, configured = false, color="white") {
 		this.name = name;
 		this.power = power;
 		this.dailyYield = dailyYield;
 		this.configured = configured;
+		this.color=color;
 	}
 };
 
 class ChargePoint {
-	constructor(index, name = "", power = 0, dailyYield = 0, configured = false) {
+	constructor(index, name = "", power = 0, dailyYield = 0, configured = false, isSocConfigured = false, isSocManual = false) {
 		this.name = name;
 		this.power = power;
 		this.energy = dailyYield;
 		this.configured = configured;
-
-
+		this.isSocConfigured = isSocConfigured;
+		this.isSocManual = isSocManual;
 	}
 };
 
 class SHDevice {
-	constructor(index, name = "", power = 0, dailyYield = 0, configured = false, color = "") {
+	constructor(index, name = "", power = 0, dailyYield = 0, configured = false, color = "white") {
 		this.id = index;
 		this.name = name;
 		this.power = power;
