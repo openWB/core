@@ -11,21 +11,10 @@ class chargepoint():
     data={}
 
     def __init__(self):
-        self.ev=0
-        self.template=0
-
-    def __is_cp_configured(self):
-        """ prüft, ob der Ladepunkt vom Benutzer konfiguriert wurde.
-        """
         pass
 
     def __is_cp_available(self):
         """ prüft, ob sich der LP in der vorgegebenen Zeit zurückgemeldet hat.
-        """
-        pass
-
-    def __is_ev_plugged(self):
-        """prüft, ob ein EV angesteckt ist.
         """
         pass
 
@@ -34,21 +23,19 @@ class chargepoint():
         """
         pass
 
-    def __is_autolock_active(self):
-        """ prüft, ob ein Zeitfenster des Autolocks aktiv ist.
-        """
-        pass
-
     def get_state(self):
         """prüft alle Bedingungen und ruft die EV-Logik auf
         """
-        # if __is_cp_configured()==True:
-        #     if __is_cp_available()==True:
-        #         if __is_ev_plugged()==True:
-        #             if __is_cp_locked()==True:
-        #                 if __is_autolock_active()==True:
-        #return
-        pass
+        try:
+            if self.__is_cp_available()==True:
+                if data["get"]["plug_state"]==True:
+                    if self.__is_cp_locked()==True:
+                        if data["get"]["autolock_active"]==False:
+                            return True
+        except:
+            print("Some topics missing")
+            return False
+        return False
 
 
 class cpTemplate():

@@ -101,7 +101,7 @@ class subData():
             if (re.search("^.+/VPhase1$", msg.topic) or re.search("^.+/VPhase2$", msg.topic)) != None:
                 self.set_json_payload(self.cp_data["lp"+index].data, msg)
                 #print(self.cp_data)
-                #print(self.cp_data["lp1"].data)
+                #print(self.cp_data["cp1"].data)
 
     def set_json_payload(self, dict, msg):
         """ dekodiert das JSON-Objekt und setzt diesen für den Value in das übergebene Dictionary, als Key wird der Name nach dem letzten / verwendet.
@@ -222,6 +222,7 @@ class subData():
                 if "cpt"+index in self.cp_template_data:
                     self.cp_template_data.pop("cpt"+index)
             self.set_json_payload(self.cp_template_data["cpt"+index].data, msg)
+        print(self.cp_data["cp1"].data)
 
     def process_pv_topic(self, client, userdata, msg):
         """ Handler für die PV-Topics

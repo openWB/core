@@ -50,7 +50,7 @@ class prepare():
         """
         for cp in data.cp_data:
             if cp.get_state()==True:
-                data.ev_data[cp.config.ev].get_required_current()
+                data.ev_data[cp.data["config"]["ev"]].get_required_current()
 
     def use_pv(self):
         """ ermittelt, ob Überschuss an der EVU vorhanden ist und kümmert sich um die Beachtung der Einspeisungsgrenze.

@@ -26,4 +26,4 @@ class data():
 
     @classmethod
     def print_all(self):
-        print(json.dumps(globals(), indent=4))
+        print(json.dumps(vars(data), indent=4))
