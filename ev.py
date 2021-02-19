@@ -10,6 +10,7 @@ class ev():
     """
 
     def __init__(self):
+        self.data={}
         self.ev_template=0
         self.charge_template=0
         
@@ -73,10 +74,14 @@ class ev():
 class evTemplate():
     """ Klasse mit den EV-Daten
     """
-    data={}
+
+    def __init__(self):
+        self.data={}
 
 
 class chargeTemplate():
     """ Klasse der Lademodus-Vorlage
     """
-    data={}
+
+    def __init__(self):
+        self.data={}

@@ -1695,7 +1695,6 @@ loadvars(){
 	#		echo $actualvar > ramdisk/mqtt$val
 	#	fi
 	#done
-	echo -e $tempPubList | python3 runs/mqttpub.py -q 0 -r &
-	runs/pubmqtt.sh &
+	python3 publishvars.py -q 0 -r &
 
 }

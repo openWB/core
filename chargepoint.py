@@ -3,15 +3,19 @@
 
 import data
 
+class allChargepoints():
+    """
+    """
+    
+    def __init__(self):
+        self.data={}
 
 class chargepoint():
     """ geht alle Ladepunkte durch, prüft, ob geladen werden darf und ruft die Funktion des angesteckten Autos auf. 
     """
 
-    data={}
-
     def __init__(self):
-        pass
+        self.data={}
 
     def __is_cp_available(self):
         """ prüft, ob sich der LP in der vorgegebenen Zeit zurückgemeldet hat.
@@ -28,9 +32,9 @@ class chargepoint():
         """
         try:
             if self.__is_cp_available()==True:
-                if data["get"]["plug_state"]==True:
+                if self.data["get"]["plug_state"]==True:
                     if self.__is_cp_locked()==True:
-                        if data["get"]["autolock_active"]==False:
+                        if self.data["get"]["autolock_active"]==False:
                             return True
         except:
             print("Some topics missing")
@@ -41,4 +45,6 @@ class chargepoint():
 class cpTemplate():
     """ Vorlage für einen LP.
     """
-    data={}
+    
+    def __init__(self):
+        self.data={}

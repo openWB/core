@@ -20,9 +20,9 @@ class prepare():
         """ bereitet die Daten für den Algorithmus vor und startet diesen.
         """
         self.copy_data()
-        self.check_chargepoints()
-        self.use_pv()
-        self.control.calc_current()
+        # self.check_chargepoints()
+        # self.use_pv()
+        # self.control.calc_current()
 
     def copy_data(self):
         """ kopiert die Daten, die per MQTT empfangen wurden.
@@ -35,15 +35,12 @@ class prepare():
         data.ev_template_data=copy.deepcopy(subdata.subData.ev_template_data)
         data.ev_charge_template_data=copy.deepcopy(subdata.subData.ev_charge_template_data)
         data.counter_data=copy.deepcopy(subdata.subData.counter_data)
-        data.counter_module_data=copy.deepcopy(subdata.subData.counter_module_data)
         data.bat_module_data=copy.deepcopy(subdata.subData.bat_module_data)
-        data.evu_data=copy.deepcopy(subdata.subData.evu_data)
-        data.evu_module_data=copy.deepcopy(subdata.subData.evu_module_data)
         data.general_data=copy.deepcopy(subdata.subData.general_data)
         data.optional_data=copy.deepcopy(subdata.subData.optional_data)
         data.graph_data=copy.deepcopy(subdata.subData.graph_data)
 
-        data.data.print_all()
+        data.print_all()
 
     def check_chargepoints(self):
         """ ermittelt die gewünschte Stromstärke für jeden LP.

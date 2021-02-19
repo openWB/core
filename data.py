@@ -2,7 +2,6 @@
 Dictionary: Zugriff erfolgt bei Dictionary über Keys, nicht über Indizes wie bei Listen. Das hat den Vorteil, dass Instanzen gelöscht werden können, der Zugriff aber nicht verändert werden musss.
 """
 
-import json
 
 cp_data={}
 cp_template_data={}
@@ -12,18 +11,29 @@ ev_data={}
 ev_template_data={}
 ev_charge_template_data={}
 counter_data={}
-counter_module_data={}
 bat_module_data={}
-evu_data={}
-evu_module_data={}
 general_data={}
 optional_data={}
 graph_data={}
 
-class data():
-    """
-    """
+def print_all():
+    print_dictionaries(cp_data)
+    print_dictionaries(cp_template_data)
+    print_dictionaries(pv_data)
+    print_dictionaries(pv_module_data)
+    print_dictionaries(ev_data)
+    print_dictionaries(ev_template_data)
+    print_dictionaries(ev_charge_template_data)
+    print_dictionaries(counter_data)
+    print_dictionaries(bat_module_data)
+    print_dictionaries(general_data)
+    print_dictionaries(optional_data)
+    print_dictionaries(graph_data)
 
-    @classmethod
-    def print_all(self):
-        print(json.dumps(vars(data), indent=4))
+def print_dictionaries(data):
+    for key in data:
+        print(key)
+        if isinstance(data[key], dict) == False:
+            print(data[key].data)
+        else:
+            print("Klasse fehlt")
