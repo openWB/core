@@ -34,10 +34,10 @@ class chargepoint():
             if self.__is_cp_available()==True:
                 if self.data["get"]["plug_state"]==True:
                     if self.__is_cp_locked()==True:
-                        if self.data["get"]["autolock_active"]==False:
+                        if self.data["get"]["enabled"]==False:
                             return True
         except:
-            print("Some topics missing")
+            print("dictionary key doens't exist")
             return False
         return False
 
