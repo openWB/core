@@ -85,9 +85,9 @@ class subData():
         #print("Unknown topic: "+msg.topic+", "+str(msg.payload.decode("utf-8")))
 
     def get_index(self, topic):
-        """extrahiert den Index aus einemTtopic (zwischen zwei //)
+        """extrahiert den Index aus einemTtopic (Zahl zwischen zwei // oder am Stringende)
         """
-        index=re.search('(?!/)([0-9]+)(?=/)', topic)
+        index=re.search('(?!/)([0-9]+)(?=/|$)', topic)
         return index.group()
 
     # def processTest(self, client, userdata, msg):
@@ -125,10 +125,18 @@ class subData():
                     if "get" not in self.ev_data["ev"+index].data:
                         self.ev_data["ev"+index].data["get"]={}
                     self.set_json_payload(self.ev_data["ev"+index].data["get"], msg)
-                elif re.search("^openWB/vehicle/[0-9]+/soc_config.+$", msg.topic) != None:
-                    if "soc_config" not in self.ev_data["ev"+index].data:
-                        self.ev_data["ev"+index].data["soc_config"]={}
-                    self.set_json_payload(self.ev_data["ev"+index].data["soc_config"], msg)
+                elif re.search("^openWB/vehicle/[0-9]+/soc/config/.+$", msg.topic) != None:
+                    if "soc" not in self.ev_data["ev"+index].data:
+                        self.ev_data["ev"+index].data["soc"]={}
+                    if "config" not in self.ev_data["ev"+index].data["soc"]:
+                        self.ev_data["ev"+index].data["soc"]["config"]={}
+                    self.set_json_payload(self.ev_data["ev"+index].data["soc"]["config"], msg)
+                elif re.search("^openWB/vehicle/[0-9]+/soc/get/.+$", msg.topic) != None:
+                    if "soc" not in self.ev_data["ev"+index].data:
+                        self.ev_data["ev"+index].data["soc"]={}
+                    if "get" not in self.ev_data["ev"+index].data["soc"]:
+                        self.ev_data["ev"+index].data["soc"]["get"]={}
+                    self.set_json_payload(self.ev_data["ev"+index].data["soc"]["get"], msg)
                 else: 
                     self.set_json_payload(self.ev_data["ev"+index].data, msg)
         elif re.search("^openWB/vehicle/default.+$", msg.topic) != None:

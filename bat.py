@@ -8,7 +8,5 @@ class batModule():
     """
     """
 
-    data={}
-
     def __init__(self):
-        pass
+        self.data={}

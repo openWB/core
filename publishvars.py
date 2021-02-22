@@ -9,7 +9,11 @@ from subprocess import Popen
 import json
 
 class pubvars():
+    """puplished alle Dateien der Ramdisk. Als Grundlage wurde die initRamdisk.sh verwendet.
+    """
     def __init__(self):
+        """ Verbindung zum Broker. (aus mqttpub.py)
+        """
         self.ramdiskpath="/var/www/html/openWB/ramdisk/"
 
         self.parser = argparse.ArgumentParser(description='openWB MQTT Publisher')
@@ -28,7 +32,14 @@ class pubvars():
         self.client.disconnect()
 
     def pub_float(self, var, topic):
-        """
+        """konvertiert die Daten der Ramdisk-Datei in Float und published diese als json-Objekt.
+
+         Parameters
+        ----------
+        var : str
+            Pfad zur Ramdisk-Datei
+        topic : str
+            Topic, in das gepublished wird
         """
         f = open( self.ramdiskpath+var , 'r')
         value =f.read()
@@ -40,7 +51,14 @@ class pubvars():
         self.client.publish(topic, payload=json.dumps(value), qos=self.args.qos, retain=self.args.retain)
 
     def pub_int(self, var, topic):
-        """
+        """konvertiert die Daten der Ramdisk-Datei in Int und published diese als json-Objekt.
+
+         Parameters
+        ----------
+        var : str
+            Pfad zur Ramdisk-Datei
+        topic : str
+            Topic, in das gepublished wird
         """
         f = open( self.ramdiskpath+var , 'r')
         value =int(f.read().rstrip('\n'))
@@ -48,7 +66,14 @@ class pubvars():
         self.client.publish(topic, payload=json.dumps(value), qos=self.args.qos, retain=self.args.retain)
 
     def pub_str(self, var, topic):
-        """
+        """konvertiert die Daten der Ramdisk-Datei in Str und published diese als json-Objekt.
+
+         Parameters
+        ----------
+        var : str
+            Pfad zur Ramdisk-Datei
+        topic : str
+            Topic, in das gepublished wird
         """
         f = open( self.ramdiskpath+var , 'r')
         value =str(f.read()).rstrip('\n')
@@ -56,7 +81,14 @@ class pubvars():
         self.client.publish(topic, payload=json.dumps(value), qos=self.args.qos, retain=self.args.retain)
 
     def pub_float_list(self, var, topic):
-        """
+        """konvertiert die Daten der als Liste übergebenen Ramdisk-Dateien in eine Float-Liste und published diese als json-Objekt.
+
+         Parameters
+        ----------
+        var : list of str
+            Pfade zu Ramdisk-Dateien
+        topic : str
+            Topic, in das gepublished wird
         """
         value=[]
         for item in var:
@@ -70,7 +102,7 @@ class pubvars():
         self.client.publish(topic, payload=json.dumps(value), qos=self.args.qos, retain=self.args.retain)
 
     def vars(self):
-        """
+        """ruft für alle Ramdisk-Dateien aus initRamdisk die zum Typ passende Funktion zum publishen auf.
         """
         self.pub_float("llv1", "openWB/chargepoint/1/voltage")
 
@@ -271,14 +303,14 @@ class pubvars():
         # self.pub_float("pvcounter", "openWB/")
         # self.pub_float("pvecounter", "openWB/")
         self.pub_float("pvkwh", "openWB/pv/get/counter_kwh")
-        self.pub_float("pvkwhk", "openWB/pv/get/counter_kwh")
+        #self.pub_float("pvkwhk", "openWB/pv/get/counter_kwh")
         self.pub_float("pvkwhk1", "openWB/pv/modules/1/get/counter_kwh")
         self.pub_float("pvkwhk2", "openWB/pv/modules/2/get/counter_kwh")
         self.pub_int("pv1vorhanden", "openWB/pv/modules/1")
         self.pub_int("pv2vorhanden", "openWB/pv/modules/2")
-        self.pub_float("pvwatt", "openWB/pv/get/power")
-        self.pub_float("pvwatt1", "openWB/pv/modules/1/get/power")
-        self.pub_float("pvwatt2", "openWB/pv/modules/2/get/power")
+        self.pub_float("pvallwatt", "openWB/pv/get/power")
+        #self.pub_float("pvwatt1", "openWB/pv/modules/1/get/power")
+        #self.pub_float("pvwatt2", "openWB/pv/modules/2/get/power")
         self.pub_float("yearly_pvkwhk", "openWB/pv/get/yearly_yield_kwh")
         self.pub_float("yearly_pvkwhk1", "openWB/pv/modules/1/get/yearly_yield_kwh")
         self.pub_float("yearly_pvkwhk2", "openWB/pv/modules/2/get/yearly_yield_kwh")
