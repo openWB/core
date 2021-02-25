@@ -255,21 +255,23 @@ class subData():
         elif re.search("^openWB/vehicle/template/charge_template/[1-9][0-9]*/time_load/.+$", msg.topic) != None:
             if "time_load" not in self.ev_charge_template_data["ct"+index].data:
                 self.ev_charge_template_data["ct"+index].data["time_load"]={}
-            index_second=self.get_second_index(msg.topic)
-            if re.search("^openWB/vehicle/template/charge_template/[1-9][0-9]*/time_load$", msg.topic) != None:
-                self.set_json_payload(self.ev_charge_template_data["ct"+index].data["timeload"], msg)
-            elif re.search("^openWB/vehicle/template/charge_template/[1-9][0-9]*/time_load/[1-9][0-9]*$", msg.topic) != None:
+            if re.search("^openWB/vehicle/template/charge_template/[1-9][0-9]*/time_load/[1-9][0-9]*$", msg.topic) != None:
+                index_second=self.get_second_index(msg.topic)
                 if json.loads(str(msg.payload.decode("utf-8")))=="":
                     if "plan"+index_second in self.ev_charge_template_data["ct"+index].data["time_load"]:
                         self.ev_charge_template_data["ct"+index].data["time_load"].pop("plan"+index_second)
             elif re.search("^openWB/vehicle/template/charge_template/[1-9][0-9]*/time_load/[1-9][0-9]*/frequency/.+$", msg.topic) != None:
+                index_second=self.get_second_index(msg.topic)
                 if "frequency" not in self.ev_charge_template_data["ct"+index].data["time_load"]["plan"+index_second]:
                     self.ev_charge_template_data["ct"+index].data["time_load"]["plan"+index_second]["frequency"]={}
                 self.set_json_payload(self.ev_charge_template_data["ct"+index].data["time_load"]["plan"+index_second]["frequency"], msg)
             elif re.search("^openWB/vehicle/template/charge_template/[1-9][0-9]*/time_load/[1-9][0-9]*/.+$", msg.topic) != None:
+                index_second=self.get_second_index(msg.topic)
                 if "plan"+index_second not in self.ev_charge_template_data["ct"+index].data["time_load"]:
                     self.ev_charge_template_data["ct"+index].data["time_load"]["plan"+index_second]={}
                 self.set_json_payload(self.ev_charge_template_data["ct"+index].data["time_load"]["plan"+index_second], msg)
+            elif re.search("^openWB/vehicle/template/charge_template/[1-9][0-9]*/time_load/.+$", msg.topic) != None:
+                self.set_json_payload(self.ev_charge_template_data["ct"+index].data["time_load"], msg)
         else:
             self.set_json_payload(self.ev_charge_template_data["ct"+index].data, msg)
 

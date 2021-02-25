@@ -40,6 +40,9 @@ class prepare():
         data.ev_template_data = copy.deepcopy(subdata.subData.ev_template_data)
         data.ev_charge_template_data = copy.deepcopy(
             subdata.subData.ev_charge_template_data)
+        for vehicle in data.ev_data:
+            data.ev_data[vehicle].set_templates()
+
         data.counter_data = copy.deepcopy(subdata.subData.counter_data)
         data.bat_module_data = copy.deepcopy(subdata.subData.bat_module_data)
         data.general_data = copy.deepcopy(subdata.subData.general_data)
@@ -52,11 +55,19 @@ class prepare():
         """ ermittelt die gewünschte Stromstärke für jeden LP.
         """
         for chargepoint in data.cp_data:
-            if "cp" in chargepoint:
-                vehicle = data.cp_data[chargepoint].get_state()
-                if vehicle != None:
-                    # data.ev_data[data.cp_data[chargepoint].data["config"]["ev"]].get_required_current()
-                    pass
+            try:
+                if "cp" in chargepoint:
+                    vehicle = data.cp_data[chargepoint].get_state()
+                    if vehicle != None:
+                        if vehicle == 0:
+                            required_current = data.ev_data["default"].get_required_current()
+                        else:
+                            required_current = data.ev_data["ev"+str(vehicle)].get_required_current()
+                        if "set" not in data.cp_data[chargepoint].data:
+                            data.cp_data[chargepoint].data["set"]={}
+                        data.cp_data[chargepoint].data["set"]["required_current"] = required_current
+            except:
+                print("dictionary key related to loop-object", chargepoint,"doesn't exist in check_chargepoints")
 
     def use_pv(self):
         """ ermittelt, ob Überschuss an der EVU vorhanden ist und kümmert sich um die Beachtung der Einspeisungsgrenze.

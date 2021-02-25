@@ -11,22 +11,40 @@ class ev():
 
     def __init__(self):
         self.data={}
-        self.ev_template=0
-        self.charge_template=0
+        self.ev_template=None
+        self.charge_template=None
+    
+    def set_templates(self):
+        """ setzt die Instanz des zugeordneten Templates als Attribut.
+        """
+        try:
+            self.ev_template = data.ev_template_data["et" + str(self.data["ev_template"])]
+            self.charge_template = data.ev_charge_template_data["ct" + str(self.data["charge_template"])]
+        except:
+            print("dictionary key doesn't exist in set_templates")
+
         
     def get_required_current(self):
         """ ermittelt, ob und mit welchem Strom das EV geladen werden soll (unabhängig vom Lastmanagement)
-        """
-        if data.ev_charge_template_data[self.charge_template].time_load == True:
-            self.__time_load()
-        if data.ev_charge_template_data[self.charge_template].charge_mode == "instant_load":
-            self.__instant_load()
-        elif data.ev_charge_template_data[self.charge_template].charge_mode == "pv_load":
-            self.__pv_load()
-        elif data.ev_charge_template_data[self.charge_template].charge_mode == "scheduled_load":
-            self.__scheduled_load()
 
-        self.__check_min_current()
+        Return
+        ------
+        required_current: int
+            Strom, der nach Ladekonfiguration benötigt wird
+        """
+        try:
+            if self.charge_template.data["time_load"]["active"] == True:
+                return self.charge_template.time_load()
+                # if data.ev_charge_template_data[self.charge_template].charge_mode == "instant_load":
+                #     self.__instant_load()
+                # elif data.ev_charge_template_data[self.charge_template].charge_mode == "pv_load":
+                #     self.__pv_load()
+                # elif data.ev_charge_template_data[self.charge_template].charge_mode == "scheduled_load":
+                #     self.__scheduled_load()
+
+                # self.__check_min_current()
+        except:
+            print("dictionary key doesn't exist in get_required_current")
     
 
     def get_soc(self):
@@ -80,22 +98,18 @@ class chargeTemplate():
     def __init__(self):
         self.data={}
 
-    def __time_load(self):
+    def time_load(self):
         """ prüft, ob ein Zeitfenster aktiv ist und setzt entsprechend den Ladestrom
         """
         try:
             if self.data["time_load"]["active"] == True:
-                for plan in self.data["time_load"]:
-                    try:
-                        if "plan" in plan:
-                            if timecheck.check_timeframe(plan) == True:
-                                return plan["current"]
-                            else:
-                                None
-                    except:
-                            print("dictionary key related to loop-object", plan, "doesn't exist in __time_load")
+                plan = timecheck.check_timeframe(self.data["time_load"])
+                if plan != None:
+                    return self.data["time_load"][plan]["current"]
+                else:
+                    return 0
         except:
-            print("dictionary key doesn't exist in __time_load")
+            print("dictionary key doesn't exist in time_load")
 
 
 def get_ev_to_rfid(rfid):

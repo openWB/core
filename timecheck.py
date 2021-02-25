@@ -62,11 +62,10 @@ def check_timeframe(plans):
 
     Returns
     -------
-    True : aktuell
-    False : nicht aktuell
+    plan: erster aktiver Plan
+    None: falls kein Plan aktiv ist
     """
-    state_new = None
-    state_old = None
+    state = None
     try:
         for plan in plans:
             # Nur Keys mit dem Namen plan + Plannummer berücksichtigen
@@ -75,51 +74,52 @@ def check_timeframe(plans):
                     if plans[plan]["active"] == True:
                         now = datetime.datetime.today()
                         begin = datetime.datetime.strptime(
-                            plan["time"][0], '%H:%M')
-                        end = datetime.datetime.strptime(
-                            plan["time"][1], '%H:%M')
+                            plans[plan]["time"][0], '%H:%M')
+                        end = datetime.datetime.strptime(plans[plan]["time"][1], '%H:%M')
 
-                        if plan["frequency"]["selected"] == "once":
+                        if plans[plan]["frequency"]["selected"] == "once":
                             beginDate = datetime.datetime.strptime(
-                                plan["frequency"]["once"][0], "%y-%m-%d")
+                                plans[plan]["frequency"]["once"][0], "%y-%m-%d")
                             endDate = datetime.datetime.strptime(
-                                plan["frequency"]["once"][1], "%y-%m-%d")
+                                plans[plan]["frequency"]["once"][1], "%y-%m-%d")
                             begin = begin.replace(
                                 beginDate.year, beginDate.month, beginDate.day)
                             end = end.replace(
                                 endDate.year, endDate.month, endDate.day)
-                            state_new = is_timeframe_valid(now, begin, end)
+                            state = is_timeframe_valid(now, begin, end)
 
-                        elif plan["frequency"]["selected"] == "daily":
+                        elif plans[plan]["frequency"]["selected"] == "daily":
                             begin, end = set_date(now, begin, end)
-                            state_new = is_timeframe_valid(now, begin, end)
+                            state = is_timeframe_valid(now, begin, end)
 
-                        elif plan["frequency"]["selected"] == "weekly":
+                        elif plans[plan]["frequency"]["selected"] == "weekly":
                             if begin < end:
                                 # Endzeit ist am gleichen Tag
-                                if plan["frequency"]["weekly"][now.weekday()] == True:
+                                if plans[plan]["frequency"]["weekly"][now.weekday()] == True:
                                     begin, end = set_date(now, begin, end)
-                                    state_new = is_timeframe_valid(
+                                    state = is_timeframe_valid(
                                         now, begin, end)
+                                else:
+                                    state = False
                             else:
-                                if (plan["frequency"]["weekly"][now.weekday()] or plan["frequency"]["weekly"][now.weekday()+1]) == True:
+                                if (plans[plan]["frequency"]["weekly"][now.weekday()] or plans[plan]["frequency"]["weekly"][now.weekday()+1]) == True:
                                     begin, end = set_date(now, begin, end)
-                                    state_new = is_timeframe_valid(
+                                    state = is_timeframe_valid(
                                         now, begin, end)
+                                else:
+                                    state = False
 
-                        if state_old == None:
-                            state_old = state_new
-                        if (state_new != state_old):
-                            # log
-                            print("Autolock-Pläne widersprechen sich. Ladung gestoppt")
-                            return False
+                        if state == True:
+                            return plan
             except:
                 print("dictionary key related to loop-object",
-                      plan, "doesn't exist in autolock")
-        if state_new == None:
+                    plan, "doesn't exist in check_timeframe")
+                return None
+
+        if state == None:
             # log
-            print("Keine aktiven Autolock-Pläne. Ladung gestoppt")
-            state_new= False
-        return state_new
+            print("Keine aktiven Zeit-Pläne.")
+        return None
     except:
         print("dictionary key doesn't exist in check_timeframe")
+        return None

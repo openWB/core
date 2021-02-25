@@ -521,11 +521,11 @@ class pubvars():
 
         # autolock
         self.client.publish("openWB/chargepoint/template/1/autolock/1/frequency/selected", payload=json.dumps("daily"), qos=0, retain=True)
-        self.client.publish("openWB/chargepoint/template/1/autolock/1/time", payload=json.dumps(["07:00", "09:00"]), qos=0, retain=True)
+        self.client.publish("openWB/chargepoint/template/1/autolock/1/time", payload=json.dumps(["07:00", "11:15"]), qos=0, retain=True)
         self.client.publish("openWB/chargepoint/template/1/autolock/1/active", payload=json.dumps(1), qos=0, retain=True)
         self.client.publish("openWB/chargepoint/template/1/autolock/wait_for_charging_end", payload=json.dumps(1), qos=0, retain=True)
-        self.client.publish("openWB/chargepoint/1/get/charge_state", payload=json.dumps(1), qos=0, retain=True)
-        self.client.publish("openWB/chargepoint/template/1/autolock/active", payload=json.dumps(1), qos=0, retain=True)
+        self.client.publish("openWB/chargepoint/1/get/charge_state", payload=json.dumps(0), qos=0, retain=True)
+        self.client.publish("openWB/chargepoint/template/1/autolock/active", payload=json.dumps(0), qos=0, retain=True)
         self.client.publish("openWB/chargepoint/1/get/plug_state", payload=json.dumps(1), qos=0, retain=True)
         self.client.publish("openWB/chargepoint/1/get/manual_lock", payload=json.dumps(0), qos=0, retain=True)
         self.client.publish("openWB/chargepoint/1/config/template", payload=json.dumps(1), qos=0, retain=True)
@@ -537,5 +537,16 @@ class pubvars():
         self.client.publish("openWB/vehicle/1/match_ev/selected", payload=json.dumps("rfid"), qos=0, retain=True)
         self.client.publish("openWB/vehicle/1/match_ev/tag_id", payload=json.dumps(1234), qos=0, retain=True)
 
+        #ev
+        self.client.publish("openWB/vehicle/1/charge_template", payload=json.dumps(1), qos=0, retain=True)
+        self.client.publish("openWB/vehicle/1/ev_template", payload=json.dumps(1), qos=0, retain=True)
+        self.client.publish("openWB/vehicle/template/ev_template/1/name", payload=json.dumps("car1"), qos=0, retain=True)
+        self.client.publish("openWB/vehicle/template/charge_template/1/chargemode/selected", payload=json.dumps("instant_load"), qos=0, retain=True)
+        self.client.publish("openWB/vehicle/template/charge_template/1/time_load/active", payload=json.dumps(1), qos=0, retain=True)
+        self.client.publish("openWB/vehicle/template/charge_template/1/time_load/1/active", payload=json.dumps(1), qos=0, retain=True)
+        self.client.publish("openWB/vehicle/template/charge_template/1/time_load/1/frequency/selected", payload=json.dumps("weekly"), qos=0, retain=True)
+        self.client.publish("openWB/vehicle/template/charge_template/1/time_load/1/frequency/weekly", payload=json.dumps([1,1,1,1,1,0,0]), qos=0, retain=True)
+        self.client.publish("openWB/vehicle/template/charge_template/1/time_load/1/time", payload=json.dumps(["12:00", "16:00"]), qos=0, retain=True)
+        self.client.publish("openWB/vehicle/template/charge_template/1/time_load/1/current", payload=json.dumps(10), qos=0, retain=True)
 
 pubvars()
