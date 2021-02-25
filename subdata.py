@@ -321,7 +321,23 @@ class subData():
             index=self.get_index(msg.topic)
             if "cpt"+index not in self.cp_template_data:
                 self.cp_template_data["cpt"+index]=chargepoint.cpTemplate()
-            self.set_json_payload(self.cp_template_data["cpt"+index].data, msg)
+            if re.search("^openWB/chargepoint/template/[1-9][0-9]*/autolock/.+$", msg.topic) != None:
+                if "autolock" not in self.cp_template_data["cpt"+index].data:
+                    self.cp_template_data["cpt"+index].data["autolock"]={}
+                if re.search("^openWB/chargepoint/template/[1-9][0-9]*/autolock/[1-9][0-9]*/.+$", msg.topic) != None:
+                    index_second=self.get_second_index(msg.topic)
+                    if "plan"+index_second not in self.cp_template_data["cpt"+index].data["autolock"]:
+                        self.cp_template_data["cpt"+index].data["autolock"]["plan"+index_second]={}
+                    if re.search("^openWB/chargepoint/template/[1-9][0-9]*/autolock/[1-9][0-9]*/frequency/.+$", msg.topic) != None:
+                        if "frequency" not in self.cp_template_data["cpt"+index].data["autolock"]["plan"+index_second]:
+                            self.cp_template_data["cpt"+index].data["autolock"]["plan"+index_second]["frequency"]={}
+                        self.set_json_payload(self.cp_template_data["cpt"+index].data["autolock"]["plan"+index_second]["frequency"], msg)
+                    else:
+                        self.set_json_payload(self.cp_template_data["cpt"+index].data["autolock"]["plan"+index_second], msg)
+                else:
+                    self.set_json_payload(self.cp_template_data["cpt"+index].data["autolock"], msg)
+            else:
+                self.set_json_payload(self.cp_template_data["cpt"+index].data, msg)
         elif re.search("^openWB/chargepoint/get/.+$", msg.topic) != None:
             if "all" not in self.cp_data:
                 self.cp_data["all"]=chargepoint.allChargepoints()
