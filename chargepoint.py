@@ -2,6 +2,7 @@
 """
 
 import data
+import ev
 import pub
 import timecheck
 
@@ -37,24 +38,26 @@ class chargepoint():
         except:
             print("dictionary key doesn't exist in __is_autolock_active")
 
+
+
     def get_state(self):
         """prüft alle Bedingungen und ruft die EV-Logik auf.
 
         Return
         ------
-        True: Ladepunkt verfügbar
-        False: Ladepunkt nicht verfügbar
+        0..x: Nummer des zugeordneten EV
+        None: Ladepunkt nicht verfügbar
         """
         try:
             if self.__is_cp_available() == True:
                 if self.data["get"]["manual_lock"] == False:
                     if self.data["get"]["plug_state"] == True:
                         if self.__is_autolock_active() == True:
-                            return True
+                            return self.template.get_ev(self.data["get"]["rfid"])
         except:
             print("dictionary key doesn't exist in get_state")
-            return False
-        return False
+            return None
+        return None
 
     def set_template(self):
         """ setzt die Instanz des zugeordneten Templates als Attribut.
@@ -114,25 +117,28 @@ class cpTemplate():
                 if autolock_state != 4:
                     for plan in self.data["autolock"]:
                         # Nur Keys mit dem Namen key + Plannummer berücksichtigen
-                        if "plan" in plan:
-                            if self.data["autolock"][plan]["active"] == True:
-                                if timecheck.check_timeframe(self.data["autolock"][plan]) == True:
-                                    if self.data["autolock"]["wait_for_charging_end"] == True:
-                                        if charge_state == True:
-                                            state_new = 1
+                        try:
+                            if "plan" in plan:
+                                if self.data["autolock"][plan]["active"] == True:
+                                    if timecheck.check_timeframe(self.data["autolock"][plan]) == True:
+                                        if self.data["autolock"]["wait_for_charging_end"] == True:
+                                            if charge_state == True:
+                                                state_new = 1
+                                            else:
+                                                state_new = 2
                                         else:
                                             state_new = 2
                                     else:
-                                        state_new = 2
-                                else:
-                                    state_new = 3
-                            if state_old == None:
-                                state_old = state_new
-                            if (state_new != state_old):
-                                # log
-                                print(
-                                    "Autolock-Pläne widersprechen sich. Ladung gestoppt")
-                                return False
+                                        state_new = 3
+                                if state_old == None:
+                                    state_old = state_new
+                                if (state_new != state_old):
+                                    # log
+                                    print(
+                                        "Autolock-Pläne widersprechen sich. Ladung gestoppt")
+                                    return False
+                        except:
+                            print("dictionary key related to loop-object", plan, "doesn't exist in autolock")
 
                     pub.pub(topic_path+"/get/autolock_state", state_new)
                     if (state_new == 1) or (state_new == 3):
@@ -192,3 +198,18 @@ class cpTemplate():
                 pub.pub(topic_path+"/get/autolock", 2)
         except:
             print("dictionary key doesn't exist in autolock_enable_after_charging_end")
+
+    def get_ev(self, rfid):
+        """ermittelt das dem LP zugeordnete EV
+        """
+        try:
+            if self.data["rfid_enabling"] == True and rfid != 0:
+                vehicle = ev.get_ev_to_rfid(rfid)
+                if vehicle == None:
+                    return self.data["ev"]
+                else:
+                    return vehicle
+            else:
+                return self.data["ev"]
+        except:
+            print("dictionary key doesn't exist in get_ev")

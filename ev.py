@@ -3,7 +3,7 @@ ermittelt, den Ladestrom, den das EV gerne zur Verfügung hätte.
 """
 
 import data
-
+import timecheck
 
 class ev():
     """Logik des EV
@@ -31,11 +31,6 @@ class ev():
 
     def get_soc(self):
         """ermittelt den SoC, wenn die Zugangsdaten konfiguriert sind.
-        """
-        pass
-
-    def __time_load(self):
-        """ prüft, ob ein Zeitfenster aktiv ist und setzt entsprechend den Ladestrom
         """
         pass
 
@@ -78,10 +73,55 @@ class evTemplate():
     def __init__(self):
         self.data={}
 
-
 class chargeTemplate():
     """ Klasse der Lademodus-Vorlage
     """
 
     def __init__(self):
         self.data={}
+
+    def __time_load(self):
+        """ prüft, ob ein Zeitfenster aktiv ist und setzt entsprechend den Ladestrom
+        """
+        try:
+            if self.data["time_load"]["active"] == True:
+                for plan in self.data["time_load"]:
+                    try:
+                        if "plan" in plan:
+                            if timecheck.check_timeframe(plan) == True:
+                                return plan["current"]
+                            else:
+                                None
+                    except:
+                            print("dictionary key related to loop-object", plan, "doesn't exist in __time_load")
+        except:
+            print("dictionary key doesn't exist in __time_load")
+
+
+def get_ev_to_rfid(rfid):
+    """ sucht zur übergebenen RFID-ID das EV.
+
+    Parameter
+    ---------
+    rfid: int
+        Tag-ID
+
+    Return
+    ------
+    vehicle: int
+        Nummer des EV, das zum Tag gehört
+    """
+    for vehicle in data.ev_data:
+        if ("ev" in vehicle) or ("default"==vehicle):
+            try:
+                if data.ev_data[vehicle].data["match_ev"]["selected"] == "rfid":
+                    if data.ev_data[vehicle].data["match_ev"]["tag_id"] == rfid:
+                        if vehicle == "default":
+                            return 0
+                        else:
+                            return int(vehicle[2:])
+            except:
+                print("dictionary key related to loop-object", vehicle, "doesn't exist in get_ev_to_rfid")
+    else:
+        return None
+    

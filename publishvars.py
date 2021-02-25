@@ -530,5 +530,12 @@ class pubvars():
         self.client.publish("openWB/chargepoint/1/get/manual_lock", payload=json.dumps(0), qos=0, retain=True)
         self.client.publish("openWB/chargepoint/1/config/template", payload=json.dumps(1), qos=0, retain=True)
 
+        #rfid
+        self.client.publish("openWB/chargepoint/1/get/rfid", payload=json.dumps(1234), qos=0, retain=True)
+        self.client.publish("openWB/chargepoint/template/1/ev", payload=json.dumps(0), qos=0, retain=True)
+        self.client.publish("openWB/chargepoint/template/1/rfid_enabling", payload=json.dumps(1), qos=0, retain=True)
+        self.client.publish("openWB/vehicle/1/match_ev/selected", payload=json.dumps("rfid"), qos=0, retain=True)
+        self.client.publish("openWB/vehicle/1/match_ev/tag_id", payload=json.dumps(1234), qos=0, retain=True)
+
 
 pubvars()

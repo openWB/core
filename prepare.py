@@ -53,7 +53,8 @@ class prepare():
         """
         for chargepoint in data.cp_data:
             if "cp" in chargepoint:
-                if data.cp_data[chargepoint].get_state() == True:
+                vehicle = data.cp_data[chargepoint].get_state()
+                if vehicle != None:
                     # data.ev_data[data.cp_data[chargepoint].data["config"]["ev"]].get_required_current()
                     pass
 
