@@ -110,44 +110,24 @@ class cpTemplate():
         True: nicht durch Autolock gesperrt -> Ladung möglich
         False: durch Autolock gesperrt
         """
-        state_new = None
-        state_old = None
         try:
             if (self.data["autolock"]["active"] == True):
                 if autolock_state != 4:
-                    for plan in self.data["autolock"]:
-                        # Nur Keys mit dem Namen key + Plannummer berücksichtigen
-                        try:
-                            if "plan" in plan:
-                                if self.data["autolock"][plan]["active"] == True:
-                                    if timecheck.check_timeframe(self.data["autolock"][plan]) == True:
-                                        if self.data["autolock"]["wait_for_charging_end"] == True:
-                                            if charge_state == True:
-                                                state_new = 1
-                                            else:
-                                                state_new = 2
-                                        else:
-                                            state_new = 2
-                                    else:
-                                        state_new = 3
-                                if state_old == None:
-                                    state_old = state_new
-                                if (state_new != state_old):
-                                    # log
-                                    print(
-                                        "Autolock-Pläne widersprechen sich. Ladung gestoppt")
-                                    return False
-                        except:
-                            print("dictionary key related to loop-object", plan, "doesn't exist in autolock")
+                    if timecheck.check_timeframe(self.data["autolock"]) == True:
+                        if self.data["autolock"]["wait_for_charging_end"] == True:
+                            if charge_state == True:
+                                state = 1
+                            else:
+                                state = 2
+                        else:
+                            state = 2
+                    else:
+                        state = 3
 
-                    pub.pub(topic_path+"/get/autolock_state", state_new)
-                    if (state_new == 1) or (state_new == 3):
+                    pub.pub(topic_path+"/get/autolock_state", state)
+                    if (state == 1) or (state == 3):
                         return True
-                    elif state_new == 2:
-                        return False
-                    elif state_new == None:
-                        # log
-                        print("Keine aktiven Autolock-Pläne. Ladung gestoppt")
+                    elif state == 2:
                         return False
                 else:
                     return True
