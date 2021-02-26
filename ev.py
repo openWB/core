@@ -20,8 +20,8 @@ class ev():
         try:
             self.ev_template = data.ev_template_data["et" + str(self.data["ev_template"])]
             self.charge_template = data.ev_charge_template_data["ct" + str(self.data["charge_template"])]
-        except:
-            print("dictionary key doesn't exist in set_templates")
+        except KeyError as key:
+            print("dictionary key", key, "doesn't exist in set_templates")
 
         
     def get_required_current(self):
@@ -33,32 +33,26 @@ class ev():
             Strom, der nach Ladekonfiguration benötigt wird
         """
         try:
+            if "set" not in self.data:
+                self.data["set"] = {}
             if self.charge_template.data["time_load"]["active"] == True:
-                return self.charge_template.time_load()
-                # if data.ev_charge_template_data[self.charge_template].charge_mode == "instant_load":
-                #     self.__instant_load()
-                # elif data.ev_charge_template_data[self.charge_template].charge_mode == "pv_load":
-                #     self.__pv_load()
-                # elif data.ev_charge_template_data[self.charge_template].charge_mode == "scheduled_load":
-                #     self.__scheduled_load()
+                self.data["set"]["required_current"] = self.charge_template.time_load()
+                self.data["set"]["chargemode"] = "time_load"
+            if self.charge_template.data["chargemode"]["selected"] == "instant_load":
+                self.data["set"]["required_current"] = self.charge_template.instant_load(self.data["get"]["soc"], self.data["get"]["charged_since_plugged_kwh"])
+                self.data["set"]["chargemode"] = "instant_load"
+            elif self.charge_template.data["chargemode"]["selected"] == "pv_load":
+                self.data["set"]["required_current"], self.data["set"]["chargemode"] = self.charge_template.pv_load(self.data["get"]["soc"])
+            # elif data.ev_charge_template_data[self.charge_template].chargemode == "scheduled_load":
+            #     self.__scheduled_load()
 
-                # self.__check_min_current()
-        except:
-            print("dictionary key doesn't exist in get_required_current")
+            # self.__check_min_current()
+        except KeyError as key:
+            print("dictionary key", key, "doesn't exist in get_required_current")
     
 
     def get_soc(self):
         """ermittelt den SoC, wenn die Zugangsdaten konfiguriert sind.
-        """
-        pass
-
-    def __pv_load(self):
-        """ prüft, ob Min-oder Max-Soc erreicht wurden und setzt entsprechend den Ladestrom.
-        """
-        pass
-
-    def __instant_load(self):
-        """ prüft, ob die Lademengenbegrenzung erreicht wurde und setzt entsprechend den Ladestrom.
         """
         pass
 
@@ -108,9 +102,54 @@ class chargeTemplate():
                     return self.data["time_load"][plan]["current"]
                 else:
                     return 0
-        except:
-            print("dictionary key doesn't exist in time_load")
+        except KeyError as key:
+            print("dictionary key", key, "doesn't exist in time_load")
 
+    def instant_load(self, soc, amount):
+        """ prüft, ob die Lademengenbegrenzung erreicht wurde und setzt entsprechend den Ladestrom.
+
+        Parameter
+        ---------
+        soc: int
+            SoC des EV
+
+        amount: int
+            geladende Energiemenge seit das EV angesteckt wurde
+        """
+        try:
+            instant_load = self.data["chargemode"]["instant_load"]
+            if instant_load["selected"] == "none":
+                return instant_load["current"]
+            elif instant_load["selected"] == "soc":
+                if soc < instant_load["limit"]["soc"]:
+                    return instant_load["current"]
+                else:
+                    return 0
+            elif instant_load["selected"] == "amount":
+                if amount < instant_load["limit"]["amount"]:
+                    return instant_load["current"]
+                else:
+                    return 0
+        except KeyError as key:
+            print("dictionary key", key, "doesn't exist in instant_load")
+
+    def pv_load(self, soc):
+        """ prüft, ob Min-oder Max-Soc erreicht wurden und setzt entsprechend den Ladestrom.
+        """
+        try:
+            pv_load= self.data["chargemode"]["pv_load"]
+            if soc < pv_load["max_soc"]:
+                if pv_load["min_soc"] != 0:
+                    if soc < pv_load["min_soc"]:
+                        return pv_load["min_soc_current"], "min_pv_load"
+                    else:
+                        return pv_load["min_current"], "pv_load"
+                else:
+                    return pv_load["min_current"], "pv_load"
+            else:
+                return 0, "pv_load"
+        except KeyError as key:
+            print("dictionary key", key, "doesn't exist in pv_load")
 
 def get_ev_to_rfid(rfid):
     """ sucht zur übergebenen RFID-ID das EV.
@@ -134,8 +173,8 @@ def get_ev_to_rfid(rfid):
                             return 0
                         else:
                             return int(vehicle[2:])
-            except:
-                print("dictionary key related to loop-object", vehicle, "doesn't exist in get_ev_to_rfid")
+            except KeyError as key:
+                print("dictionary key", key, "related to loop-object", vehicle, "doesn't exist in get_ev_to_rfid")
     else:
         return None
     

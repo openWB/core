@@ -59,15 +59,17 @@ class prepare():
                 if "cp" in chargepoint:
                     vehicle = data.cp_data[chargepoint].get_state()
                     if vehicle != None:
-                        if vehicle == 0:
-                            required_current = data.ev_data["default"].get_required_current()
-                        else:
-                            required_current = data.ev_data["ev"+str(vehicle)].get_required_current()
                         if "set" not in data.cp_data[chargepoint].data:
-                            data.cp_data[chargepoint].data["set"]={}
-                        data.cp_data[chargepoint].data["set"]["required_current"] = required_current
-            except:
-                print("dictionary key related to loop-object", chargepoint,"doesn't exist in check_chargepoints")
+                            data.cp_data[chargepoint].data["set"] = {}
+                        if vehicle == 0:
+                            data.cp_data[chargepoint].data["set"]["charging_ev"] = data.ev_data["default"]
+                            data.ev_data["default"].get_required_current()
+                        else:
+                            data.cp_data[chargepoint].data["set"]["charging_ev"] = data.ev_data["ev"+str(vehicle)]
+                            data.ev_data["ev"+str(vehicle)].get_required_current()
+                            print(data.ev_data["ev"+str(vehicle)].data)
+            except KeyError as key:
+                print("dictionary key", key, "related to loop-object", chargepoint,"doesn't exist in check_chargepoints")
 
     def use_pv(self):
         """ ermittelt, ob Überschuss an der EVU vorhanden ist und kümmert sich um die Beachtung der Einspeisungsgrenze.

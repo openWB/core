@@ -35,10 +35,8 @@ class chargepoint():
         """
         try:
             return self.template.autolock(self.data["get"]["autolock_state"], self.data["get"]["charge_state"], self.topic_path)
-        except:
-            print("dictionary key doesn't exist in __is_autolock_active")
-
-
+        except KeyError as key:
+            print("dictionary key", key, "doesn't exist in __is_autolock_active")
 
     def get_state(self):
         """prüft alle Bedingungen und ruft die EV-Logik auf.
@@ -54,8 +52,8 @@ class chargepoint():
                     if self.data["get"]["plug_state"] == True:
                         if self.__is_autolock_active() == True:
                             return self.template.get_ev(self.data["get"]["rfid"])
-        except:
-            print("dictionary key doesn't exist in get_state")
+        except KeyError as key:
+            print("dictionary key", key, "doesn't exist in get_state")
             return None
         return None
 
@@ -65,8 +63,8 @@ class chargepoint():
         try:
             self.template = data.cp_template_data["cpt" +
                                                   str(self.data["config"]["template"])]
-        except:
-            print("dictionary key doesn't exist in set_template")
+        except KeyError as key:
+            print("dictionary key", key, "doesn't exist in set_template")
 
     def set_topic_path(self, chargepoint_num):
         """ setzt den Pfad zum Publishen der Topics.
@@ -133,8 +131,8 @@ class cpTemplate():
                     return True
             else:
                 return True
-        except:
-            print("dictionary key doesn't exist in autolock")
+        except KeyError as key:
+            print("dictionary key", key, "doesn't exist in autolock")
             return True
 
     def autolock_manual_disabling(self, topic_path):
@@ -148,8 +146,8 @@ class cpTemplate():
         try:
             if (self.data["autolock"]["active"] == True):
                 pub.pub(topic_path+"/get/autolock", 4)
-        except:
-            print("dictionary key doesn't exist in autolock_manual_disabling")
+        except KeyError as key:
+            print("dictionary key", key, "doesn't exist in autolock_manual_disabling")
 
     def autolock_manual_enabling(self, topic_path):
         """ aktuelles Autolock wird wieder aktiviert.
@@ -162,8 +160,8 @@ class cpTemplate():
         try:
             if (self.data["autolock"]["active"] == True):
                 pub.pub(topic_path+"/get/autolock", 0)
-        except:
-            print("dictionary key doesn't exist in autolock_manual_enabling")
+        except KeyError as key:
+            print("dictionary key", key, "doesn't exist in autolock_manual_enabling")
 
     def autolock_enable_after_charging_end(self, autolock_state, topic_path):
         """Wenn kein Strom für den LP übrig ist, muss Autolock ggf noch aktiviert werden.
@@ -176,8 +174,8 @@ class cpTemplate():
         try:
             if (self.data["autolock"]["active"] == True) and autolock_state == 1:
                 pub.pub(topic_path+"/get/autolock", 2)
-        except:
-            print("dictionary key doesn't exist in autolock_enable_after_charging_end")
+        except KeyError as key:
+            print("dictionary key", key, "doesn't exist in autolock_enable_after_charging_end")
 
     def get_ev(self, rfid):
         """ermittelt das dem LP zugeordnete EV
@@ -191,5 +189,5 @@ class cpTemplate():
                     return vehicle
             else:
                 return self.data["ev"]
-        except:
-            print("dictionary key doesn't exist in get_ev")
+        except KeyError as key:
+            print("dictionary key", key, "doesn't exist in get_ev")

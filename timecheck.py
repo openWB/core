@@ -111,8 +111,8 @@ def check_timeframe(plans):
 
                         if state == True:
                             return plan
-            except:
-                print("dictionary key related to loop-object",
+            except KeyError as key:
+                print("dictionary key", key, "related to loop-object",
                     plan, "doesn't exist in check_timeframe")
                 return None
 
@@ -120,6 +120,6 @@ def check_timeframe(plans):
             # log
             print("Keine aktiven Zeit-Pläne.")
         return None
-    except:
-        print("dictionary key doesn't exist in check_timeframe")
+    except KeyError as key:
+        print("dictionary key", key, "doesn't exist in check_timeframe")
         return None
