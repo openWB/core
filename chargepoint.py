@@ -111,7 +111,7 @@ class cpTemplate():
         try:
             if (self.data["autolock"]["active"] == True):
                 if autolock_state != 4:
-                    if timecheck.check_timeframe(self.data["autolock"]) != None:
+                    if timecheck.check_plans_timeframe(self.data["autolock"]) != None:
                         if self.data["autolock"]["wait_for_charging_end"] == True:
                             if charge_state == True:
                                 state = 1
