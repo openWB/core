@@ -146,14 +146,17 @@ class chargeTemplate():
         """
         try:
             instant_load = self.data["chargemode"]["instant_load"]
-            if instant_load["selected"] == "none":
+            if data.optional_data["optional"].get_et_active() == True:
+                if data.optional_data["optional"].et_price_lower_than_limit() == False:
+                    return 0
+            if instant_load["limit"]["selected"] == "none":
                 return instant_load["current"]
-            elif instant_load["selected"] == "soc":
+            elif instant_load["limit"]["selected"] == "soc":
                 if soc < instant_load["limit"]["soc"]:
                     return instant_load["current"]
                 else:
                     return 0
-            elif instant_load["selected"] == "amount":
+            elif instant_load["limit"]["selected"] == "amount":
                 if amount < instant_load["limit"]["amount"]:
                     return instant_load["current"]
                 else:
@@ -238,7 +241,7 @@ class chargeTemplate():
                                 return max_current, "instant_load"
                         else:
                             if timecheck.check_timeframe(self.data["chargemode"]["scheduled_load"][plan], 24) == True:
-                                if data.optional_data["optional"].data["et"]["active"] == True:
+                                if data.optional_data["optional"].get_et_active() == True:
                                     hourlist = data.optional_data["optional"].get_loading_hours(duration)
                                     if timecheck.is_list_valid(hourlist) == True:
                                         return available_current, "instant_load"

@@ -11,10 +11,41 @@ class optional():
     """
     """
 
-    data={}
+    
 
     def __init__(self):
-        pass
+        self.data={}
+
+    def get_et_active(self):
+        """ gibt zurück, ob strompreisbasiertes Laden aktiv ist.
+
+        Return
+        ------
+        True: aktiv
+        False: inaktiv
+        """
+        try:
+            return self.data["et"]["active"]
+        except KeyError as key:
+            print("dictionary key", key, "doesn't exist in get_et_active")
+            return 
+    
+    def et_price_lower_than_limit(self):
+        """ prüft, ob der aktuelle Strompreis unter der festgelegten Preisgrenze liegt.
+
+        Return
+        ------
+        True: Preis liegt darunter
+        False: Preis liegt darüber
+        """
+        try:
+            if self.data["et"]["get"]["price"] < self.data["et"]["config"]["max_price"]:
+                return True
+            else:
+                return False
+        except KeyError as key:
+            print("dictionary key", key, "doesn't exist in et_price_lower_than_limit")
+            return False
 
     def get_loading_hours(self, duration):
         """ geht die Preise der nächsten 24h durch und liefert eine Liste der Uhrzeiten, zu denen geladen werden soll

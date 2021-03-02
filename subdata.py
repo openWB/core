@@ -432,9 +432,34 @@ class subData():
             if "general" not in self.general_data:
                 self.general_data["general"]=general.general()
             if re.search("^openWB/general/notifications/.+$", msg.topic) != None:
-                if "notifications_config" not in self.general_data["general"].data:
-                    self.general_data["general"].data["notifications_config"]={}
-                self.set_json_payload(self.general_data["general"].data["notifications_config"], msg)
+                if "notifications" not in self.general_data["general"].data:
+                    self.general_data["general"].data["notifications"]={}
+                self.set_json_payload(self.general_data["general"].data["notifications"], msg)
+            elif re.search("^openWB/general/chargemode_config/.+$", msg.topic) != None:
+                if "chargemode_config" not in self.general_data["general"].data:
+                    self.general_data["general"].data["chargemode_config"]={}
+                if re.search("^openWB/general/chargemode_config/pv_load/.+$", msg.topic) != None:
+                    if "pv_load" not in self.general_data["general"].data["chargemode_config"]:
+                        self.general_data["general"].data["chargemode_config"]["pv_load"]={}
+                    self.set_json_payload(self.general_data["general"].data["chargemode_config"]["pv_load"], msg)
+                elif re.search("^openWB/general/chargemode_config/instant_load/.+$", msg.topic) != None:
+                    if "instant_load" not in self.general_data["general"].data["chargemode_config"]:
+                        self.general_data["general"].data["chargemode_config"]["instant_load"]={}
+                    self.set_json_payload(self.general_data["general"].data["chargemode_config"]["instant_load"], msg)
+                elif re.search("^openWB/general/chargemode_config/scheduled_load/.+$", msg.topic) != None:
+                    if "scheduled_load" not in self.general_data["general"].data["chargemode_config"]:
+                        self.general_data["general"].data["chargemode_config"]["scheduled_load"]={}
+                    self.set_json_payload(self.general_data["general"].data["chargemode_config"]["scheduled_load"], msg)
+                elif re.search("^openWB/general/chargemode_config/time_load/.+$", msg.topic) != None:
+                    if "time_load" not in self.general_data["general"].data["chargemode_config"]:
+                        self.general_data["general"].data["chargemode_config"]["time_load"]={}
+                    self.set_json_payload(self.general_data["general"].data["chargemode_config"]["time_load"], msg)
+                elif re.search("^openWB/general/chargemode_config/standby/.+$", msg.topic) != None:
+                    if "standby" not in self.general_data["general"].data["chargemode_config"]:
+                        self.general_data["general"].data["chargemode_config"]["standby"]={}
+                    self.set_json_payload(self.general_data["general"].data["chargemode_config"]["standby"], msg)
+                else:
+                    self.set_json_payload(self.general_data["general"].data["chargemode_config"], msg)
             else: 
                 self.set_json_payload(self.general_data["general"].data, msg)
 
@@ -461,6 +486,19 @@ class subData():
                 if "int_display" not in self.optional_data["optional"].data:
                     self.optional_data["optional"].data["int_display"]={}
                 self.set_json_payload(self.optional_data["optional"].data["int_display"], msg)
+            elif re.search("^openWB/optional/et/.+$", msg.topic) != None:
+                if "et" not in self.optional_data["optional"].data:
+                    self.optional_data["optional"].data["et"]={}
+                if re.search("^openWB/optional/et/get/.+$", msg.topic) != None:
+                    if "get" not in self.optional_data["optional"].data["et"]:
+                        self.optional_data["optional"].data["et"]["get"]={}
+                    self.set_json_payload(self.optional_data["optional"].data["et"]["get"], msg)
+                elif re.search("^openWB/optional/et/config/.+$", msg.topic) != None:
+                    if "config" not in self.optional_data["optional"].data["et"]:
+                        self.optional_data["optional"].data["et"]["config"]={}
+                    self.set_json_payload(self.optional_data["optional"].data["et"]["config"], msg)
+                else:
+                    self.set_json_payload(self.optional_data["optional"].data["et"], msg)
             else: 
                 self.set_json_payload(self.optional_data["optional"].data, msg)
 
