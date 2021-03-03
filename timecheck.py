@@ -122,7 +122,7 @@ def check_timeframe(plan, hours):
                         plan["frequency"]["once"][0], "%y-%m-%d")
                     end = end.replace(
                         endDate.year, endDate.month, endDate.day)
-                    begin = __calc_begin(end, hours)
+                    begin = _calc_begin(end, hours)
                 end = end.replace(
                     endDate.year, endDate.month, endDate.day)
                 state = is_timeframe_valid(now, begin, end)
@@ -132,7 +132,7 @@ def check_timeframe(plan, hours):
                     begin, end = set_date(now, begin, end)
                 else:
                     end = end.replace(now.year, now.month, now.day)
-                    begin = __calc_begin(end, hours)
+                    begin = _calc_begin(end, hours)
                 state = is_timeframe_valid(now, begin, end)
 
             elif plan["frequency"]["selected"] == "weekly":
@@ -155,7 +155,7 @@ def check_timeframe(plan, hours):
                 else:
                     if plan["frequency"]["weekly"][now.weekday()] == True:
                         end = end.replace(endDate.year, endDate.month, endDate.day)
-                        begin = __calc_begin(end, hours)
+                        begin = _calc_begin(end, hours)
                         state = is_timeframe_valid(
                             now, begin, end)
                     else:
@@ -166,7 +166,7 @@ def check_timeframe(plan, hours):
         return None
     return state
 
-def __calc_begin(end, hours):
+def _calc_begin(end, hours):
     """ berechnet den Zeitpunkt, der die angegebenen Stunden vor dem Endzeitpunkt liegt.
     
     Parameter
@@ -222,7 +222,6 @@ def check_duration(plan, duration):
         print("dictionary key", key, "doesn't exist in check_duration")
         return False
 
-
 def is_duration_valid(now, duration, end):
     """ prüft, ob der Endzeitpunkt der Ladung abzüglich der Ladedauer in den nächsten 5 Min liegt oder schon vorüber ist.
 
@@ -274,3 +273,34 @@ def is_list_valid(hourlist):
             return True
         else:
             return False
+
+def check_timestamp(timestamp, duration):
+    """ prüft, ob der Zeitstempel innerhalb der angegebenen Zeit liegt
+
+    Parameter
+    ---------
+    timestamp: datetime
+        Zeitstempel, der geprüft werden soll
+    duration:
+        Zeitspanne in s, in der der Zeitstempel gültig ist
+
+    Return
+    ------
+    True: Zeit ist noch nicht abgelaufen
+    False: Zeit ist abgelaufen
+    """
+    now = datetime.datetime.today()
+    delta = datetime.timedelta(seconds=duration)
+    if (now-delta) > timestamp:
+        return False
+    else:
+        return True
+
+def create_timestamp():
+    """ erzeugt einen Zeitstempel mit dem aktuellen Datum und Uhrzeit
+
+    Return
+    ------
+    datetime: aktuelles Datum und Uhrzeit
+    """
+    return datetime.datetime.today()

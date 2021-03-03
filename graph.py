@@ -9,4 +9,4 @@ class graph():
     """
 
     def __init__(self):
-        self.data={}
+        self._data={}

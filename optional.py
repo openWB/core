@@ -11,24 +11,24 @@ class optional():
     """
     """
 
-    
-
     def __init__(self):
-        self.data={}
+        self._data={}
 
-    def get_et_active(self):
-        """ gibt zurück, ob strompreisbasiertes Laden aktiv ist.
+    @property
+    def data(self):
+        return self._data
 
-        Return
-        ------
-        True: aktiv
-        False: inaktiv
-        """
+    @data.setter
+    def data(self, data):
+        self._data = data
+
+    @property
+    def et_active(self):
         try:
-            return self.data["et"]["active"]
+            return self._data["et"]["active"]
         except KeyError as key:
             print("dictionary key", key, "doesn't exist in get_et_active")
-            return 
+            return False
     
     def et_price_lower_than_limit(self):
         """ prüft, ob der aktuelle Strompreis unter der festgelegten Preisgrenze liegt.
@@ -39,7 +39,7 @@ class optional():
         False: Preis liegt darüber
         """
         try:
-            if self.data["et"]["get"]["price"] < self.data["et"]["config"]["max_price"]:
+            if self._data["et"]["get"]["price"] < self._data["et"]["config"]["max_price"]:
                 return True
             else:
                 return False
@@ -60,7 +60,7 @@ class optional():
         list: Key des Dictionarys (Unix-Sekunden der günstigen Stunden)
         """
         try:
-            pricedict = self.data["et"]["get"]["pricedict"]
+            pricedict = self._data["et"]["get"]["pricedict"]
             return nsmallest(ceil(duration), pricedict, key = pricedict.get)
         except KeyError as key:
             print("dictionary key", key, "doesn't exist in get_loading_hours")
