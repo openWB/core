@@ -439,8 +439,8 @@ class pubvars():
         #other files
     #     self.pub_float("mqttCp1Configured:-1" \", "openWB/")
     #     self.pub_float("mqttRandomSleepValue:-1" \", "openWB/")
-    #     self.pub_float("mqttabschaltuberschuss:-1" \", "openWB/")
-    #     self.pub_float("mqttabschaltverzoegerung:-1" \", "openWB/")
+        # self.pub_int("mqttabschaltuberschuss", "openWB/pv/config/switch_off_threshold")
+        # self.pub_int("mqttabschaltverzoegerung", "openWB/pv/config/switch_off_delay")
     #     self.pub_float("mqttadaptfaktor:-1" \", "openWB/")
     #     self.pub_float("mqttadaptpv:-1" \", "openWB/")
     #     self.pub_float("mqttaktgeladen:-1" \", "openWB/")
@@ -456,7 +456,7 @@ class pubvars():
     #     self.pub_float("mqttdisplaypvmax:-1" \", "openWB/")
     #     self.pub_float("mqttdisplayspeichermax:-1" \", "openWB/")
     #     self.pub_float("mqttdurchslp1:-1" \", "openWB/")
-    #     self.pub_float("mqtteinschaltverzoegerung:-1" \", "openWB/")
+        # self.pub_int("mqtteinschaltverzoegerung", "openWB/pv/config/switch_on_delay")
     #     self.pub_float("mqttetprovideraktiv:-1" \", "openWB/")
     #     self.pub_float("mqttetprovider:notset" \", "openWB/")
     #     self.pub_float("mqttevuglaettungakt:-1" \", "openWB/")
@@ -483,7 +483,7 @@ class pubvars():
     #     self.pub_float("mqttlastlademodus:-1" \", "openWB/")
     #     self.pub_float("mqttmaximalstromstaerke:-1" \", "openWB/")
     #     self.pub_float("mqttmaxnurpvsoclp1:-1" \", "openWB/")
-    #     self.pub_float("mqttmindestuberschuss:-1" \", "openWB/")
+        # self.pub_int("mqttmindestuberschuss", "openWB/pv/config/switch_on_threshold")
     #     self.pub_float("mqttminimalalp2pv:-1" \", "openWB/")
     #     self.pub_float("mqttminimalampv:-1" \", "openWB/")
     #     self.pub_float("mqttminimalapv:-1" \", "openWB/")
@@ -496,8 +496,8 @@ class pubvars():
     #     self.pub_float("mqttnlakt_nurpv:-1" \", "openWB/")
     #     self.pub_float("mqttnlakt_sofort:-1" \", "openWB/")
     #     self.pub_float("mqttnlakt_standby:-1" \", "openWB/")
-    #     self.pub_float("mqttnurpv70dynact:-1" \", "openWB/")
-    #     self.pub_float("mqttnurpv70dynw:-1" \", "openWB/")
+        # self.pub_int("mqttnurpv70dynact", "openWB/pv/config/feed_in_yield_active")
+        # self.pub_int("mqttnurpv70dynw", "openWB/pv/config/feed_in_yield")
     #     self.pub_float("mqttoffsetpv:-1" \", "openWB/")
     #     self.pub_float("mqttpreisjekwh:-1" \", "openWB/")
     #     self.pub_float("mqttpvbezugeinspeisung:-1" \", "openWB/")
@@ -581,7 +581,7 @@ class pubvars():
         self.client.publish("openWB/vehicle/template/charge_template/1/chargemode/instant_load/limit/selected", payload=json.dumps("soc"), qos=0, retain=True)
         self.client.publish("openWB/vehicle/template/charge_template/1/chargemode/instant_load/limit/soc", payload=json.dumps(50), qos=0, retain=True)
         self.client.publish("openWB/vehicle/template/charge_template/1/chargemode/instant_load/limit/amount", payload=json.dumps(10), qos=0, retain=True)
-        # #pv_load
+        #pv_load
         #self.client.publish("openWB/vehicle/template/charge_template/1/chargemode/selected", payload=json.dumps("pv_load"), qos=0, retain=True)
         # self.client.publish("openWB/vehicle/template/charge_template/1/chargemode/pv_load/min_current", payload=json.dumps(11), qos=0, retain=True)
         # self.client.publish("openWB/vehicle/template/charge_template/1/chargemode/pv_load/min_soc", payload=json.dumps(23), qos=0, retain=True)
@@ -599,7 +599,18 @@ class pubvars():
         self.client.publish("openWB/general/chargemode_config/scheduled_load/phases_to_use", payload=json.dumps(3), qos=0, retain=True)
 
         #et
-        self.client.publish("openWB/optional/et/active", payload=json.dumps(1), qos=0, retain=True)
+        self.client.publish("openWB/optional/et/active", payload=json.dumps(0), qos=0, retain=True)
         self.client.publish("openWB/optional/et/config/max_price", payload=json.dumps(5.5), qos=0, retain=True)
+
+        #pv
+        self.client.publish("openWB/pv/config/control_range", payload=json.dumps([0,230]), qos=0, retain=True)
+        self.client.publish("openWB/pv/config/switch_off_threshold", payload=json.dumps(-1400), qos=0, retain=True)
+        self.client.publish("openWB/pv/config/switch_off_delay", payload=json.dumps(60), qos=0, retain=True)
+        self.client.publish("openWB/pv/config/switch_on_delay", payload=json.dumps(30), qos=0, retain=True)
+        self.client.publish("openWB/pv/config/switch_on_threshold", payload=json.dumps(1400), qos=0, retain=True)
+        self.client.publish("openWB/pv/config/feed_in_yield_active", payload=json.dumps(1), qos=0, retain=True)
+        self.client.publish("openWB/pv/config/feed_in_yield", payload=json.dumps(5000), qos=0, retain=True)
+        self.client.publish("openWB/pv/get/used_power", payload=json.dumps(0), qos=0, retain=True)
+        self.client.publish("openWB/counter/evu/get/power_all", payload=json.dumps(-6000), qos=0, retain=True)
 
 pubvars()

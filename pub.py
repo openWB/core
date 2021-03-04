@@ -17,6 +17,20 @@ def setup_connection():
     client.loop_start()
 
 
+def pub_dict(dictionary, topic):
+    """ sendet ein Dictionary an den Broker. Jedes Key-Value-Paar wird in ein eigenes Topic gepusht. Der Pfad nach dem letzten / entspricht dem Key.
+
+        Parameters
+    ----------
+    dict : dictionary
+        Dictionary, das gepublished wird
+    topic : str
+        übergeordnetes Topic, in das gepublished wird
+    """
+    for key in dictionary:
+        pub(topic+"/"+str(key), dictionary[key])
+
+
 def pub(topic, payload):
     """ published das übergebene Payload als json-Objekt an das übergebene Topic.
 
@@ -28,7 +42,10 @@ def pub(topic, payload):
     payload : int, str, list, float
         Payload, der gepusht werden soll
     """
-    client.publish(topic, payload=json.dumps(payload), qos=0, retain=True)
+    if payload == "":
+        client.publish(topic, payload, qos=0, retain=True)
+    else:
+        client.publish(topic, payload=json.dumps(payload), qos=0, retain=True)
 
 
 def delete_connection():

@@ -4,6 +4,7 @@ ermittelt, den Ladestrom, den das EV gerne zur Verfügung hätte.
 
 import data
 import general
+import log
 import optional
 import pub
 import timecheck
@@ -44,7 +45,7 @@ class ev():
         self.data={}
         self.ev_template=None
         self.charge_template=None
-        self.topic_path = None
+        self.ev_num = None
 
         
     def get_required_current(self):
@@ -72,9 +73,10 @@ class ev():
                 required_current, chargemode = self.charge_template.scheduled_load(self.data["get"]["soc"], self.ev_template.data["max_current"], self.ev_template.data["battery_capacity"], self.ev_template.data["max_phases"])
             required_current = self._check_min_max_current(required_current)
             self.data["set"]["required_current"] = required_current
-            pub.pub(self.topic_path+"set/required_current", required_current)
+            pub.pub("openWB/vehicle/"+self.ev_num+"/set/required_current", required_current)
             self.data["set"]["chargemode"] = chargemode
-            pub.pub(self.topic_path+"set/chargemode", chargemode)
+            pub.pub("openWB/vehicle/"+self.ev_num+"/set/chargemode", chargemode)
+            log.message_debug_log("debug", "Theroretisch benötigter Strom "+required_current+"A, Lademodus "+chargemode)
         except KeyError as key:
             print("dictionary key", key, "doesn't exist in get_required_current")
     

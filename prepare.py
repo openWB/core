@@ -5,6 +5,7 @@ import copy
 
 import algorithm
 import data
+import log
 import pub
 import stats
 import subdata
@@ -22,7 +23,7 @@ class prepare():
         """
         self._copy_data()
         self._check_chargepoints()
-        # self._use_pv()
+        self._use_pv()
         # self.control.calc_current()
 
     def _copy_data(self):
@@ -30,25 +31,30 @@ class prepare():
         """
         try:
             data.cp_data = copy.deepcopy(subdata.subData.cp_data)
-            data.cp_template_data = copy.deepcopy(subdata.subData.cp_template_data)
+            data.cp_template_data = copy.deepcopy(
+                subdata.subData.cp_template_data)
             for chargepoint in data.cp_data:
                 if "cp" in chargepoint:
-                    data.cp_data[chargepoint].template = data.cp_template_data["cpt" + str(data.cp_data[chargepoint].data["config"]["template"])]
-                    data.cp_data[chargepoint].topic_path = "openWB/chargepoint/"+chargepoint[2:]
+                    data.cp_data[chargepoint].template = data.cp_template_data["cpt" +
+                                                                               str(data.cp_data[chargepoint].data["config"]["template"])]
+                    data.cp_data[chargepoint].cp_num = chargepoint[2:]
 
             data.pv_data = copy.deepcopy(subdata.subData.pv_data)
-            data.pv_module_data = copy.deepcopy(subdata.subData.pv_module_data)
             data.ev_data = copy.deepcopy(subdata.subData.ev_data)
-            data.ev_template_data = copy.deepcopy(subdata.subData.ev_template_data)
+            data.ev_template_data = copy.deepcopy(
+                subdata.subData.ev_template_data)
             data.ev_charge_template_data = copy.deepcopy(
                 subdata.subData.ev_charge_template_data)
             for vehicle in data.ev_data:
-                data.ev_data[vehicle].charge_template = data.ev_charge_template_data["ct" + str(data.ev_data[vehicle].data["charge_template"])]
-                data.ev_data[vehicle].ev_template = data.ev_template_data["et" + str(data.ev_data[vehicle].data["ev_template"])]
-                data.ev_data[vehicle].topic_path = "openWB/ev/"+vehicle[2:]
+                data.ev_data[vehicle].charge_template = data.ev_charge_template_data["ct" +
+                                                                                     str(data.ev_data[vehicle].data["charge_template"])]
+                data.ev_data[vehicle].ev_template = data.ev_template_data["et" +
+                                                                          str(data.ev_data[vehicle].data["ev_template"])]
+                data.ev_data[vehicle].ev_num = vehicle[2:]
 
             data.counter_data = copy.deepcopy(subdata.subData.counter_data)
-            data.bat_module_data = copy.deepcopy(subdata.subData.bat_module_data)
+            data.bat_module_data = copy.deepcopy(
+                subdata.subData.bat_module_data)
             data.general_data = copy.deepcopy(subdata.subData.general_data)
             data.optional_data = copy.deepcopy(subdata.subData.optional_data)
             data.graph_data = copy.deepcopy(subdata.subData.graph_data)
@@ -64,6 +70,7 @@ class prepare():
             try:
                 if "cp" in chargepoint:
                     vehicle = data.cp_data[chargepoint].get_state()
+                    log.message_debug_log("debug", "Esdarf geladen werden")
                     if vehicle != None:
                         if "set" not in data.cp_data[chargepoint].data:
                             data.cp_data[chargepoint].data["set"] = {}
@@ -71,14 +78,16 @@ class prepare():
                             data.cp_data[chargepoint].data["set"]["charging_ev"] = data.ev_data["default"]
                             data.ev_data["default"].get_required_current()
                         else:
-                            data.cp_data[chargepoint].data["set"]["charging_ev"] = data.ev_data["ev"+str(vehicle)]
-                            data.ev_data["ev"+str(vehicle)].get_required_current()
+                            data.cp_data[chargepoint].data["set"]["charging_ev"] = data.ev_data["ev"+str(
+                                vehicle)]
+                            data.ev_data["ev"+str(vehicle)
+                                         ].get_required_current()
                             print(data.ev_data["ev"+str(vehicle)].data)
             except KeyError as key:
-                print("dictionary key", key, "related to loop-object", chargepoint,"doesn't exist in _check_chargepoints")
+                print("dictionary key", key, "related to loop-object",
+                      chargepoint, "doesn't exist in _check_chargepoints")
 
     def _use_pv(self):
         """ ermittelt, ob Überschuss an der EVU vorhanden ist und kümmert sich um die Beachtung der Einspeisungsgrenze.
         """
         data.pv_data["pv"].calc_power_for_control()
-

@@ -3,6 +3,7 @@
 
 import data
 import ev
+import log
 import pub
 import timecheck
 
@@ -22,22 +23,50 @@ class chargepoint():
     def __init__(self):
         self.data = {}
         self.template = None  # Instanz des zugeordneten CP-Templates
-        self.topic_path = None
+        self.cp_num = None
 
+    def send_log_pub(self, message):
+        """sendet die Nachricht an den Broker und schreibt sie ins Debug-Log
+
+        Parameter
+        ---------
+        message: str
+            Nachricht, die gesendet werden soll
+        """
+        log.message_debug_log("info", message)
+        pub.pub("openWB/chargepoint/"+self.cp_num+"/get/state_str", message)
 
     def _is_cp_available(self):
         """ prüft, ob sich der LP in der vorgegebenen Zeit zurückgemeldet hat.
         """
         # dummy
-        return True
+        state = True
+        if state == False:
+            self.send_log_pub("LP"+self.cp_num+" gesperrt, da sich der LP nicht innerhalb der vorgegebenen Zeit zurueckgemeldet hat.")
+        return state
 
     def _is_autolock_active(self):
         """ ruft die Funktion der Template-Klasse auf.
         """
         try:
-            return self.template.autolock(self.data["get"]["autolock_state"], self.data["get"]["charge_state"], self.topic_path)
+            state = self.template.autolock(self.data["get"]["autolock_state"], self.data["get"]["charge_state"], self.cp_num)
+            if state == False:
+                self.send_log_pub("Keine Ladung an LP"+self.cp_num+", da Autolock aktiv ist.")
+            return state
         except KeyError as key:
             print("dictionary key", key, "doesn't exist in __is_autolock_active")
+
+    def _is_manual_lock_active(self):
+        state = self.data["get"]["manual_lock"]
+        if state == False:
+            self.send_log_pub("Keine Ladung an LP"+self.cp_num+", da der LP manuell gesperrt wurde.")
+        return state
+
+    def _is_ev_plugged(self):
+        state = self.data["get"]["plug_state"]
+        if state == False:
+            self.send_log_pub("Keine Ladung an LP"+self.cp_num+", da kein Auto angesteckt ist.")
+        return state
 
     def get_state(self):
         """prüft alle Bedingungen und ruft die EV-Logik auf.
@@ -49,8 +78,8 @@ class chargepoint():
         """
         try:
             if self._is_cp_available() == True:
-                if self.data["get"]["manual_lock"] == False:
-                    if self.data["get"]["plug_state"] == True:
+                if self._is_manual_lock_active == False:
+                    if self._is_ev_plugged == True:
                         if self._is_autolock_active() == True:
                             return self.template.get_ev(self.data["get"]["rfid"])
         except KeyError as key:
@@ -66,8 +95,7 @@ class cpTemplate():
     def __init__(self):
         self.data = {}
 
-
-    def autolock(self, autolock_state, charge_state, topic_path):
+    def autolock(self, autolock_state, charge_state, cp_num):
         """ ermittelt den Status des Autolock und published diesen. Es wird sich immer der Status des vorherigen Plans gemerkt, so kann festgestellt  werden, wenn sich zwei Pläne widersprechen.
 
         Parameter
@@ -83,8 +111,8 @@ class cpTemplate():
         charge_state : int
             Ladung aktiv/nicht aktiv
 
-        topic_path : str
-            allgemeiner Pfad für Chargepoint-Topics
+        cp_num : str
+            LP-Nummer
 
         Return
         ------
@@ -105,7 +133,7 @@ class cpTemplate():
                     else:
                         state = 3
 
-                    pub.pub(topic_path+"/get/autolock_state", state)
+                    pub.pub("openWB/chargepoint/"+cp_num+"/get/autolock_state", state)
                     if (state == 1) or (state == 3):
                         return True
                     elif state == 2:

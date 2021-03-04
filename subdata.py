@@ -25,7 +25,6 @@ class subData():
     cp_data={}
     cp_template_data={}
     pv_data={}
-    pv_module_data={}
     ev_data={}
     ev_template_data={}
     ev_charge_template_data={}
@@ -116,7 +115,10 @@ class subData():
             enthält den Payload als json-Objekt
         """
         key=re.search("/([a-z,A-Z,0-9,_]+)(?!.*/)", msg.topic).group(1)
-        dict[key]=json.loads(str(msg.payload.decode("utf-8")))
+        if msg.payload:
+            dict[key]=json.loads(str(msg.payload.decode("utf-8")))
+        else:
+            dict.pop(key)
  
     def process_vehicle_topic(self, client, userdata, msg):
         """ Handler für die EV-Topics
@@ -132,16 +134,13 @@ class subData():
         """
         if re.search("^openWB/vehicle/[1-9][0-9]*/.+$", msg.topic) != None:
             index=self.get_index(msg.topic)
+            if "ev"+index not in self.ev_data:
+                self.ev_data["ev"+index]=ev.ev()
             if re.search("^openWB/vehicle/[1-9][0-9]*$", msg.topic) != None:
-                if json.loads(str(msg.payload.decode("utf-8")))==1:
-                    if "ev"+index not in self.ev_data:
-                        self.ev_data["ev"+index]=ev.ev()
-                else:
+                if json.loads(str(msg.payload.decode("utf-8")))=="":
                     if "ev"+index in self.ev_data:
                         self.ev_data.pop("ev"+index)
             else:
-                if "ev"+index not in self.ev_data:
-                        self.ev_data["ev"+index]=ev.ev()
                 if re.search("^openWB/vehicle/[1-9][0-9]*/get.+$", msg.topic) != None:
                     if "get" not in self.ev_data["ev"+index].data:
                         self.ev_data["ev"+index].data["get"]={}
@@ -291,10 +290,7 @@ class subData():
         """
         if re.search("^openWB/chargepoint/[1-9][0-9]*$", msg.topic) != None:
             index=self.get_index(msg.topic)
-            if json.loads(str(msg.payload.decode("utf-8")))==1:
-                if "cp"+index not in self.cp_data:
-                    self.cp_data["cp"+index]=chargepoint.chargepoint()
-            else:
+            if json.loads(str(msg.payload.decode("utf-8")))=="":
                 if "cp"+index in self.cp_data:
                     self.cp_data.pop("cp"+index)
         elif re.search("^openWB/chargepoint/[1-9][0-9]*/.+$", msg.topic) != None:
@@ -359,30 +355,38 @@ class subData():
         msg:
             enthält Topic und Payload
         """
-        if re.search("^openWB/pv/config/.+$", msg.topic) != None:
-            if "config" not in self.pv_data:
-                self.pv_data["config"]=pv.pv()
-            self.set_json_payload(self.pv_data["config"].data, msg)
+        if re.search("^openWB/pv/.+$", msg.topic) != None:
+            if "pv" not in self.pv_data:
+                self.pv_data["pv"]=pv.pv()
+            if re.search("^openWB/pv/config/.+$", msg.topic) != None:
+                if "config" not in self.pv_data["pv"].data:
+                    self.pv_data["pv"].data["config"]={}
+                self.set_json_payload(self.pv_data["pv"].data["config"], msg)
+            elif re.search("^openWB/pv/get/.+$", msg.topic) != None:
+                if "get" not in self.pv_data["pv"].data:
+                    self.pv_data["pv"].data["get"]={}
+                self.set_json_payload(self.pv_data["pv"].data["get"], msg)
+            elif re.search("^openWB/pv/set/.+$", msg.topic) != None:
+                if "set" not in self.pv_data["pv"].data:
+                    self.pv_data["pv"].data["set"]={}
+                self.set_json_payload(self.pv_data["pv"].data["set"], msg)
         elif re.search("^openWB/pv/modules/[1-9][0-9]*$", msg.topic) != None:
             index=self.get_index(msg.topic)
-            if json.loads(str(msg.payload.decode("utf-8")))==1:
-                if "pv"+index not in self.pv_module_data:
-                    self.pv_module_data["pv"+index]=pv.pvModule()
-            else:
-                if "pv"+index in self.pv_module_data:
-                    self.pv_module_data.pop("pv"+index)
+            if json.loads(str(msg.payload.decode("utf-8")))=="":
+                if "pv"+index in self.pv_data:
+                    self.pv_data.pop("pv"+index)
         elif re.search("^openWB/pv/modules/[1-9][0-9]*/.+$", msg.topic) != None:
             index=self.get_index(msg.topic)
-            if "pv"+index not in self.pv_module_data:
-                self.pv_module_data["pv"+index]=pv.pvModule()
+            if "pv"+index not in self.pv_data:
+                self.pv_data["pv"+index]=pv.pvModule()
             if re.search("^openWB/pv/modules/[1-9][0-9]*/config/.+$", msg.topic) != None:
-                if "config" not in self.pv_module_data["pv"+index].data:
-                    self.pv_module_data["pv"+index].data["config"]={}
-                self.set_json_payload(self.pv_module_data["pv"+index].data["config"], msg)
+                if "config" not in self.pv_data["pv"+index].data:
+                    self.pv_data["pv"+index].data["config"]={}
+                self.set_json_payload(self.pv_data["pv"+index].data["config"], msg)
             elif re.search("^openWB/pv/modules/[1-9][0-9]*/get/.+$", msg.topic) != None:
-                if "get" not in self.pv_module_data["pv"+index].data:
-                    self.pv_module_data["pv"+index].data["get"]={}
-                self.set_json_payload(self.pv_module_data["pv"+index].data["get"], msg)
+                if "get" not in self.pv_data["pv"+index].data:
+                    self.pv_data["pv"+index].data["get"]={}
+                self.set_json_payload(self.pv_data["pv"+index].data["get"], msg)
 
     def process_bat_topic(self, client, userdata, msg):
         """ Handler für die Hausspeicher-Topics
@@ -398,10 +402,7 @@ class subData():
         """
         index=self.get_index(msg.topic)
         if re.search("^openWB/bat/modules/[1-9][0-9]*$", msg.topic) != None:
-            if json.loads(str(msg.payload.decode("utf-8")))==1:
-                if "bat"+index not in self.bat_module_data:
-                    self.bat_module_data["bat"+index]=bat.batModule()
-            else:
+            if json.loads(str(msg.payload.decode("utf-8")))=="":
                 if "bat"+index in self.bat_module_data:
                     self.bat_module_data.pop("bat"+index)
         elif re.search("^openWB/bat/modules/[1-9][0-9]*/.+$", msg.topic) != None:
@@ -517,10 +518,7 @@ class subData():
         #print(msg.topic, str(msg.payload))
         if re.search("^openWB/counter/intermediate_counter/[1-9][0-9]*$", msg.topic) != None:
             index=self.get_index(msg.topic)
-            if json.loads(str(msg.payload.decode("utf-8")))==1:
-                if "counter"+index not in self.counter_data:
-                    self.counter_data["counter"+index]=counter.counterModule()
-            else:
+            if json.loads(str(msg.payload.decode("utf-8")))=="":
                 if "counter"+index in self.counter_data:
                     self.counter_data.pop("counter"+index)
         elif re.search("^openWB/counter/intermediate_counter/[1-9][0-9]*/.+$", msg.topic) != None:
