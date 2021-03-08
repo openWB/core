@@ -3,24 +3,23 @@ Dictionary: Zugriff erfolgt bei Dictionary über Keys, nicht über Indizes wie b
 """
 
 
-cp_data={}
-cp_template_data={}
-pv_data={}
-pv_module_data={}
-ev_data={}
-ev_template_data={}
-ev_charge_template_data={}
-counter_data={}
-bat_module_data={}
-general_data={}
-optional_data={}
-graph_data={}
+cp_data = {}
+cp_template_data = {}
+pv_data = {}
+ev_data = {}
+ev_template_data = {}
+ev_charge_template_data = {}
+counter_data = {}
+bat_module_data = {}
+general_data = {}
+optional_data = {}
+graph_data = {}
+
 
 def print_all():
     print_dictionaries(cp_data)
     print_dictionaries(cp_template_data)
     print_dictionaries(pv_data)
-    print_dictionaries(pv_module_data)
     print_dictionaries(ev_data)
     print_dictionaries(ev_template_data)
     print_dictionaries(ev_charge_template_data)
@@ -29,6 +28,7 @@ def print_all():
     print_dictionaries(general_data)
     print_dictionaries(optional_data)
     print_dictionaries(graph_data)
+
 
 def print_dictionaries(data):
     for key in data:

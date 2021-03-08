@@ -24,8 +24,12 @@ class chargepoint():
         self.data = {}
         self.template = None  # Instanz des zugeordneten CP-Templates
         self.cp_num = None
+        self.data["get"] = {}
+        self.data["get"]["autolock_state"] = 0
+        self.data["get"]["charge_state"] = 0
+        self.data["set"] = {}
 
-    def send_log_pub(self, message):
+    def log_pub_state_str(self, message):
         """sendet die Nachricht an den Broker und schreibt sie ins Debug-Log
 
         Parameter
@@ -42,7 +46,7 @@ class chargepoint():
         # dummy
         state = True
         if state == False:
-            self.send_log_pub("LP"+self.cp_num+" gesperrt, da sich der LP nicht innerhalb der vorgegebenen Zeit zurueckgemeldet hat.")
+            self.log_pub_state_str("LP"+self.cp_num+" gesperrt, da sich der LP nicht innerhalb der vorgegebenen Zeit zurueckgemeldet hat.")
         return state
 
     def _is_autolock_active(self):
@@ -51,21 +55,22 @@ class chargepoint():
         try:
             state = self.template.autolock(self.data["get"]["autolock_state"], self.data["get"]["charge_state"], self.cp_num)
             if state == False:
-                self.send_log_pub("Keine Ladung an LP"+self.cp_num+", da Autolock aktiv ist.")
+                self.log_pub_state_str("Keine Ladung an LP"+self.cp_num+", da Autolock aktiv ist.")
             return state
         except KeyError as key:
             print("dictionary key", key, "doesn't exist in __is_autolock_active")
 
     def _is_manual_lock_active(self):
         state = self.data["get"]["manual_lock"]
-        if state == False:
-            self.send_log_pub("Keine Ladung an LP"+self.cp_num+", da der LP manuell gesperrt wurde.")
+        if state == True:
+            self.log_pub_state_str("Keine Ladung an LP"+self.cp_num+", da der LP manuell gesperrt wurde.")
+            print(state)
         return state
 
     def _is_ev_plugged(self):
         state = self.data["get"]["plug_state"]
         if state == False:
-            self.send_log_pub("Keine Ladung an LP"+self.cp_num+", da kein Auto angesteckt ist.")
+            self.log_pub_state_str("Keine Ladung an LP"+self.cp_num+", da kein Auto angesteckt ist.")
         return state
 
     def get_state(self):
@@ -78,8 +83,8 @@ class chargepoint():
         """
         try:
             if self._is_cp_available() == True:
-                if self._is_manual_lock_active == False:
-                    if self._is_ev_plugged == True:
+                if self._is_manual_lock_active() == False:
+                    if self._is_ev_plugged() == True:
                         if self._is_autolock_active() == True:
                             return self.template.get_ev(self.data["get"]["rfid"])
         except KeyError as key:

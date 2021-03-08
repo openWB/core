@@ -2,8 +2,10 @@
 """
 
 import copy
+import traceback
 
 import algorithm
+import bat
 import data
 import log
 import pub
@@ -24,7 +26,8 @@ class prepare():
         self._copy_data()
         self._check_chargepoints()
         self._use_pv()
-        # self.control.calc_current()
+        self._bat()
+        self.control.calc_current()
 
     def _copy_data(self):
         """ kopiert die Daten, die per MQTT empfangen wurden.
@@ -70,24 +73,29 @@ class prepare():
             try:
                 if "cp" in chargepoint:
                     vehicle = data.cp_data[chargepoint].get_state()
-                    log.message_debug_log("debug", "Esdarf geladen werden")
+                    if "set" not in data.cp_data[chargepoint].data:
+                        data.cp_data[chargepoint].data["set"] = {}
                     if vehicle != None:
-                        if "set" not in data.cp_data[chargepoint].data:
-                            data.cp_data[chargepoint].data["set"] = {}
                         if vehicle == 0:
                             data.cp_data[chargepoint].data["set"]["charging_ev"] = data.ev_data["default"]
                             data.ev_data["default"].get_required_current()
                         else:
                             data.cp_data[chargepoint].data["set"]["charging_ev"] = data.ev_data["ev"+str(
                                 vehicle)]
-                            data.ev_data["ev"+str(vehicle)
-                                         ].get_required_current()
-                            print(data.ev_data["ev"+str(vehicle)].data)
-            except KeyError as key:
-                print("dictionary key", key, "related to loop-object",
-                      chargepoint, "doesn't exist in _check_chargepoints")
+                            data.ev_data["ev"+str(vehicle)].get_required_current()
+                        log.message_debug_log("debug", "Ladepunkt "+data.cp_data[chargepoint].cp_num+",: EV "+data.cp_data[chargepoint].data["set"]["charging_ev"].data["name"]+" (EV-Nr."+str(vehicle)+")")
+                    else:
+                        if "charging_ev" in data.cp_data[chargepoint].data:
+                            data.cp_data[chargepoint].data["set"].pop("charging_ev")
+            except:
+                traceback.print_exc(limit=-1)
 
     def _use_pv(self):
         """ ermittelt, ob Überschuss an der EVU vorhanden ist und kümmert sich um die Beachtung der Einspeisungsgrenze.
         """
         data.pv_data["pv"].calc_power_for_control()
+
+    def _bat(self):
+        if data.bat_module_data: 
+            data.bat_module_data["bat"] = bat.bat()
+            data.bat_module_data["bat"].setup_bat()

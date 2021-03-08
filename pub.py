@@ -17,7 +17,7 @@ def setup_connection():
     client.loop_start()
 
 
-def pub_dict(dictionary, topic):
+def pub_dict(topic, dictionary):
     """ sendet ein Dictionary an den Broker. Jedes Key-Value-Paar wird in ein eigenes Topic gepusht. Der Pfad nach dem letzten / entspricht dem Key.
 
         Parameters

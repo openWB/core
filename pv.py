@@ -4,7 +4,10 @@ Davon ab geht z.B. noch der Hausverbrauch. Für das Laden mit PV kann deshalb nu
 der sonst in das Netz eingespeist werden würde. 
 """
 
+import traceback
+
 import data
+import log
 import pub
 import timecheck
 
@@ -33,67 +36,50 @@ class pv():
         ------
         int: PV-Leistung, die genutzt werden darf (auf allen Phasen/je Phase unterschiedlich?)
         """
-        phases = 1  # wie bei indiviudeler automatik ermitteln?
         try:
             # Initialer Aufruf
             if "set" not in self.data:
                 self.data["set"] = {}
-            if "pv_available_prev" not in self.data["set"]:
-                self.data["set"]["pv_available_prev"] = False
-            # aktuelle Leistung an der EVU, enthält die Leistung der Einspeisungsgrenze
-            evu_power = (
-                data.counter_data["evu"].data["get"]["power_all"] * (-1))
-            remaining_power = self.data["get"]["used_power"] + evu_power
-            # Einspeisungsgrenze (Verschiebung des Regelpunkts)
-            if self.data["config"]["feed_in_yield_active"] == True:
-                remaining_power = remaining_power - \
-                    self.data["config"]["feed_in_yield"]
-            # Regelmodus
-            control_range_low = self.data["config"]["control_range"][0]
-            control_range_high = self.data["config"]["control_range"][1]
-            if control_range_low < evu_power < control_range_high:
-                available_power = self.data["get"]["used_power"]
-            else:
-                available_power = remaining_power - \
-                    ((control_range_high - control_range_low) /
-                     2)  # Mitte des Regelbereichs
-                if available_power < 0:
-                    available_power = 0
-
-            # Ein-/Ausschaltverzögerung
-            if self.data["set"]["pv_available_prev"] == False:
-                if available_power > self.data["config"]["switch_on_threshold"]*phases:
-                    if "timestamp_switch_on_off" in self.data["set"]:
-                        if timecheck.check_timestamp(self.data["set"]["timestamp_switch_on_off"], self.data["config"]["switch_on_delay"]) == True:
-                            power_set = 0
-                        else:
-                            self.data["set"]["pv_available_prev"] = True
-                            self.data["set"]["timestamp_switch_on_off"] = ""
-                            power_set = available_power
-                    else:
-                        self.data["set"]["timestamp_switch_on_off"] = timecheck.create_timestamp()
-                        power_set = 0
+            if len(data.pv_data) > 1:
+                self.data["config"]["configured"]=True
+                if "pv_available_prev" not in self.data["set"]:
+                    self.data["set"]["pv_available_prev"] = False
+                if "available_power" not in self.data["set"]:
+                    self.data["set"]["available_power"] = 0
+                if "pv_power_left" not in self.data["get"]:
+                    self.data["get"]["pv_power_left"] = 0
+                # aktuelle Leistung an der EVU, enthält die Leistung der Einspeisungsgrenze
+                used_power = self.data["set"]["available_power"] - self.data["get"]["pv_power_left"]
+                evu_power = (
+                    data.counter_data["evu"].data["get"]["power_all"] * (-1))
+                remaining_power = used_power + evu_power
+                # Einspeisungsgrenze (Verschiebung des Regelpunkts)
+                if self.data["config"]["feed_in_yield_active"] == True:
+                    remaining_power = remaining_power - \
+                        self.data["config"]["feed_in_yield"]
+                # Regelmodus
+                control_range_low = self.data["config"]["control_range"][0]
+                control_range_high = self.data["config"]["control_range"][1]
+                if control_range_low < evu_power < control_range_high:
+                    available_power = used_power
                 else:
-                    power_set = 0
-            else:
-                if available_power < (self.data["config"]["switch_off_threshold"]*(-1)):
-                    if "timestamp_switch_on_off" in self.data["set"]:
-                        if timecheck.check_timestamp(self.data["set"]["timestamp_switch_on_off"], self.data["config"]["switch_off_delay"]) == True:
-                            power_set = available_power
-                        else:
-                            self.data["set"]["pv_available_prev"] = False
-                            self.data["set"]["timestamp_switch_on_off"] = ""
-                            power_set = 0
-                    else:
-                        self.data["set"]["timestamp_switch_on_off"] = timecheck.create_timestamp()
-                        power_set = available_power
-                else:
-                    power_set = available_power
+                    available_power = remaining_power - \
+                        ((control_range_high - control_range_low) /
+                        2)  # Mitte des Regelbereichs
 
-            self.data["set"]["available_power"] = power_set # normalisierte verfügbare Leistung, Regelpunkt ist bei 0
-            pub.pub_dict(self.data["set"], "openWB/pv/set")
-        except KeyError as key:
-            print("dictionary key", key, "doesn't exist in calc_power_for_control")
+                self.data["set"]["available_power"] = available_power # normalisierte verfügbare Leistung, Regelpunkt ist bei 0
+                log.message_debug_log("debug", str(available_power)+"W PV-Leistung, die für die Regelung verfügbar ist")
+            # nur allgemeiner PV-Key vorhanden, d.h. kein Modul konfiguriert
+            else:
+                self.data["config"]["configured"]=False
+                available_power = 0 # normalisierte verfügbare Leistung, Regelpunkt ist bei 0
+                log.message_debug_log("debug", "Kein PV-Modul konfiguriert.")
+            self.data["set"]["available_power"] = available_power
+            pub.pub("openWB/pv/set/available_power", available_power)
+            pub.pub("openWB/pv/config/configured", self.data["config"]["configured"])
+
+        except Exception:
+            traceback.print_exc(limit=-1)
 
 
 class pvModule():

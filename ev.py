@@ -61,22 +61,22 @@ class ev():
         try:
             if "set" not in self.data:
                 self.data["set"] = {}
+            if "control_parameter" not in self.data:
+                self.data["control_parameter"] = {}
             if self.charge_template.data["time_load"]["active"] == True:
-                required_current = self.charge_template.time_load()
-                chargemode = "time_load"
+                required_current, chargemode = self.charge_template.time_load()
             if self.charge_template.data["chargemode"]["selected"] == "instant_load":
-                required_current = self.charge_template.instant_load(self.data["get"]["soc"], self.data["get"]["charged_since_plugged_kwh"])
-                chargemode = "instant_load"
+                required_current, chargemode = self.charge_template.instant_load(self.data["get"]["soc"], self.data["get"]["charged_since_plugged_kwh"])
             elif self.charge_template.data["chargemode"]["selected"] == "pv_load":
                 required_current, chargemode = self.charge_template.pv_load(self.data["get"]["soc"])
             elif self.charge_template.data["chargemode"]["selected"] == "scheduled_load":
                 required_current, chargemode = self.charge_template.scheduled_load(self.data["get"]["soc"], self.ev_template.data["max_current"], self.ev_template.data["battery_capacity"], self.ev_template.data["max_phases"])
             required_current = self._check_min_max_current(required_current)
-            self.data["set"]["required_current"] = required_current
-            pub.pub("openWB/vehicle/"+self.ev_num+"/set/required_current", required_current)
-            self.data["set"]["chargemode"] = chargemode
-            pub.pub("openWB/vehicle/"+self.ev_num+"/set/chargemode", chargemode)
-            log.message_debug_log("debug", "Theroretisch benötigter Strom "+required_current+"A, Lademodus "+chargemode)
+            self.data["control_parameter"]["required_current"] = required_current
+            pub.pub("openWB/vehicle/"+self.ev_num+"/control_parameter/required_current", required_current)
+            self.data["control_parameter"]["chargemode"] = chargemode
+            pub.pub("openWB/vehicle/"+self.ev_num+"/control_parameter/chargemode", chargemode)
+            log.message_debug_log("debug", "Theroretisch benötigter Strom "+str(required_current)+"A, Lademodus "+chargemode)
         except KeyError as key:
             print("dictionary key", key, "doesn't exist in get_required_current")
     
@@ -142,9 +142,9 @@ class chargeTemplate():
             if self.data["time_load"]["active"] == True:
                 plan = timecheck.check_plans_timeframe(self.data["time_load"])
                 if plan != None:
-                    return self.data["time_load"][plan]["current"]
+                    return self.data["time_load"][plan]["current"], "time_load"
                 else:
-                    return 0
+                    return 0, "time_load"
         except KeyError as key:
             print("dictionary key", key, "doesn't exist in time_load")
 
@@ -163,19 +163,19 @@ class chargeTemplate():
             instant_load = self.data["chargemode"]["instant_load"]
             if data.optional_data["optional"].data["et"]["active"] == True:
                 if data.optional_data["optional"].et_price_lower_than_limit() == False:
-                    return 0
+                    return 0, "instant_load"
             if instant_load["limit"]["selected"] == "none":
-                return instant_load["current"]
+                return instant_load["current"], "instant_load"
             elif instant_load["limit"]["selected"] == "soc":
                 if soc < instant_load["limit"]["soc"]:
-                    return instant_load["current"]
+                    return instant_load["current"], "instant_load"
                 else:
-                    return 0
+                    return 0, "instant_load"
             elif instant_load["limit"]["selected"] == "amount":
                 if amount < instant_load["limit"]["amount"]:
-                    return instant_load["current"]
+                    return instant_load["current"], "instant_load"
                 else:
-                    return 0
+                    return 0, "instant_load"
         except KeyError as key:
             print("dictionary key", key, "doesn't exist in instant_load")
 
