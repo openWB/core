@@ -25,8 +25,8 @@ class control():
                 self.reserved_pv_power = 0  # wird reserviert, wenn die Einschaltverzögerung startet
             data.counter_data["evu"].data["set"]["consumption_left"] = data.counter_data["evu"].data["config"]["max_consumption"]
             data.counter_data["evu"].data["set"]["current_left"] = data.counter_data["evu"].data["config"]["max_current"]
-        except KeyError as key:
-            print("dictionary key",key,"doesn't exist in calc_current")
+        except Exception as e:
+            log.exception_logging(e)
         
         self._calc_cp_in_specified_mode("scheduled_load", "instant_load")
         self._calc_cp_in_specified_mode("time_load", "time_load")
@@ -48,17 +48,20 @@ class control():
         submode: str
             Lademodus, der aufgrund des Zustands des eingestellten Lademodus benötigt wird
         """
-        for chargepoint in data.cp_data:
-            if "charging_ev" in data.cp_data[chargepoint].data:
-                charging_ev = data.cp_data[chargepoint].data["set"]["charging_ev"]
-                if (charging_ev.charge_template.data["prio"] == True) and (charging_ev.charge_template.data["chargemode"]["selected"] == mode) and (charging_ev.data["control_parameter"]["chargemode"] == submode):
-                    self._start_indiviual_calc(data.cp_data[chargepoint])
+        try:
+            for chargepoint in data.cp_data:
+                if "charging_ev" in data.cp_data[chargepoint].data:
+                    charging_ev = data.cp_data[chargepoint].data["set"]["charging_ev"]
+                    if (charging_ev.charge_template.data["prio"] == True) and (charging_ev.charge_template.data["chargemode"]["selected"] == mode) and (charging_ev.data["control_parameter"]["chargemode"] == submode):
+                        self._start_indiviual_calc(data.cp_data[chargepoint])
 
-        for chargepoint in data.cp_data.keys():
-            if "charging_ev" in data.cp_data[chargepoint].data:
-                charging_ev = data.cp_data[chargepoint].data["set"]["charging_ev"]
-                if (charging_ev.charge_template.data["prio"] == False) and (charging_ev.charge_template.data["chargemode"]["selected"] == mode) and (charging_ev.data["control_parameter"]["chargemode"] == submode):
-                    self._start_indiviual_calc(data.cp_data[chargepoint])
+            for chargepoint in data.cp_data.keys():
+                if "charging_ev" in data.cp_data[chargepoint].data:
+                    charging_ev = data.cp_data[chargepoint].data["set"]["charging_ev"]
+                    if (charging_ev.charge_template.data["prio"] == False) and (charging_ev.charge_template.data["chargemode"]["selected"] == mode) and (charging_ev.data["control_parameter"]["chargemode"] == submode):
+                        self._start_indiviual_calc(data.cp_data[chargepoint])
+        except Exception as e:
+            log.exception_logging(e)
 
     def _start_indiviual_calc(self, chargepoint):
         """ ermittelt die konfigurierte Anzahl Phasen, Stromstärke und Leistung.

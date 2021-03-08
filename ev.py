@@ -31,8 +31,8 @@ def get_ev_to_rfid(rfid):
                             return 0
                         else:
                             return int(vehicle[2:])
-            except KeyError as key:
-                print("dictionary key", key, "related to loop-object", vehicle, "doesn't exist in get_ev_to_rfid")
+            except Exception as e:
+                log.exception_logging(e)
     else:
         return None
 
@@ -77,8 +77,8 @@ class ev():
             self.data["control_parameter"]["chargemode"] = chargemode
             pub.pub("openWB/vehicle/"+self.ev_num+"/control_parameter/chargemode", chargemode)
             log.message_debug_log("debug", "Theroretisch benötigter Strom "+str(required_current)+"A, Lademodus "+chargemode)
-        except KeyError as key:
-            print("dictionary key", key, "doesn't exist in get_required_current")
+        except Exception as e:
+            log.exception_logging(e)
     
 
     def get_soc(self):
@@ -105,8 +105,8 @@ class ev():
             if required_current > self.ev_template.data["max_current"]:
                 return self.ev_template.data["max_current"]
             return required_current
-        except KeyError as key:
-            print("dictionary key", key, "doesn't exist in __check_min_max_current")
+        except Exception as e:
+            log.exception_logging(e)
 
     def load_default_profile(self):
         """ prüft, ob nach dem Abstecken das Standardprofil geladen werden soll und lädt dieses ggf..
@@ -145,8 +145,8 @@ class chargeTemplate():
                     return self.data["time_load"][plan]["current"], "time_load"
                 else:
                     return 0, "time_load"
-        except KeyError as key:
-            print("dictionary key", key, "doesn't exist in time_load")
+        except Exception as e:
+            log.exception_logging(e)
 
     def instant_load(self, soc, amount):
         """ prüft, ob die Lademengenbegrenzung erreicht wurde und setzt entsprechend den Ladestrom.
@@ -176,8 +176,8 @@ class chargeTemplate():
                     return instant_load["current"], "instant_load"
                 else:
                     return 0, "instant_load"
-        except KeyError as key:
-            print("dictionary key", key, "doesn't exist in instant_load")
+        except Exception as e:
+            log.exception_logging(e)
 
     def pv_load(self, soc):
         """ prüft, ob Min-oder Max-Soc erreicht wurden und setzt entsprechend den Ladestrom.
@@ -207,8 +207,8 @@ class chargeTemplate():
                         return pv_load["min_current"], "pv_load" #Min PV
             else:
                 return 0, "stop" 
-        except KeyError as key:
-            print("dictionary key", key, "doesn't exist in pv_load")
+        except Exception as e:
+            log.exception_logging(e)
 
     def scheduled_load(self, soc, max_current, battery_capacity, max_phases):
         """ prüft, ob der Ziel-SoC erreicht wurde und stellt den zur Erreichung nötigen Ladestrom ein.
@@ -264,8 +264,8 @@ class chargeTemplate():
                                 return 0, "scheduled_load"
                     else:
                         return 0, "stop"
-                except KeyError as key:
-                    print("dictionary key", key, "related to loop-object", plan, "doesn't exist in scheduled_load")
+                except Exception as e:
+                    log.exception_logging(e)
         else:
             #log
             print("Keine aktiven Zeit-Pläne.")

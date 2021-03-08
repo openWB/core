@@ -2,6 +2,7 @@
 """
 
 import data
+import log
 
 
 class general():
@@ -26,6 +27,6 @@ class general():
         """
         try:
             return self.data["chargemode_config"][chargemode]["phases_to_use"]
-        except KeyError as key:
-            print("dictionary key", key, "doesn't exist in get_phases_chargemode")
+        except Exception as e:
+            log.exception_logging(e)
             return 1

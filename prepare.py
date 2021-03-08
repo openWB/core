@@ -63,8 +63,8 @@ class prepare():
             data.graph_data = copy.deepcopy(subdata.subData.graph_data)
 
             data.print_all()
-        except KeyError as key:
-            print("dictionary key", key, "doesn't exist in _copy_data")
+        except Exception as e:
+            log.exception_logging(e)
 
     def _check_chargepoints(self):
         """ ermittelt die gewünschte Stromstärke für jeden LP.
@@ -87,8 +87,8 @@ class prepare():
                     else:
                         if "charging_ev" in data.cp_data[chargepoint].data:
                             data.cp_data[chargepoint].data["set"].pop("charging_ev")
-            except:
-                traceback.print_exc(limit=-1)
+            except Exception as e:
+                log.exception_logging(e)
 
     def _use_pv(self):
         """ ermittelt, ob Überschuss an der EVU vorhanden ist und kümmert sich um die Beachtung der Einspeisungsgrenze.

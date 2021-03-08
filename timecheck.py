@@ -2,7 +2,7 @@
 """
 
 import datetime
-
+import log
 
 def set_date(now, begin, end):
     """ setzt das Datum auf das heutige Datum, bzw. falls der Endzeitpunkt am nächsten Tag ist, auf morgen
@@ -80,8 +80,8 @@ def check_plans_timeframe(plans, hours=None):
             # log
             print("Keine aktiven Zeit-Pläne.")
         return None
-    except KeyError as key:
-        print("dictionary key", key, "doesn't exist in check_plans_timeframe")
+    except Exception as e:
+        log.exception_logging(e)
         return None
 
 
@@ -162,9 +162,8 @@ def check_timeframe(plan, hours):
                             now, begin, end)
                     else:
                         state = False
-    except KeyError as key:
-        print("dictionary key", key, "related to loop-object",
-              plan, "doesn't exist in check_timeframe")
+    except Exception as e:
+        log.exception_logging(e)
         return None
     return state
 
@@ -223,8 +222,8 @@ def check_duration(plan, duration):
                 return _is_duration_valid(now, duration, end)
             else:
                 return False
-    except KeyError as key:
-        print("dictionary key", key, "doesn't exist in check_duration")
+    except Exception as e:
+        log.exception_logging(e)
         return False
 
 
@@ -301,7 +300,6 @@ def check_timestamp(timestamp, duration):
     stamp = datetime.datetime.strptime(timestamp, "%m/%d/%Y, %H:%M:%S")
     now = datetime.datetime.today()
     delta = datetime.timedelta(seconds=duration)
-    print(now, delta, stamp)
     if (now-delta) > stamp:
         return False
     else:
@@ -316,5 +314,4 @@ def create_timestamp():
     str: aktuelles Datum und Uhrzeit
     """
     stamp = datetime.datetime.today().strftime("%m/%d/%Y, %H:%M:%S")
-    print("create stamp @", stamp)
     return stamp

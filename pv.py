@@ -78,8 +78,8 @@ class pv():
             pub.pub("openWB/pv/set/available_power", available_power)
             pub.pub("openWB/pv/config/configured", self.data["config"]["configured"])
 
-        except Exception:
-            traceback.print_exc(limit=-1)
+        except Exception as e:
+            log.exception_logging(e)
 
 
 class pvModule():

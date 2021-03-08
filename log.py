@@ -1,7 +1,7 @@
 """Log-Modul, dass die KOnfiguration für die Log-Dateien und Funktionen zum Aufruf der einzelnen Handler enthält
 """
 
-import inspect
+import traceback
 import logging
 
 debug_logger = None
@@ -44,8 +44,16 @@ def _set_message(logger, level, message):
     elif level == "critical":
         logger.critical(message)
 
-def log_key_error(key):
-    print("KeyError "+str(key)+" in "+inspect.stack()[1][3]+" in Module "+inspect.getmodulename(inspect.stack()[1][1]))
+def exception_logging(exception):
+    """
+    Log exception by using the root logger.
 
-def log_key_error_loop(key, loop):
-    print("KeyError "+str(key)+" related to loop-object "+str(loop)+" in "+inspect.stack()[1][3]+" in Module "+inspect.getmodulename(inspect.stack()[1][1]))
+    Parameters
+    ----------
+    exception
+    """
+    tb = exception.__traceback__
+    value= str(exception)
+    exctype=str(type(exception))
+    msg="Exception type: "+exctype+" Traceback: "+str(traceback.format_tb(tb, -1))+" Details: "+value
+    message_debug_log("error", msg)

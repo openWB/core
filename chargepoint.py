@@ -57,8 +57,8 @@ class chargepoint():
             if state == False:
                 self.log_pub_state_str("Keine Ladung an LP"+self.cp_num+", da Autolock aktiv ist.")
             return state
-        except KeyError as key:
-            print("dictionary key", key, "doesn't exist in __is_autolock_active")
+        except Exception as e:
+            log.exception_logging(e)
 
     def _is_manual_lock_active(self):
         state = self.data["get"]["manual_lock"]
@@ -87,8 +87,8 @@ class chargepoint():
                     if self._is_ev_plugged() == True:
                         if self._is_autolock_active() == True:
                             return self.template.get_ev(self.data["get"]["rfid"])
-        except KeyError as key:
-            print("dictionary key", key, "doesn't exist in get_state")
+        except Exception as e:
+            log.exception_logging(e)
             return None
         return None
 
@@ -147,8 +147,8 @@ class cpTemplate():
                     return True
             else:
                 return True
-        except KeyError as key:
-            print("dictionary key", key, "doesn't exist in autolock")
+        except Exception as e:
+            log.exception_logging(e)
             return True
 
     def autolock_manual_disabling(self, topic_path):
@@ -162,8 +162,8 @@ class cpTemplate():
         try:
             if (self.data["autolock"]["active"] == True):
                 pub.pub(topic_path+"/get/autolock", 4)
-        except KeyError as key:
-            print("dictionary key", key, "doesn't exist in autolock_manual_disabling")
+        except Exception as e:
+            log.exception_logging(e)
 
     def autolock_manual_enabling(self, topic_path):
         """ aktuelles Autolock wird wieder aktiviert.
@@ -176,8 +176,8 @@ class cpTemplate():
         try:
             if (self.data["autolock"]["active"] == True):
                 pub.pub(topic_path+"/get/autolock", 0)
-        except KeyError as key:
-            print("dictionary key", key, "doesn't exist in autolock_manual_enabling")
+        except Exception as e:
+            log.exception_logging(e)
 
     def autolock_enable_after_charging_end(self, autolock_state, topic_path):
         """Wenn kein Strom für den LP übrig ist, muss Autolock ggf noch aktiviert werden.
@@ -190,8 +190,8 @@ class cpTemplate():
         try:
             if (self.data["autolock"]["active"] == True) and autolock_state == 1:
                 pub.pub(topic_path+"/get/autolock", 2)
-        except KeyError as key:
-            print("dictionary key", key, "doesn't exist in autolock_enable_after_charging_end")
+        except Exception as e:
+            log.exception_logging(e)
 
     def get_ev(self, rfid):
         """ermittelt das dem LP zugeordnete EV
@@ -205,5 +205,5 @@ class cpTemplate():
                     return vehicle
             else:
                 return self.data["ev"]
-        except KeyError as key:
-            print("dictionary key", key, "doesn't exist in get_ev")
+        except Exception as e:
+            log.exception_logging(e)

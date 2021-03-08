@@ -5,7 +5,7 @@ from heapq import nsmallest
 from math import ceil #Aufrunden
 
 import data
-
+import log
 
 class optional():
     """
@@ -27,8 +27,8 @@ class optional():
                 return True
             else:
                 return False
-        except KeyError as key:
-            print("dictionary key", key, "doesn't exist in et_price_lower_than_limit")
+        except Exception as e:
+            log.exception_logging(e)
             return False
 
     def get_loading_hours(self, duration):
@@ -46,6 +46,6 @@ class optional():
         try:
             pricedict = self.data["et"]["get"]["pricedict"]
             return nsmallest(ceil(duration), pricedict, key = pricedict.get)
-        except KeyError as key:
-            print("dictionary key", key, "doesn't exist in get_loading_hours")
+        except Exception as e:
+            log.exception_logging(e)
             return ()
