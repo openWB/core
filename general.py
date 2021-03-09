@@ -26,7 +26,10 @@ class general():
         int: Anzahl Phasen
         """
         try:
-            return self.data["chargemode_config"][chargemode]["phases_to_use"]
+            if chargemode == "stop":
+                return 0
+            else:
+                return self.data["chargemode_config"][chargemode]["phases_to_use"]
         except Exception as e:
             log.exception_logging(e)
             return 1

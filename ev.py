@@ -63,14 +63,16 @@ class ev():
                 self.data["set"] = {}
             if "control_parameter" not in self.data:
                 self.data["control_parameter"] = {}
-            if self.charge_template.data["time_load"]["active"] == True:
+            if self.charge_template.data["chargemode"]["selected"] == "scheduled_load":
+                required_current, chargemode = self.charge_template.scheduled_load(self.data["get"]["soc"], self.ev_template.data["max_current"], self.ev_template.data["battery_capacity"], self.ev_template.data["max_phases"])
+            elif self.charge_template.data["time_load"]["active"] == True:
                 required_current, chargemode = self.charge_template.time_load()
-            if self.charge_template.data["chargemode"]["selected"] == "instant_load":
+            elif self.charge_template.data["chargemode"]["selected"] == "instant_load":
                 required_current, chargemode = self.charge_template.instant_load(self.data["get"]["soc"], self.data["get"]["charged_since_plugged_kwh"])
             elif self.charge_template.data["chargemode"]["selected"] == "pv_load":
                 required_current, chargemode = self.charge_template.pv_load(self.data["get"]["soc"])
-            elif self.charge_template.data["chargemode"]["selected"] == "scheduled_load":
-                required_current, chargemode = self.charge_template.scheduled_load(self.data["get"]["soc"], self.ev_template.data["max_current"], self.ev_template.data["battery_capacity"], self.ev_template.data["max_phases"])
+            elif (self.charge_template.data["chargemode"]["selected"] == "standby") or (self.charge_template.data["chargemode"]["selected"] == "stop"):
+                required_current, chargemode = self.charge_template.stop_standby(self.charge_template.data["chargemode"]["selected"])
             required_current = self._check_min_max_current(required_current)
             self.data["control_parameter"]["required_current"] = required_current
             pub.pub("openWB/vehicle/"+self.ev_num+"/control_parameter/required_current", required_current)
@@ -100,10 +102,11 @@ class ev():
         float: Strom, mit dem das EV laden darf
         """
         try:
-            if required_current < self.ev_template.data["min_current"]:
-               return self.ev_template.data["min_current"]
-            if required_current > self.ev_template.data["max_current"]:
-                return self.ev_template.data["max_current"]
+            if required_current != 0:
+                if required_current < self.ev_template.data["min_current"]:
+                    return self.ev_template.data["min_current"]
+                if required_current > self.ev_template.data["max_current"]:
+                    return self.ev_template.data["max_current"]
             return required_current
         except Exception as e:
             log.exception_logging(e)
@@ -139,12 +142,11 @@ class chargeTemplate():
         """ prüft, ob ein Zeitfenster aktiv ist und setzt entsprechend den Ladestrom
         """
         try:
-            if self.data["time_load"]["active"] == True:
-                plan = timecheck.check_plans_timeframe(self.data["time_load"])
-                if plan != None:
-                    return self.data["time_load"][plan]["current"], "time_load"
-                else:
-                    return 0, "time_load"
+            plan = timecheck.check_plans_timeframe(self.data["time_load"])
+            if plan != None:
+                return self.data["time_load"][plan]["current"], "time_load"
+            else:
+                return 0, "time_load"
         except Exception as e:
             log.exception_logging(e)
 
@@ -270,3 +272,18 @@ class chargeTemplate():
             #log
             print("Keine aktiven Zeit-Pläne.")
             return 0, "scheduled_load"
+
+    def stop_standby(self, mode):
+        """ setzt den benötigten Strom auf 0.
+
+        Parameter
+        ---------
+        mode: str
+            Lademodus
+
+        Return
+        ------
+            Required Current, Chargemode: int, str
+                Therotisch benötigter Strom, Ladmodus
+        """
+        return 0, mode

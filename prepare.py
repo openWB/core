@@ -62,7 +62,6 @@ class prepare():
             data.optional_data = copy.deepcopy(subdata.subData.optional_data)
             data.graph_data = copy.deepcopy(subdata.subData.graph_data)
 
-            data.print_all()
         except Exception as e:
             log.exception_logging(e)
 
@@ -83,7 +82,7 @@ class prepare():
                             data.cp_data[chargepoint].data["set"]["charging_ev"] = data.ev_data["ev"+str(
                                 vehicle)]
                             data.ev_data["ev"+str(vehicle)].get_required_current()
-                        log.message_debug_log("debug", "Ladepunkt "+data.cp_data[chargepoint].cp_num+",: EV "+data.cp_data[chargepoint].data["set"]["charging_ev"].data["name"]+" (EV-Nr."+str(vehicle)+")")
+                        log.message_debug_log("debug", "Ladepunkt "+data.cp_data[chargepoint].cp_num+", EV: "+data.cp_data[chargepoint].data["set"]["charging_ev"].data["name"]+" (EV-Nr."+str(vehicle)+")")
                     else:
                         if "charging_ev" in data.cp_data[chargepoint].data:
                             data.cp_data[chargepoint].data["set"].pop("charging_ev")
