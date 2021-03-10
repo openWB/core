@@ -61,7 +61,7 @@ class prepare():
             data.general_data = copy.deepcopy(subdata.subData.general_data)
             data.optional_data = copy.deepcopy(subdata.subData.optional_data)
             data.graph_data = copy.deepcopy(subdata.subData.graph_data)
-
+            data.print_all()
         except Exception as e:
             log.exception_logging(e)
 
@@ -74,18 +74,18 @@ class prepare():
                     vehicle = data.cp_data[chargepoint].get_state()
                     if "set" not in data.cp_data[chargepoint].data:
                         data.cp_data[chargepoint].data["set"] = {}
+                    if "charging_ev" in data.cp_data[chargepoint].data:
+                            data.cp_data[chargepoint].data["set"].pop("charging_ev")
                     if vehicle != None:
                         if vehicle == 0:
-                            data.cp_data[chargepoint].data["set"]["charging_ev"] = data.ev_data["default"]
-                            data.ev_data["default"].get_required_current()
+                            if data.ev_data["default"].get_required_current() == True:
+                                data.cp_data[chargepoint].data["set"]["charging_ev"] = data.ev_data["default"]
+                                log.message_debug_log("debug", "Ladepunkt "+data.cp_data[chargepoint].cp_num+", EV: "+data.cp_data[chargepoint].data["set"]["charging_ev"].data["name"]+" (EV-Nr."+str(vehicle)+")")
                         else:
-                            data.cp_data[chargepoint].data["set"]["charging_ev"] = data.ev_data["ev"+str(
+                            if data.ev_data["ev"+str(vehicle)].get_required_current() == True:
+                                data.cp_data[chargepoint].data["set"]["charging_ev"] = data.ev_data["ev"+str(
                                 vehicle)]
-                            data.ev_data["ev"+str(vehicle)].get_required_current()
-                        log.message_debug_log("debug", "Ladepunkt "+data.cp_data[chargepoint].cp_num+", EV: "+data.cp_data[chargepoint].data["set"]["charging_ev"].data["name"]+" (EV-Nr."+str(vehicle)+")")
-                    else:
-                        if "charging_ev" in data.cp_data[chargepoint].data:
-                            data.cp_data[chargepoint].data["set"].pop("charging_ev")
+                                log.message_debug_log("debug", "Ladepunkt "+data.cp_data[chargepoint].cp_num+", EV: "+data.cp_data[chargepoint].data["set"]["charging_ev"].data["name"]+" (EV-Nr."+str(vehicle)+")")
             except Exception as e:
                 log.exception_logging(e)
 
@@ -95,6 +95,6 @@ class prepare():
         data.pv_data["pv"].calc_power_for_control()
 
     def _bat(self):
-        if data.bat_module_data: 
+        if "bat" not in data.bat_module_data:
             data.bat_module_data["bat"] = bat.bat()
-            data.bat_module_data["bat"].setup_bat()
+        data.bat_module_data["bat"].setup_bat()

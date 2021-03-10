@@ -67,18 +67,24 @@ class ev():
                 required_current, chargemode = self.charge_template.scheduled_load(self.data["get"]["soc"], self.ev_template.data["max_current"], self.ev_template.data["battery_capacity"], self.ev_template.data["max_phases"])
             elif self.charge_template.data["time_load"]["active"] == True:
                 required_current, chargemode = self.charge_template.time_load()
-            elif self.charge_template.data["chargemode"]["selected"] == "instant_load":
-                required_current, chargemode = self.charge_template.instant_load(self.data["get"]["soc"], self.data["get"]["charged_since_plugged_kwh"])
-            elif self.charge_template.data["chargemode"]["selected"] == "pv_load":
-                required_current, chargemode = self.charge_template.pv_load(self.data["get"]["soc"])
-            elif (self.charge_template.data["chargemode"]["selected"] == "standby") or (self.charge_template.data["chargemode"]["selected"] == "stop"):
-                required_current, chargemode = self.charge_template.stop_standby(self.charge_template.data["chargemode"]["selected"])
-            required_current = self._check_min_max_current(required_current)
-            self.data["control_parameter"]["required_current"] = required_current
-            pub.pub("openWB/vehicle/"+self.ev_num+"/control_parameter/required_current", required_current)
-            self.data["control_parameter"]["chargemode"] = chargemode
-            pub.pub("openWB/vehicle/"+self.ev_num+"/control_parameter/chargemode", chargemode)
-            log.message_debug_log("debug", "Theroretisch benötigter Strom "+str(required_current)+"A, Lademodus "+chargemode)
+            if (required_current == 0) or (required_current == None):
+                if self.charge_template.data["chargemode"]["selected"] == "instant_load":
+                    required_current, chargemode = self.charge_template.instant_load(self.data["get"]["soc"], self.data["get"]["charged_since_plugged_kwh"])
+                elif self.charge_template.data["chargemode"]["selected"] == "pv_load":
+                    required_current, chargemode = self.charge_template.pv_load(self.data["get"]["soc"])
+                elif self.charge_template.data["chargemode"]["selected"] == "standby":
+                    required_current, chargemode = self.charge_template.standby(self.charge_template.data["chargemode"]["selected"])
+            if chargemode == "stop" or (self.charge_template.data["chargemode"]["selected"] == "stop"):
+                log.message_debug_log("debug", "EV"+str(self.ev_num)+": Lademdous stop")
+                return False
+            else:
+                required_current = self._check_min_max_current(required_current)
+                self.data["control_parameter"]["required_current"] = required_current
+                pub.pub("openWB/vehicle/"+self.ev_num+"/control_parameter/required_current", required_current)
+                self.data["control_parameter"]["chargemode"] = chargemode
+                pub.pub("openWB/vehicle/"+self.ev_num+"/control_parameter/chargemode", chargemode)
+                log.message_debug_log("debug", "EV"+str(self.ev_num)+": Theroretisch benötigter Strom "+str(required_current)+"A, Lademodus "+chargemode)
+                return True
         except Exception as e:
             log.exception_logging(e)
     
@@ -273,17 +279,12 @@ class chargeTemplate():
             print("Keine aktiven Zeit-Pläne.")
             return 0, "scheduled_load"
 
-    def stop_standby(self, mode):
+    def standby(self):
         """ setzt den benötigten Strom auf 0.
-
-        Parameter
-        ---------
-        mode: str
-            Lademodus
 
         Return
         ------
             Required Current, Chargemode: int, str
                 Therotisch benötigter Strom, Ladmodus
         """
-        return 0, mode
+        return 0, "standby"

@@ -355,22 +355,7 @@ class subData():
         msg:
             enthält Topic und Payload
         """
-        if re.search("^openWB/pv/.+$", msg.topic) != None:
-            if "pv" not in self.pv_data:
-                self.pv_data["pv"]=pv.pv()
-            if re.search("^openWB/pv/config/.+$", msg.topic) != None:
-                if "config" not in self.pv_data["pv"].data:
-                    self.pv_data["pv"].data["config"]={}
-                self.set_json_payload(self.pv_data["pv"].data["config"], msg)
-            elif re.search("^openWB/pv/get/.+$", msg.topic) != None:
-                if "get" not in self.pv_data["pv"].data:
-                    self.pv_data["pv"].data["get"]={}
-                self.set_json_payload(self.pv_data["pv"].data["get"], msg)
-            elif re.search("^openWB/pv/set/.+$", msg.topic) != None:
-                if "set" not in self.pv_data["pv"].data:
-                    self.pv_data["pv"].data["set"]={}
-                self.set_json_payload(self.pv_data["pv"].data["set"], msg)
-        elif re.search("^openWB/pv/modules/[1-9][0-9]*$", msg.topic) != None:
+        if re.search("^openWB/pv/modules/[1-9][0-9]*$", msg.topic) != None:
             index=self.get_index(msg.topic)
             if json.loads(str(msg.payload.decode("utf-8")))=="":
                 if "pv"+index in self.pv_data:
@@ -387,6 +372,21 @@ class subData():
                 if "get" not in self.pv_data["pv"+index].data:
                     self.pv_data["pv"+index].data["get"]={}
                 self.set_json_payload(self.pv_data["pv"+index].data["get"], msg)
+        elif re.search("^openWB/pv/.+$", msg.topic) != None:
+            if "pv" not in self.pv_data:
+                self.pv_data["pv"]=pv.pv()
+            if re.search("^openWB/pv/config/.+$", msg.topic) != None:
+                if "config" not in self.pv_data["pv"].data:
+                    self.pv_data["pv"].data["config"]={}
+                self.set_json_payload(self.pv_data["pv"].data["config"], msg)
+            elif re.search("^openWB/pv/get/.+$", msg.topic) != None:
+                if "get" not in self.pv_data["pv"].data:
+                    self.pv_data["pv"].data["get"]={}
+                self.set_json_payload(self.pv_data["pv"].data["get"], msg)
+            elif re.search("^openWB/pv/set/.+$", msg.topic) != None:
+                if "set" not in self.pv_data["pv"].data:
+                    self.pv_data["pv"].data["set"]={}
+                self.set_json_payload(self.pv_data["pv"].data["set"], msg)
 
     def process_bat_topic(self, client, userdata, msg):
         """ Handler für die Hausspeicher-Topics
