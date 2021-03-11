@@ -130,7 +130,7 @@ class control():
                 evu_current_phases = [evu_current]*phases
                 if loadmanagement.loadmanagement(evu_power, evu_current_phases) == True:
                     data.pv_data["pv"].allocate_pv_power(pv_power)
-                    self._process_data(chargepoint, pv_power, required_current, phases)
+                    self._process_data(chargepoint, required_power, required_current, phases)
             return
         # Bezug
         if loadmanagement.loadmanagement(required_power, required_current) == True:
@@ -154,7 +154,7 @@ class control():
         """
         pv_power_left = data.pv_data["pv"].power_for_pv_load(chargepoint.data["set"]["charging_ev"].charge_template.data["chargemode"]["pv_load"]["feed_in_limit"])
         if pv_power_left > 0:
-            bat_charging_power_left = data.bat_module_data["bat"].data["set"]["charging_power_left"]
+            bat_charging_power_left = data.bat_module_data["bat"].power_for_bat_charging()
             if chargepoint.data["set"]["charging_ev"].charge_template.data["chargemode"]["selected"] == "scheduled_load" and "pv_load" not in chargepoint.data["set"]["charging_ev"].charge_template.data["chargemode"]:
                 required_power, required_current, phases = self._no_load(chargepoint, required_power, required_current, phases)
                 log.message_debug_log("warning", "PV-Laden im Modus Zielladen aktiv und es wurden keine Einstellungen für PV-Laden konfiguriert.")
@@ -163,18 +163,18 @@ class control():
                 if (chargepoint.data["set"]["charging_ev"].charge_template.data["chargemode"]["pv_load"]["bat_prio"] == False) and (bat_charging_power_left > 0):
                     # Laden nur mit der Leistung, die vorher der Speicher bezogen hat
                     if ( bat_charging_power_left - required_power) > 0:
-                        bat_charging_power_left -= required_power 
+                        data.bat_module_data["bat"].allocate_bat_power(required_power )
                     # Laden mit PV-Leistung und der Leistung, die vorher der Speicher bezogen hat
                     elif pv_power_left > 0:
                         pv_power = required_power - bat_charging_power_left
-                        required_power, required_current, phases = data.pv_data["pv"].adapt_current(pv_power, required_current, phases, chargepoint.data["set"]["charging_ev"].data["control_parameter"], chargepoint.data["set"]["charging_ev"].ev_template.data["max_current"], chargepoint.data["set"]["charging_ev"].ev_template.data["min_current"])
-                        bat_charging_power_left = 0
+                        required_power, required_current, phases = data.pv_data["pv"].adapt_current(chargepoint, pv_power, required_current, phases, chargepoint.data["set"]["charging_ev"].ev_template.data["max_current"], chargepoint.data["set"]["charging_ev"].ev_template.data["min_current"])
+                        data.bat_module_data["bat"].allocate_bat_power(bat_charging_power_left )
                     else:
                         # keine Leistung übrig
                         required_power, required_current, phases = self._no_load(chargepoint, required_power, required_current, phases)
                 # Speicher hat Vorrang, aber es wird noch eingespeist
                 elif pv_power_left > 0:
-                    required_power, required_current, phases = data.pv_data["pv"].adapt_current(required_power, required_current, phases, chargepoint.data["set"]["charging_ev"].data["control_parameter"], chargepoint.data["set"]["charging_ev"].ev_template.data["max_current"], chargepoint.data["set"]["charging_ev"].ev_template.data["min_current"])
+                    required_power, required_current, phases = data.pv_data["pv"].adapt_current(chargepoint, required_power, required_current, phases, chargepoint.data["set"]["charging_ev"].ev_template.data["max_current"], chargepoint.data["set"]["charging_ev"].ev_template.data["min_current"])
                 else:
                     # Speicher zieht gesamte PV-Leistung und hat Vorrang -> keine Ladung
                     required_power, required_current, phases = self._no_load(chargepoint, required_power, required_current, phases)

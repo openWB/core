@@ -40,7 +40,6 @@ class pv():
         int: PV-Leistung, die genutzt werden darf (auf allen Phasen/je Phase unterschiedlich?)
         """
         try:
-            self.reserved_pv_power = 0  # wird reserviert, wenn die Einschaltverzögerung startet
             # Initialer Aufruf
             if "set" not in self.data:
                 self.data["set"] = {}
@@ -52,9 +51,12 @@ class pv():
                     self.data["set"]["available_power"] = 0
                 if "pv_power_left" not in self.data["get"]:
                     self.data["get"]["pv_power_left"] = 0
+                if "reserved_pv_power" not in self.data["get"]:
+                    self.data["get"]["reserved_pv_power"] = 0
                 # aktuelle Leistung an der EVU, enthält die Leistung der Einspeisungsgrenze
+                self.reserved_pv_power = self.data["get"]["reserved_pv_power"]
                 used_power = self.data["set"]["available_power"] - self.data["get"]["pv_power_left"]
-                evu_overhang = data.counter_data["evu"].data["get"]["power_all"] * (-1)
+                evu_overhang = data.counter_data["evu"].data["get"]["power_all"] * (-1) - self.reserved_pv_power
                 
                 # Regelmodus
                 control_range_low = self.data["config"]["control_range"][0]
@@ -82,7 +84,7 @@ class pv():
         except Exception as e:
             log.exception_logging(e)
 
-    def _switch_on_off_pv_load(self, control_parameter, required_power, required_current, phases):
+    def _switch_on_off_pv_load(self, chargepoint, required_power, required_current, phases):
         """ prüft, ob die Einschaltschwelle erreicht wurde, reserviert Leistung und gibt diese frei 
         bzw. stoppt die Freigabe wenn die Ausschaltschwelle und -verzögerung erreicht wurde.
 
@@ -106,11 +108,12 @@ class pv():
             Phasen, mit denen geladen werden kann
         """
         pv_config = self.data["config"]
+        control_parameter = chargepoint.data["set"]["charging_ev"].data["control_parameter"]
         if "pv_available_prev" not in control_parameter:
             control_parameter["pv_available_prev"] = False
         if control_parameter["pv_available_prev"] == False:
             if self.pv_power_left > pv_config["switch_on_threshold"]*phases:
-                if "timestamp_switch_on_off" in pv_config:
+                if "timestamp_switch_on_off" in control_parameter:
                     if timecheck.check_timestamp(control_parameter["timestamp_switch_on_off"], pv_config["switch_on_delay"]) == True:
                         required_power = 0
                         required_current = [0] * phases
@@ -123,12 +126,12 @@ class pv():
                         log.message_debug_log("info", "Einschaltschwelle von "+str(pv_config["switch_on_threshold"])+ "für die Dauer der Einschaltverzögerung überschritten.")
                 else:
                     control_parameter["timestamp_switch_on_off"] = timecheck.create_timestamp()
-                    required_power = 0
-                    required_current = [0] * phases
-                    phases = 0
                     self.reserved_pv_power += required_power
                     self.allocate_pv_power(required_power)
                     log.message_debug_log("info", "Einschaltverzögerung für "+str(pv_config["switch_on_delay"])+ "s aktiv.")
+                    required_power = 0
+                    required_current = [0] * phases
+                    phases = 0
             else:
                 required_power = 0
                 required_current = [0] * phases
@@ -150,6 +153,7 @@ class pv():
                 else:
                     control_parameter["timestamp_switch_on_off"] = timecheck.create_timestamp()
                     log.message_debug_log("info", "Abschaltverzögerung für "+ str(pv_config["switch_off_delay"])+"s aktiv.")
+        pub.pub_dict("openWB/vehicle/"+str(chargepoint.data["set"]["charging_ev"].ev_num)+"/control_parameter", control_parameter)
         return required_power, required_current, phases
 
     def power_for_pv_load(self, feed_in_yield_active):
@@ -208,7 +212,7 @@ class pv():
             if self.pv_power_left < 0:
                 pass #error
 
-    def adapt_current(self, required_power, required_current, phases, control_parameter, max_current_ev, min_current_ev):
+    def adapt_current(self, chargepoint, required_power, required_current, phases, max_current_ev, min_current_ev):
         """ anpassen der Leistung für ein EV, wenn die PV-Leistung nicht mehr ausreicht. Prüfen, der Ein-und Ausschaltschwellen/timer.
 
         Parameter
@@ -243,31 +247,33 @@ class pv():
             pass
             # todo runterregeln
         # Ein-/Ausschaltverzögerung
-        required_power, required_current, phases = self._switch_on_off_pv_load(control_parameter, required_power, required_current, phases)
-        if (self.pv_power_left - required_power) < 0:
-            evu_power = self.pv_power_left *-1 # muss bezogen werden
-            pv_power = required_power - evu_power
-            evu_current = required_power / (phases * 230)
-            evu_current_phases = [evu_current]*phases
-            if evu_power > 0:
-                if loadmanagement.loadmanagement(evu_power, evu_current_phases) == True:
-                    self.allocate_pv_power(pv_power)
-                    return required_power, required_current, phases
-                else:
-                    pass
-                    # todo
-        else:
-            self.allocate_pv_power(required_power)
-            return required_power, required_current, phases
+        required_power, required_current, phases = self._switch_on_off_pv_load(chargepoint, required_power, required_current, phases)
+        # nur durch die Ausschaltverzögerung darf required_power auf 0 gesetzt werden, sonst muss bezogen werden.
+        if required_power != 0:
+            if (self.pv_power_left - required_power) < 0:
+                evu_power = self.pv_power_left *-1 # muss bezogen werden
+                pv_power = required_power - evu_power
+                evu_current = required_power / (phases * 230)
+                evu_current_phases = [evu_current]*phases
+                if evu_power > 0:
+                    if loadmanagement.loadmanagement(evu_power, evu_current_phases) == True:
+                        self.allocate_pv_power(pv_power)
+                    else:
+                        pass
+                        # todo
+            else:
+                self.allocate_pv_power(required_power)
 
-        return required_power, required_current, phases, evu_power
+        return required_power, required_current, phases
 
     def put_stats(self):
         """ Publishen und Loggen der verbleibnden PV-Leistung und reservierten Leistung
         """
-        if data.pv_data["pv"].data["config"]["configured"] == True:
+        pub.pub("openWB/pv/config/configured", self.data["config"]["configured"])
+        if self.data["config"]["configured"] == True:
             pub.pub("openWB/pv/get/pv_power_left", self.pv_power_left)
-            log.message_debug_log("debug", "Fuer die folgenden Algorithmus-Durchlaeufe verbleibende PV-Leistung "+str(self.pv_power_left)+"W, zusätzllich reservierte Leistung "+str(self.reserved_pv_power)+"W")
+            pub.pub("openWB/pv/get/reserved_pv_power", self.reserved_pv_power)
+            log.message_debug_log("debug", "Fuer die folgenden Algorithmus-Durchlaeufe verbleibende PV-Leistung "+str(self.pv_power_left)+"W + reservierte Leistung "+str(self.reserved_pv_power)+"W")
 
 class pvModule():
     """

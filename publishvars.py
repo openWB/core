@@ -648,7 +648,7 @@ class pubvars():
         self.client.publish("openWB/pv/modules/1/get/counter", payload=json.dumps(500), qos=0, retain=True)
         
         #evu
-        self.client.publish("openWB/counter/evu/get/power_all", payload=json.dumps(-1500), qos=0, retain=True)
+        self.client.publish("openWB/counter/evu/get/power_all", payload=json.dumps(-8500), qos=0, retain=True)
         self.client.publish("openWB/counter/evu/get/current", payload=json.dumps([5,5,5]), qos=0, retain=True)
         self.client.publish("openWB/counter/evu/config/max_consumption", payload=json.dumps(5000), qos=0, retain=True)
         self.client.publish("openWB/counter/evu/config/max_current", payload=json.dumps([35, 35, 35]), qos=0, retain=True)

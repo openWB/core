@@ -161,6 +161,10 @@ class subData():
                     if "match_ev" not in self.ev_data["ev"+index].data:
                         self.ev_data["ev"+index].data["match_ev"]={}
                     self.set_json_payload(self.ev_data["ev"+index].data["match_ev"], msg)
+                elif re.search("^openWB/vehicle/[1-9][0-9]*/control_parameter/.+$", msg.topic) != None:
+                    if "control_parameter" not in self.ev_data["ev"+index].data:
+                        self.ev_data["ev"+index].data["control_parameter"]={}
+                    self.set_json_payload(self.ev_data["ev"+index].data["control_parameter"], msg)
                 else: 
                     self.set_json_payload(self.ev_data["ev"+index].data, msg)
         elif re.search("^openWB/vehicle/default.+$", msg.topic) != None:
@@ -186,6 +190,10 @@ class subData():
                 if "match_ev" not in self.ev_data["default"].data:
                     self.ev_data["default"].data["match_ev"]={}
                 self.set_json_payload(self.ev_data["default"].data["match_ev"], msg)
+            elif re.search("^openWB/vehicle/default/control_parameter/.+$", msg.topic) != None:
+                if "control_parameter" not in self.ev_data["default"].data:
+                    self.ev_data["default"].data["control_parameter"]={}
+                self.set_json_payload(self.ev_data["default"].data["control_parameter"], msg)
             else: 
                 self.set_json_payload(self.ev_data["default"].data, msg)
         elif "openWB/vehicle/template/charge_template" in msg.topic:
@@ -400,12 +408,13 @@ class subData():
         msg:
             enthält Topic und Payload
         """
-        index=self.get_index(msg.topic)
         if re.search("^openWB/bat/modules/[1-9][0-9]*$", msg.topic) != None:
+            index=self.get_index(msg.topic)
             if json.loads(str(msg.payload.decode("utf-8")))=="":
                 if "bat"+index in self.bat_module_data:
                     self.bat_module_data.pop("bat"+index)
         elif re.search("^openWB/bat/modules/[1-9][0-9]*/.+$", msg.topic) != None:
+            index=self.get_index(msg.topic)
             if "bat"+index not in self.bat_module_data:
                 self.bat_module_data["bat"+index]=bat.batModule()
             if re.search("^openWB/bat/modules/[1-9][0-9]*/config/.+$", msg.topic) != None:
@@ -416,6 +425,17 @@ class subData():
                 if "get" not in self.bat_module_data["bat"+index].data:
                     self.bat_module_data["bat"+index].data["get"]={}
                 self.set_json_payload(self.bat_module_data["bat"+index].data["get"], msg)
+        elif re.search("^openWB/bat/.+$", msg.topic) != None:
+            if "bat" in self.bat_module_data:
+                self.bat_module_data["bat"]=bat.bat()
+            if re.search("^openWB/bat/get/.+$", msg.topic) != None:
+                if "get" not in self.bat_module_data["bat"].data:
+                    self.bat_module_data["bat"].data["get"] = {}
+                self.set_json_payload(self.bat_module_data["bat"].data["get"], msg)
+            elif re.search("^openWB/bat/config/.+$", msg.topic) != None:
+                if "config" not in self.bat_module_data["bat"].data:
+                    self.bat_module_data["bat"].data["config"] = {}
+                self.set_json_payload(self.bat_module_data["bat"].data["config"], msg)
 
     def process_general_topic(self, client, userdata, msg):
         """ Handler für die Allgemeinen-Topics
