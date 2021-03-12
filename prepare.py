@@ -6,6 +6,7 @@ import traceback
 
 import algorithm
 import bat
+import chargepoint
 import data
 import log
 import pub
@@ -53,7 +54,6 @@ class prepare():
                                                                                      str(data.ev_data[vehicle].data["charge_template"])]
                 data.ev_data[vehicle].ev_template = data.ev_template_data["et" +
                                                                           str(data.ev_data[vehicle].data["ev_template"])]
-                data.ev_data[vehicle].ev_num = vehicle[2:]
 
             data.counter_data = copy.deepcopy(subdata.subData.counter_data)
             data.bat_module_data = copy.deepcopy(
@@ -68,26 +68,29 @@ class prepare():
     def _check_chargepoints(self):
         """ ermittelt die gewünschte Stromstärke für jeden LP.
         """
-        for chargepoint in data.cp_data:
+        for cp in data.cp_data:
             try:
-                if "cp" in chargepoint:
-                    vehicle = data.cp_data[chargepoint].get_state()
-                    if "set" not in data.cp_data[chargepoint].data:
-                        data.cp_data[chargepoint].data["set"] = {}
-                    if "charging_ev" in data.cp_data[chargepoint].data:
-                            data.cp_data[chargepoint].data["set"].pop("charging_ev")
+                if "cp" in cp:
+                    vehicle = data.cp_data[cp].get_state()
+                    if "set" not in data.cp_data[cp].data:
+                        data.cp_data[cp].data["set"] = {}
+                    if "charging_ev" in data.cp_data[cp].data:
+                            data.cp_data[cp].data["set"].pop("charging_ev")
                     if vehicle != None:
                         if vehicle == 0:
                             if data.ev_data["default"].get_required_current() == True:
-                                data.cp_data[chargepoint].data["set"]["charging_ev"] = data.ev_data["default"]
-                                log.message_debug_log("debug", "Ladepunkt "+data.cp_data[chargepoint].cp_num+", EV: "+data.cp_data[chargepoint].data["set"]["charging_ev"].data["name"]+" (EV-Nr."+str(vehicle)+")")
+                                data.cp_data[cp].data["set"]["charging_ev"] = data.ev_data["default"]
+                                log.message_debug_log("debug", "Ladepunkt "+data.cp_data[cp].cp_num+", EV: "+data.cp_data[cp].data["set"]["charging_ev"].data["name"]+" (EV-Nr."+str(vehicle)+")")
                         else:
                             if data.ev_data["ev"+str(vehicle)].get_required_current() == True:
-                                data.cp_data[chargepoint].data["set"]["charging_ev"] = data.ev_data["ev"+str(
+                                data.cp_data[cp].data["set"]["charging_ev"] = data.ev_data["ev"+str(
                                 vehicle)]
-                                log.message_debug_log("debug", "Ladepunkt "+data.cp_data[chargepoint].cp_num+", EV: "+data.cp_data[chargepoint].data["set"]["charging_ev"].data["name"]+" (EV-Nr."+str(vehicle)+")")
+                                log.message_debug_log("debug", "Ladepunkt "+data.cp_data[cp].cp_num+", EV: "+data.cp_data[cp].data["set"]["charging_ev"].data["name"]+" (EV-Nr."+str(vehicle)+")")
             except Exception as e:
                 log.exception_logging(e)
+        if "all" not in data.cp_data:
+            data.cp_data["all"]=chargepoint.allChargepoints()
+        data.cp_data["all"].used_power_all()
 
     def _use_pv(self):
         """ ermittelt, ob Überschuss an der EVU vorhanden ist und kümmert sich um die Beachtung der Einspeisungsgrenze.

@@ -118,7 +118,8 @@ class subData():
         if msg.payload:
             dict[key]=json.loads(str(msg.payload.decode("utf-8")))
         else:
-            dict.pop(key)
+            if key in dict:
+                dict.pop(key)
  
     def process_vehicle_topic(self, client, userdata, msg):
         """ Handler für die EV-Topics
@@ -135,7 +136,7 @@ class subData():
         if re.search("^openWB/vehicle/[1-9][0-9]*/.+$", msg.topic) != None:
             index=self.get_index(msg.topic)
             if "ev"+index not in self.ev_data:
-                self.ev_data["ev"+index]=ev.ev()
+                self.ev_data["ev"+index]=ev.ev(index)
             if re.search("^openWB/vehicle/[1-9][0-9]*$", msg.topic) != None:
                 if json.loads(str(msg.payload.decode("utf-8")))=="":
                     if "ev"+index in self.ev_data:
@@ -169,7 +170,7 @@ class subData():
                     self.set_json_payload(self.ev_data["ev"+index].data, msg)
         elif re.search("^openWB/vehicle/default.+$", msg.topic) != None:
             if "default" not in self.ev_data:
-                self.ev_data["default"]=ev.ev()
+                self.ev_data["default"]=ev.ev("default")
             if re.search("^openWB/vehicle/default/get.+$", msg.topic) != None:
                 if "get" not in self.ev_data["default"].data:
                     self.ev_data["default"].data["get"]={}
@@ -304,7 +305,7 @@ class subData():
         elif re.search("^openWB/chargepoint/[1-9][0-9]*/.+$", msg.topic) != None:
             index=self.get_index(msg.topic)
             if "cp"+index not in self.cp_data:
-                self.cp_data["cp"+index]=chargepoint.chargepoint()
+                self.cp_data["cp"+index]=chargepoint.chargepoint(index)
             if re.search("^openWB/chargepoint/[1-9][0-9]*/get/.+$", msg.topic) != None:
                 if "get" not in self.cp_data["cp"+index].data:
                     self.cp_data["cp"+index].data["get"]={}

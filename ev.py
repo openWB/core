@@ -41,13 +41,20 @@ class ev():
     """Logik des EV
     """
 
-    def __init__(self):
+    def __init__(self, index):
         self.data={}
         self.ev_template=None
         self.charge_template=None
-        self.ev_num = None
+        self.ev_num = index
+        if "set" not in self.data:
+            self.data["set"] = {}
+        if "control_parameter" not in self.data:
+            self.data["control_parameter"] = {}
+        pub.pub("openWB/vehicle/"+str(self.ev_num)+"/control_parameter/required_current", 0)
+        pub.pub("openWB/vehicle/"+str(self.ev_num)+"/control_parameter/pv_available_prev", False)
+        pub.pub("openWB/vehicle/"+str(self.ev_num)+"/control_parameter/timestamp_switch_on_off", "")
+        pub.pub("openWB/vehicle/"+str(self.ev_num)+"/control_parameter/chargemode", "stop")
 
-        
     def get_required_current(self):
         """ ermittelt, ob und mit welchem Strom das EV geladen werden soll (unabhängig vom Lastmanagement)
 
@@ -59,10 +66,6 @@ class ev():
         chargemode = None
         required_current = None
         try:
-            if "set" not in self.data:
-                self.data["set"] = {}
-            if "control_parameter" not in self.data:
-                self.data["control_parameter"] = {}
             if self.charge_template.data["chargemode"]["selected"] == "scheduled_load":
                 required_current, chargemode = self.charge_template.scheduled_load(self.data["get"]["soc"], self.ev_template.data["max_current"], self.ev_template.data["battery_capacity"], self.ev_template.data["max_phases"])
             elif self.charge_template.data["time_load"]["active"] == True:

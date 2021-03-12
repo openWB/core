@@ -55,7 +55,7 @@ class bat:
         pub.pub("openWB/bat/config/configured", self.data["config"]["configured"])
         if self.data["config"]["configured"] == True:
             pub.pub("openWB/bat/get/charging_power_left", self.charging_power_left)
-            log.message_debug_log("debug", "Fuer die folgenden Algorithmus-Durchlaeufe verbleibende Speicher-Leistung "+str(self.charging_power_left)+"W")
+            log.message_debug_log("debug", str(self.charging_power_left)+"W Speicher-Leistung , die fuer die folgenden Ladepunkte uebrig ist.")
 
 class batModule():
     """

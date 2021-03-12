@@ -14,20 +14,41 @@ class allChargepoints():
 
     def __init__(self):
         self.data = {}
+        self.data["get"] = {}
+        pub.pub("openWB/chargepoint/get/power_all", 0)
 
+    def used_power_all(self):
+        """ermittelt die verwendete Leistung in allen Phasen.
+
+        Return
+        ------
+        int: aufsummierte Leistung über alle Phasen und Ladepunkte
+        """
+        used_power_all = 0
+        for chargepoint in data.cp_data:
+            if "cp" in chargepoint:
+                if "get" in data.cp_data[chargepoint].data:
+                    if "power_all" in data.cp_data[chargepoint].data["get"]:
+                        used_power_all += data.cp_data[chargepoint].data["get"]["power_all"]
+        data.cp_data["all"].data["get"]["power_all"] = used_power_all
+        pub.pub("openWB/chargepoint/get/power_all", used_power_all)
 
 class chargepoint():
     """ geht alle Ladepunkte durch, prüft, ob geladen werden darf und ruft die Funktion des angesteckten Autos auf. 
     """
 
-    def __init__(self):
+    def __init__(self, index):
         self.data = {}
         self.template = None  # Instanz des zugeordneten CP-Templates
-        self.cp_num = None
+        self.cp_num = index
         self.data["get"] = {}
+        self.data["set"] = {}
         self.data["get"]["autolock_state"] = 0
         self.data["get"]["charge_state"] = 0
-        self.data["set"] = {}
+        pub.pub("openWB/chargepoint/"+str(self.cp_num)+"/set/current", 0)
+        pub.pub("openWB/chargepoint/"+str(self.cp_num)+"/get/autolock_state", 0)
+        pub.pub("openWB/chargepoint/"+str(self.cp_num)+"/get/charge_state", 0)
+        self.log_pub_state_str("")
 
     def log_pub_state_str(self, message):
         """sendet die Nachricht an den Broker und schreibt sie ins Debug-Log
@@ -37,8 +58,9 @@ class chargepoint():
         message: str
             Nachricht, die gesendet werden soll
         """
-        log.message_debug_log("info", message)
-        pub.pub("openWB/chargepoint/"+self.cp_num+"/get/state_str", message)
+        if message != "":
+            log.message_debug_log("info", message)
+        pub.pub("openWB/chargepoint/"+str(self.cp_num)+"/get/state_str", message)
 
     def _is_cp_available(self):
         """ prüft, ob sich der LP in der vorgegebenen Zeit zurückgemeldet hat.
@@ -47,6 +69,8 @@ class chargepoint():
         state = True
         if state == False:
             self.log_pub_state_str("LP"+self.cp_num+" gesperrt, da sich der LP nicht innerhalb der vorgegebenen Zeit zurueckgemeldet hat.")
+        else:
+            self.log_pub_state_str("")
         return state
 
     def _is_autolock_active(self):
@@ -56,6 +80,8 @@ class chargepoint():
             state = self.template.autolock(self.data["get"]["autolock_state"], self.data["get"]["charge_state"], self.cp_num)
             if state == False:
                 self.log_pub_state_str("Keine Ladung an LP"+self.cp_num+", da Autolock aktiv ist.")
+            else:
+                self.log_pub_state_str("")
             return state
         except Exception as e:
             log.exception_logging(e)
@@ -64,13 +90,16 @@ class chargepoint():
         state = self.data["get"]["manual_lock"]
         if state == True:
             self.log_pub_state_str("Keine Ladung an LP"+self.cp_num+", da der LP manuell gesperrt wurde.")
-            print(state)
+        else:
+            self.log_pub_state_str("")
         return state
 
     def _is_ev_plugged(self):
         state = self.data["get"]["plug_state"]
         if state == False:
             self.log_pub_state_str("Keine Ladung an LP"+self.cp_num+", da kein Auto angesteckt ist.")
+        else:
+            self.log_pub_state_str("")
         return state
 
     def get_state(self):
@@ -91,7 +120,6 @@ class chargepoint():
             log.exception_logging(e)
             return None
         return None
-
 
 class cpTemplate():
     """ Vorlage für einen LP.
