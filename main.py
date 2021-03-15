@@ -3,7 +3,6 @@
 
 from threading import Thread
 import threading
-import traceback
 
 import data
 import log
@@ -21,9 +20,11 @@ def main():
 
     pub.setup_connection()
     t.start()
-    try:
-        seconds = 10
-        while not ticker.wait(seconds):
+
+    seconds = 3
+
+    while not ticker.wait(seconds):
+        try:
             prep.setup_algorithm()
             if "general" in sub.general_data:
                 if "control_interval" in sub.general_data["general"].data:
@@ -32,7 +33,8 @@ def main():
                     seconds = 10
             else:
                 seconds = 10
-    except Exception:
-        traceback.print_exc(limit=-1)
+        except Exception as e:
+            log.exception_logging(e)
+
 
 main()

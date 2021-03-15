@@ -7,6 +7,7 @@ import traceback
 import algorithm
 import bat
 import chargepoint
+import counter
 import data
 import log
 import pub
@@ -28,6 +29,7 @@ class prepare():
         self._check_chargepoints()
         self._use_pv()
         self._bat()
+        data.counter_data["evu"].setup_counter()
         self.control.calc_current()
 
     def _copy_data(self):
