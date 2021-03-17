@@ -40,7 +40,7 @@ class control():
         self._start_charging()
 
     def _calc_cp_in_specified_mode(self, mode, submode):
-        """ berechnet die Zuteilung für die Ladepunkte, bei denen der angebenene Lademodus und der Lademodus, 
+        """ ermittelt die Ladepunkte, bei denen der angebenene Lademodus und der Lademodus, 
         der aufgrund des Zustands des eingestellten Lademodus benötigt wird, aktiv sind. Zuerst für die Lade-
         punkte mit Priorität, dann für die Ladepunkte ohne Priorität.
 
@@ -52,36 +52,90 @@ class control():
         submode: str
             Lademodus, der aufgrund des Zustands des eingestellten Lademodus benötigt wird
         """
+        
         try:
-            for cp in data.cp_data:
-                if "cp" in cp:
-                    chargepoint = data.cp_data[cp]
-                    if "charge_state" in chargepoint.data["get"]:
-                        if chargepoint.data["get"]["charge_state"] == True:
-                            continue
-                    if "charging_ev" in chargepoint.data["set"]:
-                        charging_ev = chargepoint.data["set"]["charging_ev"]
-                        if mode == None:
-                            if(charging_ev.charge_template.data["prio"] == True) and (charging_ev.data["control_parameter"]["chargemode"] == submode):
-                                self._start_indiviual_calc(chargepoint)
-                        elif (charging_ev.charge_template.data["prio"] == True) and (charging_ev.charge_template.data["chargemode"]["selected"] == mode) and (charging_ev.data["control_parameter"]["chargemode"] == submode):
-                            self._start_indiviual_calc(chargepoint)
+            while True:
+                preferenced_chargepoint = None
+                valid_chargepoints = {}
+                for cp in data.cp_data:
+                    if "cp" in cp:
+                        chargepoint = data.cp_data[cp]
+                        if "current" in chargepoint.data["set"]:
+                            if chargepoint.data["set"]["current"] != 0:
+                                continue
+                        if "charging_ev" in chargepoint.data["set"]:
+                            charging_ev = chargepoint.data["set"]["charging_ev"]
+                            if mode == None:
+                                if(charging_ev.charge_template.data["prio"] == True) and (charging_ev.data["control_parameter"]["chargemode"] == submode):
+                                    valid_chargepoints[chargepoint] = None
+                            elif (charging_ev.charge_template.data["prio"] == True) and (charging_ev.charge_template.data["chargemode"]["selected"] == mode) and (charging_ev.data["control_parameter"]["chargemode"] == submode):
+                                valid_chargepoints[chargepoint] = None
+                preferenced_chargepoint = self._get_preferenced_chargepoint(valid_chargepoints)
 
-            for cp in data.cp_data:
-                if "cp" in cp:
-                    chargepoint = data.cp_data[cp]
-                    if "charge_state" in chargepoint.data["get"]:
-                        if chargepoint.data["get"]["charge_state"] == True:
-                            continue
-                    if "charging_ev" in chargepoint.data["set"]:
-                        charging_ev = chargepoint.data["set"]["charging_ev"]
-                        if mode == None:
-                            if(charging_ev.charge_template.data["prio"] == False) and (charging_ev.data["control_parameter"]["chargemode"] == submode):
-                                self._start_indiviual_calc(chargepoint)
-                        elif (charging_ev.charge_template.data["prio"] == False) and (charging_ev.charge_template.data["chargemode"]["selected"] == mode) and (charging_ev.data["control_parameter"]["chargemode"] == submode):
-                            self._start_indiviual_calc(chargepoint)
+                # Es gibt keine Ladepunkte mit Priorität in diesem Lademodus, die noch nicht laden, daher Ladepunkte ohne Priorität prüfen.
+                if preferenced_chargepoint == None:
+                    for cp in data.cp_data:
+                        if "cp" in cp:
+                            chargepoint = data.cp_data[cp]
+                            if "charge_state" in chargepoint.data["get"]:
+                                if chargepoint.data["get"]["charge_state"] == True:
+                                    continue
+                            if "charging_ev" in chargepoint.data["set"]:
+                                charging_ev = chargepoint.data["set"]["charging_ev"]
+                                if mode == None:
+                                    if(charging_ev.charge_template.data["prio"] == False) and (charging_ev.data["control_parameter"]["chargemode"] == submode):
+                                        valid_chargepoints[chargepoint] = None
+                                elif (charging_ev.charge_template.data["prio"] == False) and (charging_ev.charge_template.data["chargemode"]["selected"] == mode) and (charging_ev.data["control_parameter"]["chargemode"] == submode):
+                                    valid_chargepoints[chargepoint] = None
+                    preferenced_chargepoint = self._get_preferenced_chargepoint(valid_chargepoints)
+
+                if preferenced_chargepoint == None:
+                    # Es gibt keine Ladepunkte in diesem Lademodus, die noch nicht laden
+                    break
+                else:
+                    self._start_indiviual_calc(preferenced_chargepoint)
         except Exception as e:
             log.exception_logging(e)
+
+    
+    def _get_preferenced_chargepoint(self, valid_chargepoints):
+        """ermittelt aus dem Dictionary den Ladepunkt, der eindeutig die Bedingung erfüllt. Die Bedingungen sind:
+        geringste Mindeststromstärke, niedrigster SoC, frühester Ansteck-Zeitpunkt, niedrigste Ladepunktnummer.
+        Parameter
+        ---------
+        valid_chargepoints: dict
+            enthält alle Ladepunkte gleicher Priorität und Lademodus, die noch nicht laden oder eine Zuteilung haben.
+
+        Return
+        ------
+        preferenced_chargepoint: dict
+            Ladepunkt, der vorrangig geladen werden soll
+        """
+        preferenced_chargepoint = None
+        condition_types = ("min_current", "soc", "plug_in", "cp_num") # Bedingungen in der Reihenfolge, in der sie geprüft werden.
+        condition = 0
+        if len(valid_chargepoints) > 0:
+            while (preferenced_chargepoint == None and (condition <= 3)):
+                # entsprechend der Bedingung die Values im Dictionary füllen
+                if condition_types[condition] == "min_current":
+                    valid_chargepoints.update((cp, cp.data["set"]["charging_ev"].data["control_parameter"]["required_current"]) for cp, val in valid_chargepoints.items())
+                elif condition_types[condition] == "soc":
+                    valid_chargepoints.update((cp, cp.data["set"]["charging_ev"].data["get"]["soc"]) for cp, val in valid_chargepoints.items())
+                elif condition_types[condition] == "plug_in":
+                    valid_chargepoints.update((cp, cp.data["get"]["plug_time"]) for cp, val in valid_chargepoints.items())
+                else:
+                    valid_chargepoints.update((cp, cp.cp_num) for cp, val in valid_chargepoints.items())
+
+                print(valid_chargepoints)
+                min_value = min(valid_chargepoints.values())
+                min_cp = [key for key in valid_chargepoints if valid_chargepoints[key] == min_value]
+                if len(min_cp) > 1:
+                    # Wenn es mehrere LP gibt, die den gleichen Minimalwert haben, nächste Bedingung prüfen.
+                    condition += 1
+                else:
+                    preferenced_chargepoint = min_cp[0]
+
+        return preferenced_chargepoint
 
     def _start_indiviual_calc(self, chargepoint):
         """ ermittelt die konfigurierte Anzahl Phasen, Stromstärke und Leistung.
