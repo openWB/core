@@ -19,18 +19,23 @@ class control():
         """ Einstiegspunkt in den Regel-Algorithmus
         ruft in der Reihenfolge der Prioritäten der Lademodi die Berechnungsfunktion auf.
         """
+        if data.counter_data["evu"].data["set"]["consumption_left"] > 0:
+            # Überschuss für Ladepunkte verwenden, die noch nicht laden
+            self._calc_cp_in_specified_mode("scheduled_load", "instant_load")
+            self._calc_cp_in_specified_mode(None, "time_load")
+            self._calc_cp_in_specified_mode("instant_load", "instant_load")
+            self._calc_cp_in_specified_mode("pv_load", "instant_load")
+            self._calc_cp_in_specified_mode("scheduled_load", "pv_load")
+            self._calc_cp_in_specified_mode("pv_load", "pv_load")
+            self._calc_cp_in_specified_mode(None, "standby")
+            self._calc_cp_in_specified_mode(None, "stop")
 
-        self._calc_cp_in_specified_mode("scheduled_load", "instant_load")
-        self._calc_cp_in_specified_mode(None, "time_load")
-        self._calc_cp_in_specified_mode("instant_load", "instant_load")
-        self._calc_cp_in_specified_mode("pv_load", "instant_load")
-        self._calc_cp_in_specified_mode("scheduled_load", "pv_load")
-        self._calc_cp_in_specified_mode("pv_load", "pv_load")
-        self._calc_cp_in_specified_mode(None, "standby")
-        self._calc_cp_in_specified_mode(None, "stop")
-
-        # Hochregeln
-        #self.distribute_unsued_evu_overhang()
+            # Übrigen Überschuss auf Ladepunkte im PV-Modus verteilen
+            #self.distribute_unsued_evu_overhang()
+        else:
+            #Ist jetzt schon die Sicherung geflogen?
+            log.message_debug_log("warning", "Verwendete Leistung überschreitet den zulässigen Bezug um "+str((data.counter_data["evu"].data["set"]["consumption_left"]*-1))+"W.")
+            # todo LP abschalten
 
         self._start_charging()
 
@@ -48,25 +53,33 @@ class control():
             Lademodus, der aufgrund des Zustands des eingestellten Lademodus benötigt wird
         """
         try:
-            for chargepoint in data.cp_data:
-                if "set" in data.cp_data[chargepoint].data:
-                    if "charging_ev" in data.cp_data[chargepoint].data["set"]:
-                        charging_ev = data.cp_data[chargepoint].data["set"]["charging_ev"]
+            for cp in data.cp_data:
+                if "cp" in cp:
+                    chargepoint = data.cp_data[cp]
+                    if "charge_state" in chargepoint.data["get"]:
+                        if chargepoint.data["get"]["charge_state"] == True:
+                            continue
+                    if "charging_ev" in chargepoint.data["set"]:
+                        charging_ev = chargepoint.data["set"]["charging_ev"]
                         if mode == None:
                             if(charging_ev.charge_template.data["prio"] == True) and (charging_ev.data["control_parameter"]["chargemode"] == submode):
-                                self._start_indiviual_calc(data.cp_data[chargepoint])
+                                self._start_indiviual_calc(chargepoint)
                         elif (charging_ev.charge_template.data["prio"] == True) and (charging_ev.charge_template.data["chargemode"]["selected"] == mode) and (charging_ev.data["control_parameter"]["chargemode"] == submode):
-                            self._start_indiviual_calc(data.cp_data[chargepoint])
+                            self._start_indiviual_calc(chargepoint)
 
-            for chargepoint in data.cp_data.keys():
-                if "set" in data.cp_data[chargepoint].data:
-                    if "charging_ev" in data.cp_data[chargepoint].data["set"]:
-                        charging_ev = data.cp_data[chargepoint].data["set"]["charging_ev"]
+            for cp in data.cp_data:
+                if "cp" in cp:
+                    chargepoint = data.cp_data[cp]
+                    if "charge_state" in chargepoint.data["get"]:
+                        if chargepoint.data["get"]["charge_state"] == True:
+                            continue
+                    if "charging_ev" in chargepoint.data["set"]:
+                        charging_ev = chargepoint.data["set"]["charging_ev"]
                         if mode == None:
                             if(charging_ev.charge_template.data["prio"] == False) and (charging_ev.data["control_parameter"]["chargemode"] == submode):
-                                self._start_indiviual_calc(data.cp_data[chargepoint])
+                                self._start_indiviual_calc(chargepoint)
                         elif (charging_ev.charge_template.data["prio"] == False) and (charging_ev.charge_template.data["chargemode"]["selected"] == mode) and (charging_ev.data["control_parameter"]["chargemode"] == submode):
-                            self._start_indiviual_calc(data.cp_data[chargepoint])
+                            self._start_indiviual_calc(chargepoint)
         except Exception as e:
             log.exception_logging(e)
 
@@ -275,6 +288,8 @@ class control():
 
     def _start_charging(self):
         try:
+            data.pv_data["pv"].put_stats()
+            data.counter_data["evu"].put_stats()
             log.message_debug_log("info", "Regelungszyklus beendet.")
             for cp in data.cp_data:
                 chargepoint = data.cp_data[cp]
@@ -295,7 +310,7 @@ class control():
             for chargepoint in data.cp_data:
                 if "set" in data.cp_data[chargepoint].data:
                     if "charging_ev" in data.cp_data[chargepoint].data["set"]:
-                        if data.cp_data[chargepoint].data["set"]["charging_ev"].data["control_parameter"]["chargemode"] == "pv_load" and data.cp_data[chargepoint].data["get"]["charge_state"]:
+                        if (data.cp_data[chargepoint].data["set"]["charging_ev"].charge_template.data["chargemode"]["selected"] == "pv_load" or data.cp_data[chargepoint].data["set"]["charging_ev"].data["control_parameter"]["chargemode"] == "pv_load") and data.cp_data[chargepoint].data["get"]["charge_state"]:
                             num_of_phases += data.cp_data[chargepoint].data["set"]["phases_to_use"]
             # mit oder ohne Einspeisungsgrenze??
             additional_current_per_phase = data.pv_data["pv"].power_for_pv_load(True) / 230 / num_of_phases
@@ -303,13 +318,14 @@ class control():
             for cp in data.cp_data:
                 if "set" in data.cp_data[cp].data:
                     if "charging_ev" in data.cp_data[cp].data["set"]:
-                        chargepoint = data.cp_data[cp]
-                        # prüfen, ob Umschaltcountdown gestartet werden kann
-                        current = chargepoint.data["set"]["charging_ev"].phase_switch_start_timer(chargepoint, additional_current_per_phase)
-                        chargepoint.data["set"]["current"] = current
-                        data.pv_data["pv"].allocate_pv_power(phases * 230 * current)
-                        pub.pub("openWB/chargepoint/"+str(chargepoint.cp_num)+"/set/current", current)
-                        log.message_debug_log("info", "Überschussladen an LP: "+str(chargepoint.cp_num)+", Ladestrom: "+str(current)+"A, Phasen: "+str(phases)+", Ladeleistung: "+str(phases * 230 * current)+"W")
+                        if (data.cp_data[chargepoint].data["set"]["charging_ev"].charge_template.data["chargemode"]["selected"] == "pv_load" or data.cp_data[chargepoint].data["set"]["charging_ev"].data["control_parameter"]["chargemode"] == "pv_load")  and data.cp_data[chargepoint].data["get"]["charge_state"]:
+                            chargepoint = data.cp_data[cp]
+                            # prüfen, ob Umschaltcountdown gestartet werden kann
+                            current = chargepoint.data["set"]["charging_ev"].phase_switch_start_timer(chargepoint, additional_current_per_phase)
+                            chargepoint.data["set"]["current"] = current
+                            data.pv_data["pv"].allocate_pv_power(phases * 230 * current)
+                            pub.pub("openWB/chargepoint/"+str(chargepoint.cp_num)+"/set/current", current)
+                            log.message_debug_log("info", "Überschussladen an LP: "+str(chargepoint.cp_num)+", Ladestrom: "+str(current)+"A, Phasen: "+str(phases)+", Ladeleistung: "+str(phases * 230 * current)+"W")
             data.pv_data["pv"].put_stats()
         except Exception as e:
             log.exception_logging(e)

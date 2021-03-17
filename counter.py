@@ -3,6 +3,7 @@
 
 import data
 import log
+import pub
 
 class counter():
     """
@@ -15,15 +16,18 @@ class counter():
     def setup_counter(self):
         # Zählvariablen vor dem Start der Regelung zurücksetzen
         try:
-            if self.data["get"]["power_all"] > 0: #Import
-                # <absicherung - Hausverbrauch
-                self.data["set"]["consumption_left"] = self.data["config"]["max_consumption"] - (self.data["get"]["power_all"] - data.cp_data["all"].data["get"]["power_all"])
-                #self.data["set"]["current_left"] = [m - n for m,n in zip(self.data["config"]["max_current"], self.data["get"]["current"])]
-            else: # Export
+            # Import
+            if self.data["get"]["power_all"] > 0:
+                self.data["set"]["consumption_left"] = self.data["config"]["max_consumption"] - self.data["get"]["power_all"]
+            else:
                 self.data["set"]["consumption_left"] = self.data["config"]["max_consumption"]
-                #self.data["set"]["current_left"] = self.data["config"]["max_current"]
         except Exception as e:
             log.exception_logging(e)
+
+    def put_stats(self):
+        pub.pub("openWB/counter/evu/set/consumption_left", self.data["set"]["consumption_left"])
+        log.message_debug_log("debug", str(self.data["set"]["consumption_left"])+"W EVU-Leistung, die noch bezogen werden kann.")
+
 
 class counterModule():
     """

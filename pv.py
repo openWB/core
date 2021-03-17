@@ -42,19 +42,18 @@ class pv():
             if len(data.pv_data) > 1:
                 self.data["config"]["configured"]=True
                 # aktuelle Leistung an der EVU, enthält die Leistung der Einspeisungsgrenze
-                used_power = data.cp_data["all"].data["get"]["power_all"]
                 evu_overhang = data.counter_data["evu"].data["get"]["power_all"] * (-1)
                 
-                # Regelmodus
-                control_range_low = self.data["config"]["control_range"][0]
-                control_range_high = self.data["config"]["control_range"][1]
-                control_range_center = (control_range_high - control_range_low) / 2
-                if control_range_low < evu_overhang < control_range_high:
-                    available_power = used_power
+                if evu_overhang > 0:
+                    # Regelmodus
+                    control_range_low = self.data["config"]["control_range"][0]
+                    control_range_high = self.data["config"]["control_range"][1]
+                    control_range_center = (control_range_high - control_range_low) / 2
+                    if control_range_low < evu_overhang < control_range_high:
+                        available_power = evu_overhang
+                    else:
+                        available_power = evu_overhang - control_range_center
                 else:
-                    available_power = used_power + evu_overhang - control_range_center
-
-                if available_power < 0:
                     available_power = 0
 
                 log.message_debug_log("debug", str(available_power)+"W EVU-Ueberschuss, der für die Regelung verfuegbar ist, davon "+str(self.data["get"]["reserved_pv_power"])+"W fuer die Einschaltverzoegerung reservierte Leistung.")
