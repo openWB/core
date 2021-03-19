@@ -9,6 +9,7 @@ import optional
 import pub
 import timecheck
 
+
 def get_ev_to_rfid(rfid):
     """ sucht zur übergebenen RFID-ID das EV.
 
@@ -23,7 +24,7 @@ def get_ev_to_rfid(rfid):
         Nummer des EV, das zum Tag gehört
     """
     for vehicle in data.ev_data:
-        if ("ev" in vehicle) or ("default"==vehicle):
+        if ("ev" in vehicle) or ("default" == vehicle):
             try:
                 if data.ev_data[vehicle].data["match_ev"]["selected"] == "rfid":
                     if data.ev_data[vehicle].data["match_ev"]["tag_id"] == rfid:
@@ -42,17 +43,20 @@ class ev():
     """
 
     def __init__(self, index):
-        self.data={}
-        self.ev_template=None
-        self.charge_template=None
+        self.data = {}
+        self.ev_template = None
+        self.charge_template = None
         self.ev_num = index
         if "set" not in self.data:
             self.data["set"] = {}
         if "control_parameter" not in self.data:
             self.data["control_parameter"] = {}
-        pub.pub("openWB/vehicle/"+str(self.ev_num)+"/control_parameter/required_current", 0)
-        pub.pub("openWB/vehicle/"+str(self.ev_num)+"/control_parameter/timestamp_switch_on_off", "")
-        pub.pub("openWB/vehicle/"+str(self.ev_num)+"/control_parameter/chargemode", "stop")
+        pub.pub("openWB/vehicle/"+str(self.ev_num) +
+                "/control_parameter/required_current", 0)
+        pub.pub("openWB/vehicle/"+str(self.ev_num) +
+                "/control_parameter/timestamp_switch_on_off", "")
+        pub.pub("openWB/vehicle/"+str(self.ev_num) +
+                "/control_parameter/chargemode", "stop")
 
     def get_required_current(self):
         """ ermittelt, ob und mit welchem Strom das EV geladen werden soll (unabhängig vom Lastmanagement)
@@ -66,30 +70,38 @@ class ev():
         required_current = None
         try:
             if self.charge_template.data["chargemode"]["selected"] == "scheduled_load":
-                required_current, chargemode = self.charge_template.scheduled_load(self.data["get"]["soc"], self.ev_template.data["max_current"], self.ev_template.data["battery_capacity"], self.ev_template.data["max_phases"])
+                required_current, chargemode = self.charge_template.scheduled_load(
+                    self.data["get"]["soc"], self.ev_template.data["max_current"], self.ev_template.data["battery_capacity"], self.ev_template.data["max_phases"])
             elif self.charge_template.data["time_load"]["active"] == True:
                 required_current, chargemode = self.charge_template.time_load()
             if (required_current == 0) or (required_current == None):
                 if self.charge_template.data["chargemode"]["selected"] == "instant_load":
-                    required_current, chargemode = self.charge_template.instant_load(self.data["get"]["soc"], self.data["get"]["charged_since_plugged_kwh"])
+                    required_current, chargemode = self.charge_template.instant_load(
+                        self.data["get"]["soc"], self.data["get"]["charged_since_plugged_kwh"])
                 elif self.charge_template.data["chargemode"]["selected"] == "pv_load":
-                    required_current, chargemode = self.charge_template.pv_load(self.data["get"]["soc"])
+                    required_current, chargemode = self.charge_template.pv_load(
+                        self.data["get"]["soc"])
                 elif self.charge_template.data["chargemode"]["selected"] == "standby":
-                    required_current, chargemode = self.charge_template.standby(self.charge_template.data["chargemode"]["selected"])
+                    required_current, chargemode = self.charge_template.standby(
+                        self.charge_template.data["chargemode"]["selected"])
             if chargemode == "stop" or (self.charge_template.data["chargemode"]["selected"] == "stop"):
-                log.message_debug_log("debug", "EV"+str(self.ev_num)+": Lademdous stop")
+                log.message_debug_log(
+                    "debug", "EV"+str(self.ev_num)+": Lademdous stop")
                 return False
             else:
-                required_current = self._check_min_max_current(required_current)
+                required_current = self._check_min_max_current(
+                    required_current)
                 self.data["control_parameter"]["required_current"] = required_current
-                pub.pub("openWB/vehicle/"+self.ev_num+"/control_parameter/required_current", required_current)
+                pub.pub("openWB/vehicle/"+self.ev_num +
+                        "/control_parameter/required_current", required_current)
                 self.data["control_parameter"]["chargemode"] = chargemode
-                pub.pub("openWB/vehicle/"+self.ev_num+"/control_parameter/chargemode", chargemode)
-                log.message_debug_log("debug", "EV"+str(self.ev_num)+": Theroretisch benötigter Strom "+str(required_current)+"A, Lademodus "+chargemode)
+                pub.pub("openWB/vehicle/"+self.ev_num +
+                        "/control_parameter/chargemode", chargemode)
+                log.message_debug_log("debug", "EV"+str(self.ev_num)+": Theroretisch benötigter Strom "+str(required_current)+"A, Lademodus "+str(
+                    self.charge_template.data["chargemode"]["selected"])+", Submodus: "+str(chargemode)+", Prioritaet: "+str(self.charge_template.data["prio"]))
                 return True
         except Exception as e:
             log.exception_logging(e)
-    
 
     def get_soc(self):
         """ermittelt den SoC, wenn die Zugangsdaten konfiguriert sind.
@@ -132,7 +144,8 @@ class ev():
         float: Strom, mit dem das EV laden darf
         """
         try:
-            current = chargepoint.data["set"]["current"]+additional_current_per_phase
+            current = chargepoint.data["set"]["current"] + \
+                additional_current_per_phase
             phases = chargepoint.data["set"]["phases_to_use"]
             control_parameter = chargepoint.data["set"]["charging_ev"].data["control_parameter"]
             pv_config = data.pv_data["pv"].data["config"]
@@ -142,15 +155,21 @@ class ev():
                         if current > self.ev_template.data["max_current"]:
                             current = self.ev_template.data["max_current"]
                         if "timestamp_auto_phase_switch" not in control_parameter:
-                            control_parameter["timestamp_auto_phase_switch"] = timecheck.create_timestamp()
-                            pub.pub("openWB/vehicle/"+str(chargepoint.data["set"]["charging_ev"].ev_num)+"/control_parameter/timestamp_auto_phase_switch_", control_parameter["timestamp_auto_phase_switch"])
-                            log.message_debug_log("info", "Umschaltverzoegerung von 1 auf 3 Phasen für "+str(pv_config["phase_switch_delay"])+ "Min aktiv.")
+                            control_parameter["timestamp_auto_phase_switch"] = timecheck.create_timestamp(
+                            )
+                            pub.pub("openWB/vehicle/"+str(chargepoint.data["set"]["charging_ev"].ev_num) +
+                                    "/control_parameter/timestamp_auto_phase_switch_", control_parameter["timestamp_auto_phase_switch"])
+                            log.message_debug_log("info", "Umschaltverzoegerung von 1 auf 3 Phasen für "+str(
+                                pv_config["phase_switch_delay"]) + "Min aktiv.")
                 elif phases == 3:
                     if current == self.ev_template.data["min_current"]:
                         if "timestamp_auto_phase_switch" not in control_parameter:
-                            control_parameter["timestamp_auto_phase_switch"] = timecheck.create_timestamp()
-                            pub.pub("openWB/vehicle/"+str(chargepoint.data["set"]["charging_ev"].ev_num)+"/control_parameter/timestamp_auto_phase_switch_", control_parameter["timestamp_auto_phase_switch"])
-                            log.message_debug_log("info", "Umschaltverzoegerung von 3 auf 1 Phase für "+str(pv_config["phase_switch_delay"])+ "Min aktiv.")
+                            control_parameter["timestamp_auto_phase_switch"] = timecheck.create_timestamp(
+                            )
+                            pub.pub("openWB/vehicle/"+str(chargepoint.data["set"]["charging_ev"].ev_num) +
+                                    "/control_parameter/timestamp_auto_phase_switch_", control_parameter["timestamp_auto_phase_switch"])
+                            log.message_debug_log("info", "Umschaltverzoegerung von 3 auf 1 Phase für "+str(
+                                pv_config["phase_switch_delay"]) + "Min aktiv.")
             return current
         except Exception as e:
             log.exception_logging(e)
@@ -176,15 +195,19 @@ class ev():
                     if chargepoint.data["get"]["current"][0] < self.ev_template.data["max_current"]:
                         if "timestamp_auto_phase_switch" in control_parameter:
                             control_parameter["timestamp_auto_phase_switch"] = ""
-                            pub.pub("openWB/vehicle/"+str(chargepoint.data["set"]["charging_ev"].ev_num)+"/control_parameter/timestamp_auto_phase_switch_", control_parameter["timestamp_auto_phase_switch"])
-                            log.message_debug_log("info", "Nicht mit Maximalstromstarke waehrend der Umschaltverzoegerung geladen.")
+                            pub.pub("openWB/vehicle/"+str(chargepoint.data["set"]["charging_ev"].ev_num) +
+                                    "/control_parameter/timestamp_auto_phase_switch_", control_parameter["timestamp_auto_phase_switch"])
+                            log.message_debug_log(
+                                "info", "Nicht mit Maximalstromstarke waehrend der Umschaltverzoegerung geladen.")
                 elif phases == 3:
                     # alle drei Phasen müssem mit Mindeststrom laden, damit nach dem Timeout zurück geschaltet wird
-                    if  max(chargepoint.data["get"]["current"]) > self.ev_template.data["min_current"]:
+                    if max(chargepoint.data["get"]["current"]) > self.ev_template.data["min_current"]:
                         if "timestamp_auto_phase_switch" in control_parameter:
                             control_parameter["timestamp_auto_phase_switch"] = ""
-                            pub.pub("openWB/vehicle/"+str(chargepoint.data["set"]["charging_ev"].ev_num)+"/control_parameter/timestamp_auto_phase_switch_", control_parameter["timestamp_auto_phase_switch"])
-                            log.message_debug_log("info", "Nicht mit Minimalstromstaerke waehrend der Umschaltverzoegerung geladen.")
+                            pub.pub("openWB/vehicle/"+str(chargepoint.data["set"]["charging_ev"].ev_num) +
+                                    "/control_parameter/timestamp_auto_phase_switch_", control_parameter["timestamp_auto_phase_switch"])
+                            log.message_debug_log(
+                                "info", "Nicht mit Minimalstromstaerke waehrend der Umschaltverzoegerung geladen.")
             return current
         except Exception as e:
             log.exception_logging(e)
@@ -212,22 +235,25 @@ class ev():
                             phases = 1
                         else:
                             control_parameter["timestamp_auto_phase_switch"] = ""
-                            pub.pub("openWB/vehicle/"+str(chargepoint.data["set"]["charging_ev"].ev_num)+"/control_parameter/timestamp_auto_phase_switch_", control_parameter["timestamp_auto_phase_switch"])
+                            pub.pub("openWB/vehicle/"+str(chargepoint.data["set"]["charging_ev"].ev_num) +
+                                    "/control_parameter/timestamp_auto_phase_switch_", control_parameter["timestamp_auto_phase_switch"])
                             phases = 3
-                            log.message_debug_log("info", "Mit der Maximalstromstaerke fuer die Dauer der Umnschaltverzoegerung konstant geladen.")
+                            log.message_debug_log(
+                                "info", "Mit der Maximalstromstaerke fuer die Dauer der Umnschaltverzoegerung konstant geladen.")
                 elif phases == 3:
                     if "timestamp_auto_phase_switch" in control_parameter:
                         if timecheck.check_timestamp(control_parameter["timestamp_auto_phase_switch_"], (16 - pv_config["phase_switch_delay"])) == True:
                             phases = 3
                         else:
                             control_parameter["timestamp_auto_phase_switch"] = ""
-                            pub.pub("openWB/vehicle/"+str(chargepoint.data["set"]["charging_ev"].ev_num)+"/control_parameter/timestamp_auto_phase_switch_", control_parameter["timestamp_auto_phase_switch"])
+                            pub.pub("openWB/vehicle/"+str(chargepoint.data["set"]["charging_ev"].ev_num) +
+                                    "/control_parameter/timestamp_auto_phase_switch_", control_parameter["timestamp_auto_phase_switch"])
                             phases = 1
-                            log.message_debug_log("info", "Mit der Minimalstromstaerke fuer die Dauer der Umnschaltverzoegerung konstant geladen.")
+                            log.message_debug_log(
+                                "info", "Mit der Minimalstromstaerke fuer die Dauer der Umnschaltverzoegerung konstant geladen.")
             return phases
         except Exception as e:
             log.exception_logging(e)
-
 
     def load_default_profile(self):
         """ prüft, ob nach dem Abstecken das Standardprofil geladen werden soll und lädt dieses ggf..
@@ -238,14 +264,14 @@ class ev():
         """prüft, ob nach dem Abstecken der LP gesperrt werden soll und sperrt diesen ggf..
         """
         pass
-        
+
 
 class evTemplate():
     """ Klasse mit den EV-Daten
     """
 
     def __init__(self):
-        self.data={}
+        self.data = {}
 
 
 class chargeTemplate():
@@ -253,8 +279,7 @@ class chargeTemplate():
     """
 
     def __init__(self):
-        self.data={}
-
+        self.data = {}
 
     def time_load(self):
         """ prüft, ob ein Zeitfenster aktiv ist und setzt entsprechend den Ladestrom
@@ -313,7 +338,7 @@ class chargeTemplate():
             Therotisch benötigter Strom, Ladmodus(soll geladen werden, auch wenn kein PV-Strom zur Verfügung steht)
         """
         try:
-            pv_load= self.data["chargemode"]["pv_load"]
+            pv_load = self.data["chargemode"]["pv_load"]
             if soc < pv_load["max_soc"]:
                 if pv_load["min_soc"] != 0:
                     if soc < pv_load["min_soc"]:
@@ -322,11 +347,11 @@ class chargeTemplate():
                         return pv_load["min_current"], "pv_load"
                 else:
                     if pv_load["min_current"] == 0:
-                        return 0, "pv_load" #nur PV
+                        return 0, "pv_load"  # nur PV
                     else:
-                        return pv_load["min_current"], "pv_load" #Min PV
+                        return pv_load["min_current"], "pv_load"  # Min PV
             else:
-                return 0, "stop" 
+                return 0, "stop"
         except Exception as e:
             log.exception_logging(e)
 
@@ -356,24 +381,28 @@ class chargeTemplate():
             if self.data["chargemode"]["scheduled_load"][plan]["active"] == True:
                 try:
                     if soc < self.data["chargemode"]["scheduled_load"][plan]["soc"]:
-                        phases_scheduled_load = data.general_data["general"].get_phases_chargemode("scheduled_load")
+                        phases_scheduled_load = data.general_data["general"].get_phases_chargemode(
+                            "scheduled_load")
                         if max_phases <= phases_scheduled_load:
                             usable_phases = max_phases
                         else:
                             usable_phases = phases_scheduled_load
 
                         available_current = 0.8*max_current*usable_phases
-                        required_wh = ((self.data["chargemode"]["scheduled_load"][plan]["soc"] - soc)/100) *battery_capacity*1000
+                        required_wh = (
+                            (self.data["chargemode"]["scheduled_load"][plan]["soc"] - soc)/100) * battery_capacity*1000
                         duration = required_wh/(available_current*230)
-                        start, remaining_time = timecheck.check_duration(self.data["chargemode"]["scheduled_load"][plan], duration)
+                        start, remaining_time = timecheck.check_duration(
+                            self.data["chargemode"]["scheduled_load"][plan], duration)
                         if start == 1:
                             return available_current, "instant_load"
-                        elif start == 2: # weniger als die berechnete Zeit verfügbar
+                        elif start == 2:  # weniger als die berechnete Zeit verfügbar
                             return required_wh/(remaining_time*230)
                         else:
                             if timecheck.check_timeframe(self.data["chargemode"]["scheduled_load"][plan], 24) == True:
                                 if data.optional_data["optional"].data["et"]["active"] == True:
-                                    hourlist = data.optional_data["optional"].get_loading_hours(duration)
+                                    hourlist = data.optional_data["optional"].get_loading_hours(
+                                        duration)
                                     if timecheck.is_list_valid(hourlist) == True:
                                         return available_current, "instant_load"
                                     else:
@@ -387,7 +416,7 @@ class chargeTemplate():
                 except Exception as e:
                     log.exception_logging(e)
         else:
-            #log
+            # log
             print("Keine aktiven Zeit-Pläne.")
             return 0, "scheduled_load"
 

@@ -125,14 +125,10 @@ class pv():
                     required_power = 0
         else:
             if overhang_power_left_feed_in < (pv_config["switch_off_threshold"]*(-1)):
-                if "timestamp_switch_on_off" in control_parameter:
-                    if timecheck.check_timestamp(control_parameter["timestamp_switch_on_off"], pv_config["switch_off_delay"]) == False:
-                        control_parameter["timestamp_switch_on_off"] = ""
-                        required_power = 0
-                        log.message_debug_log("info", "Abschaltschwelle von "+str(pv_config["switch_off_threshold"])+"W fuer die Dauer der Abschaltverzöegerung unterschritten.")
-                else:
-                    control_parameter["timestamp_switch_on_off"] = timecheck.create_timestamp()
-                    log.message_debug_log("info", "Abschaltverzögerung für "+ str(pv_config["switch_off_delay"])+"s aktiv.")
+                pass
+            else:
+                control_parameter["timestamp_switch_on_off"] = timecheck.create_timestamp()
+                log.message_debug_log("info", "Abschaltverzögerung für "+ str(pv_config["switch_off_delay"])+"s aktiv.")
         pub.pub_dict("openWB/vehicle/"+str(chargepoint.data["set"]["charging_ev"].ev_num)+"/control_parameter", control_parameter)
 
         # nur durch die Ausschaltverzögerung darf required_power auf 0 gesetzt werden, sonst muss bezogen werden.
@@ -142,18 +138,27 @@ class pv():
                 pv_power = required_power - evu_power
                 evu_current = required_power / (phases * 230)
                 if evu_power > 0:
-                    if loadmanagement.loadmanagement(evu_power, evu_current, phases) == True:
+                    if loadmanagement.loadmanagement(evu_power, evu_current, phases) == False:
                         self.allocate_pv_power(pv_power)
                     else:
                         pass
                         # todo
             else:
                 self.allocate_pv_power(required_power)
-        else:
-            required_current = 0
-            phases = 0
+            
 
         return required_power, required_current, phases
+
+    def switch_off_check_timer(self):
+        if ("timestamp_switch_on_off" in control_parameter) and (chargepoint.data["get"]["charge_state"] == True):
+            if timecheck.check_timestamp(control_parameter["timestamp_switch_on_off"], pv_config["switch_off_delay"]) == False:
+                control_parameter["timestamp_switch_on_off"] = ""
+                required_power = 0
+                log.message_debug_log("info", "Abschaltschwelle von "+str(pv_config["switch_off_threshold"])+"W fuer die Dauer der Abschaltverzöegerung unterschritten.")
+                pub.pub("openWB/vehicle/"+str(chargepoint.data["set"]["charging_ev"].ev_num)+"/control_parameter/timestamp_switch_on_off", control_parameter["timestamp_switch_on_off"])
+
+    def switch_off_check_threshold(self):
+        pass
 
     def power_for_pv_load(self, feed_in_yield_active):
         """ gibt den verfügbaren EVU-Überschuss unter Berücksichtigung der Einspeisungsgrenze zurück.
@@ -212,6 +217,7 @@ class pv():
         """
         if self.data["config"]["configured"] == True:
             self.data["get"]["overhang_power_left"] -= required_power
+            log.message_debug_log("debug", str(self.data["get"]["overhang_power_left"])+"W EVU-Ueberschuss, der fuer die folgenden Ladepunkte uebrig ist, davon "+str(self.data["get"]["reserved_pv_power"])+"W fuer die Einschaltverzoegerung reservierte Leistung.")
             if self.data["get"]["overhang_power_left"] < 0:
                 pass #error
 
@@ -222,7 +228,7 @@ class pv():
         if self.data["config"]["configured"] == True:
             pub.pub("openWB/pv/get/overhang_power_left", self.data["get"]["overhang_power_left"])
             pub.pub("openWB/pv/get/reserved_pv_power", self.data["get"]["reserved_pv_power"])
-            log.message_debug_log("debug", str(self.data["get"]["overhang_power_left"])+"W EVU-Ueberschuss, der fuer die folgenden Ladepunkte uebrig ist, davon "+str(self.data["get"]["reserved_pv_power"])+"W fuer die Einschaltverzoegerung reservierte Leistung.")
+
 
 class pvModule():
     """
