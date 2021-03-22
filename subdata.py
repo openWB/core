@@ -231,57 +231,57 @@ class subData():
         elif re.search("^openWB/vehicle/template/charge_template/[1-9][0-9]*/chargemode/.+$", msg.topic) != None:
             if "chargemode" not in self.ev_charge_template_data["ct"+index].data:
                     self.ev_charge_template_data["ct"+index].data["chargemode"]={}
-            if re.search("^openWB/vehicle/template/charge_template/[1-9][0-9]*/chargemode/instant_load/.+$", msg.topic) != None:
-                if "instant_load" not in self.ev_charge_template_data["ct"+index].data["chargemode"]:
-                    self.ev_charge_template_data["ct"+index].data["chargemode"]["instant_load"]={}
-                if re.search("^openWB/vehicle/template/charge_template/[1-9][0-9]*/chargemode/instant_load/limit/.+$", msg.topic) != None:
-                    if "limit" not in self.ev_charge_template_data["ct"+index].data["chargemode"]["instant_load"]:
-                        self.ev_charge_template_data["ct"+index].data["chargemode"]["instant_load"]["limit"]={}
-                    self.set_json_payload(self.ev_charge_template_data["ct"+index].data["chargemode"]["instant_load"]["limit"], msg)
+            if re.search("^openWB/vehicle/template/charge_template/[1-9][0-9]*/chargemode/instant_charging/.+$", msg.topic) != None:
+                if "instant_charging" not in self.ev_charge_template_data["ct"+index].data["chargemode"]:
+                    self.ev_charge_template_data["ct"+index].data["chargemode"]["instant_charging"]={}
+                if re.search("^openWB/vehicle/template/charge_template/[1-9][0-9]*/chargemode/instant_charging/limit/.+$", msg.topic) != None:
+                    if "limit" not in self.ev_charge_template_data["ct"+index].data["chargemode"]["instant_charging"]:
+                        self.ev_charge_template_data["ct"+index].data["chargemode"]["instant_charging"]["limit"]={}
+                    self.set_json_payload(self.ev_charge_template_data["ct"+index].data["chargemode"]["instant_charging"]["limit"], msg)
                 else:
-                    self.set_json_payload(self.ev_charge_template_data["ct"+index].data["chargemode"]["instant_load"], msg)
-            elif re.search("^openWB/vehicle/template/charge_template/[1-9][0-9]*/chargemode/pv_load/.+$", msg.topic) != None:
-                if "pv_load" not in self.ev_charge_template_data["ct"+index].data["chargemode"]:
-                    self.ev_charge_template_data["ct"+index].data["chargemode"]["pv_load"]={}
-                self.set_json_payload(self.ev_charge_template_data["ct"+index].data["chargemode"]["pv_load"], msg)
-            elif re.search("^openWB/vehicle/template/charge_template/[1-9][0-9]*/chargemode/scheduled_load/.+$", msg.topic) != None:
-                if "scheduled_load" not in self.ev_charge_template_data["ct"+index].data["chargemode"]:
-                    self.ev_charge_template_data["ct"+index].data["chargemode"]["scheduled_load"]={}
+                    self.set_json_payload(self.ev_charge_template_data["ct"+index].data["chargemode"]["instant_charging"], msg)
+            elif re.search("^openWB/vehicle/template/charge_template/[1-9][0-9]*/chargemode/pv_charging/.+$", msg.topic) != None:
+                if "pv_charging" not in self.ev_charge_template_data["ct"+index].data["chargemode"]:
+                    self.ev_charge_template_data["ct"+index].data["chargemode"]["pv_charging"]={}
+                self.set_json_payload(self.ev_charge_template_data["ct"+index].data["chargemode"]["pv_charging"], msg)
+            elif re.search("^openWB/vehicle/template/charge_template/[1-9][0-9]*/chargemode/scheduled_charging/.+$", msg.topic) != None:
+                if "scheduled_charging" not in self.ev_charge_template_data["ct"+index].data["chargemode"]:
+                    self.ev_charge_template_data["ct"+index].data["chargemode"]["scheduled_charging"]={}
                 index_second=self.get_second_index(msg.topic)
-                if "plan"+index_second not in self.ev_charge_template_data["ct"+index].data["chargemode"]["scheduled_load"]:
-                    self.ev_charge_template_data["ct"+index].data["chargemode"]["scheduled_load"]["plan"+index_second]={}
-                if re.search("^openWB/vehicle/template/charge_template/[1-9][0-9]*/chargemode/scheduled_load/[1-9][0-9]*$", msg.topic) != None:
+                if "plan"+index_second not in self.ev_charge_template_data["ct"+index].data["chargemode"]["scheduled_charging"]:
+                    self.ev_charge_template_data["ct"+index].data["chargemode"]["scheduled_charging"]["plan"+index_second]={}
+                if re.search("^openWB/vehicle/template/charge_template/[1-9][0-9]*/chargemode/scheduled_charging/[1-9][0-9]*$", msg.topic) != None:
                     if json.loads(str(msg.payload.decode("utf-8")))=="":
-                        if "plan"+index_second in self.ev_charge_template_data["ct"+index].data["chargemode"]["scheduled_load"]:
-                            self.ev_charge_template_data["ct"+index].data["chargemode"]["scheduled_load"].pop("plan"+index_second)
-                elif re.search("^openWB/vehicle/template/charge_template/[1-9][0-9]*/chargemode/scheduled_load/[1-9][0-9]*/frequency/.+$", msg.topic) != None:
-                    if "frequency" not in self.ev_charge_template_data["ct"+index].data["chargemode"]["scheduled_load"]["plan"+index_second]:
-                        self.ev_charge_template_data["ct"+index].data["chargemode"]["scheduled_load"]["plan"+index_second]["frequency"]={}
-                    self.set_json_payload(self.ev_charge_template_data["ct"+index].data["chargemode"]["scheduled_load"]["plan"+index_second]["frequency"], msg)
-                elif re.search("^openWB/vehicle/template/charge_template/[1-9][0-9]*/chargemode/scheduled_load/[1-9][0-9]*/.+$", msg.topic) != None:
-                    self.set_json_payload(self.ev_charge_template_data["ct"+index].data["chargemode"]["scheduled_load"]["plan"+index_second], msg)
+                        if "plan"+index_second in self.ev_charge_template_data["ct"+index].data["chargemode"]["scheduled_charging"]:
+                            self.ev_charge_template_data["ct"+index].data["chargemode"]["scheduled_charging"].pop("plan"+index_second)
+                elif re.search("^openWB/vehicle/template/charge_template/[1-9][0-9]*/chargemode/scheduled_charging/[1-9][0-9]*/frequency/.+$", msg.topic) != None:
+                    if "frequency" not in self.ev_charge_template_data["ct"+index].data["chargemode"]["scheduled_charging"]["plan"+index_second]:
+                        self.ev_charge_template_data["ct"+index].data["chargemode"]["scheduled_charging"]["plan"+index_second]["frequency"]={}
+                    self.set_json_payload(self.ev_charge_template_data["ct"+index].data["chargemode"]["scheduled_charging"]["plan"+index_second]["frequency"], msg)
+                elif re.search("^openWB/vehicle/template/charge_template/[1-9][0-9]*/chargemode/scheduled_charging/[1-9][0-9]*/.+$", msg.topic) != None:
+                    self.set_json_payload(self.ev_charge_template_data["ct"+index].data["chargemode"]["scheduled_charging"]["plan"+index_second], msg)
             else:
                 self.set_json_payload(self.ev_charge_template_data["ct"+index].data["chargemode"], msg)
-        elif re.search("^openWB/vehicle/template/charge_template/[1-9][0-9]*/time_load/.+$", msg.topic) != None:
-            if "time_load" not in self.ev_charge_template_data["ct"+index].data:
-                self.ev_charge_template_data["ct"+index].data["time_load"]={}
-            if re.search("^openWB/vehicle/template/charge_template/[1-9][0-9]*/time_load/[1-9][0-9]*$", msg.topic) != None:
+        elif re.search("^openWB/vehicle/template/charge_template/[1-9][0-9]*/time_charging/.+$", msg.topic) != None:
+            if "time_charging" not in self.ev_charge_template_data["ct"+index].data:
+                self.ev_charge_template_data["ct"+index].data["time_charging"]={}
+            if re.search("^openWB/vehicle/template/charge_template/[1-9][0-9]*/time_charging/[1-9][0-9]*$", msg.topic) != None:
                 index_second=self.get_second_index(msg.topic)
                 if json.loads(str(msg.payload.decode("utf-8")))=="":
-                    if "plan"+index_second in self.ev_charge_template_data["ct"+index].data["time_load"]:
-                        self.ev_charge_template_data["ct"+index].data["time_load"].pop("plan"+index_second)
-            elif re.search("^openWB/vehicle/template/charge_template/[1-9][0-9]*/time_load/[1-9][0-9]*/frequency/.+$", msg.topic) != None:
+                    if "plan"+index_second in self.ev_charge_template_data["ct"+index].data["time_charging"]:
+                        self.ev_charge_template_data["ct"+index].data["time_charging"].pop("plan"+index_second)
+            elif re.search("^openWB/vehicle/template/charge_template/[1-9][0-9]*/time_charging/[1-9][0-9]*/frequency/.+$", msg.topic) != None:
                 index_second=self.get_second_index(msg.topic)
-                if "frequency" not in self.ev_charge_template_data["ct"+index].data["time_load"]["plan"+index_second]:
-                    self.ev_charge_template_data["ct"+index].data["time_load"]["plan"+index_second]["frequency"]={}
-                self.set_json_payload(self.ev_charge_template_data["ct"+index].data["time_load"]["plan"+index_second]["frequency"], msg)
-            elif re.search("^openWB/vehicle/template/charge_template/[1-9][0-9]*/time_load/[1-9][0-9]*/.+$", msg.topic) != None:
+                if "frequency" not in self.ev_charge_template_data["ct"+index].data["time_charging"]["plan"+index_second]:
+                    self.ev_charge_template_data["ct"+index].data["time_charging"]["plan"+index_second]["frequency"]={}
+                self.set_json_payload(self.ev_charge_template_data["ct"+index].data["time_charging"]["plan"+index_second]["frequency"], msg)
+            elif re.search("^openWB/vehicle/template/charge_template/[1-9][0-9]*/time_charging/[1-9][0-9]*/.+$", msg.topic) != None:
                 index_second=self.get_second_index(msg.topic)
-                if "plan"+index_second not in self.ev_charge_template_data["ct"+index].data["time_load"]:
-                    self.ev_charge_template_data["ct"+index].data["time_load"]["plan"+index_second]={}
-                self.set_json_payload(self.ev_charge_template_data["ct"+index].data["time_load"]["plan"+index_second], msg)
-            elif re.search("^openWB/vehicle/template/charge_template/[1-9][0-9]*/time_load/.+$", msg.topic) != None:
-                self.set_json_payload(self.ev_charge_template_data["ct"+index].data["time_load"], msg)
+                if "plan"+index_second not in self.ev_charge_template_data["ct"+index].data["time_charging"]:
+                    self.ev_charge_template_data["ct"+index].data["time_charging"]["plan"+index_second]={}
+                self.set_json_payload(self.ev_charge_template_data["ct"+index].data["time_charging"]["plan"+index_second], msg)
+            elif re.search("^openWB/vehicle/template/charge_template/[1-9][0-9]*/time_charging/.+$", msg.topic) != None:
+                self.set_json_payload(self.ev_charge_template_data["ct"+index].data["time_charging"], msg)
         else:
             self.set_json_payload(self.ev_charge_template_data["ct"+index].data, msg)
 
@@ -460,22 +460,22 @@ class subData():
             elif re.search("^openWB/general/chargemode_config/.+$", msg.topic) != None:
                 if "chargemode_config" not in self.general_data["general"].data:
                     self.general_data["general"].data["chargemode_config"]={}
-                if re.search("^openWB/general/chargemode_config/pv_load/.+$", msg.topic) != None:
-                    if "pv_load" not in self.general_data["general"].data["chargemode_config"]:
-                        self.general_data["general"].data["chargemode_config"]["pv_load"]={}
-                    self.set_json_payload(self.general_data["general"].data["chargemode_config"]["pv_load"], msg)
-                elif re.search("^openWB/general/chargemode_config/instant_load/.+$", msg.topic) != None:
-                    if "instant_load" not in self.general_data["general"].data["chargemode_config"]:
-                        self.general_data["general"].data["chargemode_config"]["instant_load"]={}
-                    self.set_json_payload(self.general_data["general"].data["chargemode_config"]["instant_load"], msg)
-                elif re.search("^openWB/general/chargemode_config/scheduled_load/.+$", msg.topic) != None:
-                    if "scheduled_load" not in self.general_data["general"].data["chargemode_config"]:
-                        self.general_data["general"].data["chargemode_config"]["scheduled_load"]={}
-                    self.set_json_payload(self.general_data["general"].data["chargemode_config"]["scheduled_load"], msg)
-                elif re.search("^openWB/general/chargemode_config/time_load/.+$", msg.topic) != None:
-                    if "time_load" not in self.general_data["general"].data["chargemode_config"]:
-                        self.general_data["general"].data["chargemode_config"]["time_load"]={}
-                    self.set_json_payload(self.general_data["general"].data["chargemode_config"]["time_load"], msg)
+                if re.search("^openWB/general/chargemode_config/pv_charging/.+$", msg.topic) != None:
+                    if "pv_charging" not in self.general_data["general"].data["chargemode_config"]:
+                        self.general_data["general"].data["chargemode_config"]["pv_charging"]={}
+                    self.set_json_payload(self.general_data["general"].data["chargemode_config"]["pv_charging"], msg)
+                elif re.search("^openWB/general/chargemode_config/instant_charging/.+$", msg.topic) != None:
+                    if "instant_charging" not in self.general_data["general"].data["chargemode_config"]:
+                        self.general_data["general"].data["chargemode_config"]["instant_charging"]={}
+                    self.set_json_payload(self.general_data["general"].data["chargemode_config"]["instant_charging"], msg)
+                elif re.search("^openWB/general/chargemode_config/scheduled_charging/.+$", msg.topic) != None:
+                    if "scheduled_charging" not in self.general_data["general"].data["chargemode_config"]:
+                        self.general_data["general"].data["chargemode_config"]["scheduled_charging"]={}
+                    self.set_json_payload(self.general_data["general"].data["chargemode_config"]["scheduled_charging"], msg)
+                elif re.search("^openWB/general/chargemode_config/time_charging/.+$", msg.topic) != None:
+                    if "time_charging" not in self.general_data["general"].data["chargemode_config"]:
+                        self.general_data["general"].data["chargemode_config"]["time_charging"]={}
+                    self.set_json_payload(self.general_data["general"].data["chargemode_config"]["time_charging"], msg)
                 elif re.search("^openWB/general/chargemode_config/standby/.+$", msg.topic) != None:
                     if "standby" not in self.general_data["general"].data["chargemode_config"]:
                         self.general_data["general"].data["chargemode_config"]["standby"]={}

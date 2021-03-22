@@ -69,17 +69,17 @@ class ev():
         chargemode = None
         required_current = None
         try:
-            if self.charge_template.data["chargemode"]["selected"] == "scheduled_load":
-                required_current, chargemode = self.charge_template.scheduled_load(
+            if self.charge_template.data["chargemode"]["selected"] == "scheduled_charging":
+                required_current, chargemode = self.charge_template.scheduled_charging(
                     self.data["get"]["soc"], self.ev_template.data["max_current"], self.ev_template.data["battery_capacity"], self.ev_template.data["max_phases"])
-            elif self.charge_template.data["time_load"]["active"] == True:
-                required_current, chargemode = self.charge_template.time_load()
+            elif self.charge_template.data["time_charging"]["active"] == True:
+                required_current, chargemode = self.charge_template.time_charging()
             if (required_current == 0) or (required_current == None):
-                if self.charge_template.data["chargemode"]["selected"] == "instant_load":
-                    required_current, chargemode = self.charge_template.instant_load(
+                if self.charge_template.data["chargemode"]["selected"] == "instant_charging":
+                    required_current, chargemode = self.charge_template.instant_charging(
                         self.data["get"]["soc"], self.data["get"]["charged_since_plugged_kwh"])
-                elif self.charge_template.data["chargemode"]["selected"] == "pv_load":
-                    required_current, chargemode = self.charge_template.pv_load(
+                elif self.charge_template.data["chargemode"]["selected"] == "pv_charging":
+                    required_current, chargemode = self.charge_template.pv_charging(
                         self.data["get"]["soc"])
                 elif self.charge_template.data["chargemode"]["selected"] == "standby":
                     required_current, chargemode = self.charge_template.standby(
@@ -281,19 +281,19 @@ class chargeTemplate():
     def __init__(self):
         self.data = {}
 
-    def time_load(self):
+    def time_charging(self):
         """ prüft, ob ein Zeitfenster aktiv ist und setzt entsprechend den Ladestrom
         """
         try:
-            plan = timecheck.check_plans_timeframe(self.data["time_load"])
+            plan = timecheck.check_plans_timeframe(self.data["time_charging"])
             if plan != None:
-                return self.data["time_load"][plan]["current"], "time_load"
+                return self.data["time_charging"][plan]["current"], "time_charging"
             else:
-                return 0, "time_load"
+                return 0, "time_charging"
         except Exception as e:
             log.exception_logging(e)
 
-    def instant_load(self, soc, amount):
+    def instant_charging(self, soc, amount):
         """ prüft, ob die Lademengenbegrenzung erreicht wurde und setzt entsprechend den Ladestrom.
 
         Parameter
@@ -305,26 +305,26 @@ class chargeTemplate():
             geladende Energiemenge seit das EV angesteckt wurde
         """
         try:
-            instant_load = self.data["chargemode"]["instant_load"]
+            instant_charging = self.data["chargemode"]["instant_charging"]
             if data.optional_data["optional"].data["et"]["active"] == True:
                 if data.optional_data["optional"].et_price_lower_than_limit() == False:
-                    return 0, "instant_load"
-            if instant_load["limit"]["selected"] == "none":
-                return instant_load["current"], "instant_load"
-            elif instant_load["limit"]["selected"] == "soc":
-                if soc < instant_load["limit"]["soc"]:
-                    return instant_load["current"], "instant_load"
+                    return 0, "instant_charging"
+            if instant_charging["limit"]["selected"] == "none":
+                return instant_charging["current"], "instant_charging"
+            elif instant_charging["limit"]["selected"] == "soc":
+                if soc < instant_charging["limit"]["soc"]:
+                    return instant_charging["current"], "instant_charging"
                 else:
-                    return 0, "instant_load"
-            elif instant_load["limit"]["selected"] == "amount":
-                if amount < instant_load["limit"]["amount"]:
-                    return instant_load["current"], "instant_load"
+                    return 0, "instant_charging"
+            elif instant_charging["limit"]["selected"] == "amount":
+                if amount < instant_charging["limit"]["amount"]:
+                    return instant_charging["current"], "instant_charging"
                 else:
-                    return 0, "instant_load"
+                    return 0, "instant_charging"
         except Exception as e:
             log.exception_logging(e)
 
-    def pv_load(self, soc):
+    def pv_charging(self, soc):
         """ prüft, ob Min-oder Max-Soc erreicht wurden und setzt entsprechend den Ladestrom.
 
         Parameter
@@ -338,24 +338,24 @@ class chargeTemplate():
             Therotisch benötigter Strom, Ladmodus(soll geladen werden, auch wenn kein PV-Strom zur Verfügung steht)
         """
         try:
-            pv_load = self.data["chargemode"]["pv_load"]
-            if soc < pv_load["max_soc"]:
-                if pv_load["min_soc"] != 0:
-                    if soc < pv_load["min_soc"]:
-                        return pv_load["min_soc_current"], "instant_load"
+            pv_charging = self.data["chargemode"]["pv_charging"]
+            if soc < pv_charging["max_soc"]:
+                if pv_charging["min_soc"] != 0:
+                    if soc < pv_charging["min_soc"]:
+                        return pv_charging["min_soc_current"], "instant_charging"
                     else:
-                        return pv_load["min_current"], "pv_load"
+                        return pv_charging["min_current"], "pv_charging"
                 else:
-                    if pv_load["min_current"] == 0:
-                        return 0, "pv_load"  # nur PV
+                    if pv_charging["min_current"] == 0:
+                        return 0, "pv_charging"  # nur PV
                     else:
-                        return pv_load["min_current"], "pv_load"  # Min PV
+                        return pv_charging["min_current"], "pv_charging"  # Min PV
             else:
                 return 0, "stop"
         except Exception as e:
             log.exception_logging(e)
 
-    def scheduled_load(self, soc, max_current, battery_capacity, max_phases):
+    def scheduled_charging(self, soc, max_current, battery_capacity, max_phases):
         """ prüft, ob der Ziel-SoC erreicht wurde und stellt den zur Erreichung nötigen Ladestrom ein.
 
         Parameter
@@ -377,40 +377,40 @@ class chargeTemplate():
             Required Current, Chargemode: int, str
                 Therotisch benötigter Strom, Ladmodus(soll geladen werden, auch wenn kein PV-Strom zur Verfügung steht)
         """
-        for plan in self.data["chargemode"]["scheduled_load"]:
-            if self.data["chargemode"]["scheduled_load"][plan]["active"] == True:
+        for plan in self.data["chargemode"]["scheduled_charging"]:
+            if self.data["chargemode"]["scheduled_charging"][plan]["active"] == True:
                 try:
-                    if soc < self.data["chargemode"]["scheduled_load"][plan]["soc"]:
-                        phases_scheduled_load = data.general_data["general"].get_phases_chargemode(
-                            "scheduled_load")
-                        if max_phases <= phases_scheduled_load:
+                    if soc < self.data["chargemode"]["scheduled_charging"][plan]["soc"]:
+                        phases_scheduled_charging = data.general_data["general"].get_phases_chargemode(
+                            "scheduled_charging")
+                        if max_phases <= phases_scheduled_charging:
                             usable_phases = max_phases
                         else:
-                            usable_phases = phases_scheduled_load
+                            usable_phases = phases_scheduled_charging
 
                         available_current = 0.8*max_current*usable_phases
                         required_wh = (
-                            (self.data["chargemode"]["scheduled_load"][plan]["soc"] - soc)/100) * battery_capacity*1000
+                            (self.data["chargemode"]["scheduled_charging"][plan]["soc"] - soc)/100) * battery_capacity*1000
                         duration = required_wh/(available_current*230)
                         start, remaining_time = timecheck.check_duration(
-                            self.data["chargemode"]["scheduled_load"][plan], duration)
+                            self.data["chargemode"]["scheduled_charging"][plan], duration)
                         if start == 1:
-                            return available_current, "instant_load"
+                            return available_current, "instant_charging"
                         elif start == 2:  # weniger als die berechnete Zeit verfügbar
                             return required_wh/(remaining_time*230)
                         else:
-                            if timecheck.check_timeframe(self.data["chargemode"]["scheduled_load"][plan], 24) == True:
+                            if timecheck.check_timeframe(self.data["chargemode"]["scheduled_charging"][plan], 24) == True:
                                 if data.optional_data["optional"].data["et"]["active"] == True:
                                     hourlist = data.optional_data["optional"].get_loading_hours(
                                         duration)
                                     if timecheck.is_list_valid(hourlist) == True:
-                                        return available_current, "instant_load"
+                                        return available_current, "instant_charging"
                                     else:
-                                        return 0, "pv_load"
+                                        return 0, "pv_charging"
                                 else:
-                                    return 0, "pv_load"
+                                    return 0, "pv_charging"
                             else:
-                                return 0, "scheduled_load"
+                                return 0, "scheduled_charging"
                     else:
                         return 0, "stop"
                 except Exception as e:
@@ -418,7 +418,7 @@ class chargeTemplate():
         else:
             # log
             print("Keine aktiven Zeit-Pläne.")
-            return 0, "scheduled_load"
+            return 0, "scheduled_charging"
 
     def standby(self):
         """ setzt den benötigten Strom auf 0.

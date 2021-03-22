@@ -101,7 +101,7 @@ class pv():
         pv_config = self.data["config"]
         control_parameter = chargepoint.data["set"]["charging_ev"].data["control_parameter"]
         # verbleibender EVU-Überschuss unter Berücksichtigung der Einspeisungsgrenze
-        overhang_power_left_feed_in = self.power_for_pv_load(chargepoint.data["set"]["charging_ev"].charge_template.data["chargemode"]["pv_load"]["feed_in_limit"])
+        overhang_power_left_feed_in = self.power_for_pv_charging(chargepoint.data["set"]["charging_ev"].charge_template.data["chargemode"]["pv_charging"]["feed_in_limit"])
         if  chargepoint.data["get"]["charge_state"] == False:
             if "timestamp_switch_on_off" in control_parameter:
                 if overhang_power_left_feed_in > 0:
@@ -160,7 +160,7 @@ class pv():
     def switch_off_check_threshold(self):
         pass
 
-    def power_for_pv_load(self, feed_in_yield_active):
+    def power_for_pv_charging(self, feed_in_yield_active):
         """ gibt den verfügbaren EVU-Überschuss unter Berücksichtigung der Einspeisungsgrenze zurück.
 
         Einspeisungsgrenze: Meist darf nur bis zu einem bestimmten Ertrag eingespeist werden (70%). 

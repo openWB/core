@@ -20,18 +20,18 @@ class control():
         """
         log.message_debug_log("debug", "# Algorithmus-Start")
         # Lademodi in absteigender Priorität; Tupelinhalt: (eingestellter Modus, tatsächlich genutzter Modus, Priorität)
-        chargemodes = ( ("scheduled_load", "instant_load", True), 
-                        ("scheduled_load", "instant_load", False), 
-                        (None, "time_load", True), 
-                        (None, "time_load", False), 
-                        ("instant_load", "instant_load", True), 
-                        ("instant_load", "instant_load", False), 
-                        ("pv_load", "instant_load", True), 
-                        ("pv_load", "instant_load", False), 
-                        ("scheduled_load", "pv_load", True),
-                        ("scheduled_load", "pv_load", False), 
-                        ("pv_load", "pv_load", True), 
-                        ("pv_load", "pv_load", False), 
+        chargemodes = ( ("scheduled_charging", "instant_charging", True), 
+                        ("scheduled_charging", "instant_charging", False), 
+                        (None, "time_charging", True), 
+                        (None, "time_charging", False), 
+                        ("instant_charging", "instant_charging", True), 
+                        ("instant_charging", "instant_charging", False), 
+                        ("pv_charging", "instant_charging", True), 
+                        ("pv_charging", "instant_charging", False), 
+                        ("scheduled_charging", "pv_charging", True),
+                        ("scheduled_charging", "pv_charging", False), 
+                        ("pv_charging", "pv_charging", True), 
+                        ("pv_charging", "pv_charging", False), 
                         (None, "standby", True), 
                         (None, "standby", False), 
                         (None, "stop", True),
@@ -272,8 +272,8 @@ class control():
             required_current = charging_ev.data["control_parameter"]["required_current"]
             required_power = phases * 230 * \
                 charging_ev.data["control_parameter"]["required_current"]
-            if charging_ev.data["control_parameter"]["chargemode"] == "pv_load":
-                self._calc_pv_load(chargepoint, required_power,
+            if charging_ev.data["control_parameter"]["chargemode"] == "pv_charging":
+                self._calc_pv_charging(chargepoint, required_power,
                                 required_current, phases)
             elif (charging_ev.data["control_parameter"]["chargemode"] == "stop" or (charging_ev.data["control_parameter"]["chargemode"] == "standby")):
                 required_power, required_current, phases = self._no_load()
@@ -325,7 +325,7 @@ class control():
         except Exception as e:
             log.exception_logging(e)
 
-    def _calc_pv_load(self, chargepoint, required_power, required_current, phases):
+    def _calc_pv_charging(self, chargepoint, required_power, required_current, phases):
         """prüft, ob Speicher oder EV Vorrang hat und wie viel Strom/Leistung genutzt werden kann.
 
         Parameter
@@ -342,19 +342,19 @@ class control():
         ------
         """
         try:
-            overhang_power_left = data.pv_data["pv"].power_for_pv_load(chargepoint.data["set"]["charging_ev"].charge_template.data["chargemode"]["pv_load"]["feed_in_limit"])
+            overhang_power_left = data.pv_data["pv"].power_for_pv_charging(chargepoint.data["set"]["charging_ev"].charge_template.data["chargemode"]["pv_charging"]["feed_in_limit"])
             if overhang_power_left > 0:
                 # # prüfen, dass es in den letzten 10s nicht über dem Minimum/unter dem Maximum lag
                 # chargepoint.data["set"]["charging_ev"].phase_switch_stop_timer(chargepoint)
                 # # prüfen, ob Timer abgelaufen ist
                 # phases = chargepoint.data["set"]["charging_ev"].check_phase_switch_switching(chargepoint)
                 bat_charging_power_left = data.bat_module_data["bat"].power_for_bat_charging()
-                if chargepoint.data["set"]["charging_ev"].charge_template.data["chargemode"]["selected"] == "scheduled_load" and "pv_load" not in chargepoint.data["set"]["charging_ev"].charge_template.data["chargemode"]:
+                if chargepoint.data["set"]["charging_ev"].charge_template.data["chargemode"]["selected"] == "scheduled_charging" and "pv_charging" not in chargepoint.data["set"]["charging_ev"].charge_template.data["chargemode"]:
                     required_power, required_current, phases = self._no_load()
                     log.message_debug_log("warning", "PV-Laden im Modus Zielladen aktiv und es wurden keine Einstellungen für PV-Laden konfiguriert.")
                 else:
                     # EV hat Vorrang
-                    if (chargepoint.data["set"]["charging_ev"].charge_template.data["chargemode"]["pv_load"]["bat_prio"] == False) and (bat_charging_power_left > 0):
+                    if (chargepoint.data["set"]["charging_ev"].charge_template.data["chargemode"]["pv_charging"]["bat_prio"] == False) and (bat_charging_power_left > 0):
                         # Laden nur mit der Leistung, die vorher der Speicher bezogen hat
                         if ( bat_charging_power_left - required_power) > 0:
                             data.bat_module_data["bat"].allocate_bat_power(required_power )
@@ -479,15 +479,15 @@ class control():
     #         for chargepoint in data.cp_data:
     #             if "set" in data.cp_data[chargepoint].data:
     #                 if "charging_ev" in data.cp_data[chargepoint].data["set"]:
-    #                     if (data.cp_data[chargepoint].data["set"]["charging_ev"].charge_template.data["chargemode"]["selected"] == "pv_load" or data.cp_data[chargepoint].data["set"]["charging_ev"].data["control_parameter"]["chargemode"] == "pv_load") and data.cp_data[chargepoint].data["get"]["charge_state"] == True:
+    #                     if (data.cp_data[chargepoint].data["set"]["charging_ev"].charge_template.data["chargemode"]["selected"] == "pv_charging" or data.cp_data[chargepoint].data["set"]["charging_ev"].data["control_parameter"]["chargemode"] == "pv_charging") and data.cp_data[chargepoint].data["get"]["charge_state"] == True:
     #                         num_of_phases += data.cp_data[chargepoint].data["set"]["phases_to_use"]
     #         # mit oder ohne Einspeisungsgrenze??
-    #         additional_current_per_phase = data.pv_data["pv"].power_for_pv_load(True) / 230 / num_of_phases
+    #         additional_current_per_phase = data.pv_data["pv"].power_for_pv_charging(True) / 230 / num_of_phases
     #         phases = data.cp_data[chargepoint].data["set"]["phases_to_use"]
     #         for cp in data.cp_data:
     #             if "set" in data.cp_data[cp].data:
     #                 if "charging_ev" in data.cp_data[cp].data["set"]:
-    #                     if (data.cp_data[chargepoint].data["set"]["charging_ev"].charge_template.data["chargemode"]["selected"] == "pv_load" or data.cp_data[chargepoint].data["set"]["charging_ev"].data["control_parameter"]["chargemode"] == "pv_load")  and data.cp_data[chargepoint].data["get"]["charge_state"]:
+    #                     if (data.cp_data[chargepoint].data["set"]["charging_ev"].charge_template.data["chargemode"]["selected"] == "pv_charging" or data.cp_data[chargepoint].data["set"]["charging_ev"].data["control_parameter"]["chargemode"] == "pv_charging")  and data.cp_data[chargepoint].data["get"]["charge_state"]:
     #                         chargepoint = data.cp_data[cp]
     #                         # prüfen, ob Umschaltcountdown gestartet werden kann
     #                         current = chargepoint.data["set"]["charging_ev"].phase_switch_start_timer(chargepoint, additional_current_per_phase)
@@ -505,15 +505,15 @@ class control():
     #         for chargepoint in data.cp_data:
     #             if "set" in data.cp_data[chargepoint].data:
     #                 if "charging_ev" in data.cp_data[chargepoint].data["set"]:
-    #                     if (data.cp_data[chargepoint].data["set"]["charging_ev"].charge_template.data["chargemode"]["selected"] == "pv_load" or data.cp_data[chargepoint].data["set"]["charging_ev"].data["control_parameter"]["chargemode"] == "pv_load") and data.cp_data[chargepoint].data["get"]["charge_state"] == True:
+    #                     if (data.cp_data[chargepoint].data["set"]["charging_ev"].charge_template.data["chargemode"]["selected"] == "pv_charging" or data.cp_data[chargepoint].data["set"]["charging_ev"].data["control_parameter"]["chargemode"] == "pv_charging") and data.cp_data[chargepoint].data["get"]["charge_state"] == True:
     #                         num_of_phases += data.cp_data[chargepoint].data["get"]["phases_in_use"]
     #         # mit oder ohne Einspeisungsgrenze??
-    #         revoke_current_per_phase = data.pv_data["pv"].power_for_pv_load(True) / 230 / num_of_phases
+    #         revoke_current_per_phase = data.pv_data["pv"].power_for_pv_charging(True) / 230 / num_of_phases
     #         phases = data.cp_data[chargepoint].data["set"]["phases_to_use"]
     #         for cp in data.cp_data:
     #             if "set" in data.cp_data[cp].data:
     #                 if "charging_ev" in data.cp_data[cp].data["set"]:
-    #                     if (data.cp_data[chargepoint].data["set"]["charging_ev"].charge_template.data["chargemode"]["selected"] == "pv_load" or data.cp_data[chargepoint].data["set"]["charging_ev"].data["control_parameter"]["chargemode"] == "pv_load")  and data.cp_data[chargepoint].data["get"]["charge_state"]:
+    #                     if (data.cp_data[chargepoint].data["set"]["charging_ev"].charge_template.data["chargemode"]["selected"] == "pv_charging" or data.cp_data[chargepoint].data["set"]["charging_ev"].data["control_parameter"]["chargemode"] == "pv_charging")  and data.cp_data[chargepoint].data["get"]["charge_state"]:
     #                         chargepoint = data.cp_data[cp]
     #                         # prüfen, ob Umschaltcountdown gestartet werden kann
     #                         current = chargepoint.data["set"]["charging_ev"].phase_switch_start_timer(chargepoint, additional_current_per_phase)
