@@ -596,11 +596,11 @@ class pubvars():
         self.client.publish("openWB/vehicle/2/match_ev/tag_id", payload=json.dumps(1234), qos=0, retain=True)
 
         #Zeitladen
-        self.client.publish("openWB/vehicle/template/charge_template/2/time_load/active", payload=json.dumps(0), qos=0, retain=True)
+        self.client.publish("openWB/vehicle/template/charge_template/2/time_load/active", payload=json.dumps(1), qos=0, retain=True)
         self.client.publish("openWB/vehicle/template/charge_template/2/time_load/1/active", payload=json.dumps(1), qos=0, retain=True)
         self.client.publish("openWB/vehicle/template/charge_template/2/time_load/1/frequency/selected", payload=json.dumps("weekly"), qos=0, retain=True)
         self.client.publish("openWB/vehicle/template/charge_template/2/time_load/1/frequency/weekly", payload=json.dumps([1,1,1,1,1,0,0]), qos=0, retain=True)
-        self.client.publish("openWB/vehicle/template/charge_template/2/time_load/1/time", payload=json.dumps(["10:00", "11:20"]), qos=0, retain=True)
+        self.client.publish("openWB/vehicle/template/charge_template/2/time_load/1/time", payload=json.dumps(["08:00", "11:20"]), qos=0, retain=True)
         self.client.publish("openWB/vehicle/template/charge_template/2/time_load/1/current", payload=json.dumps(10), qos=0, retain=True)
         self.client.publish("openWB/vehicle/template/charge_template/2/chargemode/selected", payload=json.dumps("instant_load"), qos=0, retain=True)
         self.client.publish("openWB/vehicle/template/charge_template/2/chargemode/pv_load/min_current", payload=json.dumps(11), qos=0, retain=True)
@@ -618,7 +618,7 @@ class pubvars():
         #instant_load
         self.client.publish("openWB/vehicle/template/charge_template/1/time_load/active", payload=json.dumps(0), qos=0, retain=True)
         self.client.publish("openWB/vehicle/template/charge_template/1/chargemode/selected", payload=json.dumps("instant_load"), qos=0, retain=True)
-        self.client.publish("openWB/vehicle/template/charge_template/1/chargemode/instant_load/current", payload=json.dumps(10), qos=0, retain=True)
+        self.client.publish("openWB/vehicle/template/charge_template/1/chargemode/instant_load/current", payload=json.dumps(11), qos=0, retain=True)
         self.client.publish("openWB/vehicle/template/charge_template/1/chargemode/instant_load/limit/selected", payload=json.dumps("soc"), qos=0, retain=True)
         self.client.publish("openWB/vehicle/template/charge_template/1/chargemode/instant_load/limit/soc", payload=json.dumps(50), qos=0, retain=True)
         self.client.publish("openWB/vehicle/template/charge_template/1/chargemode/instant_load/limit/amount", payload=json.dumps(10), qos=0, retain=True)

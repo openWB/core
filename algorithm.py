@@ -17,10 +17,9 @@ class control():
 
     def calc_current(self):
         """ Einstiegspunkt in den Regel-Algorithmus
-        ruft in der Reihenfolge der Prioritäten der Lademodi die Berechnungsfunktion auf.
         """
         log.message_debug_log("debug", "# Algorithmus-Start")
-        # Lademodi in absteigender Priorität (eingestellter Modus, tatsächlich genutzter Modus, Priorität)
+        # Lademodi in absteigender Priorität; Tupelinhalt: (eingestellter Modus, tatsächlich genutzter Modus, Priorität)
         chargemodes = ( ("scheduled_load", "instant_load", True), 
                         ("scheduled_load", "instant_load", False), 
                         (None, "time_load", True), 
@@ -51,19 +50,24 @@ class control():
         #                 loadmanagement.loadmanagement(chargepoint.data["get"]["power_all"]*-1, 0, 0)
                         
         if data.pv_data["pv"].power_for_normal_load() == 0:
-            # erstmal die PV-Überschuss-Ladung zurück nehmen
+            # erstmal die PV-Überschuss-Ladung zurück nehmen, wenn kein Überschuss vorhanden ist
             # self.revoke_used_evu_overhang()
             log.message_debug_log("debug", "## Ueberschuss-Ladung ueber Mindeststrom bei PV-Laden zuruecknehmen.")
        
         if data.counter_data["evu"].data["set"]["loadmanagement"] == True:
-            log.message_debug_log("debug", "## Ladung wegen aktivem Lastmanagement stoppen.")
-            # Wenn immer noch das Lastmanagement aktiv ist, LP abschalten
+            log.message_debug_log("debug", "## Ladung wegen aktiven Lastmanagements stoppen.")
+            # Wenn trotz Rücknahme des PV-Überschussladens immer noch das Lastmanagement aktiv ist, LP abschalten. Dazu das Lademodi-Tupel rückwärts durchgehen und LP mit niedrig priorisiertem Lademodus zuerst stoppen.
             #Ist jetzt schon die Sicherung geflogen?
             for mode in reversed(chargemodes[:-4]):
-                if self._switch_off_cps_for_loadmanagement(mode) == False:
-                    break
+                cp_to_stop = True
+                while cp_to_stop == True:
+                    cp_to_stop = self._switch_off_lowest_cp(mode)
+                    if data.counter_data["evu"].data["set"]["loadmanagement"] == False:
+                        break
+                if data.counter_data["evu"].data["set"]["loadmanagement"] == False:
+                        break
         else:
-            log.message_debug_log("debug", "## Ladung muss nicht wegen aktivem Lastmanagement gestoppt werden.")
+            log.message_debug_log("debug", "## Ladung muss nicht wegen aktiven Lastmanagements gestoppt werden.")
 
         if data.counter_data["evu"].data["set"]["loadmanagement"] == True:
             log.message_debug_log("warning", "Bezug immer noch hoeher als maximaler Bezug, obwohl das Laden gestoppt wurde.")
@@ -83,7 +87,7 @@ class control():
                 # kein Ladepunkt, der noch auf Zuteilung wartet
                 log.message_debug_log("debug", "## Zuteilung beendet, da kein Ladepunkt mehr auf Zuteilung wartet.")
                 break
-            log.message_debug_log("debug", "## Zuteilung gestoppt, da erst die Ladung an einem Ladepunkt mit niedrigerer Priorität gestoppt werden muss.")
+            log.message_debug_log("debug", "## Zuteilung gestoppt, da erst die Ladung an einem Ladepunkt mit niedrigerer Prioritaet gestoppt werden muss.")
             # LP mit niedrigerer Priorität stoppen
             for mode in reversed(chargemodes[(current_mode+1):-4]):
                 if self._switch_off_lowest_cp(mode) == True:
@@ -101,73 +105,29 @@ class control():
         log.message_debug_log("debug", "## Ladung starten.")
         self._start_charging()
 
-    def _switch_off_cps_for_loadmanagement(self, mode_tuple):
-        """ ermittelt die Ladepunkte, bei denen der angebenene Lademodus und der Lademodus, 
-        der aufgrund des Zustands des eingestellten Lademodus benötigt wird, aktiv sind. Zuerst für die Lade-
-        punkte mit Priorität, dann für die Ladepunkte ohne Priorität.
-
-        Parameter
-        ---------
-        mode_tuple: tuple
-            Lademodus, der am Ladepunkt eingestellt ist
-        start: bool
-            Soll die Ladung gestoppt oder gestartet werden? Relevant, da Ein- und Abschaltreihenfolge nicht identisch sind. 
-        """
-        mode=mode_tuple[0]
-        submode = mode_tuple[1]
-        prio = mode_tuple[2]
-        try:
-            while True:
-                preferenced_chargepoint = None
-                valid_chargepoints = {}
-                for cp in data.cp_data:
-                    if "cp" in cp:
-                        chargepoint = data.cp_data[cp]
-                        #set-> current enthält einen Wert, wenn das EV in diesem Zyklus eingeschaltet werden soll, aktuell aber noch nicht lädt.
-                        if "current" in chargepoint.data["set"]:
-                            if chargepoint.data["set"]["current"] == 0:
-                                continue
-                        if "charging_ev" in chargepoint.data["set"]:
-                            charging_ev = chargepoint.data["set"]["charging_ev"]
-                            if mode == None:
-                                if(charging_ev.charge_template.data["prio"] == prio) and (charging_ev.data["control_parameter"]["chargemode"] == submode):
-                                    valid_chargepoints[chargepoint] = None
-                            elif (charging_ev.charge_template.data["prio"] == prio) and (charging_ev.charge_template.data["chargemode"]["selected"] == mode) and (charging_ev.data["control_parameter"]["chargemode"] == submode):
-                                valid_chargepoints[chargepoint] = None
-                preferenced_chargepoint = self._get_preferenced_chargepoint(valid_chargepoints, False)
-
-                if preferenced_chargepoint == None:
-                    # Es gibt keine Ladepunkte in diesem Lademodus, die noch nicht laden oder die noch gestoppt werden können.
-                    return True
-                else:
-                    required_power, required_current, phases= self._no_load()
-                    self._process_data(chargepoint, required_power, required_current, phases)
-                    log.message_debug_log("debug", "Ladung an LP"+str(chargepoint.cp_num)+" gestoppt.")
-                    # Ladeleistung zum übrigen Bezug addieren
-                    if loadmanagement.loadmanagement((chargepoint.data["get"]["power_all"]*-1), 0, 0) == False:
-                        return False
-        except Exception as e:
-            log.exception_logging(e)
-
-
     def _distribute_overhang(self, mode_tuple):
-        """ ermittelt die Ladepunkte, bei denen der angebenene Lademodus und der Lademodus, 
-        der aufgrund des Zustands des eingestellten Lademodus benötigt wird, aktiv sind. Zuerst für die Lade-
-        punkte mit Priorität, dann für die Ladepunkte ohne Priorität.
+        """ verteilt den EVU-Überschuss und den maximalen Bezug auf die Ladepunkte, die dem Modus im Tupel entsprechen. 
+        Die Funktion endet, wenn das Lastmanagement eingereift oder keine Ladepunkte mehr in diesem Modus vorhanden sind. 
+        Die Zuteilung erfolgt gemäß der Reihenfolge in _get_preferenced_chargepoint.
 
         Parameter
         ---------
         mode_tuple: tuple
-            Lademodus, der am Ladepunkt eingestellt ist
-        start: bool
-            Soll die Ladung gestoppt oder gestartet werden? Relevant, da Ein- und Abschaltreihenfolge nicht identisch sind. 
+            enthält den eingestellten Lademodus, den tatsächlichen Lademodus und die Priorität
+
+        Returns
+        -------
+        True: Lastmanagement hat eine Zuteilung verhindert.
+        False: Es gibt keine LP, der auf Zuteilung wartet.
         """
         mode=mode_tuple[0]
         submode = mode_tuple[1]
         prio = mode_tuple[2]
         try:
             while True:
+                # LP, der abgeschaltet werden soll
                 preferenced_chargepoint = None
+                # enthält alle LP, auf die das Tupel zutrifft
                 valid_chargepoints = {}
                 for cp in data.cp_data:
                     if "cp" in cp:
@@ -191,7 +151,7 @@ class control():
                 else:
                     self._start_indiviual_calc(preferenced_chargepoint)
                     if data.counter_data["evu"].data["set"]["loadmanagement"] == False:
-                        log.message_debug_log("info", "LP: "+str(preferenced_chargepoint.cp_num)+", Ladestrom: "+str(preferenced_chargepoint.data["set"]["current"])+"A, Phasen: "+str(preferenced_chargepoint.data["set"]["phases_to_use"])+", Ladeleistung: "+str((chargepoint.data["set"]["phases_to_use"]*chargepoint.data["set"]["current"]*230))+"W")
+                        log.message_debug_log("info", "LP: "+str(preferenced_chargepoint.cp_num)+", Ladestrom: "+str(preferenced_chargepoint.data["set"]["current"])+"A, Phasen: "+str(preferenced_chargepoint.data["set"]["phases_to_use"])+", Ladeleistung: "+str((preferenced_chargepoint.data["set"]["phases_to_use"]*preferenced_chargepoint.data["set"]["current"]*230))+"W")
                     else:
                         #Lastmanagement hat eingegriffen und die Zuteilung verhindert
                         return True
@@ -199,22 +159,25 @@ class control():
             log.exception_logging(e)
 
     def _switch_off_lowest_cp(self, mode_tuple):
-        """ ermittelt die Ladepunkte, bei denen der angebenene Lademodus und der Lademodus, 
-        der aufgrund des Zustands des eingestellten Lademodus benötigt wird, aktiv sind. Zuerst für die Lade-
-        punkte mit Priorität, dann für die Ladepunkte ohne Priorität.
+        """ schaltet einen Ladepunkt gemäß dem Modus im Tupel ab. Gibt es mehrere Ladepunkte, auf die das Tupel zutrifft, wird die Reihenfolge durch _get_preferenced_chargepoint festgelegt.
 
         Parameter
         ---------
         mode_tuple: tuple
-            Lademodus, der am Ladepunkt eingestellt ist
-        start: bool
-            Soll die Ladung gestoppt oder gestartet werden? Relevant, da Ein- und Abschaltreihenfolge nicht identisch sind. 
+            enthält den eingestellten Lademodus, den tatsächlichen Lademodus und die Priorität
+
+        Return
+        ------
+        True: Es wurde ein Ladepunkt abgeschaltet.
+        False: Es gibt keine Ladepunkte in diesem Lademodus, die noch nicht laden oder die noch gestoppt werden können.
         """
         mode=mode_tuple[0]
         submode = mode_tuple[1]
         prio = mode_tuple[2]
         try:
+            # LP, der abgeschaltet werden soll
             preferenced_chargepoint = None
+            # enthält alle LP, auf die das Tupel zutrifft
             valid_chargepoints = {}
             for cp in data.cp_data:
                 if "cp" in cp:
@@ -237,33 +200,35 @@ class control():
                 return False
             else:
                 required_power, required_current, phases= self._no_load()
-                self._process_data(chargepoint, required_power, required_current, phases)
-                log.message_debug_log("debug", "Ladung an LP"+str(chargepoint.cp_num)+" gestoppt.")
-                loadmanagement.loadmanagement((chargepoint.data["get"]["power_all"]*-1), 0, 0)
+                self._process_data(preferenced_chargepoint, required_power, required_current, phases)
+                log.message_debug_log("debug", "Ladung an LP"+str(preferenced_chargepoint.cp_num)+" gestoppt.")
+                loadmanagement.loadmanagement((preferenced_chargepoint.data["get"]["power_all"]*-1), 0, 0)
                 return True
         except Exception as e:
             log.exception_logging(e)
     
     def _get_preferenced_chargepoint(self, valid_chargepoints, start):
         """ermittelt aus dem Dictionary den Ladepunkt, der eindeutig die Bedingung erfüllt. Die Bedingungen sind:
-        geringste Mindeststromstärke, niedrigster SoC, frühester Ansteck-Zeitpunkt, niedrigste Ladepunktnummer.
+        geringste Mindeststromstärke, niedrigster SoC, frühester Ansteck-Zeitpunkt(Einschalten)/Lademenge(Abschalten), niedrigste Ladepunktnummer.
         Parameter
         ---------
         valid_chargepoints: dict
-            enthält alle Ladepunkte gleicher Priorität und Lademodus, die noch nicht laden oder eine Zuteilung haben.
+            enthält alle Ladepunkte gleicher Priorität und Lademodus, die noch nicht laden und keine Zuteilung haben.
         start: bool
             Soll die Ladung gestoppt oder gestartet werden?
 
         Return
         ------
         preferenced_chargepoint: dict
-            Ladepunkt, der vorrangig geladen werden soll
+            Ladepunkt, der vorrangig geladen/gestoppt werden soll.
         """
         preferenced_chargepoint = None
+         # Bedingungen in der Reihenfolge, in der sie geprüft werden. 3. Bedingung, ist abhängig davon, ob ein- oder ausgeschaltet werden soll.
         if start == True:
-            condition_types = ("min_current", "soc", "plug_in", "cp_num") # Bedingungen in der Reihenfolge, in der sie geprüft werden.
+            condition_types = ("min_current", "soc", "plug_in", "cp_num") 
         else:
-            condition_types = ("min_current", "soc", "charged_since_plugged", "cp_num") # Bedingungen in der Reihenfolge, in der sie geprüft werden.
+            condition_types = ("min_current", "soc", "charged_since_plugged", "cp_num") 
+        # Bedingung, die geprüft wird (entspricht Index von condition_types)
         condition = 0
         if len(valid_chargepoints) > 0:
             while (preferenced_chargepoint == None and (condition <= 3)):
@@ -279,8 +244,9 @@ class control():
                 else:
                     valid_chargepoints.update((cp, cp.cp_num) for cp, val in valid_chargepoints.items())
 
-                print(valid_chargepoints)
+                # kleinsten Value im Dictionary ermitteln
                 min_value = min(valid_chargepoints.values())
+                # dazugehörige Keys ermitteln
                 min_cp = [key for key in valid_chargepoints if valid_chargepoints[key] == min_value]
                 if len(min_cp) > 1:
                     # Wenn es mehrere LP gibt, die den gleichen Minimalwert haben, nächste Bedingung prüfen.
