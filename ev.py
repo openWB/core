@@ -54,7 +54,7 @@ class ev():
         pub.pub("openWB/vehicle/"+str(self.ev_num) +
                 "/control_parameter/required_current", 0)
         pub.pub("openWB/vehicle/"+str(self.ev_num) +
-                "/control_parameter/timestamp_switch_on_off", "")
+                "/control_parameter/timestamp_switch_on_off", 0)
         pub.pub("openWB/vehicle/"+str(self.ev_num) +
                 "/control_parameter/chargemode", "stop")
 

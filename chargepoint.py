@@ -116,6 +116,12 @@ class chargepoint():
                     if self._is_ev_plugged() == True:
                         if self._is_autolock_active() == True:
                             return self.template.get_ev(self.data["get"]["rfid"])
+            # Daten zurücksetzen, wenn nicht geladen werden soll.
+            self.data.pop("set")
+            pub.pub("openWB/chargepoint/"+str(self.cp_num)+"/set/charging_ev", "")
+            pub.pub("openWB/chargepoint/"+str(self.cp_num)+"/set/current", "")
+            pub.pub("openWB/chargepoint/"+str(self.cp_num)+"/set/energy_to_charge", "")
+            pub.pub("openWB/chargepoint/"+str(self.cp_num)+"/set/phases_to_use", "")
         except Exception as e:
             log.exception_logging(e)
             return None

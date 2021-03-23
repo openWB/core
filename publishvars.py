@@ -582,7 +582,7 @@ class pubvars():
         self.client.publish("openWB/vehicle/1/charge_template", payload=json.dumps(1), qos=0, retain=True)
         self.client.publish("openWB/vehicle/1/ev_template", payload=json.dumps(1), qos=0, retain=True)
         self.client.publish("openWB/vehicle/1/name", payload=json.dumps("car1"), qos=0, retain=True)
-        self.client.publish("openWB/vehicle/1/get/soc", payload=json.dumps(20), qos=0, retain=True)
+        self.client.publish("openWB/vehicle/1/get/soc", payload=json.dumps(25), qos=0, retain=True)
         self.client.publish("openWB/vehicle/1/get/charged_since_plugged_kwh", payload=json.dumps(5), qos=0, retain=True)
         self.client.publish("openWB/vehicle/1/match_ev/selected", payload=json.dumps("rfid"), qos=0, retain=True)
         self.client.publish("openWB/vehicle/1/match_ev/tag_id", payload=json.dumps(1234), qos=0, retain=True)
@@ -595,15 +595,15 @@ class pubvars():
         self.client.publish("openWB/vehicle/2/match_ev/selected", payload=json.dumps("rfid"), qos=0, retain=True)
         self.client.publish("openWB/vehicle/2/match_ev/tag_id", payload=json.dumps(1234), qos=0, retain=True)
 
-        #Zeitladen
-        self.client.publish("openWB/vehicle/template/charge_template/2/time_charging/active", payload=json.dumps(1), qos=0, retain=True)
+        #ct2
+        self.client.publish("openWB/vehicle/template/charge_template/2/time_charging/active", payload=json.dumps(0), qos=0, retain=True)
         self.client.publish("openWB/vehicle/template/charge_template/2/time_charging/1/active", payload=json.dumps(1), qos=0, retain=True)
         self.client.publish("openWB/vehicle/template/charge_template/2/time_charging/1/frequency/selected", payload=json.dumps("weekly"), qos=0, retain=True)
         self.client.publish("openWB/vehicle/template/charge_template/2/time_charging/1/frequency/weekly", payload=json.dumps([1,1,1,1,1,0,0]), qos=0, retain=True)
         self.client.publish("openWB/vehicle/template/charge_template/2/time_charging/1/time", payload=json.dumps(["08:00", "11:20"]), qos=0, retain=True)
         self.client.publish("openWB/vehicle/template/charge_template/2/time_charging/1/current", payload=json.dumps(10), qos=0, retain=True)
-        self.client.publish("openWB/vehicle/template/charge_template/2/chargemode/selected", payload=json.dumps("instant_charging"), qos=0, retain=True)
-        self.client.publish("openWB/vehicle/template/charge_template/2/chargemode/pv_charging/min_current", payload=json.dumps(11), qos=0, retain=True)
+        self.client.publish("openWB/vehicle/template/charge_template/2/chargemode/selected", payload=json.dumps("pv_charging"), qos=0, retain=True)
+        self.client.publish("openWB/vehicle/template/charge_template/2/chargemode/pv_charging/min_current", payload=json.dumps(12), qos=0, retain=True)
         self.client.publish("openWB/vehicle/template/charge_template/2/chargemode/pv_charging/min_soc", payload=json.dumps(23), qos=0, retain=True)
         self.client.publish("openWB/vehicle/template/charge_template/2/chargemode/pv_charging/min_soc_current", payload=json.dumps(13), qos=0, retain=True)
         self.client.publish("openWB/vehicle/template/charge_template/2/chargemode/pv_charging/max_soc", payload=json.dumps(80), qos=0, retain=True)
@@ -615,13 +615,19 @@ class pubvars():
         self.client.publish("openWB/vehicle/template/charge_template/2/chargemode/instant_charging/limit/soc", payload=json.dumps(50), qos=0, retain=True)
         self.client.publish("openWB/vehicle/template/charge_template/2/chargemode/instant_charging/limit/amount", payload=json.dumps(10), qos=0, retain=True)
 
-        #instant_charging
+        #ct1
         self.client.publish("openWB/vehicle/template/charge_template/1/time_charging/active", payload=json.dumps(0), qos=0, retain=True)
-        self.client.publish("openWB/vehicle/template/charge_template/1/chargemode/selected", payload=json.dumps("instant_charging"), qos=0, retain=True)
+        self.client.publish("openWB/vehicle/template/charge_template/1/chargemode/selected", payload=json.dumps("pv_charging"), qos=0, retain=True)
         self.client.publish("openWB/vehicle/template/charge_template/1/chargemode/instant_charging/current", payload=json.dumps(11), qos=0, retain=True)
         self.client.publish("openWB/vehicle/template/charge_template/1/chargemode/instant_charging/limit/selected", payload=json.dumps("soc"), qos=0, retain=True)
         self.client.publish("openWB/vehicle/template/charge_template/1/chargemode/instant_charging/limit/soc", payload=json.dumps(50), qos=0, retain=True)
         self.client.publish("openWB/vehicle/template/charge_template/1/chargemode/instant_charging/limit/amount", payload=json.dumps(10), qos=0, retain=True)
+        self.client.publish("openWB/vehicle/template/charge_template/1/chargemode/pv_charging/min_current", payload=json.dumps(10), qos=0, retain=True)
+        self.client.publish("openWB/vehicle/template/charge_template/1/chargemode/pv_charging/min_soc", payload=json.dumps(23), qos=0, retain=True)
+        self.client.publish("openWB/vehicle/template/charge_template/1/chargemode/pv_charging/min_soc_current", payload=json.dumps(13), qos=0, retain=True)
+        self.client.publish("openWB/vehicle/template/charge_template/1/chargemode/pv_charging/max_soc", payload=json.dumps(80), qos=0, retain=True)
+        self.client.publish("openWB/vehicle/template/charge_template/1/chargemode/pv_charging/bat_prio", payload=json.dumps(0), qos=0, retain=True)
+        self.client.publish("openWB/vehicle/template/charge_template/1/chargemode/pv_charging/feed_in_limit", payload=json.dumps(0), qos=0, retain=True)
         #pv_charging
         #self.client.publish("openWB/vehicle/template/charge_template/1/chargemode/selected", payload=json.dumps("pv_charging"), qos=0, retain=True)
         # self.client.publish("openWB/vehicle/template/charge_template/1/chargemode/pv_charging/min_current", payload=json.dumps(11), qos=0, retain=True)
@@ -645,8 +651,8 @@ class pubvars():
 
         #pv
         self.client.publish("openWB/pv/config/control_range", payload=json.dumps([0,230]), qos=0, retain=True)
-        self.client.publish("openWB/pv/config/switch_off_threshold", payload=json.dumps(-1400), qos=0, retain=True)
-        self.client.publish("openWB/pv/config/switch_off_delay", payload=json.dumps(60), qos=0, retain=True)
+        self.client.publish("openWB/pv/config/switch_off_threshold", payload=json.dumps(1000), qos=0, retain=True)
+        self.client.publish("openWB/pv/config/switch_off_delay", payload=json.dumps(25), qos=0, retain=True)
         self.client.publish("openWB/pv/config/switch_on_delay", payload=json.dumps(15), qos=0, retain=True)
         self.client.publish("openWB/pv/config/switch_on_threshold", payload=json.dumps(1400), qos=0, retain=True)
         self.client.publish("openWB/pv/config/feed_in_yield", payload=json.dumps(5000), qos=0, retain=True)

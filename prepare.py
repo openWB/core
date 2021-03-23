@@ -77,7 +77,7 @@ class prepare():
                     if "set" not in data.cp_data[cp].data:
                         data.cp_data[cp].data["set"] = {}
                     if "charging_ev" in data.cp_data[cp].data:
-                            data.cp_data[cp].data["set"].pop("charging_ev")
+                        data.cp_data[cp].data["set"].pop("charging_ev")
                     if vehicle != None:
                         if vehicle == 0:
                             if data.ev_data["default"].get_required_current() == True:

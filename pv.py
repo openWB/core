@@ -25,6 +25,7 @@ class pv():
             self.data["get"] = {}
         pub.pub("openWB/pv/get/overhang_power_left", 0)
         pub.pub("openWB/pv/get/reserved_pv_power", 0)
+        pub.pub("openWB/pv/get/released_pv_power", 0)
         pub.pub("openWB/pv/set/available_power", 0)
         pub.pub("openWB/pv/config/configured", False)
 
@@ -70,7 +71,7 @@ class pv():
         except Exception as e:
             log.exception_logging(e)
 
-    def switch_on_off(self, chargepoint, required_power, required_current, phases):
+    def switch_on(self, chargepoint, required_power, required_current, phases):
         """ prüft, ob die Einschaltschwelle erreicht wurde, reserviert Leistung und gibt diese frei 
         bzw. stoppt die Freigabe wenn die Ausschaltschwelle und -verzögerung erreicht wurde.
 
@@ -98,67 +99,135 @@ class pv():
         phases: int
             Phasen, mit denen geladen werden kann
         """
-        pv_config = self.data["config"]
-        control_parameter = chargepoint.data["set"]["charging_ev"].data["control_parameter"]
-        # verbleibender EVU-Überschuss unter Berücksichtigung der Einspeisungsgrenze
-        overhang_power_left_feed_in = self.power_for_pv_charging(chargepoint.data["set"]["charging_ev"].charge_template.data["chargemode"]["pv_charging"]["feed_in_limit"])
-        if  chargepoint.data["get"]["charge_state"] == False:
-            if "timestamp_switch_on_off" in control_parameter:
-                if overhang_power_left_feed_in > 0:
-                    if timecheck.check_timestamp(control_parameter["timestamp_switch_on_off"], pv_config["switch_on_delay"]) == True:
+        try:
+            pv_config = self.data["config"]
+            control_parameter = chargepoint.data["set"]["charging_ev"].data["control_parameter"]
+            # verbleibender EVU-Überschuss unter Berücksichtigung der Einspeisungsgrenze
+            overhang_power_left_feed_in = self.power_for_pv_charging(chargepoint.data["set"]["charging_ev"].charge_template.data["chargemode"]["pv_charging"]["feed_in_limit"])
+            if  chargepoint.data["get"]["charge_state"] == False:
+                if control_parameter["timestamp_switch_on_off"] != False:
+                    # Wurde die Einschaltschwelle erreicht?
+                    if overhang_power_left_feed_in + required_power > pv_config["switch_on_threshold"]*phases:
+                        # Timer ist noch nicht abglaufen
+                        if timecheck.check_timestamp(control_parameter["timestamp_switch_on_off"], pv_config["switch_on_delay"]) == True:
+                            required_power = 0
+                        # Timer abgelaufen
+                        else:
+                            control_parameter["timestamp_switch_on_off"] = 0
+                            self.data["get"]["reserved_pv_power"] -= required_power
+                            log.message_debug_log("info", "Einschaltschwelle von "+str(pv_config["switch_on_threshold"])+ "W fuer die Dauer der Einschaltverzoegerung ueberschritten.")
+                            pub.pub("openWB/vehicle/"+str(chargepoint.data["set"]["charging_ev"].ev_num)+"/control_parameter/timestamp_switch_on_off",0)
+                    # Einschaltschwelle wurde unterschritten, Timer zurücksetzen
+                    else:
+                        control_parameter["timestamp_switch_on_off"] = 0
                         required_power = 0
-                    else:
-                        control_parameter["timestamp_switch_on_off"] = ""
                         self.data["get"]["reserved_pv_power"] -= required_power
-                        log.message_debug_log("info", "Einschaltschwelle von "+str(pv_config["switch_on_threshold"])+ "fuer die Dauer der Einschaltverzoegerung ueberschritten.")
+                        log.message_debug_log("info", "Einschaltschwelle von "+str(pv_config["switch_on_threshold"])+ "W waehrend der Einschaltverzoegerung unterschritten.")
+                        pub.pub("openWB/vehicle/"+str(chargepoint.data["set"]["charging_ev"].ev_num)+"/control_parameter/timestamp_switch_on_off", 0)
                 else:
-                    control_parameter["timestamp_switch_on_off"] = ""
-                    self.data["get"]["reserved_pv_power"] -= required_power
-                    log.message_debug_log("info", "Einschaltschwelle von "+str(pv_config["switch_on_threshold"])+ "waehrend der Einschaltverzoegerung unterschritten.")
-            else:
-                if overhang_power_left_feed_in > pv_config["switch_on_threshold"]*phases:
-                    control_parameter["timestamp_switch_on_off"] = timecheck.create_timestamp()
-                    self.data["get"]["reserved_pv_power"] += required_power
-                    log.message_debug_log("info", "Einschaltverzoegerung für "+str(pv_config["switch_on_delay"])+ "s aktiv.")
-                    required_power = 0
-                else:
-                    required_power = 0
-        else:
-            if overhang_power_left_feed_in < (pv_config["switch_off_threshold"]*(-1)):
-                pass
-            else:
-                control_parameter["timestamp_switch_on_off"] = timecheck.create_timestamp()
-                log.message_debug_log("info", "Abschaltverzögerung für "+ str(pv_config["switch_off_delay"])+"s aktiv.")
-        pub.pub_dict("openWB/vehicle/"+str(chargepoint.data["set"]["charging_ev"].ev_num)+"/control_parameter", control_parameter)
-
-        # nur durch die Ausschaltverzögerung darf required_power auf 0 gesetzt werden, sonst muss bezogen werden.
-        if required_power != 0:
-            if (overhang_power_left_feed_in - required_power) < 0:
-                evu_power = overhang_power_left_feed_in *-1 # muss bezogen werden
-                pv_power = required_power - evu_power
-                evu_current = required_power / (phases * 230)
-                if evu_power > 0:
-                    if loadmanagement.loadmanagement(evu_power, evu_current, phases) == False:
-                        self.allocate_pv_power(pv_power)
+                    # Timer starten
+                    if overhang_power_left_feed_in > pv_config["switch_on_threshold"]*phases:
+                        control_parameter["timestamp_switch_on_off"] = timecheck.create_timestamp()
+                        self.data["get"]["reserved_pv_power"] += required_power
+                        required_power = 0
+                        log.message_debug_log("info", "Einschaltverzoegerung für "+str(pv_config["switch_on_delay"])+ "s aktiv.")
+                        pub.pub("openWB/vehicle/"+str(chargepoint.data["set"]["charging_ev"].ev_num)+"/control_parameter/timestamp_switch_on_off", control_parameter["timestamp_switch_on_off"])
                     else:
-                        pass
-                        # todo
+                        required_power = 0
+            # Liegt die Einschaltgrenze unter der benötigten Leistung, muss bezogen werden.
+            if required_power != 0:
+                if (overhang_power_left_feed_in - required_power) < 0:
+                    evu_power = overhang_power_left_feed_in *-1 # muss bezogen werden
+                    pv_power = required_power - evu_power
+                    evu_current = required_power / (phases * 230)
+                    if evu_power > 0:
+                        if loadmanagement.loadmanagement(evu_power, evu_current, phases) == False:
+                            self.allocate_pv_power(pv_power)
+                else:
+                    self.allocate_pv_power(required_power)
             else:
-                self.allocate_pv_power(required_power)
-            
+                required_current = 0
+                phases = 0
+            return required_power, required_current, phases
+        except Exception as e:
+            log.exception_logging(e)
 
-        return required_power, required_current, phases
+    def switch_off_check_timer(self, chargepoint):
+        """ prüft, ob der Timer der Ausschaltverzögerung abgelaufen ist.
 
-    def switch_off_check_timer(self):
-        if ("timestamp_switch_on_off" in control_parameter) and (chargepoint.data["get"]["charge_state"] == True):
-            if timecheck.check_timestamp(control_parameter["timestamp_switch_on_off"], pv_config["switch_off_delay"]) == False:
-                control_parameter["timestamp_switch_on_off"] = ""
-                required_power = 0
-                log.message_debug_log("info", "Abschaltschwelle von "+str(pv_config["switch_off_threshold"])+"W fuer die Dauer der Abschaltverzöegerung unterschritten.")
-                pub.pub("openWB/vehicle/"+str(chargepoint.data["set"]["charging_ev"].ev_num)+"/control_parameter/timestamp_switch_on_off", control_parameter["timestamp_switch_on_off"])
+        Parameter
+        ---------
+        chargepoint: dict
+            Daten des Ladepunkts
 
-    def switch_off_check_threshold(self):
-        pass
+        Return
+        ------
+        True: Timer abgelaufen
+        False: Timer noch nicht abgelaufen
+        """
+        try:
+            pv_config = self.data["config"]
+            control_parameter = chargepoint.data["set"]["charging_ev"].data["control_parameter"]
+
+            if control_parameter["timestamp_switch_on_off"] != False:
+                if timecheck.check_timestamp(control_parameter["timestamp_switch_on_off"], pv_config["switch_off_delay"]) == False:
+                    control_parameter["timestamp_switch_on_off"] = 0
+                    self.data["get"]["released_pv_power"] -= chargepoint.data["set"]["current"]*chargepoint.data["set"]["phases_to_use"]*230
+                    log.message_debug_log("info", "Abschaltschwelle von "+str(pv_config["switch_off_threshold"])+"W fuer die Dauer der Abschaltverzöegerung unterschritten.")
+                    pub.pub("openWB/vehicle/"+str(chargepoint.data["set"]["charging_ev"].ev_num)+"/control_parameter/timestamp_switch_on_off",0)
+                    return True
+            return False
+        except Exception as e:
+            log.exception_logging(e)
+
+    def switch_off_check_threshold(self, chargepoint):
+        """ prüft, ob die Abschaltschwelle erreicht wurde und startet die Abschaltverzögerung. 
+        Ist die Abschaltverzögerung bereits aktiv, wird geprüft, ob die Abschaltschwelle wieder 
+        unterschritten wurde, sodass die Verzögerung wieder gestoppt wird.
+
+        Parameter
+        ---------
+        chargepoint: dict
+            Daten des Ladepunkts
+
+        Return
+        ------
+        True: Es muss noch mehr Leistung freigegeben werden.
+        False: Es wurde genügend Leistung freigegeben.
+        """
+        try:
+            control_parameter = chargepoint.data["set"]["charging_ev"].data["control_parameter"] 
+            pv_config = self.data["config"]
+            # Der EVU-Überschuss muss ggf um die Einspeisungsgrenze bereinigt werden.
+            if chargepoint.data["set"]["charging_ev"].charge_template.data["chargemode"]["pv_charging"]["feed_in_limit"] == True:
+                feed_in_limit = self.data["config"]["feed_in_yield"]
+            else:
+                feed_in_limit = 0
+            if control_parameter["timestamp_switch_on_off"] != False:
+                # Wurde die Abschaltschwelle erreicht?
+                if (data.counter_data["evu"].data["get"]["power_all"] + feed_in_limit) < pv_config["switch_off_threshold"]:
+                    # Wurden bereits bei so vielen LP die Abschaltverzögerung abgebrochen, dass die Abschaltschwelle nicht mehr überschritten wird? 
+                    # Wenn nein, dann stoppe bei einem weiteren Ladepunkt die Abschaltverzögerung.
+                    if (data.counter_data["evu"].data["get"]["power_all"]- feed_in_limit - self.data["get"]["released_pv_power"]) > pv_config["switch_off_threshold"]:
+                        control_parameter["timestamp_switch_on_off"] = 0
+                        self.data["get"]["released_pv_power"] -= chargepoint.data["set"]["current"]*chargepoint.data["set"]["phases_to_use"]*230
+                        log.message_debug_log("info", "Abschaltschwelle während der Verzögerung unterschritten.")
+                        pub.pub("openWB/vehicle/"+str(chargepoint.data["set"]["charging_ev"].ev_num)+"/control_parameter/timestamp_switch_on_off", 0)
+            else:
+                # Wurde die Abschaltschwelle ggf. durch die Verzögerung anderer LP erreicht?
+                if (data.counter_data["evu"].data["get"]["power_all"] + feed_in_limit - self.data["get"]["released_pv_power"]) > pv_config["switch_off_threshold"]:
+                    control_parameter["timestamp_switch_on_off"] = timecheck.create_timestamp()
+                    # merken, dass ein LP verzögert wird, damit nicht zu viele LP verzögert werden.
+                    self.data["get"]["released_pv_power"] += chargepoint.data["set"]["current"]*chargepoint.data["set"]["phases_to_use"]*230
+                    log.message_debug_log("info", "Abschaltverzögerung für "+ str(pv_config["switch_off_delay"])+"s aktiv.")
+                    pub.pub("openWB/vehicle/"+str(chargepoint.data["set"]["charging_ev"].ev_num)+"/control_parameter/timestamp_switch_on_off", control_parameter["timestamp_switch_on_off"])
+                    # Die Abschaltvschwelle wird immer noch überschritten und es sollten weitere LP abgeschaltet werden.
+            if (data.counter_data["evu"].data["get"]["power_all"] + feed_in_limit - self.data["get"]["released_pv_power"]) > pv_config["switch_off_threshold"]:
+                return True
+            else:
+                return False
+        except Exception as e:
+            log.exception_logging(e)
 
     def power_for_pv_charging(self, feed_in_yield_active):
         """ gibt den verfügbaren EVU-Überschuss unter Berücksichtigung der Einspeisungsgrenze zurück.
@@ -177,21 +246,24 @@ class pv():
         overhang_power_left: int
             verfügbarer EVU-Überschuss + bereits genutzter Überschuss
         """
-        if self.data["config"]["configured"] == True:
-            # Einspeisungsgrenze (Verschiebung des Regelpunkts)
-            if feed_in_yield_active == True:
-                remaining_power = self.data["get"]["overhang_power_left"] - self.data["get"]["reserved_pv_power"] - self.data["config"]["feed_in_yield"]
-                if remaining_power > 0:
-                    return remaining_power
+        try:
+            if self.data["config"]["configured"] == True:
+                # Einspeisungsgrenze (Verschiebung des Regelpunkts)
+                if feed_in_yield_active == True:
+                    remaining_power = self.data["get"]["overhang_power_left"] - self.data["get"]["reserved_pv_power"] - self.data["config"]["feed_in_yield"]
+                    if remaining_power > 0:
+                        return remaining_power
+                    else:
+                        return 0
                 else:
-                    return 0
-            else:
-                return self.data["get"]["overhang_power_left"]
+                    return self.data["get"]["overhang_power_left"]
 
-        else:
-            log.message_debug_log("warning", "PV-Laden aktiv, obwohl kein PV-Modul konfiguriert wurde.")
-            return 0
-    # return available pv power with feed in yield
+            else:
+                log.message_debug_log("warning", "PV-Laden aktiv, obwohl kein PV-Modul konfiguriert wurde.")
+                return 0
+        # return available pv power with feed in yield
+        except Exception as e:
+                log.exception_logging(e)
 
     def power_for_normal_load(self):
         """ gibt den verfügbaren EVU-Überschuss zurück.
@@ -201,11 +273,14 @@ class pv():
         overhang_power_left: int
             verfügbare PV-Leistung
         """
-        if self.data["config"]["configured"] == True:
-            return (self.data["get"]["overhang_power_left"] - self.data["get"]["reserved_pv_power"])
-        else:
-            return 0
-    # return available pv power without feed in yield
+        try:
+            if self.data["config"]["configured"] == True:
+                return (self.data["get"]["overhang_power_left"] - self.data["get"]["reserved_pv_power"])
+            else:
+                return 0
+        # return available pv power without feed in yield
+        except Exception as e:
+                log.exception_logging(e)
 
     def allocate_pv_power(self, required_power):
         """ subtrahieren der zugeteilten Leistung vomverfügbaren EVU-Überschuss
@@ -215,19 +290,26 @@ class pv():
         required_power: float
             Leistung, mit der geladen werden soll
         """
-        if self.data["config"]["configured"] == True:
-            self.data["get"]["overhang_power_left"] -= required_power
-            log.message_debug_log("debug", str(self.data["get"]["overhang_power_left"])+"W EVU-Ueberschuss, der fuer die folgenden Ladepunkte uebrig ist, davon "+str(self.data["get"]["reserved_pv_power"])+"W fuer die Einschaltverzoegerung reservierte Leistung.")
-            if self.data["get"]["overhang_power_left"] < 0:
-                pass #error
+        try:
+            if self.data["config"]["configured"] == True:
+                self.data["get"]["overhang_power_left"] -= required_power
+                log.message_debug_log("debug", str(self.data["get"]["overhang_power_left"])+"W EVU-Ueberschuss, der fuer die folgenden Ladepunkte uebrig ist, davon "+str(self.data["get"]["reserved_pv_power"])+"W fuer die Einschaltverzoegerung reservierte Leistung.")
+                if self.data["get"]["overhang_power_left"] < 0:
+                    pass #error
+        except Exception as e:
+            log.exception_logging(e)
 
     def put_stats(self):
         """ Publishen und Loggen des verbleibnden EVU-Überschusses und reservierten Leistung
         """
-        pub.pub("openWB/pv/config/configured", self.data["config"]["configured"])
-        if self.data["config"]["configured"] == True:
-            pub.pub("openWB/pv/get/overhang_power_left", self.data["get"]["overhang_power_left"])
-            pub.pub("openWB/pv/get/reserved_pv_power", self.data["get"]["reserved_pv_power"])
+        try:
+            pub.pub("openWB/pv/config/configured", self.data["config"]["configured"])
+            if self.data["config"]["configured"] == True:
+                pub.pub("openWB/pv/get/overhang_power_left", self.data["get"]["overhang_power_left"])
+                pub.pub("openWB/pv/get/reserved_pv_power", self.data["get"]["reserved_pv_power"])
+                pub.pub("openWB/pv/get/released_pv_power", self.data["get"]["released_pv_power"])
+        except Exception as e:
+            log.exception_logging(e)
 
 
 class pvModule():
