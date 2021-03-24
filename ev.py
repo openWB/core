@@ -131,6 +131,29 @@ class ev():
         except Exception as e:
             log.exception_logging(e)
 
+    def check_min_max_current_for_pv_charging(self, required_current):
+        """ prüft, ob der gesetzte Ladestrom über dem Mindest-Ladestrom des Lademdous und unter dem Maximal-Ladestrom des EVs liegt. Falls nicht, wird der 
+        Ladestrom auf den Mindest-Ladestrom bzw. den Maximal-Ladestrom gesetzt.
+
+        Parameter
+        ---------
+        required_current: float
+            Strom, der vom Lademodus benötgt wird
+
+        Return
+        ------
+        float: Strom, mit dem das EV laden darf
+        """
+        try:
+            if required_current != 0:
+                if required_current < self.data["control_parameter"]["required_current"]:
+                    return self.data["control_parameter"]["required_current"]
+                if required_current > self.ev_template.data["max_current"]:
+                    return self.ev_template.data["max_current"]
+            return required_current
+        except Exception as e:
+            log.exception_logging(e)
+
     def phase_switch_start_timer(self, chargepoint, additional_current_per_phase):
         """ prüft, ob der gesetzte Ladestrom überunter dem Maximal-Ladestrom des EVs liegt.
 
@@ -152,24 +175,28 @@ class ev():
             if chargepoint.data["get"]["charge_state"] == True:
                 if phases == 1:
                     if current >= self.ev_template.data["max_current"]:
+                        # Maximalstromstärke nicht überschreiten
                         if current > self.ev_template.data["max_current"]:
                             current = self.ev_template.data["max_current"]
-                        if "timestamp_auto_phase_switch" not in control_parameter:
-                            control_parameter["timestamp_auto_phase_switch"] = timecheck.create_timestamp(
-                            )
+                        # Wenn im einphasigen Laden die Maximalstromstärke erreicht wird, Timer für das Umschalten auf 3 Phasen starten.
+                        if control_parameter["timestamp_auto_phase_switch"] != 0:
+                            control_parameter["timestamp_auto_phase_switch"] = timecheck.create_timestamp()
                             pub.pub("openWB/vehicle/"+str(chargepoint.data["set"]["charging_ev"].ev_num) +
                                     "/control_parameter/timestamp_auto_phase_switch_", control_parameter["timestamp_auto_phase_switch"])
                             log.message_debug_log("info", "Umschaltverzoegerung von 1 auf 3 Phasen für "+str(
                                 pv_config["phase_switch_delay"]) + "Min aktiv.")
                 elif phases == 3:
-                    if current == self.ev_template.data["min_current"]:
-                        if "timestamp_auto_phase_switch" not in control_parameter:
-                            control_parameter["timestamp_auto_phase_switch"] = timecheck.create_timestamp(
-                            )
-                            pub.pub("openWB/vehicle/"+str(chargepoint.data["set"]["charging_ev"].ev_num) +
-                                    "/control_parameter/timestamp_auto_phase_switch_", control_parameter["timestamp_auto_phase_switch"])
-                            log.message_debug_log("info", "Umschaltverzoegerung von 3 auf 1 Phase für "+str(
-                                pv_config["phase_switch_delay"]) + "Min aktiv.")
+                    if current > self.ev_template.data["max_current"]:
+                        current = self.ev_template.data["max_current"]
+                    # Wenn im dreiphasigen Laden ein Timer aktiv ist, ist dieser für das Zurückschalten auf eine Phase.
+                    # Wird zusätzlicher Strom zur Verfügung gestellt, muss dieser Timer gestoppt werden, da für die Umschaltung
+                    # durchgängig mit Minimalstromstärke geladen werden muss.
+                    if control_parameter["timestamp_auto_phase_switch"] != 0:
+                        control_parameter["timestamp_auto_phase_switch"] = 0
+                        pub.pub("openWB/vehicle/"+str(chargepoint.data["set"]["charging_ev"].ev_num) +
+                                "/control_parameter/timestamp_auto_phase_switch_", control_parameter["timestamp_auto_phase_switch"])
+                        log.message_debug_log("info", "Umschaltverzoegerung von 3 auf 1 Phase für "+str(
+                            pv_config["phase_switch_delay"]) + "Min abgebrochen.")
             return current
         except Exception as e:
             log.exception_logging(e)
@@ -192,6 +219,11 @@ class ev():
             pv_config = data.pv_data["pv"].data["config"]
             if chargepoint.data["get"]["charge_state"] == True:
                 if phases == 1:
+                    if current < self.control_parameter["required_current"]:
+                        current = self.control_parameter["required_current"]
+                    # Wenn im einphasigen Laden ein Timer aktiv ist, ist dieser für das Umschalten auf drei Phasen.
+                    # Wird weniger Strom zur Verfügung gestellt, muss dieser Timer gestoppt werden, da für die Umschaltung
+                    # durchgängig mit Maximalstromstärke geladen werden muss.
                     if chargepoint.data["get"]["current"][0] < self.ev_template.data["max_current"]:
                         if "timestamp_auto_phase_switch" in control_parameter:
                             control_parameter["timestamp_auto_phase_switch"] = ""

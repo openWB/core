@@ -45,17 +45,14 @@ class pv():
                 # aktuelle Leistung an der EVU, enthält die Leistung der Einspeisungsgrenze
                 evu_overhang = data.counter_data["evu"].data["get"]["power_all"] * (-1)
                 
-                if evu_overhang > 0:
-                    # Regelmodus
-                    control_range_low = self.data["config"]["control_range"][0]
-                    control_range_high = self.data["config"]["control_range"][1]
-                    control_range_center = (control_range_high - control_range_low) / 2
-                    if control_range_low < evu_overhang < control_range_high:
-                        available_power = evu_overhang
-                    else:
-                        available_power = evu_overhang - control_range_center
-                else:
+                # Regelmodus
+                control_range_low = self.data["config"]["control_range"][0]
+                control_range_high = self.data["config"]["control_range"][1]
+                control_range_center = (control_range_high - control_range_low) / 2
+                if control_range_low < evu_overhang < control_range_high:
                     available_power = 0
+                else:
+                    available_power = evu_overhang - control_range_center
 
                 log.message_debug_log("debug", str(available_power)+"W EVU-Ueberschuss, der für die Regelung verfuegbar ist, davon "+str(self.data["get"]["reserved_pv_power"])+"W fuer die Einschaltverzoegerung reservierte Leistung.")
             # nur allgemeiner PV-Key vorhanden, d.h. kein Modul konfiguriert
@@ -106,7 +103,8 @@ class pv():
             overhang_power_left_feed_in = self.power_for_pv_charging(chargepoint.data["set"]["charging_ev"].charge_template.data["chargemode"]["pv_charging"]["feed_in_limit"])
             if  chargepoint.data["get"]["charge_state"] == False:
                 if control_parameter["timestamp_switch_on_off"] != False:
-                    # Wurde die Einschaltschwelle erreicht?
+                    # Wurde die Einschaltschwelle erreicht? Reservierte Leistung aus overhang_power_left_feed_in rausrechnen, 
+                    # da diese Leistung ja schon reserviert wurde, als die Einschaltschwelle erreicht wurde.
                     if overhang_power_left_feed_in + required_power > pv_config["switch_on_threshold"]*phases:
                         # Timer ist noch nicht abglaufen
                         if timecheck.check_timestamp(control_parameter["timestamp_switch_on_off"], pv_config["switch_on_delay"]) == True:
@@ -136,8 +134,8 @@ class pv():
                         required_power = 0
             # Liegt die Einschaltgrenze unter der benötigten Leistung, muss bezogen werden.
             if required_power != 0:
-                if (overhang_power_left_feed_in - required_power) < 0:
-                    evu_power = overhang_power_left_feed_in *-1 # muss bezogen werden
+                if self.data["get"]["overhang_power_left"] < 0:
+                    evu_power = self.data["get"]["overhang_power_left"] *-1 # muss bezogen werden
                     pv_power = required_power - evu_power
                     evu_current = required_power / (phases * 230)
                     if evu_power > 0:
@@ -189,11 +187,6 @@ class pv():
         ---------
         chargepoint: dict
             Daten des Ladepunkts
-
-        Return
-        ------
-        True: Es muss noch mehr Leistung freigegeben werden.
-        False: Es wurde genügend Leistung freigegeben.
         """
         try:
             control_parameter = chargepoint.data["set"]["charging_ev"].data["control_parameter"] 
@@ -222,10 +215,6 @@ class pv():
                     log.message_debug_log("info", "Abschaltverzögerung für "+ str(pv_config["switch_off_delay"])+"s aktiv.")
                     pub.pub("openWB/vehicle/"+str(chargepoint.data["set"]["charging_ev"].ev_num)+"/control_parameter/timestamp_switch_on_off", control_parameter["timestamp_switch_on_off"])
                     # Die Abschaltvschwelle wird immer noch überschritten und es sollten weitere LP abgeschaltet werden.
-            if (data.counter_data["evu"].data["get"]["power_all"] + feed_in_limit - self.data["get"]["released_pv_power"]) > pv_config["switch_off_threshold"]:
-                return True
-            else:
-                return False
         except Exception as e:
             log.exception_logging(e)
 
@@ -250,16 +239,10 @@ class pv():
             if self.data["config"]["configured"] == True:
                 # Einspeisungsgrenze (Verschiebung des Regelpunkts)
                 if feed_in_yield_active == True:
-                    remaining_power = self.data["get"]["overhang_power_left"] - self.data["get"]["reserved_pv_power"] - self.data["config"]["feed_in_yield"]
-                    if remaining_power > 0:
-                        return remaining_power
-                    else:
-                        return 0
+                    return self.data["get"]["overhang_power_left"] - self.data["get"]["reserved_pv_power"] - self.data["config"]["feed_in_yield"]
                 else:
-                    return self.data["get"]["overhang_power_left"]
-
+                    return self.data["get"]["overhang_power_left"] - self.data["get"]["reserved_pv_power"]
             else:
-                log.message_debug_log("warning", "PV-Laden aktiv, obwohl kein PV-Modul konfiguriert wurde.")
                 return 0
         # return available pv power with feed in yield
         except Exception as e:
