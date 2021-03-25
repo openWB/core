@@ -561,6 +561,7 @@ class pubvars():
         self.client.publish("openWB/chargepoint/1/get/manual_lock", payload=json.dumps(0), qos=0, retain=True)
         self.client.publish("openWB/chargepoint/1/config/template", payload=json.dumps(1), qos=0, retain=True)
         self.client.publish("openWB/chargepoint/1/config/connected_phases", payload=json.dumps(3), qos=0, retain=True)
+        self.client.publish("openWB/chargepoint/1/config/auto_phase_switch_hw", payload=json.dumps(1), qos=0, retain=True)
         self.client.publish("openWB/chargepoint/1/get/rfid", payload=json.dumps(1234), qos=0, retain=True)
         # self.client.publish("openWB/chargepoint/1/get/power", payload=json.dumps(1000), qos=0, retain=True)
         # cp2
@@ -575,7 +576,7 @@ class pubvars():
         #evt1
         self.client.publish("openWB/vehicle/template/ev_template/1/min_current", payload=json.dumps(10), qos=0, retain=True)
         self.client.publish("openWB/vehicle/template/ev_template/1/battery_capacity", payload=json.dumps(80), qos=0, retain=True)
-        self.client.publish("openWB/vehicle/template/ev_template/1/max_phases", payload=json.dumps(1), qos=0, retain=True)
+        self.client.publish("openWB/vehicle/template/ev_template/1/max_phases", payload=json.dumps(3), qos=0, retain=True)
         self.client.publish("openWB/vehicle/template/ev_template/1/max_current", payload=json.dumps(16), qos=0, retain=True)
         self.client.publish("openWB/vehicle/template/charge_template/1/prio", payload=json.dumps(1), qos=0, retain=True)
         #ev1
@@ -656,6 +657,7 @@ class pubvars():
         self.client.publish("openWB/pv/config/switch_on_delay", payload=json.dumps(15), qos=0, retain=True)
         self.client.publish("openWB/pv/config/switch_on_threshold", payload=json.dumps(1400), qos=0, retain=True)
         self.client.publish("openWB/pv/config/feed_in_yield", payload=json.dumps(2000), qos=0, retain=True)
+        self.client.publish("openWB/pv/config/phase_switch_delay", payload=json.dumps(7), qos=0, retain=True)
         self.client.publish("openWB/pv/modules/1/get/counter", payload=json.dumps(500), qos=0, retain=True)
         
         #evu

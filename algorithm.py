@@ -35,7 +35,7 @@ class control():
                         (None, "standby", True), 
                         (None, "standby", False), 
                         (None, "stop", True),
-                        (None, "stop", False))
+                        (None, "stop", False) )
                         
         # erstmal die PV-Überschuss-Ladung zurück nehmen, wenn kein Überschuss vorhanden ist
         log.message_debug_log("debug", "## Ueberschuss-Ladung ueber Mindeststrom bei PV-Laden zuruecknehmen.")
@@ -63,6 +63,9 @@ class control():
         for mode in reversed(chargemodes[10:-4]):
             if self._switch_off_threshold(mode) == False:
                 break
+
+        # Phasenumschaltung
+        self._check_auto_phase_switch()
 
         # Überschuss für Ladepunkte verwenden, die noch nicht laden bzw. LP mit niedrigerer Ladepriorität abschalten, um LP mit höherer Priorität zu laden.
         while True:
@@ -92,7 +95,7 @@ class control():
         log.message_debug_log("debug", "## Uebrigen Ueberschuss verteilen.")
         self._distribute_unused_evu_overhang()
 
-        # LP stoppen, bei denen die Abschaltverzögerung abgelaufen ist
+        # LP stoppen, bei denen die Abschaltverzögerung abgelaufen ist (die frei werdende Leistung soll erst im nächsten Zyklus verteilt werden)
         for cp in data.cp_data:
             if "cp" in cp:
                 chargepoint = data.cp_data[cp]
@@ -486,7 +489,12 @@ class control():
                 phases = config["connected_phases"]
             chargemode = charging_ev.data["control_parameter"]["chargemode"]
             chargemode_phases = data.general_data["general"].get_phases_chargemode(chargemode)
-            if phases <= chargemode_phases:
+            if chargemode_phases == "auto":
+                if phases <= chargepoint.data["set"]["phases_to_use"]:
+                    return chargepoint.data["set"]["phases_to_use"]
+                else:
+                    phases
+            elif phases <= chargemode_phases:
                 return phases
             else:
                 return chargemode_phases
@@ -607,8 +615,8 @@ class control():
                 # pos. Wert -> Ladestrom wird erhöht, negativer Wert -> Ladestrom wird reduziert
                 current_diff_per_phase = data.pv_data["pv"].power_for_pv_charging(feed_in_limit) / 230 / num_of_phases
                 for cp in data.cp_data:
-                    chargepoint = data.cp_data[cp]
-                    if "set" in chargepoint.data:
+                    if "set" in data.cp_data[cp].data:
+                        chargepoint = data.cp_data[cp]
                         if "charging_ev" in data.cp_data[cp].data["set"]:
                             charging_ev = chargepoint.data["set"]["charging_ev"]
                             if charging_ev.charge_template.data["chargemode"]["selected"] == "pv_charging" or charging_ev.data["control_parameter"]["chargemode"] == "pv_charging":
@@ -623,4 +631,16 @@ class control():
         except Exception as e:
             log.exception_logging(e)
 
-
+    def _check_auto_phase_switch(self):
+        """ geht alle LP durch und prüft, ob eine Ladung aktiv ist, ob automatische Phasenumschaltung 
+        möglich ist und ob ob ein Timer gestartet oder gestoppt werden muss oder ob ein Timer abgelaufen ist.
+        """
+        try:
+            for cp in data.cp_data:
+                if "set" in data.cp_data[cp].data:
+                    chargepoint = data.cp_data[cp]
+                    if "charging_ev" in data.cp_data[cp].data["set"]:
+                        if chargepoint.data["config"]["auto_phase_switch_hw"] == True and chargepoint.data["get"]["charge_state"] == True:
+                            chargepoint.data["set"]["phases_to_use"] = chargepoint.data["set"]["charging_ev"].auto_phase_switch(chargepoint.data["get"]["phases_in_use"], chargepoint.data["set"]["current"], chargepoint.data["get"]["current"])
+        except Exception as e:
+            log.exception_logging(e)

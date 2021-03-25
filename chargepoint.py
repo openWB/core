@@ -119,9 +119,9 @@ class chargepoint():
             # Daten zurücksetzen, wenn nicht geladen werden soll.
             self.data.pop("set")
             pub.pub("openWB/chargepoint/"+str(self.cp_num)+"/set/charging_ev", "")
-            pub.pub("openWB/chargepoint/"+str(self.cp_num)+"/set/current", "")
-            pub.pub("openWB/chargepoint/"+str(self.cp_num)+"/set/energy_to_charge", "")
-            pub.pub("openWB/chargepoint/"+str(self.cp_num)+"/set/phases_to_use", "")
+            pub.pub("openWB/chargepoint/"+str(self.cp_num)+"/set/current", 0)
+            pub.pub("openWB/chargepoint/"+str(self.cp_num)+"/set/energy_to_charge", 0)
+            pub.pub("openWB/chargepoint/"+str(self.cp_num)+"/set/phases_to_use", 0)
         except Exception as e:
             log.exception_logging(e)
             return None
