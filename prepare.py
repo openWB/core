@@ -2,9 +2,7 @@
 """
 
 import copy
-import traceback
 
-import algorithm
 import bat
 import chargepoint
 import counter
@@ -20,7 +18,7 @@ class prepare():
     """
 
     def __init__(self):
-        self.control = algorithm.control()
+        pass
 
     def setup_algorithm(self):
         """ bereitet die Daten für den Algorithmus vor und startet diesen.
@@ -30,7 +28,6 @@ class prepare():
         self._use_pv()
         self._bat()
         data.counter_data["evu"].setup_counter()
-        self.control.calc_current()
 
     def _copy_data(self):
         """ kopiert die Daten, die per MQTT empfangen wurden.
