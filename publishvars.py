@@ -603,7 +603,7 @@ class pubvars():
         self.client.publish("openWB/vehicle/template/charge_template/2/time_charging/1/frequency/weekly", payload=json.dumps([1,1,1,1,1,0,0]), qos=0, retain=True)
         self.client.publish("openWB/vehicle/template/charge_template/2/time_charging/1/time", payload=json.dumps(["08:00", "11:20"]), qos=0, retain=True)
         self.client.publish("openWB/vehicle/template/charge_template/2/time_charging/1/current", payload=json.dumps(10), qos=0, retain=True)
-        self.client.publish("openWB/vehicle/template/charge_template/2/chargemode/selected", payload=json.dumps("pv_charging"), qos=0, retain=True)
+        self.client.publish("openWB/vehicle/template/charge_template/2/chargemode/selected", payload=json.dumps("instant_charging"), qos=0, retain=True)
         self.client.publish("openWB/vehicle/template/charge_template/2/chargemode/pv_charging/min_current", payload=json.dumps(12), qos=0, retain=True)
         self.client.publish("openWB/vehicle/template/charge_template/2/chargemode/pv_charging/min_soc", payload=json.dumps(23), qos=0, retain=True)
         self.client.publish("openWB/vehicle/template/charge_template/2/chargemode/pv_charging/min_soc_current", payload=json.dumps(13), qos=0, retain=True)
@@ -657,7 +657,7 @@ class pubvars():
         self.client.publish("openWB/pv/config/switch_on_delay", payload=json.dumps(15), qos=0, retain=True)
         self.client.publish("openWB/pv/config/switch_on_threshold", payload=json.dumps(1400), qos=0, retain=True)
         self.client.publish("openWB/pv/config/feed_in_yield", payload=json.dumps(2000), qos=0, retain=True)
-        self.client.publish("openWB/pv/config/phase_switch_delay", payload=json.dumps(7), qos=0, retain=True)
+        self.client.publish("openWB/pv/config/phase_switch_delay", payload=json.dumps(1), qos=0, retain=True)
         self.client.publish("openWB/pv/modules/1/get/counter", payload=json.dumps(500), qos=0, retain=True)
         
         #evu
@@ -665,6 +665,11 @@ class pubvars():
         self.client.publish("openWB/counter/evu/get/current", payload=json.dumps([5,5,5]), qos=0, retain=True)
         self.client.publish("openWB/counter/evu/config/max_consumption", payload=json.dumps(6000), qos=0, retain=True)
         self.client.publish("openWB/counter/evu/config/max_current", payload=json.dumps([35, 35, 35]), qos=0, retain=True)
+
+        #bat
+        self.client.publish("openWB/bat/config/switch_on_soc", payload=json.dumps(60), qos=0, retain=True)
+        self.client.publish("openWB/bat/config/switch_off_soc", payload=json.dumps(40), qos=0, retain=True)
+        self.client.publish("openWB/bat/modules/1/config/type", payload=json.dumps("mqtt"), qos=0, retain=True)
 
         #general
         self.client.publish("openWB/general/chargemode_config/instant_charging/phases_to_use", payload=json.dumps(1), qos=0, retain=True)

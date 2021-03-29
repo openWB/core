@@ -426,8 +426,12 @@ class subData():
                 if "get" not in self.bat_module_data["bat"+index].data:
                     self.bat_module_data["bat"+index].data["get"]={}
                 self.set_json_payload(self.bat_module_data["bat"+index].data["get"], msg)
+            elif re.search("^openWB/bat/modules/[1-9][0-9]*/set/.+$", msg.topic) != None:
+                if "set" not in self.bat_module_data["bat"+index].data:
+                    self.bat_module_data["bat"+index].data["set"]={}
+                self.set_json_payload(self.bat_module_data["bat"+index].data["set"], msg)
         elif re.search("^openWB/bat/.+$", msg.topic) != None:
-            if "bat" in self.bat_module_data:
+            if "bat" not in self.bat_module_data:
                 self.bat_module_data["bat"]=bat.bat()
             if re.search("^openWB/bat/get/.+$", msg.topic) != None:
                 if "get" not in self.bat_module_data["bat"].data:

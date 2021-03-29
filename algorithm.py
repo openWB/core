@@ -257,7 +257,7 @@ class control():
                 # Solange die Liste durchgehen, bis die Abschaltschwelle nicht mehr erreicht wird.
                 for cp in preferenced_chargepoints:
                     if cp.data["set"]["current"] != 0:
-                        data.pv_data["pv"].switch_off_check_threshold(cp)
+                        data.pv_data["pv"].switch_off_check_threshold(cp, self._get_bat_and_evu_overhang())
         except Exception as e:
             log.exception_logging(e)
     
@@ -358,18 +358,22 @@ class control():
         """
         try:
             # PV-Strom nutzen
-            overhang_power_left = data.pv_data["pv"].power_for_normal_load()
+            overhang_power_left = data.pv_data["pv"].overhang_left_with_without_feed_in_limit(False)
             if overhang_power_left > 0:
                 overhang_power_left -= required_power
                 if overhang_power_left > 0:
-                    data.pv_data["pv"].allocate_pv_power(required_power)
+                    if data.pv_data["pv"].allocate_pv_power(required_power) == False:
+                        required_current = 0
+                        phases = 0
                     self._process_data(chargepoint, required_power, required_current, phases)
                 else:
                     evu_power = overhang_power_left *-1 # muss bezogen werden
                     pv_power = required_power - evu_power
                     evu_current = required_power / (phases * 230)
                     if loadmanagement.loadmanagement(evu_power, evu_current, phases) == False:
-                        data.pv_data["pv"].allocate_pv_power(pv_power)
+                        if data.pv_data["pv"].allocate_pv_power(pv_power) == False:
+                            required_current = 0
+                            phases = 0
                     else:
                         required_power, required_current, phases= self._no_load()
                     self._process_data(chargepoint, required_power, required_current, phases)
@@ -398,44 +402,12 @@ class control():
         ------
         """
         try:
-            overhang_power_left = data.pv_data["pv"].power_for_pv_charging(chargepoint.data["set"]["charging_ev"].charge_template.data["chargemode"]["pv_charging"]["feed_in_limit"])
-            if overhang_power_left > 0:
-                # # prüfen, dass es in den letzten 10s nicht über dem Minimum/unter dem Maximum lag
-                # chargepoint.data["set"]["charging_ev"].phase_switch_stop_timer(chargepoint)
-                # # prüfen, ob Timer abgelaufen ist
-                # phases = chargepoint.data["set"]["charging_ev"].check_phase_switch_switching(chargepoint)
-                bat_charging_power_left = data.bat_module_data["bat"].power_for_bat_charging()
-                if chargepoint.data["set"]["charging_ev"].charge_template.data["chargemode"]["selected"] == "scheduled_charging" and "pv_charging" not in chargepoint.data["set"]["charging_ev"].charge_template.data["chargemode"]:
-                    required_power, required_current, phases = self._no_load()
-                    log.message_debug_log("warning", "PV-Laden im Modus Zielladen aktiv und es wurden keine Einstellungen für PV-Laden konfiguriert.")
-                else:
-                    # EV hat Vorrang
-                    if (chargepoint.data["set"]["charging_ev"].charge_template.data["chargemode"]["pv_charging"]["bat_prio"] == False) and (bat_charging_power_left > 0):
-                        # Laden nur mit der Leistung, die vorher der Speicher bezogen hat
-                        if ( bat_charging_power_left - required_power) > 0:
-                            data.bat_module_data["bat"].allocate_bat_power(required_power )
-                        # Laden mit PV-Leistung und der Leistung, die vorher der Speicher bezogen hat
-                        elif overhang_power_left > 0:
-                            pv_power = required_power - bat_charging_power_left
-                            required_power, required_current, phases = data.pv_data["pv"].switch_on(chargepoint, pv_power, required_current, phases)
-                            data.bat_module_data["bat"].allocate_bat_power(bat_charging_power_left )
-                        else:
-                            # keine Leistung übrig
-                            required_power, required_current, phases = self._no_load()
-                    # Speicher hat Vorrang, aber es wird noch eingespeist
-                    elif overhang_power_left > 0:
-                        if self._check_cp_without_feed_in_is_prioritised(chargepoint) == True:
-                            required_power, required_current, phases = data.pv_data["pv"].switch_on(chargepoint, required_power, required_current, phases)
-                        else:
-                            required_power, required_current, phases = self._no_load()
-                    else:
-                        # Speicher zieht gesamte PV-Leistung und hat Vorrang -> keine Ladung
-                        required_power, required_current, phases = self._no_load()
+            if chargepoint.data["set"]["charging_ev"].charge_template.data["chargemode"]["selected"] == "scheduled_charging" and "pv_charging" not in chargepoint.data["set"]["charging_ev"].charge_template.data["chargemode"]:
+                required_power, required_current, phases = self._no_load()
+                log.message_debug_log("warning", "PV-Laden im Modus Zielladen aktiv und es wurden keine Einstellungen für PV-Laden konfiguriert.")
             else:
                 if self._check_cp_without_feed_in_is_prioritised(chargepoint) == True:
-                    required_power, required_current, phases = data.pv_data["pv"].switch_on(chargepoint, required_power, required_current, phases)
-                else:
-                    required_power, required_current, phases = self._no_load()
+                    required_power, required_current, phases = data.pv_data["pv"].switch_on(chargepoint, required_power, required_current, phases, data.bat_module_data["bat"].data["get"]["power"])
             self._process_data(chargepoint, required_power, required_current, phases)
         except Exception as e:
             log.exception_logging(e)
@@ -466,7 +438,141 @@ class control():
         except Exception as e:
             log.exception_logging(e)
 
-# Helperfunctions
+    def _start_charging(self):
+        try:
+            data.pv_data["pv"].put_stats()
+            data.counter_data["evu"].put_stats()
+            log.message_debug_log("info", "Regelungszyklus beendet.")
+            for cp in data.cp_data:
+                chargepoint = data.cp_data[cp]
+                if "set" in chargepoint.data:
+                    if "charging_ev" in chargepoint.data["set"]:
+                        # CP-Unterbrechung durchführen?
+                        # Phasenumschaltung erforderlich?
+                        if chargepoint.data["get"]["phases_in_use"] != chargepoint.data["set"]["phases_to_use"]:
+                            #perform phase switch
+                            pub.pub("openWB/chargepoint/"+str(chargepoint.cp_num)+"/set/phases_to_use", chargepoint.data["set"]["phases_to_use"])
+                            pub.pub("openWB/chargepoint/"+str(chargepoint.cp_num)+"/set/current", chargepoint.data["set"]["charging_ev"].data["control_parameter"]["required_current"])
+                        if chargepoint.data["set"]["current"]  != 0:
+                            chargepoint.data["get"]["charge_state"] == True
+                        else:
+                            chargepoint.data["get"]["charge_state"] == False
+                        pub.pub("openWB/chargepoint/"+str(chargepoint.cp_num)+"/get/charge_state", chargepoint.data["get"]["charge_state"])
+                        pub.pub("openWB/chargepoint/"+str(chargepoint.cp_num)+"/get/power_all", (chargepoint.data["set"]["phases_to_use"]*chargepoint.data["set"]["current"]*230))
+        except Exception as e:
+            log.exception_logging(e)
+
+    def _distribute_unused_evu_overhang(self):
+        """ prüft, ob für LP ohne Einspeisungsgrenze noch EVU-Überschuss übrig ist und dann für die LP mit Einspeiungsgrenze.
+        """
+        try:
+            if data.pv_data["pv"].overhang_left_with_without_feed_in_limit(False) != 0:
+                if data.pv_data["pv"].overhang_left_with_without_feed_in_limit(False) > 0:
+                    self._distribution(False, False)
+                    self._distribution(False, True)
+                if data.pv_data["pv"].overhang_left_with_without_feed_in_limit(True) > 0:
+                    self._distribution(True, True)
+                    self._distribution(True, False)
+            data.pv_data["pv"].put_stats()
+        except Exception as e:
+            log.exception_logging(e)
+
+    def _reduce_used_evu_overhang(self):
+        """ prüft, ob für LP ohne Einspeisungsgrenze noch EVU-Überschuss zurückgenommen werden muss und dann für die LP mit Einspeiungsgrenze.
+        """
+        try:
+            if data.pv_data["pv"].overhang_left_with_without_feed_in_limit(False) != 0:
+                if data.pv_data["pv"].overhang_left_with_without_feed_in_limit(True) < 0:
+                    self._distribution(True, False)
+                    self._distribution(True, True)
+                if data.pv_data["pv"].overhang_left_with_without_feed_in_limit(False) < 0:
+                    self._distribution(False, True)
+                    self._distribution(False, False)
+            data.pv_data["pv"].put_stats()
+        except Exception as e:
+            log.exception_logging(e)
+
+    def _distribution(self, feed_in_limit, bat_prio):
+        """ Verteilt den verbleibenden EVU-Überschuss gleichmäßig auf alle genutzten Phasen. Dazu wird zunächst die Anzahl der Phasen ermittelt, auf denen geladen wird.
+        Danach wird der Überschuss pro Phase ermittelt und auf die Phasen aufgeschlagen.
+
+        Parameter
+        ---------
+        feed_in_limit: bool
+            Einspeisungsgrenze aktiv/inaktiv 
+        """
+        try:
+            num_of_phases = 0
+            # Anzahl aller genutzten Phasen ermitteln
+            for chargepoint in data.cp_data:
+                if "set" in data.cp_data[chargepoint].data:
+                    if "charging_ev" in data.cp_data[chargepoint].data["set"]:
+                        charging_ev = data.cp_data[chargepoint].data["set"]["charging_ev"]
+                        if charging_ev.data["control_parameter"]["chargemode"] == "pv_charging":
+                            if (data.cp_data[chargepoint].data["set"]["current"] != 0 and 
+                                    charging_ev.charge_template.data["chargemode"]["pv_charging"]["feed_in_limit"] == feed_in_limit and 
+                                    charging_ev.charge_template.data["chargemode"]["pv_charging"]["bat_prio"] == bat_prio):
+                                num_of_phases += data.cp_data[chargepoint].data["set"]["phases_to_use"]
+            # Ladung aktiv?
+            if num_of_phases > 0:
+                # Wenn das EV Vorrang hat, kann die Ladeleistung des Speichers zum Laden des EV verwendet werden.
+                if bat_prio == False:
+                    bat_overhang = data.bat_module_data["bat"].data["set"]["charging_power_left"]
+                else:
+                    bat_overhang = 0
+                # pos. Wert -> Ladestrom wird erhöht, negativer Wert -> Ladestrom wird reduziert
+                current_diff_per_phase = (data.pv_data["pv"].overhang_left_with_without_feed_in_limit(feed_in_limit) + bat_overhang) / 230 / num_of_phases
+                for cp in data.cp_data:
+                    if "set" in data.cp_data[cp].data:
+                        chargepoint = data.cp_data[cp]
+                        if "charging_ev" in data.cp_data[cp].data["set"]:
+                            charging_ev = chargepoint.data["set"]["charging_ev"]
+                            if charging_ev.charge_template.data["chargemode"]["selected"] == "pv_charging" or charging_ev.data["control_parameter"]["chargemode"] == "pv_charging":
+                                if (chargepoint.data["set"]["current"] != 0 and 
+                                        charging_ev.charge_template.data["chargemode"]["pv_charging"]["feed_in_limit"] == feed_in_limit and 
+                                        charging_ev.charge_template.data["chargemode"]["pv_charging"]["bat_prio"] == bat_prio):
+                                    phases = chargepoint.data["set"]["phases_to_use"]
+                                    # Einhalten des Mindeststroms des Lademodus und Maximalstroms des EV
+                                    current = charging_ev.check_min_max_current_for_pv_charging(current_diff_per_phase+chargepoint.data["set"]["current"])
+                                    chargepoint.data["set"]["current"] = current
+                                    power_diff = phases * 230 * (current - chargepoint.data["set"]["current"])
+
+                                    # Laden nur mit der Leistung, die vorher der Speicher bezogen hat
+                                    if ( bat_overhang - power_diff) > 0:
+                                        if data.bat_module_data["bat"].allocate_bat_power(power_diff) == False:
+                                            current = 0
+                                    # Laden mit EVU-Überschuss und der Leistung, die vorher der Speicher bezogen hat
+                                    elif bat_overhang > 0:
+                                        pv_power = power_diff - bat_overhang
+                                        if data.pv_data["pv"].allocate_pv_power(pv_power) == False:
+                                            current = 0
+                                        elif data.bat_module_data["bat"].allocate_bat_power(bat_overhang) == False:
+                                            current = 0
+                                    # Laden nur mit EVU-Überschuss bzw. Reduktion des EVU-Bezugs
+                                    else:
+                                        if data.pv_data["pv"].allocate_pv_power(power_diff) == False:
+                                            current = 0
+
+                                    pub.pub("openWB/chargepoint/"+str(chargepoint.cp_num)+"/set/current", current)
+                                    log.message_debug_log("info", "Überschussladen an LP: "+str(chargepoint.cp_num)+", Ladestrom: "+str(current)+"A, Phasen: "+str(phases)+", Ladeleistung: "+str(phases * 230 * current)+"W")
+        except Exception as e:
+            log.exception_logging(e)
+
+    def _check_auto_phase_switch(self):
+        """ geht alle LP durch und prüft, ob eine Ladung aktiv ist, ob automatische Phasenumschaltung 
+        möglich ist und ob ob ein Timer gestartet oder gestoppt werden muss oder ob ein Timer abgelaufen ist.
+        """
+        try:
+            for cp in data.cp_data:
+                if "set" in data.cp_data[cp].data:
+                    chargepoint = data.cp_data[cp]
+                    if "charging_ev" in data.cp_data[cp].data["set"]:
+                        if chargepoint.data["config"]["auto_phase_switch_hw"] == True and chargepoint.data["get"]["charge_state"] == True:
+                            chargepoint.data["set"]["phases_to_use"] = chargepoint.data["set"]["charging_ev"].auto_phase_switch(chargepoint.data["get"]["phases_in_use"], chargepoint.data["get"]["current"])
+        except Exception as e:
+            log.exception_logging(e)
+
+    # Helperfunctions
 
     def _get_phases(self, chargepoint):
         """ ermittelt die maximal mögliche Anzahl Phasen, die von Konfiguration, Auto und Ladepunkt unterstützt wird.
@@ -542,105 +648,7 @@ class control():
         except Exception as e:
             log.exception_logging(e)
 
-    def _start_charging(self):
-        try:
-            data.pv_data["pv"].put_stats()
-            data.counter_data["evu"].put_stats()
-            log.message_debug_log("info", "Regelungszyklus beendet.")
-            for cp in data.cp_data:
-                chargepoint = data.cp_data[cp]
-                if "set" in chargepoint.data:
-                    if "charging_ev" in chargepoint.data["set"]:
-                        # CP-Unterbrechung durchführen?
-                        # Phasenumschaltung erforderlich? -> Timer abgelaufen
-                        if chargepoint.data["set"]["current"]  != 0:
-                            chargepoint.data["get"]["charge_state"] == True
-                        else:
-                            chargepoint.data["get"]["charge_state"] == False
-                        pub.pub("openWB/chargepoint/"+str(chargepoint.cp_num)+"/get/charge_state", chargepoint.data["get"]["charge_state"])
-                        pub.pub("openWB/chargepoint/"+str(chargepoint.cp_num)+"/get/power_all", (chargepoint.data["set"]["phases_to_use"]*chargepoint.data["set"]["current"]*230))
-        except Exception as e:
-            log.exception_logging(e)
-
-# in Vorbereitung
-
-
-    def _distribute_unused_evu_overhang(self):
-        """ prüft, ob für LP ohne Einspeisungsgrenze noch EVU-Überschuss übrig ist und dann für die LP mit Einspeiungsgrenze.
+    def _get_bat_and_evu_overhang(self):
         """
-        try:
-            if data.pv_data["pv"].power_for_normal_load() != 0:
-                if data.pv_data["pv"].power_for_pv_charging(False) > 0:
-                    self._distribution(False)
-                if data.pv_data["pv"].power_for_pv_charging(True) > 0:
-                    self._distribution(True)
-            data.pv_data["pv"].put_stats()
-        except Exception as e:
-            log.exception_logging(e)
-
-    def _reduce_used_evu_overhang(self):
-        """ prüft, ob für LP ohne Einspeisungsgrenze noch EVU-Überschuss zurückgenommen werden muss und dann für die LP mit Einspeiungsgrenze.
         """
-        try:
-            if data.pv_data["pv"].power_for_normal_load() != 0:
-                if data.pv_data["pv"].power_for_pv_charging(True) < 0:
-                    self._distribution(True)
-                if data.pv_data["pv"].power_for_pv_charging(False) < 0:
-                    self._distribution(False)
-            data.pv_data["pv"].put_stats()
-        except Exception as e:
-            log.exception_logging(e)
-
-    def _distribution(self, feed_in_limit):
-        """ Verteilt den verbleibenden EVU-Überschuss gleichmäßig auf alle genutzten Phasen. Dazu wird zunächst die Anzahl der Phasen ermittelt, auf denen geladen wird.
-        Danach wird der Überschuss pro Phase ermittelt und auf die Phasen aufgeschlagen.
-
-        Parameter
-        ---------
-        feed_in_limit: bool
-            Einspeisungsgrenze aktiv/inaktiv 
-        """
-        try:
-            num_of_phases = 0
-            # Anzahl aller genutzten Phasen ermitteln
-            for chargepoint in data.cp_data:
-                if "set" in data.cp_data[chargepoint].data:
-                    if "charging_ev" in data.cp_data[chargepoint].data["set"]:
-                        charging_ev = data.cp_data[chargepoint].data["set"]["charging_ev"]
-                        if charging_ev.data["control_parameter"]["chargemode"] == "pv_charging":
-                            if data.cp_data[chargepoint].data["set"]["current"] != 0 and charging_ev.charge_template.data["chargemode"]["pv_charging"]["feed_in_limit"] == feed_in_limit:
-                                num_of_phases += data.cp_data[chargepoint].data["set"]["phases_to_use"]
-            # Ladung aktiv?
-            if num_of_phases > 0:
-                # pos. Wert -> Ladestrom wird erhöht, negativer Wert -> Ladestrom wird reduziert
-                current_diff_per_phase = data.pv_data["pv"].power_for_pv_charging(feed_in_limit) / 230 / num_of_phases
-                for cp in data.cp_data:
-                    if "set" in data.cp_data[cp].data:
-                        chargepoint = data.cp_data[cp]
-                        if "charging_ev" in data.cp_data[cp].data["set"]:
-                            charging_ev = chargepoint.data["set"]["charging_ev"]
-                            if charging_ev.charge_template.data["chargemode"]["selected"] == "pv_charging" or charging_ev.data["control_parameter"]["chargemode"] == "pv_charging":
-                                if chargepoint.data["set"]["current"] != 0 and charging_ev.charge_template.data["chargemode"]["pv_charging"]["feed_in_limit"] == feed_in_limit:
-                                    phases = chargepoint.data["set"]["phases_to_use"]
-                                    # Einhalten des Mindeststroms des Lademodus und Maximalstroms des EV
-                                    current = charging_ev.check_min_max_current_for_pv_charging(current_diff_per_phase+chargepoint.data["set"]["current"])
-                                    chargepoint.data["set"]["current"] = current
-                                    data.pv_data["pv"].allocate_pv_power(phases * 230 * (current - chargepoint.data["set"]["current"]))
-                                    pub.pub("openWB/chargepoint/"+str(chargepoint.cp_num)+"/set/current", current)
-                                    log.message_debug_log("info", "Überschussladen an LP: "+str(chargepoint.cp_num)+", Ladestrom: "+str(current)+"A, Phasen: "+str(phases)+", Ladeleistung: "+str(phases * 230 * current)+"W")
-        except Exception as e:
-            log.exception_logging(e)
-
-    def _check_auto_phase_switch(self):
-        """ geht alle LP durch und prüft, ob eine Ladung aktiv ist, ob automatische Phasenumschaltung 
-        möglich ist und ob ob ein Timer gestartet oder gestoppt werden muss oder ob ein Timer abgelaufen ist.
-        """
-        try:
-            for cp in data.cp_data:
-                if "set" in data.cp_data[cp].data:
-                    chargepoint = data.cp_data[cp]
-                    if "charging_ev" in data.cp_data[cp].data["set"]:
-                        if chargepoint.data["config"]["auto_phase_switch_hw"] == True and chargepoint.data["get"]["charge_state"] == True:
-                            chargepoint.data["set"]["phases_to_use"] = chargepoint.data["set"]["charging_ev"].auto_phase_switch(chargepoint.data["get"]["phases_in_use"], chargepoint.data["set"]["current"], chargepoint.data["get"]["current"])
-        except Exception as e:
-            log.exception_logging(e)
+        return data.bat_module_data["bat"].data["get"]["power"] + data.pv_data["pv"].data["set"]["available_power"]
