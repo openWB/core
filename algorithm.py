@@ -103,8 +103,8 @@ class control():
                     if chargepoint.data["set"]["charging_ev"].data["control_parameter"]["chargemode"] == "pv_charging" and chargepoint.data["get"]["charge_state"] == True:
                         if data.pv_data["pv"].switch_off_check_timer(chargepoint) == True:
                             # Ladung stoppen
-                            required_power, required_current, phases = self._no_load()
-                            self._process_data(chargepoint, required_power, required_current, phases)
+                            required_current, phases = self._no_load()
+                            self._process_data(chargepoint, required_current, phases)
                             # in diesem Durchgang soll kein Strom zugeteilt werden
                             chargepoint.data["set"]["charging_ev"].data["control_parameter"]["chargemode"] = "stop"
 
@@ -205,8 +205,8 @@ class control():
                 # Es gibt keine Ladepunkte in diesem Lademodus, die noch nicht laden oder die noch gestoppt werden können.
                 return False
             else:
-                required_power, required_current, phases= self._no_load()
-                self._process_data(preferenced_chargepoints[0], required_power, required_current, phases)
+                required_current, phases= self._no_load()
+                self._process_data(preferenced_chargepoints[0], required_current, phases)
                 log.message_debug_log("debug", "Ladung an LP"+str(preferenced_chargepoints[0].cp_num)+" gestoppt.")
                 loadmanagement.loadmanagement((preferenced_chargepoints[0].data["get"]["power_all"]*-1), 0, 0)
                 return True
@@ -334,8 +334,8 @@ class control():
                 self._calc_pv_charging(chargepoint, required_power,
                                 required_current, phases)
             elif (charging_ev.data["control_parameter"]["chargemode"] == "stop" or (charging_ev.data["control_parameter"]["chargemode"] == "standby")):
-                required_power, required_current, phases = self._no_load()
-                self._process_data(chargepoint, required_power, required_current, phases)
+                required_current, phases = self._no_load()
+                self._process_data(chargepoint, required_current, phases)
             else:
                 self._calc_normal_load(chargepoint, required_power,
                                     required_current, phases)
@@ -365,7 +365,7 @@ class control():
                     if data.pv_data["pv"].allocate_pv_power(required_power) == False:
                         required_current = 0
                         phases = 0
-                    self._process_data(chargepoint, required_power, required_current, phases)
+                    self._process_data(chargepoint, required_current, phases)
                 else:
                     evu_power = overhang_power_left *-1 # muss bezogen werden
                     pv_power = required_power - evu_power
@@ -375,13 +375,13 @@ class control():
                             required_current = 0
                             phases = 0
                     else:
-                        required_power, required_current, phases= self._no_load()
-                    self._process_data(chargepoint, required_power, required_current, phases)
+                        required_current, phases= self._no_load()
+                    self._process_data(chargepoint, required_current, phases)
                 return
             # Bezug
             if loadmanagement.loadmanagement(required_power, required_current, phases) == True:
-                required_power, required_current, phases= self._no_load()
-            self._process_data(chargepoint, required_power, required_current, phases)
+                required_current, phases= self._no_load()
+            self._process_data(chargepoint, required_current, phases)
         except Exception as e:
             log.exception_logging(e)
 
@@ -398,17 +398,15 @@ class control():
             Stromstärke, mit der geladen werden soll
         phases: int
             Phasen, mit denen geladen werden soll
-        Return
-        ------
         """
         try:
             if chargepoint.data["set"]["charging_ev"].charge_template.data["chargemode"]["selected"] == "scheduled_charging" and "pv_charging" not in chargepoint.data["set"]["charging_ev"].charge_template.data["chargemode"]:
-                required_power, required_current, phases = self._no_load()
+                required_current, phases = self._no_load()
                 log.message_debug_log("warning", "PV-Laden im Modus Zielladen aktiv und es wurden keine Einstellungen für PV-Laden konfiguriert.")
             else:
                 if self._check_cp_without_feed_in_is_prioritised(chargepoint) == True:
-                    required_power, required_current, phases = data.pv_data["pv"].switch_on(chargepoint, required_power, required_current, phases, data.bat_module_data["bat"].data["get"]["power"])
-            self._process_data(chargepoint, required_power, required_current, phases)
+                    required_current, phases = data.pv_data["pv"].switch_on(chargepoint, required_power, required_current, phases, data.bat_module_data["bat"].data["get"]["power"])
+            self._process_data(chargepoint, required_current, phases)
         except Exception as e:
             log.exception_logging(e)
 
@@ -612,19 +610,16 @@ class control():
 
         Return
         ------
-        required_power: float
-            Leistung, mit der geladen werden soll
         required_current: float
             Stromstärke, mit der geladen werden soll
         phases: int
             Phasen, mit denen geladen werden soll
         """
-        required_power = 0
         required_current = 0
         phases = 0
-        return required_power, required_current, phases
+        return required_current, phases
 
-    def _process_data(self, chargepoint, required_power, required_current, phases):
+    def _process_data(self, chargepoint, required_current, phases):
         """ setzt die ermittelte Anzahl Phasen, Stromstärke und Leistung in den Dictionarys, 
         publsihed sie und schreibt sie ins Log.
 
@@ -632,8 +627,6 @@ class control():
         ---------
         chargepoint: dict
             Daten des Ladepunkts
-        required_power: float
-            Leistung, mit der geladen werden soll
         required_current: float
             Stromstärke, mit der geladen werden soll
         phases: int

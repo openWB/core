@@ -89,8 +89,6 @@ class pv():
             Phasen, mit denen geladen werden soll
         Return
         ------
-        required_power: float
-            Leistung, mit der geladen werden kann
         required_current: float
             Stromstärke, mit der geladen werden kann
         phases: int
@@ -143,18 +141,18 @@ class pv():
                     if data.bat_module_data["bat"].allocate_bat_power(required_power) == False:
                         required_current = 0
                         phases = 0
-                        return required_power, required_current, phases
+                        return required_current, phases
                 # Laden mit EVU-Überschuss und der Leistung, die vorher der Speicher bezogen hat
                 elif self.data["get"]["overhang_power_left"] > 0 and bat_overhang > 0:
                     pv_power = required_power - bat_overhang
                     if self.allocate_pv_power(pv_power) == False:
                         required_current = 0
                         phases = 0
-                        return required_power, required_current, phases
+                        return required_current, phases
                     elif data.bat_module_data["bat"].allocate_bat_power(bat_overhang) == False:
                         required_current = 0
                         phases = 0
-                        return required_power, required_current, phases
+                        return required_current, phases
                 # Liegt die Einschaltgrenze unter der benötigten Leistung, muss bezogen werden.
                 elif self.data["get"]["overhang_power_left"] < 0:
                     evu_power = self.data["get"]["overhang_power_left"] *-1 # muss bezogen werden
@@ -165,17 +163,17 @@ class pv():
                             if self.allocate_pv_power(pv_power) == False:
                                 required_current = 0
                                 phases = 0
-                                return required_power, required_current, phases
+                                return required_current, phases
                 # Laden nur mit EVU-Überschuss
                 else:
                     if self.allocate_pv_power(required_power) == False:
                         required_current = 0
                         phases = 0
-                        return required_power, required_current, phases
+                        return required_current, phases
             else:
                 required_current = 0
                 phases = 0
-            return required_power, required_current, phases
+            return required_current, phases
         except Exception as e:
             log.exception_logging(e)
 
