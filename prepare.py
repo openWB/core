@@ -27,7 +27,7 @@ class prepare():
         self._check_chargepoints()
         self._use_pv()
         self._bat()
-        data.counter_data["evu"].setup_counter()
+        data.counter_data["counter0"].setup_counter()
 
     def _copy_data(self):
         """ kopiert die Daten, die per MQTT empfangen wurden.

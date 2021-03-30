@@ -41,7 +41,7 @@ class control():
         log.message_debug_log("debug", "## Ueberschuss-Ladung ueber Mindeststrom bei PV-Laden zuruecknehmen.")
         self._reduce_used_evu_overhang()
        
-        if data.counter_data["evu"].data["set"]["loadmanagement"] == True:
+        if data.counter_data["counter0"].data["set"]["loadmanagement"] == True:
             log.message_debug_log("debug", "## Ladung wegen aktiven Lastmanagements stoppen.")
             # Wenn trotz Rücknahme des PV-Überschussladens immer noch das Lastmanagement aktiv ist, LP abschalten. Dazu das Lademodi-Tupel rückwärts durchgehen und LP mit niedrig priorisiertem Lademodus zuerst stoppen.
             #Ist jetzt schon die Sicherung geflogen?
@@ -49,14 +49,14 @@ class control():
                 cp_to_stop = True
                 while cp_to_stop == True:
                     cp_to_stop = self._switch_off_lowest_cp(mode)
-                    if data.counter_data["evu"].data["set"]["loadmanagement"] == False:
+                    if data.counter_data["counter0"].data["set"]["loadmanagement"] == False:
                         break
-                if data.counter_data["evu"].data["set"]["loadmanagement"] == False:
+                if data.counter_data["counter0"].data["set"]["loadmanagement"] == False:
                         break
         else:
             log.message_debug_log("debug", "## Ladung muss nicht wegen aktiven Lastmanagements gestoppt werden.")
 
-        if data.counter_data["evu"].data["set"]["loadmanagement"] == True:
+        if data.counter_data["counter0"].data["set"]["loadmanagement"] == True:
             log.message_debug_log("warning", "Bezug immer noch hoeher als maximaler Bezug, obwohl das Laden gestoppt wurde.")
 
          #Abschaltschwelle prüfen und ggf. Abschaltverzögerung starten
@@ -153,7 +153,7 @@ class control():
             else:
                 for cp in preferenced_chargepoints:
                     self._distribute_power_to_cp(cp)
-                    if data.counter_data["evu"].data["set"]["loadmanagement"] == False:
+                    if data.counter_data["counter0"].data["set"]["loadmanagement"] == False:
                         log.message_debug_log("info", "LP: "+str(cp.cp_num)+", Ladestrom: "+str(cp.data["set"]["current"])+"A, Phasen: "+str(cp.data["set"]["phases_to_use"])+", Ladeleistung: "+str((cp.data["set"]["phases_to_use"]*cp.data["set"]["current"]*230))+"W")
                     else:
                         #Lastmanagement hat eingegriffen und die Zuteilung verhindert
@@ -402,7 +402,7 @@ class control():
                 log.message_debug_log("warning", "PV-Laden im Modus Zielladen aktiv und es wurden keine Einstellungen für PV-Laden konfiguriert.")
             else:
                 if self._check_cp_without_feed_in_is_prioritised(chargepoint) == True:
-                    required_current, phases = data.pv_data["pv"].switch_on(chargepoint, required_power, required_current, phases, data.bat_module_data["bat"].data["get"]["power"])
+                    required_current, phases = data.pv_data["pv"].switch_on(chargepoint, required_power, required_current, phases, data.bat_module_data["bat"].power_for_bat_charging())
             self._process_data(chargepoint, required_current, phases)
         except Exception as e:
             log.exception_logging(e)
@@ -539,7 +539,7 @@ class control():
                     chargepoint = data.cp_data[cp]
                     if "charging_ev" in data.cp_data[cp].data["set"]:
                         if chargepoint.data["config"]["auto_phase_switch_hw"] == True and chargepoint.hw_data["get"]["charge_state"] == True:
-                            chargepoint.data["set"]["phases_to_use"] = chargepoint.data["set"]["charging_ev"].auto_phase_switch(chargepoint.data["get"]["phases_in_use"], chargepoint.hw_data["get"]["current"])
+                            chargepoint.data["set"]["phases_to_use"] = chargepoint.data["set"]["charging_ev"].auto_phase_switch(chargepoint.hw_data["get"]["phases_in_use"], chargepoint.hw_data["get"]["current"])
         except Exception as e:
             log.exception_logging(e)
 

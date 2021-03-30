@@ -43,7 +43,7 @@ class pv():
             if len(data.pv_data) > 1:
                 self.data["config"]["configured"]=True
                 # aktuelle Leistung an der EVU, enthält die Leistung der Einspeisungsgrenze
-                evu_overhang = data.counter_data["evu"].data["get"]["power_all"] * (-1)
+                evu_overhang = data.counter_data["counter0"].hw_data["get"]["power_all"] * (-1)
                 
                 # Regelmodus
                 control_range_low = self.data["config"]["control_range"][0]
@@ -103,7 +103,7 @@ class pv():
             # Wenn das EV Vorrang hat, kann die Ladeleistung des Speichers zum Laden des EV verwendet werden.
             if chargepoint.data["set"]["charging_ev"].charge_template.data["chargemode"]["pv_charging"]["bat_prio"] == False:
                 all_overhang += bat_overhang
-            if  chargepoint.data["get"]["charge_state"] == False:
+            if  chargepoint.hw_data["get"]["charge_state"] == False:
                 if control_parameter["timestamp_switch_on_off"] != False:
                     # Wurde die Einschaltschwelle erreicht? Reservierte Leistung aus all_overhang rausrechnen, 
                     # da diese Leistung ja schon reserviert wurde, als die Einschaltschwelle erreicht wurde.
@@ -154,13 +154,13 @@ class pv():
                         phases = 0
                         return required_current, phases
                 # Liegt die Einschaltgrenze unter der benötigten Leistung, muss bezogen werden.
-                elif self.data["get"]["overhang_power_left"] < 0:
-                    evu_power = self.data["get"]["overhang_power_left"] *-1 # muss bezogen werden
-                    pv_power = required_power - evu_power
+                elif (self.data["get"]["overhang_power_left"] - required_power) < 0:
+                    overhang_power = self.data["get"]["overhang_power_left"] 
+                    evu_power = required_power - overhang_power # muss bezogen werden
                     evu_current = required_power / (phases * 230)
                     if evu_power > 0:
                         if loadmanagement.loadmanagement(evu_power, evu_current, phases) == False:
-                            if self.allocate_pv_power(pv_power) == False:
+                            if self.allocate_pv_power(overhang_power) == False:
                                 required_current = 0
                                 phases = 0
                                 return required_current, phases

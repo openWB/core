@@ -22,11 +22,11 @@ def loadmanagement(required_power, required_current, phases):
     """
     try:
         # Maximale Leistung
-        consumption_left = data.counter_data["evu"].data["set"]["consumption_left"] - required_power
+        consumption_left = data.counter_data["counter0"].data["set"]["consumption_left"] - required_power
         if consumption_left > 0:
-            data.counter_data["evu"].data["set"]["loadmanagement"] = False
+            data.counter_data["counter0"].data["set"]["loadmanagement"] = False
         else:
-            data.counter_data["evu"].data["set"]["loadmanagement"] = True
+            data.counter_data["counter0"].data["set"]["loadmanagement"] = True
             log.message_debug_log("warning", "Benötigte Leistung "+str(required_power)+" überschreitet den zulässigen Bezug um "+str((consumption_left*-1))+"W.")
             
 
@@ -34,7 +34,7 @@ def loadmanagement(required_power, required_current, phases):
         # current_left = [0, 0, 0]
         # required_current_phases = [required_current]*phases + [0]*(3-phases)
         # for n in range(phases):
-        #     current_left[n] = data.counter_data["evu"].data["set"]["current_left"][n] - required_current_phases[n]
+        #     current_left[n] = data.counter_data["counter0"].data["set"]["current_left"][n] - required_current_phases[n]
         #     if current_left[n] > 0:
         #         state = True
         #     else:
@@ -44,10 +44,10 @@ def loadmanagement(required_power, required_current, phases):
         #         return
 
         # Werte bei erfolgreichem Lastamanagement schreiben
-        if data.counter_data["evu"].data["set"]["loadmanagement"] == False:
-            data.counter_data["evu"].data["set"]["consumption_left"] = consumption_left
-            log.message_debug_log("debug", str(data.counter_data["evu"].data["set"]["consumption_left"])+"W EVU-Bezugs-Leistung, die fuer die folgenden Durchlaufe uebrig ist.")
-        #data.counter_data["evu"].data["set"]["current_left"] = current_left
-        return data.counter_data["evu"].data["set"]["loadmanagement"]
+        if data.counter_data["counter0"].data["set"]["loadmanagement"] == False:
+            data.counter_data["counter0"].data["set"]["consumption_left"] = consumption_left
+            log.message_debug_log("debug", str(data.counter_data["counter0"].data["set"]["consumption_left"])+"W EVU-Bezugs-Leistung, die fuer die folgenden Durchlaufe uebrig ist.")
+        #data.counter_data["counter0"].data["set"]["current_left"] = current_left
+        return data.counter_data["counter0"].data["set"]["loadmanagement"]
     except Exception as e:
         log.exception_logging(e)

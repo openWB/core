@@ -5,11 +5,22 @@ import data
 import log
 import pub
 
-class counter():
+class counterHw():
     """
     """
 
     def __init__(self):
+        self.hw_data={}
+
+    def get_counter_values(self):
+        pass
+
+class counter(counterHw):
+    """
+    """
+
+    def __init__(self):
+        super().__init__()
         self.data={}
         self.data["set"] = {}
 
@@ -17,8 +28,8 @@ class counter():
         # Zählvariablen vor dem Start der Regelung zurücksetzen
         try:
             # Import
-            if self.data["get"]["power_all"] > 0:
-                self.data["set"]["consumption_left"] = self.data["config"]["max_consumption"] - self.data["get"]["power_all"]
+            if self.hw_data["get"]["power_all"] > 0:
+                self.data["set"]["consumption_left"] = self.hw_data["config"]["max_consumption"] - self.hw_data["get"]["power_all"]
                 if self.data["set"]["consumption_left"] < 0:
                     self.data["set"]["loadmanagement"] = True
                     log.message_debug_log("warning", "Lastamanagement aktiv. maximaler Bezug um "+str(self.data["set"]["consumption_left"]*-1)+"W ueberschritten.")
@@ -26,7 +37,7 @@ class counter():
                     self.data["set"]["loadmanagement"] = False
                     log.message_debug_log("debug", "Lastmanagement nicht aktiv. "+str(self.data["set"]["consumption_left"])+"W EVU-Leistung, die noch bezogen werden kann.")
             else:
-                self.data["set"]["consumption_left"] = self.data["config"]["max_consumption"]
+                self.data["set"]["consumption_left"] = self.hw_data["config"]["max_consumption"]
                 self.data["set"]["loadmanagement"] = False
                 log.message_debug_log("debug", "Lastmanagement nicht aktiv. "+str(self.data["set"]["consumption_left"])+"W EVU-Leistung, die noch bezogen werden kann.")
         except Exception as e:
@@ -37,9 +48,3 @@ class counter():
         log.message_debug_log("debug", str(self.data["set"]["consumption_left"])+"W EVU-Leistung, die noch bezogen werden kann.")
 
 
-class counterModule():
-    """
-    """
-
-    def __init__(self):
-        self.data={}
