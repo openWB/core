@@ -558,19 +558,19 @@ class pubvars():
         #cp1
         # self.client.publish("openWB/chargepoint/1/get/charge_state", payload=json.dumps(0), qos=0, retain=True)
         # self.client.publish("openWB/chargepoint/1/get/plug_state", payload=json.dumps(1), qos=0, retain=True)
-        self.client.publish("openWB/chargepoint/1/get/manual_lock", payload=json.dumps(0), qos=0, retain=True)
+        self.client.publish("openWB/chargepoint/1/set/manual_lock", payload=json.dumps(0), qos=0, retain=True)
         self.client.publish("openWB/chargepoint/1/config/template", payload=json.dumps(1), qos=0, retain=True)
         self.client.publish("openWB/chargepoint/1/config/connected_phases", payload=json.dumps(3), qos=0, retain=True)
         self.client.publish("openWB/chargepoint/1/config/auto_phase_switch_hw", payload=json.dumps(1), qos=0, retain=True)
-        self.client.publish("openWB/chargepoint/1/get/rfid", payload=json.dumps(1234), qos=0, retain=True)
+        self.client.publish("openWB/chargepoint_hw/1/get/rfid", payload=json.dumps(1234), qos=0, retain=True)
         # self.client.publish("openWB/chargepoint/1/get/power", payload=json.dumps(1000), qos=0, retain=True)
         # cp2
-        self.client.publish("openWB/chargepoint/2/get/charge_state", payload=json.dumps(0), qos=0, retain=True)
+        #self.client.publish("openWB/chargepoint_hw/2/get/charge_state", payload=json.dumps(0), qos=0, retain=True)
         # self.client.publish("openWB/chargepoint/2/get/plug_state", payload=json.dumps(1), qos=0, retain=True)
-        self.client.publish("openWB/chargepoint/2/get/manual_lock", payload=json.dumps(0), qos=0, retain=True)
+        self.client.publish("openWB/chargepoint/2/set/manual_lock", payload=json.dumps(0), qos=0, retain=True)
         self.client.publish("openWB/chargepoint/2/config/template", payload=json.dumps(2), qos=0, retain=True)
         self.client.publish("openWB/chargepoint/2/config/connected_phases", payload=json.dumps(3), qos=0, retain=True)
-        self.client.publish("openWB/chargepoint/2/get/rfid", payload=json.dumps(1234), qos=0, retain=True)
+        self.client.publish("openWB/chargepoint_hw/2/get/rfid", payload=json.dumps(1234), qos=0, retain=True)
         # self.client.publish("openWB/chargepoint/1/get/power", payload=json.dumps(1500), qos=0, retain=True)
 
         #evt1

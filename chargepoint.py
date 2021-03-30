@@ -1,6 +1,9 @@
 """Ladepunkt-Logik
 """
 
+import time
+import RPi.GPIO as GPIO
+
 import data
 import ev
 import log
@@ -33,21 +36,28 @@ class allChargepoints():
         data.cp_data["all"].data["get"]["power_all"] = used_power_all
         pub.pub("openWB/chargepoint/get/power_all", used_power_all)
 
-class chargepoint():
+class chargepoint_hw():
+
+    def __init__(self, index):
+        self.cp_num = index
+        self.hw_data = {}
+        self.hw_data["get"] = {}
+        self.hw_data["get"]["charge_state"] = 0
+        pub.pub("openWB/chargepoint_hw/"+str(self.cp_num)+"/get/charge_state", 0)
+
+class chargepoint(chargepoint_hw):
     """ geht alle Ladepunkte durch, prüft, ob geladen werden darf und ruft die Funktion des angesteckten Autos auf. 
     """
 
     def __init__(self, index):
+        super().__init__(index)
         self.data = {}
         self.template = None  # Instanz des zugeordneten CP-Templates
         self.cp_num = index
-        self.data["get"] = {}
         self.data["set"] = {}
-        self.data["get"]["autolock_state"] = 0
-        self.data["get"]["charge_state"] = 0
-        pub.pub("openWB/chargepoint/"+str(self.cp_num)+"/set/current", 0)
-        pub.pub("openWB/chargepoint/"+str(self.cp_num)+"/get/autolock_state", 0)
-        pub.pub("openWB/chargepoint/"+str(self.cp_num)+"/get/charge_state", 0)
+        self.data["set"]["autolock_state"] = 0
+        pub.pub("openWB/chargepoint_hw/"+str(self.cp_num)+"/set/current", 0)
+        pub.pub("openWB/chargepoint_hw/"+str(self.cp_num)+"/set/autolock_state", 0)
         self.log_pub_state_str("")
 
     def log_pub_state_str(self, message):
@@ -77,7 +87,7 @@ class chargepoint():
         """ ruft die Funktion der Template-Klasse auf.
         """
         try:
-            state = self.template.autolock(self.data["get"]["autolock_state"], self.data["get"]["charge_state"], self.cp_num)
+            state = self.template.autolock(self.data["set"]["autolock_state"], self.hw_data["get"]["charge_state"], self.cp_num)
             if state == False:
                 self.log_pub_state_str("Keine Ladung an LP"+self.cp_num+", da Autolock aktiv ist.")
             else:
@@ -87,7 +97,7 @@ class chargepoint():
             log.exception_logging(e)
 
     def _is_manual_lock_active(self):
-        state = self.data["get"]["manual_lock"]
+        state = self.data["set"]["manual_lock"]
         if state == True:
             self.log_pub_state_str("Keine Ladung an LP"+self.cp_num+", da der LP manuell gesperrt wurde.")
         else:
@@ -95,7 +105,7 @@ class chargepoint():
         return state
 
     def _is_ev_plugged(self):
-        state = self.data["get"]["plug_state"]
+        state = self.hw_data["get"]["plug_state"]
         if state == False:
             self.log_pub_state_str("Keine Ladung an LP"+self.cp_num+", da kein Auto angesteckt ist.")
         else:
@@ -115,7 +125,7 @@ class chargepoint():
                 if self._is_manual_lock_active() == False:
                     if self._is_ev_plugged() == True:
                         if self._is_autolock_active() == True:
-                            return self.template.get_ev(self.data["get"]["rfid"])
+                            return self.template.get_ev(self.hw_data["get"]["rfid"])
             # Daten zurücksetzen, wenn nicht geladen werden soll.
             self.data.pop("set")
             pub.pub("openWB/chargepoint/"+str(self.cp_num)+"/set/charging_ev", "")
@@ -126,6 +136,33 @@ class chargepoint():
             log.exception_logging(e)
             return None
         return None
+
+    def perform_control_pilot_interruption(self, duration):
+        """ Durchführen der Control Pilot-Unterbrechung für die Ladepunkte 1 und 2 (geht nur bei internen LP)
+
+        Parameter
+        ---------
+        duration: int 
+            Dauer der Control Pilot-Unterbrechung
+        """
+        if self.cp_num == 1:
+            GPIO.setwarnings(False)
+            GPIO.setmode(GPIO.BOARD)
+            GPIO.setup(22, GPIO.OUT)
+
+            GPIO.output(22, GPIO.HIGH)
+            time.sleep(duration)
+            GPIO.output(22, GPIO.LOW)
+        elif self.cp_num == 2:
+            GPIO.setwarnings(False)
+            GPIO.setmode(GPIO.BOARD)
+            GPIO.setup(15, GPIO.OUT)
+
+            GPIO.output(15, GPIO.HIGH)
+            time.sleep(duration)
+            GPIO.output(15, GPIO.LOW)
+        else:
+            log.message_debug_log("error", "Control Pilot-Unterbrechung durch Pin-Schalten nur fuer LP 1 und 2 moeglich.")
 
 class cpTemplate():
     """ Vorlage für einen LP.
@@ -172,7 +209,7 @@ class cpTemplate():
                     else:
                         state = 3
 
-                    pub.pub("openWB/chargepoint/"+cp_num+"/get/autolock_state", state)
+                    pub.pub("openWB/chargepoint/"+cp_num+"/set/autolock_state", state)
                     if (state == 1) or (state == 3):
                         return True
                     elif state == 2:
@@ -223,7 +260,7 @@ class cpTemplate():
         """
         try:
             if (self.data["autolock"]["active"] == True) and autolock_state == 1:
-                pub.pub(topic_path+"/get/autolock", 2)
+                pub.pub(topic_path+"/set/autolock", 2)
         except Exception as e:
             log.exception_logging(e)
 

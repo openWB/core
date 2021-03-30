@@ -2,6 +2,7 @@
 Dictionary: Zugriff erfolgt bei Dictionary über Keys, nicht über Indizes wie bei Listen. Das hat den Vorteil, dass Instanzen gelöscht werden können, der Zugriff aber nicht verändert werden musss.
 """
 
+import log
 
 cp_data = {}
 cp_template_data = {}
@@ -31,9 +32,22 @@ def print_all():
 
 
 def print_dictionaries(data):
-    for key in data:
-        print(key)
-        if isinstance(data[key], dict) == False:
-            print(data[key].data)
-        else:
-            print("Klasse fehlt")
+    """ gibt zu Debug-Zwecken für jeden Key im übergebenen Dictionary das Dictionary aus.
+
+    Parameter
+    ---------
+    data: dict
+    """
+    try:
+        for key in data:
+            print(key)
+            if isinstance(data[key], dict) == False:
+                print(data[key].data)
+                try:
+                    print(data[key].hw_data)
+                except:
+                    pass
+            else:
+                print("Klasse fehlt")
+    except Exception as e:
+        log.exception_logging(e)

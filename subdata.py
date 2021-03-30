@@ -50,6 +50,7 @@ class subData():
         client.on_message = self.on_message
         client.message_callback_add("openWB/vehicle/#", self.process_vehicle_topic)
         client.message_callback_add("openWB/chargepoint/#", self.process_chargepoint_topic)
+        client.message_callback_add("openWB/chargepoint_hw/#", self.process_chargepoint_hw_topic)
         client.message_callback_add("openWB/pv/#", self.process_pv_topic)
         client.message_callback_add("openWB/bat/#", self.process_bat_topic)
         client.message_callback_add("openWB/general/#", self.process_general_topic)
@@ -306,11 +307,7 @@ class subData():
             index=self.get_index(msg.topic)
             if "cp"+index not in self.cp_data:
                 self.cp_data["cp"+index]=chargepoint.chargepoint(index)
-            if re.search("^openWB/chargepoint/[1-9][0-9]*/get/.+$", msg.topic) != None:
-                if "get" not in self.cp_data["cp"+index].data:
-                    self.cp_data["cp"+index].data["get"]={}
-                self.set_json_payload(self.cp_data["cp"+index].data["get"], msg)
-            elif re.search("^openWB/chargepoint/[1-9][0-9]*/set/.+$", msg.topic) != None:
+            if re.search("^openWB/chargepoint/[1-9][0-9]*/set/.+$", msg.topic) != None:
                 if "set" not in self.cp_data["cp"+index].data:
                     self.cp_data["cp"+index].data["set"]={}
                 self.set_json_payload(self.cp_data["cp"+index].data["set"], msg)
@@ -351,6 +348,36 @@ class subData():
             if "all" not in self.cp_data:
                 self.cp_data["all"]=chargepoint.allChargepoints()
             self.set_json_payload(self.cp_data["all"].data, msg)
+
+    def process_chargepoint_hw_topic(self, client, userdata, msg):
+        """ Handler für die Ladepunkt-Topics
+
+         Parameters
+        ----------
+        client : (unused)
+            vorgegebener Parameter
+        userdata : (unused)
+            vorgegebener Parameter
+        msg:
+            enthält Topic und Payload
+        """
+        if re.search("^openWB/chargepoint_hw/[1-9][0-9]*$", msg.topic) != None:
+            index=self.get_index(msg.topic)
+            if json.loads(str(msg.payload.decode("utf-8")))=="":
+                if "cp"+index in self.cp_data:
+                    self.cp_data.pop("cp"+index)
+        elif re.search("^openWB/chargepoint_hw/[1-9][0-9]*/.+$", msg.topic) != None:
+            index=self.get_index(msg.topic)
+            if "cp"+index not in self.cp_data:
+                self.cp_data["cp"+index]=chargepoint.chargepoint(index)
+            if re.search("^openWB/chargepoint_hw/[1-9][0-9]*/get/.+$", msg.topic) != None:
+                if "get" not in self.cp_data["cp"+index].hw_data:
+                    self.cp_data["cp"+index].hw_data["get"]={}
+                self.set_json_payload(self.cp_data["cp"+index].hw_data["get"], msg)
+            elif re.search("^openWB/chargepoint_hw/[1-9][0-9]*/config/.+$", msg.topic) != None:
+                if "config" not in self.cp_data["cp"+index].hw_data:
+                    self.cp_data["cp"+index].hw_data["config"]={}
+                self.set_json_payload(self.cp_data["cp"+index].hw_data["config"], msg)
 
     def process_pv_topic(self, client, userdata, msg):
         """ Handler für die PV-Topics
