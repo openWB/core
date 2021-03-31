@@ -13,6 +13,7 @@ Debug=$debug
 #Debug=1
 
 
+<<<<<<< HEAD
 
 
 re='^[-+]?[0-9]+\.?[0-9]*$'
@@ -22,9 +23,26 @@ pvwatt=$(echo $answer | jq -r "$wr2jsonwatt" | sed 's/\..*$//')
 		pvwatt=$(echo "$pvwatt*-1" |bc)
 	fi
 openwbDebugLog ${DMOD} 1 "PV2Watt: ${pvwatt}"
+=======
+re='^[-+]?[0-9]+\.?[0-9]*$'
+answer=$(curl --connect-timeout 5 -s $wr2jsonurl)
+pvwatt=$(echo $answer | jq -r "$wr2jsonwatt" | sed 's/\..*$//')
+# Wenn WR aus bzw. im Standby (keine Antwort), ersetze leeren Wert durch eine 0
+>>>>>>> master
 if ! [[ $pvwatt =~ $re ]] ; then
-	   pvwatt=$(</var/www/html/openWB/ramdisk/pv2watt)
+	openwbDebugLog ${DMOD} 1 "PV2Watt Not Numeric: $pvwatt . Check if Filter is correct or WR is in standby"
+	pvwatt=0
 fi
+
+if (( $pvwatt > 5 )); then
+	pvwatt=$(echo "$pvwatt*-1" |bc)
+fi
+
+openwbDebugLog ${DMOD} 1 "PV2Watt: ${pvwatt}"
+echo ${pvwatt}
+#if ! [[ $pvwatt =~ $re ]] ; then
+#	   pvwatt=$(</var/www/html/openWB/ramdisk/pv2watt)
+#fi
 echo $pvwatt > /var/www/html/openWB/ramdisk/pv2watt
 pv2kwh=$(echo $answer | jq -r "$wr2jsonkwh")
 if ! [[ $pv2kwh =~ $re ]] ; then
@@ -33,6 +51,9 @@ fi
 
 echo $pv2kwh > /var/www/html/openWB/ramdisk/pv2kwh
 openwbDebugLog ${DMOD} 1 "PV2kWh: ${pv2kwh}"
+<<<<<<< HEAD
 pv2watt=$(</var/www/html/openWB/ramdisk/pv2watt)
 
 echo $pv2watt
+=======
+>>>>>>> master

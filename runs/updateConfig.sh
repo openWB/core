@@ -444,11 +444,11 @@ updateConfig(){
 	if ! grep -Fq "battjsonurl=" $ConfigFile; then
 		echo "battjsonurl=192.168.0.10/speicher" >> $ConfigFile
 	fi
-	if ! grep -Fq "battjsonsoc"=" $ConfigFile; then
-		echo "speichersoc_json='.RSOC'" >> $ConfigFile
+	if ! grep -Fq "battjsonsoc=" $ConfigFile; then
+		echo "battjsonsoc='.RSOC'" >> $ConfigFile
 	fi
-	if ! grep -Fq "battjsonwatt"=" $ConfigFile; then
-		echo "battjsonwatt='.Consumption_Wi'" >> $ConfigFile
+	if ! grep -Fq "battjsonwatt=" $ConfigFile; then
+		echo "battjsonwatt='.Consumption_W'" >> $ConfigFile
 	fi
 	if ! grep -Fq "soc_tesla_username=" $ConfigFile; then
 		echo "soc_tesla_username=deine@email.com" >> $ConfigFile
@@ -663,6 +663,34 @@ updateConfig(){
 	if ! grep -Fq "soccarnetintervall=" $ConfigFile; then
 		echo "soccarnetintervall=10" >> $ConfigFile
 	fi
+	if ! grep -Fq "soc_vag_type=" $ConfigFile; then
+		echo "soc_vag_type=vw" >> $ConfigFile
+	fi
+	if ! grep -Fq "soc_vag_username=" $ConfigFile; then
+		echo "soc_vag_username=user" >> $ConfigFile
+	fi
+	if ! grep -Fq "soc_vag_password=" $ConfigFile; then
+		echo "soc_vag_password=pass" >> $ConfigFile
+	fi
+	# remove line with syntax error from config
+	if grep -Fq "soc_vag_vin=vin (WVWZZZ...)" $ConfigFile; then
+		sed -i '/^soc_vag_vin=/d' $ConfigFile
+	fi
+	if ! grep -Fq "soc_vag_vin=" $ConfigFile; then
+		echo "soc_vag_vin='WVWZZZ...'" >> $ConfigFile
+	fi
+	if ! grep -Fq "soc_vag_intervall=" $ConfigFile; then
+		echo "soc_vag_intervall=60" >> $ConfigFile
+	fi
+	if ! grep -Fq "soc2type=" $ConfigFile; then
+		echo "soc2type=vw" >> $ConfigFile
+	fi
+	if ! grep -Fq "soc_vag_intervallladen=" $ConfigFile; then
+		echo "soc_vag_intervallladen=10" >> $ConfigFile
+	fi
+	if ! grep -Fq "soc2intervallladen=" $ConfigFile; then
+		echo "soc2intervallladen=10" >> $ConfigFile
+	fi
 	if ! grep -Fq "bydhvuser=" $ConfigFile; then
 		echo "bydhvuser=benutzer" >> $ConfigFile
 	fi
@@ -705,6 +733,9 @@ updateConfig(){
 	if ! grep -Fq "kostalplenticoreip2=" $ConfigFile; then
 		echo "kostalplenticoreip2=none" >> $ConfigFile
 	fi
+	if ! grep -Fq "kostalplenticoreip3=" $ConfigFile; then
+		echo "kostalplenticoreip3=none" >> $ConfigFile
+	fi
 	if ! grep -Fq "name_wechselrichter1=" $ConfigFile; then
 		echo "name_wechselrichter1=WR1" >> $ConfigFile
 	fi
@@ -716,6 +747,15 @@ updateConfig(){
 	fi
 	if ! grep -Fq "angesteckthooklp1_url=" $ConfigFile; then
 		echo "angesteckthooklp1_url='https://webhook.com/ein.php'" >> $ConfigFile
+	fi
+	if ! grep -Fq "abgesteckthooklp1_url=" $ConfigFile; then
+		echo "abgesteckthooklp1_url='https://webhook.com/aus.php'" >> $ConfigFile
+	fi
+	if ! grep -Fq "ladestarthooklp1_url=" $ConfigFile; then
+		echo "ladestarthooklp1_url='https://webhook.com/ein.php'" >> $ConfigFile
+	fi
+	if ! grep -Fq "ladestophooklp1_url=" $ConfigFile; then
+		echo "ladestophooklp1_url='https://webhook.com/aus.php'" >> $ConfigFile
 	fi
 	if ! grep -Fq "hook1aus_url=" $ConfigFile; then
 		echo "hook1aus_url='https://webhook.com/aus.php'" >> $ConfigFile
@@ -734,6 +774,15 @@ updateConfig(){
 	fi
 	if ! grep -Fq "angesteckthooklp1=" $ConfigFile; then
 		echo "angesteckthooklp1=0" >> $ConfigFile
+	fi
+	if ! grep -Fq "abgesteckthooklp1=" $ConfigFile; then
+		echo "abgesteckthooklp1=0" >> $ConfigFile
+	fi
+	if ! grep -Fq "ladestarthooklp1=" $ConfigFile; then
+		echo "ladestarthooklp1=0" >> $ConfigFile
+	fi
+	if ! grep -Fq "ladestophooklp1=" $ConfigFile; then
+		echo "ladestophooklp1=0" >> $ConfigFile
 	fi
 	if ! grep -Fq "hook1_dauer=" $ConfigFile; then
 		echo "hook1_dauer=5" >> $ConfigFile
@@ -909,6 +958,9 @@ updateConfig(){
 	fi
 	if ! grep -Fq "u1p3paktiv=" $ConfigFile; then
 		echo "u1p3paktiv=0" >> $ConfigFile
+	fi
+	if ! grep -Fq "u1p3ppause=" $ConfigFile; then
+		echo "u1p3ppause=2" >> $ConfigFile
 	fi
 	if ! grep -Fq "u1p3psofort=" $ConfigFile; then
 		echo "u1p3psofort=3" >> $ConfigFile
@@ -1276,8 +1328,14 @@ updateConfig(){
 	if ! grep -Fq "cpunterbrechunglp1=" $ConfigFile; then
 		echo "cpunterbrechunglp1=0" >> $ConfigFile
 	fi
+	if ! grep -Fq "cpunterbrechungdauerlp1=" $ConfigFile; then
+		echo "cpunterbrechungdauerlp1=4" >> $ConfigFile
+	fi
 	if ! grep -Fq "cpunterbrechunglp2=" $ConfigFile; then
 		echo "cpunterbrechunglp2=0" >> $ConfigFile
+	fi
+	if ! grep -Fq "cpunterbrechungdauerlp2=" $ConfigFile; then
+		echo "cpunterbrechungdauerlp2=4" >> $ConfigFile
 	fi
 	if ! grep -Fq "soc_zerong_username=" $ConfigFile; then
 		echo "soc_zerong_username=deine@email.com" >> $ConfigFile
@@ -1323,6 +1381,15 @@ updateConfig(){
 	fi
 	if ! grep -Fq "discovergypvid=" $ConfigFile; then
 		echo "discovergypvid=idesmeters" >> $ConfigFile
+	fi
+	if ! grep -Fq "powerfoxuser=" $ConfigFile; then
+		echo "powerfoxuser=name@mail.de" >> $ConfigFile
+	fi
+	if ! grep -Fq "powerfoxpass=" $ConfigFile; then
+		echo "powerfoxpass=passwort" >> $ConfigFile
+	fi
+	if ! grep -Fq "powerfoxid=" $ConfigFile; then
+		echo "powerfoxid=idesmeters" >> $ConfigFile
 	fi
 	if ! grep -Fq "ksemip=" $ConfigFile; then
 		echo "ksemip=ipdesmeters" >> $ConfigFile
@@ -1398,6 +1465,9 @@ updateConfig(){
 	fi
 	if ! grep -Fq "soc_audi_passwort=" $ConfigFile; then
 		echo "soc_audi_passwort=passwort" >> $ConfigFile
+	fi
+	if ! grep -Fq "soc_audi_vin=" $ConfigFile; then
+		echo "soc_audi_vin=VIN" >> $ConfigFile
 	fi
 	if ! grep -Fq "soc2user=" $ConfigFile; then
 		echo "soc2user=demo@demo.de" >> $ConfigFile
@@ -1547,7 +1617,17 @@ updateConfig(){
 		echo "slaveModeSlowRamping=1" >> $ConfigFile
 	fi
 	if ! grep -Fq "slaveModeMinimumAdjustmentInterval=" $ConfigFile; then
-		echo "slaveModeMinimumAdjustmentInterval=15" >> $ConfigFile
+    	echo "slaveModeMinimumAdjustmentInterval=15" >> $ConfigFile
+	fi
+	if ! grep -Fq "standardSocketInstalled=" /var/www/html/openWB/openwb.conf
+	then
+		echo "standardSocketInstalled=0" >> /var/www/html/openWB/openwb.conf
+	fi
+	if ! grep -Fq "sdm120modbussocketsource=" $ConfigFile; then
+		echo "sdm120modbussocketsource=/dev/ttyUSB0" >> $ConfigFile
+	fi
+	if ! grep -Fq "sdm120modbussocketid=" $ConfigFile; then
+		echo "sdm120modbussocketid=9" >> $ConfigFile
 	fi
 	if ! grep -Fq "solarworld_emanagerip=" $ConfigFile; then
 		echo "solarworld_emanagerip=192.192.192.192" >> $ConfigFile
@@ -1575,6 +1655,12 @@ updateConfig(){
 	fi
 	if ! grep -Fq "soc_vin=" $ConfigFile; then
 		echo "soc_vin=VIN" >> $ConfigFile
+	fi
+	if ! grep -Fq "kia_soccalclp1=" $ConfigFile; then
+		echo "kia_soccalclp1=0" >> $ConfigFile
+	fi
+	if ! grep -Fq "kia_soccalclp2=" $ConfigFile; then
+		echo "kia_soccalclp2=0" >> $ConfigFile
 	fi
 	if ! grep -Fq "isss=" $ConfigFile; then
 		echo "isss=0" >> $ConfigFile
@@ -1677,6 +1763,28 @@ updateConfig(){
 		echo "myopel_clientidlp2=ID" >> $ConfigFile
 		echo "myopel_clientsecretlp2=Secret" >> $ConfigFile
 	fi
+	if ! grep -Fq "psa_userlp1=" $ConfigFile; then
+		echo "psa_userlp1=User" >> $ConfigFile
+		echo "psa_passlp1=Pass" >> $ConfigFile
+		echo "psa_clientidlp1=ID" >> $ConfigFile
+		echo "psa_clientsecretlp1=Secret" >> $ConfigFile
+		echo "psa_userlp2=User" >> $ConfigFile
+		echo "psa_passlp2=Pass" >> $ConfigFile
+		echo "psa_clientidlp2=ID" >> $ConfigFile
+		echo "psa_clientsecretlp2=Secret" >> $ConfigFile
+	fi
+	if ! grep -Fq "psa_intervallp1=" $ConfigFile; then
+		echo "psa_intervallp1=10" >> $ConfigFile
+	fi
+	if ! grep -Fq "psa_intervallp2=" $ConfigFile; then
+		echo "psa_intervallp2=10" >> $ConfigFile
+	fi
+	if ! grep -Fq "psa_manufacturerlp1=" $ConfigFile; then
+		echo "psa_manufacturerlp1=Peugeot" >> $ConfigFile
+	fi
+	if ! grep -Fq "psa_manufacturerlp2=" $ConfigFile; then
+		echo "psa_manufacturerlp2=Peugeot" >> $ConfigFile
+	fi
 	if ! grep -Fq "soc_eq_client_id_lp1=" $ConfigFile; then
 		echo "soc_eq_client_id_lp1=ID" >> $ConfigFile
 		echo "soc_eq_client_secret_lp1=Secret" >> $ConfigFile
@@ -1687,6 +1795,15 @@ updateConfig(){
 		echo "soc_eq_vin_lp2=VIN" >> $ConfigFile
 		echo "soc_eq_cb_lp2=http://openWB/openWB/modules/soc_eq/callback_lp2.php" >> $ConfigFile
 	fi
+	if ! grep -Fq "soc_id_username=" $ConfigFile; then
+		echo "soc_id_username=User" >> $ConfigFile
+	fi
+	if ! grep -Fq "soc_id_passwort=" $ConfigFile; then
+		echo "soc_id_passwort='Pass'" >> $ConfigFile
+	fi
+	if ! grep -Fq "soc_id_vin=" $ConfigFile; then
+		echo "soc_id_vin=VIN" >> $ConfigFile
+	fi
 	if ! grep -Fq "soc2vin=" $ConfigFile; then
 		echo "soc2vin=" >> $ConfigFile
 		echo "soc2intervall=60" >> $ConfigFile
@@ -1696,6 +1813,8 @@ updateConfig(){
 	fi
 	if ! grep -Fq "akkuglp2=" $ConfigFile; then
 		echo "akkuglp2=35" >> $ConfigFile
+	fi
+	if ! grep -Fq "wirkungsgradlp2=" $ConfigFile; then
 		echo "wirkungsgradlp2=90" >> $ConfigFile
 	fi
 	if ! grep -Fq "solaxip=" $ConfigFile; then
@@ -1708,10 +1827,16 @@ updateConfig(){
 		echo "mypeugeot_soccalclp2=0" >> $ConfigFile
 	fi
 	if ! grep -Fq "myopel_soccalclp1=" $ConfigFile; then
-		echo "myopel_soccalclp1=0" >> $ConfigFile; 
-	fi 
+		echo "myopel_soccalclp1=0" >> $ConfigFile;
+	fi
 	if ! grep -Fq "myopel_soccalclp2=" $ConfigFile; then
 		echo "myopel_soccalclp2=0" >> $ConfigFile;
+	fi
+	if ! grep -Fq "psa_soccalclp1=" $ConfigFile; then
+		echo "psa_soccalclp1=0" >> $ConfigFile;
+	fi
+	if ! grep -Fq "psa_soccalclp2=" $ConfigFile; then
+		echo "psa_soccalclp2=0" >> $ConfigFile;
 	fi
 	if ! grep -Fq "wr1extprod=" $ConfigFile; then
 		echo "wr1extprod=0" >> $ConfigFile
@@ -1721,6 +1846,9 @@ updateConfig(){
 	fi
 	if ! grep -Fq "hook2einschaltverz=" $ConfigFile; then
 		echo "hook2einschaltverz=20" >> $ConfigFile
+	fi
+	if ! grep -Fq "hook3einschaltverz=" $ConfigFile; then
+		echo "hook3einschaltverz=20" >> $ConfigFile
 	fi
 	if ! grep -Fq "stopsocnotpluggedlp1=" $ConfigFile; then
 		echo "stopsocnotpluggedlp1=0" >> $ConfigFile
@@ -1755,6 +1883,25 @@ updateConfig(){
 		echo "speicherpwuser=Username" >> $ConfigFile
 		echo "speicherpwpass='XXX'" >> $ConfigFile
 	fi
-
+	if ! grep -Fq "multifems=" $ConfigFile; then
+		echo "multifems=1" >> $ConfigFile
+	fi
+	if ! grep -Fq "solaredgezweiterspeicher=" $ConfigFile; then
+		echo "solaredgezweiterspeicher=0" >> $ConfigFile
+	fi
+	if ! grep -Fq "studer_ip=" $ConfigFile; then
+		echo "studer_ip=192.168.1.1" >> $ConfigFile
+	fi
+	if ! grep -Fq "discovergypass=" $ConfigFile; then
+		echo "discovergypass='password'" >> $ConfigFile
+	else
+		sed -i "/discovergypass='/b; s/^discovergypass=\(.*\)/discovergypass=\'\1\'/g" $ConfigFile
+	fi
+	if ! grep -Fq "pingcheckactive=" $ConfigFile; then
+		echo "pingcheckactive=1" >> $ConfigFile
+	fi
+	if ! grep -Fq "froniusmeterlocation=" $ConfigFile; then
+		echo "froniusmeterlocation=0" >> $ConfigFile
+	fi
 	echo "Config file Update done."
 }
