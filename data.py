@@ -42,10 +42,7 @@ def print_dictionaries(data):
         for key in data:
             print(key)
             if isinstance(data[key], dict) == False:
-                try:
-                    print(data[key].data)
-                except:
-                    pass
+                print(data[key].data)
                 try:
                     print(data[key].hw_data)
                 except:

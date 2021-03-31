@@ -1,6 +1,8 @@
 """Zähler-Logik
 """
 
+import subprocess
+
 import data
 import log
 import pub
@@ -11,9 +13,24 @@ class counterHw():
 
     def __init__(self):
         self.hw_data={}
+        self.counter_num = 0
 
     def get_counter_values(self):
-        pass
+        """ ermittelt die Zählermesswerte und ruft dazu das vorhandene Shell-Skript auf. Anschließend werden die Werte auf dem Broker gepublished.
+        """
+        if self.hw_data["config"]["module"]["selected"] == "http":
+            http_config = self.hw_data["config"]["module"]["http"]
+            output = subprocess.run(["./modules/bezug_http/main.sh",http_config["url_power"],http_config["url_imported"], http_config["url_exported"], http_config["url_current1"], http_config["url_current2"], http_config["url_current3"]], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            if output.stderr.decode('utf-8') == "":
+                # In UTF-8 dekodieren und in Liste ablegen.
+                values = output.stdout.decode('utf-8').strip('\n').split('  ')
+                # Werte publishen
+                pub.pub("openWB/set/counter/"+self.counter_num+"/get/power_all", values[0])
+                pub.pub("openWB/set/counter/"+self.counter_num+"/get/imported", values[1])
+                pub.pub("openWB/set/counter/"+self.counter_num+"/get/exported", values[2])
+                pub.pub("openWB/set/counter/"+self.counter_num+"/get/current", [values[3], values[4], values[5]])
+            else:
+                log.message_debug_log("error", "Beim Ausführen des Shell-Skripts ist ein Fehler aufgetreten: "+str(output.stderr.decode('utf-8')))
 
 class counter(counterHw):
     """

@@ -55,6 +55,8 @@ class prepare():
                                                                           str(data.ev_data[vehicle].data["ev_template"])]
 
             data.counter_data = copy.deepcopy(subdata.subData.counter_data)
+            for counter in data.counter_data:
+                data.counter_data[counter].counter_num = counter[7:]
             data.bat_module_data = copy.deepcopy(
                 subdata.subData.bat_module_data)
             data.general_data = copy.deepcopy(subdata.subData.general_data)

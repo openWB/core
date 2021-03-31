@@ -10,6 +10,7 @@ import data
 import log
 import prepare
 import pub
+import setdata
 import subdata
 
 def main():
@@ -17,6 +18,7 @@ def main():
     char = charge.charge()
     control = algorithm.control()
     prep = prepare.prepare()
+    setdata.setData()
     sub = subdata.subData()
     ticker = threading.Event()
 

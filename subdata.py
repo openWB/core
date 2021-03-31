@@ -55,7 +55,7 @@ class subData():
         client.message_callback_add("openWB/bat/#", self.process_bat_topic)
         client.message_callback_add("openWB/general/#", self.process_general_topic)
         client.message_callback_add("openWB/optional/#", self.process_optional_topic)
-        client.message_callback_add("openWB/counter_hw/#", self.process_counter_hw_topic)
+        client.message_callback_add("openWB/counter/#", self.process_counter_topic)
         client.message_callback_add("openWB/graph/#", self.process_graph_topic)
         # client.message_callback_add("openWB/smarthome/#", self.processSmarthomeTopic)
 
@@ -555,7 +555,7 @@ class subData():
             else: 
                 self.set_json_payload(self.optional_data["optional"].data, msg)
 
-    def process_counter_hw_topic(self, client, userdata, msg):
+    def process_counter_topic(self, client, userdata, msg):
         """ Handler für die Zähler-Topics
 
          Parameters
@@ -568,25 +568,20 @@ class subData():
             enthält Topic und Payload
         """
         #print(msg.topic, str(msg.payload))
-        if re.search("^openWB/counter_hw/[0-9]*$", msg.topic) != None:
+        if re.search("^openWB/counter/[0-9]*$", msg.topic) != None:
             index=self.get_index(msg.topic)
             if json.loads(str(msg.payload.decode("utf-8")))=="":
                 if "counter"+index in self.counter_data:
                     self.counter_data.pop("counter"+index)
-        elif re.search("^openWB/counter_hw/[0-9]*/.+$", msg.topic) != None:
+        elif re.search("^openWB/counter/[0-9]*/.+$", msg.topic) != None:
             index=self.get_index(msg.topic)
-            # EVU
-            if index == "0":
-                if "counter"+index not in self.counter_data:
-                    self.counter_data["counter"+index]=counter.counter()
-            else:
-                if "counter"+index not in self.counter_data:
-                    self.counter_data["counter"+index]=counter.counterHw()
-            if re.search("^openWB/counter_hw/[0-9]*/get.+$", msg.topic) != None:
+            if "counter"+index not in self.counter_data:
+                self.counter_data["counter"+index]=counter.counter()
+            if re.search("^openWB/counter/[0-9]*/get.+$", msg.topic) != None:
                 if "get" not in self.counter_data["counter"+index].hw_data:
                     self.counter_data["counter"+index].hw_data["get"]={}
                 self.set_json_payload(self.counter_data["counter"+index].hw_data["get"], msg)
-            elif re.search("^openWB/counter_hw/[0-9]*/config.+$", msg.topic) != None:
+            elif re.search("^openWB/counter/[0-9]*/config.+$", msg.topic) != None:
                 if "config" not in self.counter_data["counter"+index].hw_data:
                     self.counter_data["counter"+index].hw_data["config"]={}
                 self.set_json_payload(self.counter_data["counter"+index].hw_data["config"], msg)
