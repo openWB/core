@@ -89,12 +89,12 @@ fi
 
 function checkDisableLp {
 	powerVarName="powerLp${chargePoint}"
-	if [ "${!powerVarName}" -lt "200" ]; then
-		# charge point not charging, so disable charge point
-		mqttTopic="openWB/set/chargepoint/$chargePoint/get/enabled"
+	if [ "$waitUntilFinished" = "off" ] || [ "${!powerVarName}" -lt "200" ]; then
+		# autolock is not configured to wait until finished or charge point not charging, so disable charge point
+		mqttTopic="openWB/set/lp/$chargePoint/ChargePointEnabled"
 		mosquitto_pub -r -t $mqttTopic -m 0
 		# and set flag "autolock performed"
-		mqttTopic="openWB/set/chargepoint/$chargePoint/get/autolock_state"
+		mqttTopic="openWB/set/lp/$chargePoint/AutolockStatus"
 		mosquitto_pub -r -t $mqttTopic -m 2
 	fi
 }
