@@ -4,6 +4,7 @@ Davon ab geht z.B. noch der Hausverbrauch. Für das Laden mit PV kann deshalb nu
 der sonst in das Netz eingespeist werden würde. 
 """
 
+import subprocess
 import traceback
 
 import data
@@ -316,5 +317,21 @@ class pvModule():
 
     def __init__(self):
         self.data = {}
+        self.module_num = 0
     """
     """
+
+    def get_module_values(self):
+        """ ermittelt die Zählermesswerte und ruft dazu das vorhandene Shell-Skript auf. Anschließend werden die Werte auf dem Broker gepublished.
+        """
+        if self.data["config"]["selected"] == "http":
+            http_config = self.data["config"]["http"]
+            output = subprocess.run(["./modules/wr_http/main.sh",http_config["url_power"],http_config["url_energy"]], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            if output.stderr.decode('utf-8') == "":
+                # In UTF-8 dekodieren und in Liste ablegen.
+                values = output.stdout.decode('utf-8').strip('\n').split('  ')
+                # Werte publishen
+                pub.pub("openWB/set/pv/modules/"+self.module_num+"/get/power", values[0])
+                pub.pub("openWB/set/pv/modules/"+self.module_num+"/get/energy", values[1])
+            else:
+                log.message_debug_log("error", "Beim Ausführen des Shell-Skripts ist ein Fehler aufgetreten: "+str(output.stderr.decode('utf-8')))

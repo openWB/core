@@ -18,8 +18,8 @@ class counterHw():
     def get_counter_values(self):
         """ ermittelt die Zählermesswerte und ruft dazu das vorhandene Shell-Skript auf. Anschließend werden die Werte auf dem Broker gepublished.
         """
-        if self.hw_data["config"]["module"]["selected"] == "http":
-            http_config = self.hw_data["config"]["module"]["http"]
+        if self.hw_data["config"]["selected"] == "http":
+            http_config = self.hw_data["config"]["http"]
             output = subprocess.run(["./modules/bezug_http/main.sh",http_config["url_power"],http_config["url_imported"], http_config["url_exported"], http_config["url_current1"], http_config["url_current2"], http_config["url_current3"]], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             if output.stderr.decode('utf-8') == "":
                 # In UTF-8 dekodieren und in Liste ablegen.

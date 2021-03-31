@@ -43,6 +43,9 @@ class prepare():
                     data.cp_data[chargepoint].cp_num = chargepoint[2:]
 
             data.pv_data = copy.deepcopy(subdata.subData.pv_data)
+            for module in data.counter_data:
+                if "pv" in module:
+                    data.pv_data[module].module_num = module[2:]
             data.ev_data = copy.deepcopy(subdata.subData.ev_data)
             data.ev_template_data = copy.deepcopy(
                 subdata.subData.ev_template_data)
@@ -96,7 +99,7 @@ class prepare():
     def _use_pv(self):
         """ ermittelt, ob Überschuss an der EVU vorhanden ist und kümmert sich um die Beachtung der Einspeisungsgrenze.
         """
-        data.pv_data["pv"].calc_power_for_control()
+        data.pv_data["all"].calc_power_for_control()
 
     def _bat(self):
         if "bat" not in data.bat_module_data:

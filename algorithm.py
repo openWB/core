@@ -101,7 +101,7 @@ class control():
                 chargepoint = data.cp_data[cp]
                 if "charging_ev" in chargepoint.data["set"]:
                     if chargepoint.data["set"]["charging_ev"].data["control_parameter"]["chargemode"] == "pv_charging" and chargepoint.hw_data["get"]["charge_state"] == True:
-                        if data.pv_data["pv"].switch_off_check_timer(chargepoint) == True:
+                        if data.pv_data["all"].switch_off_check_timer(chargepoint) == True:
                             # Ladung stoppen
                             required_current, phases = self._no_load()
                             self._process_data(chargepoint, required_current, phases)
@@ -254,7 +254,7 @@ class control():
                 # Solange die Liste durchgehen, bis die Abschaltschwelle nicht mehr erreicht wird.
                 for cp in preferenced_chargepoints:
                     if cp.data["set"]["current"] != 0:
-                        data.pv_data["pv"].switch_off_check_threshold(cp, self._get_bat_and_evu_overhang())
+                        data.pv_data["all"].switch_off_check_threshold(cp, self._get_bat_and_evu_overhang())
         except Exception as e:
             log.exception_logging(e)
     
@@ -355,11 +355,11 @@ class control():
         """
         try:
             # PV-Strom nutzen
-            overhang_power_left = data.pv_data["pv"].overhang_left_with_without_feed_in_limit(False)
+            overhang_power_left = data.pv_data["all"].overhang_left_with_without_feed_in_limit(False)
             if overhang_power_left > 0:
                 overhang_power_left -= required_power
                 if overhang_power_left > 0:
-                    if data.pv_data["pv"].allocate_pv_power(required_power) == False:
+                    if data.pv_data["all"].allocate_pv_power(required_power) == False:
                         required_current = 0
                         phases = 0
                     self._process_data(chargepoint, required_current, phases)
@@ -368,7 +368,7 @@ class control():
                     pv_power = required_power - evu_power
                     evu_current = required_power / (phases * 230)
                     if loadmanagement.loadmanagement(evu_power, evu_current, phases) == False:
-                        if data.pv_data["pv"].allocate_pv_power(pv_power) == False:
+                        if data.pv_data["all"].allocate_pv_power(pv_power) == False:
                             required_current = 0
                             phases = 0
                     else:
@@ -402,7 +402,7 @@ class control():
                 log.message_debug_log("warning", "PV-Laden im Modus Zielladen aktiv und es wurden keine Einstellungen für PV-Laden konfiguriert.")
             else:
                 if self._check_cp_without_feed_in_is_prioritised(chargepoint) == True:
-                    required_current, phases = data.pv_data["pv"].switch_on(chargepoint, required_power, required_current, phases, data.bat_module_data["bat"].power_for_bat_charging())
+                    required_current, phases = data.pv_data["all"].switch_on(chargepoint, required_power, required_current, phases, data.bat_module_data["bat"].power_for_bat_charging())
             self._process_data(chargepoint, required_current, phases)
         except Exception as e:
             log.exception_logging(e)
@@ -437,14 +437,14 @@ class control():
         """ prüft, ob für LP ohne Einspeisungsgrenze noch EVU-Überschuss übrig ist und dann für die LP mit Einspeiungsgrenze.
         """
         try:
-            if data.pv_data["pv"].overhang_left_with_without_feed_in_limit(False) != 0:
-                if data.pv_data["pv"].overhang_left_with_without_feed_in_limit(False) > 0:
+            if data.pv_data["all"].overhang_left_with_without_feed_in_limit(False) != 0:
+                if data.pv_data["all"].overhang_left_with_without_feed_in_limit(False) > 0:
                     self._distribution(False, False)
                     self._distribution(False, True)
-                if data.pv_data["pv"].overhang_left_with_without_feed_in_limit(True) > 0:
+                if data.pv_data["all"].overhang_left_with_without_feed_in_limit(True) > 0:
                     self._distribution(True, True)
                     self._distribution(True, False)
-            data.pv_data["pv"].put_stats()
+            data.pv_data["all"].put_stats()
         except Exception as e:
             log.exception_logging(e)
 
@@ -452,14 +452,14 @@ class control():
         """ prüft, ob für LP ohne Einspeisungsgrenze noch EVU-Überschuss zurückgenommen werden muss und dann für die LP mit Einspeiungsgrenze.
         """
         try:
-            if data.pv_data["pv"].overhang_left_with_without_feed_in_limit(False) != 0:
-                if data.pv_data["pv"].overhang_left_with_without_feed_in_limit(True) < 0:
+            if data.pv_data["all"].overhang_left_with_without_feed_in_limit(False) != 0:
+                if data.pv_data["all"].overhang_left_with_without_feed_in_limit(True) < 0:
                     self._distribution(True, False)
                     self._distribution(True, True)
-                if data.pv_data["pv"].overhang_left_with_without_feed_in_limit(False) < 0:
+                if data.pv_data["all"].overhang_left_with_without_feed_in_limit(False) < 0:
                     self._distribution(False, True)
                     self._distribution(False, False)
-            data.pv_data["pv"].put_stats()
+            data.pv_data["all"].put_stats()
         except Exception as e:
             log.exception_logging(e)
 
@@ -492,7 +492,7 @@ class control():
                 else:
                     bat_overhang = 0
                 # pos. Wert -> Ladestrom wird erhöht, negativer Wert -> Ladestrom wird reduziert
-                current_diff_per_phase = (data.pv_data["pv"].overhang_left_with_without_feed_in_limit(feed_in_limit) + bat_overhang) / 230 / num_of_phases
+                current_diff_per_phase = (data.pv_data["all"].overhang_left_with_without_feed_in_limit(feed_in_limit) + bat_overhang) / 230 / num_of_phases
                 for cp in data.cp_data:
                     if "set" in data.cp_data[cp].data:
                         chargepoint = data.cp_data[cp]
@@ -515,13 +515,13 @@ class control():
                                     # Laden mit EVU-Überschuss und der Leistung, die vorher der Speicher bezogen hat
                                     elif bat_overhang > 0:
                                         pv_power = power_diff - bat_overhang
-                                        if data.pv_data["pv"].allocate_pv_power(pv_power) == False:
+                                        if data.pv_data["all"].allocate_pv_power(pv_power) == False:
                                             current = 0
                                         elif data.bat_module_data["bat"].allocate_bat_power(bat_overhang) == False:
                                             current = 0
                                     # Laden nur mit EVU-Überschuss bzw. Reduktion des EVU-Bezugs
                                     else:
-                                        if data.pv_data["pv"].allocate_pv_power(power_diff) == False:
+                                        if data.pv_data["all"].allocate_pv_power(power_diff) == False:
                                             current = 0
 
                                     pub.pub("openWB/chargepoint/"+str(chargepoint.cp_num)+"/set/current", current)
@@ -610,11 +610,11 @@ class control():
             chargepoint.data["set"]["phases_to_use"] = phases
             pub.pub("openWB/chargepoint/"+str(chargepoint.cp_num)+"/set/current", required_current)
             pub.pub("openWB/chargepoint/"+str(chargepoint.cp_num)+"/set/phases_to_use", phases)
-            data.pv_data["pv"].put_stats()
+            data.pv_data["all"].put_stats()
         except Exception as e:
             log.exception_logging(e)
 
     def _get_bat_and_evu_overhang(self):
         """
         """
-        return data.bat_module_data["bat"].data["get"]["power"] + data.pv_data["pv"].data["set"]["available_power"]
+        return data.bat_module_data["bat"].data["get"]["power"] + data.pv_data["all"].data["set"]["available_power"]

@@ -172,7 +172,7 @@ class ev():
             Phasenanzahl , mit der geladen werden soll.
         """
         try:
-            pv_config = data.pv_data["pv"].data["config"]
+            pv_config = data.pv_data["all"].data["config"]
             phases_to_use = phases_in_use
             if phases_in_use == 1:
                 # Wenn im einphasigen Laden mit Maximalstromstärke geladen wird und der Timer abläuft, wird auf 3 Phasen umgeschaltet.
