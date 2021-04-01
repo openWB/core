@@ -44,7 +44,7 @@ class pv():
             if len(data.pv_data) > 1:
                 self.data["config"]["configured"]=True
                 # aktuelle Leistung an der EVU, enthält die Leistung der Einspeisungsgrenze
-                evu_overhang = data.counter_data["counter0"].hw_data["get"]["power_all"] * (-1)
+                evu_overhang = data.counter_data["counter0"].data["get"]["power_all"] * (-1)
                 
                 # Regelmodus
                 control_range_low = self.data["config"]["control_range"][0]
@@ -104,7 +104,7 @@ class pv():
             # Wenn das EV Vorrang hat, kann die Ladeleistung des Speichers zum Laden des EV verwendet werden.
             if chargepoint.data["set"]["charging_ev"].charge_template.data["chargemode"]["pv_charging"]["bat_prio"] == False:
                 all_overhang += bat_overhang
-            if  chargepoint.hw_data["get"]["charge_state"] == False:
+            if  chargepoint.data["get"]["charge_state"] == False:
                 if control_parameter["timestamp_switch_on_off"] != False:
                     # Wurde die Einschaltschwelle erreicht? Reservierte Leistung aus all_overhang rausrechnen, 
                     # da diese Leistung ja schon reserviert wurde, als die Einschaltschwelle erreicht wurde.
@@ -309,29 +309,3 @@ class pv():
                 pub.pub("openWB/pv/get/released_pv_power", self.data["get"]["released_pv_power"])
         except Exception as e:
             log.exception_logging(e)
-
-
-class pvModule():
-    """
-    """
-
-    def __init__(self):
-        self.data = {}
-        self.module_num = 0
-    """
-    """
-
-    def get_module_values(self):
-        """ ermittelt die Zählermesswerte und ruft dazu das vorhandene Shell-Skript auf. Anschließend werden die Werte auf dem Broker gepublished.
-        """
-        if self.data["config"]["selected"] == "http":
-            http_config = self.data["config"]["http"]
-            output = subprocess.run(["./modules/wr_http/main.sh",http_config["url_power"],http_config["url_energy"]], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            if output.stderr.decode('utf-8') == "":
-                # In UTF-8 dekodieren und in Liste ablegen.
-                values = output.stdout.decode('utf-8').strip('\n').split('  ')
-                # Werte publishen
-                pub.pub("openWB/set/pv_hw/"+self.module_num+"/get/power", values[0])
-                pub.pub("openWB/set/pv_hw/"+self.module_num+"/get/energy", values[1])
-            else:
-                log.message_debug_log("error", "Beim Ausführen des Shell-Skripts ist ein Fehler aufgetreten: "+str(output.stderr.decode('utf-8')))

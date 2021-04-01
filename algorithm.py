@@ -100,7 +100,7 @@ class control():
             if "cp" in cp:
                 chargepoint = data.cp_data[cp]
                 if "charging_ev" in chargepoint.data["set"]:
-                    if chargepoint.data["set"]["charging_ev"].data["control_parameter"]["chargemode"] == "pv_charging" and chargepoint.hw_data["get"]["charge_state"] == True:
+                    if chargepoint.data["set"]["charging_ev"].data["control_parameter"]["chargemode"] == "pv_charging" and chargepoint.data["get"]["charge_state"] == True:
                         if data.pv_data["all"].switch_off_check_timer(chargepoint) == True:
                             # Ladung stoppen
                             required_current, phases = self._no_load()
@@ -205,7 +205,7 @@ class control():
                 required_current, phases= self._no_load()
                 self._process_data(preferenced_chargepoints[0], required_current, phases)
                 log.message_debug_log("debug", "Ladung an LP"+str(preferenced_chargepoints[0].cp_num)+" gestoppt.")
-                loadmanagement.loadmanagement((preferenced_chargepoints[0].hw_data["get"]["power_all"]*-1), 0, 0)
+                loadmanagement.loadmanagement((preferenced_chargepoints[0].data["get"]["power_all"]*-1), 0, 0)
                 return True
         except Exception as e:
             log.exception_logging(e)
@@ -236,7 +236,7 @@ class control():
                 if "cp" in cp:
                     chargepoint = data.cp_data[cp]
                     #chargestate, weil nur die geprüft werden sollen, die tatsächlich laden und nicht die, die in diesem Zyklus eingeschaltet wurden.
-                    if chargepoint.hw_data["get"]["charge_state"] == False:
+                    if chargepoint.data["get"]["charge_state"] == False:
                         continue
                     if "charging_ev" in chargepoint.data["set"]:
                         charging_ev = chargepoint.data["set"]["charging_ev"]
@@ -538,8 +538,8 @@ class control():
                 if "set" in data.cp_data[cp].data:
                     chargepoint = data.cp_data[cp]
                     if "charging_ev" in data.cp_data[cp].data["set"]:
-                        if chargepoint.data["config"]["auto_phase_switch_hw"] == True and chargepoint.hw_data["get"]["charge_state"] == True:
-                            chargepoint.data["set"]["phases_to_use"] = chargepoint.data["set"]["charging_ev"].auto_phase_switch(chargepoint.hw_data["get"]["phases_in_use"], chargepoint.hw_data["get"]["current"])
+                        if chargepoint.data["config"]["auto_phase_switch_hw"] == True and chargepoint.data["get"]["charge_state"] == True:
+                            chargepoint.data["set"]["phases_to_use"] = chargepoint.data["set"]["charging_ev"].auto_phase_switch(chargepoint.data["get"]["phases_in_use"], chargepoint.data["get"]["current"])
         except Exception as e:
             log.exception_logging(e)
 

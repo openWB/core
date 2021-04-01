@@ -36,68 +36,11 @@ class allChargepoints():
         data.cp_data["all"].data["get"]["power_all"] = used_power_all
         pub.pub("openWB/chargepoint/get/power_all", used_power_all)
 
-class chargepointHw():
-
-    def __init__(self, index):
-        self.cp_num = index
-        self.hw_data = {}
-        self.hw_data["get"] = {}
-        self.hw_data["get"]["charge_state"] = 0
-        pub.pub("openWB/chargepoint_hw/"+str(self.cp_num)+"/get/charge_state", 0)
-
-    # Control Pilot-Unterbrechung
-    def perform_control_pilot_interruption(self, duration):
-        """ Durchführen der Control Pilot-Unterbrechung für die Ladepunkte 1 und 2 (geht nur bei internen LP)
-
-        Parameter
-        ---------
-        duration: int 
-            Dauer der Control Pilot-Unterbrechung
-        """
-        # Skript der jeweiligen EVSE-Verbindung aufrufen
-        # if [[ $evsecon == "simpleevsewifi" ]]; then
-        #     response = requests.get('http:///$evsewifiiplp1/interruptCp')
-        # elif [[ $evsecon == "ipevse" ]]; then
-        #     self._force_control_pilot_interruption_remote(duration)
-        # elif [[ $evsecon == "extopenwb" ]]; then
-        #     mosquitto_pub -r -t openWB/set/isss/Cpulp1 -h $chargep1ip -m "1"
-        # else
-        #     self._force_control_pilot_interruption_gpio(duration)
-    
-    def _force_control_pilot_interruption_gpio(self, duration):
-        if self.cp_num == 1:
-            GPIO.setwarnings(False)
-            GPIO.setmode(GPIO.BOARD)
-            GPIO.setup(22, GPIO.OUT)
-
-            GPIO.output(22, GPIO.HIGH)
-            time.sleep(duration)
-            GPIO.output(22, GPIO.LOW)
-        elif self.cp_num == 2:
-            GPIO.setwarnings(False)
-            GPIO.setmode(GPIO.BOARD)
-            GPIO.setup(15, GPIO.OUT)
-
-            GPIO.output(15, GPIO.HIGH)
-            time.sleep(duration)
-            GPIO.output(15, GPIO.LOW)
-        else:
-            log.message_debug_log("error", "Control Pilot-Unterbrechung durch Pin-Schalten nur fuer LP 1 und 2 moeglich.")
-
-    def _force_control_pilot_interruption_remote(self, ip_address, modbus_id, duration):
-        client = ModbusTcpClient(ip_address, port=8899)
-        rq = client.write_register(0x0001, 256, unit=modbus_id)
-        time.sleep(duration)
-        rq = client.write_register(0x0001, 512, unit=modbus_id)
-
-    #
-
-class chargepoint(chargepointHw):
+class chargepoint():
     """ geht alle Ladepunkte durch, prüft, ob geladen werden darf und ruft die Funktion des angesteckten Autos auf. 
     """
 
     def __init__(self, index):
-        super().__init__(index)
         self.data = {}
         self.template = None  # Instanz des zugeordneten CP-Templates
         self.cp_num = index
@@ -134,7 +77,7 @@ class chargepoint(chargepointHw):
         """ ruft die Funktion der Template-Klasse auf.
         """
         try:
-            state = self.template.autolock(self.data["set"]["autolock_state"], self.hw_data["get"]["charge_state"], self.cp_num)
+            state = self.template.autolock(self.data["set"]["autolock_state"], self.data["get"]["charge_state"], self.cp_num)
             if state == False:
                 self.log_pub_state_str("Keine Ladung an LP"+self.cp_num+", da Autolock aktiv ist.")
             else:
@@ -152,7 +95,7 @@ class chargepoint(chargepointHw):
         return state
 
     def _is_ev_plugged(self):
-        state = self.hw_data["get"]["plug_state"]
+        state = self.data["get"]["plug_state"]
         if state == False:
             self.log_pub_state_str("Keine Ladung an LP"+self.cp_num+", da kein Auto angesteckt ist.")
         else:
@@ -172,7 +115,7 @@ class chargepoint(chargepointHw):
                 if self._is_manual_lock_active() == False:
                     if self._is_ev_plugged() == True:
                         if self._is_autolock_active() == True:
-                            return self.template.get_ev(self.hw_data["get"]["rfid"])
+                            return self.template.get_ev(self.data["get"]["rfid"])
             # Daten zurücksetzen, wenn nicht geladen werden soll.
             self.data.pop("set")
             pub.pub("openWB/chargepoint/"+str(self.cp_num)+"/set/charging_ev", "")
@@ -194,7 +137,7 @@ class chargepoint(chargepointHw):
             # Ist Control Pilot-Unterbrechung hardwareseitig möglich und ist die Control Pilot-Unterbrechung für das EV erforderlich?
             if self.data["config"]["control_pilot_interruption_hw"] == True and charging_ev.ev_template.data["control_pilot_interruption"] == True:
             # 50s warten bis CP-Skript aufgerufen wird?
-                self.perform_control_pilot_interruption(charging_ev.ev_template.data["control_pilot_interruption_duration"])
+                #self.perform_control_pilot_interruption(charging_ev.ev_template.data["control_pilot_interruption_duration"])
                 log.message_debug_log("debug", "# Control-Pilot-Unterbrechung an LP"+str(self.cp_num)+" fuer "+charging_ev.ev_template.data["control_pilot_interruption_duration"]+"s durchfuehren.")
         except Exception as e:
             log.exception_logging(e)

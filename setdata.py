@@ -26,11 +26,8 @@ class setData():
         client.on_message = self.on_message
         client.message_callback_add("openWB/set/vehicle/#", self.process_vehicle_topic)
         client.message_callback_add("openWB/set/chargepoint/#", self.process_chargepoint_topic)
-        client.message_callback_add("openWB/set/chargepoint_hw/#", self.process_chargepoint_hw_topic)
         client.message_callback_add("openWB/set/pv/#", self.process_pv_topic)
-        client.message_callback_add("openWB/set/pv_hw/#", self.process_pv_hw_topic)
         client.message_callback_add("openWB/set/bat/#", self.process_bat_topic)
-        client.message_callback_add("openWB/set/bat_hw/#", self.process_bat_hw_topic)
         client.message_callback_add("openWB/set/general/#", self.process_general_topic)
         client.message_callback_add("openWB/set/optional/#", self.process_optional_topic)
         client.message_callback_add("openWB/set/counter/#", self.process_counter_topic)
@@ -189,23 +186,6 @@ class setData():
         else:
             log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
 
-    def process_chargepoint_hw_topic(self, client, userdata, msg):
-        """ Handler für die Ladepunkt-Topics
-
-         Parameters
-        ----------
-        client : (unused)
-            vorgegebener Parameter
-        userdata : (unused)
-            vorgegebener Parameter
-        msg:
-            enthält Topic und Payload
-        """
-        if False:
-            pass
-        else:
-            log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
-
     def process_pv_topic(self, client, userdata, msg):
         """ Handler für die PV-Topics
 
@@ -220,33 +200,6 @@ class setData():
         """
         if False:
             pass
-        else:
-            log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
-
-    def process_pv_hw_topic(self, client, userdata, msg):
-        """ Handler für die PV-Hardware-Topics
-
-         Parameters
-        ----------
-        client : (unused)
-            vorgegebener Parameter
-        userdata : (unused)
-            vorgegebener Parameter
-        msg:
-            enthält Topic und Payload
-        """
-        if re.search("^openWB/set/pv_hw/[1-9][0-9]*/get/fault_state$", msg.topic) != None:
-            self._validate_value(msg, int, min_value=0, max_value=2)
-        elif re.search("^openWB/set/pv_hw/[1-9][0-9]*/get/fault_str$", msg.topic) != None:
-            self._validate_value(msg, str)
-        elif (re.search("^openWB/set/pv_hw/[1-9][0-9]*/get/counter$", msg.topic) != None or
-                re.search("^openWB/set/pv_hw/[1-9][0-9]*/get/daily_yield$", msg.topic) != None or
-                re.search("^openWB/set/pv_hw/[1-9][0-9]*/get/monthly_yield$", msg.topic) != None or
-                re.search("^openWB/set/pv_hw/[1-9][0-9]*/get/yearly_yield$", msg.topic) != None or
-                re.search("^openWB/set/pv_hw/[1-9][0-9]*/get/actual_power_phase$", msg.topic) != None or
-                re.search("^openWB/set/pv_hw/[1-9][0-9]*/get/energy$", msg.topic) != None or
-                re.search("^openWB/set/pv_hw/[1-9][0-9]*/get/power$", msg.topic) != None):
-            self._validate_value(msg, float, min_value=0)
         else:
             log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
 
@@ -266,27 +219,6 @@ class setData():
             self._validate_value(msg, int, min_value=0, max_value=100)
         elif re.search("^openWB/set/bat/get/power$", msg.topic) != None:
             self._validate_value(msg, int, min_value=0)
-        else:
-            log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
-
-    def process_bat_hw_topic(self, client, userdata, msg):
-        """ Handler für die Hausspeicher-Hardware-Topics
-
-         Parameters
-        ----------
-        client : (unused)
-            vorgegebener Parameter
-        userdata : (unused)
-            vorgegebener Parameter
-        msg:
-            enthält Topic und Payload
-        """
-        if re.search("^openWB/set/bat_hw/[1-9][0-9]*/get/soc$", msg.topic) != None:
-            self._validate_value(msg, int, min_value=0, max_value=100)
-        elif (re.search("^openWB/set/bat_hw/[1-9][0-9]*/get/power$", msg.topic) != None or
-                re.search("^openWB/set/bat_hw/[1-9][0-9]*/get/imported$", msg.topic) != None or
-                re.search("^openWB/set/bat_hw/[1-9][0-9]*/get/exported$", msg.topic) != None):
-            self._validate_value(msg, float, min_value=0)
         else:
             log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
 

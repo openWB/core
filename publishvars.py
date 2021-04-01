@@ -563,7 +563,7 @@ class pubvars():
         self.client.publish("openWB/chargepoint/1/config/connected_phases", payload=json.dumps(3), qos=0, retain=True)
         self.client.publish("openWB/chargepoint/1/config/auto_phase_switch_hw", payload=json.dumps(1), qos=0, retain=True)
         self.client.publish("openWB/chargepoint/1/config/control_pilot_interruption_hw", payload=json.dumps(0), qos=0, retain=True)
-        self.client.publish("openWB/chargepoint_hw/1/get/rfid", payload=json.dumps(1234), qos=0, retain=True)
+        self.client.publish("openWB/chargepoint/1/get/rfid", payload=json.dumps(1234), qos=0, retain=True)
         # self.client.publish("openWB/chargepoint/1/get/power", payload=json.dumps(1000), qos=0, retain=True)
         # cp2
         #self.client.publish("openWB/chargepoint_hw/2/get/charge_state", payload=json.dumps(0), qos=0, retain=True)
@@ -573,7 +573,7 @@ class pubvars():
         self.client.publish("openWB/chargepoint/2/config/connected_phases", payload=json.dumps(3), qos=0, retain=True)
         self.client.publish("openWB/chargepoint/1/config/auto_phase_switch_hw", payload=json.dumps(1), qos=0, retain=True)
         self.client.publish("openWB/chargepoint/1/config/control_pilot_interruption_hw", payload=json.dumps(0), qos=0, retain=True)
-        self.client.publish("openWB/chargepoint_hw/2/get/rfid", payload=json.dumps(1234), qos=0, retain=True)
+        self.client.publish("openWB/chargepoint/2/get/rfid", payload=json.dumps(1234), qos=0, retain=True)
         # self.client.publish("openWB/chargepoint/1/get/power", payload=json.dumps(1500), qos=0, retain=True)
 
         #evt1
@@ -661,7 +661,7 @@ class pubvars():
         self.client.publish("openWB/pv/config/switch_on_threshold", payload=json.dumps(1400), qos=0, retain=True)
         self.client.publish("openWB/pv/config/feed_in_yield", payload=json.dumps(2000), qos=0, retain=True)
         self.client.publish("openWB/pv/config/phase_switch_delay", payload=json.dumps(1), qos=0, retain=True)
-        self.client.publish("openWB/pv_hw/1/get/counter", payload=json.dumps(500), qos=0, retain=True)
+        self.client.publish("openWB/pv/1/get/counter", payload=json.dumps(500), qos=0, retain=True)
         
         #evu
         # self.client.publish("openWB/counter/evu/get/power_all", payload=json.dumps(-5000), qos=0, retain=True)
@@ -672,7 +672,7 @@ class pubvars():
         #bat
         self.client.publish("openWB/bat/config/switch_on_soc", payload=json.dumps(60), qos=0, retain=True)
         self.client.publish("openWB/bat/config/switch_off_soc", payload=json.dumps(40), qos=0, retain=True)
-        self.client.publish("openWB/bat_hw/1/config/type", payload=json.dumps("mqtt"), qos=0, retain=True)
+        self.client.publish("openWB/bat/1/config/type", payload=json.dumps("mqtt"), qos=0, retain=True)
 
         #general
         self.client.publish("openWB/general/chargemode_config/instant_charging/phases_to_use", payload=json.dumps(1), qos=0, retain=True)

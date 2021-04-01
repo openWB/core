@@ -43,10 +43,6 @@ def print_dictionaries(data):
             print(key)
             if isinstance(data[key], dict) == False:
                 print(data[key].data)
-                try:
-                    print(data[key].hw_data)
-                except:
-                    pass
             else:
                 print("Klasse fehlt")
     except Exception as e:

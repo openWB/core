@@ -43,9 +43,6 @@ class prepare():
                     data.cp_data[chargepoint].cp_num = chargepoint[2:]
 
             data.pv_data = copy.deepcopy(subdata.subData.pv_data)
-            for module in data.counter_data:
-                if "pv" in module:
-                    data.pv_data[module].module_num = module[2:]
             data.ev_data = copy.deepcopy(subdata.subData.ev_data)
             data.ev_template_data = copy.deepcopy(
                 subdata.subData.ev_template_data)

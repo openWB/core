@@ -33,7 +33,7 @@ class charge():
         """prüft, ob eine Phasenumschaltung erforderlich ist und führt diese durch.
         """
         try:
-            if chargepoint.hw_data["get"]["phases_in_use"] != chargepoint.data["set"]["phases_to_use"]:
+            if chargepoint.data["get"]["phases_in_use"] != chargepoint.data["set"]["phases_to_use"]:
                 #perform hw phase switch
                 pub.pub("openWB/chargepoint/"+str(chargepoint.cp_num)+"/set/phases_to_use", chargepoint.data["set"]["phases_to_use"])
                 pub.pub("openWB/chargepoint/"+str(chargepoint.cp_num)+"/set/current", chargepoint.data["set"]["charging_ev"].data["control_parameter"]["required_current"])
@@ -45,10 +45,10 @@ class charge():
         """
         try:
             if chargepoint.data["set"]["current"]  != 0:
-                chargepoint.hw_data["get"]["charge_state"] == True
+                chargepoint.data["get"]["charge_state"] == True
             else:
-                chargepoint.hw_data["get"]["charge_state"] == False
-            pub.pub("openWB/chargepoint/"+str(chargepoint.cp_num)+"/get/charge_state", chargepoint.hw_data["get"]["charge_state"])
+                chargepoint.data["get"]["charge_state"] == False
+            pub.pub("openWB/chargepoint/"+str(chargepoint.cp_num)+"/get/charge_state", chargepoint.data["get"]["charge_state"])
             pub.pub("openWB/chargepoint/"+str(chargepoint.cp_num)+"/get/power_all", (chargepoint.data["set"]["phases_to_use"]*chargepoint.data["set"]["current"]*230))
         except Exception as e:
             log.exception_logging(e)
