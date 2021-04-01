@@ -123,11 +123,11 @@ class setData():
         """
         if isinstance(value, data_type) == True:
             if min_value != None:
-                if value < min_value:
+                if value <= min_value:
                     log.message_debug_log("error", "Payload ungültig: Topic "+str(msg.topic)+", Payload "+str(value)+" kleiner als Minimalwert.")
                     return False
             if max_value != None:
-                if value > max_value:
+                if value >= max_value:
                     log.message_debug_log("error", "Payload ungueltig: Topic "+str(msg.topic)+", Payload "+str(value)+" groesser als Maxmalwert.")
                     return False
             return True
@@ -181,8 +181,24 @@ class setData():
         msg:
             enthält Topic und Payload
         """
-        if False:
-            pass
+        if re.search("^openWB/set/chargepoint/[1-9][0-9]*/config/connection_module/[a-z,_]+/ip_address$", msg.topic) != None:
+            self._validate_value(msg, str)
+        elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/config/connection_module/external_openwb/chargepoint$", msg.topic) != None:
+            self._validate_value(msg, int, min_value=1, max_value=2)
+        elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/config/connection_module/satellite/id$", msg.topic) != None:
+            self._validate_value(msg, int, min_value=1, max_value=254)
+        elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/config/connection_module/[a-z,_]+/timeout$", msg.topic) != None:
+            self._validate_value(msg, int, min_value=0)
+        elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/config/connection_module/nrg/mac$", msg.topic) != None:
+            self._validate_value(msg, str)
+        elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/config/connection_module/tesla/phases$", msg.topic) != None:
+            self._validate_value(msg, int, min_value=1, max_value=3)
+        elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/config/connection_module/dac/register$", msg.topic) != None:
+            self._validate_value(msg, int, min_value=0, max_value=99)
+        elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/config/connection_module/modbus_evse/source$", msg.topic) != None:
+            self._validate_value(msg, str)
+        elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/config/connection_module/modbus_evse/id$", msg.topic) != None:
+            self._validate_value(msg, int, min_value=1, max_value=254)
         else:
             log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
 
