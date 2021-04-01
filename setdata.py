@@ -11,6 +11,9 @@ import pub
 class setData():
  
     def __init__(self):
+        pass
+
+    def set_data(self):
         """ abonniert alle set-Topics.
         """
         mqtt_broker_ip = "localhost"
@@ -25,7 +28,9 @@ class setData():
         client.message_callback_add("openWB/set/chargepoint/#", self.process_chargepoint_topic)
         client.message_callback_add("openWB/set/chargepoint_hw/#", self.process_chargepoint_hw_topic)
         client.message_callback_add("openWB/set/pv/#", self.process_pv_topic)
+        client.message_callback_add("openWB/set/pv_hw/#", self.process_pv_hw_topic)
         client.message_callback_add("openWB/set/bat/#", self.process_bat_topic)
+        client.message_callback_add("openWB/set/bat_hw/#", self.process_bat_hw_topic)
         client.message_callback_add("openWB/set/general/#", self.process_general_topic)
         client.message_callback_add("openWB/set/optional/#", self.process_optional_topic)
         client.message_callback_add("openWB/set/counter/#", self.process_counter_topic)
@@ -152,7 +157,7 @@ class setData():
         if False:
             pass
         else:
-            log.message_debug_log("error", "Unbekanntes set-Topic: "+msg.topic+", "+ msg.payload)
+            log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
 
     def subprocess_vehicle_chargemode_topic(self, msg):
         """ Handler für die EV-Chargemode-Template-Topics
@@ -165,7 +170,7 @@ class setData():
         if False:
             pass
         else:
-            log.message_debug_log("error", "Unbekanntes set-Topic: "+msg.topic+", "+ msg.payload)
+            log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
 
     def process_chargepoint_topic(self, client, userdata, msg):
         """ Handler für die Ladepunkt-Topics
@@ -182,7 +187,7 @@ class setData():
         if False:
             pass
         else:
-            log.message_debug_log("error", "Unbekanntes set-Topic: "+msg.topic+", "+ msg.payload)
+            log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
 
     def process_chargepoint_hw_topic(self, client, userdata, msg):
         """ Handler für die Ladepunkt-Topics
@@ -199,10 +204,27 @@ class setData():
         if False:
             pass
         else:
-            log.message_debug_log("error", "Unbekanntes set-Topic: "+msg.topic+", "+ msg.payload)
+            log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
 
     def process_pv_topic(self, client, userdata, msg):
         """ Handler für die PV-Topics
+
+         Parameters
+        ----------
+        client : (unused)
+            vorgegebener Parameter
+        userdata : (unused)
+            vorgegebener Parameter
+        msg:
+            enthält Topic und Payload
+        """
+        if False:
+            pass
+        else:
+            log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
+
+    def process_pv_hw_topic(self, client, userdata, msg):
+        """ Handler für die PV-Hardware-Topics
 
          Parameters
         ----------
@@ -224,9 +246,9 @@ class setData():
                 re.search("^openWB/set/pv_hw/[1-9][0-9]*/get/actual_power_phase$", msg.topic) != None or
                 re.search("^openWB/set/pv_hw/[1-9][0-9]*/get/energy$", msg.topic) != None or
                 re.search("^openWB/set/pv_hw/[1-9][0-9]*/get/power$", msg.topic) != None):
-            self._validate_value(msg, float)
+            self._validate_value(msg, float, min_value=0)
         else:
-            log.message_debug_log("error", "Unbekanntes set-Topic: "+msg.topic+", "+ msg.payload)
+            log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
 
     def process_bat_topic(self, client, userdata, msg):
         """ Handler für die Hausspeicher-Topics
@@ -240,10 +262,33 @@ class setData():
         msg:
             enthält Topic und Payload
         """
-        if False:
-            pass
+        if re.search("^openWB/set/bat/get/soc$", msg.topic) != None:
+            self._validate_value(msg, int, min_value=0, max_value=100)
+        elif re.search("^openWB/set/bat/get/power$", msg.topic) != None:
+            self._validate_value(msg, int, min_value=0)
         else:
-            log.message_debug_log("error", "Unbekanntes set-Topic: "+msg.topic+", "+ msg.payload)
+            log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
+
+    def process_bat_hw_topic(self, client, userdata, msg):
+        """ Handler für die Hausspeicher-Hardware-Topics
+
+         Parameters
+        ----------
+        client : (unused)
+            vorgegebener Parameter
+        userdata : (unused)
+            vorgegebener Parameter
+        msg:
+            enthält Topic und Payload
+        """
+        if re.search("^openWB/set/bat_hw/[1-9][0-9]*/get/soc$", msg.topic) != None:
+            self._validate_value(msg, int, min_value=0, max_value=100)
+        elif (re.search("^openWB/set/bat_hw/[1-9][0-9]*/get/power$", msg.topic) != None or
+                re.search("^openWB/set/bat_hw/[1-9][0-9]*/get/imported$", msg.topic) != None or
+                re.search("^openWB/set/bat_hw/[1-9][0-9]*/get/exported$", msg.topic) != None):
+            self._validate_value(msg, float, min_value=0)
+        else:
+            log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
 
     def process_general_topic(self, client, userdata, msg):
         """ Handler für die Allgemeinen-Topics
@@ -260,7 +305,7 @@ class setData():
         if False:
             pass
         else:
-            log.message_debug_log("error", "Unbekanntes set-Topic: "+msg.topic+", "+ msg.payload)
+            log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
 
     def process_optional_topic(self, client, userdata, msg):
         """ Handler für die Optionalen-Topics
@@ -277,7 +322,7 @@ class setData():
         if False:
             pass
         else:
-            log.message_debug_log("error", "Unbekanntes set-Topic: "+msg.topic+", "+ msg.payload)
+            log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
 
     def process_counter_topic(self, client, userdata, msg):
         """ Handler für die Zähler-Topics
@@ -292,12 +337,12 @@ class setData():
             enthält Topic und Payload
         """
         if re.search("^openWB/set/counter/[0-9]*/get/power_all$", msg.topic) != None:
-            self._validate_value(msg, float)
+            self._validate_value(msg, int)
         elif (re.search("^openWB/set/counter/[0-9]*/get/current$", msg.topic) != None or
                 re.search("^openWB/set/counter/[0-9]*/get/voltage$", msg.topic) != None or
                 re.search("^openWB/set/counter/[0-9]*/get/power_phase$", msg.topic) != None or
                 re.search("^openWB/set/counter/[0-9]*/get/power_factor$", msg.topic) != None):
-            self._validate_list_value(msg, float)
+            self._validate_list_value(msg, float, min_value=0)
         elif (re.search("^openWB/set/counter/[0-9]*/get/power_average$", msg.topic) != None
                 or re.search("^openWB/set/counter/[0-9]*/get/unbalanced_load$", msg.topic) != None
                 or re.search("^openWB/set/counter/[0-9]*/get/frequency$", msg.topic) != None
@@ -305,13 +350,13 @@ class setData():
                 or re.search("^openWB/set/counter/[0-9]*/get/daily_yield_import$", msg.topic) != None
                 or re.search("^openWB/set/counter/[0-9]*/get/imported$", msg.topic) != None
                 or re.search("^openWB/set/counter/[0-9]*/get/exported$", msg.topic) != None):
-            self._validate_value(msg, float)
+            self._validate_value(msg, float, min_value=0)
         elif re.search("^openWB/set/counter/[0-9]/get/fault_state$", msg.topic) != None:
             self._validate_value(msg, int, min_value=0, max_value=2)
         elif re.search("^openWB/set/counter/[0-9]/get/fault_str$", msg.topic) != None:
             self._validate_value(msg, str)
         else:
-            log.message_debug_log("error", "Unbekanntes set-Topic: "+msg.topic+", "+ msg.payload)
+            log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
 
     def process_graph_topic(self, client, userdata, msg):
         """ Handler für die Graph-Topics
@@ -328,7 +373,7 @@ class setData():
         if False:
             pass
         else:
-            log.message_debug_log("error", "Unbekanntes set-Topic: "+msg.topic+", "+ msg.payload)
+            log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
 
     # def processSmarthomeTopic(self, client, userdata, msg):
     #     """

@@ -11,6 +11,7 @@ import counter
 import ev
 import general
 import graph
+import log
 import optional
 import prepare
 import pv
@@ -52,12 +53,13 @@ class subData():
         client.message_callback_add("openWB/chargepoint/#", self.process_chargepoint_topic)
         client.message_callback_add("openWB/chargepoint_hw/#", self.process_chargepoint_hw_topic)
         client.message_callback_add("openWB/pv/#", self.process_pv_topic)
+        client.message_callback_add("openWB/pv_hw/#", self.process_pv_hw_topic)
         client.message_callback_add("openWB/bat/#", self.process_bat_topic)
+        client.message_callback_add("openWB/bat_hw/#", self.process_bat_hw_topic)
         client.message_callback_add("openWB/general/#", self.process_general_topic)
         client.message_callback_add("openWB/optional/#", self.process_optional_topic)
         client.message_callback_add("openWB/counter/#", self.process_counter_topic)
         client.message_callback_add("openWB/graph/#", self.process_graph_topic)
-        # client.message_callback_add("openWB/smarthome/#", self.processSmarthomeTopic)
 
         client.connect(mqtt_broker_ip, 1883)
         client.loop_forever()
@@ -379,8 +381,8 @@ class subData():
                     self.cp_data["cp"+index].hw_data["config"]={}
                 self.set_json_payload(self.cp_data["cp"+index].hw_data["config"], msg)
 
-    def process_pv_topic(self, client, userdata, msg):
-        """ Handler für die PV-Topics
+    def process_pv_hw_topic(self, client, userdata, msg):
+        """ Handler für die PV-Hardware-Topics
 
          Parameters
         ----------
@@ -391,7 +393,7 @@ class subData():
         msg:
             enthält Topic und Payload
         """
-        if re.search("^openWB/_hw/[1-9][0-9]*$", msg.topic) != None:
+        if re.search("^openWB/pv_hw/[1-9][0-9]*$", msg.topic) != None:
             index=self.get_index(msg.topic)
             if json.loads(str(msg.payload.decode("utf-8")))=="":
                 if "pv"+index in self.pv_data:
@@ -408,8 +410,25 @@ class subData():
                 if "get" not in self.pv_data["pv"+index].data:
                     self.pv_data["pv"+index].data["get"]={}
                 self.set_json_payload(self.pv_data["pv"+index].data["get"], msg)
+
+    def process_pv_topic(self, client, userdata, msg):
+        """ Handler für die PV-Topics
+
+         Parameters
+        ----------
+        client : (unused)
+            vorgegebener Parameter
+        userdata : (unused)
+            vorgegebener Parameter
+        msg:
+            enthält Topic und Payload
+        """
+        if re.search("^openWB/pv$", msg.topic) != None:
+            if json.loads(str(msg.payload.decode("utf-8")))=="":
+                if "all" in self.pv_data:
+                    self.pv_data.pop("all")
         elif re.search("^openWB/pv/.+$", msg.topic) != None:
-            if "pv" not in self.pv_data:
+            if "all" not in self.pv_data:
                 self.pv_data["all"]=pv.pv()
             if re.search("^openWB/pv/config/.+$", msg.topic) != None:
                 if "config" not in self.pv_data["all"].data:
@@ -424,7 +443,7 @@ class subData():
                     self.pv_data["all"].data["set"]={}
                 self.set_json_payload(self.pv_data["all"].data["set"], msg)
 
-    def process_bat_topic(self, client, userdata, msg):
+    def process_bat_hw_topic(self, client, userdata, msg):
         """ Handler für die Hausspeicher-Topics
 
          Parameters
@@ -436,38 +455,55 @@ class subData():
         msg:
             enthält Topic und Payload
         """
-        if re.search("^openWB/bat/modules/[1-9][0-9]*$", msg.topic) != None:
+        if re.search("^openWB/bat_hw/[1-9][0-9]*$", msg.topic) != None:
             index=self.get_index(msg.topic)
             if json.loads(str(msg.payload.decode("utf-8")))=="":
                 if "bat"+index in self.bat_module_data:
                     self.bat_module_data.pop("bat"+index)
-        elif re.search("^openWB/bat/modules/[1-9][0-9]*/.+$", msg.topic) != None:
+        elif re.search("^openWB/bat_hw/[1-9][0-9]*/.+$", msg.topic) != None:
             index=self.get_index(msg.topic)
             if "bat"+index not in self.bat_module_data:
                 self.bat_module_data["bat"+index]=bat.batModule()
-            if re.search("^openWB/bat/modules/[1-9][0-9]*/config/.+$", msg.topic) != None:
+            if re.search("^openWB/bat_hw/[1-9][0-9]*/config/.+$", msg.topic) != None:
                 if "config" not in self.bat_module_data["bat"+index].data:
                     self.bat_module_data["bat"+index].data["config"]={}
                 self.set_json_payload(self.bat_module_data["bat"+index].data["config"], msg)
-            elif re.search("^openWB/bat/modules/[1-9][0-9]*/get/.+$", msg.topic) != None:
+            elif re.search("^openWB/bat_hw/[1-9][0-9]*/get/.+$", msg.topic) != None:
                 if "get" not in self.bat_module_data["bat"+index].data:
                     self.bat_module_data["bat"+index].data["get"]={}
                 self.set_json_payload(self.bat_module_data["bat"+index].data["get"], msg)
-            elif re.search("^openWB/bat/modules/[1-9][0-9]*/set/.+$", msg.topic) != None:
+            elif re.search("^openWB/bat_hw/[1-9][0-9]*/set/.+$", msg.topic) != None:
                 if "set" not in self.bat_module_data["bat"+index].data:
                     self.bat_module_data["bat"+index].data["set"]={}
                 self.set_json_payload(self.bat_module_data["bat"+index].data["set"], msg)
+
+    def process_bat_topic(self, client, userdata, msg):
+        """ Handler für die Hausspeicher-Hardware_Topics
+
+         Parameters
+        ----------
+        client : (unused)
+            vorgegebener Parameter
+        userdata : (unused)
+            vorgegebener Parameter
+        msg:
+            enthält Topic und Payload
+        """
+        if re.search("^openWB/bat$", msg.topic) != None:
+            if json.loads(str(msg.payload.decode("utf-8")))=="":
+                if "all" in self.bat_module_data:
+                    self.bat_module_data.pop("all")
         elif re.search("^openWB/bat/.+$", msg.topic) != None:
-            if "bat" not in self.bat_module_data:
-                self.bat_module_data["bat"]=bat.bat()
+            if "all" not in self.bat_module_data:
+                self.bat_module_data["all"]=bat.bat()
             if re.search("^openWB/bat/get/.+$", msg.topic) != None:
-                if "get" not in self.bat_module_data["bat"].data:
-                    self.bat_module_data["bat"].data["get"] = {}
-                self.set_json_payload(self.bat_module_data["bat"].data["get"], msg)
+                if "get" not in self.bat_module_data["all"].data:
+                    self.bat_module_data["all"].data["get"] = {}
+                self.set_json_payload(self.bat_module_data["all"].data["get"], msg)
             elif re.search("^openWB/bat/config/.+$", msg.topic) != None:
-                if "config" not in self.bat_module_data["bat"].data:
-                    self.bat_module_data["bat"].data["config"] = {}
-                self.set_json_payload(self.bat_module_data["bat"].data["config"], msg)
+                if "config" not in self.bat_module_data["all"].data:
+                    self.bat_module_data["all"].data["config"] = {}
+                self.set_json_payload(self.bat_module_data["all"].data["config"], msg)
 
     def process_general_topic(self, client, userdata, msg):
         """ Handler für die Allgemeinen-Topics
@@ -614,4 +650,3 @@ class subData():
     #     """
     #     """
     #     pass
-

@@ -18,15 +18,18 @@ def main():
     char = charge.charge()
     control = algorithm.control()
     prep = prepare.prepare()
-    setdata.setData()
+    set = setdata.setData()
     sub = subdata.subData()
     ticker = threading.Event()
 
     log.setup_logger()
-    t = Thread(target=sub.sub_topics, args=())
+    
+    t_sub = Thread(target=sub.sub_topics, args=())
+    t_set = Thread(target=set.set_data, args=())
 
     pub.setup_connection()
-    t.start()
+    t_sub.start()
+    t_set.start()
 
     seconds = 3
     while not ticker.wait(seconds):

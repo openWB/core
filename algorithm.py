@@ -402,7 +402,7 @@ class control():
                 log.message_debug_log("warning", "PV-Laden im Modus Zielladen aktiv und es wurden keine Einstellungen für PV-Laden konfiguriert.")
             else:
                 if self._check_cp_without_feed_in_is_prioritised(chargepoint) == True:
-                    required_current, phases = data.pv_data["all"].switch_on(chargepoint, required_power, required_current, phases, data.bat_module_data["bat"].power_for_bat_charging())
+                    required_current, phases = data.pv_data["all"].switch_on(chargepoint, required_power, required_current, phases, data.bat_module_data["all"].power_for_bat_charging())
             self._process_data(chargepoint, required_current, phases)
         except Exception as e:
             log.exception_logging(e)
@@ -488,7 +488,7 @@ class control():
             if num_of_phases > 0:
                 # Wenn das EV Vorrang hat, kann die Ladeleistung des Speichers zum Laden des EV verwendet werden.
                 if bat_prio == False:
-                    bat_overhang = data.bat_module_data["bat"].data["set"]["charging_power_left"]
+                    bat_overhang = data.bat_module_data["all"].data["set"]["charging_power_left"]
                 else:
                     bat_overhang = 0
                 # pos. Wert -> Ladestrom wird erhöht, negativer Wert -> Ladestrom wird reduziert
@@ -510,14 +510,14 @@ class control():
 
                                     # Laden nur mit der Leistung, die vorher der Speicher bezogen hat
                                     if ( bat_overhang - power_diff) > 0:
-                                        if data.bat_module_data["bat"].allocate_bat_power(power_diff) == False:
+                                        if data.bat_module_data["all"].allocate_bat_power(power_diff) == False:
                                             current = 0
                                     # Laden mit EVU-Überschuss und der Leistung, die vorher der Speicher bezogen hat
                                     elif bat_overhang > 0:
                                         pv_power = power_diff - bat_overhang
                                         if data.pv_data["all"].allocate_pv_power(pv_power) == False:
                                             current = 0
-                                        elif data.bat_module_data["bat"].allocate_bat_power(bat_overhang) == False:
+                                        elif data.bat_module_data["all"].allocate_bat_power(bat_overhang) == False:
                                             current = 0
                                     # Laden nur mit EVU-Überschuss bzw. Reduktion des EVU-Bezugs
                                     else:
@@ -617,4 +617,4 @@ class control():
     def _get_bat_and_evu_overhang(self):
         """
         """
-        return data.bat_module_data["bat"].data["get"]["power"] + data.pv_data["all"].data["set"]["available_power"]
+        return data.bat_module_data["all"].data["get"]["power"] + data.pv_data["all"].data["set"]["available_power"]

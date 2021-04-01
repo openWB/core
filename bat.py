@@ -6,6 +6,8 @@ eine Ladung gestartet und der Speicher hört automatisch auf zu laden, da sonst 
 das Laden des EV Bezug statt finden würde.
 """
 
+import subprocess
+
 import data
 import log
 import pub
@@ -29,8 +31,8 @@ class bat:
     def setup_bat(self):
         try:
             if len(data.bat_module_data) > 1:
-                if "bat" not in data.bat_module_data:
-                    data.bat_module_data["bat"]
+                if "all" not in data.bat_module_data:
+                    data.bat_module_data["all"] = {}
                 self.data["config"]["configured"] = True
                 # Speicher lädt
                 if self.data["get"]["power"] > 0:
@@ -141,3 +143,21 @@ class batModule():
 
     def __init__(self):
         self.data={}
+        self.module_num = 0
+
+    def get_module_values(self):
+        """ ermittelt die Zählermesswerte und ruft dazu das vorhandene Shell-Skript auf. Anschließend werden die Werte auf dem Broker gepublished.
+        """
+        if self.data["config"]["selected"] == "http":
+            http_config = self.data["config"]["http"]
+            output = subprocess.run(["./modules/speicher_http/main.sh", http_config["url_soc"], http_config["url_power"], http_config["url_imported"], http_config["url_exported"]], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            if output.stderr.decode('utf-8') == "":
+                # In UTF-8 dekodieren und in Liste ablegen.
+                values = output.stdout.decode('utf-8').strip('\n').split('  ')
+                # Werte publishen
+                pub.pub("openWB/set/bat_hw/modules/"+self.module_num+"/get/soc", values[0])
+                pub.pub("openWB/set/bat_hw/modules/"+self.module_num+"/get/power", values[1])
+                pub.pub("openWB/set/bat_hw/modules/"+self.module_num+"/get/imported", values[2])
+                pub.pub("openWB/set/bat_hw/modules/"+self.module_num+"/get/exported", values[3])
+            else:
+                log.message_debug_log("error", "Beim Ausführen des Shell-Skripts ist ein Fehler aufgetreten: "+str(output.stderr.decode('utf-8')))

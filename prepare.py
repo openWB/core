@@ -102,6 +102,6 @@ class prepare():
         data.pv_data["all"].calc_power_for_control()
 
     def _bat(self):
-        if "bat" not in data.bat_module_data:
-            data.bat_module_data["bat"] = bat.bat()
-        data.bat_module_data["bat"].setup_bat()
+        if "all" not in data.bat_module_data:
+            data.bat_module_data["all"] = bat.bat()
+        data.bat_module_data["all"].setup_bat()

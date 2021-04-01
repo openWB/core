@@ -139,7 +139,7 @@ class pv():
             if required_power != 0:
                 # Laden nur mit der Leistung, die vorher der Speicher bezogen hat
                 if ( bat_overhang - required_power) > 0:
-                    if data.bat_module_data["bat"].allocate_bat_power(required_power) == False:
+                    if data.bat_module_data["all"].allocate_bat_power(required_power) == False:
                         required_current = 0
                         phases = 0
                         return required_current, phases
@@ -150,7 +150,7 @@ class pv():
                         required_current = 0
                         phases = 0
                         return required_current, phases
-                    elif data.bat_module_data["bat"].allocate_bat_power(bat_overhang) == False:
+                    elif data.bat_module_data["all"].allocate_bat_power(bat_overhang) == False:
                         required_current = 0
                         phases = 0
                         return required_current, phases
@@ -331,7 +331,7 @@ class pvModule():
                 # In UTF-8 dekodieren und in Liste ablegen.
                 values = output.stdout.decode('utf-8').strip('\n').split('  ')
                 # Werte publishen
-                pub.pub("openWB/set/pv/modules/"+self.module_num+"/get/power", values[0])
-                pub.pub("openWB/set/pv/modules/"+self.module_num+"/get/energy", values[1])
+                pub.pub("openWB/set/pv_hw/"+self.module_num+"/get/power", values[0])
+                pub.pub("openWB/set/pv_hw/"+self.module_num+"/get/energy", values[1])
             else:
                 log.message_debug_log("error", "Beim Ausführen des Shell-Skripts ist ein Fehler aufgetreten: "+str(output.stderr.decode('utf-8')))
