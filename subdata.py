@@ -133,36 +133,36 @@ class subData():
         msg:
             enthält Topic und Payload
         """
-        if re.search("^openWB/vehicle/[0-9]*/.+$", msg.topic) != None:
+        if re.search("^openWB/vehicle/[0-9]+/.+$", msg.topic) != None:
             index=self.get_index(msg.topic)
             if "ev"+index not in self.ev_data:
                 self.ev_data["ev"+index]=ev.ev(index)
-            if re.search("^openWB/vehicle/[0-9]*$", msg.topic) != None:
+            if re.search("^openWB/vehicle/[0-9]+$", msg.topic) != None:
                 if json.loads(str(msg.payload.decode("utf-8")))=="":
                     if "ev"+index in self.ev_data:
                         self.ev_data.pop("ev"+index)
             else:
-                if re.search("^openWB/vehicle/[0-9]*/get.+$", msg.topic) != None:
+                if re.search("^openWB/vehicle/[0-9]+/get.+$", msg.topic) != None:
                     if "get" not in self.ev_data["ev"+index].data:
                         self.ev_data["ev"+index].data["get"]={}
                     self.set_json_payload(self.ev_data["ev"+index].data["get"], msg)
-                elif re.search("^openWB/vehicle/[0-9]*/soc/config/.+$", msg.topic) != None:
+                elif re.search("^openWB/vehicle/[0-9]+/soc/config/.+$", msg.topic) != None:
                     if "soc" not in self.ev_data["ev"+index].data:
                         self.ev_data["ev"+index].data["soc"]={}
                     if "config" not in self.ev_data["ev"+index].data["soc"]:
                         self.ev_data["ev"+index].data["soc"]["config"]={}
                     self.set_json_payload(self.ev_data["ev"+index].data["soc"]["config"], msg)
-                elif re.search("^openWB/vehicle/[0-9]*/soc/get/.+$", msg.topic) != None:
+                elif re.search("^openWB/vehicle/[0-9]+/soc/get/.+$", msg.topic) != None:
                     if "soc" not in self.ev_data["ev"+index].data:
                         self.ev_data["ev"+index].data["soc"]={}
                     if "get" not in self.ev_data["ev"+index].data["soc"]:
                         self.ev_data["ev"+index].data["soc"]["get"]={}
                     self.set_json_payload(self.ev_data["ev"+index].data["soc"]["get"], msg)
-                elif re.search("^openWB/vehicle/[0-9]*/match_ev/.+$", msg.topic) != None:
+                elif re.search("^openWB/vehicle/[0-9]+/match_ev/.+$", msg.topic) != None:
                     if "match_ev" not in self.ev_data["ev"+index].data:
                         self.ev_data["ev"+index].data["match_ev"]={}
                     self.set_json_payload(self.ev_data["ev"+index].data["match_ev"], msg)
-                elif re.search("^openWB/vehicle/[0-9]*/control_parameter/.+$", msg.topic) != None:
+                elif re.search("^openWB/vehicle/[0-9]+/control_parameter/.+$", msg.topic) != None:
                     if "control_parameter" not in self.ev_data["ev"+index].data:
                         self.ev_data["ev"+index].data["control_parameter"]={}
                     self.set_json_payload(self.ev_data["ev"+index].data["control_parameter"], msg)
@@ -514,20 +514,20 @@ class subData():
             enthält Topic und Payload
         """
         #print(msg.topic, str(msg.payload))
-        if re.search("^openWB/counter/[0-9]*$", msg.topic) != None:
+        if re.search("^openWB/counter/[0-9]+$", msg.topic) != None:
             index=self.get_index(msg.topic)
             if json.loads(str(msg.payload.decode("utf-8")))=="":
                 if "counter"+index in self.counter_data:
                     self.counter_data.pop("counter"+index)
-        elif re.search("^openWB/counter/[0-9]*/.+$", msg.topic) != None:
+        elif re.search("^openWB/counter/[0-9]+/.+$", msg.topic) != None:
             index=self.get_index(msg.topic)
             if "counter"+index not in self.counter_data:
                 self.counter_data["counter"+index]=counter.counter()
-            if re.search("^openWB/counter/[0-9]*/get.+$", msg.topic) != None:
+            if re.search("^openWB/counter/[0-9]+/get.+$", msg.topic) != None:
                 if "get" not in self.counter_data["counter"+index].data:
                     self.counter_data["counter"+index].data["get"]={}
                 self.set_json_payload(self.counter_data["counter"+index].data["get"], msg)
-            elif re.search("^openWB/counter/[0-9]*/config.+$", msg.topic) != None:
+            elif re.search("^openWB/counter/[0-9]+/config.+$", msg.topic) != None:
                 if "config" not in self.counter_data["counter"+index].data:
                     self.counter_data["counter"+index].data["config"]={}
                 self.set_json_payload(self.counter_data["counter"+index].data["config"], msg)
