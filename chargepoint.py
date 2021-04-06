@@ -115,7 +115,7 @@ class chargepoint():
                 if self._is_manual_lock_active() == False:
                     if self._is_ev_plugged() == True:
                         if self._is_autolock_active() == True:
-                            return self.template.get_ev(self.data["get"]["rfid"])
+                            return self.template.get_ev(self.data["get"]["rfid"], self.cp_num)
             # Daten zurücksetzen, wenn nicht geladen werden soll.
             self.data.pop("set")
             pub.pub("openWB/chargepoint/"+str(self.cp_num)+"/set/charging_ev", "")
@@ -242,17 +242,20 @@ class cpTemplate():
         except Exception as e:
             log.exception_logging(e)
 
-    def get_ev(self, rfid):
+    def get_ev(self, rfid, cp_num):
         """ermittelt das dem LP zugeordnete EV
         """
+        ev_num = 0
         try:
             if self.data["rfid_enabling"] == True and rfid != 0:
                 vehicle = ev.get_ev_to_rfid(rfid)
                 if vehicle == None:
-                    return self.data["ev"]
+                    ev_num = self.data["ev"]
                 else:
-                    return vehicle
+                    ev_num = vehicle
             else:
-                return self.data["ev"]
+                ev_num = self.data["ev"]
+            pub.pub("openWB/chargepoint/"+cp_num+"/set/autolock_state", ev_num)
+            return ev_num
         except Exception as e:
             log.exception_logging(e)

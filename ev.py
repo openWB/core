@@ -24,14 +24,11 @@ def get_ev_to_rfid(rfid):
         Nummer des EV, das zum Tag gehört
     """
     for vehicle in data.ev_data:
-        if ("ev" in vehicle) or ("default" == vehicle):
+        if "ev" in vehicle:
             try:
                 if data.ev_data[vehicle].data["match_ev"]["selected"] == "rfid":
                     if data.ev_data[vehicle].data["match_ev"]["tag_id"] == rfid:
-                        if vehicle == "default":
-                            return 0
-                        else:
-                            return int(vehicle[2:])
+                        return data.ev_data[vehicle].ev_num
             except Exception as e:
                 log.exception_logging(e)
     else:

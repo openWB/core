@@ -133,70 +133,41 @@ class subData():
         msg:
             enthält Topic und Payload
         """
-        if re.search("^openWB/vehicle/[1-9][0-9]*/.+$", msg.topic) != None:
+        if re.search("^openWB/vehicle/[0-9]*/.+$", msg.topic) != None:
             index=self.get_index(msg.topic)
             if "ev"+index not in self.ev_data:
                 self.ev_data["ev"+index]=ev.ev(index)
-            if re.search("^openWB/vehicle/[1-9][0-9]*$", msg.topic) != None:
+            if re.search("^openWB/vehicle/[0-9]*$", msg.topic) != None:
                 if json.loads(str(msg.payload.decode("utf-8")))=="":
                     if "ev"+index in self.ev_data:
                         self.ev_data.pop("ev"+index)
             else:
-                if re.search("^openWB/vehicle/[1-9][0-9]*/get.+$", msg.topic) != None:
+                if re.search("^openWB/vehicle/[0-9]*/get.+$", msg.topic) != None:
                     if "get" not in self.ev_data["ev"+index].data:
                         self.ev_data["ev"+index].data["get"]={}
                     self.set_json_payload(self.ev_data["ev"+index].data["get"], msg)
-                elif re.search("^openWB/vehicle/[1-9][0-9]*/soc/config/.+$", msg.topic) != None:
+                elif re.search("^openWB/vehicle/[0-9]*/soc/config/.+$", msg.topic) != None:
                     if "soc" not in self.ev_data["ev"+index].data:
                         self.ev_data["ev"+index].data["soc"]={}
                     if "config" not in self.ev_data["ev"+index].data["soc"]:
                         self.ev_data["ev"+index].data["soc"]["config"]={}
                     self.set_json_payload(self.ev_data["ev"+index].data["soc"]["config"], msg)
-                elif re.search("^openWB/vehicle/[1-9][0-9]*/soc/get/.+$", msg.topic) != None:
+                elif re.search("^openWB/vehicle/[0-9]*/soc/get/.+$", msg.topic) != None:
                     if "soc" not in self.ev_data["ev"+index].data:
                         self.ev_data["ev"+index].data["soc"]={}
                     if "get" not in self.ev_data["ev"+index].data["soc"]:
                         self.ev_data["ev"+index].data["soc"]["get"]={}
                     self.set_json_payload(self.ev_data["ev"+index].data["soc"]["get"], msg)
-                elif re.search("^openWB/vehicle/[1-9][0-9]*/match_ev/.+$", msg.topic) != None:
+                elif re.search("^openWB/vehicle/[0-9]*/match_ev/.+$", msg.topic) != None:
                     if "match_ev" not in self.ev_data["ev"+index].data:
                         self.ev_data["ev"+index].data["match_ev"]={}
                     self.set_json_payload(self.ev_data["ev"+index].data["match_ev"], msg)
-                elif re.search("^openWB/vehicle/[1-9][0-9]*/control_parameter/.+$", msg.topic) != None:
+                elif re.search("^openWB/vehicle/[0-9]*/control_parameter/.+$", msg.topic) != None:
                     if "control_parameter" not in self.ev_data["ev"+index].data:
                         self.ev_data["ev"+index].data["control_parameter"]={}
                     self.set_json_payload(self.ev_data["ev"+index].data["control_parameter"], msg)
                 else: 
                     self.set_json_payload(self.ev_data["ev"+index].data, msg)
-        elif re.search("^openWB/vehicle/default.+$", msg.topic) != None:
-            if "default" not in self.ev_data:
-                self.ev_data["default"]=ev.ev("default")
-            if re.search("^openWB/vehicle/default/get.+$", msg.topic) != None:
-                if "get" not in self.ev_data["default"].data:
-                    self.ev_data["default"].data["get"]={}
-                self.set_json_payload(self.ev_data["default"].data["get"], msg)
-            elif re.search("^openWB/vehicle/default/soc/config/.+$", msg.topic) != None:
-                if "soc" not in self.ev_data["default"].data:
-                    self.ev_data["default"].data["soc"]={}
-                if "config" not in self.ev_data["default"].data["soc"]:
-                    self.ev_data["default"].data["soc"]["config"]={}
-                self.set_json_payload(self.ev_data["default"].data["soc"]["config"], msg)
-            elif re.search("^openWB/vehicle/default/soc/get/.+$", msg.topic) != None:
-                if "soc" not in self.ev_data["default"].data:
-                    self.ev_data["default"].data["soc"]={}
-                if "get" not in self.ev_data["default"].data["soc"]:
-                    self.ev_data["default"].data["soc"]["get"]={}
-                self.set_json_payload(self.ev_data["default"].data["soc"]["get"], msg)
-            elif re.search("^openWB/vehicle/default/match_ev/.+$", msg.topic) != None:
-                if "match_ev" not in self.ev_data["default"].data:
-                    self.ev_data["default"].data["match_ev"]={}
-                self.set_json_payload(self.ev_data["default"].data["match_ev"], msg)
-            elif re.search("^openWB/vehicle/default/control_parameter/.+$", msg.topic) != None:
-                if "control_parameter" not in self.ev_data["default"].data:
-                    self.ev_data["default"].data["control_parameter"]={}
-                self.set_json_payload(self.ev_data["default"].data["control_parameter"], msg)
-            else: 
-                self.set_json_payload(self.ev_data["default"].data, msg)
         elif "openWB/vehicle/template/charge_template" in msg.topic:
             self.subprocess_vehicle_chargemode_topic(msg)
         elif "openWB/vehicle/template/ev_template" in msg.topic:
