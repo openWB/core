@@ -133,12 +133,23 @@ class chargepoint():
         try:
             charging_ev = self.data["set"]["charging_ev"]
             # War die Ladung pausiert?
+            if self.data["get"]["charge_state"] == False:
+                # Ist Control Pilot-Unterbrechung hardwareseitig möglich und ist die Control Pilot-Unterbrechung für das EV erforderlich?
+                if self.data["config"]["control_pilot_interruption_hw"] == True and charging_ev.ev_template.data["control_pilot_interruption"] == True:
+                # 50s warten bis CP-Skript aufgerufen wird?
+                    #self.perform_control_pilot_interruption(charging_ev.ev_template.data["control_pilot_interruption_duration"])
+                    pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/perform_control_pilot_interruption", True)
+                    log.message_debug_log("debug", "# Control-Pilot-Unterbrechung an LP"+str(self.cp_num)+" fuer "+charging_ev.ev_template.data["control_pilot_interruption_duration"]+"s durchfuehren.")
+        except Exception as e:
+            log.exception_logging(e)
 
-            # Ist Control Pilot-Unterbrechung hardwareseitig möglich und ist die Control Pilot-Unterbrechung für das EV erforderlich?
-            if self.data["config"]["control_pilot_interruption_hw"] == True and charging_ev.ev_template.data["control_pilot_interruption"] == True:
-            # 50s warten bis CP-Skript aufgerufen wird?
-                #self.perform_control_pilot_interruption(charging_ev.ev_template.data["control_pilot_interruption_duration"])
-                log.message_debug_log("debug", "# Control-Pilot-Unterbrechung an LP"+str(self.cp_num)+" fuer "+charging_ev.ev_template.data["control_pilot_interruption_duration"]+"s durchfuehren.")
+    def initiate_phase_switch(self, chargepoint):
+        """prüft, ob eine Phasenumschaltung erforderlich ist und führt diese durch.
+        """
+        try:
+            if self.data["get"]["phases_in_use"] != self.data["set"]["phases_to_use"]:
+                #perform hw phase switch
+                pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/perform_phase_switch", True)
         except Exception as e:
             log.exception_logging(e)
 

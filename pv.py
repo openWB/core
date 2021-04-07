@@ -305,6 +305,6 @@ class pv():
             if self.data["config"]["configured"] == True:
                 pub.pub("openWB/set/pv/get/overhang_power_left", self.data["get"]["overhang_power_left"])
                 pub.pub("openWB/set/pv/get/reserved_evu_overhang", self.data["get"]["reserved_evu_overhang"])
-                pub.pub("openWB/set/pv/get/reserved_evu_overhang", self.data["get"]["reserved_evu_overhang"])
+                pub.pub("openWB/set/pv/get/released_evu_overhang", self.data["get"]["released_evu_overhang"])
         except Exception as e:
             log.exception_logging(e)

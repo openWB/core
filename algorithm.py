@@ -534,7 +534,6 @@ class control():
                                                 current = 0
 
                                     chargepoint.data["set"]["current"] = current
-                                    pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/set/current", current)
                                     log.message_debug_log("info", "Überschussladen an LP: "+str(chargepoint.cp_num)+", Ladestrom: "+str(current)+"A, Phasen: "+str(phases)+", Ladeleistung: "+str(phases * 230 * current)+"W")
         except Exception as e:
             log.exception_logging(e)
@@ -618,8 +617,6 @@ class control():
         try:
             chargepoint.data["set"]["current"] = required_current
             chargepoint.data["set"]["phases_to_use"] = phases
-            pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/set/current", required_current)
-            pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/set/phases_to_use", phases)
             data.pv_data["all"].put_stats()
         except Exception as e:
             log.exception_logging(e)
