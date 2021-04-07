@@ -1729,5 +1729,5 @@ loadvars(){
 	#	fi
 	#done
 	python3 publishvars.py -q 0 -r &
-
+	runs/pub2mqtt.sh &
 }
