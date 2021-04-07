@@ -7,12 +7,19 @@ import data
 import log
 import pub
 
+class counterAll():
+    """
+    """
+
+    def __init__(self):
+        self.data={}
+        self.data["set"] = {}
+
 class counter():
     """
     """
 
     def __init__(self):
-        super().__init__()
         self.data={}
         self.data["set"] = {}
 
@@ -36,7 +43,7 @@ class counter():
             log.exception_logging(e)
 
     def put_stats(self):
-        pub.pub("openWB/counter/evu/set/consumption_left", self.data["set"]["consumption_left"])
+        pub.pub("openWB/set/counter/0/set/consumption_left", self.data["set"]["consumption_left"])
         log.message_debug_log("debug", str(self.data["set"]["consumption_left"])+"W EVU-Leistung, die noch bezogen werden kann.")
 
 

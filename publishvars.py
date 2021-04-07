@@ -654,13 +654,6 @@ class pubvars():
         self.client.publish("openWB/optional/et/config/max_price", payload=json.dumps(5.5), qos=0, retain=True)
 
         #pv
-        self.client.publish("openWB/pv/config/control_range", payload=json.dumps([0,230]), qos=0, retain=True)
-        self.client.publish("openWB/pv/config/switch_off_threshold", payload=json.dumps(1000), qos=0, retain=True)
-        self.client.publish("openWB/pv/config/switch_off_delay", payload=json.dumps(25), qos=0, retain=True)
-        self.client.publish("openWB/pv/config/switch_on_delay", payload=json.dumps(15), qos=0, retain=True)
-        self.client.publish("openWB/pv/config/switch_on_threshold", payload=json.dumps(1400), qos=0, retain=True)
-        self.client.publish("openWB/pv/config/feed_in_yield", payload=json.dumps(2000), qos=0, retain=True)
-        self.client.publish("openWB/pv/config/phase_switch_delay", payload=json.dumps(1), qos=0, retain=True)
         self.client.publish("openWB/pv/1/get/counter", payload=json.dumps(500), qos=0, retain=True)
         
         #evu
@@ -676,6 +669,13 @@ class pubvars():
 
         #general
         self.client.publish("openWB/general/chargemode_config/instant_charging/phases_to_use", payload=json.dumps(1), qos=0, retain=True)
+        self.client.publish("openWB/general/chargemode_config/pv_charging/control_range", payload=json.dumps([0,230]), qos=0, retain=True)
+        self.client.publish("openWB/general/chargemode_config/pv_charging/switch_off_threshold", payload=json.dumps(1000), qos=0, retain=True)
+        self.client.publish("openWB/general/chargemode_config/pv_charging/switch_off_delay", payload=json.dumps(25), qos=0, retain=True)
+        self.client.publish("openWB/general/chargemode_config/pv_charging/switch_on_delay", payload=json.dumps(15), qos=0, retain=True)
+        self.client.publish("openWB/general/chargemode_config/pv_charging/switch_on_threshold", payload=json.dumps(1400), qos=0, retain=True)
+        self.client.publish("openWB/general/chargemode_config/pv_charging/feed_in_yield", payload=json.dumps(2000), qos=0, retain=True)
+        self.client.publish("openWB/general/chargemode_config/pv_charging/phase_switch_delay", payload=json.dumps(1), qos=0, retain=True)
         self.client.publish("openWB/general/chargemode_config/pv_charging/phases_to_use", payload=json.dumps(1), qos=0, retain=True)
         self.client.publish("openWB/general/chargemode_config/scheduled_charging/phases_to_use", payload=json.dumps(1), qos=0, retain=True)
         self.client.publish("openWB/general/chargemode_config/time_charging/phases_to_use", payload=json.dumps(1), qos=0, retain=True)

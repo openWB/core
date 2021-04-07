@@ -24,9 +24,9 @@ def loadmanagement(required_power, required_current, phases):
         # Maximale Leistung
         consumption_left = data.counter_data["counter0"].data["set"]["consumption_left"] - required_power
         if consumption_left > 0:
-            data.counter_data["counter0"].data["set"]["loadmanagement"] = False
+            data.counter_data["all"].data["set"]["loadmanagement"] = False
         else:
-            data.counter_data["counter0"].data["set"]["loadmanagement"] = True
+            data.counter_data["all"].data["set"]["loadmanagement"] = True
             log.message_debug_log("warning", "Benötigte Leistung "+str(required_power)+" überschreitet den zulässigen Bezug um "+str((consumption_left*-1))+"W.")
             
 
@@ -44,10 +44,10 @@ def loadmanagement(required_power, required_current, phases):
         #         return
 
         # Werte bei erfolgreichem Lastamanagement schreiben
-        if data.counter_data["counter0"].data["set"]["loadmanagement"] == False:
+        if data.counter_data["all"].data["set"]["loadmanagement"] == False:
             data.counter_data["counter0"].data["set"]["consumption_left"] = consumption_left
             log.message_debug_log("debug", str(data.counter_data["counter0"].data["set"]["consumption_left"])+"W EVU-Bezugs-Leistung, die fuer die folgenden Durchlaufe uebrig ist.")
         #data.counter_data["counter0"].data["set"]["current_left"] = current_left
-        return data.counter_data["counter0"].data["set"]["loadmanagement"]
+        return data.counter_data["all"].data["set"]["loadmanagement"]
     except Exception as e:
         log.exception_logging(e)

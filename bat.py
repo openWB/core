@@ -15,8 +15,8 @@ import pub
 class bat:
     def __init__(self):
         self.data={}
-        pub.pub("openWB/bat/config/configured", False)
-        pub.pub("openWB/pv/set/charging_power_left", 0)
+        pub.pub("openWB/set/bat/config/configured", False)
+        pub.pub("openWB/set/bat/set/charging_power_left", 0)
         if "get" not in self.data:
             self.data["get"]={}
         if "set" not in self.data:
@@ -79,8 +79,8 @@ class bat:
                 self.data["config"]["configured"] = False
                 self.data["set"]["charging_power_left"] = 0
                 self.data["get"]["power"] = 0
-            pub.pub("openWB/bat/config/configured", self.data["config"]["configured"])
-            pub.pub("openWB/pv/set/charging_power_left", self.data["set"]["charging_power_left"])
+            pub.pub("openWB/set/bat/config/configured", self.data["config"]["configured"])
+            pub.pub("openWB/set/bat/set/charging_power_left", self.data["set"]["charging_power_left"])
         except Exception as e:
             log.exception_logging(e)
 
@@ -130,9 +130,9 @@ class bat:
         """ Publishen und Loggen der verbleibnden PV-Leistung und reservierten Leistung
         """
         try:
-            pub.pub("openWB/bat/config/configured", self.data["config"]["configured"])
+            pub.pub("openWB/set/bat/config/configured", self.data["config"]["configured"])
             if self.data["config"]["configured"] == True:
-                pub.pub("openWB/bat/set/charging_power_left", self.data["set"]["charging_power_left"])
+                pub.pub("openWB/set/bat/set/charging_power_left", self.data["set"]["charging_power_left"])
                 log.message_debug_log("debug", str(self.data["set"]["charging_power_left"])+"W Speicher-Leistung , die fuer die folgenden Ladepunkte uebrig ist.")
         except Exception as e:
             log.exception_logging(e)
