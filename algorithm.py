@@ -437,11 +437,11 @@ class control():
         """ prüft, ob für LP ohne Einspeisungsgrenze noch EVU-Überschuss übrig ist und dann für die LP mit Einspeiungsgrenze.
         """
         try:
-            if data.pv_data["all"].overhang_left_with_without_feed_in_limit(False) != 0:
-                if data.pv_data["all"].overhang_left_with_without_feed_in_limit(False) > 0:
+            if data.pv_data["all"].overhang_left() != 0:
+                if data.pv_data["all"].overhang_left() > 0:
                     self._distribution(False, False)
                     self._distribution(False, True)
-                if data.pv_data["all"].overhang_left_with_without_feed_in_limit(True) > 0:
+                if (data.pv_data["all"].overhang_left() - data.general_data["general"].data["chargemode_config"]["pv_charging"]["feed_in_yield"]) > 0:
                     self._distribution(True, True)
                     self._distribution(True, False)
             data.pv_data["all"].put_stats()
@@ -452,11 +452,11 @@ class control():
         """ prüft, ob für LP ohne Einspeisungsgrenze noch EVU-Überschuss zurückgenommen werden muss und dann für die LP mit Einspeiungsgrenze.
         """
         try:
-            if data.pv_data["all"].overhang_left_with_without_feed_in_limit(False) != 0:
-                if data.pv_data["all"].overhang_left_with_without_feed_in_limit(True) < 0:
+            if data.pv_data["all"].overhang_left != 0:
+                if data.pv_data["all"].overhang_left() < 0:
                     self._distribution(True, False)
                     self._distribution(True, True)
-                if data.pv_data["all"].overhang_left_with_without_feed_in_limit(False) < 0:
+                if (data.pv_data["all"].overhang_left() - data.general_data["general"].data["chargemode_config"]["pv_charging"]["feed_in_yield"]) < 0:
                     self._distribution(False, True)
                     self._distribution(False, False)
             data.pv_data["all"].put_stats()
@@ -491,8 +491,17 @@ class control():
                     bat_overhang = data.bat_module_data["all"].data["set"]["charging_power_left"]
                 else:
                     bat_overhang = 0
-                # pos. Wert -> Ladestrom wird erhöht, negativer Wert -> Ladestrom wird reduziert
-                current_diff_per_phase = (data.pv_data["all"].overhang_left_with_without_feed_in_limit(feed_in_limit) + bat_overhang) / 230 / num_of_phases
+                if feed_in_limit == False:
+                    # pos. Wert -> Ladestrom wird erhöht, negativer Wert -> Ladestrom wird reduziert
+                    current_diff_per_phase = (data.pv_data["all"].overhang_left() + bat_overhang) / 230 / num_of_phases
+                else:
+                    feed_in_yield = data.general_data["general"].data["chargemode_config"]["pv_charging"]["feed_in_yield"]
+                    if data.pv_data["all"].overhang_left() <= feed_in_yield:
+                        # pos. Wert -> Ladestrom wird erhöht, negativer Wert -> Ladestrom wird reduziert
+                        current_diff_per_phase = (data.pv_data["all"].overhang_left() - feed_in_yield + bat_overhang) / 230 / num_of_phases
+                    else:
+                        # Wenn die Einspeisungsgrenze erreicht wird, Strom schrittweise erhöhen, bis dies nicht mehr der Fall ist.
+                        current_diff_per_phase = num_of_phases
                 for cp in data.cp_data:
                     if "set" in data.cp_data[cp].data:
                         chargepoint = data.cp_data[cp]
@@ -505,25 +514,26 @@ class control():
                                     phases = chargepoint.data["set"]["phases_to_use"]
                                     # Einhalten des Mindeststroms des Lademodus und Maximalstroms des EV
                                     current = charging_ev.check_min_max_current_for_pv_charging(current_diff_per_phase+chargepoint.data["set"]["current"])
-                                    chargepoint.data["set"]["current"] = current
                                     power_diff = phases * 230 * (current - chargepoint.data["set"]["current"])
+                                    
+                                    if power_diff != 0:
+                                        # Laden nur mit der Leistung, die vorher der Speicher bezogen hat
+                                        if ( bat_overhang - power_diff) > 0:
+                                            if data.bat_module_data["all"].allocate_bat_power(power_diff) == False:
+                                                current = 0
+                                        # Laden mit EVU-Überschuss und der Leistung, die vorher der Speicher bezogen hat
+                                        elif bat_overhang > 0:
+                                            pv_power = power_diff - bat_overhang
+                                            if data.pv_data["all"].allocate_pv_power(pv_power) == False:
+                                                current = 0
+                                            elif data.bat_module_data["all"].allocate_bat_power(bat_overhang) == False:
+                                                current = 0
+                                        # Laden nur mit EVU-Überschuss bzw. Reduktion des EVU-Bezugs
+                                        else:
+                                            if data.pv_data["all"].allocate_pv_power(power_diff) == False:
+                                                current = 0
 
-                                    # Laden nur mit der Leistung, die vorher der Speicher bezogen hat
-                                    if ( bat_overhang - power_diff) > 0:
-                                        if data.bat_module_data["all"].allocate_bat_power(power_diff) == False:
-                                            current = 0
-                                    # Laden mit EVU-Überschuss und der Leistung, die vorher der Speicher bezogen hat
-                                    elif bat_overhang > 0:
-                                        pv_power = power_diff - bat_overhang
-                                        if data.pv_data["all"].allocate_pv_power(pv_power) == False:
-                                            current = 0
-                                        elif data.bat_module_data["all"].allocate_bat_power(bat_overhang) == False:
-                                            current = 0
-                                    # Laden nur mit EVU-Überschuss bzw. Reduktion des EVU-Bezugs
-                                    else:
-                                        if data.pv_data["all"].allocate_pv_power(power_diff) == False:
-                                            current = 0
-
+                                    chargepoint.data["set"]["current"] = current
                                     pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/set/current", current)
                                     log.message_debug_log("info", "Überschussladen an LP: "+str(chargepoint.cp_num)+", Ladestrom: "+str(current)+"A, Phasen: "+str(phases)+", Ladeleistung: "+str(phases * 230 * current)+"W")
         except Exception as e:

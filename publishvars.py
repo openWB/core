@@ -631,7 +631,7 @@ class pubvars():
         self.client.publish("openWB/vehicle/template/charge_template/1/chargemode/pv_charging/min_soc_current", payload=json.dumps(13), qos=0, retain=True)
         self.client.publish("openWB/vehicle/template/charge_template/1/chargemode/pv_charging/max_soc", payload=json.dumps(80), qos=0, retain=True)
         self.client.publish("openWB/vehicle/template/charge_template/1/chargemode/pv_charging/bat_prio", payload=json.dumps(0), qos=0, retain=True)
-        self.client.publish("openWB/vehicle/template/charge_template/1/chargemode/pv_charging/feed_in_limit", payload=json.dumps(0), qos=0, retain=True)
+        self.client.publish("openWB/vehicle/template/charge_template/1/chargemode/pv_charging/feed_in_limit", payload=json.dumps(1), qos=0, retain=True)
         #pv_charging
         #self.client.publish("openWB/vehicle/template/charge_template/1/chargemode/selected", payload=json.dumps("pv_charging"), qos=0, retain=True)
         # self.client.publish("openWB/vehicle/template/charge_template/1/chargemode/pv_charging/min_current", payload=json.dumps(11), qos=0, retain=True)
