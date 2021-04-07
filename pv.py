@@ -26,7 +26,7 @@ class pv():
             self.data["get"] = {}
         pub.pub("openWB/set/pv/get/overhang_power_left", 0)
         pub.pub("openWB/set/pv/get/reserved_evu_overhang", 0)
-        pub.pub("openWB/set/pv/get/reserved_evu_overhang", 0)
+        pub.pub("openWB/set/pv/get/released_evu_overhang", 0)
         pub.pub("openWB/set/pv/set/available_power", 0)
         pub.pub("openWB/set/pv/config/configured", False)
 
@@ -117,14 +117,14 @@ class pv():
                             control_parameter["timestamp_switch_on_off"] = "0"
                             self.data["get"]["reserved_evu_overhang"] -= required_power
                             log.message_debug_log("info", "Einschaltschwelle von "+str(pv_config["switch_on_threshold"])+ "W fuer die Dauer der Einschaltverzoegerung ueberschritten.")
-                            pub.pub("openWB/set/vehicle/"+str(chargepoint.data["set"]["charging_ev"].ev_num)+"/control_parameter/timestamp_switch_on_off",0)
+                            pub.pub("openWB/set/vehicle/"+str(chargepoint.data["set"]["charging_ev"].ev_num)+"/control_parameter/timestamp_switch_on_off", "0")
                     # Einschaltschwelle wurde unterschritten, Timer zurücksetzen
                     else:
                         control_parameter["timestamp_switch_on_off"] = "0"
                         required_power = 0
                         self.data["get"]["reserved_evu_overhang"] -= required_power
                         log.message_debug_log("info", "Einschaltschwelle von "+str(pv_config["switch_on_threshold"])+ "W waehrend der Einschaltverzoegerung unterschritten.")
-                        pub.pub("openWB/set/vehicle/"+str(chargepoint.data["set"]["charging_ev"].ev_num)+"/control_parameter/timestamp_switch_on_off", 0)
+                        pub.pub("openWB/set/vehicle/"+str(chargepoint.data["set"]["charging_ev"].ev_num)+"/control_parameter/timestamp_switch_on_off", "0")
                 else:
                     # Timer starten
                     if all_overhang > pv_config["switch_on_threshold"]*phases:
