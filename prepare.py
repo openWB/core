@@ -73,15 +73,13 @@ class prepare():
             try:
                 if "cp" in cp:
                     vehicle = data.cp_data[cp].get_state()
-                    if "set" not in data.cp_data[cp].data:
-                        data.cp_data[cp].data["set"] = {}
-                    if "charging_ev" in data.cp_data[cp].data:
-                        data.cp_data[cp].data["set"].pop("charging_ev")
-                    if vehicle != None:
+                    if vehicle != -1:
                         if data.ev_data["ev"+str(vehicle)].get_required_current() == True:
                             data.cp_data[cp].data["set"]["charging_ev"] = data.ev_data["ev"+str(
                             vehicle)]
                             log.message_debug_log("debug", "Ladepunkt "+data.cp_data[cp].cp_num+", EV: "+data.cp_data[cp].data["set"]["charging_ev"].data["name"]+" (EV-Nr."+str(vehicle)+")")
+                        else:
+                            data.cp_data[cp].data["set"]["charging_ev"] = -1
             except Exception as e:
                 log.exception_logging(e)
         if "all" not in data.cp_data:

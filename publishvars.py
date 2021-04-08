@@ -664,6 +664,8 @@ class pubvars():
         self.client.publish("openWB/bat/1/config/type", payload=json.dumps("mqtt"), qos=0, retain=True)
 
         #general
+        self.client.publish("openWB/general/chargemode_config/unbalanced_load", payload=json.dumps(1), qos=0, retain=True)
+        self.client.publish("openWB/general/chargemode_config/unbalanced_load_limit", payload=json.dumps(32), qos=0, retain=True)
         self.client.publish("openWB/general/chargemode_config/instant_charging/phases_to_use", payload=json.dumps(1), qos=0, retain=True)
         self.client.publish("openWB/general/chargemode_config/pv_charging/bat_prio", payload=json.dumps(0), qos=0, retain=True)
         self.client.publish("openWB/general/chargemode_config/pv_charging/switch_on_soc", payload=json.dumps(60), qos=0, retain=True)

@@ -106,13 +106,10 @@ class pv():
                 if control_parameter["timestamp_switch_on_off"] != "0":
                     # Wurde die Einschaltschwelle erreicht? Reservierte Leistung aus all_overhang rausrechnen, 
                     # da diese Leistung ja schon reserviert wurde, als die Einschaltschwelle erreicht wurde.
-                    # Oder die Einschaltschwelle ist aktiv, dann wird die Einschaltverzögerung gestartet, wenn die
-                    # Einspeisungsgrenze erreicht wird (knapp darunter) und kein anderes EV Leistung reserviert hat,
-                    # da nach dem Einschalten gewartet wird, ob wieder die Einspeisungsgrenze erreicht wird.
-                    if (all_overhang + required_power > pv_config["switch_on_threshold"]*phases or 
+                    if ((chargepoint.data["set"]["charging_ev"].charge_template.data["chargemode"]["pv_charging"]["feed_in_limit"] == False and
+                            all_overhang + required_power > pv_config["switch_on_threshold"]*phases) or 
                             (chargepoint.data["set"]["charging_ev"].charge_template.data["chargemode"]["pv_charging"]["feed_in_limit"] == True and 
-                            all_overhang + required_power >= data.general_data["general"].data["chargemode_config"]["pv_charging"]["feed_in_yield"] and 
-                            self.data["get"]["reserved_evu_overhang"] == 0)):
+                            all_overhang + required_power >= data.general_data["general"].data["chargemode_config"]["pv_charging"]["feed_in_yield"])):
                         # Timer ist noch nicht abglaufen
                         if timecheck.check_timestamp(control_parameter["timestamp_switch_on_off"], pv_config["switch_on_delay"]) == True:
                             required_power = 0
@@ -125,13 +122,14 @@ class pv():
                     # Einschaltschwelle wurde unterschritten, Timer zurücksetzen
                     else:
                         control_parameter["timestamp_switch_on_off"] = "0"
-                        required_power = 0
                         self.data["get"]["reserved_evu_overhang"] -= required_power
+                        required_power = 0
                         log.message_debug_log("info", "Einschaltschwelle von "+str(pv_config["switch_on_threshold"])+ "W waehrend der Einschaltverzoegerung unterschritten.")
                         pub.pub("openWB/set/vehicle/"+str(chargepoint.data["set"]["charging_ev"].ev_num)+"/control_parameter/timestamp_switch_on_off", "0")
                 else:
                     # Timer starten
-                    if (all_overhang > pv_config["switch_on_threshold"]*phases or
+                    if ((chargepoint.data["set"]["charging_ev"].charge_template.data["chargemode"]["pv_charging"]["feed_in_limit"] == False and
+                            all_overhang > pv_config["switch_on_threshold"]*phases) or
                             (chargepoint.data["set"]["charging_ev"].charge_template.data["chargemode"]["pv_charging"]["feed_in_limit"] == True and 
                             all_overhang >= data.general_data["general"].data["chargemode_config"]["pv_charging"]["feed_in_yield"] and 
                             self.data["get"]["reserved_evu_overhang"] == 0)):

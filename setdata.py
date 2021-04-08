@@ -306,7 +306,7 @@ class setData():
                 re.search("^openWB/set/chargepoint/get/power_all$", msg.topic) != None):
             self._validate_value(msg, float, [(0, None)])
         elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/charging_ev$", msg.topic) != None:
-            self._validate_value(msg, int, [(0, None)])
+            self._validate_value(msg, int, [(-1, None)])
         elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/current$", msg.topic) != None:
             self._validate_value(msg, float, [(6, 32), (0, 0)])
         elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/energy_to_charge$", msg.topic) != None:
@@ -476,7 +476,7 @@ class setData():
         elif re.search("^openWB/set/bat/get/soc$", msg.topic) != None:
             self._validate_value(msg, int, [(0, 100)])
         elif re.search("^openWB/set/bat/get/power$", msg.topic) != None:
-            self._validate_value(msg, int, [(0, None)])
+            self._validate_value(msg, int)
         elif (re.search("^openWB/set/bat/[1-9][0-9]*/config/selected$", msg.topic) != None or
                 re.search("^openWB/set/bat/[1-9][0-9]*/config/[a-z,_]+/ip_address[1-9,_]*$", msg.topic) != None or
                 re.search("^openWB/set/bat/[1-9][0-9]*/config/[a-z,_]+/api$", msg.topic) != None or

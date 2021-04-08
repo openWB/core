@@ -22,8 +22,7 @@ class charge():
             for cp in data.cp_data:
                 if "cp" in cp:
                     chargepoint = data.cp_data[cp]
-                    if "set" in chargepoint.data:
-                        if "charging_ev" in chargepoint.data["set"]:
+                    if chargepoint.data["set"]["charging_ev"] != -1:
                             chargepoint.initiate_control_pilot_interruption()
                             chargepoint.initiate_phase_switch(chargepoint)
                             self._update_state(chargepoint)

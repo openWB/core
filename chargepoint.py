@@ -46,21 +46,11 @@ class chargepoint():
         self.cp_num = index
         self.data["set"] = {}
         self.data["set"]["autolock_state"] = 0
-        pub.pub("openWB/set/chargepoint_hw/"+str(self.cp_num)+"/set/current", 0)
-        pub.pub("openWB/set/chargepoint_hw/"+str(self.cp_num)+"/set/autolock_state", 0)
-        self.log_pub_state_str("")
-
-    def log_pub_state_str(self, message):
-        """sendet die Nachricht an den Broker und schreibt sie ins Debug-Log
-
-        Parameter
-        ---------
-        message: str
-            Nachricht, die gesendet werden soll
-        """
-        if message != "":
-            log.message_debug_log("info", message)
-        pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/get/state_str", message)
+        pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/current", 0)
+        pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/autolock_state", 0)
+        pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/charging_ev", -1)
+        pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/energy_to_charge", 0)
+        pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/phases_to_use", 0)
 
     def _is_cp_available(self):
         """ prüft, ob sich der LP in der vorgegebenen Zeit zurückgemeldet hat.
@@ -68,39 +58,39 @@ class chargepoint():
         # dummy
         state = True
         if state == False:
-            self.log_pub_state_str("LP"+self.cp_num+" gesperrt, da sich der LP nicht innerhalb der vorgegebenen Zeit zurueckgemeldet hat.")
+            message = "LP"+self.cp_num+" gesperrt, da sich der LP nicht innerhalb der vorgegebenen Zeit zurueckgemeldet hat."
         else:
-            self.log_pub_state_str("")
-        return state
+            message = "Ladung an LP"+self.cp_num+" moeglich."
+        return state, message
 
     def _is_autolock_active(self):
         """ ruft die Funktion der Template-Klasse auf.
         """
         try:
             state = self.template.autolock(self.data["set"]["autolock_state"], self.data["get"]["charge_state"], self.cp_num)
-            if state == False:
-                self.log_pub_state_str("Keine Ladung an LP"+self.cp_num+", da Autolock aktiv ist.")
+            if state == True:
+                message = "Keine Ladung an LP"+self.cp_num+", da Autolock aktiv ist."
             else:
-                self.log_pub_state_str("")
-            return state
+                message = "Ladung an LP"+self.cp_num+" moeglich."
+            return state, message
         except Exception as e:
             log.exception_logging(e)
 
     def _is_manual_lock_active(self):
         state = self.data["set"]["manual_lock"]
         if state == True:
-            self.log_pub_state_str("Keine Ladung an LP"+self.cp_num+", da der LP manuell gesperrt wurde.")
+            message = "Keine Ladung an LP"+self.cp_num+", da der LP manuell gesperrt wurde."
         else:
-            self.log_pub_state_str("")
-        return state
+            message = "Ladung an LP"+self.cp_num+" moeglich."
+        return state, message
 
     def _is_ev_plugged(self):
         state = self.data["get"]["plug_state"]
         if state == False:
-            self.log_pub_state_str("Keine Ladung an LP"+self.cp_num+", da kein Auto angesteckt ist.")
+            message = "Keine Ladung an LP"+self.cp_num+", da kein Auto angesteckt ist."
         else:
-            self.log_pub_state_str("")
-        return state
+            message = "Ladung an LP"+self.cp_num+" moeglich."
+        return state, message
 
     def get_state(self):
         """prüft alle Bedingungen und ruft die EV-Logik auf.
@@ -111,17 +101,28 @@ class chargepoint():
         None: Ladepunkt nicht verfügbar
         """
         try:
-            if self._is_cp_available() == True:
-                if self._is_manual_lock_active() == False:
-                    if self._is_ev_plugged() == True:
-                        if self._is_autolock_active() == True:
-                            return self.template.get_ev(self.data["get"]["rfid"], self.cp_num)
-            # Daten zurücksetzen, wenn nicht geladen werden soll.
-            self.data.pop("set")
-            pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/charging_ev", "")
-            pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/current", 0)
-            pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/energy_to_charge", 0)
-            pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/phases_to_use", 0)
+            charging_possbile = False
+            state, message = self._is_cp_available()
+            if state == True:
+                state, message = self._is_manual_lock_active()
+                if state == False:
+                    state, message = self._is_ev_plugged()
+                    if state == True:
+                        state, message = self._is_autolock_active()
+                        if state == False:
+                            charging_possbile = True
+                    
+            log.message_debug_log("info", message)
+            pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/get/state_str", message)
+            if charging_possbile == True:
+                return self.template.get_ev(self.data["get"]["rfid"], self.cp_num)
+            else:
+                # Daten zurücksetzen, wenn nicht geladen werden soll.
+                pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/charging_ev", -1)
+                pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/current", 0)
+                pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/energy_to_charge", 0)
+                pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/phases_to_use", 0)
+                return -1
         except Exception as e:
             log.exception_logging(e)
             return None
@@ -201,13 +202,13 @@ class cpTemplate():
 
                     pub.pub("openWB/set/chargepoint/"+cp_num+"/set/autolock_state", state)
                     if (state == 1) or (state == 3):
-                        return True
-                    elif state == 2:
                         return False
+                    elif state == 2:
+                        return True
                 else:
-                    return True
+                    return False
             else:
-                return True
+                return False
         except Exception as e:
             log.exception_logging(e)
             return True
@@ -257,7 +258,7 @@ class cpTemplate():
     def get_ev(self, rfid, cp_num):
         """ermittelt das dem LP zugeordnete EV
         """
-        ev_num = 0
+        ev_num = -1
         try:
             if self.data["rfid_enabling"] == True and rfid != 0:
                 vehicle = ev.get_ev_to_rfid(rfid)
@@ -267,7 +268,7 @@ class cpTemplate():
                     ev_num = vehicle
             else:
                 ev_num = self.data["ev"]
-            pub.pub("openWB/set/chargepoint/"+cp_num+"/set/autolock_state", ev_num)
+            pub.pub("openWB/set/chargepoint/"+cp_num+"/set/charging_ev", ev_num)
             return ev_num
         except Exception as e:
             log.exception_logging(e)
