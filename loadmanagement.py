@@ -27,27 +27,36 @@ def loadmanagement(required_power, required_current, phases):
             data.counter_data["all"].data["set"]["loadmanagement"] = False
         else:
             data.counter_data["all"].data["set"]["loadmanagement"] = True
-            log.message_debug_log("warning", "Benötigte Leistung "+str(required_power)+" überschreitet den zulässigen Bezug um "+str((consumption_left*-1))+"W.")
-            
+            log.message_debug_log("warning", "Benoetigte Leistung "+str(required_power)+" ueberschreitet den zulaessigen Bezug um "+str((consumption_left*-1))+"W.")
 
         # Maximaler Strom
-        # current_left = [0, 0, 0]
-        # required_current_phases = [required_current]*phases + [0]*(3-phases)
-        # for n in range(phases):
-        #     current_left[n] = data.counter_data["counter0"].data["set"]["current_left"][n] - required_current_phases[n]
-        #     if current_left[n] > 0:
-        #         state = True
-        #     else:
-        #         # runterregeln
-        #         state = False
-        #         #log.message_debug_log("warning", "LP "+str(chargepoint.cp_num)+": Benötigte Stromstärke "+str(required_current[n])+" überschreitet die zulässige Stromstärke der EVU an Phase "+str(n)+ "um "+str((current_left[n]*-1))+"A.")
-        #         return
+        current_used = [0, 0, 0]
+        required_current_phases = [required_current]*phases + [0]*(3-phases) # erzeugt eine Liste mit der Stromstärke als Wert für die Anzahl der Phasen, der Rest wird mit 0 aufgefüllt
+        for n in range(phases):
+            current_used[n] = data.counter_data["counter0"].data["set"]["current_used"][n] + required_current_phases[n]
+            if current_used[n] < data.counter_data["counter0"].data["config"]["max_current"][n]:
+                data.counter_data["all"].data["set"]["loadmanagement"] = False
+            else:
+                data.counter_data["all"].data["set"]["loadmanagement"] = True
+                log.message_debug_log("warning", "Benoetigte Stromstaerke "+str(required_current[n])+" ueberschreitet die zulaessige Stromstaerke an Phase "+str(n)+ " um "+str((current_used[n]*-1))+"A.")
+                break
+
+        # Schieflast
+        if data.general_data["general"].data["chargemode_config"]["unbalanced_load"] == True:
+            min_current = min(current_used)
+            max_current = max(current_used)
+            if (max_current - min_current) < data.general_data["general"].data["chargemode_config"]["unbalanced_load_limit"]:
+                data.counter_data["all"].data["set"]["loadmanagement"] = False
+            else:
+                data.counter_data["all"].data["set"]["loadmanagement"] = True
+                log.message_debug_log("warning", "Schieflast wurde ueberschritten.")
+
 
         # Werte bei erfolgreichem Lastamanagement schreiben
         if data.counter_data["all"].data["set"]["loadmanagement"] == False:
             data.counter_data["counter0"].data["set"]["consumption_left"] = consumption_left
             log.message_debug_log("debug", str(data.counter_data["counter0"].data["set"]["consumption_left"])+"W EVU-Bezugs-Leistung, die fuer die folgenden Durchlaufe uebrig ist.")
-        #data.counter_data["counter0"].data["set"]["current_left"] = current_left
+            data.counter_data["counter0"].data["set"]["current_used"] = current_used
         return data.counter_data["all"].data["set"]["loadmanagement"]
     except Exception as e:
         log.exception_logging(e)

@@ -147,9 +147,10 @@ class chargepoint():
         """prüft, ob eine Phasenumschaltung erforderlich ist und führt diese durch.
         """
         try:
-            if self.data["get"]["phases_in_use"] != self.data["set"]["phases_to_use"]:
-                #perform hw phase switch
-                pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/perform_phase_switch", True)
+            if chargepoint.data["config"]["auto_phase_switch_hw"] == True and chargepoint.data["get"]["charge_state"] == True:
+                if self.data["get"]["phases_in_use"] != self.data["set"]["phases_to_use"]:
+                    #perform hw phase switch
+                    pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/perform_phase_switch", True)
         except Exception as e:
             log.exception_logging(e)
 

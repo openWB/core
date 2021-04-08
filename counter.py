@@ -14,6 +14,11 @@ class counterAll():
     def __init__(self):
         self.data={}
         self.data["set"] = {}
+        self.data["set"]["loadmanagement"] = False
+        pub.pub("openWB/set/counter/set/loadmanagement", False)
+
+    def put_stats(self):
+        pub.pub("openWB/set/counter/set/loadmanagement", self.data["set"]["loadmanagement"])
 
 class counter():
     """
@@ -39,6 +44,8 @@ class counter():
                 self.data["set"]["consumption_left"] = self.data["config"]["max_consumption"]
                 self.data["set"]["loadmanagement"] = False
                 log.message_debug_log("debug", "Lastmanagement nicht aktiv. "+str(self.data["set"]["consumption_left"])+"W EVU-Leistung, die noch bezogen werden kann.")
+            # Strom
+            self.data["set"]["current_used"] = self.data["get"]["current"]
         except Exception as e:
             log.exception_logging(e)
 
