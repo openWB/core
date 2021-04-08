@@ -237,8 +237,6 @@ class setData():
             self._validate_value(msg, int, [(0, 100)])
         elif re.search("^openWB/set/vehicle/template/charge_template/[1-9][0-9]*/chargemode/instant_charging/limit/amount$", msg.topic) != None:
             self._validate_value(msg, int, [(2, 100)])
-        elif re.search("^openWB/set/vehicle/template/charge_template/[1-9][0-9]*/chargemode/pv_charging/bat_prio$", msg.topic) != None:
-            self._validate_value(msg, int, [(0, 1)])
         elif re.search("^openWB/set/vehicle/template/charge_template/[1-9][0-9]*/chargemode/pv_charging/feed_in_limit$", msg.topic) != None:
             self._validate_value(msg, int, [(0, 1)])
         elif re.search("^openWB/set/vehicle/template/charge_template/[1-9][0-9]*/chargemode/pv_charging/min_current$", msg.topic) != None:
@@ -539,8 +537,6 @@ class setData():
             self._validate_value(msg, int, [(0, 1)])
         elif re.search("^openWB/set/general/chargemode_config/unbalanced_load_limit$", msg.topic) != None:
             self._validate_value(msg, int, [(10, 32)])
-        elif re.search("^openWB/set/general/chargemode_config/pv_charging/feed_in_yield_active$", msg.topic) != None:
-            self._validate_value(msg, int, [(0, 1)])
         elif (re.search("^openWB/set/general/chargemode_config/pv_charging/feed_in_yield$", msg.topic) != None or 
                 re.search("^openWB/set/general/chargemode_config/pv_charging/switch_on_threshold$", msg.topic) != None or
                 re.search("^openWB/set/general/chargemode_config/pv_charging/switch_on_delay$", msg.topic) != None or
@@ -554,6 +550,14 @@ class setData():
         elif re.search("^openWB/set/general/chargemode_config/pv_charging/phases_to_use$", msg.topic) != None:
             self._validate_value(msg, int, [(1, 3)])
             self._validate_value(msg, str)
+        elif re.search("^openWB/set/general/chargemode_config/pv_charging/bat_prio$", msg.topic) != None:
+            self._validate_value(msg, int, [(0, 1)])
+        elif (re.search("^openWB/set/general/chargemode_config/pv_charging/switch_on_soc$", msg.topic) != None or
+                re.search("^openWB/set/general/chargemode_config/pv_charging/switch_off_soc$", msg.topic) != None or
+                re.search("^openWB/set/general/chargemode_config/pv_charging/rundown_soc$", msg.topic) != None):
+            self._validate_value(msg, int, [(0, 100)])
+        elif re.search("^openWB/set/general/chargemode_config/pv_charging/rundown_power$", msg.topic) != None:
+            self._validate_value(msg, int, [(0, None)])
         elif re.search("^openWB/set/general/chargemode_config/[a-z,_]+/phases_to_use$", msg.topic) != None:
             self._validate_value(msg, int, [(1, 3)])
         elif (re.search("^openWB/set/general/grid_protection$", msg.topic) != None or

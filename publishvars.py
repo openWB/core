@@ -611,7 +611,6 @@ class pubvars():
         self.client.publish("openWB/vehicle/template/charge_template/2/chargemode/pv_charging/min_soc", payload=json.dumps(23), qos=0, retain=True)
         self.client.publish("openWB/vehicle/template/charge_template/2/chargemode/pv_charging/min_soc_current", payload=json.dumps(13), qos=0, retain=True)
         self.client.publish("openWB/vehicle/template/charge_template/2/chargemode/pv_charging/max_soc", payload=json.dumps(80), qos=0, retain=True)
-        self.client.publish("openWB/vehicle/template/charge_template/2/chargemode/pv_charging/bat_prio", payload=json.dumps(0), qos=0, retain=True)
         self.client.publish("openWB/vehicle/template/charge_template/2/chargemode/pv_charging/feed_in_limit", payload=json.dumps(1), qos=0, retain=True)
         self.client.publish("openWB/vehicle/template/charge_template/2/prio", payload=json.dumps(1), qos=0, retain=True)
         self.client.publish("openWB/vehicle/template/charge_template/2/chargemode/instant_charging/current", payload=json.dumps(12), qos=0, retain=True)
@@ -630,7 +629,6 @@ class pubvars():
         self.client.publish("openWB/vehicle/template/charge_template/1/chargemode/pv_charging/min_soc", payload=json.dumps(23), qos=0, retain=True)
         self.client.publish("openWB/vehicle/template/charge_template/1/chargemode/pv_charging/min_soc_current", payload=json.dumps(13), qos=0, retain=True)
         self.client.publish("openWB/vehicle/template/charge_template/1/chargemode/pv_charging/max_soc", payload=json.dumps(80), qos=0, retain=True)
-        self.client.publish("openWB/vehicle/template/charge_template/1/chargemode/pv_charging/bat_prio", payload=json.dumps(0), qos=0, retain=True)
         self.client.publish("openWB/vehicle/template/charge_template/1/chargemode/pv_charging/feed_in_limit", payload=json.dumps(1), qos=0, retain=True)
         #pv_charging
         #self.client.publish("openWB/vehicle/template/charge_template/1/chargemode/selected", payload=json.dumps("pv_charging"), qos=0, retain=True)
@@ -663,12 +661,15 @@ class pubvars():
         self.client.publish("openWB/counter/0/config/max_current", payload=json.dumps([35, 35, 35]), qos=0, retain=True)
 
         #bat
-        self.client.publish("openWB/bat/config/switch_on_soc", payload=json.dumps(60), qos=0, retain=True)
-        self.client.publish("openWB/bat/config/switch_off_soc", payload=json.dumps(40), qos=0, retain=True)
         self.client.publish("openWB/bat/1/config/type", payload=json.dumps("mqtt"), qos=0, retain=True)
 
         #general
         self.client.publish("openWB/general/chargemode_config/instant_charging/phases_to_use", payload=json.dumps(1), qos=0, retain=True)
+        self.client.publish("openWB/general/chargemode_config/pv_charging/bat_prio", payload=json.dumps(0), qos=0, retain=True)
+        self.client.publish("openWB/general/chargemode_config/pv_charging/switch_on_soc", payload=json.dumps(60), qos=0, retain=True)
+        self.client.publish("openWB/general/chargemode_config/pv_charging/switch_off_soc", payload=json.dumps(40), qos=0, retain=True)
+        self.client.publish("openWB/general/chargemode_config/pv_charging/rundown_power", payload=json.dumps(1400), qos=0, retain=True)
+        self.client.publish("openWB/general/chargemode_config/pv_charging/rundown_soc", payload=json.dumps(100), qos=0, retain=True)
         self.client.publish("openWB/general/chargemode_config/pv_charging/control_range", payload=json.dumps([0,230]), qos=0, retain=True)
         self.client.publish("openWB/general/chargemode_config/pv_charging/switch_off_threshold", payload=json.dumps(1000), qos=0, retain=True)
         self.client.publish("openWB/general/chargemode_config/pv_charging/switch_off_delay", payload=json.dumps(25), qos=0, retain=True)

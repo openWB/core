@@ -439,11 +439,9 @@ class control():
         try:
             if data.pv_data["all"].overhang_left() != 0:
                 if data.pv_data["all"].overhang_left() > 0:
-                    self._distribution(False, False)
-                    self._distribution(False, True)
+                    self._distribution(False)
                 if (data.pv_data["all"].overhang_left() - data.general_data["general"].data["chargemode_config"]["pv_charging"]["feed_in_yield"]) > 0:
-                    self._distribution(True, True)
-                    self._distribution(True, False)
+                    self._distribution(True)
             data.pv_data["all"].put_stats()
         except Exception as e:
             log.exception_logging(e)
@@ -454,16 +452,14 @@ class control():
         try:
             if data.pv_data["all"].overhang_left != 0:
                 if data.pv_data["all"].overhang_left() < 0:
-                    self._distribution(True, False)
-                    self._distribution(True, True)
+                    self._distribution(True)
                 if (data.pv_data["all"].overhang_left() - data.general_data["general"].data["chargemode_config"]["pv_charging"]["feed_in_yield"]) < 0:
-                    self._distribution(False, True)
-                    self._distribution(False, False)
+                    self._distribution(False)
             data.pv_data["all"].put_stats()
         except Exception as e:
             log.exception_logging(e)
 
-    def _distribution(self, feed_in_limit, bat_prio):
+    def _distribution(self, feed_in_limit):
         """ Verteilt den verbleibenden EVU-Überschuss gleichmäßig auf alle genutzten Phasen. Dazu wird zunächst die Anzahl der Phasen ermittelt, auf denen geladen wird.
         Danach wird der Überschuss pro Phase ermittelt und auf die Phasen aufgeschlagen.
 
@@ -481,16 +477,11 @@ class control():
                         charging_ev = data.cp_data[chargepoint].data["set"]["charging_ev"]
                         if charging_ev.data["control_parameter"]["chargemode"] == "pv_charging":
                             if (data.cp_data[chargepoint].data["set"]["current"] != 0 and 
-                                    charging_ev.charge_template.data["chargemode"]["pv_charging"]["feed_in_limit"] == feed_in_limit and 
-                                    charging_ev.charge_template.data["chargemode"]["pv_charging"]["bat_prio"] == bat_prio):
+                                    charging_ev.charge_template.data["chargemode"]["pv_charging"]["feed_in_limit"] == feed_in_limit):
                                 num_of_phases += data.cp_data[chargepoint].data["set"]["phases_to_use"]
             # Ladung aktiv?
             if num_of_phases > 0:
-                # Wenn das EV Vorrang hat, kann die Ladeleistung des Speichers zum Laden des EV verwendet werden.
-                if bat_prio == False:
-                    bat_overhang = data.bat_module_data["all"].data["set"]["charging_power_left"]
-                else:
-                    bat_overhang = 0
+                bat_overhang = data.bat_module_data["all"].data["set"]["charging_power_left"]
                 if feed_in_limit == False:
                     # pos. Wert -> Ladestrom wird erhöht, negativer Wert -> Ladestrom wird reduziert
                     current_diff_per_phase = (data.pv_data["all"].overhang_left() + bat_overhang) / 230 / num_of_phases
@@ -509,8 +500,7 @@ class control():
                             charging_ev = chargepoint.data["set"]["charging_ev"]
                             if charging_ev.charge_template.data["chargemode"]["selected"] == "pv_charging" or charging_ev.data["control_parameter"]["chargemode"] == "pv_charging":
                                 if (chargepoint.data["set"]["current"] != 0 and 
-                                        charging_ev.charge_template.data["chargemode"]["pv_charging"]["feed_in_limit"] == feed_in_limit and 
-                                        charging_ev.charge_template.data["chargemode"]["pv_charging"]["bat_prio"] == bat_prio):
+                                        charging_ev.charge_template.data["chargemode"]["pv_charging"]["feed_in_limit"] == feed_in_limit):
                                     phases = chargepoint.data["set"]["phases_to_use"]
                                     # Einhalten des Mindeststroms des Lademodus und Maximalstroms des EV
                                     current = charging_ev.check_min_max_current_for_pv_charging(current_diff_per_phase+chargepoint.data["set"]["current"])

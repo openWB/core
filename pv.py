@@ -100,10 +100,8 @@ class pv():
             control_parameter = chargepoint.data["set"]["charging_ev"].data["control_parameter"]
             # verbleibender EVU-Überschuss unter Berücksichtigung der Einspeisungsgrenze
             all_overhang = self.overhang_left()
-            # Berücksichtigung des Speichervorrangs
-            # Wenn das EV Vorrang hat, kann die Ladeleistung des Speichers zum Laden des EV verwendet werden.
-            if chargepoint.data["set"]["charging_ev"].charge_template.data["chargemode"]["pv_charging"]["bat_prio"] == False:
-                all_overhang += bat_overhang
+            # Berücksichtigung der Speicherleistung
+            all_overhang += bat_overhang
             if  chargepoint.data["get"]["charge_state"] == False:
                 if control_parameter["timestamp_switch_on_off"] != "0":
                     # Wurde die Einschaltschwelle erreicht? Reservierte Leistung aus all_overhang rausrechnen, 
