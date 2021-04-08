@@ -1,6 +1,8 @@
 """Starten der benötigten Prozesse
 """
 
+import imp
+import subprocess
 from threading import Thread
 import threading
 
@@ -10,6 +12,7 @@ import data
 import log
 import prepare
 import pub
+import publishvars2
 import setdata
 import subdata
 
@@ -31,9 +34,15 @@ def main():
     t_sub.start()
     t_set.start()
 
-    seconds = 3
-    while not ticker.wait(seconds):
+    seconds = 10
+    while not ticker.wait(seconds-3):
         try:
+            imp.reload(publishvars2)
+            publishvars2.pub_settings()
+            output = subprocess.run(["./loadvars.sh"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            if output.stderr.decode('utf-8') != "":
+                log.message_debug_log("error", str(output.stderr.decode('utf-8')))
+            ticker.wait(3)
             prep.setup_algorithm()
             control.calc_current()
             char.start_charging()
