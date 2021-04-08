@@ -327,6 +327,8 @@ class control():
             required_current = charging_ev.data["control_parameter"]["required_current"]
             required_power = phases * 230 * \
                 charging_ev.data["control_parameter"]["required_current"]
+            pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/set/required_power", required_power)
+            chargepoint.data["set"]["required_power"] = required_power
             if charging_ev.data["control_parameter"]["chargemode"] == "pv_charging":
                 self._calc_pv_charging(chargepoint, required_power,
                                 required_current, phases)

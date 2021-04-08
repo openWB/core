@@ -118,9 +118,20 @@ class chargepoint():
                 return self.template.get_ev(self.data["get"]["rfid"], self.cp_num)
             else:
                 # Daten zurücksetzen, wenn nicht geladen werden soll.
+                if self.data["set"]["charging_ev"] != -1:
+                    if data.ev_data["ev"+str(self.data["set"]["charging_ev"])].data["control_parameter"]["timestamp_switch_on_off"] != "0":
+                        if self.data["get"]["charge_state"] == False:
+                            data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= self.data["set"]["required_power"]
+                        else:
+                            data.pv_data["all"].data["set"]["released_evu_overhang"] -= self.data["set"]["required_power"] 
+                    data.ev_data["ev"+str(self.data["set"]["charging_ev"])].reset_ev()
+                self.data["set"]["charging_ev"] = -1
                 pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/charging_ev", -1)
+                self.data["set"]["current"] = 0
                 pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/current", 0)
+                self.data["set"]["energy_to_charge"] = 0
                 pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/energy_to_charge", 0)
+                self.data["set"]["phases_to_use"] = 0
                 pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/phases_to_use", 0)
                 return -1
         except Exception as e:

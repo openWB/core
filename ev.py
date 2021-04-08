@@ -48,14 +48,22 @@ class ev():
             self.data["set"] = {}
         if "control_parameter" not in self.data:
             self.data["control_parameter"] = {}
-        pub.pub("openWB/set/vehicle/"+str(self.ev_num) +
-                "/control_parameter/required_current", 0)
-        pub.pub("openWB/set/vehicle/"+str(self.ev_num) +
-                "/control_parameter/timestamp_switch_on_off", "0")
-        pub.pub("openWB/set/vehicle/"+str(self.ev_num) +
-                "/control_parameter/timestamp_auto_phase_switch", "0")
-        pub.pub("openWB/set/vehicle/"+str(self.ev_num) +
-                "/control_parameter/chargemode", "stop")
+        pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/required_current", 0)
+        pub.pub("openWB/set/vehicle/"+str(self.ev_num) + "/control_parameter/timestamp_switch_on_off", "0")
+        pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/timestamp_auto_phase_switch", "0")
+        pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/chargemode", "stop")
+
+    def reset_ev(self):
+        """ setzt alle Werte zurück, die während des Algorithmus gesetzt werden.
+        """
+        pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/required_current", 0)
+        pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/timestamp_switch_on_off", "0")
+        pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/timestamp_auto_phase_switch", "0")
+        pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/chargemode", "stop")
+        self.data["control_parameter"]["required_current"] = 0 
+        self.data["control_parameter"]["timestamp_switch_on_off"] = "0"
+        self.data["control_parameter"]["timestamp_auto_phase_switch"] = "0"
+        self.data["control_parameter"]["chargemode"] = "stop"
 
     def get_required_current(self):
         """ ermittelt, ob und mit welchem Strom das EV geladen werden soll (unabhängig vom Lastmanagement)

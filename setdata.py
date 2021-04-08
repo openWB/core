@@ -309,7 +309,8 @@ class setData():
             self._validate_value(msg, int, [(-1, None)])
         elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/current$", msg.topic) != None:
             self._validate_value(msg, float, [(6, 32), (0, 0)])
-        elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/energy_to_charge$", msg.topic) != None:
+        elif (re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/energy_to_charge$", msg.topic) != None or
+                re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/required_power$", msg.topic) != None):
             self._validate_value(msg, int, [(0, None)])
         elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/phases_to_use$", msg.topic) != None:
             self._validate_value(msg, int, [(0, 3)])
@@ -412,9 +413,9 @@ class setData():
         elif (re.search("^openWB/set/pv/get/current$", msg.topic) != None or
                 re.search("^openWB/set/pv/get/power$", msg.topic) != None):
             self._validate_value(msg, float, [(0, None)], collection=list)
-        elif (re.search("^openWB/set/pv/get/overhang_power_left$", msg.topic) != None or
-                re.search("^openWB/set/pv/get/reserved_evu_overhang$", msg.topic) != None or
-                re.search("^openWB/set/pv/get/released_evu_overhang$", msg.topic) != None):
+        elif (re.search("^openWB/set/pv/set/overhang_power_left$", msg.topic) != None or
+                re.search("^openWB/set/pv/set/reserved_evu_overhang$", msg.topic) != None or
+                re.search("^openWB/set/pv/set/released_evu_overhang$", msg.topic) != None):
             self._validate_value(msg, float)
         elif re.search("^openWB/set/pv/set/available_power$", msg.topic) != None:
             self._validate_value(msg, float)
