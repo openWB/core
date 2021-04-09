@@ -368,7 +368,7 @@ class chargeTemplate():
                         else:
                             if timecheck.check_timeframe(self.data["chargemode"]["scheduled_charging"][plan], 24) == True:
                                 if data.optional_data["optional"].data["et"]["active"] == True:
-                                    hourlist = data.optional_data["optional"].get_loading_hours(
+                                    hourlist = data.optional_data["optional"].et_get_loading_hours(
                                         duration)
                                     if timecheck.is_list_valid(hourlist) == True:
                                         return available_current, "instant_charging"

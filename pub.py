@@ -16,21 +16,6 @@ def setup_connection():
     client.connect("localhost")
     client.loop_start()
 
-
-def pub_dict(topic, dictionary):
-    """ sendet ein Dictionary an den Broker. Jedes Key-Value-Paar wird in ein eigenes Topic gepusht. Der Pfad nach dem letzten / entspricht dem Key.
-
-        Parameters
-    ----------
-    dict : dictionary
-        Dictionary, das gepublished wird
-    topic : str
-        übergeordnetes Topic, in das gepublished wird
-    """
-    for key in dictionary:
-        pub(topic+"/"+str(key), dictionary[key])
-
-
 def pub(topic, payload):
     """ published das übergebene Payload als json-Objekt an das übergebene Topic.
 
@@ -47,6 +32,43 @@ def pub(topic, payload):
     else:
         client.publish(topic, payload=json.dumps(payload), qos=0, retain=True)
 
+def pub_float(var, topic):
+    """konvertiert die Daten der Ramdisk-Datei in Float und published diese als json-Objekt.
+
+        Parameters
+    ----------
+    var : str
+        Pfad zur Ramdisk-Datei
+    topic : str
+        Topic, in das gepublished wird
+    """
+    f = open( "/var/www/html/openWB/ramdisk/"+var , 'r')
+    value =f.read()
+    f.close()
+    if value == '\n':
+        value=float(0)
+    else:
+        value=float(value)
+    pub(topic, value)
+
+def pub_dict(var, topic):
+    """konvertiert die Daten der übergebenen Ramdisk-Datei in ein Dictionary und published dieses als json-Objekt.
+
+        Parameters
+    ----------
+    var : str
+        Pfad zu Ramdisk-Datei
+    topic : str
+        Topic, in das gepublished wird
+    """
+    payload = {}
+    f = open( "/var/www/html/openWB/ramdisk/"+var , 'r')
+    for line in f:
+        if "," in line:
+            value = line.rstrip('\n').split(",")
+            payload[value[0]] = value[1]
+    f.close()
+    pub(topic, payload)
 
 def delete_connection():
     """ schließt die Verbindung zum Broker.

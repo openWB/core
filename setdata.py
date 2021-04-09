@@ -594,7 +594,8 @@ class setData():
             self._validate_value(msg, int, [(16, 32)])
         elif re.search("^openWB/set/optional/et/active$", msg.topic) != None:
             self._validate_value(msg, int, [(0, 1)])
-        elif re.search("^openWB/set/optional/et/provider$", msg.topic) != None:
+        elif (re.search("^openWB/set/optional/et/provider$", msg.topic) != None or
+                re.search("^openWB/set/optional/et/set/timestamp_updated_prices$", msg.topic) != None):
             self._validate_value(msg, str)
         elif re.search("^openWB/set/optional/et/get/pricedict$", msg.topic) != None:
             self._validate_value(msg, float, collection=dict)

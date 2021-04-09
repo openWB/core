@@ -1,42 +1,4 @@
 import pub
- 
-def pub_float(var, topic):
-    """konvertiert die Daten der Ramdisk-Datei in Float und published diese als json-Objekt.
-
-        Parameters
-    ----------
-    var : str
-        Pfad zur Ramdisk-Datei
-    topic : str
-        Topic, in das gepublished wird
-    """
-    f = open( "/var/www/html/openWB/ramdisk/"+var , 'r')
-    value =f.read()
-    f.close()
-    if value == '\n':
-        value=float(0)
-    else:
-        value=float(value)
-    pub.pub(topic, value)
-
-def pub_dict(var, topic):
-    """konvertiert die Daten der übergebenen Ramdisk-Datei in ein Dictionary und published dieses als json-Objekt.
-
-        Parameters
-    ----------
-    var : str
-        Pfad zu Ramdisk-Datei
-    topic : str
-        Topic, in das gepublished wird
-    """
-    payload = {}
-    f = open( "/var/www/html/openWB/ramdisk/"+var , 'r')
-    for line in f:
-        if "," in line:
-            value = line.rstrip('\n').split(",")
-            payload[value[0]] = value[1]
-    f.close()
-    pub.pub(topic, payload)
 
 def pub_settings():
     """ruft für alle Ramdisk-Dateien aus initRamdisk die zum Typ passende Funktion zum publishen auf.
@@ -134,9 +96,10 @@ def pub_settings():
     #chargemode_config
     pub.pub("openWB/general/chargemode_config/scheduled_charging/phases_to_use", 3)
 
-    #et
-    pub.pub("openWB/optional/et/active", 0)
+    # optional
+    pub.pub("openWB/optional/et/active", 1)
     pub.pub("openWB/optional/et/config/max_price", 5.5)
+    pub.pub("openWB/optional/et/provider", "awattar")
 
     #pv
     pub.pub("openWB/pv/1/get/counter", 500)
@@ -170,7 +133,3 @@ def pub_settings():
     pub.pub("openWB/general/chargemode_config/time_charging/phases_to_use", 1)
     pub.pub("openWB/general/chargemode_config/standby/phases_to_use", 1)
     pub.pub("openWB/general/chargemode_config/stop/phases_to_use", 0)
-
-    #et 
-    pub_dict("etprovidergraphlist", "openWB/optional/et/get/pricedict")
-    pub_float("etproviderprice", "openWB/optional/et/get/price")
