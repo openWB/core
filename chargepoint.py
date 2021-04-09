@@ -136,8 +136,7 @@ class chargepoint():
                 return -1
         except Exception as e:
             log.exception_logging(e)
-            return None
-        return None
+            return -1
 
     def initiate_control_pilot_interruption(self):
         """ prüft, ob eine Control Pilot- Unterbrechung erforderlich ist und führt diese durch.
