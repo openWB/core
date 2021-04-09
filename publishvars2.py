@@ -41,6 +41,13 @@ def pub_dict(var, topic):
 def pub_settings():
     """ruft für alle Ramdisk-Dateien aus initRamdisk die zum Typ passende Funktion zum publishen auf.
     """
+    #cp1
+    pub.pub("openWB/chargepoint/1/set/manual_lock", 0)
+    pub.pub("openWB/chargepoint/1/config/template", 1)
+    pub.pub("openWB/chargepoint/1/config/connected_phases", 3)
+    pub.pub("openWB/chargepoint/1/config/auto_phase_switch_hw", 1)
+    pub.pub("openWB/chargepoint/1/config/control_pilot_interruption_hw", 0)
+    pub.pub("openWB/chargepoint/1/get/rfid", 1234)
     # cpt1
     pub.pub("openWB/chargepoint/template/1/autolock/1/frequency/selected", "daily")
     pub.pub("openWB/chargepoint/template/1/autolock/1/time", ["07:00", "11:15"])
@@ -49,6 +56,14 @@ def pub_settings():
     pub.pub("openWB/chargepoint/template/1/autolock/active", 0)
     pub.pub("openWB/chargepoint/template/1/ev", 1)
     pub.pub("openWB/chargepoint/template/1/rfid_enabling", 0)
+
+    # cp2
+    pub.pub("openWB/chargepoint/2/set/manual_lock", 0)
+    pub.pub("openWB/chargepoint/2/config/template", 2)
+    pub.pub("openWB/chargepoint/2/config/connected_phases", 3)
+    pub.pub("openWB/chargepoint/2/config/auto_phase_switch_hw", 1)
+    pub.pub("openWB/chargepoint/2/config/control_pilot_interruption_hw", 0)
+    pub.pub("openWB/chargepoint/2/get/rfid", 1234)
     # cpt2
     pub.pub("openWB/chargepoint/template/2/autolock/1/frequency/selected", "daily")
     pub.pub("openWB/chargepoint/template/2/autolock/1/time", ["07:00", "11:20"])
@@ -57,28 +72,7 @@ def pub_settings():
     pub.pub("openWB/chargepoint/template/2/autolock/active", 0)
     pub.pub("openWB/chargepoint/template/2/ev", 2)
     pub.pub("openWB/chargepoint/template/2/rfid_enabling", 0)
-    #cp1
-    pub.pub("openWB/chargepoint/1/set/manual_lock", 0)
-    pub.pub("openWB/chargepoint/1/config/template", 1)
-    pub.pub("openWB/chargepoint/1/config/connected_phases", 3)
-    pub.pub("openWB/chargepoint/1/config/auto_phase_switch_hw", 1)
-    pub.pub("openWB/chargepoint/1/config/control_pilot_interruption_hw", 0)
-    pub.pub("openWB/chargepoint/1/get/rfid", 1234)
 
-    # cp2
-    pub.pub("openWB/chargepoint/2/set/manual_lock", 0)
-    pub.pub("openWB/chargepoint/2/config/template", 2)
-    pub.pub("openWB/chargepoint/2/config/connected_phases", 3)
-    pub.pub("openWB/chargepoint/1/config/auto_phase_switch_hw", 1)
-    pub.pub("openWB/chargepoint/1/config/control_pilot_interruption_hw", 0)
-    pub.pub("openWB/chargepoint/2/get/rfid", 1234)
-
-    #evt1
-    pub.pub("openWB/vehicle/template/ev_template/1/min_current", 10)
-    pub.pub("openWB/vehicle/template/ev_template/1/battery_capacity", 80)
-    pub.pub("openWB/vehicle/template/ev_template/1/max_phases", 3)
-    pub.pub("openWB/vehicle/template/ev_template/1/max_current", 16)
-    pub.pub("openWB/vehicle/template/charge_template/1/prio", 1)
     #ev1
     pub.pub("openWB/vehicle/1/charge_template", 1)
     pub.pub("openWB/vehicle/1/ev_template", 1)
@@ -95,8 +89,13 @@ def pub_settings():
     pub.pub("openWB/vehicle/2/get/charged_since_plugged_kwh", 5)
     pub.pub("openWB/vehicle/2/match_ev/selected", "rfid")
     pub.pub("openWB/vehicle/2/match_ev/tag_id", 1234)
-
+    #evt1
+    pub.pub("openWB/vehicle/template/ev_template/1/min_current", 10)
+    pub.pub("openWB/vehicle/template/ev_template/1/battery_capacity", 80)
+    pub.pub("openWB/vehicle/template/ev_template/1/max_phases", 3)
+    pub.pub("openWB/vehicle/template/ev_template/1/max_current", 16)
     #ct1
+    pub.pub("openWB/vehicle/template/charge_template/1/prio", 1)
     pub.pub("openWB/vehicle/template/charge_template/1/time_charging/active", 0)
     pub.pub("openWB/vehicle/template/charge_template/1/chargemode/selected", "instant_charging")
     pub.pub("openWB/vehicle/template/charge_template/1/chargemode/instant_charging/current", 11)
@@ -110,6 +109,7 @@ def pub_settings():
     pub.pub("openWB/vehicle/template/charge_template/1/chargemode/pv_charging/feed_in_limit", 0)
 
     #ct2
+    pub.pub("openWB/vehicle/template/charge_template/2/prio", 1)
     pub.pub("openWB/vehicle/template/charge_template/2/time_charging/active", 0)
     pub.pub("openWB/vehicle/template/charge_template/2/time_charging/1/active", 1)
     pub.pub("openWB/vehicle/template/charge_template/2/time_charging/1/frequency/selected", "weekly")
@@ -122,7 +122,6 @@ def pub_settings():
     pub.pub("openWB/vehicle/template/charge_template/2/chargemode/pv_charging/min_soc_current", 13)
     pub.pub("openWB/vehicle/template/charge_template/2/chargemode/pv_charging/max_soc", 80)
     pub.pub("openWB/vehicle/template/charge_template/2/chargemode/pv_charging/feed_in_limit", 1)
-    pub.pub("openWB/vehicle/template/charge_template/2/prio", 1)
     pub.pub("openWB/vehicle/template/charge_template/2/chargemode/instant_charging/current", 12)
     pub.pub("openWB/vehicle/template/charge_template/2/chargemode/instant_charging/limit/selected", "soc")
     pub.pub("openWB/vehicle/template/charge_template/2/chargemode/instant_charging/limit/soc", 50)

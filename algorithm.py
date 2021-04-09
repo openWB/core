@@ -103,7 +103,7 @@ class control():
                     if chargepoint.data["set"]["charging_ev"].data["control_parameter"]["chargemode"] == "pv_charging" and chargepoint.data["get"]["charge_state"] == True:
                         if data.pv_data["all"].switch_off_check_timer(chargepoint) == True:
                             # Ladung stoppen
-                            required_current, phases = self._no_load()
+                            required_current, phases = no_load()
                             self._process_data(chargepoint, required_current, phases)
                             # in diesem Durchgang soll kein Strom zugeteilt werden
                             chargepoint.data["set"]["charging_ev"].data["control_parameter"]["chargemode"] = "stop"
@@ -202,7 +202,7 @@ class control():
                 # Es gibt keine Ladepunkte in diesem Lademodus, die noch nicht laden oder die noch gestoppt werden können.
                 return False
             else:
-                required_current, phases= self._no_load()
+                required_current, phases= no_load()
                 self._process_data(preferenced_chargepoints[0], required_current, phases)
                 log.message_debug_log("debug", "Ladung an LP"+str(preferenced_chargepoints[0].cp_num)+" gestoppt.")
                 loadmanagement.loadmanagement((preferenced_chargepoints[0].data["get"]["power_all"]*-1), 0, 0)
@@ -333,7 +333,7 @@ class control():
                 self._calc_pv_charging(chargepoint, required_power,
                                 required_current, phases)
             elif (charging_ev.data["control_parameter"]["chargemode"] == "stop" or (charging_ev.data["control_parameter"]["chargemode"] == "standby")):
-                required_current, phases = self._no_load()
+                required_current, phases = no_load()
                 self._process_data(chargepoint, required_current, phases)
             else:
                 self._calc_normal_load(chargepoint, required_power,
@@ -356,31 +356,9 @@ class control():
             Phasen, mit denen geladen werden soll
         """
         try:
-            # PV-Strom nutzen
-            overhang_power_left = data.pv_data["all"].overhang_left_with_without_feed_in_limit(False)
-            if overhang_power_left > 0:
-                overhang_power_left -= required_power
-                if overhang_power_left > 0:
-                    if data.pv_data["all"].allocate_pv_power(required_power) == False:
-                        required_current = 0
-                        phases = 0
-                    self._process_data(chargepoint, required_current, phases)
-                else:
-                    evu_power = overhang_power_left *-1 # muss bezogen werden
-                    pv_power = required_power - evu_power
-                    evu_current = required_power / (phases * 230)
-                    if loadmanagement.loadmanagement(evu_power, evu_current, phases) == False:
-                        if data.pv_data["all"].allocate_pv_power(pv_power) == False:
-                            required_current = 0
-                            phases = 0
-                    else:
-                        required_current, phases= self._no_load()
-                    self._process_data(chargepoint, required_current, phases)
-                return
-            # Bezug
-            if loadmanagement.loadmanagement(required_power, required_current, phases) == True:
-                required_current, phases= self._no_load()
+            required_current, phases = allocate_power(required_power, required_current, phases)
             self._process_data(chargepoint, required_current, phases)
+        
         except Exception as e:
             log.exception_logging(e)
 
@@ -401,7 +379,7 @@ class control():
         try:
             if (chargepoint.data["set"]["charging_ev"].charge_template.data["chargemode"]["selected"] == "scheduled_charging" and 
                     "pv_charging" not in chargepoint.data["set"]["charging_ev"].charge_template.data["chargemode"]):
-                required_current, phases = self._no_load()
+                required_current, phases = no_load()
                 log.message_debug_log("warning", "PV-Laden im Modus Zielladen aktiv und es wurden keine Einstellungen für PV-Laden konfiguriert.")
             else:
                 if self._check_cp_without_feed_in_is_prioritised(chargepoint) == True:
@@ -518,13 +496,13 @@ class control():
                                         # Laden mit EVU-Überschuss und der Leistung, die vorher der Speicher bezogen hat
                                         elif bat_overhang > 0:
                                             pv_power = power_diff - bat_overhang
-                                            if data.pv_data["all"].allocate_pv_power(pv_power) == False:
+                                            if data.pv_data["all"].allocate_evu_power(pv_power) == False:
                                                 current = 0
                                             elif data.bat_module_data["all"].allocate_bat_power(bat_overhang) == False:
                                                 current = 0
                                         # Laden nur mit EVU-Überschuss bzw. Reduktion des EVU-Bezugs
                                         else:
-                                            if data.pv_data["all"].allocate_pv_power(power_diff) == False:
+                                            if data.pv_data["all"].allocate_evu_power(power_diff) == False:
                                                 current = 0
 
                                     chargepoint.data["set"]["current"] = current
@@ -581,20 +559,6 @@ class control():
         except Exception as e:
             log.exception_logging(e)
 
-    def _no_load(self):
-        """ setzt die Parameter zum Stoppen der PV-Ladung
-
-        Return
-        ------
-        required_current: float
-            Stromstärke, mit der geladen werden soll
-        phases: int
-            Phasen, mit denen geladen werden soll
-        """
-        required_current = 0
-        phases = 0
-        return required_current, phases
-
     def _process_data(self, chargepoint, required_current, phases):
         """ setzt die ermittelte Anzahl Phasen, Stromstärke und Leistung in den Dictionarys, 
         publsihed sie und schreibt sie ins Log.
@@ -619,3 +583,70 @@ class control():
         """
         """
         return data.bat_module_data["all"].data["get"]["power"] + data.pv_data["all"].data["set"]["available_power"]
+
+
+def allocate_power(required_power, required_current, phases):
+    """allokiert, wenn vorhanden erst Speicherladeleistung, dann EVU-Überschuss 
+    und dann EVU-Bezug im Lastamanagement.
+
+    Parameter
+    ---------
+    chargepoint: dict
+        Daten des Ladepunkts
+    required_power: float
+        Leistung, mit der geladen werden soll
+    required_current: float
+        Stromstärke, mit der geladen werden soll
+    phases: int
+        Phasen, mit denen geladen werden soll
+
+    Return 
+    ------
+    required_current: float
+        Stromstärke, mit der geladen werden kann
+    phases: int
+        Phasen, mit denen geladen werden kann
+    """
+    try:
+        bat_overhang = data.bat_module_data["all"].power_for_bat_charging()
+        evu_overhang = data.pv_data["all"].overhang_left()
+        # Laden nur mit der Leistung, die vorher der Speicher bezogen hat
+        if ( bat_overhang - required_power) > 0:
+            if data.bat_module_data["all"].allocate_bat_power(required_power) == False:
+                required_current, phases= no_load()
+        # Laden mit EVU-Überschuss und der Leistung, die vorher der Speicher bezogen hat
+        elif evu_overhang > 0 and bat_overhang > 0:
+            evu_power = required_power - bat_overhang
+            if data.pv_data["all"].allocate_evu_power(evu_power) == False:
+                required_current, phases= no_load()
+            elif data.bat_module_data["all"].allocate_bat_power(bat_overhang) == False:
+                required_current, phases= no_load()
+        # Liegt die Einschaltgrenze unter der benötigten Leistung, muss bezogen werden.
+        elif (evu_overhang - required_power) < 0:
+            evu_power = required_power - evu_overhang # muss bezogen werden
+            evu_current = required_power / (phases * 230)
+            if evu_power > 0:
+                if loadmanagement.loadmanagement(evu_power, evu_current, phases) == False:
+                    if data.pv_data["all"].allocate_evu_power(evu_overhang) == False:
+                        required_current, phases= no_load()
+        # Laden nur mit EVU-Überschuss
+        else:
+            if data.pv_data["all"].allocate_evu_power(required_power) == False:
+                required_current, phases= no_load()
+        return required_current, phases
+    except Exception as e:
+        log.exception_logging(e)
+
+def no_load():
+    """ setzt die Parameter zum Stoppen der PV-Ladung
+
+    Return
+    ------
+    required_current: float
+        Stromstärke, mit der geladen werden soll
+    phases: int
+        Phasen, mit denen geladen werden soll
+    """
+    required_current = 0
+    phases = 0
+    return required_current, phases
