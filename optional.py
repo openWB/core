@@ -59,6 +59,9 @@ class optional():
         """
         """
         try:
+            if "set" not in self.data["et"]:
+                    self.data["et"]["set"] = {}
+                    self.data["et"]["set"]["timestamp_updated_prices"] = timecheck.create_timestamp()
             if timecheck.check_timestamp(self.data["et"]["set"]["timestamp_updated_prices"], 58*60) == False:
                 if self.data["et"]["provider"] == "awattar":
                     awattargetprices.awattar_get_prices()

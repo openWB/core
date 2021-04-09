@@ -59,7 +59,7 @@ def pub_settings():
     #ct1
     pub.pub("openWB/vehicle/template/charge_template/1/prio", 1)
     pub.pub("openWB/vehicle/template/charge_template/1/time_charging/active", 0)
-    pub.pub("openWB/vehicle/template/charge_template/1/chargemode/selected", "instant_charging")
+    pub.pub("openWB/vehicle/template/charge_template/1/chargemode/selected", "pv_charging")
     pub.pub("openWB/vehicle/template/charge_template/1/chargemode/instant_charging/current", 11)
     pub.pub("openWB/vehicle/template/charge_template/1/chargemode/instant_charging/limit/selected", "soc")
     pub.pub("openWB/vehicle/template/charge_template/1/chargemode/instant_charging/limit/soc", 50)
@@ -93,11 +93,8 @@ def pub_settings():
     pub.pub("openWB/vehicle/template/charge_template/2/chargemode/scheduled_charging/1/time", "15:00")
     pub.pub("openWB/vehicle/template/charge_template/2/chargemode/scheduled_charging/1/soc", 85)
 
-    #chargemode_config
-    pub.pub("openWB/general/chargemode_config/scheduled_charging/phases_to_use", 3)
-
     # optional
-    pub.pub("openWB/optional/et/active", 1)
+    pub.pub("openWB/optional/et/active", 0)
     pub.pub("openWB/optional/et/config/max_price", 5.5)
     pub.pub("openWB/optional/et/provider", "awattar")
 

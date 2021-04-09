@@ -67,7 +67,7 @@ def check_plans_timeframe(plans, hours=None):
     plan: erster aktiver Plan
     None: falls kein Plan aktiv ist
     """
-    state = None
+    state = False
     try:
         for plan in plans:
             # Nur Keys mit dem Namen plan + Plannummer berücksichtigen
@@ -75,11 +75,8 @@ def check_plans_timeframe(plans, hours=None):
                 state = check_timeframe(plans[plan], hours)
                 if state == True:
                     return plan
-
-        if state == None:
-            # log
-            print("Keine aktiven Zeit-Pläne.")
-        return None
+        else:
+            return None
     except Exception as e:
         log.exception_logging(e)
         return None
@@ -199,8 +196,9 @@ def check_duration(plan, duration):
 
     Return
     ------
-    True: Ladung sollte starten
-    False: hat noch Zeit
+    2, int: Zeitpunkt ist um mehr als 5 Min überschritten worden, verbleibende Zeit in h
+    1, 0: Ladung sollte starten
+    0, 0: hat noch Zeit
     """
     try:
         now = datetime.datetime.today()
@@ -221,7 +219,7 @@ def check_duration(plan, duration):
                 end = end.replace(now.year, now.month, now.day)
                 return _is_duration_valid(now, duration, end)
             else:
-                return False
+                return False, 0
     except Exception as e:
         log.exception_logging(e)
         return False

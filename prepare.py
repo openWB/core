@@ -72,14 +72,18 @@ class prepare():
         for cp in data.cp_data:
             try:
                 if "cp" in cp:
-                    vehicle = data.cp_data[cp].get_state()
+                    vehicle, message = data.cp_data[cp].get_state()
                     if vehicle != -1:
-                        if data.ev_data["ev"+str(vehicle)].get_required_current() == True:
-                            data.cp_data[cp].data["set"]["charging_ev"] = data.ev_data["ev"+str(
-                            vehicle)]
-                            log.message_debug_log("debug", "Ladepunkt "+data.cp_data[cp].cp_num+", EV: "+data.cp_data[cp].data["set"]["charging_ev"].data["name"]+" (EV-Nr."+str(vehicle)+")")
-                        else:
-                            data.cp_data[cp].data["set"]["charging_ev"] = -1
+                        state, message_ev = data.ev_data["ev"+str(vehicle)].get_required_current()
+                        data.cp_data[cp].data["set"]["charging_ev"] = data.ev_data["ev"+str(vehicle)]
+                        if message_ev != None:
+                            message = "Keine Ladung an LP"+str(data.cp_data[cp].cp_num)+", da "+str(message_ev)
+                        log.message_debug_log("debug", "Ladepunkt "+data.cp_data[cp].cp_num+", EV: "+data.cp_data[cp].data["set"]["charging_ev"].data["name"]+" (EV-Nr."+str(vehicle)+")")
+                        # Wenn die Nachrichten gesendet wurden, EV wieder löschen, wenn das EV im Algorithmus nicht berücksichtigt werden soll.
+                        if state == False:
+                                data.cp_data[cp].data["set"]["charging_ev"] = -1
+                    pub.pub("openWB/set/chargepoint/"+str(data.cp_data[cp].cp_num)+"/get/state_str", message)
+                    log.message_debug_log("info", message)
             except Exception as e:
                 log.exception_logging(e)
         if "all" not in data.cp_data:

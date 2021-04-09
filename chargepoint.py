@@ -101,6 +101,7 @@ class chargepoint():
         None: Ladepunkt nicht verfügbar
         """
         try:
+            message = "Keine Ladung an LP"+self.cp_num+", da ein Fehler aufgetreten ist."
             charging_possbile = False
             state, message = self._is_cp_available()
             if state == True:
@@ -112,10 +113,8 @@ class chargepoint():
                         if state == False:
                             charging_possbile = True
                     
-            log.message_debug_log("info", message)
-            pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/get/state_str", message)
             if charging_possbile == True:
-                return self.template.get_ev(self.data["get"]["rfid"], self.cp_num)
+                return self.template.get_ev(self.data["get"]["rfid"], self.cp_num), message
             else:
                 # Daten zurücksetzen, wenn nicht geladen werden soll.
                 if self.data["set"]["charging_ev"] != -1:
@@ -133,7 +132,7 @@ class chargepoint():
                 pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/energy_to_charge", 0)
                 self.data["set"]["phases_to_use"] = 0
                 pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/phases_to_use", 0)
-                return -1
+                return -1, message
         except Exception as e:
             log.exception_logging(e)
             return -1
