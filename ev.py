@@ -89,10 +89,10 @@ class ev():
                 elif self.charge_template.data["chargemode"]["selected"] == "pv_charging":
                     required_current, chargemode, message = self.charge_template.pv_charging(self.data["get"]["soc"])
                 elif self.charge_template.data["chargemode"]["selected"] == "standby":
-                    required_current, chargemode, message = self.charge_template.standby(self.charge_template.data["chargemode"]["selected"])
+                    required_current, chargemode, message = self.charge_template.standby()
                     
                 elif self.charge_template.data["chargemode"]["selected"] == "stop":
-                 required_current, chargemode, message = self.charge_template.stop(self.charge_template.data["chargemode"]["selected"])
+                 required_current, chargemode, message = self.charge_template.stop()
             if chargemode == "stop" or (self.charge_template.data["chargemode"]["selected"] == "stop"):
                 state = False
             required_current = self._check_min_max_current(required_current)

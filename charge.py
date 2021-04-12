@@ -33,11 +33,6 @@ class charge():
         """aktualisiert den Zustand des Ladepunkts.
         """
         try:
-            if chargepoint.data["set"]["current"] != 0:
-                chargepoint.data["get"]["charge_state"] = True
-            else:
-                chargepoint.data["get"]["charge_state"] = False
-            pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/get/charge_state", chargepoint.data["get"]["charge_state"])
             pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/set/phases_to_use", chargepoint.data["set"]["phases_to_use"])
             pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/set/current", round(chargepoint.data["set"]["current"], 2))
         except Exception as e:

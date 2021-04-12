@@ -27,14 +27,43 @@ class allChargepoints():
         ------
         int: aufsummierte Leistung über alle Phasen und Ladepunkte
         """
-        used_power_all = 0
-        for chargepoint in data.cp_data:
-            if "cp" in chargepoint:
-                if "get" in data.cp_data[chargepoint].data:
-                    if "power_all" in data.cp_data[chargepoint].data["get"]:
-                        used_power_all += data.cp_data[chargepoint].data["get"]["power_all"]
-        data.cp_data["all"].data["get"]["power_all"] = used_power_all
-        pub.pub("openWB/set/chargepoint/get/power_all", used_power_all)
+        try:
+            used_power_all = 0
+            for chargepoint in data.cp_data:
+                if "cp" in chargepoint:
+                    if "get" in data.cp_data[chargepoint].data:
+                        if "power_all" in data.cp_data[chargepoint].data["get"]:
+                            used_power_all += data.cp_data[chargepoint].data["get"]["power_all"]
+            data.cp_data["all"].data["get"]["power_all"] = used_power_all
+            pub.pub("openWB/set/chargepoint/get/power_all", used_power_all)
+        except Exception as e:
+            log.exception_logging(e)
+
+    def no_charge(self):
+        """ Wenn keine EV angesteckt sind oder keine EV laden/laden möchten, werden die Algorithmus-Werte zurückgesetzt.
+        (dient der Robustheit)
+        """
+        try:
+            for cp in data.cp_data:
+                if "cp" in cp:
+                    chargepoint = data.cp_data[cp]
+                    # Kein EV angesteckt
+                    if ( chargepoint.data["get"]["plug_state"] == False or
+                            # Kein EV, das Laden soll
+                            chargepoint.data["set"]["charging_ev"] == -1 or 
+                            # Kein EV, das auf das Ablaufen der Einschaltverzögerung wartet
+                            (chargepoint.data["set"]["charging_ev"] != -1 and 
+                            chargepoint.data["set"]["charging_ev"].data["control_parameter"]["chargemode"] != "pv_charging" and 
+                            chargepoint.data["get"]["charge_state"] == False)):
+                        continue
+                    else:
+                        break
+                else:
+                    data.pv_data["all"].reset_pv_data()
+        except Exception as e:
+            log.exception_logging(e)
+
+
 
 class chargepoint():
     """ geht alle Ladepunkte durch, prüft, ob geladen werden darf und ruft die Funktion des angesteckten Autos auf. 

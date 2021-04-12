@@ -28,15 +28,12 @@ class pv():
         if "config" not in self.data:
             self.data["config"] = {}
         pub.pub("openWB/set/pv/set/overhang_power_left", 0)
-        pub.pub("openWB/set/pv/set/reserved_evu_overhang", 0)
-        pub.pub("openWB/set/pv/set/released_evu_overhang", 0)
         pub.pub("openWB/set/pv/set/available_power", 0)
         pub.pub("openWB/set/pv/config/configured", False)
         self.data["set"]["overhang_power_left"] = 0
-        self.data["set"]["reserved_evu_overhang"] = 0
-        self.data["set"]["released_evu_overhang"] = 0
         self.data["set"]["available_power"] = 0
         self.data["config"]["configured"] = False
+        self.reset_pv_data()
 
     def calc_power_for_control(self):
         """ berechnet den EVU-Überschuss, der in der Regelung genutzt werden kann.
@@ -276,3 +273,11 @@ class pv():
                 pub.pub("openWB/set/pv/set/released_evu_overhang", self.data["set"]["released_evu_overhang"])
         except Exception as e:
             log.exception_logging(e)
+
+    def reset_pv_data(self):
+        """ setzt die Daten zurück, die über mehrere Regelzyklen genutzt werden.
+        """
+        pub.pub("openWB/set/pv/set/reserved_evu_overhang", 0)
+        pub.pub("openWB/set/pv/set/released_evu_overhang", 0)
+        self.data["set"]["reserved_evu_overhang"] = 0
+        self.data["set"]["released_evu_overhang"] = 0

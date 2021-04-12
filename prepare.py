@@ -38,8 +38,7 @@ class prepare():
                 subdata.subData.cp_template_data)
             for chargepoint in data.cp_data:
                 if "cp" in chargepoint:
-                    data.cp_data[chargepoint].template = data.cp_template_data["cpt" +
-                                                                               str(data.cp_data[chargepoint].data["config"]["template"])]
+                    data.cp_data[chargepoint].template = data.cp_template_data["cpt" +str(data.cp_data[chargepoint].data["config"]["template"])]
                     data.cp_data[chargepoint].cp_num = chargepoint[2:]
 
             data.pv_data = copy.deepcopy(subdata.subData.pv_data)
@@ -49,10 +48,8 @@ class prepare():
             data.ev_charge_template_data = copy.deepcopy(
                 subdata.subData.ev_charge_template_data)
             for vehicle in data.ev_data:
-                data.ev_data[vehicle].charge_template = data.ev_charge_template_data["ct" +
-                                                                                     str(data.ev_data[vehicle].data["charge_template"])]
-                data.ev_data[vehicle].ev_template = data.ev_template_data["et" +
-                                                                          str(data.ev_data[vehicle].data["ev_template"])]
+                data.ev_data[vehicle].charge_template = data.ev_charge_template_data["ct" +str(data.ev_data[vehicle].data["charge_template"])]
+                data.ev_data[vehicle].ev_template = data.ev_template_data["et" +str(data.ev_data[vehicle].data["ev_template"])]
 
             data.counter_data = copy.deepcopy(subdata.subData.counter_data)
             for counter in data.counter_data:
@@ -89,6 +86,7 @@ class prepare():
         if "all" not in data.cp_data:
             data.cp_data["all"]=chargepoint.allChargepoints()
         data.cp_data["all"].used_power_all()
+        data.cp_data["all"].no_charge()
 
     def _use_pv(self):
         """ ermittelt, ob Überschuss an der EVU vorhanden ist und kümmert sich um die Beachtung der Einspeisungsgrenze.
