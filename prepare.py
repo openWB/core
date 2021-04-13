@@ -27,7 +27,7 @@ class prepare():
         self._check_chargepoints()
         self._use_pv()
         self._bat()
-        data.counter_data["counter0"].setup_counter()
+        self._counter()
 
     def _copy_data(self):
         """ kopiert die Daten, die per MQTT empfangen wurden.
@@ -97,3 +97,10 @@ class prepare():
         if "all" not in data.bat_module_data:
             data.bat_module_data["all"] = bat.bat()
         data.bat_module_data["all"].setup_bat()
+
+    def _counter(self):
+        """ initialisiert alle Zähler für den Algorithmus
+        """
+        for counter in data.counter_data:
+            if "counter" in counter:
+                data.counter_data[counter].setup_counter()

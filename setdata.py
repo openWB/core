@@ -621,7 +621,7 @@ class setData():
         if re.search("^openWB/set/counter/set/loadmanagement$", msg.topic) != None:
             self._validate_value(msg, int, [(0, 1)])
         elif re.search("^openWB/set/counter/[0-9]+/set/consumption_left$", msg.topic) != None:
-            self._validate_value(msg, float, [(0, None)])
+            self._validate_value(msg, float)
         elif re.search("^openWB/set/counter/[0-9]+/set/current_left$", msg.topic) != None:
             self._validate_value(msg, float, [(0, None)], collection=list)
         elif (re.search("^openWB/set/counter/[0-9]+/config/selected$", msg.topic) != None or

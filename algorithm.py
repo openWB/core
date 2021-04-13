@@ -41,7 +41,8 @@ class control():
         log.message_debug_log("debug", "## Ueberschuss-Ladung ueber Mindeststrom bei PV-Laden zuruecknehmen.")
         self._reduce_used_evu_overhang()
        
-        if data.counter_data["counter0"].data["set"]["loadmanagement"] == True:
+        loadmanagement.loadmanagement_for_counters()
+        if data.counter_data["all"].data["set"]["loadmanagement"] == True:
             log.message_debug_log("debug", "## Ladung wegen aktiven Lastmanagements stoppen.")
             # Wenn trotz Rücknahme des PV-Überschussladens immer noch das Lastmanagement aktiv ist, LP abschalten. Dazu das Lademodi-Tupel rückwärts durchgehen und LP mit niedrig priorisiertem Lademodus zuerst stoppen.
             #Ist jetzt schon die Sicherung geflogen?
@@ -49,14 +50,14 @@ class control():
                 cp_to_stop = True
                 while cp_to_stop == True:
                     cp_to_stop = self._switch_off_lowest_cp(mode)
-                    if data.counter_data["counter0"].data["set"]["loadmanagement"] == False:
+                    if data.counter_data["all"].data["set"]["loadmanagement"] == False:
                         break
-                if data.counter_data["counter0"].data["set"]["loadmanagement"] == False:
+                if data.counter_data["all"].data["set"]["loadmanagement"] == False:
                         break
         else:
             log.message_debug_log("debug", "## Ladung muss nicht wegen aktiven Lastmanagements gestoppt werden.")
 
-        if data.counter_data["counter0"].data["set"]["loadmanagement"] == True:
+        if data.counter_data["all"].data["set"]["loadmanagement"] == True:
             log.message_debug_log("warning", "Bezug immer noch hoeher als maximaler Bezug, obwohl das Laden gestoppt wurde.")
 
          #Abschaltschwelle prüfen und ggf. Abschaltverzögerung starten
@@ -153,7 +154,7 @@ class control():
             else:
                 for cp in preferenced_chargepoints:
                     self._distribute_power_to_cp(cp)
-                    if data.counter_data["counter0"].data["set"]["loadmanagement"] == False:
+                    if data.counter_data["all"].data["set"]["loadmanagement"] == False:
                         log.message_debug_log("info", "LP: "+str(cp.cp_num)+", Ladestrom: "+str(cp.data["set"]["current"])+"A, Phasen: "+str(cp.data["set"]["phases_to_use"])+", Ladeleistung: "+str((cp.data["set"]["phases_to_use"]*cp.data["set"]["current"]*230))+"W")
                     else:
                         #Lastmanagement hat eingegriffen und die Zuteilung verhindert
@@ -205,7 +206,7 @@ class control():
                 required_current, phases= no_load()
                 self._process_data(preferenced_chargepoints[0], required_current, phases)
                 log.message_debug_log("debug", "Ladung an LP"+str(preferenced_chargepoints[0].cp_num)+" gestoppt.")
-                loadmanagement.loadmanagement((preferenced_chargepoints[0].data["get"]["power_all"]*-1), 0, 0)
+                loadmanagement.loadmanagement_for_cp(preferenced_chargepoints[0], (preferenced_chargepoints[0].data["get"]["power_all"]*-1), 0, 0)
                 return True
         except Exception as e:
             log.exception_logging(e)
@@ -356,7 +357,7 @@ class control():
             Phasen, mit denen geladen werden soll
         """
         try:
-            required_current, phases = allocate_power(required_power, required_current, phases)
+            required_current, phases = allocate_power(chargepoint, required_power, required_current, phases)
             self._process_data(chargepoint, required_current, phases)
         
         except Exception as e:
@@ -585,7 +586,7 @@ class control():
         return data.bat_module_data["all"].data["get"]["power"] + data.pv_data["all"].data["set"]["available_power"]
 
 
-def allocate_power(required_power, required_current, phases):
+def allocate_power(chargepoint, required_power, required_current, phases):
     """allokiert, wenn vorhanden erst Speicherladeleistung, dann EVU-Überschuss 
     und dann EVU-Bezug im Lastamanagement.
 
@@ -626,7 +627,7 @@ def allocate_power(required_power, required_current, phases):
             evu_power = required_power - evu_overhang # muss bezogen werden
             evu_current = required_power / (phases * 230)
             if evu_power > 0:
-                if loadmanagement.loadmanagement(evu_power, evu_current, phases) == False:
+                if loadmanagement.loadmanagement_for_cp(chargepoint, evu_power, evu_current, phases) == False:
                     if data.pv_data["all"].allocate_evu_power(evu_overhang) == False:
                         required_current, phases= no_load()
         # Laden nur mit EVU-Überschuss

@@ -547,8 +547,6 @@ class subData():
                 index=self.get_index(msg.topic)
                 if "counter"+index not in self.counter_data:
                     self.counter_data["counter"+index]=counter.counter()
-                if "all" not in self.counter_data:
-                    self.counter_data["all"]=counter.counterAll()
                 if re.search("^openWB/counter/[0-9]+/get.+$", msg.topic) != None:
                     if "get" not in self.counter_data["counter"+index].data:
                         self.counter_data["counter"+index].data["get"]={}
@@ -557,6 +555,13 @@ class subData():
                     if "config" not in self.counter_data["counter"+index].data:
                         self.counter_data["counter"+index].data["config"]={}
                     self.set_json_payload(self.counter_data["counter"+index].data["config"], msg)
+            elif re.search("^openWB/counter/.+$", msg.topic) != None:
+                if "all" not in self.counter_data:
+                    self.counter_data["all"]=counter.counterAll()
+                if re.search("^openWB/counter/get.+$", msg.topic) != None:
+                    if "get" not in self.counter_data["all"].data:
+                        self.counter_data["all"].data["get"]={}
+                    self.set_json_payload(self.counter_data["all"].data["get"], msg)
         except Exception as e:
             log.exception_logging(e)
 

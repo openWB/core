@@ -17,7 +17,6 @@ class charge():
         try:
             log.message_debug_log("debug", "# Ladung starten.")
             data.pv_data["all"].put_stats()
-            data.counter_data["all"].put_stats()
             data.counter_data["counter0"].put_stats()
             for cp in data.cp_data:
                 if "cp" in cp:

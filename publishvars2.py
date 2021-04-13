@@ -101,7 +101,9 @@ def pub_settings():
     #pv
     pub.pub("openWB/pv/1/get/counter", 500)
     
-    #evu
+    #counter
+    hierarchy = [{"id":"counter0", "children":[{"id":"cp1", "children": []}, {"id":"cp2", "children": []}]}]
+    pub.pub("openWB/counter/get/hierarchy", hierarchy)
     pub.pub("openWB/counter/0/get/current", [5,5,5])
     pub.pub("openWB/counter/0/config/max_consumption", 6000)
     pub.pub("openWB/counter/0/config/max_current", [35, 35, 35])

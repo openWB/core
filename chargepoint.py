@@ -201,7 +201,7 @@ class cpTemplate():
         self.data = {}
 
     def autolock(self, autolock_state, charge_state, cp_num):
-        """ ermittelt den Status des Autolock und published diesen. Es wird sich immer der Status des vorherigen Plans gemerkt, so kann festgestellt  werden, wenn sich zwei Pläne widersprechen.
+        """ ermittelt den Status des Autolock und published diesen. 
 
         Parameter
         ---------
