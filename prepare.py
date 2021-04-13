@@ -89,18 +89,29 @@ class prepare():
         data.cp_data["all"].no_charge()
 
     def _use_pv(self):
-        """ ermittelt, ob Überschuss an der EVU vorhanden ist und kümmert sich um die Beachtung der Einspeisungsgrenze.
+        """ ermittelt, ob Überschuss an der EVU vorhanden ist.
         """
-        data.pv_data["all"].calc_power_for_control()
+        try:
+            data.pv_data["all"].calc_power_for_control()
+        except Exception as e:
+            log.exception_logging(e)
 
     def _bat(self):
-        if "all" not in data.bat_module_data:
-            data.bat_module_data["all"] = bat.bat()
-        data.bat_module_data["all"].setup_bat()
+        """ ermittelt, ob Überschuss am Speicher verfügbar ist.
+        """
+        try:
+            if "all" not in data.bat_module_data:
+                log.message_debug_log("eror", "Keine allgemeinen Daten für Hausspeicher.")
+            data.bat_module_data["all"].setup_bat()
+        except Exception as e:
+                log.exception_logging(e)
 
     def _counter(self):
         """ initialisiert alle Zähler für den Algorithmus
         """
-        for counter in data.counter_data:
-            if "counter" in counter:
-                data.counter_data[counter].setup_counter()
+        try:
+            for counter in data.counter_data:
+                if "counter" in counter:
+                    data.counter_data[counter].setup_counter()
+        except Exception as e:
+                log.exception_logging(e)
