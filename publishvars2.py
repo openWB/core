@@ -72,13 +72,13 @@ def pub_settings():
 
     #ct2
     pub.pub("openWB/vehicle/template/charge_template/2/prio", 1)
-    pub.pub("openWB/vehicle/template/charge_template/2/time_charging/active", 1)
+    pub.pub("openWB/vehicle/template/charge_template/2/time_charging/active", 0)
     pub.pub("openWB/vehicle/template/charge_template/2/time_charging/1/active", 1)
     pub.pub("openWB/vehicle/template/charge_template/2/time_charging/1/frequency/selected", "weekly")
     pub.pub("openWB/vehicle/template/charge_template/2/time_charging/1/frequency/weekly", [1,1,1,1,1,0,0])
     pub.pub("openWB/vehicle/template/charge_template/2/time_charging/1/time", ["07:00", "17:20"])
     pub.pub("openWB/vehicle/template/charge_template/2/time_charging/1/current", 15)
-    pub.pub("openWB/vehicle/template/charge_template/2/chargemode/selected", "standby")
+    pub.pub("openWB/vehicle/template/charge_template/2/chargemode/selected", "instant_charging")
     pub.pub("openWB/vehicle/template/charge_template/2/chargemode/pv_charging/min_current", 12)
     pub.pub("openWB/vehicle/template/charge_template/2/chargemode/pv_charging/min_soc", 23)
     pub.pub("openWB/vehicle/template/charge_template/2/chargemode/pv_charging/min_soc_current", 13)
