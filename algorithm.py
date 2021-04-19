@@ -70,7 +70,7 @@ class control():
                 if n > len(overloaded_counters)-1:
                     # keine Zähler mehr, an denen noch reduziert werden kann.
                     log.message_debug_log("warning", "Das Lastmanagement ist immer noch aktiv, obwohl das Laden gestoppt wurde.")
-                    #break
+                    n = 0
                 # Werte aktualisieren
                 loadmanagement_state, overloaded_counters = loadmanagement.loadmanagement_for_counters()
                 if loadmanagement_state == False:
