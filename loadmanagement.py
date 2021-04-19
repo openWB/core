@@ -274,7 +274,6 @@ def _check_max_power(required_power):
     try:
         consumption_left = data.counter_data["counter0"].data["set"]["consumption_left"] - required_power
         data.counter_data["counter0"].data["set"]["consumption_left"] = consumption_left
-        log.message_debug_log("debug", str(data.counter_data["counter0"].data["set"]["consumption_left"])+"W EVU-Bezugs-Leistung, die fuer die folgenden Durchlaufe uebrig ist.")
         if consumption_left >= 0:
             return False, consumption_left
         else:
