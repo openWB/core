@@ -147,7 +147,7 @@ class pv():
                         required_power = 0
             
             if required_power != 0:
-                required_current, phases = algorithm.allocate_power(chargepoint, required_power, required_current, phases)
+                required_current, phases, _ = algorithm.allocate_power(chargepoint, required_power, required_current, phases)
             else:
                 required_current = 0
                 phases = 0

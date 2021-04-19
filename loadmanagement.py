@@ -4,9 +4,7 @@
 import data
 import log
 
-max_current_overshoot = 0
-max_overshoot_counter = None
-max_overshoot_phase = None
+overloaded_counters = {} # {counter: [max_overshoot, pase_with_max_overshoot]}
 
 def loadmanagement_for_cp(chargepoint, required_power, required_current, phases):
     """ prüft für den angegebenen Ladepunkt, ob im Zweig des Ladepunkts die maximale Stromstärke oder Bezug überschritten wird.
@@ -26,41 +24,24 @@ def loadmanagement_for_cp(chargepoint, required_power, required_current, phases)
     bool: Lastmanagement aktiv?
     """
     loadmanagement = False
-    current_used = {}
-    consumption_left = 0
-    global max_current_overshoot
-    global max_overshoot_counter
-    global max_overshoot_phase
-    max_current_overshoot = 0
-    max_overshoot_counter = None
-    max_overshoot_phase = None
     loadmanagement_all_conditions = False
+    global overloaded_counters
+    overloaded_counters.clear()
     try:
         counters = _get_counters_to_check(chargepoint)
         # Stromstärke merken, wenn das Lastmanagement nicht aktiv wird, wird nach der Prüfung die neue verwendete Stromstärke gesetzt.
         for counter in counters[:-1]:
-            loadmanagement, current_used, overshoot, phase = _check_max_current(counter, required_current, phases)
-            if loadmanagement == False:
-                current_used[counter] = current_used
-            else:
+            loadmanagement, overshoot, phase = _check_max_current(counter, required_current, phases)
+            if loadmanagement == True:
                 loadmanagement_all_conditions = True
-                if max_current_overshoot < overshoot:
-                    max_current_overshoot = overshoot
-                    max_overshoot_counter = counter
-                    max_overshoot_phase = phase
+                overloaded_counters[counter] = [overshoot, phase]
         # Wenn das Lastamanagement bei den Zwischenzählern aktiv wurde, darf es nicht wieder zurück gesetzt werden.
-        loadmanagement, consumption_left, current_used = _loadmanagement_for_evu(current_used, required_power, required_current, phases)
-        if loadmanagement_all_conditions == False:
-            loadmanagement_all_conditions = loadmanagement
-
-        # Werte bei erfolgreichem Lastamanagement schreiben
-        if loadmanagement_all_conditions == False:
-            data.counter_data["counter0"].data["set"]["consumption_left"] = consumption_left
-            log.message_debug_log("debug", str(data.counter_data["counter0"].data["set"]["consumption_left"])+"W EVU-Bezugs-Leistung, die fuer die folgenden Durchlaufe uebrig ist.")
-            for counter in current_used:
-                data.counter_data[counter].data["set"]["current_used"] = current_used[counter]
+        loadmanagement= _loadmanagement_for_evu(required_power, required_current, phases)
+        if loadmanagement == True:
+            loadmanagement_all_conditions = True
+        
         data.counter_data["all"].data["set"]["loadmanagement"] = loadmanagement_all_conditions
-        return data.counter_data["all"].data["set"]["loadmanagement"]
+        return loadmanagement_all_conditions, overloaded_counters
     except Exception as e:
         log.exception_logging(e)
 
@@ -71,27 +52,23 @@ def loadmanagement_for_counters():
     ------
     True/False: Lastmanagement aktiv/inaktiv
     """
-    global max_current_overshoot
-    global max_overshoot_counter
-    global max_overshoot_phase
-    max_current_overshoot = 0
-    max_overshoot_counter = None
-    max_overshoot_phase = None
+    global overloaded_counters
+    overloaded_counters.clear()
     loadmanagement_all_conditions = False
     try:
         # Für den EVU-Zähler max. Leistung, max. Stromstärke und Schieflast überprüfen.
-        loadmanagement_all_conditions = _loadmanagement_for_evu({}, 0 ,0, 3)[0]
+        loadmanagement_all_conditions = _loadmanagement_for_evu(0 ,0, 3)
         # Überprüfung der Zwischenzähler
         loadmanagement = _check_all_intermediate_counters(data.counter_data["all"].data["get"]["hierarchy"][0])
         # Wenn das Lastmanagement aktiv war, darf es nicht wieder zurück gesetzt werden.
         if loadmanagement_all_conditions == False:
             loadmanagement_all_conditions = loadmanagement
         data.counter_data["all"].data["set"]["loadmanagement"] = loadmanagement_all_conditions
-        return loadmanagement
+        return loadmanagement_all_conditions, overloaded_counters
     except Exception as e:
         log.exception_logging(e)
 
-def perform_loadmanagement():
+def perform_loadmanagement(counter):
     """ gibt den Zähler mit der gröpten Überlastung und die Überlastung sowie eine Liste der Ladepunkte, die in den folgenden Zweigen des Zählers sind, zurück.
 
     Return
@@ -103,20 +80,17 @@ def perform_loadmanagement():
     max_overshoot_phase: int
         Phase, in der die größte Überlastung auftritt
     """
-    global max_current_overshoot
-    global max_overshoot_counter
-    global max_overshoot_phase
     global chargepoints
     chargepoints.clear()
-    if max_current_overshoot != 0 and max_overshoot_counter != None and data.counter_data["all"].data["set"]["loadmanagement"] == True:
-        if max_overshoot_counter == "counter0":
+    try:
+        if counter == "counter0":
             counter_object = data.counter_data["all"].data["get"]["hierarchy"][0]
         else:
-            counter_object = _look_for_object(data.counter_data["all"].data["get"]["hierarchy"][0], "counter", max_overshoot_counter[7:])
+            counter_object = _look_for_object(data.counter_data["all"].data["get"]["hierarchy"][0], "counter", counter[7:])
         _get_all_cp_connected_to_counter(counter_object)
-        return chargepoints, max_current_overshoot, max_overshoot_phase
-    else:
-        log.message_debug_log("error", "Lastmanagement soll durchgefuehrt werden, obwohl keine Zaehler die Werte ueberschreiten.")
+        return chargepoints
+    except Exception as e:
+        log.exception_logging(e)
 
 # Verarbeiten der Liste aus Zählern und Ladepunkten
 counters = []
@@ -132,20 +106,15 @@ def _check_all_intermediate_counters(child):
     ------
     True/False: Lastmanagement aktiv/inaktiv
     """
-    global max_current_overshoot
-    global max_overshoot_counter
-    global max_overshoot_phase
+    global overloaded_counters
     try:
         # Alle Objekte der Ebene durchgehen
         for child in child["children"]:
             if "counter" in child["id"]:
                 # Wenn Objekt ein Zähler ist, Stromstärke prüfen.
-                loadmanagement, _, overshoot, phase = _check_max_current(child["id"], 0, 3)
+                loadmanagement, overshoot, phase = _check_max_current(child["id"], 0, 3)
                 if loadmanagement == True:
-                    if max_current_overshoot < overshoot:
-                        max_current_overshoot = overshoot
-                        max_overshoot_counter = child["id"]
-                        max_overshoot_phase = phase
+                    overloaded_counters[child["id"]] = [overshoot, phase]
                     return True
             # Wenn das Objekt noch Kinder hat, diese ebenfalls untersuchen.
             if len(child["children"]) != 0:
@@ -230,23 +199,24 @@ def _get_all_cp_connected_to_counter(child):
     child: object
         Zähler, dessen Ladepunkte ermittelt werden sollen
     """
-    # Alle Objekte der Ebene durchgehen
-    for child in child["children"]:
-        if "cp" in child["id"]:
-            chargepoints.append(child["id"])
-        # Wenn das Objekt noch Kinder hat, diese ebenfalls untersuchen.
-        elif len(child["children"]) != 0:
-            _get_all_cp_connected_to_counter(child)
+    try:
+        # Alle Objekte der Ebene durchgehen
+        for child in child["children"]:
+            if "cp" in child["id"]:
+                chargepoints.append(child["id"])
+            # Wenn das Objekt noch Kinder hat, diese ebenfalls untersuchen.
+            elif len(child["children"]) != 0:
+                _get_all_cp_connected_to_counter(child)
+    except Exception as e:
+        log.exception_logging(e)
 
 # Überprüfen der Werte
 
-def _loadmanagement_for_evu(current_used, required_power, required_current, phases):
+def _loadmanagement_for_evu(required_power, required_current, phases):
     """ führt die Überprüfung für das Lastmanagement der EVU durch und prüft dabei die maximale Stromstärke, maximalen Bezug und maximale Schieflast, falls aktiv.
 
     Parameter
     ---------
-    current_used: list
-        genutzter Strom
     required_power: float
         Leistung, mit der geladen werden soll
     required_current: list
@@ -255,39 +225,39 @@ def _loadmanagement_for_evu(current_used, required_power, required_current, phas
         Phasen, mit denen geladen werden soll
     Return
     ------
-    loadmanagement, consumption_left, current_used: bool, int, list
+    loadmanagement: bool
         Lastmanagement aktiv/inaktiv, verbleibende verfügbare Leistung, genutzter Strom
     """
-    global max_current_overshoot
-    global max_overshoot_counter
-    global max_overshoot_phase
-    # Wenn das Lastmanagement einmal aktiv gesetzt wurde, darf es nicht mehr zurück gesetzt werden.
-    loadmanagement_all_conditions = False
-    loadmanagement, consumption_left = _check_max_power(required_power)
-    if loadmanagement == True:
-        loadmanagement_all_conditions = True
-        overshoot = (consumption_left*-1) /230 / phases
-        if max_current_overshoot < overshoot:
-            max_current_overshoot = overshoot
-            max_overshoot_counter = "counter0"
-            max_overshoot_phase = 0
-    loadmanagement, current_used_counter, overshoot, phase = _check_max_current("counter0", required_current, phases)
-    if loadmanagement == False:
-        current_used["counter0"] = current_used_counter
-    else:
-        loadmanagement_all_conditions = True
-        if max_current_overshoot < overshoot:
-            max_current_overshoot = overshoot
-            max_overshoot_counter = "counter0"
-            max_overshoot_phase = phase
-    loadmanagement, overshoot, phase = _check_unbalanced_load(current_used_counter)
-    if loadmanagement == True:
-        loadmanagement_all_conditions = True
-        if max_current_overshoot < overshoot:
-            max_current_overshoot = overshoot
-            max_overshoot_counter = "counter0"
-            max_overshoot_phase = phase
-    return loadmanagement_all_conditions, consumption_left, current_used
+    max_current_overshoot = 0
+    max_overshoot_phase = 0
+    consumption_left = 0
+    global overloaded_counters
+    try:
+        # Wenn das Lastmanagement einmal aktiv gesetzt wurde, darf es nicht mehr zurück gesetzt werden.
+        loadmanagement_all_conditions = False
+        loadmanagement, consumption_left = _check_max_power(required_power)
+        if loadmanagement == True:
+            loadmanagement_all_conditions = True
+            overshoot = (consumption_left*-1) /230 / 3
+            if max_current_overshoot < overshoot:
+                max_current_overshoot = overshoot
+                max_overshoot_phase = 0
+        loadmanagement, overshoot, phase = _check_max_current("counter0", required_current, phases)
+        if loadmanagement == True:
+            loadmanagement_all_conditions = True
+            if max_current_overshoot < overshoot:
+                max_current_overshoot = overshoot
+                max_overshoot_phase = phase
+        loadmanagement, overshoot, phase = _check_unbalanced_load(data.counter_data["counter0"].data["set"]["current_used"])
+        if loadmanagement == True:
+            loadmanagement_all_conditions = True
+            if max_current_overshoot < overshoot:
+                max_current_overshoot = overshoot
+                max_overshoot_phase = phase
+        overloaded_counters["counter0"] = [max_current_overshoot, max_overshoot_phase]
+        return loadmanagement_all_conditions
+    except Exception as e:
+        log.exception_logging(e)
 
 def _check_max_power(required_power):
     """ prüft, dass die maximale Leistung nicht überschritten wird.
@@ -303,10 +273,11 @@ def _check_max_power(required_power):
     """
     try:
         consumption_left = data.counter_data["counter0"].data["set"]["consumption_left"] - required_power
+        data.counter_data["counter0"].data["set"]["consumption_left"] = consumption_left
+        log.message_debug_log("debug", str(data.counter_data["counter0"].data["set"]["consumption_left"])+"W EVU-Bezugs-Leistung, die fuer die folgenden Durchlaufe uebrig ist.")
         if consumption_left >= 0:
             return False, consumption_left
         else:
-            log.message_debug_log("warning", "Benoetigte Leistung "+str(required_power)+" ueberschreitet den zulaessigen Bezug um "+str((consumption_left*-1))+"W.")
             return True, consumption_left
     except Exception as e:
         log.exception_logging(e)
@@ -326,8 +297,6 @@ def _check_max_current(counter, required_current, phases):
     ------
     loadmanagement: bool
         Lastmanagement aktiv/inaktiv
-    current_used: list
-        Verwendeter Strom 
     max_current_overshoot: float
         maximale Überschreitung des zulässigen Stroms
     phase: int
@@ -345,9 +314,10 @@ def _check_max_current(counter, required_current, phases):
                 if (current_used[n]-data.counter_data[counter].data["config"]["max_current"][n]) > max_current_overshoot:
                     max_current_overshoot = current_used[n]-data.counter_data[counter].data["config"]["max_current"][n]
                 loadmanagement = True
-                log.message_debug_log("warning", "Benoetigte Stromstaerke "+str(required_current[n])+" ueberschreitet die zulaessige Stromstaerke an Phase "+str(n)+ " um "+str((current_used[n]*-1))+"A.")
+                log.message_debug_log("warning", "Benoetigte Stromstaerke "+str(required_current)+" ueberschreitet die zulaessige Stromstaerke an Phase "+str(n)+ " um "+str((current_used[n]*-1))+"A.")
                 break
-        return loadmanagement, current_used, max_current_overshoot, current_used.index(max(current_used))
+        data.counter_data[counter].data["set"]["current_used"] = current_used
+        return loadmanagement, max_current_overshoot, current_used.index(max(current_used))
     except Exception as e:
         log.exception_logging(e)
 
