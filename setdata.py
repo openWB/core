@@ -74,18 +74,22 @@ class setData():
         collection = list/dict
             Angabe, ob und welche Kollektion erwartet wird
         """
+        valid = False
         if msg.payload:
             value = json.loads(str(msg.payload.decode("utf-8")))
             if collection != None:
-                    self._validate_collection_value(msg, data_type, ranges, collection)
+                    if self._validate_collection_value(msg, data_type, ranges, collection) == True:
+                        valid = True
             elif data_type == str:
-                if isinstance(value, str) == False:
+                if isinstance(value, str) == True:
+                    valid = True
+                else:
                     log.message_debug_log("error", "Payload ungueltig: Topic "+str(msg.topic)+", Payload "+str(value)+" sollte ein String sein.")
-                    return
-            elif self._validate_min_max_value(value, msg, data_type, ranges) == False:
-                return 
-            pub.pub(msg.topic.replace('set/', '', 1), value)
-            pub.pub(msg.topic, "")
+            elif self._validate_min_max_value(value, msg, data_type, ranges) == True:
+                valid = True 
+            if valid == True:
+                pub.pub(msg.topic.replace('set/', '', 1), value)
+                pub.pub(msg.topic, "")
 
     def _validate_collection_value(self, msg, data_type, ranges = None, collection = None):
         """ prüft, ob die Liste vom angegebenen Typ ist und ob Minimal- und Maximalwert eingehalten werden.
@@ -103,22 +107,23 @@ class setData():
         collection = list/dict
             Angabe, ob und welche Kollektion erwartet wird
         """
+        valid = False
         value = json.loads(str(msg.payload.decode("utf-8")))
         if isinstance(value, list) == True:
             for item in value:
                 if self._validate_min_max_value(item, msg, data_type, ranges) == False:
                     break
             else:
-                pub.pub(msg.topic.replace('set/', '', 1), value)
+                valid = True
         elif isinstance(value, dict) == True:
             for item in value.values():
                 if self._validate_min_max_value(item, msg, data_type, ranges) == False:
                     break
             else:
-                pub.pub(msg.topic.replace('set/', '', 1), value)
-                pub.pub(msg.topic, "")
+                valid = True
         else:
             log.message_debug_log("error", "Payload ungueltig: Topic "+str(msg.topic)+", Payload "+str(value)+" sollte eine Kollektion vom Typ "+str(collection)+" sein.")
+        return valid
 
     def _validate_min_max_value(self, value, msg, data_type, ranges = None):
         """ prüft, ob der Payload Minimal- und Maximalwert einhält.
@@ -136,30 +141,30 @@ class setData():
         max_value= int/float
             Maximalwert
         """
+        valid = True
         # Wenn es ein Float erwartet wird, kann auch ein Int akzeptiert werden. Da dies automatisch umgewandelt wird, falls erfoderlich.
         if isinstance(value, data_type) == True or (data_type == float and isinstance(value, int) == True):
-            if ranges == None:
-                return True
-            else:
+            if ranges != None:
                 for range in ranges:
                     if range[0] != None and range[1] != None:
                         if range[0] <= value <= range[1]:
-                            return True
+                            break
                     elif range[0] != None:
                         if value >= range[0]:
-                            return True
+                            break
                     elif range[1] != None:
                         if value <= range[1]:
-                            return True
+                            break
                 else:
                     log.message_debug_log("error", "Payload ungueltig: Topic "+str(msg.topic)+", Payload "+str(value)+" liegt in keinem der angegebenen Wertebereiche.")
+                    valid = False
         else:
             if data_type == int:
                 log.message_debug_log("error", "Payload ungueltig: Topic "+str(msg.topic)+", Payload "+str(value)+" sollte ein Int sein.")
             elif data_type == float:
                 log.message_debug_log("error", "Payload ungueltig: Topic "+str(msg.topic)+", Payload "+str(value)+" sollte ein Float sein.")
-            return False
-        
+            valid = False
+        return valid
  
     def process_vehicle_topic(self, client, userdata, msg):
         """ Handler für die EV-Topics
