@@ -74,6 +74,19 @@ class control():
         except Exception as e:
             log.exception_logging(e)
 
+    def _reduce_used_evu_overhang(self):
+        """ prüft, ob für LP ohne Einspeisungsgrenze noch EVU-Überschuss zurückgenommen werden muss und dann für die LP mit Einspeiungsgrenze.
+        """
+        try:
+            if data.pv_data["all"].overhang_left != 0:
+                if data.pv_data["all"].overhang_left() < 0:
+                    self._distribute_remianing_overhang(True)
+                if (data.pv_data["all"].overhang_left() - data.general_data["general"].data["chargemode_config"]["pv_charging"]["feed_in_yield"]) < 0:
+                    self._distribute_remianing_overhang(False)
+            data.pv_data["all"].put_stats()
+        except Exception as e:
+            log.exception_logging(e)
+
     def _check_loadmanagement(self):
         """ prüft, ob an einem der Zähler das Lastmanagement aktiv ist.
         """
@@ -119,107 +132,6 @@ class control():
                 # Ladepunkte, die nicht mit Maximalstromstärke laden, können wieder hochgeregelt werden.
                 for mode in self.chargemodes[:-4]:
                     self._adjust_chargepoints(mode)
-        except Exception as e:
-            log.exception_logging(e)
-
-    def _manage_distribution(self):
-        """ Überschuss für Ladepunkte verwenden, die noch nicht laden bzw. LP mit niedrigerer Ladepriorität abschalten, um LP mit höherer Priorität zu laden.
-        """
-        try:
-            while True:
-                current_mode = None
-                log.message_debug_log("debug", "## Zuteilung des Ueberschusses")
-                for mode in self.chargemodes:
-                    state, chargepoint, overloaded_counters = self._distribute_overhang(mode)
-                    if state == True:
-                        # Lastmanagement verhindert Ladung
-                        current_mode = self.chargemodes.index(mode)
-                        break
-                else:
-                    # kein Ladepunkt, der noch auf Zuteilung wartet
-                    log.message_debug_log("debug", "## Zuteilung beendet, da kein Ladepunkt mehr auf Zuteilung wartet.")
-                    break
-                # Zähler mit der größten Überlastung ermitteln
-                overloaded_counters = sorted(overloaded_counters.items(), key=lambda e: e[1][1], reverse = True)
-                # Ergebnisse des Lastmanagements holen, das beim Einschalten durchgeführt worden ist. Es ist ausreichend, 
-                # Zähler mit der größten Überlastung im Pfad zu betrachten. Kann diese nicht eliminiert werden, kann der Ladpunkt nicht laden. 
-                chargepoints = loadmanagement.perform_loadmanagement(overloaded_counters[0][0])
-                remaining_current_overshoot = overloaded_counters[0][1][0]
-                # LP mit niedrigerer Priorität reduzieren und ggf. stoppen
-                for mode in reversed(self.chargemodes[(current_mode+1):-4]):
-                    remaining_current_overshoot = self._down_regulation(mode, chargepoints, remaining_current_overshoot, overloaded_counters[0][1][1], prevent_stop = False)
-                    if remaining_current_overshoot == 0:
-                        break
-                else:
-                    # Ladepunkt, der gestartet werden soll reduzieren
-                    remaining_current_overshoot = self._perform_down_regulation([chargepoint], remaining_current_overshoot, overloaded_counters[0][1][1], prevent_stop = True)
-                    # Ladepunkte mit gleicher Priorität reduzieren. Diese dürfen nicht gestoppt werden.
-                    if remaining_current_overshoot != 0:
-                        remaining_current_overshoot = self._down_regulation(self.chargemodes[current_mode], chargepoints, remaining_current_overshoot, overloaded_counters[0][1][1], prevent_stop = True)
-                    if remaining_current_overshoot != 0:
-                        # Ladepunkt darf nicht laden
-                        remaining_current_overshoot = self._perform_down_regulation([chargepoint], remaining_current_overshoot, overloaded_counters[0][1][1], prevent_stop = False)
-                        # keine weitere Zuteilung
-                        log.message_debug_log("debug", "## Zuteilung beendet, da Lastmanagement aktiv und es kann kein LP mehr gestoppt werden.")
-                        break
-                    # Ladepunkte, die reduziert wurden und trotzdem keine weitere Ladung gestartet werden konnte, können wieder hochgeregelt werden.
-                    for mode in self.chargemodes[:-4]:
-                        self._adjust_chargepoints(mode)
-        except Exception as e:
-            log.exception_logging(e)
-
-    def _distribute_overhang(self, mode_tuple):
-        """ verteilt den EVU-Überschuss und den maximalen Bezug auf die Ladepunkte, die dem Modus im Tupel entsprechen. 
-        Die Funktion endet, wenn das Lastmanagement eingereift oder keine Ladepunkte mehr in diesem Modus vorhanden sind. 
-        Die Zuteilung erfolgt gemäß der Reihenfolge in _get_preferenced_chargepoint.
-
-        Parameter
-        ---------
-        mode_tuple: tuple
-            enthält den eingestellten Lademodus, den tatsächlichen Lademodus und die Priorität
-
-        Returns
-        -------
-        True: Lastmanagement hat eine Zuteilung verhindert.
-        False: Es gibt keine LP, der auf Zuteilung wartet.
-        """
-        mode=mode_tuple[0]
-        submode = mode_tuple[1]
-        prio = mode_tuple[2]
-        try:
-            # LP, der abgeschaltet werden soll
-            preferenced_chargepoints = []
-            # enthält alle LP, auf die das Tupel zutrifft
-            valid_chargepoints = {}
-            for cp in data.cp_data:
-                if "cp" in cp:
-                    chargepoint = data.cp_data[cp]
-                    if chargepoint.data["set"]["charging_ev"] != -1:
-                        charging_ev = chargepoint.data["set"]["charging_ev"]
-                        #set-> current enthält einen Wert, wenn das EV in diesem Zyklus eingeschaltet werden soll, aktuell aber noch nicht lädt.
-                        if "current" in chargepoint.data["set"]:
-                            if chargepoint.data["set"]["current"] != 0:
-                                continue
-                        if( (charging_ev.charge_template.data["prio"] == prio) and 
-                            (charging_ev.charge_template.data["chargemode"]["selected"] == mode or mode == None) and 
-                            (charging_ev.data["control_parameter"]["chargemode"] == submode)):
-                            valid_chargepoints[chargepoint] = None
-            preferenced_chargepoints = self._get_preferenced_chargepoint(valid_chargepoints, True)
-
-            if len(preferenced_chargepoints) == 0:
-                # Es gibt keine Ladepunkte in diesem Lademodus, die noch nicht laden.
-                return False, None, None
-            else:
-                for cp in preferenced_chargepoints:
-                    overloaded_counters = self._distribute_power_to_cp(cp)
-                    log.message_debug_log("info", "LP: "+str(cp.cp_num)+", Ladestrom: "+str(cp.data["set"]["current"])+"A, Phasen: "+str(cp.data["set"]["phases_to_use"])+", Ladeleistung: "+str((cp.data["set"]["phases_to_use"]*cp.data["set"]["current"]*230))+"W")
-                    data.counter_data["counter0"].print_stats()
-                    if data.counter_data["all"].data["set"]["loadmanagement"] == True:
-                        #Lastmanagement hat eingegriffen und die Zuteilung verhindert
-                        log.message_debug_log("debug", "Zuteilung gestoppt, da für die Ladung an LP"+str(cp.cp_num)+" erst ein Ladepunkt mit gleicher/niedrigerer Prioritaet reduziert/gestoppt werden muss.")
-                        return True, cp, overloaded_counters
-                else:
-                    return False, None, None
         except Exception as e:
             log.exception_logging(e)
 
@@ -463,57 +375,121 @@ class control():
                         data.pv_data["all"].switch_off_check_threshold(cp, self._get_bat_and_evu_overhang())
         except Exception as e:
             log.exception_logging(e)
-    
-    def _get_preferenced_chargepoint(self, valid_chargepoints, start):
-        """ermittelt aus dem Dictionary den Ladepunkt, der eindeutig die Bedingung erfüllt. Die Bedingungen sind:
-        geringste Mindeststromstärke, niedrigster SoC, frühester Ansteck-Zeitpunkt(Einschalten)/Lademenge(Abschalten), niedrigste Ladepunktnummer.
-        Parameter
-        ---------
-        valid_chargepoints: dict
-            enthält alle Ladepunkte gleicher Priorität und Lademodus, die noch nicht laden und keine Zuteilung haben.
-        start: bool
-            Soll die Ladung gestoppt oder gestartet werden?
 
-        Return
-        ------
-        preferenced_chargepoints: list
-            Liste der Ladepunkte in der Reihenfolge, in der sie geladen/gestoppt werden sollen.
+    def _check_auto_phase_switch(self):
+        """ geht alle LP durch und prüft, ob eine Ladung aktiv ist, ob automatische Phasenumschaltung 
+        möglich ist und ob ob ein Timer gestartet oder gestoppt werden muss oder ob ein Timer abgelaufen ist.
         """
         try:
+            for cp in data.cp_data:
+                if "cp" in cp:
+                    if data.cp_data[cp].data["set"]["charging_ev"] != -1:
+                        chargepoint = data.cp_data[cp]
+                        if (chargepoint.data["config"]["auto_phase_switch_hw"] == True and 
+                                chargepoint.data["get"]["charge_state"] == True and 
+                                chargepoint.data["set"]["charging_ev"].data["control_parameter"]["chargemode"] == "pv_charging"):
+                            chargepoint.data["set"]["phases_to_use"] = chargepoint.data["set"]["charging_ev"].auto_phase_switch(chargepoint.data["get"]["phases_in_use"], chargepoint.data["get"]["current"])
+        except Exception as e:
+            log.exception_logging(e)
+
+    def _manage_distribution(self):
+        """ Überschuss für Ladepunkte verwenden, die noch nicht laden bzw. LP mit niedrigerer Ladepriorität abschalten, um LP mit höherer Priorität zu laden.
+        """
+        try:
+            while True:
+                current_mode = None
+                log.message_debug_log("debug", "## Zuteilung des Ueberschusses")
+                for mode in self.chargemodes:
+                    state, chargepoint, overloaded_counters = self._distribute_overhang(mode)
+                    if state == True:
+                        # Lastmanagement verhindert Ladung
+                        current_mode = self.chargemodes.index(mode)
+                        break
+                else:
+                    # kein Ladepunkt, der noch auf Zuteilung wartet
+                    log.message_debug_log("debug", "## Zuteilung beendet, da kein Ladepunkt mehr auf Zuteilung wartet.")
+                    break
+                # Zähler mit der größten Überlastung ermitteln
+                overloaded_counters = sorted(overloaded_counters.items(), key=lambda e: e[1][1], reverse = True)
+                # Ergebnisse des Lastmanagements holen, das beim Einschalten durchgeführt worden ist. Es ist ausreichend, 
+                # Zähler mit der größten Überlastung im Pfad zu betrachten. Kann diese nicht eliminiert werden, kann der Ladpunkt nicht laden. 
+                chargepoints = loadmanagement.perform_loadmanagement(overloaded_counters[0][0])
+                remaining_current_overshoot = overloaded_counters[0][1][0]
+                # LP mit niedrigerer Priorität reduzieren und ggf. stoppen
+                for mode in reversed(self.chargemodes[(current_mode+1):-4]):
+                    remaining_current_overshoot = self._down_regulation(mode, chargepoints, remaining_current_overshoot, overloaded_counters[0][1][1], prevent_stop = False)
+                    if remaining_current_overshoot == 0:
+                        break
+                else:
+                    # Ladepunkt, der gestartet werden soll reduzieren
+                    remaining_current_overshoot = self._perform_down_regulation([chargepoint], remaining_current_overshoot, overloaded_counters[0][1][1], prevent_stop = True)
+                    # Ladepunkte mit gleicher Priorität reduzieren. Diese dürfen nicht gestoppt werden.
+                    if remaining_current_overshoot != 0:
+                        remaining_current_overshoot = self._down_regulation(self.chargemodes[current_mode], chargepoints, remaining_current_overshoot, overloaded_counters[0][1][1], prevent_stop = True)
+                    if remaining_current_overshoot != 0:
+                        # Ladepunkt darf nicht laden
+                        remaining_current_overshoot = self._perform_down_regulation([chargepoint], remaining_current_overshoot, overloaded_counters[0][1][1], prevent_stop = False)
+                        # keine weitere Zuteilung
+                        log.message_debug_log("debug", "## Zuteilung beendet, da Lastmanagement aktiv und es kann kein LP mehr gestoppt werden.")
+                        break
+                    # Ladepunkte, die reduziert wurden und trotzdem keine weitere Ladung gestartet werden konnte, können wieder hochgeregelt werden.
+                    for mode in self.chargemodes[:-4]:
+                        self._adjust_chargepoints(mode)
+        except Exception as e:
+            log.exception_logging(e)
+
+    def _distribute_overhang(self, mode_tuple):
+        """ verteilt den EVU-Überschuss und den maximalen Bezug auf die Ladepunkte, die dem Modus im Tupel entsprechen. 
+        Die Funktion endet, wenn das Lastmanagement eingereift oder keine Ladepunkte mehr in diesem Modus vorhanden sind. 
+        Die Zuteilung erfolgt gemäß der Reihenfolge in _get_preferenced_chargepoint.
+
+        Parameter
+        ---------
+        mode_tuple: tuple
+            enthält den eingestellten Lademodus, den tatsächlichen Lademodus und die Priorität
+
+        Returns
+        -------
+        True: Lastmanagement hat eine Zuteilung verhindert.
+        False: Es gibt keine LP, der auf Zuteilung wartet.
+        """
+        mode=mode_tuple[0]
+        submode = mode_tuple[1]
+        prio = mode_tuple[2]
+        try:
+            # LP, der abgeschaltet werden soll
             preferenced_chargepoints = []
-            # Bedingungen in der Reihenfolge, in der sie geprüft werden. 3. Bedingung, ist abhängig davon, ob ein- oder ausgeschaltet werden soll.
-            if start == True:
-                condition_types = ("min_current", "soc", "plug_in", "cp_num") 
+            # enthält alle LP, auf die das Tupel zutrifft
+            valid_chargepoints = {}
+            for cp in data.cp_data:
+                if "cp" in cp:
+                    chargepoint = data.cp_data[cp]
+                    if chargepoint.data["set"]["charging_ev"] != -1:
+                        charging_ev = chargepoint.data["set"]["charging_ev"]
+                        #set-> current enthält einen Wert, wenn das EV in diesem Zyklus eingeschaltet werden soll, aktuell aber noch nicht lädt.
+                        if "current" in chargepoint.data["set"]:
+                            if chargepoint.data["set"]["current"] != 0:
+                                continue
+                        if( (charging_ev.charge_template.data["prio"] == prio) and 
+                            (charging_ev.charge_template.data["chargemode"]["selected"] == mode or mode == None) and 
+                            (charging_ev.data["control_parameter"]["chargemode"] == submode)):
+                            valid_chargepoints[chargepoint] = None
+            preferenced_chargepoints = self._get_preferenced_chargepoint(valid_chargepoints, True)
+
+            if len(preferenced_chargepoints) == 0:
+                # Es gibt keine Ladepunkte in diesem Lademodus, die noch nicht laden.
+                return False, None, None
             else:
-                condition_types = ("min_current", "soc", "charged_since_plugged", "cp_num") 
-            # Bedingung, die geprüft wird (entspricht Index von condition_types)
-            condition = 0
-            if len(valid_chargepoints) > 0:
-                while len(valid_chargepoints) > 0:
-                    # entsprechend der Bedingung die Values im Dictionary füllen
-                    if condition_types[condition] == "min_current":
-                        valid_chargepoints.update((cp, cp.data["set"]["charging_ev"].data["control_parameter"]["required_current"]) for cp, val in valid_chargepoints.items())
-                    elif condition_types[condition] == "soc":
-                        valid_chargepoints.update((cp, cp.data["set"]["charging_ev"].data["get"]["soc"]) for cp, val in valid_chargepoints.items())
-                    elif condition_types[condition] == "plug_in":
-                        valid_chargepoints.update((cp, cp.data["get"]["plug_time"]) for cp, val in valid_chargepoints.items())
-                    elif condition_types[condition] == "charged_since_plugged":
-                        valid_chargepoints.update((cp, cp.data["get"]["charged_since_plugged_counter"]) for cp, val in valid_chargepoints.items())
-                    else:
-                        valid_chargepoints.update((cp, cp.cp_num) for cp, val in valid_chargepoints.items())
-
-                    # kleinsten Value im Dictionary ermitteln
-                    min_value = min(valid_chargepoints.values())
-                    # dazugehörige Keys ermitteln
-                    min_cp = [key for key in valid_chargepoints if valid_chargepoints[key] == min_value]
-                    if len(min_cp) > 1:
-                        # Wenn es mehrere LP gibt, die den gleichen Minimalwert haben, nächste Bedingung prüfen.
-                        condition += 1
-                    else:
-                        preferenced_chargepoints.append(min_cp[0])
-                        valid_chargepoints.pop(min_cp[0])
-
-            return preferenced_chargepoints
+                for cp in preferenced_chargepoints:
+                    overloaded_counters = self._distribute_power_to_cp(cp)
+                    log.message_debug_log("info", "LP: "+str(cp.cp_num)+", Ladestrom: "+str(cp.data["set"]["current"])+"A, Phasen: "+str(cp.data["set"]["phases_to_use"])+", Ladeleistung: "+str((cp.data["set"]["phases_to_use"]*cp.data["set"]["current"]*230))+"W")
+                    data.counter_data["counter0"].print_stats()
+                    if data.counter_data["all"].data["set"]["loadmanagement"] == True:
+                        #Lastmanagement hat eingegriffen und die Zuteilung verhindert
+                        log.message_debug_log("debug", "Zuteilung gestoppt, da für die Ladung an LP"+str(cp.cp_num)+" erst ein Ladepunkt mit gleicher/niedrigerer Prioritaet reduziert/gestoppt werden muss.")
+                        return True, cp, overloaded_counters
+                else:
+                    return False, None, None
         except Exception as e:
             log.exception_logging(e)
 
@@ -598,33 +574,6 @@ class control():
         except Exception as e:
             log.exception_logging(e)
 
-    def _check_cp_without_feed_in_is_prioritised(self, chargepoint):
-        """ Wenn ein LP im Sbumodus PV-Laden nicht die Maximalstromstärke zugeteilt bekommen hat, 
-        darf ein LP mit Einspeiungsgrenze nicht eingeschaltet werden.
-
-        Parameter
-        ---------
-        chargepoint: dict
-            Daten des Ladepunkts
-
-        Return
-        ------
-        True: LP darf geladen werden.
-        False: LP mit Einspeisungsgrenze darf nicht geladen werden.
-        """
-        try:
-            if chargepoint.data["set"]["charging_ev"].charge_template.data["chargemode"]["pv_charging"]["feed_in_limit"] == True:
-                for cp in data.cp_data:
-                    if "cp" in cp:
-                        if data.cp_data[cp].data["set"]["charging_ev"]!= -1:
-                            charging_ev = data.cp_data[cp].data["set"]["charging_ev"]
-                            if charging_ev.data["control_parameter"]["chargemode"] == "pv_charging" and charging_ev.charge_template.data["chargemode"]["pv_charging"]["feed_in_limit"] == False:
-                                if data.cp_data[cp].data["set"]["current"] != charging_ev.ev_template.data["max_current"]:
-                                    return False
-            return True
-        except Exception as e:
-            log.exception_logging(e)
-
     def _distribute_unused_evu_overhang(self):
         """ prüft, ob für LP ohne Einspeisungsgrenze noch EVU-Überschuss übrig ist und dann für die LP mit Einspeiungsgrenze.
         """
@@ -634,19 +583,6 @@ class control():
                     self._distribute_remianing_overhang(False)
                 if (data.pv_data["all"].overhang_left() - data.general_data["general"].data["chargemode_config"]["pv_charging"]["feed_in_yield"]) > 0:
                     self._distribute_remianing_overhang(True)
-            data.pv_data["all"].put_stats()
-        except Exception as e:
-            log.exception_logging(e)
-
-    def _reduce_used_evu_overhang(self):
-        """ prüft, ob für LP ohne Einspeisungsgrenze noch EVU-Überschuss zurückgenommen werden muss und dann für die LP mit Einspeiungsgrenze.
-        """
-        try:
-            if data.pv_data["all"].overhang_left != 0:
-                if data.pv_data["all"].overhang_left() < 0:
-                    self._distribute_remianing_overhang(True)
-                if (data.pv_data["all"].overhang_left() - data.general_data["general"].data["chargemode_config"]["pv_charging"]["feed_in_yield"]) < 0:
-                    self._distribute_remianing_overhang(False)
             data.pv_data["all"].put_stats()
         except Exception as e:
             log.exception_logging(e)
@@ -720,23 +656,87 @@ class control():
         except Exception as e:
             log.exception_logging(e)
 
-    def _check_auto_phase_switch(self):
-        """ geht alle LP durch und prüft, ob eine Ladung aktiv ist, ob automatische Phasenumschaltung 
-        möglich ist und ob ob ein Timer gestartet oder gestoppt werden muss oder ob ein Timer abgelaufen ist.
+    # Helperfunctions
+
+    def _get_preferenced_chargepoint(self, valid_chargepoints, start):
+        """ermittelt aus dem Dictionary den Ladepunkt, der eindeutig die Bedingung erfüllt. Die Bedingungen sind:
+        geringste Mindeststromstärke, niedrigster SoC, frühester Ansteck-Zeitpunkt(Einschalten)/Lademenge(Abschalten), niedrigste Ladepunktnummer.
+        Parameter
+        ---------
+        valid_chargepoints: dict
+            enthält alle Ladepunkte gleicher Priorität und Lademodus, die noch nicht laden und keine Zuteilung haben.
+        start: bool
+            Soll die Ladung gestoppt oder gestartet werden?
+
+        Return
+        ------
+        preferenced_chargepoints: list
+            Liste der Ladepunkte in der Reihenfolge, in der sie geladen/gestoppt werden sollen.
         """
         try:
-            for cp in data.cp_data:
-                if "cp" in cp:
-                    if data.cp_data[cp].data["set"]["charging_ev"] != -1:
-                        chargepoint = data.cp_data[cp]
-                        if (chargepoint.data["config"]["auto_phase_switch_hw"] == True and 
-                                chargepoint.data["get"]["charge_state"] == True and 
-                                chargepoint.data["set"]["charging_ev"].data["control_parameter"]["chargemode"] == "pv_charging"):
-                            chargepoint.data["set"]["phases_to_use"] = chargepoint.data["set"]["charging_ev"].auto_phase_switch(chargepoint.data["get"]["phases_in_use"], chargepoint.data["get"]["current"])
+            preferenced_chargepoints = []
+            # Bedingungen in der Reihenfolge, in der sie geprüft werden. 3. Bedingung, ist abhängig davon, ob ein- oder ausgeschaltet werden soll.
+            if start == True:
+                condition_types = ("min_current", "soc", "plug_in", "cp_num") 
+            else:
+                condition_types = ("min_current", "soc", "charged_since_plugged", "cp_num") 
+            # Bedingung, die geprüft wird (entspricht Index von condition_types)
+            condition = 0
+            if len(valid_chargepoints) > 0:
+                while len(valid_chargepoints) > 0:
+                    # entsprechend der Bedingung die Values im Dictionary füllen
+                    if condition_types[condition] == "min_current":
+                        valid_chargepoints.update((cp, cp.data["set"]["charging_ev"].data["control_parameter"]["required_current"]) for cp, val in valid_chargepoints.items())
+                    elif condition_types[condition] == "soc":
+                        valid_chargepoints.update((cp, cp.data["set"]["charging_ev"].data["get"]["soc"]) for cp, val in valid_chargepoints.items())
+                    elif condition_types[condition] == "plug_in":
+                        valid_chargepoints.update((cp, cp.data["get"]["plug_time"]) for cp, val in valid_chargepoints.items())
+                    elif condition_types[condition] == "charged_since_plugged":
+                        valid_chargepoints.update((cp, cp.data["get"]["charged_since_plugged_counter"]) for cp, val in valid_chargepoints.items())
+                    else:
+                        valid_chargepoints.update((cp, cp.cp_num) for cp, val in valid_chargepoints.items())
+
+                    # kleinsten Value im Dictionary ermitteln
+                    min_value = min(valid_chargepoints.values())
+                    # dazugehörige Keys ermitteln
+                    min_cp = [key for key in valid_chargepoints if valid_chargepoints[key] == min_value]
+                    if len(min_cp) > 1:
+                        # Wenn es mehrere LP gibt, die den gleichen Minimalwert haben, nächste Bedingung prüfen.
+                        condition += 1
+                    else:
+                        preferenced_chargepoints.append(min_cp[0])
+                        valid_chargepoints.pop(min_cp[0])
+
+            return preferenced_chargepoints
         except Exception as e:
             log.exception_logging(e)
 
-    # Helperfunctions
+    def _check_cp_without_feed_in_is_prioritised(self, chargepoint):
+        """ Wenn ein LP im Sbumodus PV-Laden nicht die Maximalstromstärke zugeteilt bekommen hat, 
+        darf ein LP mit Einspeiungsgrenze nicht eingeschaltet werden.
+
+        Parameter
+        ---------
+        chargepoint: dict
+            Daten des Ladepunkts
+
+        Return
+        ------
+        True: LP darf geladen werden.
+        False: LP mit Einspeisungsgrenze darf nicht geladen werden.
+        """
+        try:
+            if chargepoint.data["set"]["charging_ev"].charge_template.data["chargemode"]["pv_charging"]["feed_in_limit"] == True:
+                for cp in data.cp_data:
+                    if "cp" in cp:
+                        if data.cp_data[cp].data["set"]["charging_ev"]!= -1:
+                            charging_ev = data.cp_data[cp].data["set"]["charging_ev"]
+                            if charging_ev.data["control_parameter"]["chargemode"] == "pv_charging" and charging_ev.charge_template.data["chargemode"]["pv_charging"]["feed_in_limit"] == False:
+                                if data.cp_data[cp].data["set"]["current"] != charging_ev.ev_template.data["max_current"]:
+                                    return False
+            return True
+        except Exception as e:
+            log.exception_logging(e)
 
     def _get_phases(self, chargepoint):
         """ ermittelt die maximal mögliche Anzahl Phasen, die von Konfiguration, Auto und Ladepunkt unterstützt wird.
