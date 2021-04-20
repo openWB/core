@@ -313,7 +313,7 @@ def _check_max_current(counter, required_current, phases):
                 if (current_used[n]-data.counter_data[counter].data["config"]["max_current"][n]) > max_current_overshoot:
                     max_current_overshoot = current_used[n]-data.counter_data[counter].data["config"]["max_current"][n]
                 loadmanagement = True
-                log.message_debug_log("warning", "Benoetigte Stromstaerke "+str(required_current)+" ueberschreitet die zulaessige Stromstaerke an Phase "+str(n)+ " um "+str((current_used[n]*-1))+"A.")
+                log.message_debug_log("warning", "Benoetigte Stromstaerke "+str(required_current)+" ueberschreitet die zulaessige Stromstaerke an Phase "+str(n)+ " um "+str(max_current_overshoot)+"A.")
                 break
         data.counter_data[counter].data["set"]["current_used"] = current_used
         return loadmanagement, max_current_overshoot, current_used.index(max(current_used))
@@ -338,11 +338,11 @@ def _check_unbalanced_load(current_used):
         if data.general_data["general"].data["chargemode_config"]["unbalanced_load"] == True:
             min_current = min(current_used)
             max_current = max(current_used)
-            if (max_current - min_current) < data.general_data["general"].data["chargemode_config"]["unbalanced_load_limit"]:
+            if (max_current - min_current) <= data.general_data["general"].data["chargemode_config"]["unbalanced_load_limit"]:
                 return False, None, 0
             else:
                 max_current_overshoot = (max_current - min_current) - data.general_data["general"].data["chargemode_config"]["unbalanced_load_limit"]
                 log.message_debug_log("warning", "Schieflast wurde ueberschritten.")
-                return True, max_current_overshoot, current_used.index(max_current)
+                return True, max_current_overshoot, current_used.index(max_current)+1
     except Exception as e:
         log.exception_logging(e)

@@ -35,6 +35,22 @@ def pub_settings():
     pub.pub("openWB/chargepoint/template/2/ev", 2)
     pub.pub("openWB/chargepoint/template/2/rfid_enabling", 0)
 
+    #cp3
+    pub.pub("openWB/chargepoint/3/set/manual_lock", 0)
+    pub.pub("openWB/chargepoint/3/config/template", 3)
+    pub.pub("openWB/chargepoint/3/config/connected_phases", 3)
+    pub.pub("openWB/chargepoint/3/config/auto_phase_switch_hw", 1)
+    pub.pub("openWB/chargepoint/3/config/control_pilot_interruption_hw", 0)
+    pub.pub("openWB/chargepoint/3/get/rfid", 1234)
+    # cpt3
+    pub.pub("openWB/chargepoint/template/3/autolock/1/frequency/selected", "daily")
+    pub.pub("openWB/chargepoint/template/3/autolock/1/time", ["07:00", "11:15"])
+    pub.pub("openWB/chargepoint/template/3/autolock/1/active", 1)
+    pub.pub("openWB/chargepoint/template/3/autolock/wait_for_charging_end", 1)
+    pub.pub("openWB/chargepoint/template/3/autolock/active", 0)
+    pub.pub("openWB/chargepoint/template/3/ev", 3)
+    pub.pub("openWB/chargepoint/template/3/rfid_enabling", 0)
+
     #ev1
     pub.pub("openWB/vehicle/1/charge_template", 1)
     pub.pub("openWB/vehicle/1/ev_template", 1)
@@ -51,6 +67,14 @@ def pub_settings():
     pub.pub("openWB/vehicle/2/get/charged_since_plugged_kwh", 5)
     pub.pub("openWB/vehicle/2/match_ev/selected", "rfid")
     pub.pub("openWB/vehicle/2/match_ev/tag_id", 1234)
+    #ev3
+    pub.pub("openWB/vehicle/3/charge_template", 2)
+    pub.pub("openWB/vehicle/3/ev_template", 1)
+    pub.pub("openWB/vehicle/3/name", "car3")
+    pub.pub("openWB/vehicle/3/get/soc", 30)
+    pub.pub("openWB/vehicle/3/get/charged_since_plugged_kwh", 5)
+    pub.pub("openWB/vehicle/3/match_ev/selected", "rfid")
+    pub.pub("openWB/vehicle/3/match_ev/tag_id", 1234)
     #evt1
     pub.pub("openWB/vehicle/template/ev_template/1/min_current", 10)
     pub.pub("openWB/vehicle/template/ev_template/1/battery_capacity", 80)
@@ -102,10 +126,10 @@ def pub_settings():
     pub.pub("openWB/pv/1/get/counter", 500)
     
     #counter
-    hierarchy = [{"id":"counter0", "children":[{"id":"cp1", "children": []}, {"id":"cp2", "children": []}]}]
+    hierarchy = [{"id":"counter0", "children":[{"id":"cp1", "children": []}, {"id":"cp2", "children": []}, {"id":"cp3", "children": []}]}]
     pub.pub("openWB/counter/get/hierarchy", hierarchy)
-    pub.pub("openWB/counter/0/get/current", [5,5,5])
-    pub.pub("openWB/counter/0/config/max_consumption", 6000)
+    pub.pub("openWB/counter/0/get/current", [0,0,0])
+    pub.pub("openWB/counter/0/config/max_consumption", 60000)
     pub.pub("openWB/counter/0/config/max_current", [35, 35, 35])
 
     #bat
@@ -114,7 +138,7 @@ def pub_settings():
     #general
     pub.pub("openWB/general/chargemode_config/unbalanced_load", 1)
     pub.pub("openWB/general/chargemode_config/unbalanced_load_limit", 32)
-    pub.pub("openWB/general/chargemode_config/instant_charging/phases_to_use", 3)
+    pub.pub("openWB/general/chargemode_config/instant_charging/phases_to_use", 1)
     pub.pub("openWB/general/chargemode_config/pv_charging/bat_prio", 1)
     pub.pub("openWB/general/chargemode_config/pv_charging/switch_on_soc", 60)
     pub.pub("openWB/general/chargemode_config/pv_charging/switch_off_soc", 40)

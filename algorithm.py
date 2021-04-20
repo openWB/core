@@ -173,10 +173,15 @@ class control():
                             continue
                     if chargepoint.data["set"]["charging_ev"] != -1:
                         charging_ev = chargepoint.data["set"]["charging_ev"]
+                        # Wenn der LP erst in diesem Zyklus eingeschaltet wird, sind noch keine phases_in_use hinterlegt.
+                        if chargepoint.data["get"]["charge_state"] == False:
+                            phases = chargepoint.data["set"]["phases_to_use"]
+                        else:
+                            phases = chargepoint.data["get"]["phases_in_use"]
                         if((charging_ev.charge_template.data["prio"] == prio) and 
                                 (charging_ev.charge_template.data["chargemode"]["selected"] == mode or mode == None) and 
                                 (charging_ev.data["control_parameter"]["chargemode"] == submode) and
-                                (chargepoint.data["get"]["phases_in_use"] >= max_overshoot_phase)):
+                                (phases >= max_overshoot_phase)):
                             valid_chargepoints[chargepoint] = None
             preferenced_chargepoints = self._get_preferenced_chargepoint(valid_chargepoints, False)
             
