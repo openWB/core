@@ -59,8 +59,10 @@ class pv():
                     available_power = 0
                 else:
                     available_power = evu_overhang - control_range_center
-
-                log.message_debug_log("debug", str(available_power)+"W EVU-Ueberschuss, der für die Regelung verfuegbar ist, davon "+str(self.data["set"]["reserved_evu_overhang"])+"W fuer die Einschaltverzoegerung reservierte Leistung.")
+                if available_power > 0:
+                    log.message_debug_log("debug", str(available_power)+"W EVU-Ueberschuss, der fuer die Regelung verfuegbar ist, davon "+str(self.data["set"]["reserved_evu_overhang"])+"W fuer die Einschaltverzoegerung reservierte Leistung.")
+                else:
+                    log.message_debug_log("debug", "0W EVU-Ueberschuss, der fuer die Regelung verfuegbar ist, davon "+str(self.data["set"]["reserved_evu_overhang"])+"W fuer die Einschaltverzoegerung reservierte Leistung.")
             # nur allgemeiner PV-Key vorhanden, d.h. kein Modul konfiguriert
             else:
                 self.data["config"]["configured"]=False
