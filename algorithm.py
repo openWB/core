@@ -306,6 +306,11 @@ class control():
             if len(preferenced_chargepoints) != 0:
                 log.message_debug_log("debug", "## Ladepunkte, die nicht mit Maximalstromstaerke laden, wieder hochregeln.")
                 for cp in preferenced_chargepoints:
+                    # aktuelle Werte speichern (werden wieder hergestellt, wenn das Lastmanagement die Anpassung verhindert)
+                    counter_data_old = copy.deepcopy(data.counter_data)
+                    pv_data_old = copy.deepcopy(data.pv_data)
+                    bat_module_data = copy.deepcopy(data.bat_module_data)
+                    cp_data_old = copy.deepcopy(data.cp_data)
                     missing_current = cp.data["set"]["charging_ev"].data["control_parameter"]["required_current"] - cp.data["set"]["current"]
                     # Wenn der LP erst in diesem Zyklus eingeschaltet wird, sind noch keine phases_in_use hinterlegt.
                     if cp.data["get"]["phases_in_use"] == 0:
@@ -323,14 +328,19 @@ class control():
                             undo_missing_current = (overloaded_counters[0][1][0] * (3 - phases +1)) * -1
                         else:
                             undo_missing_current = overloaded_counters[0][1][0] * -1
-                        if undo_missing_current > missing_current:
-                            undo_missing_current = missing_current
+                        # Dies tritt nur ein, wenn Bezug möglich ist, dieser aber unter dem Offset liegt. Dann wird nämlich bei der Überlastung auch versucht, das Offfset zu erreichen.
+                        if undo_missing_current*-1 > missing_current:
+                            # Zustand von vor dem Lastmanagement wieder herstellen
+                            data.counter_data = counter_data_old
+                            data.pv_data = pv_data_old
+                            data.bat_module_data = bat_module_data
+                            data.cp_data = cp_data_old
+                            continue
                         required_power = 230 * phases * undo_missing_current
                         # Werte aktualisieren
                         loadmanagement.loadmanagement_for_cp(cp, required_power, undo_missing_current, phases)
                         self._process_data(cp, cp.data["set"]["current"] + missing_current + undo_missing_current, phases)
-                        if missing_current + undo_missing_current > 0.01:
-                            log.message_debug_log("debug", "Ladung an LP"+str(cp.cp_num)+" um "+str(missing_current)+"A angepasst.")
+                        log.message_debug_log("debug", "Ladung an LP"+str(cp.cp_num)+" um "+str(missing_current + undo_missing_current)+"A angepasst.")
                     else:
                         self._process_data(cp, cp.data["set"]["current"] + missing_current, phases)
                         log.message_debug_log("debug", "Ladung an LP"+str(cp.cp_num)+" um "+str(missing_current)+"A angepasst.")
