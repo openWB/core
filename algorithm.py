@@ -324,11 +324,11 @@ class control():
                         else:
                             undo_missing_current = overloaded_counters[0][1][0] * -1
                         required_power = 230 * phases * undo_missing_current
-
-                        if loadmanagement.loadmanagement_for_cp(cp, required_power, undo_missing_current, phases) == True:
-                            self._process_data(cp, cp.data["set"]["current"] + missing_current + undo_missing_current, phases)
-                            if missing_current + undo_missing_current > 0.01:
-                                log.message_debug_log("debug", "Ladung an LP"+str(cp.cp_num)+" um "+str(missing_current)+"A angepasst.")
+                        # Werte aktualisieren
+                        loadmanagement.loadmanagement_for_cp(cp, required_power, undo_missing_current, phases)
+                        self._process_data(cp, cp.data["set"]["current"] + missing_current + undo_missing_current, phases)
+                        if missing_current + undo_missing_current > 0.01:
+                            log.message_debug_log("debug", "Ladung an LP"+str(cp.cp_num)+" um "+str(missing_current)+"A angepasst.")
                     else:
                         self._process_data(cp, cp.data["set"]["current"] + missing_current, phases)
                         log.message_debug_log("debug", "Ladung an LP"+str(cp.cp_num)+" um "+str(missing_current)+"A angepasst.")

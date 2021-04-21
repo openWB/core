@@ -47,9 +47,9 @@ class counter():
 
     def put_stats(self):
         pub.pub("openWB/set/counter/0/set/consumption_left", self.data["set"]["consumption_left"])
-        log.message_debug_log("debug", str(self.data["set"]["consumption_left"])+"W verbleibende EVU-Bezugs-Leistung")
+        log.message_debug_log("debug", str(self.data["set"]["consumption_left"])+"W verbleibende EVU-Bezugs-Leistung (ohne Offset-Beachtung)")
 
     def print_stats(self):
-        log.message_debug_log("debug", str(self.data["set"]["consumption_left"])+"W verbleibende EVU-Bezugs-Leistung")
+        log.message_debug_log("debug", str(self.data["set"]["consumption_left"])+"W verbleibende EVU-Bezugs-Leistung (ohne Offset-Beachtung)")
 
 
