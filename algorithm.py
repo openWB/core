@@ -323,6 +323,8 @@ class control():
                             undo_missing_current = (overloaded_counters[0][1][0] * (3 - phases +1)) * -1
                         else:
                             undo_missing_current = overloaded_counters[0][1][0] * -1
+                        if undo_missing_current > missing_current:
+                            undo_missing_current = missing_current
                         required_power = 230 * phases * undo_missing_current
                         # Werte aktualisieren
                         loadmanagement.loadmanagement_for_cp(cp, required_power, undo_missing_current, phases)
@@ -834,8 +836,8 @@ def allocate_power(chargepoint, required_power, required_current, phases):
             else:
                 to_allocate = required_power - bat_overhang
                 remaining_required_power = required_power - to_allocate
-                if data.bat_module_data["all"].allocate_bat_power(to_allocate) == False:
-                    required_current = 0
+            if data.bat_module_data["all"].allocate_bat_power(to_allocate) == False:
+                required_current = 0
         # Wenn vorhanden, EVU-Überschuss allokieren.
         if remaining_required_power > 0:
             if evu_overhang > 0:
@@ -845,8 +847,8 @@ def allocate_power(chargepoint, required_power, required_current, phases):
                 else:
                     to_allocate = required_power
                     remaining_required_power = 0
-                    if data.pv_data["all"].allocate_evu_power(to_allocate) == False:
-                        required_current = 0
+                if data.pv_data["all"].allocate_evu_power(to_allocate) == False:
+                    required_current = 0
         # Rest ermitteln und allokieren
         if remaining_required_power > 0:
             evu_current = remaining_required_power / (phases * 230)
