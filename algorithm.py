@@ -430,9 +430,7 @@ class control():
 
                 if len(preferenced_chargepoints) != 0:
                     current_mode = self.chargemodes.index(mode_tuple)
-                    if self._distribution_and_loadmanagement(preferenced_chargepoints, current_mode) == True:
-                        # Lastmanagement aktiv und es können keine Ladepunkte mehr reduziert/abgeschaltet werden.
-                        break
+                    self._distribution_and_loadmanagement(preferenced_chargepoints, current_mode)
             else:
                 # kein Ladepunkt, der noch auf Zuteilung wartet
                 log.message_debug_log("debug", "## Zuteilung beendet, da kein Ladepunkt mehr auf Zuteilung wartet.")
@@ -450,10 +448,6 @@ class control():
             Ladepunkte in der Reihenfolge, in der sie eingeschaltet werden sollen
         current_mode: tupel
             aktueller Lademodus, Submodus und Priorität
-
-        Returns
-        -------
-        True/False: Lastmanagement aktiv/inaktiv
         """
         try:
             for cp in preferenced_chargepoints:
@@ -462,13 +456,12 @@ class control():
                 pv_data_old = copy.deepcopy(data.pv_data)
                 bat_module_data = copy.deepcopy(data.bat_module_data)
                 cp_data_old = copy.deepcopy(data.cp_data)
-                
+
                 overloaded_counters = self._distribute_power_to_cp(cp)
-                log.message_debug_log("info", "LP: "+str(cp.cp_num)+", Ladestrom: "+str(cp.data["set"]["current"])+"A, Phasen: "+str(cp.data["set"]["phases_to_use"])+", Ladeleistung: "+str((cp.data["set"]["phases_to_use"]*cp.data["set"]["current"]*230))+"W")
-                data.counter_data["counter0"].print_stats()
                 if data.counter_data["all"].data["set"]["loadmanagement"] == True:
                     #Lastmanagement hat eingegriffen
-                    log.message_debug_log("debug", "Zuteilung gestoppt, da für die Ladung an LP"+str(cp.cp_num)+" erst ein Ladepunkt mit gleicher/niedrigerer Prioritaet reduziert/gestoppt werden muss.")
+                    log.message_debug_log("info", "Für die Ladung an LP"+str(cp.cp_num)+" muss erst ein Ladepunkt mit gleicher/niedrigerer Prioritaet reduziert/gestoppt werden muss.")
+                    data.counter_data["counter0"].print_stats()
                     # Zähler mit der größten Überlastung ermitteln
                     overloaded_counters = sorted(overloaded_counters.items(), key=lambda e: e[1][1], reverse = True)
                     # Ergebnisse des Lastmanagements holen, das beim Einschalten durchgeführt worden ist. Es ist ausreichend, 
@@ -494,10 +487,11 @@ class control():
                             data.bat_module_data = bat_module_data
                             data.cp_data = cp_data_old
                             # keine weitere Zuteilung
-                            log.message_debug_log("debug", "## Zuteilung beendet, da Lastmanagement aktiv und es kann kein LP mehr gestoppt werden.")
-                            return True
-            else:
-                return False
+                            log.message_debug_log("info", "Keine Ladung an LP"+str(cp.cp_num)+", da das Reduzieren/Abschalten der anderen Ladepunkte nicht ausreicht.")
+                            log.message_debug_log("debug", "Wiederherstellen des Zustands, bevor LP"+str(cp.cp_num)+" betrachtet wurde.")
+                else:
+                    log.message_debug_log("info", "LP: "+str(cp.cp_num)+", Ladestrom: "+str(cp.data["set"]["current"])+"A, Phasen: "+str(cp.data["set"]["phases_to_use"])+", Ladeleistung: "+str((cp.data["set"]["phases_to_use"]*cp.data["set"]["current"]*230))+"W")
+                data.counter_data["counter0"].print_stats()
         except Exception as e:
             log.exception_logging(e)
 
