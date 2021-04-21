@@ -65,6 +65,7 @@
 								<select name="pvwattmodul" id="pvwattmodul" class="form-control">
 									<option <?php if($pvwattmodulold == "none") echo "selected" ?> value="none">Nicht vorhanden</option>
 									<optgroup label="openWB">
+										<option <?php if($pvwattmodulold == "wr_pvkit") echo "selected" ?> value="wr_pvkit">openWB PV Kit</option>
 										<option <?php if($pvwattmodulold == "wr_ethmpm3pmaevu") echo "selected" ?> value="wr_ethmpm3pmaevu">Zähler an openWB EVU Kit</option>
 										<option <?php if($pvwattmodulold == "wr_ethsdm120") echo "selected" ?> value="wr_ethsdm120">SDM120 an openWB Modbus Lan Konverter</option>
 									</optgroup>
@@ -241,15 +242,14 @@
 								Keine Einstellung nötig. Die IP wird im Speichermodul konfiguriert.
 							</div>
 						</div>
-						<div id="pvmpmevu" class="hide">
+						<div id="pvkitdiv" class="hide">
 							<div class="form-row mb-1">
 								<label for="pvkitversion" class="col-md-4 col-form-label">Version des openWB PV Kits</label>
 								<div class="col">
 									<select name="pvkitversion" id="pvkitversion" class="form-control">
 										<option <?php if($pvkitversionold == 0) echo "selected" ?> value="0">PV Kit mit MPM3PM Zähler</option>
 										<option <?php if($pvkitversionold == 1) echo "selected" ?> value="1">PV Kit mit Lovato Zähler</option>
-										<option <?php if($pvkitversionold == 2) echo "selected" ?> value="1">PV Kit mit SDM630 Zähler</option>
-
+										<option <?php if($pvkitversionold == 2) echo "selected" ?> value="2">PV Kit mit Eastron SDM630 Zähler</option>
 									</select>
 								</div>
 							</div>
@@ -536,6 +536,22 @@
 								</div>
 							</div>
 							<div class="form-row mb-1">
+								<label class="col-md-4 col-form-label">Handelt es sich um einen Gen24?</label>
+								<div class="col">
+									<div class="btn-group btn-group-toggle btn-block" data-toggle="buttons">
+										<label class="btn btn-outline-info<?php if($wrfroniusisgen24old == 0) echo " active" ?>">
+											<input type="radio" name="froniusisgen24" id="froniusisgen24No" value="0"<?php if($wrfroniusisgen24old == 0) echo " checked=\"checked\"" ?>>Nein
+										</label>
+										<label class="btn btn-outline-info<?php if($wrfroniusisgen24old == 1) echo " active" ?>">
+											<input type="radio" name="froniusisgen24" id="froniusisgen24Yes" value="1"<?php if($wrfroniusisgen24old == 1) echo " checked=\"checked\"" ?>>Ja
+										</label>
+									</div>
+									<span class="form-text small">
+										Diese Option aktivieren wenn es sich um einen Gen24 handelt.
+									</span>
+								</div>
+							</div>
+							<div class="form-row mb-1">
 								<label for="wrfronius2ip" class="col-md-4 col-form-label">WR Fronius 2 IP</label>
 								<div class="col">
 									<input class="form-control" type="text" pattern="^((\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.){3}(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])|none$" name="wrfronius2ip" id="wrfronius2ip" value="<?php echo $wrfronius2ipold ?>">
@@ -704,7 +720,7 @@
 								hideSection('#pvsolarlog');
 								hideSection('#pvpiko2');
 								hideSection('#pvpowerwall');
-								hideSection('#pvmpmevu');
+								hideSection('#pvkitdiv');
 								hideSection('#pvethsdm120');
 								hideSection('#pvsolarview');
 								hideSection('#pvdiscovergy');
@@ -763,8 +779,11 @@
 								if($('#pvwattmodul').val() == 'wr_ethsdm120') {
 									showSection('#pvethsdm120');
 								}
+								if($('#pvwattmodul').val() == 'wr_pvkit') {
+									showSection('#pvkitdiv');
+								}
 								if($('#pvwattmodul').val() == 'wr_ethmpm3pmaevu') {
-									showSection('#pvmpmevu');
+									showSection('#pvkitdiv');
 								}
 								if($('#pvwattmodul').val() == 'vzloggerpv') {
 									showSection('#pvvzl');

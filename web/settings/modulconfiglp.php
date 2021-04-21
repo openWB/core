@@ -331,6 +331,12 @@
 						<div id="evsecongoe" class="hide">
 							<input type="hidden" name="ladeleistungmodul" value="goelp1">
 							<div class="form-group">
+								<div class="alert alert-info">
+									Seit Firmware Version 0.40 wird PV-Laden besser unterstützt. 
+									<span class="text-danger">
+										Bitte halten Sie die go-e Firmware auf einem aktuellen Stand.
+									</span>
+								</div>
 								<div class="form-row mb-1">
 									<label for="goeiplp1" class="col-md-4 col-form-label">IP Adresse</label>
 									<div class="col">
@@ -665,6 +671,7 @@
 								<select name="socmodul" id="socmodul" class="form-control">
 									<option <?php if($socmodulold == "none") echo "selected" ?> value="none">Nicht vorhanden</option>
 									<optgroup label="universelle Module">
+										<option <?php if($socmodulold == "soc_evcc") echo "selected" ?> value="soc_evcc">EVCC</option>
 										<option <?php if($socmodulold == "soc_evnotify") echo "selected" ?> value="soc_evnotify">EVNotify</option>
 										<option <?php if($socmodulold == "soc_http") echo "selected" ?> value="soc_http">HTTP</option>
 										<option <?php if($socmodulold == "soc_manual") echo "selected" ?> value="soc_manual">Manuell + Berechnung</option>
@@ -684,10 +691,10 @@
 										<option <?php if($socmodulold == "soc_psa") echo "selected" ?> value="soc_psa">PSA (Peugeot/Citroen/DS/Opel/Vauxhall)</option>
 										<option <?php if($socmodulold == "soc_zoe") echo "selected" ?> value="soc_zoe">Renault Zoe (alt)</option>
 										<option <?php if($socmodulold == "soc_tesla") echo "selected" ?> value="soc_tesla">Tesla</option>
+										<option <?php if($socmodulold == "soc_vag") echo "selected" ?> value="soc_vag">VAG</option>
 										<option <?php if($socmodulold == "soc_volvo") echo "selected" ?> value="soc_volvo">Volvo</option>
 										<option <?php if($socmodulold == "soc_carnet") echo "selected" ?> value="soc_carnet">VW Carnet</option>
 										<option <?php if($socmodulold == "soc_id") echo "selected" ?> value="soc_id">VW ID</option>
-										<option <?php if($socmodulold == "soc_vag") echo "selected" ?> value="soc_vag">VAG</option>
 										<option <?php if($socmodulold == "soc_zerong") echo "selected" ?> value="soc_zerong">Zero NG</option>
 									</optgroup>
 								</select>
@@ -1006,6 +1013,11 @@
 							<div id="socmid" class="hide">
 								<div class="form-group">
 									<div class="form-row mb-1">
+										<div class="alert alert-info">
+											Dieses ID Modul ist redundant und wird in zukünftigen Versionen entfernt. Bitte das VAG Modul auswählen.
+										</div>
+									</div>
+									<div class="form-row mb-1">
 										<label for="soc_id_username" class="col-md-4 col-form-label">Benutzername</label>
 										<div class="col">
 											<input class="form-control" type="email" name="soc_id_username" id="soc_id_username" value="<?php echo $soc_id_usernameold ?>">
@@ -1047,15 +1059,6 @@
 												<label class="btn btn-outline-info<?php if($soc_vag_typeold == 'id') echo " active" ?>">
 													<input type="radio" name="soc_vag_type" id="soc_vag_type_id" value="id"<?php if($soc_vag_typeold == 'id') echo " checked=\"checked\"" ?>>ID
 												</label>
-												<label class="btn btn-outline-info<?php if($soc_vag_typeold == 'audi') echo " active" ?>">
-													<input type="radio" name="soc_vag_type" id="soc_vag_type_audi" value="audi"<?php if($soc_vag_typeold == 'audi') echo " checked=\"checked\"" ?>>Audi
-												</label>
-												<label class="btn btn-outline-info<?php if($soc_vag_typeold == 'seat') echo " active" ?>">
-													<input type="radio" name="soc_vag_type" id="soc_vag_type_seat" value="seat"<?php if($soc_vag_typeold == 'seat') echo " checked=\"checked\"" ?>>Seat
-												</label>
-												<label class="btn btn-outline-info<?php if($soc_vag_typeold == 'skoda') echo " active" ?>">
-													<input type="radio" name="soc_vag_type" id="soc_vag_type_skoda" value="skoda"<?php if($soc_vag_typeold == 'skoda') echo " checked=\"checked\"" ?>>Skoda
-												</label>
 												<label class="btn btn-outline-info<?php if($soc_vag_typeold == 'porsche') echo " active" ?>">
 													<input type="radio" name="soc_vag_type" id="soc_vag_type_porsche" value="porsche"<?php if($soc_vag_typeold == 'porsche') echo " checked=\"checked\"" ?>>Porsche
 												</label>
@@ -1077,7 +1080,7 @@
 										<div class="col">
 											<input class="form-control" type="password" name="soc_vag_password" id="soc_vag_password" value="<?php echo $soc_vag_passwordold ?>">
 											<span class="form-text small">
-												Password des Logins
+												Passwort des Logins
 											</span>
 										</div>
 									</div>
@@ -1103,6 +1106,85 @@
 										<label for="soc_vag_intervallladen" class="col-md-4 col-form-label">Abfrageintervall Ladevorgang</label>
 										<div class="col">
 											<input class="form-control" type="number" min="0" step="1" name="soc_vag_intervallladen" id="soc_vag_intervallladen" value="<?php echo $soc_vag_intervallladenold ?>">
+											<span class="form-text small">
+												Wie oft das Fahrzeug abgefragt wird, wenn geladen wird. Angabe in Minuten.
+											</span>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div id="socevcc" class="hide">
+								<div class="form-group">
+									<div class="form-row mb-1">
+										<label class="col-md-4 col-form-label">Fahrzeugtyp</label>
+										<div class="col">
+											<select name="soc_evcc_type_lp1" id="soc_evcc_type_lp1" class="form-control">
+												<option <?php if($soc_evcc_type_lp1old == "none") echo "selected" ?> value="none">Bitte auswählen</option>
+												<option <?php if($soc_evcc_type_lp1old == 'vw') echo "selected" ?> value="vw">VW</option>
+												<option <?php if($soc_evcc_type_lp1old == 'id') echo "selected" ?> value="id">ID</option>
+												<option <?php if($soc_evcc_type_lp1old == 'audi') echo "selected" ?> value="audi">Audi</option>
+												<option <?php if($soc_evcc_type_lp1old == 'seat') echo "selected" ?> value="seat">Seat</option>
+												<option <?php if($soc_evcc_type_lp1old == 'porsche') echo "selected" ?> value="porsche">Porsche</option>
+												<option <?php if($soc_evcc_type_lp1old == 'volvo') echo "selected" ?> value="volvo">Volvo</option>
+												<option <?php if($soc_evcc_type_lp1old == 'bmw') echo "selected" ?> value="bmw">BMW</option>
+												<option <?php if($soc_evcc_type_lp1old == 'ford') echo "selected" ?> value="ford">Ford</option>
+												<option <?php if($soc_evcc_type_lp1old == 'kia') echo "selected" ?> value="kia">Kia</option>
+												<option <?php if($soc_evcc_type_lp1old == 'hyundai') echo "selected" ?> value="Hyundai">Hyundai</option>
+												<option <?php if($soc_evcc_type_lp1old == 'nissan') echo "selected" ?> value="Nissan">Nissan</option>
+												<option <?php if($soc_evcc_type_lp1old == 'renault') echo "selected" ?> value="Renault">Renault</option>
+											</select>
+											<span class="form-text small">Auswahl Fahrzeugtyp</span>
+										</div>
+									</div>
+									<div class="form-row mb-1">
+										<label for="soc_evcc_username_lp1" class="col-md-4 col-form-label">Benutzername</label>
+										<div class="col">
+											<input class="form-control" type="email" name="soc_evcc_username_lp1" id="soc_evcc_username_lp1" value="<?php echo $soc_evcc_username_lp1old ?>">
+											<span class="form-text small">
+												Email Adresse des Logins
+											</span>
+										</div>
+									</div>
+									<div class="form-row mb-1">
+										<label for="soc_evcc_password_lp1" class="col-md-4 col-form-label">Passwort</label>
+										<div class="col">
+											<input class="form-control" type="password" name="soc_evcc_password_lp1" id="soc_evcc_password_lp1" value="<?php echo $soc_evcc_password_lp1old ?>">
+											<span class="form-text small">
+												Passwort des Logins
+											</span>
+										</div>
+									</div>
+									<div class="form-row mb-1">
+										<label for="soc_evcc_vin_lp1" class="col-md-4 col-form-label">VIN</label>
+										<div class="col">
+											<input class="form-control" type="text" name="soc_evcc_vin_lp1" id="soc_evcc_vin_lp1" value="<?php echo $soc_evcc_vin_lp1old ?>">
+											<span class="form-text small">
+												Vollständige VIN des Fahrzeugs
+											</span>
+										</div>
+									</div>
+									<div class="form-row mb-1">
+										<label for="soc_evcc_token_lp1" class="col-md-4 col-form-label">Token</label>
+										<div class="col">
+											<input class="form-control" type="text" name="soc_evcc_token_lp1" id="soc_evcc_token_lp1" value="<?php echo $soc_evcc_token_lp1old ?>">
+											<span class="form-text small">
+												EVCC Abo Token, zu beziehen unter https://cloud.evcc.io
+											</span>
+										</div>
+									</div>
+									<div class="form-row mb-1">
+										<label for="soc_evcc_intervall_lp1" class="col-md-4 col-form-label">Abfrageintervall Standby</label>
+										<div class="col">
+											<input class="form-control" type="number" min="0" step="1" name="soc_evcc_intervall" id="soc_evcc_intervall" value="<?php echo $soc_evcc_intervallold ?>">
+											<span class="form-text small">
+												Wie oft das Fahrzeug abgefragt wird, wenn nicht geladen wird. Angabe in Minuten.
+											</span>
+										</div>
+									</div>
+									<div class="form-row mb-1">
+										<label for="soc_evcc_intervallladen" class="col-md-4 col-form-label">Abfrageintervall Ladevorgang</label>
+										<div class="col">
+											<input class="form-control" type="number" min="0" step="1" name="soc_evcc_intervallladen" id="soc_evcc_intervallladen" value="<?php echo $soc_evcc_intervallladenold ?>">
 											<span class="form-text small">
 												Wie oft das Fahrzeug abgefragt wird, wenn geladen wird. Angabe in Minuten.
 											</span>
@@ -1350,6 +1432,11 @@
 							</div>
 							<div id="soccarnet" class="hide">
 								<div class="form-group">
+									<div class="form-row mb-1">
+										<div class="alert alert-info">
+											Das VAG Modul kann alternativ genutzt werden und ruft den SoC in 1-Prozent Schritten ab.
+										</div>
+									</div>
 									<div class="form-row mb-1">
 										<label for="carnetuser" class="col-md-4 col-form-label">Benutzername</label>
 										<div class="col">
@@ -2018,6 +2105,7 @@
 							hideSection('#socmaudi');
 							hideSection('#socmid');
 							hideSection('#socvag');
+							hideSection('#socevcc');
 							hideSection('#socmqtt');
 							hideSection('#socmbluelink');
 							hideSection('#socmkia');
@@ -2053,6 +2141,9 @@
 							}
 							if($('#socmodul').val() == 'soc_vag') {
 								showSection('#socvag');
+							}
+							if($('#socmodul').val() == 'soc_evcc') {
+								showSection('#socevcc');
 							}
 							if($('#socmodul').val() == 'soc_kia') {
 								showSection('#socmkia');
@@ -2390,6 +2481,12 @@
 						<div id="evsecongoes1" class="hide">
 							<input type="hidden" name="ladeleistungs1modul" value="goelp2">
 							<div class="form-group">
+								<div class="alert alert-info">
+									Seit Firmware Version 0.40 wird PV-Laden besser unterstützt. 
+									<span class="text-danger">
+										Bitte halten Sie die go-e Firmware auf einem aktuellen Stand.
+									</span>
+								</div>
 								<div class="form-row mb-1">
 									<label for="goeiplp2" class="col-md-4 col-form-label">IP Adresse</label>
 									<div class="col">
@@ -2575,6 +2672,7 @@
 								<select name="socmodul1" id="socmodul1" class="form-control">
 									<option <?php if($socmodul1old == "none") echo "selected" ?> value="none">Nicht vorhanden</option>
 									<optgroup label="universelle Module">
+										<option <?php if($socmodul1old == "soc_evcclp2") echo "selected" ?> value="soc_evcclp2">EVCC</option>
 										<option <?php if($socmodul1old == "soc_evnotifys1") echo "selected" ?> value="soc_evnotifys1">EVNotify</option>
 										<option <?php if($socmodul1old == "soc_http1") echo "selected" ?> value="soc_http1">HTTP</option>
 										<option <?php if($socmodul1old == "soc_manuallp2") echo "selected" ?> value="soc_manuallp2">Manuell + Berechnung</option>
@@ -2594,10 +2692,10 @@
 										<option <?php if($socmodul1old == "soc_psalp2") echo "selected" ?> value="soc_psalp2">PSA (Peugeot/Citroen/DS/Opel/Vauxhall)</option>
 										<option <?php if($socmodul1old == "soc_zoelp2") echo "selected" ?> value="soc_zoelp2">Renault Zoe alt</option>
 										<option <?php if($socmodul1old == "soc_teslalp2") echo "selected" ?> value="soc_teslalp2">Tesla</option>
+										<option <?php if($socmodul1old == "soc_vaglp2") echo "selected" ?> value="soc_vaglp2">VAG</option>
 										<option <?php if($socmodul1old == "soc_volvolp2") echo "selected" ?> value="soc_volvolp2">Volvo</option>
 										<option <?php if($socmodul1old == "soc_carnetlp2") echo "selected" ?> value="soc_carnetlp2">VW Carnet</option>
 										<option <?php if($socmodul1old == "soc_idlp2") echo "selected" ?> value="soc_idlp2">VW ID</option>
-										<option <?php if($socmodul1old == "soc_vaglp2") echo "selected" ?> value="soc_vaglp2">VAG</option>
 										<option <?php if($socmodul1old == "soc_zeronglp2") echo "selected" ?> value="soc_zeronglp2">Zero NG</option>
 									</optgroup>
 								</select>
@@ -2619,15 +2717,6 @@
 												</label>
 												<label class="btn btn-outline-info<?php if($soc2typeold == 'id') echo " active" ?>">
 													<input type="radio" name="soc2type" id="soc2type_id" value="id"<?php if($soc2typeold == 'id') echo " checked=\"checked\"" ?>>ID
-												</label>
-												<label class="btn btn-outline-info<?php if($soc2typeold == 'audi') echo " active" ?>">
-													<input type="radio" name="soc2type" id="soc2type_audi" value="audi"<?php if($soc2typeold == 'audi') echo " checked=\"checked\"" ?>>Audi
-												</label>
-												<label class="btn btn-outline-info<?php if($soc2typeold == 'seat') echo " active" ?>">
-													<input type="radio" name="soc2type" id="soc2type_seat" value="seat"<?php if($soc2typeold == 'seat') echo " checked=\"checked\"" ?>>Seat
-												</label>
-												<label class="btn btn-outline-info<?php if($soc2typeold == 'skoda') echo " active" ?>">
-													<input type="radio" name="soc2type" id="soc2type_skoda" value="skoda"<?php if($soc2typeold == 'skoda') echo " checked=\"checked\"" ?>>Skoda
 												</label>
 												<label class="btn btn-outline-info<?php if($soc2typeold == 'porsche') echo " active" ?>">
 													<input type="radio" name="soc2type" id="soc2type_porsche" value="porsche"<?php if($soc2typeold == 'porsche') echo " checked=\"checked\"" ?>>Porsche
@@ -3578,6 +3667,67 @@
 									});
 								</script>
 							</div>
+							<div id="socevcclp2" class="hide">
+								<div class="form-group">
+									<div class="form-row mb-1">
+										<label class="col-md-4 col-form-label">Fahrzeugtyp</label>
+										<div class="col">
+											<select name="soc_evcc_type_lp2" id="soc_evcc_type_lp2" class="form-control">
+												<option <?php if($soc_evcc_type_lp2old == "none") echo "selected" ?> value="none">Bitte auswählen</option>
+												<option <?php if($soc_evcc_type_lp2old == 'vw') echo "selected" ?> value="vw">VW</option>
+												<option <?php if($soc_evcc_type_lp2old == 'id') echo "selected" ?> value="id">ID</option>
+												<option <?php if($soc_evcc_type_lp2old == 'audi') echo "selected" ?> value="audi">Audi</option>
+												<option <?php if($soc_evcc_type_lp2old == 'seat') echo "selected" ?> value="seat">Seat</option>
+												<option <?php if($soc_evcc_type_lp2old == 'porsche') echo "selected" ?> value="porsche">Porsche</option>
+												<option <?php if($soc_evcc_type_lp2old == 'volvo') echo "selected" ?> value="volvo">Volvo</option>
+												<option <?php if($soc_evcc_type_lp2old == 'bmw') echo "selected" ?> value="bmw">BMW</option>
+												<option <?php if($soc_evcc_type_lp2old == 'ford') echo "selected" ?> value="ford">Ford</option>
+												<option <?php if($soc_evcc_type_lp2old == 'kia') echo "selected" ?> value="kia">Kia</option>
+												<option <?php if($soc_evcc_type_lp2old == 'hyundai') echo "selected" ?> value="Hyundai">Hyundai</option>
+												<option <?php if($soc_evcc_type_lp2old == 'nissan') echo "selected" ?> value="Nissan">Nissan</option>
+												<option <?php if($soc_evcc_type_lp2old == 'renault') echo "selected" ?> value="Renault">Renault</option>
+											</select>
+											<span class="form-text small">Auswahl Fahrzeugtyp</span>
+										</div>
+									</div>
+									<div class="form-row mb-1">
+										<label for="soc_evcc_username_lp2" class="col-md-4 col-form-label">Benutzername</label>
+										<div class="col">
+											<input class="form-control" type="email" name="soc_evcc_username_lp2" id="soc_evcc_username_lp2" value="<?php echo $soc_evcc_username_lp2old ?>">
+											<span class="form-text small">
+												Email Adresse des Logins
+											</span>
+										</div>
+									</div>
+									<div class="form-row mb-1">
+										<label for="soc_evcc_password_lp2" class="col-md-4 col-form-label">Passwort</label>
+										<div class="col">
+											<input class="form-control" type="password" name="soc_evcc_password_lp2" id="soc_evcc_password_lp2" value="<?php echo $soc_evcc_password_lp2old ?>">
+											<span class="form-text small">
+												Passwort des Logins
+											</span>
+										</div>
+									</div>
+									<div class="form-row mb-1">
+										<label for="soc_evcc_vin_lp2" class="col-md-4 col-form-label">VIN</label>
+										<div class="col">
+											<input class="form-control" type="text" name="soc_evcc_vin_lp2" id="soc_evcc_vin_lp2" value="<?php echo $soc_evcc_vin_lp2old ?>">
+											<span class="form-text small">
+												Vollständige VIN des Fahrzeugs
+											</span>
+										</div>
+									</div>
+									<div class="form-row mb-1">
+										<label for="soc_evcc_token_lp2" class="col-md-4 col-form-label">Token</label>
+										<div class="col">
+											<input class="form-control" type="text" name="soc_evcc_token_lp2" id="soc_evcc_token_lp2" value="<?php echo $soc_evcc_token_lp2old ?>">
+											<span class="form-text small">
+												EVCC Abo Token, zu beziehen unter https://cloud.evcc.io
+											</span>
+										</div>
+									</div>
+								</div>
+							</div>
 							<div id="socmintervall2" class="hide">
 								<div class="form-group">
 									<div class="form-row mb-1">
@@ -3734,6 +3884,7 @@
 							hideSection('#socmintervallladen2');
 							hideSection('#socmanuallp2');
 							hideSection('#soctronitylp2');
+							hideSection('#socevcclp2');
 
 							if($('#socmodul1').val() == 'none') {
 								showSection('#socmnone1');
@@ -3779,6 +3930,11 @@
 								showSection('#socmuser2');
 								showSection('#socmpass2');
 								showSection('#socmvin2');
+								showSection('#socmintervall2');
+								showSection('#socmintervallladen2');
+							}
+							if($('#socmodul1').val() == 'soc_evcclp2') {
+								showSection('#socevcclp2');
 								showSection('#socmintervall2');
 								showSection('#socmintervallladen2');
 							}
@@ -4046,6 +4202,12 @@
 						<div id="evsecongoes2" class="hide">
 							<input type="hidden" name="ladeleistungs2modul" value="goelp3">
 							<div class="form-group">
+								<div class="alert alert-info">
+									Seit Firmware Version 0.40 wird PV-Laden besser unterstützt. 
+									<span class="text-danger">
+										Bitte halten Sie die go-e Firmware auf einem aktuellen Stand.
+									</span>
+								</div>
 								<div class="form-row mb-1">
 									<label for="goeiplp3" class="col-md-4 col-form-label">IP Adresse</label>
 									<div class="col">
