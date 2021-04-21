@@ -129,7 +129,7 @@ def pub_settings():
     hierarchy = [{"id":"counter0", "children":[{"id":"cp1", "children": []}, {"id":"cp2", "children": []}, {"id":"cp3", "children": []}]}]
     pub.pub("openWB/counter/get/hierarchy", hierarchy)
     pub.pub("openWB/counter/0/get/current", [0,0,0])
-    pub.pub("openWB/counter/0/config/max_consumption", 60000)
+    pub.pub("openWB/counter/0/config/max_consumption", 6000)
     pub.pub("openWB/counter/0/config/max_current", [35, 35, 35])
 
     #bat
