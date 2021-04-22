@@ -7,6 +7,7 @@ import bat
 import chargepoint
 import counter
 import data
+import loadmanagement
 import log
 import pub
 import stats
@@ -24,10 +25,10 @@ class prepare():
         """ bereitet die Daten für den Algorithmus vor und startet diesen.
         """
         self._copy_data()
+        self._counter()
         self._check_chargepoints()
         self._use_pv()
         self._bat()
-        self._counter()
 
     def _copy_data(self):
         """ kopiert die Daten, die per MQTT empfangen wurden.
@@ -69,17 +70,26 @@ class prepare():
         for cp in data.cp_data:
             try:
                 if "cp" in cp:
-                    vehicle, message = data.cp_data[cp].get_state()
+                    chargepoint = data.cp_data[cp]
+                    vehicle, message = chargepoint.get_state()
                     if vehicle != -1:
-                        state, message_ev = data.ev_data["ev"+str(vehicle)].get_required_current()
-                        data.cp_data[cp].data["set"]["charging_ev"] = data.ev_data["ev"+str(vehicle)]
+                        state, message_ev, mode_changed = data.ev_data["ev"+str(vehicle)].get_required_current()
+                        chargepoint.data["set"]["charging_ev"] = data.ev_data["ev"+str(vehicle)]
                         if message_ev != None:
-                            message = "Keine Ladung an LP"+str(data.cp_data[cp].cp_num)+", da "+str(message_ev)
-                        log.message_debug_log("debug", "Ladepunkt "+data.cp_data[cp].cp_num+", EV: "+data.cp_data[cp].data["set"]["charging_ev"].data["name"]+" (EV-Nr."+str(vehicle)+")")
+                            message = "Keine Ladung an LP"+str(chargepoint.cp_num)+", da "+str(message_ev)
+                        log.message_debug_log("debug", "Ladepunkt "+chargepoint.cp_num+", EV: "+chargepoint.data["set"]["charging_ev"].data["name"]+" (EV-Nr."+str(vehicle)+")")
                         # Wenn die Nachrichten gesendet wurden, EV wieder löschen, wenn das EV im Algorithmus nicht berücksichtigt werden soll.
                         if state == False:
-                                data.cp_data[cp].data["set"]["charging_ev"] = -1
-                    pub.pub("openWB/set/chargepoint/"+str(data.cp_data[cp].cp_num)+"/get/state_str", message)
+                            chargepoint.data["set"]["charging_ev"] = -1
+                        # Die benötigte Stromstärke hat sich durch eine Änderung des Lademdous oder der Konfiguration geändert. Die Zuteilung entsprechend der Priorisierung muss neu geprüft werden.
+                        # Daher muss der LP zurückgesetzt werden.
+                        if mode_changed == True and max(chargepoint.data["get"]["current"]) != 0:
+                            chargepoint.data["set"]["current"] = 0
+                            freed_current = (max(chargepoint.data["get"]["current"]) )* -1
+                            freed_power = freed_current * 230 * chargepoint.data["get"]["phases_in_use"]
+                            # Werte aktualisieren
+                            loadmanagement.loadmanagement_for_cp(chargepoint, freed_power, freed_current, chargepoint.data["get"]["phases_in_use"])
+                    pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/get/state_str", message)
                     log.message_debug_log("info", message)
             except Exception as e:
                 log.exception_logging(e)

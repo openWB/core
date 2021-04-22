@@ -49,7 +49,7 @@ class ev():
         if "control_parameter" not in self.data:
             self.data["control_parameter"] = {}
         pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/required_current", 0)
-        pub.pub("openWB/set/vehicle/"+str(self.ev_num) + "/control_parameter/timestamp_switch_on_off", "0")
+        pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/timestamp_switch_on_off", "0")
         pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/timestamp_auto_phase_switch", "0")
         pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/chargemode", "stop")
 
@@ -70,13 +70,18 @@ class ev():
 
         Return
         ------
+        state: bool
+            Soll geladen werden?
         required_current: int
             Strom, der nach Ladekonfiguration benötigt wird
+        mode_changed: bool
+            Der Lademodus/ die Konfiguration wurde geändert.
         """
         chargemode = None
         required_current = None
         message = None
         state = True
+        mode_changed = False
         try:
             if self.charge_template.data["chargemode"]["selected"] == "scheduled_charging":
                 required_current, chargemode, message = self.charge_template.scheduled_charging(
@@ -96,13 +101,16 @@ class ev():
             if chargemode == "stop" or (self.charge_template.data["chargemode"]["selected"] == "stop"):
                 state = False
             required_current = self._check_min_max_current(required_current)
+            # Die benötigte Stromstärke hat sich durch eine Änderung des Lademdous oder der Konfiguration geändert.
+            if self.data["control_parameter"]["required_current"] != required_current:
+                mode_changed = True
             self.data["control_parameter"]["required_current"] = required_current
             pub.pub("openWB/set/vehicle/"+self.ev_num +"/control_parameter/required_current", required_current)
             self.data["control_parameter"]["chargemode"] = chargemode
             pub.pub("openWB/set/vehicle/"+self.ev_num +"/control_parameter/chargemode", chargemode)
             log.message_debug_log("debug", "EV"+str(self.ev_num)+": Theroretisch benötigter Strom "+str(required_current)+"A, Lademodus "+str(
                 self.charge_template.data["chargemode"]["selected"])+", Submodus: "+str(chargemode)+", Prioritaet: "+str(self.charge_template.data["prio"]))
-            return state, message
+            return state, message, mode_changed
         except Exception as e:
             log.exception_logging(e)
 

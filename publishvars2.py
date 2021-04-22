@@ -55,7 +55,7 @@ def pub_settings():
     pub.pub("openWB/vehicle/1/charge_template", 1)
     pub.pub("openWB/vehicle/1/ev_template", 1)
     pub.pub("openWB/vehicle/1/name", "car1")
-    pub.pub("openWB/vehicle/1/get/soc", 25)
+    pub.pub("openWB/vehicle/1/get/soc", 20)
     pub.pub("openWB/vehicle/1/get/charged_since_plugged_kwh", 5)
     pub.pub("openWB/vehicle/1/match_ev/selected", "rfid")
     pub.pub("openWB/vehicle/1/match_ev/tag_id", 1234)
@@ -83,7 +83,7 @@ def pub_settings():
     #ct1
     pub.pub("openWB/vehicle/template/charge_template/1/prio", 1)
     pub.pub("openWB/vehicle/template/charge_template/1/time_charging/active", 0)
-    pub.pub("openWB/vehicle/template/charge_template/1/chargemode/selected", "instant_charging")
+    pub.pub("openWB/vehicle/template/charge_template/1/chargemode/selected", "pv_charging")
     pub.pub("openWB/vehicle/template/charge_template/1/chargemode/instant_charging/current", 14)
     pub.pub("openWB/vehicle/template/charge_template/1/chargemode/instant_charging/limit/selected", "soc")
     pub.pub("openWB/vehicle/template/charge_template/1/chargemode/instant_charging/limit/soc", 50)
@@ -96,7 +96,7 @@ def pub_settings():
 
     #ct2
     pub.pub("openWB/vehicle/template/charge_template/2/prio", 1)
-    pub.pub("openWB/vehicle/template/charge_template/2/time_charging/active", 0)
+    pub.pub("openWB/vehicle/template/charge_template/2/time_charging/active", 1)
     pub.pub("openWB/vehicle/template/charge_template/2/time_charging/1/active", 1)
     pub.pub("openWB/vehicle/template/charge_template/2/time_charging/1/frequency/selected", "weekly")
     pub.pub("openWB/vehicle/template/charge_template/2/time_charging/1/frequency/weekly", [1,1,1,1,1,0,0])
