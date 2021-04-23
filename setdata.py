@@ -667,8 +667,9 @@ class setData():
             self._validate_value(msg, int, [(0, 1)])
         elif re.search("^openWB/set/counter/[0-9]+/get/power_all$", msg.topic) != None:
             self._validate_value(msg, int)
-        elif (re.search("^openWB/set/counter/[0-9]+/get/current$", msg.topic) != None or
-                re.search("^openWB/set/counter/[0-9]+/get/voltage$", msg.topic) != None or
+        elif re.search("^openWB/set/counter/[0-9]+/get/current$", msg.topic) != None:
+            self._validate_value(msg, float, collection=list)
+        elif (re.search("^openWB/set/counter/[0-9]+/get/voltage$", msg.topic) != None or
                 re.search("^openWB/set/counter/[0-9]+/get/power_phase$", msg.topic) != None or
                 re.search("^openWB/set/counter/[0-9]+/get/power_factor$", msg.topic) != None):
             self._validate_value(msg, float, [(0, None)], collection=list)

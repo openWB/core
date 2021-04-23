@@ -55,7 +55,7 @@ def pub_settings():
     pub.pub("openWB/vehicle/1/charge_template", 1)
     pub.pub("openWB/vehicle/1/ev_template", 1)
     pub.pub("openWB/vehicle/1/name", "car1")
-    pub.pub("openWB/vehicle/1/get/soc", 20)
+    pub.pub("openWB/vehicle/1/get/soc", 25)
     pub.pub("openWB/vehicle/1/get/charged_since_plugged_kwh", 5)
     pub.pub("openWB/vehicle/1/match_ev/selected", "rfid")
     pub.pub("openWB/vehicle/1/match_ev/tag_id", 1234)
@@ -96,7 +96,7 @@ def pub_settings():
 
     #ct2
     pub.pub("openWB/vehicle/template/charge_template/2/prio", 1)
-    pub.pub("openWB/vehicle/template/charge_template/2/time_charging/active", 1)
+    pub.pub("openWB/vehicle/template/charge_template/2/time_charging/active", 0)
     pub.pub("openWB/vehicle/template/charge_template/2/time_charging/1/active", 1)
     pub.pub("openWB/vehicle/template/charge_template/2/time_charging/1/frequency/selected", "weekly")
     pub.pub("openWB/vehicle/template/charge_template/2/time_charging/1/frequency/weekly", [1,1,1,1,1,0,0])
@@ -129,7 +129,7 @@ def pub_settings():
     hierarchy = [{"id":"counter0", "children":[{"id":"cp1", "children": []}, {"id":"cp2", "children": []}, {"id":"cp3", "children": []}]}]
     pub.pub("openWB/counter/get/hierarchy", hierarchy)
     pub.pub("openWB/counter/0/get/current", [0,0,0])
-    pub.pub("openWB/counter/0/config/max_consumption", 6000)
+    pub.pub("openWB/counter/0/config/max_consumption", 60000)
     pub.pub("openWB/counter/0/config/max_current", [35, 35, 35])
 
     #bat
@@ -138,7 +138,7 @@ def pub_settings():
     #general
     pub.pub("openWB/general/chargemode_config/unbalanced_load", 1)
     pub.pub("openWB/general/chargemode_config/unbalanced_load_limit", 32)
-    pub.pub("openWB/general/chargemode_config/instant_charging/phases_to_use", 1)
+    pub.pub("openWB/general/chargemode_config/instant_charging/phases_to_use", 3)
     pub.pub("openWB/general/chargemode_config/pv_charging/bat_prio", 1)
     pub.pub("openWB/general/chargemode_config/pv_charging/switch_on_soc", 60)
     pub.pub("openWB/general/chargemode_config/pv_charging/switch_off_soc", 40)
@@ -152,7 +152,7 @@ def pub_settings():
     pub.pub("openWB/general/chargemode_config/pv_charging/feed_in_yield", 2000)
     pub.pub("openWB/general/chargemode_config/pv_charging/phase_switch_delay", 1)
     pub.pub("openWB/general/chargemode_config/pv_charging/phases_to_use", 1)
-    pub.pub("openWB/general/chargemode_config/scheduled_charging/phases_to_use", 1)
+    pub.pub("openWB/general/chargemode_config/scheduled_charging/phases_to_use", "auto")
     pub.pub("openWB/general/chargemode_config/time_charging/phases_to_use", 1)
     pub.pub("openWB/general/chargemode_config/standby/phases_to_use", 1)
     pub.pub("openWB/general/chargemode_config/stop/phases_to_use", 0)

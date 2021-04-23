@@ -215,8 +215,7 @@ class ev():
                 elif self.data["control_parameter"]["timestamp_auto_phase_switch"] == "0" and all(current == self.data["control_parameter"]["required_current"] for current in current_get):
                     self.data["control_parameter"]["timestamp_auto_phase_switch"] = timecheck.create_timestamp()
                     pub.pub("openWB/set/vehicle/"+str(self.ev_num) + "/control_parameter/timestamp_auto_phase_switch", self.data["control_parameter"]["timestamp_auto_phase_switch"])
-                    log.message_debug_log("info", "Umschaltverzoegerung von 3 auf 1 Phase für "+str(
-                        pv_config["phase_switch_delay"]) + "Min aktiv.")
+                    log.message_debug_log("info", "Umschaltverzoegerung von 3 auf 1 Phase für "+str( 16-pv_config["phase_switch_delay"]) + "Min aktiv.")
                 # Wenn der Timer läuft und mit mehr als Minimalstromstärke geladen wird, Timer stoppen.
                 elif self.data["control_parameter"]["timestamp_auto_phase_switch"] != "0" and any(current > self.data["control_parameter"]["required_current"] for current in current_get):
                     self.data["control_parameter"]["timestamp_auto_phase_switch"] = "0"
