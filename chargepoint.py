@@ -53,13 +53,13 @@ class allChargepoints():
                             chargepoint.data["set"]["charging_ev"] == -1 or 
                             # Kein EV, das auf das Ablaufen der Einschaltverzögerung wartet
                             (chargepoint.data["set"]["charging_ev"] != -1 and 
-                            chargepoint.data["set"]["charging_ev"].data["control_parameter"]["chargemode"] != "pv_charging" and 
+                            chargepoint.data["set"]["charging_ev"].data["control_parameter"]["submode"] != "pv_charging" and 
                             chargepoint.data["get"]["charge_state"] == False)):
                         continue
                     else:
                         break
-                else:
-                    data.pv_data["all"].reset_pv_data()
+            else:
+                data.pv_data["all"].reset_pv_data()
         except Exception as e:
             log.exception_logging(e)
 
@@ -190,6 +190,39 @@ class chargepoint():
                 if self.data["get"]["phases_in_use"] != self.data["set"]["phases_to_use"]:
                     #perform hw phase switch
                     pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/perform_phase_switch", True)
+        except Exception as e:
+            log.exception_logging(e)
+
+    def get_phases(self):
+        """ ermittelt die maximal mögliche Anzahl Phasen, die von Konfiguration, Auto und Ladepunkt unterstützt wird und prüft anschließend, ob sich die Anzahl der genutzten Phasen geändert hat.
+
+        Return
+        ------
+        phases: int
+            Anzahl Phasen
+        """
+        try:
+            phases = 0
+            charging_ev = self.data["set"]["charging_ev"]
+            config = self.data["config"]
+            if charging_ev.ev_template.data["max_phases"] <= config["connected_phases"]:
+                phases = charging_ev.ev_template.data["max_phases"]
+            else:
+                phases = config["connected_phases"]
+            chargemode = charging_ev.data["control_parameter"]["submode"]
+            chargemode_phases = data.general_data["general"].get_phases_chargemode(chargemode)
+            if chargemode_phases == "auto":
+                if phases <= self.data["set"]["phases_to_use"]:
+                    phases = self.data["set"]["phases_to_use"]
+            elif phases >= chargemode_phases:
+                phases = chargemode_phases
+            pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/control_parameter/phases", phases)
+            if phases != charging_ev.data["control_parameter"]["phases"]:
+                charging_ev.data["control_parameter"]["phases"] = phases
+                pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/control_parameter/phases", phases)
+                return True
+            else:
+                return False
         except Exception as e:
             log.exception_logging(e)
 

@@ -208,8 +208,13 @@ class setData():
             self._validate_value(msg, int, [(0, 100)])
         elif re.search("^openWB/set/vehicle/[0-9]+/control_parameter/required_current$", msg.topic) != None:
             self._validate_value(msg, int, [(6, 32), (0, 0)])
-        elif re.search("^openWB/set/vehicle/[0-9]+/control_parameter/chargemode$", msg.topic) != None:
+        elif re.search("^openWB/set/vehicle/[0-9]+/control_parameter/phases$", msg.topic) != None:
+            self._validate_value(msg, int, [(0, 3)])
+        elif (re.search("^openWB/set/vehicle/[0-9]+/control_parameter/submode$", msg.topic) != None or
+                re.search("^openWB/set/vehicle/[0-9]+/control_parameter/chargemode$", msg.topic) != None):
             self._validate_value(msg, str)
+        elif re.search("^openWB/set/vehicle/[0-9]+/control_parameter/prio$", msg.topic) != None:
+            self._validate_value(msg, int, [(0, 1)])
         elif (re.search("^openWB/set/vehicle/[0-9]+/control_parameter/timestamp_switch_on_off$", msg.topic) != None or
                 re.search("^openWB/set/vehicle/[0-9]+/control_parameter/timestamp_auto_phase_switch$", msg.topic) != None):
             self._validate_value(msg, str)

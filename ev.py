@@ -49,8 +49,10 @@ class ev():
         if "control_parameter" not in self.data:
             self.data["control_parameter"] = {}
         pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/required_current", 0)
+        pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/phases", 0)
         pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/timestamp_switch_on_off", "0")
         pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/timestamp_auto_phase_switch", "0")
+        pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/submode", "stop")
         pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/chargemode", "stop")
 
     def reset_ev(self):
@@ -59,11 +61,15 @@ class ev():
         pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/required_current", 0)
         pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/timestamp_switch_on_off", "0")
         pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/timestamp_auto_phase_switch", "0")
+        pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/submode", "stop")
         pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/chargemode", "stop")
+        pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/phases", 0)
         self.data["control_parameter"]["required_current"] = 0 
         self.data["control_parameter"]["timestamp_switch_on_off"] = "0"
         self.data["control_parameter"]["timestamp_auto_phase_switch"] = "0"
+        self.data["control_parameter"]["submode"] = "stop"
         self.data["control_parameter"]["chargemode"] = "stop"
+        self.data["control_parameter"]["phases"] = 0 
 
     def get_required_current(self):
         """ ermittelt, ob und mit welchem Strom das EV geladen werden soll (unabhängig vom Lastmanagement)
@@ -102,12 +108,20 @@ class ev():
                 state = False
             required_current = self._check_min_max_current(required_current)
             # Die benötigte Stromstärke hat sich durch eine Änderung des Lademdous oder der Konfiguration geändert.
-            if self.data["control_parameter"]["required_current"] != required_current:
+            # Der Ladepunkt muss in der Regelung neu priorisiert werden.
+            if (self.data["control_parameter"]["required_current"] != required_current or
+                    self.data["control_parameter"]["chargemode"] != self.charge_template.data["chargemode"]["selected"] or
+                    self.data["control_parameter"]["submode"] != chargemode or
+                    self.data["control_parameter"]["prio"] != self.charge_template.data["prio"]):
                 mode_changed = True
             self.data["control_parameter"]["required_current"] = required_current
             pub.pub("openWB/set/vehicle/"+self.ev_num +"/control_parameter/required_current", required_current)
-            self.data["control_parameter"]["chargemode"] = chargemode
-            pub.pub("openWB/set/vehicle/"+self.ev_num +"/control_parameter/chargemode", chargemode)
+            self.data["control_parameter"]["submode"] = chargemode
+            pub.pub("openWB/set/vehicle/"+self.ev_num +"/control_parameter/submode", chargemode)
+            self.data["control_parameter"]["chargemode"] = self.charge_template.data["chargemode"]["selected"]
+            pub.pub("openWB/set/vehicle/"+self.ev_num +"/control_parameter/chargemode", self.charge_template.data["chargemode"]["selected"])
+            self.data["control_parameter"]["prio"] = self.charge_template.data["prio"]
+            pub.pub("openWB/set/vehicle/"+self.ev_num +"/control_parameter/prio", self.charge_template.data["prio"])
             log.message_debug_log("debug", "EV"+str(self.ev_num)+": Theroretisch benötigter Strom "+str(required_current)+"A, Lademodus "+str(
                 self.charge_template.data["chargemode"]["selected"])+", Submodus: "+str(chargemode)+", Prioritaet: "+str(self.charge_template.data["prio"]))
             return state, message, mode_changed

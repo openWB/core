@@ -88,7 +88,7 @@ def pub_settings():
     pub.pub("openWB/vehicle/template/charge_template/1/chargemode/instant_charging/limit/selected", "soc")
     pub.pub("openWB/vehicle/template/charge_template/1/chargemode/instant_charging/limit/soc", 50)
     pub.pub("openWB/vehicle/template/charge_template/1/chargemode/instant_charging/limit/amount", 10)
-    pub.pub("openWB/vehicle/template/charge_template/1/chargemode/pv_charging/min_current", 10)
+    pub.pub("openWB/vehicle/template/charge_template/1/chargemode/pv_charging/min_current", 14)
     pub.pub("openWB/vehicle/template/charge_template/1/chargemode/pv_charging/min_soc", 23)
     pub.pub("openWB/vehicle/template/charge_template/1/chargemode/pv_charging/min_soc_current", 13)
     pub.pub("openWB/vehicle/template/charge_template/1/chargemode/pv_charging/max_soc", 80)

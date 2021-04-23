@@ -289,7 +289,8 @@ def _check_max_power(required_power, offset):
     try:
         consumption_left = data.counter_data["counter0"].data["set"]["consumption_left"] - required_power - offset_power
         data.counter_data["counter0"].data["set"]["consumption_left"] -= required_power
-        if consumption_left >= 0:
+        # Float-Ungenauigkeiten abfangen
+        if consumption_left >= -0.01:
             return False, data.counter_data["counter0"].data["set"]["consumption_left"] - 300
         else:
             return True, data.counter_data["counter0"].data["set"]["consumption_left"] - 300

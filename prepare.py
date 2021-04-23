@@ -81,14 +81,16 @@ class prepare():
                         # Wenn die Nachrichten gesendet wurden, EV wieder löschen, wenn das EV im Algorithmus nicht berücksichtigt werden soll.
                         if state == False:
                             chargepoint.data["set"]["charging_ev"] = -1
-                        # Die benötigte Stromstärke hat sich durch eine Änderung des Lademdous oder der Konfiguration geändert. Die Zuteilung entsprechend der Priorisierung muss neu geprüft werden.
-                        # Daher muss der LP zurückgesetzt werden.
-                        if mode_changed == True and max(chargepoint.data["get"]["current"]) != 0:
-                            chargepoint.data["set"]["current"] = 0
-                            freed_current = (max(chargepoint.data["get"]["current"]) )* -1
-                            freed_power = freed_current * 230 * chargepoint.data["get"]["phases_in_use"]
-                            # Werte aktualisieren
-                            loadmanagement.loadmanagement_for_cp(chargepoint, freed_power, freed_current, chargepoint.data["get"]["phases_in_use"])
+                        else:
+                            phases_changed = chargepoint.get_phases()
+                            # Die benötigte Stromstärke hat sich durch eine Änderung des Lademdous oder der Konfiguration geändert. Die Zuteilung entsprechend der Priorisierung muss neu geprüft werden.
+                            # Daher muss der LP zurückgesetzt werden, wenn er gerade lädt, um in der Regelung wieder berücksichtigt zu werden.
+                            if (mode_changed == True or phases_changed == True) and max(chargepoint.data["get"]["current"]) != 0:
+                                chargepoint.data["set"]["current"] = 0
+                                freed_current = (max(chargepoint.data["get"]["current"]) )* -1
+                                freed_power = freed_current * 230 * chargepoint.data["get"]["phases_in_use"]
+                                # Werte aktualisieren
+                                loadmanagement.loadmanagement_for_cp(chargepoint, freed_power, freed_current, chargepoint.data["get"]["phases_in_use"])
                     pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/get/state_str", message)
                     log.message_debug_log("info", message)
             except Exception as e:
