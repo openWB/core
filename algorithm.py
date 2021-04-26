@@ -39,7 +39,7 @@ class control():
         try:
             log.message_debug_log("debug", "# Algorithmus-Start")
 
-            # erstmal die PV-Überschuss-Ladung zurück nehmen, wenn kein Überschuss vorhanden ist
+            # erstmal die PV-Überschuss-Ladung zurück nehmen
             log.message_debug_log("debug", "## Ueberschuss-Ladung ueber Mindeststrom bei PV-Laden zuruecknehmen.")
             self._reduce_used_evu_overhang()
         
@@ -77,15 +77,26 @@ class control():
             log.exception_logging(e)
 
     def _reduce_used_evu_overhang(self):
-        """ prüft, ob für LP ohne Einspeisungsgrenze noch EVU-Überschuss zurückgenommen werden muss und dann für die LP mit Einspeiungsgrenze.
+        """ nimmt den Ladestrom, der über der eingestellten Stromstärke liegt, zurück, um zu schauen, ob er im Algorithmus anderweitig verteilt wird.
+        Wenn nein, wird er am Ende wieder zugeteilt.
         """
         try:
-            if data.pv_data["all"].overhang_left != 0:
-                if data.pv_data["all"].overhang_left() < 0:
-                    self._distribute_remaining_overhang(True)
-                if (data.pv_data["all"].overhang_left() - data.general_data["general"].data["chargemode_config"]["pv_charging"]["feed_in_yield"]) < 0:
-                    self._distribute_remaining_overhang(False)
-            data.pv_data["all"].put_stats()
+            for cp in data.cp_data:
+                if "cp" in cp:
+                    chargepoint = data.cp_data[cp]
+                    if "current" in chargepoint.data["set"]:
+                        if chargepoint.data["set"]["current"] == 0:
+                            continue
+                    if chargepoint.data["set"]["charging_ev"] != -1:
+                        charging_ev = chargepoint.data["set"]["charging_ev"]
+                        # Wenn beim PV-Laden über der eingestellten Stromstärke geladen wird, erstmal zurücknehmen.
+                        if(charging_ev.charge_template.data["chargemode"]["selected"] == "pv_charging" and 
+                                charging_ev.data["control_parameter"]["submode"] == "pv_charging" and
+                                charging_ev.data["control_parameter"]["required_current"] < chargepoint.data["set"]["current"]):
+                            released_current = charging_ev.data["control_parameter"]["required_current"] - chargepoint.data["set"]["current"]
+                            data.pv_data["all"].allocate_evu_power(chargepoint.data["get"]["phases_in_use"] * 230 * released_current)
+                            self._process_data(chargepoint, charging_ev.data["control_parameter"]["required_current"], chargepoint.data["get"]["phases_in_use"])
+                            log.message_debug_log("debug", "Ladung an LP"+str(chargepoint.cp_num)+" um "+str(released_current)+"A auf "+str(charging_ev.data["control_parameter"]["required_current"])+"A angepasst.")
         except Exception as e:
             log.exception_logging(e)
 
@@ -636,12 +647,10 @@ class control():
             if num_of_phases > 0:
                 bat_overhang = data.bat_module_data["all"].data["set"]["charging_power_left"]
                 if feed_in_limit == False:
-                    # pos. Wert -> Ladestrom wird erhöht, negativer Wert -> Ladestrom wird reduziert
                     current_diff_per_phase = (data.pv_data["all"].overhang_left() + bat_overhang) / 230 / num_of_phases
                 else:
                     feed_in_yield = data.general_data["general"].data["chargemode_config"]["pv_charging"]["feed_in_yield"]
                     if data.pv_data["all"].overhang_left() <= feed_in_yield:
-                        # pos. Wert -> Ladestrom wird erhöht, negativer Wert -> Ladestrom wird reduziert
                         current_diff_per_phase = (data.pv_data["all"].overhang_left() - feed_in_yield + bat_overhang) / 230 / num_of_phases
                     else:
                         # Wenn die Einspeisungsgrenze erreicht wird, Strom schrittweise erhöhen, bis dies nicht mehr der Fall ist.
