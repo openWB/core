@@ -13,7 +13,7 @@ def pub_settings():
     pub.pub("openWB/chargepoint/1/get/rfid", 1234)
     # cpt1
     pub.pub("openWB/chargepoint/template/1/autolock/1/frequency/selected", "daily")
-    pub.pub("openWB/chargepoint/template/1/autolock/1/time", ["07:00", "11:15"])
+    pub.pub("openWB/chargepoint/template/1/autolock/1/time", ["07:00", "16:15"])
     pub.pub("openWB/chargepoint/template/1/autolock/1/active", 1)
     pub.pub("openWB/chargepoint/template/1/autolock/wait_for_charging_end", 1)
     pub.pub("openWB/chargepoint/template/1/autolock/active", 0)
@@ -80,7 +80,6 @@ def pub_settings():
     #evt1
     pub.pub("openWB/vehicle/template/ev_template/1/min_current", 10)
     pub.pub("openWB/vehicle/template/ev_template/1/battery_capacity", 80)
-    pub.pub("openWB/vehicle/template/ev_template/1/max_phases", 3)
     pub.pub("openWB/vehicle/template/ev_template/1/max_current", 16)
     #ct1
     pub.pub("openWB/vehicle/template/charge_template/1/prio", 1)

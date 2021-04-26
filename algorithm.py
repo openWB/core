@@ -79,6 +79,9 @@ class control():
     def _reduce_used_evu_overhang(self):
         """ nimmt den Ladestrom, der über der eingestellten Stromstärke liegt, zurück, um zu schauen, ob er im Algorithmus anderweitig verteilt wird.
         Wenn nein, wird er am Ende wieder zugeteilt.
+
+        Alle EV im PV-Modus sollen laden, bevor eine Phasenumschaltung stattfindet. Deshalb wird zu Beginn des Algorithmus der übrige Überschuss zurückgenommen und
+        steht dann im weiteren Algorithmus, z.B. zur Erreicherung der Einschaltschwelle für ein weiteres EV, zur Verfügung.
         """
         try:
             for cp in data.cp_data:
@@ -425,7 +428,10 @@ class control():
                             phases, current = chargepoint.data["set"]["charging_ev"].auto_phase_switch(chargepoint.data["get"]["phases_in_use"], chargepoint.data["get"]["current"])
                             # Umschaltung erfoderlich
                             if current != None:
+                                # Ladung stoppen
                                 self._process_data(chargepoint, current, phases)
+                                # Leistung reservieren
+
         except Exception as e:
             log.exception_logging(e)
 
