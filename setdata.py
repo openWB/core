@@ -336,7 +336,8 @@ class setData():
             self._validate_value(msg, str)
         elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/config/max_current", msg.topic) != None:
             self._validate_value(msg, int, [(6, 32)])
-        elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/config/connected_phases", msg.topic) != None:
+        elif (re.search("^openWB/set/chargepoint/[1-9][0-9]*/config/connected_phases", msg.topic) != None or
+                re.search("^openWB/set/chargepoint/[1-9][0-9]*/config/phase_1", msg.topic) != None):
             self._validate_value(msg, int, [(1, 3)])
         elif (re.search("^openWB/set/chargepoint/[1-9][0-9]*/config/auto_phase_switch_hw", msg.topic) != None or
                 re.search("^openWB/set/chargepoint/[1-9][0-9]*/config/control_pilot_interruption_hw", msg.topic) != None):

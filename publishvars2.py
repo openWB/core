@@ -7,6 +7,7 @@ def pub_settings():
     pub.pub("openWB/chargepoint/1/set/manual_lock", 0)
     pub.pub("openWB/chargepoint/1/config/template", 1)
     pub.pub("openWB/chargepoint/1/config/connected_phases", 3)
+    pub.pub("openWB/chargepoint/1/config/phase_1", 0)
     pub.pub("openWB/chargepoint/1/config/auto_phase_switch_hw", 1)
     pub.pub("openWB/chargepoint/1/config/control_pilot_interruption_hw", 0)
     pub.pub("openWB/chargepoint/1/get/rfid", 1234)
@@ -23,6 +24,7 @@ def pub_settings():
     pub.pub("openWB/chargepoint/2/set/manual_lock", 0)
     pub.pub("openWB/chargepoint/2/config/template", 2)
     pub.pub("openWB/chargepoint/2/config/connected_phases", 3)
+    pub.pub("openWB/chargepoint/2/config/phase_1", 0)
     pub.pub("openWB/chargepoint/2/config/auto_phase_switch_hw", 1)
     pub.pub("openWB/chargepoint/2/config/control_pilot_interruption_hw", 0)
     pub.pub("openWB/chargepoint/2/get/rfid", 1234)
@@ -83,7 +85,7 @@ def pub_settings():
     #ct1
     pub.pub("openWB/vehicle/template/charge_template/1/prio", 1)
     pub.pub("openWB/vehicle/template/charge_template/1/time_charging/active", 0)
-    pub.pub("openWB/vehicle/template/charge_template/1/chargemode/selected", "pv_charging")
+    pub.pub("openWB/vehicle/template/charge_template/1/chargemode/selected", "instant_charging")
     pub.pub("openWB/vehicle/template/charge_template/1/chargemode/instant_charging/current", 14)
     pub.pub("openWB/vehicle/template/charge_template/1/chargemode/instant_charging/limit/selected", "soc")
     pub.pub("openWB/vehicle/template/charge_template/1/chargemode/instant_charging/limit/soc", 50)
@@ -97,7 +99,7 @@ def pub_settings():
     #ct2
     pub.pub("openWB/vehicle/template/charge_template/2/prio", 1)
     pub.pub("openWB/vehicle/template/charge_template/2/time_charging/active", 0)
-    pub.pub("openWB/vehicle/template/charge_template/2/time_charging/1/active", 1)
+    pub.pub("openWB/vehicle/template/charge_template/2/time_charging/1/active", 0)
     pub.pub("openWB/vehicle/template/charge_template/2/time_charging/1/frequency/selected", "weekly")
     pub.pub("openWB/vehicle/template/charge_template/2/time_charging/1/frequency/weekly", [1,1,1,1,1,0,0])
     pub.pub("openWB/vehicle/template/charge_template/2/time_charging/1/time", ["07:00", "17:20"])
@@ -129,7 +131,7 @@ def pub_settings():
     hierarchy = [{"id":"counter0", "children":[{"id":"cp1", "children": []}, {"id":"cp2", "children": []}, {"id":"cp3", "children": []}]}]
     pub.pub("openWB/counter/get/hierarchy", hierarchy)
     pub.pub("openWB/counter/0/get/current", [0,0,0])
-    pub.pub("openWB/counter/0/config/max_consumption", 60000)
+    pub.pub("openWB/counter/0/config/max_consumption", 6000)
     pub.pub("openWB/counter/0/config/max_current", [35, 35, 35])
 
     #bat
@@ -138,7 +140,7 @@ def pub_settings():
     #general
     pub.pub("openWB/general/chargemode_config/unbalanced_load", 1)
     pub.pub("openWB/general/chargemode_config/unbalanced_load_limit", 32)
-    pub.pub("openWB/general/chargemode_config/instant_charging/phases_to_use", 3)
+    pub.pub("openWB/general/chargemode_config/instant_charging/phases_to_use", 1)
     pub.pub("openWB/general/chargemode_config/pv_charging/bat_prio", 1)
     pub.pub("openWB/general/chargemode_config/pv_charging/switch_on_soc", 60)
     pub.pub("openWB/general/chargemode_config/pv_charging/switch_off_soc", 40)
