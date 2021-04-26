@@ -40,6 +40,7 @@ class bat:
                 # Speicher wird entladen -> Wert wird ebenfalls benötigt, um zu prüfen, ob Abschaltschwelle erreicht wird.
                 else:
                     self.data["set"]["charging_power_left"] = self.data["get"]["power"]
+                log.message_debug_log("debug", str(self.data["set"]["charging_power_left"])+"W verbliebende Speicher-Leistung")
             else:
                 self.data["config"]["configured"] = False
                 self.data["set"]["charging_power_left"] = 0

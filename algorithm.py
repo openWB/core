@@ -82,9 +82,9 @@ class control():
         try:
             if data.pv_data["all"].overhang_left != 0:
                 if data.pv_data["all"].overhang_left() < 0:
-                    self._distribute_remianing_overhang(True)
+                    self._distribute_remaining_overhang(True)
                 if (data.pv_data["all"].overhang_left() - data.general_data["general"].data["chargemode_config"]["pv_charging"]["feed_in_yield"]) < 0:
-                    self._distribute_remianing_overhang(False)
+                    self._distribute_remaining_overhang(False)
             data.pv_data["all"].put_stats()
         except Exception as e:
             log.exception_logging(e)
@@ -411,7 +411,10 @@ class control():
                         if (chargepoint.data["config"]["auto_phase_switch_hw"] == True and 
                                 chargepoint.data["get"]["charge_state"] == True and 
                                 chargepoint.data["set"]["charging_ev"].data["control_parameter"]["chargemode"] == "pv_charging"):
-                            chargepoint.data["set"]["phases_to_use"] = chargepoint.data["set"]["charging_ev"].auto_phase_switch(chargepoint.data["get"]["phases_in_use"], chargepoint.data["get"]["current"])
+                            phases, current = chargepoint.data["set"]["charging_ev"].auto_phase_switch(chargepoint.data["get"]["phases_in_use"], chargepoint.data["get"]["current"])
+                            # Umschaltung erfoderlich
+                            if current != None:
+                                self._process_data(chargepoint, current, phases)
         except Exception as e:
             log.exception_logging(e)
 
@@ -590,6 +593,8 @@ class control():
             else:
                 if self._check_cp_without_feed_in_is_prioritised(chargepoint) == True:
                     required_current, phases = data.pv_data["all"].switch_on(chargepoint, required_power, required_current, phases, data.bat_module_data["all"].power_for_bat_charging())
+                else:
+                    required_current, phases = no_load()
             self._process_data(chargepoint, required_current, phases)
         except Exception as e:
             log.exception_logging(e)
@@ -600,14 +605,14 @@ class control():
         try:
             if data.pv_data["all"].overhang_left() != 0:
                 if data.pv_data["all"].overhang_left() > 0:
-                    self._distribute_remianing_overhang(False)
+                    self._distribute_remaining_overhang(False)
                 if (data.pv_data["all"].overhang_left() - data.general_data["general"].data["chargemode_config"]["pv_charging"]["feed_in_yield"]) > 0:
-                    self._distribute_remianing_overhang(True)
+                    self._distribute_remaining_overhang(True)
             data.pv_data["all"].put_stats()
         except Exception as e:
             log.exception_logging(e)
 
-    def _distribute_remianing_overhang(self, feed_in_limit):
+    def _distribute_remaining_overhang(self, feed_in_limit):
         """ Verteilt den verbleibenden EVU-Überschuss gleichmäßig auf alle genutzten Phasen. Dazu wird zunächst die Anzahl der Phasen ermittelt, auf denen geladen wird.
         Danach wird der Überschuss pro Phase ermittelt und auf die Phasen aufgeschlagen.
 
