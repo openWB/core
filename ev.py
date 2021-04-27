@@ -184,13 +184,13 @@ class ev():
         except Exception as e:
             log.exception_logging(e)
 
-    def auto_phase_switch(self, phases_in_use, current_get):
+    def auto_phase_switch(self, phases_to_use, current_get):
         """ prüft, ob ein Timer für die Phasenumschaltung gestartet oder gestoppt werden muss oder ein Timer für die Phasenumschaltung abgelaufen ist.
 
         Parameter
         ---------
-        phases_in_use: int
-            Anzahl der aktuell genutzten Phasen
+        phases_to_use: int
+            Anzahl der aktuell nutzbaren Phasen
         current_get: list
             Stromstärke, mit der aktuell geladen wird
 
@@ -201,9 +201,8 @@ class ev():
         """
         try:
             pv_config = data.general_data["general"].data["chargemode_config"]["pv_charging"]
-            phases_to_use = phases_in_use
             current = None
-            if phases_in_use == 1:
+            if phases_to_use == 1:
                 # Wenn im einphasigen Laden mit Maximalstromstärke geladen wird und der Timer abläuft, wird auf 3 Phasen umgeschaltet.
                 if self.data["control_parameter"]["timestamp_auto_phase_switch"] != "0" and max(current_get) == self.ev_template.data["max_current"]:
                     if timecheck.check_timestamp(self.data["control_parameter"]["timestamp_auto_phase_switch"], pv_config["phase_switch_delay"]*60) == False:
@@ -226,8 +225,8 @@ class ev():
                     pub.pub("openWB/set/vehicle/"+str(self.ev_num) +
                             "/control_parameter/timestamp_auto_phase_switch", "0")
                     log.message_debug_log("info", "Umschaltverzoegerung von 1 auf 3 Phasen abgebrochen.")
-            elif phases_in_use == 3:
-                if self.data["control_parameter"]["timestamp_auto_phase_switch"] != "0" and all(current == self.ev_template.data["min_current"] for current in current_get):
+            else:
+                if self.data["control_parameter"]["timestamp_auto_phase_switch"] != "0" and all((current == self.ev_template.data["min_current"] or current == 0) for current in current_get):
                     if timecheck.check_timestamp(self.data["control_parameter"]["timestamp_auto_phase_switch"], (16-pv_config["phase_switch_delay"])*60) == False:
                         phases_to_use = 1
                         # Nach dem Umschalten wieder mit Maximalstromstärke laden.

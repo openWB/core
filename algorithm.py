@@ -425,7 +425,7 @@ class control():
                         if (chargepoint.data["config"]["auto_phase_switch_hw"] == True and 
                                 chargepoint.data["get"]["charge_state"] == True and 
                                 chargepoint.data["set"]["charging_ev"].data["control_parameter"]["chargemode"] == "pv_charging"):
-                            phases, current = chargepoint.data["set"]["charging_ev"].auto_phase_switch(chargepoint.data["get"]["phases_in_use"], chargepoint.data["get"]["current"])
+                            phases, current = chargepoint.data["set"]["charging_ev"].auto_phase_switch(chargepoint.data["set"]["phases_to_use"], chargepoint.data["get"]["current"])
                             # Umschaltung erfoderlich
                             if current != None:
                                 # Ladung stoppen
@@ -648,7 +648,11 @@ class control():
                         if charging_ev.data["control_parameter"]["submode"] == "pv_charging":
                             if (data.cp_data[chargepoint].data["set"]["current"] != 0 and 
                                     charging_ev.charge_template.data["chargemode"]["pv_charging"]["feed_in_limit"] == feed_in_limit):
-                                num_of_phases += data.cp_data[chargepoint].data["set"]["phases_to_use"]
+                                # Wenn der Ladepunkt bereits lädt, die tatsächlich genutzten Phasen verwenden.
+                                if data.cp_data[chargepoint].data["get"]["charge_state"] == True:
+                                    num_of_phases += data.cp_data[chargepoint].data["get"]["phases_in_use"]
+                                else:
+                                    num_of_phases += data.cp_data[chargepoint].data["set"]["phases_to_use"]
             # Ladung aktiv?
             if num_of_phases > 0:
                 bat_overhang = data.bat_module_data["all"].data["set"]["charging_power_left"]
@@ -670,7 +674,10 @@ class control():
                                     charging_ev.data["control_parameter"]["submode"] == "pv_charging"):
                                 if (chargepoint.data["set"]["current"] != 0 and 
                                         charging_ev.charge_template.data["chargemode"]["pv_charging"]["feed_in_limit"] == feed_in_limit):
-                                    phases = chargepoint.data["set"]["phases_to_use"]
+                                    if chargepoint.data["get"]["charge_state"] == True:
+                                        phases = chargepoint.data["get"]["phases_in_use"]
+                                    else:
+                                        phases = chargepoint.data["set"]["phases_to_use"]
                                     # Einhalten des Mindeststroms des Lademodus und Maximalstroms des EV
                                     current = charging_ev.check_min_max_current_for_pv_charging(current_diff_per_phase+chargepoint.data["set"]["current"])
                                     power_diff = phases * 230 * (current - chargepoint.data["set"]["current"])
