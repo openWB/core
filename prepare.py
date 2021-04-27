@@ -73,8 +73,9 @@ class prepare():
                     chargepoint = data.cp_data[cp]
                     vehicle, message = chargepoint.get_state()
                     if vehicle != -1:
-                        state, message_ev, mode_changed = data.ev_data["ev"+str(vehicle)].get_required_current()
-                        chargepoint.data["set"]["charging_ev"] = data.ev_data["ev"+str(vehicle)]
+                        charging_ev = data.ev_data["ev"+str(vehicle)]
+                        state, message_ev, mode_changed = charging_ev.get_required_current()
+                        chargepoint.data["set"]["charging_ev"] = charging_ev
                         if message_ev != None:
                             message = "Keine Ladung an LP"+str(chargepoint.cp_num)+", da "+str(message_ev)
                         log.message_debug_log("debug", "Ladepunkt "+chargepoint.cp_num+", EV: "+chargepoint.data["set"]["charging_ev"].data["name"]+" (EV-Nr."+str(vehicle)+")")
@@ -83,14 +84,16 @@ class prepare():
                             chargepoint.data["set"]["charging_ev"] = -1
                         else:
                             phases_changed = chargepoint.get_phases()
+                            # Einhaltung des Minimal- und Maximalstroms prüfen
+                            required_current = charging_ev.check_min_max_current(charging_ev.data["control_parameter"]["required_current"], charging_ev.data["control_parameter"]["phases"])
+                            charging_ev.data["control_parameter"]["required_current"] = required_current
+                            pub.pub("openWB/set/vehicle/"+charging_ev.ev_num +"/control_parameter/required_current", required_current)
                             # Die benötigte Stromstärke hat sich durch eine Änderung des Lademdous oder der Konfiguration geändert. Die Zuteilung entsprechend der Priorisierung muss neu geprüft werden.
                             # Daher muss der LP zurückgesetzt werden, wenn er gerade lädt, um in der Regelung wieder berücksichtigt zu werden.
                             if (mode_changed == True or phases_changed == True) and max(chargepoint.data["get"]["current"]) != 0:
                                 chargepoint.data["set"]["current"] = 0
-                                freed_current = (max(chargepoint.data["get"]["current"]) )* -1
-                                freed_power = freed_current * 230 * chargepoint.data["get"]["phases_in_use"]
-                                # Werte aktualisieren
-                                loadmanagement.loadmanagement_for_cp(chargepoint, freed_power, freed_current, chargepoint.data["get"]["phases_in_use"])
+                                # Da nicht bekannt ist, ob mit Bezug, Überschuss oder aus dem Speicher geladen wird, wird die freiwerdende Leistung erst im nächsten Durchlauf berücksichtigt.
+                                # Ggf. entsteht so eine kurze Unterbrechung der Ladung, wenn während dem Laden umkonfiguriert wird.
                     pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/get/state_str", message)
                     log.message_debug_log("info", message)
             except Exception as e:

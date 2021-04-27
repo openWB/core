@@ -32,7 +32,10 @@ class charge():
         """aktualisiert den Zustand des Ladepunkts.
         """
         try:
+            current = round(chargepoint.data["set"]["current"], 2)
+            # Zur Sicherheit - nach dem der Algorithmus abgeschlossen ist - nochmal die Einhaltung der Stromstärken prüfen.
+            current = chargepoint.data["set"]["charging_ev"].check_min_max_current(current, chargepoint.data["set"]["phases_to_use"])
             pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/set/phases_to_use", chargepoint.data["set"]["phases_to_use"])
-            pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/set/current", round(chargepoint.data["set"]["current"], 2))
+            pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/set/current", current)
         except Exception as e:
             log.exception_logging(e)

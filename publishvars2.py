@@ -81,7 +81,8 @@ def pub_settings():
     #evt1
     pub.pub("openWB/vehicle/template/ev_template/1/min_current", 10)
     pub.pub("openWB/vehicle/template/ev_template/1/battery_capacity", 80)
-    pub.pub("openWB/vehicle/template/ev_template/1/max_current", 16)
+    pub.pub("openWB/vehicle/template/ev_template/1/max_current_one_phase", 32)
+    pub.pub("openWB/vehicle/template/ev_template/1/max_current_multi_phases", 16)
     #pub.pub("openWB/vehicle/template/ev_template/1/max_phases", 3)
     #ct1
     pub.pub("openWB/vehicle/template/charge_template/1/prio", 0)
@@ -186,7 +187,7 @@ def pub_settings():
     pub.pub("openWB/general/chargemode_config/pv_charging/switch_on_threshold", 1500)
     pub.pub("openWB/general/chargemode_config/pv_charging/feed_in_yield", 2000)
     pub.pub("openWB/general/chargemode_config/pv_charging/phase_switch_delay", 1)
-    pub.pub("openWB/general/chargemode_config/pv_charging/phases_to_use", 3)
+    pub.pub("openWB/general/chargemode_config/pv_charging/phases_to_use", 1)
     pub.pub("openWB/general/chargemode_config/scheduled_charging/phases_to_use", 1)
     pub.pub("openWB/general/chargemode_config/time_charging/phases_to_use", 1)
     pub.pub("openWB/general/chargemode_config/standby/phases_to_use", 1)

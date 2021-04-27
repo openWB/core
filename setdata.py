@@ -291,7 +291,8 @@ class setData():
             self._validate_value(msg, int, [(1, 3)])
         elif re.search("^openWB/set/vehicle/template/ev_template/[1-9][0-9]*/min_current$", msg.topic) != None:
             self._validate_value(msg, int, [(6, 32)])
-        elif re.search("^openWB/set/vehicle/template/ev_template/[1-9][0-9]*/max_current$", msg.topic) != None:
+        elif (re.search("^openWB/set/vehicle/template/ev_template/[1-9][0-9]*/max_current_one_phase$", msg.topic) != None or
+                re.search("^openWB/set/vehicle/template/ev_template/[1-9][0-9]*/max_current_multi_phases$", msg.topic) != None):
             self._validate_value(msg, int, [(6, 32)])
         elif re.search("^openWB/set/vehicle/template/ev_template/[1-9][0-9]*/control_pilot_interruption$", msg.topic) != None:
             self._validate_value(msg, int, [(0, 1)])

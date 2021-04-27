@@ -422,10 +422,16 @@ class control():
                 if "cp" in cp:
                     if data.cp_data[cp].data["set"]["charging_ev"] != -1:
                         chargepoint = data.cp_data[cp]
+                        charging_ev = data.cp_data[cp].data["set"]["charging_ev"]
                         if (chargepoint.data["config"]["auto_phase_switch_hw"] == True and 
                                 chargepoint.data["get"]["charge_state"] == True and 
-                                chargepoint.data["set"]["charging_ev"].data["control_parameter"]["chargemode"] == "pv_charging"):
-                            phases, current = chargepoint.data["set"]["charging_ev"].auto_phase_switch(chargepoint.data["set"]["phases_to_use"], chargepoint.data["get"]["current"])
+                                charging_ev.data["control_parameter"]["chargemode"] == "pv_charging" and
+                                data.general_data["general"].get_phases_chargemode("pv_charging") == "auto"):
+                            phases, current = charging_ev.auto_phase_switch(chargepoint.data["set"]["phases_to_use"], chargepoint.data["get"]["current"])
+                            # Nachdem im Automatikmodus die Anzahl Phasen bekannt ist, Einhaltung des Maximalstroms prüfen.
+                            required_current = charging_ev.check_min_max_current(current, phases)
+                            charging_ev.data["control_parameter"]["required_current"] = required_current
+                            pub.pub("openWB/set/vehicle/"+charging_ev.ev_num +"/control_parameter/required_current", required_current)
                             # Umschaltung erfoderlich
                             if current != None:
                                 # Ladung stoppen
@@ -679,7 +685,7 @@ class control():
                                     else:
                                         phases = chargepoint.data["set"]["phases_to_use"]
                                     # Einhalten des Mindeststroms des Lademodus und Maximalstroms des EV
-                                    current = charging_ev.check_min_max_current_for_pv_charging(current_diff_per_phase+chargepoint.data["set"]["current"])
+                                    current = charging_ev.check_min_max_current_for_pv_charging(current_diff_per_phase+chargepoint.data["set"]["current"], phases)
                                     power_diff = phases * 230 * (current - chargepoint.data["set"]["current"])
                                     
                                     if power_diff != 0:
@@ -760,8 +766,11 @@ class control():
             log.exception_logging(e)
 
     def _check_cp_without_feed_in_is_prioritised(self, chargepoint):
-        """ Wenn ein LP im Sbumodus PV-Laden nicht die Maximalstromstärke zugeteilt bekommen hat, 
+        """ Wenn ein LP im Submodus PV-Laden nicht die Maximalstromstärke zugeteilt bekommen hat, 
         darf ein LP mit Einspeiungsgrenze nicht eingeschaltet werden.
+        Diese Funktion wird benötigt, da sie während der Verteilung des Überschusses aufgerufen 
+        wird. Der verbleibende Überschuss wird erst später verteilt, wenn bereits der LP mit 
+        Einspeisungsgrenze eine Ladefreigabe erhalten hätte.
 
         Parameter
         ---------
@@ -781,7 +790,11 @@ class control():
                             charging_ev = data.cp_data[cp].data["set"]["charging_ev"]
                             if (charging_ev.data["control_parameter"]["submode"] == "pv_charging" and 
                                     charging_ev.charge_template.data["chargemode"]["pv_charging"]["feed_in_limit"] == False):
-                                if data.cp_data[cp].data["set"]["current"] != charging_ev.ev_template.data["max_current"]:
+                                if data.cp_data[cp].data["set"]["phases_to_use"] == 1:
+                                    max_current = charging_ev.ev_template.data["max_current_one_phase"]
+                                else:
+                                    max_current = charging_ev.ev_template.data["max_current_multi_phases"]
+                                if data.cp_data[cp].data["set"]["current"] != max_current:
                                     return False
             return True
         except Exception as e:

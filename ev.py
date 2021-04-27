@@ -95,8 +95,7 @@ class ev():
         mode_changed = False
         try:
             if self.charge_template.data["chargemode"]["selected"] == "scheduled_charging":
-                required_current, chargemode, message = self.charge_template.scheduled_charging(
-                    self.data["get"]["soc"], self.ev_template.data["max_current"], self.ev_template.data["battery_capacity"], self.ev_template.data["max_phases"])
+                required_current, chargemode, message = self.charge_template.scheduled_charging(self.data["get"]["soc"], self.ev_template)
             elif self.charge_template.data["time_charging"]["active"] == True:
                 required_current, chargemode, message = self.charge_template.time_charging()
             if (required_current == 0) or (required_current == None):
@@ -111,7 +110,7 @@ class ev():
                  required_current, chargemode, message = self.charge_template.stop()
             if chargemode == "stop" or (self.charge_template.data["chargemode"]["selected"] == "stop"):
                 state = False
-            required_current = self._check_min_max_current(required_current)
+            
             # Die benötigte Stromstärke hat sich durch eine Änderung des Lademdous oder der Konfiguration geändert.
             # Der Ladepunkt muss in der Regelung neu priorisiert werden.
             if (self.data["control_parameter"]["required_current"] != required_current or
@@ -120,7 +119,6 @@ class ev():
                     self.data["control_parameter"]["prio"] != self.charge_template.data["prio"]):
                 mode_changed = True
             self.data["control_parameter"]["required_current"] = required_current
-            pub.pub("openWB/set/vehicle/"+self.ev_num +"/control_parameter/required_current", required_current)
             self.data["control_parameter"]["submode"] = chargemode
             pub.pub("openWB/set/vehicle/"+self.ev_num +"/control_parameter/submode", chargemode)
             self.data["control_parameter"]["chargemode"] = self.charge_template.data["chargemode"]["selected"]
@@ -138,7 +136,7 @@ class ev():
         """
         pass
 
-    def _check_min_max_current(self, required_current):
+    def check_min_max_current(self, required_current, phases):
         """ prüft, ob der gesetzte Ladestrom über dem Mindest-Ladestrom und unter dem Maximal-Ladestrom des EVs liegt. Falls nicht, wird der 
         Ladestrom auf den Mindest-Ladestrom bzw. den Maximal-Ladestrom des EV gesetzt.
 
@@ -147,21 +145,31 @@ class ev():
         required_current: float
             Strom, der vom Lademodus benötgt wird
 
+        phases: int
+            Anzahl Phasen, mit denen geladen werden soll
+
         Return
         ------
         float: Strom, mit dem das EV laden darf
         """
         try:
-            if required_current != 0:
-                if required_current < self.ev_template.data["min_current"]:
-                    return self.ev_template.data["min_current"]
-                if required_current > self.ev_template.data["max_current"]:
-                    return self.ev_template.data["max_current"]
+            # Überprüfung bei "auto" erfolgt nach der Prüfung der Phasenumschaltung, wenn fest steht, mit vielen Phasen geladen werden soll.
+            if phases != "auto":
+                if required_current != 0:
+                    if required_current < self.ev_template.data["min_current"]:
+                        required_current = self.ev_template.data["min_current"]
+                    else:
+                        if phases == 1:
+                            max_current = self.ev_template.data["max_current_one_phase"]
+                        else:
+                            max_current = self.ev_template.data["max_current_multi_phases"]
+                        if required_current > max_current:
+                            required_current = self.ev_template.data["max_current"]
             return required_current
         except Exception as e:
             log.exception_logging(e)
 
-    def check_min_max_current_for_pv_charging(self, required_current):
+    def check_min_max_current_for_pv_charging(self, required_current, phases):
         """ prüft, ob der gesetzte Ladestrom über dem Mindest-Ladestrom des Lademdous und unter dem Maximal-Ladestrom des EVs liegt. Falls nicht, wird der 
         Ladestrom auf den Mindest-Ladestrom bzw. den Maximal-Ladestrom gesetzt.
 
@@ -169,6 +177,9 @@ class ev():
         ---------
         required_current: float
             Strom, der vom Lademodus benötgt wird
+
+        phases: int
+            Anzahl Phasen, mit denen geladen werden soll
 
         Return
         ------
@@ -178,8 +189,12 @@ class ev():
             if required_current != 0:
                 if required_current < self.data["control_parameter"]["required_current"]:
                     return self.data["control_parameter"]["required_current"]
-                if required_current > self.ev_template.data["max_current"]:
-                    return self.ev_template.data["max_current"]
+                if phases == 1:
+                    max_current = self.ev_template.data["max_current_one_phase"]
+                else:
+                    max_current = self.ev_template.data["max_current_multi_phases"]
+                if required_current > max_current:
+                    return max_current
             return required_current
         except Exception as e:
             log.exception_logging(e)
@@ -204,7 +219,7 @@ class ev():
             current = None
             if phases_to_use == 1:
                 # Wenn im einphasigen Laden mit Maximalstromstärke geladen wird und der Timer abläuft, wird auf 3 Phasen umgeschaltet.
-                if self.data["control_parameter"]["timestamp_auto_phase_switch"] != "0" and max(current_get) == self.ev_template.data["max_current"]:
+                if self.data["control_parameter"]["timestamp_auto_phase_switch"] != "0" and max(current_get) == self.ev_template.data["max_current_one_phase"]:
                     if timecheck.check_timestamp(self.data["control_parameter"]["timestamp_auto_phase_switch"], pv_config["phase_switch_delay"]*60) == False:
                         phases_to_use = 3
                         # Nach dem Umschalten erstmal mit Mindeststromstärke laden.
@@ -213,14 +228,14 @@ class ev():
                         pub.pub("openWB/set/vehicle/"+str(self.ev_num) + "/control_parameter/timestamp_auto_phase_switch", "0")
                         log.message_debug_log("info", "Umschaltung von 1 auf 3 Phasen.")
                 # Wenn im einphasigen Laden die Maximalstromstärke erreicht wird und der Timer noch nicht läuft, Timer für das Umschalten auf 3 Phasen starten.
-                elif self.data["control_parameter"]["timestamp_auto_phase_switch"] == "0" and max(current_get) == self.ev_template.data["max_current"]:
+                elif self.data["control_parameter"]["timestamp_auto_phase_switch"] == "0" and max(current_get) == self.ev_template.data["max_current_one_phase"]:
                     self.data["control_parameter"]["timestamp_auto_phase_switch"] = timecheck.create_timestamp()
                     pub.pub("openWB/set/vehicle/"+str(self.ev_num) +
                         "/control_parameter/timestamp_auto_phase_switch", self.data["control_parameter"]["timestamp_auto_phase_switch"])
                     log.message_debug_log("info", "Umschaltverzoegerung von 1 auf 3 Phasen für "+str(
                         pv_config["phase_switch_delay"]) + "Min aktiv.")
                 # Wenn der Timer läuft und nicht mit Maximalstromstärke geladen wird, Timer stoppen.
-                elif self.data["control_parameter"]["timestamp_auto_phase_switch"] != "0" and max(current_get) < self.ev_template.data["max_current"]:
+                elif self.data["control_parameter"]["timestamp_auto_phase_switch"] != "0" and max(current_get) < self.ev_template.data["max_current_one_phase"]:
                     self.data["control_parameter"]["timestamp_auto_phase_switch"] = "0"
                     pub.pub("openWB/set/vehicle/"+str(self.ev_num) +
                             "/control_parameter/timestamp_auto_phase_switch", "0")
@@ -230,7 +245,7 @@ class ev():
                     if timecheck.check_timestamp(self.data["control_parameter"]["timestamp_auto_phase_switch"], (16-pv_config["phase_switch_delay"])*60) == False:
                         phases_to_use = 1
                         # Nach dem Umschalten wieder mit Maximalstromstärke laden.
-                        current = self.ev_template.data["max_current"]
+                        current = self.ev_template.data["max_current_one_phase"]
                         self.data["control_parameter"]["timestamp_auto_phase_switch"] = "0"
                         pub.pub("openWB/set/vehicle/"+str(self.ev_num) + "/control_parameter/timestamp_auto_phase_switch", "0")
                         log.message_debug_log("info", "Umschaltung von 3 auf 1 Phase.")
@@ -361,22 +376,16 @@ class chargeTemplate():
         except Exception as e:
             log.exception_logging(e)
 
-    def scheduled_charging(self, soc, max_current, battery_capacity, max_phases):
+    def scheduled_charging(self, soc, ev_template):
         """ prüft, ob der Ziel-SoC erreicht wurde und stellt den zur Erreichung nötigen Ladestrom ein.
 
         Parameter
         ---------
-            soc: int
-                Akkustand
+        soc: int
+            Akkustand
 
-            max_current: int
-                maximaler Ladestrom
-
-            battery_capacity: float
-                Akkugröße
-
-            max_phases: int
-                maximale Anzahl Phasen, mit denen das EV laden kann.
+        ev_template: dict
+            Daten des EV, das geladen werden soll.
 
         Return
         ------
@@ -385,6 +394,8 @@ class chargeTemplate():
         """
         try:
             message = None
+            battery_capacity = ev_template.data["battery_capacity"]
+            max_phases = ev_template.data["max_phases"]
             for plan in self.data["chargemode"]["scheduled_charging"]:
                 if self.data["chargemode"]["scheduled_charging"][plan]["active"] == True:
                     try:
@@ -396,6 +407,10 @@ class chargeTemplate():
                             else:
                                 usable_phases = phases_scheduled_charging
 
+                            if usable_phases == 1:
+                                max_current = ev_template.data["max_current_one_phase"]
+                            else:
+                                max_current = ev_template.data["max_current_multi_phases"]
                             available_current = 0.8*max_current*usable_phases
                             required_wh = (
                                 (self.data["chargemode"]["scheduled_charging"][plan]["soc"] - soc)/100) * battery_capacity*1000
