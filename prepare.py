@@ -134,8 +134,8 @@ class prepare():
                 "name": vehicle.data["name"]}
         config_obj = {"charge_template": vehicle.charge_template.ct_num,
                 "ev_template": vehicle.ev_template.et_num,
-                "chargemode": vehicle.data["control_parameter"]["chargemode"],
-                "priority": vehicle.data["control_parameter"]["prio"],
+                "chargemode": vehicle.charge_template.data["chargemode"]["selected"],
+                "priority": vehicle.charge_template.data["prio"],
                 "average_consumption": vehicle.ev_template.data["average_consump"]}
 
         pub.pub("openWB/chargepoint/"+str(cp_num)+"/get/connected_vehicle/soc_config", soc_config_obj)
