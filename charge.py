@@ -23,9 +23,14 @@ class charge():
                 if "cp" in cp:
                     chargepoint = data.cp_data[cp]
                     if chargepoint.data["set"]["charging_ev"] != -1:
-                            chargepoint.initiate_control_pilot_interruption()
-                            chargepoint.initiate_phase_switch(chargepoint)
-                            self._update_state(chargepoint)
+                        chargepoint.initiate_control_pilot_interruption()
+                        chargepoint.initiate_phase_switch(chargepoint)
+                        self._update_state(chargepoint)
+                    else:
+                        # LP, an denen nicht geladen werden darf
+                        if chargepoint.data["set"]["current"] != 0:
+                            chargepoint.data["set"]["current"] = 0
+                            pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/set/current", 0)
         except Exception as e:
             log.exception_logging(e)
 
