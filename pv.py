@@ -284,3 +284,6 @@ class pv():
         pub.pub("openWB/set/pv/set/released_evu_overhang", 0)
         self.data["set"]["reserved_evu_overhang"] = 0
         self.data["set"]["released_evu_overhang"] = 0
+
+    def print_stats(self):
+        log.message_debug_log("debug", str(self.data["set"]["overhang_power_left"])+"W EVU-Ueberschuss, der fuer die Regelung verfuegbar ist, davon "+str(self.data["set"]["reserved_evu_overhang"])+"W fuer die Einschaltverzoegerung reservierte Leistung.")

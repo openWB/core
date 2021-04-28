@@ -560,7 +560,8 @@ class setData():
             self._validate_value(msg, int, [(1, 15)])
         elif re.search("^openWB/set/general/chargemode_config/pv_charging/control_range$", msg.topic) != None:
             self._validate_value(msg, int, collection=list)
-        elif re.search("^openWB/set/general/chargemode_config/pv_charging/phases_to_use$", msg.topic) != None:
+        elif ((re.search("^openWB/set/general/chargemode_config/pv_charging/phases_to_use$", msg.topic) != None or
+                re.search("^openWB/set/general/chargemode_config/scheduled_charging/phases_to_use$", msg.topic) != None)):
             self._validate_value(msg, int, [(1, 3)])
             self._validate_value(msg, str)
         elif re.search("^openWB/set/general/chargemode_config/pv_charging/bat_prio$", msg.topic) != None:

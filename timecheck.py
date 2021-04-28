@@ -130,6 +130,9 @@ def check_timeframe(plan, hours):
                     begin, end = set_date(now, begin, end)
                 else:
                     end = end.replace(now.year, now.month, now.day)
+                    # Wenn der Zeitpunkt an diesem Tag schon vorüber ist, nächsten Tag prüfen.
+                    if end < now:
+                        end += datetime.timedelta(days = 1)
                     begin = _calc_begin(end, hours)
                 state = is_timeframe_valid(now, begin, end)
 
@@ -212,8 +215,13 @@ def check_duration(plan, duration):
 
         elif plan["frequency"]["selected"] == "daily":
             end = end.replace(now.year, now.month, now.day)
-            return _is_duration_valid(now, duration, end)
-
+            # Wenn der Zeitpunkt an diesem Tag schon vorüber ist, nächsten Tag prüfen.
+            state, remaining_time = _is_duration_valid(now, duration, end)
+            if remaining_time < 0:
+                delta = datetime.timedelta(days = 1)
+                end += delta
+                state, remaining_time = _is_duration_valid(now, duration, end)
+            return state, remaining_time
         elif plan["frequency"]["selected"] == "weekly":
             if plan["frequency"]["weekly"][now.weekday()] == True:
                 end = end.replace(now.year, now.month, now.day)

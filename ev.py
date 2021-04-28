@@ -125,8 +125,6 @@ class ev():
             pub.pub("openWB/set/vehicle/"+self.ev_num +"/control_parameter/chargemode", self.charge_template.data["chargemode"]["selected"])
             self.data["control_parameter"]["prio"] = self.charge_template.data["prio"]
             pub.pub("openWB/set/vehicle/"+self.ev_num +"/control_parameter/prio", self.charge_template.data["prio"])
-            log.message_debug_log("debug", "EV"+str(self.ev_num)+": Theroretisch benötigter Strom "+str(required_current)+"A, Lademodus "+str(
-                self.charge_template.data["chargemode"]["selected"])+", Submodus: "+str(chargemode)+", Prioritaet: "+str(self.charge_template.data["prio"]))
             return state, message, mode_changed
         except Exception as e:
             log.exception_logging(e)
@@ -164,7 +162,7 @@ class ev():
                         else:
                             max_current = self.ev_template.data["max_current_multi_phases"]
                         if required_current > max_current:
-                            required_current = self.ev_template.data["max_current"]
+                            required_current = max_current
             return required_current
         except Exception as e:
             log.exception_logging(e)
@@ -432,10 +430,10 @@ class chargeTemplate():
                                             return available_current, "instant_charging", message
                                         else:
                                             message = "da kein günstiger Zeitpunkt zum preisbasierten Laden ist. Falls vorhanden, wird mit EVU-Überschuss geladen."
-                                            return 0, "pv_charging", message
+                                            return ev_template.data["min_current"], "pv_charging", message
                                     else:
                                         message = "da noch Zeit bis zum Zieltermmin ist. Falls vorhanden, wird mit EVU-Überschuss geladen."
-                                        return 0, "pv_charging", message
+                                        return ev_template.data["min_current"], "pv_charging", message
                                 else:
                                     message = "da noch mehr als ein Tag bis zum Zieltermmin ist. "
                                     return 0, "stop", message

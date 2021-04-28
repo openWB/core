@@ -93,8 +93,8 @@ class control():
                     if chargepoint.data["set"]["charging_ev"] != -1:
                         charging_ev = chargepoint.data["set"]["charging_ev"]
                         # Wenn beim PV-Laden über der eingestellten Stromstärke geladen wird, erstmal zurücknehmen.
-                        if(charging_ev.charge_template.data["chargemode"]["selected"] == "pv_charging" and 
-                                charging_ev.data["control_parameter"]["submode"] == "pv_charging" and
+                        if((charging_ev.charge_template.data["chargemode"]["selected"] == "pv_charging" or 
+                                charging_ev.data["control_parameter"]["submode"] == "pv_charging") and
                                 charging_ev.data["control_parameter"]["required_current"] < chargepoint.data["set"]["current"]):
                             released_current = charging_ev.data["control_parameter"]["required_current"] - chargepoint.data["set"]["current"]
                             data.pv_data["all"].allocate_evu_power(chargepoint.data["get"]["phases_in_use"] * 230 * released_current)
@@ -651,7 +651,8 @@ class control():
                 if "cp" in chargepoint:
                     if data.cp_data[chargepoint].data["set"]["charging_ev"] != -1:
                         charging_ev = data.cp_data[chargepoint].data["set"]["charging_ev"]
-                        if charging_ev.data["control_parameter"]["submode"] == "pv_charging":
+                        if (charging_ev.data["control_parameter"]["submode"] == "pv_charging" or
+                                charging_ev.data["control_parameter"]["chargemode"] == "pv_charging"):
                             if (data.cp_data[chargepoint].data["set"]["current"] != 0 and 
                                     charging_ev.charge_template.data["chargemode"]["pv_charging"]["feed_in_limit"] == feed_in_limit):
                                 # Wenn der Ladepunkt bereits lädt, die tatsächlich genutzten Phasen verwenden.
