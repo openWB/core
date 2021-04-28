@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-power=$(curl --connect-timeout 10 -s $1)
+power=$(curl --connect-timeout 10 -s 192.168.40.248/openWB/ramdisk/wattbezug)
 
 re='^-?[0-9]+$'
 
@@ -9,7 +9,7 @@ if ! [[ $power =~ $re ]] ; then
 	   wattbezug="0"
 fi
 echo $power
-
+echo $power > /var/www/html/openWB/ramdisk/wattbezug
 if [[ $2 != "none" ]]; then
 	echo $(curl --connect-timeout 5 -s $2)
 fi

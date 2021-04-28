@@ -8,17 +8,17 @@ mqttvar["chargepoint/1/get/current"]=lla1
 mqttvar["chargepoint/1/get/counter"]=llkwh
 mqttvar["chargepoint/1/get/charge_state"]=chargestat
 mqttvar["chargepoint/1/get/plug_state"]=plugstat
-mqttvar["chargepoint/1/get/"]=aktgeladen
-mqttvar["pv/get/counter"]=pvallwh
-mqttvar["pv/get/power"]=pvwatt
+mqttvar["chargepoint/1/get/charged_since_plugged"]=aktgeladen
+mqttvar["pv/1/get/counter"]=pvallwh
+mqttvar["pv/1/get/power"]=pvwatt
 mqttvar["bat/get/soc"]=speichersoc
 mqttvar["bat/get/power"]=speicherleistung
-mqttvar["counter/1/get/power_all"]=wattbezugint
-mqttvar["counter/1/get/current"]=evua1
-mqttvar["counter/1/get/voltage"]=evuv1
-mqttvar["counter/1/get/imported"]=bezugkwh
-mqttvar["counter/1/get/exported"]=einspeisungkwh
-
+mqttvar["counter/0/get/power_all"]=wattbezugint
+mqttvar["counter/0/get/current"]=evua1
+mqttvar["counter/0/get/voltage"]=evuv1
+mqttvar["counter/0/get/imported"]=bezugkwh
+mqttvar["counter/0/get/exported"]=einspeisungkwh
+mqttvar["vehicle/1/get/soc"]=soc
 
 for i in $(seq 1 8);
 do
