@@ -179,13 +179,13 @@ class subData():
                 if re.search("^openWB/vehicle/template/ev_template/[1-9][0-9]*$", msg.topic) != None:
                     if json.loads(str(msg.payload.decode("utf-8")))==1:
                         if "et"+index not in self.ev_template_data:
-                            self.ev_template_data["et"+index]=ev.evTemplate()
+                            self.ev_template_data["et"+index]=ev.evTemplate(index)
                     else:
                         if "et"+index in self.ev_template_data:
                             self.ev_template_data.pop("et"+index)
                 else:
                     if "et"+index not in self.ev_template_data:
-                        self.ev_template_data["et"+index]=ev.evTemplate()
+                        self.ev_template_data["et"+index]=ev.evTemplate(index)
                 self.set_json_payload(self.ev_template_data["et"+index].data, msg)
         except Exception as e:
             log.exception_logging(e)
@@ -201,7 +201,7 @@ class subData():
         index=self.get_index(msg.topic)
         try:
             if "ct"+index not in self.ev_charge_template_data:
-                    self.ev_charge_template_data["ct"+index]=ev.chargeTemplate()
+                    self.ev_charge_template_data["ct"+index]=ev.chargeTemplate(index)
             if re.search("^openWB/vehicle/template/charge_template/[1-9][0-9]*$", msg.topic) != None:
                 if json.loads(str(msg.payload.decode("utf-8")))=="":
                     if "ct"+index in self.ev_charge_template_data:

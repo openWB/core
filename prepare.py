@@ -74,6 +74,7 @@ class prepare():
                     vehicle, message = cp.get_state()
                     if vehicle != -1:
                         charging_ev = data.ev_data["ev"+str(vehicle)]
+                        self._pub_connected_vehicle(charging_ev, cp.cp_num)
                         state, message_ev, mode_changed = charging_ev.get_required_current()
                         cp.data["set"]["charging_ev"] = charging_ev
                         if message_ev != None:
@@ -110,6 +111,37 @@ class prepare():
             data.cp_data["all"]=chargepoint.allChargepoints()
         data.cp_data["all"].used_power_all()
         data.cp_data["all"].no_charge()
+
+    def _pub_connected_vehicle(self, vehicle, cp_num):
+        """ published die Daten, die zur Anzeige auf der Haupseite benötigt werden.
+
+        Parameter
+        ---------
+        vehicle: dict
+            EV, das dem LP zugeordnet ist
+        cp_num: int
+            LP-Nummer
+        """
+        soc_config_obj = {"configured": vehicle.data["soc"]["config"]["configured"], 
+                "manual": vehicle.data["soc"]["config"]["manual"]}
+        soc_obj = {"soc": vehicle.data["get"]["soc"],
+                "range": vehicle.data["get"]["range_charged"],
+                "range_unit": data.general_data["general"].data["range_unit"],
+                "timestamp": vehicle.data["get"]["soc_timestamp"],
+                "fault_stat": vehicle.data["soc"]["get"]["fault_state"],
+                "fault_str": vehicle.data["soc"]["get"]["fault_str"]}
+        info_obj = {"id": vehicle.ev_num,
+                "name": vehicle.data["name"]}
+        config_obj = {"charge_template": vehicle.charge_template.ct_num,
+                "ev_template": vehicle.ev_template.et_num,
+                "chargemode": vehicle.data["control_parameter"]["chargemode"],
+                "priority": vehicle.data["control_parameter"]["prio"],
+                "average_consumption": vehicle.ev_template.data["average_consump"]}
+
+        pub.pub("openWB/chargepoint/"+str(cp_num)+"/get/connected_vehicle/soc_config", soc_config_obj)
+        pub.pub("openWB/chargepoint/"+str(cp_num)+"/get/connected_vehicle/soc", soc_obj)
+        pub.pub("openWB/chargepoint/"+str(cp_num)+"/get/connected_vehicle/info", info_obj)
+        pub.pub("openWB/chargepoint/"+str(cp_num)+"/get/connected_vehicle/config", config_obj)
 
     def _use_pv(self):
         """ ermittelt, ob Überschuss an der EVU vorhanden ist.

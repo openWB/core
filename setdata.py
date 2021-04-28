@@ -183,7 +183,9 @@ class setData():
         elif (re.search("^openWB/set/vehicle/[0-9]+/soc/config/request_interval_charging$", msg.topic) != None or
                 re.search("^openWB/set/vehicle/[0-9]+/soc/config/reques_interval_not_charging$", msg.topic) != None):
             self._validate_value(msg, int, [(0, None)])
-        elif re.search("^openWB/set/vehicle/[0-9]+/soc/config/request_only_plugged$", msg.topic) != None:
+        elif (re.search("^openWB/set/vehicle/[0-9]+/soc/config/request_only_plugged$", msg.topic) != None or
+                re.search("^openWB/set/vehicle/[0-9]+/soc/config/configured$", msg.topic) != None or
+                re.search("^openWB/set/vehicle/[0-9]+/soc/config/manual$", msg.topic) != None):
             self._validate_value(msg, int, [(0, 1)])
         elif re.search("^openWB/set/vehicle/[0-9]+/soc/get/fault_state$", msg.topic) != None:
             self._validate_value(msg, int, [(0, 2)])
@@ -202,7 +204,8 @@ class setData():
                 re.search("^openWB/set/vehicle/[0-9]+/get/km_charged$", msg.topic) != None or
                 re.search("^openWB/set/vehicle/[0-9]+/get/counter$", msg.topic) != None or
                 re.search("^openWB/set/vehicle/[0-9]+/get/charged_since_plugged_counter$", msg.topic) != None or 
-                re.search("^openWB/set/vehicle/[0-9]+/get/counter_at_plugtime$", msg.topic) != None):
+                re.search("^openWB/set/vehicle/[0-9]+/get/counter_at_plugtime$", msg.topic) != None or
+                re.search("^openWB/set/vehicle/[0-9]+/get/soc_timestamp$", msg.topic) != None):
             self._validate_value(msg, int, [(0, None)])
         elif re.search("^openWB/set/vehicle/[0-9]+/get/soc$", msg.topic) != None:
             self._validate_value(msg, int, [(0, 100)])
@@ -586,6 +589,8 @@ class setData():
             self._validate_value(msg, int, [(0, 1)])
         elif re.search("^openWB/set/general/price_kwh$", msg.topic) != None:
             self._validate_value(msg, float, [(0, 99.99)])
+        elif re.search("^openWB/set/general/range_unit$", msg.topic) != None:
+            self._validate_value(msg, str)
         else:
             log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
 

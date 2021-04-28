@@ -276,16 +276,17 @@ class evTemplate():
     """ Klasse mit den EV-Daten
     """
 
-    def __init__(self):
+    def __init__(self, index):
         self.data = {}
-
+        self.et_num = index
 
 class chargeTemplate():
     """ Klasse der Lademodus-Vorlage
     """
 
-    def __init__(self):
+    def __init__(self, index):
         self.data = {}
+        self.ct_num = index
 
     def time_charging(self):
         """ prüft, ob ein Zeitfenster aktiv ist und setzt entsprechend den Ladestrom
