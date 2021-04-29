@@ -374,7 +374,7 @@ class setData():
                 re.search("^openWB/set/chargepoint/[1-9][0-9]*/get/charged_since_plugged_counter$", msg.topic) != None):
             self._validate_value(msg, float, [(0, None)])
         elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/get/phases_in_use", msg.topic) != None:
-            self._validate_value(msg, int, [(1, 3)])
+            self._validate_value(msg, int, [(0, 3)])
         elif (re.search("^openWB/set/chargepoint/[1-9][0-9]*/get/charge_state$", msg.topic) != None or
                 re.search("^openWB/set/chargepoint/[1-9][0-9]*/get/plug_state$", msg.topic) != None):
             self._validate_value(msg, int, [(0, 1)])
@@ -463,9 +463,10 @@ class setData():
                 re.search("^openWB/set/pv/[1-9][0-9]*/get/daily_yield$", msg.topic) != None or
                 re.search("^openWB/set/pv/[1-9][0-9]*/get/monthly_yield$", msg.topic) != None or
                 re.search("^openWB/set/pv/[1-9][0-9]*/get/yearly_yield$", msg.topic) != None or
-                re.search("^openWB/set/pv/[1-9][0-9]*/get/energy$", msg.topic) != None or
-                re.search("^openWB/set/pv/[1-9][0-9]*/get/power$", msg.topic) != None):
+                re.search("^openWB/set/pv/[1-9][0-9]*/get/energy$", msg.topic) != None):
             self._validate_value(msg, float, [(0, None)])
+        elif re.search("^openWB/set/pv/[1-9][0-9]*/get/power$", msg.topic) != None:
+            self._validate_value(msg, int, [(None, 0)])
         elif re.search("^openWB/set/pv/[1-9][0-9]*/get/actual_power_phase$", msg.topic) != None:
             self._validate_value(msg, float, [(0, None)], collection=list)
         else:
