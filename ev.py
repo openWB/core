@@ -68,13 +68,11 @@ class ev():
         pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/timestamp_auto_phase_switch", "0")
         pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/submode", "stop")
         pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/chargemode", "stop")
-        pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/phases", 0)
         self.data["control_parameter"]["required_current"] = 0 
         self.data["control_parameter"]["timestamp_switch_on_off"] = "0"
         self.data["control_parameter"]["timestamp_auto_phase_switch"] = "0"
         self.data["control_parameter"]["submode"] = "stop"
         self.data["control_parameter"]["chargemode"] = "stop"
-        self.data["control_parameter"]["phases"] = 0 
 
     def get_required_current(self):
         """ ermittelt, ob und mit welchem Strom das EV geladen werden soll (unabhängig vom Lastmanagement)
@@ -100,7 +98,7 @@ class ev():
                 required_current, chargemode, message = self.charge_template.time_charging()
             if (required_current == 0) or (required_current == None):
                 if self.charge_template.data["chargemode"]["selected"] == "instant_charging":
-                    required_current, chargemode, message = self.charge_template.instant_charging(self.data["get"]["soc"], self.data["get"]["charged_since_plugged_kwh"])
+                    required_current, chargemode, message = self.charge_template.instant_charging(self.data["get"]["soc"], self.data["get"]["charged_since_plugged_counter"])
                 elif self.charge_template.data["chargemode"]["selected"] == "pv_charging":
                     required_current, chargemode, message = self.charge_template.pv_charging(self.data["get"]["soc"])
                 elif self.charge_template.data["chargemode"]["selected"] == "standby":

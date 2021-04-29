@@ -176,7 +176,7 @@ class pv():
             if control_parameter["timestamp_switch_on_off"] != "0":
                 if timecheck.check_timestamp(control_parameter["timestamp_switch_on_off"], pv_config["switch_off_delay"]) == False:
                     control_parameter["timestamp_switch_on_off"] = "0"
-                    self.data["set"]["released_evu_overhang"] -= chargepoint.data["set"]["charging_ev"].data["control_parameter"] ["required_current"]*chargepoint.data["set"]["phases_to_use"]*230
+                    self.data["set"]["released_evu_overhang"] -= chargepoint.data["set"]["charging_ev"].data["control_parameter"]["required_current"]*chargepoint.data["set"]["charging_ev"].data["control_parameter"]["phases"]*230
                     log.message_debug_log("info", "Abschaltschwelle von "+str(pv_config["switch_off_threshold"])+"W fuer die Dauer der Abschaltverzöegerung unterschritten.")
                     pub.pub("openWB/set/vehicle/"+str(chargepoint.data["set"]["charging_ev"].ev_num)+"/control_parameter/timestamp_switch_on_off", "0")
                     return True

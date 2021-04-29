@@ -191,7 +191,7 @@ class control():
                         charging_ev = chargepoint.data["set"]["charging_ev"]
                         # Wenn der LP erst in diesem Zyklus eingeschaltet wird, sind noch keine phases_in_use hinterlegt.
                         if chargepoint.data["get"]["charge_state"] == False:
-                            phases = chargepoint.data["set"]["phases_to_use"]
+                            phases = charging_ev.data["control_parameter"]["phases"]
                         else:
                             phases = chargepoint.data["get"]["phases_in_use"]
                         if((charging_ev.charge_template.data["prio"] == prio) and 
@@ -233,7 +233,7 @@ class control():
                 for cp in preferenced_chargepoints:
                     # Wenn der LP erst in diesem Zyklus eingeschaltet wird, sind noch keine phases_in_use hinterlegt.
                     if cp.data["get"]["charge_state"] == False:
-                        phases = cp.data["set"]["phases_to_use"]
+                        phases = cp.data["set"]["charging_ev"].data["control_parameter"]["phases"]
                     else:
                         phases = cp.data["get"]["phases_in_use"]
                     # Wenn max_overshoot_phase 0 ist, wurde die maximale Gesamtleistung überschrittten und max_current_overshoot muss, 
@@ -329,7 +329,7 @@ class control():
                     missing_current = cp.data["set"]["charging_ev"].data["control_parameter"]["required_current"] - cp.data["set"]["current"]
                     # Wenn der LP erst in diesem Zyklus eingeschaltet wird, sind noch keine phases_in_use hinterlegt.
                     if cp.data["get"]["phases_in_use"] == 0:
-                        phases = cp.data["set"]["phases_to_use"]
+                        phases = cp.data["set"]["charging_ev"].data["control_parameter"]["phases"]
                     else:
                         phases = cp.data["get"]["phases_in_use"]
                     required_power = 230 * phases * missing_current
@@ -427,16 +427,14 @@ class control():
                                 chargepoint.data["get"]["charge_state"] == True and 
                                 charging_ev.data["control_parameter"]["chargemode"] == "pv_charging" and
                                 data.general_data["general"].get_phases_chargemode("pv_charging") == "auto"):
-                            phases, current = charging_ev.auto_phase_switch(chargepoint.data["set"]["phases_to_use"], chargepoint.data["get"]["current"])
+                            # Gibt die Stromstärke und Phasen zurück, mit denen nach der Umschaltung geladen werden soll. 
+                            # Falls keine Umschaltung erforderlich ist, werden Strom und Phasen, die übergeben wurden, wieder zurückgegeben.
+                            phases, current = charging_ev.auto_phase_switch(charging_ev.data["control_parameter"]["phases"], chargepoint.data["get"]["current"])
                             # Nachdem im Automatikmodus die Anzahl Phasen bekannt ist, Einhaltung des Maximalstroms prüfen.
                             required_current = charging_ev.check_min_max_current(current, phases)
                             charging_ev.data["control_parameter"]["required_current"] = required_current
                             pub.pub("openWB/set/vehicle/"+charging_ev.ev_num +"/control_parameter/required_current", required_current)
-                            # Umschaltung erfoderlich
-                            if current != None:
-                                # Ladung stoppen
-                                self._process_data(chargepoint, current, phases)
-                                # Leistung reservieren
+                            self._process_data(chargepoint, current, phases)
 
         except Exception as e:
             log.exception_logging(e)
@@ -515,7 +513,7 @@ class control():
                         remaining_current_overshoot = self._down_regulation(mode, chargepoints, remaining_current_overshoot, overloaded_counters[0][1][1], prevent_stop = False)
                         if remaining_current_overshoot == 0:
                             # LP kann nun wie gewünscht eingeschaltet werden
-                            self._process_data(cp, cp.data["set"]["charging_ev"].data["control_parameter"]["required_current"], cp.data["set"]["phases_to_use"])
+                            self._process_data(cp, cp.data["set"]["charging_ev"].data["control_parameter"]["required_current"], cp.data["set"]["charging_ev"].data["control_parameter"]["phases"])
                             break
                     else:
                         # Ladepunkt, der gestartet werden soll reduzieren
@@ -534,7 +532,8 @@ class control():
                             log.message_debug_log("info", "Keine Ladung an LP"+str(cp.cp_num)+", da das Reduzieren/Abschalten der anderen Ladepunkte nicht ausreicht.")
                             log.message_debug_log("debug", "Wiederherstellen des Zustands, bevor LP"+str(cp.cp_num)+" betrachtet wurde.")
                 else:
-                    log.message_debug_log("info", "LP: "+str(cp.cp_num)+", Ladestrom: "+str(cp.data["set"]["current"])+"A, Phasen: "+str(cp.data["set"]["phases_to_use"])+", Ladeleistung: "+str((cp.data["set"]["phases_to_use"]*cp.data["set"]["current"]*230))+"W")
+                    (log.message_debug_log("info", "LP: "+str(cp.cp_num)+", Ladestrom: "+str(cp.data["set"]["current"])+"A, Phasen: "+str(cp.data["set"]["charging_ev"].data["control_parameter"]["phases"])+
+                    ", Ladeleistung: "+str((cp.data["set"]["charging_ev"].data["control_parameter"]["phases"]*cp.data["set"]["current"]*230))+"W"))
                 data.counter_data["counter0"].print_stats()
         except Exception as e:
             log.exception_logging(e)
@@ -659,7 +658,7 @@ class control():
                                 if data.cp_data[chargepoint].data["get"]["charge_state"] == True:
                                     num_of_phases += data.cp_data[chargepoint].data["get"]["phases_in_use"]
                                 else:
-                                    num_of_phases += data.cp_data[chargepoint].data["set"]["phases_to_use"]
+                                    num_of_phases += data.cp_data[chargepoint].data["set"]["charging_ev"].data["control_parameter"]["phases"]
             # Ladung aktiv?
             if num_of_phases > 0:
                 bat_overhang = data.bat_module_data["all"].data["set"]["charging_power_left"]
@@ -684,7 +683,7 @@ class control():
                                     if chargepoint.data["get"]["charge_state"] == True:
                                         phases = chargepoint.data["get"]["phases_in_use"]
                                     else:
-                                        phases = chargepoint.data["set"]["phases_to_use"]
+                                        phases = chargepoint.data["set"]["charging_ev"].data["control_parameter"]["phases"]
                                     # Einhalten des Mindeststroms des Lademodus und Maximalstroms des EV
                                     current = charging_ev.check_min_max_current_for_pv_charging(current_diff_per_phase+chargepoint.data["set"]["current"], phases)
                                     power_diff = phases * 230 * (current - chargepoint.data["set"]["current"])
@@ -791,7 +790,7 @@ class control():
                             charging_ev = data.cp_data[cp].data["set"]["charging_ev"]
                             if (charging_ev.data["control_parameter"]["submode"] == "pv_charging" and 
                                     charging_ev.charge_template.data["chargemode"]["pv_charging"]["feed_in_limit"] == False):
-                                if data.cp_data[cp].data["set"]["phases_to_use"] == 1:
+                                if data.cp_data[cp].data["set"]["charging_ev"].data["control_parameter"]["phases"]== 1:
                                     max_current = charging_ev.ev_template.data["max_current_one_phase"]
                                 else:
                                     max_current = charging_ev.ev_template.data["max_current_multi_phases"]
@@ -816,7 +815,6 @@ class control():
         """
         try:
             chargepoint.data["set"]["current"] = required_current
-            chargepoint.data["set"]["phases_to_use"] = phases
             data.pv_data["all"].put_stats()
         except Exception as e:
             log.exception_logging(e)

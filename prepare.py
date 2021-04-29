@@ -90,7 +90,7 @@ class prepare():
                                     cp.data["get"]["charge_state"] == False and 
                                     data.pv_data["all"].data["set"]["overhang_power_left"] == 0):
                                 log.message_debug_log("error", "Reservierte Leistung kann nicht 0 sein.")
-                            phases_changed = cp.get_phases()
+                            cp.get_phases()
                             # Einhaltung des Minimal- und Maximalstroms prüfen
                             required_current = charging_ev.check_min_max_current(charging_ev.data["control_parameter"]["required_current"], charging_ev.data["control_parameter"]["phases"])
                             log.message_debug_log("debug", "EV"+str(charging_ev.ev_num)+": Theroretisch benötigter Strom "+str(required_current)+"A, Lademodus "+str(
@@ -99,7 +99,7 @@ class prepare():
                             pub.pub("openWB/set/vehicle/"+charging_ev.ev_num +"/control_parameter/required_current", required_current)
                             # Die benötigte Stromstärke hat sich durch eine Änderung des Lademdous oder der Konfiguration geändert. Die Zuteilung entsprechend der Priorisierung muss neu geprüft werden.
                             # Daher muss der LP zurückgesetzt werden, wenn er gerade lädt, um in der Regelung wieder berücksichtigt zu werden.
-                            if (mode_changed == True or phases_changed == True):
+                            if mode_changed == True:
                                 # Zeitstempel löschen, wenn der Lademodus geändert wird
                                 if charging_ev.data["control_parameter"]["timestamp_switch_on_off"] != "0":
                                     charging_ev.data["control_parameter"]["timestamp_switch_on_off"] = "0"

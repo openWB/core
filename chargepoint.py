@@ -79,7 +79,6 @@ class chargepoint():
         pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/autolock_state", 0)
         pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/charging_ev", -1)
         pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/energy_to_charge", 0)
-        pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/phases_to_use", 0)
 
     def _is_cp_available(self):
         """ prüft, ob sich der LP in der vorgegebenen Zeit zurückgemeldet hat.
@@ -159,8 +158,6 @@ class chargepoint():
                 pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/current", 0)
                 self.data["set"]["energy_to_charge"] = 0
                 pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/energy_to_charge", 0)
-                self.data["set"]["phases_to_use"] = 0
-                pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/phases_to_use", 0)
                 return -1, message
         except Exception as e:
             log.exception_logging(e)
@@ -182,14 +179,18 @@ class chargepoint():
         except Exception as e:
             log.exception_logging(e)
 
-    def initiate_phase_switch(self, chargepoint):
+    def initiate_phase_switch(self):
         """prüft, ob eine Phasenumschaltung erforderlich ist und führt diese durch.
         """
         try:
-            if chargepoint.data["config"]["auto_phase_switch_hw"] == True and chargepoint.data["get"]["charge_state"] == True:
-                if self.data["get"]["phases_in_use"] != self.data["set"]["phases_to_use"]:
-                    #perform hw phase switch
-                    pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/perform_phase_switch", True)
+            # Einmal muss die Anzahl der Phasen gesetzt werden.
+            if "phases_to_use" not in self.data["set"]:
+                    pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/phases_to_use", self.data["set"]["charging_ev"].data["control_parameter"]["phases"])
+            if self.data["get"]["phases_in_use"] != self.data["set"]["charging_ev"].data["control_parameter"]["phases"]:
+                if self.data["config"]["auto_phase_switch_hw"] == True and self.data["get"]["charge_state"] == True:
+                    pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/phases_to_use", self.data["set"]["charging_ev"].data["control_parameter"]["phases"])
+                else:
+                    log.message_debug_log("error", "Phasenumschaltung an LP"+str(self.cp_num)+" nicht möglich.")
         except Exception as e:
             log.exception_logging(e)
 
@@ -211,18 +212,11 @@ class chargepoint():
                 phases = config["connected_phases"]
             chargemode = charging_ev.data["control_parameter"]["submode"]
             chargemode_phases = data.general_data["general"].get_phases_chargemode(chargemode)
-            if chargemode_phases == "auto":
-                if phases <= self.data["set"]["phases_to_use"]:
-                    phases = self.data["set"]["phases_to_use"]
-            elif phases >= chargemode_phases:
+            if chargemode_phases != "auto" and phases >= chargemode_phases:
                 phases = chargemode_phases
-            pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/control_parameter/phases", phases)
             if phases != charging_ev.data["control_parameter"]["phases"]:
                 charging_ev.data["control_parameter"]["phases"] = phases
                 pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/control_parameter/phases", phases)
-                return True
-            else:
-                return False
         except Exception as e:
             log.exception_logging(e)
 
