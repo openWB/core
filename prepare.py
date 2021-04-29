@@ -99,8 +99,13 @@ class prepare():
                             pub.pub("openWB/set/vehicle/"+charging_ev.ev_num +"/control_parameter/required_current", required_current)
                             # Die benötigte Stromstärke hat sich durch eine Änderung des Lademdous oder der Konfiguration geändert. Die Zuteilung entsprechend der Priorisierung muss neu geprüft werden.
                             # Daher muss der LP zurückgesetzt werden, wenn er gerade lädt, um in der Regelung wieder berücksichtigt zu werden.
-                            if (mode_changed == True or phases_changed == True) and max(cp.data["get"]["current"]) != 0:
-                                cp.data["set"]["current"] = 0
+                            if (mode_changed == True or phases_changed == True):
+                                # Zeitstempel löschen, wenn der Lademodus geändert wird
+                                if charging_ev.data["control_parameter"]["timestamp_switch_on_off"] != "0":
+                                    charging_ev.data["control_parameter"]["timestamp_switch_on_off"] = "0"
+                                    pub.pub("openWB/set/vehicle/"+str(cp.data["set"]["charging_ev"].ev_num)+"/control_parameter/timestamp_switch_on_off", "0")
+                                elif max(cp.data["get"]["current"]) != 0:
+                                    cp.data["set"]["current"] = 0
                                 # Da nicht bekannt ist, ob mit Bezug, Überschuss oder aus dem Speicher geladen wird, wird die freiwerdende Leistung erst im nächsten Durchlauf berücksichtigt.
                                 # Ggf. entsteht so eine kurze Unterbrechung der Ladung, wenn während dem Laden umkonfiguriert wird.
                     pub.pub("openWB/set/chargepoint/"+str(cp.cp_num)+"/get/state_str", message)
