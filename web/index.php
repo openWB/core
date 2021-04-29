@@ -39,7 +39,11 @@
 			// set to /openWB/web/. So from now on path is /openWB/ to access cookie from all subdirs
 			// therefore delete old cookies by having them expire immediatley
 			setcookie('openWBTheme', '', time() - 3600, '/openWB/web');
-			include 'themes/'.$_COOKIE['openWBTheme'].'/theme.html';
+			if( file_exists($_SERVER['DOCUMENT_ROOT'] . '/openWB/web/themes/' . $_COOKIE['openWBTheme'] . '/theme.php') ){
+				include 'themes/'.$_COOKIE['openWBTheme'].'/theme.php';
+			} else {
+				include 'themes/'.$_COOKIE['openWBTheme'].'/theme.html';
+			}
 		}
 	}
 ?>
