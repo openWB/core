@@ -425,9 +425,8 @@ class setData():
                 re.search("^openWB/set/pv/get/monthly_yield$", msg.topic) != None or
                 re.search("^openWB/set/pv/get/yearly_yield$", msg.topic) != None):
             self._validate_value(msg, float, [(0, None)])
-        elif (re.search("^openWB/set/pv/get/current$", msg.topic) != None or
-                re.search("^openWB/set/pv/get/power$", msg.topic) != None):
-            self._validate_value(msg, float, [(0, None)], collection=list)
+        elif re.search("^openWB/set/pv/get/power$", msg.topic) != None:
+            self._validate_value(msg, int, [(None, 0)], collection=list)
         elif (re.search("^openWB/set/pv/set/overhang_power_left$", msg.topic) != None or
                 re.search("^openWB/set/pv/set/reserved_evu_overhang$", msg.topic) != None or
                 re.search("^openWB/set/pv/set/released_evu_overhang$", msg.topic) != None):
@@ -493,6 +492,11 @@ class setData():
             self._validate_value(msg, int, [(0, 100)])
         elif re.search("^openWB/set/bat/get/power$", msg.topic) != None:
             self._validate_value(msg, int)
+        elif (re.search("^openWB/set/bat/get/imported$", msg.topic) != None or
+                re.search("^openWB/set/bat/get/exported$", msg.topic) != None or
+                re.search("^openWB/set/bat/get/daily_yield_export$", msg.topic) != None or
+                re.search("^openWB/set/bat/get/daily_yield_import$", msg.topic) != None):
+            self._validate_value(msg, float, [(0, None)])
         elif (re.search("^openWB/set/bat/[1-9][0-9]*/config/selected$", msg.topic) != None or
                 re.search("^openWB/set/bat/[1-9][0-9]*/config/[a-z,_]+/ip_address[1-9,_]*$", msg.topic) != None or
                 re.search("^openWB/set/bat/[1-9][0-9]*/config/[a-z,_]+/api$", msg.topic) != None or
