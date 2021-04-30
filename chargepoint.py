@@ -186,7 +186,7 @@ class chargepoint():
             # Einmal muss die Anzahl der Phasen gesetzt werden.
             if "phases_to_use" not in self.data["set"]:
                     pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/phases_to_use", self.data["set"]["charging_ev"].data["control_parameter"]["phases"])
-            if self.data["get"]["phases_in_use"] != self.data["set"]["charging_ev"].data["control_parameter"]["phases"]:
+            if self.data["set"]["phases_to_use"] != self.data["set"]["charging_ev"].data["control_parameter"]["phases"]:
                 if self.data["config"]["auto_phase_switch_hw"] == True and self.data["get"]["charge_state"] == True:
                     pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/phases_to_use", self.data["set"]["charging_ev"].data["control_parameter"]["phases"])
                 else:
@@ -212,8 +212,12 @@ class chargepoint():
                 phases = config["connected_phases"]
             chargemode = charging_ev.data["control_parameter"]["submode"]
             chargemode_phases = data.general_data["general"].get_phases_chargemode(chargemode)
-            if chargemode_phases != "auto" and phases >= chargemode_phases:
-                phases = chargemode_phases
+            if chargemode_phases == "auto":
+                if self.data["set"]["current"] == 0:
+                # Im Automatik-Modus muss die Ladung mit einer Phase begonnen werden.
+                    phases = 1
+                else:
+                    phases = charging_ev.data["control_parameter"]["phases"]
             if phases != charging_ev.data["control_parameter"]["phases"]:
                 charging_ev.data["control_parameter"]["phases"] = phases
                 pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/control_parameter/phases", phases)

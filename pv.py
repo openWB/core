@@ -176,7 +176,7 @@ class pv():
             if control_parameter["timestamp_switch_on_off"] != "0":
                 if timecheck.check_timestamp(control_parameter["timestamp_switch_on_off"], pv_config["switch_off_delay"]) == False:
                     control_parameter["timestamp_switch_on_off"] = "0"
-                    self.data["set"]["released_evu_overhang"] -= chargepoint.data["set"]["charging_ev"].data["control_parameter"]["required_current"]*chargepoint.data["set"]["charging_ev"].data["control_parameter"]["phases"]*230
+                    self.data["set"]["released_evu_overhang"] -= chargepoint.data["set"]["required_power"] 
                     log.message_debug_log("info", "Abschaltschwelle von "+str(pv_config["switch_off_threshold"])+"W fuer die Dauer der Abschaltverzöegerung unterschritten.")
                     pub.pub("openWB/set/vehicle/"+str(chargepoint.data["set"]["charging_ev"].ev_num)+"/control_parameter/timestamp_switch_on_off", "0")
                     return True
@@ -221,6 +221,24 @@ class pv():
         except Exception as e:
             log.exception_logging(e)
 
+    def reset_switch_on_off(self, chargepoint):
+        """ Zeitstempel und reseervierte Leistung löschen
+
+        Parameter
+        ---------
+        chargepoint: dict
+            Ladepunkt, für den die Werte zurückgesetzt werden sollen
+        """
+        charging_ev = chargepoint.data["set"]["charging_ev"]
+        if charging_ev.data["control_parameter"]["timestamp_switch_on_off"] != "0":
+            charging_ev.data["control_parameter"]["timestamp_switch_on_off"] = "0"
+            pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/control_parameter/timestamp_switch_on_off", "0")
+            # Wenn bereits geladen wird, freigegebene Leistung freigeben. Wenn nicht geladen wird, reservierte Leistung freigeben.
+            if chargepoint.data["get"]["charge_state"] == False:
+                data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= chargepoint.data["set"]["required_power"]
+            else:
+                data.pv_data["all"].data["set"]["released_evu_overhang"]  -= chargepoint.data["set"]["required_power"]
+
     def overhang_left(self):
         """ gibt den verfügbaren EVU-Überschuss zurück.
 
@@ -257,7 +275,6 @@ class pv():
                 log.message_debug_log("debug", str(self.data["set"]["overhang_power_left"])+"W EVU-Ueberschuss, der fuer die folgenden Ladepunkte uebrig ist, davon "+str(self.data["set"]["reserved_evu_overhang"])+"W fuer die Einschaltverzoegerung reservierte Leistung.")
                 # Float-Ungenauigkeiten abfangen
                 if self.data["set"]["overhang_power_left"] < -0.01:
-                    self.data["set"]["overhang_power_left"] += required_power
                     log.message_debug_log("error", "Es wurde versucht, mehr EVU-Überschuss zu allokieren, als vorhanden ist.")
                     return False
             return True

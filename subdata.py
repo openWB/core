@@ -140,7 +140,7 @@ class subData():
             if re.search("^openWB/vehicle/[0-9]+/.+$", msg.topic) != None:
                 index=self.get_index(msg.topic)
                 if "ev"+index not in self.ev_data:
-                    self.ev_data["ev"+index]=ev.ev(index)
+                    self.ev_data["ev"+index]=ev.ev(int(index))
                 if re.search("^openWB/vehicle/[0-9]+$", msg.topic) != None:
                     if json.loads(str(msg.payload.decode("utf-8")))=="":
                         if "ev"+index in self.ev_data:
@@ -179,13 +179,13 @@ class subData():
                 if re.search("^openWB/vehicle/template/ev_template/[1-9][0-9]*$", msg.topic) != None:
                     if json.loads(str(msg.payload.decode("utf-8")))==1:
                         if "et"+index not in self.ev_template_data:
-                            self.ev_template_data["et"+index]=ev.evTemplate(index)
+                            self.ev_template_data["et"+index]=ev.evTemplate(int(index))
                     else:
                         if "et"+index in self.ev_template_data:
                             self.ev_template_data.pop("et"+index)
                 else:
                     if "et"+index not in self.ev_template_data:
-                        self.ev_template_data["et"+index]=ev.evTemplate(index)
+                        self.ev_template_data["et"+index]=ev.evTemplate(int(index))
                 self.set_json_payload(self.ev_template_data["et"+index].data, msg)
         except Exception as e:
             log.exception_logging(e)
@@ -201,7 +201,7 @@ class subData():
         index=self.get_index(msg.topic)
         try:
             if "ct"+index not in self.ev_charge_template_data:
-                    self.ev_charge_template_data["ct"+index]=ev.chargeTemplate(index)
+                    self.ev_charge_template_data["ct"+index]=ev.chargeTemplate(int(index))
             if re.search("^openWB/vehicle/template/charge_template/[1-9][0-9]*$", msg.topic) != None:
                 if json.loads(str(msg.payload.decode("utf-8")))=="":
                     if "ct"+index in self.ev_charge_template_data:
@@ -286,7 +286,7 @@ class subData():
             elif re.search("^openWB/chargepoint/[1-9][0-9]*/.+$", msg.topic) != None:
                 index=self.get_index(msg.topic)
                 if "cp"+index not in self.cp_data:
-                    self.cp_data["cp"+index]=chargepoint.chargepoint(index)
+                    self.cp_data["cp"+index]=chargepoint.chargepoint(int(index))
                 if re.search("^openWB/chargepoint/[1-9][0-9]*/set/.+$", msg.topic) != None:
                     if "set" not in self.cp_data["cp"+index].data:
                         self.cp_data["cp"+index].data["set"]={}

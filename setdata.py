@@ -219,7 +219,8 @@ class setData():
         elif re.search("^openWB/set/vehicle/[0-9]+/control_parameter/prio$", msg.topic) != None:
             self._validate_value(msg, int, [(0, 1)])
         elif (re.search("^openWB/set/vehicle/[0-9]+/control_parameter/timestamp_switch_on_off$", msg.topic) != None or
-                re.search("^openWB/set/vehicle/[0-9]+/control_parameter/timestamp_auto_phase_switch$", msg.topic) != None):
+                re.search("^openWB/set/vehicle/[0-9]+/control_parameter/timestamp_auto_phase_switch$", msg.topic) != None or
+                re.search("^openWB/set/vehicle/[0-9]+/control_parameter/timestamp_perform_phase_switch$", msg.topic) != None):
             self._validate_value(msg, str)
         elif "openWB/vehicle/template" in msg.topic:
             self._subprocess_vehicle_chargemode_topic(msg)
