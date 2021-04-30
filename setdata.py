@@ -89,7 +89,7 @@ class setData():
                 valid = True 
             if valid == True:
                 pub.pub(msg.topic.replace('set/', '', 1), value)
-                pub.pub(msg.topic, "")
+            pub.pub(msg.topic, "")
 
     def _validate_collection_value(self, msg, data_type, ranges = None, collection = None):
         """ prüft, ob die Liste vom angegebenen Typ ist und ob Minimal- und Maximalwert eingehalten werden.
