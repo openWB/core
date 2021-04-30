@@ -218,6 +218,8 @@ class chargepoint():
                     phases = 1
                 else:
                     phases = charging_ev.data["control_parameter"]["phases"]
+            elif chargemode_phases < phases:
+                phases = chargemode_phases
             if phases != charging_ev.data["control_parameter"]["phases"]:
                 charging_ev.data["control_parameter"]["phases"] = phases
                 pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/control_parameter/phases", phases)

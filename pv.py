@@ -204,14 +204,14 @@ class pv():
                 feed_in_yield = 0
             if control_parameter["timestamp_switch_on_off"] != "0":
                 # Wurde die Abschaltschwelle erreicht?
-                if overhang > ( pv_config["switch_off_threshold"]*-1 + feed_in_yield):
+                if overhang + self.data["set"]["released_evu_overhang"] > ( pv_config["switch_off_threshold"]*-1 + feed_in_yield):
                     control_parameter["timestamp_switch_on_off"] = "0"
                     self.data["set"]["released_evu_overhang"] -= chargepoint.data["set"]["required_power"] 
                     log.message_debug_log("info", "Abschaltschwelle während der Verzögerung ueberschritten.")
                     pub.pub("openWB/set/vehicle/"+str(chargepoint.data["set"]["charging_ev"].ev_num)+"/control_parameter/timestamp_switch_on_off", "0")
             else:
                 # Wurde die Abschaltschwelle ggf. durch die Verzögerung anderer LP erreicht?
-                if overhang < (pv_config["switch_off_threshold"]*-1 + feed_in_yield):
+                if overhang + self.data["set"]["released_evu_overhang"] < (pv_config["switch_off_threshold"]*-1 + feed_in_yield):
                     control_parameter["timestamp_switch_on_off"] = timecheck.create_timestamp()
                     # merken, dass ein LP verzögert wird, damit nicht zu viele LP verzögert werden.
                     self.data["set"]["released_evu_overhang"] += chargepoint.data["set"]["required_power"] 
