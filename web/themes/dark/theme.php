@@ -13,7 +13,7 @@
 		<meta name="apple-mobile-web-app-title" content="openWB">
 		<meta name="apple-mobile-web-app-status-bar-style" content="default">
 		<link rel="apple-touch-startup-image" href="/openWB/web/img/favicons/splash1125x2436w.png"  />
-		<link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)" href="img/favicons/splash1125x2436w.png">
+		<link rel="apple-touch-startup-image" media="(width: 375px) and (height: 812px) and (-webkit-device-pixel-ratio: 3)" href="img/favicons/splash1125x2436w.png">
 		<meta name="apple-mobile-web-app-title" content="openWB">
 		<meta name="description" content="openWB">
 		<meta name="keywords" content="openWB">
@@ -168,14 +168,23 @@
 									XX %
 								</div>
 							</div>
+							<div class="pv-configured">
+								<hr class="border-warning">
+								<div class="row">
+									<div class="col font-italic font-weight-bold">
+										Einstellungen:
+									</div>
+								</div>
+								<div class="row vaRow">
+									<div class="col">
+										Vorrang PV
+									</div>
+									<div class="col text-right">
+										<input class="housebattery-priority" type="checkbox" data-toggle="toggle" data-topic="openWB/set/general/chargemode_config/pv_charging/bat_prio" data-on="Bat" data-off="EV" data-onstyle="warning" data-offstyle="primary" data-style="w-100">
+									</div>
+								</div>
+							</div>
 						</div>
-						<script>
-							$(".batVorrangBtn").click(function(){
-								console.log('btn clicked');
-								$("#batVorrangStr").toggle();
-								$("#batVorrang").toggle();
-							});
-						</script>
 					</div>
 				</div>
 
@@ -212,7 +221,7 @@
 							<i class="fas fa-home"></i>
 							<i class="grid-exporting fas fa-long-arrow-alt-right hide"></i>
 							<i class="grid-importing fas fa-long-arrow-alt-left hide"></i>
-							<img src="img/icons/electric-tower.svg" style="width: 1.1em;" >
+							<img src="img/icons/electric-tower.svg" alt="electric tower" style="width: 1.1em;" >
 							<span class="grid-power">600 W</span>
 							<span class="collPlus"></span>
 						</div>
@@ -380,13 +389,13 @@
 								<span class="fa fa-xs fa-moon hide nightChargingCp"></span>
 							</div>
 							<div class="col-3">
-								<span class="chargepoint-vehiclechargemode chargepoint-plugstate">?</span>
+								<span class="chargepoint-vehiclechargemode">?</span>
 							</div>
 							<div class="col-3">
 								<span class="chargepoint-power">?</span> <span class="chargepoint-phasesinuse">?</span> <span class="chargepoint-setcurrent">?</span>
 							</div>
 							<div class="col-3 collPlus">
-								<span class="chargepoint-energysinceplugged chargepoint-plugstate">?</span><span class="chargepoint-rangesinceplugged chargepoint-plugstate" data-consumption="0">?</span> 
+								<span class="chargepoint-energysinceplugged">?</span><span class="chargepoint-rangesinceplugged" data-consumption="0">?</span> 
 							</div>
 						</div>
 						<div class="form-row">
@@ -396,10 +405,10 @@
 								<i class="chargepoint-faultstate fas fa-times-circle text-danger hide" data-option="2"></i>
 								<span class="chargepoint-faultstr hide"></span>
 							</div>
-							<div class="col-3 chargepoint-vehiclename"></div>
+							<div class="col-3 chargepoint-vehiclename">?</div>
 							<div class="col-3">
-								<div class="chargepoint-plugstate chargepoint-socconfigured">
-									<span class="chargepoint-soc"></span> %
+								<div class="chargepoint-socconfigured hide">
+									<span class="chargepoint-soc">?</span> %
 									<i class="small chargepoint-reloadsocsymbol fas fa-redo-alt"></i>
 									<i class="chargepoint-manualsocsymbol fas fa-edit hide"></i>
 								</div>
@@ -412,43 +421,32 @@
 								--
 							</div>
 							<div class="form-row mb-1">
-								<div class="col-sm-9">
+								<div class="col">
 									<i class="fas fa-lock"></i>
 									Ladepunkt sperren
 								</div>
-								<div class="col text-right">
+								<div class="col-md-8 text-right">
 									<input class="chargepoint-manuallock" type="checkbox" data-toggle="toggle" data-topic="openWB/set/chargepoint/<cp>/set/manual_lock" data-on="Ja" data-off="Nein" data-onstyle="danger" data-offstyle="success" data-style="w-100">
 								</div>
 							</div>
 							<hr>
 							<div class="chargepoint-vehicledata" data-ev="">
 								<div class="form-row mb-1">
-									<label class="col-6 col-form-label">
+									<label class="col col-form-label">
 										<i class="fas fa-car-side"></i>
 										Fahrzeug
 									</label>
-									<div class="col-6">
+									<div class="col-md-8">
 										<select name="chargepoint-vehicleselect" class="form-control chargepoint-vehicleselect" data-topic="openWB/set/chargepoint/<cp>/set/charging_ev">
 											<option value="">-- Nicht ausgewählt --</option>
-											<option value="1">#EV 1#</option>
-											<option value="2">#EV 2#</option>
 										</select>
 									</div>
 								</div>
 								<div class="form-row mb-1">
-									<div class="col-9">
-										<i class="fas fa-star"></i>
-										Priorität
-									</div>
-									<div class="col-3 text-right">
-										<input class="chargepoint-vehiclepriority" type="checkbox" data-toggle="toggle" data-topic="openWB/set/vehicle/<ev>/control_parameter/priority" data-on="Ja" data-off="Nein" data-onstyle="success" data-offstyle="danger" data-style="w-100">
-									</div>
-								</div>
-								<div class="form-row mb-1">
-									<div class="col-4">
+									<div class="col">
 										<label class="col-form-label">Lademodus</label>
 									</div>
-									<div class="col btn-group btn-group-toggle chargepoint-chargemode" data-toggle="buttons" data-name="chargemode" data-topic="my/#/topic">
+									<div class="col-lg-8 btn-group btn-group-toggle chargepoint-chargemode" data-toggle="buttons" data-name="chargemode" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/selected">
 										<label class="btn btn-lg btn-outline-danger btn-toggle">
 											<input type="radio" name="chargemode" data-option="instant_charge">Sofortladen
 										</label>
@@ -456,7 +454,7 @@
 											<input type="radio" name="chargemode" data-option="pv_charge">PV
 										</label>
 										<label class="btn btn-lg btn-outline-primary btn-toggle">
-											<input type="radio" name="chargemode" data-option="time_charge">Zielladen
+											<input type="radio" name="chargemode" data-option="scheduled_charging">Zielladen
 										</label>
 										<label class="btn btn-lg btn-outline-dark btn-toggle">
 											<input type="radio" name="chargemode" data-option="stop">Stop
@@ -464,32 +462,57 @@
 									</div>
 								</div>
 								<div class="form-row mb-1">
-									<div class="col-9">
-										<i class="fas fa-temperature-high"></i>
-										Vorheizladen
+									<div class="col">
+										<i class="fas fa-star"></i>
+										Priorität
 									</div>
-									<div class="col-3 text-right">
-										<input type="checkbox" data-toggle="toggle" data-on="Ja" data-off="Nein" data-onstyle="success" data-offstyle="danger" data-style="w-100">
+									<div class="col-md-8 text-right">
+										<input class="chargepoint-vehiclepriority" type="checkbox" data-toggle="toggle" data-topic="openWB/set/vehicle/<ev>/control_parameter/priority" data-on="Ja" data-off="Nein" data-onstyle="success" data-offstyle="danger" data-style="w-100">
 									</div>
 								</div>
-								<!--
-								<div class="form-group mb-0">
+								<div class="form-row mb-1">
+									<div class="col">
+										<i class="far fa-clock"></i>
+										Zeitladen
+									</div>
+									<div class="col-md-8 text-right">
+										<input type="checkbox" data-toggle="toggle" data-topic="openWB/set/vehicle/template/charge_template/<ct>/time_charging/active" data-on="Ja" data-off="Nein" data-onstyle="success" data-offstyle="danger" data-style="w-100">
+									</div>
+								</div>
+								<div class="chargepoint-chargemodeoptions mb-0 hide">
 									<hr>
-									<h3>Einstellungen für den Lademodus</h3>
-									<div class="form-row vaRow mb-0">
-										<div class="col-6">
+									<h3 class="chargemode-options chargemode-option-instant_charge">Einstellungen für "Sofortladen"</h3>
+									<h3 class="chargemode-options chargemode-option-pv_charge">Einstellungen für "PV"</h3>
+									<h3 class="chargemode-options chargemode-option-scheduled_charging">Einstellungen für "Zielladen"</h3>
+									<div class="form-row vaRow mb-0 chargemode-options chargemode-option-instant_charge">
+										<div class="col">
+											Stromstärke
+										</div>
+										<div class="col-md-8">
+											<div class="form-row form-group mb-1 vaRow">
+												<label for="currentInstantChargeCp1" class="col-form-label text-right"></label>
+												<div class="col">
+													<input type="range" class="form-control-range rangeInput" id="currentInstantChargeCp1" min="6" max="32" step=".1">
+												</div>
+												<label for="currentInstantChargeCp1" class="col-form-label valueLabel" data-suffix="A">? A</label>
+											</div>
+										</div>
+									</div>
+									<div class="form-row vaRow mb-0 chargemode-options chargemode-option-pv_charge">
+										<div class="col">
 											Minimal Stromstärke
 										</div>
-										<div class="col-6">
+										<div class="col-md-8">
 											<div class="form-row form-group mb-1 vaRow">
 												<label for="minCurrentPvCp1" class="col-form-label text-right"></label>
 												<div class="col">
-													<input type="range" class="form-control-range rangeInput" id="minCurrentPvCp1" min="6" max="16" step="1" data-initialized="0" data-topicprefix="openWB/config/get/pv/">
+													<input type="range" class="form-control-range rangeInput" id="minCurrentPvCp1" min="6" max="16" step="1">
 												</div>
 												<label for="minCurrentPvCp1" class="col-form-label valueLabel" data-suffix="A">? A</label>
 											</div>
 										</div>
 									</div>
+									<!--
 									<div class="form-row vaRow">
 										<div class="col-4">
 											<label class="col-form-label">Begrenzung</label>
@@ -506,8 +529,8 @@
 											</label>
 										</div>
 									</div>
+									-->
 								</div>
-								-->
 							</div>
 						</div>
 					</div>
@@ -618,9 +641,15 @@
 
 			function chargeLimitationOptionsShowHide(btnGrp, option) {
 				// show/hide all option-parameters in form-rows for selected option
-				var parent = btnGrp.closest('.cpCard[data-cp]');  // get parent div element for charge limitation options
-				$(parent).find('.form-row[data-option*=' + option + ']').show();  // now show option elements for selected option
-				$(parent).find('.form-row[data-option]').not('[data-option*=' + option + ']').hide();  // hide all other option elements
+				var parent = btnGrp.closest('.chargepoint-card[data-cp]');  // get parent div element for charge limitation options
+				var chargemodeOptionsElement = $(parent).find('.chargepoint-chargemodeoptions');
+				if( option == "stop" ) {
+					chargemodeOptionsElement.addClass('hide');
+				} else {
+					chargemodeOptionsElement.removeClass('hide');
+					$(chargemodeOptionsElement).find('.chargemode-options.chargemode-option-'+option).removeClass('hide');  // now show option elements for selected option
+					$(chargemodeOptionsElement).find('.chargemode-options').not('.chargemode-option-'+option).addClass('hide');  // hide all other option elements
+				}
 			}
 
 			function processPreloader(mqttTopic) {
@@ -730,12 +759,18 @@
 					if( topic != undefined ) {
 						var cp = parseInt($(this).closest('[data-cp]').data('cp'));  // get attribute cp-# of parent element
 						var ev = parseInt($(this).closest('[data-ev]').data('ev'));  // get attribute ev-# of parent element
+						var ct = parseInt($(this).closest('[data-chargetemplate]').data('chargetemplate'));  // get attribute chargetemplate-# of parent element
 						topic = topic.replace( '<cp>', cp );
 						topic = topic.replace( '<ev>', ev );
-						if ( $(this).prop('checked') ) {
-							publish("1", topic);
+						topic = topic.replace( '<ct>', ct );
+						if( topic.includes('/NaN/') ) {
+							console.log( 'missing cp, ev or ct data' );
 						} else {
-							publish("0", topic);
+							if ( $(this).prop('checked') ) {
+								publish("1", topic);
+							} else {
+								publish("0", topic);
+							}
 						}
 					} else {
 						console.log("checkbox without topic changed");
@@ -825,12 +860,16 @@
 				// });
 
 				$('.btn-group-toggle').change(function(event){
-					var index = parseInt($(this).closest('[data-cp]').attr('data-cp'));  // get attribute cp-# of parent element
+					var ct = parseInt($(this).closest('[data-chargetemplate]').data('chargetemplate'));  // get attribute chargetemplate-# of parent element
 					var option = $(this).find('input[type="radio"]:checked').data('option').toString();
-					var topic = $(this).data('topic').replace('/#/', '/'+index+'/');
-					publish(option, topic);
-					// show/hide respective option-values and progress
-					chargeLimitationOptionsShowHide(this, option);
+					var topic = $(this).data('topic').replace('/<ct>/', '/'+ct+'/');
+					if( topic.includes('/NaN/') ) {
+							console.log( 'missing ct data' );
+					} else {
+						publish(option, topic);
+						// show/hide respective option-values and progress
+						chargeLimitationOptionsShowHide(this, option);
+					}
 				});
 
 				// $('.priceMore, .priceLess').click(function(event){

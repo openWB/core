@@ -8,6 +8,8 @@
 
 var graphrefreshcounter = 0;
 
+var chargemodeTemplate = [];
+
 function getCol(matrix, col){
 	var column = [];
 	for(var i=0; i<matrix.length; i++){
@@ -55,6 +57,8 @@ function createChargepoint(hierarchy) {
 				clonedElement.find('.card-body').attr('id', 'collapseChargepoint'+chargepointIndex);
 				clonedElement.find('label[for=minCurrentPvCp1]').attr('for', 'minCurrentPvCp'+chargepointIndex);
 				clonedElement.find('#minCurrentPvCp1').attr('id', 'minCurrentPvCp'+chargepointIndex);
+				clonedElement.find('label[for=currentInstantChargeCp1]').attr('for', 'currentInstantChargeCp'+chargepointIndex);
+				clonedElement.find('#currentInstantChargeCp1').attr('id', 'currentInstantChargeCp'+chargepointIndex);
 				// insert after last existing chargepoint to honor sorting from the array
 				target = $('.chargepoint-card[data-cp]').last();
 				// console.log("target: "+target.data('cp')+" index: "+chargepointIndex);
@@ -77,24 +81,617 @@ function handlevar(mqttmsg, mqttpayload) {
 	// receives all messages and calls respective function to process them
 	// console.log("newmessage: "+mqttmsg+": "+mqttpayload);
 	processPreloader(mqttmsg);
-	if ( mqttmsg.match( /^openwb\/graph\//i ) ) { processGraphMessages(mqttmsg, mqttpayload); }
-	else if ( mqttmsg.match( /^openwb\/counter\/0\//i) ) { processEvuMessages(mqttmsg, mqttpayload); } // counter/0 is always EVU
+	if ( mqttmsg.match( /^openwb\/counter\/0\//i) ) { processEvuMessages(mqttmsg, mqttpayload); } // counter/0 is always EVU
 	else if ( mqttmsg.match( /^openwb\/counter\/[0-9]+\//i) ) { /* nothing here yet */ }
 	else if ( mqttmsg.match( /^openwb\/counter\//i) ) { processGlobalCounterMessages(mqttmsg, mqttpayload); } // counter/0 is always EVU
+	else if ( mqttmsg.match( /^openwb\/bat\//i) ) { processBatteryMessages(mqttmsg, mqttpayload); }
+	else if ( mqttmsg.match( /^openwb\/pv\//i) ) { processPvMessages(mqttmsg, mqttpayload); }
+	else if ( mqttmsg.match( /^openwb\/chargepoint\//i) ) { processChargepointMessages(mqttmsg, mqttpayload); }
+	else if ( mqttmsg.match( /^openwb\/vehicle\//i) ) { processVehicleMessages(mqttmsg, mqttpayload); }
+	// else if ( mqttmsg.match( /^openwb\/graph\//i ) ) { processGraphMessages(mqttmsg, mqttpayload); }
 	// else if ( mqttmsg.match( /^openwb\/global\/awattar\//i) ) { processETProviderMessages(mqttmsg, mqttpayload); }
 	// else if ( mqttmsg.match( /^openwb\/global\/ETProvider\//i) ) { processETProviderMessages(mqttmsg, mqttpayload); }
 	// else if ( mqttmsg.match( /^openwb\/global\//i) ) { processGlobalMessages(mqttmsg, mqttpayload); }
-	else if ( mqttmsg.match( /^openwb\/bat\//i) ) { processBatteryMessages(mqttmsg, mqttpayload); }
 	// else if ( mqttmsg.match( /^openwb\/system\//i) ) { processSystemMessages(mqttmsg, mqttpayload); }
-	else if ( mqttmsg.match( /^openwb\/pv\//i) ) { processPvMessages(mqttmsg, mqttpayload); }
 	// else if ( mqttmsg.match( /^openwb\/verbraucher\//i) ) { processVerbraucherMessages(mqttmsg, mqttpayload); }
-	else if ( mqttmsg.match( /^openwb\/chargepoint\//i) ) { processChargepointMessages(mqttmsg, mqttpayload); }
 	// else if ( mqttmsg.match( /^openwb\/hook\//i) ) { processHookMessages(mqttmsg, mqttpayload); }
 	// else if ( mqttmsg.match( /^openwb\/SmartHome\/Devices\//i) ) { processSmartHomeDevicesMessages(mqttmsg, mqttpayload); }
 	// else if ( mqttmsg.match( /^openwb\/config\/get\/SmartHome\/Devices\//i) ) { processSmartHomeDevicesConfigMessages(mqttmsg, mqttpayload); }
 	// else if ( mqttmsg.match( /^openwb\/config\/get\/sofort\/lp\//i) ) { processSofortConfigMessages(mqttmsg, mqttpayload); }
 	// else if ( mqttmsg.match( /^openwb\/config\/get\/pv\//i) ) { processPvConfigMessages(mqttmsg, mqttpayload); }
 }  // end handlevar
+
+function processGlobalCounterMessages(mqttmsg, mqttpayload) {
+	if ( mqttmsg.match( /^openwb\/counter\/get\/hierarchy$/i ) ) {
+		// this topic is used to populate the chargepoint list
+		// unsubscribe from all other topics
+		topicsToSubscribe.forEach((topic) => {
+			client.unsubscribe(topic[0]);
+		});
+		// first remove all chargepoints exept the first
+		$('.chargepoint-card[data-cp]').not('[data-cp=1]').remove();
+		// now create any other chargepoint
+		var hierarchy = $.parseJSON(mqttpayload);
+		createChargepoint(hierarchy[0]);
+		// subscribe to other topics
+		topicsToSubscribe.forEach((topic) => {
+			client.subscribe(topic[0], {qos: 0});
+		});
+	}
+}
+
+function processEvuMessages(mqttmsg, mqttpayload) {
+	// processes mqttmsg for topic openWB/counter/0
+	// called by handlevar
+	if ( mqttmsg == 'openWB/counter/0/get/power_all' ) {
+		var unit = 'W';
+		var powerEvu = parseInt(mqttpayload, 10);
+		if ( isNaN(powerEvu) ) {
+			powerEvu = 0;
+		}
+		var importing = (powerEvu >= 0);
+		if ( powerEvu < 0 ) {
+			powerEvu *= -1;
+		}
+		if ( powerEvu > 999 ) {
+			powerEvu = (powerEvu / 1000).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+			unit = 'k'+unit;
+		}
+		if(importing){
+			$('.grid-importing').removeClass('hide');
+			$('.grid-exporting').addClass('hide');
+		} else {
+			$('.grid-exporting').removeClass('hide');
+			$('.grid-importing').addClass('hide');
+		}
+		$('.grid-power').text(powerEvu+' '+unit);
+	}
+	else if ( mqttmsg == 'openWB/counter/0/get/daily_yield_import') {
+		var unit = "Wh";
+		var unitPrefix = "k";
+		var gridDailyYield = parseFloat(mqttpayload);
+		if ( isNaN(gridDailyYield) ) {
+			gridDailyYield = 0;
+		}
+		if ( gridDailyYield > 999 ) {
+			gridDailyYield = (gridDailyYield / 1000).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+			unitPrefix = "M";
+		}
+		$('.grid-import').text(gridDailyYield+' '+unitPrefix+unit);
+	}
+	else if ( mqttmsg == 'openWB/counter/0/get/daily_yield_export') {
+		var unit = "Wh";
+		var unitPrefix = "k";
+		var gridDailyYield = parseFloat(mqttpayload);
+		if ( isNaN(gridDailyYield) ) {
+			gridDailyYield = 0;
+		}
+		if ( gridDailyYield > 999 ) {
+			gridDailyYield = (gridDailyYield / 1000).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+			unitPrefix = "M";
+		}
+		$('.grid-export').text(gridDailyYield+' '+unitPrefix+unit);
+	}
+}
+
+function processBatteryMessages(mqttmsg, mqttpayload) {
+	// processes mqttmsg for topic openWB/housebattery
+	// called by handlevar
+	if ( mqttmsg == 'openWB/bat/config/configured' ) {
+		if ( mqttpayload == "true" ) {
+			$('.housebattery-configured').removeClass('hide');
+		} else {
+			$('.housebattery-configured').addClass('hide');
+		}
+	}
+	else if ( mqttmsg == 'openWB/bat/get/power' ) {
+		var unit = 'W';
+		var speicherwatt = parseInt(mqttpayload, 10);
+		var charging = (speicherwatt >= 0);
+		if ( isNaN(speicherwatt) ) {
+			speicherwatt = 0;
+		}
+		if ( speicherwatt < 0 ) {
+			speicherwatt *= -1;
+		}
+		if ( speicherwatt > 999 ) {
+			speicherwatt = (speicherwatt / 1000).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+			unit = 'k'+unit;
+		}
+		$('.housebattery-sum-power').text(speicherwatt+' '+unit);
+		if(charging == true){
+			$('.housebattery-sum-charging').removeClass('hide');
+			$('.housebattery-sum-discharging').addClass('hide');
+		} else {
+			$('.housebattery-sum-discharging').removeClass('hide');
+			$('.housebattery-sum-charging').addClass('hide');
+		}
+	}
+	else if ( mqttmsg == 'openWB/bat/get/soc' ) {
+		var unit = "%";
+		var speicherSoc = parseInt(mqttpayload, 10);
+		if ( isNaN(speicherSoc) || speicherSoc < 0 || speicherSoc > 100 ) {
+			speicherSoc = '--';
+		}
+		$('.housebattery-sum-soc').text(speicherSoc+' '+unit);
+	}
+	else if ( mqttmsg == 'openWB/bat/get/daily_yield_export') {
+		var unit = "kWh";
+		var batDailyYield = parseFloat(mqttpayload);
+		if ( isNaN(batDailyYield) ) {
+			batDailyYield = 0;
+		}
+		var batDailyYieldStr = "--";
+		if ( batDailyYield >= 0 ) {
+			batDailyYieldStr = batDailyYield.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+		}
+		$('.housebattery-sum-import').text(batDailyYieldStr+' '+unit);
+	}
+	else if ( mqttmsg == 'openWB/bat/get/daily_yield_import') {
+		var unit = "kWh";
+		var batDailyYield = parseFloat(mqttpayload);
+		if ( isNaN(batDailyYield) ) {
+			batDailyYield = 0;
+		}
+		var batDailyYieldStr = "--";
+		if ( batDailyYield >= 0 ) {
+			batDailyYieldStr = batDailyYield.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+		}
+		$('.housebattery-sum-export').text(batDailyYieldStr+' '+unit);
+	}
+}
+
+function processPvMessages(mqttmsg, mqttpayload) {
+	// processes mqttmsg for topic openWB/pv
+	// called by handlevar
+	if ( mqttmsg == 'openWB/pv/config/configured' ) {
+		if ( mqttpayload == "true" ) {
+			$('.pv-configured').removeClass('hide');
+		} else {
+			$('.pv-configured').addClass('hide');
+		}
+	}
+	else if ( mqttmsg == 'openWB/pv/get/power') {
+		var unit = 'W';
+		var unitPrefix = '';
+		var pvwatt = parseInt(mqttpayload, 10);
+		if ( isNaN(pvwatt) ) {
+			pvwatt = 0;
+		}
+		if ( pvwatt <= 0){
+			// production is negative for calculations so adjust for display
+			pvwatt *= -1;
+		}
+		// adjust and add unit
+		if (pvwatt > 999) {
+			pvwatt = (pvwatt / 1000).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+			unitPrefix = 'k'
+		}
+		$('.pv-sum-power').text(pvwatt+' '+unitPrefix+unit);
+	}
+	else if ( mqttmsg == 'openWB/pv/get/daily_yield') {
+		var unit = "Wh";
+		var unitPrefix = "k";
+		var pvDailyYield = parseFloat(mqttpayload);
+		if ( isNaN(pvDailyYield) ) {
+			pvDailyYield = 0;
+		}
+		if ( pvDailyYield > 999 ) {
+			pvDailyYield = (pvDailyYield / 1000).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+			unitPrefix = "M";
+		}
+		$('.pv-sum-production').text(pvDailyYield+' '+unitPrefix+unit);
+	}
+	// else if ( mqttmsg == 'openWB/pv/bool70PVDynStatus') {
+	// 	switch (mqttpayload) {
+	// 		case '0':
+	// 			// deaktiviert
+	// 			$('#70PvBtn').removeClass('btn-success');
+	// 			break;
+	// 		case '1':
+	// 			// ev priority
+	// 			$('#70PvBtn').addClass('btn-success');
+	// 		break;
+	// 	}
+	// }
+}
+
+function processChargepointMessages(mqttmsg, mqttpayload) {
+	// processes mqttmsg for topic openWB/chargepoint
+	// called by handlevar
+	if ( mqttmsg == 'openWB/chargepoint/get/power_all') {
+		var unit = "W";
+		var unitPrefix = "k";
+		var powerAllLp = parseInt(mqttpayload, 10);
+		if ( isNaN(powerAllLp) ) {
+			powerAllLp = 0;
+		}
+		if (powerAllLp > 999) {
+			powerAllLp = (powerAllLp / 1000).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+			unitPrefix = 'M';
+		}
+		$('.chargepoint-sum-power').text(powerAllLp+' '+unitPrefix+unit);
+	}
+	else if ( mqttmsg == 'openWB/chargepoint/get/daily_yield_import') {
+		var unit = "kWh";
+		var dailyYield = parseFloat(mqttpayload);
+		if ( isNaN(dailyYield) ) {
+			dailyYield = 0;
+		}
+		var dailyYieldStr = "--";
+		if ( dailyYield >= 0 ) {
+			dailyYieldStr = dailyYield.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+		}
+		$('.chargepoint-sum-importdaily').text(dailyYieldStr+' '+unit);
+	}
+	else if ( mqttmsg == 'openWB/chargepoint/get/daily_yield_export') {
+		var unit = "kWh";
+		var dailyYield = parseFloat(mqttpayload);
+		if ( isNaN(dailyYield) ) {
+			dailyYield = 0;
+		}
+		var dailyYieldStr = "--";
+		if ( dailyYield >= 0 ) {
+			dailyYieldStr = dailyYield.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+		}
+		$('.chargepoint-sum-exportdaily').text(dailyYieldStr+' '+unit);
+	}
+	else if ( mqttmsg.match( /^openwb\/chargepoint\/[1-9][0-9]*\/config\/name$/i ) ) {
+		var index = getIndex(mqttmsg);  // extract number between two / /
+		var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent row element for charge point
+		var element = parent.find('.chargepoint-name');  // now get parents respective child element
+		$(element).text($.parseJSON(mqttpayload));
+	}
+	else if ( mqttmsg.match( /^openwb\/chargepoint\/[1-9][0-9]*\/get\/state_str$/i ) ) {
+		var index = getIndex(mqttmsg);  // extract number between two / /
+		var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent row element for charge point
+		var element = parent.find('.chargepoint-statestr');  // now get parents respective child element
+		element.text($.parseJSON(mqttpayload));
+	}
+	else if ( mqttmsg.match( /^openwb\/chargepoint\/[1-9][0-9]*\/get\/fault_str$/i ) ) {
+		// console.log("fault str");
+		var index = getIndex(mqttmsg);  // extract number between two / /
+		var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent row element for charge point
+		var element = parent.find('.chargepoint-faultstr');  // now get parents respective child element
+		element.text($.parseJSON(mqttpayload));
+	}
+	else if ( mqttmsg.match( /^openwb\/chargepoint\/[1-9][0-9]*\/get\/fault_state$/i ) ) {
+		// console.log("fault state");
+		var index = getIndex(mqttmsg);  // extract number between two / /
+		var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent row element for charge point
+		parent.find('.chargepoint-faultstate[data-option="'+mqttpayload+'"').removeClass('hide');
+		parent.find('.chargepoint-faultstate').not('[data-option="'+mqttpayload+'"]').addClass('hide');
+		textElement = parent.find('.chargepoint-faultstr');
+		switch (parseInt(mqttpayload, 10)){
+			case 1: // warning
+				$(textElement).removeClass('hide');
+				$(textElement).addClass('alert-warning');
+				$(textElement).removeClass('alert-danger');
+				break;
+			case 2: // error
+				$(textElement).removeClass('hide');
+				$(textElement).removeClass('alert-warning');
+				$(textElement).addClass('alert-danger');
+				break;
+			default:
+				$(textElement).addClass('hide');
+		}
+	}
+	else if ( mqttmsg.match( /^openWB\/chargepoint\/[1-9][0-9]*\/get\/power_all$/i ) ) {
+		var unit = "W";
+		var index = getIndex(mqttmsg);  // extract number between two / /
+		var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent row element for charge point
+		var element = parent.find('.chargepoint-power');  // now get parents respective child element
+		var actualPower = parseInt(mqttpayload, 10);
+		if ( isNaN(actualPower) ) {
+			actualPower = 0;
+		}
+		if (actualPower > 999) {
+			actualPower = (actualPower / 1000).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+			unit = 'k'+unit;
+		}
+		element.text(actualPower+' '+unit);
+	}
+	else if ( mqttmsg.match( /^openWB\/chargepoint\/[1-9][0-9]*\/get\/charged_since_plugged_counter$/i ) ) {
+		// energy charged since ev was plugged in
+		// also calculates and displays km charged
+		// console.log("charged since plugged counter");
+		var index = getIndex(mqttmsg);  // extract number between two / /
+		var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent row element for charge point
+		var element = parent.find('.chargepoint-energysinceplugged');  // now get parents respective child element
+		var energyCharged = parseFloat(mqttpayload, 10);
+		if ( isNaN(energyCharged) ) {
+			energyCharged = 0;
+		}
+		element.text(energyCharged.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1}) + ' kWh');
+		var rangeChargedElement = parent.find('.chargepoint-rangesinceplugged');  // now get parents child element
+		var consumption = parseFloat($(rangeChargedElement).data('consumption'));
+		var rangeCharged = '';
+		if ( !isNaN(consumption) && consumption > 0 ) {
+			rangeCharged = (energyCharged / consumption) * 100;
+			rangeCharged = ' / ' + rangeCharged.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1}) + ' km';
+		}
+		$(rangeChargedElement).text(rangeCharged);
+	}
+	else if ( mqttmsg.match( /^openwb\/chargepoint\/[1-9][0-9]*\/get\/plug_state$/i ) ) {
+		// status ev plugged in or not
+		var index = getIndex(mqttmsg);  // extract number between two / /
+		var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent row element for charge point
+		var element = parent.find('.chargepoint-plugstate');  // now get parents respective child element
+		if ( mqttpayload == 1 ) {
+			element.removeClass('hide');
+		} else {
+			element.addClass('hide');
+		}
+	}
+	else if ( mqttmsg.match( /^openwb\/chargepoint\/[1-9][0-9]*\/get\/charge_state$/i ) ) {
+		var index = getIndex(mqttmsg);  // extract number between two / /
+		var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent row element for charge point
+		var element = parent.find('.chargepoint-chargestate');  // now get parents respective child element
+		if ( mqttpayload == 1 ) {
+			element.removeClass('text-orange').addClass('text-green');
+		} else {
+			element.removeClass('text-green').addClass('text-orange');
+		}
+	}
+	else if ( mqttmsg.match( /^openwb\/chargepoint\/[1-9][0-9]*\/get\/manual_lock$/i ) ) {
+		// console.log("chargepoint manual_lock");
+		var index = getIndex(mqttmsg);  // extract number between two / /
+		var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent row element for charge point
+		var element = parent.find('.chargepoint-manuallock');  // now get parents respective child element
+		if ( mqttpayload == 1 ) {
+			// element.prop('checked', true);
+			element.bootstrapToggle('on', true); // do not fire a changed-event to prevent a loop!
+		} else {
+			// element.prop('checked', false);
+			element.bootstrapToggle('off', true); // do not fire a changed-event to prevent a loop!
+		}
+	}
+	else if ( mqttmsg.match( /^openwb\/chargepoint\/[1-9][0-9]*\/get\/enabled$/i ) ) {
+		// console.log("chargepoint enabled");
+		var index = getIndex(mqttmsg);  // extract number between two / /
+		var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent row element for charge point
+		element = parent.find('.chargepoint-stateenabled');
+		if ( mqttpayload == 1 ) {
+			$(element).addClass('chargepoint-enabled');
+			$(element).removeClass('chargepoint-disabled');
+		} else {
+			$(element).removeClass('chargepoint-enabled');
+			$(element).addClass('chargepoint-disabled');
+		}
+	}
+	else if ( mqttmsg.match( /^openwb\/chargepoint\/[1-9][0-9]*\/get\/phases_in_use/i ) ) {
+		// console.log("chargepoint phases_in_use");
+		var index = getIndex(mqttmsg);  // extract number between two / /
+		var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent row element for charge point
+		var element = parent.find('.chargepoint-phasesinuse');  // now get parents respective child element
+		var phasesInUse = parseInt(mqttpayload, 10);
+		if ( isNaN(phasesInUse) || phasesInUse < 1 || phasesInUse > 3 ) {
+			element.text('/');
+		} else {
+			var phaseSymbols = ['', '\u2460', '\u2461', '\u2462'];
+			element.text(phaseSymbols[phasesInUse]);
+		}
+	}
+	else if ( mqttmsg.match( /^openwb\/chargepoint\/[1-9][0-9]*\/set\/current/i ) ) {
+		// target current value at charge point
+		// console.log("chargepoint set current");
+		var unit = "A";
+		var index = getIndex(mqttmsg);  // extract number between two / /
+		var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent row element for charge point
+		var element = parent.find('.chargepoint-setcurrent');  // now get parents respective child element
+		var targetCurrent = parseInt(mqttpayload, 10);
+		if ( isNaN(targetCurrent) ) {
+			targetCurrent = 0;
+		}
+		element.text(targetCurrent+' '+unit);
+	}
+	else if ( mqttmsg.match( /^openwb\/chargepoint\/[1-9][0-9]*\/get\/connected_vehicle\/soc$/i ) ) {
+		// { "soc", "range", "range_unit", "timestamp", "fault_stat", "fault_str" }
+		var index = getIndex(mqttmsg);  // extract number between two / /
+		var socData = $.parseJSON(mqttpayload);
+		var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent row element for charge point
+		// "soc" float unit: %
+		var element = parent.find('.chargepoint-soc');  // now get parents respective child element
+		var soc = socData.soc;
+		if ( isNaN(soc) || soc < 0 || soc > 100 ) {
+			soc = '--';
+		}
+		element.text(soc);
+		var spinner = parent.find('.chargepoint-reloadsocsymbol');
+		spinner.removeClass('fa-spin');
+		// "range" ToDo
+		// "range_unit" ToDo
+		// "timestamp" ToDo
+		// "fault_stat" ToDo
+		// "fault_str" ToDo
+	}
+	else if ( mqttmsg.match( /^openwb\/chargepoint\/[1-9][0-9]*\/get\/connected_vehicle\/soc_config$/i ) ) {
+		// { "socconfigured", "manual" }
+		var configData = $.parseJSON(mqttpayload);
+		var index = getIndex(mqttmsg);  // extract number between two / /
+		var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent row element for charge point
+		// "socconfigured" bool
+		var elementIsConfigured = $(parent).find('.chargepoint-socconfigured');  // now get parents respective child element
+		var elementIsNotConfigured = $(parent).find('.chargepoint-socnotconfigured');  // now get parents respective child element
+		if (configData.socconfigured == true) {
+			$(elementIsNotConfigured).addClass('hide');
+			$(elementIsConfigured).removeClass('hide');
+		} else {
+			$(elementIsNotConfigured).removeClass('hide');
+			$(elementIsConfigured).addClass('hide');
+		}
+		// "manual"
+		if (configData.manual == true) {
+			$(elementIsConfigured).addClass('manualSoC');
+			$(elementIsConfigured).find('.chargepoint-manualsocsymbol').removeClass('hide');
+			$(elementIsConfigured).find('.chargepoint-reloadsocsymbol').addClass('hide');
+		} else {
+			$(elementIsConfigured).removeClass('manualSoC');
+			$(elementIsConfigured).find('.chargepoint-manualsocsymbol').addClass('hide');
+			$(elementIsConfigured).find('.chargepoint-reloadsocsymbol').removeClass('hide');
+		}
+	}
+	else if ( mqttmsg.match( /^openwb\/chargepoint\/[1-9][0-9]*\/get\/connected_vehicle\/info$/i ) ) {
+		// info of the vehicle if connected
+		// { "id", "name" }
+		var index = getIndex(mqttmsg);  // extract number between two / /
+		var infoData = $.parseJSON(mqttpayload);
+		var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent row element for charge point
+		// "id" int
+		parent.find('.chargepoint-vehicleselect').val(infoData.id);  // set selectBox to received id
+		parent.find('.chargepoint-vehicledata[data-ev]').attr('data-ev', infoData.id).data('ev', infoData.id);  // set data-ev setting for this chargepoint
+		// "name" str
+		parent.find('.chargepoint-vehiclename').text(infoData.name);
+	}
+	else if ( mqttmsg.match( /^openwb\/chargepoint\/[1-9][0-9]*\/get\/connected_vehicle\/config$/i ) ) {
+		// settings of the vehicle if connected
+		// { "charge_template", "ev_template", "chargemode", "priority", "average_consumption" }
+		var index = getIndex(mqttmsg);  // extract number between two / /
+		var configData = $.parseJSON(mqttpayload);
+		var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent row element for charge point
+		// "charge_template" in
+		parent.attr('data-chargetemplate', configData.charge_template).data('chargetemplate', configData.charge_template);
+		// "ev_template" int
+		parent.attr('data-evtemplate', configData.ev_template).data('evtemplate', configData.ev_template);
+		// "chargemode" str
+		chargemodeRadio = parent.find('.chargepoint-chargemode input[type=radio][data-option="'+configData.chargemode+'"]');
+		chargemodeRadio.prop('checked', true);  // check selected chargemode radio button
+		friendlyChargemode = chargemodeRadio.parent().text();
+		parent.find('.chargepoint-vehiclechargemode').text(friendlyChargemode);  // set chargemode in card header
+		chargemodeRadio.parent().addClass('active');  // activate selected chargemode button
+		parent.find('.chargepoint-chargemode input[type=radio]').not('[data-option="'+configData.chargemode+'"]').each(function() {
+			$(this).prop('checked', false);  // uncheck all other radio buttons
+			$(this).parent().removeClass('active');  // deselect all other chargemode buttons
+		});
+		chargeLimitationOptionsShowHide(chargemodeRadio, configData.chargemode);
+		// "priority" bool
+		var priorityElement = parent.find('.chargepoint-vehiclepriority');  // now get parents respective child element
+		if ( configData.priority == true ) {
+			// element.prop('checked', true);
+			priorityElement.bootstrapToggle('on', true); // do not fire a changed-event to prevent a loop!
+		} else {
+			// element.prop('checked', false);
+			priorityElement.bootstrapToggle('off', true); // do not fire a changed-event to prevent a loop!
+		}
+		// "average_consumption" int unit: Wh/100km
+		var rangeChargedElement = parent.find('.chargepoint-rangesinceplugged');
+		rangeChargedElement.data('consumption', configData.average_consumption).attr('data-consumption', configData.average_consumption);
+		// if already energyCharged-displayed, update rangeCharged
+		var energyCharged = parseFloat(parent.find('.chargepoint-energysinceplugged').text());  // now get parents respective energyCharged child element
+		var rangeCharged = '';
+		if ( !isNaN(energyCharged) && consumption > 0 ) {
+			rangeCharged = (energyCharged / consumption) * 100;
+			rangeCharged = ' / ' + rangeCharged.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1}) + ' km';
+		}
+		$(rangeChargedElement).text(rangeCharged);
+	}
+	// else if ( mqttmsg.match( /^openwb\/lp\/[1-9][0-9]*\/kWhactualcharged$/i ) ) {
+	// 	// energy charged since reset of limitation
+	// 	var index = getIndex(mqttmsg);  // extract number between two / /
+	// 	if ( isNaN(mqttpayload) ) {
+	// 		mqttpayload = 0;
+	// 	}
+	// 	var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent div element for charge limitation
+	// 	var element = parent.find('.progress-bar');  // now get parents progressbar
+	// 	element.data('actualCharged', mqttpayload);  // store value received
+	// 	var limitElementId = 'lp/' + index + '/energyToCharge';
+	// 	var limit = $('#' + $.escapeSelector(limitElementId)).val();  // slider value
+	// 	if ( isNaN(limit) || limit < 2 ) {
+	// 		limit = 2;  // minimum value
+	// 	}
+	// 	var progress = (mqttpayload / limit * 100).toFixed(0);
+	// 	element.width(progress+"%");
+	// }
+	// else if ( mqttmsg.match( /^openwb\/lp\/[1-9][0-9]*\/timeremaining$/i ) ) {
+	// 	// time remaining for charging to target value
+	// 	var index = getIndex(mqttmsg);  // extract number between two / /
+	// 	var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent div element for charge limitation
+	// 	var element = parent.find('.restzeitLp');  // get element
+	// 	element.text('Restzeit ' + mqttpayload);
+	// }
+	// else if ( mqttmsg.match( /^openwb\/lp\/[1-9][0-9]*\/boolchargeatnight$/i ) ) {
+	// 	var index = getIndex(mqttmsg);  // extract number between two / /
+	// 	var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent row element for charge point
+	// 	var element = parent.find('.nightChargingLp');  // now get parents respective child element
+	// 	if ( mqttpayload == 1 ) {
+	// 		element.removeClass('hide');
+	// 	} else {
+	// 		element.addClass('hide');
+	// 	}
+	// }
+	// else if ( mqttmsg.match( /^openwb\/lp\/[1-9][0-9]*\/autolockconfigured$/i ) ) {
+	// 	var index = getIndex(mqttmsg);  // extract first match = number from
+	// 	var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent row element for charge point
+	// 	var element = parent.find('.autolockConfiguredLp');  // now get parents respective child element
+	// 	if ( mqttpayload == 0 ) {
+	// 		element.addClass('hide');
+	// 	} else {
+	// 		element.removeClass('hide');
+	// 	}
+	// }
+	// else if ( mqttmsg.match( /^openwb\/lp\/[1-9][0-9]*\/autolockstatus$/i ) ) {
+	// 	// values used for AutolockStatus flag:
+	// 	// 0 = standby
+	// 	// 1 = waiting for autolock
+	// 	// 2 = autolock performed
+	// 	// 3 = auto-unlock performed
+	// 	var index = getIndex(mqttmsg);  // extract number between two / /
+	// 	var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent row element for charge point
+	// 	var element = parent.find('.autolockConfiguredLp');  // now get parents respective child element
+	// 	switch ( mqttpayload ) {
+	// 		case '0':
+	// 			// remove animation from span and set standard colored key icon
+	// 			element.removeClass('fa-lock fa-lock-open animate-alertPulsation text-red text-green');
+	// 			element.addClass('fa-key');
+	// 			break;
+	// 		case '1':
+	// 			// add animation to standard icon
+	// 			element.removeClass('fa-lock fa-lock-open text-red text-green');
+	// 			element.addClass('fa-key animate-alertPulsation');
+	// 			break;
+	// 		case '2':
+	// 			// add red locked icon
+	// 			element.removeClass('fa-lock-open fa-key animate-alertPulsation text-green');
+	// 			element.addClass('fa-lock text-red');
+	// 			break;
+	// 		case '3':
+	// 			// add green unlock icon
+	// 			element.removeClass('fa-lock fa-key animate-alertPulsation text-red');
+	// 			element.addClass('fa-lock-open text-green');
+	// 			break;
+	// 	}
+	// }
+	// else if ( mqttmsg.match( /^openwb\/lp\/[1-9][0-9]*\/boolfinishattimechargeactive$/i ) ) {
+	// 	// respective charge point configured
+	// 	var index = getIndex(mqttmsg);  // extract number between two / /
+	// 	var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent row element for charge point
+	// 	var element = parent.find('.targetChargingLp');  // now get parents respective child element
+	// 	if (mqttpayload == 1) {
+	// 		element.removeClass('hide');
+	// 	} else {
+	// 		element.addClass('hide');
+	// 	}
+	// }
+}
+
+function processVehicleMessages(mqttmsg, mqttpayload) {
+	if ( mqttmsg.match( /^openwb\/vehicle\/[1-9][0-9]*\/name$/i ) ) {
+		// this topic is used to populate the chargepoint list
+		var index = getIndex(mqttmsg);  // extract number between two / /
+		$('.chargepoint-vehicleselect').each(function(){
+			myOption = $(this).find('option[value='+index+']');
+			if( myOption.length > 0 ){
+				myOption.text($.parseJSON(mqttpayload));  // update vehicle name if option with index is present
+			} else {
+				$(this).append('<option value="'+index+'">'+$.parseJSON(mqttpayload)+'</option>');  // add option with index
+				if( parseInt($(this).closest('.chargepoint-vehicledata[data-ev]').data('ev')) == index) { // update selected element if match with our index
+					$(this).val(index);
+				}
+			}
+		});
+	}
+}
 
 // function processETProviderMessages(mqttmsg, mqttpayload) {
 // 	// processes mqttmsg for topic openWB/global
@@ -351,79 +948,6 @@ function handlevar(mqttmsg, mqttpayload) {
 // 	}
 // }  // end processGraphMessages
 
-function processGlobalCounterMessages(mqttmsg, mqttpayload) {
-	if ( mqttmsg.match( /^openwb\/counter\/get\/hierarchy$/i ) ) {
-		// this topic is used to populate the chargepoint list
-		// unsubscribe from all other topics
-		topicsToSubscribe.forEach((topic) => {
-			client.unsubscribe(topic[0]);
-		});
-		// first remove all chargepoints exept the first
-		$('.chargepoint-card[data-cp]').not('[data-cp=1]').remove();
-		// now create any other chargepoint
-		var hierarchy = $.parseJSON(mqttpayload);
-		createChargepoint(hierarchy[0]);
-		// subscribe to other topics
-		topicsToSubscribe.forEach((topic) => {
-			client.subscribe(topic[0], {qos: 0});
-		});
-	}
-}
-
-function processEvuMessages(mqttmsg, mqttpayload) {
-	// processes mqttmsg for topic openWB/counter/0
-	// called by handlevar
-	if ( mqttmsg == 'openWB/counter/0/get/power_all' ) {
-		var unit = 'W';
-		var powerEvu = parseInt(mqttpayload, 10);
-		if ( isNaN(powerEvu) ) {
-			powerEvu = 0;
-		}
-		var importing = (powerEvu >= 0);
-		if ( powerEvu < 0 ) {
-			powerEvu *= -1;
-		}
-		if ( powerEvu > 999 ) {
-			powerEvu = (powerEvu / 1000).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-			unit = 'k'+unit;
-		}
-		if(importing){
-			$('.grid-importing').removeClass('hide');
-			$('.grid-exporting').addClass('hide');
-		} else {
-			$('.grid-exporting').removeClass('hide');
-			$('.grid-importing').addClass('hide');
-		}
-		$('.grid-power').text(powerEvu+' '+unit);
-	}
-	else if ( mqttmsg == 'openWB/counter/0/get/daily_yield_import') {
-		var unit = "Wh";
-		var unitPrefix = "k";
-		var gridDailyYield = parseFloat(mqttpayload);
-		if ( isNaN(gridDailyYield) ) {
-			gridDailyYield = 0;
-		}
-		if ( gridDailyYield > 999 ) {
-			gridDailyYield = (gridDailyYield / 1000).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-			unitPrefix = "M";
-		}
-		$('.grid-import').text(gridDailyYield+' '+unitPrefix+unit);
-	}
-	else if ( mqttmsg == 'openWB/counter/0/get/daily_yield_export') {
-		var unit = "Wh";
-		var unitPrefix = "k";
-		var gridDailyYield = parseFloat(mqttpayload);
-		if ( isNaN(gridDailyYield) ) {
-			gridDailyYield = 0;
-		}
-		if ( gridDailyYield > 999 ) {
-			gridDailyYield = (gridDailyYield / 1000).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-			unitPrefix = "M";
-		}
-		$('.grid-export').text(gridDailyYield+' '+unitPrefix+unit);
-	}
-}
-
 // function processGlobalMessages(mqttmsg, mqttpayload) {
 // 	// processes mqttmsg for topic openWB/global
 // 	// called by handlevar
@@ -537,73 +1061,6 @@ function processEvuMessages(mqttmsg, mqttpayload) {
 // 	}
 // }
 
-function processBatteryMessages(mqttmsg, mqttpayload) {
-	// processes mqttmsg for topic openWB/housebattery
-	// called by handlevar
-	if ( mqttmsg == 'openWB/bat/config/configured' ) {
-		if ( mqttpayload == "true" ) {
-			$('.housebattery-configured').removeClass('hide');
-		} else {
-			$('.housebattery-configured').addClass('hide');
-		}
-	}
-	else if ( mqttmsg == 'openWB/bat/get/power' ) {
-		var unit = 'W';
-		var speicherwatt = parseInt(mqttpayload, 10);
-		var charging = (speicherwatt >= 0);
-		if ( isNaN(speicherwatt) ) {
-			speicherwatt = 0;
-		}
-		if ( speicherwatt < 0 ) {
-			speicherwatt *= -1;
-		}
-		if ( speicherwatt > 999 ) {
-			speicherwatt = (speicherwatt / 1000).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-			unit = 'k'+unit;
-		}
-		$('.housebattery-sum-power').text(speicherwatt+' '+unit);
-		if(charging == true){
-			$('.housebattery-sum-charging').removeClass('hide');
-			$('.housebattery-sum-discharging').addClass('hide');
-		} else {
-			$('.housebattery-sum-discharging').removeClass('hide');
-			$('.housebattery-sum-charging').addClass('hide');
-		}
-	}
-	else if ( mqttmsg == 'openWB/bat/get/soc' ) {
-		var unit = "%";
-		var speicherSoc = parseInt(mqttpayload, 10);
-		if ( isNaN(speicherSoc) || speicherSoc < 0 || speicherSoc > 100 ) {
-			speicherSoc = '--';
-		}
-		$('.housebattery-sum-soc').text(speicherSoc+' '+unit);
-	}
-	else if ( mqttmsg == 'openWB/bat/get/daily_yield_export') {
-		var unit = "kWh";
-		var batDailyYield = parseFloat(mqttpayload);
-		if ( isNaN(batDailyYield) ) {
-			batDailyYield = 0;
-		}
-		var batDailyYieldStr = "--";
-		if ( batDailyYield >= 0 ) {
-			batDailyYieldStr = batDailyYield.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-		}
-		$('.housebattery-sum-import').text(batDailyYieldStr+' '+unit);
-	}
-	else if ( mqttmsg == 'openWB/bat/get/daily_yield_import') {
-		var unit = "kWh";
-		var batDailyYield = parseFloat(mqttpayload);
-		if ( isNaN(batDailyYield) ) {
-			batDailyYield = 0;
-		}
-		var batDailyYieldStr = "--";
-		if ( batDailyYield >= 0 ) {
-			batDailyYieldStr = batDailyYield.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-		}
-		$('.housebattery-sum-export').text(batDailyYieldStr+' '+unit);
-	}
-}
-
 // function processSystemMessages(mqttmsg, mqttpayload) {
 // 	// processes mqttmsg for topic openWB/system
 // 	// called by handlevar
@@ -626,61 +1083,6 @@ function processBatteryMessages(mqttmsg, mqttpayload) {
 // 		$('#date').text(date);
 // 	}
 // }
-
-function processPvMessages(mqttmsg, mqttpayload) {
-	// processes mqttmsg for topic openWB/pv
-	// called by handlevar
-	if ( mqttmsg == 'openWB/pv/config/configured' ) {
-		if ( mqttpayload == "true" ) {
-			$('.pv-configured').removeClass('hide');
-		} else {
-			$('.pv-configured').addClass('hide');
-		}
-	}
-	else if ( mqttmsg == 'openWB/pv/get/power') {
-		var unit = 'W';
-		var unitPrefix = '';
-		var pvwatt = parseInt(mqttpayload, 10);
-		if ( isNaN(pvwatt) ) {
-			pvwatt = 0;
-		}
-		if ( pvwatt <= 0){
-			// production is negative for calculations so adjust for display
-			pvwatt *= -1;
-		}
-		// adjust and add unit
-		if (pvwatt > 999) {
-			pvwatt = (pvwatt / 1000).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-			unitPrefix = 'k'
-		}
-		$('.pv-sum-power').text(pvwatt+' '+unitPrefix+unit);
-	}
-	else if ( mqttmsg == 'openWB/pv/get/daily_yield') {
-		var unit = "Wh";
-		var unitPrefix = "k";
-		var pvDailyYield = parseFloat(mqttpayload);
-		if ( isNaN(pvDailyYield) ) {
-			pvDailyYield = 0;
-		}
-		if ( pvDailyYield > 999 ) {
-			pvDailyYield = (pvDailyYield / 1000).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-			unitPrefix = "M";
-		}
-		$('.pv-sum-production').text(pvDailyYield+' '+unitPrefix+unit);
-	}
-	// else if ( mqttmsg == 'openWB/pv/bool70PVDynStatus') {
-	// 	switch (mqttpayload) {
-	// 		case '0':
-	// 			// deaktiviert
-	// 			$('#70PvBtn').removeClass('btn-success');
-	// 			break;
-	// 		case '1':
-	// 			// ev priority
-	// 			$('#70PvBtn').addClass('btn-success');
-	// 		break;
-	// 	}
-	// }
-}
 
 // function processVerbraucherMessages(mqttmsg, mqttpayload) {
 // 	// processes mqttmsg for topic openWB/Verbraucher
@@ -724,385 +1126,6 @@ function processPvMessages(mqttmsg, mqttpayload) {
 
 // 	}
 // }
-
-function processChargepointMessages(mqttmsg, mqttpayload) {
-	// processes mqttmsg for topic openWB/chargepoint
-	// called by handlevar
-	if ( mqttmsg == 'openWB/chargepoint/get/power_all') {
-		var unit = "W";
-		var unitPrefix = "k";
-		var powerAllLp = parseInt(mqttpayload, 10);
-		if ( isNaN(powerAllLp) ) {
-			powerAllLp = 0;
-		}
-		if (powerAllLp > 999) {
-			powerAllLp = (powerAllLp / 1000).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-			unitPrefix = 'M';
-		}
-		$('.chargepoint-sum-power').text(powerAllLp+' '+unitPrefix+unit);
-	}
-	else if ( mqttmsg == 'openWB/chargepoint/get/daily_yield_import') {
-		var unit = "kWh";
-		var dailyYield = parseFloat(mqttpayload);
-		if ( isNaN(dailyYield) ) {
-			dailyYield = 0;
-		}
-		var dailyYieldStr = "--";
-		if ( dailyYield >= 0 ) {
-			dailyYieldStr = dailyYield.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-		}
-		$('.chargepoint-sum-importdaily').text(dailyYieldStr+' '+unit);
-	}
-	else if ( mqttmsg == 'openWB/chargepoint/get/daily_yield_export') {
-		var unit = "kWh";
-		var dailyYield = parseFloat(mqttpayload);
-		if ( isNaN(dailyYield) ) {
-			dailyYield = 0;
-		}
-		var dailyYieldStr = "--";
-		if ( dailyYield >= 0 ) {
-			dailyYieldStr = dailyYield.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-		}
-		$('.chargepoint-sum-exportdaily').text(dailyYieldStr+' '+unit);
-	}
-	else if ( mqttmsg.match( /^openwb\/chargepoint\/[1-9][0-9]*\/config\/name$/i ) ) {
-		// this topic is used to populate the chargepoint list
-		var index = getIndex(mqttmsg);  // extract number between two / /
-		// var parent = getChargepointElement(index);  // get parent row element for charge point
-		var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent row element for charge point
-		var element = parent.find('.chargepoint-name');  // now get parents respective child element
-		$(element).text($.parseJSON(mqttpayload));
-	}
-	else if ( mqttmsg.match( /^openwb\/chargepoint\/[1-9][0-9]*\/get\/state_str$/i ) ) {
-		var index = getIndex(mqttmsg);  // extract number between two / /
-		var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent row element for charge point
-		var element = parent.find('.chargepoint-statestr');  // now get parents respective child element
-		element.text($.parseJSON(mqttpayload));
-	}
-	else if ( mqttmsg.match( /^openwb\/chargepoint\/[1-9][0-9]*\/get\/fault_str$/i ) ) {
-		// console.log("fault str");
-		var index = getIndex(mqttmsg);  // extract number between two / /
-		var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent row element for charge point
-		var element = parent.find('.chargepoint-faultstr');  // now get parents respective child element
-		element.text($.parseJSON(mqttpayload));
-	}
-	else if ( mqttmsg.match( /^openwb\/chargepoint\/[1-9][0-9]*\/get\/fault_state$/i ) ) {
-		// console.log("fault state");
-		var index = getIndex(mqttmsg);  // extract number between two / /
-		var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent row element for charge point
-		parent.find('.chargepoint-faultstate[data-option="'+mqttpayload+'"').removeClass('hide');
-		parent.find('.chargepoint-faultstate').not('[data-option="'+mqttpayload+'"]').addClass('hide');
-		textElement = parent.find('.chargepoint-faultstr');
-		switch (parseInt(mqttpayload, 10)){
-			case 1: // warning
-				$(textElement).removeClass('hide');
-				$(textElement).addClass('alert-warning');
-				$(textElement).removeClass('alert-danger');
-				break;
-			case 2: // error
-				$(textElement).removeClass('hide');
-				$(textElement).removeClass('alert-warning');
-				$(textElement).addClass('alert-danger');
-				break;
-			default:
-				$(textElement).addClass('hide');
-		}
-	}
-	else if ( mqttmsg.match( /^openWB\/chargepoint\/[1-9][0-9]*\/get\/power_all$/i ) ) {
-		var unit = "W";
-		var index = getIndex(mqttmsg);  // extract number between two / /
-		var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent row element for charge point
-		var element = parent.find('.chargepoint-power');  // now get parents respective child element
-		var actualPower = parseInt(mqttpayload, 10);
-		if ( isNaN(actualPower) ) {
-			actualPower = 0;
-		}
-		if (actualPower > 999) {
-			actualPower = (actualPower / 1000).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-			unit = 'k'+unit;
-		}
-		element.text(actualPower+' '+unit);
-	}
-	else if ( mqttmsg.match( /^openWB\/chargepoint\/[1-9][0-9]*\/get\/charged_since_plugged_counter$/i ) ) {
-		// energy charged since ev was plugged in
-		// also calculates and displays km charged
-		// console.log("charged since plugged counter");
-		var index = getIndex(mqttmsg);  // extract number between two / /
-		var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent row element for charge point
-		var element = parent.find('.chargepoint-energysinceplugged');  // now get parents respective child element
-		var energyCharged = parseFloat(mqttpayload, 10);
-		if ( isNaN(energyCharged) ) {
-			energyCharged = 0;
-		}
-		element.text(energyCharged.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1}) + ' kWh');
-		var rangeChargedElement = parent.find('.chargepoint-rangesinceplugged');  // now get parents child element
-		var consumption = parseFloat($(rangeChargedElement).data('consumption'));
-		var rangeCharged = '';
-		if ( !isNaN(consumption) && consumption > 0 ) {
-			rangeCharged = (energyCharged / consumption) * 100;
-			rangeCharged = ' / ' + rangeCharged.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1}) + ' km';
-		}
-		$(rangeChargedElement).text(rangeCharged);
-	}
-	// else if ( mqttmsg.match( /^openwb\/lp\/[1-9][0-9]*\/kWhactualcharged$/i ) ) {
-	// 	// energy charged since reset of limitation
-	// 	var index = getIndex(mqttmsg);  // extract number between two / /
-	// 	if ( isNaN(mqttpayload) ) {
-	// 		mqttpayload = 0;
-	// 	}
-	// 	var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent div element for charge limitation
-	// 	var element = parent.find('.progress-bar');  // now get parents progressbar
-	// 	element.data('actualCharged', mqttpayload);  // store value received
-	// 	var limitElementId = 'lp/' + index + '/energyToCharge';
-	// 	var limit = $('#' + $.escapeSelector(limitElementId)).val();  // slider value
-	// 	if ( isNaN(limit) || limit < 2 ) {
-	// 		limit = 2;  // minimum value
-	// 	}
-	// 	var progress = (mqttpayload / limit * 100).toFixed(0);
-	// 	element.width(progress+"%");
-	// }
-	// else if ( mqttmsg.match( /^openwb\/lp\/[1-9][0-9]*\/timeremaining$/i ) ) {
-	// 	// time remaining for charging to target value
-	// 	var index = getIndex(mqttmsg);  // extract number between two / /
-	// 	var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent div element for charge limitation
-	// 	var element = parent.find('.restzeitLp');  // get element
-	// 	element.text('Restzeit ' + mqttpayload);
-	// }
-	// else if ( mqttmsg.match( /^openwb\/lp\/[1-9][0-9]*\/boolchargeatnight$/i ) ) {
-	// 	var index = getIndex(mqttmsg);  // extract number between two / /
-	// 	var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent row element for charge point
-	// 	var element = parent.find('.nightChargingLp');  // now get parents respective child element
-	// 	if ( mqttpayload == 1 ) {
-	// 		element.removeClass('hide');
-	// 	} else {
-	// 		element.addClass('hide');
-	// 	}
-	// }
-	else if ( mqttmsg.match( /^openwb\/chargepoint\/[1-9][0-9]*\/get\/plug_state$/i ) ) {
-		// status ev plugged in or not
-		var index = getIndex(mqttmsg);  // extract number between two / /
-		var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent row element for charge point
-		var element = parent.find('.chargepoint-plugstate');  // now get parents respective child element
-		if ( mqttpayload == 1 ) {
-			element.removeClass('hide');
-		} else {
-			element.addClass('hide');
-		}
-	}
-	else if ( mqttmsg.match( /^openwb\/chargepoint\/[1-9][0-9]*\/get\/charge_state$/i ) ) {
-		var index = getIndex(mqttmsg);  // extract number between two / /
-		var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent row element for charge point
-		var element = parent.find('.chargepoint-chargestate');  // now get parents respective child element
-		if ( mqttpayload == 1 ) {
-			element.removeClass('text-orange').addClass('text-green');
-		} else {
-			element.removeClass('text-green').addClass('text-orange');
-		}
-	}
-	else if ( mqttmsg.match( /^openwb\/chargepoint\/[1-9][0-9]*\/get\/manual_lock$/i ) ) {
-		// console.log("chargepoint manual_lock");
-		var index = getIndex(mqttmsg);  // extract number between two / /
-		var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent row element for charge point
-		var element = parent.find('.chargepoint-manuallock');  // now get parents respective child element
-		if ( mqttpayload == 1 ) {
-			// element.prop('checked', true);
-			element.bootstrapToggle('on', true); // do not fire a changed-event to prevent a loop!
-		} else {
-			// element.prop('checked', false);
-			element.bootstrapToggle('off', true); // do not fire a changed-event to prevent a loop!
-		}
-	}
-	else if ( mqttmsg.match( /^openwb\/chargepoint\/[1-9][0-9]*\/get\/enabled$/i ) ) {
-		// console.log("chargepoint enabled");
-		var index = getIndex(mqttmsg);  // extract number between two / /
-		var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent row element for charge point
-		element = parent.find('.chargepoint-stateenabled');
-		if ( mqttpayload == 1 ) {
-			$(element).addClass('chargepoint-enabled');
-			$(element).removeClass('chargepoint-disabled');
-		} else {
-			$(element).removeClass('chargepoint-enabled');
-			$(element).addClass('chargepoint-disabled');
-		}
-	}
-	else if ( mqttmsg.match( /^openwb\/chargepoint\/[1-9][0-9]*\/get\/phases_in_use/i ) ) {
-		// console.log("chargepoint phases_in_use");
-		var index = getIndex(mqttmsg);  // extract number between two / /
-		var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent row element for charge point
-		var element = parent.find('.chargepoint-phasesinuse');  // now get parents respective child element
-		var phasesInUse = parseInt(mqttpayload, 10);
-		if ( isNaN(phasesInUse) || phasesInUse < 1 || phasesInUse > 3 ) {
-			element.text('/');
-		} else {
-			var phaseSymbols = ['', '\u2460', '\u2461', '\u2462'];
-			element.text(phaseSymbols[phasesInUse]);
-		}
-	}
-	else if ( mqttmsg.match( /^openwb\/chargepoint\/[1-9][0-9]*\/set\/current/i ) ) {
-		// target current value at charge point
-		// console.log("chargepoint set current");
-		var unit = "A";
-		var index = getIndex(mqttmsg);  // extract number between two / /
-		var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent row element for charge point
-		var element = parent.find('.chargepoint-setcurrent');  // now get parents respective child element
-		var targetCurrent = parseInt(mqttpayload, 10);
-		if ( isNaN(targetCurrent) ) {
-			targetCurrent = 0;
-		}
-		element.text(targetCurrent+' '+unit);
-	}
-	else if ( mqttmsg.match( /^openwb\/chargepoint\/[1-9][0-9]*\/get\/connected_vehicle\/soc$/i ) ) {
-		// { "soc", "range", "range_unit", "timestamp", "fault_stat", "fault_str" }
-		var index = getIndex(mqttmsg);  // extract number between two / /
-		var socData = $.parseJSON(mqttpayload);
-		var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent row element for charge point
-		// "soc" float unit: %
-		var element = parent.find('.chargepoint-soc');  // now get parents respective child element
-		var soc = socData.soc;
-		if ( isNaN(soc) || soc < 0 || soc > 100 ) {
-			soc = '--';
-		}
-		element.text(soc);
-		var spinner = parent.find('.chargepoint-reloadsocsymbol');
-		spinner.removeClass('fa-spin');
-		// "range" ToDo
-		// "range_unit" ToDo
-		// "timestamp" ToDo
-		// "fault_stat" ToDo
-		// "fault_str" ToDo
-	}
-	else if ( mqttmsg.match( /^openwb\/chargepoint\/[1-9][0-9]*\/get\/connected_vehicle\/soc_config$/i ) ) {
-		// { "socconfigured", "manual" }
-		var configData = $.parseJSON(mqttpayload);
-		var index = getIndex(mqttmsg);  // extract number between two / /
-		var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent row element for charge point
-		// "socconfigured" bool
-		var elementIsConfigured = $(parent).find('.chargepoint-socconfigured');  // now get parents respective child element
-		var elementIsNotConfigured = $(parent).find('.chargepoint-socnotconfigured');  // now get parents respective child element
-		if (configData.socconfigured == true) {
-			$(elementIsNotConfigured).addClass('hide');
-			$(elementIsConfigured).removeClass('hide');
-		} else {
-			$(elementIsNotConfigured).removeClass('hide');
-			$(elementIsConfigured).addClass('hide');
-		}
-		// "manual"
-		if (configData.manual == true) {
-			$(elementIsConfigured).addClass('manualSoC');
-			$(elementIsConfigured).find('.chargepoint-manualsocsymbol').removeClass('hide');
-			$(elementIsConfigured).find('.chargepoint-reloadsocsymbol').addClass('hide');
-		} else {
-			$(elementIsConfigured).removeClass('manualSoC');
-			$(elementIsConfigured).find('.chargepoint-manualsocsymbol').addClass('hide');
-			$(elementIsConfigured).find('.chargepoint-reloadsocsymbol').removeClass('hide');
-		}
-	}
-	 // else if ( mqttmsg.match( /^openwb\/lp\/[1-9][0-9]*\/autolockconfigured$/i ) ) {
-	 // 	var index = getIndex(mqttmsg);  // extract first match = number from
-	 // 	var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent row element for charge point
-	 // 	var element = parent.find('.autolockConfiguredLp');  // now get parents respective child element
-	 // 	if ( mqttpayload == 0 ) {
-	 // 		element.addClass('hide');
-	 // 	} else {
-	 // 		element.removeClass('hide');
-	 // 	}
-	 // }
-	 // else if ( mqttmsg.match( /^openwb\/lp\/[1-9][0-9]*\/autolockstatus$/i ) ) {
-	 // 	// values used for AutolockStatus flag:
-	 // 	// 0 = standby
-	 // 	// 1 = waiting for autolock
-	 // 	// 2 = autolock performed
-	 // 	// 3 = auto-unlock performed
-	 // 	var index = getIndex(mqttmsg);  // extract number between two / /
-	 // 	var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent row element for charge point
-	 // 	var element = parent.find('.autolockConfiguredLp');  // now get parents respective child element
-	 // 	switch ( mqttpayload ) {
-	 // 		case '0':
-	 // 			// remove animation from span and set standard colored key icon
-	 // 			element.removeClass('fa-lock fa-lock-open animate-alertPulsation text-red text-green');
-	 // 			element.addClass('fa-key');
-	 // 			break;
-	 // 		case '1':
-	 // 			// add animation to standard icon
-	 // 			element.removeClass('fa-lock fa-lock-open text-red text-green');
-	 // 			element.addClass('fa-key animate-alertPulsation');
-	 // 			break;
-	 // 		case '2':
-	 // 			// add red locked icon
-	 // 			element.removeClass('fa-lock-open fa-key animate-alertPulsation text-green');
-	 // 			element.addClass('fa-lock text-red');
-	 // 			break;
-	 // 		case '3':
-	 // 			// add green unlock icon
-	 // 			element.removeClass('fa-lock fa-key animate-alertPulsation text-red');
-	 // 			element.addClass('fa-lock-open text-green');
-	 // 			break;
-	 // 	}
-	 // }
-	 // else if ( mqttmsg.match( /^openwb\/lp\/[1-9][0-9]*\/boolfinishattimechargeactive$/i ) ) {
-	 // 	// respective charge point configured
-	 // 	var index = getIndex(mqttmsg);  // extract number between two / /
-	 // 	var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent row element for charge point
-	 // 	var element = parent.find('.targetChargingLp');  // now get parents respective child element
-	 // 	if (mqttpayload == 1) {
-	 // 		element.removeClass('hide');
-	 // 	} else {
-	 // 		element.addClass('hide');
-	 // 	}
-	 // }
-	else if ( mqttmsg.match( /^openwb\/chargepoint\/[1-9][0-9]*\/get\/connected_vehicle\/info$/i ) ) {
-		// info of the vehicle if connected
-		// { "id", "name" }
-		var index = getIndex(mqttmsg);  // extract number between two / /
-		var infoData = $.parseJSON(mqttpayload);
-		var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent row element for charge point
-		// "id" int
-		parent.find('.chargepoint-vehicleselect').val(infoData.id);  // set selectBox to received id
-		parent.find('.chargepoint-vehicledata[data-ev]').attr('data-ev', infoData.id).data('ev', infoData.id);  // set data-ev setting for this chargepoint
-		// "name" str
-		parent.find('.chargepoint-vehiclename').text(infoData.name);
-	}
-	else if ( mqttmsg.match( /^openwb\/chargepoint\/[1-9][0-9]*\/get\/connected_vehicle\/config$/i ) ) {
-		// settings of the vehicle if connected
-		// { "charge_template", "ev_template", "chargemode", "priority", "average_consumption" }
-		var index = getIndex(mqttmsg);  // extract number between two / /
-		var configData = $.parseJSON(mqttpayload);
-		var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent row element for charge point
-		// "charge_template" in
-		parent.attr('data-chargetemplate', configData.charge_template).data('chargetemplate', configData.charge_template);
-		// "ev_template" int
-		parent.attr('data-evtemplate', configData.ev_template).data('evtemplate', configData.ev_template);
-		// "chargemode" str
-		parent.find('.chargepoint-vehiclechargemode').text(configData.chargemode);  // set chargemode in card header
-		chargemodeButton = parent.find('.chargepoint-chargemode input[type=radio][data-option='+configData.chargemode+']');
-		chargemodeButton.prop('checked', true);  // check selected chargemode radio button
-		chargemodeButton.closest('label').addClass('active');  // activate selected chargemode button
-		$('.chargepoint-chargemode input[type=radio]').not('[data-option="'+configData.chargemode+'"]').each(function() {
-			$(this).prop('checked', false);  // uncheck all other radio buttons
-			$(this).closest('label').removeClass('active');  // deselect all other chargemode buttons
-		});
-		// "priority" bool
-		var priorityElement = parent.find('.chargepoint-vehiclepriority');  // now get parents respective child element
-		if ( configData.priority === true ) {
-			// element.prop('checked', true);
-			priorityElement.bootstrapToggle('on', true); // do not fire a changed-event to prevent a loop!
-		} else {
-			// element.prop('checked', false);
-			priorityElement.bootstrapToggle('off', true); // do not fire a changed-event to prevent a loop!
-		}
-		// "average_consumption" int unit: Wh/100km
-		var rangeChargedElement = parent.find('.chargepoint-rangesinceplugged');
-		rangeChargedElement.data('consumption', configData.average_consumption).attr('data-consumption', configData.average_consumption);
-		// if already energyCharged-displayed, update rangeCharged
-		var energyCharged = parseFloat(parent.find('.chargepoint-energysinceplugged').text());  // now get parents respective energyCharged child element
-		var rangeCharged = '';
-		if ( !isNaN(energyCharged) && consumption > 0 ) {
-			rangeCharged = (energyCharged / consumption) * 100;
-			rangeCharged = ' / ' + rangeCharged.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1}) + ' km';
-		}
-		$(rangeChargedElement).text(rangeCharged);
-	}
-}
 
 // function processHookMessages(mqttmsg, mqttpayload) {
 // 	// processes mqttmsg for topic openWB/hook

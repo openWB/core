@@ -54,16 +54,12 @@ var topicsToSubscribe = [
 
 	// information for connected vehicle
 	["openWB/chargepoint/+/get/connected_vehicle/info", 1],			// general info of the vehicle; JSON { "id": int, "name": str }
-	// ["openWB/chargepoint/+/get/vehicle/id", 1],					// unique id of the vehicle; int
-	// ["openWB/chargepoint/+/get/vehicle/name", 1],				// name of the vehicle; str
 	["openWB/chargepoint/+/get/connected_vehicle/config", 1],		// general configuration of the vehicle; JSON { "charge_template": int, "ev_template": int, "chargemode": str, "priority": bool, "average_consumption": int (Wh/100km) }
-	// ["openWB/chargepoint/+/get/vehicle/chargemode", 1],				// actual chargemode of the vehicle; str
-	// ["openWB/chargepoint/+/get/vehicle/average_consump", 1],		// average consumption of the vehicle; int, unit: Wh/100km
 	["openWB/chargepoint/+/get/connected_vehicle/soc", 1],			// soc info of the vehicle; JSON {"soc": float (%), "range": int, "range_unit": str, "timestamp": int, "fault_stat": int, "fault_str": str }
-	// ["openWB/chargepoint/+/get/vehicle/soc", 1],					// actual soc of the vehicle; float, unit: %, 1-100
-	["openWB/chargepoint/+/get/connected_vehicle/soc_config", 1]	// soc configuration of the vehicle; JSON { "configured": bool, "manual": bool }
-	// ["openWB/chargepoint/+/get/vehicle/socconfigured", 1],		// is a soc module configured for the vehicle? bool
-	// ["openWB/chargepoint/+/get/vehicle/socmanual", 1]			// should manual input be enabled for this vehicle? bool
+	["openWB/chargepoint/+/get/connected_vehicle/soc_config", 1],	// soc configuration of the vehicle; JSON { "configured": bool, "manual": bool }
+
+	// vehicle topics
+	["openWB/vehicle/+/name", 1],	// populate a list of vehicle id/name info
 
 	// // hook Konfiguration
 	// ["openWB/hook/1/boolHookConfigured", 0],
