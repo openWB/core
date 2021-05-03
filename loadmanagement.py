@@ -97,7 +97,7 @@ def loadmanagement_for_counters():
         log.exception_logging(e)
 
 def perform_loadmanagement(counter):
-    """ gibt den Zähler mit der gröpten Überlastung und die Überlastung sowie eine Liste der Ladepunkte, die in den folgenden Zweigen des Zählers sind, zurück.
+    """ gibt eine Liste der Ladepunkte, die in den folgenden Zweigen des Zählers sind, zurück.
 
     Return
     ------
@@ -119,6 +119,9 @@ def perform_loadmanagement(counter):
         return chargepoints
     except Exception as e:
         log.exception_logging(e)
+
+def get_overloaded_counters():
+    return overloaded_counters
 
 # Verarbeiten der Liste aus Zählern und Ladepunkten
 counters = []

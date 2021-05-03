@@ -127,6 +127,13 @@ class control():
                         overshoot = self._down_regulation(mode, chargepoints, overshoot, overloaded_counters[n][1][1])
                         if overshoot == 0:
                             break
+                    # Wenn kein Ladepunkt lädt, kann die Wallbox nichts am Lastmanagement ausrichten. Die Überlastung kommt ausschließlich vom Hausverbrauch.
+                    for cp in data.cp_data:
+                        if "cp" in cp:
+                            if data.cp_data[cp].data["set"]["current"] != 0:
+                                break
+                    else:
+                        break
                     if overshoot == 0:
                         # Nach dem Aktualisieren der Werte sollte der Zähler verschwunden sein, weil man genügend LP abschalten konnte
                         n=0
@@ -548,7 +555,7 @@ class control():
         Return
         ------
         """
-        overloaded_counters = None
+        overloaded_counters = loadmanagement.get_overloaded_counters()
         try:
             charging_ev = chargepoint.data["set"]["charging_ev"]
             phases = charging_ev.data["control_parameter"]["phases"]

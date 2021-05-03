@@ -75,21 +75,24 @@ class setData():
             Angabe, ob und welche Kollektion erwartet wird
         """
         valid = False
-        if msg.payload:
-            value = json.loads(str(msg.payload.decode("utf-8")))
-            if collection != None:
-                    if self._validate_collection_value(msg, data_type, ranges, collection) == True:
+        try:
+            if msg.payload:
+                value = json.loads(str(msg.payload.decode("utf-8")))
+                if collection != None:
+                        if self._validate_collection_value(msg, data_type, ranges, collection) == True:
+                            valid = True
+                elif data_type == str:
+                    if isinstance(value, str) == True:
                         valid = True
-            elif data_type == str:
-                if isinstance(value, str) == True:
-                    valid = True
-                else:
-                    log.message_debug_log("error", "Payload ungueltig: Topic "+str(msg.topic)+", Payload "+str(value)+" sollte ein String sein.")
-            elif self._validate_min_max_value(value, msg, data_type, ranges) == True:
-                valid = True 
-            if valid == True:
-                pub.pub(msg.topic.replace('set/', '', 1), value)
-                pub.pub(msg.topic, "")
+                    else:
+                        log.message_debug_log("error", "Payload ungueltig: Topic "+str(msg.topic)+", Payload "+str(value)+" sollte ein String sein.")
+                elif self._validate_min_max_value(value, msg, data_type, ranges) == True:
+                    valid = True 
+                if valid == True:
+                    pub.pub(msg.topic.replace('set/', '', 1), value)
+                    pub.pub(msg.topic, "")
+        except Exception as e:
+            log.exception_logging(e)
 
     def _validate_collection_value(self, msg, data_type, ranges = None, collection = None):
         """ prüft, ob die Liste vom angegebenen Typ ist und ob Minimal- und Maximalwert eingehalten werden.
@@ -420,12 +423,12 @@ class setData():
         """
         if re.search("^openWB/set/pv/config/configured$", msg.topic) != None:
             self._validate_value(msg, int, [(0, 1)])
-        elif (re.search("^openWB/set/pv/get/counter$", msg.topic) != None or
-                re.search("^openWB/set/pv/get/daily_yield$", msg.topic) != None or
+        elif (re.search("^openWB/set/pv/get/daily_yield$", msg.topic) != None or
                 re.search("^openWB/set/pv/get/monthly_yield$", msg.topic) != None or
                 re.search("^openWB/set/pv/get/yearly_yield$", msg.topic) != None):
             self._validate_value(msg, float, [(0, None)])
-        elif re.search("^openWB/set/pv/get/power$", msg.topic) != None:
+        elif (re.search("^openWB/set/pv/get/counter$", msg.topic) != None or
+                re.search("^openWB/set/pv/get/power$", msg.topic) != None):
             self._validate_value(msg, int, [(None, 0)], collection=list)
         elif (re.search("^openWB/set/pv/set/overhang_power_left$", msg.topic) != None or
                 re.search("^openWB/set/pv/set/reserved_evu_overhang$", msg.topic) != None or
@@ -459,13 +462,13 @@ class setData():
             self._validate_value(msg, int, [(0, 2)])
         elif re.search("^openWB/set/pv/[1-9][0-9]*/get/fault_str$", msg.topic) != None:
             self._validate_value(msg, str)
-        elif (re.search("^openWB/set/pv/[1-9][0-9]*/get/counter$", msg.topic) != None or
-                re.search("^openWB/set/pv/[1-9][0-9]*/get/daily_yield$", msg.topic) != None or
+        elif (re.search("^openWB/set/pv/[1-9][0-9]*/get/daily_yield$", msg.topic) != None or
                 re.search("^openWB/set/pv/[1-9][0-9]*/get/monthly_yield$", msg.topic) != None or
                 re.search("^openWB/set/pv/[1-9][0-9]*/get/yearly_yield$", msg.topic) != None or
                 re.search("^openWB/set/pv/[1-9][0-9]*/get/energy$", msg.topic) != None):
             self._validate_value(msg, float, [(0, None)])
-        elif re.search("^openWB/set/pv/[1-9][0-9]*/get/power$", msg.topic) != None:
+        elif (re.search("^openWB/set/pv/[1-9][0-9]*/get/counter$", msg.topic) != None or
+                re.search("^openWB/set/pv/[1-9][0-9]*/get/power$", msg.topic) != None):
             self._validate_value(msg, int, [(None, 0)])
         elif re.search("^openWB/set/pv/[1-9][0-9]*/get/actual_power_phase$", msg.topic) != None:
             self._validate_value(msg, float, [(0, None)], collection=list)
