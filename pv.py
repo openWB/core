@@ -54,25 +54,25 @@ class pv():
                 # Regelmodus
                 control_range_low = data.general_data["general"].data["chargemode_config"]["pv_charging"]["control_range"][0]
                 control_range_high = data.general_data["general"].data["chargemode_config"]["pv_charging"]["control_range"][1]
-                control_range_center = (control_range_high - control_range_low) / 2
+                control_range_center = control_range_high - (control_range_high - control_range_low) / 2
                 if control_range_low < evu_overhang < control_range_high:
                     available_power = 0
                 else:
                     available_power = evu_overhang - control_range_center
-                if available_power > 0:
-                    log.message_debug_log("debug", str(available_power)+"W EVU-Ueberschuss, der fuer die Regelung verfuegbar ist, davon "+str(self.data["set"]["reserved_evu_overhang"])+"W fuer die Einschaltverzoegerung reservierte Leistung.")
+                if evu_overhang > 0:
+                    self.data["set"]["overhang_power_left"] = available_power
                 else:
-                    log.message_debug_log("debug", "0W EVU-Ueberschuss, der fuer die Regelung verfuegbar ist, davon "+str(self.data["set"]["reserved_evu_overhang"])+"W fuer die Einschaltverzoegerung reservierte Leistung.")
+                    self.data["set"]["overhang_power_left"] = 0
+                log.message_debug_log("debug", str(self.data["set"]["overhang_power_left"])+"W EVU-Ueberschuss, der fuer die Regelung verfuegbar ist, davon "+str(self.data["set"]["reserved_evu_overhang"])+"W fuer die Einschaltverzoegerung reservierte Leistung.")
             # nur allgemeiner PV-Key vorhanden, d.h. kein Modul konfiguriert
             else:
                 self.data["config"]["configured"]=False
-                available_power = 0 # verfügbare Leistung, Regelpunkt ist im Regelintervall
+                available_power = 0 
                 log.message_debug_log("debug", "Kein PV-Modul konfiguriert.")
-            self.data["set"]["overhang_power_left"] = available_power
+                self.data["set"]["overhang_power_left"] = 0
             self.data["set"]["available_power"] = available_power
             pub.pub("openWB/set/pv/set/available_power", available_power)
             pub.pub("openWB/set/pv/config/configured", self.data["config"]["configured"])
-
         except Exception as e:
             log.exception_logging(e)
 

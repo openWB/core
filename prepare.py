@@ -87,6 +87,15 @@ class prepare():
                             message = "Keine Ladung an LP"+str(cp.cp_num)+", da "+str(message_ev)
                         log.message_debug_log("debug", "Ladepunkt "+cp.cp_num+", EV: "+cp.data["set"]["charging_ev"].data["name"]+" (EV-Nr."+str(vehicle)+")")
                         
+                        # Die benötigte Stromstärke hat sich durch eine Änderung des Lademdous oder der Konfiguration geändert. Die Zuteilung entsprechend der Priorisierung muss neu geprüft werden.
+                        # Daher muss der LP zurückgesetzt werden, wenn er gerade lädt, um in der Regelung wieder berücksichtigt zu werden.
+                        if mode_changed == True:
+                            data.pv_data["all"].reset_switch_on_off(cp)
+                            charging_ev.reset_phase_switch()
+                            if max(cp.data["get"]["current"]) != 0:
+                                cp.data["set"]["current"] = 0
+                            # Da nicht bekannt ist, ob mit Bezug, Überschuss oder aus dem Speicher geladen wird, wird die freiwerdende Leistung erst im nächsten Durchlauf berücksichtigt.
+                            # Ggf. entsteht so eine kurze Unterbrechung der Ladung, wenn während dem Laden umkonfiguriert wird.
                         # Wenn die Nachrichten gesendet wurden, EV wieder löschen, wenn das EV im Algorithmus nicht berücksichtigt werden soll.
                         if state == False:
                             cp.data["set"]["charging_ev"] = -1
@@ -96,15 +105,6 @@ class prepare():
                                     cp.data["get"]["charge_state"] == False and 
                                     data.pv_data["all"].data["set"]["overhang_power_left"] == 0):
                                 log.message_debug_log("error", "Reservierte Leistung kann nicht 0 sein.")
-                            # Die benötigte Stromstärke hat sich durch eine Änderung des Lademdous oder der Konfiguration geändert. Die Zuteilung entsprechend der Priorisierung muss neu geprüft werden.
-                            # Daher muss der LP zurückgesetzt werden, wenn er gerade lädt, um in der Regelung wieder berücksichtigt zu werden.
-                            if mode_changed == True:
-                                data.pv_data["all"].reset_switch_on_off(cp)
-                                charging_ev.reset_phase_switch()
-                                if max(cp.data["get"]["current"]) != 0:
-                                    cp.data["set"]["current"] = 0
-                                # Da nicht bekannt ist, ob mit Bezug, Überschuss oder aus dem Speicher geladen wird, wird die freiwerdende Leistung erst im nächsten Durchlauf berücksichtigt.
-                                # Ggf. entsteht so eine kurze Unterbrechung der Ladung, wenn während dem Laden umkonfiguriert wird.
                             cp.get_phases()
                             # Einhaltung des Minimal- und Maximalstroms prüfen
                             required_current = charging_ev.check_min_max_current(charging_ev.data["control_parameter"]["required_current"], charging_ev.data["control_parameter"]["phases"])

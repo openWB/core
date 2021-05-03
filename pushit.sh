@@ -19,6 +19,7 @@ current=$(timeout 1 mosquitto_sub -t 'openWB/chargepoint/1/set/current')
 #echo $current > /var/www/html/openWB/ramdisk/actcurrlp1
 mosquitto_pub -r -t "openWB/set/isss/Current" -h 192.168.1.221 -m "$current"
 ll=$(timeout 1 mosquitto_sub -C 1 -h 192.168.1.221 -t 'openWB/lp/1/W')
+mosquitto_pub -r -t "openWB/set/isss/heartbeat" -h 192.168.1.221 -m "0"
 mosquitto_pub -r -t "openWB/set/chargepoint/1/get/power_all" -m "$ll"
 plug=$(timeout 1 mosquitto_sub -C 1 -h 192.168.1.221 -t 'openWB/lp/1/boolPlugStat')
 mosquitto_pub -r -t "openWB/set/chargepoint/1/get/plug_state" -m "$plug"

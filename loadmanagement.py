@@ -397,7 +397,11 @@ def _check_unbalanced_load(current_used, offset):
     try:
         if data.general_data["general"].data["chargemode_config"]["unbalanced_load"] == True:
             min_current = min(current_used)
+            if min_current < 0:
+                min_current = 0
             max_current = max(current_used)
+            if max_current < 0:
+                max_current = 0
             if (max_current - min_current) <= data.general_data["general"].data["chargemode_config"]["unbalanced_load_limit"] - offset_current:
                 return False, None, 0
             else:
