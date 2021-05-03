@@ -97,89 +97,88 @@ def pub_settings():
     # pub.pub("openWB/vehicle/3/match_ev/selected", "rfid")
     # pub.pub("openWB/vehicle/3/match_ev/tag_id", 1234)
     #evt1 - Tesla
-    pub.pub("openWB/vehicle/template/ev_template/1/min_current", 6)
-    pub.pub("openWB/vehicle/template/ev_template/1/battery_capacity", 82)
-    pub.pub("openWB/vehicle/template/ev_template/1/max_current_one_phase", 32)
-    pub.pub("openWB/vehicle/template/ev_template/1/max_current_multi_phases", 16)
-    pub.pub("openWB/vehicle/template/ev_template/1/max_phases", 3)
-    pub.pub("openWB/vehicle/template/ev_template/1/average_consump", 5)
-    pub.pub("openWB/vehicle/template/ev_template/1/control_pilot_interruption", False)
+    evt1 = {
+        'max_current_one_phase': 32, 
+        'min_current': 6, 
+        'battery_capacity': 82, 
+        'average_consump': 5, 
+        'max_phases': 3, 
+        'max_current_multi_phases': 16, 
+        'control_pilot_interruption': False
+        }
+    pub.pub("openWB/vehicle/template/ev_template/1", evt1)
+
     #evt2 - Inoiq
-    pub.pub("openWB/vehicle/template/ev_template/2/min_current", 6)
-    pub.pub("openWB/vehicle/template/ev_template/2/battery_capacity", 82)
-    pub.pub("openWB/vehicle/template/ev_template/2/max_current_one_phase", 32)
-    pub.pub("openWB/vehicle/template/ev_template/2/max_current_multi_phases", 0)
-    pub.pub("openWB/vehicle/template/ev_template/2/max_phases", 1)
-    pub.pub("openWB/vehicle/template/ev_template/2/average_consump", 5)
-    pub.pub("openWB/vehicle/template/ev_template/2/control_pilot_interruption", False)
+    evt2 = {
+        'max_current_one_phase': 32, 
+        'min_current': 6, 
+        'battery_capacity': 82, 
+        'average_consump': 5, 
+        'max_phases': 1, 
+        'max_current_multi_phases': 0, 
+        'control_pilot_interruption': False}
+    pub.pub("openWB/vehicle/template/ev_template/2", evt2)
+
     #ct1
-    pub.pub("openWB/vehicle/template/charge_template/1/prio", False)
-    pub.pub("openWB/vehicle/template/charge_template/1/time_charging/active", False)
-    pub.pub("openWB/vehicle/template/charge_template/1/time_charging/1/active", False)
-    pub.pub("openWB/vehicle/template/charge_template/1/time_charging/1/frequency/selected", "weekly")
-    pub.pub("openWB/vehicle/template/charge_template/1/time_charging/1/frequency/weekly", [1,1,1,1,1,0,0])
-    pub.pub("openWB/vehicle/template/charge_template/1/time_charging/1/time", ["07:00", "17:20"])
-    pub.pub("openWB/vehicle/template/charge_template/1/time_charging/1/current", 15)
-    pub.pub("openWB/vehicle/template/charge_template/1/chargemode/selected", "pv_charging")
-    pub.pub("openWB/vehicle/template/charge_template/1/chargemode/pv_charging/min_current", 6)
-    pub.pub("openWB/vehicle/template/charge_template/1/chargemode/pv_charging/min_soc", 0)
-    pub.pub("openWB/vehicle/template/charge_template/1/chargemode/pv_charging/min_soc_current", 13)
-    pub.pub("openWB/vehicle/template/charge_template/1/chargemode/pv_charging/max_soc", 90)
-    pub.pub("openWB/vehicle/template/charge_template/1/chargemode/pv_charging/feed_in_limit", False)
-    pub.pub("openWB/vehicle/template/charge_template/1/chargemode/instant_charging/current", 12)
-    pub.pub("openWB/vehicle/template/charge_template/1/chargemode/instant_charging/limit/selected", "soc")
-    pub.pub("openWB/vehicle/template/charge_template/1/chargemode/instant_charging/limit/soc", 50)
-    pub.pub("openWB/vehicle/template/charge_template/1/chargemode/instant_charging/limit/amount", 10)
-    pub.pub("openWB/vehicle/template/charge_template/1/chargemode/scheduled_charging/1/active", 1)
-    pub.pub("openWB/vehicle/template/charge_template/1/chargemode/scheduled_charging/1/frequency/selected", "daily")
-    pub.pub("openWB/vehicle/template/charge_template/1/chargemode/scheduled_charging/1/time", "15:00")
-    pub.pub("openWB/vehicle/template/charge_template/1/chargemode/scheduled_charging/1/soc", 85)
+    ct1 = {
+        'time_charging': 
+        {
+            'active': False, 
+            'plan1': 
+            {
+                'active': False, 
+                'current': 15, 'frequency': 
+                {
+                    'selected': 'weekly', 
+                    'weekly': [1, 1, 1, 1, 1, 0, 0]
+                    }, 
+                'time': ['07:00', '17:20']
+                }
+            }, 
+            'prio': False, 
+            'chargemode': 
+            {
+                'selected': 'pv_charging', 
+                'pv_charging': 
+                {
+                    'min_soc': 0, 
+                    'min_current': 6, 
+                    'feed_in_limit': False, 
+                    'min_soc_current': 13, 
+                    'max_soc': 90
+                    }, 
+                'instant_charging': 
+                {
+                    'current': 12, 
+                    'limit': 
+                    {
+                        'selected': 'soc', 
+                        'amount': 10, 
+                        'soc': 50
+                        }
+                    }, 
+                    'scheduled_charging': 
+                    {
+                        'plan1': 
+                        {
+                            'active': 1, 
+                            'frequency': 
+                            {
+                                'selected': 'daily'
+                                }, 
+                            'soc': 85, 
+                            'time': '15:00'
+                            }
+                        }
+                    }
+                }
+    pub.pub("openWB/vehicle/template/charge_template/1", ct1)
 
     # #ct2
-    # pub.pub("openWB/vehicle/template/charge_template/2/prio", False)
-    # pub.pub("openWB/vehicle/template/charge_template/2/time_charging/active", False)
-    # pub.pub("openWB/vehicle/template/charge_template/2/time_charging/1/active", False)
-    # pub.pub("openWB/vehicle/template/charge_template/2/time_charging/1/frequency/selected", "weekly")
-    # pub.pub("openWB/vehicle/template/charge_template/2/time_charging/1/frequency/weekly", [1,1,1,1,1,0,0])
-    # pub.pub("openWB/vehicle/template/charge_template/2/time_charging/1/time", ["07:00", "17:20"])
-    # pub.pub("openWB/vehicle/template/charge_template/2/time_charging/1/current", 15)
-    # pub.pub("openWB/vehicle/template/charge_template/2/chargemode/selected", "pv_charging")
-    # pub.pub("openWB/vehicle/template/charge_template/2/chargemode/pv_charging/min_current", 12)
-    # pub.pub("openWB/vehicle/template/charge_template/2/chargemode/pv_charging/min_soc", 23)
-    # pub.pub("openWB/vehicle/template/charge_template/2/chargemode/pv_charging/min_soc_current", 13)
-    # pub.pub("openWB/vehicle/template/charge_template/2/chargemode/pv_charging/max_soc", 80)
-    # pub.pub("openWB/vehicle/template/charge_template/2/chargemode/pv_charging/feed_in_limit", False)
-    # pub.pub("openWB/vehicle/template/charge_template/2/chargemode/instant_charging/current", 12)
-    # pub.pub("openWB/vehicle/template/charge_template/2/chargemode/instant_charging/limit/selected", "soc")
-    # pub.pub("openWB/vehicle/template/charge_template/2/chargemode/instant_charging/limit/soc", 50)
-    # pub.pub("openWB/vehicle/template/charge_template/2/chargemode/instant_charging/limit/amount", 10)
-    # pub.pub("openWB/vehicle/template/charge_template/2/chargemode/scheduled_charging/1/active", 1)
-    # pub.pub("openWB/vehicle/template/charge_template/2/chargemode/scheduled_charging/1/frequency/selected", "daily")
-    # pub.pub("openWB/vehicle/template/charge_template/2/chargemode/scheduled_charging/1/time", "11:00")
-    # pub.pub("openWB/vehicle/template/charge_template/2/chargemode/scheduled_charging/1/soc", 85)
+    pub.pub("openWB/vehicle/template/charge_template/2", ct1)
 
     # #ct3
-    # pub.pub("openWB/vehicle/template/charge_template/3/prio", False)
-    # pub.pub("openWB/vehicle/template/charge_template/3/time_charging/active", False)
-    # pub.pub("openWB/vehicle/template/charge_template/3/time_charging/1/active", False)
-    # pub.pub("openWB/vehicle/template/charge_template/3/time_charging/1/frequency/selected", "weekly")
-    # pub.pub("openWB/vehicle/template/charge_template/3/time_charging/1/frequency/weekly", [1,1,1,1,1,0,0])
-    # pub.pub("openWB/vehicle/template/charge_template/3/time_charging/1/time", ["07:00", "17:20"])
-    # pub.pub("openWB/vehicle/template/charge_template/3/time_charging/1/current", 15)
-    # pub.pub("openWB/vehicle/template/charge_template/3/chargemode/selected", "instant_charging")
-    # pub.pub("openWB/vehicle/template/charge_template/3/chargemode/pv_charging/min_current", 12)
-    # pub.pub("openWB/vehicle/template/charge_template/3/chargemode/pv_charging/min_soc", 23)
-    # pub.pub("openWB/vehicle/template/charge_template/3/chargemode/pv_charging/min_soc_current", 13)
-    # pub.pub("openWB/vehicle/template/charge_template/3/chargemode/pv_charging/max_soc", 80)
-    # pub.pub("openWB/vehicle/template/charge_template/3/chargemode/pv_charging/feed_in_limit", False)
-    # pub.pub("openWB/vehicle/template/charge_template/3/chargemode/instant_charging/current", 12)
-    # pub.pub("openWB/vehicle/template/charge_template/3/chargemode/instant_charging/limit/selected", "soc")
-    # pub.pub("openWB/vehicle/template/charge_template/3/chargemode/instant_charging/limit/soc", 50)
-    # pub.pub("openWB/vehicle/template/charge_template/3/chargemode/instant_charging/limit/amount", 10)
-    # pub.pub("openWB/vehicle/template/charge_template/3/chargemode/scheduled_charging/1/active", 1)
-    # pub.pub("openWB/vehicle/template/charge_template/3/chargemode/scheduled_charging/1/frequency/selected", "daily")
-    # pub.pub("openWB/vehicle/template/charge_template/3/chargemode/scheduled_charging/1/time", "11:00")
-    # pub.pub("openWB/vehicle/template/charge_template/3/chargemode/scheduled_charging/1/soc", 85)
+    pub.pub("openWB/vehicle/template/charge_template/3", ct1)
 
     # optional
     pub.pub("openWB/optional/et/active", False)

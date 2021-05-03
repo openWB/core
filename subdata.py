@@ -137,8 +137,8 @@ class subData():
             enthält Topic und Payload
         """
         try:
+            index=self.get_index(msg.topic)
             if re.search("^openWB/vehicle/[0-9]+/.+$", msg.topic) != None:
-                index=self.get_index(msg.topic)
                 if "ev"+index not in self.ev_data:
                     self.ev_data["ev"+index]=ev.ev(int(index))
                 if re.search("^openWB/vehicle/[0-9]+$", msg.topic) != None:
@@ -172,96 +172,22 @@ class subData():
                         self.set_json_payload(self.ev_data["ev"+index].data["control_parameter"], msg)
                     else: 
                         self.set_json_payload(self.ev_data["ev"+index].data, msg)
-            elif "openWB/vehicle/template/charge_template" in msg.topic:
-                self.subprocess_vehicle_chargemode_topic(msg)
-            elif "openWB/vehicle/template/ev_template" in msg.topic:
-                index=self.get_index(msg.topic)
-                if re.search("^openWB/vehicle/template/ev_template/[1-9][0-9]*$", msg.topic) != None:
-                    if json.loads(str(msg.payload.decode("utf-8")))==1:
-                        if "et"+index not in self.ev_template_data:
-                            self.ev_template_data["et"+index]=ev.evTemplate(int(index))
-                    else:
-                        if "et"+index in self.ev_template_data:
-                            self.ev_template_data.pop("et"+index)
-                else:
-                    if "et"+index not in self.ev_template_data:
-                        self.ev_template_data["et"+index]=ev.evTemplate(int(index))
-                self.set_json_payload(self.ev_template_data["et"+index].data, msg)
-        except Exception as e:
-            log.exception_logging(e)
-
-    def subprocess_vehicle_chargemode_topic(self, msg):
-        """ Handler für die EV-Chargemode-Template-Topics
-
-         Parameters
-        ----------
-        msg:
-            enthält Topic und Payload
-        """
-        index=self.get_index(msg.topic)
-        try:
-            if "ct"+index not in self.ev_charge_template_data:
-                    self.ev_charge_template_data["ct"+index]=ev.chargeTemplate(int(index))
-            if re.search("^openWB/vehicle/template/charge_template/[1-9][0-9]*$", msg.topic) != None:
+            elif re.search("^openWB/vehicle/template/charge_template/[1-9][0-9]*$", msg.topic) != None:
                 if json.loads(str(msg.payload.decode("utf-8")))=="":
                     if "ct"+index in self.ev_charge_template_data:
                         self.ev_charge_template_data.pop("ct"+index)
-            elif re.search("^openWB/vehicle/template/charge_template/[1-9][0-9]*/chargemode/.+$", msg.topic) != None:
-                if "chargemode" not in self.ev_charge_template_data["ct"+index].data:
-                        self.ev_charge_template_data["ct"+index].data["chargemode"]={}
-                if re.search("^openWB/vehicle/template/charge_template/[1-9][0-9]*/chargemode/instant_charging/.+$", msg.topic) != None:
-                    if "instant_charging" not in self.ev_charge_template_data["ct"+index].data["chargemode"]:
-                        self.ev_charge_template_data["ct"+index].data["chargemode"]["instant_charging"]={}
-                    if re.search("^openWB/vehicle/template/charge_template/[1-9][0-9]*/chargemode/instant_charging/limit/.+$", msg.topic) != None:
-                        if "limit" not in self.ev_charge_template_data["ct"+index].data["chargemode"]["instant_charging"]:
-                            self.ev_charge_template_data["ct"+index].data["chargemode"]["instant_charging"]["limit"]={}
-                        self.set_json_payload(self.ev_charge_template_data["ct"+index].data["chargemode"]["instant_charging"]["limit"], msg)
-                    else:
-                        self.set_json_payload(self.ev_charge_template_data["ct"+index].data["chargemode"]["instant_charging"], msg)
-                elif re.search("^openWB/vehicle/template/charge_template/[1-9][0-9]*/chargemode/pv_charging/.+$", msg.topic) != None:
-                    if "pv_charging" not in self.ev_charge_template_data["ct"+index].data["chargemode"]:
-                        self.ev_charge_template_data["ct"+index].data["chargemode"]["pv_charging"]={}
-                    self.set_json_payload(self.ev_charge_template_data["ct"+index].data["chargemode"]["pv_charging"], msg)
-                elif re.search("^openWB/vehicle/template/charge_template/[1-9][0-9]*/chargemode/scheduled_charging/.+$", msg.topic) != None:
-                    if "scheduled_charging" not in self.ev_charge_template_data["ct"+index].data["chargemode"]:
-                        self.ev_charge_template_data["ct"+index].data["chargemode"]["scheduled_charging"]={}
-                    index_second=self.get_second_index(msg.topic)
-                    if "plan"+index_second not in self.ev_charge_template_data["ct"+index].data["chargemode"]["scheduled_charging"]:
-                        self.ev_charge_template_data["ct"+index].data["chargemode"]["scheduled_charging"]["plan"+index_second]={}
-                    if re.search("^openWB/vehicle/template/charge_template/[1-9][0-9]*/chargemode/scheduled_charging/[1-9][0-9]*$", msg.topic) != None:
-                        if json.loads(str(msg.payload.decode("utf-8")))=="":
-                            if "plan"+index_second in self.ev_charge_template_data["ct"+index].data["chargemode"]["scheduled_charging"]:
-                                self.ev_charge_template_data["ct"+index].data["chargemode"]["scheduled_charging"].pop("plan"+index_second)
-                    elif re.search("^openWB/vehicle/template/charge_template/[1-9][0-9]*/chargemode/scheduled_charging/[1-9][0-9]*/frequency/.+$", msg.topic) != None:
-                        if "frequency" not in self.ev_charge_template_data["ct"+index].data["chargemode"]["scheduled_charging"]["plan"+index_second]:
-                            self.ev_charge_template_data["ct"+index].data["chargemode"]["scheduled_charging"]["plan"+index_second]["frequency"]={}
-                        self.set_json_payload(self.ev_charge_template_data["ct"+index].data["chargemode"]["scheduled_charging"]["plan"+index_second]["frequency"], msg)
-                    elif re.search("^openWB/vehicle/template/charge_template/[1-9][0-9]*/chargemode/scheduled_charging/[1-9][0-9]*/.+$", msg.topic) != None:
-                        self.set_json_payload(self.ev_charge_template_data["ct"+index].data["chargemode"]["scheduled_charging"]["plan"+index_second], msg)
                 else:
-                    self.set_json_payload(self.ev_charge_template_data["ct"+index].data["chargemode"], msg)
-            elif re.search("^openWB/vehicle/template/charge_template/[1-9][0-9]*/time_charging/.+$", msg.topic) != None:
-                if "time_charging" not in self.ev_charge_template_data["ct"+index].data:
-                    self.ev_charge_template_data["ct"+index].data["time_charging"]={}
-                if re.search("^openWB/vehicle/template/charge_template/[1-9][0-9]*/time_charging/[1-9][0-9]*$", msg.topic) != None:
-                    index_second=self.get_second_index(msg.topic)
-                    if json.loads(str(msg.payload.decode("utf-8")))=="":
-                        if "plan"+index_second in self.ev_charge_template_data["ct"+index].data["time_charging"]:
-                            self.ev_charge_template_data["ct"+index].data["time_charging"].pop("plan"+index_second)
-                elif re.search("^openWB/vehicle/template/charge_template/[1-9][0-9]*/time_charging/[1-9][0-9]*/frequency/.+$", msg.topic) != None:
-                    index_second=self.get_second_index(msg.topic)
-                    if "frequency" not in self.ev_charge_template_data["ct"+index].data["time_charging"]["plan"+index_second]:
-                        self.ev_charge_template_data["ct"+index].data["time_charging"]["plan"+index_second]["frequency"]={}
-                    self.set_json_payload(self.ev_charge_template_data["ct"+index].data["time_charging"]["plan"+index_second]["frequency"], msg)
-                elif re.search("^openWB/vehicle/template/charge_template/[1-9][0-9]*/time_charging/[1-9][0-9]*/.+$", msg.topic) != None:
-                    index_second=self.get_second_index(msg.topic)
-                    if "plan"+index_second not in self.ev_charge_template_data["ct"+index].data["time_charging"]:
-                        self.ev_charge_template_data["ct"+index].data["time_charging"]["plan"+index_second]={}
-                    self.set_json_payload(self.ev_charge_template_data["ct"+index].data["time_charging"]["plan"+index_second], msg)
-                elif re.search("^openWB/vehicle/template/charge_template/[1-9][0-9]*/time_charging/.+$", msg.topic) != None:
-                    self.set_json_payload(self.ev_charge_template_data["ct"+index].data["time_charging"], msg)
-            else:
-                self.set_json_payload(self.ev_charge_template_data["ct"+index].data, msg)
+                    if "ct"+index not in self.ev_charge_template_data:
+                        self.ev_charge_template_data["ct"+index]=ev.chargeTemplate(int(index))
+                    self.ev_charge_template_data["ct"+index].data = json.loads(str(msg.payload.decode("utf-8")))
+            elif re.search("^openWB/vehicle/template/ev_template/[1-9][0-9]*$", msg.topic) != None:
+                if json.loads(str(msg.payload.decode("utf-8")))=="":
+                    if "et"+index in self.ev_template_data:
+                        self.ev_template_data.pop("et"+index)
+                else:
+                    if "et"+index not in self.ev_template_data:
+                        self.ev_template_data["et"+index]=ev.evTemplate(int(index))
+                    self.ev_template_data["et"+index].data = json.loads(str(msg.payload.decode("utf-8")))
         except Exception as e:
             log.exception_logging(e)
 
