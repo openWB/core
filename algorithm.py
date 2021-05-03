@@ -436,11 +436,13 @@ class control():
                                 data.general_data["general"].get_phases_chargemode("pv_charging") == "auto"):
                             # Gibt die Stromstärke und Phasen zurück, mit denen nach der Umschaltung geladen werden soll. 
                             # Falls keine Umschaltung erforderlich ist, werden Strom und Phasen, die übergeben wurden, wieder zurückgegeben.
-                            phases, current = charging_ev.auto_phase_switch(charging_ev.data["control_parameter"]["phases"], chargepoint.data["get"]["current"])
+                            phases, current = charging_ev.auto_phase_switch(charging_ev.data["control_parameter"]["required_current"], charging_ev.data["control_parameter"]["phases"], chargepoint.data["get"]["current"])
                             # Nachdem im Automatikmodus die Anzahl Phasen bekannt ist, Einhaltung des Maximalstroms prüfen.
                             required_current = charging_ev.check_min_max_current(current, phases)
                             charging_ev.data["control_parameter"]["required_current"] = required_current
-                            pub.pub("openWB/set/vehicle/"+charging_ev.ev_num +"/control_parameter/required_current", required_current)
+                            pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num )+"/control_parameter/required_current", required_current)
+                            charging_ev.data["control_parameter"]["phases"] = phases
+                            pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num )+"/control_parameter/phases", phases)
                             self._process_data(chargepoint, current, phases)
 
         except Exception as e:
