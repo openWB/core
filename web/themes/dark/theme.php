@@ -133,12 +133,21 @@
 					<div class="card border-warning">
 						<div class="card-header bg-warning collapsed" data-toggle="collapse" data-target="#cardBat">
 							<i class="fas fa-car-battery"></i>
-							<i class="housebattery-sum-charging fas fa-long-arrow-alt-left hide"></i>
-							<i class="housebattery-sum-discharging fas fa-long-arrow-alt-right hide"></i>
+							<span class="housebattery-sum-soc">XX %</span>
+							<i class="housebattery-sum-charging fas fa-angle-double-left hide"></i>
+							<i class="housebattery-sum-discharging fas fa-angle-double-right hide"></i>
 							<span class="housebattery-sum-power">XX W</span>
 							<span class="collPlus"></span>
 						</div>
 						<div id="cardBat" class="card-body collapse">
+							<div class="row">
+								<div class="col">
+									SoC
+								</div>
+								<div class="housebattery-sum-soc col text-right">
+									XX %
+								</div>
+							</div>
 							<div class="row">
 								<div class="col font-italic font-weight-bold">
 									Heute:
@@ -158,14 +167,6 @@
 								</div>
 								<div class="housebattery-sum-export col text-right">
 									XX kWh
-								</div>
-							</div>
-							<div class="row">
-								<div class="col">
-									SoC
-								</div>
-								<div class="housebattery-sum-soc col text-right">
-									XX %
 								</div>
 							</div>
 							<div class="pv-configured">
@@ -219,8 +220,8 @@
 					<div class="card border-danger">
 						<div class="card-header bg-danger collapsed" data-toggle="collapse" data-target="#cardGrid">
 							<i class="fas fa-home"></i>
-							<i class="grid-exporting fas fa-long-arrow-alt-right hide"></i>
-							<i class="grid-importing fas fa-long-arrow-alt-left hide"></i>
+							<i class="grid-exporting fas fa-angle-double-right hide"></i>
+							<i class="grid-importing fas fa-angle-double-left hide"></i>
 							<img src="img/icons/electric-tower.svg" alt="electric tower" style="width: 1.1em;" >
 							<span class="grid-power">600 W</span>
 							<span class="collPlus"></span>
