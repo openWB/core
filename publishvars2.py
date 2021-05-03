@@ -1,9 +1,10 @@
 import pub
 
+
 def pub_settings():
     """ruft für alle Ramdisk-Dateien aus initRamdisk die zum Typ passende Funktion zum publishen auf.
     """
-    #cp1
+    # cp1
     pub.pub("openWB/chargepoint/1/set/manual_lock", False)
     pub.pub("openWB/chargepoint/1/config/template", 1)
     pub.pub("openWB/chargepoint/1/config/connected_phases", 3)
@@ -20,22 +21,22 @@ def pub_settings():
     pub.pub("openWB/chargepoint/template/1/ev", 1)
     pub.pub("openWB/chargepoint/template/1/rfid_enabling", False)
 
-    # # cp2
-    # pub.pub("openWB/chargepoint/2/set/manual_lock", False)
-    # pub.pub("openWB/chargepoint/2/config/template", 2)
-    # pub.pub("openWB/chargepoint/2/config/connected_phases", 3)
-    # pub.pub("openWB/chargepoint/2/config/phase_1", 0)
-    # pub.pub("openWB/chargepoint/2/config/auto_phase_switch_hw", True)
-    # pub.pub("openWB/chargepoint/2/config/control_pilot_interruption_hw", False)
-    # pub.pub("openWB/chargepoint/2/get/rfid", 1234)
-    # # cpt2
-    # pub.pub("openWB/chargepoint/template/2/autolock/1/frequency/selected", "daily")
-    # pub.pub("openWB/chargepoint/template/2/autolock/1/time", ["07:00", "11:20"])
-    # pub.pub("openWB/chargepoint/template/2/autolock/1/active", False)
-    # pub.pub("openWB/chargepoint/template/2/autolock/wait_for_charging_end", True)
-    # pub.pub("openWB/chargepoint/template/2/autolock/active", False)
-    # pub.pub("openWB/chargepoint/template/2/ev", 2)
-    # pub.pub("openWB/chargepoint/template/2/rfid_enabling", False)
+    # cp2
+    pub.pub("openWB/chargepoint/2/set/manual_lock", False)
+    pub.pub("openWB/chargepoint/2/config/template", 2)
+    pub.pub("openWB/chargepoint/2/config/connected_phases", 3)
+    pub.pub("openWB/chargepoint/2/config/phase_1", 0)
+    pub.pub("openWB/chargepoint/2/config/auto_phase_switch_hw", True)
+    pub.pub("openWB/chargepoint/2/config/control_pilot_interruption_hw", False)
+    pub.pub("openWB/chargepoint/2/get/rfid", 1234)
+    # cpt2
+    pub.pub("openWB/chargepoint/template/2/autolock/1/frequency/selected", "daily")
+    pub.pub("openWB/chargepoint/template/2/autolock/1/time", ["07:00", "11:20"])
+    pub.pub("openWB/chargepoint/template/2/autolock/1/active", False)
+    pub.pub("openWB/chargepoint/template/2/autolock/wait_for_charging_end", True)
+    pub.pub("openWB/chargepoint/template/2/autolock/active", False)
+    pub.pub("openWB/chargepoint/template/2/ev", 2)
+    pub.pub("openWB/chargepoint/template/2/rfid_enabling", False)
 
     # #cp3
     # pub.pub("openWB/chargepoint/3/set/manual_lock", False)
@@ -54,7 +55,7 @@ def pub_settings():
     # pub.pub("openWB/chargepoint/template/3/ev", 3)
     # pub.pub("openWB/chargepoint/template/3/rfid_enabling", False)
 
-    #ev1
+    # ev1
     pub.pub("openWB/vehicle/1/charge_template", 1)
     pub.pub("openWB/vehicle/1/ev_template", 2)
     pub.pub("openWB/vehicle/1/name", "m3p")
@@ -62,9 +63,9 @@ def pub_settings():
     pub.pub("openWB/vehicle/1/soc/config/manual", False)
     pub.pub("openWB/vehicle/1/soc/get/fault_state", 0)
     pub.pub("openWB/vehicle/1/soc/get/fault_str", "Kein Fehler.")
-    #pub.pub("openWB/vehicle/1/get/soc", 81)
+    pub.pub("openWB/vehicle/1/get/soc", 61)
     pub.pub("openWB/vehicle/1/get/soc_timestamp", 1619568005)
-    #pub.pub("openWB/vehicle/1/get/charged_since_plugged_counter", 5)
+    pub.pub("openWB/vehicle/1/get/charged_since_plugged_counter", 5)
     pub.pub("openWB/vehicle/1/get/range_charged", 125)
     pub.pub("openWB/vehicle/1/match_ev/selected", "cp")
     pub.pub("openWB/vehicle/1/match_ev/tag_id", 1234)
@@ -185,20 +186,20 @@ def pub_settings():
     pub.pub("openWB/optional/et/config/max_price", 5.5)
     pub.pub("openWB/optional/et/provider", "awattar")
 
-    #pv
+    # pv
     #pub.pub("openWB/pv/1/get/counter", 500)
-    
-    #counter
-    hierarchy = [{"id":"counter0", "children":[{"id":"cp1", "children": []} ]}]
+
+    # counter
+    hierarchy = [{"id": "counter0", "children": [{"id": "cp1", "children": []}]}]
     pub.pub("openWB/counter/get/hierarchy", hierarchy)
     #pub.pub("openWB/counter/0/get/current", [0,0,0])
     pub.pub("openWB/counter/0/config/max_consumption", 6000)
     pub.pub("openWB/counter/0/config/max_current", [30, 30, 30])
 
-    #bat
+    # bat
     #pub.pub("openWB/bat/1/config/type", "mqtt")
 
-    #general
+    # general
     pub.pub("openWB/general/chargemode_config/unbalanced_load", 1)
     pub.pub("openWB/general/chargemode_config/unbalanced_load_limit", 18)
     pub.pub("openWB/general/chargemode_config/instant_charging/phases_to_use", 1)
