@@ -41,10 +41,6 @@ body > .container {
 	100% { opacity:1; }
 }
 
-#infoheader .card-body {
-	padding: 0.75rem;
-}
-
 .animate-alertPulsation {
 	-webkit-animation: alertPulsation 1s infinite;
 	-moz-animation: alertPulsation 1s infinite;
@@ -186,7 +182,8 @@ h3 {
 	font-size: 0.5rem;
 }
 
-.regularTextSize {
+.regularTextSize,
+.form-control {
 	font-size: 0.7rem;
 }
 
@@ -298,9 +295,9 @@ h3 {
 		font-size: 1.25rem;
 	}
 
-	.regularTextSize {
+	/* .regularTextSize {
 		font-size: 1.4rem;
-	}
+	} */
 
 	.largeTextSize {
 		font-size: 1.6rem;
@@ -333,9 +330,9 @@ h3 {
 		font-size: 1.65rem;
 	}
 
-	.regularTextSize {
+	/* .regularTextSize {
 		font-size: 1.8rem;
-	}
+	} */
 
 	.largeTextSize {
 		font-size: 1.8rem;
@@ -434,4 +431,17 @@ h3 {
 
 #infoheader .card {
 	min-width: 13em;
+}
+
+#infoheader .card-body {
+	padding: 0.75rem;
+}
+
+.card-header,
+.card-body {
+	padding: .2vh .6rem;
+}
+
+.btn-group {
+	flex-wrap: wrap;
 }

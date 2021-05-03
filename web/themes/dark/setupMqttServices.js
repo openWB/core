@@ -61,6 +61,9 @@ var topicsToSubscribe = [
 	// vehicle topics
 	["openWB/vehicle/+/name", 1],	// populate a list of vehicle id/name info
 
+	// chargemode config
+	["openWB/general/chargemode_config/pv_charging/bat_prio", 0],
+
 	// // hook Konfiguration
 	// ["openWB/hook/1/boolHookConfigured", 0],
 	// ["openWB/hook/2/boolHookConfigured", 0],

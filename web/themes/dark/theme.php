@@ -123,7 +123,7 @@
 		<!-- Landing Page -->
 		<div id="nav-placeholder"></div>
 
-		<div class="container">
+		<div class="container regularTextSize">
 
 			<!-- Header Section -->
 			<div id="infoheader" class="row no-gutters">
@@ -180,7 +180,7 @@
 										Vorrang PV
 									</div>
 									<div class="col text-right">
-										<input class="housebattery-priority" type="checkbox" data-toggle="toggle" data-topic="openWB/set/general/chargemode_config/pv_charging/bat_prio" data-on="Bat" data-off="EV" data-onstyle="warning" data-offstyle="primary" data-style="w-100">
+										<input class="housebattery-priority" type="checkbox" data-toggle="toggle" data-topic="openWB/set/general/chargemode_config/pv_charging/bat_prio" data-on='<i class="fas fa-car-battery"></i>' data-off='<i class="fas fa-car-side"></i>' data-onstyle="warning" data-offstyle="primary" data-size="sm" data-style="w-50">
 									</div>
 								</div>
 							</div>
@@ -343,35 +343,30 @@
 			<!-- chargepoint info header -->
 			<div class="card text-grey">
 				<div class="card-header bg-darkgrey font-weight-bold">
-					<div class="form-group">
-						<div class="form-row">
-							<div class="col-3">
-								Ladepunkt <span id="etproviderEnabledIcon" class="fa fa-chart-line hide"></span>
-							</div>
-							<div class="col-3">
-								Lademodus
-							</div>
-							<div class="col-3">
-								Ladeparameter
-							</div>
-							<div class="col-2">
-								geladen
-							</div>
-							<div class="col-1">
-							</div>
+					<div class="form-row">
+						<div class="col-3">
+							Ladepunkt <span id="etproviderEnabledIcon" class="fa fa-chart-line hide"></span>
 						</div>
-						<div class="form-row">
-							<div class="col-3">
-								
-							</div>
-							<div class="col-3">
-								Fahrzeug
-							</div>
-							<div class="col-3">
-								SoC
-							</div>
-							<div class="col-3">
-							</div>
+						<div class="col-3">
+							Lademodus
+						</div>
+						<div class="col-3">
+							Parameter
+						</div>
+						<div class="col-3">
+							geladen
+						</div>
+					</div>
+					<div class="form-row">
+						<div class="col-3">
+						</div>
+						<div class="col-3">
+							Fahrzeug
+						</div>
+						<div class="col-3">
+							SoC
+						</div>
+						<div class="col-3">
 						</div>
 					</div>
 				</div>
@@ -417,8 +412,11 @@
 					</div>
 					<div id="collapseChargepoint1" data-parent="#chargepointaccordion" class="card-body collapse">
 						<div class="form-group">
-							<div class="chargepoint-statestr form-row mb-1">
-								--
+							<div class="form-row my-1 alert alert-info">
+								<div class="col">
+									<i class="fas fa-info-circle"></i>
+									<span class="chargepoint-statestr">--</span>
+								</div>
 							</div>
 							<div class="form-row mb-1">
 								<div class="col">
@@ -426,7 +424,7 @@
 									Ladepunkt sperren
 								</div>
 								<div class="col-md-8 text-right">
-									<input class="chargepoint-manuallock" type="checkbox" data-toggle="toggle" data-topic="openWB/set/chargepoint/<cp>/set/manual_lock" data-on="Ja" data-off="Nein" data-onstyle="danger" data-offstyle="success" data-style="w-100">
+									<input class="chargepoint-manuallock" type="checkbox" data-toggle="toggle" data-topic="openWB/set/chargepoint/<cp>/set/manual_lock" data-on="Ja" data-off="Nein" data-onstyle="danger" data-offstyle="success" data-size="sm" data-style="w-100">
 								</div>
 							</div>
 							<hr>
@@ -446,17 +444,17 @@
 									<div class="col">
 										<label class="col-form-label">Lademodus</label>
 									</div>
-									<div class="col-lg-8 btn-group btn-group-toggle chargepoint-chargemode" data-toggle="buttons" data-name="chargemode" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/selected">
-										<label class="btn btn-lg btn-outline-danger btn-toggle">
+									<div class="col-md-8 btn-group btn-group-toggle chargepoint-chargemode" data-toggle="buttons" data-name="chargemode" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/selected">
+										<label class="btn btn-outline-danger btn-toggle">
 											<input type="radio" name="chargemode" data-option="instant_charge">Sofortladen
 										</label>
-										<label class="btn btn-lg btn-outline-success btn-toggle">
+										<label class="btn btn-outline-success btn-toggle">
 											<input type="radio" name="chargemode" data-option="pv_charge">PV
 										</label>
-										<label class="btn btn-lg btn-outline-primary btn-toggle">
+										<label class="btn btn-outline-primary btn-toggle">
 											<input type="radio" name="chargemode" data-option="scheduled_charging">Zielladen
 										</label>
-										<label class="btn btn-lg btn-outline-dark btn-toggle">
+										<label class="btn btn-outline-dark btn-toggle">
 											<input type="radio" name="chargemode" data-option="stop">Stop
 										</label>
 									</div>
@@ -467,7 +465,7 @@
 										Priorität
 									</div>
 									<div class="col-md-8 text-right">
-										<input class="chargepoint-vehiclepriority" type="checkbox" data-toggle="toggle" data-topic="openWB/set/vehicle/<ev>/control_parameter/priority" data-on="Ja" data-off="Nein" data-onstyle="success" data-offstyle="danger" data-style="w-100">
+										<input class="chargepoint-vehiclepriority" type="checkbox" data-toggle="toggle" data-topic="openWB/set/vehicle/<ev>/control_parameter/priority" data-on="Ja" data-off="Nein" data-onstyle="success" data-offstyle="danger" data-size="sm" data-style="w-100">
 									</div>
 								</div>
 								<div class="form-row mb-1">
@@ -476,7 +474,7 @@
 										Zeitladen
 									</div>
 									<div class="col-md-8 text-right">
-										<input type="checkbox" data-toggle="toggle" data-topic="openWB/set/vehicle/template/charge_template/<ct>/time_charging/active" data-on="Ja" data-off="Nein" data-onstyle="success" data-offstyle="danger" data-style="w-100">
+										<input type="checkbox" data-toggle="toggle" data-topic="openWB/set/vehicle/template/charge_template/<ct>/time_charging/active" data-on="Ja" data-off="Nein" data-onstyle="success" data-offstyle="danger" data-size="sm" data-style="w-100">
 									</div>
 								</div>
 								<div class="chargepoint-chargemodeoptions mb-0 hide">

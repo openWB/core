@@ -88,6 +88,7 @@ function handlevar(mqttmsg, mqttpayload) {
 	else if ( mqttmsg.match( /^openwb\/pv\//i) ) { processPvMessages(mqttmsg, mqttpayload); }
 	else if ( mqttmsg.match( /^openwb\/chargepoint\//i) ) { processChargepointMessages(mqttmsg, mqttpayload); }
 	else if ( mqttmsg.match( /^openwb\/vehicle\//i) ) { processVehicleMessages(mqttmsg, mqttpayload); }
+	else if ( mqttmsg.match( /^openwb\/general\/chargemode_config\/pv_charging\//i) ) { processPvConfigMessages(mqttmsg, mqttpayload); }
 	// else if ( mqttmsg.match( /^openwb\/graph\//i ) ) { processGraphMessages(mqttmsg, mqttpayload); }
 	// else if ( mqttmsg.match( /^openwb\/global\/awattar\//i) ) { processETProviderMessages(mqttmsg, mqttpayload); }
 	// else if ( mqttmsg.match( /^openwb\/global\/ETProvider\//i) ) { processETProviderMessages(mqttmsg, mqttpayload); }
@@ -98,7 +99,6 @@ function handlevar(mqttmsg, mqttpayload) {
 	// else if ( mqttmsg.match( /^openwb\/SmartHome\/Devices\//i) ) { processSmartHomeDevicesMessages(mqttmsg, mqttpayload); }
 	// else if ( mqttmsg.match( /^openwb\/config\/get\/SmartHome\/Devices\//i) ) { processSmartHomeDevicesConfigMessages(mqttmsg, mqttpayload); }
 	// else if ( mqttmsg.match( /^openwb\/config\/get\/sofort\/lp\//i) ) { processSofortConfigMessages(mqttmsg, mqttpayload); }
-	// else if ( mqttmsg.match( /^openwb\/config\/get\/pv\//i) ) { processPvConfigMessages(mqttmsg, mqttpayload); }
 }  // end handlevar
 
 function processGlobalCounterMessages(mqttmsg, mqttpayload) {
@@ -293,6 +293,36 @@ function processPvMessages(mqttmsg, mqttpayload) {
 	// 			$('#70PvBtn').addClass('btn-success');
 	// 		break;
 	// 	}
+	// }
+}
+
+function processPvConfigMessages(mqttmsg, mqttpayload) {
+	if ( mqttmsg == 'openWB/general/chargemode_config/pv_charging/bat_prio' ) {
+		console.log("pv config: bat_prio");
+		var element = $('.housebattery-priority');
+		if ( mqttpayload == 1 ) {
+			// element.prop('checked', true);
+			element.bootstrapToggle('on', true); // do not fire a changed-event to prevent a loop!
+		} else {
+			// element.prop('checked', false);
+			element.bootstrapToggle('off', true); // do not fire a changed-event to prevent a loop!
+		}
+	}
+	// else if ( mqttmsg == 'openWB/config/get/pv/nurpv70dynact' ) {
+	// 	//  and sets icon in mode select button
+	// 	switch (mqttpayload) {
+	// 		case '0':
+	// 			// deaktiviert
+	// 			$('#70ModeBtn').addClass('hide');
+	// 			break;
+	// 		case '1':
+	// 			// activiert
+	// 			$('#70ModeBtn').removeClass('hide');
+	// 		break;
+	// 	}
+	// }
+	// else if ( mqttmsg == 'openWB/config/get/pv/minCurrentMinPv' ) {
+	// 	setInputValue('minCurrentMinPv', mqttpayload);
 	// }
 }
 
@@ -738,42 +768,6 @@ function processVehicleMessages(mqttmsg, mqttpayload) {
 // 	}
 // 	else if ( mqttmsg == 'openWB/global/awattar/ActualPriceForCharging' ) {
 // 		$('#aktuellerStrompreis').text(parseFloat(mqttpayload).toLocaleString(undefined, {maximumFractionDigits: 2}) + ' ct/kWh');
-// 	}
-// }
-
-// function processPvConfigMessages(mqttmsg, mqttpayload) {
-// 	if ( mqttmsg == 'openWB/config/get/pv/priorityModeEVBattery' ) {
-// 		// sets button color in charge mode modal and sets icon in mode select button
-// 		switch (mqttpayload) {
-// 			case '0':
-// 				// battery priority
-// 				$('#evPriorityBtn').removeClass('btn-success');
-// 				$('#batteryPriorityBtn').addClass('btn-success');
-// 				$('#priorityEvBatteryIcon').removeClass('fa-car').addClass('fa-car-battery')
-// 				break;
-// 			case '1':
-// 				// ev priority
-// 				$('#evPriorityBtn').addClass('btn-success');
-// 				$('#batteryPriorityBtn').removeClass('btn-success');
-// 				$('#priorityEvBatteryIcon').removeClass('fa-car-battery').addClass('fa-car')
-// 			break;
-// 		}
-// 	}
-// 	else if ( mqttmsg == 'openWB/config/get/pv/nurpv70dynact' ) {
-// 		//  and sets icon in mode select button
-// 		switch (mqttpayload) {
-// 			case '0':
-// 				// deaktiviert
-// 				$('#70ModeBtn').addClass('hide');
-// 				break;
-// 			case '1':
-// 				// activiert
-// 				$('#70ModeBtn').removeClass('hide');
-// 			break;
-// 		}
-// 	}
-// 	else if ( mqttmsg == 'openWB/config/get/pv/minCurrentMinPv' ) {
-// 		setInputValue('minCurrentMinPv', mqttpayload);
 // 	}
 // }
 
