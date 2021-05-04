@@ -153,6 +153,7 @@ class pv():
             return required_current, phases
         except Exception as e:
             log.exception_logging(e)
+            return 0, phases
 
     def switch_off_check_timer(self, chargepoint):
         """ prüft, ob der Timer der Ausschaltverzögerung abgelaufen ist.
@@ -181,6 +182,7 @@ class pv():
             return False
         except Exception as e:
             log.exception_logging(e)
+            return False
 
     def switch_off_check_threshold(self, chargepoint, overhang):
         """ prüft, ob die Abschaltschwelle erreicht wurde und startet die Abschaltverzögerung. 
@@ -253,6 +255,7 @@ class pv():
         # return available pv power with feed in yield
         except Exception as e:
             log.exception_logging(e)
+            return 0
 
     def allocate_evu_power(self, required_power):
         """ subtrahieren der zugeteilten Leistung vom verfügbaren EVU-Überschuss
@@ -278,6 +281,7 @@ class pv():
             return True
         except Exception as e:
             log.exception_logging(e)
+            return False
 
     def put_stats(self):
         """ Publishen und Loggen des verbleibnden EVU-Überschusses und reservierten Leistung

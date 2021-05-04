@@ -328,7 +328,7 @@ class cpTemplate():
                 return False
         except Exception as e:
             log.exception_logging(e)
-            return True
+            return False
 
     def autolock_manual_disabling(self, topic_path):
         """ aktuelles Autolock wird außer Kraft gesetzt.
@@ -389,3 +389,4 @@ class cpTemplate():
             return ev_num
         except Exception as e:
             log.exception_logging(e)
+            return ev_num
