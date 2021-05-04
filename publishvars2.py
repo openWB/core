@@ -21,22 +21,22 @@ def pub_settings():
     pub.pub("openWB/chargepoint/template/1/ev", 1)
     pub.pub("openWB/chargepoint/template/1/rfid_enabling", False)
 
-    # cp2
-    pub.pub("openWB/chargepoint/2/set/manual_lock", False)
-    pub.pub("openWB/chargepoint/2/config/template", 2)
-    pub.pub("openWB/chargepoint/2/config/connected_phases", 3)
-    pub.pub("openWB/chargepoint/2/config/phase_1", 0)
-    pub.pub("openWB/chargepoint/2/config/auto_phase_switch_hw", True)
-    pub.pub("openWB/chargepoint/2/config/control_pilot_interruption_hw", False)
-    pub.pub("openWB/chargepoint/2/get/rfid", 1234)
-    # cpt2
-    pub.pub("openWB/chargepoint/template/2/autolock/1/frequency/selected", "daily")
-    pub.pub("openWB/chargepoint/template/2/autolock/1/time", ["07:00", "11:20"])
-    pub.pub("openWB/chargepoint/template/2/autolock/1/active", False)
-    pub.pub("openWB/chargepoint/template/2/autolock/wait_for_charging_end", True)
-    pub.pub("openWB/chargepoint/template/2/autolock/active", False)
-    pub.pub("openWB/chargepoint/template/2/ev", 2)
-    pub.pub("openWB/chargepoint/template/2/rfid_enabling", False)
+    # # cp2
+    # pub.pub("openWB/chargepoint/2/set/manual_lock", False)
+    # pub.pub("openWB/chargepoint/2/config/template", 2)
+    # pub.pub("openWB/chargepoint/2/config/connected_phases", 3)
+    # pub.pub("openWB/chargepoint/2/config/phase_1", 0)
+    # pub.pub("openWB/chargepoint/2/config/auto_phase_switch_hw", True)
+    # pub.pub("openWB/chargepoint/2/config/control_pilot_interruption_hw", False)
+    # pub.pub("openWB/chargepoint/2/get/rfid", 1234)
+    # # cpt2
+    # pub.pub("openWB/chargepoint/template/2/autolock/1/frequency/selected", "daily")
+    # pub.pub("openWB/chargepoint/template/2/autolock/1/time", ["07:00", "11:20"])
+    # pub.pub("openWB/chargepoint/template/2/autolock/1/active", False)
+    # pub.pub("openWB/chargepoint/template/2/autolock/wait_for_charging_end", True)
+    # pub.pub("openWB/chargepoint/template/2/autolock/active", False)
+    # pub.pub("openWB/chargepoint/template/2/ev", 2)
+    # pub.pub("openWB/chargepoint/template/2/rfid_enabling", False)
 
     # #cp3
     # pub.pub("openWB/chargepoint/3/set/manual_lock", False)

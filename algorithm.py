@@ -95,6 +95,7 @@ class control():
                         # Wenn beim PV-Laden über der eingestellten Stromstärke geladen wird, erstmal zurücknehmen.
                         if((charging_ev.charge_template.data["chargemode"]["selected"] == "pv_charging" or 
                                 charging_ev.data["control_parameter"]["submode"] == "pv_charging") and
+                                chargepoint.data["set"]["current"] != 0 and
                                 (chargepoint.data["set"]["current"] - charging_ev.ev_template.data["nominal_difference"]) < max(chargepoint.data["get"]["current"])):
                             released_current = charging_ev.data["control_parameter"]["required_current"] - max(chargepoint.data["get"]["current"])
                             # Nur wenn mit mehr als der benötigten Stromstärke geladen wird, kann der Überschuss ggf anderweitig in der Regelung verwendet werden.
@@ -661,8 +662,9 @@ class control():
                 if "cp" in chargepoint:
                     if data.cp_data[chargepoint].data["set"]["charging_ev"] != -1:
                         charging_ev = data.cp_data[chargepoint].data["set"]["charging_ev"]
-                        if (charging_ev.data["control_parameter"]["submode"] == "pv_charging" or
-                                charging_ev.data["control_parameter"]["chargemode"] == "pv_charging"):
+                        if ((charging_ev.data["control_parameter"]["submode"] == "pv_charging" or
+                                charging_ev.data["control_parameter"]["chargemode"] == "pv_charging") and
+                                data.cp_data[chargepoint].data["set"]["current"] != 0):
                             # Erst hochregeln, wenn geladen wird.
                             if ((data.cp_data[chargepoint].data["set"]["current"] - charging_ev.ev_template.data["nominal_difference"]) < max(data.cp_data[chargepoint].data["get"]["current"]) and 
                                     charging_ev.charge_template.data["chargemode"]["pv_charging"]["feed_in_limit"] == feed_in_limit):
@@ -691,8 +693,9 @@ class control():
                         chargepoint = data.cp_data[cp]
                         if chargepoint.data["set"]["charging_ev"] != -1:
                             charging_ev = chargepoint.data["set"]["charging_ev"]
-                            if (charging_ev.charge_template.data["chargemode"]["selected"] == "pv_charging" or 
-                                    charging_ev.data["control_parameter"]["submode"] == "pv_charging"):
+                            if ((charging_ev.charge_template.data["chargemode"]["selected"] == "pv_charging" or 
+                                    charging_ev.data["control_parameter"]["submode"] == "pv_charging") and
+                                    chargepoint.data["set"]["current"] != 0):
                                 if ((chargepoint.data["set"]["current"] - charging_ev.ev_template.data["nominal_difference"]) < max(chargepoint.data["get"]["current"]) and 
                                         charging_ev.charge_template.data["chargemode"]["pv_charging"]["feed_in_limit"] == feed_in_limit):
                                     if chargepoint.data["get"]["charge_state"] == True:
@@ -835,10 +838,19 @@ class control():
             log.exception_logging(e)
 
     def _get_bat_and_evu_overhang(self):
-        """
-        """
-        return data.bat_module_data["all"].data["get"]["power"] + data.pv_data["all"].data["set"]["available_power"]
+        """ ermittelt den verfügbaren Überhang. Da zu Beginn des Algorithmus die Leistung, die über der benötigten Leistung liegt,
+        freigegeben wird, muss der verbleibende EVU-Überhang betrachtet werden. Erst wenn nicht mehr genug freigegeben (und am Ende
+        wieder allokiert wird) muss abgeschaltet werden.
 
+        Return
+        ------
+        verfügbarer Überhang
+        """
+        try:
+            return data.bat_module_data["all"].data["get"]["power"] + data.pv_data["all"].overhang_left()
+        except Exception as e:
+            log.exception_logging(e)
+            return 0
 
 def allocate_power(chargepoint, required_power, required_current, phases):
     """allokiert, wenn vorhanden erst Speicherladeleistung, dann EVU-Überschuss 
