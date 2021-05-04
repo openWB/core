@@ -95,11 +95,13 @@ class control():
                         # Wenn beim PV-Laden über der eingestellten Stromstärke geladen wird, erstmal zurücknehmen.
                         if((charging_ev.charge_template.data["chargemode"]["selected"] == "pv_charging" or 
                                 charging_ev.data["control_parameter"]["submode"] == "pv_charging") and
-                                charging_ev.data["control_parameter"]["required_current"] < chargepoint.data["set"]["current"]):
-                            released_current = charging_ev.data["control_parameter"]["required_current"] - chargepoint.data["set"]["current"]
-                            data.pv_data["all"].allocate_evu_power(chargepoint.data["get"]["phases_in_use"] * 230 * released_current)
-                            self._process_data(chargepoint, charging_ev.data["control_parameter"]["required_current"], chargepoint.data["get"]["phases_in_use"])
-                            log.message_debug_log("debug", "Ladung an LP"+str(chargepoint.cp_num)+" um "+str(released_current)+"A auf "+str(charging_ev.data["control_parameter"]["required_current"])+"A angepasst.")
+                                (chargepoint.data["set"]["current"] - charging_ev.ev_template.data["nominal_difference"]) < max(chargepoint.data["get"]["current"])):
+                            released_current = charging_ev.data["control_parameter"]["required_current"] - max(chargepoint.data["get"]["current"])
+                            # Nur wenn mit mehr als der benötigten Stromstärke geladen wird, kann der Überschuss ggf anderweitig in der Regelung verwendet werden.
+                            if released_current < 0:
+                                data.pv_data["all"].allocate_evu_power(released_current * 230 * chargepoint.data["get"]["phases_in_use"])
+                                self._process_data(chargepoint, charging_ev.data["control_parameter"]["required_current"], chargepoint.data["get"]["phases_in_use"])
+                                log.message_debug_log("debug", "Ladung an LP"+str(chargepoint.cp_num)+" um "+str(released_current)+"A auf "+str(charging_ev.data["control_parameter"]["required_current"])+"A angepasst.")
         except Exception as e:
             log.exception_logging(e)
 
@@ -130,7 +132,7 @@ class control():
                     # Wenn kein Ladepunkt lädt, kann die Wallbox nichts am Lastmanagement ausrichten. Die Überlastung kommt ausschließlich vom Hausverbrauch.
                     for cp in data.cp_data:
                         if "cp" in cp:
-                            if data.cp_data[cp].data["set"]["current"] != 0:
+                            if data.cp_data[cp].data["get"]["charge_state"] == True:
                                 break
                     else:
                         break
@@ -661,7 +663,8 @@ class control():
                         charging_ev = data.cp_data[chargepoint].data["set"]["charging_ev"]
                         if (charging_ev.data["control_parameter"]["submode"] == "pv_charging" or
                                 charging_ev.data["control_parameter"]["chargemode"] == "pv_charging"):
-                            if (data.cp_data[chargepoint].data["set"]["current"] != 0 and 
+                            # Erst hochregeln, wenn geladen wird.
+                            if ((data.cp_data[chargepoint].data["set"]["current"] - charging_ev.ev_template.data["nominal_difference"]) < max(data.cp_data[chargepoint].data["get"]["current"]) and 
                                     charging_ev.charge_template.data["chargemode"]["pv_charging"]["feed_in_limit"] == feed_in_limit):
                                 # Wenn der Ladepunkt bereits lädt, die tatsächlich genutzten Phasen verwenden.
                                 if data.cp_data[chargepoint].data["get"]["charge_state"] == True:
@@ -678,8 +681,11 @@ class control():
                     if data.pv_data["all"].overhang_left() <= feed_in_yield:
                         current_diff_per_phase = (data.pv_data["all"].overhang_left() - feed_in_yield + bat_overhang) / 230 / num_of_phases
                     else:
-                        # Wenn die Einspeisungsgrenze erreicht wird, Strom schrittweise erhöhen, bis dies nicht mehr der Fall ist.
-                        current_diff_per_phase = num_of_phases
+                        # Wenn die Einspeisungsgrenze erreicht wird, Strom schrittweise erhöhen (1A pro Phase), bis dies nicht mehr der Fall ist.
+                        if data.cp_data[chargepoint].data["get"]["charge_state"] == True:
+                            current_diff_per_phase = data.cp_data[chargepoint].data["get"]["phases_in_use"]
+                        else:
+                            current_diff_per_phase = data.cp_data[chargepoint].data["set"]["charging_ev"].data["control_parameter"]["phases"]
                 for cp in data.cp_data:
                    if "cp" in cp:
                         chargepoint = data.cp_data[cp]
@@ -687,7 +693,7 @@ class control():
                             charging_ev = chargepoint.data["set"]["charging_ev"]
                             if (charging_ev.charge_template.data["chargemode"]["selected"] == "pv_charging" or 
                                     charging_ev.data["control_parameter"]["submode"] == "pv_charging"):
-                                if (chargepoint.data["set"]["current"] != 0 and 
+                                if ((chargepoint.data["set"]["current"] - charging_ev.ev_template.data["nominal_difference"]) < max(chargepoint.data["get"]["current"]) and 
                                         charging_ev.charge_template.data["chargemode"]["pv_charging"]["feed_in_limit"] == feed_in_limit):
                                     if chargepoint.data["get"]["charge_state"] == True:
                                         phases = chargepoint.data["get"]["phases_in_use"]

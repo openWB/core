@@ -104,7 +104,8 @@ def pub_settings():
         'average_consump': 5, 
         'max_phases': 3, 
         'max_current_multi_phases': 16, 
-        'control_pilot_interruption': False
+        'control_pilot_interruption': False,
+        'nominal_difference': 2
         }
     pub.pub("openWB/vehicle/template/ev_template/1", evt1)
 
@@ -116,7 +117,9 @@ def pub_settings():
         'average_consump': 5, 
         'max_phases': 1, 
         'max_current_multi_phases': 0, 
-        'control_pilot_interruption': False}
+        'control_pilot_interruption': False,
+        'nominal_difference': 2
+        }
     pub.pub("openWB/vehicle/template/ev_template/2", evt2)
 
     #ct1
@@ -208,7 +211,7 @@ def pub_settings():
     pub.pub("openWB/general/chargemode_config/pv_charging/switch_off_soc", 40)
     pub.pub("openWB/general/chargemode_config/pv_charging/rundown_power", 1000)
     pub.pub("openWB/general/chargemode_config/pv_charging/rundown_soc", 50)
-    pub.pub("openWB/general/chargemode_config/pv_charging/control_range", [16000,16500])
+    pub.pub("openWB/general/chargemode_config/pv_charging/control_range", [0,230])
     pub.pub("openWB/general/chargemode_config/pv_charging/switch_off_threshold", 5)
     pub.pub("openWB/general/chargemode_config/pv_charging/switch_off_delay", 60)
     pub.pub("openWB/general/chargemode_config/pv_charging/switch_on_delay", 30)

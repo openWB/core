@@ -90,13 +90,18 @@ class chargepoint():
         message: str
             Text, dass geladen werden kann oder warum nicht geladen werden kann.
         """
-        if self.data["get"]["fault_state"] == 0:
-            state = True
-            message = "Ladung an LP"+self.cp_num+" moeglich."
-        else:
-            state = False
-            message = "LP"+self.cp_num+" gesperrt, da sich der LP nicht innerhalb der vorgegebenen Zeit zurueckgemeldet hat."
-        return state, message
+        try:
+            if True:
+            #if self.data["get"]["fault_state"] == 0:
+                state = True
+                message = "Ladung an LP"+self.cp_num+" moeglich."
+            else:
+                state = False
+                message = "LP"+self.cp_num+" gesperrt, da sich der LP nicht innerhalb der vorgegebenen Zeit zurueckgemeldet hat."
+            return state, message
+        except Exception as e:
+            log.exception_logging(e)
+            return False, "Keine Ladung an LP"+self.cp_num+", da ein interner Fehler aufgetreten ist."
 
     def _is_autolock_active(self):
         """ ruft die Funktion der Template-Klasse auf.
@@ -117,6 +122,7 @@ class chargepoint():
             return state, message
         except Exception as e:
             log.exception_logging(e)
+            return True, "Keine Ladung an LP"+self.cp_num+", da ein interner Fehler aufgetreten ist."
 
     def _is_manual_lock_active(self):
         """ prüft, ob der Ladepunkt manuell gesperrt wurde.
@@ -128,12 +134,16 @@ class chargepoint():
         message: str
             Text, dass geladen werden kann oder warum nicht geladen werden kann.
         """
-        state = self.data["set"]["manual_lock"]
-        if state == True:
-            message = "Keine Ladung an LP"+self.cp_num+", da der LP manuell gesperrt wurde."
-        else:
-            message = "Ladung an LP"+self.cp_num+" moeglich."
-        return state, message
+        try:
+            state = self.data["set"]["manual_lock"]
+            if state == True:
+                message = "Keine Ladung an LP"+self.cp_num+", da der LP manuell gesperrt wurde."
+            else:
+                message = "Ladung an LP"+self.cp_num+" moeglich."
+            return state, message
+        except Exception as e:
+            log.exception_logging(e)
+            return True, "Keine Ladung an LP"+self.cp_num+", da ein interner Fehler aufgetreten ist."
 
     def _is_ev_plugged(self):
         """ prüft, ob ein EV angesteckt ist
@@ -145,12 +155,16 @@ class chargepoint():
         message: str
             Text, dass geladen werden kann oder warum nicht geladen werden kann.
         """
-        state = self.data["get"]["plug_state"]
-        if state == False:
-            message = "Keine Ladung an LP"+self.cp_num+", da kein Auto angesteckt ist."
-        else:
-            message = "Ladung an LP"+self.cp_num+" moeglich."
-        return state, message
+        try:
+            state = self.data["get"]["plug_state"]
+            if state == False:
+                message = "Keine Ladung an LP"+self.cp_num+", da kein Auto angesteckt ist."
+            else:
+                message = "Ladung an LP"+self.cp_num+" moeglich."
+            return state, message
+        except Exception as e:
+            log.exception_logging(e)
+            return False, "Keine Ladung an LP"+self.cp_num+", da ein interner Fehler aufgetreten ist."
 
     def get_state(self):
         """prüft alle Bedingungen und ruft die EV-Logik auf.

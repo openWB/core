@@ -59,10 +59,8 @@ class pv():
                     available_power = 0
                 else:
                     available_power = evu_overhang - control_range_center
-                if evu_overhang > 0:
-                    self.data["set"]["overhang_power_left"] = available_power
-                else:
-                    self.data["set"]["overhang_power_left"] = 0
+                
+                self.data["set"]["overhang_power_left"] = available_power
                 log.message_debug_log("debug", str(self.data["set"]["overhang_power_left"])+"W EVU-Ueberschuss, der fuer die Regelung verfuegbar ist, davon "+str(self.data["set"]["reserved_evu_overhang"])+"W fuer die Einschaltverzoegerung reservierte Leistung.")
             # nur allgemeiner PV-Key vorhanden, d.h. kein Modul konfiguriert
             else:
@@ -204,14 +202,14 @@ class pv():
                 feed_in_yield = 0
             if control_parameter["timestamp_switch_on_off"] != "0":
                 # Wurde die Abschaltschwelle erreicht?
-                if overhang + self.data["set"]["released_evu_overhang"] > ( pv_config["switch_off_threshold"]*-1 + feed_in_yield):
+                if (overhang + self.data["set"]["released_evu_overhang"]) > ( pv_config["switch_off_threshold"]*-1 + feed_in_yield):
                     control_parameter["timestamp_switch_on_off"] = "0"
                     self.data["set"]["released_evu_overhang"] -= chargepoint.data["set"]["required_power"] 
                     log.message_debug_log("info", "Abschaltschwelle während der Verzögerung ueberschritten.")
                     pub.pub("openWB/set/vehicle/"+str(chargepoint.data["set"]["charging_ev"].ev_num)+"/control_parameter/timestamp_switch_on_off", "0")
             else:
                 # Wurde die Abschaltschwelle ggf. durch die Verzögerung anderer LP erreicht?
-                if overhang + self.data["set"]["released_evu_overhang"] < (pv_config["switch_off_threshold"]*-1 + feed_in_yield):
+                if (overhang + self.data["set"]["released_evu_overhang"]) < (pv_config["switch_off_threshold"]*-1 + feed_in_yield):
                     control_parameter["timestamp_switch_on_off"] = timecheck.create_timestamp()
                     # merken, dass ein LP verzögert wird, damit nicht zu viele LP verzögert werden.
                     self.data["set"]["released_evu_overhang"] += chargepoint.data["set"]["required_power"] 
