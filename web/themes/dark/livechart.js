@@ -809,10 +809,6 @@ function checkgraphload(){
 	}
 }
 
-window.onload = function(){
-	setTimeout(forcegraphload, 15000)
-}
-
 function forcegraphload() {
 	if ( graphloaded == 0 ) {
 		if ( !(typeof boolDisplayHouseConsumption === "boolean") ) {
@@ -919,3 +915,7 @@ function unsubscribeMqttGraphSegments() {
 		client.unsubscribe(topic);
 	}
 }
+
+$(document).ready(function(){
+	setTimeout(forcegraphload, 15000);
+})

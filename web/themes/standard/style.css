@@ -15,8 +15,9 @@ body {
 	/* Old browsers */
 	background: white;
 }
+
 body > .container {
-	padding: 55px 15px 0;
+	padding: 55px 0px 0;
 }
 
 @keyframes alertPulsation {
@@ -39,6 +40,7 @@ body > .container {
 	50%  { opacity:0; }
 	100% { opacity:1; }
 }
+
 .animate-alertPulsation {
 	-webkit-animation: alertPulsation 1s infinite;
 	-moz-animation: alertPulsation 1s infinite;
@@ -86,7 +88,7 @@ body > .container {
 	display: none;
 }
 
-.lpEnabledStyle {
+.chargepoint-enabled {
 	color: #006515;
 	text-decoration: none;
 }
@@ -94,7 +96,7 @@ body > .container {
 	color: #ffdb00;
 	text-decoration: none;
 }
-.lpDisabledStyle {
+.chargepoint-disabled {
 	color: #A30000;
 	text-decoration: line-through;
 }
@@ -180,7 +182,8 @@ h3 {
 	font-size: 0.5rem;
 }
 
-.regularTextSize {
+.regularTextSize,
+.form-control {
 	font-size: 0.7rem;
 }
 
@@ -204,6 +207,10 @@ h3 {
 
 	h3 {
 		font-size: 0.9rem;
+	}
+
+	.container {
+		max-width: 100%;
 	}
 
 	.verySmallTextSize {
@@ -239,6 +246,10 @@ h3 {
 
 	h3 {
 		font-size: 1.1rem;
+	}
+
+	body > .container {
+		padding: 60px 5% 0;
 	}
 
 	.verySmallTextSize {
@@ -284,9 +295,9 @@ h3 {
 		font-size: 1.25rem;
 	}
 
-	.regularTextSize {
+	/* .regularTextSize {
 		font-size: 1.4rem;
-	}
+	} */
 
 	.largeTextSize {
 		font-size: 1.6rem;
@@ -319,9 +330,9 @@ h3 {
 		font-size: 1.65rem;
 	}
 
-	.regularTextSize {
+	/* .regularTextSize {
 		font-size: 1.8rem;
-	}
+	} */
 
 	.largeTextSize {
 		font-size: 1.8rem;
@@ -396,4 +407,41 @@ h3 {
 .openwb-devices {
 	color: #ccffff;
 	background-color: #009696;
+}
+
+#thegraph > div {
+	height: 350px;
+}
+
+#electricityPriceChartCanvasDiv {
+	height: 150px;
+}
+
+.card-header .collPlus:after {
+	font-family: 'Font Awesome 5 Free';
+	font-weight: 900;
+	content: "\f146";
+	float: right; 
+}
+
+.card-header.collapsed .collPlus:after {
+	/* symbol for "collapsed" panels */
+	content: "\f0fe"; 
+}
+
+#infoheader .card {
+	min-width: 13em;
+}
+
+#infoheader .card-body {
+	padding: 0.75rem;
+}
+
+.card-header,
+.card-body {
+	padding: .2vh .6rem;
+}
+
+.btn-group {
+	flex-wrap: wrap;
 }
