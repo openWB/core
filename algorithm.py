@@ -48,8 +48,7 @@ class control():
 
             #Abschaltschwelle prüfen und ggf. Abschaltverzögerung starten
             for mode in reversed(self.chargemodes[10:-4]):
-                if self._switch_off_threshold(mode) == False:
-                    break
+                self._switch_off_threshold(mode)
 
             # Phasenumschaltung
             self._check_auto_phase_switch()
@@ -416,7 +415,7 @@ class control():
 
             if len(preferenced_chargepoints) == 0:
                 # Es gibt keine Ladepunkte in diesem Lademodus, die noch nicht laden oder die noch gestoppt werden können.
-                return True
+                return 
             else:
                 # Solange die Liste durchgehen, bis die Abschaltschwelle nicht mehr erreicht wird.
                 for cp in preferenced_chargepoints:
@@ -424,7 +423,6 @@ class control():
                         data.pv_data["all"].switch_off_check_threshold(cp, self._get_bat_and_evu_overhang())
         except Exception as e:
             log.exception_logging(e)
-            return True
 
     def _check_auto_phase_switch(self):
         """ geht alle LP durch und prüft, ob eine Ladung aktiv ist, ob automatische Phasenumschaltung 
