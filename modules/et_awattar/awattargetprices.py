@@ -494,7 +494,7 @@ def update_pricedata(landeskennung, basispreis, debug_level):
 #
 #########################################################
 
-if __name__ == '__main__':
+def awattar_get_prices():
     try:
         landeskennung, basispreis, debug_level = _read_args()
     except Exception as e:

@@ -1247,7 +1247,6 @@ function unsubscribeGraphUpdates() {
 topic = "openWB/graph/lastlivevalues";
 		client.unsubscribe(topic);
 }
-
 function subscribeDayGraph(date) {
 	// var today = new Date();
 	var dd = String(date.getDate()).padStart(2, '0');

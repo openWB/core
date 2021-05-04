@@ -75,7 +75,9 @@ class PowerMeter {
       );
 
     return g;
-  }
+      
+    }
+  
 
   drawGraph(svg) {
     this.updateDisplayRatio();
@@ -175,12 +177,12 @@ class PowerMeter {
   }
 
   drawUsageArc(svg) {
-
+   
     // Define the generator for the segments
     const pieGenerator = d3.pie()
       .value((record) => Number(record.power))
       .startAngle(Math.PI * 1.5 - this.circleGapSize)
-      .endAngle(Math.PI / 2 + this.circleGapSize)
+      .endAngle(Math.PI / 2 + this.circleGapSize )
       .sort(null);
 
     // Generator for the pie chart

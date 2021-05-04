@@ -477,6 +477,11 @@ PV_power_total = PV_power_ac1 + PV_power_ac2 + PV_power_ac3
 if PV_power_total < 0:
     PV_power_total = 0
 
+# Ab und an liefert der WR Werte (gerade beim Anlaufen), die einen Verbrauch der PV-AC-Seite suggerieren
+# Da dies unplausibel ist, wird in diesem Fall die PV-Leistung auf 0 gesetzt
+if PV_power_total < 0:
+    PV_power_total = 0
+
 # Erzeugung wird in openWB als negativer Wert weiter verarbeitet
 PV_power_total *= -1
 Actual_batt_ch_disch_power *= -1

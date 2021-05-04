@@ -189,6 +189,33 @@
 	</div>
 </div>
 
+<!-- modal shutdown-confirmation window -->
+<div class="modal fade" id="shutdownConfirmationModal" role="dialog">
+	<div class="modal-dialog" role="document">
+		<div class="modal-content">
+			<!-- modal header -->
+			<div class="modal-header btn-red">
+				<h4 class="modal-title text-light">Achtung</h4>
+			</div>
+			<!-- modal body -->
+			<div class="modal-body text-center">
+				<p>
+					<b>Soll die openWB wirklich heruntergefahren werden?<br></b>
+					Wenn ein Problem mit der openWB vorliegt bitte Debug Daten senden.<br>
+					Ein Herunterfahren löscht alle Debug Daten und macht es unmöglich, die Problemursache festzustellen.<br>
+					Nach dem Herunterfahren kann die openWB nur durch Trennen und anschließendem Wiederverbinden mit dem Stromnetz erneut gestartet werden. (z.B. am Sicherungsautomat)<br>
+					<span class="text-danger">Fahrzeuge sind vor dem Herunterfahren abzustecken!</span>
+				</p>
+			</div>
+			<!-- modal footer -->
+			<div class="modal-footer d-flex justify-content-center">
+				<button type="button" class="btn btn-green" data-dismiss="modal" onclick="window.location.href='./tools/shutdown.html'">Shutdown</button>
+				<button type="button" class="btn btn-red" data-dismiss="modal">Abbruch</button>
+			</div>
+		</div>
+	</div>
+</div>
+
 <!-- modal modulkonfig-lp-confirmation window -->
 <div class="modal fade" id="modulconfigConfirmationLPModal" role="dialog">
 	<div class="modal-dialog" role="document">

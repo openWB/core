@@ -222,6 +222,24 @@ class PowerGraph {
           this.initCounter++;
         }
       }
+      if (this.initCounter == 12) {// Initialization complete
+        unsubscribeDayGraph();
+        
+        this.initCounter = 0;
+        this.staging.map(segment =>
+          segment.map(line => this.rawData.push(line))
+        )
+        this.rawData.map((line, i, a) => {
+          if (i > 0) {
+            const values = this.extractDayValues(line, a[i - 1]);
+            this.graphData.push(values);
+          } else {
+            // const values = this.extractValues(line, []);                
+          }
+        });
+        this.updateGraph();
+        setTimeout(() => this.activateLive(), 300000)
+      }
     }
     if (this.initCounter == 12) {// Initialization complete
       unsubscribeDayGraph();

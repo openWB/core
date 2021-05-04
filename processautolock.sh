@@ -80,7 +80,7 @@ if [ "$second" -lt "10" ]; then
 			if [ "$lpenabled" = "1" ] && [ $timeOfDay = "$lockTime" ] && [ $statusFlag != "1" ]; then
 				# if the charge point is enabled and auto lock time is now
 				# and flag not already set, set flag "waiting for autolock"
-				mqttTopic="openWB/set/lp/$chargePoint/AutolockStatus"
+				mqttTopic="openWB/set/chargepoint/$chargePoint/get/autolock_state"
 				mosquitto_pub -r -t $mqttTopic -m 1
 			fi
 		fi
@@ -136,7 +136,7 @@ do
 			echo "0" > $configuredFlagFilename  # set flag in ramdisk
 			if [ "$statusFlag" != "0" ]; then			
 				# and set flag "standby" id not already set
-				mqttTopic="openWB/set/lp/$chargePoint/AutolockStatus"
+				mqttTopic="openWB/set/chargepoint/$chargePoint/get/autolock_state"
 				mosquitto_pub -r -t $mqttTopic -m 0
 			fi
 		fi
@@ -159,13 +159,14 @@ do
 			waitUntilFinished="${!waitUntilFinishedName}"  # get the checkbox-value from setting
 		fi
 
+		echo $statusFlag
 		# now process the settings...
 		if [ "$statusFlag" = "1" ]; then
 			# charge point waiting for lock
 			if [ $timeOfDay = "$unlockTime" ]; then
 				# but auto unlock time is now
 				# set flag back to "standby"
-				mqttTopic="openWB/set/lp/$chargePoint/AutolockStatus"
+				mqttTopic="openWB/set/chargepoint/$chargePoint/get/autolock_state"
 				mosquitto_pub -r -t $mqttTopic -m 0
 			else
 				if [ $statusFlag != "2" ]; then
@@ -177,10 +178,10 @@ do
 		elif [ $timeOfDay = "$unlockTime" ] && [ $statusFlag != "3" ]; then
 			# charge point not waiting for lock and not already unlocked
 			# but unlock time is now, so enable charge point
-			mqttTopic="openWB/set/lp$chargePoint/ChargePointEnabled"
+			mqttTopic="openWB/set/chargepoint/$chargePoint/get/enabled"
 			mosquitto_pub -r -t $mqttTopic -m 1
 			# and set flag "auto-unlock performed"
-			mqttTopic="openWB/set/lp/$chargePoint/AutolockStatus"
+			mqttTopic="openWB/set/chargepoint/$chargePoint/get/autolock_state"
 			mosquitto_pub -r -t $mqttTopic -m 3
 		fi
 	fi
