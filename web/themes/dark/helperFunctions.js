@@ -52,10 +52,25 @@ function setInputValue(elementId, value) {
 
 function getTopicToSendTo (elementId) {
     var element = $('#' + $.escapeSelector(elementId));
-    var topic = element.data('topicprefix') + elementId;
-    topic = topic.replace('/get/', '/set/');
-    if (topic.includes('MaxPriceForCharging')) {
-        topic = 'openWB/set/awattar/MaxPriceForCharging'
+    // var topic = element.data('topicprefix') + elementId;
+    // topic = topic.replace('/get/', '/set/');
+    // if (topic.includes('MaxPriceForCharging')) {
+    //     topic = 'openWB/set/awattar/MaxPriceForCharging'
+    // }
+    var topic = $(element).data('topic');
+    if( topic != undefined ) {
+        var cp = parseInt($(element).closest('[data-cp]').data('cp'));  // get attribute cp-# of parent element
+        var ev = parseInt($(element).closest('[data-ev]').data('ev'));  // get attribute ev-# of parent element
+        var ct = parseInt($(element).closest('[data-chargetemplate]').data('chargetemplate'));  // get attribute chargetemplate-# of parent element
+        topic = topic.replace( '<cp>', cp );
+        topic = topic.replace( '<ev>', ev );
+        topic = topic.replace( '<ct>', ct );
+        if( topic.includes('/NaN/') ) {
+            console.log( 'missing cp, ev or ct data' );
+            topic = undefined;
+        }
+    } else {
+        console.log("element without topic changed!");
     }
     return topic;
 }
@@ -63,16 +78,26 @@ function getTopicToSendTo (elementId) {
 function setToggleBtnGroup(groupId, option) {
     /** @function setInputValue
      * sets the value-label (if exists) attached to the element to the element value
-     * @param {string} elementId - the id of the button group
+     * @param {string} groupId - the id of the button group
      * @param {string} option - the option the group btns will be set to
      * @requires data-attribute 'option' (unique for group) assigned to every radio-btn
      */
-    $('input[name="' + groupId + '"][data-option="' + option + '"]').prop('checked', true);
-    $('input[name="' + groupId + '"][data-option="' + option + '"]').closest('label').addClass('active');
+    var btnGroup = $('#' + $.escapeSelector(groupId));
+    // console.log(btnGroup);
+    btnGroup.find('input[data-option="' + option + '"]').prop('checked', true);
+    btnGroup.find('input[data-option="' + option + '"]').closest('label').addClass('active');
     // and uncheck all others
-    $('input[name="' + groupId + '"]').not('[data-option="' + option + '"]').each(function() {
+    btnGroup.find('input').not('[data-option="' + option + '"]').each(function() {
         $(this).prop('checked', false);
         $(this).closest('label').removeClass('active');
     });
-    chargeLimitationOptionsShowHide($('#' + $.escapeSelector(groupId)), option)
+    // show/hide respective option-values and progress
+    if (btnGroup.hasClass('chargepoint-chargemode')){
+        chargemodeOptionsShowHide(btnGroup, option);
+    }
+    if (btnGroup.hasClass('chargepoint-instantchargelimitselected')){
+        // console.log('btnGroup chargepoint-instantchargelimitselected');
+        chargemodeLimitOptionsShowHide(btnGroup, option);
+    }
+
 }

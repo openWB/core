@@ -475,60 +475,137 @@
 										Zeitladen
 									</div>
 									<div class="col-md-8 text-right">
-										<input type="checkbox" data-toggle="toggle" data-topic="openWB/set/vehicle/template/charge_template/<ct>/time_charging/active" data-on="Ja" data-off="Nein" data-onstyle="success" data-offstyle="danger" data-size="sm" data-style="w-100">
+										<input class="chargepoint-timechargingactive" type="checkbox" data-toggle="toggle" data-topic="openWB/set/vehicle/template/charge_template/<ct>/time_charging/active" data-on="Ja" data-off="Nein" data-onstyle="success" data-offstyle="danger" data-size="sm" data-style="w-100">
 									</div>
 								</div>
 								<div class="chargepoint-chargemodeoptions mb-0 hide">
 									<hr>
-									<h3 class="chargemode-options chargemode-option-instant_charge">Einstellungen für "Sofortladen"</h3>
-									<h3 class="chargemode-options chargemode-option-pv_charge">Einstellungen für "PV"</h3>
-									<h3 class="chargemode-options chargemode-option-scheduled_charging">Einstellungen für "Zielladen"</h3>
-									<div class="form-row vaRow mb-0 chargemode-options chargemode-option-instant_charge">
-										<div class="col">
-											Stromstärke
-										</div>
-										<div class="col-md-8">
-											<div class="form-row form-group mb-1 vaRow">
-												<label for="currentInstantChargeCp1" class="col-form-label text-right"></label>
-												<div class="col">
-													<input type="range" class="form-control-range rangeInput" id="currentInstantChargeCp1" min="6" max="32" step=".1">
+									<div class="chargemode-options chargemode-option-instant_charge">
+										<h3>Einstellungen für "Sofortladen"</h3>
+										<div class="form-row vaRow mb-0">
+											<div class="col">
+												Stromstärke
+											</div>
+											<div class="col-md-8">
+												<div class="form-row form-group mb-1 vaRow">
+													<div class="col">
+														<input type="range" class="chargepoint-instantchargecurrent form-control-range rangeInput" id="currentInstantChargeCp1" data-topic="openWB/set/vehicle/template/charge_template/<ct>/instant_charging/current" min="6" max="32" step="1">
+													</div>
+													<label for="currentInstantChargeCp1" class="col-form-label valueLabel" data-suffix="A">? A</label>
 												</div>
-												<label for="currentInstantChargeCp1" class="col-form-label valueLabel" data-suffix="A">? A</label>
+											</div>
+										</div>
+										<div class="form-row vaRow">
+											<div class="col">
+												<label class="col-form-label">Begrenzung</label>
+											</div>
+											<div class="col-md-8 btn-group btn-group-toggle chargepoint-instantchargelimitselected" id="limitInstantChargeCp1" data-name="limitCp" data-toggle="buttons" data-topic="openWB/set/vehicle/template/<ct>/instant_charging/limit/selected">
+												<label class="btn btn-outline-info btn-toggle">
+													<input type="radio" name="limitCp" data-option="none"> keine
+												</label>
+												<label class="btn btn-outline-info btn-toggle">
+													<input type="radio" name="limitCp" data-option="soc"> EV-SoC
+												</label>
+												<label class="btn btn-outline-info btn-toggle">
+													<input type="radio" name="limitCp" data-option="amount"> Energiemenge
+												</label>
+											</div>
+										</div>
+										<div class="chargemode-limit-options">
+											<div class="form-row form-group mb-1 vaRow regularTextSize chargemode-limit-option chargemode-limit-option-soc">
+												<div class="col">
+													Maximaler SoC
+												</div>
+												<div class="col-md-8">
+													<div class="form-row form-group mb-1 vaRow">
+														<div class="col">
+															<input type="range" class="chargepoint-instantchargelimitsoc form-control-range rangeInput" id="soclimitCp1" min="5" max="100" step="5" data-topic="openWB/set/vehicle/template/<ct>/instant_charging/limit/soc">
+														</div>
+														<label for="soclimitCp1" class="col-form-label valueLabel" data-suffix="%">? %</label>
+													</div>
+												</div>
+											</div>
+											<div class="form-row form-group mb-1 vaRow regularTextSize chargemode-limit-option chargemode-limit-option-amount">
+												<div class="col">
+													Zu ladende Energie
+												</div>
+												<div class="col-md-8">
+													<div class="form-row form-group mb-1 vaRow">
+														<div class="col">
+															<input type="range" class="chargepoint-instantchargelimitamount form-control-range rangeInput" id="amountlimitCp1" min="1" max="50" step="1" data-topic="openWB/set/vehicle/template/<ct>/instant_charging/limit/amount">
+														</div>
+														<label for="amountlimitCp1" class="col-form-label valueLabel" data-suffix="kWh">? kWh</label>
+													</div>
+												</div>
 											</div>
 										</div>
 									</div>
-									<div class="form-row vaRow mb-0 chargemode-options chargemode-option-pv_charge">
-										<div class="col">
-											Minimal Stromstärke
+									<div class="chargemode-options chargemode-option-pv_charge">
+										<h3 c>Einstellungen für "PV"</h3>
+										<div class="form-row mb-1">
+											<div class="col">
+												Einspeisegrenze beachten
+											</div>
+											<div class="col-md-8 text-right">
+												<input class="chargepoint-pvchargefeedinlimit" type="checkbox" data-toggle="toggle" data-topic="openWB/set/vehicle/template/charge_template/<ct>/pv_charging/feed_in_limit" data-on="Ja" data-off="Nein" data-onstyle="success" data-offstyle="danger" data-size="sm" data-style="w-100">
+											</div>
 										</div>
-										<div class="col-md-8">
-											<div class="form-row form-group mb-1 vaRow">
-												<label for="minCurrentPvCp1" class="col-form-label text-right"></label>
-												<div class="col">
-													<input type="range" class="form-control-range rangeInput" id="minCurrentPvCp1" min="6" max="16" step="1">
+										<div class="form-row vaRow mb-0">
+											<div class="col">
+												Minimal Stromstärke
+											</div>
+											<div class="col-md-8">
+												<div class="form-row form-group mb-1 vaRow">
+													<div class="col">
+														<input type="range" class="chargepoint-pvchargemincurrent form-control-range rangeInput" id="minCurrentPvCp1" data-topic="openWB/set/vehicle/template/charge_template/<ct>/pv_charging/min_current" min="6" max="16" step="1">
+													</div>
+													<label for="minCurrentPvCp1" class="col-form-label valueLabel" data-suffix="A">? A</label>
 												</div>
-												<label for="minCurrentPvCp1" class="col-form-label valueLabel" data-suffix="A">? A</label>
+											</div>
+										</div>
+										<div class="form-row vaRow mb-0">
+											<div class="col">
+												Minimal SoC
+											</div>
+											<div class="col-md-8">
+												<div class="form-row form-group mb-1 vaRow">
+													<div class="col">
+														<input type="range" class="chargepoint-pvchargeminsoc form-control-range rangeInput" id="minSocPvCp1" data-topic="openWB/set/vehicle/template/charge_template/<ct>/pv_charging/min_soc" min="0" max="99" step="1">
+													</div>
+													<label for="minSocPvCp1" class="col-form-label valueLabel" data-suffix="%">? %</label>
+												</div>
+											</div>
+										</div>
+										<div class="form-row vaRow mb-0">
+											<div class="col">
+												Minimal SoC Stromstärke
+											</div>
+											<div class="col-md-8">
+												<div class="form-row form-group mb-1 vaRow">
+													<div class="col">
+														<input type="range" class="chargepoint-pvchargeminsoccurrent form-control-range rangeInput" id="minSocCurrentPvCp1" data-topic="openWB/set/vehicle/template/charge_template/<ct>/pv_charging/min_soc_current" min="6" max="16" step="1">
+													</div>
+													<label for="minSocCurrentPvCp1" class="col-form-label valueLabel" data-suffix="A">? A</label>
+												</div>
+											</div>
+										</div>
+										<div class="form-row vaRow mb-0">
+											<div class="col">
+												Maximal SoC
+											</div>
+											<div class="col-md-8">
+												<div class="form-row form-group mb-1 vaRow">
+													<div class="col">
+														<input type="range" class="chargepoint-pvchargemaxsoc form-control-range rangeInput" id="maxSocPvCp1" data-topic="openWB/set/vehicle/template/charge_template/<ct>/pv_charging/max_soc" min="1" max="100" step="1">
+													</div>
+													<label for="maxSocPvCp1" class="col-form-label valueLabel" data-suffix="%">? %</label>
+												</div>
 											</div>
 										</div>
 									</div>
-									<!--
-									<div class="form-row vaRow">
-										<div class="col-4">
-											<label class="col-form-label">Begrenzung</label>
-										</div>
-										<div class="col btn-group btn-group-toggle" data-name="limitCp" data-toggle="buttons" data-topicprefix="openWB/config/get/sofort/">
-											<label class="btn btn-lg btn-outline-info btn-toggle smallTextSize">
-												<input type="radio" data-name="limitCp" data-option="0"> keine
-											</label>
-											<label class="btn btn-lg btn-outline-info btn-toggle smallTextSize">
-												<input type="radio" data-name="limitCp" data-option="2"> EV-SoC
-											</label>
-											<label class="btn btn-lg btn-outline-info btn-toggle smallTextSize">
-												<input type="radio" data-name="limitCp" data-option="1" checked="checked"> Energiemenge
-											</label>
-										</div>
+									<div class="chargemode-options chargemode-option-scheduled_charging">
+										<h3>Einstellungen für "Zielladen"</h3>
 									</div>
-									-->
 								</div>
 							</div>
 						</div>
@@ -585,7 +662,7 @@
 					function submitSocForm() {
 						var currentCp = $('#socModal').find('.chargepoint-soc').text();
 						var manualSoc = $("#manualSocBox").val();
-						console.log("SoC for CP"+currentCp+": "+manualSoc);
+						// console.log("SoC for CP"+currentCp+": "+manualSoc);
 						publish(manualSoc, "openWB/set/lp/"+currentCp+"/manualSoc");
 						// reset input after publishing
 						clearSocForm();
@@ -638,7 +715,7 @@
 			var timeOfLastMqttMessage = 0;  // holds timestamp of last received message
 			var landingpageShown = false;  // holds flag for landing page being shown
 
-			function chargeLimitationOptionsShowHide(btnGrp, option) {
+			function chargemodeOptionsShowHide(btnGrp, option) {
 				// show/hide all option-parameters in form-rows for selected option
 				var parent = btnGrp.closest('.chargepoint-card[data-cp]');  // get parent div element for charge limitation options
 				var chargemodeOptionsElement = $(parent).find('.chargepoint-chargemodeoptions');
@@ -648,6 +725,21 @@
 					chargemodeOptionsElement.removeClass('hide');
 					$(chargemodeOptionsElement).find('.chargemode-options.chargemode-option-'+option).removeClass('hide');  // now show option elements for selected option
 					$(chargemodeOptionsElement).find('.chargemode-options').not('.chargemode-option-'+option).addClass('hide');  // hide all other option elements
+				}
+			}
+
+			function chargemodeLimitOptionsShowHide(btnGrp, option) {
+				// show/hide all option-parameters in form-rows for selected option
+				var parent = btnGrp.closest('.chargepoint-card[data-cp]');  // get parent div element for charge limitation options
+				var chargemodeLimitOptionsElement = $(parent).find('.chargemode-limit-options');
+				// console.log('option: '+option);
+				// console.log(chargemodeLimitOptionsElement);
+				if( option == "none" ) {
+					chargemodeLimitOptionsElement.addClass('hide');
+				} else {
+					chargemodeLimitOptionsElement.removeClass('hide');
+					$(chargemodeLimitOptionsElement).find('.chargemode-limit-option.chargemode-limit-option-'+option).removeClass('hide');  // now show option elements for selected option
+					$(chargemodeLimitOptionsElement).find('.chargemode-limit-option').not('.chargemode-limit-option-'+option).addClass('hide');  // hide all other option elements
 				}
 			}
 
@@ -734,15 +826,15 @@
 					// load mqtt library
 					'js/mqttws31.js',
 					// some helper functions
-					'themes/dark/helperFunctions.js?ver=20201218',
+					'themes/dark/helperFunctions.js?ver=20210504',
 					// functions for processing messages
-					'themes/dark/processAllMqttMsg.js?ver=20210129',
+					'themes/dark/processAllMqttMsg.js?ver=20210504',
 					// respective Chart.js definition live
 					// 'themes/dark/livechart.js?ver=20201218',
 					// respective Chart.js definition
 					// 'themes/dark/electricityPriceChart.js?ver=20210120',
 					// functions performing mqtt and start mqtt-service
-					'themes/dark/setupMqttServices.js?ver=20210129',
+					'themes/dark/setupMqttServices.js?ver=20210504',
 				];
 				scriptsToLoad.forEach(function(src) {
 					var script = document.createElement('script');
@@ -752,7 +844,7 @@
 				});
 
 				$('input[type=checkbox]').change(function(event){
-					console.log("checkbox changed");
+					// console.log("checkbox changed");
 					// send mqtt set to enable/disable charge point after click
 					var topic = $(this).data('topic');
 					if( topic != undefined ) {
@@ -810,52 +902,9 @@
 					}
 				});
 
-				// $('.priorityModeBtn').click(function(event){
-				// 	// prio: 0 = battery, 1 = ev
-				// 	var priority = $(this).attr('priority');
-				// 	if ( priority == '0' || priority == '1' ) {
-				// 		publish(priority, 'openWB/config/set/pv/priorityModeEVBattery');
-				// 	}
-				// });
-
-				// $('.70PvBtn').click(function(event){
-				// 	// 0 deaktiviert, 1 aktiviert
-				// 	var element = document.getElementById('70PvBtn');
-				// 	if ( element.classList.contains("btn-success") ) {
-				// 		publish("0", "openWB/set/pv/NurPV70Status");
-				// 	} else {
-				// 		publish("1", "openWB/set/pv/NurPV70Status");
-				// 	}
-				// });
-
 				// $('.btn[value="Reset"]').click(function(event){
 				// 	var topic = getTopicToSendTo($(this).attr('id'));
 				// 	publish("1", topic);
-				// });
-
-				// $('.sofortladenLadezielSelektor').change(function(event){
-				// 	// switches the visibility of the settings-divs according to dropdown selection
-				// 	var selectorId = '#' + event.target.id;
-				// 	var divAusId = selectorId.slice(0, 8) + 'n' + selectorId.slice(8);
-				// 	var divSocId = selectorId.slice(0, 8) + 's' + selectorId.slice(8);
-				// 	var divMengeId = selectorId.slice(0, 8) + 'm' + selectorId.slice(8);
-				// 	switch ($(selectorId).val()) {
-				// 		case '0':
-				// 			$(divAusId).show();
-				// 			$(divSocId).hide();
-				// 			$(divMengeId).hide();
-				// 			break;
-				// 		case '1':
-				// 			$(divAusId).hide();
-				// 			$(divSocId).hide();
-				// 			$(divMengeId).show();
-				// 			break;
-				// 		case '2':
-				// 			$(divAusId).hide();
-				// 			$(divSocId).show();
-				// 			$(divMengeId).hide();
-				// 			break;
-				// 	}
 				// });
 
 				$('.btn-group-toggle').change(function(event){
@@ -867,7 +916,13 @@
 					} else {
 						publish(option, topic);
 						// show/hide respective option-values and progress
-						chargeLimitationOptionsShowHide(this, option);
+						if ($(this).hasClass('chargepoint-chargemode')){
+							chargemodeOptionsShowHide(this, option);
+						}
+						if ($(this).hasClass('chargepoint-instantchargelimitselected')){
+							// console.log('btnGroup chargepoint-instantchargelimitselected');
+							chargemodeLimitOptionsShowHide(this, option);
+						}
 					}
 				});
 

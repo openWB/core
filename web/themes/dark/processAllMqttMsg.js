@@ -8,7 +8,7 @@
 
 var graphrefreshcounter = 0;
 
-var chargemodeTemplate = [];
+var chargemodeTemplate = {};
 
 function getCol(matrix, col){
 	var column = [];
@@ -57,8 +57,21 @@ function createChargepoint(hierarchy) {
 				clonedElement.find('.card-body').attr('id', 'collapseChargepoint'+chargepointIndex);
 				clonedElement.find('label[for=minCurrentPvCp1]').attr('for', 'minCurrentPvCp'+chargepointIndex);
 				clonedElement.find('#minCurrentPvCp1').attr('id', 'minCurrentPvCp'+chargepointIndex);
+				clonedElement.find('label[for=minSocPvCp1]').attr('for', 'minSocPvCp'+chargepointIndex);
+				clonedElement.find('#minSocPvCp1').attr('id', 'minSocPvCp'+chargepointIndex);
+				clonedElement.find('label[for=maxSocPvCp1]').attr('for', 'maxSocPvCp'+chargepointIndex);
+				clonedElement.find('#maxSocPvCp1').attr('id', 'maxSocPvCp'+chargepointIndex);
+				clonedElement.find('label[for=minSocCurrentPvCp1]').attr('for', 'minSocCurrentPvCp'+chargepointIndex);
+				clonedElement.find('#minSocCurrentPvCp1').attr('id', 'minSocCurrentPvCp'+chargepointIndex);
+
 				clonedElement.find('label[for=currentInstantChargeCp1]').attr('for', 'currentInstantChargeCp'+chargepointIndex);
 				clonedElement.find('#currentInstantChargeCp1').attr('id', 'currentInstantChargeCp'+chargepointIndex);
+				clonedElement.find('label[for=limitInstantChargeCp1]').attr('for', 'limitInstantChargeCp'+chargepointIndex);
+				clonedElement.find('#limitInstantChargeCp1').attr('id', 'limitInstantChargeCp'+chargepointIndex);
+				clonedElement.find('label[for=soclimitCp1]').attr('for', 'soclimitCp'+chargepointIndex);
+				clonedElement.find('#soclimitCp1').attr('id', 'soclimitCp'+chargepointIndex);
+				clonedElement.find('label[for=amountlimitCp1]').attr('for', 'amountlimitCp'+chargepointIndex);
+				clonedElement.find('#amountlimitCp1').attr('id', 'amountlimitCp'+chargepointIndex);
 				// insert after last existing chargepoint to honor sorting from the array
 				target = $('.chargepoint-card[data-cp]').last();
 				// console.log("target: "+target.data('cp')+" index: "+chargepointIndex);
@@ -69,7 +82,7 @@ function createChargepoint(hierarchy) {
 				chargepointElement.find('input[type=checkbox][data-toggle^=toggle]').bootstrapToggle();
 			}
 		} else {
-			// console.log("chargepoint '"+chargepointIndex+"' already exists");
+			console.log("chargepoint '"+chargepointIndex+"' already exists");
 		}
 	}
 	hierarchy.children.forEach(element => {
@@ -77,9 +90,56 @@ function createChargepoint(hierarchy) {
 	});
 }
 
+function refreshChargetemplate(templateIndex) {
+	if( chargemodeTemplate.hasOwnProperty(templateIndex) ) {
+		parent = $('.chargepoint-card[data-chargetemplate='+templateIndex+']');
+		// time_charging.active
+		element = parent.find('.chargepoint-timechargingactive');
+		if ( chargemodeTemplate[templateIndex].time_charging.active ) {
+			element.bootstrapToggle('on', true);
+		}else {
+			element.bootstrapToggle('off', true);
+		}
+		// chargemode.instant_charging.current
+		element = parent.find('.chargepoint-instantchargecurrent');
+		setInputValue(element.attr('id'), chargemodeTemplate[templateIndex].chargemode.instant_charging.current);
+		// chargemode.instant_charging.limit.selected
+		element = parent.find('.chargepoint-instantchargelimitselected');
+		setToggleBtnGroup(element.attr('id'), chargemodeTemplate[templateIndex].chargemode.instant_charging.limit.selected);
+		// chargemode.instant_charging.limit.soc
+		element = parent.find('.chargepoint-instantchargelimitsoc');
+		setInputValue(element.attr('id'), chargemodeTemplate[templateIndex].chargemode.instant_charging.limit.soc);
+		// chargemode.instant_charging.limit.soc
+		element = parent.find('.chargepoint-instantchargelimitamount');
+		setInputValue(element.attr('id'), chargemodeTemplate[templateIndex].chargemode.instant_charging.limit.amount);
+		// chargemode.pv_charging.min_current
+		element = parent.find('.chargepoint-pvchargemincurrent');
+		setInputValue(element.attr('id'), chargemodeTemplate[templateIndex].chargemode.pv_charging.min_current);
+		// chargemode.pv_charging.min_soc
+		element = parent.find('.chargepoint-pvchargeminsoc');
+		setInputValue(element.attr('id'), chargemodeTemplate[templateIndex].chargemode.pv_charging.min_soc);
+		// chargemode.pv_charging.max_soc
+		element = parent.find('.chargepoint-pvchargemaxsoc');
+		setInputValue(element.attr('id'), chargemodeTemplate[templateIndex].chargemode.pv_charging.max_soc);
+		// chargemode.pv_charging.min_soc_current
+		element = parent.find('.chargepoint-pvchargeminsoccurrent');
+		setInputValue(element.attr('id'), chargemodeTemplate[templateIndex].chargemode.pv_charging.min_soc_current);
+		// chargemode.pv_charging.feed_in_limit
+		var element = parent.find('.chargepoint-pvchargefeedinlimit');  // now get parents respective child element
+		if ( chargemodeTemplate[templateIndex].chargemode.pv_charging.feed_in_limit == 1 ) {
+			// element.prop('checked', true);
+			element.bootstrapToggle('on', true); // do not fire a changed-event to prevent a loop!
+		} else {
+			// element.prop('checked', false);
+			element.bootstrapToggle('off', true); // do not fire a changed-event to prevent a loop!
+		}
+
+	}
+}
+
 function handlevar(mqttmsg, mqttpayload) {
 	// receives all messages and calls respective function to process them
-	// console.log("newmessage: "+mqttmsg+": "+mqttpayload);
+	console.log("newmessage: "+mqttmsg+": "+mqttpayload);
 	processPreloader(mqttmsg);
 	if ( mqttmsg.match( /^openwb\/counter\/0\//i) ) { processEvuMessages(mqttmsg, mqttpayload); } // counter/0 is always EVU
 	else if ( mqttmsg.match( /^openwb\/counter\/[0-9]+\//i) ) { /* nothing here yet */ }
@@ -298,7 +358,7 @@ function processPvMessages(mqttmsg, mqttpayload) {
 
 function processPvConfigMessages(mqttmsg, mqttpayload) {
 	if ( mqttmsg == 'openWB/general/chargemode_config/pv_charging/bat_prio' ) {
-		console.log("pv config: bat_prio");
+		// console.log("pv config: bat_prio");
 		var element = $('.housebattery-priority');
 		if ( mqttpayload == 1 ) {
 			// element.prop('checked', true);
@@ -580,8 +640,9 @@ function processChargepointMessages(mqttmsg, mqttpayload) {
 		var index = getIndex(mqttmsg);  // extract number between two / /
 		var configData = $.parseJSON(mqttpayload);
 		var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent row element for charge point
-		// "charge_template" in
+		// "charge_template" int
 		parent.attr('data-chargetemplate', configData.charge_template).data('chargetemplate', configData.charge_template);
+		refreshChargetemplate(configData.charge_template);
 		// "ev_template" int
 		parent.attr('data-evtemplate', configData.ev_template).data('evtemplate', configData.ev_template);
 		// "chargemode" str
@@ -594,7 +655,7 @@ function processChargepointMessages(mqttmsg, mqttpayload) {
 			$(this).prop('checked', false);  // uncheck all other radio buttons
 			$(this).parent().removeClass('active');  // deselect all other chargemode buttons
 		});
-		chargeLimitationOptionsShowHide(chargemodeRadio, configData.chargemode);
+		chargemodeOptionsShowHide(chargemodeRadio, configData.chargemode);
 		// "priority" bool
 		var priorityElement = parent.find('.chargepoint-vehiclepriority');  // now get parents respective child element
 		if ( configData.priority == true ) {
@@ -720,6 +781,12 @@ function processVehicleMessages(mqttmsg, mqttpayload) {
 				}
 			}
 		});
+	}
+	else if ( mqttmsg.match( /^openwb\/vehicle\/template\/charge_template\/[1-9][0-9]*$/i ) ) {
+		// console.log("charge_template");
+		templateIndex = mqttmsg.match( /[1-9][0-9]*$/i );
+		chargemodeTemplate[templateIndex] = $.parseJSON(mqttpayload);
+		refreshChargetemplate(templateIndex);
 	}
 }
 

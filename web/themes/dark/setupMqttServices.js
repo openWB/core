@@ -59,7 +59,8 @@ var topicsToSubscribe = [
 	["openWB/chargepoint/+/get/connected_vehicle/soc_config", 1],	// soc configuration of the vehicle; JSON { "configured": bool, "manual": bool }
 
 	// vehicle topics
-	["openWB/vehicle/+/name", 1],	// populate a list of vehicle id/name info
+	["openWB/vehicle/+/name", 1],						// populate a list of vehicle id/name info
+	["openWB/vehicle/template/charge_template/+", 1],	// populate a list of charge templates
 
 	// chargemode config
 	["openWB/general/chargemode_config/pv_charging/bat_prio", 0],
@@ -239,14 +240,18 @@ client.onMessageArrived = function (message) {
 //Creates a new Messaging.Message Object and sends it
 function publish(payload, topic) {
 	console.log("publish: "+topic+": "+payload);
-	var message = new Messaging.Message(payload);
-	message.destinationName = topic;
-	message.qos = 2;
-	message.retained = true;
-	// client.send(message);
-	var message = new Messaging.Message("local client uid: " + clientuid + " sent: " + topic);
-	message.destinationName = "openWB/set/system/topicSender";
-	message.qos = 2;
-	message.retained = true;
-	// client.send(message);
+	if ( topic != undefined ) {
+		var message = new Messaging.Message(payload);
+		message.destinationName = topic;
+		message.qos = 2;
+		message.retained = true;
+		client.send(message);
+		var message = new Messaging.Message("local client uid: " + clientuid + " sent: " + topic);
+		message.destinationName = "openWB/set/system/topicSender";
+		message.qos = 2;
+		message.retained = true;
+		client.send(message);
+	} else {
+		console.log("not publishing message without topic!");
+	}
 }
