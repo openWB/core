@@ -48,8 +48,7 @@ class control():
 
             #Abschaltschwelle prüfen und ggf. Abschaltverzögerung starten
             for mode in reversed(self.chargemodes[10:-4]):
-                if self._switch_off_threshold(mode) == False:
-                    break
+                self._switch_off_threshold(mode)
 
             # Phasenumschaltung
             self._check_auto_phase_switch()
@@ -95,6 +94,7 @@ class control():
                         # Wenn beim PV-Laden über der eingestellten Stromstärke geladen wird, erstmal zurücknehmen.
                         if((charging_ev.charge_template.data["chargemode"]["selected"] == "pv_charging" or 
                                 charging_ev.data["control_parameter"]["submode"] == "pv_charging") and
+                                chargepoint.data["set"]["current"] != 0 and
                                 (chargepoint.data["set"]["current"] - charging_ev.ev_template.data["nominal_difference"]) < max(chargepoint.data["get"]["current"])):
                             released_current = charging_ev.data["control_parameter"]["required_current"] - max(chargepoint.data["get"]["current"])
                             # Nur wenn mit mehr als der benötigten Stromstärke geladen wird, kann der Überschuss ggf anderweitig in der Regelung verwendet werden.
@@ -213,6 +213,7 @@ class control():
             return self._perform_down_regulation(preferenced_chargepoints, max_current_overshoot, max_overshoot_phase, prevent_stop)
         except Exception as e:
             log.exception_logging(e)
+            return 0
 
     def _perform_down_regulation(self, preferenced_chargepoints, max_current_overshoot, max_overshoot_phase, prevent_stop = False):
         """ prüft, ob der Ladepunkt reduziert werden kann. Wenn Nein und das Abschalten nicht verboten ist, wird der Ladepunkt abgeschaltet.
@@ -293,6 +294,7 @@ class control():
                 return remaining_current_overshoot
         except Exception as e:
             log.exception_logging(e)
+            return 0
 
     def _adjust_chargepoints(self, mode_tuple):
         """ ermittelt die Ladepunkte, die nicht mit der benötigten Stromstärke laden und prüft, ob diese hochgeregelt werden können und regelt diese, falls möglich, hoch.
@@ -413,7 +415,7 @@ class control():
 
             if len(preferenced_chargepoints) == 0:
                 # Es gibt keine Ladepunkte in diesem Lademodus, die noch nicht laden oder die noch gestoppt werden können.
-                return True
+                return 
             else:
                 # Solange die Liste durchgehen, bis die Abschaltschwelle nicht mehr erreicht wird.
                 for cp in preferenced_chargepoints:
@@ -446,7 +448,6 @@ class control():
                             charging_ev.data["control_parameter"]["phases"] = phases
                             pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num )+"/control_parameter/phases", phases)
                             self._process_data(chargepoint, current, phases)
-
         except Exception as e:
             log.exception_logging(e)
 
@@ -580,6 +581,7 @@ class control():
             return overloaded_counters
         except Exception as e:
             log.exception_logging(e)
+            return None
 
     def _calc_normal_load(self, chargepoint, required_power, required_current, phases):
         """ prüft, ob mit PV geladen werden kann oder bezogen werden muss.
@@ -603,6 +605,7 @@ class control():
             return overloaded_counters
         except Exception as e:
             log.exception_logging(e)
+            return None
 
     def _calc_pv_charging(self, chargepoint, required_power, required_current, phases):
         """prüft, ob Speicher oder EV Vorrang hat und wie viel Strom/Leistung genutzt werden kann.
@@ -661,8 +664,9 @@ class control():
                 if "cp" in chargepoint:
                     if data.cp_data[chargepoint].data["set"]["charging_ev"] != -1:
                         charging_ev = data.cp_data[chargepoint].data["set"]["charging_ev"]
-                        if (charging_ev.data["control_parameter"]["submode"] == "pv_charging" or
-                                charging_ev.data["control_parameter"]["chargemode"] == "pv_charging"):
+                        if ((charging_ev.data["control_parameter"]["submode"] == "pv_charging" or
+                                charging_ev.data["control_parameter"]["chargemode"] == "pv_charging") and
+                                data.cp_data[chargepoint].data["set"]["current"] != 0):
                             # Erst hochregeln, wenn geladen wird.
                             if ((data.cp_data[chargepoint].data["set"]["current"] - charging_ev.ev_template.data["nominal_difference"]) < max(data.cp_data[chargepoint].data["get"]["current"]) and 
                                     charging_ev.charge_template.data["chargemode"]["pv_charging"]["feed_in_limit"] == feed_in_limit):
@@ -691,8 +695,9 @@ class control():
                         chargepoint = data.cp_data[cp]
                         if chargepoint.data["set"]["charging_ev"] != -1:
                             charging_ev = chargepoint.data["set"]["charging_ev"]
-                            if (charging_ev.charge_template.data["chargemode"]["selected"] == "pv_charging" or 
-                                    charging_ev.data["control_parameter"]["submode"] == "pv_charging"):
+                            if ((charging_ev.charge_template.data["chargemode"]["selected"] == "pv_charging" or 
+                                    charging_ev.data["control_parameter"]["submode"] == "pv_charging") and
+                                    chargepoint.data["set"]["current"] != 0):
                                 if ((chargepoint.data["set"]["current"] - charging_ev.ev_template.data["nominal_difference"]) < max(chargepoint.data["get"]["current"]) and 
                                         charging_ev.charge_template.data["chargemode"]["pv_charging"]["feed_in_limit"] == feed_in_limit):
                                     if chargepoint.data["get"]["charge_state"] == True:
@@ -779,6 +784,7 @@ class control():
             return preferenced_chargepoints
         except Exception as e:
             log.exception_logging(e)
+            return preferenced_chargepoints
 
     def _check_cp_without_feed_in_is_prioritised(self, chargepoint):
         """ Wenn ein LP im Submodus PV-Laden nicht die Maximalstromstärke zugeteilt bekommen hat, 
@@ -814,6 +820,7 @@ class control():
             return True
         except Exception as e:
             log.exception_logging(e)
+            return True
 
     def _process_data(self, chargepoint, required_current, phases):
         """ setzt die ermittelte Anzahl Phasen, Stromstärke und Leistung in den Dictionarys, 
@@ -835,10 +842,19 @@ class control():
             log.exception_logging(e)
 
     def _get_bat_and_evu_overhang(self):
-        """
-        """
-        return data.bat_module_data["all"].data["get"]["power"] + data.pv_data["all"].data["set"]["available_power"]
+        """ ermittelt den verfügbaren Überhang. Da zu Beginn des Algorithmus die Leistung, die über der benötigten Leistung liegt,
+        freigegeben wird, muss der verbleibende EVU-Überhang betrachtet werden. Erst wenn nicht mehr genug freigegeben (und am Ende
+        wieder allokiert wird) muss abgeschaltet werden.
 
+        Return
+        ------
+        verfügbarer Überhang
+        """
+        try:
+            return data.bat_module_data["all"].data["get"]["power"] + data.pv_data["all"].overhang_left()
+        except Exception as e:
+            log.exception_logging(e)
+            return 0
 
 def allocate_power(chargepoint, required_power, required_current, phases):
     """allokiert, wenn vorhanden erst Speicherladeleistung, dann EVU-Überschuss 
@@ -897,6 +913,7 @@ def allocate_power(chargepoint, required_power, required_current, phases):
         return required_current, phases, overloaded_counters
     except Exception as e:
         log.exception_logging(e)
+        return 0, phases, None
 
 def no_load():
     """ setzt die Parameter zum Stoppen der PV-Ladung

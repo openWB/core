@@ -53,7 +53,7 @@ class optional():
             return nsmallest(ceil(duration), pricedict, key = pricedict.get)
         except Exception as e:
             log.exception_logging(e)
-            return ()
+            return []
 
     def et_get_prices(self):
         """

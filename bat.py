@@ -112,6 +112,7 @@ class bat:
                 return 0
         except Exception as e:
             log.exception_logging(e)
+            return 0
 
     def power_for_bat_charging(self):
         try:
@@ -121,6 +122,7 @@ class bat:
                 return 0
         except Exception as e:
             log.exception_logging(e)
+            return 0
 
     def allocate_bat_power(self, required_power):
         """ subtrahieren der zugeteilten Leistung von der verfügbaren Speicher-Leistung

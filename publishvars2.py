@@ -21,22 +21,22 @@ def pub_settings():
     pub.pub("openWB/chargepoint/template/1/ev", 1)
     pub.pub("openWB/chargepoint/template/1/rfid_enabling", False)
 
-    # cp2
-    pub.pub("openWB/chargepoint/2/set/manual_lock", False)
-    pub.pub("openWB/chargepoint/2/config/template", 2)
-    pub.pub("openWB/chargepoint/2/config/connected_phases", 3)
-    pub.pub("openWB/chargepoint/2/config/phase_1", 0)
-    pub.pub("openWB/chargepoint/2/config/auto_phase_switch_hw", True)
-    pub.pub("openWB/chargepoint/2/config/control_pilot_interruption_hw", False)
-    pub.pub("openWB/chargepoint/2/get/rfid", 1234)
-    # cpt2
-    pub.pub("openWB/chargepoint/template/2/autolock/1/frequency/selected", "daily")
-    pub.pub("openWB/chargepoint/template/2/autolock/1/time", ["07:00", "11:20"])
-    pub.pub("openWB/chargepoint/template/2/autolock/1/active", False)
-    pub.pub("openWB/chargepoint/template/2/autolock/wait_for_charging_end", True)
-    pub.pub("openWB/chargepoint/template/2/autolock/active", False)
-    pub.pub("openWB/chargepoint/template/2/ev", 2)
-    pub.pub("openWB/chargepoint/template/2/rfid_enabling", False)
+    # # cp2
+    # pub.pub("openWB/chargepoint/2/set/manual_lock", False)
+    # pub.pub("openWB/chargepoint/2/config/template", 2)
+    # pub.pub("openWB/chargepoint/2/config/connected_phases", 3)
+    # pub.pub("openWB/chargepoint/2/config/phase_1", 0)
+    # pub.pub("openWB/chargepoint/2/config/auto_phase_switch_hw", True)
+    # pub.pub("openWB/chargepoint/2/config/control_pilot_interruption_hw", False)
+    # pub.pub("openWB/chargepoint/2/get/rfid", 1234)
+    # # cpt2
+    # pub.pub("openWB/chargepoint/template/2/autolock/1/frequency/selected", "daily")
+    # pub.pub("openWB/chargepoint/template/2/autolock/1/time", ["07:00", "11:20"])
+    # pub.pub("openWB/chargepoint/template/2/autolock/1/active", False)
+    # pub.pub("openWB/chargepoint/template/2/autolock/wait_for_charging_end", True)
+    # pub.pub("openWB/chargepoint/template/2/autolock/active", False)
+    # pub.pub("openWB/chargepoint/template/2/ev", 2)
+    # pub.pub("openWB/chargepoint/template/2/rfid_enabling", False)
 
     # #cp3
     # pub.pub("openWB/chargepoint/3/set/manual_lock", False)
@@ -57,7 +57,7 @@ def pub_settings():
 
     # ev1
     pub.pub("openWB/vehicle/1/charge_template", 1)
-    pub.pub("openWB/vehicle/1/ev_template", 2)
+    pub.pub("openWB/vehicle/1/ev_template", 1)
     pub.pub("openWB/vehicle/1/name", "m3p")
     pub.pub("openWB/vehicle/1/soc/config/configured", True)
     pub.pub("openWB/vehicle/1/soc/config/manual", False)
@@ -105,7 +105,8 @@ def pub_settings():
         'average_consump': 5, 
         'max_phases': 3, 
         'max_current_multi_phases': 16, 
-        'control_pilot_interruption': False,
+        'control_pilot_interruption': True,
+        'control_pilot_interruption_duration': 4,
         'nominal_difference': 2
         }
     pub.pub("openWB/vehicle/template/ev_template/1", evt1)
@@ -219,9 +220,11 @@ def pub_settings():
     pub.pub("openWB/general/chargemode_config/pv_charging/switch_on_threshold", 1500)
     pub.pub("openWB/general/chargemode_config/pv_charging/feed_in_yield", 15000)
     pub.pub("openWB/general/chargemode_config/pv_charging/phase_switch_delay", 1)
-    pub.pub("openWB/general/chargemode_config/pv_charging/phases_to_use", 3)
+    pub.pub("openWB/general/chargemode_config/pv_charging/phases_to_use", 1)
     pub.pub("openWB/general/chargemode_config/scheduled_charging/phases_to_use", 1)
     pub.pub("openWB/general/chargemode_config/time_charging/phases_to_use", 1)
     pub.pub("openWB/general/chargemode_config/standby/phases_to_use", 1)
     pub.pub("openWB/general/chargemode_config/stop/phases_to_use", 0)
     pub.pub("openWB/general/range_unit", "km")
+    pub.pub("openWB/general/grid_protection_configured", True)
+    pub.pub("openWB/general/grid_protection_active", False)
