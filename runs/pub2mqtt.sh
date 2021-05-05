@@ -3,8 +3,6 @@
 declare -A mqttvar
 mqttvar["chargepoint/get/counter_all"]=llkwhges
 mqttvar["chargepoint/get/power_all"]=llkombiniert
-mqttvar["chargepoint/1/get/voltage"]=llv1
-mqttvar["chargepoint/1/get/current"]=lla1
 mqttvar["chargepoint/1/get/counter"]=llkwh
 mqttvar["chargepoint/1/get/charge_state"]=chargestat
 mqttvar["chargepoint/1/get/plug_state"]=plugstat

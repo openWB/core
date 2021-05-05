@@ -21,6 +21,8 @@
 #     along with openWB.  If not, see <https://www.gnu.org/licenses/>.
 #
 #####
+#loadconfig
+. /var/www/html/openWB/loadconfig.sh
 
 # set charging current in EVSE
 #
@@ -30,15 +32,14 @@
 #
 # Example: ./set-current.sh 9 s1
 # sets charging current on point "s1" to 9A
-
-lp1enabled=$(<ramdisk/lp1enabled)
-lp2enabled=$(<ramdisk/lp2enabled)
-lp3enabled=$(<ramdisk/lp3enabled)
-lp4enabled=$(<ramdisk/lp4enabled)
-lp5enabled=$(<ramdisk/lp5enabled)
-lp6enabled=$(<ramdisk/lp6enabled)
-lp7enabled=$(<ramdisk/lp7enabled)
-lp8enabled=$(<ramdisk/lp8enabled)
+lp1enabled=1
+lp2enabled=1
+lp3enabled=1
+lp4enabled=1
+lp5enabled=1
+lp6enabled=1
+lp7enabled=1
+lp8enabled=1
 #####
 #
 # functions
@@ -65,10 +66,12 @@ function setChargingCurrentExtopenwb () {
 	chargep1ip=$2
 	chargep1cp=$3
 	# set desired charging current
+
 	if [[ "$chargep1cp" == "2" ]]; then
 		mosquitto_pub -r -t openWB/set/isss/Lp2Current -h $chargep1ip -m "$current"
 	else
 		mosquitto_pub -r -t openWB/set/isss/Current -h $chargep1ip -m "$current"
+		
 	fi
 }
 
@@ -251,6 +254,8 @@ function setChargingCurrentnrgkick () {
 # function for setting the charging current
 # no parameters, variables need to be set before...
 function setChargingCurrent () {
+echo "setChargingCurrent" >> /var/www/html/openWB/ramdisk/openWB.log
+
 	if [[ $evsecon == "dac" ]]; then
 		setChargingCurrentDAC $current $dacregister
 	fi
@@ -325,14 +330,13 @@ function setChargingCurrent () {
 let current=$1
 if [[ current -lt 0 ]] | [[ current -gt 32 ]]; then
 	if [[ $debug == "2" ]]; then
-		echo "ungültiger Wert für Ladestrom" > /var/www/html/openWB/web/lade.log
+		echo "ungültiger Wert für Ladestrom" >> /var/www/html/openWB/ramdisk/openWB.log
 	fi
 	exit 1
 fi
-
-if !([[ $2 == "all" ]] || [[ $2 == "m" ]] || [[ $2 == "s1" ]] || [[ $2 == "s2" ]] || [[ $2 == "lp4" ]] || [[ $2 == "lp5" ]] || [[ $2 == "lp6" ]] || [[ $2 == "lp7" ]] || [[ $2 == "lp8" ]]) ; then
+if !([[ $2 == "all" ]] || [[ $2 == "m" ]] || [[ $2 == "s1" ]] || [[ $2 == "s2" ]] || [[ $2 == "lp4" ]] || [[ $2 == "lp5" ]] || [[ $2 == "lp6" ]] || [[ $2 == "lp7" ]] || [[ $2 == "lp8" ]] || [[ $2 == "1" ]] || [[ $2 == "2" ]] || [[ $2 == "3" ]]) ; then
 	if [[ $debug == "2" ]]; then
-		echo "ungültiger Wert für Ziel: $2" > /var/www/html/openWB/web/lade.log
+		echo "ungültiger Wert für Ziel: $2" >> /var/www/html/openWB/ramdisk/openWB.log
 	fi
 	exit 1
 fi
@@ -422,7 +426,7 @@ else
 fi
 
 # set charging current - first charging point
-if [[ $points == "all" ]] || [[ $points == "m" ]]; then
+if [[ $points == "all" ]] || [[ $points == "m" ]] || [[ $points == "1" ]]; then
 		evseip=$evseiplp1
 		ipevseid=$evseidlp1
 
@@ -442,7 +446,7 @@ fi
 
 # set charging current - second charging point
 if [[ $lastmanagement == "1" ]]; then
-	if [[ $points == "all" ]] || [[ $points == "s1" ]]; then
+	if [[ $points == "all" ]] || [[ $points == "s1" ]] || [[ $points == "2" ]]; then
 		evsecon=$evsecons1
 		dacregister=$dacregisters1
 		modbusevsesource=$evsesources1
@@ -478,7 +482,7 @@ fi
 
 # set charging current - third charging point
 if [[ $lastmanagements2 == "1" ]]; then
-	if [[ $points == "all" ]] || [[ $points == "s2" ]]; then
+	if [[ $points == "all" ]] || [[ $points == "s2" ]] || [[ $points == "3" ]]; then
 		evsecon=$evsecons2
 		dacregister=$dacregisters2
 		modbusevsesource=$evsesources2
