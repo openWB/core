@@ -829,8 +829,8 @@ loadvars(){
 	#Wattbezug
 	#wattbezugmodul=manual
 	if [[ $wattbezugmodul != "none" ]]; then
-		#wattbezug=$(modules/$wattbezugmodul/main.sh || true)
-		wattbezug=$(curl -s 192.168.40.248/openWB/ramdisk/wattbezug)
+		wattbezug=$(modules/$wattbezugmodul/main.sh || true)
+		#wattbezug=$(curl -s 192.168.40.248/openWB/ramdisk/wattbezug)
 		if ! [[ $wattbezug =~ $re ]] ; then
 			wattbezug="0"
 		fi
@@ -855,19 +855,19 @@ loadvars(){
 		fi
 		#uberschuss zur berechnung
 		uberschuss=$(printf "%.0f\n" $((-wattbezug)))
-		if [[ $speichervorhanden == "1" ]]; then
-			if [[ $speicherpveinbeziehen == "1" ]]; then
-				if (( speicherleistung > 0 )); then
-					if (( speichersoc > speichersocnurpv )); then
-						speicherww=$((speicherleistung + speicherwattnurpv))
-						uberschuss=$((uberschuss + speicherww))
-					else
-						speicherww=$((speicherleistung - speichermaxwatt))
-						uberschuss=$((uberschuss + speicherww))
-					fi
-				fi
-			fi
-		fi
+		#if [[ $speichervorhanden == "1" ]]; then
+		#	if [[ $speicherpveinbeziehen == "1" ]]; then
+		#		if (( speicherleistung > 0 )); then
+		#			if (( speichersoc > speichersocnurpv )); then
+		#				speicherww=$((speicherleistung + speicherwattnurpv))
+		#				uberschuss=$((uberschuss + speicherww))
+		#			else
+		#				speicherww=$((speicherleistung - speichermaxwatt))
+		#				uberschuss=$((uberschuss + speicherww))
+		#			fi
+		#		fi
+		#	fi
+		#fi
 		evua1=$(cat /var/www/html/openWB/ramdisk/bezuga1)
 		evua2=$(cat /var/www/html/openWB/ramdisk/bezuga2)
 		evua3=$(cat /var/www/html/openWB/ramdisk/bezuga3)
@@ -877,15 +877,15 @@ loadvars(){
 		[[ $evua1 =~ $re ]] || evua1="0"
 		[[ $evua2 =~ $re ]] || evua2="0"
 		[[ $evua3 =~ $re ]] || evua3="0"
-		evuas=($evua1 $evua2 $evua3)
-		maxevu=${evuas[0]}
-		lowevu=${evuas[0]}
-		for v in "${evuas[@]}"; do
-			if (( v < lowevu )); then lowevu=$v; fi;
-			if (( v > maxevu )); then maxevu=$v; fi;
-		done
-		schieflast=$(( maxevu - lowevu ))
-		echo $schieflast > /var/www/html/openWB/ramdisk/schieflast
+		#evuas=($evua1 $evua2 $evua3)
+		#maxevu=${evuas[0]}
+		#lowevu=${evuas[0]}
+		#for v in "${evuas[@]}"; do
+		#	if (( v < lowevu )); then lowevu=$v; fi;
+		#	if (( v > maxevu )); then maxevu=$v; fi;
+		#done
+		#schieflast=$(( maxevu - lowevu ))
+		#echo $schieflast > /var/www/html/openWB/ramdisk/schieflast
 		mosquitto_pub -r -t "openWB/counter/0/get/current" -m "[$evua1,$evua2,$evua3]"
 	else
 		uberschuss=$((-pvwatt - hausbezugnone - ladeleistung))

@@ -1,20 +1,24 @@
 #!/bin/bash
 
 
-power=$(curl --connect-timeout 10 -s $1)
+wattwr=$(curl --connect-timeout 10 -s $wr_http_w_url)
 
 re='^-?[0-9]+$'
 
-if ! [[ $power =~ $re ]] ; then
+if ! [[ $wattwr =~ $re ]] ; then
 	   wattwr="0"
 fi
-if (( power > 3 )); then
-	power=$(( power * -1 ))
+if (( wattwr > 3 )); then
+	wattwr=$(( wattwr * -1 ))
 fi
-echo $power
+echo $wattwr
+echo $wattwr > /var/www/html/openWB/ramdisk/pvwatt
 
-if [[ $2 != "none" ]]; then
-	echo $(curl --connect-timeout 5 -s $2)
+if [[ $wr_http_kwh_url != "none" ]]; then
+	ekwh=$(curl --connect-timeout 5 -s $wr_http_kwh_url)
+	echo $ekwh > /var/www/html/openWB/ramdisk/pvkwh
+	pvkwhk=$(echo "scale=3;$ekwh / 1000" |bc)
+	echo $pvkwhk > /var/www/html/openWB/ramdisk/pvkwhk
 fi
 
 
