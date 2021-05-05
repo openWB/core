@@ -36,6 +36,7 @@ def get_ev_to_rfid(rfid):
                         return data.ev_data[vehicle].ev_num
             except Exception as e:
                 log.exception_logging(e)
+                return data.ev_data[0].ev_num
     else:
         return None
 
@@ -129,6 +130,7 @@ class ev():
             return state, message, mode_changed
         except Exception as e:
             log.exception_logging(e)
+            return False, "ein interner Fehler aufgetreten ist.", True
 
     def get_soc(self):
         """ermittelt den SoC, wenn die Zugangsdaten konfiguriert sind.
@@ -167,6 +169,7 @@ class ev():
             return required_current
         except Exception as e:
             log.exception_logging(e)
+            return 0
 
     def check_min_max_current_for_pv_charging(self, required_current, phases):
         """ prüft, ob der gesetzte Ladestrom über dem Mindest-Ladestrom des Lademdous und unter dem Maximal-Ladestrom des EVs liegt. Falls nicht, wird der 
@@ -197,6 +200,7 @@ class ev():
             return required_current
         except Exception as e:
             log.exception_logging(e)
+            return 0
 
     def auto_phase_switch(self, current, phases_to_use, current_get):
         """ prüft, ob ein Timer für die Phasenumschaltung gestartet oder gestoppt werden muss oder ein Timer für die Phasenumschaltung abgelaufen ist.
@@ -286,6 +290,7 @@ class ev():
             return phases_to_use, current
         except Exception as e:
             log.exception_logging(e) 
+            return phases_to_use, current
 
     def reset_phase_switch(self):
         """ Zurücksetzen der Zeitstempel und reservierten Leistung.
@@ -354,6 +359,7 @@ class chargeTemplate():
                 return 0, "stop", message
         except Exception as e:
             log.exception_logging(e)
+            return 0, "stop", "da ein interner Fehler aufgetreten ist."
 
     def instant_charging(self, soc, amount):
         """ prüft, ob die Lademengenbegrenzung erreicht wurde und setzt entsprechend den Ladestrom.
@@ -389,6 +395,7 @@ class chargeTemplate():
                     return 0, "stop", message
         except Exception as e:
             log.exception_logging(e)
+            return 0, "stop", "da ein interner Fehler aufgetreten ist."
 
     def pv_charging(self, soc):
         """ prüft, ob Min-oder Max-Soc erreicht wurden und setzt entsprechend den Ladestrom.
@@ -422,6 +429,7 @@ class chargeTemplate():
                 return 0, "stop", message
         except Exception as e:
             log.exception_logging(e)
+            return 0, "stop", "da ein interner Fehler aufgetreten ist."
 
     def scheduled_charging(self, soc, ev_template):
         """ prüft, ob der Ziel-SoC erreicht wurde und stellt den zur Erreichung nötigen Ladestrom ein.
@@ -495,7 +503,8 @@ class chargeTemplate():
                 message = "da keine Ziel-Termine konfiguriert sind."
                 return 0, "scheduled_charging", message
         except Exception as e:
-                    log.exception_logging(e)
+            log.exception_logging(e)
+            return 0, "stop", "da ein interner Fehler aufgetreten ist."
 
     def standby(self):
         """ setzt den benötigten Strom auf 0.

@@ -75,10 +75,37 @@ class chargepoint():
         self.cp_num = index
         self.data["set"] = {}
         self.data["set"]["autolock_state"] = 0
+        self.set_current_prev = 0 # set current aus dem vorherigen Zyklus, um zu wissen, ob am Ende des Zyklus die Ladung freigegeben wird (für Control-Pilot-Unterbrechung)
         pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/current", 0)
         pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/autolock_state", 0)
         pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/charging_ev", -1)
         pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/energy_to_charge", 0)
+
+    def _is_grid_protection_active(self):
+        """ prüft, ob der Netzschutz aktiv ist und alle LP gestoppt werden müssen.
+
+        Return
+        ------
+        state: bool
+            ist Netzschutz aktiv
+        message: str
+            Text, dass geladen werden kann oder warum nicht geladen werden kann.
+        """
+        try:
+            if data.general_data["general"].data["grid_protection_configured"] == True:
+                if data.general_data["general"].data["grid_protection_active"] == False:
+                    state = False
+                    message = "Ladung an LP"+self.cp_num+" moeglich."
+                else:
+                    state = True
+                    message = "LP"+self.cp_num+" gesperrt, da der Netzschutz aktiv ist."
+            else:
+                state = False
+                message = "Ladung an LP"+self.cp_num+" moeglich."
+            return state, message
+        except Exception as e:
+            log.exception_logging(e)
+            return True, "Keine Ladung an LP"+self.cp_num+", da ein interner Fehler aufgetreten ist."
 
     def _is_cp_available(self):
         """ prüft, ob sich der LP in der vorgegebenen Zeit zurückgemeldet hat.
@@ -175,17 +202,21 @@ class chargepoint():
         None: Ladepunkt nicht verfügbar
         """
         try:
+            # Für Control-Pilot-Unterbrechung set current merken.
+            self.set_current_prev = self.data["set"]["current"]
             message = "Keine Ladung an LP"+self.cp_num+", da ein Fehler aufgetreten ist."
             charging_possbile = False
-            state, message = self._is_cp_available()
-            if state == True:
-                state, message = self._is_manual_lock_active()
-                if state == False:
-                    state, message = self._is_ev_plugged()
-                    if state == True:
-                        state, message = self._is_autolock_active()
-                        if state == False:
-                            charging_possbile = True
+            state, message = self._is_grid_protection_active()
+            if state == False:
+                state, message = self._is_cp_available()
+                if state == True:
+                    state, message = self._is_manual_lock_active()
+                    if state == False:
+                        state, message = self._is_ev_plugged()
+                        if state == True:
+                            state, message = self._is_autolock_active()
+                            if state == False:
+                                charging_possbile = True
                     
             if charging_possbile == True:
                 return self.template.get_ev(self.data["get"]["rfid"], self.cp_num), message
@@ -214,14 +245,13 @@ class chargepoint():
         """
         try:
             charging_ev = self.data["set"]["charging_ev"]
-            # War die Ladung pausiert?
-            if self.data["get"]["charge_state"] == False:
-                # Ist Control Pilot-Unterbrechung hardwareseitig möglich und ist die Control Pilot-Unterbrechung für das EV erforderlich?
-                if self.data["config"]["control_pilot_interruption_hw"] == True and charging_ev.ev_template.data["control_pilot_interruption"] == True:
-                # 50s warten bis CP-Skript aufgerufen wird?
-                    #self.perform_control_pilot_interruption(charging_ev.ev_template.data["control_pilot_interruption_duration"])
-                    pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/perform_control_pilot_interruption", True)
-                    log.message_debug_log("debug", "# Control-Pilot-Unterbrechung an LP"+str(self.cp_num)+" fuer "+charging_ev.ev_template.data["control_pilot_interruption_duration"]+"s durchfuehren.")
+            # Unterstützt der LP die CP-Unterbrechung und benötigt das Auto eine CP-Unterbrechung?
+            if self.data["config"]["control_pilot_interruption_hw"] == True and charging_ev.ev_template.data["control_pilot_interruption"] == True:
+                # Wird die Ladung gestartet?
+                if self.set_current_prev == 0 and self.data["set"]["current"] != 0:
+                    self.data["set"]["perform_control_pilot_interruption"] = charging_ev.ev_template.data["control_pilot_interruption_duration"]
+                    pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/perform_control_pilot_interruption", charging_ev.ev_template.data["control_pilot_interruption_duration"])
+                    log.message_debug_log("debug", "Control-Pilot-Unterbrechung an LP"+str(self.cp_num)+" fuer "+charging_ev.ev_template.data["control_pilot_interruption_duration"]+"s angestoßen.")
         except Exception as e:
             log.exception_logging(e)
 
@@ -328,7 +358,7 @@ class cpTemplate():
                 return False
         except Exception as e:
             log.exception_logging(e)
-            return True
+            return False
 
     def autolock_manual_disabling(self, topic_path):
         """ aktuelles Autolock wird außer Kraft gesetzt.
@@ -389,3 +419,4 @@ class cpTemplate():
             return ev_num
         except Exception as e:
             log.exception_logging(e)
+            return ev_num

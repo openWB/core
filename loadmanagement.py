@@ -72,6 +72,7 @@ def loadmanagement_for_cp(chargepoint, required_power, required_current, phases)
         return loadmanagement_all_conditions, overloaded_counters
     except Exception as e:
         log.exception_logging(e)
+        return False, None
 
 def loadmanagement_for_counters():
     """ überprüft bei allen Zählern, ob die Maximal-Werte eingehalten werden.
@@ -95,18 +96,20 @@ def loadmanagement_for_counters():
         return loadmanagement_all_conditions, overloaded_counters
     except Exception as e:
         log.exception_logging(e)
+        return False, None
 
 def perform_loadmanagement(counter):
     """ gibt eine Liste der Ladepunkte, die in den folgenden Zweigen des Zählers sind, zurück.
+
+    Parameter
+    ---------
+    counter: str
+        Zähler, dessen Lp ermittelt werden sollen.
 
     Return
     ------
     chargepoints: list
         Ladepunkte, die in den folgenden Zweigen des Zählers sind
-    max_current_overshoot: float
-        Größte Überlastung
-    max_overshoot_phase: int
-        Phase, in der die größte Überlastung auftritt
     """
     global chargepoints
     chargepoints.clear()
@@ -119,6 +122,7 @@ def perform_loadmanagement(counter):
         return chargepoints
     except Exception as e:
         log.exception_logging(e)
+        return None
 
 def get_overloaded_counters():
     return overloaded_counters
@@ -157,6 +161,7 @@ def _check_all_intermediate_counters(child):
             return False
     except Exception as e:
         log.exception_logging(e)
+        return False
 
 def _get_counters_to_check(chargepoint):
     """ ermittelt alle Zähler, die für das Lastmanagement des angegebenen Ladepunkts relevant sind.
@@ -177,6 +182,7 @@ def _get_counters_to_check(chargepoint):
         return counters
     except Exception as e:
         log.exception_logging(e)
+        return None
 
 def _look_for_object(child, object, num):
     """ Rekursive Funktion, die alle Zweige durchgeht, bis der entsprechende Ladepunkt gefunden wird und dann alle Zähler in diesem Pfad der Liste anhängt.
@@ -221,6 +227,7 @@ def _look_for_object(child, object, num):
             return False
     except Exception as e:
         log.exception_logging(e)
+        return False
 
 def _get_all_cp_connected_to_counter(child):
     """ Rekursive Funktion, die alle Ladepunkte ermittelt, die an den angegebenen Zähler angeschlossen sind.
@@ -294,6 +301,7 @@ def _loadmanagement_for_evu(required_power, required_current_phases, phases, off
         return loadmanagement_all_conditions
     except Exception as e:
         log.exception_logging(e)
+        return False
 
 def _check_max_power(required_power, offset):
     """ prüft, dass die maximale Leistung nicht überschritten wird.
@@ -323,6 +331,7 @@ def _check_max_power(required_power, offset):
             return True, data.counter_data["counter0"].data["set"]["consumption_left"] - 300
     except Exception as e:
         log.exception_logging(e)
+        return 0, False
 
 def _check_max_current(counter, required_current_phases, phases, offset):
     """ prüft, ob die maximale Stromstärke aller Phasen eingehalten wird.
@@ -373,6 +382,7 @@ def _check_max_current(counter, required_current_phases, phases, offset):
         return loadmanagement, max_current_overshoot + (300 / 230 / phases), current_used.index(max(current_used))
     except Exception as e:
         log.exception_logging(e)
+        return False, 0, 0
 
 def _check_unbalanced_load(current_used, offset):
     """ prüft, ob die Schieflastbegrenzug aktiv ist und ob diese eingehalten wird.
@@ -410,3 +420,4 @@ def _check_unbalanced_load(current_used, offset):
                 return True, max_current_overshoot + 1, current_used.index(max_current)+1
     except Exception as e:
         log.exception_logging(e)
+        return False, 0, 0
