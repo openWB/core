@@ -81,6 +81,32 @@ class chargepoint():
         pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/charging_ev", -1)
         pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/energy_to_charge", 0)
 
+    def _is_grid_protection_active(self):
+        """ prüft, ob der Netzschutz aktiv ist und alle LP gestoppt werden müssen.
+
+        Return
+        ------
+        state: bool
+            ist Netzschutz aktiv
+        message: str
+            Text, dass geladen werden kann oder warum nicht geladen werden kann.
+        """
+        try:
+            if data.general_data["general"].data["grid_protection_configured"] == True:
+                if data.general_data["general"].data["grid_protection_active"] == False:
+                    state = False
+                    message = "Ladung an LP"+self.cp_num+" moeglich."
+                else:
+                    state = True
+                    message = "LP"+self.cp_num+" gesperrt, da der Netzschutz aktiv ist."
+            else:
+                state = False
+                message = "Ladung an LP"+self.cp_num+" moeglich."
+            return state, message
+        except Exception as e:
+            log.exception_logging(e)
+            return True, "Keine Ladung an LP"+self.cp_num+", da ein interner Fehler aufgetreten ist."
+
     def _is_cp_available(self):
         """ prüft, ob sich der LP in der vorgegebenen Zeit zurückgemeldet hat.
 
@@ -180,15 +206,17 @@ class chargepoint():
             self.set_current_prev = self.data["set"]["current"]
             message = "Keine Ladung an LP"+self.cp_num+", da ein Fehler aufgetreten ist."
             charging_possbile = False
-            state, message = self._is_cp_available()
-            if state == True:
-                state, message = self._is_manual_lock_active()
-                if state == False:
-                    state, message = self._is_ev_plugged()
-                    if state == True:
-                        state, message = self._is_autolock_active()
-                        if state == False:
-                            charging_possbile = True
+            state, message = self._is_grid_protection_active()
+            if state == False:
+                state, message = self._is_cp_available()
+                if state == True:
+                    state, message = self._is_manual_lock_active()
+                    if state == False:
+                        state, message = self._is_ev_plugged()
+                        if state == True:
+                            state, message = self._is_autolock_active()
+                            if state == False:
+                                charging_possbile = True
                     
             if charging_possbile == True:
                 return self.template.get_ev(self.data["get"]["rfid"], self.cp_num), message
