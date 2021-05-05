@@ -57,7 +57,7 @@ def pub_settings():
 
     # ev1
     pub.pub("openWB/vehicle/1/charge_template", 1)
-    pub.pub("openWB/vehicle/1/ev_template", 2)
+    pub.pub("openWB/vehicle/1/ev_template", 1)
     pub.pub("openWB/vehicle/1/name", "m3p")
     pub.pub("openWB/vehicle/1/soc/config/configured", True)
     pub.pub("openWB/vehicle/1/soc/config/manual", False)
@@ -105,7 +105,8 @@ def pub_settings():
         'average_consump': 5, 
         'max_phases': 3, 
         'max_current_multi_phases': 16, 
-        'control_pilot_interruption': False,
+        'control_pilot_interruption': True,
+        'control_pilot_interruption_duration': 4,
         'nominal_difference': 2
         }
     pub.pub("openWB/vehicle/template/ev_template/1", evt1)
@@ -219,7 +220,7 @@ def pub_settings():
     pub.pub("openWB/general/chargemode_config/pv_charging/switch_on_threshold", 1500)
     pub.pub("openWB/general/chargemode_config/pv_charging/feed_in_yield", 15000)
     pub.pub("openWB/general/chargemode_config/pv_charging/phase_switch_delay", 1)
-    pub.pub("openWB/general/chargemode_config/pv_charging/phases_to_use", 3)
+    pub.pub("openWB/general/chargemode_config/pv_charging/phases_to_use", 1)
     pub.pub("openWB/general/chargemode_config/scheduled_charging/phases_to_use", 1)
     pub.pub("openWB/general/chargemode_config/time_charging/phases_to_use", 1)
     pub.pub("openWB/general/chargemode_config/standby/phases_to_use", 1)
