@@ -447,10 +447,10 @@
 									</div>
 									<div class="col-md-8 btn-group btn-group-toggle chargepoint-chargemode" data-toggle="buttons" data-name="chargemode" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/selected">
 										<label class="btn btn-outline-danger btn-toggle">
-											<input type="radio" name="chargemode" data-option="instant_charge">Sofortladen
+											<input type="radio" name="chargemode" data-option="instant_charging">Sofortladen
 										</label>
 										<label class="btn btn-outline-success btn-toggle">
-											<input type="radio" name="chargemode" data-option="pv_charge">PV
+											<input type="radio" name="chargemode" data-option="pv_charging">PV
 										</label>
 										<label class="btn btn-outline-primary btn-toggle">
 											<input type="radio" name="chargemode" data-option="scheduled_charging">Zielladen

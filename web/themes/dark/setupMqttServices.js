@@ -241,7 +241,7 @@ client.onMessageArrived = function (message) {
 function publish(payload, topic) {
 	console.log("publish: "+topic+": "+payload);
 	if ( topic != undefined ) {
-		var message = new Messaging.Message(payload);
+		var message = new Messaging.Message(JSON.stringify(payload));
 		message.destinationName = topic;
 		message.qos = 2;
 		message.retained = true;
