@@ -166,8 +166,6 @@ class prepare():
         """ ermittelt, ob Überschuss am Speicher verfügbar ist.
         """
         try:
-            if "all" not in data.bat_module_data:
-                log.message_debug_log("eror", "Keine allgemeinen Daten für Hausspeicher.")
             data.bat_module_data["all"].setup_bat()
         except Exception as e:
                 log.exception_logging(e)

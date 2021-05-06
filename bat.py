@@ -26,12 +26,6 @@ class bat:
         self.data["config"]["configured"] = False
         self.data["set"]["charging_power_left"] = 0
         self.data["set"]["switch_on_soc_reached"] = 0
-        # Falls dazu schon Werte existieren, werden diese im weiteren Verlauf von subdata.py überschrieben.
-        self.data["get"]["power"] = 0
-        self.data["get"]["imported"] = 0
-        self.data["get"]["exported"] = 0
-        self.data["get"]["daily_yield_export"] = 0
-        self.data["get"]["daily_yield_import"] = 0
 
     def setup_bat(self):
         try:
@@ -42,6 +36,11 @@ class bat:
                 # Summe für alle konfigurierten Speicher bilden
                 soc_sum = 0
                 soc_count = 0
+                self.data["get"]["power"] = 0
+                self.data["get"]["imported"] = 0
+                self.data["get"]["exported"] = 0
+                self.data["get"]["daily_yield_export"] = 0
+                self.data["get"]["daily_yield_import"] = 0
                 for bat in data.bat_module_data:
                     if "bat" in bat:
                         self.data["get"]["power"] += data.bat_module_data[bat].data["get"]["power"]
