@@ -46,15 +46,15 @@ function createChargepoint(hierarchy) {
 			if ( typeof chargepointIndex !== 'undefined' && chargepointIndex != 1 ) {
 				// console.log("creating chargepoint "+chargepointIndex);
 				var sourceElement = $('.chargepoint-card[data-cp=1]');
-				// remove checkbox toggle button style as they are buggy and events will not be copied
+				// remove checkbox toggle button style as they will not function after cloning
 				sourceElement.find('input[type=checkbox][data-toggle^=toggle]').bootstrapToggle('destroy');
-				var clonedElement = sourceElement.clone(true);
+				var clonedElement = sourceElement.clone();
 				// recreate checkbox toggle button styles in source element
 				sourceElement.find('input[type=checkbox][data-toggle^=toggle]').bootstrapToggle();
 				// update all data referencing the old index in our clone
 				clonedElement.attr('data-cp', chargepointIndex).data('cp', chargepointIndex);
-				clonedElement.find('.card-header').attr('data-target', '#collapseChargepoint'+chargepointIndex).data('target', '#collapseChargepoint'+chargepointIndex);
-				clonedElement.find('.card-body').attr('id', 'collapseChargepoint'+chargepointIndex);
+				clonedElement.find('.card-header').attr('data-target', '#collapseChargepoint'+chargepointIndex).data('target', '#collapseChargepoint'+chargepointIndex).addClass('collapsed');
+				clonedElement.find('.card-body').attr('id', 'collapseChargepoint'+chargepointIndex).removeClass('show');
 				clonedElement.find('label[for=minCurrentPvCp1]').attr('for', 'minCurrentPvCp'+chargepointIndex);
 				clonedElement.find('#minCurrentPvCp1').attr('id', 'minCurrentPvCp'+chargepointIndex);
 				clonedElement.find('label[for=minSocPvCp1]').attr('for', 'minSocPvCp'+chargepointIndex);
@@ -63,7 +63,6 @@ function createChargepoint(hierarchy) {
 				clonedElement.find('#maxSocPvCp1').attr('id', 'maxSocPvCp'+chargepointIndex);
 				clonedElement.find('label[for=minSocCurrentPvCp1]').attr('for', 'minSocCurrentPvCp'+chargepointIndex);
 				clonedElement.find('#minSocCurrentPvCp1').attr('id', 'minSocCurrentPvCp'+chargepointIndex);
-
 				clonedElement.find('label[for=currentInstantChargeCp1]').attr('for', 'currentInstantChargeCp'+chargepointIndex);
 				clonedElement.find('#currentInstantChargeCp1').attr('id', 'currentInstantChargeCp'+chargepointIndex);
 				clonedElement.find('label[for=limitInstantChargeCp1]').attr('for', 'limitInstantChargeCp'+chargepointIndex);
@@ -171,7 +170,7 @@ function processGlobalCounterMessages(mqttmsg, mqttpayload) {
 		// first remove all chargepoints exept the first
 		$('.chargepoint-card[data-cp]').not('[data-cp=1]').remove();
 		// now create any other chargepoint
-		var hierarchy = $.parseJSON(mqttpayload);
+		var hierarchy = JSON.parse(mqttpayload);
 		createChargepoint(hierarchy[0]);
 		// subscribe to other topics
 		topicsToSubscribe.forEach((topic) => {
@@ -430,20 +429,20 @@ function processChargepointMessages(mqttmsg, mqttpayload) {
 		var index = getIndex(mqttmsg);  // extract number between two / /
 		var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent row element for charge point
 		var element = parent.find('.chargepoint-name');  // now get parents respective child element
-		$(element).text($.parseJSON(mqttpayload));
+		$(element).text(JSON.parse(mqttpayload));
 	}
 	else if ( mqttmsg.match( /^openwb\/chargepoint\/[1-9][0-9]*\/get\/state_str$/i ) ) {
 		var index = getIndex(mqttmsg);  // extract number between two / /
 		var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent row element for charge point
 		var element = parent.find('.chargepoint-statestr');  // now get parents respective child element
-		element.text($.parseJSON(mqttpayload));
+		element.text(JSON.parse(mqttpayload));
 	}
 	else if ( mqttmsg.match( /^openwb\/chargepoint\/[1-9][0-9]*\/get\/fault_str$/i ) ) {
 		// console.log("fault str");
 		var index = getIndex(mqttmsg);  // extract number between two / /
 		var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent row element for charge point
 		var element = parent.find('.chargepoint-faultstr');  // now get parents respective child element
-		element.text($.parseJSON(mqttpayload));
+		element.text(JSON.parse(mqttpayload));
 	}
 	else if ( mqttmsg.match( /^openwb\/chargepoint\/[1-9][0-9]*\/get\/fault_state$/i ) ) {
 		// console.log("fault state");
@@ -579,7 +578,7 @@ function processChargepointMessages(mqttmsg, mqttpayload) {
 	else if ( mqttmsg.match( /^openwb\/chargepoint\/[1-9][0-9]*\/get\/connected_vehicle\/soc$/i ) ) {
 		// { "soc", "range", "range_unit", "timestamp", "fault_stat", "fault_str" }
 		var index = getIndex(mqttmsg);  // extract number between two / /
-		var socData = $.parseJSON(mqttpayload);
+		var socData = JSON.parse(mqttpayload);
 		var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent row element for charge point
 		// "soc" float unit: %
 		var element = parent.find('.chargepoint-soc');  // now get parents respective child element
@@ -598,7 +597,7 @@ function processChargepointMessages(mqttmsg, mqttpayload) {
 	}
 	else if ( mqttmsg.match( /^openwb\/chargepoint\/[1-9][0-9]*\/get\/connected_vehicle\/soc_config$/i ) ) {
 		// { "socconfigured", "manual" }
-		var configData = $.parseJSON(mqttpayload);
+		var configData = JSON.parse(mqttpayload);
 		var index = getIndex(mqttmsg);  // extract number between two / /
 		var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent row element for charge point
 		// "socconfigured" bool
@@ -626,7 +625,7 @@ function processChargepointMessages(mqttmsg, mqttpayload) {
 		// info of the vehicle if connected
 		// { "id", "name" }
 		var index = getIndex(mqttmsg);  // extract number between two / /
-		var infoData = $.parseJSON(mqttpayload);
+		var infoData = JSON.parse(mqttpayload);
 		var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent row element for charge point
 		// "id" int
 		parent.find('.chargepoint-vehicleselect').val(infoData.id);  // set selectBox to received id
@@ -638,7 +637,7 @@ function processChargepointMessages(mqttmsg, mqttpayload) {
 		// settings of the vehicle if connected
 		// { "charge_template", "ev_template", "chargemode", "priority", "average_consumption" }
 		var index = getIndex(mqttmsg);  // extract number between two / /
-		var configData = $.parseJSON(mqttpayload);
+		var configData = JSON.parse(mqttpayload);
 		var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent row element for charge point
 		// "charge_template" int
 		parent.attr('data-chargetemplate', configData.charge_template).data('chargetemplate', configData.charge_template);
@@ -773,9 +772,9 @@ function processVehicleMessages(mqttmsg, mqttpayload) {
 		$('.chargepoint-vehicleselect').each(function(){
 			myOption = $(this).find('option[value='+index+']');
 			if( myOption.length > 0 ){
-				myOption.text($.parseJSON(mqttpayload));  // update vehicle name if option with index is present
+				myOption.text(JSON.parse(mqttpayload));  // update vehicle name if option with index is present
 			} else {
-				$(this).append('<option value="'+index+'">'+$.parseJSON(mqttpayload)+'</option>');  // add option with index
+				$(this).append('<option value="'+index+'">'+JSON.parse(mqttpayload)+'</option>');  // add option with index
 				if( parseInt($(this).closest('.chargepoint-vehicledata[data-ev]').data('ev')) == index) { // update selected element if match with our index
 					$(this).val(index);
 				}
@@ -785,7 +784,7 @@ function processVehicleMessages(mqttmsg, mqttpayload) {
 	else if ( mqttmsg.match( /^openwb\/vehicle\/template\/charge_template\/[1-9][0-9]*$/i ) ) {
 		// console.log("charge_template");
 		templateIndex = mqttmsg.match( /[1-9][0-9]*$/i );
-		chargemodeTemplate[templateIndex] = $.parseJSON(mqttpayload);
+		chargemodeTemplate[templateIndex] = JSON.parse(mqttpayload);
 		refreshChargetemplate(templateIndex);
 	}
 }
