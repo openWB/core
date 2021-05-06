@@ -480,7 +480,7 @@
 								</div>
 								<div class="chargepoint-chargemodeoptions mb-0 hide">
 									<hr>
-									<div class="chargemode-options chargemode-option-instant_charge">
+									<div class="chargemode-options chargemode-option-instant_charging">
 										<h3>Einstellungen für "Sofortladen"</h3>
 										<div class="form-row vaRow mb-0">
 											<div class="col">
@@ -540,7 +540,7 @@
 											</div>
 										</div>
 									</div>
-									<div class="chargemode-options chargemode-option-pv_charge">
+									<div class="chargemode-options chargemode-option-pv_charging">
 										<h3 c>Einstellungen für "PV"</h3>
 										<div class="form-row mb-1">
 											<div class="col">
