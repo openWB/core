@@ -203,7 +203,10 @@ class chargepoint():
         """
         try:
             # Für Control-Pilot-Unterbrechung set current merken.
-            self.set_current_prev = self.data["set"]["current"]
+            if "current" not in self.data["set"]:
+                self.set_current_prev = 0
+            else:
+                self.set_current_prev = self.data["set"]["current"]
             message = "Keine Ladung an LP"+self.cp_num+", da ein Fehler aufgetreten ist."
             charging_possbile = False
             state, message = self._is_grid_protection_active()

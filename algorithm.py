@@ -116,11 +116,12 @@ class control():
                 overloaded_counters = sorted(overloaded_counters.items(), key=lambda e: e[1][1], reverse = True)
                 n = 0 # Zähler, der betrachtet werden soll
                 # set current auf den maximalen get current stellen, damit der tatsächlich genutzte Strom reduziert wird und nicht der maximal nutzbare, 
-                # der ja evtl gar nicht voll ausgenutzt wird, sodass die Reduzierung wirkungslos wäre. Außerdem bleibt get current während des Zyklus unverändert,
-                # während set current in den verschiedenen Phasen immer wieder angepasst werden kann.
+                # der ja evtl gar nicht voll ausgenutzt wird, sodass die Reduzierung wirkungslos wäre. 
+                # Wenn set current bereits reduziert wurde, darf es nicht wieder hochgesetzt werden.
                 for cp in data.cp_data:
                     if "cp" in cp:
-                        data.cp_data[cp].data["set"]["current"] = max(data.cp_data[cp].data["get"]["current"])
+                        if data.cp_data[cp].data["set"]["current"] > max(data.cp_data[cp].data["get"]["current"]):
+                            data.cp_data[cp].data["set"]["current"] = max(data.cp_data[cp].data["get"]["current"])
                 while True:
                     chargepoints = loadmanagement.perform_loadmanagement(overloaded_counters[n][0])
                     overshoot = overloaded_counters[n][1][0]
