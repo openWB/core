@@ -26,7 +26,12 @@ class bat:
         self.data["config"]["configured"] = False
         self.data["set"]["charging_power_left"] = 0
         self.data["set"]["switch_on_soc_reached"] = 0
+        # Falls dazu schon Werte existieren, werden diese im weiteren Verlauf von subdata.py überschrieben.
         self.data["get"]["power"] = 0
+        self.data["get"]["imported"] = 0
+        self.data["get"]["exported"] = 0
+        self.data["get"]["daily_yield_export"] = 0
+        self.data["get"]["daily_yield_import"] = 0
 
     def setup_bat(self):
         try:
@@ -34,6 +39,21 @@ class bat:
                 if "all" not in data.bat_module_data:
                     data.bat_module_data["all"] = {}
                 self.data["config"]["configured"] = True
+                # Summe für alle konfigurierten Speicher bilden
+                soc_sum = 0
+                soc_count = 0
+                for bat in data.bat_module_data:
+                    if "bat" in bat:
+                        self.data["get"]["power"] += data.bat_module_data[bat].data["get"]["power"]
+                        self.data["get"]["imported"] += data.bat_module_data[bat].data["get"]["imported"]
+                        self.data["get"]["exported"] += data.bat_module_data[bat].data["get"]["exported"]
+                        self.data["get"]["daily_yield_export"] += data.bat_module_data[bat].data["get"]["daily_yield_export"]
+                        self.data["get"]["daily_yield_import"] += data.bat_module_data[bat].data["get"]["daily_yield_import"]
+                        soc_sum += data.bat_module_data[bat].data["get"]["soc"]
+                        soc_count += 1
+                self.data["get"]["soc"] = int(soc_sum / soc_count)
+                # Alle Summentopics im Dict publishen
+                {pub.pub("openWB/set/bat/get/"+k, v)for (k,v) in self.data["get"].items()}
                 # Speicher lädt
                 if self.data["get"]["power"] > 0:
                    self._get_charging_power_left()
@@ -158,3 +178,8 @@ class bat:
                 log.message_debug_log("debug", str(self.data["set"]["charging_power_left"])+"W Speicher-Leistung , die fuer die folgenden Ladepunkte uebrig ist.")
         except Exception as e:
             log.exception_logging(e)
+
+class batModule:
+
+    def __init__(self):
+        self.data={}

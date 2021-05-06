@@ -33,6 +33,12 @@ class pv():
         self.data["set"]["overhang_power_left"] = 0
         self.data["set"]["available_power"] = 0
         self.data["config"]["configured"] = False
+        # Falls dazu schon Werte existieren, werden diese im weiteren Verlauf von subdata.py überschrieben.
+        self.data["get"]["counter"] = 0
+        self.data["get"]["daily_yield"] = 0
+        self.data["get"]["monthly_yield"] = 0
+        self.data["get"]["yearly_yield"]= 0
+        self.data["get"]["power"] = 0
         self.reset_pv_data()
 
     def calc_power_for_control(self):
@@ -47,6 +53,16 @@ class pv():
         """
         try:
             if len(data.pv_data) > 1:
+                # Summe von allen konfigurierten Modulen
+                for module in data.pv_data:
+                    if "pv" in module:
+                        self.data["get"]["counter"] += data.pv_data[module].data["get"]["counter"]
+                        self.data["get"]["daily_yield"] += data.pv_data[module].data["get"]["daily_yield"]
+                        self.data["get"]["monthly_yield"] += data.pv_data[module].data["get"]["monthly_yield"]
+                        self.data["get"]["yearly_yield"] += data.pv_data[module].data["get"]["yearly_yield"]
+                        self.data["get"]["power"] += data.pv_data[module].data["get"]["power"]
+                # Alle Summentopics im Dict publishen
+                {pub.pub("openWB/set/pv/get/"+k, v)for (k,v) in self.data["get"].items()}
                 self.data["config"]["configured"]=True
                 # aktuelle Leistung an der EVU, enthält die Leistung der Einspeisungsgrenze
                 evu_overhang = data.counter_data["counter0"].data["get"]["power_all"] * (-1)
@@ -305,3 +321,8 @@ class pv():
 
     def print_stats(self):
         log.message_debug_log("debug", str(self.data["set"]["overhang_power_left"])+"W EVU-Ueberschuss, der fuer die Regelung verfuegbar ist, davon "+str(self.data["set"]["reserved_evu_overhang"])+"W fuer die Einschaltverzoegerung reservierte Leistung.")
+
+class pvModule:
+
+    def __init__(self):
+        self.data = {}

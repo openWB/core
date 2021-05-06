@@ -281,7 +281,7 @@ class subData():
             elif re.search("^openWB/pv/[1-9][0-9]*/.+$", msg.topic) != None:
                 index=self.get_index(msg.topic)
                 if "pv"+index not in self.pv_data:
-                    self.pv_data["pv"+index]=pv.pv()
+                    self.pv_data["pv"+index]=pv.pvModule()
                 if re.search("^openWB/pv/[1-9][0-9]*/config/.+$", msg.topic) != None:
                     if "config" not in self.pv_data["pv"+index].data:
                         self.pv_data["pv"+index].data["config"]={}
@@ -328,7 +328,7 @@ class subData():
             elif re.search("^openWB/bat/[1-9][0-9]*/.+$", msg.topic) != None:
                 index=self.get_index(msg.topic)
                 if "bat"+index not in self.bat_module_data:
-                    self.bat_module_data["bat"+index]=bat.bat()
+                    self.bat_module_data["bat"+index]=bat.batModule()
                 if re.search("^openWB/bat/[1-9][0-9]*/config/.+$", msg.topic) != None:
                     if "config" not in self.bat_module_data["bat"+index].data:
                         self.bat_module_data["bat"+index].data["config"]={}
