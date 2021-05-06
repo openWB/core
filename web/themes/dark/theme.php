@@ -820,9 +820,9 @@
 				// load scripts synchronously in order specified
 				var scriptsToLoad = [
 					// load Chart.js library
-					'js/Chart.bundle.min.js',
+					// 'js/Chart.bundle.min.js',
 					// load Chart.js annotation plugin
-					'js/chartjs-plugin-annotation.min.js',
+					// 'js/chartjs-plugin-annotation.min.js',
 					// load mqtt library
 					'js/mqttws31.js',
 					// some helper functions
@@ -830,7 +830,7 @@
 					// functions for processing messages
 					'themes/dark/processAllMqttMsg.js?ver=20210504',
 					// respective Chart.js definition live
-					'themes/dark/livechart.js?ver=20201218',
+					// 'themes/dark/livechart.js?ver=20201218',
 					// respective Chart.js definition
 					// 'themes/dark/electricityPriceChart.js?ver=20210120',
 					// functions performing mqtt and start mqtt-service
