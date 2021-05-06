@@ -81,6 +81,7 @@ def on_connect(client, userdata, flags, rc):
     #client.subscribe("openWB/#", 2)
     client.subscribe("openWB/set/#", 2)
     client.subscribe("openWB/config/set/#", 2)
+    client.subscribe("openWB/chargepoint/+/set/current", 2)
 
 # handle each set topic
 def on_message(client, userdata, msg):
@@ -93,7 +94,15 @@ def on_message(client, userdata, msg):
         file = open('/var/www/html/openWB/ramdisk/mqtt.log', 'a')
         file.write( "%s Topic: %s Message: %s\n" % (timestamp, msg.topic, str(msg.payload.decode("utf-8"))) )
         file.close()
-
+        if (( "openWB/chargepoint" in msg.topic) and ("set/current" in msg.topic)):
+            devicenumb=re.sub(r'\D', '', msg.topic)
+            if ( 1 <= int(devicenumb) <= 1000 and 0 <= float(msg.payload) <= 200):
+                f = open('/var/www/html/openWB/ramdisk/lp'+str(devicenumb)+'tmpcurrent', 'w')
+                f.write(msg.payload.decode("utf-8"))
+                f.close()
+                sendcommand = ["/var/www/html/openWB/runs/set-current.sh", msg.payload.decode("utf-8"), str(devicenumb) ]
+                subprocess.Popen(sendcommand)
+                #client.publish("openWB/chargepoint/"+str(devicenumb)+"/set/current", "", qos=0, retain=True)
         if (( "openWB/set/chargepoint" in msg.topic) and ("get/enabled" in msg.topic)):
             devicenumb=re.sub(r'\D', '', msg.topic)
             if ( 1 <= int(devicenumb) <= 8 and 0 <= int(msg.payload) <= 1):

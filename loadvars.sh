@@ -827,7 +827,7 @@ loadvars(){
 	fi
 
 	#Wattbezug
-	wattbezugmodul=manual
+	#wattbezugmodul=manual
 	if [[ $wattbezugmodul != "none" ]]; then
 		#wattbezug=$(modules/$wattbezugmodul/main.sh || true)
 		wattbezug=$(curl -s 192.168.40.248/openWB/ramdisk/wattbezug)
@@ -868,15 +868,9 @@ loadvars(){
 				fi
 			fi
 		fi
-		evua1=$(curl -s 192.168.40.248/openWB/ramdisk/bezuga1)
-		evua2=$(curl -s 192.168.40.248/openWB/ramdisk/bezuga2)
-		evua3=$(curl -s 192.168.40.248/openWB/ramdisk/bezuga3)
-		echo $evua1 > /var/www/html/openWB/ramdisk/bezuga1
-		echo $evua2 > /var/www/html/openWB/ramdisk/bezuga2
-		echo $evua3 > /var/www/html/openWB/ramdisk/bezuga3
-	#	evua1=$(cat /var/www/html/openWB/ramdisk/bezuga1)
-	#	evua2=$(cat /var/www/html/openWB/ramdisk/bezuga2)
-	#	evua3=$(cat /var/www/html/openWB/ramdisk/bezuga3)
+		evua1=$(cat /var/www/html/openWB/ramdisk/bezuga1)
+		evua2=$(cat /var/www/html/openWB/ramdisk/bezuga2)
+		evua3=$(cat /var/www/html/openWB/ramdisk/bezuga3)
 		evua1=$(echo $evua1 | sed 's/\..*$//')
 		evua2=$(echo $evua2 | sed 's/\..*$//')
 		evua3=$(echo $evua3 | sed 's/\..*$//')
@@ -1733,6 +1727,8 @@ loadvars(){
 	tempPubList="${tempPubList}\nopenWB/system/Uptime=$(uptime)"
 	tempPubList="${tempPubList}\nopenWB/system/Date=$(date)"
 	tempPubList="${tempPubList}\nopenWB/system/Timestamp=${timestamp}"
+	tempPubList="${tempPubList}\nopenWB/chargepoint/1/get/voltage=[${llv1},${llv2},${llv3}]"
+	tempPubList="${tempPubList}\nopenWB/chargepoint/1/get/current=[${lla1},${lla2},${lla3}]"
 	#declare -a pvarray=("speichersocminpv" "speichersochystminpv" "mindestuberschuss" "abschaltuberschuss" "abschaltverzoegerung" "einschaltverzoegerung" "minimalampv" "minimalampv" "minimalalp2pv" "minnurpvsoclp1" "minnurpvsocll" "pvbezugeinspeisung" "offsetpv" "speicherpvui" "speichermaxwatt" "speichersocnurpv" "speicherwattnurpv" "adaptpv" "adaptfaktor")
 	#for val in ${pvarray[@]}; do
 	#	declare o$val
@@ -1745,11 +1741,6 @@ loadvars(){
 	#	fi
 	#done
 	python3 publishvars.py -q 0 -r &
-		evua1=$(curl -s 192.168.40.248/openWB/ramdisk/bezuga1)
-		evua2=$(curl -s 192.168.40.248/openWB/ramdisk/bezuga2)
-		evua3=$(curl -s 192.168.40.248/openWB/ramdisk/bezuga3)
-		echo $evua1 > /var/www/html/openWB/ramdisk/bezuga1
-		echo $evua2 > /var/www/html/openWB/ramdisk/bezuga2
-		echo $evua3 > /var/www/html/openWB/ramdisk/bezuga3
+	echo -e $tempPubList | python3 runs/mqttpub.py -q 0 -r &
 	runs/pub2mqtt.sh &
 }
