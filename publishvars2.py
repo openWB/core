@@ -204,7 +204,7 @@ def pub_settings():
     #pub.pub("openWB/bat/1/config/type", "mqtt")
 
     # general
-    pub.pub("openWB/general/chargemode_config/unbalanced_load", 1)
+    pub.pub("openWB/general/chargemode_config/unbalanced_load", False)
     pub.pub("openWB/general/chargemode_config/unbalanced_load_limit", 18)
     pub.pub("openWB/general/chargemode_config/instant_charging/phases_to_use", 1)
     pub.pub("openWB/general/chargemode_config/pv_charging/bat_prio", 1)

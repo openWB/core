@@ -405,19 +405,21 @@ def _check_unbalanced_load(current_used, offset):
     else:
         offset_current = 0
     try:
-        if data.general_data["general"].data["chargemode_config"]["unbalanced_load"] == True:
-            min_current = min(current_used)
-            if min_current < 0:
-                min_current = 0
-            max_current = max(current_used)
-            if max_current < 0:
-                max_current = 0
-            if (max_current - min_current) <= data.general_data["general"].data["chargemode_config"]["unbalanced_load_limit"] - offset_current:
-                return False, None, 0
-            else:
-                max_current_overshoot = (max_current - min_current) - data.general_data["general"].data["chargemode_config"]["unbalanced_load_limit"]
-                log.message_debug_log("warning", "Schieflast wurde ueberschritten.")
+        min_current = min(current_used)
+        if min_current < 0:
+            min_current = 0
+        max_current = max(current_used)
+        if max_current < 0:
+            max_current = 0
+        if (max_current - min_current) <= data.general_data["general"].data["chargemode_config"]["unbalanced_load_limit"] - offset_current:
+            return False, None, 0
+        else:
+            max_current_overshoot = (max_current - min_current) - data.general_data["general"].data["chargemode_config"]["unbalanced_load_limit"]
+            log.message_debug_log("warning", "Schieflast wurde ueberschritten.")
+            if data.general_data["general"].data["chargemode_config"]["unbalanced_load"] == True:
                 return True, max_current_overshoot + 1, current_used.index(max_current)+1
+            else:
+                return False, None, 0
     except Exception as e:
         log.exception_logging(e)
         return False, 0, 0
