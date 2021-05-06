@@ -918,4 +918,4 @@ function unsubscribeMqttGraphSegments() {
 
 $(document).ready(function(){
 	setTimeout(forcegraphload, 15000);
-})
+});
