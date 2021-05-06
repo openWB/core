@@ -103,6 +103,7 @@ def on_message(client, userdata, msg):
                 sendcommand = ["/var/www/html/openWB/runs/set-current.sh", msg.payload.decode("utf-8"), str(devicenumb) ]
                 subprocess.Popen(sendcommand)
                 #client.publish("openWB/chargepoint/"+str(devicenumb)+"/set/current", "", qos=0, retain=True)
+                setTopicCleared = True
         if (( "openWB/set/chargepoint" in msg.topic) and ("get/enabled" in msg.topic)):
             devicenumb=re.sub(r'\D', '', msg.topic)
             if ( 1 <= int(devicenumb) <= 8 and 0 <= int(msg.payload) <= 1):

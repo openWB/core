@@ -6,6 +6,7 @@ mqttvar["chargepoint/get/power_all"]=llkombiniert
 mqttvar["chargepoint/1/get/counter"]=llkwh
 mqttvar["chargepoint/1/get/charge_state"]=chargestat
 mqttvar["chargepoint/1/get/plug_state"]=plugstat
+mqttvar["chargepoint/1/get/phases_in_use"]=lp1phasen
 mqttvar["chargepoint/1/get/charged_since_plugged"]=aktgeladen
 mqttvar["pv/1/get/counter"]=pvallwh
 mqttvar["pv/1/get/power"]=pvwatt

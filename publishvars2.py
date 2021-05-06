@@ -105,7 +105,7 @@ def pub_settings():
         'average_consump': 5, 
         'max_phases': 3, 
         'max_current_multi_phases': 16, 
-        'control_pilot_interruption': True,
+        'control_pilot_interruption': False,
         'control_pilot_interruption_duration': 4,
         'nominal_difference': 2
         }
