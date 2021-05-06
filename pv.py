@@ -32,13 +32,7 @@ class pv():
         pub.pub("openWB/set/pv/config/configured", False)
         self.data["set"]["overhang_power_left"] = 0
         self.data["set"]["available_power"] = 0
-        self.data["config"]["configured"] = False
-        # Falls dazu schon Werte existieren, werden diese im weiteren Verlauf von subdata.py überschrieben.
-        self.data["get"]["counter"] = 0
-        self.data["get"]["daily_yield"] = 0
-        self.data["get"]["monthly_yield"] = 0
-        self.data["get"]["yearly_yield"]= 0
-        self.data["get"]["power"] = 0
+        self.data["config"]["configured"] = False       
         self.reset_pv_data()
 
     def calc_power_for_control(self):
@@ -54,6 +48,11 @@ class pv():
         try:
             if len(data.pv_data) > 1:
                 # Summe von allen konfigurierten Modulen
+                self.data["get"]["counter"] = 0
+                self.data["get"]["daily_yield"] = 0
+                self.data["get"]["monthly_yield"] = 0
+                self.data["get"]["yearly_yield"]= 0
+                self.data["get"]["power"] = 0
                 for module in data.pv_data:
                     if "pv" in module:
                         self.data["get"]["counter"] += data.pv_data[module].data["get"]["counter"]
