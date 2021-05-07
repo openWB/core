@@ -390,14 +390,14 @@ function processChargepointMessages(mqttmsg, mqttpayload) {
 	// called by handlevar
 	if ( mqttmsg == 'openWB/chargepoint/get/power_all') {
 		var unit = "W";
-		var unitPrefix = "k";
+		var unitPrefix = "";
 		var powerAllLp = parseInt(mqttpayload, 10);
 		if ( isNaN(powerAllLp) ) {
 			powerAllLp = 0;
 		}
 		if (powerAllLp > 999) {
 			powerAllLp = (powerAllLp / 1000).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-			unitPrefix = 'M';
+			unitPrefix = 'k';
 		}
 		$('.chargepoint-sum-power').text(powerAllLp+' '+unitPrefix+unit);
 	}
