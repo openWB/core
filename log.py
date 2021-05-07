@@ -5,11 +5,13 @@ import traceback
 import logging
 
 debug_logger = None
-
+mqtt_pub_logger = None
 
 def setup_logger():
     global debug_logger
     debug_logger = _config_logger("debug")
+    global mqtt_pub_logger
+    mqtt_pub_logger = _config_file_logger("mqtt_pub")
 
 
 def _config_logger(name):
@@ -28,8 +30,23 @@ def _config_logger(name):
     return logger
 
 
+def _config_file_logger(name):
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.DEBUG)
+    formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    fh = logging.FileHandler('/var/www/html/openWB/ramdisk/'+name+'.log')
+    fh.setLevel(logging.DEBUG)
+    fh.setFormatter(formatter)
+    logger.addHandler(fh)
+    return logger
+
+
 def message_debug_log(level, message):
     _set_message(debug_logger, level, message)
+
+def message_mqtt_pub_log(level, message):
+    _set_message(mqtt_pub_logger, level, message)
 
 
 def _set_message(logger, level, message):
