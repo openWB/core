@@ -359,8 +359,9 @@ class setData():
                     re.search("^openWB/set/pv/get/monthly_yield$", msg.topic) != None or
                     re.search("^openWB/set/pv/get/yearly_yield$", msg.topic) != None):
                 self._validate_value(msg, float, [(0, None)])
-            elif (re.search("^openWB/set/pv/get/counter$", msg.topic) != None or
-                    re.search("^openWB/set/pv/get/power$", msg.topic) != None):
+            elif re.search("^openWB/set/pv/get/counter$", msg.topic) != None:
+                self._validate_value(msg, int, [(0, None)])
+            elif re.search("^openWB/set/pv/get/power$", msg.topic) != None:
                 self._validate_value(msg, int, [(None, 0)])
             elif (re.search("^openWB/set/pv/set/overhang_power_left$", msg.topic) != None or
                     re.search("^openWB/set/pv/set/reserved_evu_overhang$", msg.topic) != None or

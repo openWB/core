@@ -28,9 +28,8 @@ class charge():
                         self._update_state(chargepoint)
                     else:
                         # LP, an denen nicht geladen werden darf
-                        if chargepoint.data["set"]["current"] != 0:
-                            chargepoint.data["set"]["current"] = 0
-                            pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/set/current", 0)
+                        chargepoint.data["set"]["current"] = 0
+                        pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/set/current", 0)
         except Exception as e:
             log.exception_logging(e)
 

@@ -89,19 +89,19 @@ class control():
                     if "current" in chargepoint.data["set"]:
                         if chargepoint.data["set"]["current"] == 0:
                             continue
-                    if chargepoint.data["set"]["charging_ev"] != -1:
-                        charging_ev = chargepoint.data["set"]["charging_ev"]
-                        # Wenn beim PV-Laden über der eingestellten Stromstärke geladen wird, erstmal zurücknehmen.
-                        if((charging_ev.charge_template.data["chargemode"]["selected"] == "pv_charging" or 
-                                charging_ev.data["control_parameter"]["submode"] == "pv_charging") and
-                                chargepoint.data["set"]["current"] != 0 and
-                                (chargepoint.data["set"]["current"] - charging_ev.ev_template.data["nominal_difference"]) < max(chargepoint.data["get"]["current"])):
-                            released_current = charging_ev.data["control_parameter"]["required_current"] - max(chargepoint.data["get"]["current"])
-                            # Nur wenn mit mehr als der benötigten Stromstärke geladen wird, kann der Überschuss ggf anderweitig in der Regelung verwendet werden.
-                            if released_current < 0:
-                                data.pv_data["all"].allocate_evu_power(released_current * 230 * chargepoint.data["get"]["phases_in_use"])
-                                self._process_data(chargepoint, charging_ev.data["control_parameter"]["required_current"], chargepoint.data["get"]["phases_in_use"])
-                                log.message_debug_log("debug", "Ladung an LP"+str(chargepoint.cp_num)+" um "+str(released_current)+"A auf "+str(charging_ev.data["control_parameter"]["required_current"])+"A angepasst.")
+                        if chargepoint.data["set"]["charging_ev"] != -1:
+                            charging_ev = chargepoint.data["set"]["charging_ev"]
+                            # Wenn beim PV-Laden über der eingestellten Stromstärke geladen wird, erstmal zurücknehmen.
+                            if((charging_ev.charge_template.data["chargemode"]["selected"] == "pv_charging" or 
+                                    charging_ev.data["control_parameter"]["submode"] == "pv_charging") and
+                                    chargepoint.data["set"]["current"] != 0 and
+                                    (chargepoint.data["set"]["current"] - charging_ev.ev_template.data["nominal_difference"]) < max(chargepoint.data["get"]["current"])):
+                                released_current = charging_ev.data["control_parameter"]["required_current"] - max(chargepoint.data["get"]["current"])
+                                # Nur wenn mit mehr als der benötigten Stromstärke geladen wird, kann der Überschuss ggf anderweitig in der Regelung verwendet werden.
+                                if released_current < 0:
+                                    data.pv_data["all"].allocate_evu_power(released_current * 230 * chargepoint.data["get"]["phases_in_use"])
+                                    self._process_data(chargepoint, charging_ev.data["control_parameter"]["required_current"], chargepoint.data["get"]["phases_in_use"])
+                                    log.message_debug_log("debug", "Ladung an LP"+str(chargepoint.cp_num)+" um "+str(released_current)+"A auf "+str(charging_ev.data["control_parameter"]["required_current"])+"A angepasst.")
         except Exception as e:
             log.exception_logging(e)
 
@@ -197,18 +197,18 @@ class control():
                     if "current" in chargepoint.data["set"]:
                         if chargepoint.data["set"]["current"] == 0:
                             continue
-                    if chargepoint.data["set"]["charging_ev"] != -1:
-                        charging_ev = chargepoint.data["set"]["charging_ev"]
-                        # Wenn der LP erst in diesem Zyklus eingeschaltet wird, sind noch keine phases_in_use hinterlegt.
-                        if chargepoint.data["get"]["charge_state"] == False:
-                            phases = charging_ev.data["control_parameter"]["phases"]
-                        else:
-                            phases = chargepoint.data["get"]["phases_in_use"]
-                        if((charging_ev.charge_template.data["prio"] == prio) and 
-                                (charging_ev.charge_template.data["chargemode"]["selected"] == mode or mode == None) and 
-                                (charging_ev.data["control_parameter"]["submode"] == submode) and
-                                (phases >= max_overshoot_phase)):
-                            valid_chargepoints[chargepoint] = None
+                        if chargepoint.data["set"]["charging_ev"] != -1:
+                            charging_ev = chargepoint.data["set"]["charging_ev"]
+                            # Wenn der LP erst in diesem Zyklus eingeschaltet wird, sind noch keine phases_in_use hinterlegt.
+                            if chargepoint.data["get"]["charge_state"] == False:
+                                phases = charging_ev.data["control_parameter"]["phases"]
+                            else:
+                                phases = chargepoint.data["get"]["phases_in_use"]
+                            if((charging_ev.charge_template.data["prio"] == prio) and 
+                                    (charging_ev.charge_template.data["chargemode"]["selected"] == mode or mode == None) and 
+                                    (charging_ev.data["control_parameter"]["submode"] == submode) and
+                                    (phases >= max_overshoot_phase)):
+                                valid_chargepoints[chargepoint] = None
             preferenced_chargepoints = self._get_preferenced_chargepoint(valid_chargepoints, False)
             
             return self._perform_down_regulation(preferenced_chargepoints, max_current_overshoot, max_overshoot_phase, prevent_stop)
@@ -320,13 +320,13 @@ class control():
                     if "current" in chargepoint.data["set"]:
                         if chargepoint.data["set"]["current"] == 0:
                             continue
-                    if chargepoint.data["set"]["charging_ev"] != -1:
-                        charging_ev = chargepoint.data["set"]["charging_ev"]
-                        if((charging_ev.charge_template.data["prio"] == prio) and 
-                                (charging_ev.charge_template.data["chargemode"]["selected"] == mode or mode == None) and 
-                                (charging_ev.data["control_parameter"]["submode"] == submode) and
-                                (chargepoint.data["set"]["charging_ev"].data["control_parameter"]["required_current"] > chargepoint.data["set"]["current"])):
-                            valid_chargepoints[chargepoint] = None
+                        if chargepoint.data["set"]["charging_ev"] != -1:
+                            charging_ev = chargepoint.data["set"]["charging_ev"]
+                            if((charging_ev.charge_template.data["prio"] == prio) and 
+                                    (charging_ev.charge_template.data["chargemode"]["selected"] == mode or mode == None) and 
+                                    (charging_ev.data["control_parameter"]["submode"] == submode) and
+                                    (chargepoint.data["set"]["charging_ev"].data["control_parameter"]["required_current"] > chargepoint.data["set"]["current"])):
+                                valid_chargepoints[chargepoint] = None
             preferenced_chargepoints = self._get_preferenced_chargepoint(valid_chargepoints, False)
 
             if len(preferenced_chargepoints) != 0:
