@@ -5,8 +5,6 @@ import json
 import os
 import paho.mqtt.client as mqtt
 
-import log
-
 client = None
 
 
@@ -30,10 +28,9 @@ def pub(topic, payload):
         Payload, der gepusht werden soll
     """
     if payload == "":
-        client.publish(topic, payload, qos=2, retain=True)
+        client.publish(topic, payload, qos=0, retain=True)
     else:
-        log.message_mqtt_pub_log("debug", "Topic: "+topic+", Payload: "+str(payload))
-        client.publish(topic, payload=json.dumps(payload), qos=2, retain=True)
+        client.publish(topic, payload=json.dumps(payload), qos=0, retain=True)
 
 def pub_float(var, topic):
     """konvertiert die Daten der Ramdisk-Datei in Float und published diese als json-Objekt.
