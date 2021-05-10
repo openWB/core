@@ -138,7 +138,7 @@ function refreshChargetemplate(templateIndex) {
 
 function handlevar(mqttmsg, mqttpayload) {
 	// receives all messages and calls respective function to process them
-	console.log("newmessage: "+mqttmsg+": "+mqttpayload);
+	// console.log("newmessage: "+mqttmsg+": "+mqttpayload);
 	processPreloader(mqttmsg);
 	if ( mqttmsg.match( /^openwb\/counter\/0\//i) ) { processEvuMessages(mqttmsg, mqttpayload); } // counter/0 is always EVU
 	else if ( mqttmsg.match( /^openwb\/counter\/[0-9]+\//i) ) { /* nothing here yet */ }
@@ -148,7 +148,7 @@ function handlevar(mqttmsg, mqttpayload) {
 	else if ( mqttmsg.match( /^openwb\/chargepoint\//i) ) { processChargepointMessages(mqttmsg, mqttpayload); }
 	else if ( mqttmsg.match( /^openwb\/vehicle\//i) ) { processVehicleMessages(mqttmsg, mqttpayload); }
 	else if ( mqttmsg.match( /^openwb\/general\/chargemode_config\/pv_charging\//i) ) { processPvConfigMessages(mqttmsg, mqttpayload); }
-	// else if ( mqttmsg.match( /^openwb\/graph\//i ) ) { processGraphMessages(mqttmsg, mqttpayload); }
+	else if ( mqttmsg.match( /^openwb\/graph\//i ) ) { processGraphMessages(mqttmsg, mqttpayload); }
 	// else if ( mqttmsg.match( /^openwb\/global\/awattar\//i) ) { processETProviderMessages(mqttmsg, mqttpayload); }
 	// else if ( mqttmsg.match( /^openwb\/global\/ETProvider\//i) ) { processETProviderMessages(mqttmsg, mqttpayload); }
 	// else if ( mqttmsg.match( /^openwb\/global\//i) ) { processGlobalMessages(mqttmsg, mqttpayload); }
@@ -789,6 +789,165 @@ function processVehicleMessages(mqttmsg, mqttpayload) {
 	}
 }
 
+function processGraphMessages(mqttmsg, mqttpayload) {
+	// processes mqttmsg for topic openWB/graph
+	// called by handlevar
+	console.log("received graph msg: " + mqttmsg + ": " + mqttpayload);
+	if ( mqttmsg == 'openWB/graph/boolDisplayHouseConsumption' ) {
+		if ( mqttpayload == 1) {
+			boolDisplayHouseConsumption = false;
+			hidehaus = 'foo';
+		} else {
+			boolDisplayHouseConsumption = true;
+			hidehaus = 'Hausverbrauch';
+		}
+		checkgraphload();
+	}
+	else if ( mqttmsg == 'openWB/graph/boolDisplayLegend' ) {
+		if ( mqttpayload == 0) {
+			boolDisplayLegend = false;
+		} else {
+			boolDisplayLegend = true;
+		}
+		checkgraphload();
+	}
+	else if ( mqttmsg == 'openWB/graph/boolDisplayLiveGraph' ) {
+		if ( mqttpayload == 0) {
+			$('#thegraph').addClass('hide');
+			boolDisplayLiveGraph = false;
+		} else {
+			$('#thegraph').removeClass('hide');
+			boolDisplayLiveGraph = true;
+		}
+	}
+	else if ( mqttmsg == 'openWB/graph/boolDisplayEvu' ) {
+		if ( mqttpayload == 1) {
+			boolDisplayEvu = false;
+			hideevu = 'foo';
+		} else {
+			boolDisplayEvu = true;
+			hideevu = 'Bezug';
+		}
+		checkgraphload();
+	}
+	else if ( mqttmsg == 'openWB/graph/boolDisplayPv' ) {
+		if ( mqttpayload == 1) {
+			boolDisplayPv = false;
+			hidepv = 'foo';
+		} else {
+			boolDisplayPv = true;
+			hidepv = 'PV';
+		}
+		checkgraphload();
+	}
+	else if ( mqttmsg.match( /^openwb\/graph\/booldisplaylp[1-9][0-9]*$/i ) ) {
+		var index = mqttmsg.match(/(\d+)(?!.*\d)/g)[0];  // extract last match = number from mqttmsg
+		// now call functions or set variables corresponding to the index
+		if ( mqttpayload == 1) {
+			window['boolDisplayLp'+index] = false;
+			window['hidelp'+index] = 'foo';
+		} else {
+			window['boolDisplayLp'+index] = true;
+			window['hidelp'+index] = 'Lp' + index;
+		}
+		checkgraphload();
+	}
+	else if ( mqttmsg == 'openWB/graph/boolDisplayLpAll' ) {
+		if ( mqttpayload == 1) {
+			boolDisplayLpAll = false;
+			hidelpa = 'foo';
+		} else {
+			boolDisplayLpAll = true;
+			hidelpa = 'LP Gesamt';
+		}
+		checkgraphload();
+	}
+	else if ( mqttmsg == 'openWB/graph/boolDisplaySpeicher' ) {
+		if ( mqttpayload == 1) {
+			boolDisplaySpeicher = false;
+			hidespeicher = 'foo';
+		} else {
+			hidespeicher = 'Speicher';
+			boolDisplaySpeicher = true;
+		}
+		checkgraphload();
+	}
+	else if ( mqttmsg == 'openWB/graph/boolDisplaySpeicherSoc' ) {
+		if ( mqttpayload == 1) {
+			hidespeichersoc = 'foo';
+			boolDisplaySpeicherSoc = false;
+		} else {
+			hidespeichersoc = 'Speicher SoC';
+			boolDisplaySpeicherSoc = true;
+		}
+		checkgraphload();
+	}
+	else if ( mqttmsg.match( /^openwb\/graph\/booldisplaylp[1-9][0-9]*soc$/i ) ) {
+		var index = mqttmsg.match(/(\d+)(?!.*\d)/g)[0];  // extract last match = number from mqttmsg
+		if ( mqttpayload == 1) {
+			$('#socenabledlp' + index).removeClass('hide');
+			window['boolDisplayLp' + index + 'Soc'] = false;
+			window['hidelp' + index + 'soc'] = 'foo';
+		} else {
+			$('#socenabledlp' + index).addClass('hide');
+			window['boolDisplayLp' + index + 'Soc'] = true;
+			window['hidelp' + index + 'soc'] = 'LP' + index + ' SoC';
+		}
+		checkgraphload();
+	}
+	else if ( mqttmsg.match( /^openwb\/graph\/booldisplayload[1-9][0-9]*$/i ) ) {
+		var index = mqttmsg.match(/(\d+)(?!.*\d)/g)[0];  // extract last match = number from mqttmsg
+		// now call functions or set variables corresponding to the index
+		if ( mqttpayload == 1) {
+			window['hideload'+index] = 'foo';
+			window['boolDisplayLoad'+index] = false;
+		} else {
+			window['hideload'+index] = 'Verbraucher ' + index;
+			window['boolDisplayLoad'+index] = true;
+		}
+		checkgraphload();
+	}
+	else if ( mqttmsg.match( /^openwb\/graph\/[1-9][0-9]*alllivevalues$/i ) ) {
+		// graph messages if local connection
+		var index = mqttmsg.match(/(\d+)(?!.*\d)/g)[0];  // extract last match = number from mqttmsg
+		// now call functions or set variables corresponding to the index
+		if (initialread == 0) {
+			window['all'+index+'p'] = mqttpayload;
+			window['all'+index] = 1;
+			putgraphtogether();
+		}
+	}
+	else if ( mqttmsg == 'openWB/graph/lastlivevalues' ) {
+		// graph messages if local connection
+		if ( initialread > 0) {
+			updateGraph(mqttpayload);
+		}
+		if (graphrefreshcounter > 60) {
+			// reload graph completety
+			initialread = 0;
+			all1 = 0;
+			all2 = 0;
+			all3 = 0;
+			all4 = 0;
+			all5 = 0;
+			all6 = 0;
+			all7 = 0;
+			all8 = 0;
+			all9 = 0;
+			all10 = 0;
+			all11 = 0;
+			all12 = 0;
+			all13 = 0;
+			all14 = 0;
+			all15 = 0;
+			all16 = 0;
+			graphrefreshcounter = 0;
+			subscribeMqttGraphSegments();
+		}
+		graphrefreshcounter += 1;
+	}
+}  // end processGraphMessages
+
 // function processETProviderMessages(mqttmsg, mqttpayload) {
 // 	// processes mqttmsg for topic openWB/global
 // 	// called by handlevar
@@ -848,165 +1007,6 @@ function processVehicleMessages(mqttmsg, mqttpayload) {
 // 		setToggleBtnGroup(elementId, mqttpayload);
 // 	}
 // }
-
-// function processGraphMessages(mqttmsg, mqttpayload) {
-// 	// processes mqttmsg for topic openWB/graph
-// 	// called by handlevar
-// 	console.log("received graph msg: " + mqttmsg + ": " + mqttpayload);
-// 	if ( mqttmsg == 'openWB/graph/boolDisplayHouseConsumption' ) {
-// 		if ( mqttpayload == 1) {
-// 			boolDisplayHouseConsumption = false;
-// 			hidehaus = 'foo';
-// 		} else {
-// 			boolDisplayHouseConsumption = true;
-// 			hidehaus = 'Hausverbrauch';
-// 		}
-// 		checkgraphload();
-// 	}
-// 	else if ( mqttmsg == 'openWB/graph/boolDisplayLegend' ) {
-// 		if ( mqttpayload == 0) {
-// 			boolDisplayLegend = false;
-// 		} else {
-// 			boolDisplayLegend = true;
-// 		}
-// 		checkgraphload();
-// 	}
-// 	else if ( mqttmsg == 'openWB/graph/boolDisplayLiveGraph' ) {
-// 		if ( mqttpayload == 0) {
-// 			$('#thegraph').addClass('hide');
-// 			boolDisplayLiveGraph = false;
-// 		} else {
-// 			$('#thegraph').removeClass('hide');
-// 			boolDisplayLiveGraph = true;
-// 		}
-// 	}
-// 	else if ( mqttmsg == 'openWB/graph/boolDisplayEvu' ) {
-// 		if ( mqttpayload == 1) {
-// 			boolDisplayEvu = false;
-// 			hideevu = 'foo';
-// 		} else {
-// 			boolDisplayEvu = true;
-// 			hideevu = 'Bezug';
-// 		}
-// 		checkgraphload();
-// 	}
-// 	else if ( mqttmsg == 'openWB/graph/boolDisplayPv' ) {
-// 		if ( mqttpayload == 1) {
-// 			boolDisplayPv = false;
-// 			hidepv = 'foo';
-// 		} else {
-// 			boolDisplayPv = true;
-// 			hidepv = 'PV';
-// 		}
-// 		checkgraphload();
-// 	}
-// 	else if ( mqttmsg.match( /^openwb\/graph\/booldisplaylp[1-9][0-9]*$/i ) ) {
-// 		var index = mqttmsg.match(/(\d+)(?!.*\d)/g)[0];  // extract last match = number from mqttmsg
-// 		// now call functions or set variables corresponding to the index
-// 		if ( mqttpayload == 1) {
-// 			window['boolDisplayLp'+index] = false;
-// 			window['hidelp'+index] = 'foo';
-// 		} else {
-// 			window['boolDisplayLp'+index] = true;
-// 			window['hidelp'+index] = 'Lp' + index;
-// 		}
-// 		checkgraphload();
-// 	}
-// 	else if ( mqttmsg == 'openWB/graph/boolDisplayLpAll' ) {
-// 		if ( mqttpayload == 1) {
-// 			boolDisplayLpAll = false;
-// 			hidelpa = 'foo';
-// 		} else {
-// 			boolDisplayLpAll = true;
-// 			hidelpa = 'LP Gesamt';
-// 		}
-// 		checkgraphload();
-// 	}
-// 	else if ( mqttmsg == 'openWB/graph/boolDisplaySpeicher' ) {
-// 		if ( mqttpayload == 1) {
-// 			boolDisplaySpeicher = false;
-// 			hidespeicher = 'foo';
-// 		} else {
-// 			hidespeicher = 'Speicher';
-// 			boolDisplaySpeicher = true;
-// 		}
-// 		checkgraphload();
-// 	}
-// 	else if ( mqttmsg == 'openWB/graph/boolDisplaySpeicherSoc' ) {
-// 		if ( mqttpayload == 1) {
-// 			hidespeichersoc = 'foo';
-// 			boolDisplaySpeicherSoc = false;
-// 		} else {
-// 			hidespeichersoc = 'Speicher SoC';
-// 			boolDisplaySpeicherSoc = true;
-// 		}
-// 		checkgraphload();
-// 	}
-// 	else if ( mqttmsg.match( /^openwb\/graph\/booldisplaylp[1-9][0-9]*soc$/i ) ) {
-// 		var index = mqttmsg.match(/(\d+)(?!.*\d)/g)[0];  // extract last match = number from mqttmsg
-// 		if ( mqttpayload == 1) {
-// 			$('#socenabledlp' + index).removeClass('hide');
-// 			window['boolDisplayLp' + index + 'Soc'] = false;
-// 			window['hidelp' + index + 'soc'] = 'foo';
-// 		} else {
-// 			$('#socenabledlp' + index).addClass('hide');
-// 			window['boolDisplayLp' + index + 'Soc'] = true;
-// 			window['hidelp' + index + 'soc'] = 'LP' + index + ' SoC';
-// 		}
-// 		checkgraphload();
-// 	}
-// 	else if ( mqttmsg.match( /^openwb\/graph\/booldisplayload[1-9][0-9]*$/i ) ) {
-// 		var index = mqttmsg.match(/(\d+)(?!.*\d)/g)[0];  // extract last match = number from mqttmsg
-// 		// now call functions or set variables corresponding to the index
-// 		if ( mqttpayload == 1) {
-// 			window['hideload'+index] = 'foo';
-// 			window['boolDisplayLoad'+index] = false;
-// 		} else {
-// 			window['hideload'+index] = 'Verbraucher ' + index;
-// 			window['boolDisplayLoad'+index] = true;
-// 		}
-// 		checkgraphload();
-// 	}
-// 	else if ( mqttmsg.match( /^openwb\/graph\/[1-9][0-9]*alllivevalues$/i ) ) {
-// 		// graph messages if local connection
-// 		var index = mqttmsg.match(/(\d+)(?!.*\d)/g)[0];  // extract last match = number from mqttmsg
-// 		// now call functions or set variables corresponding to the index
-// 		if (initialread == 0) {
-// 			window['all'+index+'p'] = mqttpayload;
-// 			window['all'+index] = 1;
-// 			putgraphtogether();
-// 		}
-// 	}
-// 	else if ( mqttmsg == 'openWB/graph/lastlivevalues' ) {
-// 		// graph messages if local connection
-// 		if ( initialread > 0) {
-// 			updateGraph(mqttpayload);
-// 		}
-// 		if (graphrefreshcounter > 60) {
-// 			// reload graph completety
-// 			initialread = 0;
-// 			all1 = 0;
-// 			all2 = 0;
-// 			all3 = 0;
-// 			all4 = 0;
-// 			all5 = 0;
-// 			all6 = 0;
-// 			all7 = 0;
-// 			all8 = 0;
-// 			all9 = 0;
-// 			all10 = 0;
-// 			all11 = 0;
-// 			all12 = 0;
-// 			all13 = 0;
-// 			all14 = 0;
-// 			all15 = 0;
-// 			all16 = 0;
-// 			graphrefreshcounter = 0;
-// 			subscribeMqttGraphSegments();
-// 		}
-// 		graphrefreshcounter += 1;
-// 	}
-// }  // end processGraphMessages
 
 // function processGlobalMessages(mqttmsg, mqttpayload) {
 // 	// processes mqttmsg for topic openWB/global

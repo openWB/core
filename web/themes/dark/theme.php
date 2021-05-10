@@ -820,7 +820,7 @@
 				// load scripts synchronously in order specified
 				var scriptsToLoad = [
 					// load Chart.js library
-					// 'js/Chart.bundle.min.js',
+					'js/chart.js-3.2.1/chart.min.js',
 					// load Chart.js annotation plugin
 					// 'js/chartjs-plugin-annotation.min.js',
 					// load mqtt library
@@ -830,7 +830,7 @@
 					// functions for processing messages
 					'themes/dark/processAllMqttMsg.js?ver=20210504',
 					// respective Chart.js definition live
-					// 'themes/dark/livechart.js?ver=20201218',
+					'themes/dark/livechart.js?ver=20201218',
 					// respective Chart.js definition
 					// 'themes/dark/electricityPriceChart.js?ver=20210120',
 					// functions performing mqtt and start mqtt-service
@@ -986,42 +986,42 @@
 				});
 
 				// register an event listener for changes in visibility
-				// let hidden;
-				// let visibilityChange;
-				// if (typeof document.hidden !== 'undefined') { // Opera 12.10 and Firefox 18 and later support
-				// 	hidden = 'hidden';
-				// 	visibilityChange = 'visibilitychange';
-				// } else if (typeof document.msHidden !== 'undefined') {
-				// 	hidden = 'msHidden';
-				// 	visibilityChange = 'msvisibilitychange';
-				// } else if (typeof document.webkitHidden !== 'undefined') {
-				// 	hidden = 'webkitHidden';
-				// 	visibilityChange = 'webkitvisibilitychange';
-				// }
-				// window.document.addEventListener(visibilityChange, () => {
-				// 	if (!document[hidden]) {
-				// 		// once page is unhidden... reload graph completety
-				// 		initialread = 0;
-				// 		all1 = 0;
-				// 		all2 = 0;
-				// 		all3 = 0;
-				// 		all4 = 0;
-				// 		all5 = 0;
-				// 		all6 = 0;
-				// 		all7 = 0;
-				// 		all8 = 0;
-				// 		all9 = 0;
-				// 		all10 = 0;
-				// 		all11 = 0;
-				// 		all12 = 0;
-				// 		all13 = 0;
-				// 		all14 = 0;
-				// 		all15 = 0;
-				// 		all16 = 0;
-
-				// 		subscribeMqttGraphSegments();
-				// 	}
-				// });
+				let hidden;
+				let visibilityChange;
+				if (typeof document.hidden !== 'undefined') { // Opera 12.10 and Firefox 18 and later support
+					hidden = 'hidden';
+					visibilityChange = 'visibilitychange';
+				} else if (typeof document.msHidden !== 'undefined') {
+					hidden = 'msHidden';
+					visibilityChange = 'msvisibilitychange';
+				} else if (typeof document.webkitHidden !== 'undefined') {
+					hidden = 'webkitHidden';
+					visibilityChange = 'webkitvisibilitychange';
+				}
+				window.document.addEventListener(visibilityChange, () => {
+					if (!document[hidden]) {
+						// once page is unhidden... reload graph completety
+						initialread = 0;
+						all1 = 0;
+						all2 = 0;
+						all3 = 0;
+						all4 = 0;
+						all5 = 0;
+						all6 = 0;
+						all7 = 0;
+						all8 = 0;
+						all9 = 0;
+						all10 = 0;
+						all11 = 0;
+						all12 = 0;
+						all13 = 0;
+						all14 = 0;
+						all15 = 0;
+						all16 = 0;
+						console.log("subscribing graph topics");
+						subscribeMqttGraphSegments();
+					}
+				});
 
 			});  // end document ready
 		</script>

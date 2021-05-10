@@ -85,7 +85,7 @@ def on_connect(client, userdata, flags, rc):
 
 # handle each set topic
 def on_message(client, userdata, msg):
-    global numberOfSupportedDevices
+    # global numberOfSupportedDevices
     # log all messages before any error forces this process to die
     if (len(msg.payload.decode("utf-8")) >= 1):
         setTopicCleared = False
@@ -1068,86 +1068,89 @@ def on_message(client, userdata, msg):
                 f = open('/var/www/html/openWB/ramdisk/etprovidermaxprice', 'w')
                 f.write(msg.payload.decode("utf-8"))
                 f.close()
-        if (msg.topic == "openWB/set/houseBattery/W"):
+        # if (msg.topic == "openWB/set/houseBattery/W"):
+        if (msg.topic == "openWB/set/bat/1/get/power"):
             if (float(msg.payload) >= -30000 and float(msg.payload) <= 30000):
                 f = open('/var/www/html/openWB/ramdisk/speicherleistung', 'w')
                 f.write(msg.payload.decode("utf-8"))
                 f.close()
-        if (msg.topic == "openWB/set/houseBattery/WhImported"):
-            if (float(msg.payload) >= 0 and float(msg.payload) <= 9000000):
-                f = open('/var/www/html/openWB/ramdisk/speicherikwh', 'w')
-                f.write(msg.payload.decode("utf-8"))
-                f.close()
-        if (msg.topic == "openWB/set/houseBattery/WhExported"):
-            if (float(msg.payload) >= 0 and float(msg.payload) <= 9000000):
-                f = open('/var/www/html/openWB/ramdisk/speicherekwh', 'w')
-                f.write(msg.payload.decode("utf-8"))
-                f.close()
-        if (msg.topic == "openWB/set/houseBattery/%Soc"):
+        # if (msg.topic == "openWB/set/houseBattery/WhImported"):
+        #     if (float(msg.payload) >= 0 and float(msg.payload) <= 9000000):
+        #         f = open('/var/www/html/openWB/ramdisk/speicherikwh', 'w')
+        #         f.write(msg.payload.decode("utf-8"))
+        #         f.close()
+        # if (msg.topic == "openWB/set/houseBattery/WhExported"):
+        #     if (float(msg.payload) >= 0 and float(msg.payload) <= 9000000):
+        #         f = open('/var/www/html/openWB/ramdisk/speicherekwh', 'w')
+        #         f.write(msg.payload.decode("utf-8"))
+        #         f.close()
+        # if (msg.topic == "openWB/set/houseBattery/%Soc"):
+        if (msg.topic == "openWB/set/bat/1/get/soc"):
             if (float(msg.payload) >= 0 and float(msg.payload) <= 100):
                 f = open('/var/www/html/openWB/ramdisk/speichersoc', 'w')
                 f.write(msg.payload.decode("utf-8"))
                 f.close()
-        if (msg.topic == "openWB/set/houseBattery/faultState"):
-            if (int(msg.payload) >= 0 and int(msg.payload) <= 2):
-                client.publish("openWB/bat/modules/1/get/fault_state", msg.payload.decode("utf-8"), qos=0, retain=True)
-        if (msg.topic == "openWB/set/houseBattery/faultStr"):
-            client.publish("openWB/bat/modules/1/get/fault_str", msg.payload.decode("utf-8"), qos=0, retain=True)
-        if (msg.topic == "openWB/set/evu/W"):
+        # if (msg.topic == "openWB/set/houseBattery/faultState"):
+        #     if (int(msg.payload) >= 0 and int(msg.payload) <= 2):
+        #         client.publish("openWB/bat/modules/1/get/fault_state", msg.payload.decode("utf-8"), qos=0, retain=True)
+        # if (msg.topic == "openWB/set/houseBattery/faultStr"):
+        #     client.publish("openWB/bat/modules/1/get/fault_str", msg.payload.decode("utf-8"), qos=0, retain=True)
+        # if (msg.topic == "openWB/set/evu/W"):
+        if (msg.topic == "openWB/set/counter/0/power_all"):
             if (float(msg.payload) >= -100000 and float(msg.payload) <= 100000):
                 f = open('/var/www/html/openWB/ramdisk/wattbezug', 'w')
                 f.write(msg.payload.decode("utf-8"))
                 f.close()
-        if (msg.topic == "openWB/set/evu/APhase1"):
-            if (float(msg.payload) >= -1000 and float(msg.payload) <= 1000):
-                f = open('/var/www/html/openWB/ramdisk/bezuga1', 'w')
-                f.write(msg.payload.decode("utf-8"))
-                f.close()
-        if (msg.topic == "openWB/set/evu/APhase2"):
-            if (float(msg.payload) >= -1000 and float(msg.payload) <= 1000):
-                f = open('/var/www/html/openWB/ramdisk/bezuga2', 'w')
-                f.write(msg.payload.decode("utf-8"))
-                f.close()
-        if (msg.topic == "openWB/set/evu/APhase3"):
-            if (float(msg.payload) >= -1000 and float(msg.payload) <= 1000):
-                f = open('/var/www/html/openWB/ramdisk/bezuga3', 'w')
-                f.write(msg.payload.decode("utf-8"))
-                f.close()
-        if (msg.topic == "openWB/set/evu/VPhase1"):
-            if (float(msg.payload) >= -1000 and float(msg.payload) <= 1000):
-                f = open('/var/www/html/openWB/ramdisk/evuv1', 'w')
-                f.write(msg.payload.decode("utf-8"))
-                f.close()
-        if (msg.topic == "openWB/set/evu/VPhase2"):
-            if (float(msg.payload) >= -1000 and float(msg.payload) <= 1000):
-                f = open('/var/www/html/openWB/ramdisk/evuv2', 'w')
-                f.write(msg.payload.decode("utf-8"))
-                f.close()
-        if (msg.topic == "openWB/set/evu/VPhase3"):
-            if (float(msg.payload) >= -1000 and float(msg.payload) <= 1000):
-                f = open('/var/www/html/openWB/ramdisk/evuv3', 'w')
-                f.write(msg.payload.decode("utf-8"))
-                f.close()
-        if (msg.topic == "openWB/set/evu/HzFrequenz"):
-            if (float(msg.payload) >= 0 and float(msg.payload) <= 80):
-                f = open('/var/www/html/openWB/ramdisk/evuhz', 'w')
-                f.write(msg.payload.decode("utf-8"))
-                f.close()
-        if (msg.topic == "openWB/set/evu/WhImported"):
-            if (float(msg.payload) >= 0 and float(msg.payload) <= 10000000000):
-                f = open('/var/www/html/openWB/ramdisk/bezugkwh', 'w')
-                f.write(msg.payload.decode("utf-8"))
-                f.close()
-        if (msg.topic == "openWB/set/evu/WhExported"):
-            if (float(msg.payload) >= 0 and float(msg.payload) <= 10000000000):
-                f = open('/var/www/html/openWB/ramdisk/einspeisungkwh', 'w')
-                f.write(msg.payload.decode("utf-8"))
-                f.close()
-        if (msg.topic == "openWB/set/evu/faultState"):
-            if (int(msg.payload) >= 0 and int(msg.payload) <= 2):
-                client.publish("openWB/evu/faultState", msg.payload.decode("utf-8"), qos=0, retain=True)
-        if (msg.topic == "openWB/set/evu/faultStr"):
-            client.publish("openWB/evu/faultStr", msg.payload.decode("utf-8"), qos=0, retain=True)
+        # if (msg.topic == "openWB/set/evu/APhase1"):
+        #     if (float(msg.payload) >= -1000 and float(msg.payload) <= 1000):
+        #         f = open('/var/www/html/openWB/ramdisk/bezuga1', 'w')
+        #         f.write(msg.payload.decode("utf-8"))
+        #         f.close()
+        # if (msg.topic == "openWB/set/evu/APhase2"):
+        #     if (float(msg.payload) >= -1000 and float(msg.payload) <= 1000):
+        #         f = open('/var/www/html/openWB/ramdisk/bezuga2', 'w')
+        #         f.write(msg.payload.decode("utf-8"))
+        #         f.close()
+        # if (msg.topic == "openWB/set/evu/APhase3"):
+        #     if (float(msg.payload) >= -1000 and float(msg.payload) <= 1000):
+        #         f = open('/var/www/html/openWB/ramdisk/bezuga3', 'w')
+        #         f.write(msg.payload.decode("utf-8"))
+        #         f.close()
+        # if (msg.topic == "openWB/set/evu/VPhase1"):
+        #     if (float(msg.payload) >= -1000 and float(msg.payload) <= 1000):
+        #         f = open('/var/www/html/openWB/ramdisk/evuv1', 'w')
+        #         f.write(msg.payload.decode("utf-8"))
+        #         f.close()
+        # if (msg.topic == "openWB/set/evu/VPhase2"):
+        #     if (float(msg.payload) >= -1000 and float(msg.payload) <= 1000):
+        #         f = open('/var/www/html/openWB/ramdisk/evuv2', 'w')
+        #         f.write(msg.payload.decode("utf-8"))
+        #         f.close()
+        # if (msg.topic == "openWB/set/evu/VPhase3"):
+        #     if (float(msg.payload) >= -1000 and float(msg.payload) <= 1000):
+        #         f = open('/var/www/html/openWB/ramdisk/evuv3', 'w')
+        #         f.write(msg.payload.decode("utf-8"))
+        #         f.close()
+        # if (msg.topic == "openWB/set/evu/HzFrequenz"):
+        #     if (float(msg.payload) >= 0 and float(msg.payload) <= 80):
+        #         f = open('/var/www/html/openWB/ramdisk/evuhz', 'w')
+        #         f.write(msg.payload.decode("utf-8"))
+        #         f.close()
+        # if (msg.topic == "openWB/set/evu/WhImported"):
+        #     if (float(msg.payload) >= 0 and float(msg.payload) <= 10000000000):
+        #         f = open('/var/www/html/openWB/ramdisk/bezugkwh', 'w')
+        #         f.write(msg.payload.decode("utf-8"))
+        #         f.close()
+        # if (msg.topic == "openWB/set/evu/WhExported"):
+        #     if (float(msg.payload) >= 0 and float(msg.payload) <= 10000000000):
+        #         f = open('/var/www/html/openWB/ramdisk/einspeisungkwh', 'w')
+        #         f.write(msg.payload.decode("utf-8"))
+        #         f.close()
+        # if (msg.topic == "openWB/set/evu/faultState"):
+        #     if (int(msg.payload) >= 0 and int(msg.payload) <= 2):
+        #         client.publish("openWB/evu/faultState", msg.payload.decode("utf-8"), qos=0, retain=True)
+        # if (msg.topic == "openWB/set/evu/faultStr"):
+        #     client.publish("openWB/evu/faultStr", msg.payload.decode("utf-8"), qos=0, retain=True)
         if (msg.topic == "openWB/set/lp/1/%Soc"):
             if (float(msg.payload) >= 0 and float(msg.payload) <= 100):
                 f = open('/var/www/html/openWB/ramdisk/soc', 'w')
@@ -1158,12 +1161,13 @@ def on_message(client, userdata, msg):
                 f = open('/var/www/html/openWB/ramdisk/soc1', 'w')
                 f.write(msg.payload.decode("utf-8"))
                 f.close()
-        if (msg.topic == "openWB/set/pv/1/WhCounter"):
-            if (float(msg.payload) >= 0 and float(msg.payload) <= 10000000000):
-                f = open('/var/www/html/openWB/ramdisk/pvkwh', 'w')
-                f.write(msg.payload.decode("utf-8"))
-                f.close()
-        if (msg.topic == "openWB/set/pv/1/W"):
+        # if (msg.topic == "openWB/set/pv/1/WhCounter"):
+        #     if (float(msg.payload) >= 0 and float(msg.payload) <= 10000000000):
+        #         f = open('/var/www/html/openWB/ramdisk/pvkwh', 'w')
+        #         f.write(msg.payload.decode("utf-8"))
+        #         f.close()
+        # if (msg.topic == "openWB/set/pv/1/W"):
+        if (msg.topic == "openWB/set/pv/1/get/power"):
             if (float(msg.payload) >= -10000000 and float(msg.payload) <= 100000000):
                 if (float(msg.payload) > 1):
                     pvwatt=int(float(msg.payload.decode("utf-8"))) * -1
