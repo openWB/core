@@ -1377,16 +1377,16 @@ def on_message(client, userdata, msg):
                 f.close()
 
         # clear all set topics if not already done
-        if ( setTopicCleared == False or 
-                ("openWB/set/vehicle/" not in msg.topic and 
-                "openWB/set/chargepoint/" not in msg.topic and 
-                "openWB/set/pv/" not in msg.topic and 
-                "openWB/set/bat" not in msg.topic and 
-                "openWB/set/general" not in msg.topic and 
-                "openWB/set/optional" not in msg.topic and 
-                "openWB/set/counter" not in msg.topic)):
-            client.publish(msg.topic, "", qos=0, retain=True)
-            print(msg.topic)
+        if setTopicCleared == False:
+            if ("openWB/set/vehicle/" not in msg.topic and 
+                    "openWB/set/chargepoint/" not in msg.topic and 
+                    "openWB/chargepoint/" not in msg.topic and
+                    "openWB/set/pv/" not in msg.topic and 
+                    "openWB/set/bat" not in msg.topic and 
+                    "openWB/set/general" not in msg.topic and 
+                    "openWB/set/optional" not in msg.topic and 
+                    "openWB/set/counter" not in msg.topic):
+                client.publish(msg.topic, "", qos=0, retain=True)
 
 client.on_connect = on_connect
 client.on_message = on_message
