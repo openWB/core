@@ -31,7 +31,7 @@ class setData():
         client.message_callback_add("openWB/set/general/#", self.process_general_topic)
         client.message_callback_add("openWB/set/optional/#", self.process_optional_topic)
         client.message_callback_add("openWB/set/counter/#", self.process_counter_topic)
-        client.message_callback_add("openWB/set/graph/#", self.process_graph_topic)
+        # client.message_callback_add("openWB/set/graph/#", self.process_graph_topic)
         # client.message_callback_add("openWB/set/smarthome/#", self.processSmarthomeTopic)
 
         client.connect(mqtt_broker_ip, 1883)
@@ -359,8 +359,9 @@ class setData():
                     re.search("^openWB/set/pv/get/monthly_yield$", msg.topic) != None or
                     re.search("^openWB/set/pv/get/yearly_yield$", msg.topic) != None):
                 self._validate_value(msg, float, [(0, None)])
-            elif (re.search("^openWB/set/pv/get/counter$", msg.topic) != None or
-                    re.search("^openWB/set/pv/get/power$", msg.topic) != None):
+            elif re.search("^openWB/set/pv/get/counter$", msg.topic) != None:
+                self._validate_value(msg, int, [(0, None)])
+            elif re.search("^openWB/set/pv/get/power$", msg.topic) != None:
                 self._validate_value(msg, int, [(None, 0)])
             elif (re.search("^openWB/set/pv/set/overhang_power_left$", msg.topic) != None or
                     re.search("^openWB/set/pv/set/reserved_evu_overhang$", msg.topic) != None or
@@ -590,6 +591,11 @@ class setData():
         try:
             if re.search("^openWB/set/counter/set/loadmanagement$", msg.topic) != None:
                 self._validate_value(msg, int, [(0, 1)])
+            elif re.search("^openWB/set/counter/set/home_consumption$", msg.topic) != None:
+                # Inkonsistenz: Kann auch als Float kommen, soll aber immer als Int gepublished werden.
+                payload = json.loads(str(msg.payload.decode("utf-8")))
+                msg.payload = json.dumps(int(payload)).encode("utf-8")
+                self._validate_value(msg, int, [(0, None)])
             elif re.search("^openWB/set/counter/[0-9]+/set/consumption_left$", msg.topic) != None:
                 self._validate_value(msg, float)
             elif re.search("^openWB/set/counter/[0-9]+/set/current_left$", msg.topic) != None:

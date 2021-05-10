@@ -11,7 +11,7 @@ openwbModulePublishState() {
 				echo "openwbPublishStatus: Wrong number of arguments: EVU $#"
 			else
 				mosquitto_pub -t openWB/set/counter/evu/get/fault_state -r -m "$2"
-				mosquitto_pub -t openWB/set/counter/evu/get/fault_str -r -m "$3"
+				mosquitto_pub -t openWB/set/counter/evu/get/fault_str -r -m \"$3\"
 			fi
 			;;
 		"LP")
@@ -19,7 +19,7 @@ openwbModulePublishState() {
 				echo "openwbPublishStatus: Wrong number of arguments: LP $#"
 			else
 				mosquitto_pub -t openWB/set/chargepoint/${4}/get/fault_state -r -m "$2"
-				mosquitto_pub -t openWB/set/chargepoint/${4}/get/fault_str -r -m "$3"
+				mosquitto_pub -t openWB/set/chargepoint/${4}/get/fault_str -r -m \"$3\"
 			fi
 			;;
 		"EVSOC")
@@ -27,7 +27,7 @@ openwbModulePublishState() {
 				echo "openwbPublishStatus: Wrong number of arguments: EVSOC $#"
 			else
 				mosquitto_pub -t openWB/set/vehicle/${4}/soc/get/fault_state -r -m "$2"
-				mosquitto_pub -t openWB/set/vehicle/${4}/soc/get/fault_str -r -m "$3"
+				mosquitto_pub -t openWB/set/vehicle/${4}/soc/get/fault_str -r -m \"$3\"
 			fi
 			;;
 		"PV")
@@ -35,7 +35,7 @@ openwbModulePublishState() {
 				echo "openwbPublishStatus: Wrong number of arguments: PV $#"
 			else
 				mosquitto_pub -t openWB/set/pv/modules/${4}/get/fault_state -r -m "$2"
-				mosquitto_pub -t openWB/set/pv/modules/${4}/get/fault_str -r -m "$3"
+				mosquitto_pub -t openWB/set/pv/modules/${4}/get/fault_str -r -m \"$3\"
 			fi
 			;;
 		"BAT")
@@ -43,7 +43,7 @@ openwbModulePublishState() {
 				echo "openwbPublishStatus: Wrong number of arguments: BAT $#"
 			else
 				mosquitto_pub -t openWB/set/bat/modules/1/get/fault_state -r -m "$2"
-				mosquitto_pub -t openWB/set/bat/modules/1/get/fault_str -r -m "$3"
+				mosquitto_pub -t openWB/set/bat/modules/1/get/fault_str -r -m \"$3\"
 			fi
 			;;
 		*)

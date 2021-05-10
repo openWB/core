@@ -82,6 +82,7 @@ def on_connect(client, userdata, flags, rc):
     client.subscribe("openWB/set/#", 2)
     client.subscribe("openWB/config/set/#", 2)
     client.subscribe("openWB/chargepoint/+/set/current", 2)
+    client.subscribe("openWB/chargepoint/+/get/autolock_state", 2)
 
 # handle each set topic
 def on_message(client, userdata, msg):
@@ -476,14 +477,16 @@ def on_message(client, userdata, msg):
                 sendcommand = ["/var/www/html/openWB/runs/replaceinconfig.sh", "minimalalp2pv=", msg.payload.decode("utf-8")]
                 subprocess.Popen(sendcommand)
                 client.publish("openWB/config/get/pv/lp/2/minCurrent", msg.payload.decode("utf-8"), qos=0, retain=True)
-        if (( "openWB/set/pv" in msg.topic) and ("faultState" in msg.topic)):
-            devicenumb = int(re.sub(r'\D', '', msg.topic))
-            if ( (1 <= devicenumb <= 2) and (0 <= int(msg.payload) <= 2) ):
-                client.publish("openWB/pv/"+str(devicenumb)+"/faultState", msg.payload.decode("utf-8"), qos=0, retain=True)
-        if (( "openWB/set/pv" in msg.topic) and ("faultStr" in msg.topic)):
-            devicenumb = int(re.sub(r'\D', '', msg.topic))
-            if (1 <= devicenumb <= 2):
-                client.publish("openWB/pv/"+str(devicenumb)+"/faultStr", msg.payload.decode("utf-8"), qos=0, retain=True)
+        # if (( "openWB/set/pv" in msg.topic) and ("faultState" in msg.topic)):
+        #     devicenumb = int(re.sub(r'\D', '', msg.topic))
+        #     if ( (1 <= devicenumb <= 2) and (0 <= int(msg.payload) <= 2) ):
+        #         client.publish("openWB/pv/"+str(devicenumb)+"/faultState", msg.payload.decode("utf-8"), qos=0, retain=True)
+        #         setTopicCleared = True
+        # if (( "openWB/set/pv" in msg.topic) and ("faultStr" in msg.topic)):
+        #     devicenumb = int(re.sub(r'\D', '', msg.topic))
+        #     if (1 <= devicenumb <= 2):
+        #         client.publish("openWB/pv/"+str(devicenumb)+"/faultStr", msg.payload.decode("utf-8"), qos=0, retain=True)
+        #         setTopicCleared = True
         if (msg.topic == "openWB/config/set/u1p3p/standbyPhases"):
             if (int(msg.payload) >= 1 and int(msg.payload) <= 3):
                 sendcommand = ["/var/www/html/openWB/runs/replaceinconfig.sh", "u1p3pstandby=", msg.payload.decode("utf-8")]
@@ -931,12 +934,12 @@ def on_message(client, userdata, msg):
                 client.publish("openWB/system/MonthLadelogData11", "empty", qos=0, retain=True)
                 client.publish("openWB/system/MonthLadelogData12", "empty", qos=0, retain=True)
             setTopicCleared = True
-        if (msg.topic == "openWB/set/pv/NurPV70Status"):
-            if (int(msg.payload) >= 0 and int(msg.payload) <= 1):
-                client.publish("openWB/pv/bool70PVDynStatus", msg.payload.decode("utf-8"), qos=0, retain=True)
-                f = open('/var/www/html/openWB/ramdisk/nurpv70dynstatus', 'w')
-                f.write(msg.payload.decode("utf-8"))
-                f.close()
+        # if (msg.topic == "openWB/set/pv/NurPV70Status"):
+        #     if (int(msg.payload) >= 0 and int(msg.payload) <= 1):
+        #         client.publish("openWB/pv/bool70PVDynStatus", msg.payload.decode("utf-8"), qos=0, retain=True)
+        #         f = open('/var/www/html/openWB/ramdisk/nurpv70dynstatus', 'w')
+        #         f.write(msg.payload.decode("utf-8"))
+        #         f.close()
         if (msg.topic == "openWB/set/RenewMQTT"):
             if (int(msg.payload) == 1):
                 client.publish("openWB/set/RenewMQTT", "0", qos=0, retain=True)
@@ -1182,37 +1185,37 @@ def on_message(client, userdata, msg):
                 f.write(msg.payload.decode("utf-8"))
                 f.close()
                 client.publish("openWB/chargepoint/1/get/autolock_state", msg.payload.decode("utf-8"), qos=0, retain=True)
-        if (msg.topic == "openWB/set/chargepoint/2/get/autolock_state"):
+        if (msg.topic == "openWB/chargepoint/2/get/autolock_state"):
             if (int(msg.payload) >= 0 and int(msg.payload) <=3):
                 f = open('/var/www/html/openWB/ramdisk/autolockstatuslp2', 'w')
                 f.write(msg.payload.decode("utf-8"))
                 f.close()
-        if (msg.topic == "openWB/set/chargepoint/3/get/autolock_state"):
+        if (msg.topic == "openWB/chargepoint/3/get/autolock_state"):
             if (int(msg.payload) >= 0 and int(msg.payload) <=3):
                 f = open('/var/www/html/openWB/ramdisk/autolockstatuslp3', 'w')
                 f.write(msg.payload.decode("utf-8"))
                 f.close()
-        if (msg.topic == "openWB/set/chargepoint/4/get/autolock_state"):
+        if (msg.topic == "openWB/chargepoint/4/get/autolock_state"):
             if (int(msg.payload) >= 0 and int(msg.payload) <=3):
                 f = open('/var/www/html/openWB/ramdisk/autolockstatuslp4', 'w')
                 f.write(msg.payload.decode("utf-8"))
                 f.close()
-        if (msg.topic == "openWB/set/chargepoint/5/get/autolock_state"):
+        if (msg.topic == "openWB/chargepoint/5/get/autolock_state"):
             if (int(msg.payload) >= 0 and int(msg.payload) <=3):
                 f = open('/var/www/html/openWB/ramdisk/autolockstatuslp5', 'w')
                 f.write(msg.payload.decode("utf-8"))
                 f.close()
-        if (msg.topic == "openWB/set/chargepoint/6/get/autolock_state"):
+        if (msg.topic == "openWB/chargepoint/6/get/autolock_state"):
             if (int(msg.payload) >= 0 and int(msg.payload) <=3):
                 f = open('/var/www/html/openWB/ramdisk/autolockstatuslp6', 'w')
                 f.write(msg.payload.decode("utf-8"))
                 f.close()
-        if (msg.topic == "openWB/set/chargepoint/7/get/autolock_state"):
+        if (msg.topic == "openWB/chargepoint/7/get/autolock_state"):
             if (int(msg.payload) >= 0 and int(msg.payload) <=3):
                 f = open('/var/www/html/openWB/ramdisk/autolockstatuslp7', 'w')
                 f.write(msg.payload.decode("utf-8"))
                 f.close()
-        if (msg.topic == "openWB/set/chargepoint/8/get/autolock_state"):
+        if (msg.topic == "openWB/chargepoint/8/get/autolock_state"):
             if (int(msg.payload) >= 0 and int(msg.payload) <=3):
                 f = open('/var/www/html/openWB/ramdisk/autolockstatuslp8', 'w')
                 f.write(msg.payload.decode("utf-8"))
@@ -1378,8 +1381,16 @@ def on_message(client, userdata, msg):
                 f.close()
 
         # clear all set topics if not already done
-        if ( not(setTopicCleared) ):
-            client.publish(msg.topic, "", qos=0, retain=True)
+        if setTopicCleared == False:
+            if ("openWB/set/vehicle/" not in msg.topic and 
+                    "openWB/set/chargepoint/" not in msg.topic and 
+                    "openWB/chargepoint/" not in msg.topic and
+                    "openWB/set/pv/" not in msg.topic and 
+                    "openWB/set/bat" not in msg.topic and 
+                    "openWB/set/general" not in msg.topic and 
+                    "openWB/set/optional" not in msg.topic and 
+                    "openWB/set/counter" not in msg.topic):
+                client.publish(msg.topic, "", qos=0, retain=True)
 
 client.on_connect = on_connect
 client.on_message = on_message
