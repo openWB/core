@@ -138,7 +138,7 @@ function refreshChargetemplate(templateIndex) {
 
 function handlevar(mqttmsg, mqttpayload) {
 	// receives all messages and calls respective function to process them
-	console.log("newmessage: "+mqttmsg+": "+mqttpayload);
+	// console.log("newmessage: "+mqttmsg+": "+mqttpayload);
 	processPreloader(mqttmsg);
 	if ( mqttmsg.match( /^openwb\/counter\/0\//i) ) { processEvuMessages(mqttmsg, mqttpayload); } // counter/0 is always EVU
 	else if ( mqttmsg.match( /^openwb\/counter\/[0-9]+\//i) ) { /* nothing here yet */ }
