@@ -365,7 +365,7 @@ h3 {
 	--lp1SocCol: rgba(0, 0, 255, 0.5);
 	--lp2SocCol: rgba(50, 50, 55, 0.5);
 	--hausverbrauchCol: rgba(0, 0, 0, 0.7);
-	--hausverbrauchbgCol: rgba(200, 255, 13, 0.3);
+	--hausverbrauchbgCol: rgba(0, 0, 0, 0.2);
 	--verbraucher1Col: rgba(0, 150, 150, 0.7);
 	--verbraucher1bgCol: rgba(200, 255, 13, 0.3);
 	--verbraucher2Col: rgba(150, 150, 0, 0.7);
@@ -410,7 +410,8 @@ h3 {
 }
 
 #thegraph > div {
-	height: 350px;
+	/* height: 350px; */
+	height: 45vh;
 }
 
 #electricityPriceChartCanvasDiv {
