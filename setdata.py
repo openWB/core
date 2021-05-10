@@ -591,6 +591,11 @@ class setData():
         try:
             if re.search("^openWB/set/counter/set/loadmanagement$", msg.topic) != None:
                 self._validate_value(msg, int, [(0, 1)])
+            elif re.search("^openWB/set/counter/set/home_consumption$", msg.topic) != None:
+                # Inkonsistenz: Kann auch als Float kommen, soll aber immer als Int gepublished werden.
+                payload = json.loads(str(msg.payload.decode("utf-8")))
+                msg.payload = json.dumps(int(payload)).encode("utf-8")
+                self._validate_value(msg, int, [(0, None)])
             elif re.search("^openWB/set/counter/[0-9]+/set/consumption_left$", msg.topic) != None:
                 self._validate_value(msg, float)
             elif re.search("^openWB/set/counter/[0-9]+/set/current_left$", msg.topic) != None:
