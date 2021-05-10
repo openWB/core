@@ -31,7 +31,7 @@ class setData():
         client.message_callback_add("openWB/set/general/#", self.process_general_topic)
         client.message_callback_add("openWB/set/optional/#", self.process_optional_topic)
         client.message_callback_add("openWB/set/counter/#", self.process_counter_topic)
-        client.message_callback_add("openWB/set/graph/#", self.process_graph_topic)
+        # client.message_callback_add("openWB/set/graph/#", self.process_graph_topic)
         # client.message_callback_add("openWB/set/smarthome/#", self.processSmarthomeTopic)
 
         client.connect(mqtt_broker_ip, 1883)
