@@ -5,7 +5,8 @@ def pub_settings():
     """ruft für alle Ramdisk-Dateien aus initRamdisk die zum Typ passende Funktion zum publishen auf.
     """
     # cp1
-    pub.pub("openWB/chargepoint/1/set/manual_lock", False)
+    # pub.pub("openWB/chargepoint/1/set/manual_lock", False)
+    pub.pub("openWB/chargepoint/1/config/name", "LP1")
     pub.pub("openWB/chargepoint/1/config/template", 1)
     pub.pub("openWB/chargepoint/1/config/connected_phases", 3)
     pub.pub("openWB/chargepoint/1/config/phase_1", 0)
@@ -23,6 +24,7 @@ def pub_settings():
 
     # # cp2
     # pub.pub("openWB/chargepoint/2/set/manual_lock", False)
+    # pub.pub("openWB/chargepoint/2/config/name", "LP2")
     # pub.pub("openWB/chargepoint/2/config/template", 2)
     # pub.pub("openWB/chargepoint/2/config/connected_phases", 3)
     # pub.pub("openWB/chargepoint/2/config/phase_1", 0)
@@ -40,6 +42,7 @@ def pub_settings():
 
     # #cp3
     # pub.pub("openWB/chargepoint/3/set/manual_lock", False)
+    # pub.pub("openWB/chargepoint/3/config/name", "LP3")
     # pub.pub("openWB/chargepoint/3/config/template", 3)
     # pub.pub("openWB/chargepoint/3/config/connected_phases", 3)
     # pub.pub("openWB/chargepoint/3/config/phase_1", 0)
@@ -105,7 +108,7 @@ def pub_settings():
         'average_consump': 5, 
         'max_phases': 3, 
         'max_current_multi_phases': 16, 
-        'control_pilot_interruption': True,
+        'control_pilot_interruption': False,
         'control_pilot_interruption_duration': 4,
         'nominal_difference': 2
         }
@@ -207,7 +210,7 @@ def pub_settings():
     pub.pub("openWB/general/chargemode_config/unbalanced_load", False)
     pub.pub("openWB/general/chargemode_config/unbalanced_load_limit", 18)
     pub.pub("openWB/general/chargemode_config/instant_charging/phases_to_use", 1)
-    pub.pub("openWB/general/chargemode_config/pv_charging/bat_prio", 1)
+    # pub.pub("openWB/general/chargemode_config/pv_charging/bat_prio", 1)
     pub.pub("openWB/bat/config/configured", False)
     pub.pub("openWB/general/chargemode_config/pv_charging/switch_on_soc", 60)
     pub.pub("openWB/general/chargemode_config/pv_charging/switch_off_soc", 40)

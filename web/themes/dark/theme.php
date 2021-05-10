@@ -480,7 +480,7 @@
 								</div>
 								<div class="chargepoint-chargemodeoptions mb-0 hide">
 									<hr>
-									<div class="chargemode-options chargemode-option-instant_charge">
+									<div class="chargemode-options chargemode-option-instant_charging">
 										<h3>Einstellungen für "Sofortladen"</h3>
 										<div class="form-row vaRow mb-0">
 											<div class="col">
@@ -540,7 +540,7 @@
 											</div>
 										</div>
 									</div>
-									<div class="chargemode-options chargemode-option-pv_charge">
+									<div class="chargemode-options chargemode-option-pv_charging">
 										<h3 c>Einstellungen für "PV"</h3>
 										<div class="form-row mb-1">
 											<div class="col">
@@ -843,7 +843,7 @@
 					document.body.appendChild(script);
 				});
 
-				$('input[type=checkbox]').change(function(event){
+				$('.container').on('change', 'input[type=checkbox]', function(event){
 					// console.log("checkbox changed");
 					// send mqtt set to enable/disable charge point after click
 					var topic = $(this).data('topic');
@@ -868,7 +868,7 @@
 					}
 				});
 
-				$('.chargepoint-vehicleselect').change(function(event){
+				$('.container').on('change', '.chargepoint-vehicleselect', function(event){
 					$(this).closest('[data-ev]').attr('data-ev', $(this).val()).data('ev', $(this).val());
 					var topic = $(this).data('topic');
 					if( topic != undefined ) {
@@ -878,7 +878,7 @@
 					}
 				});
 
-				$('.chargepoint-socconfigured').click(function(event){
+				$('.container').on('click', '.chargepoint-socconfigured', function(event){
 					event.stopPropagation();
 					// send mqtt set to force reload of charge point SoC after click
 					var cp = parseInt($(this).closest('[data-cp]').data('cp'));  // get attribute cp-# of parent element
@@ -907,7 +907,7 @@
 				// 	publish("1", topic);
 				// });
 
-				$('.btn-group-toggle').change(function(event){
+				$('.container').on('change', '.btn-group-toggle', function(event){
 					var ct = parseInt($(this).closest('[data-chargetemplate]').data('chargetemplate'));  // get attribute chargetemplate-# of parent element
 					var option = $(this).find('input[type="radio"]:checked').data('option').toString();
 					var topic = $(this).data('topic').replace('/<ct>/', '/'+ct+'/');
@@ -948,7 +948,7 @@
 				// 	$('#MaxPriceForCharging').trigger('input');
 				// });
 
-				$('.rangeInput').on('input', function() {
+				$('.container').on('input', '.rangeInput', function() {
 					// show slider value in label of class valueLabel
 					var elementId = $(this).attr('id');
 					updateLabel(elementId);
