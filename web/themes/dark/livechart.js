@@ -133,6 +133,67 @@ var all16p;
 var hidehaus;
 var myLine;
 
+//var csv is the CSV file with headers
+function csvJSON(csv){
+	var lines=csv.split("\n");
+	var result = [];
+	// NOTE: If your columns contain commas in their values, you'll need
+	// to deal with those before doing the next step 
+	// (you might convert them to &&& or something, then covert them back later)
+	// jsfiddle showing the issue https://jsfiddle.net/
+	var headers=lines[0].split(",");
+
+	for(var i=1;i<lines.length;i++){
+		var obj = {};
+		var currentline=lines[i].split(",");
+		if( currentline.length == headers.length ){
+			for(var j=0;j<headers.length;j++){
+				// console.log('header: '+headers[j]);
+				switch (headers[j]) {
+					case 'EVU':
+					case 'Ladeleistung':
+					case 'PV':
+					case 'LP1':
+					case 'LP2':
+					case 'LP3':
+					case 'LP4':
+					case 'LP5':
+					case 'LP6':
+					case 'LP7':
+					case 'LP8':
+					case 'Speicherleistung':
+					case 'Hausverbrauch':
+					case 'Verbraucher1':
+					case 'Verbraucher2':
+					case 'SH1':
+					case 'SH2':
+					case 'SH3':
+					case 'SH4':
+					case 'SH5':
+					case 'SH6':
+					case 'SH7':
+					case 'SH8':
+					case 'SH9':
+						console.log()
+						obj[headers[j]] = currentline[j] / 1000;
+						break;
+					case 'SpeicherSoC':
+					case 'LP1SoC':
+					case 'LP2SoC':
+						obj[headers[j]] = parseInt(currentline[j]);
+						break;
+					default:
+						obj[headers[j]] = currentline[j];
+				}
+			}
+			result.push(obj);
+		} else {
+			console.log("data line with wrong number of columns: line: " + i + " columns: " + currentline.length + " expected: " + headers.length);
+		}
+	}
+	return result; //JavaScript object
+}
+
 function loadgraph(animationDuration = 1000) {
 
 	var chartData = {
@@ -708,7 +769,10 @@ function putgraphtogether() {
 	if ( (all1 == 1) && (all2 == 1) && (all3 == 1) && (all4 == 1) && (all5 == 1) && (all6 == 1) && (all7 == 1) && (all8 == 1) && (all9 == 1) && (all10 == 1) && (all11 == 1) && (all12 == 1) && (all13 == 1) && (all14 == 1) && (all15 == 1) && (all16 == 1) ){
 		var alldata = all1p + "\n" + all2p + "\n" + all3p + "\n" + all4p + "\n" + all5p + "\n" + all6p + "\n" + all7p + "\n" + all8p + "\n" + all9p + "\n" + all10p + "\n" + all11p + "\n" + all12p + "\n" + all13p + "\n" + all14p + "\n" + all15p + "\n" + all16p;
 		alldata = alldata.replace(/^\s*[\n]/gm, "");
-		alldata = alldata.replace(/^\s*-[\n]/gm, "");
+		alldata = alldata.replace(/^[\s]*-[\n]*/gm, "");
+		// create JSON object from csv data
+		var alldataJson = csvJSON(alldata);
+		console.log(alldataJson);
 		var csvData = [];
 		var rawcsv = alldata.split(/\r?\n|\r/);
 		// line 1 contains column headers
@@ -801,6 +865,8 @@ function putgraphtogether() {
 
 function updateGraph(dataset) {
 	var lines = dataset.split("\n");
+	var datasetJson = csvJSON(dataset);
+	console.log(datasetJson);
 	// line 1 contains column headers
 	for (var i = 1; i < lines.length; i++) {
 		var ldate = lines[i].split(",")[0];
