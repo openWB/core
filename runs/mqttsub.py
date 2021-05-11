@@ -8,6 +8,8 @@ import fileinput
 from datetime import datetime
 import configparser
 import re
+import json
+
 global inaction
 inaction=0
 openwbconffile = "/var/www/html/openWB/openwb.conf"
@@ -1099,26 +1101,20 @@ def on_message(client, userdata, msg):
         # if (msg.topic == "openWB/set/houseBattery/faultStr"):
         #     client.publish("openWB/bat/modules/1/get/fault_str", msg.payload.decode("utf-8"), qos=0, retain=True)
         # if (msg.topic == "openWB/set/evu/W"):
-        if (msg.topic == "openWB/set/counter/0/power_all"):
+        if (msg.topic == "openWB/set/counter/0/get/power_all"):
             if (float(msg.payload) >= -100000 and float(msg.payload) <= 100000):
                 f = open('/var/www/html/openWB/ramdisk/wattbezug', 'w')
                 f.write(msg.payload.decode("utf-8"))
                 f.close()
-        # if (msg.topic == "openWB/set/evu/APhase1"):
-        #     if (float(msg.payload) >= -1000 and float(msg.payload) <= 1000):
-        #         f = open('/var/www/html/openWB/ramdisk/bezuga1', 'w')
-        #         f.write(msg.payload.decode("utf-8"))
-        #         f.close()
-        # if (msg.topic == "openWB/set/evu/APhase2"):
-        #     if (float(msg.payload) >= -1000 and float(msg.payload) <= 1000):
-        #         f = open('/var/www/html/openWB/ramdisk/bezuga2', 'w')
-        #         f.write(msg.payload.decode("utf-8"))
-        #         f.close()
-        # if (msg.topic == "openWB/set/evu/APhase3"):
-        #     if (float(msg.payload) >= -1000 and float(msg.payload) <= 1000):
-        #         f = open('/var/www/html/openWB/ramdisk/bezuga3', 'w')
-        #         f.write(msg.payload.decode("utf-8"))
-        #         f.close()
+        if (msg.topic == "openWB/set/counter/0/get/current"):
+            currents = json.loads(str(msg.payload.decode("utf-8")))
+            if ( isinstance(currents, list) == True and len(currents) == 3 ):
+                index = 1
+                for phase in currents:
+                    f = open('/var/www/html/openWB/ramdisk/bezuga' + str(index), 'w')
+                    f.write(str(phase))
+                    f.close()
+                    index += 1
         # if (msg.topic == "openWB/set/evu/VPhase1"):
         #     if (float(msg.payload) >= -1000 and float(msg.payload) <= 1000):
         #         f = open('/var/www/html/openWB/ramdisk/evuv1', 'w')

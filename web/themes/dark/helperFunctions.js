@@ -84,10 +84,10 @@ function setToggleBtnGroup(groupId, option) {
      */
     var btnGroup = $('#' + $.escapeSelector(groupId));
     // console.log(btnGroup);
-    btnGroup.find('input[data-option="' + option + '"]').prop('checked', true);
-    btnGroup.find('input[data-option="' + option + '"]').closest('label').addClass('active');
+    btnGroup.find('input[data-option=' + option + ']').prop('checked', true);
+    btnGroup.find('input[data-option=' + option + ']').closest('label').addClass('active');
     // and uncheck all others
-    btnGroup.find('input').not('[data-option="' + option + '"]').each(function() {
+    btnGroup.find('input').not('[data-option=' + option + ']').each(function() {
         $(this).prop('checked', false);
         $(this).closest('label').removeClass('active');
     });
