@@ -163,18 +163,22 @@ function handlevar(mqttmsg, mqttpayload) {
 function processGlobalCounterMessages(mqttmsg, mqttpayload) {
 	if ( mqttmsg.match( /^openwb\/counter\/get\/hierarchy$/i ) ) {
 		// this topic is used to populate the chargepoint list
-		// unsubscribe from all other topics
+		// unsubscribe from other topics relevant for chargepoints
 		topicsToSubscribe.forEach((topic) => {
-			client.unsubscribe(topic[0]);
+			if ( topic[0].match( /^openwb\/(chargepoint|vehicle)\//i ) ) {
+				client.unsubscribe(topic[0]);
+			}
 		});
 		// first remove all chargepoints exept the first
 		$('.chargepoint-card[data-cp]').not('[data-cp=1]').remove();
 		// now create any other chargepoint
 		var hierarchy = JSON.parse(mqttpayload);
 		createChargepoint(hierarchy[0]);
-		// subscribe to other topics
+		// subscribe to other topics relevant for chargepoints
 		topicsToSubscribe.forEach((topic) => {
-			client.subscribe(topic[0], {qos: 0});
+			if ( topic[0].match( /^openwb\/(chargepoint|vehicle)\//i ) ) {
+				client.subscribe(topic[0], {qos: 0});
+			}
 		});
 	}
 }
