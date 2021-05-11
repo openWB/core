@@ -296,7 +296,7 @@ class chargepoint():
                 phases = config["connected_phases"]
             chargemode = charging_ev.data["control_parameter"]["submode"]
             chargemode_phases = data.general_data["general"].get_phases_chargemode(chargemode)
-            if chargemode_phases == "auto":
+            if chargemode_phases == 0:
                 if self.data["set"]["current"] == 0:
                 # Im Automatik-Modus muss die Ladung mit einer Phase begonnen werden.
                     phases = 1

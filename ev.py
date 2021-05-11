@@ -161,8 +161,8 @@ class ev():
         float: Strom, mit dem das EV laden darf
         """
         try:
-            # Überprüfung bei "auto" erfolgt nach der Prüfung der Phasenumschaltung, wenn fest steht, mit vielen Phasen geladen werden soll.
-            if phases != "auto":
+            # Überprüfung bei 0 (automatische Umschaltung) erfolgt nach der Prüfung der Phasenumschaltung, wenn fest steht, mit vielen Phasen geladen werden soll.
+            if phases != 0:
                 if required_current != 0:
                     if required_current < self.ev_template.data["min_current"]:
                         required_current = self.ev_template.data["min_current"]
