@@ -21,11 +21,13 @@ def main():
     char = charge.charge()
     control = algorithm.control()
     prep = prepare.prepare()
-    set = setdata.setData()
-    sub = subdata.subData()
+    lock_template_data = threading.Lock()
+    set = setdata.setData(lock_template_data)
+    sub = subdata.subData(lock_template_data)
     ticker = threading.Event()
 
     log.setup_logger()
+    
     
     t_sub = Thread(target=sub.sub_topics, args=())
     t_set = Thread(target=set.set_data, args=())

@@ -4,6 +4,7 @@
 import json
 import paho.mqtt.client as mqtt
 import re
+import threading
 
 import bat
 import chargepoint
@@ -35,8 +36,8 @@ class subData():
     optional_data={}
     graph_data={}
 
-    def __init__(self):
-        pass
+    def __init__(self, lock_template_data):
+        self.lock_template_data = lock_template_data
 
     def sub_topics(self):
         """ abonniert alle Topics.
@@ -180,6 +181,8 @@ class subData():
                     if "ct"+index not in self.ev_charge_template_data:
                         self.ev_charge_template_data["ct"+index]=ev.chargeTemplate(int(index))
                     self.ev_charge_template_data["ct"+index].data = json.loads(str(msg.payload.decode("utf-8")))
+                    if self.lock_template_data.locked() == True:
+                        self.lock_template_data.release()
             elif re.search("^openWB/vehicle/template/ev_template/[1-9][0-9]*$", msg.topic) != None:
                 if json.loads(str(msg.payload.decode("utf-8")))=="":
                     if "et"+index in self.ev_template_data:
@@ -188,6 +191,8 @@ class subData():
                     if "et"+index not in self.ev_template_data:
                         self.ev_template_data["et"+index]=ev.evTemplate(int(index))
                     self.ev_template_data["et"+index].data = json.loads(str(msg.payload.decode("utf-8")))
+                    if self.lock_template_data.locked() == True:
+                        self.lock_template_data.release()
         except Exception as e:
             log.exception_logging(e)
 

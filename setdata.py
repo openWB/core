@@ -5,6 +5,7 @@ import copy
 import json
 import paho.mqtt.client as mqtt
 import re
+import threading
 
 import log
 import pub
@@ -12,8 +13,8 @@ import subdata
 
 class setData():
  
-    def __init__(self):
-        pass
+    def __init__(self, lock_template_data):
+        self.lock_template_data = lock_template_data
 
     def set_data(self):
         """ abonniert alle set-Topics.
@@ -97,6 +98,7 @@ class setData():
                 if valid == True:
                     if pub_json == False:
                         pub.pub(msg.topic.replace('set/', '', 1), value)
+                        pub.pub(msg.topic, "")
                     else:
                         # aktuelles json-Objekt liegt in subdata
                         index = re.search('(?!/)([0-9]*)(?=/|$)', msg.topic).group()
@@ -118,7 +120,10 @@ class setData():
                         topic = msg.topic[:index_pos+1]
                         topic = topic.replace('set/', '', 1)
                         pub.pub(topic, template)
-                pub.pub(msg.topic, "")
+                        pub.pub(msg.topic, "")
+                        self.lock_template_data.acquire()
+                else:
+                    pub.pub(msg.topic, "")
         except Exception as e:
             log.exception_logging(e)
 
