@@ -285,6 +285,7 @@ class setData():
                 self._subprocess_vehicle_chargemode_topic(msg)
             else:
                 log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
+                pub.pub(msg.topic, "")
         except Exception as e:
             log.exception_logging(e)
 
@@ -363,8 +364,11 @@ class setData():
                 self._validate_value(msg, int, [(0, 1)], pub_json = True)
             elif re.search("^openWB/set/vehicle/template/ev_template/[1-9][0-9]*/control_pilot_interruption_duration$", msg.topic) != None:
                 self._validate_value(msg, int, [(4, 15)], pub_json = True)
+            elif re.search("^openWB/set/vehicle/template/ev_template/[1-9][0-9]*/nominal_difference$", msg.topic) != None:
+                self._validate_value(msg, float, [(0, 4)], pub_json = True)
             else:
                 log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
+                pub.pub(msg.topic, "")
         except Exception as e:
             log.exception_logging(e)
 
@@ -470,6 +474,7 @@ class setData():
                 self._validate_value(msg, int, [(0, 1)])
             else:
                 log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
+                pub.pub(msg.topic, "")
         except Exception as e:
             log.exception_logging(e)
 
@@ -540,6 +545,7 @@ class setData():
                 self._validate_value(msg, float, [(0, None)], collection=list)
             else:
                 log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
+                pub.pub(msg.topic, "")
         except Exception as e:
             log.exception_logging(e)
 
@@ -605,6 +611,7 @@ class setData():
                 self._validate_value(msg, str)
             else:
                 log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
+                pub.pub(msg.topic, "")
         except Exception as e:
             log.exception_logging(e)
 
@@ -673,6 +680,7 @@ class setData():
                 self._validate_value(msg, str)
             else:
                 log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
+                pub.pub(msg.topic, "")
         except Exception as e:
             log.exception_logging(e)
 
@@ -706,6 +714,7 @@ class setData():
                 self._validate_value(msg, float)
             else:
                 log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
+                pub.pub(msg.topic, "")
         except Exception as e:
             log.exception_logging(e)
 
@@ -797,6 +806,7 @@ class setData():
                 self._validate_value(msg, str)
             else:
                 log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
+                pub.pub(msg.topic, "")
         except Exception as e:
             log.exception_logging(e)
 
@@ -817,6 +827,7 @@ class setData():
                 pass
             else:
                 log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
+                pub.pub(msg.topic, "")
         except Exception as e:
             log.exception_logging(e)
 
