@@ -466,7 +466,7 @@
 										Priorität
 									</div>
 									<div class="col-md-8 text-right">
-										<input class="chargepoint-vehiclepriority" type="checkbox" data-toggle="toggle" data-topic="openWB/set/vehicle/<ev>/control_parameter/priority" data-on="Ja" data-off="Nein" data-onstyle="success" data-offstyle="danger" data-size="sm" data-style="w-100">
+										<input class="chargepoint-vehiclepriority" type="checkbox" data-toggle="toggle" data-topic="openWB/set/vehicle/template/charge_template/<ct>/prio" data-on="Ja" data-off="Nein" data-onstyle="success" data-offstyle="danger" data-size="sm" data-style="w-100">
 									</div>
 								</div>
 								<div class="form-row mb-1">
