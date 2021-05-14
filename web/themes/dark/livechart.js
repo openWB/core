@@ -61,8 +61,8 @@ var initialread = 0;
 var graphloaded = 0;
 var boolDisplayHouseConsumption;
 var boolDisplayLoad1;
-var boolDisplayLp1Soc;
 var boolDisplayLoad2;
+var boolDisplayLp1Soc;
 var boolDisplayLp2Soc;
 var boolDisplayLp1;
 var boolDisplayLp2;
@@ -88,15 +88,18 @@ var boolDisplayshd6;
 var boolDisplayshd7;
 var boolDisplayshd8;
 var boolDisplayshd9;
-var d1name = 'Device 1';
-var d2name = 'Device 2';
-var d3name = 'Device 3';
-var d4name = 'Device 4';
-var d5name = 'Device 5';
-var d6name = 'Device 6';
-var d7name = 'Device 7';
-var d8name = 'Device 8';
-var d9name = 'Device 9';
+var dname = [
+	'',  // index starts at 1!
+	'Device 1',
+	'Device 2',
+	'Device 3',
+	'Device 4',
+	'Device 5',
+	'Device 6',
+	'Device 7',
+	'Device 8',
+	'Device 9'
+];
 var all1 = 0;
 var all2 = 0;
 var all3 = 0;
@@ -174,9 +177,9 @@ function csvJSON(csv){
 					case 'SH7':
 					case 'SH8':
 					case 'SH9':
-						console.log()
 						obj[headers[j]] = currentline[j] / 1000;
 						break;
+					case 'Timestamp':
 					case 'SpeicherSoC':
 					case 'LP1SoC':
 					case 'LP2SoC':
@@ -192,6 +195,25 @@ function csvJSON(csv){
 		}
 	}
 	return result; //JavaScript object
+}
+
+function getXScaleData(matrix){
+	return matrix.map(function(row){
+		return row.Zeit;
+		// return row.Timestamp;
+		// return new Date(row.Timestamp*1000);
+	});
+}
+
+function getColData(matrix, colLabel){
+	if( matrix[0][colLabel] != undefined ) {
+		return matrix.map(function(row){
+			return row[colLabel];
+		});
+	} else {
+		console.log('unknown data column: ' + colLabel);
+	}
+	return [];
 }
 
 function loadgraph(animationDuration = 1000) {
@@ -210,9 +232,9 @@ function loadgraph(animationDuration = 1000) {
 				data: abezug,
 				hidden: boolDisplayEvu,
 				yAxisID: 'y1',
-				parsing: {
-					yAxisKey: 'EVU'
-				}
+				// parsing: {
+				// 	yAxisKey: 'EVU'
+				// }
 			},
 			{
 				label: 'Hausverbrauch',
@@ -224,9 +246,9 @@ function loadgraph(animationDuration = 1000) {
 				hidden: boolDisplayHouseConsumption,
 				data: ahausverbrauch,
 				yAxisID: 'y1',
-				parsing: {
-					yAxisKey: 'Hausverbrauch'
-				}
+				// parsing: {
+				// 	yAxisKey: 'Hausverbrauch'
+				// }
 			},
 			{
 				label: 'LP Gesamt',
@@ -238,9 +260,9 @@ function loadgraph(animationDuration = 1000) {
 				data: alpa,
 				hidden: boolDisplayLpAll,
 				yAxisID: 'y1',
-				parsing: {
-					yAxisKey: 'Ladeleistung'
-				}
+				// parsing: {
+				// 	yAxisKey: 'Ladeleistung'
+				// }
 			},
 			// charge points
 			{
@@ -251,11 +273,11 @@ function loadgraph(animationDuration = 1000) {
 				hidden: boolDisplayLp1,
 				fill: false,
 				lineTension: 0.2,
-				data: alp1,
+				data: alp[1],
 				yAxisID: 'y1',
-				parsing: {
-					yAxisKey: 'LP1'
-				}
+				// parsing: {
+				// 	yAxisKey: 'LP1'
+				// }
 			},
 			{
 				label: 'Lp2',
@@ -265,11 +287,11 @@ function loadgraph(animationDuration = 1000) {
 				hidden: boolDisplayLp2,
 				fill: false,
 				lineTension: 0.2,
-				data: alp2,
+				data: alp[2],
 				yAxisID: 'y1',
-				parsing: {
-					yAxisKey: 'LP2'
-				}
+				// parsing: {
+				// 	yAxisKey: 'LP2'
+				// }
 			},
 			{
 				label: 'Lp3',
@@ -279,11 +301,11 @@ function loadgraph(animationDuration = 1000) {
 				hidden: boolDisplayLp3,
 				fill: false,
 				lineTension: 0.2,
-				data: alp3,
+				data: alp[3],
 				yAxisID: 'y1',
-				parsing: {
-					yAxisKey: 'LP3'
-				}
+				// parsing: {
+				// 	yAxisKey: 'LP3'
+				// }
 			},
 			// charge point soc
 			{
@@ -294,11 +316,11 @@ function loadgraph(animationDuration = 1000) {
 				hidden: boolDisplayLp1Soc,
 				fill: false,
 				lineTension: 0.2,
-				data: asoc,
+				data: alpsoc[1],
 				yAxisID: 'y2',
-				parsing: {
-					yAxisKey: 'LP1SoC'
-				}
+				// parsing: {
+				// 	yAxisKey: 'LP1SoC'
+				// }
 			},
 			{
 				label: 'LP2 SoC',
@@ -308,11 +330,11 @@ function loadgraph(animationDuration = 1000) {
 				lineTension: 0.2,
 				borderWidth: 2,
 				hidden: boolDisplayLp2Soc,
-				data: asoc1,
+				data: alpsoc[2],
 				yAxisID: 'y2',
-				parsing: {
-					yAxisKey: 'LP2SoC'
-				}
+				// parsing: {
+				// 	yAxisKey: 'LP2SoC'
+				// }
 			},
 			// optional components
 			{
@@ -325,9 +347,9 @@ function loadgraph(animationDuration = 1000) {
 				borderWidth: 1,
 				data: apv,
 				yAxisID: 'y1',
-				parsing: {
-					yAxisKey: 'PV'
-				}
+				// parsing: {
+				// 	yAxisKey: 'PV'
+				// }
 			},
 			{
 				label: 'Speicher',
@@ -339,9 +361,9 @@ function loadgraph(animationDuration = 1000) {
 				data: aspeicherl,
 				hidden: boolDisplaySpeicher,
 				yAxisID: 'y1',
-				parsing: {
-					yAxisKey: 'Speicherleistung'
-				}
+				// parsing: {
+				// 	yAxisKey: 'Speicherleistung'
+				// }
 			},
 			{
 				label: 'Speicher SoC',
@@ -354,9 +376,9 @@ function loadgraph(animationDuration = 1000) {
 				borderWidth: 2,
 				data: aspeichersoc,
 				yAxisID: 'y2',
-				parsing: {
-					yAxisKey: 'SpeicherSoC'
-				}
+				// parsing: {
+				// 	yAxisKey: 'SpeicherSoC'
+				// }
 			},
 			// SmartHome
 			{
@@ -367,11 +389,11 @@ function loadgraph(animationDuration = 1000) {
 				lineTension: 0.2,
 				borderWidth: 2,
 				hidden: boolDisplayLoad1,
-				data: averbraucher1,
+				data: averbraucher[1],
 				yAxisID: 'y1',
-				parsing: {
-					yAxisKey: 'Verbraucher1'
-				}
+				// parsing: {
+				// 	yAxisKey: 'Verbraucher1'
+				// }
 			},
 			{
 				label: 'Verbraucher 2',
@@ -380,131 +402,131 @@ function loadgraph(animationDuration = 1000) {
 				fill: false,
 				lineTension: 0.2,
 				borderWidth: 2,
-				data: averbraucher2,
+				data: averbraucher[2],
 				hidden: boolDisplayLoad2,
 				yAxisID: 'y1',
-				parsing: {
-					yAxisKey: 'Verbraucher2'
-				}
+				// parsing: {
+				// 	yAxisKey: 'Verbraucher2'
+				// }
 			},
 			// SmartHome 2.0 devices
 			{
-				label: d1name,
+				label: dname[1],
 				borderColor: d1Col,
 				backgroundColor: d1bgCol,
 				fill: false,
 				lineTension: 0.2,
 				borderWidth: 2,
-				data: ashd1,
+				data: ashd[1],
 				yAxisID: 'y1',
 				hidden: boolDisplayshd1,
-				parsing: {
-					yAxisKey: 'SH1'
-				}
+				// parsing: {
+				// 	yAxisKey: 'SH1'
+				// }
 			}, {
-				label: d2name,
+				label: dname[2],
 				borderColor: d2Col,
 				backgroundColor: d2bgCol,
 				fill: false,
 				lineTension: 0.2,
 				borderWidth: 2,
-				data: ashd2,
+				data: ashd[2],
 				yAxisID: 'y1',
 				hidden: boolDisplayshd2,
-				parsing: {
-					yAxisKey: 'SH2'
-				}
+				// parsing: {
+				// 	yAxisKey: 'SH2'
+				// }
 			}, {
-				label: d3name,
+				label: dname[3],
 				borderColor: d3Col,
 				backgroundColor: d3bgCol,
 				fill: false,
 				lineTension: 0.2,
 				borderWidth: 2,
-				data: ashd3,
+				data: ashd[3],
 				yAxisID: 'y1',
 				hidden: boolDisplayshd3,
-				parsing: {
-					yAxisKey: 'SH3'
-				}
+				// parsing: {
+				// 	yAxisKey: 'SH3'
+				// }
 			}, {
-				label: d4name,
+				label: dname[4],
 				borderColor: d4Col,
 				backgroundColor: d4bgCol,
 				fill: false,
 				lineTension: 0.2,
 				borderWidth: 2,
-				data: ashd4,
+				data: ashd[4],
 				yAxisID: 'y1',
 				hidden: boolDisplayshd4,
-				parsing: {
-					yAxisKey: 'SH4'
-				}
+				// parsing: {
+				// 	yAxisKey: 'SH4'
+				// }
 			}, {
-				label: d5name,
+				label: dname[5],
 				borderColor: d5Col,
 				backgroundColor: d5bgCol,
 				fill: false,
 				lineTension: 0.2,
 				borderWidth: 2,
-				data: ashd5,
+				data: ashd[5],
 				yAxisID: 'y1',
 				hidden: boolDisplayshd5,
-				parsing: {
-					yAxisKey: 'SH5'
-				}
+				// parsing: {
+				// 	yAxisKey: 'SH5'
+				// }
 			}, {
-				label: d6name,
+				label: dname[6],
 				borderColor: d6Col,
 				backgroundColor: d6bgCol,
 				fill: false,
 				lineTension: 0.2,
 				borderWidth: 2,
-				data: ashd6,
+				data: ashd[6],
 				yAxisID: 'y1',
 				hidden: boolDisplayshd6,
-				parsing: {
-					yAxisKey: 'SH6'
-				}
+				// parsing: {
+				// 	yAxisKey: 'SH6'
+				// }
 			}, {
-				label: d7name,
+				label: dname[7],
 				borderColor: d7Col,
 				backgroundColor: d7bgCol,
 				fill: false,
 				lineTension: 0.2,
 				borderWidth: 2,
-				data: ashd7,
+				data: ashd[7],
 				yAxisID: 'y1',
 				hidden: boolDisplayshd7,
-				parsing: {
-					yAxisKey: 'SH7'
-				}
+				// parsing: {
+				// 	yAxisKey: 'SH7'
+				// }
 			}, {
-				label: d8name,
+				label: dname[8],
 				borderColor: d8Col,
 				backgroundColor: d8bgCol,
 				fill: false,
 				lineTension: 0.2,
 				borderWidth: 2,
-				data: ashd8,
+				data: ashd[8],
 				yAxisID: 'y1',
 				hidden: boolDisplayshd8,
-				parsing: {
-					yAxisKey: 'SH8'
-				}
+				// parsing: {
+				// 	yAxisKey: 'SH8'
+				// }
 			}, {
-				label: d9name,
+				label: dname[9],
 				borderColor: d9Col,
 				backgroundColor: d9bgCol,
 				fill: false,
 				lineTension: 0.2,
 				borderWidth: 2,
-				data: ashd9,
+				data: ashd[9],
 				yAxisID: 'y1',
 				hidden: boolDisplayshd9,
-				parsing: {
-					yAxisKey: 'SH9'
-				}
+				// parsing: {
+				// 	yAxisKey: 'SH9'
+				// }
 			},
 			// {
 			// 	label: 'Device 1t0',
@@ -671,6 +693,9 @@ function loadgraph(animationDuration = 1000) {
 			scales: {
 				x: {
 					// type: 'time',
+					// time: {
+					// 	unit: 'second'
+					// },
 					display: true,
 					title: {
 						display: false
@@ -772,67 +797,42 @@ function putgraphtogether() {
 		alldata = alldata.replace(/^[\s]*-[\n]*/gm, "");
 		// create JSON object from csv data
 		var alldataJson = csvJSON(alldata);
-		console.log(alldataJson);
-		var csvData = [];
-		var rawcsv = alldata.split(/\r?\n|\r/);
-		// line 1 contains column headers
-		for (var i = 1; i < rawcsv.length; i++) {
-			csvData.push(rawcsv[i].split(","));
-		}
-		csvData.pop();
-		// Retrived data from csv file content
-		var splittime = [];
-		getCol(csvData, 0).forEach(function(zeit){
-			splittime.push(zeit.substring(0, zeit.length -3));
-		});
-		atime = splittime;
-		if ( atime.length >= 30 ) {
-			//atime = getCol(csvData, 0);
-			abezug = convertToKw(getCol(csvData, 1));
-			alpa = convertToKw(getCol(csvData, 2));
-			apv = convertToKw(getCol(csvData, 3));
-			alp1 = convertToKw(getCol(csvData, 4));
-			alp2 = convertToKw(getCol(csvData, 5));
-			aspeicherl = convertToKw(getCol(csvData, 7));
-			aspeichersoc = getCol(csvData, 8);
-			asoc = getCol(csvData, 9);
-			asoc1 = getCol(csvData, 10);
-			ahausverbrauch = convertToKw(getCol(csvData, 11));
-			averbraucher1 = convertToKw(getCol(csvData, 12));
-			averbraucher2 = convertToKw(getCol(csvData, 13));
-			alp3 = convertToKw(getCol(csvData, 14));
-			// alp4 = convertToKw(getCol(csvData, 15));
-			// alp5 = convertToKw(getCol(csvData, 16));
-			// alp6 = convertToKw(getCol(csvData, 17));
-			// alp7 = convertToKw(getCol(csvData, 18));
-			// alp8 = convertToKw(getCol(csvData, 19));
-			ashd1 = convertToKw(getCol(csvData, 20));
-			ashd2 = convertToKw(getCol(csvData, 21));
-			ashd3 = convertToKw(getCol(csvData, 22));
-			ashd4 = convertToKw(getCol(csvData, 23));
-			ashd5 = convertToKw(getCol(csvData, 24));
-			ashd6 = convertToKw(getCol(csvData, 25));
-			ashd7 = convertToKw(getCol(csvData, 26));
-			ashd8 = convertToKw(getCol(csvData, 27));
-			ashd9 = convertToKw(getCol(csvData, 28));
+		// console.log(alldataJson);
+		atime = getXScaleData(alldataJson);
+		if ( alldataJson.length >= 30 ) {
+			// common data
+			abezug = getColData(alldataJson, 'EVU');
+			ahausverbrauch = getColData(alldataJson, 'Hausverbrauch');
+			alpa = getColData(alldataJson, 'Ladeleistung')
+			// chargepoint data
+			alp = [];
+			for(i=1; i<9; i++){
+				alp[i] = getColData(alldataJson, 'LP'+i);
+				setvisibility(alp[i],'hidelp'+i,'Lp'+i,'boolDisplayLp'+i);
+			}
+			// chargepoint soc data
+			alpsoc = [];
+			for(i=1; i<4; i++){
+				alpsoc[i] = getColData(alldataJson, 'LP'+i+'SoC');
+			}
+			// optional data
+			apv = getColData(alldataJson, 'PV');
+			aspeicherl = getColData(alldataJson, 'Speicherleistung');
+			aspeichersoc = getColData(alldataJson, 'SpeicherSoC');
+			// smarthome data
+			averbraucher = [];
+			for(i=1; i<4; i++){
+				averbraucher[i] = getColData(alldataJson, 'Verbraucher'+i);
+			}
+			// smarthome 2.0 data
+			ashd = [];
+			for(i=1; i<10; i++){
+				ashd[i] = getColData(alldataJson, 'SH'+i);
+				setvisibility(ashd[i],'hideshd'+i,dname[i],'boolDisplayshd'+i);
+			}
 			//ashd1t0 = getCol(csvData, 29);
 			//ashd1t1 = getCol(csvData, 30);
 			//ashd1t2 = getCol(csvData, 31);
-			setvisibility(alp3,'hidelp3','Lp3');
-			// setvisibility(alp4,'hidelp4','Lp4');
-			// setvisibility(alp5,'hidelp5','Lp5');
-			// setvisibility(alp6,'hidelp6','Lp6');
-			// setvisibility(alp7,'hidelp7','Lp7');
-			// setvisibility(alp8,'hidelp8','Lp8');
-			setvisibility(ashd1,'hideshd1',d1name,'boolDisplayshd1');
-			setvisibility(ashd2,'hideshd2',d2name,'boolDisplayshd2');
-			setvisibility(ashd3,'hideshd3',d3name,'boolDisplayshd3');
-			setvisibility(ashd4,'hideshd4',d4name,'boolDisplayshd4');
-			setvisibility(ashd5,'hideshd5',d5name,'boolDisplayshd5');
-			setvisibility(ashd6,'hideshd6',d6name,'boolDisplayshd6');
-			setvisibility(ashd7,'hideshd7',d7name,'boolDisplayshd7');
-			setvisibility(ashd8,'hideshd8',d8name,'boolDisplayshd8');
-			setvisibility(ashd9,'hideshd9',d9name,'boolDisplayshd9');
 
 			initialread = 1 ;
 			// after receipt of all 8 first data segments, unsubscribe from these topics to save bandwidth
@@ -864,67 +864,31 @@ function putgraphtogether() {
 }  // end putgraphtogether
 
 function updateGraph(dataset) {
-	var lines = dataset.split("\n");
 	var datasetJson = csvJSON(dataset);
-	console.log(datasetJson);
-	// line 1 contains column headers
-	for (var i = 1; i < lines.length; i++) {
-		var ldate = lines[i].split(",")[0];
-		var lbezug = lines[i].split(",")[1];
-		var lpa = lines[i].split(",")[2];
-		var lpv = lines[i].split(",")[3];
-		var llp1 = lines[i].split(",")[4];
-		var llp2 = lines[i].split(",")[5];
-		var lspeicherl = lines[i].split(",")[7];
-		var lspeichersoc = lines[i].split(",")[8];
-		var lsoc = lines[i].split(",")[9];
-		var lsoc1 = lines[i].split(",")[10];
-		var lhausverbrauch = lines[i].split(",")[11];
-		var lverbraucher1 = lines[i].split(",")[12];
-		var lverbraucher2 = lines[i].split(",")[13];
-		var lp3 = lines[i].split(",")[14];
-		// var lp4 = lines[i].split(",")[15];
-		// var lp5 = lines[i].split(",")[16];
-		// var lp6 = lines[i].split(",")[17];
-		// var lp7 = lines[i].split(",")[18];
-		// var lp8 = lines[i].split(",")[19];
-		var shd1 = lines[i].split(",")[20];
-		var shd2 = lines[i].split(",")[21];
-		var shd3 = lines[i].split(",")[22];
-		var shd4 = lines[i].split(",")[23];
-		var shd5 = lines[i].split(",")[24];
-		var shd6 = lines[i].split(",")[25];
-		var shd7 = lines[i].split(",")[26];
-		var shd8 = lines[i].split(",")[27];
-		var shd9 = lines[i].split(",")[28];
-		//var shd1t0 = lines[i].split(",")[29];
-		//var shd1t1 = lines[i].split(",")[30];
-		//var shd1t2 = lines[i].split(",")[31];
-
-	}
-	myLine.data.labels.push(ldate.substring(0, ldate.length -3));
-	myLine.data.datasets[0].data.push(lbezug / 1000);
-	myLine.data.datasets[1].data.push(lhausverbrauch / 1000);
-	myLine.data.datasets[2].data.push(lpa / 1000);
-	myLine.data.datasets[3].data.push(llp1 / 1000);
-	myLine.data.datasets[4].data.push(llp2 / 1000);
-	myLine.data.datasets[5].data.push(lp3 / 1000);
-	myLine.data.datasets[6].data.push(lsoc);
-	myLine.data.datasets[7].data.push(lsoc1);
-	myLine.data.datasets[8].data.push(lpv / 1000);
-	myLine.data.datasets[9].data.push(lspeicherl / 1000);
-	myLine.data.datasets[10].data.push(lspeichersoc);
-	myLine.data.datasets[11].data.push(lverbraucher1 / 1000);
-	myLine.data.datasets[12].data.push(lverbraucher2 / 1000);
-	myLine.data.datasets[13].data.push(shd1 / 1000);
-	myLine.data.datasets[14].data.push(shd2 / 1000);
-	myLine.data.datasets[15].data.push(shd3 / 1000);
-	myLine.data.datasets[16].data.push(shd4 / 1000);
-	myLine.data.datasets[17].data.push(shd5 / 1000);
-	myLine.data.datasets[18].data.push(shd6 / 1000);
-	myLine.data.datasets[19].data.push(shd7 / 1000);
-	myLine.data.datasets[20].data.push(shd8 / 1000);
-	myLine.data.datasets[21].data.push(shd9 / 1000);
+	// console.log(datasetJson);
+	myLine.data.labels.push(getXScaleData(datasetJson)[0]);
+	myLine.data.datasets[0].data.push(getColData(datasetJson, 'EVU')[0]);
+	myLine.data.datasets[1].data.push(getColData(datasetJson, 'Hausverbrauch')[0]);
+	myLine.data.datasets[2].data.push(getColData(datasetJson, 'Ladeleistung')[0]);
+	myLine.data.datasets[3].data.push(getColData(datasetJson, 'LP1')[0]);
+	myLine.data.datasets[4].data.push(getColData(datasetJson, 'LP2')[0]);
+	myLine.data.datasets[5].data.push(getColData(datasetJson, 'LP3')[0]);
+	myLine.data.datasets[6].data.push(getColData(datasetJson, 'LP1SoC')[0]);
+	myLine.data.datasets[7].data.push(getColData(datasetJson, 'LP2SoC')[0]);
+	myLine.data.datasets[8].data.push(getColData(datasetJson, 'PV')[0]);
+	myLine.data.datasets[9].data.push(getColData(datasetJson, 'Speicherleistung')[0]);
+	myLine.data.datasets[10].data.push(getColData(datasetJson, 'SpeicherSoC')[0]);
+	myLine.data.datasets[11].data.push(getColData(datasetJson, 'Verbraucher1')[0]);
+	myLine.data.datasets[12].data.push(getColData(datasetJson, 'Verbraucher2')[0]);
+	myLine.data.datasets[13].data.push(getColData(datasetJson, 'SH1')[0]);
+	myLine.data.datasets[14].data.push(getColData(datasetJson, 'SH2')[0]);
+	myLine.data.datasets[15].data.push(getColData(datasetJson, 'SH3')[0]);
+	myLine.data.datasets[16].data.push(getColData(datasetJson, 'SH4')[0]);
+	myLine.data.datasets[17].data.push(getColData(datasetJson, 'SH5')[0]);
+	myLine.data.datasets[18].data.push(getColData(datasetJson, 'SH6')[0]);
+	myLine.data.datasets[19].data.push(getColData(datasetJson, 'SH7')[0]);
+	myLine.data.datasets[20].data.push(getColData(datasetJson, 'SH8')[0]);
+	myLine.data.datasets[21].data.push(getColData(datasetJson, 'SH9')[0]);
 	//myLine.data.datasets[22].data.push(shd1t0);
 	//myLine.data.datasets[23].data.push(shd1t1);
 	//myLine.data.datasets[24].data.push(shd1t2);
@@ -1065,6 +1029,7 @@ function showhide(thedataset) {
 }
 
 function subscribeMqttGraphSegments() {
+	console.log('subscribing to graph topics');
 	for (var segments = 1; segments < 17; segments++) {
 		topic = "openWB/graph/" + segments + "alllivevalues";
 		client.subscribe(topic, {qos: 0});
@@ -1072,6 +1037,7 @@ function subscribeMqttGraphSegments() {
 }
 
 function unsubscribeMqttGraphSegments() {
+	console.log('unsubscribing from graph topics');
 	for (var segments = 1; segments < 17; segments++) {
 		topic = "openWB/graph/" + segments + "alllivevalues";
 		client.unsubscribe(topic);
