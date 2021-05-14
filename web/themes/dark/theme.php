@@ -324,13 +324,26 @@
 			</div>
 
 			<!-- Chart Section -->
-			<div class="row justify-content-center my-2" id="thegraph">
-				<!-- will be refreshed using MQTT (in livechart.js)-->
-				<div class="col-sm-12 text-center smallTextSize">
-					<div id="waitforgraphloadingdiv">
-						Graph lädt, bitte warten...
+			<div class="row">
+				<div class="col">
+					<div class="card border-light">
+						<div class="card-header bg-light" data-toggle="collapse" data-target="#cardGraph">
+							<i class="fas fa-chart-area"></i>
+							Diagramm
+							<span class="collPlus"></span>
+						</div>
+						<div id="cardGraph" class="card-body collapse show">
+							<div class="row justify-content-center my-2" id="thegraph">
+								<!-- will be refreshed using MQTT (in livechart.js)-->
+								<div class="col-sm-12 text-center smallTextSize">
+									<div id="waitforgraphloadingdiv">
+										Graph lädt, bitte warten...
+									</div>
+									<canvas id="canvas"></canvas>
+								</div>
+							</div>
+						</div>
 					</div>
-					<canvas id="canvas"></canvas>
 				</div>
 			</div>
 
@@ -1018,7 +1031,7 @@
 						all14 = 0;
 						all15 = 0;
 						all16 = 0;
-						console.log("subscribing graph topics");
+						// console.log("subscribing graph topics");
 						subscribeMqttGraphSegments();
 					}
 				});

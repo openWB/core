@@ -796,7 +796,7 @@ function processVehicleMessages(mqttmsg, mqttpayload) {
 function processGraphMessages(mqttmsg, mqttpayload) {
 	// processes mqttmsg for topic openWB/graph
 	// called by handlevar
-	console.log("received graph msg: " + mqttmsg + ": " + mqttpayload);
+	// console.log("received graph msg: " + mqttmsg + ": " + mqttpayload);
 	if ( mqttmsg == 'openWB/graph/boolDisplayHouseConsumption' ) {
 		if ( mqttpayload == 1) {
 			boolDisplayHouseConsumption = false;

@@ -287,6 +287,10 @@ h3 {
 		font-size: 1.6rem;
 	}
 
+	.container {
+		max-width: 1500px;
+	}
+
 	.verySmallTextSize {
 		font-size: 1.1rem;
 	}
@@ -410,7 +414,7 @@ h3 {
 }
 
 #thegraph > div {
-	/* height: 350px; */
+	max-height: 350px;
 	height: 45vh;
 }
 
@@ -445,4 +449,11 @@ h3 {
 
 .btn-group {
 	flex-wrap: wrap;
+}
+
+/* disable collapsing animation for performance reasons */
+.collapsing {
+    -webkit-transition: none;
+    transition: none;
+    display: none;
 }
