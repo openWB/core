@@ -449,7 +449,7 @@
 										Fahrzeug
 									</label>
 									<div class="col-md-8">
-										<select name="chargepoint-vehicleselect" class="form-control chargepoint-vehicleselect" data-topic="openWB/set/chargepoint/<cp>/set/charging_ev">
+										<select name="chargepoint-vehicleselect" class="form-control chargepoint-vehicleselect" data-topic="openWB/set/chargepoint/template/<et>/ev">
 											<option value="">-- Nicht ausgewählt --</option>
 										</select>
 									</div>
@@ -512,7 +512,7 @@
 											<div class="col">
 												<label class="col-form-label">Begrenzung</label>
 											</div>
-											<div class="col-md-8 btn-group btn-group-toggle chargepoint-instantchargelimitselected" id="limitInstantChargeCp1" data-name="limitCp" data-toggle="buttons" data-topic="openWB/set/vehicle/template/<ct>/instant_charging/limit/selected">
+											<div class="col-md-8 btn-group btn-group-toggle chargepoint-instantchargelimitselected" id="limitInstantChargeCp1" data-name="limitCp" data-toggle="buttons" data-topic="openWB/set/vehicle/template/<ct>/chargemode/instant_charging/limit/selected">
 												<label class="btn btn-outline-info btn-toggle">
 													<input type="radio" name="limitCp" data-option="none"> keine
 												</label>
@@ -532,7 +532,7 @@
 												<div class="col-md-8">
 													<div class="form-row form-group mb-1 vaRow">
 														<div class="col">
-															<input type="range" class="chargepoint-instantchargelimitsoc form-control-range rangeInput" id="soclimitCp1" min="5" max="100" step="5" data-topic="openWB/set/vehicle/template/<ct>/instant_charging/limit/soc">
+															<input type="range" class="chargepoint-instantchargelimitsoc form-control-range rangeInput" id="soclimitCp1" min="5" max="100" step="5" data-topic="openWB/set/vehicle/template/<ct>/chargemode/instant_charging/limit/soc">
 														</div>
 														<label for="soclimitCp1" class="col-form-label valueLabel" data-suffix="%">? %</label>
 													</div>
@@ -545,7 +545,7 @@
 												<div class="col-md-8">
 													<div class="form-row form-group mb-1 vaRow">
 														<div class="col">
-															<input type="range" class="chargepoint-instantchargelimitamount form-control-range rangeInput" id="amountlimitCp1" min="1" max="50" step="1" data-topic="openWB/set/vehicle/template/<ct>/instant_charging/limit/amount">
+															<input type="range" class="chargepoint-instantchargelimitamount form-control-range rangeInput" id="amountlimitCp1" min="1" max="50" step="1" data-topic="openWB/set/vehicle/template/<ct>/chargemode/instant_charging/limit/amount">
 														</div>
 														<label for="amountlimitCp1" class="col-form-label valueLabel" data-suffix="kWh">? kWh</label>
 													</div>
@@ -864,16 +864,18 @@
 						var cp = parseInt($(this).closest('[data-cp]').data('cp'));  // get attribute cp-# of parent element
 						var ev = parseInt($(this).closest('[data-ev]').data('ev'));  // get attribute ev-# of parent element
 						var ct = parseInt($(this).closest('[data-chargetemplate]').data('chargetemplate'));  // get attribute chargetemplate-# of parent element
+						var et = parseInt($(this).closest('[data-evtemplate]').data('evtemplate'));  // get attribute evtemplate-# of parent element
 						topic = topic.replace( '<cp>', cp );
 						topic = topic.replace( '<ev>', ev );
 						topic = topic.replace( '<ct>', ct );
+						topic = topic.replace( '<et>', ct );
 						if( topic.includes('/NaN/') ) {
-							console.log( 'missing cp, ev or ct data' );
+							console.log( 'missing cp, ev, ct or et data' );
 						} else {
 							if ( $(this).prop('checked') ) {
-								publish("1", topic);
+								publish(true, topic);
 							} else {
-								publish("0", topic);
+								publish(false, topic);
 							}
 						}
 					} else {
@@ -882,11 +884,19 @@
 				});
 
 				$('.container').on('change', '.chargepoint-vehicleselect', function(event){
+					// update data in parent element
 					$(this).closest('[data-ev]').attr('data-ev', $(this).val()).data('ev', $(this).val());
+					// send update to broker
 					var topic = $(this).data('topic');
 					if( topic != undefined ) {
 						var cp = parseInt($(this).closest('[data-cp]').data('cp'));  // get attribute cp-# of parent element
+						var ev = parseInt($(this).closest('[data-ev]').data('ev'));  // get attribute ev-# of parent element
+						var ct = parseInt($(this).closest('[data-chargetemplate]').data('chargetemplate'));  // get attribute chargetemplate-# of parent element
+						var et = parseInt($(this).closest('[data-evtemplate]').data('evtemplate'));  // get attribute evtemplate-# of parent element
 						topic = topic.replace( '<cp>', cp );
+						topic = topic.replace( '<ev>', ev );
+						topic = topic.replace( '<ct>', ct );
+						topic = topic.replace( '<et>', ct );
 						publish($(this).val(), topic);
 					}
 				});
@@ -909,7 +919,7 @@
 							var isRunning = spinner.hasClass("fa-spin");
 							if ( !isRunning ) {
 								spinner.addClass("fa-spin");
-								publish("1", "openWB/set/lp/" + cp + "/ForceSoCUpdate");
+								publish(1, "openWB/set/lp/" + cp + "/ForceSoCUpdate");
 							}
 						}
 					}
@@ -917,7 +927,7 @@
 
 				// $('.btn[value="Reset"]').click(function(event){
 				// 	var topic = getTopicToSendTo($(this).attr('id'));
-				// 	publish("1", topic);
+				// 	publish(1, topic);
 				// });
 
 				$('.container').on('change', '.btn-group-toggle', function(event){
