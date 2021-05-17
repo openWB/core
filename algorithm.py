@@ -372,7 +372,7 @@ class control():
                             log.message_debug_log("debug", "Ladung an LP"+str(cp.cp_num)+" um "+str(missing_current + undo_missing_current)+"A angepasst.")
                     # Zuvor fehlender Ladestrom kann nun genutzt werden
                     else:
-                        self._process_data(cp, cp.data["set"]["current"] + missing_current, phases)
+                        self._process_data(cp, cp.data["set"]["current"] + missing_current)
                         log.message_debug_log("debug", "Ladung an LP"+str(cp.cp_num)+" um "+str(missing_current)+"A angepasst.")
                 data.counter_data["counter0"].print_stats()
         except Exception as e:
@@ -547,7 +547,7 @@ class control():
                 required_current = 0
             self._process_data(chargepoint, required_current)
             
-            if data.counter_data["all"].data["set"]["loadmanagement"] == True or overloaded_counters != None:
+            if data.counter_data["all"].data["set"]["loadmanagement"] == True or overloaded_counters != {}:
                 #Lastmanagement hat eingegriffen
                 log.message_debug_log("info", "Für die Ladung an LP"+str(chargepoint.cp_num)+" muss erst ein Ladepunkt mit gleicher/niedrigerer Prioritaet reduziert/gestoppt werden.")
                 data.counter_data["counter0"].print_stats()
@@ -911,7 +911,7 @@ def allocate_power(chargepoint, required_power, required_current, phases):
         bat_overhang = data.bat_module_data["all"].power_for_bat_charging()
         evu_overhang = data.pv_data["all"].overhang_left()
         remaining_required_power = required_power
-        overloaded_counters = None
+        overloaded_counters = {}
         # Wenn vorhanden, Speicherenergie allokieren.
         if bat_overhang > 0:
             if bat_overhang > required_power:
