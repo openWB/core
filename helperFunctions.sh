@@ -34,8 +34,8 @@ openwbModulePublishState() {
 			if (( $# != 4 )); then
 				echo "openwbPublishStatus: Wrong number of arguments: PV $#"
 			else
-				mosquitto_pub -t openWB/set/pv/modules/${4}/get/fault_state -r -m "$2"
-				mosquitto_pub -t openWB/set/pv/modules/${4}/get/fault_str -r -m "\"$3\""
+				mosquitto_pub -t openWB/set/pv/${4}/get/fault_state -r -m "$2"
+				mosquitto_pub -t openWB/set/pv/${4}/get/fault_str -r -m "\"$3\""
 			fi
 			;;
 		"BAT")

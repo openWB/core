@@ -5,6 +5,7 @@ import imp
 import subprocess
 from threading import Thread
 import threading
+import time
 
 import algorithm
 import charge
@@ -21,9 +22,10 @@ def main():
     char = charge.charge()
     control = algorithm.control()
     prep = prepare.prepare()
-    lock_template_data = threading.Lock()
-    set = setdata.setData(lock_template_data)
-    sub = subdata.subData(lock_template_data)
+    lock_ev_template = threading.Lock()
+    lock_charge_template = threading.Lock()
+    set = setdata.setData(lock_ev_template, lock_charge_template)
+    sub = subdata.subData(lock_ev_template, lock_charge_template)
     ticker = threading.Event()
 
     log.setup_logger()
@@ -36,15 +38,11 @@ def main():
     t_sub.start()
     t_set.start()
 
+    publishvars2.pub_settings()
+
     seconds = 10
-    while not ticker.wait(seconds-3):
+    while not ticker.wait(seconds):
         try:
-            imp.reload(publishvars2)
-            publishvars2.pub_settings()
-            output = subprocess.run(["./loadvars.sh"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            if output.stderr.decode('utf-8') != "":
-                log.message_debug_log("error", str(output.stderr.decode('utf-8')))
-            ticker.wait(3)
             prep.setup_algorithm()
             control.calc_current()
             char.start_charging()

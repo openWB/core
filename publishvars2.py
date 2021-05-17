@@ -22,41 +22,41 @@ def pub_settings():
     # pub.pub("openWB/set/chargepoint/template/1/ev", 1)
     pub.pub("openWB/set/chargepoint/template/1/rfid_enabling", False)
 
-    # # cp2
-    # pub.pub("openWB/set/chargepoint/2/set/manual_lock", False)
-    # pub.pub("openWB/set/chargepoint/2/config/name", "LP2")
-    # pub.pub("openWB/set/chargepoint/2/config/template", 2)
-    # pub.pub("openWB/set/chargepoint/2/config/connected_phases", 3)
-    # pub.pub("openWB/set/chargepoint/2/config/phase_1", 0)
-    # pub.pub("openWB/set/chargepoint/2/config/auto_phase_switch_hw", True)
-    # pub.pub("openWB/set/chargepoint/2/config/control_pilot_interruption_hw", False)
-    # pub.pub("openWB/set/chargepoint/2/get/rfid", 1234)
-    # # cpt2
-    # pub.pub("openWB/set/chargepoint/template/2/autolock/1/frequency/selected", "daily")
-    # pub.pub("openWB/set/chargepoint/template/2/autolock/1/time", ["07:00", "11:20"])
-    # pub.pub("openWB/set/chargepoint/template/2/autolock/1/active", False)
-    # pub.pub("openWB/set/chargepoint/template/2/autolock/wait_for_charging_end", True)
-    # pub.pub("openWB/set/chargepoint/template/2/autolock/active", False)
-    # pub.pub("openWB/set/chargepoint/template/2/ev", 2)
-    # pub.pub("openWB/set/chargepoint/template/2/rfid_enabling", False)
+    # cp2
+    pub.pub("openWB/set/chargepoint/2/set/manual_lock", False)
+    pub.pub("openWB/set/chargepoint/2/config/name", "LP2")
+    pub.pub("openWB/set/chargepoint/2/config/template", 2)
+    pub.pub("openWB/set/chargepoint/2/config/connected_phases", 3)
+    pub.pub("openWB/set/chargepoint/2/config/phase_1", 0)
+    pub.pub("openWB/set/chargepoint/2/config/auto_phase_switch_hw", True)
+    pub.pub("openWB/set/chargepoint/2/config/control_pilot_interruption_hw", False)
+    pub.pub("openWB/set/chargepoint/2/get/rfid", 1234)
+    # cpt2
+    pub.pub("openWB/set/chargepoint/template/2/autolock/1/frequency/selected", "daily")
+    pub.pub("openWB/set/chargepoint/template/2/autolock/1/time", ["07:00", "11:20"])
+    pub.pub("openWB/set/chargepoint/template/2/autolock/1/active", False)
+    pub.pub("openWB/set/chargepoint/template/2/autolock/wait_for_charging_end", True)
+    pub.pub("openWB/set/chargepoint/template/2/autolock/active", False)
+    pub.pub("openWB/set/chargepoint/template/2/ev", 2)
+    pub.pub("openWB/set/chargepoint/template/2/rfid_enabling", False)
 
-    # #cp3
-    # pub.pub("openWB/set/chargepoint/3/set/manual_lock", False)
-    # pub.pub("openWB/set/chargepoint/3/config/name", "LP3")
-    # pub.pub("openWB/set/chargepoint/3/config/template", 3)
-    # pub.pub("openWB/set/chargepoint/3/config/connected_phases", 3)
-    # pub.pub("openWB/set/chargepoint/3/config/phase_1", 0)
-    # pub.pub("openWB/set/chargepoint/3/config/auto_phase_switch_hw", True)
-    # pub.pub("openWB/set/chargepoint/3/config/control_pilot_interruption_hw", False)
-    # pub.pub("openWB/set/chargepoint/3/get/rfid", 1234)
-    # # cpt3
-    # pub.pub("openWB/set/chargepoint/template/3/autolock/1/frequency/selected", "daily")
-    # pub.pub("openWB/set/chargepoint/template/3/autolock/1/time", ["07:00", "11:15"])
-    # pub.pub("openWB/set/chargepoint/template/3/autolock/1/active", True)
-    # pub.pub("openWB/set/chargepoint/template/3/autolock/wait_for_charging_end", True)
-    # pub.pub("openWB/set/chargepoint/template/3/autolock/active", False)
-    # pub.pub("openWB/set/chargepoint/template/3/ev", 3)
-    # pub.pub("openWB/set/chargepoint/template/3/rfid_enabling", False)
+    #cp3
+    pub.pub("openWB/set/chargepoint/3/set/manual_lock", False)
+    pub.pub("openWB/set/chargepoint/3/config/name", "LP3")
+    pub.pub("openWB/set/chargepoint/3/config/template", 3)
+    pub.pub("openWB/set/chargepoint/3/config/connected_phases", 3)
+    pub.pub("openWB/set/chargepoint/3/config/phase_1", 0)
+    pub.pub("openWB/set/chargepoint/3/config/auto_phase_switch_hw", True)
+    pub.pub("openWB/set/chargepoint/3/config/control_pilot_interruption_hw", False)
+    pub.pub("openWB/set/chargepoint/3/get/rfid", 1234)
+    # cpt3
+    pub.pub("openWB/set/chargepoint/template/3/autolock/1/frequency/selected", "daily")
+    pub.pub("openWB/set/chargepoint/template/3/autolock/1/time", ["07:00", "11:15"])
+    pub.pub("openWB/set/chargepoint/template/3/autolock/1/active", True)
+    pub.pub("openWB/set/chargepoint/template/3/autolock/wait_for_charging_end", True)
+    pub.pub("openWB/set/chargepoint/template/3/autolock/active", False)
+    pub.pub("openWB/set/chargepoint/template/3/ev", 3)
+    pub.pub("openWB/set/chargepoint/template/3/rfid_enabling", False)
 
     # ev1
     pub.pub("openWB/set/vehicle/1/charge_template", 1)
@@ -72,34 +72,34 @@ def pub_settings():
     pub.pub("openWB/set/vehicle/1/get/range_charged", 125)
     pub.pub("openWB/set/vehicle/1/match_ev/selected", "cp")
     pub.pub("openWB/set/vehicle/1/match_ev/tag_id", 1234)
-    # #ev2
-    # pub.pub("openWB/set/vehicle/2/charge_template", 2)
-    # pub.pub("openWB/set/vehicle/2/ev_template", 1)
-    # pub.pub("openWB/set/vehicle/2/name", "car2")
-    # pub.pub("openWB/set/vehicle/2/soc/config/configured", True)
-    # pub.pub("openWB/set/vehicle/2/soc/config/manual", False)
-    # pub.pub("openWB/set/vehicle/2/soc/get/fault_state", 0)
-    # pub.pub("openWB/set/vehicle/2/soc/get/fault_str", "Kein Fehler.")
-    # pub.pub("openWB/set/vehicle/2/get/soc", 24)
-    # pub.pub("openWB/set/vehicle/2/get/soc_timestamp", 1619568005)
-    # pub.pub("openWB/set/vehicle/2/get/charged_since_plugged_counter", 5)
-    # pub.pub("openWB/set/vehicle/2/get/range_charged", 130)
-    # pub.pub("openWB/set/vehicle/2/match_ev/selected", "rfid")
-    # pub.pub("openWB/set/vehicle/2/match_ev/tag_id", 1234)
-    # #ev3
-    # pub.pub("openWB/set/vehicle/3/charge_template", 3)
-    # pub.pub("openWB/set/vehicle/3/ev_template", 1)
-    # pub.pub("openWB/set/vehicle/3/name", "car3")
-    # pub.pub("openWB/set/vehicle/3/soc/config/configured", True)
-    # pub.pub("openWB/set/vehicle/3/soc/config/manual", False)
-    # pub.pub("openWB/set/vehicle/3/soc/get/fault_state", 0)
-    # pub.pub("openWB/set/vehicle/3/soc/get/fault_str", "Kein Fehler.")
-    # pub.pub("openWB/set/vehicle/3/get/soc", 30)
-    # pub.pub("openWB/set/vehicle/3/get/soc_timestamp", 1619568005)
-    # pub.pub("openWB/set/vehicle/3/get/charged_since_plugged_kwh", 5)
-    # pub.pub("openWB/set/vehicle/3/get/range_charged", 135)
-    # pub.pub("openWB/set/vehicle/3/match_ev/selected", "rfid")
-    # pub.pub("openWB/set/vehicle/3/match_ev/tag_id", 1234)
+    #ev2
+    pub.pub("openWB/set/vehicle/2/charge_template", 2)
+    pub.pub("openWB/set/vehicle/2/ev_template", 1)
+    pub.pub("openWB/set/vehicle/2/name", "car2")
+    pub.pub("openWB/set/vehicle/2/soc/config/configured", True)
+    pub.pub("openWB/set/vehicle/2/soc/config/manual", False)
+    pub.pub("openWB/set/vehicle/2/soc/get/fault_state", 0)
+    pub.pub("openWB/set/vehicle/2/soc/get/fault_str", "Kein Fehler.")
+    pub.pub("openWB/set/vehicle/2/get/soc", 24)
+    pub.pub("openWB/set/vehicle/2/get/soc_timestamp", 1619568005)
+    pub.pub("openWB/set/vehicle/2/get/charged_since_plugged_counter", 5)
+    pub.pub("openWB/set/vehicle/2/get/range_charged", 130)
+    pub.pub("openWB/set/vehicle/2/match_ev/selected", "rfid")
+    pub.pub("openWB/set/vehicle/2/match_ev/tag_id", 1234)
+    #ev3
+    pub.pub("openWB/set/vehicle/3/charge_template", 3)
+    pub.pub("openWB/set/vehicle/3/ev_template", 1)
+    pub.pub("openWB/set/vehicle/3/name", "car3")
+    pub.pub("openWB/set/vehicle/3/soc/config/configured", True)
+    pub.pub("openWB/set/vehicle/3/soc/config/manual", False)
+    pub.pub("openWB/set/vehicle/3/soc/get/fault_state", 0)
+    pub.pub("openWB/set/vehicle/3/soc/get/fault_str", "Kein Fehler.")
+    pub.pub("openWB/set/vehicle/3/get/soc", 30)
+    pub.pub("openWB/set/vehicle/3/get/soc_timestamp", 1619568005)
+    pub.pub("openWB/set/vehicle/3/get/charged_since_plugged_counter", 5)
+    pub.pub("openWB/set/vehicle/3/get/range_charged", 135)
+    pub.pub("openWB/set/vehicle/3/match_ev/selected", "rfid")
+    pub.pub("openWB/set/vehicle/3/match_ev/tag_id", 1234)
     #evt1 - Tesla
     pub.pub("openWB/set/vehicle/template/ev_template/1/min_current", 6)
     pub.pub("openWB/set/vehicle/template/ev_template/1/battery_capacity", 82)
@@ -108,6 +108,8 @@ def pub_settings():
     pub.pub("openWB/set/vehicle/template/ev_template/1/max_phases", 3)
     pub.pub("openWB/set/vehicle/template/ev_template/1/average_consump", 5)
     pub.pub("openWB/set/vehicle/template/ev_template/1/control_pilot_interruption", False)
+    pub.pub("openWB/set/vehicle/template/ev_template/1/nominal_difference", 2)
+
     #evt2 - Inoiq
     pub.pub("openWB/set/vehicle/template/ev_template/2/min_current", 6)
     pub.pub("openWB/set/vehicle/template/ev_template/2/battery_capacity", 82)
@@ -116,8 +118,9 @@ def pub_settings():
     pub.pub("openWB/set/vehicle/template/ev_template/2/max_phases", 1)
     pub.pub("openWB/set/vehicle/template/ev_template/2/average_consump", 5)
     pub.pub("openWB/set/vehicle/template/ev_template/2/control_pilot_interruption", False)
+    pub.pub("openWB/set/vehicle/template/ev_template/2/nominal_difference", 2)
 
-    #ct1
+    # #ct1
     # pub.pub("openWB/set/vehicle/template/charge_template/1/prio", False)
     # pub.pub("openWB/set/vehicle/template/charge_template/1/time_charging/active", False)
     # pub.pub("openWB/set/vehicle/template/charge_template/1/time_charging/1/active", False)
@@ -140,7 +143,7 @@ def pub_settings():
     # pub.pub("openWB/set/vehicle/template/charge_template/1/chargemode/scheduled_charging/1/time", "15:00")
     # pub.pub("openWB/set/vehicle/template/charge_template/1/chargemode/scheduled_charging/1/soc", 85)
 
-    # #ct2
+    # # #ct2
     # pub.pub("openWB/set/vehicle/template/charge_template/2/prio", False)
     # pub.pub("openWB/set/vehicle/template/charge_template/2/time_charging/active", False)
     # pub.pub("openWB/set/vehicle/template/charge_template/2/time_charging/1/active", False)
@@ -163,7 +166,7 @@ def pub_settings():
     # pub.pub("openWB/set/vehicle/template/charge_template/2/chargemode/scheduled_charging/1/time", "11:00")
     # pub.pub("openWB/set/vehicle/template/charge_template/2/chargemode/scheduled_charging/1/soc", 85)
 
-    # #ct3
+    # # #ct3
     # pub.pub("openWB/set/vehicle/template/charge_template/3/prio", False)
     # pub.pub("openWB/set/vehicle/template/charge_template/3/time_charging/active", False)
     # pub.pub("openWB/set/vehicle/template/charge_template/3/time_charging/1/active", False)
@@ -195,7 +198,7 @@ def pub_settings():
     #pub.pub("openWB/set/pv/1/get/counter", 500)
 
     # counter
-    hierarchy = [{"id": "counter0", "children": [{"id": "cp1", "children": []}]}]
+    hierarchy = [{"id": "counter0", "children": [{"id": "cp1", "children": []}, {"id": "cp2", "children": []}, {"id": "cp3", "children": []}]}]
     pub.pub("openWB/set/counter/get/hierarchy", hierarchy)
     #pub.pub("openWB/set/counter/0/get/current", [0,0,0])
     pub.pub("openWB/set/counter/0/config/max_consumption", 6000)
