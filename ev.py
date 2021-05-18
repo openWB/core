@@ -432,7 +432,7 @@ class chargeTemplate():
                     if pv_charging["min_current"] == 0:
                         return 0, "pv_charging", message  # nur PV
                     else:
-                        return pv_charging["min_current"], "pv_charging", message # Min PV
+                        return pv_charging["min_current"], "instant_charging", message # Min PV
             else:
                 message = "der maximale Soc bereits erreicht wurde."
                 return 0, "stop", message
