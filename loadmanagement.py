@@ -297,7 +297,8 @@ def _loadmanagement_for_evu(required_power, required_current_phases, phases, off
             if max_current_overshoot < overshoot:
                 max_current_overshoot = overshoot
                 max_overshoot_phase = phase
-        overloaded_counters["counter0"] = [max_current_overshoot, max_overshoot_phase]
+        if loadmanagement_all_conditions == True:
+            overloaded_counters["counter0"] = [max_current_overshoot, max_overshoot_phase]
         return loadmanagement_all_conditions
     except Exception as e:
         log.exception_logging(e)

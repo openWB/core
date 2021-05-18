@@ -68,8 +68,8 @@ class control():
                         if chargepoint.data["set"]["charging_ev"].data["control_parameter"]["submode"] == "pv_charging" and chargepoint.data["get"]["charge_state"] == True:
                             if data.pv_data["all"].switch_off_check_timer(chargepoint) == True:
                                 # Ladung stoppen
-                                required_current, phases = no_load()
-                                self._process_data(chargepoint, required_current, phases)
+                                required_current = 0
+                                self._process_data(chargepoint, required_current)
                                 # in diesem Durchgang soll kein Strom zugeteilt werden
                                 chargepoint.data["set"]["charging_ev"].data["control_parameter"]["submode"] = "stop"
         except Exception as e:
@@ -100,7 +100,7 @@ class control():
                                 # Nur wenn mit mehr als der benötigten Stromstärke geladen wird, kann der Überschuss ggf anderweitig in der Regelung verwendet werden.
                                 if released_current < 0:
                                     data.pv_data["all"].allocate_evu_power(released_current * 230 * chargepoint.data["get"]["phases_in_use"])
-                                    self._process_data(chargepoint, charging_ev.data["control_parameter"]["required_current"], chargepoint.data["get"]["phases_in_use"])
+                                    self._process_data(chargepoint, charging_ev.data["control_parameter"]["required_current"])
                                     log.message_debug_log("debug", "Ladung an LP"+str(chargepoint.cp_num)+" um "+str(released_current)+"A auf "+str(charging_ev.data["control_parameter"]["required_current"])+"A angepasst.")
         except Exception as e:
             log.exception_logging(e)
@@ -266,7 +266,7 @@ class control():
                             taken_current = cp.data["set"]["current"]*-1
                             remaining_current_overshoot -= taken_current
                             required_current = 0
-                            self._process_data(cp, 0, 0)
+                            self._process_data(cp, 0)
                             log.message_debug_log("debug", "Ladung an LP"+str(cp.cp_num)+" gestoppt.")
                         else:
                             continue
@@ -278,7 +278,7 @@ class control():
                             taken_current = remaining_current_overshoot * -1
                             remaining_current_overshoot = 0
                         required_current = considered_current+taken_current
-                        self._process_data(cp, required_current, phases)
+                        self._process_data(cp, required_current)
                         log.message_debug_log("debug", "Ladung an LP"+str(cp.cp_num)+" um "+str(taken_current)+"A auf "+str(required_current)+"A angepasst.")
                     adapted_power = taken_current * 230 * phases
                     # Werte aktualisieren
@@ -368,11 +368,11 @@ class control():
                             required_power = 230 * phases * undo_missing_current
                             # Werte aktualisieren
                             loadmanagement.loadmanagement_for_cp(cp, required_power, undo_missing_current, phases)
-                            self._process_data(cp, cp.data["set"]["current"] + missing_current + undo_missing_current, phases)
+                            self._process_data(cp, cp.data["set"]["current"] + missing_current + undo_missing_current)
                             log.message_debug_log("debug", "Ladung an LP"+str(cp.cp_num)+" um "+str(missing_current + undo_missing_current)+"A angepasst.")
                     # Zuvor fehlender Ladestrom kann nun genutzt werden
                     else:
-                        self._process_data(cp, cp.data["set"]["current"] + missing_current, phases)
+                        self._process_data(cp, cp.data["set"]["current"] + missing_current)
                         log.message_debug_log("debug", "Ladung an LP"+str(cp.cp_num)+" um "+str(missing_current)+"A angepasst.")
                 data.counter_data["counter0"].print_stats()
         except Exception as e:
@@ -448,7 +448,7 @@ class control():
                             pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num )+"/control_parameter/required_current", required_current)
                             charging_ev.data["control_parameter"]["phases"] = phases
                             pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num )+"/control_parameter/phases", phases)
-                            self._process_data(chargepoint, current, phases)
+                            self._process_data(chargepoint, current)
         except Exception as e:
             log.exception_logging(e)
 
@@ -483,17 +483,15 @@ class control():
 
                 if len(preferenced_chargepoints) != 0:
                     current_mode = self.chargemodes.index(mode_tuple)
-                    self._distribution_and_loadmanagement(preferenced_chargepoints, current_mode)
+                    self._distribute_power_to_cp(preferenced_chargepoints, current_mode)
             else:
                 # kein Ladepunkt, der noch auf Zuteilung wartet
                 log.message_debug_log("debug", "## Zuteilung beendet, da kein Ladepunkt mehr auf Zuteilung wartet.")
         except Exception as e:
             log.exception_logging(e)
 
-    def _distribution_and_loadmanagement(self, preferenced_chargepoints, current_mode):
-        """ Ladepunkte, die eingeschaltet werden sollen, durchgehen. Funktione, die den Strom zuteilt aufrufen und Lastmanagement durchführen. 
-        Falls erforderlich LP mit niedrigerer Ladepriorität reduzieren/abschalten, um LP laden. Ladepunkte mit gleichem Lademodus und gleicher 
-        Priorität dürfen nur reduziert, aber nicht abgeschaltet werden.
+    def _distribute_power_to_cp(self, preferenced_chargepoints, current_mode):
+        """ Ladepunkte, die eingeschaltet werden sollen, durchgehen. 
 
         Parameter
         ---------
@@ -502,90 +500,27 @@ class control():
         current_mode: tupel
             aktueller Lademodus, Submodus und Priorität
         """
-        try:
-            for cp in preferenced_chargepoints:
-                # aktuelle Werte speichern (werden wieder hergestellt, wenn das Lastmanagement die Ladung verhindert)
-                counter_data_old = copy.deepcopy(data.counter_data)
-                pv_data_old = copy.deepcopy(data.pv_data)
-                bat_module_data = copy.deepcopy(data.bat_module_data)
-                cp_data_old = copy.deepcopy(data.cp_data)
-
-                overloaded_counters = self._distribute_power_to_cp(cp)
-                if data.counter_data["all"].data["set"]["loadmanagement"] == True:
-                    #Lastmanagement hat eingegriffen
-                    log.message_debug_log("info", "Für die Ladung an LP"+str(cp.cp_num)+" muss erst ein Ladepunkt mit gleicher/niedrigerer Prioritaet reduziert/gestoppt werden.")
-                    data.counter_data["counter0"].print_stats()
-                    # Zähler mit der größten Überlastung ermitteln
-                    overloaded_counters = sorted(overloaded_counters.items(), key=lambda e: e[1][1], reverse = True)
-                    # Ergebnisse des Lastmanagements holen, das beim Einschalten durchgeführt worden ist. Es ist ausreichend, 
-                    # Zähler mit der größten Überlastung im Pfad zu betrachten. Kann diese nicht eliminiert werden, kann der Ladpunkt nicht laden. 
-                    chargepoints = loadmanagement.perform_loadmanagement(overloaded_counters[0][0])
-                    remaining_current_overshoot = overloaded_counters[0][1][0]
-                    # LP mit niedrigerer Priorität reduzieren und ggf. stoppen
-                    for mode in reversed(self.chargemodes[(current_mode+1):-4]):
-                        remaining_current_overshoot = self._down_regulation(mode, chargepoints, remaining_current_overshoot, overloaded_counters[0][1][1], prevent_stop = False)
-                        if remaining_current_overshoot == 0:
-                            # LP kann nun wie gewünscht eingeschaltet werden
-                            self._process_data(cp, cp.data["set"]["charging_ev"].data["control_parameter"]["required_current"], cp.data["set"]["charging_ev"].data["control_parameter"]["phases"])
-                            break
-                    else:
-                        # Ladepunkt, der gestartet werden soll reduzieren
-                        remaining_current_overshoot = self._perform_down_regulation([cp], remaining_current_overshoot, overloaded_counters[0][1][1], prevent_stop = True)
-                        # Ladepunkte mit gleicher Priorität reduzieren. Diese dürfen nicht gestoppt werden.
-                        if remaining_current_overshoot != 0:
-                            remaining_current_overshoot = self._down_regulation(self.chargemodes[current_mode], chargepoints, remaining_current_overshoot, overloaded_counters[0][1][1], prevent_stop = True)
-                        if remaining_current_overshoot != 0:
-                            # Ladepunkt darf nicht laden
-                            # Zustand von vor dem Lastmanagement wieder herstellen
-                            data.counter_data = counter_data_old
-                            data.pv_data = pv_data_old
-                            data.bat_module_data = bat_module_data
-                            data.cp_data = cp_data_old
-                            # keine weitere Zuteilung
-                            log.message_debug_log("info", "Keine Ladung an LP"+str(cp.cp_num)+", da das Reduzieren/Abschalten der anderen Ladepunkte nicht ausreicht.")
-                            log.message_debug_log("debug", "Wiederherstellen des Zustands, bevor LP"+str(cp.cp_num)+" betrachtet wurde.")
+        for chargepoint in preferenced_chargepoints:
+            try:
+                charging_ev = chargepoint.data["set"]["charging_ev"]
+                phases = charging_ev.data["control_parameter"]["phases"]
+                required_current = charging_ev.data["control_parameter"]["required_current"]
+                required_power = phases * 230 * charging_ev.data["control_parameter"]["required_current"]
+                pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/set/required_power", required_power)
+                chargepoint.data["set"]["required_power"] = required_power
+                if charging_ev.data["control_parameter"]["submode"] == "pv_charging":
+                    self._calc_pv_charging(chargepoint, required_power, required_current, phases, current_mode)
+                elif (charging_ev.data["control_parameter"]["submode"] == "stop" or (charging_ev.data["control_parameter"]["submode"] == "standby")):
+                    required_current = 0
+                    self._process_data(chargepoint, required_current)
                 else:
-                    (log.message_debug_log("info", "LP: "+str(cp.cp_num)+", Ladestrom: "+str(cp.data["set"]["current"])+"A, Phasen: "+str(cp.data["set"]["charging_ev"].data["control_parameter"]["phases"])+
-                    ", Ladeleistung: "+str((cp.data["set"]["charging_ev"].data["control_parameter"]["phases"]*cp.data["set"]["current"]*230))+"W"))
-                data.counter_data["counter0"].print_stats()
-        except Exception as e:
-            log.exception_logging(e)
+                    self._calc_normal_load(chargepoint, required_power, required_current, phases, current_mode)
+            except Exception as e:
+                log.exception_logging(e)
 
-    def _distribute_power_to_cp(self, chargepoint):
-        """ ermittelt die konfigurierte Anzahl Phasen, Stromstärke und Leistung.
-
-        Parameter
-        ---------
-        chargepoint: dict
-            Daten des Ladepunkts
-        Return
-        ------
-        """
-        overloaded_counters = loadmanagement.get_overloaded_counters()
-        try:
-            charging_ev = chargepoint.data["set"]["charging_ev"]
-            phases = charging_ev.data["control_parameter"]["phases"]
-            required_current = charging_ev.data["control_parameter"]["required_current"]
-            required_power = phases * 230 * \
-                charging_ev.data["control_parameter"]["required_current"]
-            pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/set/required_power", required_power)
-            chargepoint.data["set"]["required_power"] = required_power
-            if charging_ev.data["control_parameter"]["submode"] == "pv_charging":
-                self._calc_pv_charging(chargepoint, required_power,
-                                required_current, phases)
-            elif (charging_ev.data["control_parameter"]["submode"] == "stop" or (charging_ev.data["control_parameter"]["submode"] == "standby")):
-                required_current, phases = no_load()
-                self._process_data(chargepoint, required_current, phases)
-            else:
-                overloaded_counters = self._calc_normal_load(chargepoint, required_power,
-                                    required_current, phases)
-            return overloaded_counters
-        except Exception as e:
-            log.exception_logging(e)
-            return None
-
-    def _calc_normal_load(self, chargepoint, required_power, required_current, phases):
-        """ prüft, ob mit PV geladen werden kann oder bezogen werden muss.
+    def _calc_normal_load(self, chargepoint, required_power, required_current, phases, current_mode):
+        """ prüft, ob mit PV geladen werden kann oder bezogen werden muss. Falls erforderlich LP mit niedrigerer Ladepriorität reduzieren/abschalten, 
+        um LP laden. Ladepunkte mit gleichem Lademodus und gleicher Priorität dürfen nur reduziert, aber nicht abgeschaltet werden.
 
         Parameter
         ---------
@@ -597,18 +532,62 @@ class control():
             Stromstärke, mit der geladen werden soll
         phases: int
             Phasen, mit denen geladen werden soll
+        current_mode: tupel
+            aktueller Lademodus, Submodus und Priorität
         """
         try:
+            # aktuelle Werte speichern (werden wieder hergestellt, wenn das Lastmanagement die Ladung verhindert)
+            counter_data_old = copy.deepcopy(data.counter_data)
+            pv_data_old = copy.deepcopy(data.pv_data)
+            bat_module_data = copy.deepcopy(data.bat_module_data)
+            cp_data_old = copy.deepcopy(data.cp_data)
+
             required_current, phases, overloaded_counters = allocate_power(chargepoint, required_power, required_current, phases)
             if data.counter_data["all"].data["set"]["loadmanagement"] == True:
                 required_current = 0
-            self._process_data(chargepoint, required_current, phases)
-            return overloaded_counters
+            self._process_data(chargepoint, required_current)
+            
+            if data.counter_data["all"].data["set"]["loadmanagement"] == True or overloaded_counters != {}:
+                #Lastmanagement hat eingegriffen
+                log.message_debug_log("info", "Für die Ladung an LP"+str(chargepoint.cp_num)+" muss erst ein Ladepunkt mit gleicher/niedrigerer Prioritaet reduziert/gestoppt werden.")
+                data.counter_data["counter0"].print_stats()
+                # Zähler mit der größten Überlastung ermitteln
+                overloaded_counters = sorted(overloaded_counters.items(), key=lambda e: e[1][1], reverse = True)
+                # Ergebnisse des Lastmanagements holen, das beim Einschalten durchgeführt worden ist. Es ist ausreichend, 
+                # Zähler mit der größten Überlastung im Pfad zu betrachten. Kann diese nicht eliminiert werden, kann der Ladpunkt nicht laden. 
+                chargepoints = loadmanagement.perform_loadmanagement(overloaded_counters[0][0])
+                remaining_current_overshoot = overloaded_counters[0][1][0]
+                # LP mit niedrigerer Priorität reduzieren und ggf. stoppen
+                for mode in reversed(self.chargemodes[(current_mode+1):-4]):
+                    remaining_current_overshoot = self._down_regulation(mode, chargepoints, remaining_current_overshoot, overloaded_counters[0][1][1], prevent_stop = False)
+                    if remaining_current_overshoot == 0:
+                        # LP kann nun wie gewünscht eingeschaltet werden
+                        self._process_data(chargepoint, chargepoint.data["set"]["charging_ev"].data["control_parameter"]["required_current"])
+                        break
+                else:
+                    # Ladepunkt, der gestartet werden soll reduzieren
+                    remaining_current_overshoot = self._perform_down_regulation([chargepoint], remaining_current_overshoot, overloaded_counters[0][1][1], prevent_stop = True)
+                    # Ladepunkte mit gleicher Priorität reduzieren. Diese dürfen nicht gestoppt werden.
+                    if remaining_current_overshoot != 0:
+                        remaining_current_overshoot = self._down_regulation(self.chargemodes[current_mode], chargepoints, remaining_current_overshoot, overloaded_counters[0][1][1], prevent_stop = True)
+                    if remaining_current_overshoot != 0:
+                        # Ladepunkt darf nicht laden
+                        # Zustand von vor dem Lastmanagement wieder herstellen
+                        data.counter_data = counter_data_old
+                        data.pv_data = pv_data_old
+                        data.bat_module_data = bat_module_data
+                        data.cp_data = cp_data_old
+                        # keine weitere Zuteilung
+                        log.message_debug_log("info", "Keine Ladung an LP"+str(chargepoint.cp_num)+", da das Reduzieren/Abschalten der anderen Ladepunkte nicht ausreicht.")
+                        log.message_debug_log("debug", "Wiederherstellen des Zustands, bevor LP"+str(chargepoint.cp_num)+" betrachtet wurde.")
+            else:
+                (log.message_debug_log("info", "LP: "+str(chargepoint.cp_num)+", Ladestrom: "+str(chargepoint.data["set"]["current"])+"A, Phasen: "+str(chargepoint.data["set"]["charging_ev"].data["control_parameter"]["phases"])+
+                ", Ladeleistung: "+str((chargepoint.data["set"]["charging_ev"].data["control_parameter"]["phases"]*chargepoint.data["set"]["current"]*230))+"W"))
+            data.counter_data["counter0"].print_stats()
         except Exception as e:
             log.exception_logging(e)
-            return None
 
-    def _calc_pv_charging(self, chargepoint, required_power, required_current, phases):
+    def _calc_pv_charging(self, chargepoint, required_power, required_current, phases, current_mode):
         """prüft, ob Speicher oder EV Vorrang hat und wie viel Strom/Leistung genutzt werden kann.
 
         Parameter
@@ -621,18 +600,66 @@ class control():
             Stromstärke, mit der geladen werden soll
         phases: int
             Phasen, mit denen geladen werden soll
+        current_mode: tupel
+            aktueller Lademodus, Submodus und Priorität
         """
+        threshold_not_reached = False
         try:
             if (chargepoint.data["set"]["charging_ev"].charge_template.data["chargemode"]["selected"] == "scheduled_charging" and 
                     "pv_charging" not in chargepoint.data["set"]["charging_ev"].charge_template.data["chargemode"]):
-                required_current, phases = no_load()
+                set_current = 0
                 log.message_debug_log("warning", "PV-Laden im Modus Zielladen aktiv und es wurden keine Einstellungen für PV-Laden konfiguriert.")
             else:
                 if self._check_cp_without_feed_in_is_prioritised(chargepoint) == True:
-                    required_current, phases = data.pv_data["all"].switch_on(chargepoint, required_power, required_current, phases, data.bat_module_data["all"].power_for_bat_charging())
+                    set_current, threshold_not_reached = data.pv_data["all"].switch_on(chargepoint, required_power, required_current, phases, data.bat_module_data["all"].power_for_bat_charging())
                 else:
-                    required_current, phases = no_load()
-            self._process_data(chargepoint, required_current, phases)
+                    set_current = 0
+            
+            if threshold_not_reached == True:
+                # Zustand merken
+                pv_data_old = copy.deepcopy(data.pv_data)
+                cp_data_old = copy.deepcopy(data.cp_data)
+                # LP mit niedrigerer Priorität abschalten (Reduktion ist bereits zu Beginn des Zyklus erfolgt)
+                for mode_tuple in reversed(self.chargemodes[current_mode+1:-4]):
+                    mode = mode_tuple[0]
+                    submode = mode_tuple[1]
+                    prio = mode_tuple[2]
+                    preferenced_chargepoints = []
+                    # enthält alle LP, auf die das Tupel zutrifft
+                    valid_chargepoints = {}
+                    for item in data.cp_data:
+                        if "cp" in item:
+                            cp = data.cp_data[item]
+                            if cp.data["set"]["charging_ev"] != -1:
+                                charging_ev = cp.data["set"]["charging_ev"]
+                                #set-> current enthält einen Wert, wenn das EV in diesem Zyklus eingeschaltet werden soll, aktuell aber noch nicht lädt.
+                                if "current" in cp.data["set"]:
+                                    if cp.data["set"]["current"] == 0:
+                                        continue
+                                if( (charging_ev.charge_template.data["prio"] == prio) and 
+                                    (charging_ev.charge_template.data["chargemode"]["selected"] == mode or mode == None) and 
+                                    (charging_ev.data["control_parameter"]["submode"] == submode)):
+                                    valid_chargepoints[cp] = None
+                    preferenced_chargepoints = self._get_preferenced_chargepoint(valid_chargepoints, False)
+                    if len(preferenced_chargepoints) > 0:
+                        for cp in preferenced_chargepoints:
+                            #abschalten
+                            data.pv_data["all"].allocate_evu_power(-1* cp.data["set"]["charging_ev"].data["control_parameter"]["required_current"] * 230 * chargepoint.data["get"]["phases_in_use"])
+                            self._process_data(cp, 0)
+                            log.message_debug_log("debug", "LP"+str(cp.cp_num)+" abgeschaltet, um die Einschaltverzoegerung an LP"+str(chargepoint.cp_num)+" zu starten.")
+                            # switch_on erneut durchführen
+                            set_current, threshold_not_reached = data.pv_data["all"].switch_on(chargepoint, required_power, required_current, phases, data.bat_module_data["all"].power_for_bat_charging())
+                            if threshold_not_reached == False:
+                                break
+                        if threshold_not_reached == False:
+                            break
+                else:
+                    # Es konnte nicht genug Leistung freigegeben werden.
+                    data.pv_data = pv_data_old
+                    data.cp_data = cp_data_old
+                    log.message_debug_log("info", "Keine Ladung an LP"+str(chargepoint.cp_num)+", da das Reduzieren/Abschalten der anderen Ladepunkte nicht ausreicht.")
+                    log.message_debug_log("debug", "Wiederherstellen des Zustands, bevor LP"+str(chargepoint.cp_num)+" betrachtet wurde.")
+            self._process_data(chargepoint, set_current)
         except Exception as e:
             log.exception_logging(e)
 
@@ -678,7 +705,7 @@ class control():
                                     num_of_phases += data.cp_data[chargepoint].data["set"]["charging_ev"].data["control_parameter"]["phases"]
             # Ladung aktiv?
             if num_of_phases > 0:
-                bat_overhang = data.bat_module_data["all"].data["set"]["charging_power_left"]
+                bat_overhang = data.bat_module_data["all"].power_for_bat_charging()
                 if feed_in_limit == False:
                     current_diff_per_phase = (data.pv_data["all"].overhang_left() + bat_overhang) / 230 / num_of_phases
                 else:
@@ -771,16 +798,19 @@ class control():
                     else:
                         valid_chargepoints.update((cp, cp.cp_num) for cp, val in valid_chargepoints.items())
 
-                    # kleinsten Value im Dictionary ermitteln
-                    min_value = min(valid_chargepoints.values())
+                    if start == True:
+                        # kleinsten Value im Dictionary ermitteln
+                        extreme_value = min(valid_chargepoints.values())
+                    else:
+                        extreme_value = max(valid_chargepoints.values())
                     # dazugehörige Keys ermitteln
-                    min_cp = [key for key in valid_chargepoints if valid_chargepoints[key] == min_value]
-                    if len(min_cp) > 1:
+                    extreme_cp = [key for key in valid_chargepoints if valid_chargepoints[key] == extreme_value]
+                    if len(extreme_cp) > 1:
                         # Wenn es mehrere LP gibt, die den gleichen Minimalwert haben, nächste Bedingung prüfen.
                         condition += 1
                     else:
-                        preferenced_chargepoints.append(min_cp[0])
-                        valid_chargepoints.pop(min_cp[0])
+                        preferenced_chargepoints.append(extreme_cp[0])
+                        valid_chargepoints.pop(extreme_cp[0])
 
             return preferenced_chargepoints
         except Exception as e:
@@ -823,7 +853,7 @@ class control():
             log.exception_logging(e)
             return True
 
-    def _process_data(self, chargepoint, required_current, phases):
+    def _process_data(self, chargepoint, required_current):
         """ setzt die ermittelte Anzahl Phasen, Stromstärke und Leistung in den Dictionarys, 
         publsihed sie und schreibt sie ins Log.
 
@@ -833,8 +863,6 @@ class control():
             Daten des Ladepunkts
         required_current: float
             Stromstärke, mit der geladen werden soll
-        phases: int
-            Phasen, mit denen geladen werden soll
         """
         try:
             chargepoint.data["set"]["current"] = required_current
@@ -883,7 +911,7 @@ def allocate_power(chargepoint, required_power, required_current, phases):
         bat_overhang = data.bat_module_data["all"].power_for_bat_charging()
         evu_overhang = data.pv_data["all"].overhang_left()
         remaining_required_power = required_power
-        overloaded_counters = None
+        overloaded_counters = {}
         # Wenn vorhanden, Speicherenergie allokieren.
         if bat_overhang > 0:
             if bat_overhang > required_power:
@@ -915,17 +943,3 @@ def allocate_power(chargepoint, required_power, required_current, phases):
     except Exception as e:
         log.exception_logging(e)
         return 0, phases, None
-
-def no_load():
-    """ setzt die Parameter zum Stoppen der PV-Ladung
-
-    Return
-    ------
-    required_current: float
-        Stromstärke, mit der geladen werden soll
-    phases: int
-        Phasen, mit denen geladen werden soll
-    """
-    required_current = 0
-    phases = 0
-    return required_current, phases

@@ -5,6 +5,8 @@ import copy
 import json
 import paho.mqtt.client as mqtt
 import re
+import threading
+import time
 
 import log
 import pub
@@ -12,8 +14,9 @@ import subdata
 
 class setData():
  
-    def __init__(self):
-        pass
+    def __init__(self, lock_ev_template, lock_charge_template):
+        self.lock_ev_template = lock_ev_template
+        self.lock_charge_template = lock_charge_template
 
     def set_data(self):
         """ abonniert alle set-Topics.
@@ -26,19 +29,44 @@ class setData():
 
         client.on_connect = self.on_connect
         client.on_message = self.on_message
-        client.message_callback_add("openWB/set/vehicle/#", self.process_vehicle_topic)
-        client.message_callback_add("openWB/set/chargepoint/#", self.process_chargepoint_topic)
-        client.message_callback_add("openWB/set/pv/#", self.process_pv_topic)
-        client.message_callback_add("openWB/set/bat/#", self.process_bat_topic)
-        client.message_callback_add("openWB/set/general/#", self.process_general_topic)
-        client.message_callback_add("openWB/set/optional/#", self.process_optional_topic)
-        client.message_callback_add("openWB/set/counter/#", self.process_counter_topic)
-        # client.message_callback_add("openWB/set/graph/#", self.process_graph_topic)
-        # client.message_callback_add("openWB/set/smarthome/#", self.processSmarthomeTopic)
+        client.message_callback_add("openWB/set/#", self._process_topics)
 
         client.connect(mqtt_broker_ip, 1883)
         client.loop_forever()
         client.disconnect()
+
+    def _process_topics(self, client, userdata, msg):
+        """ ruft die Funktion auf, um das Topic zu verarbeiten. Wenn die Topics mit Locking verarbeitet werden, wird gewartet, bis das Locking aufgehoben wird.
+
+        Parameters
+        ----------
+        client : (unused)
+            vorgegebener Parameter
+        userdata : (unused)
+            vorgegebener Parameter
+        msg:
+            enthält Topic und Payload
+        """
+        if "openWB/set/vehicle/" in msg.topic:
+            if "openWB/set/vehicle/template/ev_template/" in msg.topic:
+                while self.lock_ev_template.locked() == True:
+                    time.sleep(0.01)
+            elif "openWB/set/vehicle/template/charge_template/" in msg.topic:
+                while self.lock_charge_template.locked() == True:
+                    time.sleep(0.01)
+            self.process_vehicle_topic(client, userdata, msg)
+        elif "openWB/set/chargepoint/" in msg.topic:
+            self.process_chargepoint_topic(client, userdata, msg)
+        elif "openWB/set/pv/" in msg.topic:
+            self.process_pv_topic(client, userdata, msg)
+        elif "openWB/set/bat/" in msg.topic:
+            self.process_bat_topic(client, userdata, msg)
+        elif "openWB/set/general/" in msg.topic:
+            self.process_general_topic(client, userdata, msg)
+        elif "openWB/set/optional/" in msg.topic:
+            self.process_optional_topic(client, userdata, msg)
+        elif "openWB/set/counter/" in msg.topic:
+            self.process_counter_topic(client, userdata, msg)
 
     def getserial(self):
         """ Extract serial from cpuinfo file
@@ -97,15 +125,18 @@ class setData():
                 if valid == True:
                     if pub_json == False:
                         pub.pub(msg.topic.replace('set/', '', 1), value)
+                        pub.pub(msg.topic, "")
                     else:
                         # aktuelles json-Objekt liegt in subdata
                         index = re.search('(?!/)([0-9]*)(?=/|$)', msg.topic).group()
                         if "charge_template" in msg.topic:
+                            lock = self.lock_charge_template
                             if "ct"+str(index) in subdata.subData.ev_charge_template_data:
                                 template = copy.deepcopy(subdata.subData.ev_charge_template_data["ct"+str(index)].data)
                             else:
                                 template = {}
                         elif "ev_template" in msg.topic:
+                            lock = self.lock_ev_template
                             if "et"+str(index) in subdata.subData.ev_template_data:
                                 template = copy.deepcopy(subdata.subData.ev_template_data["et"+str(index)].data)
                             else:
@@ -118,7 +149,10 @@ class setData():
                         topic = msg.topic[:index_pos+1]
                         topic = topic.replace('set/', '', 1)
                         pub.pub(topic, template)
-                pub.pub(msg.topic, "")
+                        pub.pub(msg.topic, "")
+                        lock.acquire(blocking=True)
+                else:
+                    pub.pub(msg.topic, "")
         except Exception as e:
             log.exception_logging(e)
 
@@ -280,6 +314,7 @@ class setData():
                 self._subprocess_vehicle_chargemode_topic(msg)
             else:
                 log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
+                pub.pub(msg.topic, "")
         except Exception as e:
             log.exception_logging(e)
 
@@ -358,8 +393,11 @@ class setData():
                 self._validate_value(msg, int, [(0, 1)], pub_json = True)
             elif re.search("^openWB/set/vehicle/template/ev_template/[1-9][0-9]*/control_pilot_interruption_duration$", msg.topic) != None:
                 self._validate_value(msg, int, [(4, 15)], pub_json = True)
+            elif re.search("^openWB/set/vehicle/template/ev_template/[1-9][0-9]*/nominal_difference$", msg.topic) != None:
+                self._validate_value(msg, float, [(0, 4)], pub_json = True)
             else:
                 log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
+                pub.pub(msg.topic, "")
         except Exception as e:
             log.exception_logging(e)
 
@@ -465,6 +503,7 @@ class setData():
                 self._validate_value(msg, int, [(0, 1)])
             else:
                 log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
+                pub.pub(msg.topic, "")
         except Exception as e:
             log.exception_logging(e)
 
@@ -535,6 +574,7 @@ class setData():
                 self._validate_value(msg, float, [(0, None)], collection=list)
             else:
                 log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
+                pub.pub(msg.topic, "")
         except Exception as e:
             log.exception_logging(e)
 
@@ -600,6 +640,7 @@ class setData():
                 self._validate_value(msg, str)
             else:
                 log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
+                pub.pub(msg.topic, "")
         except Exception as e:
             log.exception_logging(e)
 
@@ -668,6 +709,7 @@ class setData():
                 self._validate_value(msg, str)
             else:
                 log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
+                pub.pub(msg.topic, "")
         except Exception as e:
             log.exception_logging(e)
 
@@ -701,6 +743,7 @@ class setData():
                 self._validate_value(msg, float)
             else:
                 log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
+                pub.pub(msg.topic, "")
         except Exception as e:
             log.exception_logging(e)
 
@@ -792,6 +835,7 @@ class setData():
                 self._validate_value(msg, str)
             else:
                 log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
+                pub.pub(msg.topic, "")
         except Exception as e:
             log.exception_logging(e)
 
@@ -812,6 +856,7 @@ class setData():
                 pass
             else:
                 log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
+                pub.pub(msg.topic, "")
         except Exception as e:
             log.exception_logging(e)
 
