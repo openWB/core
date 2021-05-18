@@ -1,5 +1,10 @@
 #!/bin/bash
 graphing(){
+
+	convertTokW(){
+		echo "$(echo "scale=3;$1/1000" | bc | awk '{printf "%.3f", $0}')"
+	}
+
 	#Ladestatuslog keurzen
 	echo "$(tail -100 /var/www/html/openWB/ramdisk/ladestatus.log)" > /var/www/html/openWB/ramdisk/ladestatus.log
 	#Live Graphing
@@ -40,14 +45,69 @@ graphing(){
 		fi
 	fi
 
-	header="Zeit,EVU,Ladeleistung,PV,LP1,LP2,Ladeleistung2,Speicherleistung,SpeicherSoC,LP1SoC,LP2SoC,Hausverbrauch,Verbraucher1,Verbraucher2,LP3,LP4,LP5,LP6,LP7,LP8,SH1,SH2,SH3,SH4,SH5,SH6,SH7,SH8,SH9,SH1T0,SH1T1,SH1T2"
+	# JSON graphing
+	# begin JSON
+	dataline="{\"time\":\"$(date +%H:%M:%S)\""
+	# common data
+	dataline="$dataline,\"grid\":$(convertTokW $wattbezugint),\"house-power\":$(convertTokW $hausverbrauch),\"charging-all\":$(convertTokW $ladeleistung)"
+	# pv data
+	dataline="$dataline,\"pv\":$(convertTokW $pvgraph)"
+	# chargepoint data
+	dataline="$dataline,\"cp1-power\":$(convertTokW $ladeleistunglp1),\"cp2-power\":$(convertTokW $ladeleistunglp2),\"cp3-power\":$(convertTokW $ladeleistunglp3)"
+	# chargepoint SoC data
+	dataline="$dataline,\"cp1-soc\":$soc,\"cp2-soc\":$soc1"
+	# battery data
+	dataline="$dataline,\"bat-power\":$(convertTokW $speicherleistung),\"bat-soc\":$speichersoc"
+	# smarthoome 1
+	dataline="$dataline,\"load1-power\":$(convertTokW $verbraucher1_watt),\"load2-power\":$(convertTokW $verbraucher2_watt)"
+	# end JSON
+	dataline="$dataline}"
+	printf "$dataline\n" >> /var/www/html/openWB/ramdisk/all-live.json
+	echo "$(tail -$livegraph /var/www/html/openWB/ramdisk/all-live.json)" > /var/www/html/openWB/ramdisk/all-live.json
+	mosquitto_pub -t openWB/graph/alllivevaluesJson1 -r -m "$(cat /var/www/html/openWB/ramdisk/all-live.json | tail -n 50)" &
+	mosquitto_pub -t openWB/graph/lastlivevaluesJson -r -m "$dataline" &
+	mosquitto_pub -t openWB/system/lastlivevaluesJson -r -m "$dataline" &
+	mosquitto_pub -t openWB/graph/alllivevaluesJson1 -r -m "$(< ramdisk/all-live.json tail -n +"0" | head -n "$((50 - 0))")" &
+	all2livevalues=$(< ramdisk/all-live.json tail -n +"50" | head -n "$((100 - 50))")
+	all3livevalues="$(< ramdisk/all-live.json tail -n +"100" | head -n "$((150 - 100))")"
+	all4livevalues="$(< ramdisk/all-live.json tail -n +"150" | head -n "$((200 - 150))")"
+	all5livevalues="$(< ramdisk/all-live.json tail -n +"200" | head -n "$((250 - 200))")"
+	all6livevalues="$(< ramdisk/all-live.json tail -n +"250" | head -n "$((300 - 250))")"
+	all7livevalues="$(< ramdisk/all-live.json tail -n +"300" | head -n "$((350 - 300))")"
+	all8livevalues="$(< ramdisk/all-live.json tail -n +"350" | head -n "$((400 - 350))")"
+	all9livevalues="$(< ramdisk/all-live.json tail -n +"400" | head -n "$((450 - 400))")"
+	all10livevalues="$(< ramdisk/all-live.json tail -n +"450" | head -n "$((500 - 450))")"
+	all11livevalues="$(< ramdisk/all-live.json tail -n +"500" | head -n "$((550 - 500))")"
+	all12livevalues="$(< ramdisk/all-live.json tail -n +"550" | head -n "$((600 - 550))")"
+	all13livevalues="$(< ramdisk/all-live.json tail -n +"600" | head -n "$((650 - 600))")"
+	all14livevalues="$(< ramdisk/all-live.json tail -n +"650" | head -n "$((700 - 650))")"
+	all15livevalues="$(< ramdisk/all-live.json tail -n +"700" | head -n "$((750 - 700))")"
+	all16livevalues="$(< ramdisk/all-live.json tail -n +"750" | head -n "$((800 - 750))")"
+	mosquitto_pub -t openWB/graph/alllivevaluesJson2 -r -m "$([ ${#all2livevalues} -ge 10 ] && echo "$all2livevalues" || echo "-")" &
+	mosquitto_pub -t openWB/graph/alllivevaluesJson3 -r -m "$([ ${#all3livevalues} -ge 10 ] && echo "$all3livevalues" || echo "-")" &
+	mosquitto_pub -t openWB/graph/alllivevaluesJson4 -r -m "$([ ${#all4livevalues} -ge 10 ] && echo "$all4livevalues" || echo "-")" &
+	mosquitto_pub -t openWB/graph/alllivevaluesJson5 -r -m "$([ ${#all5livevalues} -ge 10 ] && echo "$all5livevalues" || echo "-")" &
+	mosquitto_pub -t openWB/graph/alllivevaluesJson6 -r -m "$([ ${#all6livevalues} -ge 10 ] && echo "$all6livevalues" || echo "-")" &
+	mosquitto_pub -t openWB/graph/alllivevaluesJson7 -r -m "$([ ${#all7livevalues} -ge 10 ] && echo "$all7livevalues" || echo "-")" &
+	mosquitto_pub -t openWB/graph/alllivevaluesJson8 -r -m "$([ ${#all8livevalues} -ge 10 ] && echo "$all8livevalues" || echo "-")" &
+	mosquitto_pub -t openWB/graph/alllivevaluesJson9 -r -m "$([ ${#all9livevalues} -ge 10 ] && echo "$all9livevalues" || echo "-")" &
+	mosquitto_pub -t openWB/graph/alllivevaluesJson10 -r -m "$([ ${#all10livevalues} -ge 10 ] && echo "$all10livevalues" || echo "-")" &
+	mosquitto_pub -t openWB/graph/alllivevaluesJson11 -r -m "$([ ${#all11livevalues} -ge 10 ] && echo "$all11livevalues" || echo "-")" &
+	mosquitto_pub -t openWB/graph/alllivevaluesJson12 -r -m "$([ ${#all12livevalues} -ge 10 ] && echo "$all12livevalues" || echo "-")" &
+	mosquitto_pub -t openWB/graph/alllivevaluesJson13 -r -m "$([ ${#all13livevalues} -ge 10 ] && echo "$all13livevalues" || echo "-")" &
+	mosquitto_pub -t openWB/graph/alllivevaluesJson14 -r -m "$([ ${#all14livevalues} -ge 10 ] && echo "$all14livevalues" || echo "-")" &
+	mosquitto_pub -t openWB/graph/alllivevaluesJson15 -r -m "$([ ${#all15livevalues} -ge 10 ] && echo "$all15livevalues" || echo "-")" &
+	mosquitto_pub -t openWB/graph/alllivevaluesJson16 -r -m "$([ ${#all16livevalues} -ge 10 ] && echo "$all16livevalues" || echo "-")" &
+
+	# csv graphing
+	header="Zeit,Timestamp,EVU,Ladeleistung,PV,LP1,LP2,Ladeleistung2,Speicherleistung,SpeicherSoC,LP1SoC,LP2SoC,Hausverbrauch,Verbraucher1,Verbraucher2,LP3,LP4,LP5,LP6,LP7,LP8,SH1,SH2,SH3,SH4,SH5,SH6,SH7,SH8,SH9,SH1T0,SH1T1,SH1T2"
 	if [ ! -f /var/www/html/openWB/ramdisk/all-live.graph ]; then
 		touch /var/www/html/openWB/ramdisk/all-live.graph
 	fi
 	if (( $(wc -l /var/www/html/openWB/ramdisk/all-live.graph | awk '{ print $1 }') == 0 )); then
 		printf "$header\n" > /var/www/html/openWB/ramdisk/all-live.graph
 	fi
-	printf "$(date +%H:%M:%S),$wattbezugint,$ladeleistung,$pvgraph,$ladeleistunglp1,$ladeleistunglp2,$ladeleistung,$speicherleistung,$speichersoc,$soc,$soc1,$hausverbrauch,$verbraucher1_watt,$verbraucher2_watt,$ladeleistunglp3,$ladeleistunglp4,$ladeleistunglp5,$ladeleistunglp6,$ladeleistunglp7,$ladeleistunglp8,$shd1_w,$shd2_w,$shd3_w,$shd4_w,$shd5_w,$shd6_w,$shd7_w,$shd8_w,$shd9_w,$shd1_t0,$shd1_t1,$shd1_t2\n" >> /var/www/html/openWB/ramdisk/all-live.graph
+	printf "$(date +%H:%M:%S),$(date +%s),$wattbezugint,$ladeleistung,$pvgraph,$ladeleistunglp1,$ladeleistunglp2,$ladeleistung,$speicherleistung,$speichersoc,$soc,$soc1,$hausverbrauch,$verbraucher1_watt,$verbraucher2_watt,$ladeleistunglp3,$ladeleistunglp4,$ladeleistunglp5,$ladeleistunglp6,$ladeleistunglp7,$ladeleistunglp8,$shd1_w,$shd2_w,$shd3_w,$shd4_w,$shd5_w,$shd6_w,$shd7_w,$shd8_w,$shd9_w,$shd1_t0,$shd1_t1,$shd1_t2\n" >> /var/www/html/openWB/ramdisk/all-live.graph
 	printf "$(date +%H:%M:%S),$wattbezugint,$ladeleistung,$pvgraph,$ladeleistunglp1,$ladeleistunglp2,$ladeleistung,$speicherleistung,$speichersoc,$soc,$soc1,$hausverbrauch,$verbraucher1_watt,$verbraucher2_watt" > /var/www/html/openWB/ramdisk/all-live.graph?incremental=y
 	if (( $(wc -l /var/www/html/openWB/ramdisk/all-live.graph | awk '{ print $1 }') > $livegraph )); then
 		printf "$header\n$(tail -n +2 /var/www/html/openWB/ramdisk/all-live.graph | tail -$livegraph)\n" > /var/www/html/openWB/ramdisk/all-live.graph
@@ -76,7 +136,7 @@ graphing(){
 		echo "$(tail -$livegraph /var/www/html/openWB/ramdisk/soc1-live.graph)" > /var/www/html/openWB/ramdisk/soc1-live.graph
 	fi
 	mosquitto_pub -t openWB/graph/alllivevalues -r -m "$(cat /var/www/html/openWB/ramdisk/all-live.graph | tail -n 50)" &
-	lastlivevalues=$(printf "$header\n$(date +%H:%M:%S),$wattbezugint,$ladeleistung,$pvgraph,$ladeleistunglp1,$ladeleistunglp2,$ladeleistung,$speicherleistung,$speichersoc,$soc,$soc1,$hausverbrauch,$verbraucher1_watt,$verbraucher2_watt,$ladeleistunglp3,$ladeleistunglp4,$ladeleistunglp5,$ladeleistunglp6,$ladeleistunglp7,$ladeleistunglp8,$shd1_w,$shd2_w,$shd3_w,$shd4_w,$shd5_w,$shd6_w,$shd7_w,$shd8_w,$shd9_w,$shd1_t0,$shd1_t1,$shd1_t2")
+	lastlivevalues=$(printf "$header\n$(date +%H:%M:%S),$(date +%s),$wattbezugint,$ladeleistung,$pvgraph,$ladeleistunglp1,$ladeleistunglp2,$ladeleistung,$speicherleistung,$speichersoc,$soc,$soc1,$hausverbrauch,$verbraucher1_watt,$verbraucher2_watt,$ladeleistunglp3,$ladeleistunglp4,$ladeleistunglp5,$ladeleistunglp6,$ladeleistunglp7,$ladeleistunglp8,$shd1_w,$shd2_w,$shd3_w,$shd4_w,$shd5_w,$shd6_w,$shd7_w,$shd8_w,$shd9_w,$shd1_t0,$shd1_t1,$shd1_t2")
 	mosquitto_pub -t openWB/graph/lastlivevalues -r -m "$lastlivevalues" &
 	mosquitto_pub -t openWB/system/lastlivevalues -r -m "$(date +%H:%M:%S),$wattbezugint,$ladeleistung,$pvgraph,$ladeleistunglp1,$ladeleistunglp2,$ladeleistung,$speicherleistung,$speichersoc,$soc,$soc1,$hausverbrauch,$verbraucher1_watt,$verbraucher2_watt,$ladeleistunglp3,$ladeleistunglp4,$ladeleistunglp5,$ladeleistunglp6,$ladeleistunglp7,$ladeleistunglp8,$shd1_w,$shd2_w,$shd3_w,$shd4_w,$shd5_w,$shd6_w,$shd7_w,$shd8_w,$shd9_w" &
 	mosquitto_pub -t openWB/graph/1alllivevalues -r -m "$(< ramdisk/all-live.graph tail -n +"0" | head -n "$((50 - 0))")" &
