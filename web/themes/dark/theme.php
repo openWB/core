@@ -387,7 +387,7 @@
 			</div>
 
 			<div class="accordion" id="chargepointaccordion">
-				<div class="chargepoint-card card border-dark text-grey" data-cp="1" data-chargetemplate="" data-evtemplate="">
+				<div class="chargepoint-card card border-dark text-grey" data-cp="1" data-chargetemplate="0" data-evtemplate="0">
 					<div class="card-header bg-lightgrey collapsed" data-toggle="collapse" data-target="#collapseChargepoint1">
 						<div class="form-row">
 							<div class="col-3">
@@ -450,7 +450,7 @@
 									</label>
 									<div class="col-md-8">
 										<select name="chargepoint-vehicleselect" class="form-control chargepoint-vehicleselect" data-topic="openWB/set/chargepoint/template/<et>/ev">
-											<option value="">-- Nicht ausgewählt --</option>
+											<option value="0">-- Nicht ausgewählt --</option>
 										</select>
 									</div>
 								</div>
@@ -502,7 +502,7 @@
 											<div class="col-md-8">
 												<div class="form-row form-group mb-1 vaRow">
 													<div class="col">
-														<input type="range" class="chargepoint-instantchargecurrent form-control-range rangeInput" id="currentInstantChargeCp1" data-topic="openWB/set/vehicle/template/charge_template/<ct>/instant_charging/current" min="6" max="32" step="1">
+														<input type="range" class="chargepoint-instantchargecurrent form-control-range rangeInput" id="currentInstantChargeCp1" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/instant_charging/current" min="6" max="32" step="1">
 													</div>
 													<label for="currentInstantChargeCp1" class="col-form-label valueLabel" data-suffix="A">? A</label>
 												</div>
@@ -512,7 +512,7 @@
 											<div class="col">
 												<label class="col-form-label">Begrenzung</label>
 											</div>
-											<div class="col-md-8 btn-group btn-group-toggle chargepoint-instantchargelimitselected" id="limitInstantChargeCp1" data-name="limitCp" data-toggle="buttons" data-topic="openWB/set/vehicle/template/<ct>/chargemode/instant_charging/limit/selected">
+											<div class="col-md-8 btn-group btn-group-toggle chargepoint-instantchargelimitselected" id="limitInstantChargeCp1" data-name="limitCp" data-toggle="buttons" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/instant_charging/limit/selected">
 												<label class="btn btn-outline-info btn-toggle">
 													<input type="radio" name="limitCp" data-option="none"> keine
 												</label>
@@ -532,7 +532,7 @@
 												<div class="col-md-8">
 													<div class="form-row form-group mb-1 vaRow">
 														<div class="col">
-															<input type="range" class="chargepoint-instantchargelimitsoc form-control-range rangeInput" id="soclimitCp1" min="5" max="100" step="5" data-topic="openWB/set/vehicle/template/<ct>/chargemode/instant_charging/limit/soc">
+															<input type="range" class="chargepoint-instantchargelimitsoc form-control-range rangeInput" id="soclimitCp1" min="5" max="100" step="5" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/instant_charging/limit/soc">
 														</div>
 														<label for="soclimitCp1" class="col-form-label valueLabel" data-suffix="%">? %</label>
 													</div>
@@ -545,7 +545,7 @@
 												<div class="col-md-8">
 													<div class="form-row form-group mb-1 vaRow">
 														<div class="col">
-															<input type="range" class="chargepoint-instantchargelimitamount form-control-range rangeInput" id="amountlimitCp1" min="1" max="50" step="1" data-topic="openWB/set/vehicle/template/<ct>/chargemode/instant_charging/limit/amount">
+															<input type="range" class="chargepoint-instantchargelimitamount form-control-range rangeInput" id="amountlimitCp1" min="1" max="50" step="1" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/instant_charging/limit/amount">
 														</div>
 														<label for="amountlimitCp1" class="col-form-label valueLabel" data-suffix="kWh">? kWh</label>
 													</div>
@@ -560,7 +560,7 @@
 												Einspeisegrenze beachten
 											</div>
 											<div class="col-md-8 text-right">
-												<input class="chargepoint-pvchargefeedinlimit" type="checkbox" data-toggle="toggle" data-topic="openWB/set/vehicle/template/charge_template/<ct>/pv_charging/feed_in_limit" data-on="Ja" data-off="Nein" data-onstyle="success" data-offstyle="danger" data-size="sm" data-style="w-100">
+												<input class="chargepoint-pvchargefeedinlimit" type="checkbox" data-toggle="toggle" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/feed_in_limit" data-on="Ja" data-off="Nein" data-onstyle="success" data-offstyle="danger" data-size="sm" data-style="w-100">
 											</div>
 										</div>
 										<div class="form-row vaRow mb-0">
@@ -570,7 +570,7 @@
 											<div class="col-md-8">
 												<div class="form-row form-group mb-1 vaRow">
 													<div class="col">
-														<input type="range" class="chargepoint-pvchargemincurrent form-control-range rangeInput" id="minCurrentPvCp1" data-topic="openWB/set/vehicle/template/charge_template/<ct>/pv_charging/min_current" min="6" max="16" step="1">
+														<input type="range" class="chargepoint-pvchargemincurrent form-control-range rangeInput" id="minCurrentPvCp1" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/min_current" min="6" max="16" step="1">
 													</div>
 													<label for="minCurrentPvCp1" class="col-form-label valueLabel" data-suffix="A">? A</label>
 												</div>
@@ -583,7 +583,7 @@
 											<div class="col-md-8">
 												<div class="form-row form-group mb-1 vaRow">
 													<div class="col">
-														<input type="range" class="chargepoint-pvchargeminsoc form-control-range rangeInput" id="minSocPvCp1" data-topic="openWB/set/vehicle/template/charge_template/<ct>/pv_charging/min_soc" min="0" max="99" step="1">
+														<input type="range" class="chargepoint-pvchargeminsoc form-control-range rangeInput" id="minSocPvCp1" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/min_soc" min="0" max="99" step="1">
 													</div>
 													<label for="minSocPvCp1" class="col-form-label valueLabel" data-suffix="%">? %</label>
 												</div>
@@ -596,7 +596,7 @@
 											<div class="col-md-8">
 												<div class="form-row form-group mb-1 vaRow">
 													<div class="col">
-														<input type="range" class="chargepoint-pvchargeminsoccurrent form-control-range rangeInput" id="minSocCurrentPvCp1" data-topic="openWB/set/vehicle/template/charge_template/<ct>/pv_charging/min_soc_current" min="6" max="16" step="1">
+														<input type="range" class="chargepoint-pvchargeminsoccurrent form-control-range rangeInput" id="minSocCurrentPvCp1" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/min_soc_current" min="6" max="16" step="1">
 													</div>
 													<label for="minSocCurrentPvCp1" class="col-form-label valueLabel" data-suffix="A">? A</label>
 												</div>
@@ -609,7 +609,7 @@
 											<div class="col-md-8">
 												<div class="form-row form-group mb-1 vaRow">
 													<div class="col">
-														<input type="range" class="chargepoint-pvchargemaxsoc form-control-range rangeInput" id="maxSocPvCp1" data-topic="openWB/set/vehicle/template/charge_template/<ct>/pv_charging/max_soc" min="1" max="100" step="1">
+														<input type="range" class="chargepoint-pvchargemaxsoc form-control-range rangeInput" id="maxSocPvCp1" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/max_soc" min="1" max="100" step="1">
 													</div>
 													<label for="maxSocPvCp1" class="col-form-label valueLabel" data-suffix="%">? %</label>
 												</div>
@@ -897,7 +897,7 @@
 						topic = topic.replace( '<ev>', ev );
 						topic = topic.replace( '<ct>', ct );
 						topic = topic.replace( '<et>', ct );
-						publish($(this).val(), topic);
+						publish(parseInt($(this).val()), topic);
 					}
 				});
 
@@ -989,7 +989,7 @@
 						// gets executed on callback, 2000ms after last input-change
 						// changes label color back to normal and sends input-value by mqtt
 						var elem = $('#' + $.escapeSelector(id));
-						var value = elem.val();
+						var value = parseInt(elem.val());
 						var topic = getTopicToSendTo(id);
 						publish(value, topic);
 						var label = $('label[for="' + id + '"].valueLabel');

@@ -1,3 +1,4 @@
+#!/bin/python3
 """Starten der benötigten Prozesse
 """
 
