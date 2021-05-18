@@ -53,6 +53,8 @@ function createChargepoint(hierarchy) {
 				sourceElement.find('input[type=checkbox][data-toggle^=toggle]').bootstrapToggle();
 				// update all data referencing the old index in our clone
 				clonedElement.attr('data-cp', chargepointIndex).data('cp', chargepointIndex);
+				clonedElement.attr('data-chargetemplate', 0).data('chargetemplate', 0);
+				clonedElement.attr('data-evtemplate', 0).data('evtemplate', 0);
 				clonedElement.find('.card-header').attr('data-target', '#collapseChargepoint'+chargepointIndex).data('target', '#collapseChargepoint'+chargepointIndex).addClass('collapsed');
 				clonedElement.find('.card-body').attr('id', 'collapseChargepoint'+chargepointIndex).removeClass('show');
 				clonedElement.find('label[for=minCurrentPvCp1]').attr('for', 'minCurrentPvCp'+chargepointIndex);
