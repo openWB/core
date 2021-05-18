@@ -56,6 +56,7 @@ class ev():
             self.data["control_parameter"] = {}
         pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/required_current", 0)
         pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/phases", 0)
+        pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/prio", 0)
         pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/timestamp_switch_on_off", "0")
         pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/timestamp_auto_phase_switch", "0")
         pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/timestamp_perform_phase_switch", "0")
@@ -63,6 +64,7 @@ class ev():
         pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/chargemode", "stop")
         self.data["control_parameter"]["required_current"] = 0 
         self.data["control_parameter"]["phases"] = 0 
+        self.data["control_parameter"]["prio"] = False
         self.data["control_parameter"]["timestamp_switch_on_off"] = "0"
         self.data["control_parameter"]["timestamp_auto_phase_switch"] = "0"
         self.data["control_parameter"]["timestamp_perform_phase_switch"] = "0"

@@ -58,6 +58,21 @@ def pub_settings():
     pub.pub("openWB/set/chargepoint/template/3/ev", 3)
     pub.pub("openWB/set/chargepoint/template/3/rfid_enabling", False)
 
+    # ev0
+    pub.pub("openWB/set/vehicle/0/charge_template", 0)
+    pub.pub("openWB/set/vehicle/0/ev_template", 0)
+    pub.pub("openWB/set/vehicle/0/name", "default")
+    pub.pub("openWB/set/vehicle/0/soc/config/configured", False)
+    pub.pub("openWB/set/vehicle/0/soc/config/manual", False)
+    pub.pub("openWB/set/vehicle/0/soc/get/fault_state", 0)
+    pub.pub("openWB/set/vehicle/0/soc/get/fault_str", "Kein Fehler.")
+    pub.pub("openWB/set/vehicle/0/get/soc", 0)
+    pub.pub("openWB/set/vehicle/0/get/soc_timestamp", 0)
+    pub.pub("openWB/set/vehicle/0/get/charged_since_plugged_counter", 5)
+    pub.pub("openWB/set/vehicle/0/get/range_charged", 125)
+    pub.pub("openWB/set/vehicle/0/match_ev/selected", "cp")
+    pub.pub("openWB/set/vehicle/0/match_ev/tag_id", 1234)
+
     # ev1
     pub.pub("openWB/set/vehicle/1/charge_template", 1)
     pub.pub("openWB/set/vehicle/1/ev_template", 1)

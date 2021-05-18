@@ -174,7 +174,7 @@ class subData():
                         self.set_json_payload(self.ev_data["ev"+index].data["control_parameter"], msg)
                     else: 
                         self.set_json_payload(self.ev_data["ev"+index].data, msg)
-            elif re.search("^openWB/vehicle/template/charge_template/[1-9][0-9]*$", msg.topic) != None:
+            elif re.search("^openWB/vehicle/template/charge_template/[0-9]+$", msg.topic) != None:
                 if json.loads(str(msg.payload.decode("utf-8")))=="":
                     if "ct"+index in self.ev_charge_template_data:
                         self.ev_charge_template_data.pop("ct"+index)
@@ -184,7 +184,7 @@ class subData():
                     self.ev_charge_template_data["ct"+index].data = json.loads(str(msg.payload.decode("utf-8")))
                     if self.lock_charge_template.locked() == True:
                         self.lock_charge_template.release()
-            elif re.search("^openWB/vehicle/template/ev_template/[1-9][0-9]*$", msg.topic) != None:
+            elif re.search("^openWB/vehicle/template/ev_template/[0-9]+$", msg.topic) != None:
                 if json.loads(str(msg.payload.decode("utf-8")))=="":
                     if "et"+index in self.ev_template_data:
                         self.ev_template_data.pop("et"+index)
