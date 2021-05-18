@@ -868,7 +868,7 @@
 						topic = topic.replace( '<cp>', cp );
 						topic = topic.replace( '<ev>', ev );
 						topic = topic.replace( '<ct>', ct );
-						topic = topic.replace( '<et>', ct );
+						topic = topic.replace( '<et>', et );
 						if( topic.includes('/NaN/') ) {
 							console.log( 'missing cp, ev, ct or et data' );
 						} else {
