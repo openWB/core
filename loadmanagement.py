@@ -13,6 +13,9 @@ import data
 import log
 
 overloaded_counters = {} # {counter: [max_overshoot, phase_with_max_overshoot]}
+# phase_with_max_overshoot = -1 -> max. Lesistung wurde überschritten, es ist egal, auf welcher Phase reduziert wird.
+# phase_with_max_overshoot = 0  -> Es ist nicht bekannt, auf welcher EVU/LP-Phase die Überlastung stattfindet, deshalb müssen alle Phasen reduziert werden.
+# phase_with_max_overshoot = 1-3 -> Phase, auf der die Überlastung auftritt
 
 def loadmanagement_for_cp(chargepoint, required_power, required_current, phases):
     """ prüft für den angegebenen Ladepunkt, ob im Zweig des Ladepunkts die maximale Stromstärke oder Bezug überschritten wird.
@@ -285,7 +288,7 @@ def _loadmanagement_for_evu(required_power, required_current_phases, phases, off
                 overshoot = (consumption_left*-1) /230 / 3
             if max_current_overshoot < overshoot:
                 max_current_overshoot = overshoot
-                max_overshoot_phase = 0
+                max_overshoot_phase = -1
         loadmanagement, overshoot, phase = _check_max_current("counter0", required_current_phases, phases, offset)
         if loadmanagement == True:
             loadmanagement_all_conditions = True

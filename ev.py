@@ -484,7 +484,12 @@ class chargeTemplate():
                             if start == 1: # Ladung sollte jetzt starten
                                 return available_current, "instant_charging", message
                             elif start == 2:  # weniger als die berechnete Zeit verfügbar
-                                return required_wh/(remaining_time*230), "instant_charging", message
+                                required_current = required_wh/(remaining_time*230)
+                                if required_current >= max_current:
+                                    available_current = max_current
+                                else:
+                                    available_current = required_current
+                                return available_current, "instant_charging", message
                             else:
                                 # Liegt der Zieltermin innerhalb der nächsten 24h?
                                 if timecheck.check_timeframe(self.data["chargemode"]["scheduled_charging"][plan], 24) == True:
