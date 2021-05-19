@@ -880,7 +880,7 @@ class control():
         verfügbarer Überhang
         """
         try:
-            return data.bat_module_data["all"].data["get"]["power"] + data.pv_data["all"].overhang_left()
+            return data.bat_module_data["all"].power_for_bat_charging() + data.pv_data["all"].overhang_left()
         except Exception as e:
             log.exception_logging(e)
             return 0

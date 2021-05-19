@@ -117,9 +117,10 @@ class bat:
                     if self.data["get"]["soc"] > config["rundown_soc"]:
                         self.data["set"]["charging_power_left"] = config["rundown_power"]
                     else:
-                        self.data["set"]["charging_power_left"] = 0
+                        # 50 W Überschuss übrig lassen, die sich der Speicher dann nehmen kann. Wenn der Speicher schneller regelt, als die LP, würde sonst der Speicher reduziert werden.
+                        self.data["set"]["charging_power_left"] = -50
                 else:
-                    self.data["set"]["charging_power_left"] = 0
+                    self.data["set"]["charging_power_left"] = -50
         except Exception as e:
             log.exception_logging(e)
 
