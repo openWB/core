@@ -542,8 +542,6 @@ class control():
             cp_data_old = copy.deepcopy(data.cp_data)
 
             required_current, phases, overloaded_counters = allocate_power(chargepoint, required_power, required_current, phases)
-            if data.counter_data["all"].data["set"]["loadmanagement"] == True:
-                required_current = 0
             self._process_data(chargepoint, required_current)
             
             if data.counter_data["all"].data["set"]["loadmanagement"] == True or overloaded_counters != {}:

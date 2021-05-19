@@ -236,15 +236,17 @@ class pv():
         except Exception as e:
             log.exception_logging(e)
 
-    def reset_switch_on_off(self, chargepoint):
+    def reset_switch_on_off(self, chargepoint, charging_ev):
         """ Zeitstempel und reseervierte Leistung löschen
 
         Parameter
         ---------
         chargepoint: dict
             Ladepunkt, für den die Werte zurückgesetzt werden sollen
+        charging_ev: dict
+            EV, das dem Ladepunkt zugeordnet ist
+            (cp.data["set"]["charging_ev"] ist u.U. noch nicht die EV-Instanz, sondern nur die ID aus dem Broker zugewiesen.)
         """
-        charging_ev = chargepoint.data["set"]["charging_ev"]
         if charging_ev.data["control_parameter"]["timestamp_switch_on_off"] != "0":
             charging_ev.data["control_parameter"]["timestamp_switch_on_off"] = "0"
             pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/control_parameter/timestamp_switch_on_off", "0")
