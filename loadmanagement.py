@@ -35,6 +35,7 @@ def loadmanagement_for_cp(chargepoint, required_power, required_current, phases)
     loadmanagement_all_conditions = False
     global overloaded_counters
     overloaded_counters.clear()
+    required_current_phases = []
     try:
         # Wenn dreiphasig geladen werden soll, ist es egal, auf welcher Phase L1 angeschlossen ist.
         if phases == 3:

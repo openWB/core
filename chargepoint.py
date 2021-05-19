@@ -1,9 +1,6 @@
 """Ladepunkt-Logik
 """
 
-import time
-import RPi.GPIO as GPIO
-
 import data
 import ev
 import log

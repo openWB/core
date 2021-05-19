@@ -2,15 +2,11 @@
 """Starten der benötigten Prozesse
 """
 
-import imp
-import subprocess
 from threading import Thread
 import threading
-import time
 
 import algorithm
 import charge
-import data
 import log
 import prepare
 import pub

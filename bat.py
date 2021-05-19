@@ -6,8 +6,6 @@ eine Ladung gestartet und der Speicher hört automatisch auf zu laden, da sonst 
 das Laden des EV Bezug statt finden würde.
 """
 
-import subprocess
-
 import data
 import log
 import pub
@@ -28,6 +26,8 @@ class bat:
         self.data["set"]["switch_on_soc_reached"] = 0
 
     def setup_bat(self):
+        """ prüft, ob mind ein Speicher vorhanden ist und berechnet die Summentopics.
+        """
         try:
             if len(data.bat_module_data) > 1:
                 if "all" not in data.bat_module_data:
@@ -125,6 +125,12 @@ class bat:
             log.exception_logging(e)
 
     def get_power(self):
+        """ gibt die Leistung zurück, die gerade am Speicher anliegt (Summe, wenn es mehrere Speicher gibt).
+
+        Return
+        ------
+        int: Leistung am Speicher
+        """
         try:
             if self.data["config"]["configured"] == True:
                 return self.data["get"]["power"]
@@ -135,6 +141,12 @@ class bat:
             return 0
 
     def power_for_bat_charging(self):
+        """ gibt die Leistung zurück, die zum Laden verwendet werden kann.
+
+        Return
+        ------
+        int: Leistung, die zum Laden verwendet werden darf.
+        """
         try:
             if self.data["config"]["configured"] == True:
                 return self.data["set"]["charging_power_left"]

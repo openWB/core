@@ -1,10 +1,6 @@
 """ Starten des Lade-Vorgangs
 """
 
-import requests
-import time
-from pymodbus.client.sync import ModbusTcpClient
-
 import data
 import log
 import pub
