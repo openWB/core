@@ -913,9 +913,19 @@ function processGraphMessages(mqttmsg, mqttpayload) {
 		}
 		checkgraphload();
 	}
-	else if ( mqttmsg.match( /^openwb\/graph\/[1-9][0-9]*alllivevalues$/i ) ) {
+	// else if ( mqttmsg.match( /^openwb\/graph\/[1-9][0-9]*alllivevalues$/i ) ) {
+	// 	// graph messages if local connection
+	// 	var index = mqttmsg.match(/(\d+)(?!.*\d)/g)[0];  // extract last match = number from mqttmsg
+	// 	// now call functions or set variables corresponding to the index
+	// 	if (initialread == 0) {
+	// 		window['all'+index+'p'] = mqttpayload;
+	// 		window['all'+index] = 1;
+	// 		putgraphtogether();
+	// 	}
+	// }
+	else if ( mqttmsg.match( /^openwb\/graph\/alllivevaluesJson[1-9][0-9]*$/i ) ) {
 		// graph messages if local connection
-		var index = mqttmsg.match(/(\d+)(?!.*\d)/g)[0];  // extract last match = number from mqttmsg
+		var index = mqttmsg.match(/(\d+)$/g)[0];  // extract last match = number from mqttmsg
 		// now call functions or set variables corresponding to the index
 		if (initialread == 0) {
 			window['all'+index+'p'] = mqttpayload;
@@ -923,7 +933,36 @@ function processGraphMessages(mqttmsg, mqttpayload) {
 			putgraphtogether();
 		}
 	}
-	else if ( mqttmsg == 'openWB/graph/lastlivevalues' ) {
+	// else if ( mqttmsg == 'openWB/graph/lastlivevalues' ) {
+	// 	// graph messages if local connection
+	// 	if ( initialread > 0) {
+	// 		updateGraph(mqttpayload);
+	// 	}
+	// 	if (graphrefreshcounter > 60) {
+	// 		// reload graph completety
+	// 		initialread = 0;
+	// 		all1 = 0;
+	// 		all2 = 0;
+	// 		all3 = 0;
+	// 		all4 = 0;
+	// 		all5 = 0;
+	// 		all6 = 0;
+	// 		all7 = 0;
+	// 		all8 = 0;
+	// 		all9 = 0;
+	// 		all10 = 0;
+	// 		all11 = 0;
+	// 		all12 = 0;
+	// 		all13 = 0;
+	// 		all14 = 0;
+	// 		all15 = 0;
+	// 		all16 = 0;
+	// 		graphrefreshcounter = 0;
+	// 		subscribeMqttGraphSegments();
+	// 	}
+	// 	graphrefreshcounter += 1;
+	// }
+	else if ( mqttmsg == 'openWB/graph/lastlivevaluesJson' ) {
 		// graph messages if local connection
 		if ( initialread > 0) {
 			updateGraph(mqttpayload);

@@ -832,10 +832,13 @@
 
 				// load scripts synchronously in order specified
 				var scriptsToLoad = [
+					// time/date library for chart.js
+					'js/luxon/luxon.min.js',
 					// load Chart.js library
 					'js/chart.js-3.2.1/chart.min.js',
 					// load Chart.js annotation plugin
 					// 'js/chartjs-plugin-annotation.min.js',
+					'js/chartjs-adapter-luxon/chartjs-adapter-luxon.min.js',
 					// load mqtt library
 					'js/mqttws31.js',
 					// some helper functions
