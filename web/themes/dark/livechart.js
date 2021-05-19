@@ -1,61 +1,28 @@
 var style = getComputedStyle(document.body);
-var fontCol = style.getPropertyValue('--fontCol');
-var gridCol = style.getPropertyValue('--gridCol');
-var xgridCol = style.getPropertyValue('--xgridCol');
-var gridSocCol = style.getPropertyValue('--gridSocCol');
-var tickCol = style.getPropertyValue('--tickCol');
-var lp1Col = style.getPropertyValue('--lp1Col');
-var lp1bgCol = style.getPropertyValue('--lp1bgCol');
-var lp2Col = style.getPropertyValue('--lp2Col');
-var lp2bgCol = style.getPropertyValue('--lp2bgCol');
-var evuCol = style.getPropertyValue('--evuCol');
-var evubgCol = style.getPropertyValue('--evubgCol');
-var pvCol = style.getPropertyValue('--pvCol');
-var pvbgCol = style.getPropertyValue('--pvbgCol');
-var speicherCol = style.getPropertyValue('--speicherCol');
-var speicherSocCol = style.getPropertyValue('--speicherSocCol');
-var speicherbgCol = style.getPropertyValue('--speicherbgCol');
-var speicherSocbgCol = style.getPropertyValue('--speicherSocbgCol');
-var lp1SocCol = style.getPropertyValue('--lp1SocCol');
-var lp2SocCol = style.getPropertyValue('--lp2SocCol');
-var hausverbrauchCol = style.getPropertyValue('--hausverbrauchCol');
-var hausverbrauchbgCol = style.getPropertyValue('--hausverbrauchbgCol');
-var lpgesamtCol = style.getPropertyValue('--lpgesamtCol');
-var lpgesamtbgCol = style.getPropertyValue('--lpgesamtbgCol');
-var lp3Col = style.getPropertyValue('--lp3Col');
-var lp3bgCol = style.getPropertyValue('--lp3bgCol');
-// var lp4Col = style.getPropertyValue('--lp4Col');
-// var lp4bgCol = style.getPropertyValue('--lp4bgCol');
-// var lp5Col = style.getPropertyValue('--lp5Col');
-// var lp5bgCol = style.getPropertyValue('--lp5bgCol');
-// var lp6Col = style.getPropertyValue('--lp6Col');
-// var lp6bgCol = style.getPropertyValue('--lp6bgCol');
-// var lp7Col = style.getPropertyValue('--lp7Col');
-// var lp7bgCol = style.getPropertyValue('--lp7bgCol');
-// var lp8Col = style.getPropertyValue('--lp8Col');
-// var lp8bgCol = style.getPropertyValue('--lp8bgCol');
-var verbraucher1Col = style.getPropertyValue('--verbraucher1Col');
-var verbraucher1bgCol = style.getPropertyValue('--verbraucher1bgCol');
-var verbraucher2Col = style.getPropertyValue('--verbraucher2Col');
-var verbraucher2bgCol = style.getPropertyValue('--verbraucher2bgCol');
-var d1Col = style.getPropertyValue('--d1Col');
-var d1bgCol = style.getPropertyValue('--d1bgCol');
-var d2Col = style.getPropertyValue('--d2Col');
-var d2bgCol = style.getPropertyValue('--d2bgCol');
-var d3Col = style.getPropertyValue('--d3Col');
-var d3bgCol = style.getPropertyValue('--d3bgCol');
-var d4Col = style.getPropertyValue('--d4Col');
-var d4bgCol = style.getPropertyValue('--d4bgCol');
-var d5Col = style.getPropertyValue('--d5Col');
-var d5bgCol = style.getPropertyValue('--d5bgCol');
-var d6Col = style.getPropertyValue('--d6Col');
-var d6bgCol = style.getPropertyValue('--d6bgCol');
-var d7Col = style.getPropertyValue('--d7Col');
-var d7bgCol = style.getPropertyValue('--d7bgCol');
-var d8Col = style.getPropertyValue('--d8Col');
-var d8bgCol = style.getPropertyValue('--d8bgCol');
-var d9Col = style.getPropertyValue('--d9Col');
-var d9bgCol = style.getPropertyValue('--d9bgCol');
+var fontColor = style.getPropertyValue('--fontCol');
+var gridColor = style.getPropertyValue('--gridCol');
+var xGridColor = style.getPropertyValue('--xgridCol');
+var gridSocColor = style.getPropertyValue('--gridSocCol');
+var tickColor = style.getPropertyValue('--tickCol');
+var cpColor = style.getPropertyValue('--lp1Col');
+var cpBgColor = style.getPropertyValue('--lp1bgCol');
+var cpSocColor = style.getPropertyValue('--lp1SocCol');
+var evuColor = style.getPropertyValue('--evuCol');
+var evuBgColor = style.getPropertyValue('--evubgCol');
+var pvAllColor = style.getPropertyValue('--pvCol');
+var pvAllBgColor = style.getPropertyValue('--pvbgCol');
+var batAllColor = style.getPropertyValue('--speicherCol');
+var batAllBgColor = style.getPropertyValue('--speicherbgCol');
+var batAllSocColor = style.getPropertyValue('--speicherSocCol');
+var batAllSocBgColor = style.getPropertyValue('--speicherSocbgCol');
+var homeColor = style.getPropertyValue('--hausverbrauchCol');
+var homeBgColor = style.getPropertyValue('--hausverbrauchbgCol');
+var cpAllColor = style.getPropertyValue('--lpgesamtCol');
+var cpAllBgColor = style.getPropertyValue('--lpgesamtbgCol');
+var loadColor = style.getPropertyValue('--verbraucher1Col');
+var loadBgColor = style.getPropertyValue('--verbraucher1bgCol');
+var smartHomeColor = style.getPropertyValue('--d1Col');
+var smartHomeBgColor = style.getPropertyValue('--d1bgCol');
 
 var initialread = 0;
 var graphloaded = 0;
@@ -67,11 +34,6 @@ var boolDisplayLp2Soc;
 var boolDisplayLp1;
 var boolDisplayLp2;
 var boolDisplayLp3;
-// var boolDisplayLp4;
-// var boolDisplayLp5;
-// var boolDisplayLp6;
-// var boolDisplayLp7;
-// var boolDisplayLp8;
 var boolDisplayLpAll;
 var boolDisplaySpeicherSoc;
 var boolDisplaySpeicher;
@@ -88,18 +50,6 @@ var boolDisplayshd6;
 var boolDisplayshd7;
 var boolDisplayshd8;
 var boolDisplayshd9;
-var dname = [
-	'',  // index starts at 1!
-	'Device 1',
-	'Device 2',
-	'Device 3',
-	'Device 4',
-	'Device 5',
-	'Device 6',
-	'Device 7',
-	'Device 8',
-	'Device 9'
-];
 var all1 = 0;
 var all2 = 0;
 var all3 = 0;
@@ -139,454 +89,206 @@ var myLine;
 function parseData(alldata){
 	var result = [];
 	alldata.split("\n").forEach(function(line){
-		// console.log("line: " + line);
 		if( line.length > 5 ){
 			result.push(JSON.parse(line))
-		// } else {
-		// 	console.log("skipping blank line: '" + line + "'");
 		}
-		
 	});
-	// console.log("parsed json");
-	// console.log(result);
 	return result;
 }
 
-//var csv is the CSV file with headers
-// function csvJSON(csv){
-// 	var lines=csv.split("\n");
-// 	var result = [];
-// 	// NOTE: If your columns contain commas in their values, you'll need
-// 	// to deal with those before doing the next step 
-// 	// (you might convert them to &&& or something, then covert them back later)
-// 	// jsfiddle showing the issue https://jsfiddle.net/
-// 	var headers=lines[0].split(",");
-
-// 	for(var i=1;i<lines.length;i++){
-// 		var obj = {};
-// 		var currentline=lines[i].split(",");
-// 		if( currentline.length == headers.length ){
-// 			for(var j=0;j<headers.length;j++){
-// 				// console.log('header: '+headers[j]);
-// 				switch (headers[j]) {
-// 					case 'EVU':
-// 					case 'Ladeleistung':
-// 					case 'PV':
-// 					case 'LP1':
-// 					case 'LP2':
-// 					case 'LP3':
-// 					case 'LP4':
-// 					case 'LP5':
-// 					case 'LP6':
-// 					case 'LP7':
-// 					case 'LP8':
-// 					case 'Speicherleistung':
-// 					case 'Hausverbrauch':
-// 					case 'Verbraucher1':
-// 					case 'Verbraucher2':
-// 					case 'SH1':
-// 					case 'SH2':
-// 					case 'SH3':
-// 					case 'SH4':
-// 					case 'SH5':
-// 					case 'SH6':
-// 					case 'SH7':
-// 					case 'SH8':
-// 					case 'SH9':
-// 						obj[headers[j]] = currentline[j] / 1000;
-// 						break;
-// 					case 'Timestamp':
-// 					case 'SpeicherSoC':
-// 					case 'LP1SoC':
-// 					case 'LP2SoC':
-// 						obj[headers[j]] = parseInt(currentline[j]);
-// 						break;
-// 					default:
-// 						obj[headers[j]] = currentline[j];
-// 				}
-// 			}
-// 			result.push(obj);
-// 		} else {
-// 			console.log("data line with wrong number of columns: line: " + i + " columns: " + currentline.length + " expected: " + headers.length);
-// 		}
-// 	}
-// 	return result; //JavaScript object
+// not used for time scale chart
+// function getXScaleData(matrix){
+// 	return matrix.map(function(row){
+// 		// return row.time;
+// 		return row.timestamp*1000;
+// 	});
 // }
 
-function getXScaleData(matrix){
+function getColData(matrix, colLabel){
 	return matrix.map(function(row){
-		return row.time;
-		// return row.Timestamp;
-		// return new Date(row.Timestamp*1000);
+		data = {x:row.timestamp*1000};
+		if(row[colLabel]){
+			data[colLabel] = row[colLabel];
+		} else {
+			data[colLabel] = 0;
+		}
+		return data;
 	});
 }
 
-function getColData(matrix, colLabel){
-	if( matrix[0][colLabel] != undefined ) {
-		return matrix.map(function(row){
-			return row[colLabel];
-		});
-	} else {
-		console.log('unknown data column: ' + colLabel);
+let datasetTemplates = {
+	// optional components
+	"pv-all": {
+		label: 'PV ges.',
+		borderColor: pvAllColor,
+		backgroundColor: pvAllBgColor,
+		fill: true,
+		lineTension: 0.2,
+		hidden: boolDisplayPv,
+		borderWidth: 1,
+		data: [],
+		yAxisID: 'y1',
+		parsing: {
+			yAxisKey: null
+		}
+	},
+	"bat-all-power": {
+		label: 'Speicher ges.',
+		borderColor: batAllColor,
+		backgroundColor: batAllBgColor,
+		fill: true,
+		lineTension: 0.2,
+		borderWidth: 1,
+		data: [],
+		hidden: boolDisplaySpeicher,
+		yAxisID: 'y1',
+		parsing: {
+			yAxisKey: null
+		}
+	},
+	"bat-all-soc": {
+		label: 'Speicher ges. SoC',
+		borderColor: batAllSocColor,
+		backgroundColor: batAllSocBgColor,
+		borderDash: [10,5],
+		hidden: boolDisplaySpeicherSoc,
+		fill: false,
+		lineTension: 0.2,
+		borderWidth: 2,
+		data: [],
+		yAxisID: 'y2',
+		parsing: {
+			yAxisKey: null
+		}
+	},
+	// chargepoints
+	"cp-power": {
+		label: 'LP',
+		borderColor: cpColor,
+		backgroundColor: cpBgColor,
+		borderWidth: 2,
+		hidden: false,
+		fill: false,
+		lineTension: 0.2,
+		data: [],
+		yAxisID: 'y1',
+		parsing: {
+			yAxisKey: null
+		}
+	},
+	"cp-soc": {
+		label: 'LP SoC',
+		borderColor: cpSocColor,
+		borderDash: [10,5],
+		borderWidth: 2,
+		hidden: false,
+		fill: false,
+		lineTension: 0.2,
+		data: [],
+		yAxisID: 'y2',
+		parsing: {
+			yAxisKey: null
+		}
+	},
+	// SmartHome
+	"load-power": {
+		label: 'Verbraucher',
+		borderColor: loadColor,
+		backgroundColor: loadBgColor,
+		fill: false,
+		lineTension: 0.2,
+		borderWidth: 2,
+		hidden: boolDisplayLoad1,
+		data: [],
+		yAxisID: 'y1',
+		parsing: {
+			yAxisKey: null
+		}
+	},
+	// SmartHome 2.0 devices
+	"sh-power": {
+		label: "Gerät",
+		borderColor: smartHomeColor,
+		backgroundColor: smartHomeBgColor,
+		fill: false,
+		lineTension: 0.2,
+		borderWidth: 2,
+		data: [],
+		yAxisID: 'y1',
+		hidden: boolDisplayshd1,
+		parsing: {
+			yAxisKey: null
+		}
+	},
+	// SmartHome 2.0 device temperatures
+	// "sh-temp": {
+	// 	label: 'Temperatur',
+	// 	borderColor: "rgba(250, 250, 155, 0.7)",
+	// 	backgroundColor: 'blue',
+	// 	fill: false,
+	// 	lineTension: 0.2,
+	// 	borderWidth: 2,
+	// 	data: [],
+	// 	yAxisID: 'y2',
+	// 	hidden: boolDisplayshd1t1,
+	// 	parsing: {
+	// 		yAxisKey: null
+	// 	}
+	// }
+};
+
+var chartDatasets = [
+	// always available elements
+	{
+		label: 'EVU',
+		borderColor: evuColor,
+		backgroundColor: evuBgColor,
+		borderWidth: 1,
+		fill: true,
+		lineTension: 0.2,
+		data: [],
+		hidden: boolDisplayEvu,
+		yAxisID: 'y1',
+		parsing: {
+			yAxisKey: 'grid'
+		}
+	},
+	{
+		label: 'Hausverbrauch',
+		borderColor: homeColor,
+		backgroundColor: homeBgColor,
+		fill: false,
+		lineTension: 0.2,
+		borderWidth: 2,
+		hidden: boolDisplayHouseConsumption,
+		data: [],
+		yAxisID: 'y1',
+		parsing: {
+			yAxisKey: 'house-power'
+		}
+	},
+	{
+		label: 'LP ges.',
+		borderColor: cpAllColor,
+		backgroundColor: cpAllBgColor,
+		fill: true,
+		lineTension: 0.2,
+		borderWidth: 2,
+		data: [],
+		hidden: boolDisplayLpAll,
+		yAxisID: 'y1',
+		parsing: {
+			yAxisKey: 'charging-all'
+		}
 	}
-	return [];
-}
+];
 
 function loadgraph(animationDuration = 1000) {
 
 	var chartData = {
-		labels: atime,
-		datasets: [
-			// always available elements
-			{
-				label: 'EVU',
-				borderColor: evuCol,
-				backgroundColor: evubgCol,
-				borderWidth: 1,
-				fill: true,
-				lineTension: 0.2,
-				data: abezug,
-				hidden: boolDisplayEvu,
-				yAxisID: 'y1',
-				parsing: {
-					yAxisKey: 'grid'
-				}
-			},
-			{
-				label: 'Hausverbrauch',
-				borderColor: hausverbrauchCol,
-				backgroundColor: hausverbrauchbgCol,
-				fill: false,
-				lineTension: 0.2,
-				borderWidth: 2,
-				hidden: boolDisplayHouseConsumption,
-				data: ahausverbrauch,
-				yAxisID: 'y1',
-				parsing: {
-					yAxisKey: 'house-power'
-				}
-			},
-			{
-				label: 'LP Gesamt',
-				borderColor: lpgesamtCol,
-				backgroundColor: lpgesamtbgCol,
-				fill: true,
-				lineTension: 0.2,
-				borderWidth: 2,
-				data: alpa,
-				hidden: boolDisplayLpAll,
-				yAxisID: 'y1',
-				parsing: {
-					yAxisKey: 'charging-all'
-				}
-			},
-			// charge points
-			{
-				label: 'Lp1',
-				borderColor: lp1Col,
-				backgroundColor: lp1bgCol,
-				borderWidth: 2,
-				hidden: boolDisplayLp1,
-				fill: false,
-				lineTension: 0.2,
-				data: alp[1],
-				yAxisID: 'y1',
-				parsing: {
-					yAxisKey: 'cp1-power'
-				}
-			},
-			{
-				label: 'Lp2',
-				borderColor: lp2Col,
-				backgroundColor: lp2bgCol,
-				borderWidth: 2,
-				hidden: boolDisplayLp2,
-				fill: false,
-				lineTension: 0.2,
-				data: alp[2],
-				yAxisID: 'y1',
-				parsing: {
-					yAxisKey: 'cp2-power'
-				}
-			},
-			{
-				label: 'Lp3',
-				borderColor: lp3Col,
-				backgroundColor: lp3bgCol,
-				borderWidth: 2,
-				hidden: boolDisplayLp3,
-				fill: false,
-				lineTension: 0.2,
-				data: alp[3],
-				yAxisID: 'y1',
-				parsing: {
-					yAxisKey: 'cp3-power'
-				}
-			},
-			// charge point soc
-			{
-				label: 'LP1 SoC',
-				borderColor: lp1SocCol,
-				borderDash: [10,5],
-				borderWidth: 2,
-				hidden: boolDisplayLp1Soc,
-				fill: false,
-				lineTension: 0.2,
-				data: alpsoc[1],
-				yAxisID: 'y2',
-				parsing: {
-					yAxisKey: 'cp1-soc'
-				}
-			},
-			{
-				label: 'LP2 SoC',
-				borderColor: lp2SocCol,
-				borderDash: [10,5],
-				fill: false,
-				lineTension: 0.2,
-				borderWidth: 2,
-				hidden: boolDisplayLp2Soc,
-				data: alpsoc[2],
-				yAxisID: 'y2',
-				parsing: {
-					yAxisKey: 'cp2-soc'
-				}
-			},
-			// optional components
-			{
-				label: 'PV',
-				borderColor: pvCol,
-				backgroundColor: pvbgCol,
-				fill: true,
-				lineTension: 0.2,
-				hidden: boolDisplayPv,
-				borderWidth: 1,
-				data: apv,
-				yAxisID: 'y1',
-				parsing: {
-					yAxisKey: 'pv'
-				}
-			},
-			{
-				label: 'Speicher',
-				borderColor: speicherCol,
-				backgroundColor: speicherbgCol,
-				fill: true,
-				lineTension: 0.2,
-				borderWidth: 1,
-				data: aspeicherl,
-				hidden: boolDisplaySpeicher,
-				yAxisID: 'y1',
-				parsing: {
-					yAxisKey: 'bat-power'
-				}
-			},
-			{
-				label: 'Speicher SoC',
-				borderColor: speicherSocCol,
-				backgroundColor: speicherSocbgCol,
-				borderDash: [10,5],
-				hidden: boolDisplaySpeicherSoc,
-				fill: false,
-				lineTension: 0.2,
-				borderWidth: 2,
-				data: aspeichersoc,
-				yAxisID: 'y2',
-				parsing: {
-					yAxisKey: 'bat-soc'
-				}
-			},
-			// SmartHome
-			{
-				label: 'Verbraucher 1',
-				borderColor: verbraucher1Col,
-				backgroundColor: verbraucher1bgCol,
-				fill: false,
-				lineTension: 0.2,
-				borderWidth: 2,
-				hidden: boolDisplayLoad1,
-				data: averbraucher[1],
-				yAxisID: 'y1',
-				parsing: {
-					yAxisKey: 'load1-power'
-				}
-			},
-			{
-				label: 'Verbraucher 2',
-				borderColor: verbraucher2Col,
-				backgroundColor: verbraucher2bgCol,
-				fill: false,
-				lineTension: 0.2,
-				borderWidth: 2,
-				data: averbraucher[2],
-				hidden: boolDisplayLoad2,
-				yAxisID: 'y1',
-				parsing: {
-					yAxisKey: 'load2-power'
-				}
-			},
-			// SmartHome 2.0 devices
-			{
-				label: dname[1],
-				borderColor: d1Col,
-				backgroundColor: d1bgCol,
-				fill: false,
-				lineTension: 0.2,
-				borderWidth: 2,
-				data: ashd[1],
-				yAxisID: 'y1',
-				hidden: boolDisplayshd1,
-				parsing: {
-					yAxisKey: 'SH1'
-				}
-			}, {
-				label: dname[2],
-				borderColor: d2Col,
-				backgroundColor: d2bgCol,
-				fill: false,
-				lineTension: 0.2,
-				borderWidth: 2,
-				data: ashd[2],
-				yAxisID: 'y1',
-				hidden: boolDisplayshd2,
-				parsing: {
-					yAxisKey: 'SH2'
-				}
-			}, {
-				label: dname[3],
-				borderColor: d3Col,
-				backgroundColor: d3bgCol,
-				fill: false,
-				lineTension: 0.2,
-				borderWidth: 2,
-				data: ashd[3],
-				yAxisID: 'y1',
-				hidden: boolDisplayshd3,
-				parsing: {
-					yAxisKey: 'SH3'
-				}
-			}, {
-				label: dname[4],
-				borderColor: d4Col,
-				backgroundColor: d4bgCol,
-				fill: false,
-				lineTension: 0.2,
-				borderWidth: 2,
-				data: ashd[4],
-				yAxisID: 'y1',
-				hidden: boolDisplayshd4,
-				parsing: {
-					yAxisKey: 'SH4'
-				}
-			}, {
-				label: dname[5],
-				borderColor: d5Col,
-				backgroundColor: d5bgCol,
-				fill: false,
-				lineTension: 0.2,
-				borderWidth: 2,
-				data: ashd[5],
-				yAxisID: 'y1',
-				hidden: boolDisplayshd5,
-				parsing: {
-					yAxisKey: 'SH5'
-				}
-			}, {
-				label: dname[6],
-				borderColor: d6Col,
-				backgroundColor: d6bgCol,
-				fill: false,
-				lineTension: 0.2,
-				borderWidth: 2,
-				data: ashd[6],
-				yAxisID: 'y1',
-				hidden: boolDisplayshd6,
-				parsing: {
-					yAxisKey: 'SH6'
-				}
-			}, {
-				label: dname[7],
-				borderColor: d7Col,
-				backgroundColor: d7bgCol,
-				fill: false,
-				lineTension: 0.2,
-				borderWidth: 2,
-				data: ashd[7],
-				yAxisID: 'y1',
-				hidden: boolDisplayshd7,
-				parsing: {
-					yAxisKey: 'SH7'
-				}
-			}, {
-				label: dname[8],
-				borderColor: d8Col,
-				backgroundColor: d8bgCol,
-				fill: false,
-				lineTension: 0.2,
-				borderWidth: 2,
-				data: ashd[8],
-				yAxisID: 'y1',
-				hidden: boolDisplayshd8,
-				parsing: {
-					yAxisKey: 'SH8'
-				}
-			}, {
-				label: dname[9],
-				borderColor: d9Col,
-				backgroundColor: d9bgCol,
-				fill: false,
-				lineTension: 0.2,
-				borderWidth: 2,
-				data: ashd[9],
-				yAxisID: 'y1',
-				hidden: boolDisplayshd9,
-				parsing: {
-					yAxisKey: 'SH9'
-				}
-			},
-			// {
-			// 	label: 'Device 1t0',
-			// 	borderColor: "rgba(250, 250, 155, 0.7)",
-			// 	backgroundColor: 'blue',
-			// 	fill: false,
-			// 	lineTension: 0.2,
-			// 	borderWidth: 2,
-			// 	data: ashd1t0,
-			// 	yAxisID: 'y2',
-			// 	hidden: boolDisplayLp8,
-			// 	parsing: {
-			// 		yAxisKey: 'SH1T0'
-			// 	}
-			// },
-			// {
-			// 	label: 'Device 1t1',
-			// 	borderColor: "rgba(150, 250, 255, 0.7)",
-			// 	backgroundColor: 'blue',
-			// 	fill: false,
-			// 	lineTension: 0.2,
-			// 	borderWidth: 2,
-			// 	data: ashd1t1,
-			// 	yAxisID: 'y2',
-			// 	hidden: boolDisplayLp8,
-			// 	parsing: {
-			// 		yAxisKey: 'SH1T1'
-			// 	}
-			// },
-			// {
-			// 	label: 'Device 1t2',
-			// 	borderColor: "rgba(255, 150, 255, 0.7)",
-			// 	backgroundColor: 'blue',
-			// 	fill: false,
-			// 	lineTension: 0.2,
-			// 	borderWidth: 2,
-			// 	data: ashd1t2,
-			// 	yAxisID: 'y2',
-			// 	hidden: boolDisplayLp8,
-			// 	parsing: {
-			// 		yAxisKey: 'SH1T2'
-			// 	}
-			// }
-		]
+		// not used with time scale
+		// labels: atime,
+		datasets: chartDatasets
 	}
 
 	function getMaxTicksLimit(width) {
@@ -653,42 +355,42 @@ function loadgraph(animationDuration = 1000) {
 				legend: {
 					display: boolDisplayLegend,
 					labels: {
-						color: fontCol,
-						filter: function(item,chart) {
-							if (
-								item.text.includes(hidehaus) ||
-								item.text.includes(hideload1) ||
-								item.text.includes(hideload2) ||
-								item.text.includes(hidelp1soc) ||
-								item.text.includes(hidelp2soc) ||
-								item.text.includes(hidelp1) ||
-								item.text.includes(hidelp2) ||
-								item.text.includes(hidelp3) ||
-								item.text.includes(hidelp4) ||
-								item.text.includes(hidelp5) ||
-								item.text.includes(hidelp6) ||
-								item.text.includes(hidelp7) ||
-								item.text.includes(hidelp8) ||
-								item.text.includes(hidespeichersoc) ||
-								item.text.includes(hidespeicher) ||
-								item.text.includes(hidelpa) ||
-								item.text.includes(hidepv) ||
-								item.text.includes(hideevu) ||
-								item.text.includes(hideshd1) ||
-								item.text.includes(hideshd2) ||
-								item.text.includes(hideshd3) ||
-								item.text.includes(hideshd4) ||
-								item.text.includes(hideshd5) ||
-								item.text.includes(hideshd6) ||
-								item.text.includes(hideshd7) ||
-								item.text.includes(hideshd8) ||
-								item.text.includes(hideshd9)
-							) {
-								return false;
-							} else {
-								return true;
-							}
-						}
+						color: fontColor,
+						// filter: function(item,chart) {
+						// 	if (
+						// 		item.text.includes(hidehaus) ||
+						// 		item.text.includes(hideload1) ||
+						// 		item.text.includes(hideload2) ||
+						// 		item.text.includes(hidelp1soc) ||
+						// 		item.text.includes(hidelp2soc) ||
+						// 		item.text.includes(hidelp1) ||
+						// 		item.text.includes(hidelp2) ||
+						// 		item.text.includes(hidelp3) ||
+						// 		item.text.includes(hidelp4) ||
+						// 		item.text.includes(hidelp5) ||
+						// 		item.text.includes(hidelp6) ||
+						// 		item.text.includes(hidelp7) ||
+						// 		item.text.includes(hidelp8) ||
+						// 		item.text.includes(hidespeichersoc) ||
+						// 		item.text.includes(hidespeicher) ||
+						// 		item.text.includes(hidelpa) ||
+						// 		item.text.includes(hidepv) ||
+						// 		item.text.includes(hideevu) ||
+						// 		item.text.includes(hideshd1) ||
+						// 		item.text.includes(hideshd2) ||
+						// 		item.text.includes(hideshd3) ||
+						// 		item.text.includes(hideshd4) ||
+						// 		item.text.includes(hideshd5) ||
+						// 		item.text.includes(hideshd6) ||
+						// 		item.text.includes(hideshd7) ||
+						// 		item.text.includes(hideshd8) ||
+						// 		item.text.includes(hideshd9)
+						// 	) {
+						// 		return false;
+						// 	} else {
+						// 		return true;
+						// 	}
+						// }
 					}
 				}
 			},
@@ -698,20 +400,21 @@ function loadgraph(animationDuration = 1000) {
 				}
 			},
 			animation: {
-				duration: animationDuration,
-				onComplete: function(animation) {
-					// if duration was set to 0 to avoid pumping after reload, set back to default
-					this.options.animation.duration = 1000
-				}
+				// duration: animationDuration,
+				duration: 0,
+				// onComplete: function(animation) {
+				// 	// if duration was set to 0 to avoid pumping after reload, set back to default
+				// 	this.options.animation.duration = 1000
+				// }
 			},
 			responsive: true,
 			maintainAspectRatio: false,
 			scales: {
 				x: {
-					// type: 'time',
-					// time: {
-					// 	unit: 'second'
-					// },
+					type: 'time',
+					time: {
+						unit: 'minute'
+					},
 					display: true,
 					title: {
 						display: false
@@ -720,15 +423,15 @@ function loadgraph(animationDuration = 1000) {
 						font: {
 							size: 12
 						},
-						color: tickCol,
+						color: tickColor,
 						maxTicksLimit: 15
 					},
 					grid: {
-						color: xgridCol
+						color: xGridColor
 					}
 				},
 				y1: {
-					// horizontal line for values displayed on the left side (power)
+					// horizontal line for values displayed on the left side (power, kW)
 					position: 'left',
 					type: 'linear',
 					display: 'auto',
@@ -740,10 +443,10 @@ function loadgraph(animationDuration = 1000) {
 						},
 						display: true,
 						text: 'Leistung [kW]',
-						color: fontCol
+						color: fontColor
 					},
 					grid: {
-						color: gridCol
+						color: gridColor
 					},
 					ticks: {
 						font: {
@@ -751,11 +454,11 @@ function loadgraph(animationDuration = 1000) {
 						},
 						stepSize: 0.2,
 						maxTicksLimit: 10,
-						color: tickCol
+						color: tickColor
 					}
 				},
 				y2: {
-					// horizontal line for values displayed on the right side (SoC)
+					// horizontal line for values displayed on the right side (SoC, %)
 					position: 'right',
 					type: 'linear',
 					display: 'auto',
@@ -767,16 +470,16 @@ function loadgraph(animationDuration = 1000) {
 						},
 						display: true,
 						text: 'SoC [%]',
-						color: fontCol
+						color: fontColor
 					},
 					grid: {
-						color: gridSocCol,
+						color: gridSocColor,
 					},
 					ticks: {
 						font: {
 							size: 12
 						},
-						color: tickCol
+						color: tickColor
 					}
 				}
 			}
@@ -806,49 +509,70 @@ function setvisibility(datarr,hidevar,hidevalue,booldisplay){
 	}
 }
 
+function getDatasetIndex(datasetId){
+	var found = false;
+	for(dataset = 0; dataset < chartDatasets.length; dataset++){
+		if(chartDatasets[dataset].parsing.yAxisKey == datasetId){
+			return dataset;
+		}
+	}
+	return
+}
+
+function addDataset(datasetId){
+	var datasetTemplate = datasetId.replace(/\d/g, '');
+	var datasetIndex = undefined;
+	if(number = datasetId.match(/([\d]+)/g)){
+		datasetIndex = number[0];
+	}
+	console.log('template name: ' + datasetTemplate + ' index: ' + datasetIndex);
+	if(datasetTemplates[datasetTemplate]){
+		newDataset = JSON.parse(JSON.stringify(datasetTemplates[datasetTemplate]));
+		newDataset.parsing.yAxisKey = datasetId;
+		if(datasetIndex){
+			newDataset.label = newDataset.label + ' ' + datasetIndex;
+		}
+		return chartDatasets.push(newDataset) - 1;
+	} else {
+		console.log('no matching template found: ' + datasetId);
+	}
+	return
+}
+
+function replaceData(datasetId, data){
+	var index = getDatasetIndex(datasetId);
+	if(index == undefined){
+		index = addDataset(datasetId);
+	}
+	if(index != undefined){
+		chartDatasets[index].data = data;
+	}
+}
+
+function addData(datasetId, data){
+	var index = getDatasetIndex(datasetId);
+	if(index == undefined){
+		index = addDataset(datasetId);
+	}
+	if(index != undefined){
+		chartDatasets[index].data.push(data);
+		// ToDo: only remove first datapoints if max size is reached
+		if(chartDatasets[index].data.length > 30){
+			chartDatasets[index].data.splice(0, 1);
+		}
+	}
+}
+
 function putgraphtogether() {
 	if ( (all1 == 1) && (all2 == 1) && (all3 == 1) && (all4 == 1) && (all5 == 1) && (all6 == 1) && (all7 == 1) && (all8 == 1) && (all9 == 1) && (all10 == 1) && (all11 == 1) && (all12 == 1) && (all13 == 1) && (all14 == 1) && (all15 == 1) && (all16 == 1) ){
 		var alldata = all1p + "\n" + all2p + "\n" + all3p + "\n" + all4p + "\n" + all5p + "\n" + all6p + "\n" + all7p + "\n" + all8p + "\n" + all9p + "\n" + all10p + "\n" + all11p + "\n" + all12p + "\n" + all13p + "\n" + all14p + "\n" + all15p + "\n" + all16p;
-		alldata = alldata.replace(/^\s*[\n]/gm, "");
-		alldata = alldata.replace(/^[\s]*-[\n]*/gm, "");
 		var alldataJson = parseData(alldata);
-		// console.log(alldataJson);
-		atime = getXScaleData(alldataJson);
 		if ( alldataJson.length >= 30 ) {
-			// common data
-			abezug = getColData(alldataJson, 'grid');
-			ahausverbrauch = getColData(alldataJson, 'house-power');
-			alpa = getColData(alldataJson, 'charging-all')
-			// chargepoint data
-			alp = [];
-			for(i=1; i<4; i++){
-				alp[i] = getColData(alldataJson, 'cp'+i+'-power');
-				setvisibility(alp[i],'hidelp'+i,'Lp'+i,'boolDisplayLp'+i);
-			}
-			// chargepoint soc data
-			alpsoc = [];
-			for(i=1; i<4; i++){
-				alpsoc[i] = getColData(alldataJson, 'cp'+i+'-soc');
-			}
-			// optional data
-			apv = getColData(alldataJson, 'pv');
-			aspeicherl = getColData(alldataJson, 'bat-power');
-			aspeichersoc = getColData(alldataJson, 'bat-soc');
-			// smarthome data
-			averbraucher = [];
-			for(i=1; i<3; i++){
-				averbraucher[i] = getColData(alldataJson, 'load'+i+'-power');
-			}
-			// smarthome 2.0 data
-			ashd = [];
-			for(i=1; i<10; i++){
-				ashd[i] = getColData(alldataJson, 'sh'+i+'-power');
-				setvisibility(ashd[i],'hideshd'+i,dname[i],'boolDisplayshd'+i);
-			}
-			//ashd1t0 = getCol(csvData, 29);
-			//ashd1t1 = getCol(csvData, 30);
-			//ashd1t2 = getCol(csvData, 31);
-
+			Object.keys(alldataJson[alldataJson.length - 1]).forEach(function(key){
+				if(key != 'time' && key != 'timestamp'){
+					replaceData(key, getColData(alldataJson, key));
+				}
+			});
 			initialread = 1 ;
 			// after receipt of all 8 first data segments, unsubscribe from these topics to save bandwidth
 			unsubscribeMqttGraphSegments();
@@ -872,50 +596,24 @@ function putgraphtogether() {
 			all15 = 0;
 			all16 = 0;
 
-			var percent = (atime.length / 30 * 100).toFixed();
+			var percent = (alldataJson.length / 30 * 100).toFixed();
 			$('#waitforgraphloadingdiv').text('Erst ca. ' + percent + '% der mindestens benötigten Datenpunkte für den Graph seit Neustart vorhanden.');
 		}
 	}
 }  // end putgraphtogether
 
 function updateGraph(dataset) {
-	var datasetJson = parseData(dataset);
-	// Object.keys(datasetJson[0]).forEach(function(key){
-	// 	myLine.data.datasets.forEach(function(chartDataset){
-	// 		chartDataset.data.push(datasetJson[0][key]);
-	// 	});
-	// });
-	myLine.data.labels.push(getXScaleData(datasetJson)[0]);
-	myLine.data.datasets[0].data.push(getColData(datasetJson, 'grid')[0]);
-	myLine.data.datasets[1].data.push(getColData(datasetJson, 'house-power')[0]);
-	myLine.data.datasets[2].data.push(getColData(datasetJson, 'charging-all')[0]);
-	myLine.data.datasets[3].data.push(getColData(datasetJson, 'cp1-power')[0]);
-	myLine.data.datasets[4].data.push(getColData(datasetJson, 'cp2-power')[0]);
-	myLine.data.datasets[5].data.push(getColData(datasetJson, 'cp3-power')[0]);
-	myLine.data.datasets[6].data.push(getColData(datasetJson, 'cp1-soc')[0]);
-	myLine.data.datasets[7].data.push(getColData(datasetJson, 'cp2-soc')[0]);
-	myLine.data.datasets[8].data.push(getColData(datasetJson, 'pv')[0]);
-	myLine.data.datasets[9].data.push(getColData(datasetJson, 'bat-power')[0]);
-	myLine.data.datasets[10].data.push(getColData(datasetJson, 'bat-soc')[0]);
-	// myLine.data.datasets[11].data.push(getColData(datasetJson, 'load1-power')[0]);
-	// myLine.data.datasets[12].data.push(getColData(datasetJson, 'load2-power')[0]);
-	// myLine.data.datasets[13].data.push(getColData(datasetJson, 'sh1-power')[0]);
-	// myLine.data.datasets[14].data.push(getColData(datasetJson, 'sh2-power')[0]);
-	// myLine.data.datasets[15].data.push(getColData(datasetJson, 'sh3-power')[0]);
-	// myLine.data.datasets[16].data.push(getColData(datasetJson, 'sh4-power')[0]);
-	// myLine.data.datasets[17].data.push(getColData(datasetJson, 'sh5-power')[0]);
-	// myLine.data.datasets[18].data.push(getColData(datasetJson, 'sh6-power')[0]);
-	// myLine.data.datasets[19].data.push(getColData(datasetJson, 'sh7-power')[0]);
-	// myLine.data.datasets[20].data.push(getColData(datasetJson, 'sh8-power')[0]);
-	// myLine.data.datasets[21].data.push(getColData(datasetJson, 'sh9-power')[0]);
-	//myLine.data.datasets[22].data.push(shd1t0);
-	//myLine.data.datasets[23].data.push(shd1t1);
-	//myLine.data.datasets[24].data.push(shd1t2);
-	myLine.data.labels.splice(0, 1);
-	myLine.data.datasets.forEach(function(dataset) {
-		dataset.data.splice(0, 1);
-	});
-	myLine.update();
+	if(initialread == 1){
+		var datasetJson = parseData(dataset);
+		Object.keys(datasetJson[0]).forEach(function(key){
+			if(key != 'time' && key != 'timestamp'){
+				addData(key, getColData(datasetJson, key)[0]);
+			}
+		});
+		myLine.update();
+	} else {
+		console.log('graph not yet initialized');
+	}
 }
 
 function checkgraphload(){

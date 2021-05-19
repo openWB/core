@@ -47,17 +47,17 @@ graphing(){
 
 	# JSON graphing
 	# begin JSON
-	dataline="{\"time\":\"$(date +%H:%M:%S)\""
+	dataline="{\"timestamp\":$(date +%s),\"time\":\"$(date +%H:%M:%S)\""
 	# common data
 	dataline="$dataline,\"grid\":$(convertTokW $wattbezugint),\"house-power\":$(convertTokW $hausverbrauch),\"charging-all\":$(convertTokW $ladeleistung)"
 	# pv data
-	dataline="$dataline,\"pv\":$(convertTokW $pvgraph)"
+	dataline="$dataline,\"pv-all\":$(convertTokW $pvgraph)"
 	# chargepoint data
 	dataline="$dataline,\"cp1-power\":$(convertTokW $ladeleistunglp1),\"cp2-power\":$(convertTokW $ladeleistunglp2),\"cp3-power\":$(convertTokW $ladeleistunglp3)"
 	# chargepoint SoC data
 	dataline="$dataline,\"cp1-soc\":$soc,\"cp2-soc\":$soc1"
 	# battery data
-	dataline="$dataline,\"bat-power\":$(convertTokW $speicherleistung),\"bat-soc\":$speichersoc"
+	dataline="$dataline,\"bat-all-power\":$(convertTokW $speicherleistung),\"bat-all-soc\":$speichersoc"
 	# smarthoome 1
 	dataline="$dataline,\"load1-power\":$(convertTokW $verbraucher1_watt),\"load2-power\":$(convertTokW $verbraucher2_watt)"
 	# end JSON
