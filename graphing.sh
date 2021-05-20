@@ -55,11 +55,21 @@ graphing(){
 	# chargepoint data
 	dataline="$dataline,\"cp1-power\":$(convertTokW $ladeleistunglp1),\"cp2-power\":$(convertTokW $ladeleistunglp2),\"cp3-power\":$(convertTokW $ladeleistunglp3)"
 	# chargepoint SoC data
-	dataline="$dataline,\"cp1-soc\":$soc,\"cp2-soc\":$soc1"
+	dataline="$dataline,\"cp1-soc\":$soc"
+	if [[ socmodul1 != "none" ]]; then
+		dataline="$dataline,\"cp2-soc\":$soc1"
+	fi
 	# battery data
-	dataline="$dataline,\"bat-all-power\":$(convertTokW $speicherleistung),\"bat-all-soc\":$speichersoc"
+	if ((speichervorhanden == 1 )); then
+		dataline="$dataline,\"bat-all-power\":$(convertTokW $speicherleistung),\"bat-all-soc\":$speichersoc"
+	fi
 	# smarthoome 1
-	dataline="$dataline,\"load1-power\":$(convertTokW $verbraucher1_watt),\"load2-power\":$(convertTokW $verbraucher2_watt)"
+	if (( verbraucher1_aktiv == 1 )); then
+		dataline="$dataline,\"load1-power\":$(convertTokW $verbraucher1_watt)"
+	fi
+	if (( verbraucher2_aktiv == 1 )); then
+		dataline="$dataline,\"load2-power\":$(convertTokW $verbraucher2_watt)"
+	fi
 	# end JSON
 	dataline="$dataline}"
 	printf "$dataline\n" >> /var/www/html/openWB/ramdisk/all-live.json

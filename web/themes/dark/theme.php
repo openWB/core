@@ -570,7 +570,7 @@
 											<div class="col-md-8">
 												<div class="form-row form-group mb-1 vaRow">
 													<div class="col">
-														<input type="range" class="chargepoint-pvchargemincurrent form-control-range rangeInput" id="minCurrentPvCp1" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/min_current" min="6" max="16" step="1">
+														<input type="range" class="chargepoint-pvchargemincurrent form-control-range rangeInput" id="minCurrentPvCp1" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/min_current" min="0" max="11" step="1" data-list="0,6,7,8,9,10,11,12,13,14,15,16">
 													</div>
 													<label for="minCurrentPvCp1" class="col-form-label valueLabel" data-suffix="A">? A</label>
 												</div>
@@ -981,33 +981,36 @@
 					var element = $('#' + $.escapeSelector(elementId));
 					var label = $('label[for="' + elementId + '"].valueLabel');
 					label.addClass('text-danger');
-					if ( $.escapeSelector(elementId) == 'MaxPriceForCharging') {
-						// marks times in the pricechart where the price is low enough so charging would be allowed
-						var priceAnnotations = createPriceAnnotations();
-						electricityPricechart.options.annotation.annotations = priceAnnotations;
-						electricityPricechart.update();
-					}
+					// if ( $.escapeSelector(elementId) == 'MaxPriceForCharging') {
+					// 	// marks times in the pricechart where the price is low enough so charging would be allowed
+					// 	var priceAnnotations = createPriceAnnotations();
+					// 	electricityPricechart.options.annotation.annotations = priceAnnotations;
+					// 	electricityPricechart.update();
+					// }
 
 					delayUserInput(elementId, function (id) {
 						// gets executed on callback, 2000ms after last input-change
 						// changes label color back to normal and sends input-value by mqtt
 						var elem = $('#' + $.escapeSelector(id));
-						var value = parseInt(elem.val());
+						var value = parseFloat(elem.val());
+						var label = $('label[for="' + id + '"].valueLabel');
+						if(list = $(elem).attr('data-list')){
+							value = parseFloat(list.split(',')[parseInt(value)]);
+						}
 						var topic = getTopicToSendTo(id);
 						publish(value, topic);
-						var label = $('label[for="' + id + '"].valueLabel');
 						label.removeClass('text-danger');
 						// if rangeInput is for chargeLimitation, recalc progress
-						if ( id.includes('/energyToCharge') ) {
-							var parent = elem.closest('.chargeLimitation')  // get parent div element for charge limitation
-							var element = parent.find('.progress-bar');  // now get parents progressbar
-							var actualCharged = element.data('actualCharged');  // get stored value
-							if ( isNaN(parseFloat(actualCharged)) ) {
-								actualCharged = 0;  // minimum value
-							}
-							var progress = (actualCharged / value * 100).toFixed(0);
-							element.width(progress+"%");
-						}
+						// if ( id.includes('/energyToCharge') ) {
+						// 	var parent = elem.closest('.chargeLimitation')  // get parent div element for charge limitation
+						// 	var element = parent.find('.progress-bar');  // now get parents progressbar
+						// 	var actualCharged = element.data('actualCharged');  // get stored value
+						// 	if ( isNaN(parseFloat(actualCharged)) ) {
+						// 		actualCharged = 0;  // minimum value
+						// 	}
+						// 	var progress = (actualCharged / value * 100).toFixed(0);
+						// 	element.width(progress+"%");
+						// }
 					}, 2000);
 				});
 

@@ -10,13 +10,13 @@ var graphrefreshcounter = 0;
 
 var chargemodeTemplate = {};
 
-function getCol(matrix, col){
-	var column = [];
-	for(var i=0; i<matrix.length; i++){
-		column.push(matrix[i][col]);
-	}
-	return column;
-}
+// function getCol(matrix, col){
+// 	var column = [];
+// 	for(var i=0; i<matrix.length; i++){
+// 		column.push(matrix[i][col]);
+// 	}
+// 	return column;
+// }
 
 function convertToKw(dataColum) {
 	var convertedDataColumn = [];
@@ -365,11 +365,10 @@ function processPvConfigMessages(mqttmsg, mqttpayload) {
 	if ( mqttmsg == 'openWB/general/chargemode_config/pv_charging/bat_prio' ) {
 		// console.log("pv config: bat_prio");
 		var element = $('.housebattery-priority');
-		if ( mqttpayload == 1 ) {
-			// element.prop('checked', true);
+		data = JSON.parse(mqttpayload);
+		if ( data == true ) {
 			element.bootstrapToggle('on', true); // do not fire a changed-event to prevent a loop!
 		} else {
-			// element.prop('checked', false);
 			element.bootstrapToggle('off', true); // do not fire a changed-event to prevent a loop!
 		}
 	}
