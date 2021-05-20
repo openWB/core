@@ -1,9 +1,6 @@
 """Zähler-Logik
 """
 
-import subprocess
-
-import data
 import log
 import pub
 

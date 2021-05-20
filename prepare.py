@@ -3,14 +3,10 @@
 
 import copy
 
-import bat
 import chargepoint
-import counter
 import data
-import loadmanagement
 import log
 import pub
-import stats
 import subdata
 
 
@@ -78,7 +74,7 @@ class prepare():
                         state, message_ev, mode_changed = charging_ev.get_required_current()
                         # Wenn sich das Auto ändert und vorher ein Auto zugeordnet war, Werte des alten Autos zurücksetzen.
                         if cp.data["set"]["charging_ev"] != charging_ev.ev_num and cp.data["set"]["charging_ev"] != -1:
-                            data.pv_data["all"].reset_switch_on_off(data.ev_data["ev"+str(cp.data["set"]["charging_ev"])])
+                            data.pv_data["all"].reset_switch_on_off(cp, charging_ev)
                             charging_ev.reset_phase_switch()
                             if max(cp.data["get"]["current"]) != 0:
                                 cp.data["set"]["current"] = 0
@@ -90,7 +86,7 @@ class prepare():
                         # Die benötigte Stromstärke hat sich durch eine Änderung des Lademdous oder der Konfiguration geändert. Die Zuteilung entsprechend der Priorisierung muss neu geprüft werden.
                         # Daher muss der LP zurückgesetzt werden, wenn er gerade lädt, um in der Regelung wieder berücksichtigt zu werden.
                         if mode_changed == True:
-                            data.pv_data["all"].reset_switch_on_off(cp)
+                            data.pv_data["all"].reset_switch_on_off(cp, charging_ev)
                             charging_ev.reset_phase_switch()
                             if max(cp.data["get"]["current"]) != 0:
                                 cp.data["set"]["current"] = 0

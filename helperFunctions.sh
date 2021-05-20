@@ -42,8 +42,8 @@ openwbModulePublishState() {
 			if (( $# != 3 )); then
 				echo "openwbPublishStatus: Wrong number of arguments: BAT $#"
 			else
-				mosquitto_pub -t openWB/set/bat/modules/1/get/fault_state -r -m "$2"
-				mosquitto_pub -t openWB/set/bat/modules/1/get/fault_str -r -m "\"$3\""
+				mosquitto_pub -t openWB/set/bat/1/get/fault_state -r -m "$2"
+				mosquitto_pub -t openWB/set/bat/1/get/fault_str -r -m "\"$3\""
 			fi
 			;;
 		*)

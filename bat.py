@@ -6,8 +6,6 @@ eine Ladung gestartet und der Speicher hört automatisch auf zu laden, da sonst 
 das Laden des EV Bezug statt finden würde.
 """
 
-import subprocess
-
 import data
 import log
 import pub
@@ -28,6 +26,8 @@ class bat:
         self.data["set"]["switch_on_soc_reached"] = 0
 
     def setup_bat(self):
+        """ prüft, ob mind ein Speicher vorhanden ist und berechnet die Summentopics.
+        """
         try:
             if len(data.bat_module_data) > 1:
                 if "all" not in data.bat_module_data:
@@ -117,13 +117,20 @@ class bat:
                     if self.data["get"]["soc"] > config["rundown_soc"]:
                         self.data["set"]["charging_power_left"] = config["rundown_power"]
                     else:
-                        self.data["set"]["charging_power_left"] = 0
+                        # 50 W Überschuss übrig lassen, die sich der Speicher dann nehmen kann. Wenn der Speicher schneller regelt, als die LP, würde sonst der Speicher reduziert werden.
+                        self.data["set"]["charging_power_left"] = -50
                 else:
-                    self.data["set"]["charging_power_left"] = 0
+                    self.data["set"]["charging_power_left"] = -50
         except Exception as e:
             log.exception_logging(e)
 
     def get_power(self):
+        """ gibt die Leistung zurück, die gerade am Speicher anliegt (Summe, wenn es mehrere Speicher gibt).
+
+        Return
+        ------
+        int: Leistung am Speicher
+        """
         try:
             if self.data["config"]["configured"] == True:
                 return self.data["get"]["power"]
@@ -134,6 +141,12 @@ class bat:
             return 0
 
     def power_for_bat_charging(self):
+        """ gibt die Leistung zurück, die zum Laden verwendet werden kann.
+
+        Return
+        ------
+        int: Leistung, die zum Laden verwendet werden darf.
+        """
         try:
             if self.data["config"]["configured"] == True:
                 return self.data["set"]["charging_power_left"]

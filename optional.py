@@ -5,7 +5,6 @@ from heapq import nsmallest
 from math import ceil #Aufrunden
 
 import modules.et_awattar.awattargetprices as awattargetprices
-import data
 import log
 import pub
 import timecheck

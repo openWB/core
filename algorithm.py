@@ -7,7 +7,6 @@ import data
 import loadmanagement
 import log
 import pub
-import timecheck
 
 
 class control():
@@ -247,9 +246,9 @@ class control():
                         phases = cp.data["set"]["charging_ev"].data["control_parameter"]["phases"]
                     else:
                         phases = cp.data["get"]["phases_in_use"]
-                    # Wenn max_overshoot_phase 0 ist, wurde die maximale Gesamtleistung überschrittten und max_current_overshoot muss, 
+                    # Wenn max_overshoot_phase -1 ist, wurde die maximale Gesamtleistung überschrittten und max_current_overshoot muss, 
                     # wenn weniger als 3 Phasen genutzt werden, entsprechend multipliziert werden.
-                    if max_overshoot_phase == 0 and phases < 3:
+                    if max_overshoot_phase == -1 and phases < 3:
                         remaining_current_overshoot = max_current_overshoot * (3 - phases +1)
                     else:
                         remaining_current_overshoot = max_current_overshoot
@@ -284,9 +283,9 @@ class control():
                     # Werte aktualisieren
                     loadmanagement.loadmanagement_for_cp(cp, adapted_power, taken_current, phases)
                     data.counter_data["counter0"].print_stats()
-                    # Wenn max_overshoot_phase 0 ist, wurde die maximale Gesamtleistung überschrittten und max_current_overshoot muss, 
+                    # Wenn max_overshoot_phase -1 ist, wurde die maximale Gesamtleistung überschrittten und max_current_overshoot muss, 
                     # wenn weniger als 3 Phasen genutzt werden, entsprechend dividiert werden.
-                    if max_overshoot_phase == 0 and phases < 3:
+                    if max_overshoot_phase == -1 and phases < 3:
                         remaining_current_overshoot = remaining_current_overshoot / (3 - phases +1)
                     if remaining_current_overshoot < 0.01:
                         break
@@ -349,9 +348,9 @@ class control():
                     loadmanagement_state, overloaded_counters = loadmanagement.loadmanagement_for_cp(cp, required_power, missing_current, phases)
                     if loadmanagement_state == True:
                         overloaded_counters = sorted(overloaded_counters.items(), key=lambda e: e[1][1], reverse = True)
-                        # Wenn max_overshoot_phase 0 ist, wurde die maximale Gesamtleistung überschrittten und max_current_overshoot muss, 
+                        # Wenn max_overshoot_phase -1 ist, wurde die maximale Gesamtleistung überschrittten und max_current_overshoot muss, 
                         # wenn weniger als 3 Phasen genutzt werden, entsprechend dividiert werden.
-                        if overloaded_counters[0][1][1] == 0 and phases < 3:
+                        if overloaded_counters[0][1][1] == -1 and phases < 3:
                             undo_missing_current = (overloaded_counters[0][1][0] * (3 - phases +1)) * -1
                         else:
                             undo_missing_current = overloaded_counters[0][1][0] * -1
@@ -543,8 +542,6 @@ class control():
             cp_data_old = copy.deepcopy(data.cp_data)
 
             required_current, phases, overloaded_counters = allocate_power(chargepoint, required_power, required_current, phases)
-            if data.counter_data["all"].data["set"]["loadmanagement"] == True:
-                required_current = 0
             self._process_data(chargepoint, required_current)
             
             if data.counter_data["all"].data["set"]["loadmanagement"] == True or overloaded_counters != {}:
@@ -880,7 +877,7 @@ class control():
         verfügbarer Überhang
         """
         try:
-            return data.bat_module_data["all"].data["get"]["power"] + data.pv_data["all"].overhang_left()
+            return data.bat_module_data["all"].power_for_bat_charging() + data.pv_data["all"].overhang_left()
         except Exception as e:
             log.exception_logging(e)
             return 0
