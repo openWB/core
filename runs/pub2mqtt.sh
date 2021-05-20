@@ -45,8 +45,8 @@ numOfChargepoints=$(</var/www/html/openWB/ramdisk/ConfiguredChargePoints)
 for i in $(seq 1 $numOfChargepoints);
 do
 	for f in \
-		"chargepoint/${i}/power_all:ladeleistunglp${i}" \
-		"chargepoint/${i}/phases_in_use:lp${i}phasen" 
+		"chargepoint/${i}/get/power_all:ladeleistunglp${i}" \
+		"chargepoint/${i}/get/phases_in_use:lp${i}phasen" 
 	do
 		IFS=':' read -r -a tuple <<< "$f"
 		#echo "Setting mqttvar[${tuple[0]}]=${tuple[1]}"
