@@ -38,6 +38,7 @@ if [[ $(wc -l </var/www/html/openWB/ramdisk/$outputname) -ge 5 ]]; then
 		echo $APhase1 > /var/www/html/openWB/ramdisk/lla1
 		echo $APhase2 > /var/www/html/openWB/ramdisk/lla2
 		echo $APhase3 > /var/www/html/openWB/ramdisk/lla3
+		echo $watt > /var/www/html/openWB/ramdisk/ladeleistunglp1
 		echo $watt > /var/www/html/openWB/ramdisk/llaktuell
 		echo $kWhCounter > /var/www/html/openWB/ramdisk/llkwh
 		echo $boolPlugStat > /var/www/html/openWB/ramdisk/plugstat
@@ -55,6 +56,8 @@ if [[ $(wc -l </var/www/html/openWB/ramdisk/$outputname) -ge 5 ]]; then
 		echo $APhase2 > /var/www/html/openWB/ramdisk/llas12
 		echo $APhase3 > /var/www/html/openWB/ramdisk/llas13
 		echo $watt > /var/www/html/openWB/ramdisk/llaktuells1
+		echo $watt > /var/www/html/openWB/ramdisk/ladeleistunglp2
+
 		echo $kWhCounter > /var/www/html/openWB/ramdisk/llkwhs1
 		echo $boolPlugStat > /var/www/html/openWB/ramdisk/plugstats1
 		echo $boolChargeStat > /var/www/html/openWB/ramdisk/chargestats1
@@ -69,10 +72,13 @@ if [[ $(wc -l </var/www/html/openWB/ramdisk/$outputname) -ge 5 ]]; then
 		echo $APhase1 > /var/www/html/openWB/ramdisk/llas21
 		echo $APhase2 > /var/www/html/openWB/ramdisk/llas22
 		echo $APhase3 > /var/www/html/openWB/ramdisk/llas23
+		echo $watt > /var/www/html/openWB/ramdisk/ladeleistunglp3
 		echo $watt > /var/www/html/openWB/ramdisk/llaktuells2
 		echo $kWhCounter > /var/www/html/openWB/ramdisk/llkwhs2
 		echo $boolPlugStat > /var/www/html/openWB/ramdisk/plugstatlp3
 		echo $boolChargeStat > /var/www/html/openWB/ramdisk/chargestatlp3
+		echo $boolPlugStat > /var/www/html/openWB/ramdisk/plugstats2
+		echo $boolChargeStat > /var/www/html/openWB/ramdisk/chargestats2
 
 	fi
 	if (( chargep > "3" ));then

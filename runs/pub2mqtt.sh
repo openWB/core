@@ -41,7 +41,7 @@ mqttvar["counter/0/get/imported"]=bezugkwh
 mqttvar["counter/0/get/exported"]=einspeisungkwh
 mqttvar["vehicle/1/get/soc"]=soc
 
-numOfChargepoints =$(</var/www/html/openWB/ramdisk/ConfiguredChargePoints)
+numOfChargepoints=$(</var/www/html/openWB/ramdisk/ConfiguredChargePoints)
 for i in $(seq 1 $numOfChargepoints);
 do
 	for f in \
