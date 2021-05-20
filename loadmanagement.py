@@ -292,13 +292,25 @@ def _loadmanagement_for_evu(required_power, required_current_phases, phases, off
         loadmanagement, overshoot, phase = _check_max_current("counter0", required_current_phases, phases, offset)
         if loadmanagement == True:
             loadmanagement_all_conditions = True
-            if max_current_overshoot < overshoot:
+            # Wenn max_overshoot_phase -1 ist, wurde die maximale Gesamtleistung überschrittten und max_current_overshoot muss, 
+            # wenn weniger als 3 Phasen genutzt werden, entsprechend multipliziert werden.
+            if max_overshoot_phase == -1:
+                overshoot_one_phase = max_current_overshoot * (3 - phases +1)
+            else:
+                overshoot_one_phase = max_current_overshoot
+            if overshoot_one_phase < overshoot:
                 max_current_overshoot = overshoot
                 max_overshoot_phase = phase
         loadmanagement, overshoot, phase = _check_unbalanced_load(data.counter_data["counter0"].data["set"]["current_used"], offset)
         if loadmanagement == True:
             loadmanagement_all_conditions = True
-            if max_current_overshoot < overshoot:
+            # Wenn max_overshoot_phase -1 ist, wurde die maximale Gesamtleistung überschrittten und max_current_overshoot muss, 
+            # wenn weniger als 3 Phasen genutzt werden, entsprechend multipliziert werden.
+            if max_overshoot_phase == -1:
+                overshoot_one_phase = max_current_overshoot * (3 - phases +1)
+            else:
+                overshoot_one_phase = max_current_overshoot
+            if overshoot_one_phase < overshoot:
                 max_current_overshoot = overshoot
                 max_overshoot_phase = phase
         if loadmanagement_all_conditions == True:
