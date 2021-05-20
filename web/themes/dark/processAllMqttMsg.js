@@ -10,13 +10,13 @@ var graphrefreshcounter = 0;
 
 var chargemodeTemplate = {};
 
-function getCol(matrix, col){
-	var column = [];
-	for(var i=0; i<matrix.length; i++){
-		column.push(matrix[i][col]);
-	}
-	return column;
-}
+// function getCol(matrix, col){
+// 	var column = [];
+// 	for(var i=0; i<matrix.length; i++){
+// 		column.push(matrix[i][col]);
+// 	}
+// 	return column;
+// }
 
 function convertToKw(dataColum) {
 	var convertedDataColumn = [];
