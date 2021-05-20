@@ -215,7 +215,7 @@ def check_duration(plan, duration):
 
         elif plan["frequency"]["selected"] == "daily":
             end = end.replace(now.year, now.month, now.day)
-            # Wenn der Zeitpunkt an diesem Tag schon vorüber ist, nächsten Tag prüfen.
+            # Wenn der Zeitpunkt an diesem Tag schon vorüber ist (verbleibende Zeit ist negativ), nächsten Tag prüfen.
             state, remaining_time = _is_duration_valid(now, duration, end)
             if remaining_time < 0:
                 delta = datetime.timedelta(days = 1)
@@ -225,6 +225,21 @@ def check_duration(plan, duration):
         elif plan["frequency"]["selected"] == "weekly":
             if plan["frequency"]["weekly"][now.weekday()] == True:
                 end = end.replace(now.year, now.month, now.day)
+                state, remaining_time = _is_duration_valid(now, duration, end)
+                # Zeitpunkt ist an diesem Tag noch nicht vorbei
+                if remaining_time > 0:
+                    return state, remaining_time
+                else:
+                # Wenn der Zeitpunkt an diesem Tag schon vorüber ist (verbleibende Zeit ist negativ), nächsten Tag prüfen.
+                    delta = datetime.timedelta(days = 1)
+                    end += delta
+                    state, remaining_time = _is_duration_valid(now, duration, end)
+                return state, remaining_time
+            # prüfen, ob für den nächsten Tag ein Termin ansteht und heute schon begonnen werden muss
+            if plan["frequency"]["weekly"][now.weekday()+1] == True:
+                end = end.replace(now.year, now.month, now.day)
+                delta = datetime.timedelta(days = 1)
+                end += delta
                 return _is_duration_valid(now, duration, end)
             else:
                 return False, 0
