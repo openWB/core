@@ -251,10 +251,11 @@ class pv():
             charging_ev.data["control_parameter"]["timestamp_switch_on_off"] = "0"
             pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/control_parameter/timestamp_switch_on_off", "0")
             # Wenn bereits geladen wird, freigegebene Leistung freigeben. Wenn nicht geladen wird, reservierte Leistung freigeben.
+            pv_config = data.general_data["general"].data["chargemode_config"]["pv_charging"]
             if chargepoint.data["get"]["charge_state"] == False:
-                data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= chargepoint.data["set"]["required_power"]
+                data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= pv_config["switch_on_threshold"]*chargepoint.data["set"]["phases_to_use"]
             else:
-                data.pv_data["all"].data["set"]["released_evu_overhang"]  -= chargepoint.data["set"]["required_power"]
+                data.pv_data["all"].data["set"]["released_evu_overhang"]  -= pv_config["switch_on_threshold"]*charging_ev.data["control_parameter"]["phases"]
 
     def overhang_left(self):
         """ gibt den verfügbaren EVU-Überschuss zurück.

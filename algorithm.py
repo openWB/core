@@ -132,7 +132,7 @@ class control():
                     # Wenn kein Ladepunkt lädt, kann die Wallbox nichts am Lastmanagement ausrichten. Die Überlastung kommt ausschließlich vom Hausverbrauch.
                     for cp in data.cp_data:
                         if "cp" in cp:
-                            if data.cp_data[cp].data["get"]["charge_state"] == True:
+                            if data.cp_data[cp].data["set"]["current"] == 0:
                                 break
                     else:
                         break
