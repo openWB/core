@@ -94,7 +94,7 @@ class setData():
         ---------
         msg:
             Broker-Nachricht
-        data_type: float, int, str, None
+        data_type: float, int, str, "json", None
             Datentyp (None für komplexe Datenstrukturen, wie z.B. Hierarchie)
         ranges: [(int/float/None, int/float/None), ..]
             Liste mit Tuples, die die Wertebereiche enthalten (None für unendlich)
@@ -107,7 +107,8 @@ class setData():
         try:
             if msg.payload:
                 value = json.loads(str(msg.payload.decode("utf-8")))
-                if data_type == None:
+                if data_type == None or data_type == "json":
+                    # Wenn kein gültiges json-Objekt übergeben worden wäre, wäre bei loads eine Exception aufgetreten.
                     valid = True
                 elif collection != None:
                         if self._validate_collection_value(msg, data_type, ranges, collection) == True:
@@ -154,6 +155,7 @@ class setData():
                     pub.pub(msg.topic, "")
         except Exception as e:
             log.exception_logging(e)
+            pub.pub(msg.topic, "")
 
     def _change_key(self, next_level, key_list, value):
         """ rekursive Funktion, die den Eintrag im entsprechenden Dictionary aktualisiert oder anlegt.
@@ -431,36 +433,8 @@ class setData():
                 self._validate_value(msg, int, [(0, 1)])
             elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/autolock_state$", msg.topic) != None:
                 self._validate_value(msg, int, [(0, 4)])
-            elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/config/template", msg.topic) != None:
-                self._validate_value(msg, int, [(0, None)])
-            elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/config/name", msg.topic) != None:
-                self._validate_value(msg, str)
-            elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/config/max_current", msg.topic) != None:
-                self._validate_value(msg, int, [(6, 32)])
-            elif (re.search("^openWB/set/chargepoint/[1-9][0-9]*/config/connected_phases", msg.topic) != None or
-                    re.search("^openWB/set/chargepoint/[1-9][0-9]*/config/phase_1", msg.topic) != None):
-                self._validate_value(msg, int, [(0, 3)])
-            elif (re.search("^openWB/set/chargepoint/[1-9][0-9]*/config/auto_phase_switch_hw", msg.topic) != None or
-                    re.search("^openWB/set/chargepoint/[1-9][0-9]*/config/control_pilot_interruption_hw", msg.topic) != None):
-                self._validate_value(msg, int, [(0, 1)])
-            elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/config/connection_module/[a-z,_]+/ip_address$", msg.topic) != None:
-                self._validate_value(msg, str)
-            elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/config/connection_module/external_openwb/chargepoint$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, None)])
-            elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/config/connection_module/satellite/id$", msg.topic) != None:
-                self._validate_value(msg, int, [(1, 254)])
-            elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/config/connection_module/[a-z,_]+/timeout$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, None)])
-            elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/config/connection_module/nrg/mac$", msg.topic) != None:
-                self._validate_value(msg, str)
-            elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/config/connection_module/tesla/phases$", msg.topic) != None:
-                self._validate_value(msg, int, [(1, 3)])
-            elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/config/connection_module/dac/register$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, 99)])
-            elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/config/connection_module/modbus_evse/source$", msg.topic) != None:
-                self._validate_value(msg, str)
-            elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/config/connection_module/modbus_evse/id$", msg.topic) != None:
-                self._validate_value(msg, int, [(1, 254)])
+            elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/config$", msg.topic) != None:
+                self._validate_value(msg, "json")
             elif (re.search("^openWB/set/chargepoint/[1-9][0-9]*/get/voltage$", msg.topic) != None or
                     re.search("^openWB/set/chargepoint/[1-9][0-9]*/get/current$", msg.topic) != None or
                     re.search("^openWB/set/chargepoint/[1-9][0-9]*/get/power_factor$", msg.topic) != None):
@@ -535,28 +509,8 @@ class setData():
                 self._validate_value(msg, float)
             elif re.search("^openWB/set/pv/set/available_power$", msg.topic) != None:
                 self._validate_value(msg, float)
-            elif (re.search("^openWB/set/pv/[1-9][0-9]*/config/selected$", msg.topic) != None or
-                    re.search("^openWB/set/pv/[1-9][0-9]*/config/openwb/selected$", msg.topic) != None or
-                    re.search("^openWB/set/pv/[1-9][0-9]*/config/[a-z,_]+/ip_address[1-9,_]*$", msg.topic) != None or
-                    re.search("^openWB/set/pv/[1-9][0-9]*/config/[a-z,_]+/url$", msg.topic) != None or
-                    re.search("^openWB/set/pv/[1-9][0-9]*/config/[a-z,_]+/source$", msg.topic) != None):
-                self._validate_value(msg, str)
-            elif re.search("^openWB/set/pv/[1-9][0-9]*/config/[a-z,_]+/id[1-9,_]*$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, None)])
-            elif re.search("^openWB/set/pv/[1-9][0-9]*/config/kostal_plenticore/name[1-9,_]*$", msg.topic) != None:
-                self._validate_value(msg, str)
-            elif (re.search("^openWB/set/pv/[1-9][0-9]*/config/sma/webbox$", msg.topic) != None or
-                    re.search("^openWB/set/pv/[1-9][0-9]*/config/solaredge/external_meter$", msg.topic) != None):
-                self._validate_value(msg, int, [(0, 1)])
-            elif re.search("^openWB/set/pv/[1-9][0-9]*/config/solarview/port$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, None)])
-            elif (re.search("^openWB/set/pv/[1-9][0-9]*/config/http/url_power$", msg.topic) != None or 
-                    re.search("^openWB/set/pv/[1-9][0-9]*/config/http/url_energy$", msg.topic) != None or
-                    re.search("^openWB/set/pv/[1-9][0-9]*/config/json/power$", msg.topic) != None or
-                    re.search("^openWB/set/pv/[1-9][0-9]*/config/json/energy$", msg.topic) != None):
-                self._validate_value(msg, str)
-            elif re.search("^openWB/set/pv/[1-9][0-9]*/config/vzlogger/line$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, None)])
+            elif re.search("^openWB/set/pv/[1-9][0-9]*/config$", msg.topic) != None:
+                self._validate_value(msg, "json")
             elif re.search("^openWB/set/pv/[1-9][0-9]*/get/fault_state$", msg.topic) != None:
                 self._validate_value(msg, int, [(0, 2)])
             elif re.search("^openWB/set/pv/[1-9][0-9]*/get/fault_str$", msg.topic) != None:
@@ -605,26 +559,8 @@ class setData():
                     re.search("^openWB/set/bat/get/daily_yield_export$", msg.topic) != None or
                     re.search("^openWB/set/bat/get/daily_yield_import$", msg.topic) != None):
                 self._validate_value(msg, float, [(0, None)])
-            elif (re.search("^openWB/set/bat/[1-9][0-9]*/config/selected$", msg.topic) != None or
-                    re.search("^openWB/set/bat/[1-9][0-9]*/config/[a-z,_]+/ip_address[1-9,_]*$", msg.topic) != None or
-                    re.search("^openWB/set/bat/[1-9][0-9]*/config/[a-z,_]+/api$", msg.topic) != None or
-                    re.search("^openWB/set/bat/[1-9][0-9]*/config/[a-z,_]+/url[a-z,_]*$", msg.topic) != None):
-                self._validate_value(msg, str)
-            elif re.search("^openWB/set/bat/[1-9][0-9]*/config/openwb/version$", msg.topic) != None:
-                self._validate_value(msg, str)
-            elif re.search("^openWB/set/bat/[1-9][0-9]*/config/[a-z,_]+/consider_pv$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, 1)])
-            elif re.search("^openWB/set/bat/[1-9][0-9]*/config/[a-z,_]+/number$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, None)])
-            elif (re.search("^openWB/set/bat/[1-9][0-9]*/config/tesla/registration$", msg.topic) != None or
-                    re.search("^openWB/set/bat/[1-9][0-9]*/config/varta/modbus$", msg.topic) != None):
-                self._validate_value(msg, int, [(0, 1)])
-            elif (re.search("^openWB/set/bat/[1-9][0-9]*/config/json/power$", msg.topic) != None or 
-                    re.search("^openWB/set/bat/[1-9][0-9]*/config/json/soc$", msg.topic) != None or
-                    re.search("^openWB/set/bat/[1-9][0-9]*/config/mpm3pm/source$", msg.topic) != None):
-                self._validate_value(msg, str)
-            elif re.search("^openWB/set/bat/[1-9][0-9]*/config/mpm3pm/id$", msg.topic) != None:
-                self._validate_value(msg, int, [(1, 254)])
+            elif re.search("^openWB/set/bat/[1-9][0-9]*/config$", msg.topic) != None:
+                self._validate_value(msg, "json")
             elif re.search("^openWB/set/bat/[1-9][0-9]*/get/power$", msg.topic) != None:
                 self._validate_value(msg, float)
             elif (re.search("^openWB/set/bat/[1-9][0-9]*/get/imported$", msg.topic) != None or
@@ -773,46 +709,8 @@ class setData():
                 self._validate_value(msg, float)
             elif re.search("^openWB/set/counter/[0-9]+/set/current_left$", msg.topic) != None:
                 self._validate_value(msg, float, [(0, None)], collection=list)
-            elif (re.search("^openWB/set/counter/[0-9]+/config/selected$", msg.topic) != None or
-                    re.search("^openWB/set/counter/[0-9]+/config/openwb/version$", msg.topic) != None):
-                self._validate_value(msg, str)
-            elif (re.search("^openWB/set/counter/[0-9]+/config/discovergy/id$", msg.topic) != None or
-                    re.search("^openWB/set/counter/[0-9]+/config/powerfox/id$", msg.topic) != None or
-                    re.search("^openWB/set/counter/[0-9]+/config/victron/id$", msg.topic) != None or
-                    re.search("^openWB/set/counter/[0-9]+/config/mpm3pm/id$", msg.topic) != None or
-                    re.search("^openWB/set/counter/[0-9]+/config/sdm630/id$", msg.topic) != None):
-                self._validate_value(msg, int)
-            elif (re.search("^openWB/set/counter/[0-9]+/config/fronius_energy_meter/id$", msg.topic) != None or
-                    re.search("^openWB/set/counter/[0-9]+/config/fronius_s0/id$", msg.topic) != None):
-                self._validate_value(msg, int, [(0, 1)])
-            elif re.search("^openWB/set/counter/[0-9]+/config/[a-z,_]+/compability_primo$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, 1)])
-            elif re.search("^openWB/set/counter/[0-9]+/config/[a-z,_]+/compability_gen24$", msg.topic) != None:
-                self._validate_value(msg, str)
-            elif re.search("^openWB/set/counter/[0-9]+/config/[a-z,_]+/position$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, None)])
-            elif re.search("^openWB/set/counter/[0-9]+/config/[a-z,_]+/ip_address$", msg.topic) != None:
-                self._validate_value(msg, str)
-            elif re.search("^openWB/set/counter/[0-9]+/config/sma_homemanager/serial_number$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, None)])
-            elif re.search("^openWB/set/counter/[0-9]+/config/[a-z,_]+/url[a-z,1-9,_]*$", msg.topic) != None:
-                self._validate_value(msg, str)
-            elif re.search("^openWB/set/counter/[0-9]+/config/solarlog/compability$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, 1)])
-            elif (re.search("^openWB/set/counter/[0-9]+/config/json/power$", msg.topic) != None or
-                    re.search("^openWB/set/counter/[0-9]+/config/json/imported$", msg.topic) != None or
-                    re.search("^openWB/set/counter/[0-9]+/config/json/exported$", msg.topic) != None or
-                    re.search("^openWB/set/counter/[0-9]+/config/[a-z,_]+/source$", msg.topic) != None or
-                    re.search("^openWB/set/counter/[0-9]+/config/vz_logger/line[a-z,_]+$", msg.topic) != None):
-                self._validate_value(msg, str)
-            elif re.search("^openWB/set/counter/[0-9]+/config/equalisation/active$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, 1)])
-            elif re.search("^openWB/set/counter/[0-9]+/config/equalisation/time$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, None)])
-            elif re.search("^openWB/set/counter/[0-9]+/config/max_current$", msg.topic) != None:
-                self._validate_value(msg, int, [(7, 1500)], collection=list)
-            elif re.search("^openWB/set/counter/[0-9]+/config/max_consumption$", msg.topic) != None:
-                self._validate_value(msg, int, [(2000, 1000000)])
+            elif re.search("^openWB/set/counter/[0-9]+/config$", msg.topic) != None:
+                self._validate_value(msg, "json")
             elif re.search("^openWB/set/counter/[0-9]+/get/power_all$", msg.topic) != None:
                 self._validate_value(msg, int)
             elif re.search("^openWB/set/counter/[0-9]+/get/current$", msg.topic) != None:
