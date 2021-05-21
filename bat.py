@@ -66,6 +66,7 @@ class bat:
                 self.data["get"]["power"] = 0
             pub.pub("openWB/set/bat/config/configured", self.data["config"]["configured"])
             pub.pub("openWB/set/bat/set/charging_power_left", self.data["set"]["charging_power_left"])
+            pub.pub("openWB/set/bat/set/switch_on_soc_reached", self.data["set"]["switch_on_soc_reached"])
         except Exception as e:
             log.exception_logging(e)
 
@@ -79,7 +80,7 @@ class bat:
                 if self.data["set"]["switch_on_soc_reached"] == False:
                     if config["switch_on_soc"] != 0:
                         if config["switch_on_soc"] < self.data["get"]["soc"]:
-                            self.data["set"]["switch_on_soc_reached"] == True
+                            self.data["set"]["switch_on_soc_reached"] = True
                             self.data["set"]["charging_power_left"] = self.data["get"]["power"]
                         else:
                             self.data["set"]["charging_power_left"] = 0
@@ -87,10 +88,10 @@ class bat:
                         # Kein Einschalt-Soc; Nutzung, wenn Soc über Ausschalt-Soc liegt.
                         if config["switch_off_soc"] != 0:
                             if config["switch_off_soc"] < self.data["get"]["soc"]:
-                                self.data["set"]["switch_on_soc_reached"] == True
+                                self.data["set"]["switch_on_soc_reached"] = True
                                 self.data["set"]["charging_power_left"] = self.data["get"]["power"]
                             else:
-                                self.data["set"]["switch_on_soc_reached"] == False
+                                self.data["set"]["switch_on_soc_reached"] = False
                                 self.data["set"]["charging_power_left"] = 0
                         # Weder Einschalt- noch Ausschalt-Soc sind konfiguriert.
                         else:
@@ -102,14 +103,14 @@ class bat:
                         if config["switch_off_soc"] < self.data["get"]["soc"]:
                             self.data["set"]["charging_power_left"] = self.data["get"]["power"]
                         else:
-                            self.data["set"]["switch_on_soc_reached"] == False
+                            self.data["set"]["switch_on_soc_reached"] = False
                             self.data["set"]["charging_power_left"] = 0
                     # Wenn kein Ausschalt-Soc konfiguriert wurde, wird der Speicher komplett entladen.
                     else:
                         if 0 < self.data["get"]["soc"]:
                             self.data["set"]["charging_power_left"] = self.data["get"]["power"]
                         else:
-                            self.data["set"]["switch_on_soc_reached"] == False
+                            self.data["set"]["switch_on_soc_reached"] = False
                             self.data["set"]["charging_power_left"] = 0
             # Wenn der Speicher Vorrang hat, darf die erlaubte Entlade-Leistung zum Laden der EV genutzt werden, wenn der Soc über dem minimalen Entlade-Soc liegt.
             else:

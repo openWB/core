@@ -8,9 +8,7 @@ in der Regelung neu priorisiert werden und eine neue Zuteilung des Stroms erhalt
 """
 
 import data
-import general
 import log
-import optional
 import pub
 import timecheck
 
@@ -94,59 +92,83 @@ class ev():
         ------
         state: bool
             Soll geladen werden?
+        message: str
+            Nachricht, warum nicht geladen werden soll
+        submode: str
+            Lademodus, in dem tatsächlich geladen wird
         required_current: int
             Strom, der nach Ladekonfiguration benötigt wird
-        mode_changed: bool
-            Der Lademodus/ die Konfiguration wurde geändert.
         """
-        chargemode = None
+        submode = None
         required_current = None
         message = None
         state = True
-        mode_changed = False
         try:
             if self.charge_template.data["chargemode"]["selected"] == "scheduled_charging":
-                required_current, chargemode, message = self.charge_template.scheduled_charging(self.data["get"]["soc"], self.ev_template)
+                required_current, submode, message = self.charge_template.scheduled_charging(self.data["get"]["soc"], self.ev_template)
             elif self.charge_template.data["time_charging"]["active"] == True:
-                required_current, chargemode, message = self.charge_template.time_charging()
+                required_current, submode, message = self.charge_template.time_charging()
             if (required_current == 0) or (required_current == None):
                 if self.charge_template.data["chargemode"]["selected"] == "instant_charging":
-                    required_current, chargemode, message = self.charge_template.instant_charging(self.data["get"]["soc"], self.data["get"]["charged_since_plugged_counter"])
+                    required_current, submode, message = self.charge_template.instant_charging(self.data["get"]["soc"], self.data["get"]["charged_since_plugged_counter"])
                 elif self.charge_template.data["chargemode"]["selected"] == "pv_charging":
-                    required_current, chargemode, message = self.charge_template.pv_charging(self.data["get"]["soc"])
+                    required_current, submode, message = self.charge_template.pv_charging(self.data["get"]["soc"])
                 elif self.charge_template.data["chargemode"]["selected"] == "standby":
-                    required_current, chargemode, message = self.charge_template.standby()
+                    required_current, submode, message = self.charge_template.standby()
                     
                 elif self.charge_template.data["chargemode"]["selected"] == "stop":
-                 required_current, chargemode, message = self.charge_template.stop()
-            if chargemode == "stop" or (self.charge_template.data["chargemode"]["selected"] == "stop"):
+                 required_current, submode, message = self.charge_template.stop()
+            if submode == "stop" or (self.charge_template.data["chargemode"]["selected"] == "stop"):
                 state = False
-            
+
+            return state, message, submode, required_current
+        except Exception as e:
+            log.exception_logging(e)
+            return False, "ein interner Fehler aufgetreten ist.", "stop", 0
+
+    def check_state(self, required_current, submode):
+        """ prüft, ob sich etwas an den Parametern für die Regelung geändert hat, 
+        sodass der LP neu in die Priorisierung eingeordnet werden muss und publsihed die Regelparameter.
+
+        Parameter
+        ---------
+        required_current: int
+            Stromstärke, mit der geladen werden soll
+        submode: str
+            Lademodus, in dem geladen werden soll
+
+        Return
+        ------
+        mode_changed: bool
+            Der Lademodus/ die Konfiguration wurde geändert.
+        """
+        try:
+            mode_changed = False
             # Die benötigte Stromstärke hat sich durch eine Änderung des Lademdous oder der Konfiguration geändert.
             # Der Ladepunkt muss in der Regelung neu priorisiert werden.
             if (self.data["control_parameter"]["required_current"] != required_current or
                     self.data["control_parameter"]["chargemode"] != self.charge_template.data["chargemode"]["selected"] or
-                    self.data["control_parameter"]["submode"] != chargemode or
+                    self.data["control_parameter"]["submode"] != submode or
                     self.data["control_parameter"]["prio"] != self.charge_template.data["prio"]):
                 mode_changed = True
             self.data["control_parameter"]["required_current"] = required_current
-            self.data["control_parameter"]["submode"] = chargemode
-            pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/submode", chargemode)
+            self.data["control_parameter"]["submode"] = submode
+            pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/submode", submode)
             self.data["control_parameter"]["chargemode"] = self.charge_template.data["chargemode"]["selected"]
             pub.pub("openWB/set/vehicle/"+str(self.ev_num )+"/control_parameter/chargemode", self.charge_template.data["chargemode"]["selected"])
             self.data["control_parameter"]["prio"] = self.charge_template.data["prio"]
             pub.pub("openWB/set/vehicle/"+str(self.ev_num )+"/control_parameter/prio", self.charge_template.data["prio"])
-            return state, message, mode_changed
+            return mode_changed
         except Exception as e:
             log.exception_logging(e)
-            return False, "ein interner Fehler aufgetreten ist.", True
+            return True
 
     def get_soc(self):
         """ermittelt den SoC, wenn die Zugangsdaten konfiguriert sind.
         """
         pass
 
-    def check_min_max_current(self, required_current, phases):
+    def check_min_max_current(self, required_current):
         """ prüft, ob der gesetzte Ladestrom über dem Mindest-Ladestrom und unter dem Maximal-Ladestrom des EVs liegt. Falls nicht, wird der 
         Ladestrom auf den Mindest-Ladestrom bzw. den Maximal-Ladestrom des EV gesetzt.
 
@@ -155,21 +177,19 @@ class ev():
         required_current: float
             Strom, der vom Lademodus benötgt wird
 
-        phases: int
-            Anzahl Phasen, mit denen geladen werden soll
-
         Return
         ------
         float: Strom, mit dem das EV laden darf
         """
         try:
             # Überprüfung bei 0 (automatische Umschaltung) erfolgt nach der Prüfung der Phasenumschaltung, wenn fest steht, mit vielen Phasen geladen werden soll.
-            if phases != 0:
+            if self.data["control_parameter"]["phases"] != 0:
+                # EV soll/darf nicht laden
                 if required_current != 0:
                     if required_current < self.ev_template.data["min_current"]:
                         required_current = self.ev_template.data["min_current"]
                     else:
-                        if phases == 1:
+                        if self.data["control_parameter"]["phases"] == 1:
                             max_current = self.ev_template.data["max_current_one_phase"]
                         else:
                             max_current = self.ev_template.data["max_current_multi_phases"]
@@ -426,13 +446,10 @@ class chargeTemplate():
                 if pv_charging["min_soc"] != 0:
                     if soc < pv_charging["min_soc"]:
                         return pv_charging["min_soc_current"], "instant_charging", message
-                    else:
-                        return pv_charging["min_current"], "pv_charging", message
+                if pv_charging["min_current"] == 0:
+                    return 1, "pv_charging", message  # nur PV; Ampere darf nicht 0 sein, wenn geladen werden soll
                 else:
-                    if pv_charging["min_current"] == 0:
-                        return 0, "pv_charging", message  # nur PV
-                    else:
-                        return pv_charging["min_current"], "instant_charging", message # Min PV
+                    return pv_charging["min_current"], "instant_charging", message # Min PV
             else:
                 message = "der maximale Soc bereits erreicht wurde."
                 return 0, "stop", message
@@ -515,7 +532,7 @@ class chargeTemplate():
                         log.exception_logging(e)
             else:
                 message = "da keine Ziel-Termine konfiguriert sind."
-                return 0, "scheduled_charging", message
+                return 0, "stop", message
         except Exception as e:
             log.exception_logging(e)
             return 0, "stop", "da ein interner Fehler aufgetreten ist."

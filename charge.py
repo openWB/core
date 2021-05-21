@@ -35,7 +35,7 @@ class charge():
         try:
             current = round(chargepoint.data["set"]["current"], 0)
             # Zur Sicherheit - nach dem der Algorithmus abgeschlossen ist - nochmal die Einhaltung der Stromstärken prüfen.
-            current = chargepoint.data["set"]["charging_ev"].check_min_max_current(current, chargepoint.data["set"]["charging_ev"].data["control_parameter"]["phases"])
+            current = chargepoint.data["set"]["charging_ev"].check_min_max_current(current)
             if (chargepoint.data["set"]["charging_ev"].data["control_parameter"]["timestamp_switch_on_off"] != "0" and
                     chargepoint.data["get"]["charge_state"] == False and 
                     data.pv_data["all"].data["set"]["overhang_power_left"] == 0):

@@ -442,7 +442,7 @@ class control():
                             # Falls keine Umschaltung erforderlich ist, werden Strom und Phasen, die übergeben wurden, wieder zurückgegeben.
                             phases, current = charging_ev.auto_phase_switch(charging_ev.data["control_parameter"]["required_current"], charging_ev.data["control_parameter"]["phases"], chargepoint.data["get"]["current"])
                             # Nachdem im Automatikmodus die Anzahl Phasen bekannt ist, Einhaltung des Maximalstroms prüfen.
-                            required_current = charging_ev.check_min_max_current(current, phases)
+                            required_current = charging_ev.check_min_max_current(current)
                             charging_ev.data["control_parameter"]["required_current"] = required_current
                             pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num )+"/control_parameter/required_current", required_current)
                             charging_ev.data["control_parameter"]["phases"] = phases
@@ -664,10 +664,10 @@ class control():
         """ prüft, ob für LP ohne Einspeisungsgrenze noch EVU-Überschuss übrig ist und dann für die LP mit Einspeiungsgrenze.
         """
         try:
-            if data.pv_data["all"].overhang_left() != 0:
-                if data.pv_data["all"].overhang_left() > 0:
+            if self._get_bat_and_evu_overhang() != 0:
+                if self._get_bat_and_evu_overhang() > 0:
                     self._distribute_remaining_overhang(False)
-                if (data.pv_data["all"].overhang_left() - data.general_data["general"].data["chargemode_config"]["pv_charging"]["feed_in_yield"]) > 0:
+                if (self._get_bat_and_evu_overhang ()- data.general_data["general"].data["chargemode_config"]["pv_charging"]["feed_in_yield"]) > 0:
                     self._distribute_remaining_overhang(True)
             data.pv_data["all"].put_stats()
         except Exception as e:
@@ -911,12 +911,12 @@ def allocate_power(chargepoint, required_power, required_current, phases):
         overloaded_counters = {}
         # Wenn vorhanden, Speicherenergie allokieren.
         if bat_overhang > 0:
-            if bat_overhang > required_power:
+            if bat_overhang < required_power:
+                to_allocate = bat_overhang
+                remaining_required_power = required_power - bat_overhang
+            else:
                 to_allocate = required_power
                 remaining_required_power = 0
-            else:
-                to_allocate = required_power - bat_overhang
-                remaining_required_power = required_power - to_allocate
             if data.bat_module_data["all"].allocate_bat_power(to_allocate) == False:
                 required_current = 0
         # Wenn vorhanden, EVU-Überschuss allokieren.

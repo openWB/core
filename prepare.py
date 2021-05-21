@@ -70,8 +70,6 @@ class prepare():
                     vehicle, message = cp.get_state()
                     if vehicle != -1:
                         charging_ev = data.ev_data["ev"+str(vehicle)]
-                        self._pub_connected_vehicle(charging_ev, cp.cp_num)
-                        state, message_ev, mode_changed = charging_ev.get_required_current()
                         # Wenn sich das Auto ändert und vorher ein Auto zugeordnet war, Werte des alten Autos zurücksetzen.
                         if cp.data["set"]["charging_ev"] != charging_ev.ev_num and cp.data["set"]["charging_ev"] != -1:
                             data.pv_data["all"].reset_switch_on_off(cp, charging_ev)
@@ -79,6 +77,14 @@ class prepare():
                             if max(cp.data["get"]["current"]) != 0:
                                 cp.data["set"]["current"] = 0
                         cp.data["set"]["charging_ev"] = charging_ev
+
+                        self._pub_connected_vehicle(charging_ev, cp.cp_num)
+                        state, message_ev, submode, required_current = charging_ev.get_required_current()
+                        cp.get_phases(submode)
+                        # Einhaltung des Minimal- und Maximalstroms prüfen
+                        required_current = charging_ev.check_min_max_current(required_current)
+                        mode_changed = charging_ev.check_state(required_current, submode)
+                        
                         if message_ev != None:
                             message = "Keine Ladung an LP"+str(cp.cp_num)+", da "+str(message_ev)
                         log.message_debug_log("debug", "Ladepunkt "+cp.cp_num+", EV: "+cp.data["set"]["charging_ev"].data["name"]+" (EV-Nr."+str(vehicle)+")")
@@ -101,9 +107,7 @@ class prepare():
                                     cp.data["get"]["charge_state"] == False and 
                                     data.pv_data["all"].data["set"]["overhang_power_left"] == 0):
                                 log.message_debug_log("error", "Reservierte Leistung kann nicht 0 sein.")
-                            cp.get_phases()
-                            # Einhaltung des Minimal- und Maximalstroms prüfen
-                            required_current = charging_ev.check_min_max_current(charging_ev.data["control_parameter"]["required_current"], charging_ev.data["control_parameter"]["phases"])
+                            
                             log.message_debug_log("debug", "EV"+str(charging_ev.ev_num)+": Theroretisch benötigter Strom "+str(required_current)+"A, Lademodus "+str(
                                 charging_ev.charge_template.data["chargemode"]["selected"])+", Submodus: "+str(charging_ev.data["control_parameter"]["submode"])+", Prioritaet: "+str(charging_ev.charge_template.data["prio"]))
                             charging_ev.data["control_parameter"]["required_current"] = required_current
