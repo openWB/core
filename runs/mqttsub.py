@@ -103,6 +103,9 @@ def on_message(client, userdata, msg):
                 f = open('/var/www/html/openWB/ramdisk/lp'+str(devicenumb)+'tmpcurrent', 'w')
                 f.write(msg.payload.decode("utf-8"))
                 f.close()
+                #comment out for json cp modul structure
+                #sendcommand = ["python3 /var/www/html/openWB/runs/setchargepoint.py", msg.payload.decode("utf-8"), str(devicenumb) ]
+                #subprocess.Popen(sendcommand)
                 sendcommand = ["/var/www/html/openWB/runs/set-current.sh", msg.payload.decode("utf-8"), str(devicenumb) ]
                 subprocess.Popen(sendcommand)
                 #client.publish("openWB/chargepoint/"+str(devicenumb)+"/set/current", "", qos=0, retain=True)
