@@ -1727,10 +1727,10 @@ loadvars(){
 	tempPubList="${tempPubList}\nopenWB/system/Uptime=$(uptime)"
 	tempPubList="${tempPubList}\nopenWB/system/Date=$(date)"
 	tempPubList="${tempPubList}\nopenWB/system/Timestamp=${timestamp}"
-	tempPubList="${tempPubList}\nopenWB/chargepoint/1/get/voltage=[${llv1},${llv2},${llv3}]"
-	tempPubList="${tempPubList}\nopenWB/chargepoint/1/get/current=[${lla1},${lla2},${lla3}]"
-	tempPubList="${tempPubList}\nopenWB/chargepoint/2/get/current=[${llas11},${llas12},${llas13}]"
-	tempPubList="${tempPubList}\nopenWB/chargepoint/3/get/current=[${llas21},${llas22},${llas23}]"
+#	tempPubList="${tempPubList}\nopenWB/chargepoint/1/get/voltage=[${llv1},${llv2},${llv3}]"
+#	tempPubList="${tempPubList}\nopenWB/chargepoint/1/get/current=[${lla1},${lla2},${lla3}]"
+#	tempPubList="${tempPubList}\nopenWB/chargepoint/2/get/current=[${llas11},${llas12},${llas13}]"
+#	tempPubList="${tempPubList}\nopenWB/chargepoint/3/get/current=[${llas21},${llas22},${llas23}]"
 
 	#declare -a pvarray=("speichersocminpv" "speichersochystminpv" "mindestuberschuss" "abschaltuberschuss" "abschaltverzoegerung" "einschaltverzoegerung" "minimalampv" "minimalampv" "minimalalp2pv" "minnurpvsoclp1" "minnurpvsocll" "pvbezugeinspeisung" "offsetpv" "speicherpvui" "speichermaxwatt" "speichersocnurpv" "speicherwattnurpv" "adaptpv" "adaptfaktor")
 	#for val in ${pvarray[@]}; do
@@ -1745,4 +1745,5 @@ loadvars(){
 	#done
 	echo -e $tempPubList | python3 runs/mqttpub.py -q 0 -r &
 	runs/pub2mqtt.sh &
+	python3 runs/readchargepoints.py &
 }
