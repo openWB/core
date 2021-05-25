@@ -294,7 +294,10 @@ class pv():
                 log.message_debug_log("debug", str(self.data["set"]["overhang_power_left"])+"W EVU-Ueberschuss, der fuer die folgenden Ladepunkte uebrig ist, davon "+str(self.data["set"]["reserved_evu_overhang"])+"W fuer die Einschaltverzoegerung reservierte Leistung.")
                 # Float-Ungenauigkeiten abfangen
                 if self.data["set"]["overhang_power_left"] < -0.01:
-                    log.message_debug_log("error", "Es wurde versucht, mehr EVU-Überschuss zu allokieren, als vorhanden ist.")
+                    # Fehlermeldung nur ausgeben, wenn Leistung allokiert wird. 
+                    # Es kann nicht immer mit einem LP so viel Leistung freigegeben werden, dass die verfügbare Leistung positiv ist.
+                    if required_power > 0:
+                        log.message_debug_log("error", "Es wurde versucht, mehr EVU-Überschuss zu allokieren, als vorhanden ist.")
                     return False
             return True
         except Exception as e:

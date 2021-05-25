@@ -38,7 +38,7 @@ class charge():
             current = chargepoint.data["set"]["charging_ev"].check_min_max_current(current)
             if (chargepoint.data["set"]["charging_ev"].data["control_parameter"]["timestamp_switch_on_off"] != "0" and
                     chargepoint.data["get"]["charge_state"] == False and 
-                    data.pv_data["all"].data["set"]["overhang_power_left"] == 0):
+                    data.pv_data["all"].data["set"]["reserved_evu_overhang"] == 0):
                 log.message_debug_log("error", "Reservierte Leistung kann am Algorithmus-Ende nicht 0 sein.")
             pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/set/current", int(current))
         except Exception as e:
