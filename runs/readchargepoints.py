@@ -16,7 +16,7 @@ log_dict= {}
 mqtt_broker_ip = "localhost"
 
 try:
-    with open('var/www/html/openWB/rmadisk/ipaddress','r') as f:
+    with open('var/www/html/openWB/ramdisk/ipaddress','r') as f:
         myipaddress = str(f.read())
 except:
     myipaddress="192.168.193.5"
