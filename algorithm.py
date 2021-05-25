@@ -132,7 +132,7 @@ class control():
                     # Wenn kein Ladepunkt lädt, kann die Wallbox nichts am Lastmanagement ausrichten. Die Überlastung kommt ausschließlich vom Hausverbrauch.
                     for cp in data.cp_data:
                         if "cp" in cp:
-                            if data.cp_data[cp].data["get"]["charge_state"] == True:
+                            if data.cp_data[cp].data["set"]["current"] != 0:
                                 break
                     else:
                         break
@@ -349,7 +349,7 @@ class control():
                     if loadmanagement_state == True:
                         overloaded_counters = sorted(overloaded_counters.items(), key=lambda e: e[1][1], reverse = True)
                         # Wenn max_overshoot_phase -1 ist, wurde die maximale Gesamtleistung überschrittten und max_current_overshoot muss, 
-                        # wenn weniger als 3 Phasen genutzt werden, entsprechend dividiert werden.
+                        # wenn weniger als 3 Phasen genutzt werden, entsprechend multipliziert werden.
                         if overloaded_counters[0][1][1] == -1 and phases < 3:
                             undo_missing_current = (overloaded_counters[0][1][0] * (3 - phases +1)) * -1
                         else:

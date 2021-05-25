@@ -17,25 +17,6 @@ class allChargepoints():
         self.data["get"] = {}
         pub.pub("openWB/set/chargepoint/get/power_all", 0)
 
-    def used_power_all(self):
-        """ermittelt die verwendete Leistung in allen Phasen.
-
-        Return
-        ------
-        int: aufsummierte Leistung über alle Phasen und Ladepunkte
-        """
-        try:
-            used_power_all = 0
-            for chargepoint in data.cp_data:
-                if "cp" in chargepoint:
-                    if "get" in data.cp_data[chargepoint].data:
-                        if "power_all" in data.cp_data[chargepoint].data["get"]:
-                            used_power_all += data.cp_data[chargepoint].data["get"]["power_all"]
-            data.cp_data["all"].data["get"]["power_all"] = used_power_all
-            pub.pub("openWB/set/chargepoint/get/power_all", used_power_all)
-        except Exception as e:
-            log.exception_logging(e)
-
     def no_charge(self):
         """ Wenn keine EV angesteckt sind oder keine EV laden/laden möchten, werden die Algorithmus-Werte zurückgesetzt.
         (dient der Robustheit)

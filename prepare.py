@@ -116,7 +116,6 @@ class prepare():
                 log.exception_logging(e)
         if "all" not in data.cp_data:
             data.cp_data["all"]=chargepoint.allChargepoints()
-        data.cp_data["all"].used_power_all()
         data.cp_data["all"].no_charge()
 
     def _pub_connected_vehicle(self, vehicle, cp_num):

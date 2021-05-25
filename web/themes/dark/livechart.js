@@ -85,12 +85,15 @@ var all16p;
 
 var hidehaus;
 var myLine;
+var allChartData = [];
 
 function parseData(alldata){
 	var result = [];
 	alldata.split("\n").forEach(function(line){
 		if( line.length > 5 ){
-			result.push(JSON.parse(line))
+			lineJson = JSON.parse(line);
+			lineJson.timestamp = lineJson.timestamp * 1000;
+			result.push(lineJson);
 		}
 	});
 	return result;
@@ -126,9 +129,10 @@ let datasetTemplates = {
 		lineTension: 0.2,
 		hidden: boolDisplayPv,
 		borderWidth: 1,
-		data: [],
+		data: null,
 		yAxisID: 'y1',
 		parsing: {
+			xAxisKey: 'timestamp',
 			yAxisKey: null
 		}
 	},
@@ -139,10 +143,11 @@ let datasetTemplates = {
 		fill: true,
 		lineTension: 0.2,
 		borderWidth: 1,
-		data: [],
+		data: null,
 		hidden: boolDisplaySpeicher,
 		yAxisID: 'y1',
 		parsing: {
+			xAxisKey: 'timestamp',
 			yAxisKey: null
 		}
 	},
@@ -155,9 +160,10 @@ let datasetTemplates = {
 		fill: false,
 		lineTension: 0.2,
 		borderWidth: 2,
-		data: [],
+		data: null,
 		yAxisID: 'y2',
 		parsing: {
+			xAxisKey: 'timestamp',
 			yAxisKey: null
 		}
 	},
@@ -170,9 +176,10 @@ let datasetTemplates = {
 		hidden: false,
 		fill: false,
 		lineTension: 0.2,
-		data: [],
+		data: null,
 		yAxisID: 'y1',
 		parsing: {
+			xAxisKey: 'timestamp',
 			yAxisKey: null
 		}
 	},
@@ -184,9 +191,10 @@ let datasetTemplates = {
 		hidden: false,
 		fill: false,
 		lineTension: 0.2,
-		data: [],
+		data: null,
 		yAxisID: 'y2',
 		parsing: {
+			xAxisKey: 'timestamp',
 			yAxisKey: null
 		}
 	},
@@ -199,9 +207,10 @@ let datasetTemplates = {
 		lineTension: 0.2,
 		borderWidth: 2,
 		hidden: boolDisplayLoad1,
-		data: [],
+		data: null,
 		yAxisID: 'y1',
 		parsing: {
+			xAxisKey: 'timestamp',
 			yAxisKey: null
 		}
 	},
@@ -213,10 +222,11 @@ let datasetTemplates = {
 		fill: false,
 		lineTension: 0.2,
 		borderWidth: 2,
-		data: [],
+		data: null,
 		yAxisID: 'y1',
 		hidden: boolDisplayshd1,
 		parsing: {
+			xAxisKey: 'timestamp',
 			yAxisKey: null
 		}
 	},
@@ -228,10 +238,11 @@ let datasetTemplates = {
 	// 	fill: false,
 	// 	lineTension: 0.2,
 	// 	borderWidth: 2,
-	// 	data: [],
+	// 	data: null,
 	// 	yAxisID: 'y2',
 	// 	hidden: boolDisplayshd1t1,
 	// 	parsing: {
+	// 	xAxisKey: 'timestamp',
 	// 		yAxisKey: null
 	// 	}
 	// }
@@ -246,10 +257,11 @@ var chartDatasets = [
 		borderWidth: 1,
 		fill: true,
 		lineTension: 0.2,
-		data: [],
+		data: allChartData,
 		hidden: boolDisplayEvu,
 		yAxisID: 'y1',
 		parsing: {
+			xAxisKey: 'timestamp',
 			yAxisKey: 'grid'
 		}
 	},
@@ -261,9 +273,10 @@ var chartDatasets = [
 		lineTension: 0.2,
 		borderWidth: 2,
 		hidden: boolDisplayHouseConsumption,
-		data: [],
+		data: allChartData,
 		yAxisID: 'y1',
 		parsing: {
+			xAxisKey: 'timestamp',
 			yAxisKey: 'house-power'
 		}
 	},
@@ -274,10 +287,11 @@ var chartDatasets = [
 		fill: true,
 		lineTension: 0.2,
 		borderWidth: 2,
-		data: [],
+		data: allChartData,
 		hidden: boolDisplayLpAll,
 		yAxisID: 'y1',
 		parsing: {
+			xAxisKey: 'timestamp',
 			yAxisKey: 'charging-all'
 		}
 	}
@@ -286,7 +300,7 @@ var chartDatasets = [
 function loadgraph(animationDuration = 1000) {
 
 	var chartData = {
-		// not used with time scale
+		// labels not used with time scale
 		// labels: atime,
 		datasets: chartDatasets
 	}
@@ -420,6 +434,7 @@ function loadgraph(animationDuration = 1000) {
 						display: false
 					},
 					ticks: {
+						source: 'data',
 						font: {
 							size: 12
 						},
@@ -539,42 +554,28 @@ function addDataset(datasetId){
 	return
 }
 
-function replaceData(datasetId, data){
+function initDataset(datasetId){
 	var index = getDatasetIndex(datasetId);
 	if(index == undefined){
 		index = addDataset(datasetId);
 	}
 	if(index != undefined){
-		chartDatasets[index].data = data;
-	}
-}
-
-function addData(datasetId, data){
-	var index = getDatasetIndex(datasetId);
-	if(index == undefined){
-		index = addDataset(datasetId);
-	}
-	if(index != undefined){
-		chartDatasets[index].data.push(data);
-		// ToDo: only remove first datapoints if max size is reached
-		if(chartDatasets[index].data.length > 30){
-			chartDatasets[index].data.splice(0, 1);
-		}
+		chartDatasets[index].data = allChartData;
 	}
 }
 
 function putgraphtogether() {
 	if ( (all1 == 1) && (all2 == 1) && (all3 == 1) && (all4 == 1) && (all5 == 1) && (all6 == 1) && (all7 == 1) && (all8 == 1) && (all9 == 1) && (all10 == 1) && (all11 == 1) && (all12 == 1) && (all13 == 1) && (all14 == 1) && (all15 == 1) && (all16 == 1) ){
 		var alldata = all1p + "\n" + all2p + "\n" + all3p + "\n" + all4p + "\n" + all5p + "\n" + all6p + "\n" + all7p + "\n" + all8p + "\n" + all9p + "\n" + all10p + "\n" + all11p + "\n" + all12p + "\n" + all13p + "\n" + all14p + "\n" + all15p + "\n" + all16p;
-		var alldataJson = parseData(alldata);
-		if ( alldataJson.length >= 30 ) {
-			Object.keys(alldataJson[alldataJson.length - 1]).forEach(function(key){
+		allChartData = parseData(alldata);
+		if ( allChartData.length >= 30 ) {
+			Object.keys(allChartData[allChartData.length - 1]).forEach(function(key){
 				if(key != 'time' && key != 'timestamp'){
-					replaceData(key, getColData(alldataJson, key));
+					initDataset(key);
 				}
 			});
 			initialread = 1 ;
-			// after receipt of all 8 first data segments, unsubscribe from these topics to save bandwidth
+			// after receipt of all data segments, unsubscribe from these topics to save bandwidth
 			unsubscribeMqttGraphSegments();
 
 			checkgraphload();
@@ -596,7 +597,7 @@ function putgraphtogether() {
 			all15 = 0;
 			all16 = 0;
 
-			var percent = (alldataJson.length / 30 * 100).toFixed();
+			var percent = (allChartData.length / 30 * 100).toFixed();
 			$('#waitforgraphloadingdiv').text('Erst ca. ' + percent + '% der mindestens benötigten Datenpunkte für den Graph seit Neustart vorhanden.');
 		}
 	}
@@ -604,12 +605,13 @@ function putgraphtogether() {
 
 function updateGraph(dataset) {
 	if(initialread == 1){
-		var datasetJson = parseData(dataset);
-		Object.keys(datasetJson[0]).forEach(function(key){
-			if(key != 'time' && key != 'timestamp'){
-				addData(key, getColData(datasetJson, key)[0]);
-			}
-		});
+		var dataJson = parseData(dataset)[0];
+		// console.log(dataJson);
+		allChartData.push(dataJson);
+		// ToDo: remove data based on configured size
+		if(allChartData.length > 30){
+			allChartData.splice(0, 1);
+		}
 		myLine.update();
 	} else {
 		console.log('graph not yet initialized');
