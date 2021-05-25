@@ -14,7 +14,7 @@ import json
 from threading import Thread
 log_dict= {}
 mqtt_broker_ip = "localhost"
-client = mqtt.Client("openWB-readchargepoint-" + getserial())
+
 try:
     with open('var/www/html/openWB/rmadisk/ipaddress','r') as f:
         myipaddress = str(f.read())
@@ -26,10 +26,15 @@ def getserial():
             if line[0:6] == 'Serial':
                 return line[10:26]
         return "0000000000000000"
+client = mqtt.Client("openWB-readchargepoint-" + getserial())
 def readexternal_openwb(localchargepoint, ip, remotechargepoint):
     try:
         publish.single("openWB/set/isss/heartbeat", "0", hostname=ip)
         publish.single("openWB/set/isss/parentWB", str(myipaddress), hostname=ip)
+        if (remotechargepoint == 2):
+            publish.single("openWB/set/isss/parentCPlp2", str(localchargepoint), hostname=ip)
+        else:
+            publish.single("openWB/set/isss/parentCPlp1", str(localchargepoint), hostname=ip)
         #Handled in set-current.sh
         #phases_to_use=subscribe.simple("openWB/chargepoint/"+str(localchargepoint)+"/set/phases_to_use", hostname="localhost").payload.decode("utf-8")
         #publish.single("openWB/set/isss/U1p3p", str(phases_to_use), hostname=ip)
