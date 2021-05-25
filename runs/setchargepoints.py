@@ -11,8 +11,10 @@ ll=sys.argv[1]
 cpconfig=subscribe.simple("openWB/chargepoint/"+str(chargepoint)+"/config/connection_module/selected", hostname="localhost").payload.decode("utf-8")
 chargepointconfig = json.loads(cpconfig)
 if ( chargepointconfig['selected'] == "external_openwb" ):
-    publish.single("openWB/set/isss/Current", str(ll), hostname=str(chargepointconfig['config']['ip']))
-
+    if ( chargepointconfig['config']['chargepoint'] == "2" ):
+        publish.single("openWB/set/isss/Lp2Current", str(ll), hostname=str(chargepointconfig['config']['ip']))
+    else:
+        publish.single("openWB/set/isss/Current", str(ll), hostname=str(chargepointconfig['config']['ip']))
 
 
 
