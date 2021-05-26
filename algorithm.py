@@ -664,7 +664,7 @@ class control():
         """ prüft die Lademodi, die mit EVU-Überschuss laden, in absteigender Reihenfolge, ob für LP ohne Einspeisungsgrenze noch EVU-Überschuss übrig ist und dann für die LP mit Einspeiungsgrenze.
         """
         try:
-            for mode in self.chargemodes[10:-4]:
+            for mode in self.chargemodes[6:-4]:
                 overhang = self._get_bat_and_evu_overhang()
                 if overhang != 0:
                     if overhang > 0.01:
