@@ -18,6 +18,7 @@ config = configparser.ConfigParser()
 shconfigfile='/var/www/html/openWB/smarthome.ini'
 config.read(shconfigfile)
 numberOfSupportedDevices=9 # limit number of smarthome devices
+lock=threading.Lock()
 
 for i in range(1,(numberOfSupportedDevices+1)):
     try:
