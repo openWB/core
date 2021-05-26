@@ -1,7 +1,6 @@
 """Allgemeine Einstellungen
 """
 
-import data
 import log
 
 
