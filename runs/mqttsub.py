@@ -108,10 +108,10 @@ def on_message(client, userdata, msg):
                     f.write(msg.payload.decode("utf-8"))
                     f.close()
                     #comment out for json cp modul structure
-                    #sendcommand = ["python3 /var/www/html/openWB/runs/setchargepoint.py", msg.payload.decode("utf-8"), str(devicenumb) ]
-                    #subprocess.Popen(sendcommand)
-                    sendcommand = ["/var/www/html/openWB/runs/set-current.sh", msg.payload.decode("utf-8"), str(devicenumb) ]
+                    sendcommand = ["python3 /var/www/html/openWB/runs/setchargepoint.py", msg.payload.decode("utf-8"), str(devicenumb) ]
                     subprocess.Popen(sendcommand)
+                    #sendcommand = ["/var/www/html/openWB/runs/set-current.sh", msg.payload.decode("utf-8"), str(devicenumb) ]
+                    #subprocess.Popen(sendcommand)
                     #client.publish("openWB/chargepoint/"+str(devicenumb)+"/set/current", "", qos=0, retain=True)
                     setTopicCleared = True
             if (( "openWB/set/chargepoint" in msg.topic) and ("get/enabled" in msg.topic)):
@@ -1086,11 +1086,11 @@ def on_message(client, userdata, msg):
                 f = open('/var/www/html/openWB/ramdisk/parentCPlp2', 'w')
                 f.write(msg.payload.decode("utf-8"))
                 f.close()
-        if (msg.topic == "openWB/set/awattar/MaxPriceForCharging"):
-            if (float(msg.payload) >= -50 and float(msg.payload) <=50):
-                f = open('/var/www/html/openWB/ramdisk/etprovidermaxprice', 'w')
-                f.write(msg.payload.decode("utf-8"))
-                f.close()
+            if (msg.topic == "openWB/set/awattar/MaxPriceForCharging"):
+                if (float(msg.payload) >= -50 and float(msg.payload) <=50):
+                    f = open('/var/www/html/openWB/ramdisk/etprovidermaxprice', 'w')
+                    f.write(msg.payload.decode("utf-8"))
+                    f.close()
             # if (msg.topic == "openWB/set/houseBattery/W"):
             if (msg.topic == "openWB/set/bat/1/get/power"):
                 if (float(msg.payload) >= -30000 and float(msg.payload) <= 30000):
