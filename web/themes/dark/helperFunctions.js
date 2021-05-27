@@ -36,6 +36,9 @@ function setInputValue(elementId, value) {
      */
     if ( !isNaN(value) ) {
         var element = $('#' + $.escapeSelector(elementId));
+        if(list = $(element).attr('data-list')){
+            value = parseInt(list.split(',').findIndex(item => item == value));
+        }
         var signCheckboxName = element.data('signcheckbox');
         var signCheckbox = $('#' + signCheckboxName);
         if ( signCheckbox.length == 1 ) {

@@ -346,7 +346,7 @@ class setData():
             elif re.search("^openWB/set/vehicle/template/charge_template/[0-9]+/chargemode/pv_charging/feed_in_limit$", msg.topic) != None:
                 self._validate_value(msg, int, [(0, 1)], pub_json = True)
             elif re.search("^openWB/set/vehicle/template/charge_template/[0-9]+/chargemode/pv_charging/min_current$", msg.topic) != None:
-                self._validate_value(msg, int, [(6, 32)], pub_json = True)
+                self._validate_value(msg, int, [(0,0), (6, 16)], pub_json = True)
             elif re.search("^openWB/set/vehicle/template/charge_template/[0-9]+/chargemode/pv_charging/min_soc$", msg.topic) != None:
                 self._validate_value(msg, int, [(0, 100)], pub_json = True)
             elif re.search("^openWB/set/vehicle/template/charge_template/[0-9]+/chargemode/pv_charging/min_soc_current$", msg.topic) != None:
@@ -449,13 +449,13 @@ class setData():
             elif (re.search("^openWB/set/chargepoint/[1-9][0-9]*/get/charge_state$", msg.topic) != None or
                     re.search("^openWB/set/chargepoint/[1-9][0-9]*/get/plug_state$", msg.topic) != None):
                 self._validate_value(msg, int, [(0, 1)])
-            elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/get/rfid$", msg.topic) != None:
+            elif (re.search("^openWB/set/chargepoint/[1-9][0-9]*/get/rfid$", msg.topic) != None or
+                    re.search("^openWB/set/chargepoint/[0-9]+/get/plug_time$", msg.topic) != None):
                 self._validate_value(msg, int, [(0, None)])
             elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/get/fault_state$", msg.topic) != None:
                 self._validate_value(msg, int, [(0, 2)])
             elif (re.search("^openWB/set/chargepoint/[0-9]+/get/fault_str$", msg.topic) != None or
                     re.search("^openWB/set/chargepoint/[0-9]+/get/state_str$", msg.topic) != None or
-                    re.search("^openWB/set/chargepoint/[0-9]+/get/plug_time$", msg.topic) != None or
                     re.search("^openWB/set/chargepoint/[0-9]+/get/heartbeat$", msg.topic) != None):
                 self._validate_value(msg, str)
             elif (re.search("^openWB/set/chargepoint/template/[1-9][0-9]*/autolock/active$", msg.topic) != None or
