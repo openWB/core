@@ -1746,4 +1746,6 @@ loadvars(){
 	echo -e $tempPubList | python3 runs/mqttpub.py -q 0 -r &
 	runs/pub2mqtt.sh &
 	python3 runs/readchargepoints.py &
+	m3lr=$(curl -s 192.168.40.248/openWB/ramdisk/soc1)
+	mosquitto_pub -r -t openWB/set/vehicle/3/get/soc -m $m3lr
 }
