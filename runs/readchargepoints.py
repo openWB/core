@@ -29,15 +29,15 @@ def getserial():
 client = mqtt.Client("openWB-readchargepoint-" + getserial())
 def readexternal_openwb(localchargepoint, ip, remotechargepoint):
     try:
-        publish.single("openWB/set/isss/heartbeat", "0", hostname=ip)
-        publish.single("openWB/set/isss/parentWB", str(myipaddress), hostname=ip)
+        publish.single("openWB/set/isss/heartbeat", json.dumps(0), hostname=ip)
+        publish.single("openWB/set/isss/parentWB", json.dumps(str(myipaddress)), hostname=ip)
         if (remotechargepoint == 2):
-            publish.single("openWB/set/isss/parentCPlp2", str(localchargepoint), hostname=ip)
+            publish.single("openWB/set/isss/parentCPlp2", json.dumps(str(localchargepoint)), hostname=ip)
         else:
-            publish.single("openWB/set/isss/parentCPlp1", str(localchargepoint), hostname=ip)
+            publish.single("openWB/set/isss/parentCPlp1", json.dumps(str(localchargepoint)), hostname=ip)
         #Handled in set-current.sh
         #phases_to_use=subscribe.simple("openWB/chargepoint/"+str(localchargepoint)+"/set/phases_to_use", hostname="localhost").payload.decode("utf-8")
-        #publish.single("openWB/set/isss/U1p3p", str(phases_to_use), hostname=ip)
+        #publish.single("openWB/set/isss/U1p3p", json.dumps(str(phases_to_use)), hostname=ip)
         log_dict.update({str(localchargepoint) : "No Error"})
 
     except Exception as e:
@@ -73,10 +73,10 @@ client.loop_start()
 time.sleep(8)
 for key in log_dict:
     if log_dict[key] == "No Error":
-        publish.single("openWB/set/chargepoint/"+str(key)+"/get/fault_state", "0", hostname="localhost")
+        publish.single("openWB/set/chargepoint/"+str(key)+"/get/fault_state", json.dumps(0), hostname="localhost")
     else:
-        publish.single("openWB/set/chargepoint/"+str(key)+"/get/fault_state", "1", hostname="localhost")
-    publish.single("openWB/set/chargepoint/"+str(key)+"/get/fault_str", str(log_dict[key]), hostname="localhost")
+        publish.single("openWB/set/chargepoint/"+str(key)+"/get/fault_state", json.dumps(1), hostname="localhost")
+    publish.single("openWB/set/chargepoint/"+str(key)+"/get/fault_str", json.dumps(str(log_dict[key])), hostname="localhost")
 client.disconnect()
 
 
