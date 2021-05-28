@@ -5,11 +5,14 @@ import traceback
 import logging
 
 debug_logger = None
+data_logger = None
 
 
 def setup_logger():
     global debug_logger
     debug_logger = _config_logger("debug")
+    global data_logger
+    data_logger = _config_logger("data")
 
 
 def _config_logger(name):
@@ -30,6 +33,9 @@ def _config_logger(name):
 
 def message_debug_log(level, message):
     _set_message(debug_logger, level, message)
+
+def message_data_log(level, message):
+    _set_message(data_logger, level, message)
 
 
 def _set_message(logger, level, message):

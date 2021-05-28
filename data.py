@@ -40,10 +40,9 @@ def print_dictionaries(data):
     """
     try:
         for key in data:
-            print(key)
             if isinstance(data[key], dict) == False:
-                print(data[key].data)
+                log.message_data_log("debug", key+"\n"+str(data[key].data))
             else:
-                print("Klasse fehlt")
+                log.message_data_log("debug", key+"\n"+"Klasse fehlt")
     except Exception as e:
         log.exception_logging(e)

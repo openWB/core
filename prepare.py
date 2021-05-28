@@ -20,6 +20,7 @@ class prepare():
     def setup_algorithm(self):
         """ bereitet die Daten für den Algorithmus vor und startet diesen.
         """
+        log.message_debug_log("info", "# ***Start*** ")
         self._copy_data()
         self._counter()
         self._check_chargepoints()
@@ -109,7 +110,7 @@ class prepare():
                                 log.message_debug_log("error", "Reservierte Leistung kann nicht 0 sein.")
                             
                             log.message_debug_log("debug", "EV"+str(charging_ev.ev_num)+": Theroretisch benötigter Strom "+str(required_current)+"A, Lademodus "+str(
-                                charging_ev.charge_template.data["chargemode"]["selected"])+", Submodus: "+str(charging_ev.data["control_parameter"]["submode"])+", Prioritaet: "+str(charging_ev.charge_template.data["prio"]))
+                                charging_ev.charge_template.data["chargemode"]["selected"])+", Submodus: "+str(charging_ev.data["control_parameter"]["submode"])+", Prioritaet: "+str(charging_ev.charge_template.data["prio"])+", max. Ist-Strom: "+str(max(cp.data["get"]["current"])))
                             charging_ev.data["control_parameter"]["required_current"] = required_current
                             pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num )+"/control_parameter/required_current", required_current)
                     else:
