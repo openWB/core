@@ -262,6 +262,7 @@ def pub_settings():
     pub.pub("openWB/set/general/chargemode_config/pv_charging/switch_off_soc", 40)
     pub.pub("openWB/set/general/chargemode_config/pv_charging/rundown_power", 1000)
     pub.pub("openWB/set/general/chargemode_config/pv_charging/rundown_soc", 50)
+    pub.pub("openWB/set/general/chargemode_config/pv_charging/charging_power_reserve", 200)
     pub.pub("openWB/set/general/chargemode_config/pv_charging/control_range", [0,230])
     pub.pub("openWB/set/general/chargemode_config/pv_charging/switch_off_threshold", 5)
     pub.pub("openWB/set/general/chargemode_config/pv_charging/switch_off_delay", 60)

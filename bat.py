@@ -112,6 +112,8 @@ class bat:
                         else:
                             self.data["set"]["switch_on_soc_reached"] = False
                             self.data["set"]["charging_power_left"] = 0
+                # Ladeleistungs-Reserve
+                self.data["set"]["charging_power_left"] = self.data["set"]["charging_power_left"] - config["charging_power_reserve"]
             # Wenn der Speicher Vorrang hat, darf die erlaubte Entlade-Leistung zum Laden der EV genutzt werden, wenn der Soc über dem minimalen Entlade-Soc liegt.
             else:
                 if config["rundown_soc"] != 100:
