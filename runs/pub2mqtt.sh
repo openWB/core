@@ -87,3 +87,6 @@ done
 
 #echo "Running Python:"
 echo -e $tempPubList | python3 runs/mqttpub.py -q 0 -r &
+
+sleep 0.5
+mosquitto_pub -r -t openWB/set/loadvarsdone -m 1

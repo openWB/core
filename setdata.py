@@ -66,6 +66,8 @@ class setData():
             self.process_optional_topic(client, userdata, msg)
         elif "openWB/set/counter/" in msg.topic:
             self.process_counter_topic(client, userdata, msg)
+        elif "openWB/set/loadvarsdone" in msg.topic:
+            self._validate_value(msg, int, [(0, 1)])
 
     def getserial(self):
         """ Extract serial from cpuinfo file

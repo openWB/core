@@ -19,11 +19,11 @@ def main():
     char = charge.charge()
     control = algorithm.control()
     prep = prepare.prepare()
+    loadvarsdone = threading.Event()
     lock_ev_template = threading.Lock()
     lock_charge_template = threading.Lock()
     set = setdata.setData(lock_ev_template, lock_charge_template)
-    sub = subdata.subData(lock_ev_template, lock_charge_template)
-    ticker = threading.Event()
+    sub = subdata.subData(lock_ev_template, lock_charge_template, loadvarsdone)
 
     log.setup_logger()
     
@@ -37,19 +37,12 @@ def main():
 
     publishvars2.pub_settings()
 
-    seconds = 10
-    while not ticker.wait(seconds):
+    while loadvarsdone.wait():
+        loadvarsdone.clear()
         try:
             prep.setup_algorithm()
             control.calc_current()
             char.start_charging()
-            if "general" in sub.general_data:
-                if "control_interval" in sub.general_data["general"].data:
-                    seconds = sub.general_data["general"].data["control_interval"]
-                else:
-                    seconds = 10
-            else:
-                seconds = 10
         except Exception as e:
             log.exception_logging(e)
 
