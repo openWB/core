@@ -541,7 +541,15 @@ class control():
             bat_module_data = copy.deepcopy(data.bat_module_data)
             cp_data_old = copy.deepcopy(data.cp_data)
 
-            required_current, phases, overloaded_counters = allocate_power(chargepoint, required_power, required_current, phases)
+            # Wenn bereits geladen wird, nur die Änderung allokieren
+            current_to_allocate = required_current
+            power_to_allocate = required_power
+            max_used_current = max(chargepoint.data["get"]["current"])
+            if max_used_current != 0:
+                current_to_allocate -= max_used_current
+                power_to_allocate -= phases * 230 * max_used_current
+
+            _, overloaded_counters = allocate_power(chargepoint, power_to_allocate, current_to_allocate, phases)
             self._process_data(chargepoint, required_current)
             
             if data.counter_data["all"].data["set"]["loadmanagement"] == True or overloaded_counters != {}:
@@ -909,8 +917,8 @@ def allocate_power(chargepoint, required_power, required_current, phases):
     ------
     required_current: float
         Stromstärke, mit der geladen werden kann
-    phases: int
-        Phasen, mit denen geladen werden kann
+    overloaded_counters: dict
+        Zähler, die überlastet würden
     """
     try:
         bat_overhang = data.bat_module_data["all"].power_for_bat_charging()
@@ -944,7 +952,7 @@ def allocate_power(chargepoint, required_power, required_current, phases):
             loadmanagement_state, overloaded_counters = loadmanagement.loadmanagement_for_cp(chargepoint, remaining_required_power, evu_current, phases)
             if loadmanagement_state == True:
                 required_current = 0
-        return required_current, phases, overloaded_counters
+        return required_current, overloaded_counters
     except Exception as e:
         log.exception_logging(e)
-        return 0, phases, None
+        return 0, None

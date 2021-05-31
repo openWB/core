@@ -487,10 +487,8 @@ class subData():
                     if "get" not in self.counter_data["counter"+index].data:
                         self.counter_data["counter"+index].data["get"]={}
                     self.set_json_payload(self.counter_data["counter"+index].data["get"], msg)
-                elif re.search("^openWB/counter/[0-9]+/config.+$", msg.topic) != None:
-                    if "config" not in self.counter_data["counter"+index].data:
-                        self.counter_data["counter"+index].data["config"]={}
-                    self.set_json_payload(self.counter_data["counter"+index].data["config"], msg)
+                elif re.search("^openWB/counter/[0-9]+/config$", msg.topic) != None:
+                    self.set_json_payload(self.counter_data["counter"+index].data, msg)
             elif re.search("^openWB/counter/.+$", msg.topic) != None:
                 if "all" not in self.counter_data:
                     self.counter_data["all"]=counter.counterAll()

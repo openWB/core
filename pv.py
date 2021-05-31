@@ -161,7 +161,7 @@ class pv():
                     threshold_not_reached = True
         
             if required_power != 0:
-                required_current, _, _ = algorithm.allocate_power(chargepoint, required_power, required_current, phases)
+                required_current, _ = algorithm.allocate_power(chargepoint, required_power, required_current, phases)
             else:
                 required_current = 0
             return required_current, threshold_not_reached

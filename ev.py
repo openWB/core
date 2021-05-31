@@ -126,16 +126,18 @@ class ev():
             log.exception_logging(e)
             return False, "ein interner Fehler aufgetreten ist.", "stop", 0
 
-    def check_state(self, required_current, submode):
+    def check_state(self, required_current, submode, set_current):
         """ prüft, ob sich etwas an den Parametern für die Regelung geändert hat, 
         sodass der LP neu in die Priorisierung eingeordnet werden muss und publsihed die Regelparameter.
 
         Parameter
         ---------
         required_current: int
-            Stromstärke, mit der geladen werden soll
+            neue Stromstärke, mit der geladen werden soll
         submode: str
-            Lademodus, in dem geladen werden soll
+            neuer Lademodus, in dem geladen werden soll
+        set_current: int
+            Soll-Stromstärke
 
         Return
         ------
@@ -146,11 +148,20 @@ class ev():
             mode_changed = False
             # Die benötigte Stromstärke hat sich durch eine Änderung des Lademdous oder der Konfiguration geändert.
             # Der Ladepunkt muss in der Regelung neu priorisiert werden.
-            if (self.data["control_parameter"]["required_current"] != required_current or
-                    self.data["control_parameter"]["chargemode"] != self.charge_template.data["chargemode"]["selected"] or
+            if (self.data["control_parameter"]["chargemode"] != self.charge_template.data["chargemode"]["selected"] or
                     self.data["control_parameter"]["submode"] != submode or
                     self.data["control_parameter"]["prio"] != self.charge_template.data["prio"]):
                 mode_changed = True
+            if self.data["control_parameter"]["required_current"] != required_current:
+                # Wenn im PV-Laden mit übrigem Überschuss geladen wird und dadurch die aktuelle Soll-Stromstärke über der neuen benötigten Stromstärke liegt, 
+                # muss der LP im Algorithmus nicht neu eingeordnet werden, da der LP mit der bisherigen Stormstärke weiter laden kann und sich die benötigte 
+                # Stromstärke nur auf die Reihenfolge innerhalb des Prioritätstupels bezieht und auf dieser Ebene kein LP, der bereits lädt, für einen neu 
+                # hinzugekommenen abgeschaltet werden darf.
+                if ((self.data["control_parameter"]["submode"] == "pv_charging" or self.data["control_parameter"]["chargemode"] == "pv_charging") and 
+                    set_current > self.data["control_parameter"]["required_current"]):
+                    mode_changed = False
+                else:
+                    mode_changed = True
             self.data["control_parameter"]["required_current"] = required_current
             self.data["control_parameter"]["submode"] = submode
             pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/submode", submode)
