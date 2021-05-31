@@ -84,7 +84,7 @@ class prepare():
                         cp.get_phases(submode)
                         # Einhaltung des Minimal- und Maximalstroms prüfen
                         required_current = charging_ev.check_min_max_current(required_current)
-                        mode_changed = charging_ev.check_state(required_current, submode)
+                        mode_changed = charging_ev.check_state(required_current, submode, cp.data["set"]["current"])
                         
                         if message_ev != None:
                             message = "Keine Ladung an LP"+str(cp.cp_num)+", da "+str(message_ev)

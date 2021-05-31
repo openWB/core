@@ -66,6 +66,8 @@ class setData():
             self.process_optional_topic(client, userdata, msg)
         elif "openWB/set/counter/" in msg.topic:
             self.process_counter_topic(client, userdata, msg)
+        elif "openWB/set/loadvarsdone" in msg.topic:
+            self._validate_value(msg, int, [(0, 1)])
 
     def getserial(self):
         """ Extract serial from cpuinfo file
@@ -624,7 +626,8 @@ class setData():
                     re.search("^openWB/set/general/chargemode_config/pv_charging/switch_off_soc$", msg.topic) != None or
                     re.search("^openWB/set/general/chargemode_config/pv_charging/rundown_soc$", msg.topic) != None):
                 self._validate_value(msg, int, [(0, 100)])
-            elif re.search("^openWB/set/general/chargemode_config/pv_charging/rundown_power$", msg.topic) != None:
+            elif (re.search("^openWB/set/general/chargemode_config/pv_charging/rundown_power$", msg.topic) != None or
+                    re.search("^openWB/set/general/chargemode_config/pv_charging/charging_power_reserve$", msg.topic) != None):
                 self._validate_value(msg, int, [(0, None)])
             elif re.search("^openWB/set/general/chargemode_config/[a-z,_]+/phases_to_use$", msg.topic) != None:
                 self._validate_value(msg, int, [(1, 1), (3, 3)])

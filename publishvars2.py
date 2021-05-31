@@ -246,8 +246,7 @@ def pub_settings():
     #hierarchy = [{"id": "counter0", "children": [{"id": "cp1", "children": []}]}]
     pub.pub("openWB/set/counter/get/hierarchy", hierarchy)
     #pub.pub("openWB/set/counter/0/get/current", [0,0,0])
-    pub.pub("openWB/set/counter/0/config/max_consumption", 30000)
-    pub.pub("openWB/set/counter/0/config/max_current", [30, 30, 30])
+    pub.pub("openWB/set/counter/0/config", {"max_current": [30, 30, 30], "max_consumption": 30000})
 
     # bat
     pub.pub("openWB/set/bat/1/config/type", "mqtt")
@@ -262,6 +261,7 @@ def pub_settings():
     pub.pub("openWB/set/general/chargemode_config/pv_charging/switch_off_soc", 40)
     pub.pub("openWB/set/general/chargemode_config/pv_charging/rundown_power", 1000)
     pub.pub("openWB/set/general/chargemode_config/pv_charging/rundown_soc", 50)
+    pub.pub("openWB/set/general/chargemode_config/pv_charging/charging_power_reserve", 200)
     pub.pub("openWB/set/general/chargemode_config/pv_charging/control_range", [0,230])
     pub.pub("openWB/set/general/chargemode_config/pv_charging/switch_off_threshold", 5)
     pub.pub("openWB/set/general/chargemode_config/pv_charging/switch_off_delay", 60)

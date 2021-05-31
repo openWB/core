@@ -15,6 +15,7 @@ import graph
 import log
 import optional
 import prepare
+import pub
 import pv
 import stats
 
@@ -36,9 +37,10 @@ class subData():
     optional_data={}
     graph_data={}
 
-    def __init__(self, lock_ev_template, lock_charge_template):
+    def __init__(self, lock_ev_template, lock_charge_template, loadvarsdone):
         self.lock_ev_template = lock_ev_template
         self.lock_charge_template = lock_charge_template
+        self.loadvarsdone = loadvarsdone
 
     def sub_topics(self):
         """ abonniert alle Topics.
@@ -59,6 +61,7 @@ class subData():
         client.message_callback_add("openWB/optional/#", self.process_optional_topic)
         client.message_callback_add("openWB/counter/#", self.process_counter_topic)
         client.message_callback_add("openWB/graph/#", self.process_graph_topic)
+        client.message_callback_add("openWB/loadvarsdone", self.process_loadvarsdone)
 
         client.connect(mqtt_broker_ip, 1883)
         client.loop_forever()
@@ -487,10 +490,8 @@ class subData():
                     if "get" not in self.counter_data["counter"+index].data:
                         self.counter_data["counter"+index].data["get"]={}
                     self.set_json_payload(self.counter_data["counter"+index].data["get"], msg)
-                elif re.search("^openWB/counter/[0-9]+/config.+$", msg.topic) != None:
-                    if "config" not in self.counter_data["counter"+index].data:
-                        self.counter_data["counter"+index].data["config"]={}
-                    self.set_json_payload(self.counter_data["counter"+index].data["config"], msg)
+                elif re.search("^openWB/counter/[0-9]+/config$", msg.topic) != None:
+                    self.set_json_payload(self.counter_data["counter"+index].data, msg)
             elif re.search("^openWB/counter/.+$", msg.topic) != None:
                 if "all" not in self.counter_data:
                     self.counter_data["all"]=counter.counterAll()
@@ -532,3 +533,13 @@ class subData():
     #     """
     #     """
     #     pass
+
+    def process_loadvarsdone(self, client, userdata, msg):
+        try:
+            if json.loads(str(msg.payload.decode("utf-8"))) == 1:
+                self.loadvarsdone.set()
+                pub.pub("openWB/loadvarsdone", 0)
+            else:
+                self.loadvarsdone.clear()
+        except Exception as e:
+            log.exception_logging(e)
