@@ -6,12 +6,7 @@ def pub_settings():
     """
     # cp1
     pub.pub("openWB/set/chargepoint/1/set/manual_lock", False)
-    pub.pub("openWB/set/chargepoint/1/config/name", "LP1")
-    pub.pub("openWB/set/chargepoint/1/config/template", 1)
-    pub.pub("openWB/set/chargepoint/1/config/connected_phases", 3)
-    pub.pub("openWB/set/chargepoint/1/config/phase_1", 0)
-    pub.pub("openWB/set/chargepoint/1/config/auto_phase_switch_hw", True)
-    pub.pub("openWB/set/chargepoint/1/config/control_pilot_interruption_hw", True)
+    pub.pub("openWB/set/chargepoint/1/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 0, "auto_phase_switch_hw": True, "control_pilot_interruption_hw": True})
     pub.pub("openWB/set/chargepoint/1/get/rfid", 1234)
     # cpt1
     pub.pub("openWB/set/chargepoint/template/1/autolock/1/frequency/selected", "daily")
@@ -24,12 +19,7 @@ def pub_settings():
 
     # # cp2
     pub.pub("openWB/set/chargepoint/2/set/manual_lock", False)
-    pub.pub("openWB/set/chargepoint/2/config/name", "LP2")
-    pub.pub("openWB/set/chargepoint/2/config/template", 2)
-    pub.pub("openWB/set/chargepoint/2/config/connected_phases", 3)
-    pub.pub("openWB/set/chargepoint/2/config/phase_1", 0)
-    pub.pub("openWB/set/chargepoint/2/config/auto_phase_switch_hw", True)
-    pub.pub("openWB/set/chargepoint/2/config/control_pilot_interruption_hw", False)
+    pub.pub("openWB/set/chargepoint/2/config", {"name": "LP2", "template": 2, "connected_phases": 3, "phase_1": 0, "auto_phase_switch_hw": True, "control_pilot_interruption_hw": False})
     pub.pub("openWB/set/chargepoint/2/get/rfid", 1234)
     # # cpt2
     pub.pub("openWB/set/chargepoint/template/2/autolock/1/frequency/selected", "daily")
@@ -42,12 +32,7 @@ def pub_settings():
 
     # #cp3
     pub.pub("openWB/set/chargepoint/3/set/manual_lock", False)
-    pub.pub("openWB/set/chargepoint/3/config/name", "LP3")
-    pub.pub("openWB/set/chargepoint/3/config/template", 3)
-    pub.pub("openWB/set/chargepoint/3/config/connected_phases", 3)
-    pub.pub("openWB/set/chargepoint/3/config/phase_1", 0)
-    pub.pub("openWB/set/chargepoint/3/config/auto_phase_switch_hw", True)
-    pub.pub("openWB/set/chargepoint/3/config/control_pilot_interruption_hw", False)
+    pub.pub("openWB/set/chargepoint/3/config", {"name": "LP3", "template": 3, "connected_phases": 3, "phase_1": 0, "auto_phase_switch_hw": True, "control_pilot_interruption_hw": False})
     pub.pub("openWB/set/chargepoint/3/get/rfid", 1234)
     # # cpt3
     pub.pub("openWB/set/chargepoint/template/3/autolock/1/frequency/selected", "daily")
@@ -240,6 +225,9 @@ def pub_settings():
 
     # pv
     #pub.pub("openWB/set/pv/1/get/counter", 500)
+    pub.pub("openWB/set/pv/1/get/daily_yield", 10)
+    pub.pub("openWB/set/pv/1/get/monthly_yield", 10)
+    pub.pub("openWB/set/pv/1/get/yearly_yield", 10)
 
     # counter
     hierarchy = [{"id": "counter0", "children": [{"id": "cp1", "children": []}, {"id": "cp2", "children": []}, {"id": "cp3", "children": []}]}]
@@ -249,7 +237,9 @@ def pub_settings():
     pub.pub("openWB/set/counter/0/config", {"max_current": [30, 30, 30], "max_consumption": 30000})
 
     # bat
-    pub.pub("openWB/set/bat/1/config/type", "mqtt")
+    pub.pub("openWB/set/bat/1/config", {"type": "mqtt"})
+    pub.pub("openWB/set/bat/1/get/daily_yield_export", 10)
+    pub.pub("openWB/set/bat/1/get/daily_yield_import", 10)
 
     # general
     pub.pub("openWB/set/general/chargemode_config/unbalanced_load", False)

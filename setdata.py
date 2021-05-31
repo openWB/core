@@ -13,9 +13,9 @@ import subdata
 
 class setData():
  
-    def __init__(self, lock_ev_template, lock_charge_template):
-        self.lock_ev_template = lock_ev_template
-        self.lock_charge_template = lock_charge_template
+    def __init__(self, event_ev_template, event_charge_template):
+        self.event_ev_template = event_ev_template
+        self.event_charge_template = event_charge_template
 
     def set_data(self):
         """ abonniert alle set-Topics.
@@ -48,11 +48,9 @@ class setData():
         """
         if "openWB/set/vehicle/" in msg.topic:
             if "openWB/set/vehicle/template/ev_template/" in msg.topic:
-                while self.lock_ev_template.locked() == True:
-                    time.sleep(0.01)
+                self.event_ev_template.wait(5)
             elif "openWB/set/vehicle/template/charge_template/" in msg.topic:
-                while self.lock_charge_template.locked() == True:
-                    time.sleep(0.01)
+                self.event_charge_template.wait(5)
             self.process_vehicle_topic(client, userdata, msg)
         elif "openWB/set/chargepoint/" in msg.topic:
             self.process_chargepoint_topic(client, userdata, msg)
@@ -132,13 +130,13 @@ class setData():
                         # aktuelles json-Objekt liegt in subdata
                         index = re.search('(?!/)([0-9]*)(?=/|$)', msg.topic).group()
                         if "charge_template" in msg.topic:
-                            lock = self.lock_charge_template
+                            event = self.event_charge_template
                             if "ct"+str(index) in subdata.subData.ev_charge_template_data:
                                 template = copy.deepcopy(subdata.subData.ev_charge_template_data["ct"+str(index)].data)
                             else:
                                 template = {}
                         elif "ev_template" in msg.topic:
-                            lock = self.lock_ev_template
+                            event = self.event_ev_template
                             if "et"+str(index) in subdata.subData.ev_template_data:
                                 template = copy.deepcopy(subdata.subData.ev_template_data["et"+str(index)].data)
                             else:
@@ -152,7 +150,7 @@ class setData():
                         topic = topic.replace('set/', '', 1)
                         pub.pub(topic, template)
                         pub.pub(msg.topic, "")
-                        lock.acquire(blocking=True)
+                        event.clear()
                 else:
                     pub.pub(msg.topic, "")
         except Exception as e:
