@@ -601,21 +601,21 @@ function processChargepointMessages(mqttmsg, mqttpayload) {
 		// "fault_str" ToDo
 	}
 	else if ( mqttmsg.match( /^openwb\/chargepoint\/[1-9][0-9]*\/get\/connected_vehicle\/soc_config$/i ) ) {
-		// { "socconfigured", "manual" }
+		// { "configured", "manual" }
 		var configData = JSON.parse(mqttpayload);
 		var index = getIndex(mqttmsg);  // extract number between two / /
 		var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent row element for charge point
-		// "socconfigured" bool
+		// "configured" bool
 		var elementIsConfigured = $(parent).find('.chargepoint-socconfigured');  // now get parents respective child element
 		var elementIsNotConfigured = $(parent).find('.chargepoint-socnotconfigured');  // now get parents respective child element
-		if (configData.socconfigured == true) {
+		if (configData.configured == true) {
 			$(elementIsNotConfigured).addClass('hide');
 			$(elementIsConfigured).removeClass('hide');
 		} else {
 			$(elementIsNotConfigured).removeClass('hide');
 			$(elementIsConfigured).addClass('hide');
 		}
-		// "manual"
+		// "manual" bool
 		if (configData.manual == true) {
 			$(elementIsConfigured).addClass('manualSoC');
 			$(elementIsConfigured).find('.chargepoint-manualsocsymbol').removeClass('hide');
@@ -912,55 +912,16 @@ function processGraphMessages(mqttmsg, mqttpayload) {
 		}
 		checkgraphload();
 	}
-	// else if ( mqttmsg.match( /^openwb\/graph\/[1-9][0-9]*alllivevalues$/i ) ) {
-	// 	// graph messages if local connection
-	// 	var index = mqttmsg.match(/(\d+)(?!.*\d)/g)[0];  // extract last match = number from mqttmsg
-	// 	// now call functions or set variables corresponding to the index
-	// 	if (initialread == 0) {
-	// 		window['all'+index+'p'] = mqttpayload;
-	// 		window['all'+index] = 1;
-	// 		putgraphtogether();
-	// 	}
-	// }
 	else if ( mqttmsg.match( /^openwb\/graph\/alllivevaluesJson[1-9][0-9]*$/i ) ) {
 		// graph messages if local connection
 		var index = mqttmsg.match(/(\d+)$/g)[0];  // extract last match = number from mqttmsg
 		// now call functions or set variables corresponding to the index
-		if (initialread == 0) {
+		if (initialread == 0 && window['all'+index] == 0) {
 			window['all'+index+'p'] = mqttpayload;
 			window['all'+index] = 1;
 			putgraphtogether();
 		}
 	}
-	// else if ( mqttmsg == 'openWB/graph/lastlivevalues' ) {
-	// 	// graph messages if local connection
-	// 	if ( initialread > 0) {
-	// 		updateGraph(mqttpayload);
-	// 	}
-	// 	if (graphrefreshcounter > 60) {
-	// 		// reload graph completety
-	// 		initialread = 0;
-	// 		all1 = 0;
-	// 		all2 = 0;
-	// 		all3 = 0;
-	// 		all4 = 0;
-	// 		all5 = 0;
-	// 		all6 = 0;
-	// 		all7 = 0;
-	// 		all8 = 0;
-	// 		all9 = 0;
-	// 		all10 = 0;
-	// 		all11 = 0;
-	// 		all12 = 0;
-	// 		all13 = 0;
-	// 		all14 = 0;
-	// 		all15 = 0;
-	// 		all16 = 0;
-	// 		graphrefreshcounter = 0;
-	// 		subscribeMqttGraphSegments();
-	// 	}
-	// 	graphrefreshcounter += 1;
-	// }
 	else if ( mqttmsg == 'openWB/graph/lastlivevaluesJson' ) {
 		// graph messages if local connection
 		if ( initialread > 0) {
