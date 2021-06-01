@@ -390,11 +390,14 @@ class chargeTemplate():
             if len(self.data["time_charging"]) > 1:
                 plan = timecheck.check_plans_timeframe(self.data["time_charging"])
                 if plan != None:
+                    self.data["time_charging"]["current_plan"] = plan
                     return self.data["time_charging"][plan]["current"], "time_charging", message
                 else:
+                    self.data["time_charging"]["current_plan"] = ""
                     message = "kein Zeitfenster aktiv ist."
                     return 0, "stop", message
             else:
+                self.data["time_charging"]["current_plan"] = ""
                 message = "keine Zeitfenster konfiguriert sind."
                 return 0, "stop", message
         except Exception as e:
@@ -485,9 +488,12 @@ class chargeTemplate():
                 Therotisch benötigter Strom, Ladmodus(soll geladen werden, auch wenn kein PV-Strom zur Verfügung steht)
         """
         try:
+            smallest_remaining_time = 0
+            plan_data = {"start": -1}
             message = None
             battery_capacity = ev_template.data["battery_capacity"]
             max_phases = ev_template.data["max_phases"]
+            start = -1 # Es wurde noch kein Plan geprüft.
             for plan in self.data["chargemode"]["scheduled_charging"]:
                 if self.data["chargemode"]["scheduled_charging"][plan]["active"] == True:
                     try:
@@ -509,41 +515,53 @@ class chargeTemplate():
                             duration = required_wh/(available_current*230)
                             start, remaining_time = timecheck.check_duration(
                                 self.data["chargemode"]["scheduled_charging"][plan], duration)
-                            if start == 1: # Ladung sollte jetzt starten
-                                return available_current, "instant_charging", message
-                            elif start == 2:  # weniger als die berechnete Zeit verfügbar
-                                required_current = required_wh/(remaining_time*230)
-                                if required_current >= max_current:
-                                    available_current = max_current
-                                else:
-                                    available_current = required_current
-                                return available_current, "instant_charging", message
-                            else:
-                                # Liegt der Zieltermin innerhalb der nächsten 24h?
-                                if timecheck.check_timeframe(self.data["chargemode"]["scheduled_charging"][plan], 24) == True:
-                                    # Wenn Elektronische Tarife aktiv sind, prüfen, ob jetzt ein günstiger Zeitpunkt zum Laden ist.
-                                    if data.optional_data["optional"].data["et"]["active"] == True:
-                                        hourlist = data.optional_data["optional"].et_get_loading_hours(
-                                            duration)
-                                        if timecheck.is_list_valid(hourlist) == True:
-                                            return available_current, "instant_charging", message
-                                        else:
-                                            message = "da kein günstiger Zeitpunkt zum preisbasierten Laden ist. Falls vorhanden, wird mit EVU-Überschuss geladen."
-                                            return ev_template.data["min_current"], "pv_charging", message
-                                    else:
-                                        message = "da noch Zeit bis zum Zieltermmin ist. Falls vorhanden, wird mit EVU-Überschuss geladen."
-                                        return ev_template.data["min_current"], "pv_charging", message
-                                else:
-                                    message = "da noch mehr als ein Tag bis zum Zieltermmin ist. "
-                                    return 0, "stop", message
+                            # Erster Plan
+                            if (start == plan_data["start"] and remaining_time <= smallest_remaining_time) or start > plan_data["start"]:
+                                smallest_remaining_time = remaining_time
+                                plan_data["plan"] = plan
+                                plan_data["available_current"] = available_current
+                                plan_data["start"] = start
+                                plan_data["required_wh"] = required_wh
+                                plan_data["max_current"] = max_current
                         else:
                             message = "da der Ziel-Soc bereits erreicht wurde."
                             return 0, "stop", message
                     except Exception as e:
                         log.exception_logging(e)
             else:
-                message = "da keine Ziel-Termine konfiguriert sind."
-                return 0, "stop", message
+                if start == -1:
+                    self.data["chargemode"]["scheduled_charging"]["current_plan"] = ""
+                    message = "da keine Ziel-Termine konfiguriert sind."
+                    return 0, "stop", message
+                else:
+                    self.data["chargemode"]["scheduled_charging"]["current_plan"] = plan_data["plan"]
+                    if plan_data["start"] == 1: # Ladung sollte jetzt starten
+                        return plan_data["available_current"], "instant_charging", message
+                    elif plan_data["start"] == 2:  # weniger als die berechnete Zeit verfügbar
+                        required_current = plan_data["required_wh"]/(smallest_remaining_time*230)
+                        if required_current >= plan_data["max_current"]:
+                            plan_data["available_current"] = plan_data["max_current"]
+                        else:
+                            plan_data["available_current"] = required_current
+                        return plan_data["available_current"], "instant_charging", message
+                    else:
+                        # Liegt der Zieltermin innerhalb der nächsten 24h?
+                        if timecheck.check_timeframe(self.data["chargemode"]["scheduled_charging"][plan_data["plan"]], 24) == True:
+                            # Wenn Elektronische Tarife aktiv sind, prüfen, ob jetzt ein günstiger Zeitpunkt zum Laden ist.
+                            if data.optional_data["optional"].data["et"]["active"] == True:
+                                hourlist = data.optional_data["optional"].et_get_loading_hours(
+                                    duration)
+                                if timecheck.is_list_valid(hourlist) == True:
+                                    return plan_data["available_current"], "instant_charging", message
+                                else:
+                                    message = "da kein günstiger Zeitpunkt zum preisbasierten Laden ist. Falls vorhanden, wird mit EVU-Überschuss geladen."
+                                    return ev_template.data["min_current"], "pv_charging", message
+                            else:
+                                message = "da noch Zeit bis zum Zieltermmin ist. Falls vorhanden, wird mit EVU-Überschuss geladen."
+                                return ev_template.data["min_current"], "pv_charging", message
+                        else:
+                            message = "da noch mehr als ein Tag bis zum Zieltermmin ist. "
+                            return 0, "stop", message
         except Exception as e:
             log.exception_logging(e)
             return 0, "stop", "da ein interner Fehler aufgetreten ist."

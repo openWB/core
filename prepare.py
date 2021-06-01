@@ -79,8 +79,8 @@ class prepare():
                                 cp.data["set"]["current"] = 0
                         cp.data["set"]["charging_ev"] = charging_ev
 
-                        self._pub_connected_vehicle(charging_ev, cp.cp_num)
                         state, message_ev, submode, required_current = charging_ev.get_required_current()
+                        self._pub_connected_vehicle(charging_ev, cp.cp_num)
                         cp.get_phases(submode)
                         # Einhaltung des Minimal- und Maximalstroms prüfen
                         required_current = charging_ev.check_min_max_current(required_current)
@@ -143,10 +143,17 @@ class prepare():
                 "fault_str": vehicle.data["soc"]["get"]["fault_str"]}
         info_obj = {"id": vehicle.ev_num,
                 "name": vehicle.data["name"]}
+        if vehicle.charge_template.data["chargemode"]["selected"] == "time_charging":
+            current_plan = vehicle.charge_template.data["time_charging"]["current_plan"]
+        elif vehicle.charge_template.data["chargemode"]["selected"] == "scheduled_charging":
+            current_plan = vehicle.charge_template.data["chargemode"]["scheduled_charging"]["current_plan"]
+        else:
+            current_plan = ""
         config_obj = {"charge_template": vehicle.charge_template.ct_num,
                 "ev_template": vehicle.ev_template.et_num,
                 "chargemode": vehicle.charge_template.data["chargemode"]["selected"],
                 "priority": vehicle.charge_template.data["prio"],
+                "current_plan": current_plan,
                 "average_consumption": vehicle.ev_template.data["average_consump"]}
 
         pub.pub("openWB/chargepoint/"+str(cp_num)+"/get/connected_vehicle/soc_config", soc_config_obj)
