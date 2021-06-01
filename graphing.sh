@@ -74,7 +74,7 @@ graphing(){
 	dataline="$dataline}"
 	printf "$dataline\n" >> /var/www/html/openWB/ramdisk/all-live.json
 	echo "$(tail -$livegraph /var/www/html/openWB/ramdisk/all-live.json)" > /var/www/html/openWB/ramdisk/all-live.json
-	mosquitto_pub -t openWB/graph/alllivevaluesJson1 -r -m "$(cat /var/www/html/openWB/ramdisk/all-live.json | tail -n 50)" &
+	mosquitto_pub -t openWB/graph/alllivevaluesJson -r -m "$(cat /var/www/html/openWB/ramdisk/all-live.json | tail -n 50)" &
 	mosquitto_pub -t openWB/graph/lastlivevaluesJson -r -m "$dataline" &
 	mosquitto_pub -t openWB/system/lastlivevaluesJson -r -m "$dataline" &
 	mosquitto_pub -t openWB/graph/alllivevaluesJson1 -r -m "$(< ramdisk/all-live.json tail -n +"0" | head -n "$((50 - 0))")" &

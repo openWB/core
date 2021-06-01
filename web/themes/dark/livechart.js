@@ -66,22 +66,22 @@ var all13 = 0;
 var all14 = 0;
 var all15 = 0;
 var all16 = 0;
-var all1p;
-var all2p;
-var all3p;
-var all4p;
-var all5p;
-var all6p;
-var all7p;
-var all8p;
-var all9p;
-var all10p;
-var all11p;
-var all12p;
-var all13p;
-var all14p;
-var all15p;
-var all16p;
+var all1p = "";
+var all2p = "";
+var all3p = "";
+var all4p = "";
+var all5p = "";
+var all6p = "";
+var all7p = "";
+var all8p = "";
+var all9p = "";
+var all10p = "";
+var all11p = "";
+var all12p = "";
+var all13p = "";
+var all14p = "";
+var all15p = "";
+var all16p = "";
 
 var hidehaus;
 var myLine;
@@ -525,7 +525,6 @@ function setvisibility(datarr,hidevar,hidevalue,booldisplay){
 }
 
 function getDatasetIndex(datasetId){
-	var found = false;
 	for(dataset = 0; dataset < chartDatasets.length; dataset++){
 		if(chartDatasets[dataset].parsing.yAxisKey == datasetId){
 			return dataset;
@@ -574,11 +573,12 @@ function putgraphtogether() {
 					initDataset(key);
 				}
 			});
-			initialread = 1 ;
 			// after receipt of all data segments, unsubscribe from these topics to save bandwidth
 			unsubscribeMqttGraphSegments();
 
 			checkgraphload();
+			// now we are ready to receive small updates for graph data
+			initialread = 1 ;
 		} else {
 			all1 = 0;
 			all2 = 0;
@@ -604,7 +604,7 @@ function putgraphtogether() {
 }  // end putgraphtogether
 
 function updateGraph(dataset) {
-	if(initialread == 1){
+	if(initialread == 1 && myLine != undefined){
 		var dataJson = parseData(dataset)[0];
 		// console.log(dataJson);
 		allChartData.push(dataJson);
