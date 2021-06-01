@@ -37,9 +37,9 @@ class subData():
     optional_data={}
     graph_data={}
 
-    def __init__(self, lock_ev_template, lock_charge_template, loadvarsdone):
-        self.lock_ev_template = lock_ev_template
-        self.lock_charge_template = lock_charge_template
+    def __init__(self, event_ev_template, event_charge_template, loadvarsdone):
+        self.event_ev_template = event_ev_template
+        self.event_charge_template = event_charge_template
         self.loadvarsdone = loadvarsdone
 
     def sub_topics(self):
@@ -185,8 +185,7 @@ class subData():
                     if "ct"+index not in self.ev_charge_template_data:
                         self.ev_charge_template_data["ct"+index]=ev.chargeTemplate(int(index))
                     self.ev_charge_template_data["ct"+index].data = json.loads(str(msg.payload.decode("utf-8")))
-                    if self.lock_charge_template.locked() == True:
-                        self.lock_charge_template.release()
+                    self.event_charge_template.set()
             elif re.search("^openWB/vehicle/template/ev_template/[0-9]+$", msg.topic) != None:
                 if json.loads(str(msg.payload.decode("utf-8")))=="":
                     if "et"+index in self.ev_template_data:
@@ -195,8 +194,7 @@ class subData():
                     if "et"+index not in self.ev_template_data:
                         self.ev_template_data["et"+index]=ev.evTemplate(int(index))
                     self.ev_template_data["et"+index].data = json.loads(str(msg.payload.decode("utf-8")))
-                    if self.lock_ev_template.locked() == True:
-                        self.lock_ev_template.release()
+                    self.event_ev_template.set()
         except Exception as e:
             log.exception_logging(e)
 
@@ -230,10 +228,8 @@ class subData():
                     if "get" not in self.cp_data["cp"+index].data:
                         self.cp_data["cp"+index].data["get"]={}
                     self.set_json_payload(self.cp_data["cp"+index].data["get"], msg)
-                elif re.search("^openWB/chargepoint/[1-9][0-9]*/config/.+$", msg.topic) != None:
-                    if "config" not in self.cp_data["cp"+index].data:
-                        self.cp_data["cp"+index].data["config"]={}
-                    self.set_json_payload(self.cp_data["cp"+index].data["config"], msg)
+                elif re.search("^openWB/chargepoint/[1-9][0-9]*/config$", msg.topic) != None:
+                    self.set_json_payload(self.cp_data["cp"+index].data, msg)
             elif re.search("^openWB/chargepoint/template/[1-9][0-9]*$", msg.topic) != None:
                 index=self.get_index(msg.topic)
                 if json.loads(str(msg.payload.decode("utf-8")))==1:
@@ -342,10 +338,8 @@ class subData():
                     self.bat_module_data["all"] = bat.bat()
                 if "bat"+index not in self.bat_module_data:
                     self.bat_module_data["bat"+index]=bat.batModule()
-                if re.search("^openWB/bat/[1-9][0-9]*/config/.+$", msg.topic) != None:
-                    if "config" not in self.bat_module_data["bat"+index].data:
-                        self.bat_module_data["bat"+index].data["config"]={}
-                    self.set_json_payload(self.bat_module_data["bat"+index].data["config"], msg)
+                if re.search("^openWB/bat/[1-9][0-9]*/config$", msg.topic) != None:
+                    self.set_json_payload(self.bat_module_data["bat"+index].data, msg)
                 elif re.search("^openWB/bat/[1-9][0-9]*/get/.+$", msg.topic) != None:
                     if "get" not in self.bat_module_data["bat"+index].data:
                         self.bat_module_data["bat"+index].data["get"]={}

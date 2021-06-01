@@ -20,10 +20,12 @@ def main():
     control = algorithm.control()
     prep = prepare.prepare()
     loadvarsdone = threading.Event()
-    lock_ev_template = threading.Lock()
-    lock_charge_template = threading.Lock()
-    set = setdata.setData(lock_ev_template, lock_charge_template)
-    sub = subdata.subData(lock_ev_template, lock_charge_template, loadvarsdone)
+    event_ev_template = threading.Event()
+    event_ev_template.set()
+    event_charge_template = threading.Event()
+    event_charge_template.set()
+    set = setdata.setData(event_ev_template, event_charge_template)
+    sub = subdata.subData(event_ev_template, event_charge_template, loadvarsdone)
 
     log.setup_logger()
     
