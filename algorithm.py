@@ -750,9 +750,17 @@ class control():
                                             phases = chargepoint.data["get"]["phases_in_use"]
                                         else:
                                             phases = chargepoint.data["set"]["charging_ev"].data["control_parameter"]["phases"]
-                                        # Einhalten des Mindeststroms des Lademodus und Maximalstroms des EV
                                         current_diff_per_phase = diff_per_ev / 230 / phases
-                                        current = charging_ev.check_min_max_current_for_pv_charging(current_diff_per_phase+chargepoint.data["set"]["current"], phases)
+                                        # Um max. 2A pro Zyklus regeln
+                                        if (-2-charging_ev.ev_template.data["nominal_difference"]) < (current_diff_per_phase+chargepoint.data["set"]["current"] - max(chargepoint.data["get"]["current"])) < (2+charging_ev.ev_template.data["nominal_difference"]):
+                                            current = current_diff_per_phase+chargepoint.data["set"]["current"]
+                                        else:
+                                            if current_diff_per_phase < 0:
+                                                current = max(chargepoint.data["get"]["current"]) - 2
+                                            else:
+                                                current = max(chargepoint.data["get"]["current"]) + 2
+                                        # Einhalten des Mindeststroms des Lademodus und Maximalstroms des EV
+                                        current = charging_ev.check_min_max_current_for_pv_charging(current, phases)
                                         power_diff = phases * 230 * (current - chargepoint.data["set"]["current"])
                                         
                                         if power_diff != 0:
