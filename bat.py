@@ -34,6 +34,7 @@ class bat:
         self.data={}
         pub.pub("openWB/set/bat/config/configured", False)
         pub.pub("openWB/set/bat/set/charging_power_left", 0)
+        pub.pub("openWB/set/bat/set/hybrid_system_detected", False)
         if "get" not in self.data:
             self.data["get"]={}
         if "set" not in self.data:
@@ -43,6 +44,7 @@ class bat:
         self.data["config"]["configured"] = False
         self.data["set"]["charging_power_left"] = 0
         self.data["set"]["switch_on_soc_reached"] = 0
+        self.data["set"]["hybrid_system_detected"] = False
 
     def setup_bat(self):
         """ prüft, ob mind ein Speicher vorhanden ist und berechnet die Summentopics.
@@ -205,12 +207,12 @@ class bat:
             if self.data["config"]["configured"] == True:
                 self.data["set"]["charging_power_left"] -= required_power
                 if self.data["set"]["charging_power_left"] < 0:
-                    self.data["set"]["charging_power_left"] += required_power
                     log.message_debug_log("error", "Es wurde versucht, mehr Speicher-Leistung zu allokieren, als geladen wird.")
-                    return False
-            return True
+                    return required_power
+            return 0
         except Exception as e:
             log.exception_logging(e)
+            return required_power
 
     def put_stats(self):
         """ Publishen und Loggen der verbleibnden PV-Leistung und reservierten Leistung

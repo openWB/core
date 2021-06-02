@@ -298,11 +298,11 @@ class pv():
                     # Es kann nicht immer mit einem LP so viel Leistung freigegeben werden, dass die verfügbare Leistung positiv ist.
                     if required_power > 0:
                         log.message_debug_log("error", "Es wurde versucht, mehr EVU-Überschuss zu allokieren, als vorhanden ist.")
-                    return False
-            return True
+                    return required_power
+            return 0
         except Exception as e:
             log.exception_logging(e)
-            return False
+            return required_power
 
     def put_stats(self):
         """ Publishen und Loggen des verbleibnden EVU-Überschusses und reservierten Leistung
