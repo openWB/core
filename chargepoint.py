@@ -55,7 +55,7 @@ class chargepoint():
         self.set_current_prev = 0 # set current aus dem vorherigen Zyklus, um zu wissen, ob am Ende des Zyklus die Ladung freigegeben wird (für Control-Pilot-Unterbrechung)
         #pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/current", 0)
         pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/autolock_state", 0)
-        pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/charging_ev", -1)
+        #pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/charging_ev", -1)
         pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/energy_to_charge", 0)
         self.data["set"]["charging_ev"] = -1
         self.data["set"]["autolock_state"] = 0

@@ -767,18 +767,18 @@ class control():
                                             # Laden nur mit der Leistung, die vorher der Speicher bezogen hat
                                             if ( bat_overhang - power_diff) > 0:
                                                 if data.bat_module_data["all"].allocate_bat_power(power_diff) == False:
-                                                    current = 0
+                                                    current = chargepoint.data["set"]["current"]
                                             # Laden mit EVU-Überschuss und der Leistung, die vorher der Speicher bezogen hat
                                             elif bat_overhang > 0:
                                                 pv_power = power_diff - bat_overhang
                                                 if data.pv_data["all"].allocate_evu_power(pv_power) == False:
-                                                    current = 0
+                                                    current = chargepoint.data["set"]["current"]
                                                 elif data.bat_module_data["all"].allocate_bat_power(bat_overhang) == False:
-                                                    current = 0
+                                                    current = chargepoint.data["set"]["current"]
                                             # Laden nur mit EVU-Überschuss bzw. Reduktion des EVU-Bezugs
                                             else:
                                                 if data.pv_data["all"].allocate_evu_power(power_diff) == False:
-                                                    current = 0
+                                                    current = chargepoint.data["set"]["current"]
 
                                         chargepoint.data["set"]["current"] = current
                                         log.message_debug_log("info", "Überschussladen an LP: "+str(chargepoint.cp_num)+", Ladestrom: "+str(current)+"A, Phasen: "+str(phases)+", Ladeleistung: "+str(phases * 230 * current)+"W")
