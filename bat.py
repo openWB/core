@@ -4,6 +4,25 @@ Wenn EVU_Überschuss vorhanden ist, lädt der Speicher. Wenn EVU-Bezug vorhanden
 entlädt der Speicher, sodass kein Netzbezug stattfindet. Wenn das EV Vorrang hat, wird 
 eine Ladung gestartet und der Speicher hört automatisch auf zu laden, da sonst durch 
 das Laden des EV Bezug statt finden würde.
+
+Sonderfall Hybrid-Systeme:
+Wenn wir ein Hybrid Wechselrichter Speicher system haben das besteht aus:
+20 kW PV
+15kW Wechselrichter
+Batterie DC
+Kann es derzeit passieren das die PV 20kW erzeugt, die Batterie mit 5kW geladen wird und 15kW ins Netz gehen.
+Zieht die openWB nun Überschuss (15kW Überschuss + 5kW Batterieladung = 20kW) kommt es zu 5kW Bezug weil der Wechselrichter nur 15kW abgeben kann.
+
+aktuell wird halt bei ev vorrang die Batterieladeleistung hinzugerechnet. weil die openWB von ausgeht das die dann das laden aufhört und diese leistung eignetlich überschuss ist.
+Blöd halt wenn der WEchselrichter die nicht zur verfügung stellen kann.
+Heißt aktuell denkt die openWB "0 Watt überschuss" weil 5kW bezogen werden, aber eben auch 5kW in die Batterie gehen (die ihre ladung aber nicht drosselt)
+
+du musst halt zum "antesten" bezug generieren damit die Batterie entsprechend gegenregelt. erst wenn sie das nach x sekunden nicht tut kannst von ausgehen da gibt es eine Grenze
+
+__Wie schnell regelt denn ein Speicher?
+Je nach Speicher 1-4 Sekunden.
+__Muss dann immer ein bisschen Überschuss über sein und wenn dieser im nächsten Zyklus noch da ist, kann der LP hochgeregelt werden. Wenn nicht muss der LP runtergeregelt werden?
+Üblicherweise reicht es so zu regeln das rund 50 Watt Einspeisung da sind, dann "nimmt" der Speicher sich die von alleine
 """
 
 import data
@@ -67,6 +86,7 @@ class bat:
             pub.pub("openWB/set/bat/config/configured", self.data["config"]["configured"])
             pub.pub("openWB/set/bat/set/charging_power_left", self.data["set"]["charging_power_left"])
             pub.pub("openWB/set/bat/set/switch_on_soc_reached", self.data["set"]["switch_on_soc_reached"])
+            pub.pub("openWB/set/bat/set/hybrid_system_detected", self.data["set"]["hybrid_system_detected"])
         except Exception as e:
             log.exception_logging(e)
 
@@ -76,6 +96,15 @@ class bat:
         try:
             config = data.general_data["general"].data["chargemode_config"]["pv_charging"]
             if config["bat_prio"] == False:
+                # Wenn der Speicher lädt und gleichzeitg Bezug da ist, sind entweder die Werte sehr ungünstig abgefragt worden 
+                # (deshalb wird noch ein Zyklus gewartet) oder es liegt ein Hybrid-System vor.
+                if data.counter_data["counter0"].data["get"]["power_all"] > 0:
+                    if self.data["set"]["hybrid_system_detected"] == True:
+                        self.data["set"]["charging_power_left"] = max(self.data["set"]["charging_power_left"] - data.counter_data["counter0"].data["get"]["power_all"], 0)
+                    else:
+                        self.data["set"]["hybrid_system_detected"] = True
+                elif self.data["set"]["hybrid_system_detected"] == True:
+                    self.data["set"]["hybrid_system_detected"] = False
                 # Laderegelung wurde noch nicht freigegeben
                 if self.data["set"]["switch_on_soc_reached"] == False:
                     if config["switch_on_soc"] != 0:
