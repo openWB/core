@@ -546,7 +546,8 @@ class setData():
         """
         try:
             if (re.search("^openWB/set/bat/config/configured$", msg.topic) != None or 
-                    re.search("^openWB/set/bat/set/switch_on_soc_reached$", msg.topic) != None):
+                    re.search("^openWB/set/bat/set/switch_on_soc_reached$", msg.topic) != None or
+                    re.search("^openWB/set/bat/set/hybrid_system_detected$", msg.topic) != None):
                 self._validate_value(msg, int, [(0, 1)])
             elif re.search("^openWB/set/bat/set/charging_power_left$", msg.topic) != None:
                 self._validate_value(msg, int)
