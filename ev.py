@@ -148,10 +148,6 @@ class ev():
             mode_changed = False
             # Die benötigte Stromstärke hat sich durch eine Änderung des Lademdous oder der Konfiguration geändert.
             # Der Ladepunkt muss in der Regelung neu priorisiert werden.
-            if (self.data["control_parameter"]["chargemode"] != self.charge_template.data["chargemode"]["selected"] or
-                    self.data["control_parameter"]["submode"] != submode or
-                    self.data["control_parameter"]["prio"] != self.charge_template.data["prio"]):
-                mode_changed = True
             if self.data["control_parameter"]["required_current"] != required_current:
                 # Wenn im PV-Laden mit übrigem Überschuss geladen wird und dadurch die aktuelle Soll-Stromstärke über der neuen benötigten Stromstärke liegt, 
                 # muss der LP im Algorithmus nicht neu eingeordnet werden, da der LP mit der bisherigen Stormstärke weiter laden kann und sich die benötigte 
