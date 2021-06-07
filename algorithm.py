@@ -269,8 +269,9 @@ class control():
                         # Ladung darf gestoppt werden.
                         if prevent_stop == False:
                             taken_current = cp.data["set"]["current"]*-1
-                            remaining_current_overshoot -= taken_current
-                            required_current = 0
+                            remaining_current_overshoot += taken_current
+                            # In diesem Zyklus darf nicht mehr geladen werden.
+                            cp.data["set"]["charging_ev"].data["control_parameter"]["required_current"] = 0
                             self._process_data(cp, 0)
                             log.message_debug_log("debug", "Ladung an LP"+str(cp.cp_num)+" gestoppt.")
                         else:
@@ -478,7 +479,7 @@ class control():
                             charging_ev = chargepoint.data["set"]["charging_ev"]
                             #set-> current enthält einen Wert, wenn das EV in diesem Zyklus eingeschaltet werden soll, aktuell aber noch nicht lädt.
                             if "current" in chargepoint.data["set"]:
-                                if chargepoint.data["set"]["current"] != 0:
+                                if chargepoint.data["set"]["current"] != 0 or charging_ev.data["control_parameter"]["required_current"] == 0:
                                     continue
                             if( (charging_ev.charge_template.data["prio"] == prio) and 
                                 (charging_ev.charge_template.data["chargemode"]["selected"] == mode or mode == None) and 
@@ -570,11 +571,19 @@ class control():
                 remaining_current_overshoot = overloaded_counters[0][1][0]
                 # LP mit niedrigerer Priorität reduzieren und ggf. stoppen
                 for mode in reversed(self.chargemodes[(current_mode+1):-4]):
-                    remaining_current_overshoot = self._down_regulation(mode, chargepoints, remaining_current_overshoot, overloaded_counters[0][1][1], prevent_stop = False)
+                    # Runterregeln
+                    remaining_current_overshoot = self._down_regulation(mode, chargepoints, remaining_current_overshoot, overloaded_counters[0][1][1], prevent_stop = True)
                     if remaining_current_overshoot == 0:
                         # LP kann nun wie gewünscht eingeschaltet werden
                         self._process_data(chargepoint, chargepoint.data["set"]["charging_ev"].data["control_parameter"]["required_current"])
                         break
+                    else:
+                        # Abschalten
+                        remaining_current_overshoot = self._down_regulation(mode, chargepoints, remaining_current_overshoot, overloaded_counters[0][1][1], prevent_stop = False)
+                        if remaining_current_overshoot == 0:
+                            # LP kann nun wie gewünscht eingeschaltet werden
+                            self._process_data(chargepoint, chargepoint.data["set"]["charging_ev"].data["control_parameter"]["required_current"])
+                            break
                 else:
                     # Ladepunkt, der gestartet werden soll reduzieren
                     remaining_current_overshoot = self._perform_down_regulation([chargepoint], remaining_current_overshoot, overloaded_counters[0][1][1], prevent_stop = True)

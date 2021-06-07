@@ -70,11 +70,14 @@ def check_plans_timeframe(plans, hours=None):
     state = False
     try:
         for plan in plans:
-            # Nur Keys mit dem Namen plan + Plannummer berücksichtigen
-            if "plan" in plan:
-                state = check_timeframe(plans[plan], hours)
-                if state == True:
-                    return plan
+            # Nur Keys mit Plannummer berücksichtigen
+            try:
+                if isinstance(int(plan), int) == True:
+                    state = check_timeframe(plans[plan], hours)
+                    if state == True:
+                        return plan
+            except:
+                pass
         else:
             return None
     except Exception as e:
