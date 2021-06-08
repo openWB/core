@@ -521,7 +521,7 @@ class setData():
                     re.search("^openWB/set/pv/[1-9][0-9]*/get/energy$", msg.topic) != None):
                 self._validate_value(msg, float, [(0, None)])
             elif re.search("^openWB/set/pv/[1-9][0-9]*/get/counter$", msg.topic) != None:
-                self._validate_value(msg, int, [(None, 0)])
+                self._validate_value(msg, int, [(0, None)])
             elif re.search("^openWB/set/pv/[1-9][0-9]*/get/power$", msg.topic) != None:
                 self._validate_value(msg, int, [(None, 0)])
             elif re.search("^openWB/set/pv/[1-9][0-9]*/get/actual_power_phase$", msg.topic) != None:
