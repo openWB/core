@@ -26,6 +26,10 @@ class charge():
                         # LP, an denen nicht geladen werden darf
                         chargepoint.data["set"]["current"] = 0
                         pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/set/current", 0)
+                    if chargepoint.data["get"]["state_str"] != None:
+                        pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/get/state_str", chargepoint.data["get"]["state_str"])
+                    else:
+                        pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/get/state_str", "Ladevorgang läuft...")
         except Exception as e:
             log.exception_logging(e)
 
