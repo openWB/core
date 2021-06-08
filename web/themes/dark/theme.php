@@ -387,8 +387,8 @@
 			</div>
 
 			<div class="accordion" id="chargepointaccordion">
-				<div class="chargepoint-card card border-dark text-grey" data-cp="1" data-chargetemplate="0" data-evtemplate="0">
-					<div class="card-header bg-lightgrey collapsed" data-toggle="collapse" data-target="#collapseChargepoint1">
+				<div class="chargepoint-card card border-dark text-grey chargepoint-template hide" data-cp="0" data-chargetemplate="0" data-evtemplate="0">
+					<div class="card-header bg-lightgrey collapsed" data-toggle="collapse" data-target="#collapseChargepoint0">
 						<div class="form-row">
 							<div class="col-3">
 								<span class="fas fa-xs hide autolockConfiguredCp"></span>
@@ -424,7 +424,7 @@
 							</div>
 						</div>
 					</div>
-					<div id="collapseChargepoint1" data-parent="#chargepointaccordion" class="card-body collapse">
+					<div id="collapseChargepoint0" data-parent="#chargepointaccordion" class="card-body collapse">
 						<div class="form-group">
 							<div class="form-row my-1 alert alert-info">
 								<div class="col">
@@ -502,9 +502,9 @@
 											<div class="col-md-8">
 												<div class="form-row form-group mb-1 vaRow">
 													<div class="col">
-														<input type="range" class="chargepoint-instantchargecurrent form-control-range rangeInput" id="currentInstantChargeCp1" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/instant_charging/current" min="6" max="32" step="1">
+														<input type="range" class="chargepoint-instantchargecurrent form-control-range rangeInput" id="currentInstantChargeCp0" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/instant_charging/current" min="6" max="32" step="1">
 													</div>
-													<label for="currentInstantChargeCp1" class="col-form-label valueLabel" data-suffix="A">? A</label>
+													<label for="currentInstantChargeCp0" class="col-form-label valueLabel" data-suffix="A">? A</label>
 												</div>
 											</div>
 										</div>
@@ -512,7 +512,7 @@
 											<div class="col">
 												<label class="col-form-label">Begrenzung</label>
 											</div>
-											<div class="col-md-8 btn-group btn-group-toggle chargepoint-instantchargelimitselected" id="limitInstantChargeCp1" data-name="limitCp" data-toggle="buttons" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/instant_charging/limit/selected">
+											<div class="col-md-8 btn-group btn-group-toggle chargepoint-instantchargelimitselected" id="limitInstantChargeCp0" data-name="limitCp" data-toggle="buttons" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/instant_charging/limit/selected">
 												<label class="btn btn-outline-info btn-toggle">
 													<input type="radio" name="limitCp" data-option="none"> keine
 												</label>
@@ -532,9 +532,9 @@
 												<div class="col-md-8">
 													<div class="form-row form-group mb-1 vaRow">
 														<div class="col">
-															<input type="range" class="chargepoint-instantchargelimitsoc form-control-range rangeInput" id="soclimitCp1" min="5" max="100" step="5" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/instant_charging/limit/soc">
+															<input type="range" class="chargepoint-instantchargelimitsoc form-control-range rangeInput" id="soclimitCp0" min="5" max="100" step="5" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/instant_charging/limit/soc">
 														</div>
-														<label for="soclimitCp1" class="col-form-label valueLabel" data-suffix="%">? %</label>
+														<label for="soclimitCp0" class="col-form-label valueLabel" data-suffix="%">? %</label>
 													</div>
 												</div>
 											</div>
@@ -545,9 +545,9 @@
 												<div class="col-md-8">
 													<div class="form-row form-group mb-1 vaRow">
 														<div class="col">
-															<input type="range" class="chargepoint-instantchargelimitamount form-control-range rangeInput" id="amountlimitCp1" min="1" max="50" step="1" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/instant_charging/limit/amount">
+															<input type="range" class="chargepoint-instantchargelimitamount form-control-range rangeInput" id="amountlimitCp0" min="1" max="50" step="1" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/instant_charging/limit/amount">
 														</div>
-														<label for="amountlimitCp1" class="col-form-label valueLabel" data-suffix="kWh">? kWh</label>
+														<label for="amountlimitCp0" class="col-form-label valueLabel" data-suffix="kWh">? kWh</label>
 													</div>
 												</div>
 											</div>
@@ -570,9 +570,9 @@
 											<div class="col-md-8">
 												<div class="form-row form-group mb-1 vaRow">
 													<div class="col">
-														<input type="range" class="chargepoint-pvchargemincurrent form-control-range rangeInput" id="minCurrentPvCp1" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/min_current" min="0" max="11" step="1" data-list="0,6,7,8,9,10,11,12,13,14,15,16">
+														<input type="range" class="chargepoint-pvchargemincurrent form-control-range rangeInput" id="minCurrentPvCp0" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/min_current" min="0" max="11" step="1" data-list="0,6,7,8,9,10,11,12,13,14,15,16">
 													</div>
-													<label for="minCurrentPvCp1" class="col-form-label valueLabel" data-suffix="A">? A</label>
+													<label for="minCurrentPvCp0" class="col-form-label valueLabel" data-suffix="A">? A</label>
 												</div>
 											</div>
 										</div>
@@ -583,9 +583,9 @@
 											<div class="col-md-8">
 												<div class="form-row form-group mb-1 vaRow">
 													<div class="col">
-														<input type="range" class="chargepoint-pvchargeminsoc form-control-range rangeInput" id="minSocPvCp1" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/min_soc" min="0" max="99" step="1">
+														<input type="range" class="chargepoint-pvchargeminsoc form-control-range rangeInput" id="minSocPvCp0" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/min_soc" min="0" max="99" step="1">
 													</div>
-													<label for="minSocPvCp1" class="col-form-label valueLabel" data-suffix="%">? %</label>
+													<label for="minSocPvCp0" class="col-form-label valueLabel" data-suffix="%">? %</label>
 												</div>
 											</div>
 										</div>
@@ -596,9 +596,9 @@
 											<div class="col-md-8">
 												<div class="form-row form-group mb-1 vaRow">
 													<div class="col">
-														<input type="range" class="chargepoint-pvchargeminsoccurrent form-control-range rangeInput" id="minSocCurrentPvCp1" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/min_soc_current" min="6" max="16" step="1">
+														<input type="range" class="chargepoint-pvchargeminsoccurrent form-control-range rangeInput" id="minSocCurrentPvCp0" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/min_soc_current" min="6" max="16" step="1">
 													</div>
-													<label for="minSocCurrentPvCp1" class="col-form-label valueLabel" data-suffix="A">? A</label>
+													<label for="minSocCurrentPvCp0" class="col-form-label valueLabel" data-suffix="A">? A</label>
 												</div>
 											</div>
 										</div>
@@ -609,15 +609,45 @@
 											<div class="col-md-8">
 												<div class="form-row form-group mb-1 vaRow">
 													<div class="col">
-														<input type="range" class="chargepoint-pvchargemaxsoc form-control-range rangeInput" id="maxSocPvCp1" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/max_soc" min="1" max="100" step="1">
+														<input type="range" class="chargepoint-pvchargemaxsoc form-control-range rangeInput" id="maxSocPvCp0" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/max_soc" min="1" max="100" step="1">
 													</div>
-													<label for="maxSocPvCp1" class="col-form-label valueLabel" data-suffix="%">? %</label>
+													<label for="maxSocPvCp0" class="col-form-label valueLabel" data-suffix="%">? %</label>
 												</div>
 											</div>
 										</div>
 									</div>
 									<div class="chargemode-options chargemode-option-scheduled_charging">
-										<h3>Einstellungen für "Zielladen"</h3>
+										<div class="form-row vaRow mb-1">
+											<div class="col">
+												<h3 class="mb-0">Einstellungen für "Zielladen"</h3>
+											</div>
+											<div class="col-2 text-right">
+												<button type="button" class="btn btn-sm btn-secondary">
+													<i class="fas fa-cogs"></i>
+												</button>
+											</div>
+										</div>
+										<!--
+										<div class="form-row mb-1" data-plan="1">
+											<div class="col">
+												<div class="form-row">
+													<div class="col">
+														<span class="chargepoint-schedulename">#Name des Plans#</span>
+													</div>
+													<div class="col-lg-6">
+														<i class="fas fa-calendar-alt"></i> <span class="chargepoint-schedulefrequencyselected">#Turnus#</span>
+														<i class="fas fa-calendar-day"></i> <span class="chargepoint-scheduledate">#Datum#</span>
+														<i class="fas fa-clock"></i> <span class="chargepoint-scheduletime">#Zeit#</span>
+														<i class="fas fa-car-battery"></i> <span class="chargepoint-schedulesoc">#SoC#</span>
+													</div>
+												</div>
+											</div>
+											<div class="col-4 text-right">
+												<input class="chargepoint-scheduleactive" type="checkbox" data-toggle="toggle" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/scheduled_charging/active" data-on="An" data-off="Aus" data-onstyle="success" data-offstyle="danger" data-size="sm" data-style="w-100">
+											</div>
+										</div>
+										-->
+										<!-- sample row -->
 									</div>
 								</div>
 							</div>
