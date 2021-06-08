@@ -63,7 +63,7 @@ class chargepoint():
         self.data["set"]["energy_to_charge"] = 0
 
     def _is_grid_protection_active(self):
-        """ prüft, ob der Netzschutz aktiv ist und alle LP gestoppt werden müssen.
+        """ prüft, ob der Netzschutz aktiv ist und alle Ladepunkt gestoppt werden müssen.
 
         Return
         ------
@@ -76,20 +76,20 @@ class chargepoint():
             if data.general_data["general"].data["grid_protection_configured"] == True:
                 if data.general_data["general"].data["grid_protection_active"] == False:
                     state = False
-                    message = "Ladung an LP"+self.cp_num+" moeglich."
+                    message = None
                 else:
                     state = True
-                    message = "LP"+self.cp_num+" gesperrt, da der Netzschutz aktiv ist."
+                    message = "Ladepunkt gesperrt, da der Netzschutz aktiv ist."
             else:
                 state = False
-                message = "Ladung an LP"+self.cp_num+" moeglich."
+                message = None
             return state, message
         except Exception as e:
             log.exception_logging(e)
-            return True, "Keine Ladung an LP"+self.cp_num+", da ein interner Fehler aufgetreten ist."
+            return True, "Keine Ladung, da ein interner Fehler aufgetreten ist."
 
     def _is_cp_available(self):
-        """ prüft, ob sich der LP in der vorgegebenen Zeit zurückgemeldet hat.
+        """ prüft, ob sich der Ladepunkt in der vorgegebenen Zeit zurückgemeldet hat.
 
         Return
         ------
@@ -102,14 +102,14 @@ class chargepoint():
             if True:
             #if self.data["get"]["fault_state"] == 0:
                 state = True
-                message = "Ladung an LP"+self.cp_num+" moeglich."
+                message = None
             else:
                 state = False
-                message = "LP"+self.cp_num+" gesperrt, da sich der LP nicht innerhalb der vorgegebenen Zeit zurueckgemeldet hat."
+                message = "Ladepunkt gesperrt, da sich der Ladepunkt nicht innerhalb der vorgegebenen Zeit zurueckgemeldet hat."
             return state, message
         except Exception as e:
             log.exception_logging(e)
-            return False, "Keine Ladung an LP"+self.cp_num+", da ein interner Fehler aufgetreten ist."
+            return False, "Keine Ladung, da ein interner Fehler aufgetreten ist."
 
     def _is_autolock_active(self):
         """ ruft die Funktion der Template-Klasse auf.
@@ -124,13 +124,13 @@ class chargepoint():
         try:
             state = self.template.autolock(self.data["set"]["autolock_state"], self.data["get"]["charge_state"], self.cp_num)
             if state == True:
-                message = "Keine Ladung an LP"+self.cp_num+", da Autolock aktiv ist."
+                message = "Keine Ladung, da Autolock aktiv ist."
             else:
-                message = "Ladung an LP"+self.cp_num+" moeglich."
+                message = None
             return state, message
         except Exception as e:
             log.exception_logging(e)
-            return True, "Keine Ladung an LP"+self.cp_num+", da ein interner Fehler aufgetreten ist."
+            return True, "Keine Ladung, da ein interner Fehler aufgetreten ist."
 
     def _is_manual_lock_active(self):
         """ prüft, ob der Ladepunkt manuell gesperrt wurde.
@@ -145,13 +145,13 @@ class chargepoint():
         try:
             state = self.data["set"]["manual_lock"]
             if state == True:
-                message = "Keine Ladung an LP"+self.cp_num+", da der LP manuell gesperrt wurde."
+                message = "Keine Ladung, da der Ladepunkt manuell gesperrt wurde."
             else:
-                message = "Ladung an LP"+self.cp_num+" moeglich."
+                message = None
             return state, message
         except Exception as e:
             log.exception_logging(e)
-            return True, "Keine Ladung an LP"+self.cp_num+", da ein interner Fehler aufgetreten ist."
+            return True, "Keine Ladung, da ein interner Fehler aufgetreten ist."
 
     def _is_ev_plugged(self):
         """ prüft, ob ein EV angesteckt ist
@@ -166,21 +166,23 @@ class chargepoint():
         try:
             state = self.data["get"]["plug_state"]
             if state == False:
-                message = "Keine Ladung an LP"+self.cp_num+", da kein Auto angesteckt ist."
+                message = "Keine Ladung, da kein Auto angesteckt ist."
             else:
-                message = "Ladung an LP"+self.cp_num+" moeglich."
+                message = None
             return state, message
         except Exception as e:
             log.exception_logging(e)
-            return False, "Keine Ladung an LP"+self.cp_num+", da ein interner Fehler aufgetreten ist."
+            return False, "Keine Ladung, da ein interner Fehler aufgetreten ist."
 
     def get_state(self):
         """prüft alle Bedingungen und ruft die EV-Logik auf.
 
         Return
         ------
-        0..x: Nummer des zugeordneten EV
-        None: Ladepunkt nicht verfügbar
+        int : 0..x/ -1
+            Nummer des zugeordneten EV / Ladepunkt nicht verfügbar
+        message:
+            Info-Text des Ladepunkts
         """
         try:
             # Für Control-Pilot-Unterbrechung set current merken.
@@ -188,7 +190,7 @@ class chargepoint():
                 self.set_current_prev = 0
             else:
                 self.set_current_prev = self.data["set"]["current"]
-            message = "Keine Ladung an LP"+self.cp_num+", da ein Fehler aufgetreten ist."
+            message = "Keine Ladung, da ein Fehler aufgetreten ist."
             charging_possbile = False
             state, message = self._is_grid_protection_active()
             if state == False:
@@ -223,20 +225,20 @@ class chargepoint():
                 return -1, message
         except Exception as e:
             log.exception_logging(e)
-            return -1
+            return -1, message
 
     def initiate_control_pilot_interruption(self):
         """ prüft, ob eine Control Pilot- Unterbrechung erforderlich ist und führt diese durch.
         """
         try:
             charging_ev = self.data["set"]["charging_ev"]
-            # Unterstützt der LP die CP-Unterbrechung und benötigt das Auto eine CP-Unterbrechung?
+            # Unterstützt der Ladepunkt die CP-Unterbrechung und benötigt das Auto eine CP-Unterbrechung?
             if self.data["config"]["control_pilot_interruption_hw"] == True and charging_ev.ev_template.data["control_pilot_interruption"] == True:
                 # Wird die Ladung gestartet?
                 if self.set_current_prev == 0 and self.data["set"]["current"] != 0:
                     self.data["set"]["perform_control_pilot_interruption"] = charging_ev.ev_template.data["control_pilot_interruption_duration"]
                     pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/perform_control_pilot_interruption", charging_ev.ev_template.data["control_pilot_interruption_duration"])
-                    log.message_debug_log("debug", "Control-Pilot-Unterbrechung an LP"+str(self.cp_num)+" fuer "+str(charging_ev.ev_template.data["control_pilot_interruption_duration"])+"s angestoßen.")
+                    log.message_debug_log("debug", "Control-Pilot-Unterbrechung an Ladepunkt"+str(self.cp_num)+" fuer "+str(charging_ev.ev_template.data["control_pilot_interruption_duration"])+"s angestoßen.")
         except Exception as e:
             log.exception_logging(e)
 
@@ -252,7 +254,7 @@ class chargepoint():
                 if self.data["config"]["auto_phase_switch_hw"] == True and self.data["get"]["charge_state"] == True:
                     pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/phases_to_use", self.data["set"]["charging_ev"].data["control_parameter"]["phases"])
                 else:
-                    log.message_debug_log("error", "Phasenumschaltung an LP"+str(self.cp_num)+" nicht möglich.")
+                    log.message_debug_log("error", "Phasenumschaltung an Ladepunkt"+str(self.cp_num)+" nicht möglich.")
         except Exception as e:
             log.exception_logging(e)
 
@@ -290,7 +292,7 @@ class chargepoint():
             log.exception_logging(e)
 
 class cpTemplate():
-    """ Vorlage für einen LP.
+    """ Vorlage für einen Ladepunkt.
     """
 
     def __init__(self):
@@ -313,7 +315,7 @@ class cpTemplate():
             Ladung aktiv/nicht aktiv
 
         cp_num : str
-            LP-Nummer
+            Ladepunkt-Nummer
 
         Return
         ------
@@ -376,7 +378,7 @@ class cpTemplate():
             log.exception_logging(e)
 
     def autolock_enable_after_charging_end(self, autolock_state, topic_path):
-        """Wenn kein Strom für den LP übrig ist, muss Autolock ggf noch aktiviert werden.
+        """Wenn kein Strom für den Ladepunkt übrig ist, muss Autolock ggf noch aktiviert werden.
 
         Parameter
         ---------
@@ -390,7 +392,7 @@ class cpTemplate():
             log.exception_logging(e)
 
     def get_ev(self, rfid, cp_num):
-        """ermittelt das dem LP zugeordnete EV
+        """ermittelt das dem Ladepunkt zugeordnete EV
         """
         ev_num = -1
         try:

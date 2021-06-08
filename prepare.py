@@ -87,7 +87,7 @@ class prepare():
                         mode_changed = charging_ev.check_state(required_current, submode, cp.data["set"]["current"])
                         
                         if message_ev != None:
-                            message = "Keine Ladung an LP"+str(cp.cp_num)+", da "+str(message_ev)
+                            message = "Keine Ladung, da "+str(message_ev)
                         log.message_debug_log("debug", "Ladepunkt "+cp.cp_num+", EV: "+cp.data["set"]["charging_ev"].data["name"]+" (EV-Nr."+str(vehicle)+")")
                         
                         # Die benötigte Stromstärke hat sich durch eine Änderung des Lademdous oder der Konfiguration geändert. Die Zuteilung entsprechend der Priorisierung muss neu geprüft werden.
@@ -115,8 +115,9 @@ class prepare():
                             pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num )+"/control_parameter/required_current", required_current)
                     else:
                         cp.data["set"]["charging_ev"] = vehicle
-                    pub.pub("openWB/set/chargepoint/"+str(cp.cp_num)+"/get/state_str", message)
-                    log.message_debug_log("info", message)
+                    if message != None:
+                        log.message_debug_log("info", "LP "+str(cp.cp_num)+": "+message)
+                    cp.data["get"]["state_str"] = message
             except Exception as e:
                 log.exception_logging(e)
         if "all" not in data.cp_data:

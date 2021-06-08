@@ -241,6 +241,7 @@ class control():
         remaining_current_overshoot: int
             Verbleibende Überlastung
         """
+        message = None
         try:
             if len(preferenced_chargepoints) == 0:
                 # Es gibt keine Ladepunkte in diesem Lademodus, die noch nicht laden oder die noch gestoppt werden können.
@@ -273,7 +274,7 @@ class control():
                             # In diesem Zyklus darf nicht mehr geladen werden.
                             cp.data["set"]["charging_ev"].data["control_parameter"]["required_current"] = 0
                             self._process_data(cp, 0)
-                            log.message_debug_log("debug", "Ladung an LP"+str(cp.cp_num)+" gestoppt.")
+                            message = "Das Lastmanagement hat den Ladevorgang gestoppt."
                         else:
                             continue
                     else:
@@ -285,7 +286,7 @@ class control():
                             remaining_current_overshoot = 0
                         required_current = considered_current+taken_current
                         self._process_data(cp, required_current)
-                        log.message_debug_log("debug", "Ladung an LP"+str(cp.cp_num)+" um "+str(taken_current)+"A auf "+str(required_current)+"A angepasst.")
+                        message = "Das Lastmanagement hat den Ladestrom um "+str(round(taken_current, 2))+"A auf "+str(round(required_current, 2))+"A angepasst."
                     adapted_power = taken_current * 230 * phases
                     # Werte aktualisieren
                     loadmanagement.loadmanagement_for_cp(cp, adapted_power, taken_current, phases)
@@ -298,6 +299,9 @@ class control():
                         break
                     else:
                         max_current_overshoot = remaining_current_overshoot
+                if message != None:
+                    cp.data["get"]["state_str"] = message
+                    log.message_debug_log("debug", "LP "+str(cp.cp_num)+": "+message)
                 return remaining_current_overshoot
         except Exception as e:
             log.exception_logging(e)
@@ -314,6 +318,7 @@ class control():
         mode=mode_tuple[0]
         submode = mode_tuple[1]
         prio = mode_tuple[2]
+        message = None
         try:
             # LP, der abgeschaltet werden soll
             preferenced_chargepoints = []
@@ -369,17 +374,24 @@ class control():
                             data.pv_data = pv_data_old
                             data.bat_module_data = bat_module_data
                             data.cp_data = cp_data_old
+                            message = "Das Lastmanagement hat den Ladestrom um "+str(round((missing_current), 2))+"A angepasst."
+                            # Beim Wiederherstellen der Kopie wird die Adresse der Kopie zugewiesen, sodass die Adresse des LP aktualisiert werden muss,
+                            # um Änderungen in der Klasse vorzunehmen, die das data-Modul referenziert.
+                            chargepoint = data.cp_data["cp"+str(chargepoint.cp_num)]
                         # Es kann nur ein Teil des fehlenden Ladestroms hochgeregelt werden.
                         else:
                             required_power = 230 * phases * undo_missing_current
                             # Werte aktualisieren
                             loadmanagement.loadmanagement_for_cp(cp, required_power, undo_missing_current, phases)
                             self._process_data(cp, cp.data["set"]["current"] + missing_current + undo_missing_current)
-                            log.message_debug_log("debug", "Ladung an LP"+str(cp.cp_num)+" um "+str(missing_current + undo_missing_current)+"A angepasst.")
+                            message = "Das Lastmanagement hat den Ladestrom um "+str(round((missing_current + undo_missing_current), 2))+"A angepasst."
                     # Zuvor fehlender Ladestrom kann nun genutzt werden
                     else:
                         self._process_data(cp, cp.data["set"]["current"] + missing_current)
-                        log.message_debug_log("debug", "Ladung an LP"+str(cp.cp_num)+" um "+str(missing_current)+"A angepasst.")
+                        message = "Das Lastmanagement hat den Ladestrom um "+str(round(missing_current, 2))+"A angepasst."
+                    if message != None:
+                        cp.data["get"]["state_str"] = message
+                        log.message_debug_log("debug", "LP "+str(cp.cp_num)+": "+message)
                 data.counter_data["counter0"].print_stats()
         except Exception as e:
             log.exception_logging(e)
@@ -447,7 +459,9 @@ class control():
                                 data.general_data["general"].get_phases_chargemode("pv_charging") == 0):
                             # Gibt die Stromstärke und Phasen zurück, mit denen nach der Umschaltung geladen werden soll. 
                             # Falls keine Umschaltung erforderlich ist, werden Strom und Phasen, die übergeben wurden, wieder zurückgegeben.
-                            phases, current = charging_ev.auto_phase_switch(charging_ev.data["control_parameter"]["required_current"], charging_ev.data["control_parameter"]["phases"], chargepoint.data["get"]["current"])
+                            phases, current, message = charging_ev.auto_phase_switch(chargepoint.cp_num, charging_ev.data["control_parameter"]["required_current"], charging_ev.data["control_parameter"]["phases"], chargepoint.data["get"]["current"])
+                            if message != None:
+                                chargepoint.data["get"]["state_str"] = message
                             # Nachdem im Automatikmodus die Anzahl Phasen bekannt ist, Einhaltung des Maximalstroms prüfen.
                             required_current = charging_ev.check_min_max_current(current)
                             charging_ev.data["control_parameter"]["required_current"] = required_current
@@ -597,9 +611,14 @@ class control():
                         data.pv_data = pv_data_old
                         data.bat_module_data = bat_module_data
                         data.cp_data = cp_data_old
+                        # Beim Wiederherstellen der Kopie wird die Adresse der Kopie zugewiesen, sodass die Adresse des LP aktualisiert werden muss,
+                        # um Änderungen in der Klasse vorzunehmen, die das data-Modul referenziert.
+                        chargepoint = data.cp_data["cp"+str(chargepoint.cp_num)]
                         # keine weitere Zuteilung
-                        log.message_debug_log("info", "Keine Ladung an LP"+str(chargepoint.cp_num)+", da das Reduzieren/Abschalten der anderen Ladepunkte nicht ausreicht.")
+                        message = "Keine Ladung, da das Reduzieren/Abschalten der anderen Ladepunkte nicht ausreicht."
+                        log.message_debug_log("info", "LP "+str(chargepoint.cp_num)+": "+message)
                         log.message_debug_log("debug", "Wiederherstellen des Zustands, bevor LP"+str(chargepoint.cp_num)+" betrachtet wurde.")
+                        chargepoint.data["get"]["state_str"] = message
             else:
                 (log.message_debug_log("info", "LP: "+str(chargepoint.cp_num)+", Ladestrom: "+str(chargepoint.data["set"]["current"])+"A, Phasen: "+str(chargepoint.data["set"]["charging_ev"].data["control_parameter"]["phases"])+
                 ", Ladeleistung: "+str((chargepoint.data["set"]["charging_ev"].data["control_parameter"]["phases"]*chargepoint.data["set"]["current"]*230))+"W"))
