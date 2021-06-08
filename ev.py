@@ -285,8 +285,8 @@ class ev():
                         pub.pub("openWB/set/vehicle/"+str(self.ev_num) + "/control_parameter/timestamp_auto_phase_switch", "0")
                         message = "Umschaltung von 1 auf 3 Phasen."
                         # Timestamp für die Durchführungsdauer
-                        # Aktuelle Ladeleistung reservieren, da während der Umschaltung die Ladung pausiert wird.
-                        data.pv_data["all"].data["set"]["reserved_evu_overhang"] += self.ev_template.data["max_current_one_phase"] * 230
+                        # Ladeleistung reservieren, da während der Umschaltung die Ladung pausiert wird.
+                        data.pv_data["all"].data["set"]["reserved_evu_overhang"] += self.ev_template.data["min_current"] * 3 * 230
                         self.data["control_parameter"]["timestamp_perform_phase_switch"] = timecheck.create_timestamp()
                         pub.pub("openWB/set/vehicle/"+str(self.ev_num) + "/control_parameter/timestamp_perform_phase_switch", self.data["control_parameter"]["timestamp_perform_phase_switch"])
                     else:
@@ -298,8 +298,6 @@ class ev():
                     pub.pub("openWB/set/vehicle/"+str(self.ev_num) +
                         "/control_parameter/timestamp_auto_phase_switch", self.data["control_parameter"]["timestamp_auto_phase_switch"])
                     message = "Umschaltverzoegerung von 1 auf 3 Phasen für "+str(pv_config["phase_switch_delay"]) + " Min aktiv."
-                    # Differenz reservieren, damit nicht noch mehr umschalten wollen.
-                    data.pv_data["all"].data["set"]["reserved_evu_overhang"] += self.ev_template.data["min_current"] * 3 * 230 - self.ev_template.data["max_current_one_phase"] * 230
                 # Wenn der Timer läuft und nicht mit Maximalstromstärke geladen wird, Timer stoppen.
                 elif (self.data["control_parameter"]["timestamp_auto_phase_switch"] != "0" and 
                         max(current_get) < (self.ev_template.data["max_current_one_phase"] - self.ev_template.data["nominal_difference"])):
@@ -307,7 +305,6 @@ class ev():
                     pub.pub("openWB/set/vehicle/"+str(self.ev_num) +
                             "/control_parameter/timestamp_auto_phase_switch", "0")
                     message = "Umschaltverzoegerung von 1 auf 3 Phasen abgebrochen."
-                    data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= self.ev_template.data["min_current"] * 3 * 230 - self.ev_template.data["max_current_one_phase"] * 230
             # 3 -> 1
             else:
                 if (self.data["control_parameter"]["timestamp_auto_phase_switch"] != "0" and 
@@ -322,8 +319,8 @@ class ev():
                         # Timestamp für die Durchführungsdauer
                         self.data["control_parameter"]["timestamp_perform_phase_switch"] = timecheck.create_timestamp()
                         pub.pub("openWB/set/vehicle/"+str(self.ev_num) + "/control_parameter/timestamp_perform_phase_switch", self.data["control_parameter"]["timestamp_perform_phase_switch"])
-                       # Aktuelle Ladeleistung reservieren, da während der Umschaltung die Ladung pausiert wird.
-                        data.pv_data["all"].data["set"]["reserved_evu_overhang"] += self.ev_template.data["min_current"] * 3 * 230
+                       # Ladeleistung reservieren, da während der Umschaltung die Ladung pausiert wird.
+                        data.pv_data["all"].data["set"]["reserved_evu_overhang"] += self.ev_template.data["max_current_one_phase"] * 230
                     else:
                         message = "Umschaltverzoegerung von 3 auf 1 Phase für "+str( 16-pv_config["phase_switch_delay"]) + " Min aktiv."
                 # Wenn im dreiphasigen Laden die Minimalstromstärke erreicht wird und der Timer noch nicht läuft, Timer für das Umschalten auf eine Phase starten.
@@ -332,13 +329,11 @@ class ev():
                     self.data["control_parameter"]["timestamp_auto_phase_switch"] = timecheck.create_timestamp()
                     pub.pub("openWB/set/vehicle/"+str(self.ev_num) + "/control_parameter/timestamp_auto_phase_switch", self.data["control_parameter"]["timestamp_auto_phase_switch"])
                     message = "Umschaltverzoegerung von 3 auf 1 Phase für "+str( 16-pv_config["phase_switch_delay"]) + " Min aktiv."
-                    data.pv_data["all"].data["set"]["reserved_evu_overhang"] += self.ev_template.data["max_current_one_phase"] * 230 - self.ev_template.data["min_current"] * 3 * 230
                 # Wenn der Timer läuft und mit mehr als Minimalstromstärke geladen wird, Timer stoppen.
                 elif self.data["control_parameter"]["timestamp_auto_phase_switch"] != "0" and any(current > (self.ev_template.data["min_current"] + self.ev_template.data["nominal_difference"]) for current in current_get):
                     self.data["control_parameter"]["timestamp_auto_phase_switch"] = "0"
                     pub.pub("openWB/set/vehicle/"+str(self.ev_num) + "/control_parameter/timestamp_auto_phase_switch", "0")
                     message = "Umschaltverzoegerung von 3 auf 1 Phase abgebrochen."
-                    data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= self.ev_template.data["max_current_one_phase"] * 230 - self.ev_template.data["min_current"] * 3 * 230
             if message != None:
                 log.message_debug_log("info", "LP "+str(cp_num)+": "+message)
             return phases_to_use, current, message
