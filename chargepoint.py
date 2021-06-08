@@ -258,15 +258,15 @@ class chargepoint():
         except Exception as e:
             log.exception_logging(e)
 
-    def get_phases(self, submode):
+    def get_phases(self, mode):
         """ ermittelt die maximal mögliche Anzahl Phasen, die von Konfiguration, Auto und Ladepunkt unterstützt wird und prüft anschließend, ob sich die Anzahl der genutzten Phasen geändert hat.
 
         Return
         ------
         phases: int
             Anzahl Phasen
-        submode: str
-            Lademodus, in dem tatsächlich geladen wird
+        mode: str
+            aktivierter Lademodus
         """
         try:
             phases = 0
@@ -276,7 +276,7 @@ class chargepoint():
                 phases = charging_ev.ev_template.data["max_phases"]
             else:
                 phases = config["connected_phases"]
-            chargemode_phases = data.general_data["general"].get_phases_chargemode(submode)
+            chargemode_phases = data.general_data["general"].get_phases_chargemode(mode)
             if chargemode_phases == 0:
                 if self.data["set"]["current"] == 0:
                 # Im Automatik-Modus muss die Ladung mit einer Phase begonnen werden.
