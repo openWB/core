@@ -39,40 +39,40 @@ function getIndex(topic) {
 
 function createChargepoint(hierarchy) {
 	// console.log(hierarchy);
-	if ( hierarchy.id.match(/cp([0-9]+)/g) ){
+	if ( hierarchy.id.match(/cp([1-9][0-9]*)/g) ){
 		var chargepointIndex = hierarchy.id.replace( 'cp', '');
 		if( $('.chargepoint-card[data-cp='+chargepointIndex+']').length == 0 ){
 			// console.log( "index: "+chargepointIndex);
-			if ( typeof chargepointIndex !== 'undefined' && chargepointIndex != 1 ) {
-				// console.log("creating chargepoint "+chargepointIndex);
-				var sourceElement = $('.chargepoint-card[data-cp=1]');
+			if ( typeof chargepointIndex !== 'undefined' ) {
+				console.log("creating chargepoint "+chargepointIndex);
+				var sourceElement = $('.chargepoint-card.chargepoint-template');
 				// remove checkbox toggle button style as they will not function after cloning
 				sourceElement.find('input[type=checkbox][data-toggle^=toggle]').bootstrapToggle('destroy');
 				var clonedElement = sourceElement.clone();
 				// recreate checkbox toggle button styles in source element
-				sourceElement.find('input[type=checkbox][data-toggle^=toggle]').bootstrapToggle();
+				// sourceElement.find('input[type=checkbox][data-toggle^=toggle]').bootstrapToggle();
 				// update all data referencing the old index in our clone
 				clonedElement.attr('data-cp', chargepointIndex).data('cp', chargepointIndex);
 				clonedElement.attr('data-chargetemplate', 0).data('chargetemplate', 0);
 				clonedElement.attr('data-evtemplate', 0).data('evtemplate', 0);
 				clonedElement.find('.card-header').attr('data-target', '#collapseChargepoint'+chargepointIndex).data('target', '#collapseChargepoint'+chargepointIndex).addClass('collapsed');
 				clonedElement.find('.card-body').attr('id', 'collapseChargepoint'+chargepointIndex).removeClass('show');
-				clonedElement.find('label[for=minCurrentPvCp1]').attr('for', 'minCurrentPvCp'+chargepointIndex);
-				clonedElement.find('#minCurrentPvCp1').attr('id', 'minCurrentPvCp'+chargepointIndex);
-				clonedElement.find('label[for=minSocPvCp1]').attr('for', 'minSocPvCp'+chargepointIndex);
-				clonedElement.find('#minSocPvCp1').attr('id', 'minSocPvCp'+chargepointIndex);
-				clonedElement.find('label[for=maxSocPvCp1]').attr('for', 'maxSocPvCp'+chargepointIndex);
-				clonedElement.find('#maxSocPvCp1').attr('id', 'maxSocPvCp'+chargepointIndex);
-				clonedElement.find('label[for=minSocCurrentPvCp1]').attr('for', 'minSocCurrentPvCp'+chargepointIndex);
-				clonedElement.find('#minSocCurrentPvCp1').attr('id', 'minSocCurrentPvCp'+chargepointIndex);
-				clonedElement.find('label[for=currentInstantChargeCp1]').attr('for', 'currentInstantChargeCp'+chargepointIndex);
-				clonedElement.find('#currentInstantChargeCp1').attr('id', 'currentInstantChargeCp'+chargepointIndex);
-				clonedElement.find('label[for=limitInstantChargeCp1]').attr('for', 'limitInstantChargeCp'+chargepointIndex);
-				clonedElement.find('#limitInstantChargeCp1').attr('id', 'limitInstantChargeCp'+chargepointIndex);
-				clonedElement.find('label[for=soclimitCp1]').attr('for', 'soclimitCp'+chargepointIndex);
-				clonedElement.find('#soclimitCp1').attr('id', 'soclimitCp'+chargepointIndex);
-				clonedElement.find('label[for=amountlimitCp1]').attr('for', 'amountlimitCp'+chargepointIndex);
-				clonedElement.find('#amountlimitCp1').attr('id', 'amountlimitCp'+chargepointIndex);
+				clonedElement.find('label[for=minCurrentPvCp0]').attr('for', 'minCurrentPvCp'+chargepointIndex);
+				clonedElement.find('#minCurrentPvCp0').attr('id', 'minCurrentPvCp'+chargepointIndex);
+				clonedElement.find('label[for=minSocPvCp0]').attr('for', 'minSocPvCp'+chargepointIndex);
+				clonedElement.find('#minSocPvCp0').attr('id', 'minSocPvCp'+chargepointIndex);
+				clonedElement.find('label[for=maxSocPvCp0]').attr('for', 'maxSocPvCp'+chargepointIndex);
+				clonedElement.find('#maxSocPvCp0').attr('id', 'maxSocPvCp'+chargepointIndex);
+				clonedElement.find('label[for=minSocCurrentPvCp0]').attr('for', 'minSocCurrentPvCp'+chargepointIndex);
+				clonedElement.find('#minSocCurrentPvCp0').attr('id', 'minSocCurrentPvCp'+chargepointIndex);
+				clonedElement.find('label[for=currentInstantChargeCp0]').attr('for', 'currentInstantChargeCp'+chargepointIndex);
+				clonedElement.find('#currentInstantChargeCp0').attr('id', 'currentInstantChargeCp'+chargepointIndex);
+				clonedElement.find('label[for=limitInstantChargeCp0]').attr('for', 'limitInstantChargeCp'+chargepointIndex);
+				clonedElement.find('#limitInstantChargeCp0').attr('id', 'limitInstantChargeCp'+chargepointIndex);
+				clonedElement.find('label[for=soclimitCp0]').attr('for', 'soclimitCp'+chargepointIndex);
+				clonedElement.find('#soclimitCp0').attr('id', 'soclimitCp'+chargepointIndex);
+				clonedElement.find('label[for=amountlimitCp0]').attr('for', 'amountlimitCp'+chargepointIndex);
+				clonedElement.find('#amountlimitCp0').attr('id', 'amountlimitCp'+chargepointIndex);
 				// insert after last existing chargepoint to honor sorting from the array
 				target = $('.chargepoint-card[data-cp]').last();
 				// console.log("target: "+target.data('cp')+" index: "+chargepointIndex);
@@ -81,6 +81,8 @@ function createChargepoint(hierarchy) {
 				// now get our created element and add checkbox toggle buttons
 				chargepointElement = $('.chargepoint-card[data-cp="' + chargepointIndex + '"]');
 				chargepointElement.find('input[type=checkbox][data-toggle^=toggle]').bootstrapToggle();
+				// finally show our new chargepoint
+				chargepointElement.removeClass('chargepoint-template').removeClass('hide');
 			}
 		} else {
 			console.log("chargepoint '"+chargepointIndex+"' already exists");
@@ -172,7 +174,7 @@ function processGlobalCounterMessages(mqttmsg, mqttpayload) {
 			}
 		});
 		// first remove all chargepoints exept the first
-		$('.chargepoint-card[data-cp]').not('[data-cp=1]').remove();
+		$('.chargepoint-card[data-cp]').not('.chargepoint-template').remove();
 		// now create any other chargepoint
 		var hierarchy = JSON.parse(mqttpayload);
 		createChargepoint(hierarchy[0]);
