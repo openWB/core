@@ -108,7 +108,19 @@ def on_message(client, userdata, msg):
                     f.write(msg.payload.decode("utf-8"))
                     f.close()
                     #comment out for json cp modul structure
-                    os.system("python3 /var/www/html/openWB/runs/setchargepoints.py "+msg.payload.decode("utf-8")+" "+str(devicenumb))
+                    os.system("python3 /var/www/html/openWB/runs/setchargepoints.py "+msg.payload.decode("utf-8")+" "+str(devicenumb)+" ll")
+                    #sendcommand = ["/var/www/html/openWB/runs/set-current.sh", msg.payload.decode("utf-8"), str(devicenumb) ]
+                    #subprocess.Popen(sendcommand)
+                    #client.publish("openWB/chargepoint/"+str(devicenumb)+"/set/current", "", qos=0, retain=True)
+                    setTopicCleared = True
+            if (( "openWB/chargepoint" in msg.topic) and ("set/phases_to_use" in msg.topic)):
+                devicenumb=re.sub(r'\D', '', msg.topic)
+                if ( 1 <= int(devicenumb) <= 1000 and 1 <= int(msg.payload) <= 3):
+                    f = open('/var/www/html/openWB/ramdisk/lp'+str(devicenumb)+'tmpphasestouse', 'w')
+                    f.write(msg.payload.decode("utf-8"))
+                    f.close()
+                    #comment out for json cp modul structure
+                    os.system("python3 /var/www/html/openWB/runs/setchargepoints.py "+msg.payload.decode("utf-8")+" "+str(devicenumb)+" 1p3p")
                     #sendcommand = ["/var/www/html/openWB/runs/set-current.sh", msg.payload.decode("utf-8"), str(devicenumb) ]
                     #subprocess.Popen(sendcommand)
                     #client.publish("openWB/chargepoint/"+str(devicenumb)+"/set/current", "", qos=0, retain=True)
