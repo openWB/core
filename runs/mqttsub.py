@@ -86,6 +86,7 @@ def on_connect(client, userdata, flags, rc):
     client.subscribe("openWB/set/#", 2)
     client.subscribe("openWB/config/set/#", 2)
     client.subscribe("openWB/chargepoint/+/set/current", 2)
+    client.subscribe("openWB/chargepoint/+/set/phases_to_use", 2)
     client.subscribe("openWB/chargepoint/+/get/autolock_state", 2)
 
 # handle each set topic
