@@ -17,7 +17,9 @@ if ( chargepointconfig['selected'] == "external_openwb" ):
         else:
             publish.single("openWB/set/isss/Current", str(ll), hostname=str(chargepointconfig['config']['ip']))
     if ( action == "1p3p"):
-        publish.single("openWB/set/isss/U1p3p", str(ll), hostname=str(chargepointconfig['config']['ip']))
-
+        if ( chargepointconfig['config']['chargepoint'] == "2" ):
+            publish.single("openWB/set/isss/U1p3pLp2", str(ll), hostname=str(chargepointconfig['config']['ip']))
+        else:
+            publish.single("openWB/set/isss/U1p3p", str(ll), hostname=str(chargepointconfig['config']['ip']))
 
 
