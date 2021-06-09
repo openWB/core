@@ -146,6 +146,12 @@ class ev():
         """
         try:
             mode_changed = False
+            self.data["control_parameter"]["submode"] = submode
+            pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/submode", submode)
+            self.data["control_parameter"]["chargemode"] = self.charge_template.data["chargemode"]["selected"]
+            pub.pub("openWB/set/vehicle/"+str(self.ev_num )+"/control_parameter/chargemode", self.charge_template.data["chargemode"]["selected"])
+            self.data["control_parameter"]["prio"] = self.charge_template.data["prio"]
+            pub.pub("openWB/set/vehicle/"+str(self.ev_num )+"/control_parameter/prio", self.charge_template.data["prio"])
             # Die benötigte Stromstärke hat sich durch eine Änderung des Lademdous oder der Konfiguration geändert.
             # Der Ladepunkt muss in der Regelung neu priorisiert werden.
             if self.data["control_parameter"]["required_current"] != required_current:
@@ -159,12 +165,6 @@ class ev():
                 else:
                     mode_changed = True
             self.data["control_parameter"]["required_current"] = required_current
-            self.data["control_parameter"]["submode"] = submode
-            pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/submode", submode)
-            self.data["control_parameter"]["chargemode"] = self.charge_template.data["chargemode"]["selected"]
-            pub.pub("openWB/set/vehicle/"+str(self.ev_num )+"/control_parameter/chargemode", self.charge_template.data["chargemode"]["selected"])
-            self.data["control_parameter"]["prio"] = self.charge_template.data["prio"]
-            pub.pub("openWB/set/vehicle/"+str(self.ev_num )+"/control_parameter/prio", self.charge_template.data["prio"])
             return mode_changed
         except Exception as e:
             log.exception_logging(e)
