@@ -50,7 +50,7 @@ class control():
                 self._switch_off_threshold(mode)
 
             # Phasenumschaltung
-            self._check_auto_phase_switch()
+            self._check_auto_phase_switch_delay()
 
             # Überschuss auf Ladepunkte verteilen
             self._manage_distribution()
@@ -443,7 +443,7 @@ class control():
         except Exception as e:
             log.exception_logging(e)
 
-    def _check_auto_phase_switch(self):
+    def _check_auto_phase_switch_delay(self):
         """ geht alle LP durch und prüft, ob eine Ladung aktiv ist, ob automatische Phasenumschaltung 
         möglich ist und ob ob ein Timer gestartet oder gestoppt werden muss oder ob ein Timer abgelaufen ist.
         """
@@ -789,7 +789,7 @@ class control():
                                                 current = max(chargepoint.data["get"]["current"]) + 2
                                         # Einhalten des Mindeststroms des Lademodus und Maximalstroms des EV
                                         current = charging_ev.check_min_max_current_for_pv_charging(current, phases)
-                                        power_diff = phases * 230 * (current - chargepoint.data["set"]["current"])
+                                        power_diff = phases * 230 * (current - max(chargepoint.data["get"]["current"]))
                                         
                                         if power_diff != 0:
                                             # Laden nur mit der Leistung, die vorher der Speicher bezogen hat
