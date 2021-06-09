@@ -146,6 +146,12 @@ class ev():
         """
         try:
             mode_changed = False
+            self.data["control_parameter"]["submode"] = submode
+            pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/submode", submode)
+            self.data["control_parameter"]["chargemode"] = self.charge_template.data["chargemode"]["selected"]
+            pub.pub("openWB/set/vehicle/"+str(self.ev_num )+"/control_parameter/chargemode", self.charge_template.data["chargemode"]["selected"])
+            self.data["control_parameter"]["prio"] = self.charge_template.data["prio"]
+            pub.pub("openWB/set/vehicle/"+str(self.ev_num )+"/control_parameter/prio", self.charge_template.data["prio"])
             # Die benötigte Stromstärke hat sich durch eine Änderung des Lademdous oder der Konfiguration geändert.
             # Der Ladepunkt muss in der Regelung neu priorisiert werden.
             if self.data["control_parameter"]["required_current"] != required_current:
@@ -159,12 +165,6 @@ class ev():
                 else:
                     mode_changed = True
             self.data["control_parameter"]["required_current"] = required_current
-            self.data["control_parameter"]["submode"] = submode
-            pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/submode", submode)
-            self.data["control_parameter"]["chargemode"] = self.charge_template.data["chargemode"]["selected"]
-            pub.pub("openWB/set/vehicle/"+str(self.ev_num )+"/control_parameter/chargemode", self.charge_template.data["chargemode"]["selected"])
-            self.data["control_parameter"]["prio"] = self.charge_template.data["prio"]
-            pub.pub("openWB/set/vehicle/"+str(self.ev_num )+"/control_parameter/prio", self.charge_template.data["prio"])
             return mode_changed
         except Exception as e:
             log.exception_logging(e)
@@ -260,20 +260,8 @@ class ev():
         message = None
         try:
             pv_config = data.general_data["general"].data["chargemode_config"]["pv_charging"]
-            # Umschaltung im Gange
-            if self.data["control_parameter"]["timestamp_perform_phase_switch"] != "0":
-                phase_switch_delay = data.general_data["general"].data["chargemode_config"]["pv_charging"]["phase_switch_delay"]
-                # Umschaltung abgeschlossen
-                if timecheck.check_timestamp(self.data["control_parameter"]["timestamp_perform_phase_switch"], 53+phase_switch_delay-1) == False:
-                    self.data["control_parameter"]["timestamp_perform_phase_switch"] = "0"
-                    pub.pub("openWB/set/vehicle/"+str(self.ev_num) + "/control_parameter/timestamp_perform_phase_switch", "0")
-                    # Aktuelle Ladeleistung und Differenz wieder freigeben.
-                    if self.data["control_parameter"]["phases"] == 3:
-                        data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= self.ev_template.data["min_current"] * 3 * 230
-                    else:
-                        data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= self.ev_template.data["max_current_one_phase"] * 230
             # 1 -> 3
-            elif phases_to_use == 1:
+            if phases_to_use == 1:
                 # Wenn im einphasigen Laden mit Maximalstromstärke geladen wird und der Timer abläuft, wird auf 3 Phasen umgeschaltet.
                 if (self.data["control_parameter"]["timestamp_auto_phase_switch"] != "0" and 
                         max(current_get) >= (self.ev_template.data["max_current_one_phase"] - self.ev_template.data["nominal_difference"])):
@@ -283,12 +271,6 @@ class ev():
                         current = self.ev_template.data["min_current"]
                         self.data["control_parameter"]["timestamp_auto_phase_switch"] = "0"
                         pub.pub("openWB/set/vehicle/"+str(self.ev_num) + "/control_parameter/timestamp_auto_phase_switch", "0")
-                        message = "Umschaltung von 1 auf 3 Phasen."
-                        # Timestamp für die Durchführungsdauer
-                        # Ladeleistung reservieren, da während der Umschaltung die Ladung pausiert wird.
-                        data.pv_data["all"].data["set"]["reserved_evu_overhang"] += self.ev_template.data["min_current"] * 3 * 230
-                        self.data["control_parameter"]["timestamp_perform_phase_switch"] = timecheck.create_timestamp()
-                        pub.pub("openWB/set/vehicle/"+str(self.ev_num) + "/control_parameter/timestamp_perform_phase_switch", self.data["control_parameter"]["timestamp_perform_phase_switch"])
                     else:
                         message = "Umschaltverzoegerung von 1 auf 3 Phasen für "+str(pv_config["phase_switch_delay"]) + " Min aktiv."
                 # Wenn im einphasigen Laden die Maximalstromstärke erreicht wird und der Timer noch nicht läuft, Timer für das Umschalten auf 3 Phasen starten.
@@ -315,12 +297,6 @@ class ev():
                         current = self.ev_template.data["max_current_one_phase"]
                         self.data["control_parameter"]["timestamp_auto_phase_switch"] = "0"
                         pub.pub("openWB/set/vehicle/"+str(self.ev_num) + "/control_parameter/timestamp_auto_phase_switch", "0")
-                        message = "Umschaltung von 3 auf 1 Phase."
-                        # Timestamp für die Durchführungsdauer
-                        self.data["control_parameter"]["timestamp_perform_phase_switch"] = timecheck.create_timestamp()
-                        pub.pub("openWB/set/vehicle/"+str(self.ev_num) + "/control_parameter/timestamp_perform_phase_switch", self.data["control_parameter"]["timestamp_perform_phase_switch"])
-                       # Ladeleistung reservieren, da während der Umschaltung die Ladung pausiert wird.
-                        data.pv_data["all"].data["set"]["reserved_evu_overhang"] += self.ev_template.data["max_current_one_phase"] * 230
                     else:
                         message = "Umschaltverzoegerung von 3 auf 1 Phase für "+str( 16-pv_config["phase_switch_delay"]) + " Min aktiv."
                 # Wenn im dreiphasigen Laden die Minimalstromstärke erreicht wird und der Timer noch nicht läuft, Timer für das Umschalten auf eine Phase starten.

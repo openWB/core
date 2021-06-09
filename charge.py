@@ -12,9 +12,6 @@ class charge():
     def start_charging(self):
         try:
             log.message_debug_log("debug", "# Ladung starten.")
-            data.pv_data["all"].put_stats()
-            data.pv_data["all"].print_stats()
-            data.counter_data["counter0"].put_stats()
             for cp in data.cp_data:
                 if "cp" in cp:
                     chargepoint = data.cp_data[cp]
@@ -30,6 +27,9 @@ class charge():
                         pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/get/state_str", chargepoint.data["get"]["state_str"])
                     else:
                         pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/get/state_str", "Ladevorgang läuft...")
+            data.pv_data["all"].put_stats()
+            data.pv_data["all"].print_stats()
+            data.counter_data["counter0"].put_stats()
         except Exception as e:
             log.exception_logging(e)
 
