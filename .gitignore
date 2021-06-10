@@ -16,3 +16,4 @@ modules/soc_eq/soc_eq_acc_*
 .vscode/settings.json
 __pycache__
 smarthome.ini
+data/
