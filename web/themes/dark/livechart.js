@@ -110,7 +110,7 @@ function parseData(alldata){
 
 // not used, parsing is done in chart object
 // function getColData(matrix, colLabel){
-// 	// console.log('getColData: '+colLabel);
+// 	console.log('getColData: '+colLabel);
 // 	return matrix.map(function(row){
 // 		data = {x:row.timestamp};
 // 		if(row[colLabel]){
@@ -126,6 +126,7 @@ let datasetTemplates = {
 	// optional components
 	"pv-all": {
 		label: 'PV ges.',
+		jsonKey: null,
 		borderColor: pvAllColor,
 		backgroundColor: pvAllBgColor,
 		fill: true,
@@ -141,6 +142,7 @@ let datasetTemplates = {
 	},
 	"bat-all-power": {
 		label: 'Speicher ges.',
+		jsonKey: null,
 		borderColor: batAllColor,
 		backgroundColor: batAllBgColor,
 		fill: true,
@@ -156,6 +158,7 @@ let datasetTemplates = {
 	},
 	"bat-all-soc": {
 		label: 'Speicher ges. SoC',
+		jsonKey: null,
 		borderColor: batAllSocColor,
 		backgroundColor: batAllSocBgColor,
 		borderDash: [10,5],
@@ -173,6 +176,7 @@ let datasetTemplates = {
 	// chargepoints
 	"cp-power": {
 		label: 'LP',
+		jsonKey: null,
 		borderColor: cpColor,
 		backgroundColor: cpBgColor,
 		borderWidth: 2,
@@ -188,6 +192,7 @@ let datasetTemplates = {
 	},
 	"cp-soc": {
 		label: 'LP SoC',
+		jsonKey: null,
 		borderColor: cpSocColor,
 		borderDash: [10,5],
 		borderWidth: 2,
@@ -204,6 +209,7 @@ let datasetTemplates = {
 	// SmartHome
 	"load-power": {
 		label: 'Verbraucher',
+		jsonKey: null,
 		borderColor: loadColor,
 		backgroundColor: loadBgColor,
 		fill: false,
@@ -220,6 +226,7 @@ let datasetTemplates = {
 	// SmartHome 2.0 devices
 	"sh-power": {
 		label: "Gerät",
+		jsonKey: null,
 		borderColor: smartHomeColor,
 		backgroundColor: smartHomeBgColor,
 		fill: false,
@@ -255,6 +262,7 @@ var chartDatasets = [
 	// always available elements
 	{
 		label: 'EVU',
+		jsonKey: 'grid',
 		borderColor: evuColor,
 		backgroundColor: evuBgColor,
 		borderWidth: 1,
@@ -270,6 +278,7 @@ var chartDatasets = [
 	},
 	{
 		label: 'Hausverbrauch',
+		jsonKey: 'house-power',
 		borderColor: homeColor,
 		backgroundColor: homeBgColor,
 		fill: false,
@@ -285,6 +294,7 @@ var chartDatasets = [
 	},
 	{
 		label: 'LP ges.',
+		jsonKey: 'charging-all',
 		borderColor: cpAllColor,
 		backgroundColor: cpAllBgColor,
 		fill: true,
@@ -528,11 +538,14 @@ function setvisibility(datarr,hidevar,hidevalue,booldisplay){
 }
 
 function getDatasetIndex(datasetId){
-	for(dataset = 0; dataset < chartDatasets.length; dataset++){
-		if(chartDatasets[dataset].parsing.yAxisKey == datasetId){
-			return dataset;
-		}
+	index = chartDatasets.findIndex(function(dataset){
+		return dataset.jsonKey == datasetId;
+	 });
+	if( index != -1 ){
+		// console.log('index for dataset "'+datasetId+'": '+index);
+		return index;
 	}
+	// console.log('no index found for "'+datasetId+'"');
 	return
 }
 
@@ -542,10 +555,11 @@ function addDataset(datasetId){
 	if(number = datasetId.match(/([\d]+)/g)){
 		datasetIndex = number[0];
 	}
-	console.log('template name: ' + datasetTemplate + ' index: ' + datasetIndex);
+	// console.log('template name: ' + datasetTemplate + ' index: ' + datasetIndex);
 	if(datasetTemplates[datasetTemplate]){
 		newDataset = JSON.parse(JSON.stringify(datasetTemplates[datasetTemplate]));
 		newDataset.parsing.yAxisKey = datasetId;
+		newDataset.jsonKey = datasetId;
 		if(datasetIndex){
 			newDataset.label = newDataset.label + ' ' + datasetIndex;
 		}
