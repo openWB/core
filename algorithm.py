@@ -749,6 +749,7 @@ class control():
                                 num_of_ev += 1
             # Ladung aktiv?
             if num_of_ev > 0:
+                new_current = 0
                 bat_overhang = data.bat_module_data["all"].power_for_bat_charging()
                 if feed_in_limit == False:
                     diff_per_ev = (data.pv_data["all"].overhang_left() + bat_overhang) / num_of_ev
@@ -758,11 +759,8 @@ class control():
                         diff_per_ev = (data.pv_data["all"].overhang_left() - feed_in_yield + bat_overhang) / num_of_ev
                     else:
                         # Wenn die Einspeisungsgrenze erreicht wird, Strom schrittweise erhöhen (1A pro Phase), bis dies nicht mehr der Fall ist.
-                        if data.cp_data[chargepoint].data["get"]["charge_state"] == True:
-                            current_diff_per_phase = data.cp_data[chargepoint].data["get"]["phases_in_use"]
-                        else:
-                            current_diff_per_phase = data.cp_data[chargepoint].data["set"]["charging_ev"].data["control_parameter"]["phases"]
-                if diff_per_ev > 0:
+                        new_current = 1
+                if diff_per_ev > 0 or new_current > 0:
                     for cp in data.cp_data:
                         if "cp" in cp:
                             chargepoint = data.cp_data[cp]
@@ -778,9 +776,10 @@ class control():
                                             phases = chargepoint.data["get"]["phases_in_use"]
                                         else:
                                             phases = chargepoint.data["set"]["charging_ev"].data["control_parameter"]["phases"]
-                                        new_current = (diff_per_ev / 230 / phases) + chargepoint.data["set"]["current"]
-                                        # Um max. 2A pro Zyklus regeln
-                                        if (-2-charging_ev.ev_template.data["nominal_difference"]) < (new_current - max(chargepoint.data["get"]["current"])) < (2+charging_ev.ev_template.data["nominal_difference"]):
+                                        if new_current == 0:
+                                            new_current = (diff_per_ev / 230 / phases) + chargepoint.data["set"]["current"]
+                                        # Um max. 5A pro Zyklus regeln
+                                        if (-5-charging_ev.ev_template.data["nominal_difference"]) < (new_current - max(chargepoint.data["get"]["current"])) < (5+charging_ev.ev_template.data["nominal_difference"]):
                                             current = new_current
                                         else:
                                             if new_current < max(chargepoint.data["get"]["current"]):
