@@ -1,6 +1,7 @@
 """ Starten des Lade-Vorgangs
 """
 
+import chargelog
 import data
 import log
 import pub
@@ -19,6 +20,7 @@ class charge():
                         chargepoint.initiate_control_pilot_interruption()
                         chargepoint.initiate_phase_switch()
                         self._update_state(chargepoint)
+                        chargelog.collect_data(chargepoint)
                     else:
                         # LP, an denen nicht geladen werden darf
                         chargepoint.data["set"]["current"] = 0

@@ -44,46 +44,65 @@ class ev():
     """
 
     def __init__(self, index):
-        self.data = {}
-        self.ev_template = None
-        self.charge_template = None
-        self.ev_num = index
-        if "set" not in self.data:
-            self.data["set"] = {}
-        if "control_parameter" not in self.data:
-            self.data["control_parameter"] = {}
-        pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/required_current", 0)
-        pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/phases", 0)
-        pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/prio", 0)
-        pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/timestamp_switch_on_off", "0")
-        pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/timestamp_auto_phase_switch", "0")
-        pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/timestamp_perform_phase_switch", "0")
-        pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/submode", "stop")
-        pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/chargemode", "stop")
-        self.data["control_parameter"]["required_current"] = 0 
-        self.data["control_parameter"]["phases"] = 0 
-        self.data["control_parameter"]["prio"] = False
-        self.data["control_parameter"]["timestamp_switch_on_off"] = "0"
-        self.data["control_parameter"]["timestamp_auto_phase_switch"] = "0"
-        self.data["control_parameter"]["timestamp_perform_phase_switch"] = "0"
-        self.data["control_parameter"]["submode"] = "stop"
-        self.data["control_parameter"]["chargemode"] = "stop"
+        try:
+            self.data = {}
+            self.ev_template = None
+            self.charge_template = None
+            self.ev_num = index
+            if "set" not in self.data:
+                self.data["set"] = {}
+            if "get" not in self.data:
+                self.data["get"] = {}
+            if "control_parameter" not in self.data:
+                self.data["control_parameter"] = {}
+            pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/required_current", 0)
+            pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/phases", 0)
+            pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/prio", 0)
+            pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/timestamp_switch_on_off", "0")
+            pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/timestamp_auto_phase_switch", "0")
+            pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/timestamp_perform_phase_switch", "0")
+            pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/submode", "stop")
+            pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/chargemode", "stop")
+            self.data["control_parameter"]["required_current"] = 0 
+            self.data["control_parameter"]["phases"] = 0 
+            self.data["control_parameter"]["prio"] = False
+            self.data["control_parameter"]["timestamp_switch_on_off"] = "0"
+            self.data["control_parameter"]["timestamp_auto_phase_switch"] = "0"
+            self.data["control_parameter"]["timestamp_perform_phase_switch"] = "0"
+            self.data["control_parameter"]["submode"] = "stop"
+            self.data["control_parameter"]["chargemode"] = "stop"
+
+            self.data["get"]["counter_at_plugtime"] = 0
+            self.data["get"]["timestamp_start_charging"] = "0"
+            self.data["get"]["counter_at_mode_switch"] = 0
+            self.data["get"]["charged_since_mode_switch"] = 0
+            self.data["get"]["range_charged"] = 0
+            self.data["get"]["time_charged"] = 0
+            pub.pub("openWB/set/vehicle/"+str(self.ev_num)+"/get/counter_at_plugtime", self.data["get"]["counter_at_plugtime"])
+            pub.pub("openWB/set/vehicle/"+str(self.ev_num)+"/get/timestamp_start_charging", self.data["get"]["timestamp_start_charging"])
+            pub.pub("openWB/set/vehicle/"+str(self.ev_num)+"/get/counter_at_mode_switch", self.data["get"]["counter_at_mode_switch"])
+            pub.pub("openWB/set/vehicle/"+str(self.ev_num)+"/get/charged_since_mode_switch", self.data["get"]["charged_since_mode_switch"])
+            pub.pub("openWB/set/vehicle/"+str(self.ev_num)+"/get/range_charged", self.data["get"]["range_charged"])
+            pub.pub("openWB/set/vehicle/"+str(self.ev_num)+"/get/time_charged", self.data["get"]["time_charged"])
+        except Exception as e:
+            log.exception_logging(e)
 
     def reset_ev(self):
         """ setzt alle Werte zurück, die während des Algorithmus gesetzt werden.
         """
-        pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/required_current", 0)
-        pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/timestamp_switch_on_off", "0")
-        pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/timestamp_auto_phase_switch", "0")
-        pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/timestamp_perform_phase_switch", "0")
-        pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/submode", "stop")
-        pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/chargemode", "stop")
-        self.data["control_parameter"]["required_current"] = 0 
-        self.data["control_parameter"]["timestamp_switch_on_off"] = "0"
-        self.data["control_parameter"]["timestamp_auto_phase_switch"] = "0"
-        self.data["control_parameter"]["timestamp_perform_phase_switch"] = "0"
-        self.data["control_parameter"]["submode"] = "stop"
-        self.data["control_parameter"]["chargemode"] = "stop"
+        try:
+            pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/required_current", 0)
+            pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/timestamp_auto_phase_switch", "0")
+            pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/timestamp_perform_phase_switch", "0")
+            pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/submode", "stop")
+            pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/chargemode", "stop")
+            self.data["control_parameter"]["required_current"] = 0 
+            self.data["control_parameter"]["timestamp_auto_phase_switch"] = "0"
+            self.data["control_parameter"]["timestamp_perform_phase_switch"] = "0"
+            self.data["control_parameter"]["submode"] = "stop"
+            self.data["control_parameter"]["chargemode"] = "stop"
+        except Exception as e:
+            log.exception_logging(e)
 
     def get_required_current(self):
         """ ermittelt, ob und mit welchem Strom das EV geladen werden soll (unabhängig vom Lastmanagement)
@@ -126,7 +145,7 @@ class ev():
             log.exception_logging(e)
             return False, "ein interner Fehler aufgetreten ist.", "stop", 0
 
-    def check_state(self, required_current, submode, set_current):
+    def check_state(self, required_current, set_current):
         """ prüft, ob sich etwas an den Parametern für die Regelung geändert hat, 
         sodass der LP neu in die Priorisierung eingeordnet werden muss und publsihed die Regelparameter.
 
@@ -134,24 +153,24 @@ class ev():
         ---------
         required_current: int
             neue Stromstärke, mit der geladen werden soll
-        submode: str
-            neuer Lademodus, in dem geladen werden soll
+        
         set_current: int
             Soll-Stromstärke
 
         Return
         ------
+        current_changed: bool
+            Die Sollstromstärke wurde geändert.
         mode_changed: bool
-            Der Lademodus/ die Konfiguration wurde geändert.
+            Der Lademodus wurde geändert.
         """
         try:
+            current_changed = False
             mode_changed = False
-            self.data["control_parameter"]["submode"] = submode
-            pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/submode", submode)
-            self.data["control_parameter"]["chargemode"] = self.charge_template.data["chargemode"]["selected"]
-            pub.pub("openWB/set/vehicle/"+str(self.ev_num )+"/control_parameter/chargemode", self.charge_template.data["chargemode"]["selected"])
-            self.data["control_parameter"]["prio"] = self.charge_template.data["prio"]
-            pub.pub("openWB/set/vehicle/"+str(self.ev_num )+"/control_parameter/prio", self.charge_template.data["prio"])
+            
+            if self.data["control_parameter"]["chargemode"] != self.charge_template.data["chargemode"]["selected"]:
+                mode_changed = True
+            
             # Die benötigte Stromstärke hat sich durch eine Änderung des Lademdous oder der Konfiguration geändert.
             # Der Ladepunkt muss in der Regelung neu priorisiert werden.
             if self.data["control_parameter"]["required_current"] != required_current:
@@ -161,14 +180,34 @@ class ev():
                 # hinzugekommenen abgeschaltet werden darf.
                 if ((self.data["control_parameter"]["submode"] == "pv_charging" or self.data["control_parameter"]["chargemode"] == "pv_charging") and 
                     set_current > self.data["control_parameter"]["required_current"]):
-                    mode_changed = False
+                    current_changed = False
                 else:
-                    mode_changed = True
-            self.data["control_parameter"]["required_current"] = required_current
-            return mode_changed
+                    current_changed = True
+            
+            return current_changed, mode_changed
         except Exception as e:
             log.exception_logging(e)
             return True
+
+    def set_control_parameter(self, submode, required_current):
+        """ setzt die Regel-Parameter, die der Algorithmus verwendet.
+
+        Parameter
+        ---------
+        submode: str
+            neuer Lademodus, in dem geladen werden soll
+        """
+        try:
+            self.data["control_parameter"]["submode"] = submode
+            pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/submode", submode)
+            self.data["control_parameter"]["chargemode"] = self.charge_template.data["chargemode"]["selected"]
+            pub.pub("openWB/set/vehicle/"+str(self.ev_num )+"/control_parameter/chargemode", self.charge_template.data["chargemode"]["selected"])
+            self.data["control_parameter"]["prio"] = self.charge_template.data["prio"]
+            pub.pub("openWB/set/vehicle/"+str(self.ev_num )+"/control_parameter/prio", self.charge_template.data["prio"])
+            self.data["control_parameter"]["required_current"] = required_current
+            pub.pub("openWB/set/vehicle/"+str(self.ev_num )+"/control_parameter/required_current", required_current)
+        except Exception as e:
+            log.exception_logging(e)
 
     def get_soc(self):
         """ermittelt den SoC, wenn die Zugangsdaten konfiguriert sind.
