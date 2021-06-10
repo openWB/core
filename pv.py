@@ -261,15 +261,18 @@ class pv():
             EV, das dem Ladepunkt zugeordnet ist
             (cp.data["set"]["charging_ev"] ist u.U. noch nicht die EV-Instanz, sondern nur die ID aus dem Broker zugewiesen.)
         """
-        if charging_ev.data["control_parameter"]["timestamp_switch_on_off"] != "0":
-            charging_ev.data["control_parameter"]["timestamp_switch_on_off"] = "0"
-            pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/control_parameter/timestamp_switch_on_off", "0")
-            # Wenn bereits geladen wird, freigegebene Leistung freigeben. Wenn nicht geladen wird, reservierte Leistung freigeben.
-            pv_config = data.general_data["general"].data["chargemode_config"]["pv_charging"]
-            if chargepoint.data["get"]["charge_state"] == False:
-                data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= pv_config["switch_on_threshold"]*chargepoint.data["set"]["phases_to_use"]
-            else:
-                data.pv_data["all"].data["set"]["released_evu_overhang"]  -= pv_config["switch_on_threshold"]*charging_ev.data["control_parameter"]["phases"]
+        try:
+            if charging_ev.data["control_parameter"]["timestamp_switch_on_off"] != "0":
+                charging_ev.data["control_parameter"]["timestamp_switch_on_off"] = "0"
+                pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/control_parameter/timestamp_switch_on_off", "0")
+                # Wenn bereits geladen wird, freigegebene Leistung freigeben. Wenn nicht geladen wird, reservierte Leistung freigeben.
+                pv_config = data.general_data["general"].data["chargemode_config"]["pv_charging"]
+                if chargepoint.data["get"]["charge_state"] == False:
+                    data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= pv_config["switch_on_threshold"]*chargepoint.data["set"]["phases_to_use"]
+                else:
+                    data.pv_data["all"].data["set"]["released_evu_overhang"]  -= pv_config["switch_on_threshold"]*charging_ev.data["control_parameter"]["phases"]
+        except Exception as e:
+            log.exception_logging(e)
 
     def overhang_left(self):
         """ gibt den verfügbaren EVU-Überschuss zurück.
@@ -312,7 +315,7 @@ class pv():
                     # Es kann nicht immer mit einem LP so viel Leistung freigegeben werden, dass die verfügbare Leistung positiv ist.
                     if required_power > 0:
                         log.message_debug_log("error", "Es wurde versucht, mehr EVU-Überschuss zu allokieren, als vorhanden ist.")
-                    return required_power
+                    return self.data["set"]["overhang_power_left"]
             return 0
         except Exception as e:
             log.exception_logging(e)

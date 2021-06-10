@@ -339,3 +339,31 @@ def create_timestamp():
     """
     stamp = datetime.datetime.today().strftime("%m/%d/%Y, %H:%M:%S")
     return stamp
+
+def create_timestamp_filename():
+    """ erzeugt einen Zeitstempel mit dem aktuellen Datum und Uhrzeit
+
+    Return
+    ------
+    str: aktuelles Datum und Uhrzeit
+    """
+    stamp = datetime.datetime.today().strftime("%Y%m")
+    return stamp
+
+def get_difference(timestamp_begin):
+    """ ermittelt den Abstand zwischen zwei Zeitstempeln in Sekunden.
+
+    Parameter
+    ---------
+    timestamp_begin: str
+        Anfangszeitpunkt
+
+    Return
+    ------
+    diff: int
+        Abstand in Sekunden
+    """
+    begin = datetime.datetime.strptime(timestamp_begin, "%m/%d/%Y, %H:%M:%S")
+    now = datetime.datetime.today()
+    diff = (now - begin).total_seconds()
+    return int(round(diff, 0))

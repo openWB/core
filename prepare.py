@@ -3,6 +3,7 @@
 
 import copy
 
+import chargelog
 import chargepoint
 import data
 import log
@@ -71,10 +72,11 @@ class prepare():
                     vehicle, message = cp.get_state()
                     if vehicle != -1:
                         charging_ev = data.ev_data["ev"+str(vehicle)]
-                        # Wenn sich das Auto ändert und vorher ein Auto zugeordnet war, Werte des alten Autos zurücksetzen.
+                        # Wenn sich das Auto ändert und vorher ein Auto zugeordnet war, Werte des alten Autos zurücksetzen, zB wenn das EV geändert wird, während ein EV angesteckt ist.
                         if cp.data["set"]["charging_ev"] != charging_ev.ev_num and cp.data["set"]["charging_ev"] != -1:
                             data.pv_data["all"].reset_switch_on_off(cp, charging_ev)
                             charging_ev.reset_phase_switch()
+                            chargelog.reset_data(cp, data.ev_data["ev"+str(cp.data["set"]["charging_ev"])])
                             if max(cp.data["get"]["current"]) != 0:
                                 cp.data["set"]["current"] = 0
                         cp.data["set"]["charging_ev"] = charging_ev
@@ -84,7 +86,7 @@ class prepare():
                         cp.get_phases(charging_ev.charge_template.data["chargemode"]["selected"])
                         # Einhaltung des Minimal- und Maximalstroms prüfen
                         required_current = charging_ev.check_min_max_current(required_current)
-                        mode_changed = charging_ev.check_state(required_current, submode, cp.data["set"]["current"])
+                        current_changed, mode_changed = charging_ev.check_state(required_current, cp.data["set"]["current"])
                         
                         if message_ev != None:
                             message = "Keine Ladung, da "+str(message_ev)
@@ -92,13 +94,18 @@ class prepare():
                         
                         # Die benötigte Stromstärke hat sich durch eine Änderung des Lademdous oder der Konfiguration geändert. Die Zuteilung entsprechend der Priorisierung muss neu geprüft werden.
                         # Daher muss der LP zurückgesetzt werden, wenn er gerade lädt, um in der Regelung wieder berücksichtigt zu werden.
-                        if mode_changed == True:
+                        if current_changed == True:
                             data.pv_data["all"].reset_switch_on_off(cp, charging_ev)
                             charging_ev.reset_phase_switch()
                             if max(cp.data["get"]["current"]) != 0:
                                 cp.data["set"]["current"] = 0
                             # Da nicht bekannt ist, ob mit Bezug, Überschuss oder aus dem Speicher geladen wird, wird die freiwerdende Leistung erst im nächsten Durchlauf berücksichtigt.
                             # Ggf. entsteht so eine kurze Unterbrechung der Ladung, wenn während dem Laden umkonfiguriert wird.
+                        # Ein Eintrag muss nur erstellt werden, wenn vorher schon geladen wurde.
+                        if mode_changed == True and cp.data["get"]["charge_state"]:
+                            chargelog.save_data(cp, charging_ev)
+
+                        charging_ev.set_control_parameter(submode, required_current)
                         # Wenn die Nachrichten gesendet wurden, EV wieder löschen, wenn das EV im Algorithmus nicht berücksichtigt werden soll.
                         if state == False:
                             cp.data["set"]["charging_ev"] = -1
@@ -111,8 +118,6 @@ class prepare():
                             
                             log.message_debug_log("debug", "EV"+str(charging_ev.ev_num)+": Theroretisch benötigter Strom "+str(required_current)+"A, Lademodus "+str(
                                 charging_ev.charge_template.data["chargemode"]["selected"])+", Submodus: "+str(charging_ev.data["control_parameter"]["submode"])+", Prioritaet: "+str(charging_ev.charge_template.data["prio"])+", max. Ist-Strom: "+str(max(cp.data["get"]["current"])))
-                            charging_ev.data["control_parameter"]["required_current"] = required_current
-                            pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num )+"/control_parameter/required_current", required_current)
                     else:
                         cp.data["set"]["charging_ev"] = vehicle
                     if message != None:

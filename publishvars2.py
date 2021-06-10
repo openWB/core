@@ -265,5 +265,6 @@ def pub_settings():
     pub.pub("openWB/set/general/chargemode_config/standby/phases_to_use", 1)
     pub.pub("openWB/set/general/chargemode_config/stop/phases_to_use", 1)
     pub.pub("openWB/set/general/range_unit", "km")
+    pub.pub("openWB/set/general/price_kwh", 42.0)
     pub.pub("openWB/set/general/grid_protection_configured", False)
     pub.pub("openWB/set/general/grid_protection_active", False)

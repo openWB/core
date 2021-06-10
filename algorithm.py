@@ -749,6 +749,7 @@ class control():
                                 num_of_ev += 1
             # Ladung aktiv?
             if num_of_ev > 0:
+                new_current = 0
                 bat_overhang = data.bat_module_data["all"].power_for_bat_charging()
                 if feed_in_limit == False:
                     diff_per_ev = (data.pv_data["all"].overhang_left() + bat_overhang) / num_of_ev
@@ -758,11 +759,8 @@ class control():
                         diff_per_ev = (data.pv_data["all"].overhang_left() - feed_in_yield + bat_overhang) / num_of_ev
                     else:
                         # Wenn die Einspeisungsgrenze erreicht wird, Strom schrittweise erhöhen (1A pro Phase), bis dies nicht mehr der Fall ist.
-                        if data.cp_data[chargepoint].data["get"]["charge_state"] == True:
-                            current_diff_per_phase = data.cp_data[chargepoint].data["get"]["phases_in_use"]
-                        else:
-                            current_diff_per_phase = data.cp_data[chargepoint].data["set"]["charging_ev"].data["control_parameter"]["phases"]
-                if diff_per_ev > 0:
+                        new_current = 1
+                if diff_per_ev > 0 or new_current > 0:
                     for cp in data.cp_data:
                         if "cp" in cp:
                             chargepoint = data.cp_data[cp]
@@ -778,37 +776,39 @@ class control():
                                             phases = chargepoint.data["get"]["phases_in_use"]
                                         else:
                                             phases = chargepoint.data["set"]["charging_ev"].data["control_parameter"]["phases"]
-                                        current_diff_per_phase = diff_per_ev / 230 / phases
-                                        # Um max. 2A pro Zyklus regeln
-                                        if (-2-charging_ev.ev_template.data["nominal_difference"]) < (current_diff_per_phase+chargepoint.data["set"]["current"] - max(chargepoint.data["get"]["current"])) < (2+charging_ev.ev_template.data["nominal_difference"]):
-                                            current = current_diff_per_phase+chargepoint.data["set"]["current"]
+                                        if new_current == 0:
+                                            new_current = (diff_per_ev / 230 / phases) + chargepoint.data["set"]["current"]
+                                        # Um max. 5A pro Zyklus regeln
+                                        if (-5-charging_ev.ev_template.data["nominal_difference"]) < (new_current - max(chargepoint.data["get"]["current"])) < (5+charging_ev.ev_template.data["nominal_difference"]):
+                                            current = new_current
                                         else:
-                                            if current_diff_per_phase < 0:
-                                                current = max(chargepoint.data["get"]["current"]) - 2
+                                            if new_current < max(chargepoint.data["get"]["current"]):
+                                                current = max(chargepoint.data["get"]["current"]) - 5
                                             else:
-                                                current = max(chargepoint.data["get"]["current"]) + 2
+                                                current = max(chargepoint.data["get"]["current"]) + 5
                                         # Einhalten des Mindeststroms des Lademodus und Maximalstroms des EV
                                         current = charging_ev.check_min_max_current_for_pv_charging(current, phases)
-                                        power_diff = phases * 230 * (current - max(chargepoint.data["get"]["current"]))
+                                        power_diff = phases * 230 * (current - chargepoint.data["set"]["current"])
                                         
                                         if power_diff != 0:
                                             # Laden nur mit der Leistung, die vorher der Speicher bezogen hat
-                                            if ( bat_overhang - power_diff) > 0:
-                                                return_power = data.bat_module_data["all"].allocate_bat_power(power_diff)
-                                                if return_power != 0:
-                                                    current += return_power / phases / 230
-                                                    current = charging_ev.check_min_max_current_for_pv_charging(current, phases)
-                                            # Laden mit EVU-Überschuss und der Leistung, die vorher der Speicher bezogen hat
-                                            elif bat_overhang > 0:
-                                                pv_power = power_diff - bat_overhang
-                                                return_power = data.pv_data["all"].allocate_evu_power(pv_power)
-                                                if return_power != 0:
-                                                    current += return_power / phases / 230
-                                                    current = charging_ev.check_min_max_current_for_pv_charging(current, phases)
-                                                return_power = data.bat_module_data["all"].allocate_bat_power(bat_overhang)
-                                                if return_power != 0:
-                                                    current += return_power / phases / 230
-                                                    current = charging_ev.check_min_max_current_for_pv_charging(current, phases)
+                                            if bat_overhang > 0 and power_diff > 0:
+                                                if (bat_overhang - power_diff) > 0:
+                                                    return_power = data.bat_module_data["all"].allocate_bat_power(power_diff)
+                                                    if return_power != 0:
+                                                        current += return_power / phases / 230
+                                                        current = charging_ev.check_min_max_current_for_pv_charging(current, phases)
+                                                # Laden mit EVU-Überschuss und der Leistung, die vorher der Speicher bezogen hat
+                                                else:
+                                                    pv_power = power_diff - bat_overhang
+                                                    return_power = data.pv_data["all"].allocate_evu_power(pv_power)
+                                                    if return_power != 0:
+                                                        current += return_power / phases / 230
+                                                        current = charging_ev.check_min_max_current_for_pv_charging(current, phases)
+                                                    return_power = data.bat_module_data["all"].allocate_bat_power(bat_overhang)
+                                                    if return_power != 0:
+                                                        current += return_power / phases / 230
+                                                        current = charging_ev.check_min_max_current_for_pv_charging(current, phases)
                                             # Laden nur mit EVU-Überschuss bzw. Reduktion des EVU-Bezugs
                                             else:
                                                 return_power = data.pv_data["all"].allocate_evu_power(power_diff)
