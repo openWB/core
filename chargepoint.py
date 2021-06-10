@@ -315,7 +315,9 @@ class chargepoint():
                 # Im Automatik-Modus muss die Ladung mit einer Phase begonnen werden.
                     phases = 1
                 else:
-                    phases = charging_ev.data["control_parameter"]["phases"]
+                    # Nach dem Einschalten
+                    if charging_ev.data["control_parameter"]["phases"] == 0:
+                        charging_ev.data["control_parameter"]["phases"] = self.data["get"]["phases_in_use"]
             elif chargemode_phases < phases:
                 phases = chargemode_phases
             if phases != charging_ev.data["control_parameter"]["phases"]:
