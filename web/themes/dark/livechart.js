@@ -86,6 +86,7 @@ var all16p = "";
 var hidehaus;
 var myLine;
 var allChartData = [];
+var chartUpdateBuffer = [];
 
 function parseData(alldata){
 	var result = [];
@@ -107,17 +108,19 @@ function parseData(alldata){
 // 	});
 // }
 
-function getColData(matrix, colLabel){
-	return matrix.map(function(row){
-		data = {x:row.timestamp*1000};
-		if(row[colLabel]){
-			data[colLabel] = row[colLabel];
-		} else {
-			data[colLabel] = 0;
-		}
-		return data;
-	});
-}
+// not used, parsing is done in chart object
+// function getColData(matrix, colLabel){
+// 	// console.log('getColData: '+colLabel);
+// 	return matrix.map(function(row){
+// 		data = {x:row.timestamp};
+// 		if(row[colLabel]){
+// 			data['y'] = row[colLabel];
+// 		} else {
+// 			data['y'] = 0;
+// 		}
+// 		return data;
+// 	});
+// }
 
 let datasetTemplates = {
 	// optional components
@@ -554,6 +557,7 @@ function addDataset(datasetId){
 }
 
 function initDataset(datasetId){
+	// console.log('initDataset: '+datasetId);
 	var index = getDatasetIndex(datasetId);
 	if(index == undefined){
 		index = addDataset(datasetId);
@@ -604,17 +608,21 @@ function putgraphtogether() {
 }  // end putgraphtogether
 
 function updateGraph(dataset) {
+	chartUpdateBuffer = chartUpdateBuffer.concat(parseData(dataset));
+	// console.log('buffer: '+chartUpdateBuffer.length);
 	if(initialread == 1 && myLine != undefined){
-		var dataJson = parseData(dataset)[0];
-		// console.log(dataJson);
-		allChartData.push(dataJson);
+		chartUpdateBuffer.forEach(function(row, index){
+			// console.log('adding row: '+index);
+			allChartData.push(row);
+		});
 		// ToDo: remove data based on configured size
 		if(allChartData.length > 30){
-			allChartData.splice(0, 1);
+			allChartData.splice(0, chartUpdateBuffer.length);
 		}
+		chartUpdateBuffer = [];
 		myLine.update();
 	} else {
-		console.log('graph not yet initialized');
+		console.log('graph not yet initialized, data stored in buffer');
 	}
 }
 
