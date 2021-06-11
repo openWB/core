@@ -359,30 +359,12 @@ class setData():
                 self._validate_value(msg, int, [(6, 32)], pub_json = True)
             elif re.search("^openWB/set/vehicle/template/charge_template/[0-9]+/chargemode/pv_charging/max_soc$", msg.topic) != None:
                 self._validate_value(msg, int, [(0, 100)], pub_json = True)
-            elif re.search("^openWB/set/vehicle/template/charge_template/[0-9]+/chargemode/scheduled_charging/[1-9][0-9]*/active$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, 1)], pub_json = True)
-            elif (re.search("^openWB/set/vehicle/template/charge_template/[0-9]+/chargemode/scheduled_charging/[1-9][0-9]*/frequency/selected$", msg.topic) != None or
-                    re.search("^openWB/set/vehicle/template/charge_template/[0-9]+/chargemode/scheduled_charging/[1-9][0-9]*/frequency/once$", msg.topic) != None):
-                self._validate_value(msg, str, pub_json = True)
-            elif re.search("^openWB/set/vehicle/template/charge_template/[0-9]+/chargemode/scheduled_charging/[1-9][0-9]*/frequency/weekly$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, 1)], collection=list, pub_json = True)
-            elif re.search("^openWB/set/vehicle/template/charge_template/[0-9]+/chargemode/scheduled_charging/[1-9][0-9]*/time$", msg.topic) != None:
-                self._validate_value(msg, str, pub_json = True)
-            elif re.search("^openWB/set/vehicle/template/charge_template/[0-9]+/chargemode/scheduled_charging/[1-9][0-9]*/soc$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, 100)], pub_json = True)
+            elif re.search("^openWB/set/vehicle/template/charge_template/[0-9]+/chargemode/scheduled_charging$", msg.topic) != None:
+                self._validate_value(msg, "json", pub_json = True)
             elif re.search("^openWB/set/vehicle/template/charge_template/[0-9]+/time_charging/active$", msg.topic) != None:
                 self._validate_value(msg, int, [(0, 1)], pub_json = True)
-            elif re.search("^openWB/set/vehicle/template/charge_template/[0-9]+/time_charging/[1-9][0-9]*/active$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, 1)], pub_json = True)
-            elif (re.search("^openWB/set/vehicle/template/charge_template/[0-9]+/time_charging/[1-9][0-9]*/frequency/selected$", msg.topic) != None or
-                    re.search("^openWB/set/vehicle/template/charge_template/[0-9]+/time_charging/[1-9][0-9]*/frequency/once$", msg.topic) != None):
-                self._validate_value(msg, str, pub_json = True)
-            elif re.search("^openWB/set/vehicle/template/charge_template/[0-9]+/time_charging/[1-9][0-9]*/frequency/weekly$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, 1)], collection=list, pub_json = True)
-            elif re.search("^openWB/set/vehicle/template/charge_template/[0-9]+/time_charging/[1-9][0-9]*/time$", msg.topic) != None:
-                self._validate_value(msg, str, collection = list, pub_json = True)
-            elif re.search("^openWB/set/vehicle/template/charge_template/[0-9]+/time_charging/[1-9][0-9]*/current$", msg.topic) != None:
-                self._validate_value(msg, int, [(6, 32)], pub_json = True)
+            elif re.search("^openWB/set/vehicle/template/charge_template/[0-9]+/time_charging/plans$", msg.topic) != None:
+                self._validate_value(msg, "json", pub_json = True)
             elif re.search("^openWB/set/vehicle/template/ev_template/[0-9]+/name$", msg.topic) != None:
                 self._validate_value(msg, str, pub_json = True)
             elif re.search("^openWB/set/vehicle/template/ev_template/[0-9]+/average_consump$", msg.topic) != None:

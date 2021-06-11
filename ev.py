@@ -413,16 +413,16 @@ class chargeTemplate():
         try:
             # Ein Eintrag gibt an, ob aktiv/inaktiv, alle weiteren sind Zeitpläne.
             if len(self.data["time_charging"]) > 1:
-                plan = timecheck.check_plans_timeframe(self.data["time_charging"])
+                plan = timecheck.check_plans_timeframe(self.data["time_charging"]["plans"])
                 if plan != None:
-                    self.data["time_charging"]["current_plan"] = plan
-                    return self.data["time_charging"][plan]["current"], "time_charging", message
+                    self.data["chargemode"]["current_plan"] = plan["id"]
+                    return plan["current"], "time_charging", message
                 else:
-                    self.data["time_charging"]["current_plan"] = ""
+                    self.data["chargemode"]["current_plan"] = ""
                     message = "kein Zeitfenster aktiv ist."
                     return 0, "stop", message
             else:
-                self.data["time_charging"]["current_plan"] = ""
+                self.data["chargemode"]["current_plan"] = ""
                 message = "keine Zeitfenster konfiguriert sind."
                 return 0, "stop", message
         except Exception as e:
@@ -520,9 +520,9 @@ class chargeTemplate():
             max_phases = ev_template.data["max_phases"]
             start = -1 # Es wurde noch kein Plan geprüft.
             for plan in self.data["chargemode"]["scheduled_charging"]:
-                if self.data["chargemode"]["scheduled_charging"][plan]["active"] == True:
+                if plan["active"] == True:
                     try:
-                        if soc < self.data["chargemode"]["scheduled_charging"][plan]["soc"]:
+                        if soc < plan["soc"]:
                             phases_scheduled_charging = data.general_data["general"].get_phases_chargemode(
                                 "scheduled_charging")
                             if max_phases <= phases_scheduled_charging:
@@ -536,14 +536,13 @@ class chargeTemplate():
                                 max_current = ev_template.data["max_current_multi_phases"]
                             available_current = 0.8*max_current*usable_phases
                             required_wh = (
-                                (self.data["chargemode"]["scheduled_charging"][plan]["soc"] - soc)/100) * battery_capacity*1000
+                                (plan["soc"] - soc)/100) * battery_capacity*1000
                             duration = required_wh/(available_current*230)
-                            start, remaining_time = timecheck.check_duration(
-                                self.data["chargemode"]["scheduled_charging"][plan], duration)
+                            start, remaining_time = timecheck.check_duration(plan, duration)
                             # Erster Plan
                             if (start == plan_data["start"] and remaining_time <= smallest_remaining_time) or start > plan_data["start"]:
                                 smallest_remaining_time = remaining_time
-                                plan_data["plan"] = plan
+                                plan_data["plan"] = plan["id"]
                                 plan_data["available_current"] = available_current
                                 plan_data["start"] = start
                                 plan_data["required_wh"] = required_wh
@@ -555,11 +554,11 @@ class chargeTemplate():
                         log.exception_logging(e)
             else:
                 if start == -1:
-                    self.data["chargemode"]["scheduled_charging"]["current_plan"] = ""
+                    self.data["chargemode"]["current_plan"] = ""
                     message = "da keine Ziel-Termine konfiguriert sind."
                     return 0, "stop", message
                 else:
-                    self.data["chargemode"]["scheduled_charging"]["current_plan"] = plan_data["plan"]
+                    self.data["chargemode"]["current_plan"] = plan_data["plan"]
                     if plan_data["start"] == 1: # Ladung sollte jetzt starten
                         return plan_data["available_current"], "instant_charging", message
                     elif plan_data["start"] == 2:  # weniger als die berechnete Zeit verfügbar

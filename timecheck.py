@@ -72,8 +72,8 @@ def check_plans_timeframe(plans, hours=None):
         for plan in plans:
             # Nur Keys mit Plannummer berücksichtigen
             try:
-                if isinstance(int(plan), int) == True:
-                    state = check_timeframe(plans[plan], hours)
+                if isinstance(plan, dict) == True:
+                    state = check_timeframe(plan, hours)
                     if state == True:
                         return plan
             except:
