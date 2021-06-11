@@ -310,14 +310,11 @@ class chargepoint():
             else:
                 phases = config["connected_phases"]
             chargemode_phases = data.general_data["general"].get_phases_chargemode(mode)
+            # Wenn die Lademodus-Phasen 0 sind, wird die bisher genutzte Phasenzahl weiter genutzt, 
+            # bis der Algorithmus eine Umschaltung vorgibt, zB weil der gewählte Lademodus eine 
+            # andere Phasenzahl benötigt oder bei PV-Laden die automatische Umschaltung aktiv ist.
             if chargemode_phases == 0:
-                if self.data["set"]["current"] == 0:
-                # Im Automatik-Modus muss die Ladung mit einer Phase begonnen werden.
-                    phases = 1
-                else:
-                    # Nach dem Einschalten
-                    if charging_ev.data["control_parameter"]["phases"] == 0:
-                        charging_ev.data["control_parameter"]["phases"] = self.data["get"]["phases_in_use"]
+                charging_ev.data["control_parameter"]["phases"] = self.data["get"]["phases_in_use"]
             elif chargemode_phases < phases:
                 phases = chargemode_phases
             if phases != charging_ev.data["control_parameter"]["phases"]:

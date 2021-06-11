@@ -277,7 +277,7 @@ class ev():
             log.exception_logging(e)
             return 0
 
-    def auto_phase_switch(self, cp_num, current, phases_to_use, current_get):
+    def auto_phase_switch(self, cp_num, current, phases_in_use, current_get):
         """ prüft, ob ein Timer für die Phasenumschaltung gestartet oder gestoppt werden muss oder ein Timer für die Phasenumschaltung abgelaufen ist.
 
         Parameter
@@ -286,8 +286,8 @@ class ev():
             LP-Nummer
         current: int
             Stromstärke, mit der aktuell geladen wird.
-        phases_to_use: int
-            Anzahl der aktuell nutzbaren Phasen
+        phases_in_use: int
+            Anzahl der genutzten Phasen
         current_get: list
             Stromstärke, mit der aktuell geladen wird
 
@@ -297,10 +297,11 @@ class ev():
             Phasenanzahl , mit der geladen werden soll.
         """
         message = None
+        phases_to_use = phases_in_use
         try:
             pv_config = data.general_data["general"].data["chargemode_config"]["pv_charging"]
             # 1 -> 3
-            if phases_to_use == 1:
+            if phases_in_use == 1:
                 # Wenn im einphasigen Laden mit Maximalstromstärke geladen wird und der Timer abläuft, wird auf 3 Phasen umgeschaltet.
                 if (self.data["control_parameter"]["timestamp_auto_phase_switch"] != "0" and 
                         max(current_get) >= (self.ev_template.data["max_current_one_phase"] - self.ev_template.data["nominal_difference"])):
