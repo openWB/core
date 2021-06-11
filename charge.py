@@ -39,13 +39,21 @@ class charge():
         """aktualisiert den Zustand des Ladepunkts.
         """
         try:
+            charging_ev = chargepoint.data["set"]["charging_ev"]
             current = round(chargepoint.data["set"]["current"], 2)
             # Zur Sicherheit - nach dem der Algorithmus abgeschlossen ist - nochmal die Einhaltung der Stromstärken prüfen.
-            current = chargepoint.data["set"]["charging_ev"].check_min_max_current(current)
-            if (chargepoint.data["set"]["charging_ev"].data["control_parameter"]["timestamp_switch_on_off"] != "0" and
+            current = charging_ev.check_min_max_current(current, charging_ev.data["control_parameter"]["phases"])
+
+            # Unstimmige Werte loggen
+            if (charging_ev.data["control_parameter"]["timestamp_switch_on_off"] != "0" and
                     chargepoint.data["get"]["charge_state"] == False and 
                     data.pv_data["all"].data["set"]["reserved_evu_overhang"] == 0):
                 log.message_debug_log("error", "Reservierte Leistung kann am Algorithmus-Ende nicht 0 sein.")
+            if (chargepoint.data["set"]["charging_ev"].ev_template.data["prevent_switch_stop"] == True and
+                    chargepoint.data["get"]["charge_state"] == True and
+                    chargepoint.data["set"]["current"] == 0):
+                log.message_debug_log("error", "LP"+str(chargepoint.cp_num)+": Ladung wurde trotz verhinderter Unterbrechung gestoppt.")
+            
             pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/set/current", current)
         except Exception as e:
             log.exception_logging(e)
