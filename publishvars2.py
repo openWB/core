@@ -60,7 +60,7 @@ def pub_settings():
 
     # ev1
     pub.pub("openWB/set/vehicle/1/charge_template", 1)
-    pub.pub("openWB/set/vehicle/1/ev_template", 2)
+    pub.pub("openWB/set/vehicle/1/ev_template", 1)
     pub.pub("openWB/set/vehicle/1/name", "m3p")
     pub.pub("openWB/set/vehicle/1/soc/config/configured", True)
     pub.pub("openWB/set/vehicle/1/soc/config/manual", False)
@@ -74,7 +74,7 @@ def pub_settings():
     pub.pub("openWB/set/vehicle/1/match_ev/tag_id", 1234)
     #ev2
     pub.pub("openWB/set/vehicle/2/charge_template", 2)
-    pub.pub("openWB/set/vehicle/2/ev_template", 1)
+    pub.pub("openWB/set/vehicle/2/ev_template", 2)
     pub.pub("openWB/set/vehicle/2/name", "car2")
     pub.pub("openWB/set/vehicle/2/soc/config/configured", True)
     pub.pub("openWB/set/vehicle/2/soc/config/manual", False)
@@ -88,7 +88,7 @@ def pub_settings():
     pub.pub("openWB/set/vehicle/2/match_ev/tag_id", 1234)
     #ev3
     pub.pub("openWB/set/vehicle/3/charge_template", 3)
-    pub.pub("openWB/set/vehicle/3/ev_template", 1)
+    pub.pub("openWB/set/vehicle/3/ev_template", 3)
     pub.pub("openWB/set/vehicle/3/name", "car3")
     pub.pub("openWB/set/vehicle/3/soc/config/configured", True)
     pub.pub("openWB/set/vehicle/3/soc/config/manual", False)
@@ -110,7 +110,7 @@ def pub_settings():
     pub.pub("openWB/set/vehicle/template/ev_template/0/average_consump", 5)
     pub.pub("openWB/set/vehicle/template/ev_template/0/control_pilot_interruption", False)
     pub.pub("openWB/set/vehicle/template/ev_template/0/nominal_difference", 2)
-    #evt1 - Tesla
+    #evt1 - Tesla Facelift
     pub.pub("openWB/set/vehicle/template/ev_template/1/min_current", 6)
     pub.pub("openWB/set/vehicle/template/ev_template/1/battery_capacity", 82)
     pub.pub("openWB/set/vehicle/template/ev_template/1/max_current_one_phase", 32)
@@ -119,6 +119,7 @@ def pub_settings():
     pub.pub("openWB/set/vehicle/template/ev_template/1/average_consump", 5)
     pub.pub("openWB/set/vehicle/template/ev_template/1/control_pilot_interruption", False)
     pub.pub("openWB/set/vehicle/template/ev_template/1/nominal_difference", 2)
+    pub.pub("openWB/set/vehicle/template/ev_template/1/prevent_switch_stop", True)
     #evt2 - Inoiq
     pub.pub("openWB/set/vehicle/template/ev_template/2/min_current", 6)
     pub.pub("openWB/set/vehicle/template/ev_template/2/battery_capacity", 82)
@@ -128,6 +129,17 @@ def pub_settings():
     pub.pub("openWB/set/vehicle/template/ev_template/2/average_consump", 5)
     pub.pub("openWB/set/vehicle/template/ev_template/2/control_pilot_interruption", False)
     pub.pub("openWB/set/vehicle/template/ev_template/2/nominal_difference", 2)
+    pub.pub("openWB/set/vehicle/template/ev_template/1/prevent_switch_stop", True)
+    #evt3 - Tesla
+    pub.pub("openWB/set/vehicle/template/ev_template/3/min_current", 6)
+    pub.pub("openWB/set/vehicle/template/ev_template/3/battery_capacity", 82)
+    pub.pub("openWB/set/vehicle/template/ev_template/3/max_current_one_phase", 32)
+    pub.pub("openWB/set/vehicle/template/ev_template/3/max_current_multi_phases", 16)
+    pub.pub("openWB/set/vehicle/template/ev_template/3/max_phases", 3)
+    pub.pub("openWB/set/vehicle/template/ev_template/3/average_consump", 5)
+    pub.pub("openWB/set/vehicle/template/ev_template/3/control_pilot_interruption", False)
+    pub.pub("openWB/set/vehicle/template/ev_template/3/nominal_difference", 2)
+    pub.pub("openWB/set/vehicle/template/ev_template/3/prevent_switch_stop", False)
 
     plans_for_scheduled_charging = [
     {"id": 1, "name": "abc", "time": "15:00", "soc": 85, "active": 1, "frequency": {"selected": "daily"} },
@@ -240,7 +252,7 @@ def pub_settings():
     pub.pub("openWB/set/general/chargemode_config/pv_charging/switch_on_threshold", 1500)
     pub.pub("openWB/set/general/chargemode_config/pv_charging/feed_in_yield", 15000)
     pub.pub("openWB/set/general/chargemode_config/pv_charging/phase_switch_delay", 1)
-    pub.pub("openWB/set/general/chargemode_config/pv_charging/phases_to_use", 1)
+    pub.pub("openWB/set/general/chargemode_config/pv_charging/phases_to_use", 0)
     pub.pub("openWB/set/general/chargemode_config/scheduled_charging/phases_to_use", 1)
     pub.pub("openWB/set/general/chargemode_config/time_charging/phases_to_use", 1)
     pub.pub("openWB/set/general/chargemode_config/standby/phases_to_use", 1)
