@@ -30,10 +30,10 @@ class allChargepoints():
                     if ( chargepoint.data["get"]["plug_state"] == False or
                             # Kein EV, das Laden soll
                             chargepoint.data["set"]["charging_ev"] == -1 or 
-                            # Kein EV, das auf das Ablaufen der Einschaltverzögerung wartet
+                            # Kein EV, das auf das Ablaufen der Einschalt- oder Phasenumschaltverzögerung wartet
                             (chargepoint.data["set"]["charging_ev"] != -1 and 
-                            chargepoint.data["set"]["charging_ev"].data["control_parameter"]["submode"] != "pv_charging" and 
-                            chargepoint.data["get"]["charge_state"] == False)):
+                            chargepoint.data["set"]["charging_ev"].data["control_parameter"]["timestamp_perform_phase_switch"] == "0" and
+                            chargepoint.data["set"]["charging_ev"].data["control_parameter"]["timestamp_switch_on_off"] == "0")):
                         continue
                     else:
                         break
@@ -267,27 +267,27 @@ class chargepoint():
             elif self.data["set"]["phases_to_use"] != charging_ev.data["control_parameter"]["phases"]:
                 if self.data["config"]["auto_phase_switch_hw"] == True and self.data["get"]["charge_state"] == True:
                     pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/phases_to_use", charging_ev.data["control_parameter"]["phases"])
+                    # 1 -> 3
+                    if charging_ev.data["control_parameter"]["phases"] == 3:
+                        message = "Umschaltung von 1 auf 3 Phasen."
+                        log.message_debug_log("info", "LP "+str(self.cp_num)+": "+message)
+                        self.data["get"]["state_str"] = message
+                        # Timestamp für die Durchführungsdauer
+                        # Ladeleistung reservieren, da während der Umschaltung die Ladung pausiert wird.
+                        data.pv_data["all"].data["set"]["reserved_evu_overhang"] += charging_ev.ev_template.data["min_current"] * 3 * 230
+                        charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] = timecheck.create_timestamp()
+                        pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num) + "/control_parameter/timestamp_perform_phase_switch", charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"])
+                    else:
+                        message = "Umschaltung von 3 auf 1 Phase."
+                        # Timestamp für die Durchführungsdauer
+                        charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] = timecheck.create_timestamp()
+                        pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num) + "/control_parameter/timestamp_perform_phase_switch", charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"])
+                        # Ladeleistung reservieren, da während der Umschaltung die Ladung pausiert wird.
+                        data.pv_data["all"].data["set"]["reserved_evu_overhang"] += charging_ev.ev_template.data["max_current_one_phase"] * 230
+                        log.message_debug_log("info", "LP "+str(self.cp_num)+": "+message)
+                        self.data["get"]["state_str"] = message
                 else:
                     log.message_debug_log("error", "Phasenumschaltung an Ladepunkt"+str(self.cp_num)+" nicht möglich.")
-                # 1 -> 3
-                if charging_ev.data["control_parameter"]["phases"] == 3:
-                    message = "Umschaltung von 1 auf 3 Phasen."
-                    log.message_debug_log("info", "LP "+str(self.cp_num)+": "+message)
-                    self.data["get"]["state_str"] = message
-                    # Timestamp für die Durchführungsdauer
-                    # Ladeleistung reservieren, da während der Umschaltung die Ladung pausiert wird.
-                    data.pv_data["all"].data["set"]["reserved_evu_overhang"] += charging_ev.ev_template.data["min_current"] * 3 * 230
-                    charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] = timecheck.create_timestamp()
-                    pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num) + "/control_parameter/timestamp_perform_phase_switch", charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"])
-                else:
-                    message = "Umschaltung von 3 auf 1 Phase."
-                    # Timestamp für die Durchführungsdauer
-                    charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] = timecheck.create_timestamp()
-                    pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num) + "/control_parameter/timestamp_perform_phase_switch", charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"])
-                    # Ladeleistung reservieren, da während der Umschaltung die Ladung pausiert wird.
-                    data.pv_data["all"].data["set"]["reserved_evu_overhang"] += charging_ev.ev_template.data["max_current_one_phase"] * 230
-                    log.message_debug_log("info", "LP "+str(self.cp_num)+": "+message)
-                    self.data["get"]["state_str"] = message
         except Exception as e:
             log.exception_logging(e)
 
