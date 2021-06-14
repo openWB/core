@@ -456,7 +456,8 @@ class control():
                         if (chargepoint.data["config"]["auto_phase_switch_hw"] == True and 
                                 chargepoint.data["get"]["charge_state"] == True and 
                                 charging_ev.data["control_parameter"]["chargemode"] == "pv_charging" and
-                                data.general_data["general"].get_phases_chargemode("pv_charging") == 0):
+                                data.general_data["general"].get_phases_chargemode("pv_charging") == 0 and
+                                charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] == "0"):
                             # Gibt die Stromstärke und Phasen zurück, mit denen nach der Umschaltung geladen werden soll. 
                             # Falls keine Umschaltung erforderlich ist, werden Strom und Phasen, die übergeben wurden, wieder zurückgegeben.
                             phases, current, message = charging_ev.auto_phase_switch(chargepoint.cp_num, charging_ev.data["control_parameter"]["required_current"], charging_ev.data["control_parameter"]["phases"], chargepoint.data["get"]["current"])
