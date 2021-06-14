@@ -178,8 +178,10 @@ class ev():
                 # muss der LP im Algorithmus nicht neu eingeordnet werden, da der LP mit der bisherigen Stormstärke weiter laden kann und sich die benötigte 
                 # Stromstärke nur auf die Reihenfolge innerhalb des Prioritätstupels bezieht und auf dieser Ebene kein LP, der bereits lädt, für einen neu 
                 # hinzugekommenen abgeschaltet werden darf.
-                if ((self.data["control_parameter"]["submode"] == "pv_charging" or self.data["control_parameter"]["chargemode"] == "pv_charging") and 
-                    set_current > self.data["control_parameter"]["required_current"]):
+                # Wenn sich auch der Lademodus geändert hat, muss die neue Stromstärke in jedem Fall berücksichtigt werden.
+                if (self.charge_template.data["chargemode"]["selected"] == "pv_charging" and 
+                        ((self.data["control_parameter"]["submode"] == "pv_charging" or self.data["control_parameter"]["chargemode"] == "pv_charging") and 
+                        set_current > self.data["control_parameter"]["required_current"])):
                     current_changed = False
                 else:
                     current_changed = True
