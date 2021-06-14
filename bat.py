@@ -208,7 +208,9 @@ class bat:
                 self.data["set"]["charging_power_left"] -= required_power
                 if self.data["set"]["charging_power_left"] < 0:
                     log.message_debug_log("error", "Es wurde versucht, mehr Speicher-Leistung zu allokieren, als geladen wird.")
-                    return required_power
+                    too_much = self.data["set"]["charging_power_left"]
+                    self.data["set"]["charging_power_left"] = 0
+                    return too_much
             return 0
         except Exception as e:
             log.exception_logging(e)

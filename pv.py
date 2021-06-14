@@ -317,7 +317,9 @@ class pv():
                     # Es kann nicht immer mit einem LP so viel Leistung freigegeben werden, dass die verfügbare Leistung positiv ist.
                     if required_power > 0:
                         log.message_debug_log("error", "Es wurde versucht, mehr EVU-Überschuss zu allokieren, als vorhanden ist.")
-                    return self.data["set"]["overhang_power_left"]
+                    too_much = self.data["set"]["overhang_power_left"]
+                    self.data["set"]["overhang_power_left"] = 0
+                    return too_much
             return 0
         except Exception as e:
             log.exception_logging(e)
