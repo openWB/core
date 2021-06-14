@@ -271,8 +271,10 @@ class pv():
                 pv_config = data.general_data["general"].data["chargemode_config"]["pv_charging"]
                 if chargepoint.data["get"]["charge_state"] == False:
                     data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= pv_config["switch_on_threshold"]*chargepoint.data["set"]["phases_to_use"]
+                    log.message_debug_log("debug", "reserved_evu_overhang 10 "+str(data.pv_data["all"].data["set"]["reserved_evu_overhang"]))
                 else:
                     data.pv_data["all"].data["set"]["released_evu_overhang"]  -= pv_config["switch_on_threshold"]*charging_ev.data["control_parameter"]["phases"]
+                    log.message_debug_log("debug", "reserved_evu_overhang 11 "+str(data.pv_data["all"].data["set"]["reserved_evu_overhang"]))
         except Exception as e:
             log.exception_logging(e)
 
