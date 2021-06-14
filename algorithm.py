@@ -460,6 +460,7 @@ class control():
                                 charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] == "0"):
                             # Gibt die Stromstärke und Phasen zurück, mit denen nach der Umschaltung geladen werden soll. 
                             # Falls keine Umschaltung erforderlich ist, werden Strom und Phasen, die übergeben wurden, wieder zurückgegeben.
+                            log.message_debug_log("debug", "auto_phase_switch")
                             phases, current, message = charging_ev.auto_phase_switch(chargepoint.cp_num, charging_ev.data["control_parameter"]["required_current"], charging_ev.data["control_parameter"]["phases"], chargepoint.data["get"]["current"])
                             if message != None:
                                 chargepoint.data["get"]["state_str"] = message
@@ -760,9 +761,11 @@ class control():
                     feed_in_yield = data.general_data["general"].data["chargemode_config"]["pv_charging"]["feed_in_yield"]
                     if data.pv_data["all"].overhang_left() <= feed_in_yield:
                         diff_per_ev_power = (data.pv_data["all"].overhang_left() - feed_in_yield + bat_overhang) / num_of_ev
+                        log.message_debug_log("debug", "diff_per_ev_power "+str(diff_per_ev_power))
                     else:
                         # Wenn die Einspeisungsgrenze erreicht wird, Strom schrittweise erhöhen (1A pro Phase), bis dies nicht mehr der Fall ist.
                         dif_per_ev_current = 1
+                        log.message_debug_log("debug", "dif_per_ev_current "+str(dif_per_ev_current))
                 if diff_per_ev_power > 0 or dif_per_ev_current > 0:
                     for cp in data.cp_data:
                         if "cp" in cp:
@@ -783,17 +786,23 @@ class control():
                                             new_current = (diff_per_ev_power / 230 / phases) + chargepoint.data["set"]["current"]
                                         else:
                                             new_current = dif_per_ev_current + chargepoint.data["set"]["current"]
+                                        log.message_debug_log("debug", "new_current "+str(new_current)+"phases "+str(phases))
                                         # Um max. 5A pro Zyklus regeln
                                         if (-5-charging_ev.ev_template.data["nominal_difference"]) < (new_current - max(chargepoint.data["get"]["current"])) < (5+charging_ev.ev_template.data["nominal_difference"]):
                                             current = new_current
+                                            log.message_debug_log("debug", "current 1 "+str(current))
                                         else:
                                             if new_current < max(chargepoint.data["get"]["current"]):
                                                 current = max(chargepoint.data["get"]["current"]) - 5
+                                                log.message_debug_log("debug", "current 2 "+str(current))
                                             else:
                                                 current = max(chargepoint.data["get"]["current"]) + 5
+                                                log.message_debug_log("debug", "current 3 "+str(current))
                                         # Einhalten des Mindeststroms des Lademodus und Maximalstroms des EV
                                         current = charging_ev.check_min_max_current(current, phases, pv = True)
                                         power_diff = phases * 230 * (current - chargepoint.data["set"]["current"])
+                                        log.message_debug_log("debug", "power_diff "+str(power_diff)+"current "+str(current))
+                                        log.message_debug_log("debug", "max get current "+str(max(chargepoint.data["get"]["current"])))
                                         
                                         if power_diff != 0:
                                             # Laden nur mit der Leistung, die vorher der Speicher bezogen hat
