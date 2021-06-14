@@ -315,7 +315,10 @@ class chargepoint():
             # bis der Algorithmus eine Umschaltung vorgibt, zB weil der gewählte Lademodus eine 
             # andere Phasenzahl benötigt oder bei PV-Laden die automatische Umschaltung aktiv ist.
             if chargemode_phases == 0:
-                charging_ev.data["control_parameter"]["phases"] = self.data["get"]["phases_in_use"]
+                if charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] == "0":
+                    phases = self.data["get"]["phases_in_use"]
+                else:
+                    phases = charging_ev.data["control_parameter"]["phases"]
             elif chargemode_phases < phases:
                 phases = chargemode_phases
             if phases != charging_ev.data["control_parameter"]["phases"]:
@@ -324,6 +327,7 @@ class chargepoint():
                     pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/control_parameter/phases", phases)
                 else:
                     log.message_debug_log("info", "An Ladepunkt "+str(self.cp_num)+" darf keine Phasenumschaltung durchgeführt werden.")
+                    pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/control_parameter/phases", self.data["get"]["phases_in_use"])
         except Exception as e:
             log.exception_logging(e)
 
