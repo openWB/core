@@ -630,27 +630,31 @@
 												</button>
 											</div>
 										</div>
-										<!--
-										<div class="form-row mb-1" data-plan="1">
+										<div class="form-row mb-1 chargepoint-scheduleplan chargepoint-scheduleplan-template hide" data-plan="0">
 											<div class="col">
 												<div class="form-row">
 													<div class="col">
-														<span class="chargepoint-schedulename">#Name des Plans#</span>
+														<span class="chargepoint-schedulename">?</span>
+														<span class="chargepoint-scheduleedit"><i class="fas fa-edit"></i></span>
 													</div>
 													<div class="col-lg-6">
-														<i class="fas fa-calendar-alt"></i> <span class="chargepoint-schedulefrequencyselected">#Turnus#</span>
-														<i class="fas fa-calendar-day"></i> <span class="chargepoint-scheduledate">#Datum#</span>
-														<i class="fas fa-clock"></i> <span class="chargepoint-scheduletime">#Zeit#</span>
-														<i class="fas fa-car-battery"></i> <span class="chargepoint-schedulesoc">#SoC#</span>
+														<span class="chargepoint-schedulefrequency">
+															<i class="fas fa-calendar-alt"></i>
+															<span class="chargepoint-schedulefrequencyvalue">?</span>
+														</span>
+														<span class="chargepoint-scheduledate">
+															<i class="fas fa-calendar-day"></i>
+															<span class="chargepoint-scheduledatevalue">?</span>
+														</span>
+														<i class="fas fa-clock"></i> <span class="chargepoint-scheduletime">?</span>
+														<i class="fas fa-car-battery"></i> <span class="chargepoint-schedulesoc">?</span>%
 													</div>
 												</div>
 											</div>
 											<div class="col-4 text-right">
-												<input class="chargepoint-scheduleactive" type="checkbox" data-toggle="toggle" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/scheduled_charging/active" data-on="An" data-off="Aus" data-onstyle="success" data-offstyle="danger" data-size="sm" data-style="w-100">
+												<input class="chargepoint-scheduleactive" type="checkbox" data-toggle="toggle" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/scheduled_charging/<sched>/active" data-on="An" data-off="Aus" data-onstyle="success" data-offstyle="danger" data-size="sm" data-style="w-100">
 											</div>
 										</div>
-										-->
-										<!-- sample row -->
 									</div>
 								</div>
 							</div>
@@ -901,12 +905,14 @@
 						var ev = parseInt($(this).closest('[data-ev]').data('ev'));  // get attribute ev-# of parent element
 						var ct = parseInt($(this).closest('[data-chargetemplate]').data('chargetemplate'));  // get attribute chargetemplate-# of parent element
 						var et = parseInt($(this).closest('[data-evtemplate]').data('evtemplate'));  // get attribute evtemplate-# of parent element
+						var schedule = parseInt($(this).closest('[data-plan]').data('plan'));  // get attribute plan-# of parent element
 						topic = topic.replace( '<cp>', cp );
 						topic = topic.replace( '<ev>', ev );
 						topic = topic.replace( '<ct>', ct );
 						topic = topic.replace( '<et>', et );
+						topic = topic.replace( '<sched>', schedule );
 						if( topic.includes('/NaN/') ) {
-							console.log( 'missing cp, ev, ct or et data' );
+							console.log( 'missing cp, ev, ct, et or sched data' );
 						} else {
 							if ( $(this).prop('checked') ) {
 								publish(true, topic);
@@ -933,7 +939,11 @@
 						topic = topic.replace( '<ev>', ev );
 						topic = topic.replace( '<ct>', ct );
 						topic = topic.replace( '<et>', ct );
-						publish(parseInt($(this).val()), topic);
+						if( topic.includes('/NaN/') ) {
+							console.log( 'missing cp, ev, ct, or et data' );
+						} else {
+							publish(parseInt($(this).val()), topic);
+						}
 					}
 				});
 

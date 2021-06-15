@@ -44,7 +44,7 @@ function createChargepoint(hierarchy) {
 		if( $('.chargepoint-card[data-cp='+chargepointIndex+']').length == 0 ){
 			// console.log( "index: "+chargepointIndex);
 			if ( typeof chargepointIndex !== 'undefined' ) {
-				console.log("creating chargepoint "+chargepointIndex);
+				// console.log("creating chargepoint "+chargepointIndex);
 				var sourceElement = $('.chargepoint-card.chargepoint-template');
 				// remove checkbox toggle button style as they will not function after cloning
 				sourceElement.find('input[type=checkbox][data-toggle^=toggle]').bootstrapToggle('destroy');
@@ -96,47 +96,128 @@ function createChargepoint(hierarchy) {
 function refreshChargetemplate(templateIndex) {
 	if( chargemodeTemplate.hasOwnProperty(templateIndex) ) {
 		parent = $('.chargepoint-card[data-chargetemplate='+templateIndex+']');
-		// time_charging.active
-		element = parent.find('.chargepoint-timechargingactive');
-		if ( chargemodeTemplate[templateIndex].time_charging.active ) {
-			element.bootstrapToggle('on', true);
-		}else {
-			element.bootstrapToggle('off', true);
-		}
-		// chargemode.instant_charging.current
-		element = parent.find('.chargepoint-instantchargecurrent');
-		setInputValue(element.attr('id'), chargemodeTemplate[templateIndex].chargemode.instant_charging.current);
-		// chargemode.instant_charging.limit.selected
-		element = parent.find('.chargepoint-instantchargelimitselected');
-		setToggleBtnGroup(element.attr('id'), chargemodeTemplate[templateIndex].chargemode.instant_charging.limit.selected);
-		// chargemode.instant_charging.limit.soc
-		element = parent.find('.chargepoint-instantchargelimitsoc');
-		setInputValue(element.attr('id'), chargemodeTemplate[templateIndex].chargemode.instant_charging.limit.soc);
-		// chargemode.instant_charging.limit.soc
-		element = parent.find('.chargepoint-instantchargelimitamount');
-		setInputValue(element.attr('id'), chargemodeTemplate[templateIndex].chargemode.instant_charging.limit.amount);
-		// chargemode.pv_charging.min_current
-		element = parent.find('.chargepoint-pvchargemincurrent');
-		setInputValue(element.attr('id'), chargemodeTemplate[templateIndex].chargemode.pv_charging.min_current);
-		// chargemode.pv_charging.min_soc
-		element = parent.find('.chargepoint-pvchargeminsoc');
-		setInputValue(element.attr('id'), chargemodeTemplate[templateIndex].chargemode.pv_charging.min_soc);
-		// chargemode.pv_charging.max_soc
-		element = parent.find('.chargepoint-pvchargemaxsoc');
-		setInputValue(element.attr('id'), chargemodeTemplate[templateIndex].chargemode.pv_charging.max_soc);
-		// chargemode.pv_charging.min_soc_current
-		element = parent.find('.chargepoint-pvchargeminsoccurrent');
-		setInputValue(element.attr('id'), chargemodeTemplate[templateIndex].chargemode.pv_charging.min_soc_current);
-		// chargemode.pv_charging.feed_in_limit
-		var element = parent.find('.chargepoint-pvchargefeedinlimit');  // now get parents respective child element
-		if ( chargemodeTemplate[templateIndex].chargemode.pv_charging.feed_in_limit == 1 ) {
-			// element.prop('checked', true);
-			element.bootstrapToggle('on', true); // do not fire a changed-event to prevent a loop!
-		} else {
-			// element.prop('checked', false);
-			element.bootstrapToggle('off', true); // do not fire a changed-event to prevent a loop!
-		}
+		if( parent.length > 0 ){
+			console.log("selected elements: "+parent.length);
+			// time_charging.active
+			element = parent.find('.chargepoint-timechargingactive');
+			if ( chargemodeTemplate[templateIndex].time_charging.active ) {
+				element.bootstrapToggle('on', true);
+			}else {
+				element.bootstrapToggle('off', true);
+			}
+			// ***** instant_charging *****
+			// chargemode.instant_charging.current
+			element = parent.find('.chargepoint-instantchargecurrent');
+			setInputValue(element.attr('id'), chargemodeTemplate[templateIndex].chargemode.instant_charging.current);
+			// chargemode.instant_charging.limit.selected
+			element = parent.find('.chargepoint-instantchargelimitselected');
+			setToggleBtnGroup(element.attr('id'), chargemodeTemplate[templateIndex].chargemode.instant_charging.limit.selected);
+			// chargemode.instant_charging.limit.soc
+			element = parent.find('.chargepoint-instantchargelimitsoc');
+			setInputValue(element.attr('id'), chargemodeTemplate[templateIndex].chargemode.instant_charging.limit.soc);
+			// chargemode.instant_charging.limit.soc
+			element = parent.find('.chargepoint-instantchargelimitamount');
+			setInputValue(element.attr('id'), chargemodeTemplate[templateIndex].chargemode.instant_charging.limit.amount);
 
+			// ***** pv_charging *****
+			// chargemode.pv_charging.min_current
+			element = parent.find('.chargepoint-pvchargemincurrent');
+			setInputValue(element.attr('id'), chargemodeTemplate[templateIndex].chargemode.pv_charging.min_current);
+			// chargemode.pv_charging.min_soc
+			element = parent.find('.chargepoint-pvchargeminsoc');
+			setInputValue(element.attr('id'), chargemodeTemplate[templateIndex].chargemode.pv_charging.min_soc);
+			// chargemode.pv_charging.max_soc
+			element = parent.find('.chargepoint-pvchargemaxsoc');
+			setInputValue(element.attr('id'), chargemodeTemplate[templateIndex].chargemode.pv_charging.max_soc);
+			// chargemode.pv_charging.min_soc_current
+			element = parent.find('.chargepoint-pvchargeminsoccurrent');
+			setInputValue(element.attr('id'), chargemodeTemplate[templateIndex].chargemode.pv_charging.min_soc_current);
+			// chargemode.pv_charging.feed_in_limit
+			var element = parent.find('.chargepoint-pvchargefeedinlimit');  // now get parents respective child element
+			if ( chargemodeTemplate[templateIndex].chargemode.pv_charging.feed_in_limit == 1 ) {
+				// element.prop('checked', true);
+				element.bootstrapToggle('on', true); // do not fire a changed-event to prevent a loop!
+			} else {
+				// element.prop('checked', false);
+				element.bootstrapToggle('off', true); // do not fire a changed-event to prevent a loop!
+			}
+
+			// ***** scheduled_charging *****
+			// chargemode.scheduled_charging.X
+			// first remove all schedule plans exept the template
+			parent.find('.chargepoint-scheduleplan[data-plan]').not('.chargepoint-scheduleplan-template').remove();
+			var sourceElement = parent.find('.chargepoint-scheduleplan-template');
+			// remove checkbox toggle button style as they will not function after cloning
+			sourceElement.find('input[type=checkbox][data-toggle^=toggle]').bootstrapToggle('destroy');
+			// now create any other schedule plan
+			chargemodeTemplate[templateIndex].chargemode.scheduled_charging.forEach(function(value){
+				console.log("schedule id: "+value.id);
+				console.log(value);
+				if( parent.find('.chargepoint-scheduleplan[data-plan='+value.id+']').length == 0){
+					console.log('creating schedule plan with id "'+value.id+'"');
+					var clonedElement = sourceElement.clone();
+					// update all data referencing the old index in our clone
+					clonedElement.attr('data-plan', value.id).data('plan', value.id);
+					// insert after last existing plan to honor sorting from the array
+					target = parent.find('.chargepoint-scheduleplan').last();
+					console.log("target: "+target.data('plan')+" index: "+value.id);
+					console.log(target);
+					// insert clone into DOM
+					clonedElement.insertAfter( $(target) );
+					// now get our created element and add checkbox toggle buttons
+					schedulePlanElement = parent.find('.chargepoint-scheduleplan[data-plan='+value.id+']');
+					schedulePlanElement.find('input[type=checkbox][data-toggle^=toggle]').bootstrapToggle();
+					// set values from payload
+					schedulePlanElement.find('.chargepoint-schedulename').text(value.name);
+					schedulePlanElement.find('.chargepoint-schedulesoc').text(value.soc);
+					schedulePlanElement.find('.chargepoint-scheduletime').text(value.time);
+					if( value.active == 1 ){
+						schedulePlanElement.find('.chargepoint-scheduleactive').bootstrapToggle('on', true);
+					} else {
+						schedulePlanElement.find('.chargepoint-scheduleactive').bootstrapToggle('off', true);
+					}
+					switch( value.frequency.selected ){
+						case "once":
+							schedulePlanElement.find('.chargepoint-schedulefrequency').addClass('hide');
+							schedulePlanElement.find('.chargepoint-scheduledate').removeClass('hide');
+							schedulePlanElement.find('.chargepoint-scheduleedit').removeClass('hide');
+							const d = new Date(value.frequency.once);
+							schedulePlanElement.find('.chargepoint-scheduledatevalue').text(d.toLocaleDateString(undefined, {year: "numeric", month: "2-digit", day: "2-digit", weekday: "short"}));
+							break;
+						case "daily":
+							schedulePlanElement.find('.chargepoint-schedulefrequency').removeClass('hide');
+							schedulePlanElement.find('.chargepoint-scheduledate').addClass('hide');
+							schedulePlanElement.find('.chargepoint-scheduleedit').addClass('hide');
+							schedulePlanElement.find('.chargepoint-schedulefrequencyvalue').text('täglich');
+							break;
+						case "weekly":
+							const days = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
+							var daysText = '';
+							value.frequency.weekly.forEach(function( dayValue, index ){
+								if( dayValue == true ){
+									if( daysText.length > 0 ){
+										daysText += ',';
+									}
+									daysText += days[index];
+								}
+							});
+							schedulePlanElement.find('.chargepoint-schedulefrequency').removeClass('hide');
+							schedulePlanElement.find('.chargepoint-scheduledate').addClass('hide');
+							schedulePlanElement.find('.chargepoint-scheduleedit').addClass('hide');
+							schedulePlanElement.find('.chargepoint-schedulefrequencyvalue').text(daysText);
+							break;
+						default:
+							console.log("unknown schedule frequency: "+value.frequency.selected);
+					}
+					// finally show our new chargepoint
+					clonedElement.removeClass('chargepoint-scheduleplan-template').removeClass('hide');
+				} else {
+					console.log('schedule plan '+value.id+' already exists');
+				}
+			});
+		} else {
+			console.log('no chargepoints with chargetemplate "'+templateIndex+'" found');
+		}
 	}
 }
 
@@ -173,7 +254,7 @@ function processGlobalCounterMessages(mqttmsg, mqttpayload) {
 				client.unsubscribe(topic[0]);
 			}
 		});
-		// first remove all chargepoints exept the first
+		// first remove all chargepoints exept the template
 		$('.chargepoint-card[data-cp]').not('.chargepoint-template').remove();
 		// now create any other chargepoint
 		var hierarchy = JSON.parse(mqttpayload);
