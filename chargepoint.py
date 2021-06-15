@@ -263,7 +263,7 @@ class chargepoint():
                         # Aktuelle Ladeleistung und Differenz wieder freigeben.
                         if charging_ev.data["control_parameter"]["phases"] == 3:
                             data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= charging_ev.data["control_parameter"]["required_current"] * 3 * 230
-                        else:
+                        elif charging_ev.data["control_parameter"]["phases"] == 1:
                             data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= charging_ev.ev_template.data["max_current_one_phase"] * 230
                 # Wenn eine Umschaltung im Gange ist, muss erst gewartet werden, bis diese fertig ist.
                 elif self.data["set"]["phases_to_use"] != charging_ev.data["control_parameter"]["phases"]:
@@ -280,7 +280,7 @@ class chargepoint():
                             data.pv_data["all"].data["set"]["reserved_evu_overhang"] += charging_ev.data["control_parameter"]["required_current"] * 3 * 230
                             charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] = timecheck.create_timestamp()
                             pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num) + "/control_parameter/timestamp_perform_phase_switch", charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"])
-                        else:
+                        elif charging_ev.data["control_parameter"]["phases"] == 1:
                             message = "Umschaltung von 3 auf 1 Phase."
                             # Timestamp für die Durchführungsdauer
                             charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] = timecheck.create_timestamp()
@@ -321,7 +321,10 @@ class chargepoint():
                 log.message_debug_log("debug", "timestamp_perform_phase_switch "+str(charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"])+"control_parameter phases "+str(charging_ev.data["control_parameter"]["phases"])+"phases_in_use "+str(self.data["get"]["phases_in_use"]))
                 charging_ev.data["control_parameter"]["phases"] = self.data["get"]["phases_in_use"]
                 if charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] == "0":
-                    phases = self.data["get"]["phases_in_use"]
+                    if self.data["get"]["phases_in_use"] == 1:
+                        phases = 1
+                    else:
+                        phases = 3
                 else:
                     phases = charging_ev.data["control_parameter"]["phases"]
             elif chargemode_phases < phases:
