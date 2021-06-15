@@ -6,7 +6,7 @@ Das json-Objekt (=Zeile im Ladelog) enthält diese Daten:
 {"chargepoint": {"id": 1, "name": "Hof", "rfid": 1234}, 
 "vehicle": { "id": 1, "name":"Model 3", "chargemode": "pv_charging", "prio": True }, 
 "time": { "begin":<timestamp>, "end":<timestamp>, "time_charged": "1 H, 34 Min", 
-"data": {"range_charged": 34, "charged_since_mode_switch_counter": 3400, "charged_since_plugged_counter": 5000, "power": 110000, "price": 3,42} }}
+"data": {"range_charged": 34, "charged_since_mode_switch_counter": 3400, "charged_since_plugged_counter": 5000, "power": 110000, "costs": 3,42} }}
 Eine neue Zeile wird bei Abstecken oder Wechsel des Lademodus/Priorität erzeugt. (bearbeitet) 
 weißes_häkchen
 augen
@@ -96,7 +96,7 @@ import timecheck
 # json-Objekt: {"chargepoint": {"id": 1, "name": "Hof", "rfid": 1234}, 
 # "vehicle": { "id": 1, "name":"Model 3", "chargemode": "pv_charging", "prio": True }, 
 # "time": { "begin":"27.05.2021 07:43", "end": "27.05.2021 07:50", "time_charged": "1:34", 
-# "data": {"range_charged": 34, "charged_since_mode_switch": 3400, "charged_since_plugged_counter": 5000, "power": 110000, "price": 3,42} }}
+# "data": {"range_charged": 34, "charged_since_mode_switch": 3400, "charged_since_plugged_counter": 5000, "power": 110000, "costs": 3,42} }}
 
 def collect_data(chargepoint):
     """
@@ -143,29 +143,29 @@ def save_data(chargepoint, charging_ev):
         EV, das an diesem Ladepunkt lädt. (Wird extra übergeben, da es u.U. noch nicht zugewiesen ist und nur die Nummer aus dem Broker in der LP-Klasse hinterlegt ist.)
     """
     try:
-        time_charged = charging_ev.data["get"]["time_charged"]
+        time_charged = timecheck.get_difference(charging_ev.data["get"]["timestamp_start_charging"])
         if time_charged != 0:
-            power = round(charging_ev.data["get"]["charged_since_mode_switch"] / time_charged, 2)
+            power = round(charging_ev.data["get"]["charged_since_mode_switch"] / time_charged*60*60, 2)
         else:
             power = 0
         if time_charged > 60*60:
             duration = str(int(time_charged/3600)) + " H "+ str(int((time_charged%3600)/60)) +" Min"
         else:
             duration = str(int(time_charged/60)) + " Min"
-        
+        costs = data_module.general_data["general"].data["price_kwh"] * charging_ev.data["get"]["charged_since_mode_switch"]/1000 / 100
         new_entry = {
             "chargepoint": 
             {
                 "id": chargepoint.cp_num, 
                 "name": chargepoint.data["config"]["name"], 
-                "rfid": chargepoint.data["get"]["rfid"]
                 }, 
             "vehicle": 
             { 
                 "id": charging_ev.ev_num, 
                 "name": charging_ev.data["name"], 
                 "chargemode": charging_ev.data["control_parameter"]["chargemode"], 
-                "prio": charging_ev.data["control_parameter"]["prio"] 
+                "prio": charging_ev.data["control_parameter"]["prio"],
+                "rfid": chargepoint.data["get"]["rfid"]
                 }, 
             "time": 
             { 
@@ -179,7 +179,7 @@ def save_data(chargepoint, charging_ev):
                 "charged_since_mode_switch": charging_ev.data["get"]["charged_since_mode_switch"], 
                 "charged_since_plugged_counter": charging_ev.data["get"]["charged_since_plugged_counter"], 
                 "power": power, 
-                "price": data_module.general_data["general"].data["price_kwh"]
+                "costs": costs
                 } 
             }
 
@@ -213,10 +213,135 @@ def save_data(chargepoint, charging_ev):
         log.exception_logging(e)
     
 
-def get_log_data():
+def get_log_data(request):
     """ json-Objekt mit gefilterten Logdaten erstellen
+
+    Parameter
+    ---------
+    request: dict
+        Infos zum Request: Monat, Jahr, Filter
     """
-    pass
+    # Datei einlesen
+    filepath = "./data/"+str(request["year"])+str(request["month"])+".json"
+    data = []
+    try:
+        with open(filepath, "r") as jsonFile:
+            chargelog = json.load(jsonFile)
+    except FileNotFoundError:
+        pass
+    filter = request["filter"]
+    # Liste mit gefilterten Einträgen erstellen
+    for entry in chargelog:
+        # Jeden Eintrag nur einmal anfügen, auch wenn mehrere Kriterien zutreffen
+        appended = False
+        if "chargepoint" in filter:
+            if "id" in filter["chargepoint"]:
+                for id in filter["chargepoint"]["id"]:
+                    if id == entry["chargepoint"]["id"]:
+                        data.append(entry)
+                        appended = True
+                        break
+                if appended == True:
+                    continue
+        if "vehicle" in filter:
+            if "id" in filter["vehicle"]:
+                for id in filter["vehicle"]["id"]:
+                    if id == entry["vehicle"]["id"]:
+                        data.append(entry)
+                        appended = True
+                        break
+                if appended == True:
+                    continue
+            if "rfid" in filter["vehicle"]:
+                for rfid in filter["vehicle"]["rfid"]:
+                    if rfid == entry["vehicle"]["rfid"]:
+                        data.append(entry)
+                        appended = True
+                        break
+                if appended == True:
+                    continue
+            if "chargemode" in filter["vehicle"]:
+                for chargemode in filter["vehicle"]["chargemode"]:
+                    if chargemode == entry["vehicle"]["chargemode"]:
+                        data.append(entry)
+                        appended = True
+                        break
+                if appended == True:
+                    continue
+            if "prio" in filter["vehicle"]:
+                for prio in filter["vehicle"]["prio"]:
+                    if prio == entry["vehicle"]["prio"]:
+                        data.append(entry)
+                        appended = True
+                        break
+                if appended == True:
+                    continue
+
+    if len(data) > 0:
+        # Summen bilden
+        duration = 0
+        duration_h = 0
+        duration_min = 0
+        range = 0
+        mode = 0
+        plugged = 0
+        power = 0
+        costs = 0
+        for entry in data:
+            pos_h = entry["time"]["time_charged"].find("H")
+            pos_min = entry["time"]["time_charged"].find("M")
+            if pos_h != -1:
+                duration_h_entry = int(entry["time"]["time_charged"][0:pos_h-1])
+                duration_min_entry = int(entry["time"]["time_charged"][pos_h+1:pos_min-1])
+            else:
+                duration_h_entry = 0
+                duration_min_entry = int(entry["time"]["time_charged"][0:pos_min-1])
+            duration_min += duration_min_entry 
+            duration_h += duration_h_entry
+
+            range += entry["data"]["range_charged"]
+            mode += entry["data"]["charged_since_mode_switch"]
+            plugged += entry["data"]["charged_since_plugged_counter"]
+            power += entry["data"]["power"]
+            costs += entry["data"]["costs"]
+        power = power / len(data)
+        if duration_h != 0:
+            duration = str(duration_h)+" H"+str(duration_min)+" Min"
+        else:
+            duration = str(duration_min)+" Min"
+        sum = {
+                "chargepoint": 
+                {
+                    "id": "ID", 
+                    "name": "Name", 
+                    }, 
+                "vehicle": 
+                { 
+                    "id": "ID", 
+                    "name": "Name", 
+                    "chargemode": "Lademodus", 
+                    "prio": "Priorität",
+                    "rfid": "RFID"
+                    }, 
+                "time": 
+                { 
+                    "begin": "Startzeit", 
+                    "end": "Endzeit", 
+                    "time_charged": duration
+                    }, 
+                "data": 
+                {
+                    "range_charged": range, 
+                    "charged_since_mode_switch": mode, 
+                    "charged_since_plugged_counter": plugged, 
+                    "power": power, 
+                    "costs": costs
+                    } 
+                }
+        data.append(sum)
+
+    pub.pub("openWB/set/log/data", data)
+
 
 def reset_data(chargepoint, charging_ev):
     """nach dem Abstecken Log-Eintrag erstelen und alle Log-Daten zurücksetzen.
