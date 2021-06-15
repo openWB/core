@@ -468,6 +468,9 @@
 										<label class="btn btn-outline-primary btn-toggle">
 											<input type="radio" name="chargemode" data-option="scheduled_charging">Zielladen
 										</label>
+										<label class="btn btn-outline-secondary btn-toggle">
+											<input type="radio" name="chargemode" data-option="standby">Standby
+										</label>
 										<label class="btn btn-outline-dark btn-toggle">
 											<input type="radio" name="chargemode" data-option="stop">Stop
 										</label>
@@ -554,7 +557,7 @@
 										</div>
 									</div>
 									<div class="chargemode-options chargemode-option-pv_charging">
-										<h3 c>Einstellungen für "PV"</h3>
+										<h3>Einstellungen für "PV"</h3>
 										<div class="form-row mb-1">
 											<div class="col">
 												Einspeisegrenze beachten
@@ -762,7 +765,7 @@
 				// show/hide all option-parameters in form-rows for selected option
 				var parent = btnGrp.closest('.chargepoint-card[data-cp]');  // get parent div element for charge limitation options
 				var chargemodeOptionsElement = $(parent).find('.chargepoint-chargemodeoptions');
-				if( option == "stop" ) {
+				if( option == "stop" || option == "standby" ) {
 					chargemodeOptionsElement.addClass('hide');
 				} else {
 					chargemodeOptionsElement.removeClass('hide');
