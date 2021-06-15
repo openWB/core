@@ -636,7 +636,7 @@ function updateGraph(dataset) {
 		chartUpdateBuffer = [];
 		myLine.update();
 	} else {
-		console.log('graph not yet initialized, data stored in buffer');
+		// console.log('graph not yet initialized, data stored in buffer');
 	}
 }
 
@@ -770,7 +770,7 @@ function showhide(thedataset) {
 }
 
 function subscribeMqttGraphSegments() {
-	console.log('subscribing to graph topics');
+	// console.log('subscribing to graph topics');
 	for (var segments = 1; segments < 17; segments++) {
 		// topic = "openWB/graph/" + segments + "alllivevalues";
 		topic = "openWB/graph/alllivevaluesJson" + segments;
@@ -779,7 +779,7 @@ function subscribeMqttGraphSegments() {
 }
 
 function unsubscribeMqttGraphSegments() {
-	console.log('unsubscribing from graph topics');
+	// console.log('unsubscribing from graph topics');
 	for (var segments = 1; segments < 17; segments++) {
 		// topic = "openWB/graph/" + segments + "alllivevalues";
 		topic = "openWB/graph/alllivevaluesJson" + segments;
