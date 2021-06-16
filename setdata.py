@@ -64,6 +64,8 @@ class setData():
             self.process_optional_topic(client, userdata, msg)
         elif "openWB/set/counter/" in msg.topic:
             self.process_counter_topic(client, userdata, msg)
+        elif "openWB/set/log/" in msg.topic:
+            self.process_log_topic(client, userdata, msg)
         elif "openWB/set/loadvarsdone" in msg.topic:
             self._validate_value(msg, int, [(0, 1)])
 
@@ -289,16 +291,16 @@ class setData():
             elif (re.search("^openWB/set/vehicle/[0-9]+/charge_template$", msg.topic) != None or
                     re.search("^openWB/set/vehicle/[0-9]+/ev_template$", msg.topic) != None):
                 self._validate_value(msg, int, [(0, None)])
+            elif (re.search("^openWB/set/vehicle/[0-9]+/get/time_charged$", msg.topic) != None or
+                    re.search("^openWB/set/vehicle/[0-9]+/get/soc_timestamp$", msg.topic) != None):
+                self._validate_value(msg, int, [(0, None)])
             elif (re.search("^openWB/set/vehicle/[0-9]+/get/daily_counter$", msg.topic) != None or
-                    re.search("^openWB/set/vehicle/[0-9]+/get/time_charged$", msg.topic) != None or
+                    re.search("^openWB/set/vehicle/[0-9]+/get/range_charged$", msg.topic) != None or
                     re.search("^openWB/set/vehicle/[0-9]+/get/counter$", msg.topic) != None or
                     re.search("^openWB/set/vehicle/[0-9]+/get/charged_since_mode_switch$", msg.topic) != None or 
                     re.search("^openWB/set/vehicle/[0-9]+/get/charged_since_plugged_counter$", msg.topic) != None or 
                     re.search("^openWB/set/vehicle/[0-9]+/get/counter_at_mode_switch$", msg.topic) != None or
-                    re.search("^openWB/set/vehicle/[0-9]+/get/counter_at_plugtime$", msg.topic) != None or
-                    re.search("^openWB/set/vehicle/[0-9]+/get/soc_timestamp$", msg.topic) != None):
-                self._validate_value(msg, int, [(0, None)])
-            elif re.search("^openWB/set/vehicle/[0-9]+/get/range_charged$", msg.topic) != None:
+                    re.search("^openWB/set/vehicle/[0-9]+/get/counter_at_plugtime$", msg.topic) != None):
                 self._validate_value(msg, float, [(0, None)])
             elif re.search("^openWB/set/vehicle/[0-9]+/get/timestamp_start_charging$", msg.topic) != None:
                 self._validate_value(msg, str)
@@ -749,8 +751,25 @@ class setData():
         except Exception as e:
             log.exception_logging(e)
 
-    # def processSmarthomeTopic(self, client, userdata, msg):
-    #     """
-    #     """
-    #     pass
+    def process_log_topic(self, client, userdata, msg):
+        """Handler für die Log-Topics
+
+         Parameters
+        ----------
+        client : (unused)
+            vorgegebener Parameter
+        userdata : (unused)
+            vorgegebener Parameter
+        msg:
+            enthält Topic und Payload
+        """
+        try:
+            if (re.search("^openWB/set/log/request$", msg.topic) != None or
+                    re.search("^openWB/set/log/data$", msg.topic) != None):
+                self._validate_value(msg, "json")
+            else:
+                log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
+                pub.pub(msg.topic, "")
+        except Exception as e:
+            log.exception_logging(e)
 

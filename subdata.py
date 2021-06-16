@@ -7,6 +7,7 @@ import re
 import threading
 
 import bat
+import chargelog
 import chargepoint
 import counter
 import ev
@@ -61,6 +62,7 @@ class subData():
         client.message_callback_add("openWB/optional/#", self.process_optional_topic)
         client.message_callback_add("openWB/counter/#", self.process_counter_topic)
         client.message_callback_add("openWB/graph/#", self.process_graph_topic)
+        client.message_callback_add("openWB/log/#", self.process_log_topic)
         client.message_callback_add("openWB/loadvarsdone", self.process_loadvarsdone)
 
         client.connect(mqtt_broker_ip, 1883)
@@ -523,10 +525,20 @@ class subData():
         except Exception as e:
             log.exception_logging(e)
 
-    # def processSmarthomeTopic(self, client, userdata, msg):
-    #     """
-    #     """
-    #     pass
+    def process_log_topic(self, client, userdata, msg):
+        """Handler für die Log-Topics
+
+         Parameters
+        ----------
+        client : (unused)
+            vorgegebener Parameter
+        userdata : (unused)
+            vorgegebener Parameter
+        msg:
+            enthält Topic und Payload
+        """
+        if "openWB/log/request" in msg.topic:
+            chargelog.get_log_data(json.loads(str(msg.payload.decode("utf-8"))))
 
     def process_loadvarsdone(self, client, userdata, msg):
         try:

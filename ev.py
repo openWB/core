@@ -72,12 +72,19 @@ class ev():
             self.data["control_parameter"]["submode"] = "stop"
             self.data["control_parameter"]["chargemode"] = "stop"
 
-            self.data["get"]["counter_at_plugtime"] = 0
-            self.data["get"]["timestamp_start_charging"] = "0"
-            self.data["get"]["counter_at_mode_switch"] = 0
-            self.data["get"]["charged_since_mode_switch"] = 0
-            self.data["get"]["range_charged"] = 0
-            self.data["get"]["time_charged"] = 0
+            # bestehende Logdaten auf dem Broker nicht zurücksetzen
+            if "counter_at_plugtime" not in self.data["get"]:
+                self.data["get"]["counter_at_plugtime"] = 0
+            if "timestamp_start_charging" not in self.data["get"]:
+                self.data["get"]["timestamp_start_charging"] = "0"
+            if "counter_at_mode_switch" not in self.data["get"]:
+                self.data["get"]["counter_at_mode_switch"] = 0
+            if "charged_since_mode_switch" not in self.data["get"]:
+                self.data["get"]["charged_since_mode_switch"] = 0
+            if "range_charged" not in self.data["get"]:
+                self.data["get"]["range_charged"] = 0
+            if "time_charged" not in self.data["get"]:
+                self.data["get"]["time_charged"] = 0
             pub.pub("openWB/set/vehicle/"+str(self.ev_num)+"/get/counter_at_plugtime", self.data["get"]["counter_at_plugtime"])
             pub.pub("openWB/set/vehicle/"+str(self.ev_num)+"/get/timestamp_start_charging", self.data["get"]["timestamp_start_charging"])
             pub.pub("openWB/set/vehicle/"+str(self.ev_num)+"/get/counter_at_mode_switch", self.data["get"]["counter_at_mode_switch"])
@@ -173,7 +180,7 @@ class ev():
             
             # Die benötigte Stromstärke hat sich durch eine Änderung des Lademdous oder der Konfiguration geändert.
             # Der Ladepunkt muss in der Regelung neu priorisiert werden.
-            if self.data["control_parameter"]["required_current"] != required_current:
+            if self.data["control_parameter"]["required_current"] != required_current or set_current != required_current:
                 # Wenn im PV-Laden mit übrigem Überschuss geladen wird und dadurch die aktuelle Soll-Stromstärke über der neuen benötigten Stromstärke liegt, 
                 # muss der LP im Algorithmus nicht neu eingeordnet werden, da der LP mit der bisherigen Stormstärke weiter laden kann und sich die benötigte 
                 # Stromstärke nur auf die Reihenfolge innerhalb des Prioritätstupels bezieht und auf dieser Ebene kein LP, der bereits lädt, für einen neu 
