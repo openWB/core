@@ -102,7 +102,7 @@ class prepare():
                             # Da nicht bekannt ist, ob mit Bezug, Überschuss oder aus dem Speicher geladen wird, wird die freiwerdende Leistung erst im nächsten Durchlauf berücksichtigt.
                             # Ggf. entsteht so eine kurze Unterbrechung der Ladung, wenn während dem Laden umkonfiguriert wird.
                         # Ein Eintrag muss nur erstellt werden, wenn vorher schon geladen wurde.
-                        if mode_changed == True and cp.data["get"]["charge_state"]:
+                        if mode_changed == True and cp.data["get"]["charge_state"] == True:
                             chargelog.save_data(cp, charging_ev)
 
                         charging_ev.set_control_parameter(submode, required_current)
