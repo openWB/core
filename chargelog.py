@@ -107,7 +107,7 @@ def collect_data(chargepoint):
         Ladepunkt, dessen Logdaten gesammelt werden
     """
     try:
-        charging_ev = chargepoint.data["set"]["charging_ev"]
+        charging_ev = chargepoint.data["set"]["charging_ev_data"]
         if chargepoint.data["get"]["plug_state"] == True:
             # Zählerstand beim Einschalten merken
             if charging_ev.data["get"]["counter_at_plugtime"] == 0:
@@ -147,6 +147,9 @@ def save_data(chargepoint, charging_ev, reset = False):
         Sonst schon, damit zwiwchen save_data und dem nächsten collect_data keine Daten verloren gehen.
     """
     try:
+        if charging_ev.data["get"]["time_charged"] == 0 or charging_ev == -1:
+            # Die Daten wurden schon erfasst oder es wurde noch nie ein Auto zugeordnet.
+            return
         # Daten vor dem Speichern nochmal aktualisieren
         collect_data(chargepoint)
         time_charged = charging_ev.data["get"]["time_charged"]
@@ -158,7 +161,7 @@ def save_data(chargepoint, charging_ev, reset = False):
             duration = str(int(time_charged/3600)) + " H "+ str(int((time_charged%3600)/60)) +" Min"
         else:
             duration = str(int(time_charged/60)) + " Min"
-        costs = data_module.general_data["general"].data["price_kwh"] * charging_ev.data["get"]["charged_since_mode_switch"] / 100
+        costs = data_module.general_data["general"].data["price_kwh"] * charging_ev.data["get"]["charged_since_mode_switch"] / 10
         new_entry = {
             "chargepoint": 
             {
@@ -352,7 +355,7 @@ def get_log_data(request):
     pub.pub("openWB/set/log/data", data)
 
 
-def reset_data(chargepoint, charging_ev):
+def reset_data(chargepoint, charging_ev, immediately = True):
     """nach dem Abstecken Log-Eintrag erstelen und alle Log-Daten zurücksetzen.
 
     Parameter
@@ -361,14 +364,23 @@ def reset_data(chargepoint, charging_ev):
         Ladepunkt
     charging_ev: class
         EV, das an diesem Ladepunkt lädt. (Wird extra übergeben, da es u.U. noch nicht zugewiesen ist und nur die Nummer aus dem Broker in der LP-Klasse hinterlegt ist.)
+    immediately: bool
+        Soll sofort ein Eintrag erstellt werden oder gewartet werden, bis die Ladung beendet ist.
     """
     try:
+        if charging_ev == -1:
+            # Es wurde noch nie ein Auto zugeordnet.
+            return
+        if immediately == False:
+            if chargepoint.data["get"]["power_all"] != 0:
+                return
         save_data(chargepoint, charging_ev, reset = True)
 
         charging_ev.data["get"]["counter_at_plugtime"] = 0
         pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/get/counter_at_plugtime", charging_ev.data["get"]["counter_at_plugtime"])
         charging_ev.data["get"]["charged_since_plugged_counter"] = 0
         pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/get/charged_since_plugged_counter", charging_ev.data["get"]["charged_since_plugged_counter"])
+
     except Exception as e:
         log.exception_logging(e)
 
