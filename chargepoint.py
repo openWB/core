@@ -32,8 +32,8 @@ class allChargepoints():
                             chargepoint.data["set"]["charging_ev"] == -1 or 
                             # Kein EV, das auf das Ablaufen der Einschalt- oder Phasenumschaltverzögerung wartet
                             (chargepoint.data["set"]["charging_ev"] != -1 and 
-                            chargepoint.data["set"]["charging_ev"].data["control_parameter"]["timestamp_perform_phase_switch"] == "0" and
-                            chargepoint.data["set"]["charging_ev"].data["control_parameter"]["timestamp_switch_on_off"] == "0")):
+                            chargepoint.data["set"]["charging_ev_data"].data["control_parameter"]["timestamp_perform_phase_switch"] == "0" and
+                            chargepoint.data["set"]["charging_ev_data"].data["control_parameter"]["timestamp_switch_on_off"] == "0")):
                         continue
                     else:
                         break
@@ -210,7 +210,7 @@ class chargepoint():
             else:
                 # Daten zurücksetzen, wenn nicht geladen werden soll.
                 if self.data["set"]["charging_ev"] != -1:
-                    data.ev_data["ev"+str(self.data["set"]["charging_ev"])].reset_ev()
+                    data.ev_data["ev"+str(self.data["set"]["charging_ev_data"])].reset_ev()
                     data.pv_data["all"].reset_switch_on_off(self, data.ev_data["ev"+str(self.data["set"]["charging_ev"])])
                 self.data["set"]["charging_ev"] = -1
                 pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/charging_ev", -1)
@@ -228,7 +228,7 @@ class chargepoint():
         """ prüft, ob eine Control Pilot- Unterbrechung erforderlich ist und führt diese durch.
         """
         try:
-            charging_ev = self.data["set"]["charging_ev"]
+            charging_ev = self.data["set"]["charging_ev_data"]
             # Unterstützt der Ladepunkt die CP-Unterbrechung und benötigt das Auto eine CP-Unterbrechung?
             if self.data["config"]["control_pilot_interruption_hw"] == True and charging_ev.ev_template.data["control_pilot_interruption"] == True:
                 # Wird die Ladung gestartet?
@@ -243,7 +243,7 @@ class chargepoint():
         """prüft, ob eine Phasenumschaltung erforderlich ist und führt diese durch.
         """
         try:
-            charging_ev = self.data["set"]["charging_ev"]
+            charging_ev = self.data["set"]["charging_ev_data"]
             if charging_ev.ev_template.data["prevent_switch_stop"] == False:
                 # Einmal muss die Anzahl der Phasen gesetzt werden.
                 if "phases_to_use" not in self.data["set"]:
@@ -303,7 +303,7 @@ class chargepoint():
         """
         try:
             phases = 0
-            charging_ev = self.data["set"]["charging_ev"]
+            charging_ev = self.data["set"]["charging_ev_data"]
             config = self.data["config"]
             if charging_ev.ev_template.data["max_phases"] <= config["connected_phases"]:
                 phases = charging_ev.ev_template.data["max_phases"]

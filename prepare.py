@@ -80,7 +80,7 @@ class prepare():
                             chargelog.collect_data(cp)
                             if max(cp.data["get"]["current"]) != 0:
                                 cp.data["set"]["current"] = 0
-                        cp.data["set"]["charging_ev"] = charging_ev
+                        cp.data["set"]["charging_ev_data"] = charging_ev
 
                         state, message_ev, submode, required_current = charging_ev.get_required_current()
                         self._pub_connected_vehicle(charging_ev, cp.cp_num)
@@ -91,7 +91,7 @@ class prepare():
                         
                         if message_ev != None:
                             message = "Keine Ladung, da "+str(message_ev)
-                        log.message_debug_log("debug", "Ladepunkt "+cp.cp_num+", EV: "+cp.data["set"]["charging_ev"].data["name"]+" (EV-Nr."+str(vehicle)+")")
+                        log.message_debug_log("debug", "Ladepunkt "+cp.cp_num+", EV: "+cp.data["set"]["charging_ev_data"].data["name"]+" (EV-Nr."+str(vehicle)+")")
                         
                         # Die benötigte Stromstärke hat sich durch eine Änderung des Lademdous oder der Konfiguration geändert. Die Zuteilung entsprechend der Priorisierung muss neu geprüft werden.
                         # Daher muss der LP zurückgesetzt werden, wenn er gerade lädt, um in der Regelung wieder berücksichtigt zu werden.
@@ -120,7 +120,7 @@ class prepare():
                             log.message_debug_log("debug", "EV"+str(charging_ev.ev_num)+": Theroretisch benötigter Strom "+str(required_current)+"A, Lademodus "+str(
                                 charging_ev.charge_template.data["chargemode"]["selected"])+", Submodus: "+str(charging_ev.data["control_parameter"]["submode"])+", Prioritaet: "+str(charging_ev.charge_template.data["prio"])+", max. Ist-Strom: "+str(max(cp.data["get"]["current"])))
                     else:
-                        cp.data["set"]["charging_ev"] = vehicle
+                        cp.data["set"]["charging_ev_data"] = vehicle
                     if message != None:
                         log.message_debug_log("info", "LP "+str(cp.cp_num)+": "+message)
                     cp.data["get"]["state_str"] = message

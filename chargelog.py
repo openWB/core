@@ -107,7 +107,7 @@ def collect_data(chargepoint):
         Ladepunkt, dessen Logdaten gesammelt werden
     """
     try:
-        charging_ev = chargepoint.data["set"]["charging_ev"]
+        charging_ev = chargepoint.data["set"]["charging_ev_data"]
         if chargepoint.data["get"]["plug_state"] == True:
             # Zählerstand beim Einschalten merken
             if charging_ev.data["get"]["counter_at_plugtime"] == 0:
