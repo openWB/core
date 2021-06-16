@@ -208,9 +208,6 @@ class chargepoint():
             if charging_possbile == True:
                 return self.template.get_ev(self.data["get"]["rfid"], self.cp_num), message
             else:
-                # Ladelog-Eintrag erstellen, im ersten Zyklus wenn das EV abgesteckt wurde. 
-                if self._is_ev_plugged()[0] == False and self.data["set"]["charging_ev"] != -1:
-                    chargelog.reset_data(self, data.ev_data["ev"+str(self.data["set"]["charging_ev"])])
                 # Daten zurücksetzen, wenn nicht geladen werden soll.
                 if self.data["set"]["charging_ev"] != -1:
                     data.ev_data["ev"+str(self.data["set"]["charging_ev"])].reset_ev()

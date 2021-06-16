@@ -77,6 +77,7 @@ class prepare():
                             data.pv_data["all"].reset_switch_on_off(cp, charging_ev)
                             charging_ev.reset_phase_switch()
                             chargelog.reset_data(cp, data.ev_data["ev"+str(cp.data["set"]["charging_ev"])])
+                            chargelog.collect_data(cp)
                             if max(cp.data["get"]["current"]) != 0:
                                 cp.data["set"]["current"] = 0
                         cp.data["set"]["charging_ev"] = charging_ev
