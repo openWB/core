@@ -152,7 +152,7 @@ class ev():
             log.exception_logging(e)
             return False, "ein interner Fehler aufgetreten ist.", "stop", 0
 
-    def check_state(self, required_current, set_current):
+    def check_state(self, required_current, set_current, charge_state):
         """ prüft, ob sich etwas an den Parametern für die Regelung geändert hat, 
         sodass der LP neu in die Priorisierung eingeordnet werden muss und publsihed die Regelparameter.
 
@@ -180,7 +180,7 @@ class ev():
             
             # Die benötigte Stromstärke hat sich durch eine Änderung des Lademdous oder der Konfiguration geändert.
             # Der Ladepunkt muss in der Regelung neu priorisiert werden.
-            if self.data["control_parameter"]["required_current"] != required_current or set_current != required_current:
+            if self.data["control_parameter"]["required_current"] != required_current or (set_current != required_current and charge_state == True):
                 # Wenn im PV-Laden mit übrigem Überschuss geladen wird und dadurch die aktuelle Soll-Stromstärke über der neuen benötigten Stromstärke liegt, 
                 # muss der LP im Algorithmus nicht neu eingeordnet werden, da der LP mit der bisherigen Stormstärke weiter laden kann und sich die benötigte 
                 # Stromstärke nur auf die Reihenfolge innerhalb des Prioritätstupels bezieht und auf dieser Ebene kein LP, der bereits lädt, für einen neu 
