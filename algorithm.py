@@ -1029,7 +1029,7 @@ def use_evu_bat_power(chargepoint, required_power, required_current, phases, pv_
         if pv_mode == True:
             return_power = data.pv_data["all"].allocate_evu_power(required_power)
         else:
-            return_power = data.bat_data["all"].allocate_bat_power(required_power)
+            return_power = data.bat_module_data["all"].allocate_bat_power(required_power)
         if return_power != 0:
             required_current += return_power / phases / 230
             required_current = chargepoint.data["set"]["charging_ev"].check_min_max_current(required_current, phases, pv = True)

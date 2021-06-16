@@ -87,7 +87,7 @@ class prepare():
                         cp.get_phases(charging_ev.charge_template.data["chargemode"]["selected"])
                         # Einhaltung des Minimal- und Maximalstroms prüfen
                         required_current = charging_ev.check_min_max_current(required_current, charging_ev.data["control_parameter"]["phases"])
-                        current_changed, mode_changed = charging_ev.check_state(required_current, cp.data["set"]["current"])
+                        current_changed, mode_changed = charging_ev.check_state(required_current, cp.data["set"]["current"], cp.data["get"]["charge_state"])
                         
                         if message_ev != None:
                             message = "Keine Ladung, da "+str(message_ev)
