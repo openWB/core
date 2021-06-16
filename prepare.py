@@ -73,14 +73,19 @@ class prepare():
                     if vehicle != -1:
                         charging_ev = data.ev_data["ev"+str(vehicle)]
                         # Wenn sich das Auto ändert und vorher ein Auto zugeordnet war, Werte des alten Autos zurücksetzen, zB wenn das EV geändert wird, während ein EV angesteckt ist.
-                        if cp.data["set"]["charging_ev"] != charging_ev.ev_num and cp.data["set"]["charging_ev"] != -1:
-                            data.pv_data["all"].reset_switch_on_off(cp, charging_ev)
-                            charging_ev.reset_phase_switch()
-                            chargelog.reset_data(cp, data.ev_data["ev"+str(cp.data["set"]["charging_ev"])])
+                        if cp.data["set"]["charging_ev"] != charging_ev.ev_num:
+                            if cp.data["set"]["charging_ev"] != -1:
+                                data.pv_data["all"].reset_switch_on_off(cp, charging_ev)
+                                charging_ev.reset_phase_switch()
+                            # Daten des alten EV speichern und löschen
+                            chargelog.reset_data(cp, cp.data["set"]["charging_ev_data"])
+                            # Daten des neuen EV aufzeichnen
+                            cp.data["set"]["charging_ev_data"] = charging_ev
                             chargelog.collect_data(cp)
                             if max(cp.data["get"]["current"]) != 0:
                                 cp.data["set"]["current"] = 0
-                        cp.data["set"]["charging_ev_data"] = charging_ev
+                        else:
+                            cp.data["set"]["charging_ev_data"] = charging_ev
 
                         state, message_ev, submode, required_current = charging_ev.get_required_current()
                         self._pub_connected_vehicle(charging_ev, cp.cp_num)

@@ -23,6 +23,7 @@ class charge():
                         chargelog.collect_data(chargepoint)
                     else:
                         # LP, an denen nicht geladen werden darf
+                        chargelog.reset_data(chargepoint, chargepoint.data["set"]["charging_ev_data"], immediately = False)
                         chargepoint.data["set"]["current"] = 0
                         pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/set/current", 0)
                     if chargepoint.data["get"]["state_str"] != None:
