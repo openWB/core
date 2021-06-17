@@ -26,6 +26,10 @@ function updateLabel(elementId) {
     }
 }
 
+function transformRangeValue(formula){
+    return new Function('return ' + formula)();
+}
+
 function setInputValue(elementId, value) {
     /** @function setInputValue
      * sets the value-label (if exists) attached to the element to the element value
@@ -33,11 +37,20 @@ function setInputValue(elementId, value) {
      * @param {string} value - the value the element has to be set to
      * if the element has data-attribute 'signcheckbox' the checkbox with the id of the attribute
      * will represent negative numbers by being checked
+     * if the element has data-attribute 'list' the value will be selected from the list
+     * if the element hat data-attribute 'transformation' the value will be calculated by the given formula
      */
     if ( !isNaN(value) ) {
         var element = $('#' + $.escapeSelector(elementId));
         if(list = $(element).attr('data-list')){
             value = parseInt(list.split(',').findIndex(item => item == value));
+        } else if(formula = $(element).attr('data-transformation')){
+            // console.log(formula);
+            formula = JSON.parse(formula);
+            // console.log(formula);
+            formula = formula.in.replace('<v>', value);
+            // console.log(formula);
+            value = transformRangeValue(formula);
         }
         var signCheckboxName = element.data('signcheckbox');
         var signCheckbox = $('#' + signCheckboxName);
