@@ -136,7 +136,7 @@ class ev():
                 required_current, submode, message = self.charge_template.time_charging()
             if (required_current == 0) or (required_current == None):
                 if self.charge_template.data["chargemode"]["selected"] == "instant_charging":
-                    required_current, submode, message = self.charge_template.instant_charging(self.data["get"]["soc"], self.data["get"]["charged_since_plugged_counter"])
+                    required_current, submode, message = self.charge_template.instant_charging(self.data["get"]["soc"], self.data["get"]["charged_since_mode_switch"])
                 elif self.charge_template.data["chargemode"]["selected"] == "pv_charging":
                     required_current, submode, message = self.charge_template.pv_charging(self.data["get"]["soc"])
                 elif self.charge_template.data["chargemode"]["selected"] == "standby":
