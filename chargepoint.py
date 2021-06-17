@@ -54,14 +54,22 @@ class chargepoint():
         self.cp_num = index
         self.data["set"] = {}
         self.set_current_prev = 0 # set current aus dem vorherigen Zyklus, um zu wissen, ob am Ende des Zyklus die Ladung freigegeben wird (für Control-Pilot-Unterbrechung)
-        #pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/current", 0)
-        pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/autolock_state", 0)
-        #pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/charging_ev", -1)
-        pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/energy_to_charge", 0)
-        self.data["set"]["charging_ev"] = -1
-        self.data["set"]["autolock_state"] = 0
-        self.data["set"]["current"] = 0
-        self.data["set"]["energy_to_charge"] = 0
+
+        if "charging_ev" not in self.data["set"]:
+            self.data["set"]["charging_ev"] = -1
+            pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/charging_ev", -1)
+        if "charging_ev_prev" not in self.data["set"]:
+            self.data["set"]["charging_ev_prev"] = -1
+            pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/charging_ev_prev", -1)
+        if "autolock_state" not in self.data["set"]:
+            self.data["set"]["autolock_state"] = 0
+            pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/autolock_state", 0)
+        if "current" not in self.data["set"]:
+            self.data["set"]["current"] = 0
+            pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/current", 0)
+        if "energy_to_charge" not in self.data["set"]:
+            self.data["set"]["energy_to_charge"] = 0
+            pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/energy_to_charge", 0)
 
     def _is_grid_protection_active(self):
         """ prüft, ob der Netzschutz aktiv ist und alle Ladepunkt gestoppt werden müssen.
@@ -208,12 +216,20 @@ class chargepoint():
             if charging_possbile == True:
                 return self.template.get_ev(self.data["get"]["rfid"], self.cp_num), message
             else:
-                # Daten zurücksetzen, wenn nicht geladen werden soll.
+                # Charging Ev ist noch das EV des vorherigen Zyklus, wenn das nicht -1 war und jetzt nicht mehr geladen werden soll (-1), Daten zurücksetzen.
                 if self.data["set"]["charging_ev"] != -1:
-                    data.ev_data["ev"+str(self.data["set"]["charging_ev_data"])].reset_ev()
-                    data.pv_data["all"].reset_switch_on_off(self, data.ev_data["ev"+str(self.data["set"]["charging_ev"])])
+                    # Altes EV merken
+                    self.data["set"]["charging_ev_prev"] = self.data["set"]["charging_ev"]
+                    pub.pub("openWB/set/chargepoint/"+self.cp_num+"/set/charging_ev_prev", self.data["set"]["charging_ev_prev"])
+                if self.data["set"]["charging_ev_prev"] != -1:
+                    # Daten zurücksetzen, wenn nicht geladen werden soll.
+                    data.ev_data["ev"+str(self.data["set"]["charging_ev_prev"])].reset_ev()
+                    data.pv_data["all"].reset_switch_on_off(self, data.ev_data["ev"+str(self.data["set"]["charging_ev_prev"])])
+                    if self.data["get"]["plug_state"] == False:
+                        # Ev wurde noch nicht aktualisiert.
+                        chargelog.reset_data(self, data.ev_data["ev"+str(self.data["set"]["charging_ev_prev"])])
                 self.data["set"]["charging_ev"] = -1
-                pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/charging_ev", -1)
+                pub.pub("openWB/set/chargepoint/"+self.cp_num+"/set/charging_ev", -1)
                 self.data["set"]["current"] = 0
                 pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/current", 0)
                 self.data["set"]["energy_to_charge"] = 0
@@ -451,7 +467,7 @@ class cpTemplate():
                     ev_num = vehicle
             else:
                 ev_num = self.data["ev"]
-            pub.pub("openWB/set/chargepoint/"+cp_num+"/set/charging_ev", ev_num)
+            
             return ev_num
         except Exception as e:
             log.exception_logging(e)

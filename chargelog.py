@@ -113,18 +113,21 @@ def collect_data(chargepoint):
             if charging_ev.data["get"]["counter_at_plugtime"] == 0:
                 charging_ev.data["get"]["counter_at_plugtime"] = chargepoint.data["get"]["counter"]
                 pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/get/counter_at_plugtime", charging_ev.data["get"]["counter_at_plugtime"])
+                log.message_debug_log("debug", "counter_at_plugtime "+str(chargepoint.data["get"]["counter"]))
             # Bisher geladende Energie ermitteln
             charging_ev.data["get"]["charged_since_plugged_counter"] = chargepoint.data["get"]["counter"] - charging_ev.data["get"]["counter_at_plugtime"]
             pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/get/charged_since_plugged_counter", charging_ev.data["get"]["charged_since_plugged_counter"])
             if charging_ev.data["get"]["counter_at_mode_switch"] == 0:
                 charging_ev.data["get"]["counter_at_mode_switch"] = chargepoint.data["get"]["counter"]
                 pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/get/counter_at_mode_switch", charging_ev.data["get"]["counter_at_mode_switch"])
+                log.message_debug_log("debug", "counter_at_mode_switch "+str(chargepoint.data["get"]["counter"]))
             # Bei einem Wechsel das Lademodus wird ein neuer Logeintrag erstellt.
             if chargepoint.data["get"]["charge_state"] == True:
                 if charging_ev.data["get"]["timestamp_start_charging"] == "0":
                     charging_ev.data["get"]["timestamp_start_charging"] = timecheck.create_timestamp()
                     pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/get/timestamp_start_charging", charging_ev.data["get"]["timestamp_start_charging"])
                 charging_ev.data["get"]["charged_since_mode_switch"] = chargepoint.data["get"]["counter"] -charging_ev.data["get"]["counter_at_mode_switch"]
+                log.message_debug_log("debug", "charged_since_mode_switch "+str(charging_ev.data["get"]["charged_since_mode_switch"])+" counter "+str(chargepoint.data["get"]["counter"]))
                 charging_ev.data["get"]["range_charged"] = int(round(charging_ev.data["get"]["charged_since_mode_switch"] / charging_ev.ev_template.data["average_consump"]/100, 0))
                 charging_ev.data["get"]["time_charged"] = timecheck.get_difference(charging_ev.data["get"]["timestamp_start_charging"])
                 pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/get/charged_since_mode_switch", charging_ev.data["get"]["charged_since_mode_switch"])
@@ -133,7 +136,7 @@ def collect_data(chargepoint):
     except Exception as e:
         log.exception_logging(e)
 
-def save_data(chargepoint, charging_ev, reset = False):
+def save_data(chargepoint, charging_ev, immediately = True, reset = False):
     """ json-Objekt für den Log-Eintrag erstellen, an die Datei anhängen und die Daten, die sich auf den Ladevorgang beziehen, löschen.
 
     Parameter
@@ -147,11 +150,24 @@ def save_data(chargepoint, charging_ev, reset = False):
         Sonst schon, damit zwiwchen save_data und dem nächsten collect_data keine Daten verloren gehen.
     """
     try:
-        if charging_ev.data["get"]["time_charged"] == 0 or charging_ev == -1:
-            # Die Daten wurden schon erfasst oder es wurde noch nie ein Auto zugeordnet.
+        # Es wurde noch nie ein Auto zugeordnet
+        if charging_ev == -1:
             return
-        # Daten vor dem Speichern nochmal aktualisieren
-        collect_data(chargepoint)
+        if charging_ev.data["get"]["time_charged"] == 0:
+            # Die Daten wurden schon erfasst.
+            return
+        if immediately == False:
+            if chargepoint.data["get"]["power_all"] != 0:
+                return
+        # Daten vor dem Speichern nochmal aktualisieren, auch wenn nicht mehr geladen wird.
+        charging_ev.data["get"]["charged_since_plugged_counter"] = chargepoint.data["get"]["counter"] - charging_ev.data["get"]["counter_at_plugtime"]
+        pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/get/charged_since_plugged_counter", charging_ev.data["get"]["charged_since_plugged_counter"])
+        charging_ev.data["get"]["charged_since_mode_switch"] = chargepoint.data["get"]["counter"] -charging_ev.data["get"]["counter_at_mode_switch"]
+        charging_ev.data["get"]["range_charged"] = int(round(charging_ev.data["get"]["charged_since_mode_switch"] / charging_ev.ev_template.data["average_consump"]/100, 0))
+        charging_ev.data["get"]["time_charged"] = timecheck.get_difference(charging_ev.data["get"]["timestamp_start_charging"])
+        pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/get/charged_since_mode_switch", charging_ev.data["get"]["charged_since_mode_switch"])
+        pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/get/range_charged", charging_ev.data["get"]["range_charged"])
+        pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/get/time_charged", charging_ev.data["get"]["time_charged"])
         time_charged = charging_ev.data["get"]["time_charged"]
         if time_charged != 0:
             power = charging_ev.data["get"]["charged_since_mode_switch"] / time_charged*60*60
@@ -374,7 +390,7 @@ def reset_data(chargepoint, charging_ev, immediately = True):
         if immediately == False:
             if chargepoint.data["get"]["power_all"] != 0:
                 return
-        save_data(chargepoint, charging_ev, reset = True)
+        save_data(chargepoint, charging_ev, immediately, reset = True)
 
         charging_ev.data["get"]["counter_at_plugtime"] = 0
         pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/get/counter_at_plugtime", charging_ev.data["get"]["counter_at_plugtime"])
