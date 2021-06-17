@@ -5,7 +5,6 @@ import copy
 import json
 import paho.mqtt.client as mqtt
 import re
-import time
 
 import log
 import pub

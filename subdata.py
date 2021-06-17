@@ -4,7 +4,6 @@
 import json
 import paho.mqtt.client as mqtt
 import re
-import threading
 
 import bat
 import chargelog
@@ -15,10 +14,8 @@ import general
 import graph
 import log
 import optional
-import prepare
 import pub
 import pv
-import stats
 
 class subData():
     """ Klasse, die die benötigten Topics abonniert, die Instanzen ertstellt, wenn z.b. ein Modul neu konfiguriert wird, 
@@ -46,28 +43,31 @@ class subData():
     def sub_topics(self):
         """ abonniert alle Topics.
         """
-        mqtt_broker_ip = "localhost"
-        client = mqtt.Client("openWB-mqttsub-" + self.getserial())
-        # ipallowed='^[0-9.]+$'
-        # nameallowed='^[a-zA-Z ]+$'
-        # namenumballowed='^[0-9a-zA-Z ]+$'
+        try:
+            mqtt_broker_ip = "localhost"
+            client = mqtt.Client("openWB-mqttsub-" + self.getserial())
+            # ipallowed='^[0-9.]+$'
+            # nameallowed='^[a-zA-Z ]+$'
+            # namenumballowed='^[0-9a-zA-Z ]+$'
 
-        client.on_connect = self.on_connect
-        client.on_message = self.on_message
-        client.message_callback_add("openWB/vehicle/#", self.process_vehicle_topic)
-        client.message_callback_add("openWB/chargepoint/#", self.process_chargepoint_topic)
-        client.message_callback_add("openWB/pv/#", self.process_pv_topic)
-        client.message_callback_add("openWB/bat/#", self.process_bat_topic)
-        client.message_callback_add("openWB/general/#", self.process_general_topic)
-        client.message_callback_add("openWB/optional/#", self.process_optional_topic)
-        client.message_callback_add("openWB/counter/#", self.process_counter_topic)
-        client.message_callback_add("openWB/graph/#", self.process_graph_topic)
-        client.message_callback_add("openWB/log/#", self.process_log_topic)
-        client.message_callback_add("openWB/loadvarsdone", self.process_loadvarsdone)
+            client.on_connect = self.on_connect
+            client.on_message = self.on_message
+            client.message_callback_add("openWB/vehicle/#", self.process_vehicle_topic)
+            client.message_callback_add("openWB/chargepoint/#", self.process_chargepoint_topic)
+            client.message_callback_add("openWB/pv/#", self.process_pv_topic)
+            client.message_callback_add("openWB/bat/#", self.process_bat_topic)
+            client.message_callback_add("openWB/general/#", self.process_general_topic)
+            client.message_callback_add("openWB/optional/#", self.process_optional_topic)
+            client.message_callback_add("openWB/counter/#", self.process_counter_topic)
+            client.message_callback_add("openWB/graph/#", self.process_graph_topic)
+            client.message_callback_add("openWB/log/#", self.process_log_topic)
+            client.message_callback_add("openWB/loadvarsdone", self.process_loadvarsdone)
 
-        client.connect(mqtt_broker_ip, 1883)
-        client.loop_forever()
-        client.disconnect()
+            client.connect(mqtt_broker_ip, 1883)
+            client.loop_forever()
+            client.disconnect()
+        except Exception as e:
+            log.exception_logging(e)
 
     def getserial(self):
         """ Extract serial from cpuinfo file
@@ -537,8 +537,11 @@ class subData():
         msg:
             enthält Topic und Payload
         """
-        if "openWB/log/request" in msg.topic:
-            chargelog.get_log_data(json.loads(str(msg.payload.decode("utf-8"))))
+        try:
+            if "openWB/log/request" in msg.topic:
+                chargelog.get_log_data(json.loads(str(msg.payload.decode("utf-8"))))
+        except Exception as e:
+            log.exception_logging(e)
 
     def process_loadvarsdone(self, client, userdata, msg):
         try:

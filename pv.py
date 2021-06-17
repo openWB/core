@@ -50,12 +50,15 @@ class pv():
                 self.data["get"]["yearly_yield"]= 0
                 self.data["get"]["power"] = 0
                 for module in data.pv_data:
-                    if "pv" in module:
-                        self.data["get"]["counter"] += data.pv_data[module].data["get"]["counter"]
-                        self.data["get"]["daily_yield"] += data.pv_data[module].data["get"]["daily_yield"]
-                        self.data["get"]["monthly_yield"] += data.pv_data[module].data["get"]["monthly_yield"]
-                        self.data["get"]["yearly_yield"] += data.pv_data[module].data["get"]["yearly_yield"]
-                        self.data["get"]["power"] += data.pv_data[module].data["get"]["power"]
+                    try:
+                        if "pv" in module:
+                            self.data["get"]["counter"] += data.pv_data[module].data["get"]["counter"]
+                            self.data["get"]["daily_yield"] += data.pv_data[module].data["get"]["daily_yield"]
+                            self.data["get"]["monthly_yield"] += data.pv_data[module].data["get"]["monthly_yield"]
+                            self.data["get"]["yearly_yield"] += data.pv_data[module].data["get"]["yearly_yield"]
+                            self.data["get"]["power"] += data.pv_data[module].data["get"]["power"]
+                    except Exception as e:
+                        log.exception_logging(e)
                 # Alle Summentopics im Dict publishen
                 {pub.pub("openWB/set/pv/get/"+k, v)for (k,v) in self.data["get"].items()}
                 self.data["config"]["configured"]=True
@@ -341,14 +344,21 @@ class pv():
     def reset_pv_data(self):
         """ setzt die Daten zurück, die über mehrere Regelzyklen genutzt werden.
         """
-        pub.pub("openWB/set/pv/set/reserved_evu_overhang", 0)
-        pub.pub("openWB/set/pv/set/released_evu_overhang", 0)
-        self.data["set"]["reserved_evu_overhang"] = 0
-        self.data["set"]["released_evu_overhang"] = 0
+        try:
+            pub.pub("openWB/set/pv/set/reserved_evu_overhang", 0)
+            pub.pub("openWB/set/pv/set/released_evu_overhang", 0)
+            self.data["set"]["reserved_evu_overhang"] = 0
+            self.data["set"]["released_evu_overhang"] = 0
+        except Exception as e:
+            log.exception_logging(e)
 
     def print_stats(self):
-        log.message_debug_log("debug", str(self.data["set"]["overhang_power_left"])+"W EVU-Ueberschuss, der fuer die Regelung verfuegbar ist, davon "+str(self.data["set"]["reserved_evu_overhang"])+"W fuer die Einschaltverzoegerung reservierte Leistung.")
+        try:
+            log.message_debug_log("debug", str(self.data["set"]["overhang_power_left"])+"W EVU-Ueberschuss, der fuer die Regelung verfuegbar ist, davon "+str(self.data["set"]["reserved_evu_overhang"])+"W fuer die Einschaltverzoegerung reservierte Leistung.")
+        except Exception as e:
+            log.exception_logging(e)
 
+            
 class pvModule:
 
     def __init__(self):

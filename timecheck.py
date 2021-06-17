@@ -21,12 +21,16 @@ def set_date(now, begin, end):
     begin, end: datetime
         Zeitfenster mit heutigen bzw. morgigen Datum
     """
-    begin = begin.replace(now.year, now.month, now.day)
-    end = end.replace(now.year, now.month, now.day)
-    if begin > end:
-        # Endzeit ist am nächsten Tag
-        end = end + datetime.timedelta(days=1)
-    return begin, end
+    try:
+        begin = begin.replace(now.year, now.month, now.day)
+        end = end.replace(now.year, now.month, now.day)
+        if begin > end:
+            # Endzeit ist am nächsten Tag
+            end = end + datetime.timedelta(days=1)
+        return begin, end
+    except Exception as e:
+        log.exception_logging(e)
+        return None, None
 
 
 def is_timeframe_valid(now, begin, end):
@@ -46,9 +50,13 @@ def is_timeframe_valid(now, begin, end):
     True : aktuell
     False : nicht aktuell
     """
-    if ((now < begin) == False) and ((now < end) == True):
-        return True
-    else:
+    try:
+        if ((now < begin) == False) and ((now < end) == True):
+            return True
+        else:
+            return False
+    except Exception as e:
+        log.exception_logging(e)
         return False
 
 
@@ -185,9 +193,12 @@ def _calc_begin(end, hours):
     ------
     datetime: berechneter Zeitpunkt
     """
-    prev = datetime.timedelta(hours)
-    return end - prev
-
+    try:
+        prev = datetime.timedelta(hours)
+        return end - prev
+    except Exception as e:
+        log.exception_logging(e)
+        return None
 
 def check_duration(plan, duration):
     """ prüft, ob der in angegebene Zeitpunkt abzüglich der Dauer jetzt ist.
@@ -271,17 +282,21 @@ def _is_duration_valid(now, duration, end):
     1, 0: Ladung sollte starten
     0, 0: hat noch Zeit
     """
-    delta = datetime.timedelta(
-        hours=int(duration), minutes=((duration % 1)*60))
-    begin = end - delta
-    difference = (now - begin).total_seconds()
-    if difference > 0:
-        remaining_time = duration-(difference/3600)
-        return 2, remaining_time
-    elif difference > (-300):
+    try:
+        delta = datetime.timedelta(
+            hours=int(duration), minutes=((duration % 1)*60))
+        begin = end - delta
+        difference = (now - begin).total_seconds()
+        if difference > 0:
+            remaining_time = duration-(difference/3600)
+            return 2, remaining_time
+        elif difference > (-300):
+            return 1, 0
+        else:
+            return 0, 0
+    except Exception as e:
+        log.exception_logging(e)
         return 1, 0
-    else:
-        return 0, 0
 
 
 def is_list_valid(hourlist):
@@ -297,13 +312,17 @@ def is_list_valid(hourlist):
     True: aktuelle Stunde ist in der Liste enthalten
     False: aktuelle Stunde ist nicht in der Liste enthalten
     """
-    now = datetime.datetime.today()
-    for hour in hourlist:
-        timestamp = datetime.datetime.fromtimestamp(float(hour))
-        if timestamp.hour == now.hour:
-            return True
-        else:
-            return False
+    try:
+        now = datetime.datetime.today()
+        for hour in hourlist:
+            timestamp = datetime.datetime.fromtimestamp(float(hour))
+            if timestamp.hour == now.hour:
+                return True
+            else:
+                return False
+    except Exception as e:
+        log.exception_logging(e)
+        return False
 
 
 def check_timestamp(timestamp, duration):
@@ -321,12 +340,16 @@ def check_timestamp(timestamp, duration):
     True: Zeit ist noch nicht abgelaufen
     False: Zeit ist abgelaufen
     """
-    stamp = datetime.datetime.strptime(timestamp, "%m/%d/%Y, %H:%M:%S")
-    now = datetime.datetime.today()
-    delta = datetime.timedelta(seconds=duration)
-    if (now-delta) > stamp:
-        return False
-    else:
+    try:
+        stamp = datetime.datetime.strptime(timestamp, "%m/%d/%Y, %H:%M:%S")
+        now = datetime.datetime.today()
+        delta = datetime.timedelta(seconds=duration)
+        if (now-delta) > stamp:
+            return False
+        else:
+            return True
+    except Exception as e:
+        log.exception_logging(e)
         return True
 
 
@@ -337,8 +360,12 @@ def create_timestamp():
     ------
     str: aktuelles Datum und Uhrzeit
     """
-    stamp = datetime.datetime.today().strftime("%m/%d/%Y, %H:%M:%S")
-    return stamp
+    try:
+        stamp = datetime.datetime.today().strftime("%m/%d/%Y, %H:%M:%S")
+        return stamp
+    except Exception as e:
+        log.exception_logging(e)
+        return None
 
 def create_timestamp_filename():
     """ erzeugt einen Zeitstempel mit dem aktuellen Datum und Uhrzeit
@@ -347,8 +374,12 @@ def create_timestamp_filename():
     ------
     str: aktuelles Datum und Uhrzeit
     """
-    stamp = datetime.datetime.today().strftime("%Y%m")
-    return stamp
+    try:
+        stamp = datetime.datetime.today().strftime("%Y%m")
+        return stamp
+    except Exception as e:
+        log.exception_logging(e)
+        return None
 
 def get_difference(timestamp_begin):
     """ ermittelt den Abstand zwischen zwei Zeitstempeln in Sekunden.
@@ -363,7 +394,11 @@ def get_difference(timestamp_begin):
     diff: int
         Abstand in Sekunden
     """
-    begin = datetime.datetime.strptime(timestamp_begin, "%m/%d/%Y, %H:%M:%S")
-    now = datetime.datetime.today()
-    diff = (now - begin).total_seconds()
-    return int(round(diff, 0))
+    try:
+        begin = datetime.datetime.strptime(timestamp_begin, "%m/%d/%Y, %H:%M:%S")
+        now = datetime.datetime.today()
+        diff = (now - begin).total_seconds()
+        return int(round(diff, 0))
+    except Exception as e:
+        log.exception_logging(e)
+        return 0
