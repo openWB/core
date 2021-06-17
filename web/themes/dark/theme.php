@@ -548,7 +548,7 @@
 												<div class="col-md-8">
 													<div class="form-row form-group mb-1 vaRow">
 														<div class="col">
-															<input type="range" class="chargepoint-instantchargelimitamount form-control-range rangeInput" id="amountlimitCp0" min="1" max="50" step="1" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/instant_charging/limit/amount">
+															<input type="range" class="chargepoint-instantchargelimitamount form-control-range rangeInput" id="amountlimitCp0" min="1" max="50" step="1" data-transformation='{"out":"<v>*1000","in":"<v>/1000"}' data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/instant_charging/limit/amount">
 														</div>
 														<label for="amountlimitCp0" class="col-form-label valueLabel" data-suffix="kWh">? kWh</label>
 													</div>
@@ -1039,6 +1039,10 @@
 						var label = $('label[for="' + id + '"].valueLabel');
 						if(list = $(elem).attr('data-list')){
 							value = parseFloat(list.split(',')[parseInt(value)]);
+						} else if(formula = $(elem).attr('data-transformation')){
+							formula = JSON.parse(formula);
+							formula = formula.out.replace('<v>', value);
+							value = transformRangeValue(formula);
 						}
 						var topic = getTopicToSendTo(id);
 						publish(value, topic);
