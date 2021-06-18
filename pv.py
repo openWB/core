@@ -23,9 +23,6 @@ class pv():
             self.data["get"] = {}
         if "config" not in self.data:
             self.data["config"] = {}
-        pub.pub("openWB/set/pv/set/overhang_power_left", 0)
-        pub.pub("openWB/set/pv/set/available_power", 0)
-        pub.pub("openWB/set/pv/config/configured", False)
         self.data["set"]["overhang_power_left"] = 0
         self.data["set"]["available_power"] = 0
         self.data["config"]["configured"] = False       
@@ -122,7 +119,7 @@ class pv():
             all_overhang = self.overhang_left()
             # Berücksichtigung der Speicherleistung
             all_overhang += bat_overhang
-            if chargepoint.data["set"]["charging_ev_data"].ev_template.data["prevent_switch_stop"] == False:
+            if chargepoint.data["set"]["charging_ev_data"].ev_template.data["prevent_switch_stop"] == False or max(chargepoint.data["get"]["current"]) == 0:
                 if control_parameter["timestamp_switch_on_off"] != "0":
                     # Wurde die Einschaltschwelle erreicht? Reservierte Leistung aus all_overhang rausrechnen, 
                     # da diese Leistung ja schon reserviert wurde, als die Einschaltschwelle erreicht wurde.
@@ -171,6 +168,8 @@ class pv():
                         chargepoint.data["get"]["state_str"] = message
                         required_power = 0
                         threshold_not_reached = True
+            else:
+                chargepoint.data["get"]["state_str"] = "Die Ladung wurde aufgrund des EV-Profils ohne Einschaltverzögerung gestartet, um die Ladung nicht zu unterbrechen."
         
             if required_power != 0:
                 required_current, _ = algorithm.allocate_power(chargepoint, required_power, required_current, phases)
@@ -225,7 +224,7 @@ class pv():
             Daten des Ladepunkts
         """
         try:
-            if chargepoint.data["set"]["charging_ev_data"].ev_template.data["prevent_switch_stop"] == False:
+            
                 control_parameter = chargepoint.data["set"]["charging_ev_data"].data["control_parameter"] 
                 pv_config = data.general_data["general"].data["chargemode_config"]["pv_charging"]
                 # Der EVU-Überschuss muss ggf um die Einspeisungsgrenze bereinigt werden.
@@ -244,14 +243,17 @@ class pv():
                 else:
                     # Wurde die Abschaltschwelle ggf. durch die Verzögerung anderer LP erreicht?
                     if (overhang + self.data["set"]["released_evu_overhang"]) < (pv_config["switch_off_threshold"]*-1 + feed_in_yield):
-                        control_parameter["timestamp_switch_on_off"] = timecheck.create_timestamp()
-                        # merken, dass ein LP verzögert wird, damit nicht zu viele LP verzögert werden.
-                        self.data["set"]["released_evu_overhang"] += chargepoint.data["set"]["required_power"] 
-                        message = "Ladevorgang wird nach Ablauf der Abschaltverzoegerung ("+ str(pv_config["switch_off_delay"])+"s) gestoppt."
-                        log.message_debug_log("info", "LP "+str(chargepoint.cp_num)+": "+message)
-                        chargepoint.data["get"]["state_str"] = message
-                        pub.pub("openWB/set/vehicle/"+str(chargepoint.data["set"]["charging_ev_data"].ev_num)+"/control_parameter/timestamp_switch_on_off", control_parameter["timestamp_switch_on_off"])
-                        # Die Abschaltvschwelle wird immer noch überschritten und es sollten weitere LP abgeschaltet werden.
+                        if chargepoint.data["set"]["charging_ev_data"].ev_template.data["prevent_switch_stop"] == False:
+                            control_parameter["timestamp_switch_on_off"] = timecheck.create_timestamp()
+                            # merken, dass ein LP verzögert wird, damit nicht zu viele LP verzögert werden.
+                            self.data["set"]["released_evu_overhang"] += chargepoint.data["set"]["required_power"] 
+                            message = "Ladevorgang wird nach Ablauf der Abschaltverzoegerung ("+ str(pv_config["switch_off_delay"])+"s) gestoppt."
+                            log.message_debug_log("info", "LP "+str(chargepoint.cp_num)+": "+message)
+                            chargepoint.data["get"]["state_str"] = message
+                            pub.pub("openWB/set/vehicle/"+str(chargepoint.data["set"]["charging_ev_data"].ev_num)+"/control_parameter/timestamp_switch_on_off", control_parameter["timestamp_switch_on_off"])
+                            # Die Abschaltvschwelle wird immer noch überschritten und es sollten weitere LP abgeschaltet werden.
+                        else:
+                            chargepoint.data["get"]["state_str"] = "Stoppen des Ladevorgangs aufgrund des EV-Profils verhindert."
         except Exception as e:
             log.exception_logging(e)
 
@@ -358,7 +360,7 @@ class pv():
         except Exception as e:
             log.exception_logging(e)
 
-            
+
 class pvModule:
 
     def __init__(self):
