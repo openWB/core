@@ -249,126 +249,129 @@ def get_log_data(request):
     request: dict
         Infos zum Request: Monat, Jahr, Filter
     """
-    # Datei einlesen
-    filepath = "./data/"+str(request["year"])+str(request["month"])+".json"
-    data = []
     try:
-        with open(filepath, "r") as jsonFile:
-            chargelog = json.load(jsonFile)
-    except FileNotFoundError:
-        pass
-    filter = request["filter"]
-    # Liste mit gefilterten Einträgen erstellen
-    for entry in chargelog:
-        # Jeden Eintrag nur einmal anfügen, auch wenn mehrere Kriterien zutreffen
-        appended = False
-        if "chargepoint" in filter:
-            if "id" in filter["chargepoint"]:
-                for id in filter["chargepoint"]["id"]:
-                    if id == entry["chargepoint"]["id"]:
-                        data.append(entry)
-                        appended = True
-                        break
-                if appended == True:
-                    continue
-        if "vehicle" in filter:
-            if "id" in filter["vehicle"]:
-                for id in filter["vehicle"]["id"]:
-                    if id == entry["vehicle"]["id"]:
-                        data.append(entry)
-                        appended = True
-                        break
-                if appended == True:
-                    continue
-            if "rfid" in filter["vehicle"]:
-                for rfid in filter["vehicle"]["rfid"]:
-                    if rfid == entry["vehicle"]["rfid"]:
-                        data.append(entry)
-                        appended = True
-                        break
-                if appended == True:
-                    continue
-            if "chargemode" in filter["vehicle"]:
-                for chargemode in filter["vehicle"]["chargemode"]:
-                    if chargemode == entry["vehicle"]["chargemode"]:
-                        data.append(entry)
-                        appended = True
-                        break
-                if appended == True:
-                    continue
-            if "prio" in filter["vehicle"]:
-                for prio in filter["vehicle"]["prio"]:
-                    if prio == entry["vehicle"]["prio"]:
-                        data.append(entry)
-                        appended = True
-                        break
-                if appended == True:
-                    continue
+        # Datei einlesen
+        filepath = "./data/"+str(request["year"])+str(request["month"])+".json"
+        data = []
+        try:
+            with open(filepath, "r") as jsonFile:
+                chargelog = json.load(jsonFile)
+        except FileNotFoundError:
+            pass
+        filter = request["filter"]
+        # Liste mit gefilterten Einträgen erstellen
+        for entry in chargelog:
+            # Jeden Eintrag nur einmal anfügen, auch wenn mehrere Kriterien zutreffen
+            appended = False
+            if "chargepoint" in filter:
+                if "id" in filter["chargepoint"]:
+                    for id in filter["chargepoint"]["id"]:
+                        if id == entry["chargepoint"]["id"]:
+                            data.append(entry)
+                            appended = True
+                            break
+                    if appended == True:
+                        continue
+            if "vehicle" in filter:
+                if "id" in filter["vehicle"]:
+                    for id in filter["vehicle"]["id"]:
+                        if id == entry["vehicle"]["id"]:
+                            data.append(entry)
+                            appended = True
+                            break
+                    if appended == True:
+                        continue
+                if "rfid" in filter["vehicle"]:
+                    for rfid in filter["vehicle"]["rfid"]:
+                        if rfid == entry["vehicle"]["rfid"]:
+                            data.append(entry)
+                            appended = True
+                            break
+                    if appended == True:
+                        continue
+                if "chargemode" in filter["vehicle"]:
+                    for chargemode in filter["vehicle"]["chargemode"]:
+                        if chargemode == entry["vehicle"]["chargemode"]:
+                            data.append(entry)
+                            appended = True
+                            break
+                    if appended == True:
+                        continue
+                if "prio" in filter["vehicle"]:
+                    for prio in filter["vehicle"]["prio"]:
+                        if prio == entry["vehicle"]["prio"]:
+                            data.append(entry)
+                            appended = True
+                            break
+                    if appended == True:
+                        continue
 
-    if len(data) > 0:
-        # Summen bilden
-        duration = 0
-        duration_h = 0
-        duration_min = 0
-        range = 0
-        mode = 0
-        plugged = 0
-        power = 0
-        costs = 0
-        for entry in data:
-            pos_h = entry["time"]["time_charged"].find("H")
-            pos_min = entry["time"]["time_charged"].find("M")
-            if pos_h != -1:
-                duration_h_entry = int(entry["time"]["time_charged"][0:pos_h-1])
-                duration_min_entry = int(entry["time"]["time_charged"][pos_h+1:pos_min-1])
+        if len(data) > 0:
+            # Summen bilden
+            duration = 0
+            duration_h = 0
+            duration_min = 0
+            range = 0
+            mode = 0
+            plugged = 0
+            power = 0
+            costs = 0
+            for entry in data:
+                pos_h = entry["time"]["time_charged"].find("H")
+                pos_min = entry["time"]["time_charged"].find("M")
+                if pos_h != -1:
+                    duration_h_entry = int(entry["time"]["time_charged"][0:pos_h-1])
+                    duration_min_entry = int(entry["time"]["time_charged"][pos_h+1:pos_min-1])
+                else:
+                    duration_h_entry = 0
+                    duration_min_entry = int(entry["time"]["time_charged"][0:pos_min-1])
+                duration_min += duration_min_entry 
+                duration_h += duration_h_entry
+
+                range += entry["data"]["range_charged"]
+                mode += entry["data"]["charged_since_mode_switch"]
+                plugged += entry["data"]["charged_since_plugged_counter"]
+                power += entry["data"]["power"]
+                costs += entry["data"]["costs"]
+            power = power / len(data)
+            if duration_h != 0:
+                duration = str(duration_h)+" H"+str(duration_min)+" Min"
             else:
-                duration_h_entry = 0
-                duration_min_entry = int(entry["time"]["time_charged"][0:pos_min-1])
-            duration_min += duration_min_entry 
-            duration_h += duration_h_entry
+                duration = str(duration_min)+" Min"
+            sum = {
+                    "chargepoint": 
+                    {
+                        "id": "ID", 
+                        "name": "Name", 
+                        }, 
+                    "vehicle": 
+                    { 
+                        "id": "ID", 
+                        "name": "Name", 
+                        "chargemode": "Lademodus", 
+                        "prio": "Priorität",
+                        "rfid": "RFID"
+                        }, 
+                    "time": 
+                    { 
+                        "begin": "Startzeit", 
+                        "end": "Endzeit", 
+                        "time_charged": duration
+                        }, 
+                    "data": 
+                    {
+                        "range_charged": range, 
+                        "charged_since_mode_switch": mode, 
+                        "charged_since_plugged_counter": plugged, 
+                        "power": power, 
+                        "costs": costs
+                        } 
+                    }
+            data.append(sum)
 
-            range += entry["data"]["range_charged"]
-            mode += entry["data"]["charged_since_mode_switch"]
-            plugged += entry["data"]["charged_since_plugged_counter"]
-            power += entry["data"]["power"]
-            costs += entry["data"]["costs"]
-        power = power / len(data)
-        if duration_h != 0:
-            duration = str(duration_h)+" H"+str(duration_min)+" Min"
-        else:
-            duration = str(duration_min)+" Min"
-        sum = {
-                "chargepoint": 
-                {
-                    "id": "ID", 
-                    "name": "Name", 
-                    }, 
-                "vehicle": 
-                { 
-                    "id": "ID", 
-                    "name": "Name", 
-                    "chargemode": "Lademodus", 
-                    "prio": "Priorität",
-                    "rfid": "RFID"
-                    }, 
-                "time": 
-                { 
-                    "begin": "Startzeit", 
-                    "end": "Endzeit", 
-                    "time_charged": duration
-                    }, 
-                "data": 
-                {
-                    "range_charged": range, 
-                    "charged_since_mode_switch": mode, 
-                    "charged_since_plugged_counter": plugged, 
-                    "power": power, 
-                    "costs": costs
-                    } 
-                }
-        data.append(sum)
-
-    pub.pub("openWB/set/log/data", data)
+        pub.pub("openWB/set/log/data", data)
+    except Exception as e:
+        log.exception_logging(e)
 
 
 def reset_data(chargepoint, charging_ev, immediately = True):
@@ -404,12 +407,15 @@ def truncate(number, decimals=0):
     """
     Returns a value truncated to a specific number of decimal places.
     """
-    if not isinstance(decimals, int):
-        raise TypeError("decimal places must be an integer.")
-    elif decimals < 0:
-        raise ValueError("decimal places has to be 0 or more.")
-    elif decimals == 0:
-        return math.trunc(number)
+    try:
+        if not isinstance(decimals, int):
+            raise TypeError("decimal places must be an integer.")
+        elif decimals < 0:
+            raise ValueError("decimal places has to be 0 or more.")
+        elif decimals == 0:
+            return math.trunc(number)
 
-    factor = 10.0 ** decimals
-    return math.trunc(number * factor) / factor
+        factor = 10.0 ** decimals
+        return math.trunc(number * factor) / factor
+    except Exception as e:
+        log.exception_logging(e)

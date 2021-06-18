@@ -36,9 +36,12 @@ class prepare():
             data.cp_template_data = copy.deepcopy(
                 subdata.subData.cp_template_data)
             for chargepoint in data.cp_data:
-                if "cp" in chargepoint:
-                    data.cp_data[chargepoint].template = data.cp_template_data["cpt" +str(data.cp_data[chargepoint].data["config"]["template"])]
-                    data.cp_data[chargepoint].cp_num = chargepoint[2:]
+                try:
+                    if "cp" in chargepoint:
+                        data.cp_data[chargepoint].template = data.cp_template_data["cpt" +str(data.cp_data[chargepoint].data["config"]["template"])]
+                        data.cp_data[chargepoint].cp_num = chargepoint[2:]
+                except Exception as e:
+                    log.exception_logging(e)
 
             data.pv_data = copy.deepcopy(subdata.subData.pv_data)
             data.ev_data = copy.deepcopy(subdata.subData.ev_data)
@@ -47,14 +50,19 @@ class prepare():
             data.ev_charge_template_data = copy.deepcopy(
                 subdata.subData.ev_charge_template_data)
             for vehicle in data.ev_data:
-                data.ev_data[vehicle].charge_template = data.ev_charge_template_data["ct" +str(data.ev_data[vehicle].data["charge_template"])]
-                data.ev_data[vehicle].ev_template = data.ev_template_data["et" +str(data.ev_data[vehicle].data["ev_template"])]
+                try:
+                    data.ev_data[vehicle].charge_template = data.ev_charge_template_data["ct" +str(data.ev_data[vehicle].data["charge_template"])]
+                    data.ev_data[vehicle].ev_template = data.ev_template_data["et" +str(data.ev_data[vehicle].data["ev_template"])]
+                except Exception as e:
+                    log.exception_logging(e)
 
             data.counter_data = copy.deepcopy(subdata.subData.counter_data)
             for counter in data.counter_data:
-                data.counter_data[counter].counter_num = counter[7:]
-            data.bat_module_data = copy.deepcopy(
-                subdata.subData.bat_module_data)
+                try:
+                    data.counter_data[counter].counter_num = counter[7:]
+                except Exception as e:
+                    log.exception_logging(e)
+            data.bat_module_data = copy.deepcopy(subdata.subData.bat_module_data)
             data.general_data = copy.deepcopy(subdata.subData.general_data)
             data.optional_data = copy.deepcopy(subdata.subData.optional_data)
             data.graph_data = copy.deepcopy(subdata.subData.graph_data)

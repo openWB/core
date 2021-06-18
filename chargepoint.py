@@ -24,19 +24,22 @@ class allChargepoints():
         """
         try:
             for cp in data.cp_data:
-                if "cp" in cp:
-                    chargepoint = data.cp_data[cp]
-                    # Kein EV angesteckt
-                    if ( chargepoint.data["get"]["plug_state"] == False or
-                            # Kein EV, das Laden soll
-                            chargepoint.data["set"]["charging_ev"] == -1 or 
-                            # Kein EV, das auf das Ablaufen der Einschalt- oder Phasenumschaltverzögerung wartet
-                            (chargepoint.data["set"]["charging_ev"] != -1 and 
-                            chargepoint.data["set"]["charging_ev_data"].data["control_parameter"]["timestamp_perform_phase_switch"] == "0" and
-                            chargepoint.data["set"]["charging_ev_data"].data["control_parameter"]["timestamp_switch_on_off"] == "0")):
-                        continue
-                    else:
-                        break
+                try:
+                    if "cp" in cp:
+                        chargepoint = data.cp_data[cp]
+                        # Kein EV angesteckt
+                        if ( chargepoint.data["get"]["plug_state"] == False or
+                                # Kein EV, das Laden soll
+                                chargepoint.data["set"]["charging_ev"] == -1 or 
+                                # Kein EV, das auf das Ablaufen der Einschalt- oder Phasenumschaltverzögerung wartet
+                                (chargepoint.data["set"]["charging_ev"] != -1 and 
+                                chargepoint.data["set"]["charging_ev_data"].data["control_parameter"]["timestamp_perform_phase_switch"] == "0" and
+                                chargepoint.data["set"]["charging_ev_data"].data["control_parameter"]["timestamp_switch_on_off"] == "0")):
+                            continue
+                        else:
+                            break
+                except Exception as e:
+                    log.exception_logging(e)
             else:
                 data.pv_data["all"].reset_pv_data()
         except Exception as e:

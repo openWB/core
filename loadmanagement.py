@@ -63,10 +63,13 @@ def loadmanagement_for_cp(chargepoint, required_power, required_current, phases)
         counters = _get_counters_to_check(chargepoint)
         # Stromstärke merken, wenn das Lastmanagement nicht aktiv wird, wird nach der Prüfung die neue verwendete Stromstärke gesetzt.
         for counter in counters[:-1]:
-            loadmanagement, overshoot, phase = _check_max_current(counter, required_current_phases, phases, True)
-            if loadmanagement == True:
-                loadmanagement_all_conditions = True
-                overloaded_counters[counter] = [overshoot, phase]
+            try:
+                loadmanagement, overshoot, phase = _check_max_current(counter, required_current_phases, phases, True)
+                if loadmanagement == True:
+                    loadmanagement_all_conditions = True
+                    overloaded_counters[counter] = [overshoot, phase]
+            except Exception as e:
+                log.exception_logging(e)
         # Wenn das Lastamanagement bei den Zwischenzählern aktiv wurde, darf es nicht wieder zurück gesetzt werden.
         loadmanagement= _loadmanagement_for_evu(required_power, required_current_phases, phases, True)
         if loadmanagement == True:
@@ -146,9 +149,9 @@ def _check_all_intermediate_counters(child):
     True/False: Lastmanagement aktiv/inaktiv
     """
     global overloaded_counters
-    try:
-        # Alle Objekte der Ebene durchgehen
-        for child in child["children"]:
+    # Alle Objekte der Ebene durchgehen
+    for child in child["children"]:
+        try:
             if "counter" in child["id"]:
                 # Wenn Objekt ein Zähler ist, Stromstärke prüfen.
                 loadmanagement, overshoot, phase = _check_max_current(child["id"], [0, 0, 0], 3, False)
@@ -160,11 +163,10 @@ def _check_all_intermediate_counters(child):
                 loadmanagement = _check_all_intermediate_counters(child)
                 if loadmanagement == True:
                     return True
-        # Wenn alle durchgegangen wurden und das Lastamangement nicht aktiv geworden ist.
-        else:
-            return False
-    except Exception as e:
-        log.exception_logging(e)
+        except Exception as e:
+            log.exception_logging(e)
+    # Wenn alle durchgegangen wurden und das Lastamangement nicht aktiv geworden ist.
+    else:
         return False
 
 def _get_counters_to_check(chargepoint):
@@ -207,26 +209,29 @@ def _look_for_object(child, object, num):
     try:
         parent = child["id"]
         for child in child["children"]:
-            if object == "cp":
-                if "cp" in child["id"]:
-                    if child["id"][2:] == str(num):
-                        counters.append(parent)
-                        return True
-                    else:
-                        continue
-            elif object == "counter":
-                if "counter" in child["id"]:
-                    if child["id"][7:] == str(num):
-                        return child
-            else:
-                if len(child["children"]) != 0:
-                    found = _look_for_object(child, object, num)
-                    if found != False:
-                        if object == "cp":
+            try:
+                if object == "cp":
+                    if "cp" in child["id"]:
+                        if child["id"][2:] == str(num):
                             counters.append(parent)
                             return True
-                    elif object == "counter":
-                        return found
+                        else:
+                            continue
+                elif object == "counter":
+                    if "counter" in child["id"]:
+                        if child["id"][7:] == str(num):
+                            return child
+                else:
+                    if len(child["children"]) != 0:
+                        found = _look_for_object(child, object, num)
+                        if found != False:
+                            if object == "cp":
+                                counters.append(parent)
+                                return True
+                        elif object == "counter":
+                            return found
+            except Exception as e:
+                log.exception_logging(e)
         else:
             return False
     except Exception as e:
@@ -241,16 +246,16 @@ def _get_all_cp_connected_to_counter(child):
     child: object
         Zähler, dessen Ladepunkte ermittelt werden sollen
     """
-    try:
-        # Alle Objekte der Ebene durchgehen
-        for child in child["children"]:
+    # Alle Objekte der Ebene durchgehen
+    for child in child["children"]:
+        try:
             if "cp" in child["id"]:
                 chargepoints.append(child["id"])
             # Wenn das Objekt noch Kinder hat, diese ebenfalls untersuchen.
             elif len(child["children"]) != 0:
                 _get_all_cp_connected_to_counter(child)
-    except Exception as e:
-        log.exception_logging(e)
+        except Exception as e:
+            log.exception_logging(e)
 
 # Überprüfen der Werte
 
