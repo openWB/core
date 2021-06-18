@@ -12,7 +12,6 @@ class counterAll():
         self.data={}
         self.data["set"] = {}
         self.data["set"]["loadmanagement"] = False
-        pub.pub("openWB/set/counter/set/loadmanagement", False)
 
     def put_stats(self):
         try:

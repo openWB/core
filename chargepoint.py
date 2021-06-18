@@ -60,19 +60,14 @@ class chargepoint():
 
         if "charging_ev" not in self.data["set"]:
             self.data["set"]["charging_ev"] = -1
-            pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/charging_ev", -1)
         if "charging_ev_prev" not in self.data["set"]:
             self.data["set"]["charging_ev_prev"] = -1
-            pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/charging_ev_prev", -1)
         if "autolock_state" not in self.data["set"]:
             self.data["set"]["autolock_state"] = 0
-            pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/autolock_state", 0)
         if "current" not in self.data["set"]:
             self.data["set"]["current"] = 0
-            pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/current", 0)
         if "energy_to_charge" not in self.data["set"]:
             self.data["set"]["energy_to_charge"] = 0
-            pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/energy_to_charge", 0)
 
     def _is_grid_protection_active(self):
         """ prüft, ob der Netzschutz aktiv ist und alle Ladepunkt gestoppt werden müssen.

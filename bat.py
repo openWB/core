@@ -32,9 +32,6 @@ import pub
 class bat:
     def __init__(self):
         self.data={}
-        pub.pub("openWB/set/bat/config/configured", False)
-        pub.pub("openWB/set/bat/set/charging_power_left", 0)
-        pub.pub("openWB/set/bat/set/hybrid_system_detected", False)
         if "get" not in self.data:
             self.data["get"]={}
         if "set" not in self.data:
