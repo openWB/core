@@ -163,7 +163,7 @@ def save_data(chargepoint, charging_ev, immediately = True, reset = False):
         charging_ev.data["get"]["charged_since_plugged_counter"] = chargepoint.data["get"]["counter"] - charging_ev.data["get"]["counter_at_plugtime"]
         pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/get/charged_since_plugged_counter", charging_ev.data["get"]["charged_since_plugged_counter"])
         charging_ev.data["get"]["charged_since_mode_switch"] = chargepoint.data["get"]["counter"] -charging_ev.data["get"]["counter_at_mode_switch"]
-        charging_ev.data["get"]["range_charged"] = int(round(charging_ev.data["get"]["charged_since_mode_switch"] / charging_ev.ev_template.data["average_consump"]/100, 0))
+        charging_ev.data["get"]["range_charged"] = charging_ev.data["get"]["charged_since_mode_switch"] / charging_ev.ev_template.data["average_consump"]*100
         charging_ev.data["get"]["time_charged"] = timecheck.get_difference(charging_ev.data["get"]["timestamp_start_charging"])
         pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/get/charged_since_mode_switch", charging_ev.data["get"]["charged_since_mode_switch"])
         pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/get/range_charged", charging_ev.data["get"]["range_charged"])
@@ -177,7 +177,7 @@ def save_data(chargepoint, charging_ev, immediately = True, reset = False):
             duration = str(int(time_charged/3600)) + " H "+ str(int((time_charged%3600)/60)) +" Min"
         else:
             duration = str(int(time_charged/60)) + " Min"
-        costs = data_module.general_data["general"].data["price_kwh"] * charging_ev.data["get"]["charged_since_mode_switch"] / 10
+        costs = data_module.general_data["general"].data["price_kwh"] * charging_ev.data["get"]["charged_since_mode_switch"] #/ 1000
         new_entry = {
             "chargepoint": 
             {
