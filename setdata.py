@@ -5,7 +5,6 @@ import copy
 import json
 import paho.mqtt.client as mqtt
 import re
-import time
 
 import log
 import pub
@@ -409,7 +408,8 @@ class setData():
             if (re.search("^openWB/set/chargepoint/get/counter_all$", msg.topic) != None or
                     re.search("^openWB/set/chargepoint/get/power_all$", msg.topic) != None):
                 self._validate_value(msg, float, [(0, None)])
-            elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/charging_ev$", msg.topic) != None:
+            elif (re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/charging_ev$", msg.topic) != None or
+                    re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/charging_ev_prev$", msg.topic) != None):
                 self._validate_value(msg, int, [(-1, None)])
             elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/current$", msg.topic) != None:
                 self._validate_value(msg, float, [(6, 32), (0, 0)])

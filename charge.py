@@ -14,22 +14,26 @@ class charge():
         try:
             log.message_debug_log("debug", "# Ladung starten.")
             for cp in data.cp_data:
-                if "cp" in cp:
-                    chargepoint = data.cp_data[cp]
-                    if chargepoint.data["set"]["charging_ev"] != -1:
-                        chargepoint.initiate_control_pilot_interruption()
-                        chargepoint.initiate_phase_switch()
-                        self._update_state(chargepoint)
-                        chargelog.collect_data(chargepoint)
-                    else:
-                        # LP, an denen nicht geladen werden darf
-                        chargelog.reset_data(chargepoint, chargepoint.data["set"]["charging_ev_data"], immediately = False)
-                        chargepoint.data["set"]["current"] = 0
-                        pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/set/current", 0)
-                    if chargepoint.data["get"]["state_str"] != None:
-                        pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/get/state_str", chargepoint.data["get"]["state_str"])
-                    else:
-                        pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/get/state_str", "Ladevorgang läuft...")
+                try:
+                    if "cp" in cp:
+                        chargepoint = data.cp_data[cp]
+                        if chargepoint.data["set"]["charging_ev"] != -1:
+                            chargepoint.initiate_control_pilot_interruption()
+                            chargepoint.initiate_phase_switch()
+                            self._update_state(chargepoint)
+                            chargelog.collect_data(chargepoint)
+                        else:
+                            # LP, an denen nicht geladen werden darf
+                            if chargepoint.data["set"]["charging_ev_prev"] != -1:
+                                chargelog.save_data(chargepoint, data.ev_data["ev"+str(chargepoint.data["set"]["charging_ev_prev"])], immediately = False)
+                            chargepoint.data["set"]["current"] = 0
+                            pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/set/current", 0)
+                        if chargepoint.data["get"]["state_str"] != None:
+                            pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/get/state_str", chargepoint.data["get"]["state_str"])
+                        else:
+                            pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/get/state_str", "Ladevorgang läuft...")
+                except Exception as e:
+                    log.exception_logging(e)
             data.pv_data["all"].put_stats()
             data.pv_data["all"].print_stats()
             data.counter_data["counter0"].put_stats()

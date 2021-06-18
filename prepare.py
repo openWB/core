@@ -36,9 +36,12 @@ class prepare():
             data.cp_template_data = copy.deepcopy(
                 subdata.subData.cp_template_data)
             for chargepoint in data.cp_data:
-                if "cp" in chargepoint:
-                    data.cp_data[chargepoint].template = data.cp_template_data["cpt" +str(data.cp_data[chargepoint].data["config"]["template"])]
-                    data.cp_data[chargepoint].cp_num = chargepoint[2:]
+                try:
+                    if "cp" in chargepoint:
+                        data.cp_data[chargepoint].template = data.cp_template_data["cpt" +str(data.cp_data[chargepoint].data["config"]["template"])]
+                        data.cp_data[chargepoint].cp_num = chargepoint[2:]
+                except Exception as e:
+                    log.exception_logging(e)
 
             data.pv_data = copy.deepcopy(subdata.subData.pv_data)
             data.ev_data = copy.deepcopy(subdata.subData.ev_data)
@@ -47,14 +50,19 @@ class prepare():
             data.ev_charge_template_data = copy.deepcopy(
                 subdata.subData.ev_charge_template_data)
             for vehicle in data.ev_data:
-                data.ev_data[vehicle].charge_template = data.ev_charge_template_data["ct" +str(data.ev_data[vehicle].data["charge_template"])]
-                data.ev_data[vehicle].ev_template = data.ev_template_data["et" +str(data.ev_data[vehicle].data["ev_template"])]
+                try:
+                    data.ev_data[vehicle].charge_template = data.ev_charge_template_data["ct" +str(data.ev_data[vehicle].data["charge_template"])]
+                    data.ev_data[vehicle].ev_template = data.ev_template_data["et" +str(data.ev_data[vehicle].data["ev_template"])]
+                except Exception as e:
+                    log.exception_logging(e)
 
             data.counter_data = copy.deepcopy(subdata.subData.counter_data)
             for counter in data.counter_data:
-                data.counter_data[counter].counter_num = counter[7:]
-            data.bat_module_data = copy.deepcopy(
-                subdata.subData.bat_module_data)
+                try:
+                    data.counter_data[counter].counter_num = counter[7:]
+                except Exception as e:
+                    log.exception_logging(e)
+            data.bat_module_data = copy.deepcopy(subdata.subData.bat_module_data)
             data.general_data = copy.deepcopy(subdata.subData.general_data)
             data.optional_data = copy.deepcopy(subdata.subData.optional_data)
             data.graph_data = copy.deepcopy(subdata.subData.graph_data)
@@ -72,13 +80,19 @@ class prepare():
                     vehicle, message = cp.get_state()
                     if vehicle != -1:
                         charging_ev = data.ev_data["ev"+str(vehicle)]
-                        # Wenn sich das Auto ändert und vorher ein Auto zugeordnet war, Werte des alten Autos zurücksetzen, zB wenn das EV geändert wird, während ein EV angesteckt ist.
+                        # Wenn das EV geändert wird, während ein EV angesteckt ist.
                         if cp.data["set"]["charging_ev"] != charging_ev.ev_num:
-                            if cp.data["set"]["charging_ev"] != -1:
+                            if cp.data["set"]["charging_ev"] != -1 and charging_ev.ev_num != -1:
+                                # Daten des alten EV speichern und löschen
+                                chargelog.reset_data(cp, data.ev_data["ev"+str(cp.data["set"]["charging_ev"])])
+                            # Altes EV merken
+                            cp.data["set"]["charging_ev_prev"] = cp.data["set"]["charging_ev"]
+                            pub.pub("openWB/set/chargepoint/"+cp.cp_num+"/set/charging_ev_prev", cp.data["set"]["charging_ev_prev"])
+                            cp.data["set"]["charging_ev"] = vehicle
+                            pub.pub("openWB/set/chargepoint/"+cp.cp_num+"/set/charging_ev", vehicle)
+                            if cp.data["set"]["charging_ev_prev"] != -1:
                                 data.pv_data["all"].reset_switch_on_off(cp, charging_ev)
                                 charging_ev.reset_phase_switch()
-                            # Daten des alten EV speichern und löschen
-                            chargelog.reset_data(cp, cp.data["set"]["charging_ev_data"])
                             # Daten des neuen EV aufzeichnen
                             cp.data["set"]["charging_ev_data"] = charging_ev
                             chargelog.collect_data(cp)
@@ -107,14 +121,19 @@ class prepare():
                                 cp.data["set"]["current"] = 0
                             # Da nicht bekannt ist, ob mit Bezug, Überschuss oder aus dem Speicher geladen wird, wird die freiwerdende Leistung erst im nächsten Durchlauf berücksichtigt.
                             # Ggf. entsteht so eine kurze Unterbrechung der Ladung, wenn während dem Laden umkonfiguriert wird.
-                        # Ein Eintrag muss nur erstellt werden, wenn vorher schon geladen wurde.
-                        if mode_changed == True and cp.data["get"]["charge_state"] == True:
+                        # Ein Eintrag muss nur erstellt werden, wenn vorher schon geladen wurde und auch danach noch geladen werden soll.
+                        if mode_changed == True and cp.data["get"]["charge_state"] == True and state == True:
                             chargelog.save_data(cp, charging_ev)
 
                         charging_ev.set_control_parameter(submode, required_current)
                         # Wenn die Nachrichten gesendet wurden, EV wieder löschen, wenn das EV im Algorithmus nicht berücksichtigt werden soll.
                         if state == False:
+                            if cp.data["set"]["charging_ev"] != -1:
+                                # Altes EV merken
+                                cp.data["set"]["charging_ev_prev"] = cp.data["set"]["charging_ev"]
+                                pub.pub("openWB/set/chargepoint/"+cp.cp_num+"/set/charging_ev_prev", cp.data["set"]["charging_ev_prev"])
                             cp.data["set"]["charging_ev"] = -1
+                            pub.pub("openWB/set/chargepoint/"+cp.cp_num+"/set/charging_ev", -1)
                             log.message_debug_log("debug", "EV"+str(charging_ev.ev_num)+": Lademodus "+str(charging_ev.charge_template.data["chargemode"]["selected"])+", Submodus: "+str(charging_ev.data["control_parameter"]["submode"]))
                         else:
                             if (charging_ev.data["control_parameter"]["timestamp_switch_on_off"] != "0" and
@@ -124,8 +143,6 @@ class prepare():
                             
                             log.message_debug_log("debug", "EV"+str(charging_ev.ev_num)+": Theroretisch benötigter Strom "+str(required_current)+"A, Lademodus "+str(
                                 charging_ev.charge_template.data["chargemode"]["selected"])+", Submodus: "+str(charging_ev.data["control_parameter"]["submode"])+", Prioritaet: "+str(charging_ev.charge_template.data["prio"])+", max. Ist-Strom: "+str(max(cp.data["get"]["current"])))
-                    else:
-                        cp.data["set"]["charging_ev_data"] = vehicle
                     if message != None:
                         log.message_debug_log("info", "LP "+str(cp.cp_num)+": "+message)
                     cp.data["get"]["state_str"] = message

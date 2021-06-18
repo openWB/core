@@ -12,10 +12,12 @@ class counterAll():
         self.data={}
         self.data["set"] = {}
         self.data["set"]["loadmanagement"] = False
-        pub.pub("openWB/set/counter/set/loadmanagement", False)
 
     def put_stats(self):
-        pub.pub("openWB/set/counter/set/loadmanagement", self.data["set"]["loadmanagement"])
+        try:
+            pub.pub("openWB/set/counter/set/loadmanagement", self.data["set"]["loadmanagement"])
+        except Exception as e:
+            log.exception_logging(e)
 
 class counter():
     """
@@ -43,10 +45,16 @@ class counter():
             log.exception_logging(e)
 
     def put_stats(self):
-        pub.pub("openWB/set/counter/0/set/consumption_left", self.data["set"]["consumption_left"])
-        log.message_debug_log("debug", str(self.data["set"]["consumption_left"])+"W verbleibende EVU-Bezugs-Leistung")
+        try:
+            pub.pub("openWB/set/counter/0/set/consumption_left", self.data["set"]["consumption_left"])
+            log.message_debug_log("debug", str(self.data["set"]["consumption_left"])+"W verbleibende EVU-Bezugs-Leistung")
+        except Exception as e:
+            log.exception_logging(e)
 
     def print_stats(self):
-        log.message_debug_log("debug", str(self.data["set"]["consumption_left"])+"W verbleibende EVU-Bezugs-Leistung")
+        try:
+            log.message_debug_log("debug", str(self.data["set"]["consumption_left"])+"W verbleibende EVU-Bezugs-Leistung")
+        except Exception as e:
+            log.exception_logging(e)
 
 

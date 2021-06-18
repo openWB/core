@@ -38,11 +38,11 @@ def print_dictionaries(data):
     ---------
     data: dict
     """
-    try:
-        for key in data:
+    for key in data:
+        try:
             if isinstance(data[key], dict) == False:
                 log.message_data_log("debug", key+"\n"+str(data[key].data))
             else:
                 log.message_data_log("debug", key+"\n"+"Klasse fehlt")
-    except Exception as e:
-        log.exception_logging(e)
+        except Exception as e:
+            log.exception_logging(e)

@@ -32,9 +32,6 @@ import pub
 class bat:
     def __init__(self):
         self.data={}
-        pub.pub("openWB/set/bat/config/configured", False)
-        pub.pub("openWB/set/bat/set/charging_power_left", 0)
-        pub.pub("openWB/set/bat/set/hybrid_system_detected", False)
         if "get" not in self.data:
             self.data["get"]={}
         if "set" not in self.data:
@@ -63,14 +60,17 @@ class bat:
                 self.data["get"]["daily_yield_export"] = 0
                 self.data["get"]["daily_yield_import"] = 0
                 for bat in data.bat_module_data:
-                    if "bat" in bat:
-                        self.data["get"]["power"] += data.bat_module_data[bat].data["get"]["power"]
-                        self.data["get"]["imported"] += data.bat_module_data[bat].data["get"]["imported"]
-                        self.data["get"]["exported"] += data.bat_module_data[bat].data["get"]["exported"]
-                        self.data["get"]["daily_yield_export"] += data.bat_module_data[bat].data["get"]["daily_yield_export"]
-                        self.data["get"]["daily_yield_import"] += data.bat_module_data[bat].data["get"]["daily_yield_import"]
-                        soc_sum += data.bat_module_data[bat].data["get"]["soc"]
-                        soc_count += 1
+                    try:
+                        if "bat" in bat:
+                            self.data["get"]["power"] += data.bat_module_data[bat].data["get"]["power"]
+                            self.data["get"]["imported"] += data.bat_module_data[bat].data["get"]["imported"]
+                            self.data["get"]["exported"] += data.bat_module_data[bat].data["get"]["exported"]
+                            self.data["get"]["daily_yield_export"] += data.bat_module_data[bat].data["get"]["daily_yield_export"]
+                            self.data["get"]["daily_yield_import"] += data.bat_module_data[bat].data["get"]["daily_yield_import"]
+                            soc_sum += data.bat_module_data[bat].data["get"]["soc"]
+                            soc_count += 1
+                    except Exception as e:
+                        log.exception_logging(e)
                 self.data["get"]["soc"] = int(soc_sum / soc_count)
                 # Alle Summentopics im Dict publishen
                 {pub.pub("openWB/set/bat/get/"+k, v)for (k,v) in self.data["get"].items()}
