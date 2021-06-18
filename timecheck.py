@@ -391,14 +391,49 @@ def get_difference(timestamp_begin):
 
     Return
     ------
-    diff: int
-        Abstand in Sekunden
+    diff: str
+        Differenz HH:MM, ggf DD:HH:MM
     """
     try:
-        begin = datetime.datetime.strptime(timestamp_begin, "%m/%d/%Y, %H:%M:%S")
+        begin = datetime.datetime.strptime(timestamp_begin[:-3], "%m/%d/%Y, %H:%M")
         now = datetime.datetime.today()
-        diff = (now - begin).total_seconds()
-        return int(round(diff, 0))
+        diff = (now - begin)
+        return str(diff)[:-10]
     except Exception as e:
         log.exception_logging(e)
         return 0
+
+def duration_sum(first, second):
+    """ addiert zwei Zeitstrings und gibt das Ergebnis als String zurück.
+
+    Parameter
+    ---------
+    first, second: str
+        Zeitstrings HH:MM ggf DD:HH:MM
+    Return
+    ------
+    sum: str
+        Summe der Zeitstrings
+    """
+    first = __get_timedelta_obj(first)
+    second = __get_timedelta_obj(second)
+    sum = first + second 
+    return str(sum)
+
+def __get_timedelta_obj(time):
+    """ erstellt aus einem String ein timedelta-Objekt.
+
+    Parameter
+    ---------
+    time: str
+        Zeitstrings HH:MM ggf DD:HH:MM
+    Return
+    ------
+    time: timedelta
+    """
+    time_charged = time.split(":")
+    if len(time_charged) == 2:
+        time = datetime.timedelta(hours=time_charged[0], minutes=time_charged[1])
+    elif len(time_charged) == 3:
+        time = datetime.timedelta(days=time_charged[0], hours=time_charged[1], minutes=time_charged[2])
+    return time
