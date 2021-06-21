@@ -290,8 +290,9 @@ class setData():
             elif (re.search("^openWB/set/vehicle/[0-9]+/charge_template$", msg.topic) != None or
                     re.search("^openWB/set/vehicle/[0-9]+/ev_template$", msg.topic) != None):
                 self._validate_value(msg, int, [(0, None)])
-            elif (re.search("^openWB/set/vehicle/[0-9]+/get/time_charged$", msg.topic) != None or
-                    re.search("^openWB/set/vehicle/[0-9]+/get/soc_timestamp$", msg.topic) != None):
+            elif re.search("^openWB/set/vehicle/[0-9]+/get/time_charged$", msg.topic) != None:
+                self._validate_value(msg, str)
+            elif re.search("^openWB/set/vehicle/[0-9]+/get/soc_timestamp$", msg.topic) != None:
                 self._validate_value(msg, int, [(0, None)])
             elif (re.search("^openWB/set/vehicle/[0-9]+/get/daily_counter$", msg.topic) != None or
                     re.search("^openWB/set/vehicle/[0-9]+/get/range_charged$", msg.topic) != None or

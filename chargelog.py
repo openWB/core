@@ -153,7 +153,7 @@ def save_data(chargepoint, charging_ev, immediately = True, reset = False):
         # Es wurde noch nie ein Auto zugeordnet
         if charging_ev == -1:
             return
-        if charging_ev.data["get"]["time_charged"] == 0:
+        if charging_ev.data["get"]["time_charged"] == "00:00":
             # Die Daten wurden schon erfasst.
             return
         if immediately == False:
@@ -168,15 +168,15 @@ def save_data(chargepoint, charging_ev, immediately = True, reset = False):
         pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/get/charged_since_mode_switch", charging_ev.data["get"]["charged_since_mode_switch"])
         pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/get/range_charged", charging_ev.data["get"]["range_charged"])
         pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/get/time_charged", charging_ev.data["get"]["time_charged"])
-        time_charged = charging_ev.data["get"]["time_charged"]
-        if time_charged != 0:
-            power = charging_ev.data["get"]["charged_since_mode_switch"] / time_charged*60*60
+        time_charged = charging_ev.data["get"]["time_charged"].split(":")
+        if len(time_charged) == 2:
+            duration = int(time_charged[0])*60 + int(time_charged[1])
+            power = charging_ev.data["get"]["charged_since_mode_switch"] / duration*60
+        elif len(time_charged) == 3:
+            duration = int(time_charged[0])*60*24 + int(time_charged[1])*60 + int(time_charged[2])
+            power = charging_ev.data["get"]["charged_since_mode_switch"] / duration*60
         else:
             power = 0
-        if time_charged > 60*60:
-            duration = str(int(time_charged/3600)) + " H "+ str(int((time_charged%3600)/60)) +" Min"
-        else:
-            duration = str(int(time_charged/60)) + " Min"
         costs = data_module.general_data["general"].data["price_kwh"] * charging_ev.data["get"]["charged_since_mode_switch"] #/ 1000
         new_entry = {
             "chargepoint": 
@@ -196,7 +196,7 @@ def save_data(chargepoint, charging_ev, immediately = True, reset = False):
             { 
                 "begin": charging_ev.data["get"]["timestamp_start_charging"], 
                 "end": timecheck.create_timestamp(), 
-                "time_charged": duration
+                "time_charged": charging_ev.data["get"]["time_charged"]
                 }, 
             "data": 
             {
@@ -235,7 +235,7 @@ def save_data(chargepoint, charging_ev, immediately = True, reset = False):
         pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/get/charged_since_mode_switch", charging_ev.data["get"]["charged_since_mode_switch"])
         charging_ev.data["get"]["range_charged"] = 0
         pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/get/range_charged", charging_ev.data["get"]["range_charged"])
-        charging_ev.data["get"]["time_charged"] = 0
+        charging_ev.data["get"]["time_charged"] = "00:00"
         pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/get/time_charged", charging_ev.data["get"]["time_charged"])
     except Exception as e:
         log.exception_logging(e)
@@ -257,7 +257,8 @@ def get_log_data(request):
             with open(filepath, "r") as jsonFile:
                 chargelog = json.load(jsonFile)
         except FileNotFoundError:
-            pass
+            pub.pub("openWB/set/log/data", [])
+            return
         filter = request["filter"]
         # Liste mit gefilterten Einträgen erstellen
         for entry in chargelog:
@@ -308,36 +309,20 @@ def get_log_data(request):
 
         if len(data) > 0:
             # Summen bilden
-            duration = 0
-            duration_h = 0
-            duration_min = 0
+            duration = "00:00"
             range = 0
             mode = 0
             plugged = 0
             power = 0
             costs = 0
             for entry in data:
-                pos_h = entry["time"]["time_charged"].find("H")
-                pos_min = entry["time"]["time_charged"].find("M")
-                if pos_h != -1:
-                    duration_h_entry = int(entry["time"]["time_charged"][0:pos_h-1])
-                    duration_min_entry = int(entry["time"]["time_charged"][pos_h+1:pos_min-1])
-                else:
-                    duration_h_entry = 0
-                    duration_min_entry = int(entry["time"]["time_charged"][0:pos_min-1])
-                duration_min += duration_min_entry 
-                duration_h += duration_h_entry
-
+                duration = timecheck.duration_sum(duration, entry["time"]["time_charged"])
                 range += entry["data"]["range_charged"]
                 mode += entry["data"]["charged_since_mode_switch"]
                 plugged += entry["data"]["charged_since_plugged_counter"]
                 power += entry["data"]["power"]
                 costs += entry["data"]["costs"]
             power = power / len(data)
-            if duration_h != 0:
-                duration = str(duration_h)+" H"+str(duration_min)+" Min"
-            else:
-                duration = str(duration_min)+" Min"
             sum = {
                     "chargepoint": 
                     {
