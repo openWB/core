@@ -276,6 +276,12 @@ class chargepoint():
                             data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= charging_ev.data["control_parameter"]["required_current"] * 3 * 230
                         elif charging_ev.data["control_parameter"]["phases"] == 1:
                             data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= charging_ev.ev_template.data["max_current_one_phase"] * 230
+                    else:
+                        if charging_ev.data["control_parameter"]["phases"] == 3:
+                            message = "Umschaltung von 1 auf 3 Phasen."
+                        elif charging_ev.data["control_parameter"]["phases"] == 1:
+                            message = "Umschaltung von 3 auf 1 Phase."
+                        self.data["get"]["state_str"] = message
                 # Wenn eine Umschaltung im Gange ist, muss erst gewartet werden, bis diese fertig ist.
                 elif self.data["set"]["phases_to_use"] != charging_ev.data["control_parameter"]["phases"]:
                     if self.data["config"]["auto_phase_switch_hw"] == True and self.data["get"]["charge_state"] == True:
