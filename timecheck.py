@@ -433,7 +433,7 @@ def __get_timedelta_obj(time):
     """
     time_charged = time.split(":")
     if len(time_charged) == 2:
-        time = datetime.timedelta(hours=time_charged[0], minutes=time_charged[1])
+        time = datetime.timedelta(hours=int(time_charged[0]), minutes=int(time_charged[1]))
     elif len(time_charged) == 3:
-        time = datetime.timedelta(days=time_charged[0], hours=time_charged[1], minutes=time_charged[2])
+        time = datetime.timedelta(days=int(time_charged[0]), hours=int(time_charged[1]), minutes=int(time_charged[2]))
     return time

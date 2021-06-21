@@ -76,7 +76,7 @@ class ev():
             if "range_charged" not in self.data["get"]:
                 self.data["get"]["range_charged"] = 0
             if "time_charged" not in self.data["get"]:
-                self.data["get"]["time_charged"] = 0
+                self.data["get"]["time_charged"] = "00:00"
             pub.pub("openWB/set/vehicle/"+str(self.ev_num)+"/get/counter_at_plugtime", self.data["get"]["counter_at_plugtime"])
             pub.pub("openWB/set/vehicle/"+str(self.ev_num)+"/get/timestamp_start_charging", self.data["get"]["timestamp_start_charging"])
             pub.pub("openWB/set/vehicle/"+str(self.ev_num)+"/get/counter_at_mode_switch", self.data["get"]["counter_at_mode_switch"])

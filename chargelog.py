@@ -153,7 +153,7 @@ def save_data(chargepoint, charging_ev, immediately = True, reset = False):
         # Es wurde noch nie ein Auto zugeordnet
         if charging_ev == -1:
             return
-        if charging_ev.data["get"]["time_charged"] == 0:
+        if charging_ev.data["get"]["time_charged"] == "00:00":
             # Die Daten wurden schon erfasst.
             return
         if immediately == False:
@@ -196,7 +196,7 @@ def save_data(chargepoint, charging_ev, immediately = True, reset = False):
             { 
                 "begin": charging_ev.data["get"]["timestamp_start_charging"], 
                 "end": timecheck.create_timestamp(), 
-                "time_charged": duration
+                "time_charged": charging_ev.data["get"]["time_charged"]
                 }, 
             "data": 
             {
@@ -235,7 +235,7 @@ def save_data(chargepoint, charging_ev, immediately = True, reset = False):
         pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/get/charged_since_mode_switch", charging_ev.data["get"]["charged_since_mode_switch"])
         charging_ev.data["get"]["range_charged"] = 0
         pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/get/range_charged", charging_ev.data["get"]["range_charged"])
-        charging_ev.data["get"]["time_charged"] = 0
+        charging_ev.data["get"]["time_charged"] = "00:00"
         pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/get/time_charged", charging_ev.data["get"]["time_charged"])
     except Exception as e:
         log.exception_logging(e)
@@ -309,7 +309,7 @@ def get_log_data(request):
 
         if len(data) > 0:
             # Summen bilden
-            duration = 0
+            duration = "00:00"
             range = 0
             mode = 0
             plugged = 0
