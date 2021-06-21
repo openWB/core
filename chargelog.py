@@ -130,7 +130,7 @@ def collect_data(chargepoint):
                     pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/get/timestamp_start_charging", charging_ev.data["get"]["timestamp_start_charging"])
                 charging_ev.data["get"]["charged_since_mode_switch"] = chargepoint.data["get"]["counter"] -charging_ev.data["get"]["counter_at_mode_switch"]
                 log.message_debug_log("debug", "charged_since_mode_switch "+str(charging_ev.data["get"]["charged_since_mode_switch"])+" counter "+str(chargepoint.data["get"]["counter"]))
-                charging_ev.data["get"]["range_charged"] = int(round(charging_ev.data["get"]["charged_since_mode_switch"] / charging_ev.ev_template.data["average_consump"]/100, 0))
+                charging_ev.data["get"]["range_charged"] = charging_ev.data["get"]["charged_since_mode_switch"] / charging_ev.ev_template.data["average_consump"]*100
                 charging_ev.data["get"]["time_charged"] = timecheck.get_difference(charging_ev.data["get"]["timestamp_start_charging"])
                 pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/get/charged_since_mode_switch", charging_ev.data["get"]["charged_since_mode_switch"])
                 pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/get/range_charged", charging_ev.data["get"]["range_charged"])
