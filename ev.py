@@ -64,7 +64,7 @@ class ev():
             self.data["control_parameter"]["submode"] = "stop"
             self.data["control_parameter"]["chargemode"] = "stop"
 
-            # bestehende Logdaten auf dem Broker nicht zurücksetzen
+            # bestehende Logdaten auf dem Broker nicht zurücksetzen, daher nicht publishen
             if "counter_at_plugtime" not in self.data["get"]:
                 self.data["get"]["counter_at_plugtime"] = 0
             if "timestamp_start_charging" not in self.data["get"]:
@@ -77,12 +77,8 @@ class ev():
                 self.data["get"]["range_charged"] = 0
             if "time_charged" not in self.data["get"]:
                 self.data["get"]["time_charged"] = "00:00"
-            pub.pub("openWB/set/vehicle/"+str(self.ev_num)+"/get/counter_at_plugtime", self.data["get"]["counter_at_plugtime"])
-            pub.pub("openWB/set/vehicle/"+str(self.ev_num)+"/get/timestamp_start_charging", self.data["get"]["timestamp_start_charging"])
-            pub.pub("openWB/set/vehicle/"+str(self.ev_num)+"/get/counter_at_mode_switch", self.data["get"]["counter_at_mode_switch"])
-            pub.pub("openWB/set/vehicle/"+str(self.ev_num)+"/get/charged_since_mode_switch", self.data["get"]["charged_since_mode_switch"])
-            pub.pub("openWB/set/vehicle/"+str(self.ev_num)+"/get/range_charged", self.data["get"]["range_charged"])
-            pub.pub("openWB/set/vehicle/"+str(self.ev_num)+"/get/time_charged", self.data["get"]["time_charged"])
+            if "chargemode_log_entry" not in self.data["get"]:
+                self.data["get"]["chargemode_log_entry"] = "_"
         except Exception as e:
             log.exception_logging(e)
 
