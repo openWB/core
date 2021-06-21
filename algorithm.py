@@ -133,7 +133,9 @@ class control():
                                 data.cp_data[cp].data["set"]["current"] = max(data.cp_data[cp].data["get"]["current"])
                     except Exception as e:
                         log.exception_logging(e)
-                while True:
+                # Begrenzung der Schleifendurchläufe: Im ersten Durchlauf wird versucht, die Überlast durch Reduktion zu eliminieren, 
+                # im zweiten durch Abschalten. Daher die zweifache Anzahl von Zählern als Durchläufe.
+                for b in range(0, len(data.counter_data)*2):
                     chargepoints = loadmanagement.perform_loadmanagement(overloaded_counters[n][0])
                     overshoot = overloaded_counters[n][1][0]
                     # Das Lademodi-Tupel rückwärts durchgehen und LP mit niedrig priorisiertem Lademodus zuerst reduzieren/stoppen.
