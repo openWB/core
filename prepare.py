@@ -121,11 +121,11 @@ class prepare():
                                 cp.data["set"]["current"] = 0
                             # Da nicht bekannt ist, ob mit Bezug, Überschuss oder aus dem Speicher geladen wird, wird die freiwerdende Leistung erst im nächsten Durchlauf berücksichtigt.
                             # Ggf. entsteht so eine kurze Unterbrechung der Ladung, wenn während dem Laden umkonfiguriert wird.
+                        charging_ev.set_control_parameter(submode, required_current)
                         # Ein Eintrag muss nur erstellt werden, wenn vorher schon geladen wurde und auch danach noch geladen werden soll.
                         if mode_changed == True and cp.data["get"]["charge_state"] == True and state == True:
                             chargelog.save_data(cp, charging_ev)
 
-                        charging_ev.set_control_parameter(submode, required_current)
                         # Wenn die Nachrichten gesendet wurden, EV wieder löschen, wenn das EV im Algorithmus nicht berücksichtigt werden soll.
                         if state == False:
                             if cp.data["set"]["charging_ev"] != -1:

@@ -118,6 +118,8 @@ def collect_data(chargepoint):
             charging_ev.data["get"]["charged_since_plugged_counter"] = chargepoint.data["get"]["counter"] - charging_ev.data["get"]["counter_at_plugtime"]
             pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/get/charged_since_plugged_counter", charging_ev.data["get"]["charged_since_plugged_counter"])
             if charging_ev.data["get"]["counter_at_mode_switch"] == 0:
+                charging_ev.data["get"]["chargemode_log_entry"] = charging_ev.data["control_parameter"]["chargemode"]
+                pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/get/chargemode_log_entry", charging_ev.data["get"]["chargemode_log_entry"])
                 charging_ev.data["get"]["counter_at_mode_switch"] = chargepoint.data["get"]["counter"]
                 pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/get/counter_at_mode_switch", charging_ev.data["get"]["counter_at_mode_switch"])
                 log.message_debug_log("debug", "counter_at_mode_switch "+str(chargepoint.data["get"]["counter"]))
@@ -188,7 +190,7 @@ def save_data(chargepoint, charging_ev, immediately = True, reset = False):
             { 
                 "id": charging_ev.ev_num, 
                 "name": charging_ev.data["name"], 
-                "chargemode": charging_ev.data["control_parameter"]["chargemode"], 
+                "chargemode": charging_ev.data["get"]["chargemode_log_entry"], 
                 "prio": charging_ev.data["control_parameter"]["prio"],
                 "rfid": chargepoint.data["get"]["rfid"]
                 }, 
@@ -228,8 +230,11 @@ def save_data(chargepoint, charging_ev, immediately = True, reset = False):
         pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/get/timestamp_start_charging", charging_ev.data["get"]["timestamp_start_charging"])
         if reset == True:
             charging_ev.data["get"]["counter_at_mode_switch"] = 0
+            charging_ev.data["get"]["chargemode_log_entry"] = "_"
         else:
             charging_ev.data["get"]["counter_at_mode_switch"] = chargepoint.data["get"]["counter"]
+            charging_ev.data["get"]["chargemode_log_entry"] = charging_ev.data["control_parameter"]["chargemode"]
+        pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/get/chargemode_log_entry", charging_ev.data["get"]["chargemode_log_entry"])
         pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/get/counter_at_mode_switch", charging_ev.data["get"]["counter_at_mode_switch"])
         charging_ev.data["get"]["charged_since_mode_switch"] = 0
         pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/get/charged_since_mode_switch", charging_ev.data["get"]["charged_since_mode_switch"])
