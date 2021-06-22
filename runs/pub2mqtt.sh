@@ -40,7 +40,7 @@ mqttvar["counter/0/get/voltage"]=evuv1
 mqttvar["counter/0/get/imported"]=bezugkwh
 mqttvar["counter/0/get/exported"]=einspeisungkwh
 mqttvar["vehicle/1/get/soc"]=soc
-mqttvar["openWB/counter/set/home_consumption"]=hausverbrauch
+mqttvar["counter/set/home_consumption"]=hausverbrauch
 numOfChargepoints=$(</var/www/html/openWB/ramdisk/ConfiguredChargePoints)
 for i in $(seq 1 $numOfChargepoints);
 do
