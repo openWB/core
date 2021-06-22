@@ -1,4 +1,10 @@
 """Ladepunkt-Logik
+
+charging_ev: EV, das akutell laden darf 
+charging_ev_prev: EV, das vorher geladen hat. Dies wird benötigt, da wenn das EV nicht mehr laden darf, z.B. weil Autolock aktiv ist, 
+gewartet werden muss, bis die Ladeleistung 0 ist und dann erst der Logeintrag erstellt werden kann. 
+charging_ev = -1 zeigt an, dass der LP im Algorithmus nicht berücksichtigt werden soll. 
+Ist das Ev abgesteckt, wird auch charging_ev_prev -1 und im nächsten Zyklus kann ein neues Profil geladen werden.
 """
 
 import chargelog
@@ -226,6 +232,8 @@ class chargepoint():
                     if self.data["get"]["plug_state"] == False:
                         # Ev wurde noch nicht aktualisiert.
                         chargelog.reset_data(self, data.ev_data["ev"+str(self.data["set"]["charging_ev_prev"])])
+                        self.data["set"]["charging_ev_prev"] = -1
+                        pub.pub("openWB/set/chargepoint/"+self.cp_num+"/set/charging_ev_prev", self.data["set"]["charging_ev_prev"])
                 self.data["set"]["charging_ev"] = -1
                 pub.pub("openWB/set/chargepoint/"+self.cp_num+"/set/charging_ev", -1)
                 self.data["set"]["current"] = 0

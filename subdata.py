@@ -157,6 +157,10 @@ class subData():
                         if "get" not in self.ev_data["ev"+index].data:
                             self.ev_data["ev"+index].data["get"]={}
                         self.set_json_payload(self.ev_data["ev"+index].data["get"], msg)
+                    elif re.search("^openWB/vehicle/[0-9]+/set.+$", msg.topic) != None:
+                        if "set" not in self.ev_data["ev"+index].data:
+                            self.ev_data["ev"+index].data["set"]={}
+                        self.set_json_payload(self.ev_data["ev"+index].data["set"], msg)
                     elif re.search("^openWB/vehicle/[0-9]+/soc/config/.+$", msg.topic) != None:
                         if "soc" not in self.ev_data["ev"+index].data:
                             self.ev_data["ev"+index].data["soc"]={}

@@ -307,6 +307,8 @@ class setData():
                 self._validate_value(msg, str)
             elif re.search("^openWB/set/vehicle/[0-9]+/get/soc$", msg.topic) != None:
                 self._validate_value(msg, int, [(0, 100)])
+            elif re.search("^openWB/set/vehicle/[0-9]+/set/ev_template$", msg.topic) != None:
+                self._validate_value(msg, "json")
             elif re.search("^openWB/set/vehicle/[0-9]+/control_parameter/required_current$", msg.topic) != None:
                 self._validate_value(msg, int, [(6, 32), (0, 0)])
             elif re.search("^openWB/set/vehicle/[0-9]+/control_parameter/phases$", msg.topic) != None:
