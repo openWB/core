@@ -155,7 +155,7 @@ def save_data(chargepoint, charging_ev, immediately = True, reset = False):
         # Es wurde noch nie ein Auto zugeordnet
         if charging_ev == -1:
             return
-        if charging_ev.data["get"]["time_charged"] == "00:00":
+        if charging_ev.data["get"]["timestamp_start_charging"] == "0":
             # Die Daten wurden schon erfasst.
             return
         if immediately == False:

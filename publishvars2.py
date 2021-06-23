@@ -51,6 +51,7 @@ def pub_settings():
     pub.pub("openWB/set/vehicle/0/soc/config/manual", False)
     pub.pub("openWB/set/vehicle/0/soc/get/fault_state", 0)
     pub.pub("openWB/set/vehicle/0/soc/get/fault_str", "Kein Fehler.")
+    pub.pub("openWB/set/vehicle/0/get/soc", 0)
     pub.pub("openWB/set/vehicle/0/get/soc_timestamp", 0)
     pub.pub("openWB/set/vehicle/0/match_ev/selected", "cp")
     pub.pub("openWB/set/vehicle/0/match_ev/tag_id", 1234)
@@ -63,6 +64,7 @@ def pub_settings():
     pub.pub("openWB/set/vehicle/1/soc/config/manual", False)
     pub.pub("openWB/set/vehicle/1/soc/get/fault_state", 0)
     pub.pub("openWB/set/vehicle/1/soc/get/fault_str", "Kein Fehler.")
+    pub.pub("openWB/set/vehicle/1/get/soc", 0)
     pub.pub("openWB/set/vehicle/1/get/soc_timestamp", 1619568005)
     pub.pub("openWB/set/vehicle/1/match_ev/selected", "cp")
     pub.pub("openWB/set/vehicle/1/match_ev/tag_id", 1234)
@@ -74,6 +76,7 @@ def pub_settings():
     pub.pub("openWB/set/vehicle/2/soc/config/manual", False)
     pub.pub("openWB/set/vehicle/2/soc/get/fault_state", 0)
     pub.pub("openWB/set/vehicle/2/soc/get/fault_str", "Kein Fehler.")
+    pub.pub("openWB/set/vehicle/2/get/soc", 25)
     pub.pub("openWB/set/vehicle/2/get/soc_timestamp", 1619568005)
     pub.pub("openWB/set/vehicle/2/match_ev/selected", "rfid")
     pub.pub("openWB/set/vehicle/2/match_ev/tag_id", 1234)
@@ -85,6 +88,7 @@ def pub_settings():
     pub.pub("openWB/set/vehicle/3/soc/config/manual", False)
     pub.pub("openWB/set/vehicle/3/soc/get/fault_state", 0)
     pub.pub("openWB/set/vehicle/3/soc/get/fault_str", "Kein Fehler.")
+    pub.pub("openWB/set/vehicle/3/get/soc", 0)
     pub.pub("openWB/set/vehicle/3/get/soc_timestamp", 1619568005)
     pub.pub("openWB/set/vehicle/3/match_ev/selected", "rfid")
     pub.pub("openWB/set/vehicle/3/match_ev/tag_id", 1234)
@@ -98,6 +102,7 @@ def pub_settings():
     # pub.pub("openWB/set/vehicle/template/ev_template/0/average_consump", 17)
     # pub.pub("openWB/set/vehicle/template/ev_template/0/control_pilot_interruption", False)
     # pub.pub("openWB/set/vehicle/template/ev_template/0/nominal_difference", 2)
+    # pub.pub("openWB/set/vehicle/template/ev_template/0/prevent_switch_stop", True)
     # #evt1 - Tesla Facelift
     # pub.pub("openWB/set/vehicle/template/ev_template/1/min_current", 6)
     # pub.pub("openWB/set/vehicle/template/ev_template/1/battery_capacity", 82)
@@ -112,12 +117,12 @@ def pub_settings():
     # pub.pub("openWB/set/vehicle/template/ev_template/2/min_current", 6)
     # pub.pub("openWB/set/vehicle/template/ev_template/2/battery_capacity", 82)
     # pub.pub("openWB/set/vehicle/template/ev_template/2/max_current_one_phase", 32)
-    # pub.pub("openWB/set/vehicle/template/ev_template/2/max_current_multi_phases", 0)
-    # pub.pub("openWB/set/vehicle/template/ev_template/2/max_phases", 1)
+    # pub.pub("openWB/set/vehicle/template/ev_template/2/max_current_multi_phases", 16)
+    # pub.pub("openWB/set/vehicle/template/ev_template/2/max_phases", 3)
     # pub.pub("openWB/set/vehicle/template/ev_template/2/average_consump", 17)
     # pub.pub("openWB/set/vehicle/template/ev_template/2/control_pilot_interruption", False)
     # pub.pub("openWB/set/vehicle/template/ev_template/2/nominal_difference", 2)
-    # pub.pub("openWB/set/vehicle/template/ev_template/1/prevent_switch_stop", True)
+    # pub.pub("openWB/set/vehicle/template/ev_template/2/prevent_switch_stop", True)
     # #evt3 - Tesla
     # pub.pub("openWB/set/vehicle/template/ev_template/3/min_current", 6)
     # pub.pub("openWB/set/vehicle/template/ev_template/3/battery_capacity", 82)
@@ -137,7 +142,7 @@ def pub_settings():
     {"id": 1, "name": "abc", "time": ["07:00", "17:20"], "current": 10, "active": 1, "frequency": {"selected": "daily"} },
     {"id": 2, "name": "def", "time": ["07:00", "17:20"], "current": 16, "active": 0, "frequency": {"selected": "daily"} }
     ]
-    #ct0 - default
+    # #ct0 - default
     # pub.pub("openWB/set/vehicle/template/charge_template/0/prio", False)
     # pub.pub("openWB/set/vehicle/template/charge_template/0/time_charging/active", False)
     # pub.pub("openWB/set/vehicle/template/charge_template/0/time_charging/plans", plans_for_time_charging)
