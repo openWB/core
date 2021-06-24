@@ -1,6 +1,8 @@
 #!/bin/bash
 
 declare -A mqttvar
+mqttvar["chargepoint/get/daily_imported_all"]=daily_llakwh
+mqttvar["chargepoint/get/daily_exported_all"]=0
 mqttvar["chargepoint/get/counter_all"]=llkwhges
 mqttvar["chargepoint/get/power_all"]=llkombiniert
 mqttvar["chargepoint/1/get/counter"]=llkwh
@@ -39,8 +41,11 @@ mqttvar["counter/0/get/current"]=evua1
 mqttvar["counter/0/get/voltage"]=evuv1
 mqttvar["counter/0/get/imported"]=bezugkwh
 mqttvar["counter/0/get/exported"]=einspeisungkwh
+mqttvar["counter/0/get/daily_yield_import"]=daily_bezugkwh
+mqttvar["counter/0/get/daily_yield_export"]=daily_einspeisungkwh
 mqttvar["vehicle/1/get/soc"]=soc
 mqttvar["counter/set/home_consumption"]=hausverbrauch
+mqttvar["counter/set/daily_energy_home_consumption"]=daily_hausverbrauchkwh
 numOfChargepoints=$(</var/www/html/openWB/ramdisk/ConfiguredChargePoints)
 for i in $(seq 1 $numOfChargepoints);
 do
