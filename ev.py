@@ -404,15 +404,15 @@ class chargeTemplate():
                     return plan["current"], "time_charging", message
                 else:
                     self.data["chargemode"]["current_plan"] = ""
-                    message = "kein Zeitfenster aktiv ist."
+                    message = "Keine Ladung, da kein Zeitfenster aktiv ist."
                     return 0, "stop", message
             else:
                 self.data["chargemode"]["current_plan"] = ""
-                message = "keine Zeitfenster konfiguriert sind."
+                message = "Keine Ladung, da keine Zeitfenster konfiguriert sind."
                 return 0, "stop", message
         except Exception as e:
             log.exception_logging(e)
-            return 0, "stop", "da ein interner Fehler aufgetreten ist."
+            return 0, "stop", "Keine Ladung, da da ein interner Fehler aufgetreten ist."
 
     def instant_charging(self, soc, amount):
         """ prüft, ob die Lademengenbegrenzung erreicht wurde und setzt entsprechend den Ladestrom.
@@ -430,7 +430,7 @@ class chargeTemplate():
             instant_charging = self.data["chargemode"]["instant_charging"]
             if data.optional_data["optional"].data["et"]["active"] == True:
                 if data.optional_data["optional"].et_price_lower_than_limit() == False:
-                    message = "der aktuelle Strompreis über dem maximalen Strompreis liegt."
+                    message = "Keine Ladung, da der aktuelle Strompreis über dem maximalen Strompreis liegt."
                     return 0, "stop", message
             if instant_charging["limit"]["selected"] == "none":
                 return instant_charging["current"], "instant_charging", message
@@ -438,17 +438,17 @@ class chargeTemplate():
                 if soc < instant_charging["limit"]["soc"]:
                     return instant_charging["current"], "instant_charging", message
                 else:
-                    message = "der Soc bereits erreicht wurde."
+                    message = "Keine Ladung, da der Soc bereits erreicht wurde."
                     return 0, "stop", message
             elif instant_charging["limit"]["selected"] == "amount":
                 if amount < instant_charging["limit"]["amount"]:
                     return instant_charging["current"], "instant_charging", message
                 else:
-                    message = "die Energiemenge bereits geladen wurde."
+                    message = "Keine Ladung, da die Energiemenge bereits geladen wurde."
                     return 0, "stop", message
         except Exception as e:
             log.exception_logging(e)
-            return 0, "stop", "da ein interner Fehler aufgetreten ist."
+            return 0, "stop", "Keine Ladung, da da ein interner Fehler aufgetreten ist."
 
     def pv_charging(self, soc):
         """ prüft, ob Min-oder Max-Soc erreicht wurden und setzt entsprechend den Ladestrom.
@@ -475,11 +475,11 @@ class chargeTemplate():
                 else:
                     return pv_charging["min_current"], "instant_charging", message # Min PV
             else:
-                message = "der maximale Soc bereits erreicht wurde."
+                message = "Keine Ladung, da der maximale Soc bereits erreicht wurde."
                 return 0, "stop", message
         except Exception as e:
             log.exception_logging(e)
-            return 0, "stop", "da ein interner Fehler aufgetreten ist."
+            return 0, "stop", "Keine Ladung, da ein interner Fehler aufgetreten ist."
 
     def scheduled_charging(self, soc, ev_template):
         """ prüft, ob der Ziel-SoC erreicht wurde und stellt den zur Erreichung nötigen Ladestrom ein.
@@ -533,14 +533,14 @@ class chargeTemplate():
                                 plan_data["required_wh"] = required_wh
                                 plan_data["max_current"] = max_current
                         else:
-                            message = "da der Ziel-Soc bereits erreicht wurde."
+                            message = "Keine Ladung, da der Ziel-Soc bereits erreicht wurde."
                             return 0, "stop", message
                     except Exception as e:
                         log.exception_logging(e)
             else:
                 if start == -1:
                     self.data["chargemode"]["current_plan"] = ""
-                    message = "da keine Ziel-Termine konfiguriert sind."
+                    message = "Keine Ladung, da keine Ziel-Termine konfiguriert sind."
                     return 0, "stop", message
                 else:
                     self.data["chargemode"]["current_plan"] = plan_data["plan"]
@@ -549,7 +549,7 @@ class chargeTemplate():
                             current_plan = plan
                             break
                     else:
-                        return 0, "stop", "da ein interner Fehler aufgetreten ist."
+                        return 0, "stop", "Keine Ladung, da ein interner Fehler aufgetreten ist."
                     if plan_data["start"] == 1: # Ladung sollte jetzt starten
                         return plan_data["available_current"], "instant_charging", message
                     elif plan_data["start"] == 2:  # weniger als die berechnete Zeit verfügbar
@@ -569,17 +569,17 @@ class chargeTemplate():
                                 if timecheck.is_list_valid(hourlist) == True:
                                     return plan_data["available_current"], "instant_charging", message
                                 else:
-                                    message = "da kein günstiger Zeitpunkt zum preisbasierten Laden ist. Falls vorhanden, wird mit EVU-Überschuss geladen."
-                                    return ev_template.data["min_current"], "pv_charging", message
+                                    message = "Kein Sofortladen, da kein günstiger Zeitpunkt zum preisbasierten Laden ist. Falls vorhanden, wird mit EVU-Überschuss geladen."
+                                    return 1, "pv_charging", message
                             else:
-                                message = "da noch Zeit bis zum Zieltermmin ist. Falls vorhanden, wird mit EVU-Überschuss geladen."
-                                return ev_template.data["min_current"], "pv_charging", message
+                                message = "Kein Sofortladen, da noch Zeit bis zum Zieltermmin ist. Falls vorhanden, wird mit EVU-Überschuss geladen."
+                                return 1, "pv_charging", message
                         else:
-                            message = "da noch mehr als ein Tag bis zum Zieltermmin ist. "
+                            message = "Keine Ladung, da noch mehr als ein Tag bis zum Zieltermmin ist. "
                             return 0, "stop", message
         except Exception as e:
             log.exception_logging(e)
-            return 0, "stop", "da ein interner Fehler aufgetreten ist."
+            return 0, "stop", "Keine Ladung, da ein interner Fehler aufgetreten ist."
 
     def standby(self):
         """ setzt den benötigten Strom auf 0.
@@ -589,7 +589,7 @@ class chargeTemplate():
             Required Current, Chargemode: int, str
                 Therotisch benötigter Strom, Ladmodus
         """
-        message = "der Lademodus Standby aktiv ist."
+        message = "Keine Ladung, da der Lademodus Standby aktiv ist."
         return 0, "standby", message
 
     def stop(self):
@@ -600,5 +600,5 @@ class chargeTemplate():
             Required Current, Chargemode: int, str
                 Therotisch benötigter Strom, Ladmodus
         """
-        message = "der Lademdus Stop aktiv ist."
+        message = "Keine Ladung, da der Lademdus Stop aktiv ist."
         return 0, "stop", message
