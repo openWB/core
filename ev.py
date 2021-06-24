@@ -544,6 +544,12 @@ class chargeTemplate():
                     return 0, "stop", message
                 else:
                     self.data["chargemode"]["current_plan"] = plan_data["plan"]
+                    for plan in self.data["chargemode"]["scheduled_charging"]:
+                        if plan["id"] == plan_data["plan"]:
+                            current_plan = plan
+                            break
+                    else:
+                        return 0, "stop", "da ein interner Fehler aufgetreten ist."
                     if plan_data["start"] == 1: # Ladung sollte jetzt starten
                         return plan_data["available_current"], "instant_charging", message
                     elif plan_data["start"] == 2:  # weniger als die berechnete Zeit verfügbar
@@ -555,7 +561,7 @@ class chargeTemplate():
                         return plan_data["available_current"], "instant_charging", message
                     else:
                         # Liegt der Zieltermin innerhalb der nächsten 24h?
-                        if timecheck.check_timeframe(self.data["chargemode"]["scheduled_charging"][plan_data["plan"]], 24) == True:
+                        if timecheck.check_timeframe(current_plan, 24) == True:
                             # Wenn Elektronische Tarife aktiv sind, prüfen, ob jetzt ein günstiger Zeitpunkt zum Laden ist.
                             if data.optional_data["optional"].data["et"]["active"] == True:
                                 hourlist = data.optional_data["optional"].et_get_loading_hours(
