@@ -108,7 +108,7 @@ class prepare():
                             current_changed, mode_changed = charging_ev.check_state(required_current, cp.data["set"]["current"], cp.data["get"]["charge_state"])
                             
                             if message_ev != None:
-                                message = "Keine Ladung, da "+str(message_ev)
+                                message = message_ev
                             log.message_debug_log("debug", "Ladepunkt "+cp.cp_num+", EV: "+cp.data["set"]["charging_ev_data"].data["name"]+" (EV-Nr."+str(vehicle)+")")
                             
                             # Die benötigte Stromstärke hat sich durch eine Änderung des Lademdous oder der Konfiguration geändert. Die Zuteilung entsprechend der Priorisierung muss neu geprüft werden.

@@ -46,7 +46,7 @@ class control():
             self._check_loadmanagement()
 
             # Abschaltschwelle prüfen und ggf. Abschaltverzögerung starten
-            for mode in reversed(self.chargemodes[10:-4]):
+            for mode in reversed(self.chargemodes[8:-4]):
                 self._switch_off_threshold(mode)
 
             # Phasenumschaltung

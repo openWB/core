@@ -165,7 +165,8 @@ class pv():
                         # Einschaltschwelle nicht erreicht
                         message = "Die Ladung kann nicht gestartet werden, da die Einschaltschwelle ("+str(pv_config["switch_on_threshold"])+"W) nicht erreicht wird."
                         log.message_debug_log("info", "LP "+str(chargepoint.cp_num)+": "+message)
-                        chargepoint.data["get"]["state_str"] = message
+                        if chargepoint.data["get"]["state_str"] == None:
+                            chargepoint.data["get"]["state_str"] = message
                         required_power = 0
                         threshold_not_reached = True
             else:
