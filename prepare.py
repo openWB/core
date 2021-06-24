@@ -89,8 +89,8 @@ class prepare():
                             pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num) +"/set/ev_template", charging_ev.data["set"]["ev_template"])
                         if ((cp.data["set"]["charging_ev"] == -1 and cp.data["set"]["charging_ev_prev"] == -1) or
                                 # Das EV lädt oder war angesteckt, wurde im Algorithmus aber nicht berücksichtigt.
-                                (cp.data["set"]["charging_ev"] == vehicle and cp.data["set"]["charging_ev_prev"] == -1 ) or 
-                                (cp.data["set"]["charging_ev"] == -1 and cp.data["set"]["charging_ev_prev"] == vehicle)):
+                                cp.data["set"]["charging_ev"] == vehicle or
+                                cp.data["set"]["charging_ev_prev"] == vehicle):
                             cp.data["set"]["charging_ev"] = vehicle
                             pub.pub("openWB/set/chargepoint/"+cp.cp_num+"/set/charging_ev", vehicle)
                             charging_ev.ev_template.data = charging_ev.data["set"]["ev_template"]
