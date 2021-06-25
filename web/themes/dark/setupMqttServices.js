@@ -67,6 +67,12 @@ var topicsToSubscribe = [
 	// chargemode config
 	["openWB/general/chargemode_config/pv_charging/bat_prio", 0],
 
+	// electricity tariff
+	["openWB/optional/et/active", 1],			// et provider is configured
+	["openWB/optional/et/provider", 1],			// et privider name
+	["openWB/optional/et/get/price", 1],		// current price
+	["openWB/optional/et/config/max_price", 1],	// configured max price
+
 	// graph topcis
 	["openWB/graph/boolDisplayLp1", 1],
 	["openWB/graph/boolDisplayLp2", 1],
@@ -138,9 +144,7 @@ var topicsToSubscribe = [
 	// ["openWB/Verbraucher/2/DailyYieldImportkWh", 1],
 
 	// // global topics
-	// ["openWB/global/WHouseConsumption", 1],
 	// ["openWB/global/strLastmanagementActive", 1],
-	// ["openWB/config/get/pv/priorityModeEVBattery", 1],
 
 	// ["openWB/config/get/pv/minCurrentMinPv", 1],
 	// // system topics
@@ -206,11 +210,6 @@ var topicsToSubscribe = [
 	// ["openWB/lp/8/ADirectModeAmps", 1],
 	// // Zielladen
 	// ["openWB/lp/1/boolFinishAtTimeChargeActive", 1],
-	// // Daily Yields
-	// ["openWB/global/DailyYieldHausverbrauchKwh", 1],
-	// ["openWB/global/DailyYieldAllChargePointsKwh", 1],
-	// ["openWB/evu/DailyYieldImportKwh", 1],
-	// ["openWB/evu/DailyYieldExportKwh", 1],
 
 	// // hook status
 	// ["openWB/hook/1/boolHookStatus", 1],
