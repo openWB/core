@@ -310,7 +310,7 @@ class setData():
             elif re.search("^openWB/set/vehicle/[0-9]+/set/ev_template$", msg.topic) != None:
                 self._validate_value(msg, "json")
             elif re.search("^openWB/set/vehicle/[0-9]+/control_parameter/required_current$", msg.topic) != None:
-                self._validate_value(msg, int, [(6, 32), (0, 0)])
+                self._validate_value(msg, float, [(6, 32), (0, 0)])
             elif re.search("^openWB/set/vehicle/[0-9]+/control_parameter/phases$", msg.topic) != None:
                 self._validate_value(msg, int, [(0, 3)])
             elif (re.search("^openWB/set/vehicle/[0-9]+/control_parameter/submode$", msg.topic) != None or
@@ -419,7 +419,7 @@ class setData():
                 self._validate_value(msg, float, [(6, 32), (0, 0)])
             elif (re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/energy_to_charge$", msg.topic) != None or
                     re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/required_power$", msg.topic) != None):
-                self._validate_value(msg, int, [(0, None)])
+                self._validate_value(msg, float, [(0, None)])
             elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/phases_to_use$", msg.topic) != None:
                 self._validate_value(msg, int, [(0, 3)])
             elif (re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/manual_lock$", msg.topic) != None or
