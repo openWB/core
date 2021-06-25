@@ -141,10 +141,10 @@
 						</div>
 						<div id="cardBat" class="card-body collapse">
 							<div class="row">
-								<div class="col">
+								<div class="col pr-0">
 									SoC
 								</div>
-								<div class="housebattery-sum-soc col text-right">
+								<div class="housebattery-sum-soc col pl-0 text-right">
 									XX %
 								</div>
 							</div>
@@ -154,18 +154,18 @@
 								</div>
 							</div>
 							<div class="row">
-								<div class="col">
+								<div class="col pr-0">
 									Geladen
 								</div>
-								<div class="housebattery-sum-import col text-right">
+								<div class="housebattery-sum-import col pl-0 text-right">
 									XX kWh
 								</div>
 							</div>
 							<div class="row">
-								<div class="col">
+								<div class="col pr-0">
 									Entladen
 								</div>
-								<div class="housebattery-sum-export col text-right">
+								<div class="housebattery-sum-export col pl-0 text-right">
 									XX kWh
 								</div>
 							</div>
@@ -177,11 +177,11 @@
 									</div>
 								</div>
 								<div class="row vaRow">
-									<div class="col">
+									<div class="col pr-0">
 										Vorrang PV
 									</div>
 									<div class="col text-right">
-										<input class="housebattery-priority" type="checkbox" data-toggle="toggle" data-topic="openWB/set/general/chargemode_config/pv_charging/bat_prio" data-on='<i class="fas fa-car-battery"></i>' data-off='<i class="fas fa-car-side"></i>' data-onstyle="warning" data-offstyle="primary" data-size="sm" data-style="w-50">
+										<input class="housebattery-priority" type="checkbox" data-toggle="toggle" data-topic="openWB/set/general/chargemode_config/pv_charging/bat_prio" data-on='<i class="fas fa-car-battery"></i>' data-off='<i class="fas fa-car-side"></i>' data-onstyle="warning" data-offstyle="primary" data-size="sm" data-style="w-100">
 									</div>
 								</div>
 							</div>
@@ -204,10 +204,10 @@
 								</div>
 							</div>
 							<div class="row">
-								<div class="col">
+								<div class="col pr-0">
 									Ertrag 
 								</div>
-								<div class="pv-sum-production col text-right">
+								<div class="pv-sum-production col pl-0 text-right">
 									-- kWh
 								</div>
 							</div>
@@ -233,27 +233,27 @@
 								</div>
 							</div>
 							<div class="row">
-								<div class="col">
+								<div class="col pr-0">
 									Import
 								</div>
-								<div class="grid-import col text-right">
+								<div class="grid-import col pl-0 text-right">
 									XX kWh
 								</div>
 							</div>
 							<div class="row">
-								<div class="col">
+								<div class="col pr-0">
 									Export
 								</div>
-								<div class="grid-export col text-right">
+								<div class="grid-export col pl-0 text-right">
 									XX kWh
 								</div>
 							</div>
 							<hr class="border-danger">
 							<div class="row">
-								<div class="col">
+								<div class="col pr-0">
 									Strompreis
 								</div>
-								<div class="col text-right" Title="ToDo...">
+								<div class="col pl-0 text-right" Title="ToDo...">
 									XX ct/kWh
 								</div>
 							</div>
@@ -276,10 +276,10 @@
 								</div>
 							</div>
 							<div class="row">
-								<div class="col">
+								<div class="col pr-0">
 									Energie 
 								</div>
-								<div class="houseconsumption-daily col text-right">
+								<div class="houseconsumption-daily col pl-0 text-right">
 									XX kWh
 								</div>
 							</div>
@@ -302,18 +302,18 @@
 								</div>
 							</div>
 							<div class="row">
-								<div class="col">
+								<div class="col pr-0">
 									Geladen
 								</div>
-								<div class="chargepoint-sum-importdaily col text-right">
+								<div class="chargepoint-sum-importdaily col pl-0 text-right">
 									XX kWh
 								</div>
 							</div>
 							<div class="row">
-								<div class="col">
+								<div class="col pr-0">
 									Entladen
 								</div>
-								<div class="chargepoint-sum-exportdaily col text-right">
+								<div class="chargepoint-sum-exportdaily col pl-0 text-right">
 									XX kWh
 								</div>
 							</div>

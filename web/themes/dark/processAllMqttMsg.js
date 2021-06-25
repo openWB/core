@@ -515,28 +515,30 @@ function processChargepointMessages(mqttmsg, mqttpayload) {
 		$('.chargepoint-sum-power').text(powerAllLp+' '+unitPrefix+unit);
 	}
 	else if ( mqttmsg == 'openWB/chargepoint/get/daily_imported_all') {
-		var unit = "kWh";
+		var unit = "Wh";
+		var unitPrefix = "k";
 		var dailyYield = parseFloat(mqttpayload);
 		if ( isNaN(dailyYield) ) {
 			dailyYield = 0;
 		}
-		var dailyYieldStr = "--";
-		if ( dailyYield >= 0 ) {
-			dailyYieldStr = dailyYield.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+		if ( dailyYield > 999 ) {
+			dailyYield = (dailyYield / 1000).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+			unitPrefix = "M";
 		}
-		$('.chargepoint-sum-importdaily').text(dailyYieldStr+' '+unit);
+		$('.chargepoint-sum-importdaily').text(dailyYield+' '+unitPrefix+unit);
 	}
 	else if ( mqttmsg == 'openWB/chargepoint/get/daily_exported_all') {
-		var unit = "kWh";
+		var unit = "Wh";
+		var unitPrefix = "k";
 		var dailyYield = parseFloat(mqttpayload);
 		if ( isNaN(dailyYield) ) {
 			dailyYield = 0;
 		}
-		var dailyYieldStr = "--";
-		if ( dailyYield >= 0 ) {
-			dailyYieldStr = dailyYield.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+		if ( dailyYield > 999 ) {
+			dailyYield = (dailyYield / 1000).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+			unitPrefix = "M";
 		}
-		$('.chargepoint-sum-exportdaily').text(dailyYieldStr+' '+unit);
+		$('.chargepoint-sum-exportdaily').text(dailyYield+' '+unitPrefix+unit);
 	}
 	else if ( mqttmsg.match( /^openwb\/chargepoint\/[1-9][0-9]*\/config\/name$/i ) ) {
 		var index = getIndex(mqttmsg);  // extract number between two / /
