@@ -266,7 +266,7 @@
 					<div class="card border-secondary">
 						<div class="card-header bg-secondary collapsed" data-toggle="collapse" data-target="#cardHouseconsumption">
 							<i class="fas fa-home"></i>
-							<span class="houseconsumption-power" title="Topic fehlt!">XX W</span>
+							<span class="houseconsumption-power">? W</span>
 							<span class="collPlus"></span>
 						</div>
 						<div id="cardHouseconsumption" class="card-body collapse">
@@ -279,7 +279,7 @@
 								<div class="col">
 									Energie 
 								</div>
-								<div class="houseconsumption-daily col text-right" title="Topic fehlt!">
+								<div class="houseconsumption-daily col text-right">
 									XX kWh
 								</div>
 							</div>
