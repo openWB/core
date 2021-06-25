@@ -223,6 +223,10 @@
 							<i class="grid-exporting fas fa-angle-double-right hide"></i>
 							<i class="grid-importing fas fa-angle-double-left hide"></i>
 							<img src="img/icons/electric-tower.svg" alt="electric tower" style="width: 1.1em;" >
+							<span class="et-configured hide">
+								<i class="et-blocked fas fa-coins hide"></i>
+								<i class="et-not-blocked fas fa-coins text-success hide"></i>
+							</span>
 							<span class="grid-power">600 W</span>
 							<span class="collPlus"></span>
 						</div>
@@ -248,13 +252,36 @@
 									XX kWh
 								</div>
 							</div>
-							<hr class="border-danger">
-							<div class="row">
-								<div class="col pr-0">
-									Strompreis
+							<div class="et-configured hide">
+								<hr class="border-danger">
+								<div class="row">
+									<div class="col font-italic font-weight-bold">
+										Strompreis:
+									</div>
 								</div>
-								<div class="col pl-0 text-right" Title="ToDo...">
-									XX ct/kWh
+								<div class="row">
+									<div class="col pr-0">
+										Anbieter
+									</div>
+									<div class="et-name col pl-0 text-right">
+										?
+									</div>
+								</div>
+								<div class="row">
+									<div class="col pr-0">
+										aktuell
+									</div>
+									<div class="et-current-price col pl-0 text-right">
+										XX ct/kWh
+									</div>
+								</div>
+								<div class="row">
+									<div class="col pr-0">
+										Preisgrenze
+									</div>
+									<div class="et-price-limit col pl-0 text-right">
+										XX ct/kWh
+									</div>
 								</div>
 							</div>
 						</div>

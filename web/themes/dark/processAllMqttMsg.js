@@ -234,8 +234,7 @@ function handlevar(mqttmsg, mqttpayload) {
 	else if ( mqttmsg.match( /^openwb\/vehicle\//i) ) { processVehicleMessages(mqttmsg, mqttpayload); }
 	else if ( mqttmsg.match( /^openwb\/general\/chargemode_config\/pv_charging\//i) ) { processPvConfigMessages(mqttmsg, mqttpayload); }
 	else if ( mqttmsg.match( /^openwb\/graph\//i ) ) { processGraphMessages(mqttmsg, mqttpayload); }
-	// else if ( mqttmsg.match( /^openwb\/global\/awattar\//i) ) { processETProviderMessages(mqttmsg, mqttpayload); }
-	// else if ( mqttmsg.match( /^openwb\/global\/ETProvider\//i) ) { processETProviderMessages(mqttmsg, mqttpayload); }
+	else if ( mqttmsg.match( /^openwb\/optional\/et\//i) ) { processETProviderMessages(mqttmsg, mqttpayload); }
 	// else if ( mqttmsg.match( /^openwb\/global\//i) ) { processGlobalMessages(mqttmsg, mqttpayload); }
 	// else if ( mqttmsg.match( /^openwb\/system\//i) ) { processSystemMessages(mqttmsg, mqttpayload); }
 	// else if ( mqttmsg.match( /^openwb\/verbraucher\//i) ) { processVerbraucherMessages(mqttmsg, mqttpayload); }
@@ -389,28 +388,30 @@ function processBatteryMessages(mqttmsg, mqttpayload) {
 		$('.housebattery-sum-soc').text(speicherSoc+' '+unit);
 	}
 	else if ( mqttmsg == 'openWB/bat/get/daily_yield_export') {
-		var unit = "kWh";
+		var unit = "Wh";
+		var unitPrefix = "k";
 		var batDailyYield = parseFloat(mqttpayload);
 		if ( isNaN(batDailyYield) ) {
 			batDailyYield = 0;
 		}
-		var batDailyYieldStr = "--";
-		if ( batDailyYield >= 0 ) {
-			batDailyYieldStr = batDailyYield.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+		if ( batDailyYield > 999 ) {
+			batDailyYield = (batDailyYield / 1000).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+			unitPrefix = "M";
 		}
-		$('.housebattery-sum-import').text(batDailyYieldStr+' '+unit);
+		$('.housebattery-sum-import').text(batDailyYield+' '+unitPrefix+unit);
 	}
 	else if ( mqttmsg == 'openWB/bat/get/daily_yield_import') {
-		var unit = "kWh";
+		var unit = "Wh";
+		var unitPrefix = "k";
 		var batDailyYield = parseFloat(mqttpayload);
 		if ( isNaN(batDailyYield) ) {
 			batDailyYield = 0;
 		}
-		var batDailyYieldStr = "--";
-		if ( batDailyYield >= 0 ) {
-			batDailyYieldStr = batDailyYield.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+		if ( batDailyYield > 999 ) {
+			batDailyYield = (batDailyYield / 1000).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+			unitPrefix = "M";
 		}
-		$('.housebattery-sum-export').text(batDailyYieldStr+' '+unit);
+		$('.housebattery-sum-export').text(batDailyYield+' '+unitPrefix+unit);
 	}
 }
 
@@ -1063,53 +1064,72 @@ function processGraphMessages(mqttmsg, mqttpayload) {
 	}
 }  // end processGraphMessages
 
-// function processETProviderMessages(mqttmsg, mqttpayload) {
-// 	// processes mqttmsg for topic openWB/global
-// 	// called by handlevar
-// 	if ( mqttmsg == 'openWB/global/ETProvider/providerName' ) {
-// 		$('.etproviderName').text(mqttpayload);
-// 	}
-// 	else if ( mqttmsg == 'openWB/global/ETProvider/modulePath' ) {
-// 		$('.etproviderLink').attr("href", "/openWB/modules/"+mqttpayload+"/stromtarifinfo/infopage.php");
-// 	}
-// 	else if ( mqttmsg == 'openWB/global/awattar/boolAwattarEnabled' ) {
-// 		// sets icon, graph and price-info-field visible/invisible
-// 		if ( mqttpayload == '1' ) {
-// 			$('#etproviderEnabledIcon').removeClass('hide');
-// 			$('#priceBasedCharging').removeClass('hide');
-// 			$('#strompreis').removeClass('hide');
-// 			$('#navStromtarifInfo').removeClass('hide');
-// 		} else {
-// 			$('#etproviderEnabledIcon').addClass('hide');
-// 			$('#priceBasedCharging').addClass('hide');
-// 			$('#strompreis').addClass('hide');
-// 			$('#navStromtarifInfo').addClass('hide');
-// 		}
-// 	}
-// 	else if ( mqttmsg == 'openWB/global/awattar/pricelist' ) {
-// 		// read etprovider values and trigger graph creation
-// 		// loadElectricityPriceChart will show electricityPriceChartCanvas if etprovideraktiv=1 in openwb.conf
-// 		// graph will be redrawn after 5 minutes (new data pushed from cron5min.sh)
-// 		var csvData = [];
-// 		var rawcsv = mqttpayload.split(/\r?\n|\r/);
-// 		// skip first entry: it is module-name responsible for list
-// 		for (var i = 1; i < rawcsv.length; i++) {
-// 			csvData.push(rawcsv[i].split(','));
-// 		}
-// 		// Timeline (x-Achse) ist UNIX Timestamp in UTC, deshalb Umrechnung (*1000) in Javascript-Timestamp (mit Millisekunden)
-// 		electricityPriceTimeline = getCol(csvData, 0).map(function(x) { return x * 1000; });
-// 		// Chartline (y-Achse) ist Preis in ct/kWh
-// 		electricityPriceChartline = getCol(csvData, 1);
+function processETProviderMessages(mqttmsg, mqttpayload) {
+	// processes mqttmsg for topic openWB/global
+	// called by handlevar
+	if ( mqttmsg == 'openWB/optional/et/active' ) {
+		console.log("et configured: "+mqttmsg);
+		data = JSON.parse(mqttpayload);
+		if ( data == true ) {
+			$('.et-configured').removeClass('hide');
+		} else {
+			$('.et-configured').addClass('hide');
+		}
+	}
+	else if ( mqttmsg == 'openWB/optional/et/get/price' ) {
+		var currentPrice = parseFloat(mqttpayload);
+		$('.et-current-price').text(currentPrice.toLocaleString(undefined, {maximumFractionDigits: 2, minimumFractionDigits: 2}) + ' ct/kWh');
+		var maxPrice = parseFloat($('.et-price-limit').first().text().split(" ")[0].replace(/,/, '.'));
+		console.log("max: "+maxPrice+" current: "+currentPrice);
+		if ( !isNaN(currentPrice) && !isNaN(maxPrice) ) {
+			if( currentPrice <= maxPrice ) {
+				$('.et-blocked').addClass('hide');
+				$('.et-not-blocked').removeClass('hide');
+			} else {
+				$('.et-not-blocked').addClass('hide');
+				$('.et-blocked').removeClass('hide');
+			}
+		}
+	}
+	else if ( mqttmsg == 'openWB/optional/et/config/max_price' ) {
+		var maxPrice = parseFloat(mqttpayload);
+		$('.et-price-limit').text(maxPrice.toLocaleString(undefined, {maximumFractionDigits: 2, minimumFractionDigits: 2}) + ' ct/kWh');
+		var currentPrice = parseFloat($('.et-current-price').first().text().split(" ")[0].replace(/,/, '.'));
+		console.log("max: "+maxPrice+" current: "+currentPrice);
+		if ( !isNaN(currentPrice) && !isNaN(maxPrice) ) {
+			if( currentPrice <= maxPrice ) {
+				$('.et-blocked').addClass('hide');
+				$('.et-not-blocked').removeClass('hide');
+			} else {
+				$('.et-not-blocked').addClass('hide');
+				$('.et-blocked').removeClass('hide');
+			}
+		}
+	}
+	else if ( mqttmsg == 'openWB/optional/et/provider' ) {
+		$('.et-name').text(JSON.parse(mqttpayload));
+	}
+	// else if ( mqttmsg == 'openWB/global/ETProvider/modulePath' ) {
+	// 	$('.etproviderLink').attr("href", "/openWB/modules/"+mqttpayload+"/stromtarifinfo/infopage.php");
+	// }
+	// else if ( mqttmsg == 'openWB/global/awattar/pricelist' ) {
+	// 	// read etprovider values and trigger graph creation
+	// 	// loadElectricityPriceChart will show electricityPriceChartCanvas if etprovideraktiv=1 in openwb.conf
+	// 	// graph will be redrawn after 5 minutes (new data pushed from cron5min.sh)
+	// 	var csvData = [];
+	// 	var rawcsv = mqttpayload.split(/\r?\n|\r/);
+	// 	// skip first entry: it is module-name responsible for list
+	// 	for (var i = 1; i < rawcsv.length; i++) {
+	// 		csvData.push(rawcsv[i].split(','));
+	// 	}
+	// 	// Timeline (x-Achse) ist UNIX Timestamp in UTC, deshalb Umrechnung (*1000) in Javascript-Timestamp (mit Millisekunden)
+	// 	electricityPriceTimeline = getCol(csvData, 0).map(function(x) { return x * 1000; });
+	// 	// Chartline (y-Achse) ist Preis in ct/kWh
+	// 	electricityPriceChartline = getCol(csvData, 1);
 
-// 		loadElectricityPriceChart();
-// 	}
-// 	else if ( mqttmsg == 'openWB/global/awattar/MaxPriceForCharging' ) {
-// 		setInputValue('MaxPriceForCharging', mqttpayload);
-// 	}
-// 	else if ( mqttmsg == 'openWB/global/awattar/ActualPriceForCharging' ) {
-// 		$('#aktuellerStrompreis').text(parseFloat(mqttpayload).toLocaleString(undefined, {maximumFractionDigits: 2}) + ' ct/kWh');
-// 	}
-// }
+	// 	loadElectricityPriceChart();
+	// }
+}
 
 // function processSofortConfigMessages(mqttmsg, mqttpayload) {
 // 	// processes mqttmsg for topic openWB/config/get/sofort/
