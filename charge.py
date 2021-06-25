@@ -60,5 +60,6 @@ class charge():
                 log.message_debug_log("error", "LP"+str(chargepoint.cp_num)+": Ladung wurde trotz verhinderter Unterbrechung gestoppt.")
             
             pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/set/current", current)
+            log.message_debug_log("debug", "LP"+str(chargepoint.cp_num)+": set current "+str(current)+" A")
         except Exception as e:
             log.exception_logging(e)

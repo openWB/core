@@ -114,6 +114,7 @@ class prepare():
                             # Die benötigte Stromstärke hat sich durch eine Änderung des Lademdous oder der Konfiguration geändert. Die Zuteilung entsprechend der Priorisierung muss neu geprüft werden.
                             # Daher muss der LP zurückgesetzt werden, wenn er gerade lädt, um in der Regelung wieder berücksichtigt zu werden.
                             if current_changed == True:
+                                log.message_debug_log("debug", "LP"+str(charging_ev.ev_num)+" : Da sich die Stromstärke geändert hat, muss der Ladepunkt im Algorithmus neu priorisiert werden.")
                                 data.pv_data["all"].reset_switch_on_off(cp, charging_ev)
                                 charging_ev.reset_phase_switch()
                                 if max(cp.data["get"]["current"]) != 0:
