@@ -18,8 +18,8 @@ var topicsToSubscribeFirst = [
 var topicsToSubscribe = [
 	// data for all chargepoints
 	["openWB/chargepoint/get/power_all", 1],			// total actual charging power; int, unit: Wh
-	["openWB/chargepoint/get/daily_yield_import", 1],	// total counted energy for charging; float, unit: kWh
-	["openWB/chargepoint/get/daily_yield_export", 1],	// total counted energy for discharging (V2G/V2H); float, unit: kWh
+	["openWB/chargepoint/get/daily_imported_all", 1],	// total counted energy for charging; float, unit: kWh
+	["openWB/chargepoint/get/daily_exported_all", 1],	// total counted energy for discharging (V2G/V2H); float, unit: kWh
 
 	// // pv topics
 	["openWB/pv/config/configured", 1],	// is a pv module configured? bool
@@ -34,9 +34,11 @@ var topicsToSubscribe = [
 	["openWB/bat/get/daily_yield_import", 1],	// total daily imported energy; float, unit: kWh
 
 	// counter topics, counter with index 0 is always main grid counter
-	["openWB/counter/0/get/power_all", 1],			// actual power; int, unit: W
-	["openWB/counter/0/get/daily_yield_import", 1],	// daily imported energy; float, unit: kWh
-	["openWB/counter/0/get/daily_yield_export", 1],	// daily exported energy; float, unit: kWh
+	["openWB/counter/set/home_consumption", 1],					// actual home power
+	["openWB/counter/set/daily_energy_home_consumption", 1],	// daily home energy
+	["openWB/counter/0/get/power_all", 1],						// actual power; int, unit: W
+	["openWB/counter/0/get/daily_yield_import", 1],				// daily imported energy; float, unit: kWh
+	["openWB/counter/0/get/daily_yield_export", 1],				// daily exported energy; float, unit: kWh
 
 	// chargepoint topics
 	["openWB/chargepoint/+/config/name", 1],						// chargepoint name, used to detect configured chargepoints and create html elements before receiving chargepoint data

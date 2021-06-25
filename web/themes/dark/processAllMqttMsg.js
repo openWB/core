@@ -226,7 +226,7 @@ function handlevar(mqttmsg, mqttpayload) {
 	// console.log("newmessage: "+mqttmsg+": "+mqttpayload);
 	processPreloader(mqttmsg);
 	if ( mqttmsg.match( /^openwb\/counter\/0\//i) ) { processEvuMessages(mqttmsg, mqttpayload); } // counter/0 is always EVU
-	else if ( mqttmsg.match( /^openwb\/counter\/[0-9]+\//i) ) { /* nothing here yet */ }
+	else if ( mqttmsg.match( /^openwb\/counter\/[1-9][0-9]*\//i) ) { /* nothing here yet */ }
 	else if ( mqttmsg.match( /^openwb\/counter\//i) ) { processGlobalCounterMessages(mqttmsg, mqttpayload); } // counter/0 is always EVU
 	else if ( mqttmsg.match( /^openwb\/bat\//i) ) { processBatteryMessages(mqttmsg, mqttpayload); }
 	else if ( mqttmsg.match( /^openwb\/pv\//i) ) { processPvMessages(mqttmsg, mqttpayload); }
@@ -265,6 +265,31 @@ function processGlobalCounterMessages(mqttmsg, mqttpayload) {
 				client.subscribe(topic[0], {qos: 0});
 			}
 		});
+	}
+	else if ( mqttmsg.match( /^openwb\/counter\/set\/home_consumption$/i ) ) {
+		var unit = 'W';
+		var powerHome = parseInt(mqttpayload, 10);
+		if ( isNaN(powerHome) ) {
+			powerHome = 0;
+		}
+		if ( powerHome > 999 ) {
+			powerHome = (powerHome / 1000).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+			unit = 'k'+unit;
+		}
+		$('.houseconsumption-power').text(powerHome+' '+unit);
+	}
+	else if ( mqttmsg.match( /^openwb\/counter\/set\/daily_energy_home_consumption$/i ) ) {
+		var unit = "Wh";
+		var unitPrefix = "k";
+		var houseDailyYield = parseFloat(mqttpayload);
+		if ( isNaN(houseDailyYield) ) {
+			houseDailyYield = 0;
+		}
+		if ( houseDailyYield > 999 ) {
+			houseDailyYield = (houseDailyYield / 1000).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+			unitPrefix = "M";
+		}
+		$('.houseconsumption-daily').text(houseDailyYield+' '+unitPrefix+unit);
 	}
 }
 
@@ -489,7 +514,7 @@ function processChargepointMessages(mqttmsg, mqttpayload) {
 		}
 		$('.chargepoint-sum-power').text(powerAllLp+' '+unitPrefix+unit);
 	}
-	else if ( mqttmsg == 'openWB/chargepoint/get/daily_yield_import') {
+	else if ( mqttmsg == 'openWB/chargepoint/get/daily_imported_all') {
 		var unit = "kWh";
 		var dailyYield = parseFloat(mqttpayload);
 		if ( isNaN(dailyYield) ) {
@@ -501,7 +526,7 @@ function processChargepointMessages(mqttmsg, mqttpayload) {
 		}
 		$('.chargepoint-sum-importdaily').text(dailyYieldStr+' '+unit);
 	}
-	else if ( mqttmsg == 'openWB/chargepoint/get/daily_yield_export') {
+	else if ( mqttmsg == 'openWB/chargepoint/get/daily_exported_all') {
 		var unit = "kWh";
 		var dailyYield = parseFloat(mqttpayload);
 		if ( isNaN(dailyYield) ) {
