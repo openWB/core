@@ -7,7 +7,6 @@ def pub_settings():
     # cp1
     pub.pub("openWB/set/chargepoint/1/set/manual_lock", False)
     pub.pub("openWB/set/chargepoint/1/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 0, "auto_phase_switch_hw": True, "control_pilot_interruption_hw": True})
-    pub.pub("openWB/set/chargepoint/1/get/rfid", 1234)
     # cpt1
     pub.pub("openWB/set/chargepoint/template/1/autolock/1/frequency/selected", "daily")
     pub.pub("openWB/set/chargepoint/template/1/autolock/1/time", ["07:00", "16:15"])
@@ -15,12 +14,12 @@ def pub_settings():
     pub.pub("openWB/set/chargepoint/template/1/autolock/wait_for_charging_end", True)
     pub.pub("openWB/set/chargepoint/template/1/autolock/active", False)
     pub.pub("openWB/set/chargepoint/template/1/ev", 1)
-    pub.pub("openWB/set/chargepoint/template/1/rfid_enabling", False)
+    pub.pub("openWB/set/chargepoint/template/1/rfid_enabling", True)
+    pub.pub("openWB/set/chargepoint/template/1/valid_tags", ["1234"])
 
     # # cp2
     pub.pub("openWB/set/chargepoint/2/set/manual_lock", False)
     pub.pub("openWB/set/chargepoint/2/config", {"name": "LP2", "template": 2, "connected_phases": 3, "phase_1": 0, "auto_phase_switch_hw": True, "control_pilot_interruption_hw": False})
-    pub.pub("openWB/set/chargepoint/2/get/rfid", 1234)
     # # cpt2
     pub.pub("openWB/set/chargepoint/template/2/autolock/1/frequency/selected", "daily")
     pub.pub("openWB/set/chargepoint/template/2/autolock/1/time", ["07:00", "11:20"])
@@ -33,7 +32,6 @@ def pub_settings():
     # #cp3
     pub.pub("openWB/set/chargepoint/3/set/manual_lock", False)
     pub.pub("openWB/set/chargepoint/3/config", {"name": "LP3", "template": 3, "connected_phases": 3, "phase_1": 0, "auto_phase_switch_hw": True, "control_pilot_interruption_hw": False})
-    pub.pub("openWB/set/chargepoint/3/get/rfid", 1234)
     # # cpt3
     pub.pub("openWB/set/chargepoint/template/3/autolock/1/frequency/selected", "daily")
     pub.pub("openWB/set/chargepoint/template/3/autolock/1/time", ["07:00", "11:15"])
@@ -88,7 +86,7 @@ def pub_settings():
     pub.pub("openWB/set/vehicle/3/soc/config/manual", False)
     pub.pub("openWB/set/vehicle/3/soc/get/fault_state", 0)
     pub.pub("openWB/set/vehicle/3/soc/get/fault_str", "Kein Fehler.")
-    pub.pub("openWB/set/vehicle/3/get/soc", 0)
+    pub.pub("openWB/set/vehicle/3/get/soc", 80)
     pub.pub("openWB/set/vehicle/3/get/soc_timestamp", 1619568005)
     pub.pub("openWB/set/vehicle/3/match_ev/selected", "rfid")
     pub.pub("openWB/set/vehicle/3/match_ev/tag_id", 1234)
@@ -208,6 +206,7 @@ def pub_settings():
     pub.pub("openWB/set/optional/et/active", False)
     pub.pub("openWB/set/optional/et/config/max_price", 5.5)
     pub.pub("openWB/set/optional/et/provider", "awattar")
+    pub.pub("openWB/set/optional/rfid/mode", 1)
 
     # pv
     #pub.pub("openWB/set/pv/1/get/counter", 500)
