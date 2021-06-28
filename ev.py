@@ -119,7 +119,7 @@ class ev():
         state = True
         try:
             if self.charge_template.data["chargemode"]["selected"] == "scheduled_charging":
-                required_current, submode, message = self.charge_template.scheduled_charging(self.data["get"]["soc"], self.ev_template)
+                required_current, submode, message = self.charge_template.scheduled_charging(self.data["get"]["soc"], self.ev_template, self.data["control_parameter"]["phases"])
             elif self.charge_template.data["time_charging"]["active"] == True:
                 required_current, submode, message = self.charge_template.time_charging()
             if (required_current == 0) or (required_current == None):
@@ -481,7 +481,7 @@ class chargeTemplate():
             log.exception_logging(e)
             return 0, "stop", "Keine Ladung, da ein interner Fehler aufgetreten ist."
 
-    def scheduled_charging(self, soc, ev_template):
+    def scheduled_charging(self, soc, ev_template, phases):
         """ prüft, ob der Ziel-SoC erreicht wurde und stellt den zur Erreichung nötigen Ladestrom ein.
 
         Parameter
@@ -491,6 +491,9 @@ class chargeTemplate():
 
         ev_template: dict
             Daten des EV, das geladen werden soll.
+
+        phases: int
+            Phasenzahl, mit der geladen werden soll
 
         Return
         ------
@@ -502,24 +505,16 @@ class chargeTemplate():
             plan_data = {"start": -1}
             message = None
             battery_capacity = ev_template.data["battery_capacity"]
-            max_phases = ev_template.data["max_phases"]
             start = -1 # Es wurde noch kein Plan geprüft.
             for plan in self.data["chargemode"]["scheduled_charging"]:
                 if plan["active"] == True:
                     try:
                         if soc < plan["soc"]:
-                            phases_scheduled_charging = data.general_data["general"].get_phases_chargemode(
-                                "scheduled_charging")
-                            if max_phases <= phases_scheduled_charging:
-                                usable_phases = max_phases
-                            else:
-                                usable_phases = phases_scheduled_charging
-
-                            if usable_phases == 1:
+                            if phases == 1:
                                 max_current = ev_template.data["max_current_one_phase"]
                             else:
                                 max_current = ev_template.data["max_current_multi_phases"]
-                            available_current = 0.8*max_current*usable_phases
+                            available_current = 0.8*max_current*phases
                             required_wh = (
                                 (plan["soc"] - soc)/100) * battery_capacity*1000
                             duration = required_wh/(available_current*230)
