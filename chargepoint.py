@@ -446,33 +446,35 @@ class chargepoint():
         """
         try:
             charging_ev = self.data["set"]["charging_ev_data"]
-            if charging_ev.ev_template.data["prevent_switch_stop"] == False:
+            # Umschaltung im Gange
+            if charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] != "0":
+                phase_switch_delay = data.general_data["general"].data["chargemode_config"]["pv_charging"]["phase_switch_delay"]
+                # Umschaltung abgeschlossen
+                if timecheck.check_timestamp(charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"], 53+phase_switch_delay-1) == False:
+                    log.message_debug_log("debug", "phase switch running")
+                    charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] = "0"
+                    pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num) + "/control_parameter/timestamp_perform_phase_switch", "0")
+                    # Aktuelle Ladeleistung und Differenz wieder freigeben.
+                    if charging_ev.data["control_parameter"]["phases"] == 3:
+                        data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= charging_ev.data["control_parameter"]["required_current"] * 3 * 230
+                    elif charging_ev.data["control_parameter"]["phases"] == 1:
+                        data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= charging_ev.ev_template.data["max_current_one_phase"] * 230
+                else:
+                    if charging_ev.data["control_parameter"]["phases"] == 3:
+                        message = "Umschaltung von 1 auf 3 Phasen."
+                    elif charging_ev.data["control_parameter"]["phases"] == 1:
+                        message = "Umschaltung von 3 auf 1 Phase."
+                    self.data["get"]["state_str"] = message
+                return
+            # Wenn noch kein Logeintrag erstellt wurde, wurde noch nicht geladen und die Phase kann noch umgeschaltet werden.
+            if charging_ev.ev_template.data["prevent_switch_stop"] == False or charging_ev.data["get"]["charged_since_plugged_counter"] == 0:
                 # Einmal muss die Anzahl der Phasen gesetzt werden.
                 if "phases_to_use" not in self.data["set"]:
                     pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/phases_to_use", charging_ev.data["control_parameter"]["phases"])
                     self.data["set"]["phases_to_use"] = charging_ev.data["control_parameter"]["phases"]
-                # Umschaltung im Gange
-                if charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] != "0":
-                    phase_switch_delay = data.general_data["general"].data["chargemode_config"]["pv_charging"]["phase_switch_delay"]
-                    # Umschaltung abgeschlossen
-                    if timecheck.check_timestamp(charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"], 53+phase_switch_delay-1) == False:
-                        log.message_debug_log("debug", "phase switch running")
-                        charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] = "0"
-                        pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num) + "/control_parameter/timestamp_perform_phase_switch", "0")
-                        # Aktuelle Ladeleistung und Differenz wieder freigeben.
-                        if charging_ev.data["control_parameter"]["phases"] == 3:
-                            data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= charging_ev.data["control_parameter"]["required_current"] * 3 * 230
-                        elif charging_ev.data["control_parameter"]["phases"] == 1:
-                            data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= charging_ev.ev_template.data["max_current_one_phase"] * 230
-                    else:
-                        if charging_ev.data["control_parameter"]["phases"] == 3:
-                            message = "Umschaltung von 1 auf 3 Phasen."
-                        elif charging_ev.data["control_parameter"]["phases"] == 1:
-                            message = "Umschaltung von 3 auf 1 Phase."
-                        self.data["get"]["state_str"] = message
                 # Wenn eine Umschaltung im Gange ist, muss erst gewartet werden, bis diese fertig ist.
-                elif self.data["set"]["phases_to_use"] != charging_ev.data["control_parameter"]["phases"]:
-                    if self.data["config"]["auto_phase_switch_hw"] == True and self.data["get"]["charge_state"] == True:
+                if self.data["set"]["phases_to_use"] != charging_ev.data["control_parameter"]["phases"]:
+                    if self.data["config"]["auto_phase_switch_hw"] == True:
                         pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/phases_to_use", charging_ev.data["control_parameter"]["phases"])
                         log.message_debug_log("debug", "start phase switch phases_to_use "+str(self.data["set"]["phases_to_use"])+"control_parameter phases "+str(charging_ev.data["control_parameter"]["phases"]))
                         # 1 -> 3
@@ -537,7 +539,8 @@ class chargepoint():
             log.message_debug_log("debug", "chargemode_phases "+str(chargemode_phases))
             log.message_debug_log("debug", "phases "+str(phases))
             if phases != charging_ev.data["control_parameter"]["phases"]:
-                if charging_ev.ev_template.data["prevent_switch_stop"] == False:
+                # Wenn noch kein Logeintrag erstellt wurde, wurde noch nicht geladen und die Phase kann noch umgeschaltet werden.
+                if charging_ev.ev_template.data["prevent_switch_stop"] == False or charging_ev.data["get"]["charged_since_plugged_counter"] == 0:
                     charging_ev.data["control_parameter"]["phases"] = phases
                     pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/control_parameter/phases", phases)
                 else:
