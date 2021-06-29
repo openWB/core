@@ -6,19 +6,21 @@ def pub_settings():
     """
     # cp1
     pub.pub("openWB/set/chargepoint/1/set/manual_lock", False)
-    pub.pub("openWB/set/chargepoint/1/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 0, "auto_phase_switch_hw": True, "control_pilot_interruption_hw": True})
+    pub.pub("openWB/set/chargepoint/1/get/plug_time", "6/28/2021, 08:17:22")
+    pub.pub("openWB/set/chargepoint/1/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 0, "auto_phase_switch_hw": True, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_adress": "192.168.1.221", "chargepoint": 1}}}})
     # cpt1
     pub.pub("openWB/set/chargepoint/template/1/autolock/1/frequency/selected", "daily")
     pub.pub("openWB/set/chargepoint/template/1/autolock/1/time", ["07:00", "16:15"])
     pub.pub("openWB/set/chargepoint/template/1/autolock/1/active", True)
-    pub.pub("openWB/set/chargepoint/template/1/autolock/wait_for_charging_end", True)
-    pub.pub("openWB/set/chargepoint/template/1/autolock/active", False)
+    pub.pub("openWB/set/chargepoint/template/1/autolock/wait_for_charging_end", False)
+    pub.pub("openWB/set/chargepoint/template/1/autolock/active", True)
     pub.pub("openWB/set/chargepoint/template/1/ev", 1)
-    pub.pub("openWB/set/chargepoint/template/1/rfid_enabling", True)
-    pub.pub("openWB/set/chargepoint/template/1/valid_tags", ["1234"])
+    pub.pub("openWB/set/chargepoint/template/1/rfid_enabling", False)
+    pub.pub("openWB/set/chargepoint/template/1/valid_tags", ["8910"])
 
     # # cp2
     pub.pub("openWB/set/chargepoint/2/set/manual_lock", False)
+    pub.pub("openWB/set/chargepoint/2/get/plug_time", "6/28/2021, 08:21:22")
     pub.pub("openWB/set/chargepoint/2/config", {"name": "LP2", "template": 2, "connected_phases": 3, "phase_1": 0, "auto_phase_switch_hw": True, "control_pilot_interruption_hw": False})
     # # cpt2
     pub.pub("openWB/set/chargepoint/template/2/autolock/1/frequency/selected", "daily")
@@ -28,9 +30,11 @@ def pub_settings():
     pub.pub("openWB/set/chargepoint/template/2/autolock/active", False)
     pub.pub("openWB/set/chargepoint/template/2/ev", 2)
     pub.pub("openWB/set/chargepoint/template/2/rfid_enabling", False)
+    pub.pub("openWB/set/chargepoint/template/2/valid_tags", ["8910"])
 
     # #cp3
     pub.pub("openWB/set/chargepoint/3/set/manual_lock", False)
+    pub.pub("openWB/set/chargepoint/3/get/plug_time", "6/28/2021, 08:23:22")
     pub.pub("openWB/set/chargepoint/3/config", {"name": "LP3", "template": 3, "connected_phases": 3, "phase_1": 0, "auto_phase_switch_hw": True, "control_pilot_interruption_hw": False})
     # # cpt3
     pub.pub("openWB/set/chargepoint/template/3/autolock/1/frequency/selected", "daily")
@@ -40,6 +44,7 @@ def pub_settings():
     pub.pub("openWB/set/chargepoint/template/3/autolock/active", False)
     pub.pub("openWB/set/chargepoint/template/3/ev", 3)
     pub.pub("openWB/set/chargepoint/template/3/rfid_enabling", False)
+    pub.pub("openWB/set/chargepoint/template/3/valid_tags", ["8910"])
 
     # ev0
     pub.pub("openWB/set/vehicle/0/charge_template", 0)
@@ -52,7 +57,7 @@ def pub_settings():
     pub.pub("openWB/set/vehicle/0/get/soc", 0)
     pub.pub("openWB/set/vehicle/0/get/soc_timestamp", 0)
     pub.pub("openWB/set/vehicle/0/match_ev/selected", "cp")
-    pub.pub("openWB/set/vehicle/0/match_ev/tag_id", 1234)
+    pub.pub("openWB/set/vehicle/0/match_ev/tag_id", "45")
 
     # ev1
     pub.pub("openWB/set/vehicle/1/charge_template", 1)
@@ -64,9 +69,9 @@ def pub_settings():
     pub.pub("openWB/set/vehicle/1/soc/get/fault_str", "Kein Fehler.")
     pub.pub("openWB/set/vehicle/1/get/soc", 0)
     pub.pub("openWB/set/vehicle/1/get/soc_timestamp", 1619568005)
-    pub.pub("openWB/set/vehicle/1/match_ev/selected", "cp")
-    pub.pub("openWB/set/vehicle/1/match_ev/tag_id", 1234)
-    #ev2
+    pub.pub("openWB/set/vehicle/1/match_ev/selected", "rfid")
+    pub.pub("openWB/set/vehicle/1/match_ev/tag_id", "8910")
+    # ev2
     pub.pub("openWB/set/vehicle/2/charge_template", 2)
     pub.pub("openWB/set/vehicle/2/ev_template", 2)
     pub.pub("openWB/set/vehicle/2/name", "car2")
@@ -77,7 +82,7 @@ def pub_settings():
     pub.pub("openWB/set/vehicle/2/get/soc", 25)
     pub.pub("openWB/set/vehicle/2/get/soc_timestamp", 1619568005)
     pub.pub("openWB/set/vehicle/2/match_ev/selected", "rfid")
-    pub.pub("openWB/set/vehicle/2/match_ev/tag_id", 1234)
+    pub.pub("openWB/set/vehicle/2/match_ev/tag_id", "67")
     #ev3
     pub.pub("openWB/set/vehicle/3/charge_template", 3)
     pub.pub("openWB/set/vehicle/3/ev_template", 3)
@@ -86,10 +91,10 @@ def pub_settings():
     pub.pub("openWB/set/vehicle/3/soc/config/manual", False)
     pub.pub("openWB/set/vehicle/3/soc/get/fault_state", 0)
     pub.pub("openWB/set/vehicle/3/soc/get/fault_str", "Kein Fehler.")
-    pub.pub("openWB/set/vehicle/3/get/soc", 80)
+    pub.pub("openWB/set/vehicle/3/get/soc", 82)
     pub.pub("openWB/set/vehicle/3/get/soc_timestamp", 1619568005)
     pub.pub("openWB/set/vehicle/3/match_ev/selected", "rfid")
-    pub.pub("openWB/set/vehicle/3/match_ev/tag_id", 1234)
+    pub.pub("openWB/set/vehicle/3/match_ev/tag_id", "89")
 
     # # evt0 - default
     # pub.pub("openWB/set/vehicle/template/ev_template/0/min_current", 6)
@@ -133,7 +138,7 @@ def pub_settings():
     # pub.pub("openWB/set/vehicle/template/ev_template/3/prevent_switch_stop", False)
 
     plans_for_scheduled_charging = [
-    {"id": 1, "name": "abc", "time": "15:00", "soc": 85, "active": 1, "frequency": {"selected": "daily"} },
+    {"id": 1, "name": "abc", "time": "14:15", "soc": 85, "active": 1, "frequency": {"selected": "daily"} },
     {"id": 2, "name": "def", "time": "18:45", "soc": 95, "active": 0, "frequency": {"selected": "daily"} }
     ]
     plans_for_time_charging = [
@@ -141,6 +146,8 @@ def pub_settings():
     {"id": 2, "name": "def", "time": ["07:00", "17:20"], "current": 16, "active": 0, "frequency": {"selected": "daily"} }
     ]
     # #ct0 - default
+    # pub.pub("openWB/set/vehicle/template/charge_template/0/load_default", False)
+    # pub.pub("openWB/set/vehicle/template/charge_template/0/disable_after_unplug", False)
     # pub.pub("openWB/set/vehicle/template/charge_template/0/prio", False)
     # pub.pub("openWB/set/vehicle/template/charge_template/0/time_charging/active", False)
     # pub.pub("openWB/set/vehicle/template/charge_template/0/time_charging/plans", plans_for_time_charging)
@@ -157,6 +164,8 @@ def pub_settings():
     # pub.pub("openWB/set/vehicle/template/charge_template/0/chargemode/scheduled_charging", plans_for_scheduled_charging)
 
     # #ct1
+    # pub.pub("openWB/set/vehicle/template/charge_template/1/load_default", False)
+    # pub.pub("openWB/set/vehicle/template/charge_template/1/disable_after_unplug", False)
     # pub.pub("openWB/set/vehicle/template/charge_template/1/prio", False)
     # pub.pub("openWB/set/vehicle/template/charge_template/1/time_charging/active", False)
     # pub.pub("openWB/set/vehicle/template/charge_template/1/time_charging/plans", plans_for_time_charging)
@@ -172,6 +181,8 @@ def pub_settings():
     # pub.pub("openWB/set/vehicle/template/charge_template/1/chargemode/instant_charging/limit/amount", 10)
     # pub.pub("openWB/set/vehicle/template/charge_template/1/chargemode/scheduled_charging", plans_for_scheduled_charging)
     # #ct2
+    # pub.pub("openWB/set/vehicle/template/charge_template/2/load_default", False)
+    # pub.pub("openWB/set/vehicle/template/charge_template/2/disable_after_unplug", False)
     # pub.pub("openWB/set/vehicle/template/charge_template/2/prio", False)
     # pub.pub("openWB/set/vehicle/template/charge_template/2/time_charging/active", False)
     # pub.pub("openWB/set/vehicle/template/charge_template/2/time_charging/plans", plans_for_time_charging)
@@ -187,6 +198,8 @@ def pub_settings():
     # pub.pub("openWB/set/vehicle/template/charge_template/2/chargemode/instant_charging/limit/amount", 10)
     # pub.pub("openWB/set/vehicle/template/charge_template/2/chargemode/scheduled_charging", plans_for_scheduled_charging)
     # # #ct3
+    # pub.pub("openWB/set/vehicle/template/charge_template/3/load_default", False)
+    # pub.pub("openWB/set/vehicle/template/charge_template/3/disable_after_unplug", False)
     # pub.pub("openWB/set/vehicle/template/charge_template/3/prio", False)
     # pub.pub("openWB/set/vehicle/template/charge_template/3/time_charging/active", False)
     # pub.pub("openWB/set/vehicle/template/charge_template/3/time_charging/plans", plans_for_time_charging)
@@ -206,7 +219,8 @@ def pub_settings():
     pub.pub("openWB/set/optional/et/active", False)
     pub.pub("openWB/set/optional/et/config/max_price", 5.5)
     pub.pub("openWB/set/optional/et/provider", "awattar")
-    pub.pub("openWB/set/optional/rfid/mode", 1)
+    pub.pub("openWB/set/optional/rfid/mode", 2)
+    pub.pub("openWB/set/optional/rfid/match_ev_per_tag_only", 1)
 
     # pv
     #pub.pub("openWB/set/pv/1/get/counter", 500)
@@ -227,6 +241,7 @@ def pub_settings():
     pub.pub("openWB/set/bat/1/get/daily_yield_import", 10)
 
     # general
+    pub.pub("openWB/set/general/chargemode_config/individual_mode", True)
     pub.pub("openWB/set/general/chargemode_config/unbalanced_load", False)
     pub.pub("openWB/set/general/chargemode_config/unbalanced_load_limit", 18)
     pub.pub("openWB/set/general/chargemode_config/instant_charging/phases_to_use", 1)
@@ -245,7 +260,7 @@ def pub_settings():
     pub.pub("openWB/set/general/chargemode_config/pv_charging/feed_in_yield", 15000)
     pub.pub("openWB/set/general/chargemode_config/pv_charging/phase_switch_delay", 15)
     pub.pub("openWB/set/general/chargemode_config/pv_charging/phases_to_use", 0)
-    pub.pub("openWB/set/general/chargemode_config/scheduled_charging/phases_to_use", 1)
+    pub.pub("openWB/set/general/chargemode_config/scheduled_charging/phases_to_use", 0)
     pub.pub("openWB/set/general/chargemode_config/time_charging/phases_to_use", 1)
     pub.pub("openWB/set/general/chargemode_config/standby/phases_to_use", 1)
     pub.pub("openWB/set/general/chargemode_config/stop/phases_to_use", 1)

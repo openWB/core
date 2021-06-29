@@ -131,7 +131,7 @@ def collect_data(chargepoint):
                 charging_ev.data["get"]["charged_since_mode_switch"] = chargepoint.data["get"]["counter"] -charging_ev.data["get"]["counter_at_mode_switch"]
                 log.message_debug_log("debug", "charged_since_mode_switch "+str(charging_ev.data["get"]["charged_since_mode_switch"])+" counter "+str(chargepoint.data["get"]["counter"]))
                 charging_ev.data["get"]["range_charged"] = charging_ev.data["get"]["charged_since_mode_switch"] / charging_ev.ev_template.data["average_consump"]*100
-                charging_ev.data["get"]["time_charged"] = timecheck.get_difference(charging_ev.data["get"]["timestamp_start_charging"])
+                charging_ev.data["get"]["time_charged"] = timecheck.get_difference_to_now(charging_ev.data["get"]["timestamp_start_charging"])
                 pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/get/charged_since_mode_switch", charging_ev.data["get"]["charged_since_mode_switch"])
                 pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/get/range_charged", charging_ev.data["get"]["range_charged"])
                 pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/get/time_charged", charging_ev.data["get"]["time_charged"])
@@ -166,19 +166,29 @@ def save_data(chargepoint, charging_ev, immediately = True, reset = False):
         pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/get/charged_since_plugged_counter", charging_ev.data["get"]["charged_since_plugged_counter"])
         charging_ev.data["get"]["charged_since_mode_switch"] = chargepoint.data["get"]["counter"] -charging_ev.data["get"]["counter_at_mode_switch"]
         charging_ev.data["get"]["range_charged"] = charging_ev.data["get"]["charged_since_mode_switch"] / charging_ev.ev_template.data["average_consump"]*100
-        charging_ev.data["get"]["time_charged"] = timecheck.get_difference(charging_ev.data["get"]["timestamp_start_charging"])
+        charging_ev.data["get"]["time_charged"] = timecheck.get_difference_to_now(charging_ev.data["get"]["timestamp_start_charging"])
         pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/get/charged_since_mode_switch", charging_ev.data["get"]["charged_since_mode_switch"])
         pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/get/range_charged", charging_ev.data["get"]["range_charged"])
         pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/get/time_charged", charging_ev.data["get"]["time_charged"])
-        time_charged = charging_ev.data["get"]["time_charged"].split(":")
+        time = charging_ev.data["get"]["time_charged"]
+        time_charged = []
+        if len(time) > 8:
+            # Wenn es mehrere Tage sind, enthält der String "92 days, 0:02:08" (unwahrscheinlich, aber um Fehler zu vermeiden)
+            t = str(time).split(" ")
+            time_charged.append(t[0])
+            t_2 = str(t[2]).split(":")
+            time_charged.append(t_2[0])
+            time_charged.append(t_2[1])
+        else:
+            time_charged = str(time).split(":")
+        power = 0
+        duration = 0
         if len(time_charged) == 2:
             duration = int(time_charged[0])*60 + int(time_charged[1])
-            power = charging_ev.data["get"]["charged_since_mode_switch"] / duration*60
         elif len(time_charged) == 3:
             duration = int(time_charged[0])*60*24 + int(time_charged[1])*60 + int(time_charged[2])
+        if duration > 0:
             power = charging_ev.data["get"]["charged_since_mode_switch"] / duration*60
-        else:
-            power = 0
         costs = data_module.general_data["general"].data["price_kwh"] * charging_ev.data["get"]["charged_since_mode_switch"] #/ 1000
         new_entry = {
             "chargepoint": 
@@ -192,7 +202,7 @@ def save_data(chargepoint, charging_ev, immediately = True, reset = False):
                 "name": charging_ev.data["name"], 
                 "chargemode": charging_ev.data["get"]["chargemode_log_entry"], 
                 "prio": charging_ev.data["control_parameter"]["prio"],
-                "rfid": chargepoint.data["get"]["rfid"]
+                "rfid": chargepoint.data["set"]["rfid"]
                 }, 
             "time": 
             { 

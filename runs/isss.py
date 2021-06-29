@@ -8,6 +8,12 @@ import time
 import struct
 import RPi.GPIO as GPIO
 from pymodbus.client.sync import ModbusSerialClient
+
+import importlib.util
+spec = importlib.util.spec_from_file_location("timecheck.py", "/var/www/html/openWB/timecheck.py")
+timecheck = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(timecheck)
+
 GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BOARD)
 GPIO.setup(37, GPIO.OUT)
@@ -606,7 +612,8 @@ def getmeter():
                     mclient.loop(timeout=2.0)
                     DeviceValues.update({'rfidtag' : str(rfidtag)})
                 if ( parentWB != "0" ):
-                    remoteclient.publish("openWB/chargepoint/"+parentCPlp1+"/get/rfid", payload=str(rfidtag), qos=0, retain=True)
+                    payload_read_tag = {"tag": str(rfidtag), "timestamp": str(timecheck.create_timestamp())}
+                    remoteclient.publish("openWB/chargepoint/"+parentCPlp1+"/get/read_tag", payload=payload_read_tag, qos=0, retain=True)
                     remoteclient.loop(timeout=2.0)
             if ( lp2installed == 2 ):
                 if ( "lp2countphasesinuse" in key):
