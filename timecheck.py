@@ -201,7 +201,8 @@ def _calc_begin(end, hours):
         return None
 
 def check_duration(plan, duration):
-    """ prüft, ob der in angegebene Zeitpunkt abzüglich der Dauer jetzt ist.
+    """ prüft, ob der in angegebene Zeitpunkt abzüglich der Dauer jetzt ist. 
+    Um etwas Puffer zu haben, werden bei Überschreiten des Zeitpunkts die nachfolgenden 20 Min auch noch als Ladezeit zurückgegeben.
 
     Paramter
     --------
@@ -225,13 +226,22 @@ def check_duration(plan, duration):
             endDate = datetime.datetime.strptime(
                 plan["frequency"]["once"][0], "%y-%m-%d")
             end = end.replace(endDate.year, endDate.month, endDate.day)
-            return _is_duration_valid(now, duration, end)
+            state, remaining_time = _is_duration_valid(now, duration, end)
+            if -0.33 <= remaining_time < 0:
+                remaining_time = remaining_time * -1
+            elif remaining_time < -0.33:
+                state = 0
+                remaining_time = 0
+            return state, remaining_time
 
         elif plan["frequency"]["selected"] == "daily":
             end = end.replace(now.year, now.month, now.day)
             # Wenn der Zeitpunkt an diesem Tag schon vorüber ist (verbleibende Zeit ist negativ), nächsten Tag prüfen.
             state, remaining_time = _is_duration_valid(now, duration, end)
-            if remaining_time < 0:
+            # Bis zwanzig Minuten nach Überschreiten des Zeitpunkts darf noch geladen werden.
+            if -0.33 <= remaining_time < 0:
+                remaining_time = remaining_time * -1
+            elif remaining_time < -0.33:
                 delta = datetime.timedelta(days = 1)
                 end += delta
                 state, remaining_time = _is_duration_valid(now, duration, end)
@@ -241,8 +251,10 @@ def check_duration(plan, duration):
                 end = end.replace(now.year, now.month, now.day)
                 state, remaining_time = _is_duration_valid(now, duration, end)
                 # Zeitpunkt ist an diesem Tag noch nicht vorbei
-                if remaining_time > 0:
+                if state == 1:
                     return state, remaining_time
+                elif -0.33 <= remaining_time < 0:
+                    remaining_time = remaining_time * -1
                 else:
                 # Wenn der Zeitpunkt an diesem Tag schon vorüber ist (verbleibende Zeit ist negativ), nächsten Tag prüfen.
                     delta = datetime.timedelta(days = 1)

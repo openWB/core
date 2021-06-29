@@ -401,6 +401,14 @@ class chargepoint():
                 data.pv_data["all"].reset_switch_on_off(self, data.ev_data["ev"+str(self.data["set"]["charging_ev_prev"])])
                 # Abstecken
                 if self.data["get"]["plug_state"] == False:
+                    # Standardprofil nach Abstecken laden
+                    if data.ev_data["ev"+str(self.data["set"]["charging_ev_prev"])].charge_template.data["load_default"] == True:
+                        self.template.data["ev"] = 0
+                        pub.pub("openWB/set/chargepoint/template/"+str(self.data["config"]["template"])+"/ev", 0)
+                    # Ladepunkt nach Abstecken sperren
+                    if data.ev_data["ev"+str(self.data["set"]["charging_ev_prev"])].charge_template.data["disable_after_unplug"] == True:
+                        self.data["set"]["manual_lock"] = True
+                        pub.pub("openWB/set/chargepoint/"+self.cp_num+"/set/manual_lock", True)
                     # Ev wurde noch nicht aktualisiert.
                     chargelog.reset_data(self, data.ev_data["ev"+str(self.data["set"]["charging_ev_prev"])])
                     self.data["set"]["charging_ev_prev"] = -1

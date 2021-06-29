@@ -15,7 +15,7 @@ def pub_settings():
     pub.pub("openWB/set/chargepoint/template/1/autolock/wait_for_charging_end", False)
     pub.pub("openWB/set/chargepoint/template/1/autolock/active", True)
     pub.pub("openWB/set/chargepoint/template/1/ev", 1)
-    pub.pub("openWB/set/chargepoint/template/1/rfid_enabling", True)
+    pub.pub("openWB/set/chargepoint/template/1/rfid_enabling", False)
     pub.pub("openWB/set/chargepoint/template/1/valid_tags", ["8910"])
 
     # # cp2
@@ -29,7 +29,7 @@ def pub_settings():
     pub.pub("openWB/set/chargepoint/template/2/autolock/wait_for_charging_end", True)
     pub.pub("openWB/set/chargepoint/template/2/autolock/active", False)
     pub.pub("openWB/set/chargepoint/template/2/ev", 2)
-    pub.pub("openWB/set/chargepoint/template/2/rfid_enabling", True)
+    pub.pub("openWB/set/chargepoint/template/2/rfid_enabling", False)
     pub.pub("openWB/set/chargepoint/template/2/valid_tags", ["8910"])
 
     # #cp3
@@ -43,7 +43,7 @@ def pub_settings():
     pub.pub("openWB/set/chargepoint/template/3/autolock/wait_for_charging_end", True)
     pub.pub("openWB/set/chargepoint/template/3/autolock/active", False)
     pub.pub("openWB/set/chargepoint/template/3/ev", 3)
-    pub.pub("openWB/set/chargepoint/template/3/rfid_enabling", True)
+    pub.pub("openWB/set/chargepoint/template/3/rfid_enabling", False)
     pub.pub("openWB/set/chargepoint/template/3/valid_tags", ["8910"])
 
     # ev0
@@ -138,7 +138,7 @@ def pub_settings():
     # pub.pub("openWB/set/vehicle/template/ev_template/3/prevent_switch_stop", False)
 
     plans_for_scheduled_charging = [
-    {"id": 1, "name": "abc", "time": "15:00", "soc": 85, "active": 1, "frequency": {"selected": "daily"} },
+    {"id": 1, "name": "abc", "time": "14:15", "soc": 85, "active": 1, "frequency": {"selected": "daily"} },
     {"id": 2, "name": "def", "time": "18:45", "soc": 95, "active": 0, "frequency": {"selected": "daily"} }
     ]
     plans_for_time_charging = [
@@ -146,6 +146,8 @@ def pub_settings():
     {"id": 2, "name": "def", "time": ["07:00", "17:20"], "current": 16, "active": 0, "frequency": {"selected": "daily"} }
     ]
     # #ct0 - default
+    # pub.pub("openWB/set/vehicle/template/charge_template/0/load_default", False)
+    # pub.pub("openWB/set/vehicle/template/charge_template/0/disable_after_unplug", False)
     # pub.pub("openWB/set/vehicle/template/charge_template/0/prio", False)
     # pub.pub("openWB/set/vehicle/template/charge_template/0/time_charging/active", False)
     # pub.pub("openWB/set/vehicle/template/charge_template/0/time_charging/plans", plans_for_time_charging)
@@ -162,6 +164,8 @@ def pub_settings():
     # pub.pub("openWB/set/vehicle/template/charge_template/0/chargemode/scheduled_charging", plans_for_scheduled_charging)
 
     # #ct1
+    # pub.pub("openWB/set/vehicle/template/charge_template/1/load_default", False)
+    # pub.pub("openWB/set/vehicle/template/charge_template/1/disable_after_unplug", False)
     # pub.pub("openWB/set/vehicle/template/charge_template/1/prio", False)
     # pub.pub("openWB/set/vehicle/template/charge_template/1/time_charging/active", False)
     # pub.pub("openWB/set/vehicle/template/charge_template/1/time_charging/plans", plans_for_time_charging)
@@ -177,6 +181,8 @@ def pub_settings():
     # pub.pub("openWB/set/vehicle/template/charge_template/1/chargemode/instant_charging/limit/amount", 10)
     # pub.pub("openWB/set/vehicle/template/charge_template/1/chargemode/scheduled_charging", plans_for_scheduled_charging)
     # #ct2
+    # pub.pub("openWB/set/vehicle/template/charge_template/2/load_default", False)
+    # pub.pub("openWB/set/vehicle/template/charge_template/2/disable_after_unplug", False)
     # pub.pub("openWB/set/vehicle/template/charge_template/2/prio", False)
     # pub.pub("openWB/set/vehicle/template/charge_template/2/time_charging/active", False)
     # pub.pub("openWB/set/vehicle/template/charge_template/2/time_charging/plans", plans_for_time_charging)
@@ -192,6 +198,8 @@ def pub_settings():
     # pub.pub("openWB/set/vehicle/template/charge_template/2/chargemode/instant_charging/limit/amount", 10)
     # pub.pub("openWB/set/vehicle/template/charge_template/2/chargemode/scheduled_charging", plans_for_scheduled_charging)
     # # #ct3
+    # pub.pub("openWB/set/vehicle/template/charge_template/3/load_default", False)
+    # pub.pub("openWB/set/vehicle/template/charge_template/3/disable_after_unplug", False)
     # pub.pub("openWB/set/vehicle/template/charge_template/3/prio", False)
     # pub.pub("openWB/set/vehicle/template/charge_template/3/time_charging/active", False)
     # pub.pub("openWB/set/vehicle/template/charge_template/3/time_charging/plans", plans_for_time_charging)
@@ -233,6 +241,7 @@ def pub_settings():
     pub.pub("openWB/set/bat/1/get/daily_yield_import", 10)
 
     # general
+    pub.pub("openWB/set/general/chargemode_config/individual_mode", True)
     pub.pub("openWB/set/general/chargemode_config/unbalanced_load", False)
     pub.pub("openWB/set/general/chargemode_config/unbalanced_load_limit", 18)
     pub.pub("openWB/set/general/chargemode_config/instant_charging/phases_to_use", 1)

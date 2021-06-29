@@ -483,6 +483,7 @@ class chargeTemplate():
 
     def scheduled_charging(self, soc, ev_template, phases):
         """ prüft, ob der Ziel-SoC erreicht wurde und stellt den zur Erreichung nötigen Ladestrom ein.
+        Um etwas mehr Puffer zu haben, wird bis 20 Min nach dem Zieltermin noch geladen, wenn dieser nicht eingehalten werden konnte.
 
         Parameter
         ---------
@@ -515,8 +516,7 @@ class chargeTemplate():
                             else:
                                 max_current = ev_template.data["max_current_multi_phases"]
                             available_current = 0.8*max_current*phases
-                            required_wh = (
-                                (plan["soc"] - soc)/100) * battery_capacity*1000
+                            required_wh = ((plan["soc"] - soc)/100) * battery_capacity*1000
                             duration = required_wh/(available_current*230)
                             start, remaining_time = timecheck.check_duration(plan, duration)
                             # Erster Plan

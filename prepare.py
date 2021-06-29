@@ -33,6 +33,9 @@ class prepare():
         """ kopiert die Daten, die per MQTT empfangen wurden.
         """
         try:
+            data.general_data = copy.deepcopy(subdata.subData.general_data)
+            data.optional_data = copy.deepcopy(subdata.subData.optional_data)
+            data.graph_data = copy.deepcopy(subdata.subData.graph_data)
             data.cp_data = copy.deepcopy(subdata.subData.cp_data)
             data.cp_template_data = copy.deepcopy(
                 subdata.subData.cp_template_data)
@@ -54,7 +57,11 @@ class prepare():
                 subdata.subData.ev_charge_template_data)
             for vehicle in data.ev_data:
                 try:
-                    data.ev_data[vehicle].charge_template = data.ev_charge_template_data["ct" +str(data.ev_data[vehicle].data["charge_template"])]
+                    # Globaler oder individueller Lademodus?
+                    if data.general_data["general"].data["chargemode_config"]["individual_mode"] == True:
+                        data.ev_data[vehicle].charge_template = data.ev_charge_template_data["ct" +str(data.ev_data[vehicle].data["charge_template"])]
+                    else:
+                        data.ev_data[vehicle].charge_template = data.ev_charge_template_data["ct0"]
                     # erstmal das aktuelle Template laden
                     data.ev_data[vehicle].ev_template = data.ev_template_data["et" +str(data.ev_data[vehicle].data["ev_template"])]
                 except Exception as e:
@@ -67,10 +74,6 @@ class prepare():
                 except Exception as e:
                     log.exception_logging(e)
             data.bat_module_data = copy.deepcopy(subdata.subData.bat_module_data)
-            data.general_data = copy.deepcopy(subdata.subData.general_data)
-            data.optional_data = copy.deepcopy(subdata.subData.optional_data)
-            data.graph_data = copy.deepcopy(subdata.subData.graph_data)
-            
         except Exception as e:
             log.exception_logging(e)
 
