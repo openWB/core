@@ -5,6 +5,24 @@ charging_ev_prev: EV, das vorher geladen hat. Dies wird benötigt, da wenn das E
 gewartet werden muss, bis die Ladeleistung 0 ist und dann erst der Logeintrag erstellt werden kann. 
 charging_ev = -1 zeigt an, dass der LP im Algorithmus nicht berücksichtigt werden soll. 
 Ist das Ev abgesteckt, wird auch charging_ev_prev -1 und im nächsten Zyklus kann ein neues Profil geladen werden.
+
+RFID:
+Mode 1: Der gescannte Tag  wird dem Ladepunkt zugeordnet, an dem gescannt wude. Falls es eine Duo ist, wird Mode 2 für die beiden Duo-Ladepunkte angewendet.
+
+Mode 2: Gescannt werden kann an jedem möglichen RFID Leser. Heißt auch bei mehreren Ladepunkten kann an einem zentralen RFID Leser gescannt werden. 
+Der gescannte Tag wird dem Ladepunkt zugewiesen, an dem als letztes angesteckt wurde. Wird erst gescannt und dann ein Auto angeschlossen wird der Tag dem Auto zugewiesen das als nächstes ansteckt. 
+Wird 5 Minuten nach Scannen kein Auto angeschlossen wird der Tag verworfen bzw. das hinterlgete Profil verwendet.
+
+Freischaltung durch Tag: Aktiviert RFID-Nutzung am Ladepunkt. 
+Achtung RFID+Autolock: Ist Autolock aktiviert und der Ladepunkt durch Autolock freigegeben, dient der Tag nur zur EV-Zuordnung.
+Ist der Ladepunkt durch Autolock gesperrt, kann er mit einem gültigen Tag freigeschaltet werden.
+
+Zuordnung nur per Tag:
+Ist diese Option aktiviert, wird der Tag verworfen, wenn nach 5 Min kein Auto angesteckt wird. Ist diese Option deaktiviert, wird auf das dem Ladepunkt zugeordnete Profil zurück gegriffen. 
+Sonst müsste man auch bei Autolock immer einen Tag vorhalten, auch wenn der Ladepunkt durch Autolock freigegeben ist.
+
+RFID-Tags:
+Liste der Tags, mit denen der Ladepunkt freigeschaltet werden kann. Ist diese leer, kann mit jedem Tag der Ladepunkt freigeschaltet werden.
 """
 
 from charge import charge
@@ -53,27 +71,32 @@ class allChargepoints():
             log.exception_logging(e)
 
     def match_rfid_to_cp(self):
+        """ ordnet einen gescannten Tag einem Ladepunkt zu. Allgemeine Funktion, da auch an einem zentralen Ladepunkt gescannt werden kann.
+        Wenn der RFID-Modus 1 ist, wird die Funktion zur Zuordnung bei zentralem Scanner genutzt, wenn es eine openWB Duo ist. 
+        """
         try:
             if data.optional_data["optional"].data["rfid"]["mode"] == 1:
-                chargepoints = data.cp_data.keys()
+                # nicht .keys() verwenden, da diese eine dict_keys-Liste erzeugt und wenn man daraus einen Eintrag entfernt wird dieser auch im original-dict entfernt.
+                chargepoints = list(data.cp_data.keys())
                 if "all" in chargepoints:
                     chargepoints.remove("all")
                 # Duos zuerst
                 for cp in chargepoints:
                     try:
                         chargepoint = data.cp_data[cp]
-                        # Wurde ein zweiter Ladepunkt an einer Duo konfiguriert?
-                        if chargepoint.data["config"]["connection_module"]["selected"] == "external_openwb":
-                            if chargepoint.data["config"]["connection_module"]["config"]["external_obenwb"]["chargepoint"] == 2:
-                                # Ersten Ladepunkt der Duo finden (gleiche IP)
-                                for cp2 in chargepoints:
-                                    if cp2 != cp:
-                                        if (chargepoint.data["config"]["connection_module"]["config"]["external_obenwb"]["ip_adress"] == 
-                                                data.cp_data[cp2].data["config"]["connection_module"]["config"]["external_obenwb"]["ip_adress"]):
-                                            self._match_rfid_of_multiple_cp([cp, cp2])
-                                            chargepoints.remove(cp)
-                                            chargepoints.remove(cp2)
-                                            break
+                        if chargepoint.template.data["rfid_enabling"] == True:
+                            # Wurde ein zweiter Ladepunkt an einer Duo konfiguriert?
+                            if chargepoint.data["config"]["connection_module"]["selected"] == "external_openwb":
+                                if chargepoint.data["config"]["connection_module"]["config"]["external_openwb"]["chargepoint"] == 2:
+                                    # Ersten Ladepunkt der Duo finden (gleiche IP)
+                                    for cp2 in chargepoints:
+                                        if cp2 != cp:
+                                            if (chargepoint.data["config"]["connection_module"]["config"]["external_openwb"]["ip_adress"] == 
+                                                    data.cp_data[cp2].data["config"]["connection_module"]["config"]["external_openwb"]["ip_adress"]):
+                                                self._match_rfid_of_multiple_cp([cp, cp2])
+                                                chargepoints.remove(cp)
+                                                chargepoints.remove(cp2)
+                                                break
                     except Exception as e:
                         log.exception_logging(e)
                 # Einzel-Ladepunkte
@@ -81,13 +104,21 @@ class allChargepoints():
                     try:
                         if "cp" in cp:
                             chargepoint = data.cp_data[cp]
-                            if chargepoint.data["get"]["read_tag"] != 0:
-                                # Darf mit diesem Tag der LP freigeschaltet werden?
-                                if chargepoint.data["get"]["read_tag"] in chargepoint.template["valid_tags"] or len(chargepoint.template["valid_tags"]) == 0:
-                                    chargepoint.data["set"]["rfid"] = chargepoint.data["get"]["read_tag"]
-                                    pub.pub("openWB/set/chargepoint/"+chargepoint.cp_num+"/set/rfid", chargepoint.data["set"]["rfid"])
-                                    log.message_debug_log("info", "LP "+chargepoint.cp_num+" wurde Tag "+str(chargepoint.data["set"]["rfid"])+" zugeordnet.")
-                                    pub.pub("openWB/set/chargepoint/"+chargepoint.cp_num+"/get/read_tag", 0)
+                            if chargepoint.template.data["rfid_enabling"] == True:
+                                if chargepoint.data["get"]["read_tag"]["tag"] != "0":
+                                    # Darf mit diesem Tag der LP freigeschaltet werden?
+                                    if chargepoint.data["get"]["read_tag"]["tag"] in chargepoint.template.data["valid_tags"] or len(chargepoint.template.data["valid_tags"]) == 0:
+                                        chargepoint.data["set"]["rfid"] = chargepoint.data["get"]["read_tag"]["tag"]
+                                        pub.pub("openWB/set/chargepoint/"+chargepoint.cp_num+"/set/rfid", chargepoint.data["set"]["rfid"])
+                                        log.message_debug_log("info", "LP "+chargepoint.cp_num+" wurde Tag "+str(chargepoint.data["set"]["rfid"])+" zugeordnet.")
+                                    else:
+                                        chargepoint.data["get"]["state_str"] = "Tag "+chargepoint.data["get"]["read_tag"]["tag"]+" ist an diesem Ladepunkt nicht gueltig."
+                                        log.message_debug_log("info", "LP "+chargepoint.cp_num+": Tag "+chargepoint.data["get"]["read_tag"]["tag"]+" ist an diesem Ladepunkt nicht gueltig.")
+
+                                    # Verarbeiteten Tag löschen
+                                    chargepoint.data["get"]["read_tag"]["tag"] = "0"
+                                    chargepoint.data["get"]["read_tag"]["timestamp"] = "0"
+                                    pub.pub("openWB/set/chargepoint/"+chargepoint.cp_num+"/get/read_tag", chargepoint.data["get"]["read_tag"])
                     except Exception as e:
                         log.exception_logging(e)
             elif data.optional_data["optional"].data["rfid"]["mode"] == 2:
@@ -99,16 +130,27 @@ class allChargepoints():
             log.exception_logging(e)
 
     def _match_rfid_of_multiple_cp(self, chargepoints):
+        """ ordnet einen gescanntem Tag dem Ladepunkt zu, an dem vor / nach dem Scan angesteckt wurde. 
+
+        Parameter
+        ---------
+        chargepoints: list
+            Ladepunkte, denen der Tag zugeordnet werden kann. (nötig für Duo)
+        """
         try:
             read_tag = None
             for cp in chargepoints:
                 try:
                     if "cp" in cp:
                         chargepoint = data.cp_data[cp]
-                        if chargepoint.data["get"]["read_tag"] != 0:
-                            read_tag = chargepoint.data["get"]["read_tag"]
-                            pub.pub("openWB/set/chargepoint/"+chargepoint.cp_num+"/get/read_tag", 0)
+                        if chargepoint.data["get"]["read_tag"]["tag"] != "0":
+                            read_tag = chargepoint.data["get"]["read_tag"]["tag"]
                             # Scannen darf nicht länger als 5 Min zurück liegen
+                            if timecheck.check_timestamp(chargepoint.data["get"]["read_tag"]["timestamp"], 300) == False:
+                                #abgelaufen
+                                chargepoint.data["get"]["read_tag"]["tag"] = "0"
+                                chargepoint.data["get"]["read_tag"]["timestamp"] = "0"
+                                pub.pub("openWB/set/chargepoint/"+chargepoint.cp_num+"/get/read_tag", chargepoint.data["get"]["read_tag"])
                 except Exception as e:
                     log.exception_logging(e)
             if read_tag != None:
@@ -118,22 +160,26 @@ class allChargepoints():
                     try:
                         if "cp" in cp:
                             chargepoint = data.cp_data[cp]
-                            # Wenn man einen Tag hat, der nicht vor mehr als 5 Min gescannt wurde, ist es egal, ob das Auto vor oder nach dem Scannen angesteckt wurde. 
-                            # Um den Tag zuzuordnen, muss RFID-Zuordnung aktiviert sein, es darf kein Tag zugeordnet sein (wird beim Abstecken zurückgesetzt) und es muss ein Auto angesteckt sein.
-                            if chargepoint.data["set"]["rfid"] == 0 and chargepoint.data["get"]["plug_state"] == True:
-                                if plug_time == 0 or plug_time < chargepoint.data["get"]["plug_time"]:
-                                    plug_time = chargepoint.data["get"]["plug_time"]
-                                    last_plugged_cp = chargepoint
+                            if chargepoint.template.data["rfid_enabling"] == True:
+                                # Wenn man einen Tag hat, der nicht vor mehr als 5 Min gescannt wurde, ist es egal, ob das Auto vor oder nach dem Scannen angesteckt wurde. 
+                                # Um den Tag zuzuordnen, muss RFID-Zuordnung aktiviert sein, es darf kein Tag zugeordnet sein (wird beim Abstecken zurückgesetzt) und es muss ein Auto angesteckt sein.
+                                if chargepoint.data["set"]["rfid"] == "0" and chargepoint.data["get"]["plug_state"] == True:
+                                    if plug_time == 0 or timecheck.get_difference(plug_time, chargepoint.data["get"]["plug_time"]) < 0:
+                                        plug_time = chargepoint.data["get"]["plug_time"]
+                                        last_plugged_cp = chargepoint
                     except Exception as e:
                         log.exception_logging(e)
                 if last_plugged_cp == None:
                     log.message_debug_log("info", "Es wurde kein EV angesteckt, dessen Ladepunkt auf eine Zuweisung per RFID wartet. Gescannter Tag: ")
                 else:
                     # Darf mit diesem Tag der LP freigeschaltet werden?
-                    if last_plugged_cp.data["get"]["read_tag"] in last_plugged_cp.template["valid_tags"] or len(last_plugged_cp.template["valid_tags"]) == 0:
+                    if read_tag in last_plugged_cp.template.data["valid_tags"] or len(last_plugged_cp.template.data["valid_tags"]) == 0:
                         last_plugged_cp.data["set"]["rfid"] = read_tag
                         pub.pub("openWB/set/chargepoint/"+last_plugged_cp.cp_num+"/set/rfid", last_plugged_cp.data["set"]["rfid"])
                         log.message_debug_log("info", "LP "+last_plugged_cp.cp_num+" wurde Tag "+str(last_plugged_cp.data["set"]["rfid"])+" zugeordnet.")
+                        chargepoint.data["get"]["read_tag"]["tag"] = "0"
+                        chargepoint.data["get"]["read_tag"]["timestamp"] = "0"
+                        pub.pub("openWB/set/chargepoint/"+chargepoint.cp_num+"/get/read_tag", chargepoint.data["get"]["read_tag"])
         except Exception as e:
             log.exception_logging(e)
         
@@ -147,6 +193,7 @@ class chargepoint():
         self.template = None  # Instanz des zugeordneten CP-Templates
         self.cp_num = index
         self.data["set"] = {}
+        self.data["get"] = {}
         self.set_current_prev = 0 # set current aus dem vorherigen Zyklus, um zu wissen, ob am Ende des Zyklus die Ladung freigegeben wird (für Control-Pilot-Unterbrechung)
 
         if "charging_ev" not in self.data["set"]:
@@ -159,6 +206,10 @@ class chargepoint():
             self.data["set"]["current"] = 0
         if "energy_to_charge" not in self.data["set"]:
             self.data["set"]["energy_to_charge"] = 0
+        self.data["get"]["read_tag"] = {}
+        self.data["get"]["read_tag"]["tag"] = "0"
+        self.data["get"]["read_tag"]["timestamp"] = "0"
+        self.data["set"]["rfid"] = 0
 
     def _is_grid_protection_active(self):
         """ prüft, ob der Netzschutz aktiv ist und alle Ladepunkt gestoppt werden müssen.
@@ -284,7 +335,7 @@ class chargepoint():
         """
         try:
             if self.template.data["rfid_enabling"] == True:
-                if self.data["set"]["rfid"] != 0:
+                if self.data["set"]["rfid"] != "0":
                     state = True
                     message = None
                 else:
@@ -332,9 +383,13 @@ class chargepoint():
                                 if state == True:
                                     charging_possbile = True
             if charging_possbile == True:
-                ev_num, message = self.template.get_ev(self.data["get"]["rfid"])
+                ev_num, message = self.template.get_ev(self.data["set"]["rfid"], self.data["get"]["plug_time"])
                 if ev_num != -1:
                     return ev_num, message
+                # Tag zurücksetzen, wenn kein EV zugeordnet werden kann
+                if self.data["set"]["rfid"] != "0":
+                    self.data["set"]["rfid"] = "0"
+                    pub.pub("openWB/set/chargepoint/"+self.cp_num+"/set/rfid", self.data["set"]["rfid"])
             # Charging Ev ist noch das EV des vorherigen Zyklus, wenn das nicht -1 war und jetzt nicht mehr geladen werden soll (-1), Daten zurücksetzen.
             if self.data["set"]["charging_ev"] != -1:
                 # Altes EV merken
@@ -350,8 +405,8 @@ class chargepoint():
                     chargelog.reset_data(self, data.ev_data["ev"+str(self.data["set"]["charging_ev_prev"])])
                     self.data["set"]["charging_ev_prev"] = -1
                     pub.pub("openWB/set/chargepoint/"+self.cp_num+"/set/charging_ev_prev", self.data["set"]["charging_ev_prev"])
-                    self.data["set"]["rfid"] = 0
-                    pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/rfid", 0)
+                    self.data["set"]["rfid"] = "0"
+                    pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/rfid", "0")
             self.data["set"]["charging_ev"] = -1
             pub.pub("openWB/set/chargepoint/"+self.cp_num+"/set/charging_ev", -1)
             self.data["set"]["current"] = 0
@@ -583,18 +638,44 @@ class cpTemplate():
         except Exception as e:
             log.exception_logging(e)
 
-    def get_ev(self, rfid):
+    def get_ev(self, rfid, plug_time):
         """ermittelt das dem Ladepunkt zugeordnete EV
+
+        Parameter
+        ---------
+        rfid: str
+            Tag, der einem EV zugeordnet werden soll.
+        plug_time: str
+            Zeitpunkt des Ansteckens
+        Return
+        ------
+        ev_num: int
+            Nummer des zugeordneten EVs, -1 wenn keins zugeordnet werden konnte.
+        message: str
+            Status-Text
         """
         ev_num = -1
+        message = None
         try:
-            if rfid != 0:
-                vehicle = ev.get_ev_to_rfid(rfid)
-                if vehicle == None:
-                    ev_num = -1
-                    message = "Keine Ladung, da dem RFID-Tag kein EV-Profil zugeordnet werden kann."
+            if self.data["rfid_enabling"] == True:
+                if rfid != "0":
+                    vehicle = ev.get_ev_to_rfid(rfid)
+                    if vehicle == None:
+                        if data.optional_data["optional"].data["rfid"]["match_ev_per_tag_only"] == False:
+                            ev_num = self.data["ev"]
+                        else:
+                            ev_num = -1
+                            message = "Keine Ladung, da dem RFID-Tag kein EV-Profil zugeordnet werden kann."
+                    else:
+                        ev_num = vehicle
                 else:
-                    ev_num = vehicle
+                    if data.optional_data["optional"].data["rfid"]["match_ev_per_tag_only"] == False:
+                        if timecheck.check_timestamp(plug_time, 300) == False:
+                            #abgelaufen
+                            ev_num = self.data["ev"]
+                    else:
+                        ev_num = -1
+                        message = "Keine Ladung, da noch kein RFID-Tag vorgehalten wurde."
             else:
                 ev_num = self.data["ev"]
             

@@ -284,7 +284,7 @@ class setData():
             elif re.search("^openWB/set/vehicle/[0-9]+/match_ev/selected$", msg.topic) != None:
                 self._validate_value(msg, str)
             elif re.search("^openWB/set/vehicle/[0-9]+/match_ev/tag_id$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, None)])
+                self._validate_value(msg, str)
             elif re.search("^openWB/set/vehicle/[0-9]+/match_ev/inactive$", msg.topic) != None:
                 self._validate_value(msg, int, [(0, 1)])
             elif (re.search("^openWB/set/vehicle/[0-9]+/charge_template$", msg.topic) != None or
@@ -428,6 +428,8 @@ class setData():
                 self._validate_value(msg, int, [(0, 1)])
             elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/autolock_state$", msg.topic) != None:
                 self._validate_value(msg, int, [(0, 4)])
+            elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/rfid$", msg.topic) != None:
+                self._validate_value(msg, str)
             elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/config$", msg.topic) != None:
                 self._validate_value(msg, "json")
             elif (re.search("^openWB/set/chargepoint/[1-9][0-9]*/get/voltage$", msg.topic) != None or
@@ -444,16 +446,16 @@ class setData():
             elif (re.search("^openWB/set/chargepoint/[1-9][0-9]*/get/charge_state$", msg.topic) != None or
                     re.search("^openWB/set/chargepoint/[1-9][0-9]*/get/plug_state$", msg.topic) != None):
                 self._validate_value(msg, int, [(0, 1)])
-            elif (re.search("^openWB/set/chargepoint/[1-9][0-9]*/get/read_tag$", msg.topic) != None or
-                    re.search("^openWB/set/chargepoint/[0-9]+/get/plug_time$", msg.topic) != None):
-                self._validate_value(msg, int, [(0, None)])
+            elif re.search("^openWB/set/chargepoint/[0-9]+/get/plug_time$", msg.topic) != None:
+                self._validate_value(msg, str)
             elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/get/fault_state$", msg.topic) != None:
                 self._validate_value(msg, int, [(0, 2)])
             elif (re.search("^openWB/set/chargepoint/[0-9]+/get/fault_str$", msg.topic) != None or
                     re.search("^openWB/set/chargepoint/[0-9]+/get/state_str$", msg.topic) != None or
-                    re.search("^openWB/set/chargepoint/[0-9]+/get/heartbeat$", msg.topic) != None or
-                    re.search("^openWB/set/chargepoint/[0-9]+/get/tag_timestamp$", msg.topic) != None):
+                    re.search("^openWB/set/chargepoint/[0-9]+/get/heartbeat$", msg.topic) != None):
                 self._validate_value(msg, str)
+            elif re.search("^openWB/set/chargepoint/[0-9]+/get/read_tag$", msg.topic) != None:
+                self._validate_value(msg, "json")
             elif (re.search("^openWB/set/chargepoint/template/[1-9][0-9]*/autolock/active$", msg.topic) != None or
                     re.search("^openWB/set/chargepoint/template/[1-9][0-9]*/autolock/wait_for_charging_end$", msg.topic) != None):
                 self._validate_value(msg, int, [(0, 1)])
@@ -679,6 +681,8 @@ class setData():
                 self._validate_value(msg, float)
             elif re.search("^openWB/set/optional/rfid/mode$", msg.topic) != None:
                 self._validate_value(msg, int, [(1, 2)])
+            elif re.search("^openWB/set/optional/rfid/match_ev_per_tag_only$", msg.topic) != None:
+                self._validate_value(msg, int, [(0, 1)])
             else:
                 log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
                 pub.pub(msg.topic, "")

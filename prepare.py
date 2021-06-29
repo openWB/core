@@ -41,6 +41,8 @@ class prepare():
                     if "cp" in chargepoint:
                         data.cp_data[chargepoint].template = data.cp_template_data["cpt" +str(data.cp_data[chargepoint].data["config"]["template"])]
                         data.cp_data[chargepoint].cp_num = chargepoint[2:]
+                        # Status zurücksetzen (wird jeden Zyklus neu ermittelt)
+                        data.cp_data[chargepoint].data["get"]["state_str"] = None
                 except Exception as e:
                     log.exception_logging(e)
 
@@ -75,9 +77,9 @@ class prepare():
     def _check_chargepoints(self):
         """ ermittelt die gewünschte Stromstärke für jeden LP.
         """
-        state = True
         data.cp_data["all"].match_rfid_to_cp()
         for cp_item in data.cp_data:
+            state = True
             try:
                 if "cp" in cp_item:
                     cp = data.cp_data[cp_item]
@@ -101,9 +103,9 @@ class prepare():
                             state = False
 
                         if state == True:
+                            cp.get_phases(charging_ev.charge_template.data["chargemode"]["selected"])
                             state, message_ev, submode, required_current = charging_ev.get_required_current()
                             self._pub_connected_vehicle(charging_ev, cp.cp_num)
-                            cp.get_phases(charging_ev.charge_template.data["chargemode"]["selected"])
                             # Einhaltung des Minimal- und Maximalstroms prüfen
                             required_current = charging_ev.check_min_max_current(required_current, charging_ev.data["control_parameter"]["phases"])
                             current_changed, mode_changed = charging_ev.check_state(required_current, cp.data["set"]["current"], cp.data["get"]["charge_state"])
@@ -144,9 +146,9 @@ class prepare():
                             
                             log.message_debug_log("debug", "EV"+str(charging_ev.ev_num)+": Theroretisch benötigter Strom "+str(required_current)+"A, Lademodus "+str(
                                 charging_ev.charge_template.data["chargemode"]["selected"])+", Submodus: "+str(charging_ev.data["control_parameter"]["submode"])+", Prioritaet: "+str(charging_ev.charge_template.data["prio"])+", max. Ist-Strom: "+str(max(cp.data["get"]["current"])))
-                    if message != None:
+                    if message != None and cp.data["get"]["state_str"] == None:
                         log.message_debug_log("info", "LP "+str(cp.cp_num)+": "+message)
-                    cp.data["get"]["state_str"] = message
+                        cp.data["get"]["state_str"] = message
             except Exception as e:
                 log.exception_logging(e)
         if "all" not in data.cp_data:

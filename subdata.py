@@ -442,6 +442,10 @@ class subData():
                     if "led" not in self.optional_data["optional"].data:
                         self.optional_data["optional"].data["led"]={}
                     self.set_json_payload(self.optional_data["optional"].data["led"], msg)
+                elif re.search("^openWB/optional/rfid/.+$", msg.topic) != None:
+                    if "rfid" not in self.optional_data["optional"].data:
+                        self.optional_data["optional"].data["rfid"]={}
+                    self.set_json_payload(self.optional_data["optional"].data["rfid"], msg)
                 elif re.search("^openWB/optional/int_display/.+$", msg.topic) != None:
                     if "int_display" not in self.optional_data["optional"].data:
                         self.optional_data["optional"].data["int_display"]={}
@@ -499,6 +503,10 @@ class subData():
                     if "get" not in self.counter_data["all"].data:
                         self.counter_data["all"].data["get"]={}
                     self.set_json_payload(self.counter_data["all"].data["get"], msg)
+                elif re.search("^openWB/counter/set.+$", msg.topic) != None:
+                    if "set" not in self.counter_data["all"].data:
+                        self.counter_data["all"].data["set"]={}
+                    self.set_json_payload(self.counter_data["all"].data["set"], msg)
         except Exception as e:
             log.exception_logging(e)
 
