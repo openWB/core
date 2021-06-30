@@ -33,7 +33,6 @@ class subData():
     bat_module_data={}
     general_data={}
     optional_data={}
-    graph_data={}
 
     def __init__(self, event_ev_template, event_charge_template, loadvarsdone):
         self.event_ev_template = event_ev_template
@@ -59,7 +58,6 @@ class subData():
             client.message_callback_add("openWB/general/#", self.process_general_topic)
             client.message_callback_add("openWB/optional/#", self.process_optional_topic)
             client.message_callback_add("openWB/counter/#", self.process_counter_topic)
-            client.message_callback_add("openWB/graph/#", self.process_graph_topic)
             client.message_callback_add("openWB/log/#", self.process_log_topic)
             client.message_callback_add("openWB/loadvarsdone", self.process_loadvarsdone)
 
@@ -507,33 +505,6 @@ class subData():
                     if "set" not in self.counter_data["all"].data:
                         self.counter_data["all"].data["set"]={}
                     self.set_json_payload(self.counter_data["all"].data["set"], msg)
-        except Exception as e:
-            log.exception_logging(e)
-
-    def process_graph_topic(self, client, userdata, msg):
-        """ Handler für die Graph-Topics
-
-         Parameters
-        ----------
-        client : (unused)
-            vorgegebener Parameter
-        userdata : (unused)
-            vorgegebener Parameter
-        msg:
-            enthält Topic und Payload
-        """
-        try:
-            if re.search("^openWB/graph/.+$", msg.topic) != None:
-                if "graph" not in self.graph_data:
-                    self.graph_data["graph"]=graph.graph()
-                if re.search("^openWB/graph/config.+$", msg.topic) != None:
-                    if "config" not in self.graph_data["graph"].data:
-                        self.graph_data["graph"].data["config"]={}
-                    self.set_json_payload(self.graph_data["graph"].data["config"], msg)
-                elif re.search("^openWB/graph/values.+$", msg.topic) != None:
-                    if "values" not in self.graph_data["graph"].data:
-                        self.graph_data["graph"].data["values"]={}
-                    self.set_json_payload(self.graph_data["graph"].data["values"], msg)
         except Exception as e:
             log.exception_logging(e)
 

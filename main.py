@@ -9,6 +9,7 @@ import time
 import algorithm
 import charge
 import daily_log
+import data
 import log
 import prepare
 import pub
@@ -66,6 +67,7 @@ class RepeatedTimer(object):
         self.is_running = False
 
 try:
+    data.data_init()
     char = charge.charge()
     control = algorithm.control()
     prep = prepare.prepare()
@@ -86,7 +88,7 @@ try:
     t_sub.start()
     t_set.start()
     t_handler.start()
-    rt = RepeatedTimer(60, daily_log.save_daily_log)
+    rt = RepeatedTimer(300, daily_log.save_daily_log)
 
     publishvars2.pub_settings()
 except Exception as e:

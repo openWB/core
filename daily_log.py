@@ -48,18 +48,18 @@ def save_daily_log():
     """
     try:
         cp_dict = {}
-        for cp in data.cp_data:
+        for cp in data.data.cp_data:
             try:
                 if "cp" in cp:
-                    cp_dict.update({cp: {"counter": data.cp_data[cp].data["get"]["counter"]}})
+                    cp_dict.update({cp: {"counter": data.data.cp_data[cp].data["get"]["counter"]}})
             except Exception as e:
                 log.exception_logging(e)
 
         ev_dict = {}
-        for ev in data.ev_data:
+        for ev in data.data.ev_data:
             try:
                 if "ev" in ev:
-                    ev_dict.update({ev: {"soc": data.ev_data[ev].data["get"]["soc"]}})
+                    ev_dict.update({ev: {"soc": data.data.ev_data[ev].data["get"]["soc"]}})
             except Exception as e:
                 log.exception_logging(e)
 
@@ -68,14 +68,14 @@ def save_daily_log():
             "cp": cp_dict,
             "ev": ev_dict,
             "counter0": {
-                "imported": data.counter_data["counter0"].data["get"]["imported"],
-                "exported": data.counter_data["counter0"].data["get"]["exported"]
+                "imported": data.data.counter_data["counter0"].data["get"]["imported"],
+                "exported": data.data.counter_data["counter0"].data["get"]["exported"]
             },
-            "pv_all": data.pv_data["all"].data["get"]["counter"],
+            "pv_all": data.data.pv_data["all"].data["get"]["counter"],
             "bat_all": {
-                "imported": data.bat_module_data["all"].data["get"]["imported"],
-                "exported": data.bat_module_data["all"].data["get"]["exported"],
-                "soc": data.bat_module_data["all"].data["get"]["soc"]
+                "imported": data.data.bat_module_data["all"].data["get"]["imported"],
+                "exported": data.data.bat_module_data["all"].data["get"]["exported"],
+                "soc": data.data.bat_module_data["all"].data["get"]["soc"]
             }
         }
 

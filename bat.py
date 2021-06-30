@@ -47,9 +47,9 @@ class bat:
         """ prüft, ob mind ein Speicher vorhanden ist und berechnet die Summentopics.
         """
         try:
-            if len(data.bat_module_data) > 1:
-                if "all" not in data.bat_module_data:
-                    data.bat_module_data["all"] = {}
+            if len(data.data.bat_module_data) > 1:
+                if "all" not in data.data.bat_module_data:
+                    data.data.bat_module_data["all"] = {}
                 self.data["config"]["configured"] = True
                 # Summe für alle konfigurierten Speicher bilden
                 soc_sum = 0
@@ -59,15 +59,15 @@ class bat:
                 self.data["get"]["exported"] = 0
                 self.data["get"]["daily_yield_export"] = 0
                 self.data["get"]["daily_yield_import"] = 0
-                for bat in data.bat_module_data:
+                for bat in data.data.bat_module_data:
                     try:
                         if "bat" in bat:
-                            self.data["get"]["power"] += data.bat_module_data[bat].data["get"]["power"]
-                            self.data["get"]["imported"] += data.bat_module_data[bat].data["get"]["imported"]
-                            self.data["get"]["exported"] += data.bat_module_data[bat].data["get"]["exported"]
-                            self.data["get"]["daily_yield_export"] += data.bat_module_data[bat].data["get"]["daily_yield_export"]
-                            self.data["get"]["daily_yield_import"] += data.bat_module_data[bat].data["get"]["daily_yield_import"]
-                            soc_sum += data.bat_module_data[bat].data["get"]["soc"]
+                            self.data["get"]["power"] += data.data.bat_module_data[bat].data["get"]["power"]
+                            self.data["get"]["imported"] += data.data.bat_module_data[bat].data["get"]["imported"]
+                            self.data["get"]["exported"] += data.data.bat_module_data[bat].data["get"]["exported"]
+                            self.data["get"]["daily_yield_export"] += data.data.bat_module_data[bat].data["get"]["daily_yield_export"]
+                            self.data["get"]["daily_yield_import"] += data.data.bat_module_data[bat].data["get"]["daily_yield_import"]
+                            soc_sum += data.data.bat_module_data[bat].data["get"]["soc"]
                             soc_count += 1
                     except Exception as e:
                         log.exception_logging(e)
@@ -96,13 +96,13 @@ class bat:
         """ ermittelt die Lade-Leistung des Speichers, die zum Laden der EV verwendet werden darf.
         """
         try:
-            config = data.general_data["general"].data["chargemode_config"]["pv_charging"]
+            config = data.data.general_data["general"].data["chargemode_config"]["pv_charging"]
             if config["bat_prio"] == False:
                 # Wenn der Speicher lädt und gleichzeitg Bezug da ist, sind entweder die Werte sehr ungünstig abgefragt worden 
                 # (deshalb wird noch ein Zyklus gewartet) oder es liegt ein Hybrid-System vor.
-                if data.counter_data["counter0"].data["get"]["power_all"] > 0:
+                if data.data.counter_data["counter0"].data["get"]["power_all"] > 0:
                     if self.data["set"]["hybrid_system_detected"] == True:
-                        self.data["set"]["charging_power_left"] = max(self.data["set"]["charging_power_left"] - data.counter_data["counter0"].data["get"]["power_all"], 0)
+                        self.data["set"]["charging_power_left"] = max(self.data["set"]["charging_power_left"] - data.data.counter_data["counter0"].data["get"]["power_all"], 0)
                     else:
                         self.data["set"]["hybrid_system_detected"] = True
                 elif self.data["set"]["hybrid_system_detected"] == True:
