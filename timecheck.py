@@ -379,15 +379,43 @@ def create_timestamp():
         log.exception_logging(e)
         return None
 
-def create_timestamp_filename():
-    """ erzeugt einen Zeitstempel mit dem aktuellen Datum und Uhrzeit
+def create_timestamp_YYYYMM():
+    """ erzeugt einen Zeitstempel mit dem aktuellen Jahr und Monat
 
     Return
     ------
-    str: aktuelles Datum und Uhrzeit
+    str: aktuelles Datum
     """
     try:
         stamp = datetime.datetime.today().strftime("%Y%m")
+        return stamp
+    except Exception as e:
+        log.exception_logging(e)
+        return None
+
+def create_timestamp_YYYYMMDD():
+    """ erzeugt einen Zeitstempel mit dem aktuellen Jahr und Monat und Tag
+
+    Return
+    ------
+    str: aktuelles Datum
+    """
+    try:
+        stamp = datetime.datetime.today().strftime("%Y%m%d")
+        return stamp
+    except Exception as e:
+        log.exception_logging(e)
+        return None
+
+def create_timestamp_time():
+    """ erzeugt einen Zeitstempel mit der aktuellen Uhrzeit
+
+    Return
+    ------
+    str: aktuelle Uhrzeit
+    """
+    try:
+        stamp = datetime.datetime.today().strftime("%H:%M")
         return stamp
     except Exception as e:
         log.exception_logging(e)

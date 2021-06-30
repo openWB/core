@@ -221,8 +221,8 @@ def save_data(chargepoint, charging_ev, immediately = True, reset = False):
             }
 
         # json-Objekt in Datei einfügen
-        pathlib.Path('./data').mkdir(mode = 0o755, parents=True, exist_ok=True)
-        filepath = "./data/"+timecheck.create_timestamp_filename()+".json"
+        pathlib.Path('./data/monthly_log').mkdir(mode = 0o755, parents=True, exist_ok=True)
+        filepath = "./data/monthly_log/"+timecheck.create_timestamp_YYYYMM()+".json"
         try:
             with open(filepath, "r") as jsonFile:
                 data = json.load(jsonFile)

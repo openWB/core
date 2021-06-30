@@ -149,6 +149,9 @@ class prepare():
                             
                             log.message_debug_log("debug", "EV"+str(charging_ev.ev_num)+": Theroretisch benötigter Strom "+str(required_current)+"A, Lademodus "+str(
                                 charging_ev.charge_template.data["chargemode"]["selected"])+", Submodus: "+str(charging_ev.data["control_parameter"]["submode"])+", Prioritaet: "+str(charging_ev.charge_template.data["prio"])+", max. Ist-Strom: "+str(max(cp.data["get"]["current"])))
+                    else:
+                        # Wenn kein EV zur Ladung zugeordnet wird, auf hinterlegtes EV zurückgreifen.
+                        self._pub_connected_vehicle(data.ev_data["ev"+str(cp.template.data["ev"])], cp.cp_num)
                     if message != None and cp.data["get"]["state_str"] == None:
                         log.message_debug_log("info", "LP "+str(cp.cp_num)+": "+message)
                         cp.data["get"]["state_str"] = message

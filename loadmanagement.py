@@ -393,12 +393,12 @@ def _check_max_current(counter, required_current_phases, phases, offset):
             else:
                 if (current_used[phase]-(data.counter_data[counter].data["config"]["max_current"][phase] - offset_current)) > max_current_overshoot:
                     max_current_overshoot = current_used[phase]-data.counter_data[counter].data["config"]["max_current"][phase]
-                loadmanagement = True
-                if offset == True:
-                    log.message_debug_log("warning", "Benoetigte Stromstaerke "+str(required_current_phases[phase])+" ueberschreitet unter Beachtung des Offsets die zulaessige Stromstaerke an Phase "+str(phase)+ " um "+str(max_current_overshoot)+"A.")
-                else:
-                    log.message_debug_log("warning", "Benoetigte Stromstaerke "+str(required_current_phases[phase])+" ueberschreitet ohne Beachtung des Offsets die zulaessige Stromstaerke an Phase "+str(phase)+ " um "+str(max_current_overshoot)+"A.")
-                break
+        if max_current_overshoot != 0:
+            loadmanagement = True
+            if offset == True:
+                log.message_debug_log("warning", "Benoetigte Stromstaerke "+str(required_current_phases[phase])+" ueberschreitet unter Beachtung des Offsets die zulaessige Stromstaerke an Phase "+str(phase)+ " um "+str(max_current_overshoot)+"A.")
+            else:
+                log.message_debug_log("warning", "Benoetigte Stromstaerke "+str(required_current_phases[phase])+" ueberschreitet ohne Beachtung des Offsets die zulaessige Stromstaerke an Phase "+str(phase)+ " um "+str(max_current_overshoot)+"A.")
         data.counter_data[counter].data["set"]["current_used"] = current_used
         # Wenn Zähler geprüft werden, wird ohne Offset geprüft. Beim Runterregeln soll aber das Offset berücksichtigt werden, um Schwingen zu vermeiden.
         return loadmanagement, max_current_overshoot + (300 / 230 / phases), current_used.index(max(current_used))
