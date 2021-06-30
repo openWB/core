@@ -75,7 +75,7 @@ def loadmanagement_for_cp(chargepoint, required_power, required_current, phases)
         if loadmanagement == True:
             loadmanagement_all_conditions = True
         
-        data.counter_data["all"].data["set"]["loadmanagement"] = loadmanagement_all_conditions
+        data.data.counter_data["all"].data["set"]["loadmanagement"] = loadmanagement_all_conditions
         return loadmanagement_all_conditions, overloaded_counters
     except Exception as e:
         log.exception_logging(e)
@@ -95,11 +95,11 @@ def loadmanagement_for_counters():
         # Für den EVU-Zähler max. Leistung, max. Stromstärke und Schieflast überprüfen.
         loadmanagement_all_conditions = _loadmanagement_for_evu(0 , [0, 0, 0], 3, False)
         # Überprüfung der Zwischenzähler
-        loadmanagement = _check_all_intermediate_counters(data.counter_data["all"].data["get"]["hierarchy"][0])
+        loadmanagement = _check_all_intermediate_counters(data.data.counter_data["all"].data["get"]["hierarchy"][0])
         # Wenn das Lastmanagement aktiv war, darf es nicht wieder zurück gesetzt werden.
         if loadmanagement_all_conditions == False:
             loadmanagement_all_conditions = loadmanagement
-        data.counter_data["all"].data["set"]["loadmanagement"] = loadmanagement_all_conditions
+        data.data.counter_data["all"].data["set"]["loadmanagement"] = loadmanagement_all_conditions
         return loadmanagement_all_conditions, overloaded_counters
     except Exception as e:
         log.exception_logging(e)
@@ -122,9 +122,9 @@ def perform_loadmanagement(counter):
     chargepoints.clear()
     try:
         if counter == "counter0":
-            counter_object = data.counter_data["all"].data["get"]["hierarchy"][0]
+            counter_object = data.data.counter_data["all"].data["get"]["hierarchy"][0]
         else:
-            counter_object = _look_for_object(data.counter_data["all"].data["get"]["hierarchy"][0], "counter", counter[7:])
+            counter_object = _look_for_object(data.data.counter_data["all"].data["get"]["hierarchy"][0], "counter", counter[7:])
         _get_all_cp_connected_to_counter(counter_object)
         return chargepoints
     except Exception as e:
@@ -184,7 +184,7 @@ def _get_counters_to_check(chargepoint):
     """
     try:
         counters.clear()
-        _look_for_object(data.counter_data["all"].data["get"]["hierarchy"][0], "cp", chargepoint.cp_num)
+        _look_for_object(data.data.counter_data["all"].data["get"]["hierarchy"][0], "cp", chargepoint.cp_num)
         return counters
     except Exception as e:
         log.exception_logging(e)
@@ -306,7 +306,7 @@ def _loadmanagement_for_evu(required_power, required_current_phases, phases, off
             if overshoot_one_phase < overshoot:
                 max_current_overshoot = overshoot
                 max_overshoot_phase = phase
-        loadmanagement, overshoot, phase = _check_unbalanced_load(data.counter_data["counter0"].data["set"]["current_used"], offset)
+        loadmanagement, overshoot, phase = _check_unbalanced_load(data.data.counter_data["counter0"].data["set"]["current_used"], offset)
         if loadmanagement == True:
             loadmanagement_all_conditions = True
             # Wenn max_overshoot_phase -1 ist, wurde die maximale Gesamtleistung überschrittten und max_current_overshoot muss, 
@@ -344,13 +344,13 @@ def _check_max_power(required_power, offset):
     else:
         offset_power = 0
     try:
-        consumption_left = data.counter_data["counter0"].data["set"]["consumption_left"] - required_power - offset_power
-        data.counter_data["counter0"].data["set"]["consumption_left"] -= required_power
+        consumption_left = data.data.counter_data["counter0"].data["set"]["consumption_left"] - required_power - offset_power
+        data.data.counter_data["counter0"].data["set"]["consumption_left"] -= required_power
         # Float-Ungenauigkeiten abfangen
         if consumption_left >= -0.01:
-            return False, data.counter_data["counter0"].data["set"]["consumption_left"] - 300
+            return False, data.data.counter_data["counter0"].data["set"]["consumption_left"] - 300
         else:
-            return True, data.counter_data["counter0"].data["set"]["consumption_left"] - 300
+            return True, data.data.counter_data["counter0"].data["set"]["consumption_left"] - 300
     except Exception as e:
         log.exception_logging(e)
         return 0, False
@@ -386,20 +386,20 @@ def _check_max_current(counter, required_current_phases, phases, offset):
         offset_current = 0
     try:
         for phase in range(3):
-            current_used[phase] = data.counter_data[counter].data["set"]["current_used"][phase] + required_current_phases[phase]
+            current_used[phase] = data.data.counter_data[counter].data["set"]["current_used"][phase] + required_current_phases[phase]
             # Wird die maximal zulässige Stromstärke inklusive des Offsets eingehlaten?
-            if current_used[phase] < data.counter_data[counter].data["config"]["max_current"][phase] - offset_current:
+            if current_used[phase] < data.data.counter_data[counter].data["config"]["max_current"][phase] - offset_current:
                 loadmanagement = False
             else:
-                if (current_used[phase]-(data.counter_data[counter].data["config"]["max_current"][phase] - offset_current)) > max_current_overshoot:
-                    max_current_overshoot = current_used[phase]-data.counter_data[counter].data["config"]["max_current"][phase]
-                loadmanagement = True
-                if offset == True:
-                    log.message_debug_log("warning", "Benoetigte Stromstaerke "+str(required_current_phases[phase])+" ueberschreitet unter Beachtung des Offsets die zulaessige Stromstaerke an Phase "+str(phase)+ " um "+str(max_current_overshoot)+"A.")
-                else:
-                    log.message_debug_log("warning", "Benoetigte Stromstaerke "+str(required_current_phases[phase])+" ueberschreitet ohne Beachtung des Offsets die zulaessige Stromstaerke an Phase "+str(phase)+ " um "+str(max_current_overshoot)+"A.")
-                break
-        data.counter_data[counter].data["set"]["current_used"] = current_used
+                if (current_used[phase]-(data.data.counter_data[counter].data["config"]["max_current"][phase] - offset_current)) > max_current_overshoot:
+                    max_current_overshoot = current_used[phase]-data.data.counter_data[counter].data["config"]["max_current"][phase]
+        if max_current_overshoot != 0:
+            loadmanagement = True
+            if offset == True:
+                log.message_debug_log("warning", "Benoetigte Stromstaerke "+str(required_current_phases[phase])+" ueberschreitet unter Beachtung des Offsets die zulaessige Stromstaerke an Phase "+str(phase)+ " um "+str(max_current_overshoot)+"A.")
+            else:
+                log.message_debug_log("warning", "Benoetigte Stromstaerke "+str(required_current_phases[phase])+" ueberschreitet ohne Beachtung des Offsets die zulaessige Stromstaerke an Phase "+str(phase)+ " um "+str(max_current_overshoot)+"A.")
+        data.data.counter_data[counter].data["set"]["current_used"] = current_used
         # Wenn Zähler geprüft werden, wird ohne Offset geprüft. Beim Runterregeln soll aber das Offset berücksichtigt werden, um Schwingen zu vermeiden.
         return loadmanagement, max_current_overshoot + (300 / 230 / phases), current_used.index(max(current_used))
     except Exception as e:
@@ -433,12 +433,12 @@ def _check_unbalanced_load(current_used, offset):
         max_current = max(current_used)
         if max_current < 0:
             max_current = 0
-        if (max_current - min_current) <= data.general_data["general"].data["chargemode_config"]["unbalanced_load_limit"] - offset_current:
+        if (max_current - min_current) <= data.data.general_data["general"].data["chargemode_config"]["unbalanced_load_limit"] - offset_current:
             return False, None, 0
         else:
-            max_current_overshoot = (max_current - min_current) - data.general_data["general"].data["chargemode_config"]["unbalanced_load_limit"]
+            max_current_overshoot = (max_current - min_current) - data.data.general_data["general"].data["chargemode_config"]["unbalanced_load_limit"]
             log.message_debug_log("warning", "Schieflast wurde ueberschritten.")
-            if data.general_data["general"].data["chargemode_config"]["unbalanced_load"] == True:
+            if data.data.general_data["general"].data["chargemode_config"]["unbalanced_load"] == True:
                 return True, max_current_overshoot + 1, current_used.index(max_current)+1
             else:
                 return False, None, 0

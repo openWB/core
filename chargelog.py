@@ -87,7 +87,7 @@ Ich sehe, dass so wie Lutz. Wenn im PV-Laden die Ladung unterbrochen wird, sollt
 import json
 import pathlib
 
-import data as data_module
+import data
 import log
 import math
 import pub
@@ -189,7 +189,7 @@ def save_data(chargepoint, charging_ev, immediately = True, reset = False):
             duration = int(time_charged[0])*60*24 + int(time_charged[1])*60 + int(time_charged[2])
         if duration > 0:
             power = charging_ev.data["get"]["charged_since_mode_switch"] / duration*60
-        costs = data_module.general_data["general"].data["price_kwh"] * charging_ev.data["get"]["charged_since_mode_switch"] #/ 1000
+        costs = data.data.general_data["general"].data["price_kwh"] * charging_ev.data["get"]["charged_since_mode_switch"] #/ 1000
         new_entry = {
             "chargepoint": 
             {
@@ -221,19 +221,19 @@ def save_data(chargepoint, charging_ev, immediately = True, reset = False):
             }
 
         # json-Objekt in Datei einfügen
-        pathlib.Path('./data').mkdir(mode = 0o755, parents=True, exist_ok=True)
-        filepath = "./data/"+timecheck.create_timestamp_filename()+".json"
+        pathlib.Path('./data/monthly_log').mkdir(mode = 0o755, parents=True, exist_ok=True)
+        filepath = "./data/monthly_log/"+timecheck.create_timestamp_YYYYMM()+".json"
         try:
             with open(filepath, "r") as jsonFile:
-                data = json.load(jsonFile)
+                content = json.load(jsonFile)
         except FileNotFoundError:
             with open(filepath, "w") as jsonFile:
                 json.dump([], jsonFile)
             with open(filepath, "r") as jsonFile:
-                data = json.load(jsonFile)
-        data.append(new_entry)
+                content = json.load(jsonFile)
+        content.append(new_entry)
         with open(filepath, "w") as jsonFile:
-            json.dump(data, jsonFile)
+            json.dump(content, jsonFile)
 
         # Werte zurücksetzen
         charging_ev.data["get"]["timestamp_start_charging"] = "0"

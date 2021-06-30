@@ -48,10 +48,10 @@ class allChargepoints():
         (dient der Robustheit)
         """
         try:
-            for cp in data.cp_data:
+            for cp in data.data.cp_data:
                 try:
                     if "cp" in cp:
-                        chargepoint = data.cp_data[cp]
+                        chargepoint = data.data.cp_data[cp]
                         # Kein EV angesteckt
                         if ( chargepoint.data["get"]["plug_state"] == False or
                                 # Kein EV, das Laden soll
@@ -66,7 +66,7 @@ class allChargepoints():
                 except Exception as e:
                     log.exception_logging(e)
             else:
-                data.pv_data["all"].reset_pv_data()
+                data.data.pv_data["all"].reset_pv_data()
         except Exception as e:
             log.exception_logging(e)
 
@@ -75,15 +75,15 @@ class allChargepoints():
         Wenn der RFID-Modus 1 ist, wird die Funktion zur Zuordnung bei zentralem Scanner genutzt, wenn es eine openWB Duo ist. 
         """
         try:
-            if data.optional_data["optional"].data["rfid"]["mode"] == 1:
+            if data.data.optional_data["optional"].data["rfid"]["mode"] == 1:
                 # nicht .keys() verwenden, da diese eine dict_keys-Liste erzeugt und wenn man daraus einen Eintrag entfernt wird dieser auch im original-dict entfernt.
-                chargepoints = list(data.cp_data.keys())
+                chargepoints = list(data.data.cp_data.keys())
                 if "all" in chargepoints:
                     chargepoints.remove("all")
                 # Duos zuerst
                 for cp in chargepoints:
                     try:
-                        chargepoint = data.cp_data[cp]
+                        chargepoint = data.data.cp_data[cp]
                         if chargepoint.template.data["rfid_enabling"] == True:
                             # Wurde ein zweiter Ladepunkt an einer Duo konfiguriert?
                             if chargepoint.data["config"]["connection_module"]["selected"] == "external_openwb":
@@ -92,7 +92,7 @@ class allChargepoints():
                                     for cp2 in chargepoints:
                                         if cp2 != cp:
                                             if (chargepoint.data["config"]["connection_module"]["config"]["external_openwb"]["ip_adress"] == 
-                                                    data.cp_data[cp2].data["config"]["connection_module"]["config"]["external_openwb"]["ip_adress"]):
+                                                    data.data.cp_data[cp2].data["config"]["connection_module"]["config"]["external_openwb"]["ip_adress"]):
                                                 self._match_rfid_of_multiple_cp([cp, cp2])
                                                 chargepoints.remove(cp)
                                                 chargepoints.remove(cp2)
@@ -103,7 +103,7 @@ class allChargepoints():
                 for cp in chargepoints:
                     try:
                         if "cp" in cp:
-                            chargepoint = data.cp_data[cp]
+                            chargepoint = data.data.cp_data[cp]
                             if chargepoint.template.data["rfid_enabling"] == True:
                                 if chargepoint.data["get"]["read_tag"]["tag"] != "0":
                                     # Darf mit diesem Tag der LP freigeschaltet werden?
@@ -121,11 +121,11 @@ class allChargepoints():
                                     pub.pub("openWB/set/chargepoint/"+chargepoint.cp_num+"/get/read_tag", chargepoint.data["get"]["read_tag"])
                     except Exception as e:
                         log.exception_logging(e)
-            elif data.optional_data["optional"].data["rfid"]["mode"] == 2:
-                chargepoints = data.cp_data.keys()
+            elif data.data.optional_data["optional"].data["rfid"]["mode"] == 2:
+                chargepoints = data.data.cp_data.keys()
                 self._match_rfid_of_multiple_cp(chargepoints)
             else:
-                log.message_debug_log("error", "RFID-Modus "+str(data.optional_data["optional"]["rfid"]["mode"])+" unbekannt.")
+                log.message_debug_log("error", "RFID-Modus "+str(data.data.optional_data["optional"]["rfid"]["mode"])+" unbekannt.")
         except Exception as e:
             log.exception_logging(e)
 
@@ -142,7 +142,7 @@ class allChargepoints():
             for cp in chargepoints:
                 try:
                     if "cp" in cp:
-                        chargepoint = data.cp_data[cp]
+                        chargepoint = data.data.cp_data[cp]
                         if chargepoint.data["get"]["read_tag"]["tag"] != "0":
                             read_tag = chargepoint.data["get"]["read_tag"]["tag"]
                             # Scannen darf nicht länger als 5 Min zurück liegen
@@ -159,7 +159,7 @@ class allChargepoints():
                 for cp in chargepoints:
                     try:
                         if "cp" in cp:
-                            chargepoint = data.cp_data[cp]
+                            chargepoint = data.data.cp_data[cp]
                             if chargepoint.template.data["rfid_enabling"] == True:
                                 # Wenn man einen Tag hat, der nicht vor mehr als 5 Min gescannt wurde, ist es egal, ob das Auto vor oder nach dem Scannen angesteckt wurde. 
                                 # Um den Tag zuzuordnen, muss RFID-Zuordnung aktiviert sein, es darf kein Tag zugeordnet sein (wird beim Abstecken zurückgesetzt) und es muss ein Auto angesteckt sein.
@@ -222,8 +222,8 @@ class chargepoint():
             Text, dass geladen werden kann oder warum nicht geladen werden kann.
         """
         try:
-            if data.general_data["general"].data["grid_protection_configured"] == True:
-                if data.general_data["general"].data["grid_protection_active"] == False:
+            if data.data.general_data["general"].data["grid_protection_configured"] == True:
+                if data.data.general_data["general"].data["grid_protection_active"] == False:
                     state = False
                     message = None
                 else:
@@ -397,20 +397,20 @@ class chargepoint():
                 pub.pub("openWB/set/chargepoint/"+self.cp_num+"/set/charging_ev_prev", self.data["set"]["charging_ev_prev"])
             if self.data["set"]["charging_ev_prev"] != -1:
                 # Daten zurücksetzen, wenn nicht geladen werden soll.
-                data.ev_data["ev"+str(self.data["set"]["charging_ev_prev"])].reset_ev()
-                data.pv_data["all"].reset_switch_on_off(self, data.ev_data["ev"+str(self.data["set"]["charging_ev_prev"])])
+                data.data.ev_data["ev"+str(self.data["set"]["charging_ev_prev"])].reset_ev()
+                data.data.pv_data["all"].reset_switch_on_off(self, data.data.ev_data["ev"+str(self.data["set"]["charging_ev_prev"])])
                 # Abstecken
                 if self.data["get"]["plug_state"] == False:
                     # Standardprofil nach Abstecken laden
-                    if data.ev_data["ev"+str(self.data["set"]["charging_ev_prev"])].charge_template.data["load_default"] == True:
+                    if data.data.ev_data["ev"+str(self.data["set"]["charging_ev_prev"])].charge_template.data["load_default"] == True:
                         self.template.data["ev"] = 0
                         pub.pub("openWB/set/chargepoint/template/"+str(self.data["config"]["template"])+"/ev", 0)
                     # Ladepunkt nach Abstecken sperren
-                    if data.ev_data["ev"+str(self.data["set"]["charging_ev_prev"])].charge_template.data["disable_after_unplug"] == True:
+                    if data.data.ev_data["ev"+str(self.data["set"]["charging_ev_prev"])].charge_template.data["disable_after_unplug"] == True:
                         self.data["set"]["manual_lock"] = True
                         pub.pub("openWB/set/chargepoint/"+self.cp_num+"/set/manual_lock", True)
                     # Ev wurde noch nicht aktualisiert.
-                    chargelog.reset_data(self, data.ev_data["ev"+str(self.data["set"]["charging_ev_prev"])])
+                    chargelog.reset_data(self, data.data.ev_data["ev"+str(self.data["set"]["charging_ev_prev"])])
                     self.data["set"]["charging_ev_prev"] = -1
                     pub.pub("openWB/set/chargepoint/"+self.cp_num+"/set/charging_ev_prev", self.data["set"]["charging_ev_prev"])
                     self.data["set"]["rfid"] = "0"
@@ -448,7 +448,7 @@ class chargepoint():
             charging_ev = self.data["set"]["charging_ev_data"]
             # Umschaltung im Gange
             if charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] != "0":
-                phase_switch_delay = data.general_data["general"].data["chargemode_config"]["pv_charging"]["phase_switch_delay"]
+                phase_switch_delay = data.data.general_data["general"].data["chargemode_config"]["pv_charging"]["phase_switch_delay"]
                 # Umschaltung abgeschlossen
                 if timecheck.check_timestamp(charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"], 53+phase_switch_delay-1) == False:
                     log.message_debug_log("debug", "phase switch running")
@@ -456,9 +456,9 @@ class chargepoint():
                     pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num) + "/control_parameter/timestamp_perform_phase_switch", "0")
                     # Aktuelle Ladeleistung und Differenz wieder freigeben.
                     if charging_ev.data["control_parameter"]["phases"] == 3:
-                        data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= charging_ev.data["control_parameter"]["required_current"] * 3 * 230
+                        data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= charging_ev.data["control_parameter"]["required_current"] * 3 * 230
                     elif charging_ev.data["control_parameter"]["phases"] == 1:
-                        data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= charging_ev.ev_template.data["max_current_one_phase"] * 230
+                        data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= charging_ev.ev_template.data["max_current_one_phase"] * 230
                 else:
                     if charging_ev.data["control_parameter"]["phases"] == 3:
                         message = "Umschaltung von 1 auf 3 Phasen."
@@ -484,7 +484,7 @@ class chargepoint():
                             self.data["get"]["state_str"] = message
                             # Timestamp für die Durchführungsdauer
                             # Ladeleistung reservieren, da während der Umschaltung die Ladung pausiert wird.
-                            data.pv_data["all"].data["set"]["reserved_evu_overhang"] += charging_ev.data["control_parameter"]["required_current"] * 3 * 230
+                            data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] += charging_ev.data["control_parameter"]["required_current"] * 3 * 230
                             charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] = timecheck.create_timestamp()
                             pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num) + "/control_parameter/timestamp_perform_phase_switch", charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"])
                         elif charging_ev.data["control_parameter"]["phases"] == 1:
@@ -493,7 +493,7 @@ class chargepoint():
                             charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] = timecheck.create_timestamp()
                             pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num) + "/control_parameter/timestamp_perform_phase_switch", charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"])
                             # Ladeleistung reservieren, da während der Umschaltung die Ladung pausiert wird.
-                            data.pv_data["all"].data["set"]["reserved_evu_overhang"] += charging_ev.ev_template.data["max_current_one_phase"] * 230
+                            data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] += charging_ev.ev_template.data["max_current_one_phase"] * 230
                             log.message_debug_log("info", "LP "+str(self.cp_num)+": "+message)
                             self.data["get"]["state_str"] = message
                     else:
@@ -520,7 +520,7 @@ class chargepoint():
             else:
                 phases = config["connected_phases"]
             log.message_debug_log("debug", "phases1 "+str(phases))
-            chargemode_phases = data.general_data["general"].get_phases_chargemode(mode)
+            chargemode_phases = data.data.general_data["general"].get_phases_chargemode(mode)
             # Wenn die Lademodus-Phasen 0 sind, wird die bisher genutzte Phasenzahl weiter genutzt, 
             # bis der Algorithmus eine Umschaltung vorgibt, zB weil der gewählte Lademodus eine 
             # andere Phasenzahl benötigt oder bei PV-Laden die automatische Umschaltung aktiv ist.
@@ -672,7 +672,7 @@ class cpTemplate():
                 if rfid != "0":
                     vehicle = ev.get_ev_to_rfid(rfid)
                     if vehicle == None:
-                        if data.optional_data["optional"].data["rfid"]["match_ev_per_tag_only"] == False:
+                        if data.data.optional_data["optional"].data["rfid"]["match_ev_per_tag_only"] == False:
                             ev_num = self.data["ev"]
                         else:
                             ev_num = -1
@@ -680,7 +680,7 @@ class cpTemplate():
                     else:
                         ev_num = vehicle
                 else:
-                    if data.optional_data["optional"].data["rfid"]["match_ev_per_tag_only"] == False:
+                    if data.data.optional_data["optional"].data["rfid"]["match_ev_per_tag_only"] == False:
                         if timecheck.check_timestamp(plug_time, 300) == False:
                             #abgelaufen
                             ev_num = self.data["ev"]

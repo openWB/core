@@ -27,68 +27,67 @@ class prepare():
         self._check_chargepoints()
         self._use_pv()
         self._bat()
-        data.print_all()
+        data.data.print_all()
 
     def _copy_data(self):
         """ kopiert die Daten, die per MQTT empfangen wurden.
         """
         try:
-            data.general_data = copy.deepcopy(subdata.subData.general_data)
-            data.optional_data = copy.deepcopy(subdata.subData.optional_data)
-            data.graph_data = copy.deepcopy(subdata.subData.graph_data)
-            data.cp_data = copy.deepcopy(subdata.subData.cp_data)
-            data.cp_template_data = copy.deepcopy(
+            data.data.general_data = copy.deepcopy(subdata.subData.general_data)
+            data.data.optional_data = copy.deepcopy(subdata.subData.optional_data)
+            data.data.cp_data = copy.deepcopy(subdata.subData.cp_data)
+            data.data.cp_template_data = copy.deepcopy(
                 subdata.subData.cp_template_data)
-            for chargepoint in data.cp_data:
+            for chargepoint in data.data.cp_data:
                 try:
                     if "cp" in chargepoint:
-                        data.cp_data[chargepoint].template = data.cp_template_data["cpt" +str(data.cp_data[chargepoint].data["config"]["template"])]
-                        data.cp_data[chargepoint].cp_num = chargepoint[2:]
+                        data.data.cp_data[chargepoint].template = data.data.cp_template_data["cpt" +str(data.data.cp_data[chargepoint].data["config"]["template"])]
+                        data.data.cp_data[chargepoint].cp_num = chargepoint[2:]
                         # Status zurücksetzen (wird jeden Zyklus neu ermittelt)
-                        data.cp_data[chargepoint].data["get"]["state_str"] = None
+                        data.data.cp_data[chargepoint].data["get"]["state_str"] = None
                 except Exception as e:
                     log.exception_logging(e)
 
-            data.pv_data = copy.deepcopy(subdata.subData.pv_data)
-            data.ev_data = copy.deepcopy(subdata.subData.ev_data)
-            data.ev_template_data = copy.deepcopy(
+            data.data.pv_data = copy.deepcopy(subdata.subData.pv_data)
+            data.data.ev_data = copy.deepcopy(subdata.subData.ev_data)
+            data.data.ev_template_data = copy.deepcopy(
                 subdata.subData.ev_template_data)
-            data.ev_charge_template_data = copy.deepcopy(
+            data.data.ev_charge_template_data = copy.deepcopy(
                 subdata.subData.ev_charge_template_data)
-            for vehicle in data.ev_data:
+            for vehicle in data.data.ev_data:
                 try:
                     # Globaler oder individueller Lademodus?
-                    if data.general_data["general"].data["chargemode_config"]["individual_mode"] == True:
-                        data.ev_data[vehicle].charge_template = data.ev_charge_template_data["ct" +str(data.ev_data[vehicle].data["charge_template"])]
+                    if data.data.general_data["general"].data["chargemode_config"]["individual_mode"] == True:
+                        data.data.ev_data[vehicle].charge_template = data.data.ev_charge_template_data["ct" +str(data.data.ev_data[vehicle].data["charge_template"])]
                     else:
-                        data.ev_data[vehicle].charge_template = data.ev_charge_template_data["ct0"]
+                        data.data.ev_data[vehicle].charge_template = data.data.ev_charge_template_data["ct0"]
                     # erstmal das aktuelle Template laden
-                    data.ev_data[vehicle].ev_template = data.ev_template_data["et" +str(data.ev_data[vehicle].data["ev_template"])]
+                    data.data.ev_data[vehicle].ev_template = data.data.ev_template_data["et" +str(data.data.ev_data[vehicle].data["ev_template"])]
                 except Exception as e:
                     log.exception_logging(e)
 
-            data.counter_data = copy.deepcopy(subdata.subData.counter_data)
-            for counter in data.counter_data:
+            data.data.counter_data = copy.deepcopy(subdata.subData.counter_data)
+            for counter in data.data.counter_data:
                 try:
-                    data.counter_data[counter].counter_num = counter[7:]
+                    data.data.counter_data[counter].counter_num = counter[7:]
                 except Exception as e:
                     log.exception_logging(e)
-            data.bat_module_data = copy.deepcopy(subdata.subData.bat_module_data)
+            data.data.bat_module_data = copy.deepcopy(subdata.subData.bat_module_data)
         except Exception as e:
             log.exception_logging(e)
 
     def _check_chargepoints(self):
         """ ermittelt die gewünschte Stromstärke für jeden LP.
         """
-        data.cp_data["all"].match_rfid_to_cp()
-        for cp_item in data.cp_data:
+        data.data.cp_data["all"].match_rfid_to_cp()
+        for cp_item in data.data.cp_data:
             state = True
             try:
                 if "cp" in cp_item:
-                    cp = data.cp_data[cp_item]
+                    cp = data.data.cp_data[cp_item]
                     vehicle, message = cp.get_state()
                     if vehicle != -1:
-                        charging_ev = data.ev_data["ev"+str(vehicle)]
+                        charging_ev = data.data.ev_data["ev"+str(vehicle)]
                         # Ev wurde neu angesteckt, Kopie der aktuellen Templates erstellen und publishen
                         if cp.data["set"]["charging_ev"] == -1 and cp.data["set"]["charging_ev_prev"] == -1:
                             charging_ev.data["set"]["ev_template"] = charging_ev.ev_template.data
@@ -121,7 +120,7 @@ class prepare():
                             # Daher muss der LP zurückgesetzt werden, wenn er gerade lädt, um in der Regelung wieder berücksichtigt zu werden.
                             if current_changed == True:
                                 log.message_debug_log("debug", "LP"+str(charging_ev.ev_num)+" : Da sich die Stromstärke geändert hat, muss der Ladepunkt im Algorithmus neu priorisiert werden.")
-                                data.pv_data["all"].reset_switch_on_off(cp, charging_ev)
+                                data.data.pv_data["all"].reset_switch_on_off(cp, charging_ev)
                                 charging_ev.reset_phase_switch()
                                 if max(cp.data["get"]["current"]) != 0:
                                     cp.data["set"]["current"] = 0
@@ -144,19 +143,22 @@ class prepare():
                         else:
                             if (charging_ev.data["control_parameter"]["timestamp_switch_on_off"] != "0" and
                                     cp.data["get"]["charge_state"] == False and 
-                                    data.pv_data["all"].data["set"]["overhang_power_left"] == 0):
+                                    data.data.pv_data["all"].data["set"]["overhang_power_left"] == 0):
                                 log.message_debug_log("error", "Reservierte Leistung kann nicht 0 sein.")
                             
                             log.message_debug_log("debug", "EV"+str(charging_ev.ev_num)+": Theroretisch benötigter Strom "+str(required_current)+"A, Lademodus "+str(
                                 charging_ev.charge_template.data["chargemode"]["selected"])+", Submodus: "+str(charging_ev.data["control_parameter"]["submode"])+", Prioritaet: "+str(charging_ev.charge_template.data["prio"])+", max. Ist-Strom: "+str(max(cp.data["get"]["current"])))
+                    else:
+                        # Wenn kein EV zur Ladung zugeordnet wird, auf hinterlegtes EV zurückgreifen.
+                        self._pub_connected_vehicle(data.data.ev_data["ev"+str(cp.template.data["ev"])], cp.cp_num)
                     if message != None and cp.data["get"]["state_str"] == None:
                         log.message_debug_log("info", "LP "+str(cp.cp_num)+": "+message)
                         cp.data["get"]["state_str"] = message
             except Exception as e:
                 log.exception_logging(e)
-        if "all" not in data.cp_data:
-            data.cp_data["all"]=chargepoint.allChargepoints()
-        data.cp_data["all"].no_charge()
+        if "all" not in data.data.cp_data:
+            data.data.cp_data["all"]=chargepoint.allChargepoints()
+        data.data.cp_data["all"].no_charge()
 
     def _pub_connected_vehicle(self, vehicle, cp_num):
         """ published die Daten, die zur Anzeige auf der Haupseite benötigt werden.
@@ -173,7 +175,7 @@ class prepare():
                     "manual": vehicle.data["soc"]["config"]["manual"]}
             soc_obj = {"soc": vehicle.data["get"]["soc"],
                     "range": vehicle.data["get"]["range_charged"],
-                    "range_unit": data.general_data["general"].data["range_unit"],
+                    "range_unit": data.data.general_data["general"].data["range_unit"],
                     "timestamp": vehicle.data["get"]["soc_timestamp"],
                     "fault_stat": vehicle.data["soc"]["get"]["fault_state"],
                     "fault_str": vehicle.data["soc"]["get"]["fault_str"]}
@@ -203,7 +205,7 @@ class prepare():
         """ ermittelt, ob Überschuss an der EVU vorhanden ist.
         """
         try:
-            data.pv_data["all"].calc_power_for_control()
+            data.data.pv_data["all"].calc_power_for_control()
         except Exception as e:
             log.exception_logging(e)
 
@@ -211,7 +213,7 @@ class prepare():
         """ ermittelt, ob Überschuss am Speicher verfügbar ist.
         """
         try:
-            data.bat_module_data["all"].setup_bat()
+            data.data.bat_module_data["all"].setup_bat()
         except Exception as e:
                 log.exception_logging(e)
 
@@ -219,8 +221,8 @@ class prepare():
         """ initialisiert alle Zähler für den Algorithmus
         """
         try:
-            for counter in data.counter_data:
+            for counter in data.data.counter_data:
                 if "counter" in counter:
-                    data.counter_data[counter].setup_counter()
+                    data.data.counter_data[counter].setup_counter()
         except Exception as e:
                 log.exception_logging(e)

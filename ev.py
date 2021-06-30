@@ -26,15 +26,15 @@ def get_ev_to_rfid(rfid):
     vehicle: int
         Nummer des EV, das zum Tag gehört
     """
-    for vehicle in data.ev_data:
+    for vehicle in data.data.ev_data:
         try:
             if "ev" in vehicle:
-                if data.ev_data[vehicle].data["match_ev"]["selected"] == "rfid":
-                    if data.ev_data[vehicle].data["match_ev"]["tag_id"] == rfid:
-                        return data.ev_data[vehicle].ev_num
+                if data.data.ev_data[vehicle].data["match_ev"]["selected"] == "rfid":
+                    if data.data.ev_data[vehicle].data["match_ev"]["tag_id"] == rfid:
+                        return data.data.ev_data[vehicle].ev_num
         except Exception as e:
             log.exception_logging(e)
-            return data.ev_data[0].ev_num
+            return data.data.ev_data[0].ev_num
     else:
         return None
 
@@ -277,7 +277,7 @@ class ev():
         phases_to_use = phases_in_use
         try:
             if self.ev_template.data["prevent_switch_stop"] == False:
-                pv_config = data.general_data["general"].data["chargemode_config"]["pv_charging"]
+                pv_config = data.data.general_data["general"].data["chargemode_config"]["pv_charging"]
                 # 1 -> 3
                 if phases_in_use == 1:
                     # Wenn im einphasigen Laden mit Maximalstromstärke geladen wird und der Timer abläuft, wird auf 3 Phasen umgeschaltet.
@@ -348,21 +348,21 @@ class ev():
             pub.pub("openWB/set/vehicle/"+str(self.ev_num)+"/control_parameter/timestamp_auto_phase_switch", "0")
             # Wenn der Timer läuft, ist den Control-Paranetern die alte Phasenzahl hinterlegt.
             if self.data["control_parameter"]["phases"] == 3:
-                data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= self.ev_template.data["max_current_one_phase"] * 230 - self.data["control_parameter"]["required_current"] * 3 * 230
-                log.message_debug_log("debug", "reserved_evu_overhang 6 "+str(data.pv_data["all"].data["set"]["reserved_evu_overhang"]))
+                data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= self.ev_template.data["max_current_one_phase"] * 230 - self.data["control_parameter"]["required_current"] * 3 * 230
+                log.message_debug_log("debug", "reserved_evu_overhang 6 "+str(data.data.pv_data["all"].data["set"]["reserved_evu_overhang"]))
             else:
-                data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= self.data["control_parameter"]["required_current"] * 3 * 230 - self.ev_template.data["max_current_one_phase"] * 230
-                log.message_debug_log("debug", "reserved_evu_overhang 7 "+str(data.pv_data["all"].data["set"]["reserved_evu_overhang"]))
+                data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= self.data["control_parameter"]["required_current"] * 3 * 230 - self.ev_template.data["max_current_one_phase"] * 230
+                log.message_debug_log("debug", "reserved_evu_overhang 7 "+str(data.data.pv_data["all"].data["set"]["reserved_evu_overhang"]))
         elif self.data["control_parameter"]["timestamp_perform_phase_switch"] != "0":
             self.data["control_parameter"]["timestamp_perform_phase_switch"] = "0"
             pub.pub("openWB/set/vehicle/"+str(self.ev_num)+"/control_parameter/timestamp_perform_phase_switch", "0")
             # Leistung freigeben, wird dann neu zugeteilt
             if self.data["control_parameter"]["phases"] == 3:
-                data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= self.data["control_parameter"]["required_current"] * 3 * 230
-                log.message_debug_log("debug", "reserved_evu_overhang 8 "+str(data.pv_data["all"].data["set"]["reserved_evu_overhang"]))
+                data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= self.data["control_parameter"]["required_current"] * 3 * 230
+                log.message_debug_log("debug", "reserved_evu_overhang 8 "+str(data.data.pv_data["all"].data["set"]["reserved_evu_overhang"]))
             else:
-                data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= self.ev_template.data["max_current_one_phase"] * 230
-                log.message_debug_log("debug", "reserved_evu_overhang 9 "+str(data.pv_data["all"].data["set"]["reserved_evu_overhang"]))
+                data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= self.ev_template.data["max_current_one_phase"] * 230
+                log.message_debug_log("debug", "reserved_evu_overhang 9 "+str(data.data.pv_data["all"].data["set"]["reserved_evu_overhang"]))
 
     def load_default_profile(self):
         """ prüft, ob nach dem Abstecken das Standardprofil geladen werden soll und lädt dieses ggf..
@@ -428,8 +428,8 @@ class chargeTemplate():
         message = None
         try:
             instant_charging = self.data["chargemode"]["instant_charging"]
-            if data.optional_data["optional"].data["et"]["active"] == True:
-                if data.optional_data["optional"].et_price_lower_than_limit() == False:
+            if data.data.optional_data["optional"].data["et"]["active"] == True:
+                if data.data.optional_data["optional"].et_price_lower_than_limit() == False:
                     message = "Keine Ladung, da der aktuelle Strompreis über dem maximalen Strompreis liegt."
                     return 0, "stop", message
             if instant_charging["limit"]["selected"] == "none":
@@ -558,8 +558,8 @@ class chargeTemplate():
                         # Liegt der Zieltermin innerhalb der nächsten 24h?
                         if timecheck.check_timeframe(current_plan, 24) == True:
                             # Wenn Elektronische Tarife aktiv sind, prüfen, ob jetzt ein günstiger Zeitpunkt zum Laden ist.
-                            if data.optional_data["optional"].data["et"]["active"] == True:
-                                hourlist = data.optional_data["optional"].et_get_loading_hours(
+                            if data.data.optional_data["optional"].data["et"]["active"] == True:
+                                hourlist = data.data.optional_data["optional"].et_get_loading_hours(
                                     duration)
                                 if timecheck.is_list_valid(hourlist) == True:
                                     return plan_data["available_current"], "instant_charging", message
