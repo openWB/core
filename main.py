@@ -17,28 +17,34 @@ import publishvars2
 import setdata
 import subdata
 
-def handler(loadvarsdone):
-    """ führt den Algorithmus durch.
+class HandlerAlgorithm():
+    def __init__(self):
+        self.heartbeat = False
 
-    Parameter
-    ---------
-    loadvardone: event
-        Event, das angibt, ob die loadvars abgearbeitet wurde.
-    """
-    try:
-        while loadvarsdone.wait():
-            loadvarsdone.clear()
-            try:
-                prep.setup_algorithm()
-                control.calc_current()
-                char.start_charging()
-            except Exception as e:
-                log.exception_logging(e)
-    except Exception as e:
-        log.exception_logging(e)
+    def run_handler(self, loadvarsdone):
+        """ führt den Algorithmus durch.
+
+        Parameter
+        ---------
+        loadvarsdone: event
+            Event, das angibt, ob die loadvars abgearbeitet wurde.
+        """
+        try:
+            while loadvarsdone.wait():
+                loadvarsdone.clear()
+                self.heartbeat = True
+                try:
+                    prep.setup_algorithm()
+                    control.calc_current()
+                    char.start_charging()
+                except Exception as e:
+                    log.exception_logging(e)
+        except Exception as e:
+            log.exception_logging(e)
 
 class RepeatedTimer(object):
-    """ https://stackoverflow.com/a/40965385
+    """ führt alle x Sekunden einen Thread aus, unabhängig davon, ob sich der Thread bei der vorherigen Ausführung aufgehängt etc hat.
+    https://stackoverflow.com/a/40965385
     """
     def __init__(self, interval, function, *args, **kwargs):
         self._timer = None
@@ -66,10 +72,31 @@ class RepeatedTimer(object):
         self._timer.cancel()
         self.is_running = False
 
+def handler5Min():
+    """ Handler, der alle 5 Minuten aufgerufen wird und die Heartbeats der Threads überprüft und die Aufgaben ausführt, die nur alle 5 Minuten ausgeführt werden müssen.
+    """
+    if handler.heartbeat == False:
+        pass
+    else:
+        handler.hartbeat = False
+
+    if sub.heartbeat == False:
+        pass
+    else:
+        sub.hartbeat = False
+
+    if set.heartbeat == False:
+        pass
+    else:
+        set.hartbeat = False
+
+    daily_log.save_daily_log()
+
 try:
     data.data_init()
     char = charge.charge()
     control = algorithm.control()
+    handler = HandlerAlgorithm()
     prep = prepare.prepare()
     loadvarsdone = threading.Event()
     event_ev_template = threading.Event()
@@ -80,7 +107,7 @@ try:
     sub = subdata.subData(event_ev_template, event_charge_template, loadvarsdone)
     t_sub = Thread(target=sub.sub_topics, args=())
     t_set = Thread(target=set.set_data, args=())
-    t_handler = Thread(target=handler, args=(loadvarsdone,))
+    t_handler = Thread(target=handler.run_handler, args=(loadvarsdone,))
 
 
     log.setup_logger()
@@ -88,7 +115,7 @@ try:
     t_sub.start()
     t_set.start()
     t_handler.start()
-    rt = RepeatedTimer(300, daily_log.save_daily_log)
+    rt = RepeatedTimer(300, handler5Min)
 
     publishvars2.pub_settings()
 except Exception as e:

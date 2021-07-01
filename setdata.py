@@ -15,6 +15,7 @@ class setData():
     def __init__(self, event_ev_template, event_charge_template):
         self.event_ev_template = event_ev_template
         self.event_charge_template = event_charge_template
+        self.heartbeat = False
 
     def set_data(self):
         """ abonniert alle set-Topics.
@@ -45,6 +46,7 @@ class setData():
         msg:
             enthält Topic und Payload
         """
+        self.heartbeat = True
         if "openWB/set/vehicle/" in msg.topic:
             if "openWB/set/vehicle/template/ev_template/" in msg.topic:
                 self.event_ev_template.wait(5)
