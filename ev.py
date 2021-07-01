@@ -276,7 +276,8 @@ class ev():
         message = None
         phases_to_use = phases_in_use
         try:
-            if self.ev_template.data["prevent_switch_stop"] == False:
+            # Wenn gerade umgeschaltet wird, darf kein Timer gestartet werden.
+            if self.ev_template.data["prevent_switch_stop"] == False and self.data["control_parameter"]["timestamp_perform_phase_switch"] == "0":
                 pv_config = data.data.general_data["general"].data["chargemode_config"]["pv_charging"]
                 # 1 -> 3
                 if phases_in_use == 1:
@@ -353,16 +354,6 @@ class ev():
             else:
                 data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= self.data["control_parameter"]["required_current"] * 3 * 230 - self.ev_template.data["max_current_one_phase"] * 230
                 log.message_debug_log("debug", "reserved_evu_overhang 7 "+str(data.data.pv_data["all"].data["set"]["reserved_evu_overhang"]))
-        elif self.data["control_parameter"]["timestamp_perform_phase_switch"] != "0":
-            self.data["control_parameter"]["timestamp_perform_phase_switch"] = "0"
-            pub.pub("openWB/set/vehicle/"+str(self.ev_num)+"/control_parameter/timestamp_perform_phase_switch", "0")
-            # Leistung freigeben, wird dann neu zugeteilt
-            if self.data["control_parameter"]["phases"] == 3:
-                data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= self.data["control_parameter"]["required_current"] * 3 * 230
-                log.message_debug_log("debug", "reserved_evu_overhang 8 "+str(data.data.pv_data["all"].data["set"]["reserved_evu_overhang"]))
-            else:
-                data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= self.ev_template.data["max_current_one_phase"] * 230
-                log.message_debug_log("debug", "reserved_evu_overhang 9 "+str(data.data.pv_data["all"].data["set"]["reserved_evu_overhang"]))
 
     def load_default_profile(self):
         """ prüft, ob nach dem Abstecken das Standardprofil geladen werden soll und lädt dieses ggf..

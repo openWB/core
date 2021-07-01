@@ -18,6 +18,8 @@ class charge():
                     if "cp" in cp:
                         chargepoint = data.data.cp_data[cp]
                         if chargepoint.data["set"]["charging_ev"] != -1:
+                            # Ladelog-Daten müssen vor dem Setzen des Stroms gesammelt werden, 
+                            # damit bei Phasenumschaltungs-empfindlichen EV sicher noch nicht geladen wurde.
                             chargelog.collect_data(chargepoint)
                             chargepoint.initiate_control_pilot_interruption()
                             chargepoint.initiate_phase_switch()
@@ -45,23 +47,28 @@ class charge():
         """
         try:
             charging_ev = chargepoint.data["set"]["charging_ev_data"]
-            # Keine Umschaltung im Gange
-            if charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] == "0":
-                current = round(chargepoint.data["set"]["current"], 2)
-                # Zur Sicherheit - nach dem der Algorithmus abgeschlossen ist - nochmal die Einhaltung der Stromstärken prüfen.
-                current = charging_ev.check_min_max_current(current, charging_ev.data["control_parameter"]["phases"])
+            
+            current = round(chargepoint.data["set"]["current"], 2)
+            # Zur Sicherheit - nach dem der Algorithmus abgeschlossen ist - nochmal die Einhaltung der Stromstärken prüfen.
+            current = charging_ev.check_min_max_current(current, charging_ev.data["control_parameter"]["phases"])
 
-                # Unstimmige Werte loggen
-                if (charging_ev.data["control_parameter"]["timestamp_switch_on_off"] != "0" and
-                        chargepoint.data["get"]["charge_state"] == False and 
-                        data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] == 0):
-                    log.message_debug_log("error", "Reservierte Leistung kann am Algorithmus-Ende nicht 0 sein.")
-                if (chargepoint.data["set"]["charging_ev_data"].ev_template.data["prevent_switch_stop"] == True and
-                        chargepoint.data["get"]["charge_state"] == True and
-                        chargepoint.data["set"]["current"] == 0):
-                    log.message_debug_log("error", "LP"+str(chargepoint.cp_num)+": Ladung wurde trotz verhinderter Unterbrechung gestoppt.")
-                
-                pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/set/current", current)
-                log.message_debug_log("debug", "LP"+str(chargepoint.cp_num)+": set current "+str(current)+" A")
+            # Wenn bei einem EV, das keine Umschaltung verträgt, vor dem ersten Laden noch umgeschaltet wird, darf kein Strom gesetzt werden.
+            if (charging_ev.ev_template.data["prevent_switch_stop"] == True and 
+                    charging_ev.data["get"]["charged_since_plugged_counter"] == 0 and 
+                    charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] != "0"):
+                current = 0
+
+            # Unstimmige Werte loggen
+            if (charging_ev.data["control_parameter"]["timestamp_switch_on_off"] != "0" and
+                    chargepoint.data["get"]["charge_state"] == False and 
+                    data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] == 0):
+                log.message_debug_log("error", "Reservierte Leistung kann am Algorithmus-Ende nicht 0 sein.")
+            if (chargepoint.data["set"]["charging_ev_data"].ev_template.data["prevent_switch_stop"] == True and
+                    chargepoint.data["get"]["charge_state"] == True and
+                    chargepoint.data["set"]["current"] == 0):
+                log.message_debug_log("error", "LP"+str(chargepoint.cp_num)+": Ladung wurde trotz verhinderter Unterbrechung gestoppt.")
+            
+            pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/set/current", current)
+            log.message_debug_log("debug", "LP"+str(chargepoint.cp_num)+": set current "+str(current)+" A")
         except Exception as e:
             log.exception_logging(e)

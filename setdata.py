@@ -171,14 +171,17 @@ class setData():
         value:
             Wert, der geschrieben werden soll.
         """
-        if len(key_list) == 1:
-            next_level[key_list[0]] = value
-        else:
-            if key_list[0] not in next_level:
-                next_level[key_list[0]] = {}
-            next_key = key_list[0]
-            key_list.pop(0)
-            self._change_key(next_level[next_key], key_list, value)
+        try:
+            if len(key_list) == 1:
+                next_level[key_list[0]] = value
+            else:
+                if key_list[0] not in next_level:
+                    next_level[key_list[0]] = {}
+                next_key = key_list[0]
+                key_list.pop(0)
+                self._change_key(next_level[next_key], key_list, value)
+        except Exception as e:
+            log.exception_logging(e)
 
     def _validate_collection_value(self, msg, data_type, ranges = None, collection = None):
         """ prüft, ob die Liste vom angegebenen Typ ist und ob Minimal- und Maximalwert eingehalten werden.
@@ -196,23 +199,26 @@ class setData():
         collection = list/dict
             Angabe, ob und welche Kollektion erwartet wird
         """
-        valid = False
-        value = json.loads(str(msg.payload.decode("utf-8")))
-        if isinstance(value, list) == True:
-            for item in value:
-                if self._validate_min_max_value(item, msg, data_type, ranges) == False:
-                    break
+        try:
+            valid = False
+            value = json.loads(str(msg.payload.decode("utf-8")))
+            if isinstance(value, list) == True:
+                for item in value:
+                    if self._validate_min_max_value(item, msg, data_type, ranges) == False:
+                        break
+                else:
+                    valid = True
+            elif isinstance(value, dict) == True:
+                for item in value.values():
+                    if self._validate_min_max_value(item, msg, data_type, ranges) == False:
+                        break
+                else:
+                    valid = True
             else:
-                valid = True
-        elif isinstance(value, dict) == True:
-            for item in value.values():
-                if self._validate_min_max_value(item, msg, data_type, ranges) == False:
-                    break
-            else:
-                valid = True
-        else:
-            log.message_debug_log("error", "Payload ungueltig: Topic "+str(msg.topic)+", Payload "+str(value)+" sollte eine Kollektion vom Typ "+str(collection)+" sein.")
-        return valid
+                log.message_debug_log("error", "Payload ungueltig: Topic "+str(msg.topic)+", Payload "+str(value)+" sollte eine Kollektion vom Typ "+str(collection)+" sein.")
+            return valid
+        except Exception as e:
+            log.exception_logging(e)
 
     def _validate_min_max_value(self, value, msg, data_type, ranges = None):
         """ prüft, ob der Payload Minimal- und Maximalwert einhält.
@@ -230,30 +236,33 @@ class setData():
         max_value= int/float
             Maximalwert
         """
-        valid = True
-        # Wenn es ein Float erwartet wird, kann auch ein Int akzeptiert werden. Da dies automatisch umgewandelt wird, falls erfoderlich.
-        if isinstance(value, data_type) == True or (data_type == float and isinstance(value, int) == True):
-            if ranges != None:
-                for range in ranges:
-                    if range[0] != None and range[1] != None:
-                        if range[0] <= value <= range[1]:
-                            break
-                    elif range[0] != None:
-                        if value >= range[0]:
-                            break
-                    elif range[1] != None:
-                        if value <= range[1]:
-                            break
-                else:
-                    log.message_debug_log("error", "Payload ungueltig: Topic "+str(msg.topic)+", Payload "+str(value)+" liegt in keinem der angegebenen Wertebereiche.")
-                    valid = False
-        else:
-            if data_type == int:
-                log.message_debug_log("error", "Payload ungueltig: Topic "+str(msg.topic)+", Payload "+str(value)+" sollte ein Int sein.")
-            elif data_type == float:
-                log.message_debug_log("error", "Payload ungueltig: Topic "+str(msg.topic)+", Payload "+str(value)+" sollte ein Float sein.")
-            valid = False
-        return valid
+        try:
+            valid = True
+            # Wenn es ein Float erwartet wird, kann auch ein Int akzeptiert werden. Da dies automatisch umgewandelt wird, falls erfoderlich.
+            if isinstance(value, data_type) == True or (data_type == float and isinstance(value, int) == True):
+                if ranges != None:
+                    for range in ranges:
+                        if range[0] != None and range[1] != None:
+                            if range[0] <= value <= range[1]:
+                                break
+                        elif range[0] != None:
+                            if value >= range[0]:
+                                break
+                        elif range[1] != None:
+                            if value <= range[1]:
+                                break
+                    else:
+                        log.message_debug_log("error", "Payload ungueltig: Topic "+str(msg.topic)+", Payload "+str(value)+" liegt in keinem der angegebenen Wertebereiche.")
+                        valid = False
+            else:
+                if data_type == int:
+                    log.message_debug_log("error", "Payload ungueltig: Topic "+str(msg.topic)+", Payload "+str(value)+" sollte ein Int sein.")
+                elif data_type == float:
+                    log.message_debug_log("error", "Payload ungueltig: Topic "+str(msg.topic)+", Payload "+str(value)+" sollte ein Float sein.")
+                valid = False
+            return valid
+        except Exception as e:
+            log.exception_logging(e)
  
     def process_vehicle_topic(self, client, userdata, msg):
         """ Handler für die EV-Topics
@@ -737,27 +746,6 @@ class setData():
                 self._validate_value(msg, int, [(0, 2)])
             elif re.search("^openWB/set/counter/[0-9]/get/fault_str$", msg.topic) != None:
                 self._validate_value(msg, str)
-            else:
-                log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
-                pub.pub(msg.topic, "")
-        except Exception as e:
-            log.exception_logging(e)
-
-    def process_graph_topic(self, client, userdata, msg):
-        """ Handler für die Graph-Topics
-
-         Parameters
-        ----------
-        client : (unused)
-            vorgegebener Parameter
-        userdata : (unused)
-            vorgegebener Parameter
-        msg:
-            enthält Topic und Payload
-        """
-        try:
-            if False:
-                pass
             else:
                 log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
                 pub.pub(msg.topic, "")
