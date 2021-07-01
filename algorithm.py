@@ -615,7 +615,7 @@ class control():
                     try:
                         # Runterregeln
                         remaining_current_overshoot = self._down_regulation(mode, chargepoints, remaining_current_overshoot, overloaded_counters[0][1][1], prevent_stop = True)
-                        if remaining_current_overshoot == 0:
+                        if remaining_current_overshoot <= 0:
                             # LP kann nun wie gewünscht eingeschaltet werden
                             self._process_data(chargepoint, chargepoint.data["set"]["charging_ev_data"].data["control_parameter"]["required_current"])
                             break
@@ -623,7 +623,7 @@ class control():
                             # Abschalten
                             if chargepoint.data["set"]["charging_ev_data"].ev_template.data["prevent_switch_stop"] == False:
                                 remaining_current_overshoot = self._down_regulation(mode, chargepoints, remaining_current_overshoot, overloaded_counters[0][1][1], prevent_stop = False)
-                                if remaining_current_overshoot == 0:
+                                if remaining_current_overshoot <= 0:
                                     # LP kann nun wie gewünscht eingeschaltet werden
                                     self._process_data(chargepoint, chargepoint.data["set"]["charging_ev_data"].data["control_parameter"]["required_current"])
                                     break
@@ -1076,7 +1076,7 @@ def use_evu_bat_power(chargepoint, required_power, required_current, phases, pv_
         if return_power != 0:
             required_current += return_power / phases / 230
             required_current = chargepoint.data["set"]["charging_ev_data"].check_min_max_current(required_current, phases, pv = True)
-        loadmanagement_state, overloaded_counters = loadmanagement.loadmanagement_for_cp(chargepoint, required_power-return_power, required_current, phases)
+        loadmanagement_state, overloaded_counters = loadmanagement.loadmanagement_for_cp(chargepoint, required_power-return_power, (required_power-return_power)/230/phases, phases)
         if loadmanagement_state == True:
             overloaded_counters = sorted(overloaded_counters.items(), key=lambda e: e[1][1], reverse = True)
             # Wenn max_overshoot_phase -1 ist, wurde die maximale Gesamtleistung überschrittten und max_current_overshoot muss, 

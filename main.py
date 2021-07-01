@@ -91,6 +91,7 @@ def handler5Min():
         set.hartbeat = False
 
     daily_log.save_daily_log()
+    data.data.general_data["general"].grid_protection()
 
 try:
     data.data_init()

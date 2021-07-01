@@ -232,7 +232,7 @@ def pub_settings():
     hierarchy = [{"id": "counter0", "children": [{"id": "cp1", "children": []}, {"id": "cp2", "children": []}, {"id": "cp3", "children": []}]}]
     #hierarchy = [{"id": "counter0", "children": [{"id": "cp1", "children": []}]}]
     pub.pub("openWB/set/counter/get/hierarchy", hierarchy)
-    #pub.pub("openWB/set/counter/0/get/current", [0,0,0])
+    pub.pub("openWB/set/counter/0/get/frequency", 50.2)
     pub.pub("openWB/set/counter/0/config", {"max_current": [30, 30, 30], "max_consumption": 30000})
 
     # bat
@@ -244,7 +244,7 @@ def pub_settings():
     pub.pub("openWB/set/general/chargemode_config/individual_mode", True)
     pub.pub("openWB/set/general/chargemode_config/unbalanced_load", False)
     pub.pub("openWB/set/general/chargemode_config/unbalanced_load_limit", 18)
-    pub.pub("openWB/set/general/chargemode_config/instant_charging/phases_to_use", 1)
+    pub.pub("openWB/set/general/chargemode_config/instant_charging/phases_to_use", 3)
     # pub.pub("openWB/set/general/chargemode_config/pv_charging/bat_prio", 1)
     pub.pub("openWB/set/bat/config/configured", False)
     pub.pub("openWB/set/general/chargemode_config/pv_charging/switch_on_soc", 60)
@@ -266,5 +266,4 @@ def pub_settings():
     pub.pub("openWB/set/general/chargemode_config/stop/phases_to_use", 1)
     pub.pub("openWB/set/general/range_unit", "km")
     pub.pub("openWB/set/general/price_kwh", 0.2)
-    pub.pub("openWB/set/general/grid_protection_configured", False)
-    pub.pub("openWB/set/general/grid_protection_active", False)
+    pub.pub("openWB/set/general/grid_protection_configured", True)

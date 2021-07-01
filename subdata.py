@@ -82,13 +82,13 @@ class subData():
             self.process_bat_topic(client, userdata, msg)
         elif "openWB/general/" in msg.topic:
             self.process_general_topic(client, userdata, msg)
-        elif "openWB//optional/" in msg.topic:
+        elif "openWB/optional/" in msg.topic:
             self.process_optional_topic(client, userdata, msg)
         elif "openWB/counter/" in msg.topic:
             self.process_counter_topic(client, userdata, msg)
         elif "openWB/log/" in msg.topic:
             self.process_log_topic(client, userdata, msg)
-        elif "openWB/set/loadvarsdone" in msg.topic:
+        elif "openWB/loadvarsdone" in msg.topic:
             self.process_loadvarsdone(client, userdata, msg)
 
     def getserial(self):

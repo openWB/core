@@ -1,7 +1,9 @@
 """Allgemeine Einstellungen
 """
 
+import data
 import log
+import pub
 
 
 class general():
@@ -34,3 +36,25 @@ class general():
         except Exception as e:
             log.exception_logging(e)
             return 1
+
+    def grid_protection(self):
+        """ Wenn der Netschutz konfiguriert ist, wird geprüft, ob die Frequenz außerhalb des Normalbereichs liegt 
+        und dann der Netzschutz aktiviert. Bei der Ermittlung des benötigten Stroms im EV-Modul wird geprüft, ob 
+        der Netzschutz aktiv ist und dann die Ladung gestoppt.
+        """
+        try:
+            if self.data["grid_protection_configured"] == True:
+                frequency = data.data.counter_data["counter0"].data["get"]["frequency"] * 100
+                grid_protection_active = self.data["grid_protection_active"]
+                if grid_protection_active == False:
+                    if 4500 < frequency < 4920 or 5180 < frequency < 5300:
+                        self.data["grid_protection_active"] = True
+                        pub.pub("openWB/set/general/grid_protection_active", self.data["grid_protection_active"])
+                        log.message_debug_log("info", "Netzschutz aktiv! Frequenz: "+str(data.data.counter_data["counter0"].data["get"]["frequency"])+"Hz")
+                else:
+                    if 4962 < frequency < 5100:
+                        self.data["grid_protection_active"] = False
+                        pub.pub("openWB/set/general/grid_protection_active", self.data["grid_protection_active"])
+                        log.message_debug_log("info", "Netzfrequenz wieder im normalen Bereich. Frequenz: "+str(data.data.counter_data["counter0"].data["get"]["frequency"])+"Hz")
+        except Exception as e:
+            log.exception_logging(e)

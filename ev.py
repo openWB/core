@@ -118,20 +118,24 @@ class ev():
         message = None
         state = True
         try:
-            if self.charge_template.data["chargemode"]["selected"] == "scheduled_charging":
-                required_current, submode, message = self.charge_template.scheduled_charging(self.data["get"]["soc"], self.ev_template, self.data["control_parameter"]["phases"])
-            elif self.charge_template.data["time_charging"]["active"] == True:
-                required_current, submode, message = self.charge_template.time_charging()
-            if (required_current == 0) or (required_current == None):
-                if self.charge_template.data["chargemode"]["selected"] == "instant_charging":
-                    required_current, submode, message = self.charge_template.instant_charging(self.data["get"]["soc"], self.data["get"]["charged_since_mode_switch"])
-                elif self.charge_template.data["chargemode"]["selected"] == "pv_charging":
-                    required_current, submode, message = self.charge_template.pv_charging(self.data["get"]["soc"])
-                elif self.charge_template.data["chargemode"]["selected"] == "standby":
-                    required_current, submode, message = self.charge_template.standby()
-                    
-                elif self.charge_template.data["chargemode"]["selected"] == "stop":
-                 required_current, submode, message = self.charge_template.stop()
+            if data.data.general_data["general"].data["grid_protection_active"] == True:
+                required_current = 0
+                submode = "stop"
+                message = "Keine Ladung, da der Netzschutz aktiv ist."
+            else:
+                if self.charge_template.data["chargemode"]["selected"] == "scheduled_charging":
+                    required_current, submode, message = self.charge_template.scheduled_charging(self.data["get"]["soc"], self.ev_template, self.data["control_parameter"]["phases"])
+                elif self.charge_template.data["time_charging"]["active"] == True:
+                    required_current, submode, message = self.charge_template.time_charging()
+                if (required_current == 0) or (required_current == None):
+                    if self.charge_template.data["chargemode"]["selected"] == "instant_charging":
+                        required_current, submode, message = self.charge_template.instant_charging(self.data["get"]["soc"], self.data["get"]["charged_since_mode_switch"])
+                    elif self.charge_template.data["chargemode"]["selected"] == "pv_charging":
+                        required_current, submode, message = self.charge_template.pv_charging(self.data["get"]["soc"])
+                    elif self.charge_template.data["chargemode"]["selected"] == "standby":
+                        required_current, submode, message = self.charge_template.standby()
+                    elif self.charge_template.data["chargemode"]["selected"] == "stop":
+                        required_current, submode, message = self.charge_template.stop()
             if submode == "stop" or (self.charge_template.data["chargemode"]["selected"] == "stop"):
                 state = False
 
