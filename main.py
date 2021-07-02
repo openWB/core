@@ -92,6 +92,7 @@ def handler5Min():
 
     daily_log.save_daily_log()
     data.data.general_data["general"].grid_protection()
+    data.data.optional_data["optional"].et_get_prices()
 
 try:
     data.data_init()

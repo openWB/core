@@ -681,15 +681,16 @@ class setData():
                 self._validate_value(msg, int, [(16, 32)])
             elif re.search("^openWB/set/optional/et/active$", msg.topic) != None:
                 self._validate_value(msg, int, [(0, 1)])
-            elif (re.search("^openWB/set/optional/et/provider$", msg.topic) != None or
-                    re.search("^openWB/set/optional/et/set/timestamp_updated_prices$", msg.topic) != None):
-                self._validate_value(msg, str)
-            elif re.search("^openWB/set/optional/et/get/pricedict$", msg.topic) != None:
-                self._validate_value(msg, float, collection=dict)
+            elif re.search("^openWB/set/optional/et/get/price_list$", msg.topic) != None:
+                self._validate_value(msg, "json")
             elif re.search("^openWB/set/optional/et/get/price$", msg.topic) != None:
                 self._validate_value(msg, float)
+            elif re.search("^openWB/set/optional/et/get/source$", msg.topic) != None:
+                self._validate_value(msg, str)
             elif re.search("^openWB/set/optional/et/config/max_price$", msg.topic) != None:
                 self._validate_value(msg, float)
+            elif re.search("^openWB/set/optional/et/config/provider$", msg.topic) != None:
+                self._validate_value(msg, "json")
             elif re.search("^openWB/set/optional/rfid/mode$", msg.topic) != None:
                 self._validate_value(msg, int, [(1, 2)])
             elif re.search("^openWB/set/optional/rfid/match_ev_per_tag_only$", msg.topic) != None:
