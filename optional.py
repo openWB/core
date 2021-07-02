@@ -5,6 +5,7 @@ from math import ceil #Aufrunden
 
 import awattargetprices
 import log
+import tibbergetprices
 
 class optional():
     """
@@ -60,6 +61,8 @@ class optional():
             if self.data["et"]["active"] == True:
                 if self.data["et"]["config"]["provider"]["provider"] == "awattar":
                     awattargetprices.update_pricedata(self.data["et"]["config"]["provider"]["country"], 0)
+                elif self.data["et"]["config"]["provider"]["provider"] == "tibber":
+                    tibbergetprices.update_pricedata(self.data["et"]["config"]["provider"]["token"], self.data["et"]["config"]["provider"]["id"])
                 else:
                     log.message_debug_log("error", "Unbekannter Et-Provider.")
         except Exception as e:

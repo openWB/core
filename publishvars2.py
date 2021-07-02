@@ -218,7 +218,8 @@ def pub_settings():
     # optional
     pub.pub("openWB/set/optional/et/active", False)
     pub.pub("openWB/set/optional/et/config/max_price", 5.5)
-    pub.pub("openWB/set/optional/et/config/provider", {"provider": "awattar", "country": "de"})
+    #pub.pub("openWB/set/optional/et/config/provider", {"provider": "awattar", "country": "de"})
+    pub.pub("openWB/set/optional/et/config/provider", {"provider": "tibber", "token": "d1007ead2dc84a2b82f0de19451c5fb22112f7ae11d19bf2bedb224a003ff74a", "id": "c70dcbe5-4485-4821-933d-a8a86452737b"})
     pub.pub("openWB/set/optional/rfid/mode", 2)
     pub.pub("openWB/set/optional/rfid/match_ev_per_tag_only", 1)
 
