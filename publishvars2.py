@@ -7,28 +7,28 @@ def pub_settings():
     # cp1
     pub.pub("openWB/set/chargepoint/1/set/manual_lock", False)
     pub.pub("openWB/set/chargepoint/1/get/plug_time", "6/28/2021, 08:17:22")
-    pub.pub("openWB/set/chargepoint/1/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 0, "auto_phase_switch_hw": True, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_adress": "192.168.1.221", "chargepoint": 1}}}})
+    pub.pub("openWB/set/chargepoint/1/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 0, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_adress": "192.168.1.221", "chargepoint": 1}}}})
     # cpt1
     pub.pub("openWB/set/chargepoint/template/1/autolock/1/frequency/selected", "daily")
     pub.pub("openWB/set/chargepoint/template/1/autolock/1/time", ["07:00", "16:15"])
     pub.pub("openWB/set/chargepoint/template/1/autolock/1/active", True)
     pub.pub("openWB/set/chargepoint/template/1/autolock/wait_for_charging_end", False)
     pub.pub("openWB/set/chargepoint/template/1/autolock/active", True)
-    pub.pub("openWB/set/chargepoint/template/1/ev", 1)
+    #pub.pub("openWB/set/chargepoint/template/1/ev", 1)
     pub.pub("openWB/set/chargepoint/template/1/rfid_enabling", False)
     pub.pub("openWB/set/chargepoint/template/1/valid_tags", ["8910"])
 
     # # cp2
     pub.pub("openWB/set/chargepoint/2/set/manual_lock", False)
     pub.pub("openWB/set/chargepoint/2/get/plug_time", "6/28/2021, 08:21:22")
-    pub.pub("openWB/set/chargepoint/2/config", {"name": "LP2", "template": 2, "connected_phases": 3, "phase_1": 0, "auto_phase_switch_hw": True, "control_pilot_interruption_hw": False})
+    pub.pub("openWB/set/chargepoint/2/config", {"name": "LP2", "template": 2, "connected_phases": 3, "phase_1": 0, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": False})
     # # cpt2
     pub.pub("openWB/set/chargepoint/template/2/autolock/1/frequency/selected", "daily")
     pub.pub("openWB/set/chargepoint/template/2/autolock/1/time", ["07:00", "11:20"])
     pub.pub("openWB/set/chargepoint/template/2/autolock/1/active", False)
     pub.pub("openWB/set/chargepoint/template/2/autolock/wait_for_charging_end", True)
     pub.pub("openWB/set/chargepoint/template/2/autolock/active", False)
-    pub.pub("openWB/set/chargepoint/template/2/ev", 2)
+    #pub.pub("openWB/set/chargepoint/template/2/ev", 2)
     pub.pub("openWB/set/chargepoint/template/2/rfid_enabling", False)
     pub.pub("openWB/set/chargepoint/template/2/valid_tags", ["8910"])
 
@@ -42,7 +42,7 @@ def pub_settings():
     pub.pub("openWB/set/chargepoint/template/3/autolock/1/active", True)
     pub.pub("openWB/set/chargepoint/template/3/autolock/wait_for_charging_end", True)
     pub.pub("openWB/set/chargepoint/template/3/autolock/active", False)
-    pub.pub("openWB/set/chargepoint/template/3/ev", 3)
+    #pub.pub("openWB/set/chargepoint/template/3/ev", 3)
     pub.pub("openWB/set/chargepoint/template/3/rfid_enabling", False)
     pub.pub("openWB/set/chargepoint/template/3/valid_tags", ["8910"])
 
