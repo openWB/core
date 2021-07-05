@@ -38,6 +38,7 @@ class subData():
         self.event_ev_template = event_ev_template
         self.event_charge_template = event_charge_template
         self.loadvarsdone = loadvarsdone
+        self.heartbeat = False
 
     def sub_topics(self):
         """ abonniert alle Topics.
@@ -51,21 +52,44 @@ class subData():
 
             client.on_connect = self.on_connect
             client.on_message = self.on_message
-            client.message_callback_add("openWB/vehicle/#", self.process_vehicle_topic)
-            client.message_callback_add("openWB/chargepoint/#", self.process_chargepoint_topic)
-            client.message_callback_add("openWB/pv/#", self.process_pv_topic)
-            client.message_callback_add("openWB/bat/#", self.process_bat_topic)
-            client.message_callback_add("openWB/general/#", self.process_general_topic)
-            client.message_callback_add("openWB/optional/#", self.process_optional_topic)
-            client.message_callback_add("openWB/counter/#", self.process_counter_topic)
-            client.message_callback_add("openWB/log/#", self.process_log_topic)
-            client.message_callback_add("openWB/loadvarsdone", self.process_loadvarsdone)
+            client.message_callback_add("openWB/vehicle/#", self._process_topics)
+            client.message_callback_add("openWB/chargepoint/#", self._process_topics)
+            client.message_callback_add("openWB/pv/#", self._process_topics)
+            client.message_callback_add("openWB/bat/#", self._process_topics)
+            client.message_callback_add("openWB/general/#", self._process_topics)
+            client.message_callback_add("openWB/optional/#", self._process_topics)
+            client.message_callback_add("openWB/counter/#", self._process_topics)
+            client.message_callback_add("openWB/log/#", self._process_topics)
+            client.message_callback_add("openWB/loadvarsdone", self._process_topics)
 
             client.connect(mqtt_broker_ip, 1883)
             client.loop_forever()
             client.disconnect()
         except Exception as e:
             log.exception_logging(e)
+
+    def _process_topics(self, client, userdata, msg):
+        """
+        """
+        self.heartbeat = True
+        if "openWB/vehicle/" in msg.topic:
+            self.process_vehicle_topic(client, userdata, msg)
+        elif "openWB/chargepoint/" in msg.topic:
+            self.process_chargepoint_topic(client, userdata, msg)
+        elif "openWB/pv/" in msg.topic:
+            self.process_pv_topic(client, userdata, msg)
+        elif "openWB/bat/" in msg.topic:
+            self.process_bat_topic(client, userdata, msg)
+        elif "openWB/general/" in msg.topic:
+            self.process_general_topic(client, userdata, msg)
+        elif "openWB/optional/" in msg.topic:
+            self.process_optional_topic(client, userdata, msg)
+        elif "openWB/counter/" in msg.topic:
+            self.process_counter_topic(client, userdata, msg)
+        elif "openWB/log/" in msg.topic:
+            self.process_log_topic(client, userdata, msg)
+        elif "openWB/loadvarsdone" in msg.topic:
+            self.process_loadvarsdone(client, userdata, msg)
 
     def getserial(self):
         """ Extract serial from cpuinfo file

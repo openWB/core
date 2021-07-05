@@ -460,9 +460,10 @@ class chargepoint():
                     elif charging_ev.data["control_parameter"]["phases"] == 1:
                         data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= charging_ev.ev_template.data["max_current_one_phase"] * 230
                 else:
-                    if charging_ev.data["control_parameter"]["phases"] == 3:
+                    # Wenn eine Umschaltung im Gange ist, muss erst gewartet werden, bis diese fertig ist.
+                    if self.data["set"]["phases_to_use"] == 3:
                         message = "Umschaltung von 1 auf 3 Phasen."
-                    elif charging_ev.data["control_parameter"]["phases"] == 1:
+                    elif self.data["set"]["phases_to_use"] == 1:
                         message = "Umschaltung von 3 auf 1 Phase."
                     self.data["get"]["state_str"] = message
                 return
@@ -472,8 +473,8 @@ class chargepoint():
                 if "phases_to_use" not in self.data["set"]:
                     pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/phases_to_use", charging_ev.data["control_parameter"]["phases"])
                     self.data["set"]["phases_to_use"] = charging_ev.data["control_parameter"]["phases"]
-                # Wenn eine Umschaltung im Gange ist, muss erst gewartet werden, bis diese fertig ist.
-                if self.data["set"]["phases_to_use"] != charging_ev.data["control_parameter"]["phases"]:
+                # Wenn die Umschaltverzögerung aktiv ist, darf nicht umgeschaltet werden.
+                if self.data["set"]["phases_to_use"] != charging_ev.data["control_parameter"]["phases"] and charging_ev.data["control_parameter"]["timestamp_auto_phase_switch"] == "0":
                     if self.data["config"]["auto_phase_switch_hw"] == True:
                         pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/phases_to_use", charging_ev.data["control_parameter"]["phases"])
                         log.message_debug_log("debug", "start phase switch phases_to_use "+str(self.data["set"]["phases_to_use"])+"control_parameter phases "+str(charging_ev.data["control_parameter"]["phases"]))

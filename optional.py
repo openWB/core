@@ -1,13 +1,11 @@
 """Optionale Module
 """
 
-from heapq import nsmallest 
 from math import ceil #Aufrunden
 
-import modules.et_awattar.awattargetprices as awattargetprices
+import awattargetprices
 import log
-import pub
-import timecheck
+import tibbergetprices
 
 class optional():
     """
@@ -15,6 +13,8 @@ class optional():
 
     def __init__(self):
         self.data={}
+        self.data["et"] = {}
+        self.data["et"]["get"] = {}
     
     def et_price_lower_than_limit(self):
         """ prüft, ob der aktuelle Strompreis unter der festgelegten Preisgrenze liegt.
@@ -25,12 +25,12 @@ class optional():
         False: Preis liegt darüber
         """
         try:
-            self.et_get_prices()
-            if self.data["et"]["get"]["price"] < self.data["et"]["config"]["max_price"]:
+            if self.data["et"]["get"]["price"] <= self.data["et"]["config"]["max_price"]:
                 return True
             else:
                 return False
         except Exception as e:
+            self.et_get_prices()
             log.exception_logging(e)
             return False
 
@@ -47,10 +47,10 @@ class optional():
         list: Key des Dictionarys (Unix-Sekunden der günstigen Stunden)
         """
         try:
-            self.et_get_prices()
-            pricedict = self.data["et"]["get"]["pricedict"]
-            return nsmallest(ceil(duration), pricedict, key = pricedict.get)
+            price_list = self.data["et"]["get"]["price_list"]
+            return [i[0] for i in sorted(price_list, key=lambda x: x[1])[:ceil(duration)]]
         except Exception as e:
+            self.et_get_prices()
             log.exception_logging(e)
             return []
 
@@ -58,17 +58,12 @@ class optional():
         """
         """
         try:
-            if "set" not in self.data["et"]:
-                    self.data["et"]["set"] = {}
-                    self.data["et"]["set"]["timestamp_updated_prices"] = timecheck.create_timestamp()
-            if timecheck.check_timestamp(self.data["et"]["set"]["timestamp_updated_prices"], 58*60) == False:
-                if self.data["et"]["provider"] == "awattar":
-                    awattargetprices.awattar_get_prices()
-                    pub.pub_dict("etprovidergraphlist", "openWB/optional/et/get/pricedict")
-                    pub.pub_float("etproviderprice", "openWB/optional/et/get/price")
+            if self.data["et"]["active"] == True:
+                if self.data["et"]["config"]["provider"]["provider"] == "awattar":
+                    awattargetprices.update_pricedata(self.data["et"]["config"]["provider"]["country"], 0)
+                elif self.data["et"]["config"]["provider"]["provider"] == "tibber":
+                    tibbergetprices.update_pricedata(self.data["et"]["config"]["provider"]["token"], self.data["et"]["config"]["provider"]["id"])
                 else:
                     log.message_debug_log("error", "Unbekannter Et-Provider.")
-                self.data["et"]["set"]["timestamp_updated_prices"] = timecheck.create_timestamp()
-                pub.pub("openWB/set/optional/et/set/timestamp_updated_prices", self.data["et"]["set"]["timestamp_updated_prices"])
         except Exception as e:
             log.exception_logging(e)

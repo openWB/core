@@ -118,20 +118,24 @@ class ev():
         message = None
         state = True
         try:
-            if self.charge_template.data["chargemode"]["selected"] == "scheduled_charging":
-                required_current, submode, message = self.charge_template.scheduled_charging(self.data["get"]["soc"], self.ev_template, self.data["control_parameter"]["phases"])
-            elif self.charge_template.data["time_charging"]["active"] == True:
-                required_current, submode, message = self.charge_template.time_charging()
-            if (required_current == 0) or (required_current == None):
-                if self.charge_template.data["chargemode"]["selected"] == "instant_charging":
-                    required_current, submode, message = self.charge_template.instant_charging(self.data["get"]["soc"], self.data["get"]["charged_since_mode_switch"])
-                elif self.charge_template.data["chargemode"]["selected"] == "pv_charging":
-                    required_current, submode, message = self.charge_template.pv_charging(self.data["get"]["soc"])
-                elif self.charge_template.data["chargemode"]["selected"] == "standby":
-                    required_current, submode, message = self.charge_template.standby()
-                    
-                elif self.charge_template.data["chargemode"]["selected"] == "stop":
-                 required_current, submode, message = self.charge_template.stop()
+            if data.data.general_data["general"].data["grid_protection_active"] == True:
+                required_current = 0
+                submode = "stop"
+                message = "Keine Ladung, da der Netzschutz aktiv ist."
+            else:
+                if self.charge_template.data["chargemode"]["selected"] == "scheduled_charging":
+                    required_current, submode, message = self.charge_template.scheduled_charging(self.data["get"]["soc"], self.ev_template, self.data["control_parameter"]["phases"])
+                elif self.charge_template.data["time_charging"]["active"] == True:
+                    required_current, submode, message = self.charge_template.time_charging()
+                if (required_current == 0) or (required_current == None):
+                    if self.charge_template.data["chargemode"]["selected"] == "instant_charging":
+                        required_current, submode, message = self.charge_template.instant_charging(self.data["get"]["soc"], self.data["get"]["charged_since_mode_switch"])
+                    elif self.charge_template.data["chargemode"]["selected"] == "pv_charging":
+                        required_current, submode, message = self.charge_template.pv_charging(self.data["get"]["soc"])
+                    elif self.charge_template.data["chargemode"]["selected"] == "standby":
+                        required_current, submode, message = self.charge_template.standby()
+                    elif self.charge_template.data["chargemode"]["selected"] == "stop":
+                        required_current, submode, message = self.charge_template.stop()
             if submode == "stop" or (self.charge_template.data["chargemode"]["selected"] == "stop"):
                 state = False
 
@@ -276,7 +280,8 @@ class ev():
         message = None
         phases_to_use = phases_in_use
         try:
-            if self.ev_template.data["prevent_switch_stop"] == False:
+            # Wenn gerade umgeschaltet wird, darf kein Timer gestartet werden.
+            if self.ev_template.data["prevent_switch_stop"] == False and self.data["control_parameter"]["timestamp_perform_phase_switch"] == "0":
                 pv_config = data.data.general_data["general"].data["chargemode_config"]["pv_charging"]
                 # 1 -> 3
                 if phases_in_use == 1:
@@ -353,16 +358,6 @@ class ev():
             else:
                 data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= self.data["control_parameter"]["required_current"] * 3 * 230 - self.ev_template.data["max_current_one_phase"] * 230
                 log.message_debug_log("debug", "reserved_evu_overhang 7 "+str(data.data.pv_data["all"].data["set"]["reserved_evu_overhang"]))
-        elif self.data["control_parameter"]["timestamp_perform_phase_switch"] != "0":
-            self.data["control_parameter"]["timestamp_perform_phase_switch"] = "0"
-            pub.pub("openWB/set/vehicle/"+str(self.ev_num)+"/control_parameter/timestamp_perform_phase_switch", "0")
-            # Leistung freigeben, wird dann neu zugeteilt
-            if self.data["control_parameter"]["phases"] == 3:
-                data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= self.data["control_parameter"]["required_current"] * 3 * 230
-                log.message_debug_log("debug", "reserved_evu_overhang 8 "+str(data.data.pv_data["all"].data["set"]["reserved_evu_overhang"]))
-            else:
-                data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= self.ev_template.data["max_current_one_phase"] * 230
-                log.message_debug_log("debug", "reserved_evu_overhang 9 "+str(data.data.pv_data["all"].data["set"]["reserved_evu_overhang"]))
 
     def load_default_profile(self):
         """ prüft, ob nach dem Abstecken das Standardprofil geladen werden soll und lädt dieses ggf..
