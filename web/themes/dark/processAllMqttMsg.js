@@ -97,7 +97,7 @@ function refreshChargetemplate(templateIndex) {
 	if( chargemodeTemplate.hasOwnProperty(templateIndex) ) {
 		parent = $('.chargepoint-card[data-chargetemplate='+templateIndex+']');
 		if( parent.length > 0 ){
-			console.log("selected elements: "+parent.length);
+			// console.log("selected elements: "+parent.length);
 			// time_charging.active
 			element = parent.find('.chargepoint-timechargingactive');
 			if ( chargemodeTemplate[templateIndex].time_charging.active ) {
@@ -151,8 +151,8 @@ function refreshChargetemplate(templateIndex) {
 			sourceElement.find('input[type=checkbox][data-toggle^=toggle]').bootstrapToggle('destroy');
 			// now create any other schedule plan
 			chargemodeTemplate[templateIndex].chargemode.scheduled_charging.forEach(function(value){
-				console.log("schedule id: "+value.id);
-				console.log(value);
+				// console.log("schedule id: "+value.id);
+				// console.log(value);
 				if( parent.find('.chargepoint-scheduleplan[data-plan='+value.id+']').length == 0){
 					console.log('creating schedule plan with id "'+value.id+'"');
 					var clonedElement = sourceElement.clone();
@@ -160,8 +160,8 @@ function refreshChargetemplate(templateIndex) {
 					clonedElement.attr('data-plan', value.id).data('plan', value.id);
 					// insert after last existing plan to honor sorting from the array
 					target = parent.find('.chargepoint-scheduleplan').last();
-					console.log("target: "+target.data('plan')+" index: "+value.id);
-					console.log(target);
+					// console.log("target: "+target.data('plan')+" index: "+value.id);
+					// console.log(target);
 					// insert clone into DOM
 					clonedElement.insertAfter( $(target) );
 					// now get our created element and add checkbox toggle buttons
@@ -274,6 +274,8 @@ function processGlobalCounterMessages(mqttmsg, mqttpayload) {
 		if ( powerHome > 999 ) {
 			powerHome = (powerHome / 1000).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
 			unit = 'k'+unit;
+		} else {
+			powerHome = powerHome.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
 		}
 		$('.houseconsumption-power').text(powerHome+' '+unit);
 	}
@@ -287,6 +289,8 @@ function processGlobalCounterMessages(mqttmsg, mqttpayload) {
 		if ( houseDailyYield > 999 ) {
 			houseDailyYield = (houseDailyYield / 1000).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
 			unitPrefix = "M";
+		} else {
+			houseDailyYield = houseDailyYield.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
 		}
 		$('.houseconsumption-daily').text(houseDailyYield+' '+unitPrefix+unit);
 	}
@@ -308,6 +312,8 @@ function processEvuMessages(mqttmsg, mqttpayload) {
 		if ( powerEvu > 999 ) {
 			powerEvu = (powerEvu / 1000).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
 			unit = 'k'+unit;
+		} else {
+			powerEvu = powerEvu.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
 		}
 		if(importing){
 			$('.grid-importing').removeClass('hide');
@@ -328,6 +334,8 @@ function processEvuMessages(mqttmsg, mqttpayload) {
 		if ( gridDailyYield > 999 ) {
 			gridDailyYield = (gridDailyYield / 1000).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
 			unitPrefix = "M";
+		} else {
+			gridDailyYield = gridDailyYield.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
 		}
 		$('.grid-import').text(gridDailyYield+' '+unitPrefix+unit);
 	}
@@ -341,6 +349,8 @@ function processEvuMessages(mqttmsg, mqttpayload) {
 		if ( gridDailyYield > 999 ) {
 			gridDailyYield = (gridDailyYield / 1000).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
 			unitPrefix = "M";
+		} else {
+			gridDailyYield = gridDailyYield.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
 		}
 		$('.grid-export').text(gridDailyYield+' '+unitPrefix+unit);
 	}
@@ -369,6 +379,8 @@ function processBatteryMessages(mqttmsg, mqttpayload) {
 		if ( speicherwatt > 999 ) {
 			speicherwatt = (speicherwatt / 1000).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
 			unit = 'k'+unit;
+		} else {
+			speicherwatt = speicherwatt.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
 		}
 		$('.housebattery-sum-power').text(speicherwatt+' '+unit);
 		if(charging == true){
@@ -397,6 +409,8 @@ function processBatteryMessages(mqttmsg, mqttpayload) {
 		if ( batDailyYield > 999 ) {
 			batDailyYield = (batDailyYield / 1000).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
 			unitPrefix = "M";
+		} else {
+			batDailyYield = batDailyYield.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
 		}
 		$('.housebattery-sum-import').text(batDailyYield+' '+unitPrefix+unit);
 	}
@@ -410,6 +424,8 @@ function processBatteryMessages(mqttmsg, mqttpayload) {
 		if ( batDailyYield > 999 ) {
 			batDailyYield = (batDailyYield / 1000).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
 			unitPrefix = "M";
+		} else {
+			batDailyYield = batDailyYield.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
 		}
 		$('.housebattery-sum-export').text(batDailyYield+' '+unitPrefix+unit);
 	}
@@ -440,6 +456,8 @@ function processPvMessages(mqttmsg, mqttpayload) {
 		if (pvwatt > 999) {
 			pvwatt = (pvwatt / 1000).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
 			unitPrefix = 'k'
+		} else {
+			pvwatt = pvwatt.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
 		}
 		$('.pv-sum-power').text(pvwatt+' '+unitPrefix+unit);
 	}
@@ -453,6 +471,8 @@ function processPvMessages(mqttmsg, mqttpayload) {
 		if ( pvDailyYield > 999 ) {
 			pvDailyYield = (pvDailyYield / 1000).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
 			unitPrefix = "M";
+		} else {
+			pvDailyYield = pvDailyYield.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
 		}
 		$('.pv-sum-production').text(pvDailyYield+' '+unitPrefix+unit);
 	}
@@ -512,6 +532,8 @@ function processChargepointMessages(mqttmsg, mqttpayload) {
 		if (powerAllLp > 999) {
 			powerAllLp = (powerAllLp / 1000).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
 			unitPrefix = 'k';
+		} else {
+			powerAllLp = powerAllLp.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
 		}
 		$('.chargepoint-sum-power').text(powerAllLp+' '+unitPrefix+unit);
 	}
@@ -525,6 +547,8 @@ function processChargepointMessages(mqttmsg, mqttpayload) {
 		if ( dailyYield > 999 ) {
 			dailyYield = (dailyYield / 1000).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
 			unitPrefix = "M";
+		} else {
+			dailyYield = dailyYield.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
 		}
 		$('.chargepoint-sum-importdaily').text(dailyYield+' '+unitPrefix+unit);
 	}
@@ -538,6 +562,8 @@ function processChargepointMessages(mqttmsg, mqttpayload) {
 		if ( dailyYield > 999 ) {
 			dailyYield = (dailyYield / 1000).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
 			unitPrefix = "M";
+		} else {
+			dailyYield = dailyYield.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
 		}
 		$('.chargepoint-sum-exportdaily').text(dailyYield+' '+unitPrefix+unit);
 	}
@@ -594,6 +620,8 @@ function processChargepointMessages(mqttmsg, mqttpayload) {
 		if (actualPower > 999) {
 			actualPower = (actualPower / 1000).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
 			unit = 'k'+unit;
+		} else {
+			actualPower = actualPower.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
 		}
 		element.text(actualPower+' '+unit);
 	}
@@ -784,10 +812,10 @@ function processChargepointMessages(mqttmsg, mqttpayload) {
 		var rangeChargedElement = parent.find('.chargepoint-rangesinceplugged');
 		rangeChargedElement.data('consumption', configData.average_consumption).attr('data-consumption', configData.average_consumption);
 		// if already energyCharged-displayed, update rangeCharged
-		var energyCharged = parseFloat(parent.find('.chargepoint-energysinceplugged').text());  // now get parents respective energyCharged child element
+		var energyCharged = parseFloat(parent.find('.chargepoint-energysinceplugged').text().replace(',','.'));  // now get parents respective energyCharged child element
 		var rangeCharged = '';
-		if ( !isNaN(energyCharged) && consumption > 0 ) {
-			rangeCharged = (energyCharged / consumption) * 100;
+		if ( !isNaN(energyCharged) && configData.average_consumption > 0 ) {
+			rangeCharged = (energyCharged / configData.average_consumption) * 100;
 			rangeCharged = ' / ' + rangeCharged.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1}) + ' km';
 		}
 		$(rangeChargedElement).text(rangeCharged);
