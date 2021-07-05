@@ -63,14 +63,14 @@ graphing(){
 	if ((speichervorhanden == 1 )); then
 		dataline="$dataline,\"bat-all-power\":$(convertTokW $speicherleistung),\"bat-all-soc\":$speichersoc"
 	fi
-	# smarthoome 1
+	# smarthome 1
 	if (( verbraucher1_aktiv == 1 )); then
 		dataline="$dataline,\"load1-power\":$(convertTokW $verbraucher1_watt)"
 	fi
 	if (( verbraucher2_aktiv == 1 )); then
 		dataline="$dataline,\"load2-power\":$(convertTokW $verbraucher2_watt)"
 	fi
-	# end JSON
+
 	dataline="$dataline}"
 	printf "$dataline\n" >> /var/www/html/openWB/ramdisk/all-live.json
 	echo "$(tail -$livegraph /var/www/html/openWB/ramdisk/all-live.json)" > /var/www/html/openWB/ramdisk/all-live.json
@@ -108,6 +108,7 @@ graphing(){
 	mosquitto_pub -t openWB/graph/alllivevaluesJson14 -r -m "$([ ${#all14livevalues} -ge 10 ] && echo "$all14livevalues" || echo "-")" &
 	mosquitto_pub -t openWB/graph/alllivevaluesJson15 -r -m "$([ ${#all15livevalues} -ge 10 ] && echo "$all15livevalues" || echo "-")" &
 	mosquitto_pub -t openWB/graph/alllivevaluesJson16 -r -m "$([ ${#all16livevalues} -ge 10 ] && echo "$all16livevalues" || echo "-")" &
+	# end JSON
 
 	# csv graphing
 	header="Zeit,Timestamp,EVU,Ladeleistung,PV,LP1,LP2,Ladeleistung2,Speicherleistung,SpeicherSoC,LP1SoC,LP2SoC,Hausverbrauch,Verbraucher1,Verbraucher2,LP3,LP4,LP5,LP6,LP7,LP8,SH1,SH2,SH3,SH4,SH5,SH6,SH7,SH8,SH9,SH1T0,SH1T1,SH1T2"

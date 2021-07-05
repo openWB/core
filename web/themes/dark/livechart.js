@@ -26,6 +26,7 @@ var smartHomeBgColor = style.getPropertyValue('--d1bgCol');
 
 var initialread = 0;
 var graphloaded = 0;
+var maxDisplayLength;
 var boolDisplayHouseConsumption;
 var boolDisplayLoad1;
 var boolDisplayLoad2;
@@ -585,7 +586,9 @@ function putgraphtogether() {
 	if ( (all1 == 1) && (all2 == 1) && (all3 == 1) && (all4 == 1) && (all5 == 1) && (all6 == 1) && (all7 == 1) && (all8 == 1) && (all9 == 1) && (all10 == 1) && (all11 == 1) && (all12 == 1) && (all13 == 1) && (all14 == 1) && (all15 == 1) && (all16 == 1) ){
 		var alldata = all1p + "\n" + all2p + "\n" + all3p + "\n" + all4p + "\n" + all5p + "\n" + all6p + "\n" + all7p + "\n" + all8p + "\n" + all9p + "\n" + all10p + "\n" + all11p + "\n" + all12p + "\n" + all13p + "\n" + all14p + "\n" + all15p + "\n" + all16p;
 		allChartData = parseData(alldata);
-		if ( allChartData.length >= 30 ) {
+		console.log("allChartData.length: "+allChartData.length);
+		if ( allChartData.length >= 30 ) { // 5 minutes * 6 measurements/min
+			console.log("received at least "+maxDisplayLength+" data sets for graph");
 			Object.keys(allChartData[allChartData.length - 1]).forEach(function(key){
 				if(key != 'time' && key != 'timestamp'){
 					initDataset(key);
@@ -594,9 +597,10 @@ function putgraphtogether() {
 			// after receipt of all data segments, unsubscribe from these topics to save bandwidth
 			unsubscribeMqttGraphSegments();
 
+			initialread = 1 ;
+			$('#waitforgraphloadingdiv').text('Graph lädt...');
 			checkgraphload();
 			// now we are ready to receive small updates for graph data
-			initialread = 1 ;
 		} else {
 			all1 = 0;
 			all2 = 0;
@@ -623,24 +627,24 @@ function putgraphtogether() {
 
 function updateGraph(dataset) {
 	chartUpdateBuffer = chartUpdateBuffer.concat(parseData(dataset));
-	// console.log('buffer: '+chartUpdateBuffer.length);
 	if(initialread == 1 && myLine != undefined){
 		chartUpdateBuffer.forEach(function(row, index){
-			// console.log('adding row: '+index);
 			allChartData.push(row);
 		});
-		// ToDo: remove data based on configured size
-		if(allChartData.length > 30){
-			allChartData.splice(0, chartUpdateBuffer.length);
+		if(typeof maxDisplayLength !== "undefined"  && allChartData.length > maxDisplayLength){
+			// allChartData.splice(0, chartUpdateBuffer.length);
+			allChartData.splice(0, allChartData.length - maxDisplayLength);
 		}
+		console.log("allChartData.length: "+allChartData.length);
 		chartUpdateBuffer = [];
 		myLine.update();
 	} else {
-		// console.log('graph not yet initialized, data stored in buffer');
+		console.log('graph not yet initialized, data stored in buffer');
 	}
 }
 
 function checkgraphload(){
+	console.log("checkgraphload: graphloaded: "+graphloaded+" initialread: "+initialread);
 	if ( graphloaded == 1 ) {
 		myLine.destroy();
 		loadgraph(0);  // when reloading graph, no more "pumping" animations
@@ -665,6 +669,7 @@ function checkgraphload(){
 		typeof boolDisplayEvu === "boolean" &&
 		typeof boolDisplayPv === "boolean" &&
 		typeof boolDisplayLegend === "boolean" ) {
+		console.log("all bools received");
 		if ( initialread != 0 ) {
 			if ( graphloaded == 0 ) {
 				graphloaded = 1;
@@ -734,6 +739,10 @@ function forcegraphload() {
 		}
 		if ( !(typeof boolDisplayLegend === "boolean") ) {
 			showhidedataset('boolDisplayLegend');
+		}
+		if ( typeof maxDisplayLength === "undefined" ) {
+			console.log("setting graph duration to default of 30 minutes");
+			maxDisplayLength = 30 * 6;
 		}
 		checkgraphload();
 	}

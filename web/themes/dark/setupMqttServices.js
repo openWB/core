@@ -74,6 +74,7 @@ var topicsToSubscribe = [
 	["openWB/optional/et/config/max_price", 1],	// configured max price
 
 	// graph topcis
+	["openWB/graph/config/duration", 1],				// maximum duration to display in landing page
 	["openWB/graph/boolDisplayLp1", 1],
 	["openWB/graph/boolDisplayLp2", 1],
 	["openWB/graph/boolDisplayLp3", 1],
