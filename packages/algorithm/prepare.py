@@ -3,12 +3,12 @@
 
 import copy
 
-import chargelog
-import chargepoint
-import data
-import log
-import pub
-import subdata
+from . import chargelog
+from . import chargepoint
+from . import data
+from ..helpermodules import log
+from ..helpermodules import pub
+from ..helpermodules import subdata
 
 
 class prepare():

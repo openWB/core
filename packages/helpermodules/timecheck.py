@@ -2,7 +2,8 @@
 """
 
 import datetime
-import log
+
+from . import log
 
 def set_date(now, begin, end):
     """ setzt das Datum auf das heutige Datum, bzw. falls der Endzeitpunkt am nächsten Tag ist, auf morgen

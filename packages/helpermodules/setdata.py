@@ -6,9 +6,9 @@ import json
 import paho.mqtt.client as mqtt
 import re
 
-import log
-import pub
-import subdata
+from . import log
+from . import pub
+from . import subdata
 
 class setData():
  
@@ -28,13 +28,26 @@ class setData():
 
         client.on_connect = self.on_connect
         client.on_message = self.on_message
-        client.message_callback_add("openWB/set/#", self._process_topics)
 
         client.connect(mqtt_broker_ip, 1883)
         client.loop_forever()
         client.disconnect()
 
-    def _process_topics(self, client, userdata, msg):
+    def getserial(self):
+        """ Extract serial from cpuinfo file
+        """
+        with open('/proc/cpuinfo','r') as f:
+            for line in f:
+                if line[0:6] == 'Serial':
+                    return line[10:26]
+            return "0000000000000000"
+
+    def on_connect(self, client, userdata, flags, rc):
+        """ connect to broker and subscribe to set topics
+        """
+        client.subscribe("openWB/set/#", 2)
+
+    def on_message(self, client, userdata, msg):
         """ ruft die Funktion auf, um das Topic zu verarbeiten. Wenn die Topics mit Locking verarbeitet werden, wird gewartet, bis das Locking aufgehoben wird.
 
         Parameters
@@ -69,26 +82,6 @@ class setData():
             self.process_log_topic(client, userdata, msg)
         elif "openWB/set/loadvarsdone" in msg.topic:
             self._validate_value(msg, int, [(0, 1)])
-
-    def getserial(self):
-        """ Extract serial from cpuinfo file
-        """
-        with open('/proc/cpuinfo','r') as f:
-            for line in f:
-                if line[0:6] == 'Serial':
-                    return line[10:26]
-            return "0000000000000000"
-
-    def on_connect(self, client, userdata, flags, rc):
-        """ connect to broker and subscribe to set topics
-        """
-        client.subscribe("openWB/set/#", 2)
-
-    def on_message(self, client, userdata, msg):
-        """ wartet auf eingehende Topics.
-        """
-        #self.log_mqtt()
-        #print("Unknown topic: "+msg.topic+", "+str(msg.payload.decode("utf-8")))
 
     def _validate_value(self, msg, data_type, ranges = None, collection = None, pub_json = False):
         """ prüft, ob der Wert vom angegebenen Typ ist.

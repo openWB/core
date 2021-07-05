@@ -9,8 +9,8 @@ welche LP-Phase an welche EVU-Phase angeschlossen ist, nicht. Beim einphasigen L
 ob genug Leistung/Stromstärke verfügbar ist.
 """
 
-import data
-import log
+from . import data
+from ..helpermodules import log
 
 overloaded_counters = {} # {counter: [max_overshoot, phase_with_max_overshoot]}
 # phase_with_max_overshoot = -1 -> max. Lesistung wurde überschritten, es ist egal, auf welcher Phase reduziert wird.

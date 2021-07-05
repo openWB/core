@@ -25,13 +25,13 @@ RFID-Tags:
 Liste der Tags, mit denen der Ladepunkt freigeschaltet werden kann. Ist diese leer, kann mit jedem Tag der Ladepunkt freigeschaltet werden.
 """
 
-from charge import charge
-import chargelog
-import data
-import ev
-import log
-import pub
-import timecheck
+from . import charge
+from . import chargelog
+from . import data
+from . import ev
+from ..helpermodules import log
+from ..helpermodules import pub
+from ..helpermodules import timecheck
 
 
 class allChargepoints():
