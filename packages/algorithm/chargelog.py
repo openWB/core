@@ -85,13 +85,13 @@ Ich sehe, dass so wie Lutz. Wenn im PV-Laden die Ladung unterbrochen wird, sollt
 """
 
 import json
+import math
 import pathlib
 
-import data
-import log
-import math
-import pub
-import timecheck
+from . import data
+from ..helpermodules import log
+from ..helpermodules import pub
+from ..helpermodules import timecheck
 
 # alte Daten: Startzeitpunkt der Ladung, Endzeitpunkt, Geladene Reichweite, Energie, Leistung, Ladedauer, LP-Nummer, Lademodus, RFID-Tag
 # json-Objekt: {"chargepoint": {"id": 1, "name": "Hof", "rfid": 1234}, 

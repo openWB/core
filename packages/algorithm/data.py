@@ -2,8 +2,9 @@
 Dictionary: Zugriff erfolgt bei Dictionary über Keys, nicht über Indizes wie bei Listen. Das hat den Vorteil, dass Instanzen gelöscht werden können, der Zugriff aber nicht verändert werden musss.
 """
 
-import log
 import threading
+
+from ..helpermodules import log
 
 data = None
 

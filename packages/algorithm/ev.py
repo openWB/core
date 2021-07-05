@@ -7,10 +7,10 @@ stärke wird auch geprüft, ob sich an diesen Parametern etwas geändert hat. Fa
 in der Regelung neu priorisiert werden und eine neue Zuteilung des Stroms erhalten.
 """
 
-import data
-import log
-import pub
-import timecheck
+from . import data
+from ..helpermodules import log
+from ..helpermodules import pub
+from ..helpermodules import timecheck
 
 
 def get_ev_to_rfid(rfid):

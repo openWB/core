@@ -3,9 +3,9 @@
 
 from math import ceil #Aufrunden
 
-import awattargetprices
-import log
-import tibbergetprices
+from ..modules.et import awattargetprices
+from ..helpermodules import log
+from ..modules.et import tibbergetprices
 
 class optional():
     """

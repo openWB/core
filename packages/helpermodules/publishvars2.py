@@ -1,4 +1,4 @@
-import pub
+from . import pub
 
 
 def pub_settings():
