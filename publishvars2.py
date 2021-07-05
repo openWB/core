@@ -268,3 +268,6 @@ def pub_settings():
     pub.pub("openWB/set/general/range_unit", "km")
     pub.pub("openWB/set/general/price_kwh", 0.2)
     pub.pub("openWB/set/general/grid_protection_configured", True)
+
+    # graph
+    pub.pub("openWB/graph/config/duration", 30)

@@ -1090,6 +1090,15 @@ function processGraphMessages(mqttmsg, mqttpayload) {
 		}
 		graphrefreshcounter += 1;
 	}
+	else if ( mqttmsg == 'openWB/graph/config/duration' ) {
+		console.log("graph duration: "+mqttpayload+" minutes");
+		var duration = JSON.parse(mqttpayload);
+		if( isNaN(duration) || duration < 10 || duration > 120 ){
+			console.log("bad graph duration received: "+mqttpayload+" setting to default of 30");
+			duration = 30;
+		}
+		maxDisplayLength = duration * 6; // we get 6 measurements in every minute
+	}
 }  // end processGraphMessages
 
 function processETProviderMessages(mqttmsg, mqttpayload) {
