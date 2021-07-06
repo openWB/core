@@ -368,6 +368,8 @@ class setData():
                 self._validate_value(msg, int, [(6, 32)], pub_json = True)
             elif re.search("^openWB/set/vehicle/template/charge_template/[0-9]+/chargemode/pv_charging/max_soc$", msg.topic) != None:
                 self._validate_value(msg, int, [(0, 100)], pub_json = True)
+            elif re.search("^openWB/set/vehicle/template/charge_template/[0-9]+/chargemode/scheduled_charging/[0-9]+/active$", msg.topic) != None:
+                self._validate_value(msg, int, [(0, 1)], pub_json = True)
             elif re.search("^openWB/set/vehicle/template/charge_template/[0-9]+/chargemode/scheduled_charging$", msg.topic) != None:
                 self._validate_value(msg, "json", pub_json = True)
             elif re.search("^openWB/set/vehicle/template/charge_template/[0-9]+/time_charging/active$", msg.topic) != None:

@@ -107,7 +107,7 @@ class prepare():
                         if state == True:
                             cp.get_phases(charging_ev.charge_template.data["chargemode"]["selected"])
                             state, message_ev, submode, required_current = charging_ev.get_required_current()
-                            self._pub_connected_vehicle(charging_ev, cp.cp_num)
+                            self._pub_connected_vehicle(charging_ev, cp)
                             # Einhaltung des Minimal- und Maximalstroms prüfen
                             required_current = charging_ev.check_min_max_current(required_current, charging_ev.data["control_parameter"]["phases"])
                             current_changed, mode_changed = charging_ev.check_state(required_current, cp.data["set"]["current"], cp.data["get"]["charge_state"])
@@ -150,7 +150,7 @@ class prepare():
                                 charging_ev.charge_template.data["chargemode"]["selected"])+", Submodus: "+str(charging_ev.data["control_parameter"]["submode"])+", Prioritaet: "+str(charging_ev.charge_template.data["prio"])+", max. Ist-Strom: "+str(max(cp.data["get"]["current"])))
                     else:
                         # Wenn kein EV zur Ladung zugeordnet wird, auf hinterlegtes EV zurückgreifen.
-                        self._pub_connected_vehicle(data.data.ev_data["ev"+str(cp.template.data["ev"])], cp.cp_num)
+                        self._pub_connected_vehicle(data.data.ev_data["ev"+str(cp.template.data["ev"])], cp)
                     if message != None and cp.data["get"]["state_str"] == None:
                         log.message_debug_log("info", "LP "+str(cp.cp_num)+": "+message)
                         cp.data["get"]["state_str"] = message
@@ -160,7 +160,7 @@ class prepare():
             data.data.cp_data["all"]=chargepoint.allChargepoints()
         data.data.cp_data["all"].no_charge()
 
-    def _pub_connected_vehicle(self, vehicle, cp_num):
+    def _pub_connected_vehicle(self, vehicle, chargepoint):
         """ published die Daten, die zur Anzeige auf der Haupseite benötigt werden.
 
         Parameter
@@ -193,11 +193,14 @@ class prepare():
                     "priority": vehicle.charge_template.data["prio"],
                     "current_plan": current_plan,
                     "average_consumption": vehicle.ev_template.data["average_consump"]}
-
-            pub.pub("openWB/chargepoint/"+str(cp_num)+"/get/connected_vehicle/soc_config", soc_config_obj)
-            pub.pub("openWB/chargepoint/"+str(cp_num)+"/get/connected_vehicle/soc", soc_obj)
-            pub.pub("openWB/chargepoint/"+str(cp_num)+"/get/connected_vehicle/info", info_obj)
-            pub.pub("openWB/chargepoint/"+str(cp_num)+"/get/connected_vehicle/config", config_obj)
+            if soc_config_obj != chargepoint.data["get"]["connected_vehicle"]["soc_config"]:
+                pub.pub("openWB/chargepoint/"+str(chargepoint.cp_num)+"/get/connected_vehicle/soc_config", soc_config_obj)
+            if soc_obj != chargepoint.data["get"]["connected_vehicle"]["soc"]:
+                pub.pub("openWB/chargepoint/"+str(chargepoint.cp_num)+"/get/connected_vehicle/soc", soc_obj)
+            if info_obj != chargepoint.data["get"]["connected_vehicle"]["info"]:
+                pub.pub("openWB/chargepoint/"+str(chargepoint.cp_num)+"/get/connected_vehicle/info", info_obj)
+            if config_obj != chargepoint.data["get"]["connected_vehicle"]["config"]:
+                pub.pub("openWB/chargepoint/"+str(chargepoint.cp_num)+"/get/connected_vehicle/config", config_obj)
         except Exception as e:
                 log.exception_logging(e)
 

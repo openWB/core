@@ -137,15 +137,17 @@ def pub_settings():
     # pub.pub("openWB/set/vehicle/template/ev_template/3/nominal_difference", 2)
     # pub.pub("openWB/set/vehicle/template/ev_template/3/prevent_switch_stop", False)
 
-    plans_for_scheduled_charging = [
-    {"id": 1, "name": "abc", "time": "14:15", "soc": 85, "active": 1, "frequency": {"selected": "daily"} },
-    {"id": 2, "name": "def", "time": "18:45", "soc": 95, "active": 0, "frequency": {"selected": "daily"} }
-    ]
-    plans_for_time_charging = [
-    {"id": 1, "name": "abc", "time": ["07:00", "17:20"], "current": 10, "active": 1, "frequency": {"selected": "daily"} },
-    {"id": 2, "name": "def", "time": ["07:00", "17:20"], "current": 16, "active": 0, "frequency": {"selected": "daily"} }
-    ]
-    # #ct0 - default
+    plans_for_scheduled_charging = {
+        "1": {"name": "abc", "time": "14:15", "soc": 85, "active": 1, "frequency": {"selected": "daily"}},
+        "2": {"name": "def", "time": "18:45", "soc": 95, "active": 0, "frequency": {"selected": "daily"}}
+        }
+
+    plans_for_time_charging = {
+        "1": {"name": "abc", "time": ["07:00", "17:20"], "current": 10, "active": 1, "frequency": {"selected": "daily"} },
+        "2": {"name": "def", "time": ["07:00", "17:20"], "current": 16, "active": 0, "frequency": {"selected": "daily"} }
+        }
+    
+    #ct0 - default
     # pub.pub("openWB/set/vehicle/template/charge_template/0/load_default", False)
     # pub.pub("openWB/set/vehicle/template/charge_template/0/disable_after_unplug", False)
     # pub.pub("openWB/set/vehicle/template/charge_template/0/prio", False)

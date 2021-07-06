@@ -247,7 +247,12 @@ class subData():
                 elif re.search("^openWB/chargepoint/[1-9][0-9]*/get/.+$", msg.topic) != None:
                     if "get" not in self.cp_data["cp"+index].data:
                         self.cp_data["cp"+index].data["get"]={}
-                    self.set_json_payload(self.cp_data["cp"+index].data["get"], msg)
+                    if re.search("^openWB/chargepoint/[1-9][0-9]*/get/connected_vehicle/.+$", msg.topic) != None:
+                        if "connected_vehicle" not in self.cp_data["cp"+index].data["get"]:
+                            self.cp_data["cp"+index].data["get"]["connected_vehicle"]={}
+                        self.set_json_payload(self.cp_data["cp"+index].data["get"]["connected_vehicle"], msg)
+                    elif re.search("^openWB/chargepoint/[1-9][0-9]*/get/.+$", msg.topic) != None:
+                        self.set_json_payload(self.cp_data["cp"+index].data["get"], msg)
                 elif re.search("^openWB/chargepoint/[1-9][0-9]*/config$", msg.topic) != None:
                     self.set_json_payload(self.cp_data["cp"+index].data, msg)
             elif re.search("^openWB/chargepoint/template/[1-9][0-9]*$", msg.topic) != None:
