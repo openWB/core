@@ -592,20 +592,23 @@ function processChargepointMessages(mqttmsg, mqttpayload) {
 		var parent = $('.chargepoint-card[data-cp="' + index + '"]');  // get parent row element for charge point
 		parent.find('.chargepoint-faultstate[data-option="'+mqttpayload+'"').removeClass('hide');
 		parent.find('.chargepoint-faultstate').not('[data-option="'+mqttpayload+'"]').addClass('hide');
-		textElement = parent.find('.chargepoint-faultstr');
+		// textElement = parent.find('.chargepoint-faultstr');
+		alertElement = parent.find('.chargepoint-alert');
 		switch (parseInt(mqttpayload, 10)){
 			case 1: // warning
-				$(textElement).removeClass('hide');
-				$(textElement).addClass('alert-warning');
-				$(textElement).removeClass('alert-danger');
+				$(alertElement).addClass('alert-warning');
+				$(alertElement).removeClass('alert-danger');
+				$(alertElement).removeClass('hide');
 				break;
 			case 2: // error
-				$(textElement).removeClass('hide');
-				$(textElement).removeClass('alert-warning');
-				$(textElement).addClass('alert-danger');
+				$(alertElement).removeClass('alert-warning');
+				$(alertElement).addClass('alert-danger');
+				$(alertElement).removeClass('hide');
 				break;
 			default:
-				$(textElement).addClass('hide');
+				$(alertElement).addClass('hide');
+				$(alertElement).removeClass('alert-warning');
+				$(alertElement).removeClass('alert-danger');
 		}
 	}
 	else if ( mqttmsg.match( /^openWB\/chargepoint\/[1-9][0-9]*\/get\/power_all$/i ) ) {
