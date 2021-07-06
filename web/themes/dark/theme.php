@@ -238,7 +238,7 @@
 							</div>
 							<div class="row">
 								<div class="col pr-0">
-									Import
+									Bezug
 								</div>
 								<div class="grid-import col pl-0 text-right">
 									XX kWh
@@ -246,7 +246,7 @@
 							</div>
 							<div class="row">
 								<div class="col pr-0">
-									Export
+									Einspeisung
 								</div>
 								<div class="grid-export col pl-0 text-right">
 									XX kWh
@@ -336,6 +336,7 @@
 									XX kWh
 								</div>
 							</div>
+							<!-- Preparation for bidirectional charging V2H/V2G
 							<div class="row">
 								<div class="col pr-0">
 									Entladen
@@ -344,6 +345,7 @@
 									XX kWh
 								</div>
 							</div>
+							-->
 						</div>
 					</div>
 				</div>
@@ -436,10 +438,12 @@
 						</div>
 						<div class="form-row">
 							<div class="col-3">
-								<!-- <i class="chargepoint-faultstate fas fa-check-circle text-success hide" data-option="0"></i> -->
-								<i class="chargepoint-faultstate fas fa-exclamation-triangle text-warning hide" data-option="1"></i>
-								<i class="chargepoint-faultstate fas fa-times-circle text-danger hide" data-option="2"></i>
-								<span class="chargepoint-faultstr hide"></span>
+								<div class="chargepoint-alert alert m-0 px-1 py-0">
+									<!-- <i class="chargepoint-faultstate fas fa-check-circle text-success hide" data-option="0"></i> -->
+									<i class="chargepoint-faultstate fas fa-exclamation-triangle text-warning hide" data-option="1"></i>
+									<i class="chargepoint-faultstate fas fa-times-circle text-danger hide" data-option="2"></i>
+									<span class="chargepoint-faultstr"></span>
+								</div>
 							</div>
 							<div class="col-3 chargepoint-vehiclename">?</div>
 							<div class="col-3">
