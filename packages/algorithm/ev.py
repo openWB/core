@@ -7,10 +7,10 @@ stärke wird auch geprüft, ob sich an diesen Parametern etwas geändert hat. Fa
 in der Regelung neu priorisiert werden und eine neue Zuteilung des Stroms erhalten.
 """
 
-import data
-import log
-import pub
-import timecheck
+from . import data
+from ..helpermodules import log
+from ..helpermodules import pub
+from ..helpermodules import timecheck
 
 
 def get_ev_to_rfid(rfid):
@@ -503,21 +503,21 @@ class chargeTemplate():
             battery_capacity = ev_template.data["battery_capacity"]
             start = -1 # Es wurde noch kein Plan geprüft.
             for plan in self.data["chargemode"]["scheduled_charging"]:
-                if plan["active"] == True:
+                if self.data["chargemode"]["scheduled_charging"][plan]["active"] == True:
                     try:
-                        if soc < plan["soc"]:
+                        if soc < self.data["chargemode"]["scheduled_charging"][plan]["soc"]:
                             if phases == 1:
                                 max_current = ev_template.data["max_current_one_phase"]
                             else:
                                 max_current = ev_template.data["max_current_multi_phases"]
                             available_current = 0.8*max_current*phases
-                            required_wh = ((plan["soc"] - soc)/100) * battery_capacity*1000
+                            required_wh = ((self.data["chargemode"]["scheduled_charging"][plan]["soc"] - soc)/100) * battery_capacity*1000
                             duration = required_wh/(available_current*230)
-                            start, remaining_time = timecheck.check_duration(plan, duration)
+                            start, remaining_time = timecheck.check_duration(self.data["chargemode"]["scheduled_charging"][plan], duration)
                             # Erster Plan
                             if (start == plan_data["start"] and remaining_time <= smallest_remaining_time) or start > plan_data["start"]:
                                 smallest_remaining_time = remaining_time
-                                plan_data["plan"] = plan["id"]
+                                plan_data["plan"] = plan
                                 plan_data["available_current"] = available_current
                                 plan_data["start"] = start
                                 plan_data["required_wh"] = required_wh
@@ -535,12 +535,13 @@ class chargeTemplate():
                 else:
                     self.data["chargemode"]["current_plan"] = plan_data["plan"]
                     for plan in self.data["chargemode"]["scheduled_charging"]:
-                        if plan["id"] == plan_data["plan"]:
-                            current_plan = plan
+                        if plan == plan_data["plan"]:
+                            current_plan = self.data["chargemode"]["scheduled_charging"][plan]
                             break
                     else:
                         return 0, "stop", "Keine Ladung, da ein interner Fehler aufgetreten ist."
                     if plan_data["start"] == 1: # Ladung sollte jetzt starten
+                        message = "Zielladen mit "+str(plan_data["available_current"])+"A, um einen SoC von "+str(current_plan["soc"])+"%% um "+str(current_plan["time"])+" zu erreichen."
                         return plan_data["available_current"], "instant_charging", message
                     elif plan_data["start"] == 2:  # weniger als die berechnete Zeit verfügbar
                         required_current = plan_data["required_wh"]/(smallest_remaining_time*230)
@@ -548,6 +549,7 @@ class chargeTemplate():
                             plan_data["available_current"] = plan_data["max_current"]
                         else:
                             plan_data["available_current"] = required_current
+                        message = "Zielladen mit "+str(plan_data["available_current"])+"A. Der verfügbare Ladezeitraum reicht nicht aus, um den Ziel-SoC zu erreichen. Daher wird bis max. 20 Minuten nach dem angegebenen Zieltermin geladen."
                         return plan_data["available_current"], "instant_charging", message
                     else:
                         # Liegt der Zieltermin innerhalb der nächsten 24h?

@@ -3,10 +3,10 @@
 
 import copy
 
-import data
-import loadmanagement
-import log
-import pub
+from . import data
+from . import loadmanagement
+from ..helpermodules import log
+from ..helpermodules import pub
 
 
 class control():

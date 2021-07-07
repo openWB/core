@@ -25,9 +25,9 @@ __Muss dann immer ein bisschen Überschuss über sein und wenn dieser im nächst
 Üblicherweise reicht es so zu regeln das rund 50 Watt Einspeisung da sind, dann "nimmt" der Speicher sich die von alleine
 """
 
-import data
-import log
-import pub
+from . import data
+from ..helpermodules import log
+from ..helpermodules import pub
 
 class bat:
     def __init__(self):

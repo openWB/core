@@ -5,17 +5,16 @@ import json
 import paho.mqtt.client as mqtt
 import re
 
-import bat
-import chargelog
-import chargepoint
-import counter
-import ev
-import general
-import graph
-import log
-import optional
-import pub
-import pv
+from ..algorithm import bat
+from ..algorithm import chargelog
+from ..algorithm import chargepoint
+from ..algorithm import counter
+from ..algorithm import ev
+from ..algorithm import general
+from . import log
+from ..algorithm import optional
+from . import pub
+from ..algorithm import pv
 
 class subData():
     """ Klasse, die die benötigten Topics abonniert, die Instanzen ertstellt, wenn z.b. ein Modul neu konfiguriert wird, 
@@ -52,15 +51,6 @@ class subData():
 
             client.on_connect = self.on_connect
             client.on_message = self.on_message
-            client.message_callback_add("openWB/vehicle/#", self._process_topics)
-            client.message_callback_add("openWB/chargepoint/#", self._process_topics)
-            client.message_callback_add("openWB/pv/#", self._process_topics)
-            client.message_callback_add("openWB/bat/#", self._process_topics)
-            client.message_callback_add("openWB/general/#", self._process_topics)
-            client.message_callback_add("openWB/optional/#", self._process_topics)
-            client.message_callback_add("openWB/counter/#", self._process_topics)
-            client.message_callback_add("openWB/log/#", self._process_topics)
-            client.message_callback_add("openWB/loadvarsdone", self._process_topics)
 
             client.connect(mqtt_broker_ip, 1883)
             client.loop_forever()
@@ -68,8 +58,30 @@ class subData():
         except Exception as e:
             log.exception_logging(e)
 
-    def _process_topics(self, client, userdata, msg):
+    def getserial(self):
+        """ Extract serial from cpuinfo file
         """
+        with open('/proc/cpuinfo','r') as f:
+            for line in f:
+                if line[0:6] == 'Serial':
+                    return line[10:26]
+            return "0000000000000000"
+
+    def on_connect(self, client, userdata, flags, rc):
+        """ connect to broker and subscribe to set topics
+        """
+        client.subscribe("openWB/vehicle/#", 2)
+        client.subscribe("openWB/chargepoint/#", 2)
+        client.subscribe("openWB/pv/#", 2)
+        client.subscribe("openWB/bat/#", 2)
+        client.subscribe("openWB/general/#", 2)
+        client.subscribe("openWB/optional/#", 2)
+        client.subscribe("openWB/counter/#", 2)
+        client.subscribe("openWB/log/#", 2)
+        client.subscribe("openWB/loadvarsdone", 2)
+
+    def on_message(self, client, userdata, msg):
+        """ wartet auf eingehende Topics.
         """
         self.heartbeat = True
         if "openWB/vehicle/" in msg.topic:
@@ -90,26 +102,6 @@ class subData():
             self.process_log_topic(client, userdata, msg)
         elif "openWB/loadvarsdone" in msg.topic:
             self.process_loadvarsdone(client, userdata, msg)
-
-    def getserial(self):
-        """ Extract serial from cpuinfo file
-        """
-        with open('/proc/cpuinfo','r') as f:
-            for line in f:
-                if line[0:6] == 'Serial':
-                    return line[10:26]
-            return "0000000000000000"
-
-    def on_connect(self, client, userdata, flags, rc):
-        """ connect to broker and subscribe to set topics
-        """
-        client.subscribe("openWB/#", 2)
-
-    def on_message(self, client, userdata, msg):
-        """ wartet auf eingehende Topics.
-        """
-        #self.log_mqtt()
-        #print("Unknown topic: "+msg.topic+", "+str(msg.payload.decode("utf-8")))
 
     def get_index(self, topic):
         """extrahiert den Index aus einem Topic (Zahl zwischen zwei // oder am Stringende)
@@ -255,7 +247,12 @@ class subData():
                 elif re.search("^openWB/chargepoint/[1-9][0-9]*/get/.+$", msg.topic) != None:
                     if "get" not in self.cp_data["cp"+index].data:
                         self.cp_data["cp"+index].data["get"]={}
-                    self.set_json_payload(self.cp_data["cp"+index].data["get"], msg)
+                    if re.search("^openWB/chargepoint/[1-9][0-9]*/get/connected_vehicle/.+$", msg.topic) != None:
+                        if "connected_vehicle" not in self.cp_data["cp"+index].data["get"]:
+                            self.cp_data["cp"+index].data["get"]["connected_vehicle"]={}
+                        self.set_json_payload(self.cp_data["cp"+index].data["get"]["connected_vehicle"], msg)
+                    elif re.search("^openWB/chargepoint/[1-9][0-9]*/get/.+$", msg.topic) != None:
+                        self.set_json_payload(self.cp_data["cp"+index].data["get"], msg)
                 elif re.search("^openWB/chargepoint/[1-9][0-9]*/config$", msg.topic) != None:
                     self.set_json_payload(self.cp_data["cp"+index].data, msg)
             elif re.search("^openWB/chargepoint/template/[1-9][0-9]*$", msg.topic) != None:

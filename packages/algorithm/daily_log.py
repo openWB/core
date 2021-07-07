@@ -3,9 +3,9 @@
 import json
 import pathlib
 
-import data
-import log
-import timecheck
+from . import data
+from ..helpermodules import log
+from ..helpermodules import timecheck
 
 def save_daily_log():
     """ erstellt für jeden Tag eine Datei, die die Daten für den Langzeitgraph enthält.
@@ -16,23 +16,42 @@ def save_daily_log():
             "cp1": {
                 "counter": Zählerstand in Wh,
                 }
-            ... (dynamsich, je nach Anzahl konfigurierter Ladepunkte)
+            ... (dynamsich, je nach konfigurierter Anzahl)
         }
         "ev": {
             "ev1": {
                 "soc": int in %
             }
-            ... (dynamsich, je nach Anzahl konfigurierter Ladepunkte)
+            ... (dynamsich, je nach konfigurierter Anzahl)
         }
-        "counter0": {
-            "imported": Wh,
-            "exported": Wh
+        "counter": {
+            "counter0": {
+                "imported": Wh,
+                "exported": Wh
+            }
+            ... (dynamsich, je nach konfigurierter Anzahl)
         }
-        "pv_all": Wh
-        "bat_all": {
-            "imported": Wh,
-            "exported": Wh,
-            "soc": int in %
+        "pv": {
+            "all": {
+                "counter": Wh
+            }
+            "pv0": {
+                "counter": Wh
+            }
+            ... (dynamsich, je nach konfigurierter Anzahl)
+        }
+        "bat": {
+            "all": {
+                "imported": Wh,
+                "exported": Wh,
+                "soc": int in %
+            }
+            "bat0": {
+                "imported": Wh,
+                "exported": Wh,
+                "soc": int in %
+            }
+            ... (dynamsich, je nach konfigurierter Anzahl)
         }
         "smarthome_devices": {
             "device1": {
@@ -63,20 +82,39 @@ def save_daily_log():
             except Exception as e:
                 log.exception_logging(e)
 
+        counter_dict = {}
+        for counter in data.data.counter_data:
+            try:
+                if "counter" in counter:
+                    counter_dict.update({counter: {"imported": data.data.counter_data[counter].data["get"]["imported"], 
+                            "exported": data.data.counter_data[counter].data["get"]["exported"]}})
+            except Exception as e:
+                log.exception_logging(e)
+
+        pv_dict = {}
+        for pv in data.data.pv_data:
+            try:
+                    pv_dict.update({pv: {"imported": data.data.pv_data[pv].data["get"]["counter"]}})
+            except Exception as e:
+                log.exception_logging(e)
+
+        bat_dict = {}
+        for bat in data.data.bat_module_data:
+            try:
+                if "bat" in bat:
+                    bat_dict.update({bat: {"imported": data.data.bat_module_data[bat].data["get"]["imported"],
+                        "exported": data.data.bat_module_data[bat].data["get"]["exported"],
+                        "soc": data.data.bat_module_data[bat].data["get"]["soc"]}})
+            except Exception as e:
+                log.exception_logging(e)
+
         new_entry = {
             "date": timecheck.create_timestamp_time(),
             "cp": cp_dict,
             "ev": ev_dict,
-            "counter0": {
-                "imported": data.data.counter_data["counter0"].data["get"]["imported"],
-                "exported": data.data.counter_data["counter0"].data["get"]["exported"]
-            },
-            "pv_all": data.data.pv_data["all"].data["get"]["counter"],
-            "bat_all": {
-                "imported": data.data.bat_module_data["all"].data["get"]["imported"],
-                "exported": data.data.bat_module_data["all"].data["get"]["exported"],
-                "soc": data.data.bat_module_data["all"].data["get"]["soc"]
-            }
+            "counter": counter_dict,
+            "pv": pv_dict,
+            "bat": bat_dict
         }
 
         # json-Objekt in Datei einfügen

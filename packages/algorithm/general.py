@@ -1,9 +1,9 @@
 """Allgemeine Einstellungen
 """
 
-import data
-import log
-import pub
+from . import data
+from ..helpermodules import log
+from ..helpermodules import pub
 
 
 class general():

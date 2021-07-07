@@ -6,16 +6,16 @@ from threading import Thread
 import threading
 import time
 
-import algorithm
-import charge
-import daily_log
-import data
-import log
-import prepare
-import pub
-import publishvars2
-import setdata
-import subdata
+from packages.algorithm import algorithm
+from packages.algorithm import charge
+from packages.algorithm import daily_log
+from packages.algorithm import data
+from packages.helpermodules import log
+from packages.algorithm import prepare
+from packages.helpermodules import pub
+from packages.helpermodules import publishvars2
+from packages.helpermodules import setdata
+from packages.helpermodules import subdata
 
 class HandlerAlgorithm():
     def __init__(self):
