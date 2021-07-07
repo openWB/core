@@ -294,21 +294,8 @@ class setData():
             elif (re.search("^openWB/set/vehicle/[0-9]+/charge_template$", msg.topic) != None or
                     re.search("^openWB/set/vehicle/[0-9]+/ev_template$", msg.topic) != None):
                 self._validate_value(msg, int, [(0, None)])
-            elif (re.search("^openWB/set/vehicle/[0-9]+/get/time_charged$", msg.topic) != None or
-                    re.search("^openWB/set/vehicle/[0-9]+/get/chargemode_log_entry$", msg.topic) != None):
-                self._validate_value(msg, str)
             elif re.search("^openWB/set/vehicle/[0-9]+/get/soc_timestamp$", msg.topic) != None:
                 self._validate_value(msg, int, [(0, None)])
-            elif (re.search("^openWB/set/vehicle/[0-9]+/get/daily_counter$", msg.topic) != None or
-                    re.search("^openWB/set/vehicle/[0-9]+/get/range_charged$", msg.topic) != None or
-                    re.search("^openWB/set/vehicle/[0-9]+/get/counter$", msg.topic) != None or
-                    re.search("^openWB/set/vehicle/[0-9]+/get/charged_since_mode_switch$", msg.topic) != None or 
-                    re.search("^openWB/set/vehicle/[0-9]+/get/charged_since_plugged_counter$", msg.topic) != None or 
-                    re.search("^openWB/set/vehicle/[0-9]+/get/counter_at_mode_switch$", msg.topic) != None or
-                    re.search("^openWB/set/vehicle/[0-9]+/get/counter_at_plugtime$", msg.topic) != None):
-                self._validate_value(msg, float, [(0, None)])
-            elif re.search("^openWB/set/vehicle/[0-9]+/get/timestamp_start_charging$", msg.topic) != None:
-                self._validate_value(msg, str)
             elif re.search("^openWB/set/vehicle/[0-9]+/get/soc$", msg.topic) != None:
                 self._validate_value(msg, int, [(0, 100)])
             elif re.search("^openWB/set/vehicle/[0-9]+/set/ev_template$", msg.topic) != None:
@@ -435,6 +422,19 @@ class setData():
             elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/autolock_state$", msg.topic) != None:
                 self._validate_value(msg, int, [(0, 4)])
             elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/rfid$", msg.topic) != None:
+                self._validate_value(msg, str)
+            elif (re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/log/time_charged$", msg.topic) != None or
+                    re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/log/chargemode_log_entry$", msg.topic) != None):
+                self._validate_value(msg, str)
+            elif (re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/log/daily_counter$", msg.topic) != None or
+                    re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/log/range_charged$", msg.topic) != None or
+                    re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/log/counter$", msg.topic) != None or
+                    re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/log/charged_since_mode_switch$", msg.topic) != None or 
+                    re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/log/charged_since_plugged_counter$", msg.topic) != None or 
+                    re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/log/counter_at_mode_switch$", msg.topic) != None or
+                    re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/log/counter_at_plugtime$", msg.topic) != None):
+                self._validate_value(msg, float, [(0, None)])
+            elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/log/timestamp_start_charging$", msg.topic) != None:
                 self._validate_value(msg, str)
             elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/config$", msg.topic) != None:
                 self._validate_value(msg, "json")

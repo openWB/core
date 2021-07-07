@@ -63,22 +63,6 @@ class ev():
             self.data["control_parameter"]["timestamp_perform_phase_switch"] = "0"
             self.data["control_parameter"]["submode"] = "stop"
             self.data["control_parameter"]["chargemode"] = "stop"
-
-            # bestehende Logdaten auf dem Broker nicht zurücksetzen, daher nicht publishen
-            if "counter_at_plugtime" not in self.data["get"]:
-                self.data["get"]["counter_at_plugtime"] = 0
-            if "timestamp_start_charging" not in self.data["get"]:
-                self.data["get"]["timestamp_start_charging"] = "0"
-            if "counter_at_mode_switch" not in self.data["get"]:
-                self.data["get"]["counter_at_mode_switch"] = 0
-            if "charged_since_mode_switch" not in self.data["get"]:
-                self.data["get"]["charged_since_mode_switch"] = 0
-            if "range_charged" not in self.data["get"]:
-                self.data["get"]["range_charged"] = 0
-            if "time_charged" not in self.data["get"]:
-                self.data["get"]["time_charged"] = "00:00"
-            if "chargemode_log_entry" not in self.data["get"]:
-                self.data["get"]["chargemode_log_entry"] = "_"
         except Exception as e:
             log.exception_logging(e)
 

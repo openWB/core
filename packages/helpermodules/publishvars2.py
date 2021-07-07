@@ -147,7 +147,7 @@ def pub_settings():
         "2": {"name": "def", "time": ["07:00", "17:20"], "current": 16, "active": 0, "frequency": {"selected": "daily"} }
         }
     
-    #ct0 - default
+    # # ct0 - default
     # pub.pub("openWB/set/vehicle/template/charge_template/0/load_default", False)
     # pub.pub("openWB/set/vehicle/template/charge_template/0/disable_after_unplug", False)
     # pub.pub("openWB/set/vehicle/template/charge_template/0/prio", False)
