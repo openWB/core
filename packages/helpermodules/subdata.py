@@ -243,7 +243,12 @@ class subData():
                 if re.search("^openWB/chargepoint/[1-9][0-9]*/set/.+$", msg.topic) != None:
                     if "set" not in self.cp_data["cp"+index].data:
                         self.cp_data["cp"+index].data["set"]={}
-                    self.set_json_payload(self.cp_data["cp"+index].data["set"], msg)
+                    if re.search("^openWB/chargepoint/[1-9][0-9]*/set/log/.+$", msg.topic) != None:
+                        if "log" not in self.cp_data["cp"+index].data["set"]:
+                            self.cp_data["cp"+index].data["set"]["log"]={}
+                        self.set_json_payload(self.cp_data["cp"+index].data["set"]["log"], msg)
+                    else:
+                        self.set_json_payload(self.cp_data["cp"+index].data["set"], msg)
                 elif re.search("^openWB/chargepoint/[1-9][0-9]*/get/.+$", msg.topic) != None:
                     if "get" not in self.cp_data["cp"+index].data:
                         self.cp_data["cp"+index].data["get"]={}

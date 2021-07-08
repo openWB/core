@@ -210,6 +210,23 @@ class chargepoint():
         self.data["get"]["read_tag"]["tag"] = "0"
         self.data["get"]["read_tag"]["timestamp"] = "0"
         self.data["set"]["rfid"] = 0
+        self.data["set"]["log"] = {}
+
+        # bestehende Logdaten auf dem Broker nicht zurücksetzen, daher nicht publishen
+        if "counter_at_plugtime" not in self.data["set"]["log"]:
+            self.data["set"]["log"]["counter_at_plugtime"] = 0
+        if "timestamp_start_charging" not in self.data["set"]["log"]:
+            self.data["set"]["log"]["timestamp_start_charging"] = "0"
+        if "counter_at_mode_switch" not in self.data["set"]["log"]:
+            self.data["set"]["log"]["counter_at_mode_switch"] = 0
+        if "charged_since_mode_switch" not in self.data["set"]["log"]:
+            self.data["set"]["log"]["charged_since_mode_switch"] = 0
+        if "range_charged" not in self.data["set"]["log"]:
+            self.data["set"]["log"]["range_charged"] = 0
+        if "time_charged" not in self.data["set"]["log"]:
+            self.data["set"]["log"]["time_charged"] = "00:00"
+        if "chargemode_log_entry" not in self.data["set"]["log"]:
+            self.data["set"]["log"]["chargemode_log_entry"] = "_"
 
     def _is_grid_protection_active(self):
         """ prüft, ob der Netzschutz aktiv ist und alle Ladepunkt gestoppt werden müssen.

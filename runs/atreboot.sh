@@ -272,6 +272,12 @@ if python3 -c "import jq" &> /dev/null; then
 else
 	sudo pip3 install jq
 fi
+# Packages for 2.x
+if python3 -c "import filelock" &> /dev/null; then
+	echo 'filelock installed...'
+else
+	sudo pip3 install filelock
+fi
 
 # update version
 echo "version..."
