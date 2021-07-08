@@ -1,18 +1,29 @@
 """Log-Modul, dass die KOnfiguration für die Log-Dateien und Funktionen zum Aufruf der einzelnen Handler enthält
 """
 
-import traceback
+import filelock
 import logging
+import traceback
 
 debug_logger = None
+debug_fhandler = None
+debug_lock = None
 data_logger = None
+data_fhandler = None
+data_lock = None
 
 
 def setup_logger():
     global debug_logger
-    debug_logger = _config_logger("debug")
+    global debug_fhandler
+    global debug_lock
+    debug_logger, debug_fhandler = _config_logger("debug")
+    debug_lock = filelock.FileLock('/var/www/html/openWB/debug.log.lock')
     global data_logger
-    data_logger = _config_logger("data")
+    global data_fhandler
+    global data_lock
+    data_logger, data_fhandler = _config_logger("data")
+    data_lock = filelock.FileLock('/var/www/html/openWB/data.log.lock')
 
 
 def _config_logger(name):
@@ -28,14 +39,17 @@ def _config_logger(name):
     ch.setLevel(logging.DEBUG)
     ch.setFormatter(formatter)
     logger.addHandler(ch)
-    return logger
-
+    return logger, fh
 
 def message_debug_log(level, message):
-    _set_message(debug_logger, level, message)
+    with debug_lock.acqiure(timeout=1):
+        _set_message(debug_logger, level, message)
+        debug_fhandler.close()
 
 def message_data_log(level, message):
-    _set_message(data_logger, level, message)
+    with data_lock.acquire(timeout=1):
+        _set_message(data_logger, level, message)
+        data_fhandler.close()
 
 
 def _set_message(logger, level, message):
