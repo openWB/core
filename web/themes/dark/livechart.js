@@ -586,9 +586,9 @@ function putgraphtogether() {
 	if ( (all1 == 1) && (all2 == 1) && (all3 == 1) && (all4 == 1) && (all5 == 1) && (all6 == 1) && (all7 == 1) && (all8 == 1) && (all9 == 1) && (all10 == 1) && (all11 == 1) && (all12 == 1) && (all13 == 1) && (all14 == 1) && (all15 == 1) && (all16 == 1) ){
 		var alldata = all1p + "\n" + all2p + "\n" + all3p + "\n" + all4p + "\n" + all5p + "\n" + all6p + "\n" + all7p + "\n" + all8p + "\n" + all9p + "\n" + all10p + "\n" + all11p + "\n" + all12p + "\n" + all13p + "\n" + all14p + "\n" + all15p + "\n" + all16p;
 		allChartData = parseData(alldata);
-		console.log("allChartData.length: "+allChartData.length);
+		// console.log("allChartData.length: "+allChartData.length);
 		if ( allChartData.length >= 30 ) { // 5 minutes * 6 measurements/min
-			console.log("received at least "+maxDisplayLength+" data sets for graph");
+			// console.log("received at least "+maxDisplayLength+" data sets for graph");
 			Object.keys(allChartData[allChartData.length - 1]).forEach(function(key){
 				if(key != 'time' && key != 'timestamp'){
 					initDataset(key);
@@ -635,7 +635,7 @@ function updateGraph(dataset) {
 			// allChartData.splice(0, chartUpdateBuffer.length);
 			allChartData.splice(0, allChartData.length - maxDisplayLength);
 		}
-		console.log("allChartData.length: "+allChartData.length);
+		// console.log("allChartData.length: "+allChartData.length);
 		chartUpdateBuffer = [];
 		myLine.update();
 	} else {
@@ -644,7 +644,7 @@ function updateGraph(dataset) {
 }
 
 function checkgraphload(){
-	console.log("checkgraphload: graphloaded: "+graphloaded+" initialread: "+initialread);
+	// console.log("checkgraphload: graphloaded: "+graphloaded+" initialread: "+initialread);
 	if ( graphloaded == 1 ) {
 		myLine.destroy();
 		loadgraph(0);  // when reloading graph, no more "pumping" animations
@@ -669,7 +669,7 @@ function checkgraphload(){
 		typeof boolDisplayEvu === "boolean" &&
 		typeof boolDisplayPv === "boolean" &&
 		typeof boolDisplayLegend === "boolean" ) {
-		console.log("all bools received");
+		// console.log("all bools received");
 		if ( initialread != 0 ) {
 			if ( graphloaded == 0 ) {
 				graphloaded = 1;
@@ -741,7 +741,7 @@ function forcegraphload() {
 			showhidedataset('boolDisplayLegend');
 		}
 		if ( typeof maxDisplayLength === "undefined" ) {
-			console.log("setting graph duration to default of 30 minutes");
+			// console.log("setting graph duration to default of 30 minutes");
 			maxDisplayLength = 30 * 6;
 		}
 		checkgraphload();
