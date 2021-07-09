@@ -93,9 +93,18 @@ function parseData(alldata){
 	var result = [];
 	alldata.split("\n").forEach(function(line){
 		if( line.length > 5 ){
-			lineJson = JSON.parse(line);
-			lineJson.timestamp = lineJson.timestamp * 1000;
-			result.push(lineJson);
+			try{
+				lineJson = JSON.parse(line);
+				lineJson.timestamp = lineJson.timestamp * 1000;
+				result.push(lineJson);
+			}
+			catch (e){
+				if (e instanceof SyntaxError){
+					console.log("bad json syntax: "+line);
+				} else {
+					console.log(e.name+': '+e.message);
+				}
+			}
 		}
 	});
 	return result;
