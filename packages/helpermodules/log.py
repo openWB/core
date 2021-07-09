@@ -42,7 +42,7 @@ def _config_logger(name):
     return logger, fh
 
 def message_debug_log(level, message):
-    with debug_lock.acqiure(timeout=1):
+    with debug_lock.acquire(timeout=1):
         _set_message(debug_logger, level, message)
         debug_fhandler.close()
 
