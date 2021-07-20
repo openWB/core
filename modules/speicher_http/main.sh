@@ -6,7 +6,6 @@ re='^-?[0-9]+$'
 
 echo $soc 
 power=$(curl --connect-timeout 10 -s $2 )
-re='^-?[0-9]+$'
 
 echo $power 
 
@@ -17,4 +16,3 @@ fi
 if [[ speicherekwh != "none" ]]; then
 echo $(curl --connect-timeout 10 -s $3)
 fi
-
