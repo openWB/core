@@ -518,7 +518,7 @@ if( isset($_COOKIE['openWBTheme'] )){
 			<div class="form-row mb-1">
 				<label v-on:click="toggleHelp" class="col-md-4 col-form-label">
 					{{ title }}
-					<i v-if="this.$slots.help" class="fa-question-circle" :class="showHelp ? 'fas' : 'far'"></i>
+					<i v-if="this.$slots.help" class="fa-question-circle" :class="showHelp ? 'fas text-info' : 'far'"></i>
 				</label>
 				<div class="col-md-8">
 					<div class="form-row">
@@ -535,7 +535,7 @@ if( isset($_COOKIE['openWBTheme'] )){
 							<input v-if="['email', 'url'].includes(subtype)" :type="subtype" class="form-control" v-model="value" :disabled="disabled">
 						</div>
 					</div>
-					<span v-if="showHelp" class="form-text small">
+					<span v-if="showHelp" class="form-row alert alert-info my-1 small">
 						<slot name="help"></slot>
 					</span>
 				</div>
@@ -546,7 +546,7 @@ if( isset($_COOKIE['openWBTheme'] )){
 			<div class="form-row mb-1">
 				<label v-on:click="toggleHelp" class="col-md-4 col-form-label">
 					{{ title }}
-					<i v-if="this.$slots.help" class="fa-question-circle" :class="showHelp ? 'fas' : 'far'"></i>
+					<i v-if="this.$slots.help" class="fa-question-circle" :class="showHelp ? 'fas text-info' : 'far'"></i>
 				</label>
 				<div class="col-md-8">
 					<div class="form-row">
@@ -559,7 +559,7 @@ if( isset($_COOKIE['openWBTheme'] )){
 							<input :type="showPassword ? 'text' : 'password'" class="form-control" v-model="value" :disabled="disabled">
 						</div>
 					</div>
-					<span v-if="showHelp" class="form-text small">
+					<span v-if="showHelp" class="form-row alert alert-info my-1 small">
 						<slot name="help"></slot>
 					</span>
 				</div>
@@ -570,7 +570,7 @@ if( isset($_COOKIE['openWBTheme'] )){
 			<div class="form-row mb-1">
 				<label v-on:click="toggleHelp" class="col-md-4 col-form-label">
 					{{ title }}
-					<i v-if="this.$slots.help" class="fa-question-circle" :class="showHelp ? 'fas' : 'far'"></i>
+					<i v-if="this.$slots.help" class="fa-question-circle" :class="showHelp ? 'fas text-info' : 'far'"></i>
 				</label>
 				<div class="col-md-8">
 					<div class="form-row">
@@ -583,7 +583,7 @@ if( isset($_COOKIE['openWBTheme'] )){
 							</div>
 						</div>
 					</div>
-					<span v-if="showHelp" class="form-text small">
+					<span v-if="showHelp" class="form-row alert alert-info my-1 small">
 						<slot name="help"></slot>
 					</span>
 				</div>
@@ -594,7 +594,7 @@ if( isset($_COOKIE['openWBTheme'] )){
 			<div class="form-row mb-1">
 				<label v-on:click="toggleHelp" class="col-md-4 col-form-label">
 					{{ title }}
-					<i v-if="this.$slots.help" class="fa-question-circle" :class="showHelp ? 'fas' : 'far'"></i>
+					<i v-if="this.$slots.help" class="fa-question-circle" :class="showHelp ? 'fas text-info' : 'far'"></i>
 				</label>
 				<div class="col-md-8">
 					<div class="form-row vaRow mb-1">
@@ -604,7 +604,7 @@ if( isset($_COOKIE['openWBTheme'] )){
 							<input type="range" class="form-control-range rangeInput" :min="min" :max="max" :step="step" v-model.number="value" :disabled="disabled">
 						</div>
 					</div>
-					<span v-if="showHelp" class="form-text small">
+					<span v-if="showHelp" class="form-row alert alert-info my-1 small">
 						<slot name="help"></slot>
 					</span>
 				</div>
@@ -615,13 +615,13 @@ if( isset($_COOKIE['openWBTheme'] )){
 			<div class="form-row mb-1">
 				<label v-on:click="toggleHelp" class="col-md-4 col-form-label">
 					{{ title }}
-					<i v-if="this.$slots.help" class="fa-question-circle" :class="showHelp ? 'fas' : 'far'"></i>
+					<i v-if="this.$slots.help" class="fa-question-circle" :class="showHelp ? 'fas text-info' : 'far'"></i>
 				</label>
 				<div class="col-md-8">
 					<div class="form-row">
 						<textarea class="form-control" :disabled="disabled">{{ value }}</textarea>
 					</div>
-					<span v-if="showHelp" class="form-text small">
+					<span v-if="showHelp" class="form-row alert alert-info my-1 small">
 						<slot name="help"></slot>
 					</span>
 				</div>
@@ -632,7 +632,7 @@ if( isset($_COOKIE['openWBTheme'] )){
 			<div class="form-row mb-1">
 				<label v-on:click="toggleHelp" class="col-md-4 col-form-label">
 					{{ title }}
-					<i v-if="this.$slots.help" class="fa-question-circle" :class="showHelp ? 'fas' : 'far'"></i>
+					<i v-if="this.$slots.help" class="fa-question-circle" :class="showHelp ? 'fas text-info' : 'far'"></i>
 				</label>
 				<div class="col-md-8">
 					<div class="form-row">
@@ -645,7 +645,7 @@ if( isset($_COOKIE['openWBTheme'] )){
 							</optgroup>
 						</select>
 					</div>
-					<span v-if="showHelp" class="form-text small">
+					<span v-if="showHelp" class="form-row alert alert-info my-1 small">
 						<slot name="help"></slot>
 					</span>
 				</div>
@@ -656,7 +656,7 @@ if( isset($_COOKIE['openWBTheme'] )){
 			<div class="form-row mb-1">
 				<label v-on:click="toggleHelp" class="col-md-4 col-form-label">
 					{{ title }}
-					<i v-if="this.$slots.help" class="fa-question-circle" :class="showHelp ? 'fas' : 'far'"></i>
+					<i v-if="this.$slots.help" class="fa-question-circle" :class="showHelp ? 'fas text-info' : 'far'"></i>
 				</label>
 				<div class="col-md-8">
 					<div class="form-row">
@@ -667,7 +667,7 @@ if( isset($_COOKIE['openWBTheme'] )){
 							</label>
 						</div>
 					</div>
-					<span v-if="showHelp" class="form-text small">
+					<span v-if="showHelp" class="form-row alert alert-info my-1 small">
 						<slot name="help"></slot>
 					</span>
 				</div>
@@ -678,14 +678,14 @@ if( isset($_COOKIE['openWBTheme'] )){
 			<div class="form-row mb-1">
 				<label v-on:click="toggleHelp" class="col-md-4 col-form-label">
 					{{ title }}
-					<i v-if="this.$slots.help" class="fa-question-circle" :class="showHelp ? 'fas' : 'far'"></i>
+					<i v-if="this.$slots.help" class="fa-question-circle" :class="showHelp ? 'fas text-info' : 'far'"></i>
 				</label>
 				<div class="col-md-8">
 					<div class="form-row">
 						<!-- <input type="checkbox" v-model="value" :disabled="disabled" data-toggle="toggle" :data-on="labelOn" :data-off="labelOff" :data-onstyle="styleOn" :data-offstyle="styleOff" :data-style="style"> -->
 						<input class="form-control" type="checkbox" v-model="value" :disabled="disabled">
 					</div>
-					<span v-if="showHelp" class="form-text small">
+					<span v-if="showHelp" class="form-row alert alert-info my-1 small">
 						<slot name="help"></slot>
 					</span>
 				</div>
