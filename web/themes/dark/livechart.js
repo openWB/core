@@ -89,24 +89,25 @@ var myLine;
 var allChartData = [];
 var chartUpdateBuffer = [];
 
-function parseData(alldata){
+function parseData(alldata) {
 	var result = [];
-	alldata.split("\n").forEach(function(line){
-		if( line.length > 5 ){
-			try{
+	alldata.split("\n").forEach(function(line) {
+		if (line.length > 5) {
+			try {
 				lineJson = JSON.parse(line);
 				lineJson.timestamp = lineJson.timestamp * 1000;
 				result.push(lineJson);
-			}
-			catch (e){
-				if (e instanceof SyntaxError){
-					console.log("bad json syntax: "+line);
+				// console.log(lineJson);
+			} catch (e) {
+				if (e instanceof SyntaxError) {
+					console.log("bad json syntax: " + line);
 				} else {
-					console.log(e.name+': '+e.message);
+					console.log(e.name + ': ' + e.message);
 				}
 			}
 		}
 	});
+	// console.log(result);
 	return result;
 }
 
@@ -171,7 +172,7 @@ let datasetTemplates = {
 		jsonKey: null,
 		borderColor: batAllSocColor,
 		backgroundColor: batAllSocBgColor,
-		borderDash: [10,5],
+		borderDash: [10, 5],
 		hidden: boolDisplaySpeicherSoc,
 		fill: false,
 		lineTension: 0.2,
@@ -204,7 +205,7 @@ let datasetTemplates = {
 		label: 'LP SoC',
 		jsonKey: null,
 		borderColor: cpSocColor,
-		borderDash: [10,5],
+		borderDash: [10, 5],
 		borderWidth: 2,
 		hidden: false,
 		fill: false,
@@ -329,11 +330,11 @@ function loadgraph(animationDuration = 1000) {
 	}
 
 	function getMaxTicksLimit(width) {
-		if ( width < 350 ) {
+		if (width < 350) {
 			return 6;
-		} else if ( width < 470 ) {
+		} else if (width < 470) {
 			return 9;
-		} else if ( width < 768 ) {
+		} else if (width < 768) {
 			return 12;
 		} else {
 			return 18;
@@ -342,8 +343,8 @@ function loadgraph(animationDuration = 1000) {
 
 	function setGraphLineBorderWidth(theGraph, newWidth) {
 		// sets borderWidth attribute for all single lines without fill
-		for ( var index = 0; index < theGraph.config.data.datasets.length; index++) {
-			if ( !theGraph.config.data.datasets[index].fill ) {
+		for (var index = 0; index < theGraph.config.data.datasets.length; index++) {
+			if (!theGraph.config.data.datasets[index].fill) {
 				theGraph.config.data.datasets[index].borderWidth = newWidth;
 			}
 		}
@@ -354,7 +355,7 @@ function loadgraph(animationDuration = 1000) {
 		// quantity of x-axis labels
 		chartInstance.config.options.scales.x.ticks.maxTicksLimit = getMaxTicksLimit(chartInstance.width);
 		// other settings
-		if ( chartInstance.width > 390 ) {
+		if (chartInstance.width > 390) {
 			setGraphLineBorderWidth(chartInstance, 2);
 			chartInstance.config.options.scales.x.ticks.font.size = 12;
 			chartInstance.config.options.scales.y1.ticks.font.size = 12;
@@ -387,7 +388,7 @@ function loadgraph(animationDuration = 1000) {
 					display: false
 				},
 				tooltip: {
-					enabled: false
+					enabled: true
 				},
 				legend: {
 					display: boolDisplayLegend,
@@ -437,12 +438,11 @@ function loadgraph(animationDuration = 1000) {
 				}
 			},
 			animation: {
-				// duration: animationDuration,
-				duration: 0,
-				// onComplete: function(animation) {
-				// 	// if duration was set to 0 to avoid pumping after reload, set back to default
-				// 	this.options.animation.duration = 1000
-				// }
+				duration: animationDuration,
+				onComplete: function(animation) {
+					// if duration was set to 0 to avoid pumping after reload, set back to default
+					this.options.animation.duration = 1000
+				}
 			},
 			responsive: true,
 			maintainAspectRatio: false,
@@ -526,18 +526,18 @@ function loadgraph(animationDuration = 1000) {
 
 	initialread = 1;
 	$('#waitforgraphloadingdiv').hide();
-}  // end loadgraph
+} // end loadgraph
 
 // Sichtbarkeit für SmartHome Devices im Graph
-function setvisibility(datarr,hidevar,hidevalue,booldisplay){
+function setvisibility(datarr, hidevar, hidevalue, booldisplay) {
 	var arrayLength = datarr.length;
-	var vis=0
+	var vis = 0
 	for (var i = 0; i < arrayLength; i++) {
-		if (( datarr[i] >= 0.010) || (datarr[i] <=- 0.010)) {
-			vis=1
+		if ((datarr[i] >= 0.010) || (datarr[i] <= -0.010)) {
+			vis = 1
 		}
 	}
-	if ( vis == 0){
+	if (vis == 0) {
 		window[hidevar] = hidevalue;
 		window[booldisplay] = true;
 	} else {
@@ -547,11 +547,11 @@ function setvisibility(datarr,hidevar,hidevalue,booldisplay){
 	}
 }
 
-function getDatasetIndex(datasetId){
-	index = chartDatasets.findIndex(function(dataset){
+function getDatasetIndex(datasetId) {
+	index = chartDatasets.findIndex(function(dataset) {
 		return dataset.jsonKey == datasetId;
-	 });
-	if( index != -1 ){
+	});
+	if (index != -1) {
 		// console.log('index for dataset "'+datasetId+'": '+index);
 		return index;
 	}
@@ -559,18 +559,18 @@ function getDatasetIndex(datasetId){
 	return
 }
 
-function addDataset(datasetId){
+function addDataset(datasetId) {
 	var datasetTemplate = datasetId.replace(/\d/g, '');
 	var datasetIndex = undefined;
-	if(number = datasetId.match(/([\d]+)/g)){
+	if (number = datasetId.match(/([\d]+)/g)) {
 		datasetIndex = number[0];
 	}
 	// console.log('template name: ' + datasetTemplate + ' index: ' + datasetIndex);
-	if(datasetTemplates[datasetTemplate]){
+	if (datasetTemplates[datasetTemplate]) {
 		newDataset = JSON.parse(JSON.stringify(datasetTemplates[datasetTemplate]));
 		newDataset.parsing.yAxisKey = datasetId;
 		newDataset.jsonKey = datasetId;
-		if(datasetIndex){
+		if (datasetIndex) {
 			newDataset.label = newDataset.label + ' ' + datasetIndex;
 		}
 		return chartDatasets.push(newDataset) - 1;
@@ -580,33 +580,33 @@ function addDataset(datasetId){
 	return
 }
 
-function initDataset(datasetId){
+function initDataset(datasetId) {
 	// console.log('initDataset: '+datasetId);
 	var index = getDatasetIndex(datasetId);
-	if(index == undefined){
+	if (index == undefined) {
 		index = addDataset(datasetId);
 	}
-	if(index != undefined){
+	if (index != undefined) {
 		chartDatasets[index].data = allChartData;
 	}
 }
 
 function putgraphtogether() {
-	if ( (all1 == 1) && (all2 == 1) && (all3 == 1) && (all4 == 1) && (all5 == 1) && (all6 == 1) && (all7 == 1) && (all8 == 1) && (all9 == 1) && (all10 == 1) && (all11 == 1) && (all12 == 1) && (all13 == 1) && (all14 == 1) && (all15 == 1) && (all16 == 1) ){
+	if ((all1 == 1) && (all2 == 1) && (all3 == 1) && (all4 == 1) && (all5 == 1) && (all6 == 1) && (all7 == 1) && (all8 == 1) && (all9 == 1) && (all10 == 1) && (all11 == 1) && (all12 == 1) && (all13 == 1) && (all14 == 1) && (all15 == 1) && (all16 == 1)) {
 		var alldata = all1p + "\n" + all2p + "\n" + all3p + "\n" + all4p + "\n" + all5p + "\n" + all6p + "\n" + all7p + "\n" + all8p + "\n" + all9p + "\n" + all10p + "\n" + all11p + "\n" + all12p + "\n" + all13p + "\n" + all14p + "\n" + all15p + "\n" + all16p;
 		allChartData = parseData(alldata);
 		// console.log("allChartData.length: "+allChartData.length);
-		if ( allChartData.length >= 30 ) { // 5 minutes * 6 measurements/min
+		if (allChartData.length >= 30) { // 5 minutes * 6 measurements/min
 			// console.log("received at least "+maxDisplayLength+" data sets for graph");
-			Object.keys(allChartData[allChartData.length - 1]).forEach(function(key){
-				if(key != 'time' && key != 'timestamp'){
+			Object.keys(allChartData[allChartData.length - 1]).forEach(function(key) {
+				if (key != 'time' && key != 'timestamp') {
 					initDataset(key);
 				}
 			});
 			// after receipt of all data segments, unsubscribe from these topics to save bandwidth
 			unsubscribeMqttGraphSegments();
 
-			initialread = 1 ;
+			initialread = 1;
 			$('#waitforgraphloadingdiv').text('Graph lädt...');
 			checkgraphload();
 			// now we are ready to receive small updates for graph data
@@ -632,15 +632,15 @@ function putgraphtogether() {
 			$('#waitforgraphloadingdiv').text('Erst ca. ' + percent + '% der mindestens benötigten Datenpunkte für den Graph seit Neustart vorhanden.');
 		}
 	}
-}  // end putgraphtogether
+} // end putgraphtogether
 
 function updateGraph(dataset) {
 	chartUpdateBuffer = chartUpdateBuffer.concat(parseData(dataset));
-	if(initialread == 1 && myLine != undefined){
-		chartUpdateBuffer.forEach(function(row, index){
+	if (initialread == 1 && myLine != undefined) {
+		chartUpdateBuffer.forEach(function(row, index) {
 			allChartData.push(row);
 		});
-		if(typeof maxDisplayLength !== "undefined"  && allChartData.length > maxDisplayLength){
+		if (typeof maxDisplayLength !== "undefined" && allChartData.length > maxDisplayLength) {
 			// allChartData.splice(0, chartUpdateBuffer.length);
 			allChartData.splice(0, allChartData.length - maxDisplayLength);
 		}
@@ -652,14 +652,14 @@ function updateGraph(dataset) {
 	}
 }
 
-function checkgraphload(){
+function checkgraphload() {
 	// console.log("checkgraphload: graphloaded: "+graphloaded+" initialread: "+initialread);
-	if ( graphloaded == 1 ) {
+	if (graphloaded == 1) {
 		myLine.destroy();
-		loadgraph(0);  // when reloading graph, no more "pumping" animations
+		loadgraph(0); // when reloading graph, no more "pumping" animations
 		return;
 	}
-	if ( typeof boolDisplayHouseConsumption === "boolean" &&
+	if (typeof boolDisplayHouseConsumption === "boolean" &&
 		typeof boolDisplayLoad1 === "boolean" &&
 		typeof boolDisplayLp1Soc === "boolean" &&
 		typeof boolDisplayLp2Soc === "boolean" &&
@@ -677,10 +677,10 @@ function checkgraphload(){
 		typeof boolDisplaySpeicher === "boolean" &&
 		typeof boolDisplayEvu === "boolean" &&
 		typeof boolDisplayPv === "boolean" &&
-		typeof boolDisplayLegend === "boolean" ) {
+		typeof boolDisplayLegend === "boolean") {
 		// console.log("all bools received");
-		if ( initialread != 0 ) {
-			if ( graphloaded == 0 ) {
+		if (initialread != 0) {
+			if (graphloaded == 0) {
 				graphloaded = 1;
 			} else {
 				myLine.destroy();
@@ -691,99 +691,99 @@ function checkgraphload(){
 }
 
 function forcegraphload() {
-	if ( graphloaded == 0 ) {
-		if ( !(typeof boolDisplayHouseConsumption === "boolean") ) {
+	if (graphloaded == 0) {
+		if (!(typeof boolDisplayHouseConsumption === "boolean")) {
 			showhidedataset('boolDisplayHouseConsumption');
 		}
-		if ( !(typeof boolDisplayLoad1 === "boolean") ) {
+		if (!(typeof boolDisplayLoad1 === "boolean")) {
 			showhidedataset('boolDisplayLoad1');
 		}
-		if ( !(typeof boolDisplayLp1Soc === "boolean") ) {
+		if (!(typeof boolDisplayLp1Soc === "boolean")) {
 			showhidedataset('boolDisplayLp1Soc');
 		}
-		if ( !(typeof boolDisplayLp2Soc === "boolean") ) {
+		if (!(typeof boolDisplayLp2Soc === "boolean")) {
 			showhidedataset('boolDisplayLp2Soc');
 		}
-		if ( !(typeof boolDisplayLoad2 === "boolean") ) {
+		if (!(typeof boolDisplayLoad2 === "boolean")) {
 			showhidedataset('boolDisplayLoad2');
 		}
-		if ( !(typeof boolDisplayLp1 === "boolean") ) {
+		if (!(typeof boolDisplayLp1 === "boolean")) {
 			showhidedataset('boolDisplayLp1');
 		}
-		if ( !(typeof boolDisplayLp2 === "boolean") ) {
+		if (!(typeof boolDisplayLp2 === "boolean")) {
 			showhidedataset('boolDisplayLp2');
 		}
-		if ( !(typeof boolDisplayLp3 === "boolean") ) {
+		if (!(typeof boolDisplayLp3 === "boolean")) {
 			showhidedataset('boolDisplayLp3');
 		}
-		if ( !(typeof boolDisplayLp4 === "boolean") ) {
+		if (!(typeof boolDisplayLp4 === "boolean")) {
 			showhidedataset('boolDisplayLp4');
 		}
-		if ( !(typeof boolDisplayLp5 === "boolean") ) {
+		if (!(typeof boolDisplayLp5 === "boolean")) {
 			showhidedataset('boolDisplayLp5');
 		}
-		if ( !(typeof boolDisplayLp6 === "boolean") ) {
+		if (!(typeof boolDisplayLp6 === "boolean")) {
 			showhidedataset('boolDisplayLp6');
 		}
-		if ( !(typeof boolDisplayLp7 === "boolean") ) {
+		if (!(typeof boolDisplayLp7 === "boolean")) {
 			showhidedataset('boolDisplayLp7');
 		}
-		if ( !(typeof boolDisplayLp8 === "boolean") ) {
+		if (!(typeof boolDisplayLp8 === "boolean")) {
 			showhidedataset('boolDisplayLp8');
 		}
-		if ( !(typeof boolDisplayLpAll === "boolean") ) {
+		if (!(typeof boolDisplayLpAll === "boolean")) {
 			showhidedataset('boolDisplayLpAll');
 		}
-		if ( !(typeof boolDisplaySpeicherSoc === "boolean") ) {
+		if (!(typeof boolDisplaySpeicherSoc === "boolean")) {
 			showhidedataset('boolDisplaySpeicherSoc');
 		}
-		if ( !(typeof boolDisplaySpeicher === "boolean") ) {
+		if (!(typeof boolDisplaySpeicher === "boolean")) {
 			showhidedataset('boolDisplaySpeicher');
 		}
-		if ( !(typeof boolDisplayEvu === "boolean") ) {
+		if (!(typeof boolDisplayEvu === "boolean")) {
 			showhidedataset('boolDisplayEvu');
 		}
-		if ( !(typeof boolDisplayPv === "boolean") ) {
+		if (!(typeof boolDisplayPv === "boolean")) {
 			showhidedataset('boolDisplayPv');
 		}
-		if ( !(typeof boolDisplayLegend === "boolean") ) {
+		if (!(typeof boolDisplayLegend === "boolean")) {
 			showhidedataset('boolDisplayLegend');
 		}
-		if ( typeof maxDisplayLength === "undefined" ) {
+		if (typeof maxDisplayLength === "undefined") {
 			// console.log("setting graph duration to default of 30 minutes");
 			maxDisplayLength = 30 * 6;
 		}
 		checkgraphload();
 	}
-}  // end forcegraphload
+} // end forcegraphload
 
 function showhidedataset(thedataset) {
-	if ( window[thedataset] == true ) {
-		publish("1","openWB/graph/"+thedataset);
-	} else if ( window[thedataset] == false ) {
-		publish("0","openWB/graph/"+thedataset);
+	if (window[thedataset] == true) {
+		publish("1", "openWB/graph/" + thedataset);
+	} else if (window[thedataset] == false) {
+		publish("0", "openWB/graph/" + thedataset);
 	} else {
-		publish("1","openWB/graph/"+thedataset);
+		publish("1", "openWB/graph/" + thedataset);
 	}
 }
 
 function showhidelegend(thedataset) {
-	if ( window[thedataset] == true ) {
-		publish("0","openWB/graph/"+thedataset);
-	} else if ( window[thedataset] == false ) {
-		publish("1","openWB/graph/"+thedataset);
+	if (window[thedataset] == true) {
+		publish("0", "openWB/graph/" + thedataset);
+	} else if (window[thedataset] == false) {
+		publish("1", "openWB/graph/" + thedataset);
 	} else {
-		publish("0","openWB/graph/"+thedataset);
+		publish("0", "openWB/graph/" + thedataset);
 	}
 }
 
 function showhide(thedataset) {
-	if ( window[thedataset] == 0 ) {
-		publish("1","openWB/graph/"+thedataset);
-	} else if ( window[thedataset] == 1 ) {
-		publish("0","openWB/graph/"+thedataset);
+	if (window[thedataset] == 0) {
+		publish("1", "openWB/graph/" + thedataset);
+	} else if (window[thedataset] == 1) {
+		publish("0", "openWB/graph/" + thedataset);
 	} else {
-		publish("1","openWB/graph/"+thedataset);
+		publish("1", "openWB/graph/" + thedataset);
 	}
 }
 
@@ -792,7 +792,7 @@ function subscribeMqttGraphSegments() {
 	for (var segments = 1; segments < 17; segments++) {
 		// topic = "openWB/graph/" + segments + "alllivevalues";
 		topic = "openWB/graph/alllivevaluesJson" + segments;
-		client.subscribe(topic, {qos: 0});
+		client.subscribe(topic, { qos: 0 });
 	}
 }
 
@@ -805,6 +805,6 @@ function unsubscribeMqttGraphSegments() {
 	}
 }
 
-$(document).ready(function(){
+$(document).ready(function() {
 	setTimeout(forcegraphload, 15000);
 });
