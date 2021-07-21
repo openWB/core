@@ -16,29 +16,21 @@ from packages.helpermodules import pub
 from packages.helpermodules import publishvars2
 from packages.helpermodules import setdata
 from packages.helpermodules import subdata
+from packages.modules import loadvars
 
 class HandlerAlgorithm():
     def __init__(self):
         self.heartbeat = False
 
-    def run_handler(self, loadvarsdone):
+    def handler10Sec(self):
         """ führt den Algorithmus durch.
-
-        Parameter
-        ---------
-        loadvarsdone: event
-            Event, das angibt, ob die loadvars abgearbeitet wurde.
         """
         try:
-            while loadvarsdone.wait():
-                loadvarsdone.clear()
-                self.heartbeat = True
-                try:
-                    prep.setup_algorithm()
-                    control.calc_current()
-                    char.start_charging()
-                except Exception as e:
-                    log.exception_logging(e)
+            vars.get_values()
+            self.heartbeat = True
+            prep.setup_algorithm()
+            control.calc_current()
+            char.start_charging()
         except Exception as e:
             log.exception_logging(e)
 
@@ -99,6 +91,7 @@ try:
     char = charge.charge()
     control = algorithm.control()
     handler = HandlerAlgorithm()
+    vars = loadvars.loadvars()
     prep = prepare.prepare()
     loadvarsdone = threading.Event()
     event_ev_template = threading.Event()
@@ -109,15 +102,14 @@ try:
     sub = subdata.subData(event_ev_template, event_charge_template, loadvarsdone)
     t_sub = Thread(target=sub.sub_topics, args=())
     t_set = Thread(target=set.set_data, args=())
-    t_handler = Thread(target=handler.run_handler, args=(loadvarsdone,))
 
 
     log.setup_logger()
     pub.setup_connection()
     t_sub.start()
     t_set.start()
-    t_handler.start()
     rt = RepeatedTimer(300, handler5Min)
+    rt2 = RepeatedTimer(10, handler.handler10Sec)
 
     publishvars2.pub_settings()
 except Exception as e:
