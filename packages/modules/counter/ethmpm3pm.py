@@ -9,7 +9,15 @@ from pymodbus.client.sync import ModbusTcpClient
 from ...helpermodules import pub
 from ...helpermodules import simcount
 
-def read_version0(counter):
+def read_ethmpm3pm(counter):
+    if counter.data["config"]["config"]["openwb"]["version"] == 0:
+        _read_version0(counter)
+    elif counter.data["config"]["config"]["openwb"]["version"] == 1:
+        _read_lovato(counter)
+    elif counter.data["config"]["config"]["openwb"]["version"] == 2:
+        _read_sdm(counter)
+
+def _read_version0(counter):
     """ liest die Werte des openWB EVU Kit Version 0.
 
     Parameters
@@ -109,7 +117,7 @@ def read_version0(counter):
     evupf3 = round((float(evupf3) / 10), 0)
     pub.pub("openWB/set/counter/"+str(counter_num)+"/get/power_factor", [evupf1, evupf2, evupf3])
 
-def read_lovato(counter):
+def _read_lovato(counter):
     """ liest die Werte des openWB EVU Kit Version 1 - Lovato.
 
     Parameters
@@ -182,7 +190,7 @@ def read_lovato(counter):
 
     simcount.sim_count(finalw, "openWB/set/counter/"+str(counter_num)+"/", counter.data["set"])
 
-def read_sdm(counter):
+def _read_sdm(counter):
     """ liest die Werte des openWB EVU Kit Version 2 - SDM.
 
     Parameters

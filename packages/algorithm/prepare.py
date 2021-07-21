@@ -73,6 +73,11 @@ class prepare():
                 except Exception as e:
                     log.exception_logging(e)
             data.data.bat_module_data = copy.deepcopy(subdata.subData.bat_module_data)
+            for bat in data.data.bat_module_data:
+                try:
+                    data.data.bat_module_data[bat].bat_num = bat[3:]
+                except Exception as e:
+                    log.exception_logging(e)
         except Exception as e:
             log.exception_logging(e)
 
