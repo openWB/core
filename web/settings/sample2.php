@@ -31,35 +31,55 @@ if( isset($_COOKIE['openWBTheme'] )){
 
 		<!-- Bootstrap -->
 		<link rel="stylesheet" type="text/css" href="css/bootstrap-4.4.1/bootstrap.min.css">
+		<!-- Bootstrap-Toggle -->
+		<link rel="stylesheet" type="text/css" href="css/bootstrap4-toggle/bootstrap4-toggle.min.css">
 		<!-- Normalize -->
 		<link rel="stylesheet" type="text/css" href="css/normalize-8.0.1.css">
 		<!-- Font Awesome -->
 		<link rel="stylesheet" type="text/css" href="fonts/font-awesome-5.8.2/css/all.css">
 		<!-- include settings-style -->
-		<link rel="stylesheet" type="text/css" href="css/settings_style.css">
-		<link rel="stylesheet" href="themes/<?php echo $themeCookie; ?>/settings.css?v=20200801">
+		<link rel="stylesheet" type="text/css" href="css/settings_style20.css">
+		<link rel="stylesheet" href="themes/<?php echo $themeCookie; ?>/settings.css?v=20210330">
 
 		<!-- important scripts to be loaded -->
 		<script src="js/jquery-3.6.0.min.js"></script>
 		<script src="js/bootstrap-4.4.1/bootstrap.bundle.min.js"></script>
+		<script src="js/bootstrap4-toggle/bootstrap4-toggle.min.js"></script>
 		<script src="js/bootstrap-selectpicker/bootstrap-select.min.js"></script>
 		<!-- load helper functions -->
-		<!-- <script src = "settings/helperFunctions.js?ver=20210329" ></script> -->
+		<script src = "settings/helperFunctions20.js?ver=20210329" ></script>
 		<!-- load mqtt library -->
-		<!-- <script src = "js/mqttws31.js" ></script> -->
-		<!-- load topics -->
-		<!-- <script src = "settings/<?php echo $currentPage['id']; ?>/topicsToSubscribe.js?ver=20210215" ></script> -->
-		<!-- load service -->
-		<!-- <script src = "settings/setupMqttServices.js?ver=20201207" ></script> -->
-		<!-- load mqtt handler-->
-		<!-- <script src = "settings/processAllMqttMsg.js?ver=20210104" ></script> -->
+		<script src = "js/mqttws31.js" ></script>
 		<!-- vue.js -->
 		<script src="js/vue.js-3.1.5/vue.global.js"></script>
+		<style>
+			#saveprogress {
+				background-color:white;
+				position:fixed;
+				top:0px;
+				left:0px;
+				width:100%;
+				height:100%;
+				z-index:999999;
+				opacity: 90%;
+			}
+			#saveprogress-inner {
+				margin-top: 150px;
+				text-align: center;
+			}
+			#saveprogress-image {
+				max-width: 300px;
+			}
+			#saveprogress-info {
+				color:grey;
+			}
+		</style>
 	</head>
 	<body>
 		<div id="nav"></div> <!-- placeholder for navbar -->
 
-		<div role="main" class="container pt-4" style="margin-top:20px">
+		<div role="main" class="container">
+
 			<div id="content">
 				<h1>{{ title }}</h1>
 
