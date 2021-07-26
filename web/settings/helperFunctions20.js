@@ -41,7 +41,7 @@ function getCookie(cname) {
 	return '';
 }
 
-var originalValues = {}; // holds all topics and its values received by mqtt as objects before possible changes made by user
+// var originalValues = {}; // holds all topics and its values received by mqtt as objects before possible changes made by user
 
 var changedValuesHandler = {
 	deleteProperty: function(obj, key, value) {
@@ -63,61 +63,3 @@ var changedValuesHandler = {
 }
 
 var changedValues = new Proxy({}, changedValuesHandler);
-
-function sendValues() {
-	/** @function sendValues
-	 * send all topic-value-pairs from valueList
-	 * @typedef {Object} topic-value-pair
-	 * @property {string} topic - the topic
-	 * @property {string} value - the value
-	 * @param {topic-value-pair} - the changed values and their topics
-	 * @requires global variable 'toBeSendValues'
-	 * @requires modal with id 'noValuesChangedInfoModal'
-	 */
-	if (!(Object.keys(changedValues).length === 0)) {
-		// there are changed values
-		// so first show saveprogress on page
-		$('#saveprogress').removeClass('hide');
-		// delay in ms between publishes
-		var intervall = 200;
-		// then send changed values
-
-		Object.keys(changedValues).forEach(function(topic, index) {
-			var value = this[topic];
-			setTimeout(function() {
-				console.log("publishing changed value: " + topic + ": " + value);
-				// as all empty messages are not processed by mqttsub.py, we have to send something usefull
-				if (value.length == 0) {
-					publish("none", topic);
-					// delete empty values as we will never get an answer
-					console.log("deleting empty changedValue: " + topic)
-					delete changedValues[topic];
-				} else {
-					publish(value, topic);
-				}
-			}, index * intervall);
-		}, changedValues);
-
-	} else {
-		$('#noValuesChangedInfoModal').modal();
-	}
-}
-
-function getChangedValues() {
-	/** @function getChangedValues
-	 * gets all topic-value-pairs changed by the user and sets topic from /get/ to /set/
-	 * @typedef {Object} topic-value-pair
-	 * @property {string} topic - the topic
-	 * @property {string} value - the value
-	 * @return {topic-value-pair} - the changed values and their topics
-	 */
-	for (element in vApp.$refs) {
-		console.log("checking: " + element);
-		if (vApp.$refs[element].changed && !vApp.$refs[element].disabled) {
-			console.log("value ist changed and not disabled");
-			var message = JSON.stringify(vApp.$refs[element].value);
-			var topic = element.replace(/^openWB\//, 'openWB/set/');
-			changedValues[topic] = message;
-		}
-	}
-}
