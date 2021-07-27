@@ -229,10 +229,22 @@ if( isset($_COOKIE['openWBTheme'] )){
 								</password-input>
 								<range-input
 									title="1. Range"
-									:min=6 :max=32 :step=2
-									ref="openWB/general/testRange"
+									:min=6 :max=32 :step=1
+									ref="openWB/general/testRange1"
 									:default-value=6
 									unit="A"
+									:is-disabled='visibility.extOpenWBOn'>
+									<template #help>
+										Hilfetext
+									</template>
+								</range-input>
+								<range-input
+									title="2. Range"
+									:min=0 :max=11 :step=1
+									ref="openWB/general/testRange2"
+									:default-value=0
+									unit="A"
+									:labels='[{"label":"Aus","value":0},{"label":6,"value":6},{"label":7,"value":7},{"label":8,"value":8},{"label":9,"value":9},{"label":10,"value":10},{"label":11,"value":11},{"label":12,"value":12},{"label":13,"value":13},{"label":14,"value":14},{"label":15,"value":15},{"label":16,"value":16}]'
 									:is-disabled='visibility.extOpenWBOn'>
 									<template #help>
 										Hilfetext

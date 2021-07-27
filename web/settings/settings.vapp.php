@@ -208,11 +208,17 @@
 		</label>
 		<div class="col-md-8">
 			<div class="form-row vaRow mb-1">
-				<label for="XXX" class="col-2 col-form-label valueLabel">{{ value }} {{ unit }}</label>
-				<div class="col-10">
+				<label v-if="label" for="XXX" class="col-2 col-form-label valueLabel">{{ label }}</label>
+				<button class="col-1 btn btn-block btn-info" type="button" @click="decrement">
+					<i class="fas fa-step-backward"></i>
+				</button>
+				<div class="col">
 					<!-- <input type="range" class="form-control-range rangeInput" :min="min" :max="max" :step="step" v-model="value" :disabled="disabled"> -->
 					<input type="range" class="form-control-range rangeInput" :min="min" :max="max" :step="step" v-model.number="value" :disabled="disabled">
 				</div>
+				<button class="col-1 btn btn-block btn-info" type="button" @click="increment">
+					<i class="fas fa-step-forward"></i>
+				</button>
 			</div>
 			<span v-if="showHelp" class="form-row alert alert-info my-1 small">
 				<slot name="help"></slot>
@@ -336,6 +342,14 @@
 			},
 			changed() {
 				return this.value != this.initialValue;
+			},
+			mqttValue: {
+				get() {
+					return this.value;
+				},
+				set(newMqttValue) {
+					this.value = newMqttValue;
+				}
 			}
 		},
 		watch: {
@@ -363,40 +377,7 @@
 			toggleHelp() {
 				this.showHelp = !this.showHelp && this.$slots.help;
 			}
-		},
-		// beforeMount(){
-		// 	console.debug("text-input onBeforeMount");
-		// },
-		// mounted() {
-		// 	console.debug("text-input onMounted");
-		// },
-		// beforeUpdate() {
-		// 	console.debug("text-input onBeforeUpdate");
-		// },
-		// updated() {
-		// 	console.debug("text-input onUpdated");
-		// },
-		// beforeUnmount() {
-		// 	console.debug("text-input onBeforeUnmount");
-		// },
-		// unmounted() {
-		// 	console.debug("text-input onUnmounted");
-		// },
-		// errorCaptured() {
-		// 	console.error("text-input onErrorCaptured");
-		// },
-		// renderTracked() {
-		// 	console.debug("text-input onRenderTracked");
-		// },
-		// renderTriggered() {
-		// 	console.debug("text-input onRenderTriggered");
-		// },
-		// activated() {
-		// 	console.debug("text-input onActivated");
-		// },
-		// deactivated() {
-		// 	console.debug("text-input onDeactivated");
-		// }
+		}
 	};
 
 	const passwordInputComponent = {
@@ -421,6 +402,14 @@
 			},
 			changed() {
 				return this.value != this.initialValue;
+			},
+			mqttValue: {
+				get() {
+					return this.value;
+				},
+				set(newMqttValue) {
+					this.value = newMqttValue;
+				}
 			}
 		},
 		watch: {
@@ -479,6 +468,14 @@
 			},
 			changed() {
 				return this.value != this.initialValue;
+			},
+			mqttValue: {
+				get() {
+					return this.value;
+				},
+				set(newMqttValue) {
+					this.value = newMqttValue;
+				}
 			}
 		},
 		watch: {
@@ -519,7 +516,8 @@
 			unit: String,
 			min: { type: Number, default: 0 },
 			max: { type: Number, default: 100 },
-			step: { type: Number, default: 1 }
+			step: { type: Number, default: 1 },
+			labels: { type: Array },
 		},
 		data() {
 			return {
@@ -534,6 +532,46 @@
 			},
 			changed() {
 				return this.value != this.initialValue;
+			},
+			label() {
+				currentLabel = '';
+				if(this.labels){
+					currentLabel = this.labels[this.value].label;
+				} else {
+					currentLabel = this.value;
+				}
+				if(typeof currentLabel == 'number' && this.unit){
+					currentLabel += ' ' + this.unit;
+				}
+				return currentLabel;
+			},
+			mqttValue: {
+				get() {
+					if(this.labels){
+						return this.labels[this.value].value;
+					}
+					return this.value;
+				},
+				set(newMqttValue) {
+					if(this.labels){
+						var newValue = undefined;
+						for(index = 0; index < this.labels.length; index++){
+							if(this.labels[index].value == newMqttValue){
+								newValue = index;
+								break;
+							}
+						}
+						if(newValue === undefined){
+							console.warn("mqttValue: not found in values: "+newMqttValue);
+						} else {
+							this.value = newValue;
+							this.initialValue = newValue;
+						}
+					} else {
+						this.value = newMqttValue;
+						this.initialValue = newMqttValue;
+					}
+				}
 			}
 		},
 		watch: {
@@ -560,6 +598,12 @@
 			},
 			toggleHelp() {
 				this.showHelp = !this.showHelp && this.$slots.help;
+			},
+			increment() {
+				this.value = Math.min(this.value+this.step, this.max);
+			},
+			decrement() {
+				this.value = Math.max(this.value-this.step, this.min);
 			}
 		}
 	};
@@ -585,6 +629,14 @@
 			},
 			changed() {
 				return this.value != this.initialValue;
+			},
+			mqttValue: {
+				get() {
+					return this.value;
+				},
+				set(newMqttValue) {
+					this.value = newMqttValue;
+				}
 			}
 		},
 		watch: {
@@ -638,6 +690,14 @@
 			},
 			changed() {
 				return this.value != this.initialValue;
+			},
+			mqttValue: {
+				get() {
+					return this.value;
+				},
+				set(newMqttValue) {
+					this.value = newMqttValue;
+				}
 			}
 		},
 		watch: {
@@ -708,6 +768,14 @@
 			},
 			changed() {
 				return this.value != this.initialValue;
+			},
+			mqttValue: {
+				get() {
+					return this.value;
+				},
+				set(newMqttValue) {
+					this.value = newMqttValue;
+				}
 			}
 		},
 		watch: {
@@ -739,40 +807,7 @@
 			toggleHelp() {
 				this.showHelp = !this.showHelp && this.$slots.help;
 			}
-		},
-		// beforeMount(){
-		// 	console.debug("buttongroup-input onBeforeMount");
-		// },
-		// mounted() {
-		// 	console.debug("buttongroup-input onMounted");
-		// },
-		// beforeUpdate() {
-		// 	console.debug("buttongroup-input onBeforeUpdate");
-		// },
-		// updated() {
-		// 	console.debug("buttongroup-input onUpdated");
-		// },
-		// beforeUnmount() {
-		// 	console.debug("buttongroup-input onBeforeUnmount");
-		// },
-		// unmounted() {
-		// 	console.debug("buttongroup-input onUnmounted");
-		// },
-		// errorCaptured() {
-		// 	console.error("buttongroup-input onErrorCaptured");
-		// },
-		// renderTracked() {
-		// 	console.debug("buttongroup-input onRenderTracked");
-		// },
-		// renderTriggered() {
-		// 	console.debug("buttongroup-input onRenderTriggered");
-		// },
-		// activated() {
-		// 	console.debug("buttongroup-input onActivated");
-		// },
-		// deactivated() {
-		// 	console.debug("buttongroup-input onDeactivated");
-		// }
+		}
 	};
 
 	const checkboxInputComponent = {
@@ -796,6 +831,14 @@
 			},
 			changed() {
 				return this.value != this.initialValue;
+			},
+			mqttValue: {
+				get() {
+					return this.value;
+				},
+				set(newMqttValue) {
+					this.value = newMqttValue;
+				}
 			}
 		},
 		watch: {
@@ -905,7 +948,7 @@
 					console.debug("checking: " + element);
 					if (this.$refs[element].changed && !this.$refs[element].disabled) {
 						console.debug("value ist changed and not disabled");
-						var message = JSON.stringify(this.$refs[element].value);
+						var message = JSON.stringify(this.$refs[element].mqttValue);
 						var topic = element.replace(/^openWB\//, 'openWB/set/');
 						changedValues[topic] = message;
 					}
@@ -961,6 +1004,7 @@
 				message.qos = 2;
 				message.retained = true;
 				this.client.send(message);
+				console.debug("sent: "+topic+": "+payload);
 			},
 			addTopicToSubscribe(topic) {
 				if(this.topicsToSubscribe.indexOf(topic) == -1) {
@@ -1001,9 +1045,7 @@
 				this.checkAllSaved(message.destinationName, message.payloadString);
 				if (message.destinationName in this.$refs) {
 					jsonPayload = JSON.parse(message.payloadString);
-					console.debug("topic: "+message.destinationName+" payload: "+message.payloadString)
-					vApp.$refs[message.destinationName].setInitialValue(jsonPayload);
-					vApp.$refs[message.destinationName].setValue(jsonPayload);
+					vApp.$refs[message.destinationName].mqttValue = jsonPayload;
 				} else {
 					console.warn("no ref found: " + message.destinationName33);
 				}
