@@ -8,9 +8,12 @@ html {
 }
 
 body {
-	margin-top: 55px;
 	margin-bottom: 40px;
 	/* margin bottom by footer height and some more space */
+}
+
+.container[role=main] {
+	padding: 50px 15px 0;
 }
 
 .card {
@@ -71,6 +74,33 @@ h1 {
 
 .hide {
 	display: none;
+}
+
+
+/* progress during saving */
+
+#saveprogress {
+	background-color: white;
+	position: fixed;
+	top: 0px;
+	left: 0px;
+	width: 100%;
+	height: 100%;
+	z-index: 999999;
+	opacity: 90%;
+}
+
+#saveprogress-inner {
+	margin-top: 150px;
+	text-align: center;
+}
+
+#saveprogress-image {
+	max-width: 300px;
+}
+
+#saveprogress-info {
+	color: grey;
 }
 
 

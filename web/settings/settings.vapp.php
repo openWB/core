@@ -138,9 +138,10 @@
 							<i v-if="subtype == 'email'" class="fa fa-fw fa-envelope"></i>
 							<i v-if="subtype == 'host'" class="fas fa-fw fa-network-wired"></i>
 							<i v-if="subtype == 'url'" class="fas fa-fw fa-globe"></i>
+							<i v-if="subtype == 'user'" class="fa fa-fw fa-user"></i>
 						</div>
 					</div>
-					<input v-if="subtype === 'text'" type="text" class="form-control" v-model="value" :disabled="disabled" :pattern="pattern">
+					<input v-if="['text', 'user'].includes(subtype)" type="text" class="form-control" v-model="value" :disabled="disabled" :pattern="pattern">
 					<input v-if="subtype === 'host'" type="text" class="form-control" v-model="value" :disabled="disabled" pattern="^(((\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.){3}(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])|[A-Za-z0-9\._\-]*)$">
 					<input v-if="['email', 'url'].includes(subtype)" :type="subtype" class="form-control" v-model="value" :disabled="disabled">
 				</div>
@@ -167,6 +168,11 @@
 						</div>
 					</div>
 					<input :type="showPassword ? 'text' : 'password'" class="form-control" v-model="value" :disabled="disabled">
+					<div class="input-group-append" v-on:click="togglePassword">
+						<div class="input-group-text">
+							<i class="far fa-fw" :class="showPassword ? 'fa-eye' : 'fa-eye-slash'"></i>
+						</div>
+					</div>
 				</div>
 			</div>
 			<span v-if="showHelp" class="form-row alert alert-info my-1 small">
@@ -213,7 +219,6 @@
 					<i class="fas fa-step-backward"></i>
 				</button>
 				<div class="col">
-					<!-- <input type="range" class="form-control-range rangeInput" :min="min" :max="max" :step="step" v-model="value" :disabled="disabled"> -->
 					<input type="range" class="form-control-range rangeInput" :min="min" :max="max" :step="step" v-model.number="value" :disabled="disabled">
 				</div>
 				<button class="col-1 btn btn-block btn-info" type="button" @click="increment">
@@ -279,7 +284,7 @@
 				<div class="btn-group btn-block btn-group-toggle">
 					<label v-for="button in buttons" class="btn" :class="[ value == button.buttonValue ? 'active' : '', button.class ? button.class : 'btn-outline-info', disabled ? 'disabled' : '' ]">
 						<input type="radio" v-model="value" :value="button.buttonValue" :disabled="disabled">{{ button.text }}
-						<i v-if="value == button.buttonValue" class="" :class="[ button.icon ? button.icon : 'fas fa-check']"></i>
+						<i :class="[ button.icon ? button.icon : 'fas fa-check' ]" :style="[ value == button.buttonValue ? 'visibility: visible' : 'visibility: hidden' ]"></i>
 					</label>
 				</div>
 			</div>
@@ -298,7 +303,6 @@
 		</label>
 		<div class="col-md-8">
 			<div class="form-row">
-				<!-- <input type="checkbox" v-model="value" :disabled="disabled" data-toggle="toggle" :data-on="labelOn" :data-off="labelOff" :data-onstyle="styleOn" :data-offstyle="styleOff" :data-style="style"> -->
 				<input class="form-control" type="checkbox" v-model="value" :disabled="disabled">
 			</div>
 			<span v-if="showHelp" class="form-row alert alert-info my-1 small">
@@ -314,6 +318,12 @@
 	</div>
 </script>
 
+<script type="text/x-template" id="heading-template">
+	<div class="card-text">
+		<slot></slot>
+	</div>
+</script>
+
 <!-- vue apps start here -->
 <script>
 	const textInputComponent = {
@@ -324,7 +334,7 @@
 			isDisabled: { type: Boolean, default: false },
 			toggleSelector: String,
 			subtype: { validator: function(value){
-				return ['text', 'email', 'host', 'url'].indexOf(value) !== -1;
+				return ['text', 'email', 'host', 'url', 'user'].indexOf(value) !== -1;
 				}, default: 'text'
 			},
 			pattern: String
@@ -706,14 +716,16 @@
 					let toggleSelector = this.toggleSelector;
 					var done = false;
 					var appData = this.$root.$data['visibility'];
-					this.options.some(function(option){
-						if(option.value === newValue) {
-							appData[toggleSelector] = newValue;
-							done = true;
-							return true;
-						}
-					});
-					if(!done){
+					if(this.options){
+						this.options.some(function(option){
+							if(option.value === newValue) {
+								appData[toggleSelector] = newValue;
+								done = true;
+								return true;
+							}
+						});
+					}
+					if(!done && this.groups){
 						this.groups.some(function(group){
 							return group.options.some(function(option){
 								if(option.value === newValue) {
@@ -879,6 +891,10 @@
 		}
 	};
 
+	const headingComponent = {
+		template: '#heading-template'
+	};
+
 	const ContentApp = {
 		data() {
 			return {
@@ -909,7 +925,8 @@
 			'select-input': selectInputComponent,
 			'buttongroup-input': buttongroupInputComponent,
 			'checkbox-input': checkboxInputComponent,
-			'alert': alertComponent
+			'alert': alertComponent,
+			'heading': headingComponent
 		},
 		methods: {
 			showResetModal() {
@@ -1041,7 +1058,7 @@
 			},
 			onClientMessageArrived(message) {
 				//Gets called whenever you receive a message
-				console.debug(message);
+				console.debug("message received: "+message.destinationName+": "+message.payloadString);
 				this.checkAllSaved(message.destinationName, message.payloadString);
 				if (message.destinationName in this.$refs) {
 					jsonPayload = JSON.parse(message.payloadString);
