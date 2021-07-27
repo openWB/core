@@ -210,12 +210,12 @@ if( isset($_COOKIE['openWBTheme'] )){
 										title="Pushover User Key"
 										ref="ToDo/notifications/PushoverUser"
 										subtype="user"
-										:is-disabled='visibility.extOpenWBOn && visibility.notificationProvider!="pushover"'>
+										:is-disabled='visibility.extOpenWBOn || visibility.notificationProvider!="pushover"'>
 									</text-input>
 									<password-input
 										title="Pushover API-Token/Key"
 										ref="ToDo/notifications/PushoverKey"
-										:is-disabled='visibility.extOpenWBOn && visibility.notificationProvider!="pushover"'>
+										:is-disabled='visibility.extOpenWBOn || visibility.notificationProvider!="pushover"'>
 									</password-input>
 									<hr>
 									<heading>
@@ -229,7 +229,7 @@ if( isset($_COOKIE['openWBTheme'] )){
 											{buttonValue: true, text: 'Ja', class: 'btn-outline-success'}
 										]"
 										:default-value=false
-										:is-disabled='visibility.extOpenWBOn && visibility.notificationProvider!="pushover"'>
+										:is-disabled='visibility.extOpenWBOn || visibility.notificationProvider!="pushover"'>
 									</buttongroup-input>
 									<buttongroup-input
 										title="Beim Stoppen der Ladung"
@@ -239,7 +239,7 @@ if( isset($_COOKIE['openWBTheme'] )){
 											{buttonValue: true, text: 'Ja', class: 'btn-outline-success'}
 										]"
 										:default-value=false
-										:is-disabled='visibility.extOpenWBOn && visibility.notificationProvider!="pushover"'>
+										:is-disabled='visibility.extOpenWBOn || visibility.notificationProvider!="pushover"'>
 									</buttongroup-input>
 									<buttongroup-input
 										title="Beim Einstecken eines Fahrzeugs"
@@ -249,7 +249,7 @@ if( isset($_COOKIE['openWBTheme'] )){
 											{buttonValue: true, text: 'Ja', class: 'btn-outline-success'}
 										]"
 										:default-value=false
-										:is-disabled='visibility.extOpenWBOn && visibility.notificationProvider!="pushover"'>
+										:is-disabled='visibility.extOpenWBOn || visibility.notificationProvider!="pushover"'>
 									</buttongroup-input>
 									<buttongroup-input
 										title="Bei Triggern von Smart Home Aktionen"
@@ -259,7 +259,7 @@ if( isset($_COOKIE['openWBTheme'] )){
 											{buttonValue: true, text: 'Ja', class: 'btn-outline-success'}
 										]"
 										:default-value=false
-										:is-disabled='visibility.extOpenWBOn && visibility.notificationProvider!="pushover"'>
+										:is-disabled='visibility.extOpenWBOn || visibility.notificationProvider!="pushover"'>
 									</buttongroup-input>
 								</div>
 							</div>

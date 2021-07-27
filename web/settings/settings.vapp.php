@@ -359,6 +359,7 @@
 				},
 				set(newMqttValue) {
 					this.value = newMqttValue;
+					this.initialValue = newMqttValue;
 				}
 			}
 		},
@@ -419,6 +420,7 @@
 				},
 				set(newMqttValue) {
 					this.value = newMqttValue;
+					this.initialValue = newMqttValue;
 				}
 			}
 		},
@@ -485,6 +487,7 @@
 				},
 				set(newMqttValue) {
 					this.value = newMqttValue;
+					this.initialValue = newMqttValue;
 				}
 			}
 		},
@@ -646,6 +649,7 @@
 				},
 				set(newMqttValue) {
 					this.value = newMqttValue;
+					this.initialValue = newMqttValue;
 				}
 			}
 		},
@@ -707,6 +711,7 @@
 				},
 				set(newMqttValue) {
 					this.value = newMqttValue;
+					this.initialValue = newMqttValue;
 				}
 			}
 		},
@@ -787,6 +792,7 @@
 				},
 				set(newMqttValue) {
 					this.value = newMqttValue;
+					this.initialValue = newMqttValue;
 				}
 			}
 		},
@@ -850,6 +856,7 @@
 				},
 				set(newMqttValue) {
 					this.value = newMqttValue;
+					this.initialValue = newMqttValue;
 				}
 			}
 		},
