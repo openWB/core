@@ -77,6 +77,33 @@ h1 {
 }
 
 
+/* progress during saving */
+
+#saveprogress {
+	background-color: white;
+	position: fixed;
+	top: 0px;
+	left: 0px;
+	width: 100%;
+	height: 100%;
+	z-index: 999999;
+	opacity: 90%;
+}
+
+#saveprogress-inner {
+	margin-top: 150px;
+	text-align: center;
+}
+
+#saveprogress-image {
+	max-width: 300px;
+}
+
+#saveprogress-info {
+	color: grey;
+}
+
+
 /* very Small devices (up to 575.98px) */
 
 @media screen and (max-width: 575.98px) {

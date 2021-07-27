@@ -107,54 +107,6 @@ if( isset($_COOKIE['openWBTheme'] )){
 								<div class="form-group mb-0">
 									<div class="form-row vaRow mb-1">
 										<div class="col">
-											openWB
-										</div>
-									</div>
-								</div>
-							</div>
-							<div class="card-body">
-								<buttongroup-input
-									title="Nur Ladepunkt"
-									ref="openWB/general/extern"
-									toggle-selector='extOpenWBOn'
-									:buttons="[
-										{buttonValue: false, text: 'Nein', class: 'btn-outline-danger', icon: 'fas fa-times'},
-										{buttonValue: true, text: 'Ja', class: 'btn-outline-success'}
-									]"
-									:default-value=false>
-									<template #help>
-										Wird hier "Ja" gewählt ist diese openWB nur ein Ladepunkt und übernimmt keine eigene Regelung.
-										Hier ist "Ja" zu wählen wenn, bereits eine openWB vorhanden ist und diese nur ein weiterer Ladepunkt der vorhandenen openWB sein soll.
-										<span class="text-danger">Alle in dieser openWB getätigten Einstellungen werden NICHT beachtet.</span>
-										An der Haupt openWB wird als Ladepunkt "externe openWB" gewählt und die IP Adresse eingetragen.
-									</template>
-								</buttongroup-input>
-								<!-- <div v-show="visibility.extOpenWBOn"> ToDo: toggle visibility -->
-								<div>
-									<select-input
-										id="select1"
-										title="Display-Theme"
-										ref="openWB/general/extOpenWBDisplay"
-										toggle-selector='displayTheme'
-										:options="[
-											{value: 'normal', text: 'Normal'},
-											{value: 'parent', text: 'Display der übergeordneten openWB'}
-										]"
-										default-value="normal"
-										:is-disabled='! visibility.extOpenWBOn'>
-										<template #help>
-											Hilfetext
-										</template>
-									</select-input>
-								</div>
-							</div>
-						</div>
-
-						<div class="card border-secondary">
-							<div class="card-header bg-secondary">
-								<div class="form-group mb-0">
-									<div class="form-row vaRow mb-1">
-										<div class="col">
 											Beispielelemente
 										</div>
 									</div>
@@ -167,7 +119,7 @@ if( isset($_COOKIE['openWBTheme'] )){
 									default-value="abc"
 									:is-disabled='visibility.extOpenWBOn'>
 									<template #help>
-										Hilfetext
+										Einfacher Text
 									</template>
 								</text-input>
 								<text-input
@@ -176,7 +128,7 @@ if( isset($_COOKIE['openWBTheme'] )){
 									subtype="email"
 									:is-disabled='visibility.extOpenWBOn'>
 									<template #help>
-										Hilfetext
+										Eingabefeld für E-Mailadressen
 									</template>
 								</text-input>
 								<text-input
@@ -185,7 +137,7 @@ if( isset($_COOKIE['openWBTheme'] )){
 									subtype="host"
 									:is-disabled='visibility.extOpenWBOn'>
 									<template #help>
-										Hilfetext
+										Eingabefeld für Hosts (IP oder Namen)
 									</template>
 								</text-input>
 								<text-input
@@ -194,7 +146,16 @@ if( isset($_COOKIE['openWBTheme'] )){
 									subtype="url"
 									:is-disabled='visibility.extOpenWBOn'>
 									<template #help>
-										Hilfetext
+										Eingabefeld für URLs
+									</template>
+								</text-input>
+								<text-input
+									title="5. Text (User)"
+									ref="openWB/general/testText5"
+									subtype="user"
+									:is-disabled='visibility.extOpenWBOn'>
+									<template #help>
+										Eingabefeld für Benutzernamen
 									</template>
 								</text-input>
 								<number-input
@@ -205,7 +166,7 @@ if( isset($_COOKIE['openWBTheme'] )){
 									unit="kW"
 									:is-disabled='visibility.extOpenWBOn'>
 									<template #help>
-										Hilfetext
+										Zahl mit Einheit
 									</template>
 								</number-input>
 								<hr>
@@ -216,7 +177,7 @@ if( isset($_COOKIE['openWBTheme'] )){
 									:default-value=12
 									:is-disabled='visibility.extOpenWBOn'>
 									<template #help>
-										Hilfetext
+										Eingabefeld für Zahlen ohne Einheit
 									</template>
 								</number-input>
 								<password-input
@@ -224,7 +185,7 @@ if( isset($_COOKIE['openWBTheme'] )){
 									ref="openWB/general/testPassword"
 									:is-disabled='visibility.extOpenWBOn'>
 									<template #help>
-										Hilfetext
+										Das Passwort kann per Klick auf das Schloss oder Auge angezeigt werden.
 									</template>
 								</password-input>
 								<range-input
@@ -235,7 +196,7 @@ if( isset($_COOKIE['openWBTheme'] )){
 									unit="A"
 									:is-disabled='visibility.extOpenWBOn'>
 									<template #help>
-										Hilfetext
+										Range ohne spezielle Labels
 									</template>
 								</range-input>
 								<range-input
@@ -247,7 +208,7 @@ if( isset($_COOKIE['openWBTheme'] )){
 									:labels='[{"label":"Aus","value":0},{"label":6,"value":6},{"label":7,"value":7},{"label":8,"value":8},{"label":9,"value":9},{"label":10,"value":10},{"label":11,"value":11},{"label":12,"value":12},{"label":13,"value":13},{"label":14,"value":14},{"label":15,"value":15},{"label":16,"value":16}]'
 									:is-disabled='visibility.extOpenWBOn'>
 									<template #help>
-										Hilfetext
+										Range mit speziellen Labels
 									</template>
 								</range-input>
 								<textarea-input
@@ -256,7 +217,7 @@ if( isset($_COOKIE['openWBTheme'] )){
 									default-value="abc"
 									:is-disabled='visibility.extOpenWBOn'>
 									<template #help>
-										Hilfetext
+										Textarea
 									</template>
 								</textarea-input>
 								<select-input
@@ -267,6 +228,16 @@ if( isset($_COOKIE['openWBTheme'] )){
 										{value: 1, text: 'Eins'},
 										{value: 2, text: 'Zwei'}
 									]"
+									:default-value=2
+									:is-disabled='visibility.extOpenWBOn'>
+									<template #help>
+										Select mit einfachen Optionen
+									</template>
+								</select-input>
+								<select-input
+									title="2. Select"
+									ref="openWB/general/testSelect2"
+									toggle-selector="select2"
 									:groups="[
 										{label: 'Gruppe 1', options: [
 											{value: 1, text: 'Eins'},
@@ -277,10 +248,10 @@ if( isset($_COOKIE['openWBTheme'] )){
 											{value: 4, text: 'Vier'}
 										] }
 									]"
-									:default-value=2
+									:default-value=3
 									:is-disabled='visibility.extOpenWBOn'>
 									<template #help>
-										Hilfetext
+										Select mit Gruppen
 									</template>
 								</select-input>
 								<buttongroup-input
@@ -314,7 +285,7 @@ if( isset($_COOKIE['openWBTheme'] )){
 								<alert
 									subtype="info">
 									<template #message>
-										Info-Meldung
+										Infomeldung
 									</template>
 								</alert>
 								<alert
