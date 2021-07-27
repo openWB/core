@@ -8,9 +8,12 @@ html {
 }
 
 body {
-	margin-top: 55px;
 	margin-bottom: 40px;
 	/* margin bottom by footer height and some more space */
+}
+
+.container[role=main] {
+	padding: 50px 15px 0;
 }
 
 .card {
