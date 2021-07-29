@@ -207,6 +207,14 @@ if( isset($_COOKIE['openWBTheme'] )){
 										</template>
 									</alert>
 									<text-input
+										title="Einstellungen"
+										ref="ToDo/notifications/config"
+										:is-disabled='visibility.extOpenWBOn || visibility.notificationProvider!="pushover"'>
+										<template #help>
+											ToDo: JSON aufteilen
+										</template>
+									</text-input>
+									<!-- <text-input
 										title="Pushover User Key"
 										ref="ToDo/notifications/PushoverUser"
 										subtype="user"
@@ -216,7 +224,7 @@ if( isset($_COOKIE['openWBTheme'] )){
 										title="Pushover API-Token/Key"
 										ref="ToDo/notifications/PushoverKey"
 										:is-disabled='visibility.extOpenWBOn || visibility.notificationProvider!="pushover"'>
-									</password-input>
+									</password-input> -->
 									<hr>
 									<heading>
 										Benachrichtigungen
@@ -330,7 +338,7 @@ if( isset($_COOKIE['openWBTheme'] )){
 				function(data){
 					$("#nav").replaceWith(data);
 					// disable navbar entry for current page
-					$('#navAllgemein').addClass('disabled');
+					$('#navGeneral').addClass('disabled');
 				}
 			);
 		</script>
