@@ -167,7 +167,7 @@
 							<i class="fa fa-fw" :class="showPassword ? 'fa-unlock' : 'fa-lock'"></i>
 						</div>
 					</div>
-					<input :type="showPassword ? 'text' : 'password'" class="form-control" v-model="value" :disabled="disabled">
+					<input :type="showPassword ? 'text' : 'password'" class="form-control" v-model="value" :disabled="disabled" :pattern="pattern">
 					<div class="input-group-append" v-on:click="togglePassword">
 						<div class="input-group-text">
 							<i class="far fa-fw" :class="showPassword ? 'fa-eye' : 'fa-eye-slash'"></i>
@@ -225,9 +225,11 @@
 					<i class="fas fa-step-forward"></i>
 				</button>
 			</div>
-			<span v-if="showHelp" class="form-row alert alert-info my-1 small">
-				<slot name="help"></slot>
-			</span>
+			<div v-if="showHelp" class="form-row alert alert-info my-1 small">
+				<div class="col">
+					<slot name="help"></slot>
+				</div>
+			</div>
 		</div>
 	</div>
 </script>
@@ -397,7 +399,8 @@
 			title: String,
 			defaultValue: { type: String, default: "" },
 			isDisabled: { type: Boolean, default: false },
-			toggleSelector: String
+			toggleSelector: String,
+			pattern: String
 		},
 		data() {
 			return {
@@ -685,7 +688,7 @@
 		template: '#select-input-template',
 		props: {
 			title: String,
-			defaultValue: { type: [String, Number], default: "" },
+			defaultValue: { type: [String, Number, Array], default: "" },
 			isDisabled: { type: Boolean, default: false },
 			toggleSelector: String,
 			groups: Object,
@@ -717,7 +720,13 @@
 		},
 		watch: {
 			value(newValue) {
+				this.setToggleSelector(newValue);
+			}
+		},
+		methods: {
+			setToggleSelector(newValue) {
 				if(this.toggleSelector) {
+					// console.debug('toggleSelector: '+this.toggleSelector+' newValue: '+newValue);
 					let toggleSelector = this.toggleSelector;
 					var done = false;
 					var appData = this.$root.$data['visibility'];
@@ -742,9 +751,7 @@
 						});
 					}
 				}
-			}
-		},
-		methods: {
+			},
 			setInitialValue(newDefault) {
 				this.initialValue = newDefault;
 			},
@@ -760,7 +767,41 @@
 			toggleHelp() {
 				this.showHelp = !this.showHelp && this.$slots.help;
 			}
-		}
+		},
+		beforeMount(){
+			// debug("beforeMount: "+this.title);
+			this.setToggleSelector(this.value);
+		},
+		// mounted() {
+		// 	console.debug("mounted: "+this.title);
+		// },
+		// beforeUpdate() {
+		// 	console.debug("beforeUpdate: "+this.title);
+		// },
+		// updated() {
+		// 	console.debug("updated: "+this.title);
+		// },
+		// beforeUnmount() {
+		// 	console.debug("beforeUnmount: "+this.title);
+		// },
+		// unmounted() {
+		// 	console.debug("unmounted: "+this.title);
+		// },
+		// errorCaptured() {
+		// 	console.error("errorCaptured: "+this.title);
+		// },
+		// renderTracked() {
+		// 	console.debug("renderTracked: "+this.title);
+		// },
+		// renderTriggered() {
+		// 	console.debug("renderTriggered: "+this.title);
+		// },
+		// activated() {
+		// 	console.debug("activated: "+this.title);
+		// },
+		// deactivated() {
+		// 	console.debug("deactivated: "+this.title);
+		// }
 	};
 
 	const buttongroupInputComponent = {
@@ -798,6 +839,11 @@
 		},
 		watch: {
 			value(newValue) {
+				this.setToggleSelector(newValue);
+			}
+		},
+		methods: {
+			setToggleSelector(newValue) {
 				if(this.toggleSelector) {
 					let toggleSelector = this.toggleSelector;
 					var appData = this.$root.$data['visibility'];
@@ -807,9 +853,7 @@
 						}
 					});
 				}
-			}
-		},
-		methods: {
+			},
 			setInitialValue(newDefault) {
 				this.initialValue = newDefault;
 			},
@@ -825,7 +869,41 @@
 			toggleHelp() {
 				this.showHelp = !this.showHelp && this.$slots.help;
 			}
-		}
+		},
+		beforeMount(){
+			// console.debug("beforeMount: "+this.title);
+			this.setToggleSelector(this.value);
+		},
+		// mounted() {
+		// 	console.debug("mounted: "+this.title);
+		// },
+		// beforeUpdate() {
+		// 	console.debug("beforeUpdate: "+this.title);
+		// },
+		// updated() {
+		// 	console.debug("updated: "+this.title);
+		// },
+		// beforeUnmount() {
+		// 	console.debug("beforeUnmount: "+this.title);
+		// },
+		// unmounted() {
+		// 	console.debug("unmounted: "+this.title);
+		// },
+		// errorCaptured() {
+		// 	console.error("errorCaptured: "+this.title);
+		// },
+		// renderTracked() {
+		// 	console.debug("renderTracked: "+this.title);
+		// },
+		// renderTriggered() {
+		// 	console.debug("renderTriggered: "+this.title);
+		// },
+		// activated() {
+		// 	console.debug("activated: "+this.title);
+		// },
+		// deactivated() {
+		// 	console.debug("deactivated: "+this.title);
+		// }
 	};
 
 	const checkboxInputComponent = {
@@ -862,14 +940,17 @@
 		},
 		watch: {
 			value(newValue) {
+				this.setToggleSelector(newValue);
+			}
+		},
+		methods: {
+			setToggleSelector(newValue) {
 				if(this.toggleSelector) {
 					let toggleSelector = this.toggleSelector;
 					var appData = this.$root.$data['visibility'];
 					appData[toggleSelector] = newValue;
 				}
-			}
-		},
-		methods: {
+			},
 			setInitialValue(newDefault) {
 				this.initialValue = newDefault;
 			},
@@ -885,7 +966,41 @@
 			toggleHelp() {
 				this.showHelp = !this.showHelp && this.$slots.help;
 			}
-		}
+		},
+		beforeMount(){
+			// console.debug("beforeMount: "+this.title);
+			this.setToggleSelector(this.value);
+		},
+		// mounted() {
+		// 	console.debug("mounted: "+this.title);
+		// },
+		// beforeUpdate() {
+		// 	console.debug("beforeUpdate: "+this.title);
+		// },
+		// updated() {
+		// 	console.debug("updated: "+this.title);
+		// },
+		// beforeUnmount() {
+		// 	console.debug("beforeUnmount: "+this.title);
+		// },
+		// unmounted() {
+		// 	console.debug("unmounted: "+this.title);
+		// },
+		// errorCaptured() {
+		// 	console.error("errorCaptured: "+this.title);
+		// },
+		// renderTracked() {
+		// 	console.debug("renderTracked: "+this.title);
+		// },
+		// renderTriggered() {
+		// 	console.debug("renderTriggered: "+this.title);
+		// },
+		// activated() {
+		// 	console.debug("activated: "+this.title);
+		// },
+		// deactivated() {
+		// 	console.debug("deactivated: "+this.title);
+		// }
 	};
 
 	const alertComponent = {
@@ -959,7 +1074,7 @@
 			saveSettings() {
 				// sends all changed values by mqtt if valid
 				var formValid = $("#myForm")[0].checkValidity();
-				console.log("validity: "+formValid);
+				console.info("validity: "+formValid);
 				if ( !formValid ) {
 					$('#formNotValidModal').modal();
 					return;
@@ -969,7 +1084,7 @@
 			},
 			getChangedValues() {
 				for (element in this.$refs) {
-					console.debug("checking: " + element);
+					// console.debug("checking: " + element);
 					if (this.$refs[element].changed && !this.$refs[element].disabled) {
 						console.debug("value ist changed and not disabled");
 						var message = JSON.stringify(this.$refs[element].mqttValue);
@@ -986,7 +1101,7 @@
 				 * @requires global var:changedValues - is declared with proxy in helperFunctions.js
 				 */
 				topic = topic.replace('openWB/', 'openWB/set/');
-				console.debug("checkAllSaved: "+topic);
+				// console.debug("checkAllSaved: "+topic);
 				if (changedValues.hasOwnProperty(topic) && changedValues[topic] == value) {
 					// received topic-value-pair equals one that was send before
 					delete changedValues[topic]; // delete it
@@ -1065,11 +1180,16 @@
 			},
 			onClientMessageArrived(message) {
 				//Gets called whenever you receive a message
-				console.debug("message received: "+message.destinationName+": "+message.payloadString);
+				console.info("message received: "+message.destinationName+": "+message.payloadString);
 				this.checkAllSaved(message.destinationName, message.payloadString);
 				if (message.destinationName in this.$refs) {
-					jsonPayload = JSON.parse(message.payloadString);
-					vApp.$refs[message.destinationName].mqttValue = jsonPayload;
+					if (message.payloadString.length) {
+						jsonPayload = JSON.parse(message.payloadString);
+						vApp.$refs[message.destinationName].mqttValue = jsonPayload;
+					} else {
+						// restore default value if empty message received
+						vApp.$refs[message.destinationName].value = vApp.$refs[message.destinationName].defaultValue;
+					}
 				} else {
 					console.warn("no ref found: " + message.destinationName33);
 				}
