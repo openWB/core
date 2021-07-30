@@ -326,9 +326,94 @@
 	</div>
 </script>
 
+<script type="text/x-template" id="submit-buttons-template">
+	<div class="row justify-content-center">
+		<div class="col-md-4 d-flex py-1 justify-content-center">
+			<button id="saveSettingsBtn" type="button" class="btn btn-block btn-success" @click="saveSettings()">Speichern</button>
+		</div>
+		<div class="col-md-4 d-flex py-1 justify-content-center">
+			<button id="modalResetBtn" type="button" class="btn btn-block btn-warning" @click="showResetModal()">Änderungen verwerfen</button>
+		</div>
+		<div class="col-md-4 d-flex py-1 justify-content-center">
+			<button id="modalDefaultsBtn" type="button" class="btn btn-block btn-danger" @click="showDefaultsModal()">Werkseinstellungen</button>
+		</div>
+	</div>
+</script>
+
+<script type="text/x-template" id="card-template">
+	<div class="card border-secondary">
+		<div class="card-header bg-secondary">
+			<div class="form-group mb-0">
+				<div class="form-row vaRow mb-1">
+					<div class="col">
+						{{ title }}
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="card-body">
+			<slot></slot>
+		</div>
+	</div>
+</script>
+
+<script type="text/x-template" id="page-footer-template">
+	<footer id="footer" class="footer bg-dark text-light font-small">
+		<div class="container text-center">
+			<small>Sie befinden sich hier: Einstellungen / {{ location }}</small>
+		</div>
+	</footer>
+</script>
+
+<script type="text/x-template" id="donation-banner-template">
+	<div class="mt-3 alert alert-dark text-center">
+		Open Source made with love!<br>
+		Jede Spende hilft die Weiterentwicklung von openWB voranzutreiben<br>
+		<form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_top">
+			<input type="hidden" name="cmd" value="_s-xclick">
+			<input type="hidden" name="hosted_button_id" value="2K8C4Y2JTGH7U">
+			<button type="submit" class="btn btn-warning">Spenden <i class="fab fa-paypal"></i></button>
+		</form>
+	</div>
+</script>
+
+<script type="text/x-template" id="content-template">
+	<!-- Saveprogress -->
+	<div id="saveprogress" class="hide">
+		<div id="saveprogress-inner">
+			<div class="row">
+				<div class="mx-auto d-block justify-content-center">
+					<img id="saveprogress-image" src="img/favicons/preloader-image.png" alt="openWB">
+				</div>
+			</div>
+			<div id="saveprogress-info" class="row justify-content-center mt-2">
+				<div class="col-10 col-sm-6">
+					Bitte warten, geänderte Einstellungen werden gespeichert.
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div id="nav"></div> <!-- placeholder for navbar -->
+
+	<div role="main" class="container">
+		<div id="content">
+			<h1>{{ title }}</h1>
+			<form id="myForm">
+				<slot></slot>
+				<submit-buttons></submit-buttons>
+			</form>
+		</div>
+		<donation-banner></donation-banner>
+	</div>  <!-- main container -->
+
+	<page-footer :location='footer'></page-footer>
+</script>
+
 <!-- vue apps start here -->
 <script>
 	const textInputComponent = {
+		name: "TextInput",
 		template: '#text-input-template',
 		props: {
 			title: String,
@@ -394,6 +479,7 @@
 	};
 
 	const passwordInputComponent = {
+		name: "PasswordInput",
 		template: '#password-input-template',
 		props: {
 			title: String,
@@ -459,6 +545,7 @@
 	};
 
 	const numberInputComponent = {
+		name: "NumberInput",
 		template: '#number-input-template',
 		props: {
 			title: String,
@@ -523,6 +610,7 @@
 	};
 
 	const rangeInputComponent = {
+		name: "RangeInput",
 		template: '#range-input-template',
 		props: {
 			title: String,
@@ -625,6 +713,7 @@
 	};
 
 	const textareaInputComponent = {
+		name: "TextareaInput",
 		template: '#textarea-input-template',
 		props: {
 			title: String,
@@ -685,6 +774,7 @@
 	};
 
 	const selectInputComponent = {
+		name: "SelectInput",
 		template: '#select-input-template',
 		props: {
 			title: String,
@@ -805,6 +895,7 @@
 	};
 
 	const buttongroupInputComponent = {
+		name: "ButtonGroupInput",
 		template: '#buttongroup-input-template',
 		props: {
 			title: String,
@@ -907,6 +998,7 @@
 	};
 
 	const checkboxInputComponent = {
+		name: "CheckboxInput",
 		template: '#checkbox-input-template',
 		props: {
 			title: String,
@@ -1004,6 +1096,7 @@
 	};
 
 	const alertComponent = {
+		name: "Alert",
 		template: '#alert-template',
 		props: {
 			subtype: { validator: function(value){
@@ -1014,12 +1107,68 @@
 	};
 
 	const headingComponent = {
+		name: "Heading",
 		template: '#heading-template'
 	};
 
-	const ContentApp = {
+	const submitButtonsComponent = {
+		name: "SubmitButtons",
+		template: '#submit-buttons-template',
+		methods: {
+			saveSettings() {
+				this.$root.saveSettings();
+			},
+			showResetModal() {
+				this.$root.showResetModal();
+			},
+			showDefaultsModal() {
+				this.$root.showDefaultsModal();
+			}
+		}
+	}
+
+	const cardComponent = {
+		name: 'Card',
+		template: "#card-template",
+		props: {
+			title: { type: String, default: "# no title set #" }
+		}
+	}
+
+	const pageFooterComponent = {
+		name: "PageFooter",
+		template: "#page-footer-template",
+		props: {
+			location: { type: String, default: "# no location set #" }
+		}
+	}
+
+	const donationBannerComponent = {
+		name: "DonationBanner",
+		template: '#donation-banner-template'
+	}
+
+	const contentComponent = {
+		name: "content",
+		template: "#content-template",
+		props: {
+			title: { type: String, default: "# no title set #" },
+			footer: { type: String, default: "# no footer set #" }
+		},
+		components: {
+			'submit-buttons': submitButtonsComponent,
+			'page-footer': pageFooterComponent,
+			'donation-banner': donationBannerComponent
+		}
+	}
+
+	const contentApp = {
+		name: "contentApp",
+		// template: "#settings-app-template",
 		data() {
 			return {
+				// title: document.getElementById('app').dataset.title,
+				// footer: document.getElementById('app').dataset.footer,
 				client: undefined,
 				clientOptions: {
 					timeout: 5,
@@ -1034,10 +1183,6 @@
 				visibility: {}
 			}
 		},
-		props: {
-			title: { type: String, default: "# no title set #" },
-			footer: { type: String, default: "# no footer set #" }
-		},
 		components: {
 			'text-input': textInputComponent,
 			'password-input': passwordInputComponent,
@@ -1048,7 +1193,9 @@
 			'buttongroup-input': buttongroupInputComponent,
 			'checkbox-input': checkboxInputComponent,
 			'alert': alertComponent,
-			'heading': headingComponent
+			'heading': headingComponent,
+			'card': cardComponent,
+			'content': contentComponent
 		},
 		methods: {
 			showResetModal() {
@@ -1196,6 +1343,7 @@
 			}
 		},
 		beforeMount(){
+			// setup mqtt client
 			var clientuid = Math.random().toString(36).replace(/[^a-z]+/g, "").substr(0, 5);
 			this.client = new Messaging.Client(location.hostname, 9001, clientuid);
 			// setup handlers
@@ -1241,5 +1389,5 @@
 		// }
 	}
 
-	const vApp = Vue.createApp(ContentApp).mount('#app');
+	const vApp = Vue.createApp(contentApp).mount('#app');
 </script>
