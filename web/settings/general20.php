@@ -80,6 +80,7 @@ if( isset($_COOKIE['openWBTheme'] )){
 					<h1>Allgemeine Einstellungen</h1>
 
 					<form id="myForm">
+
 						<div class="card border-secondary">
 							<div class="card-header bg-secondary">
 								<div class="form-group mb-0">
@@ -133,7 +134,7 @@ if( isset($_COOKIE['openWBTheme'] )){
 								<div class="form-group mb-0">
 									<div class="form-row vaRow mb-1">
 										<div class="col">
-											Hardware-Einstellungen
+											Hardware
 										</div>
 									</div>
 								</div>
@@ -173,6 +174,27 @@ if( isset($_COOKIE['openWBTheme'] )){
 										<span class="text-danger">Die Option ist nur aktiv, wenn der Ladepunkt die Frequenz übermittelt. Jede openWB Series1/2 unterstützt dies.</span>
 									</template>
 								</buttongroup-input>
+								<buttongroup-input
+									title="Taster-Eingänge"
+									ref="openWB/general/external_buttons_hw"
+									:buttons="[
+										{buttonValue: false, text: 'Aus'},
+										{buttonValue: true, text: 'An'}
+									]"
+									:default-value=false
+									:is-disabled='visibility.extOpenWBOn'>
+									<template #help>
+										Wenn diese Option aktiviert ist, können bis zu fünf Taster an die openWB angeschlossen werden. Die entsprechenden Kontakte sind auf der Add-On-Platine beschriftet.<br>
+										Bei Installationen ohne die Zusatzplatine können folgende GPIOs benutzt werden, die durch die Taster auf Masse zu schalten sind:
+										<ul>
+											<li>Taster 1: Pin 32 / GPIO 12</li>
+											<li>Taster 2: Pin 36 / GPIO 16</li>
+											<li>Taster 3: Pin 31 / GPIO 6</li>
+											<li>Taster 4: Pin 33 / GPIO 13</li>
+											<li>Taster 5: Pin 40 / GPIO 21</li>
+										</ul>
+									</template>
+								</buttongroup-input>
 							</div>
 						</div>
 
@@ -187,7 +209,7 @@ if( isset($_COOKIE['openWBTheme'] )){
 								</div>
 							</div>
 							<div class="card-body">
-							<select-input
+								<select-input
 									title="Anbieter"
 									ref="openWB/general/notifications/selected"
 									toggle-selector="notificationProvider"
@@ -295,6 +317,19 @@ if( isset($_COOKIE['openWBTheme'] )){
 										Es können bis zu 4 Nachkommastellen genutzt werden.
 									</template>
 								</number-input>
+								<buttongroup-input
+								title="Einheit für Entfernungen"
+									ref="openWB/general/range_unit"
+									:buttons="[
+										{buttonValue: 'km', text: 'Kilometer'},
+										{buttonValue: 'mi', text: 'Meilen'}
+									]"
+									default-value='km'
+									:is-disabled='visibility.extOpenWBOn'>
+									<template #help>
+										ToDo: Hilfetext ergänzen!
+									</template>
+								</buttongroup-input>
 							</div>
 						</div>
 
@@ -309,6 +344,7 @@ if( isset($_COOKIE['openWBTheme'] )){
 								<button id="modalDefaultsBtn" type="button" class="btn btn-block btn-danger" @click="showDefaultsModal()">Werkseinstellungen</button>
 							</div>
 						</div>
+
 					</form>
 				</div>
 

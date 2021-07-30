@@ -696,6 +696,7 @@ if( isset($_COOKIE['openWBTheme'] )){
 								<button id="modalDefaultsBtn" type="button" class="btn btn-block btn-danger" @click="showDefaultsModal()">Werkseinstellungen</button>
 							</div>
 						</div>
+
 					</form>
 				</div>
 
@@ -713,7 +714,7 @@ if( isset($_COOKIE['openWBTheme'] )){
 
 			<footer id="footer" class="footer bg-dark text-light font-small">
 				<div class="container text-center">
-					<small>Sie befinden sich hier: Einstellungen / Allgemein</small>
+					<small>Sie befinden sich hier: Einstellungen / Optionale Komponenten</small>
 				</div>
 			</footer>
 
