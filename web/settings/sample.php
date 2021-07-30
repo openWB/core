@@ -56,7 +56,8 @@ if( isset($_COOKIE['openWBTheme'] )){
 	<body>
 		<div id="app">
 			<content title="Beispiele" footer="Beispiele">
-				<card title="Beispiele">
+
+				<card title="Einfache Eingabefelder">
 					<text-input
 						title="1. Text"
 						ref="openWB/general/testText1"
@@ -102,6 +103,7 @@ if( isset($_COOKIE['openWBTheme'] )){
 							Eingabefeld für Benutzernamen
 						</template>
 					</text-input>
+					<hr>
 					<number-input
 						title="1. Zahl"
 						:min=5 :max=9 :step=2
@@ -113,7 +115,6 @@ if( isset($_COOKIE['openWBTheme'] )){
 							Zahl mit Einheit
 						</template>
 					</number-input>
-					<hr>
 					<number-input
 						title="2. Zahl"
 						:min=10 :max=32 :step=2
@@ -132,6 +133,19 @@ if( isset($_COOKIE['openWBTheme'] )){
 							Das Passwort kann per Klick auf das Schloss oder Auge angezeigt werden.
 						</template>
 					</password-input>
+					<hr>
+					<textarea-input
+						title="1. Textarea"
+						ref="openWB/general/testTextarea1"
+						default-value="abc"
+						:is-disabled='visibility.extOpenWBOn'>
+						<template #help>
+							Textarea
+						</template>
+					</textarea-input>
+				</card>
+
+				<card title="Spezielle Elemente">
 					<range-input
 						title="1. Range"
 						:min=6 :max=32 :step=1
@@ -155,15 +169,7 @@ if( isset($_COOKIE['openWBTheme'] )){
 							Range mit speziellen Labels
 						</template>
 					</range-input>
-					<textarea-input
-						title="1. Textarea"
-						ref="openWB/general/testTextarea1"
-						default-value="abc"
-						:is-disabled='visibility.extOpenWBOn'>
-						<template #help>
-							Textarea
-						</template>
-					</textarea-input>
+					<hr>
 					<select-input
 						title="1. Select"
 						ref="openWB/general/testSelect1"
@@ -198,6 +204,7 @@ if( isset($_COOKIE['openWBTheme'] )){
 							Select mit Gruppen
 						</template>
 					</select-input>
+					<hr>
 					<buttongroup-input
 						title="1. Button-Group"
 						ref="openWB/general/testButtonGroup1"
@@ -211,6 +218,7 @@ if( isset($_COOKIE['openWBTheme'] )){
 							Hilfetext
 						</template>
 					</buttongroup-input>
+					<hr>
 					<checkbox-input
 						title="1. Checkbox"
 						ref="openWB/general/testCheckbox1"
@@ -220,7 +228,9 @@ if( isset($_COOKIE['openWBTheme'] )){
 							Hilfetext
 						</template>
 					</checkbox-input>
-					<hr>
+				</card>
+
+				<card title="Meldungen">
 					<alert>
 						<template #message>
 							Meldung ohne speziellen Subtype.
@@ -245,6 +255,7 @@ if( isset($_COOKIE['openWBTheme'] )){
 						</template>
 					</alert>
 				</card>
+
 			</content>
 		</div><!-- app -->
 
