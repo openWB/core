@@ -377,6 +377,39 @@
 	</div>
 </script>
 
+<script type="text/x-template" id="content-template">
+	<!-- Saveprogress -->
+	<div id="saveprogress" class="hide">
+		<div id="saveprogress-inner">
+			<div class="row">
+				<div class="mx-auto d-block justify-content-center">
+					<img id="saveprogress-image" src="img/favicons/preloader-image.png" alt="openWB">
+				</div>
+			</div>
+			<div id="saveprogress-info" class="row justify-content-center mt-2">
+				<div class="col-10 col-sm-6">
+					Bitte warten, geänderte Einstellungen werden gespeichert.
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div id="nav"></div> <!-- placeholder for navbar -->
+
+	<div role="main" class="container">
+		<div id="content">
+			<h1>{{ title }}</h1>
+			<form id="myForm">
+				<slot></slot>
+				<submit-buttons></submit-buttons>
+			</form>
+		</div>
+		<donation-banner></donation-banner>
+	</div>  <!-- main container -->
+
+	<page-footer :location='footer'></page-footer>
+</script>
+
 <!-- vue apps start here -->
 <script>
 	const textInputComponent = {
@@ -1115,12 +1148,27 @@
 		template: '#donation-banner-template'
 	}
 
-	const ContentApp = {
+	const contentComponent = {
+		name: "content",
+		template: "#content-template",
+		props: {
+			title: { type: String, default: "# no title set #" },
+			footer: { type: String, default: "# no footer set #" }
+		},
+		components: {
+			'submit-buttons': submitButtonsComponent,
+			'page-footer': pageFooterComponent,
+			'donation-banner': donationBannerComponent
+		}
+	}
+
+	const contentApp = {
 		name: "contentApp",
+		// template: "#settings-app-template",
 		data() {
 			return {
-				title: document.getElementById('app').dataset.title,
-				footer: document.getElementById('app').dataset.footer,
+				// title: document.getElementById('app').dataset.title,
+				// footer: document.getElementById('app').dataset.footer,
 				client: undefined,
 				clientOptions: {
 					timeout: 5,
@@ -1146,10 +1194,8 @@
 			'checkbox-input': checkboxInputComponent,
 			'alert': alertComponent,
 			'heading': headingComponent,
-			'submit-buttons': submitButtonsComponent,
 			'card': cardComponent,
-			'page-footer': pageFooterComponent,
-			'donation-banner': donationBannerComponent
+			'content': contentComponent
 		},
 		methods: {
 			showResetModal() {
@@ -1343,5 +1389,5 @@
 		// }
 	}
 
-	const vApp = Vue.createApp(ContentApp).mount('#app');
+	const vApp = Vue.createApp(contentApp).mount('#app');
 </script>
