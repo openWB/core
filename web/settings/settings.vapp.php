@@ -341,8 +341,8 @@
 </script>
 
 <script type="text/x-template" id="card-template">
-	<div class="card border-secondary">
-		<div class="card-header bg-secondary">
+	<div class="card" :class="'border-'+subtype">
+		<div class="card-header" :class="'bg-'+subtype">
 			<div class="form-group mb-0">
 				<div class="form-row vaRow mb-1">
 					<div class="col">
@@ -1131,7 +1131,11 @@
 		name: 'Card',
 		template: "#card-template",
 		props: {
-			title: { type: String, default: "# no title set #" }
+			title: { type: String, default: "# no title set #" },
+			subtype: { validator: function(value){
+				return ['info', 'success', 'warning', 'danger', 'primary', 'secondary', 'light', 'dark'].indexOf(value) !== -1;
+				}, default: 'secondary'
+			}
 		}
 	}
 
