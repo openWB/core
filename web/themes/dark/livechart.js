@@ -591,10 +591,18 @@ function initDataset(datasetId) {
 	}
 }
 
+function truncateData(data) {
+	if (typeof maxDisplayLength !== "undefined" && data.length > maxDisplayLength) {
+		console.info("datasets: " + data.length + " removing: " + (data.length - maxDisplayLength));
+		data.splice(0, data.length - maxDisplayLength);
+	}
+}
+
 function putgraphtogether() {
 	if ((all1 == 1) && (all2 == 1) && (all3 == 1) && (all4 == 1) && (all5 == 1) && (all6 == 1) && (all7 == 1) && (all8 == 1) && (all9 == 1) && (all10 == 1) && (all11 == 1) && (all12 == 1) && (all13 == 1) && (all14 == 1) && (all15 == 1) && (all16 == 1)) {
 		var alldata = all1p + "\n" + all2p + "\n" + all3p + "\n" + all4p + "\n" + all5p + "\n" + all6p + "\n" + all7p + "\n" + all8p + "\n" + all9p + "\n" + all10p + "\n" + all11p + "\n" + all12p + "\n" + all13p + "\n" + all14p + "\n" + all15p + "\n" + all16p;
 		allChartData = parseData(alldata);
+		truncateData(allChartData);
 		console.debug("allChartData.length: " + allChartData.length);
 		if (allChartData.length >= 30) { // 5 minutes * 6 measurements/min
 			console.info("received at least 30 data sets for graph; will add up to " + maxDisplayLength + " datasets in total");
@@ -640,10 +648,7 @@ function updateGraph(dataset) {
 		chartUpdateBuffer.forEach(function(row, index) {
 			allChartData.push(row);
 		});
-		if (typeof maxDisplayLength !== "undefined" && allChartData.length > maxDisplayLength) {
-			console.info("datasets: " + allChartData.length + " removing: " + (allChartData.length - maxDisplayLength));
-			allChartData.splice(0, allChartData.length - maxDisplayLength);
-		}
+		truncateData(allChartData);
 		chartUpdateBuffer = [];
 		myLine.update();
 	} else {
