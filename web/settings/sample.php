@@ -232,27 +232,19 @@ if( isset($_COOKIE['openWBTheme'] )){
 
 				<card title="Meldungen">
 					<alert>
-						<template #message>
-							Meldung ohne speziellen Subtype.
-						</template>
+						Meldung ohne speziellen Subtype.
 					</alert>
 					<alert
 						subtype="info">
-						<template #message>
-							Infomeldung
-						</template>
+						Infomeldung
 					</alert>
 					<alert
 						subtype="warning">
-						<template #message>
-							Warnmeldung
-						</template>
+						Warnmeldung
 					</alert>
 					<alert
 						subtype="danger">
-						<template #message>
-							Fehlermeldung
-						</template>
+						Fehlermeldung
 					</alert>
 				</card>
 

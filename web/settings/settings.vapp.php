@@ -125,7 +125,7 @@
 
 <!-- vue templates start here -->
 <script type="text/x-template" id="text-input-template">
-	<div class="form-row mb-1">
+	<div v-if="!isHidden" class="form-row mb-1">
 		<label v-on:click="toggleHelp" class="col-md-4 col-form-label">
 			{{ title }}
 			<i v-if="this.$slots.help" class="fa-question-circle" :class="showHelp ? 'fas text-info' : 'far'"></i>
@@ -139,9 +139,10 @@
 							<i v-if="subtype == 'host'" class="fas fa-fw fa-network-wired"></i>
 							<i v-if="subtype == 'url'" class="fas fa-fw fa-globe"></i>
 							<i v-if="subtype == 'user'" class="fa fa-fw fa-user"></i>
+							<i v-if="subtype == 'json'" class="fas fa-code"></i>
 						</div>
 					</div>
-					<input v-if="['text', 'user'].includes(subtype)" type="text" class="form-control" v-model="value" :disabled="disabled" :pattern="pattern">
+					<input v-if="['text', 'user', 'json'].includes(subtype)" type="text" class="form-control" v-model="value" :disabled="disabled" :pattern="pattern">
 					<input v-if="subtype === 'host'" type="text" class="form-control" v-model="value" :disabled="disabled" pattern="^(((\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.){3}(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])|[A-Za-z0-9\._\-]*)$">
 					<input v-if="['email', 'url'].includes(subtype)" :type="subtype" class="form-control" v-model="value" :disabled="disabled">
 				</div>
@@ -154,7 +155,7 @@
 </script>
 
 <script type="text/x-template" id="password-input-template">
-	<div class="form-row mb-1">
+	<div v-if="!isHidden" class="form-row mb-1">
 		<label v-on:click="toggleHelp" class="col-md-4 col-form-label">
 			{{ title }}
 			<i v-if="this.$slots.help" class="fa-question-circle" :class="showHelp ? 'fas text-info' : 'far'"></i>
@@ -183,7 +184,7 @@
 </script>
 
 <script type="text/x-template" id="number-input-template">
-	<div class="form-row mb-1">
+	<div v-if="!isHidden" class="form-row mb-1">
 		<label v-on:click="toggleHelp" class="col-md-4 col-form-label">
 			{{ title }}
 			<i v-if="this.$slots.help" class="fa-question-circle" :class="showHelp ? 'fas text-info' : 'far'"></i>
@@ -207,7 +208,7 @@
 </script>
 
 <script type="text/x-template" id="range-input-template">
-	<div class="form-row mb-1">
+	<div v-if="!isHidden" class="form-row mb-1">
 		<label v-on:click="toggleHelp" class="col-md-4 col-form-label">
 			{{ title }}
 			<i v-if="this.$slots.help" class="fa-question-circle" :class="showHelp ? 'fas text-info' : 'far'"></i>
@@ -235,7 +236,7 @@
 </script>
 
 <script type="text/x-template" id="textarea-input-template">
-	<div class="form-row mb-1">
+	<div v-if="!isHidden" class="form-row mb-1">
 		<label v-on:click="toggleHelp" class="col-md-4 col-form-label">
 			{{ title }}
 			<i v-if="this.$slots.help" class="fa-question-circle" :class="showHelp ? 'fas text-info' : 'far'"></i>
@@ -252,7 +253,7 @@
 </script>
 
 <script type="text/x-template" id="select-input-template">
-	<div class="form-row mb-1">
+	<div v-if="!isHidden" class="form-row mb-1">
 		<label v-on:click="toggleHelp" class="col-md-4 col-form-label">
 			{{ title }}
 			<i v-if="this.$slots.help" class="fa-question-circle" :class="showHelp ? 'fas text-info' : 'far'"></i>
@@ -276,7 +277,7 @@
 </script>
 
 <script type="text/x-template" id="buttongroup-input-template">
-	<div class="form-row mb-1">
+	<div v-if="!isHidden" class="form-row mb-1">
 		<label v-on:click="toggleHelp" class="col-md-4 col-form-label">
 			{{ title }}
 			<i v-if="this.$slots.help" class="fa-question-circle" :class="showHelp ? 'fas text-info' : 'far'"></i>
@@ -298,7 +299,7 @@
 </script>
 
 <script type="text/x-template" id="checkbox-input-template">
-	<div class="form-row mb-1">
+	<div v-if="!isHidden" class="form-row mb-1">
 		<label v-on:click="toggleHelp" class="col-md-4 col-form-label">
 			{{ title }}
 			<i v-if="this.$slots.help" class="fa-question-circle" :class="showHelp ? 'fas text-info' : 'far'"></i>
@@ -316,7 +317,7 @@
 
 <script type="text/x-template" id="alert-template">
 	<div class="card-text alert" :class="'alert-'+subtype">
-		<slot name="message"></slot>
+		<slot></slot>
 	</div>
 </script>
 
@@ -420,8 +421,9 @@
 			defaultValue: { type: String, default: "" },
 			isDisabled: { type: Boolean, default: false },
 			toggleSelector: String,
+			isHidden: { type: Boolean, default: false },
 			subtype: { validator: function(value){
-				return ['text', 'email', 'host', 'url', 'user'].indexOf(value) !== -1;
+				return ['text', 'email', 'host', 'url', 'user', 'json'].indexOf(value) !== -1;
 				}, default: 'text'
 			},
 			pattern: String
@@ -442,9 +444,15 @@
 			},
 			mqttValue: {
 				get() {
+					if(this.subtype == 'json') {
+						return JSON.parse(this.value);
+					}
 					return this.value;
 				},
 				set(newMqttValue) {
+					if(this.subtype == 'json') {
+						newMqttValue = JSON.stringify(newMqttValue);
+					}
 					this.value = newMqttValue;
 					this.initialValue = newMqttValue;
 				}
@@ -486,6 +494,7 @@
 			defaultValue: { type: String, default: "" },
 			isDisabled: { type: Boolean, default: false },
 			toggleSelector: String,
+			isHidden: { type: Boolean, default: false },
 			pattern: String
 		},
 		data() {
@@ -552,6 +561,7 @@
 			defaultValue: { type: Number, default: 0 },
 			isDisabled: { type: Boolean, default: false },
 			toggleSelector: String,
+			isHidden: { type: Boolean, default: false },
 			unit: String,
 			min: Number,
 			max: Number,
@@ -617,6 +627,7 @@
 			defaultValue: { type: Number, default: 0 },
 			isDisabled: { type: Boolean, default: false },
 			toggleSelector: String,
+			isHidden: { type: Boolean, default: false },
 			unit: String,
 			min: { type: Number, default: 0 },
 			max: { type: Number, default: 100 },
@@ -719,7 +730,8 @@
 			title: String,
 			defaultValue: { type: String, default: "" },
 			isDisabled: { type: Boolean, default: false },
-			toggleSelector: String
+			toggleSelector: String,
+			isHidden: { type: Boolean, default: false }
 		},
 		data() {
 			return {
@@ -781,6 +793,7 @@
 			defaultValue: { type: [String, Number, Array], default: "" },
 			isDisabled: { type: Boolean, default: false },
 			toggleSelector: String,
+			isHidden: { type: Boolean, default: false },
 			groups: Object,
 			options: Object
 		},
@@ -902,6 +915,7 @@
 			defaultValue: [String, Number, Boolean],
 			isDisabled: { type: Boolean, default: false },
 			toggleSelector: String,
+			isHidden: { type: Boolean, default: false },
 			buttons: Object
 		},
 		data() {
@@ -1004,7 +1018,8 @@
 			title: String,
 			defaultValue: { type: Boolean, default: false },
 			isDisabled: { type: Boolean, default: false },
-			toggleSelector: String
+			toggleSelector: String,
+			isHidden: { type: Boolean, default: false }
 		},
 		data() {
 			return {
@@ -1237,7 +1252,7 @@
 				for (element in this.$refs) {
 					// console.debug("checking: " + element);
 					if (this.$refs[element].changed && !this.$refs[element].disabled) {
-						console.debug("value ist changed and not disabled");
+						console.debug("value ist changed and not disabled: "+element);
 						var message = JSON.stringify(this.$refs[element].mqttValue);
 						var topic = element.replace(/^openWB\//, 'openWB/set/');
 						changedValues[topic] = message;

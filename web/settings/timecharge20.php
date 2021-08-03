@@ -57,19 +57,41 @@
 		<div id="app">
 			<content title="Einstellungen Zeitladen" footer="Zeitladen">
 
+				<!-- hidden toggle-only components: BEGIN -->
+				<buttongroup-input
+					title="Nur Ladepunkt"
+					ref="openWB/general/extern"
+					:is-hidden="true"
+					toggle-selector='extOpenWBOn'
+					:buttons="[
+						{buttonValue: false, text: 'Nein', class: 'btn-outline-danger', icon: 'fas fa-times'},
+						{buttonValue: true, text: 'Ja', class: 'btn-outline-success'}
+					]"
+					:default-value=false>
+				</buttongroup-input>
+				<!-- hidden toggle-only components: END -->
+
 				<card title="Phasenumschaltung">
-					<buttongroup-input
-						title="Anzahl Phasen"
-						ref="openWB/general/chargemode_config/time_charging/phases_to_use"
-						:buttons="[
-							{buttonValue: 1, text: '1'},
-							{buttonValue: 3, text: 'Maximum'}
-						]"
-						:default-value=3>
-						<template #help>
-							ToDo
-						</template>
-					</buttongroup-input>
+					<div v-show="visibility.extOpenWBOn">
+						<alert
+							subtype="info">
+							Diese Einstellungen sind nicht verfügbar, solange sich diese openWB im Modus "Nur Ladepunkt" befindet.
+						</alert>
+					</div>
+					<div v-show="!visibility.extOpenWBOn">
+						<buttongroup-input
+							title="Anzahl Phasen"
+							ref="openWB/general/chargemode_config/time_charging/phases_to_use"
+							:buttons="[
+								{buttonValue: 1, text: '1'},
+								{buttonValue: 3, text: 'Maximum'}
+							]"
+							:default-value=3>
+							<template #help>
+								ToDo
+							</template>
+						</buttongroup-input>
+					</div>
 				</card>
 
 			</content>

@@ -94,7 +94,7 @@
 					</div>
 				</card>
 
-				<card title="Hardware">
+				<card title="Hardware" v-if="!visibility.extOpenWBOn">
 					<buttongroup-input
 						title="Geschwindigkeit Regelintervall"
 						ref="openWB/general/control_interval"
@@ -152,7 +152,7 @@
 					</buttongroup-input>
 				</card>
 
-				<card title="Benachrichtigungen">
+				<card title="Benachrichtigungen" v-if="!visibility.extOpenWBOn">
 					<select-input
 						title="Anbieter"
 						ref="openWB/general/notifications/selected"
@@ -167,14 +167,13 @@
 					<div v-show="visibility.notificationProvider=='pushover'">
 						<alert
 							subtype="info">
-							<template #message>
-								Zur Nutzung von Pushover muss ein Konto auf Pushover.net bestehen. Zudem muss im Pushover-Nutzerkonto eine Applikation openWB eingerichtet werden, um den benötigten API-Token/Key zu erhalten.<br>
-								Wenn Pushover eingeschaltet ist, werden die Zählerstände aller konfigurierten Ladepunkte immer zum 1. des Monats gepusht.
-							</template>
+							Zur Nutzung von Pushover muss ein Konto auf Pushover.net bestehen. Zudem muss im Pushover-Nutzerkonto eine Applikation openWB eingerichtet werden, um den benötigten API-Token/Key zu erhalten.<br>
+							Wenn Pushover eingeschaltet ist, werden die Zählerstände aller konfigurierten Ladepunkte immer zum 1. des Monats gepusht.
 						</alert>
 						<text-input
 							title="Einstellungen"
-							ref="ToDo/notifications/config"
+							subtype="json"
+							ref="openWB/general/notifications/configuration"
 							:is-disabled='visibility.extOpenWBOn || visibility.notificationProvider!="pushover"'>
 							<template #help>
 								ToDo: JSON aufteilen
@@ -238,7 +237,7 @@
 					</div>
 				</card>
 
-				<card title="Ladelog">
+				<card title="Ladelog" v-if="!visibility.extOpenWBOn">
 					<number-input
 						title="Preis je kWh"
 						:min=0 :step=0.0001
