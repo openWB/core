@@ -57,192 +57,233 @@
 		<div id="app">
 			<content title="Einstellungen PV-Laden" footer="PV-Laden">
 
-				<card title="PV-Laden">
-					<buttongroup-input
-						title="Regelmodus"
-						ref="ToDo/pv_charge/control_mode"
-						toggle-selector='controlmode'
-						:buttons="[
-							{buttonValue: 'export', text: 'Einspeisung'},
-							{buttonValue: 'import', text: 'Bezug'},
-							{buttonValue: 'individual', text: 'Individuell'}
-						]"
-						default-value='export'>
-						<template #help>
-							ToDo
-						</template>
-					</buttongroup-input>
-					<text-input
-						title="Regelbereich"
-						ref="openWB/general/chargemode_config/pv_charging/control_range"
-						default-value="abc"
-						:is-disabled='visibility.extOpenWBOn'>
-						<template #help>
-							ToDo
-						</template>
-					</text-input>
-					<div v-show='visibility.controlmode=="individual"'>
-						<number-input
-							title="Minimum"
-							:min=-10000 :max=10000
-							ref="ToDo/pv_charge/control_min"
-							:default-value=-230
-							unit="W"
-							:is-disabled='visibility.controlmode!="individual"'>
+				<!-- hidden toggle-only components: BEGIN -->
+				<buttongroup-input
+					title="Nur Ladepunkt"
+					ref="openWB/general/extern"
+					:is-hidden="true"
+					toggle-selector='extOpenWBOn'
+					:buttons="[
+						{buttonValue: false, text: 'Nein', class: 'btn-outline-danger', icon: 'fas fa-times'},
+						{buttonValue: true, text: 'Ja', class: 'btn-outline-success'}
+					]"
+					:default-value=false>
+				</buttongroup-input>
+				<!-- hidden toggle-only components: END -->
+
+				<card title="Regelparameter">
+					<div v-show="visibility.extOpenWBOn">
+						<alert
+							subtype="info">
+							Diese Einstellungen sind nicht verfügbar, solange sich diese openWB im Modus "Nur Ladepunkt" befindet.
+						</alert>
+					</div>
+					<div v-show="!visibility.extOpenWBOn">
+						<buttongroup-input
+							title="Regelmodus"
+							ref="ToDo/pv_charge/control_mode"
+							toggle-selector='controlmode'
+							:buttons="[
+								{buttonValue: 'export', text: 'Einspeisung'},
+								{buttonValue: 'import', text: 'Bezug'},
+								{buttonValue: 'individual', text: 'Individuell'}
+							]"
+							default-value='export'>
 							<template #help>
 								ToDo
+							</template>
+						</buttongroup-input>
+						<text-input
+							title="Regelbereich"
+							subtype="json"
+							ref="openWB/general/chargemode_config/pv_charging/control_range"
+							default-value="abc"
+							:is-disabled='visibility.extOpenWBOn'>
+							<template #help>
+								ToDo
+							</template>
+						</text-input>
+						<div v-show='visibility.controlmode=="individual"'>
+							<number-input
+								title="Minimum"
+								:min=-10000 :max=10000
+								ref="ToDo/pv_charge/control_min"
+								:default-value=-230
+								unit="W"
+								:is-disabled='visibility.controlmode!="individual" || visibility.extOpenWBOn'>
+								<template #help>
+									ToDo
+								</template>
+							</number-input>
+							<number-input
+								title="Maximum"
+								:min=-10000 :max=10000
+								ref="ToDo/pv_charge/control_max"
+								:default-value=0
+								unit="W"
+								:is-disabled='visibility.controlmode!="individual" || visibility.extOpenWBOn'>
+								<template #help>
+									ToDo
+								</template>
+							</number-input>
+						</div>
+						<number-input
+							title="Regelpunkt Einspeisegrenze"
+							:min=0 :step=100
+							ref="openWB/general/chargemode_config/pv_charging/feed_in_yield"
+							:default-value=0
+							unit="W">
+							<template #help>
+								Parameter für den 70%-Regelpunkt im Modus PV-Laden. Dieser Parameter ist nur wirksam bei der Einstellung "70%-Regelung eingeschaltet". Der hier eingetragene Wert sollte zur optimalen Eigenverbrauchssteuerung 70% der installierten Generatorleistung betragen.<br>
+								Die Nutzung dieser Option ergibt nur Sinn wenn ein Wechselrichter und Smartmeter verbaut ist welches eine dynamische Begrenzung der Einspeiseleistung bietet.
 							</template>
 						</number-input>
+						<hr>
 						<number-input
-							title="Maximum"
-							:min=-10000 :max=10000
-							ref="ToDo/pv_charge/control_max"
+							title="Einschaltschwelle"
+							:min=0 :step=1
+							ref="openWB/general/chargemode_config/pv_charging/switch_on_threshold"
+							:default-value=1320
+							unit="W">
+						</number-input>
+						<number-input
+							title="Einschaltverzögerung"
+							:min=0 :step=1
+							ref="openWB/general/chargemode_config/pv_charging/switch_on_delay"
+							:default-value=20
+							unit="W">
+						</number-input>
+						<hr>
+						<number-input
+							title="Abschaltschwelle"
+							:min=0 :step=1
+							ref="openWB/general/chargemode_config/pv_charging/switch_off_threshold"
 							:default-value=0
-							unit="W"
-							:is-disabled='visibility.controlmode!="individual"'>
-							<template #help>
-								ToDo
-							</template>
+							unit="W">
+						</number-input>
+						<number-input
+							title="Abschaltverzögerung"
+							:min=0 :step=1
+							ref="openWB/general/chargemode_config/pv_charging/switch_off_delay"
+							:default-value=60
+							unit="W">
 						</number-input>
 					</div>
-					<number-input
-						title="Regelpunkt Einspeisegrenze"
-						:min=0 :step=100
-						ref="openWB/general/chargemode_config/pv_charging/feed_in_yield"
-						:default-value=0
-						unit="W">
-						<template #help>
-							Parameter für den 70%-Regelpunkt im Modus PV-Laden. Dieser Parameter ist nur wirksam bei der Einstellung "70%-Regelung eingeschaltet". Der hier eingetragene Wert sollte zur optimalen Eigenverbrauchssteuerung 70% der installierten Generatorleistung betragen.<br>
-							Die Nutzung dieser Option ergibt nur Sinn wenn ein Wechselrichter und Smartmeter verbaut ist welches eine dynamische Begrenzung der Einspeiseleistung bietet.
-						</template>
-					</number-input>
-					<hr>
-					<number-input
-						title="Einschaltschwelle"
-						:min=0 :step=1
-						ref="openWB/general/chargemode_config/pv_charging/switch_on_threshold"
-						:default-value=1320
-						unit="W">
-					</number-input>
-					<number-input
-						title="Einschaltverzögerung"
-						:min=0 :step=1
-						ref="openWB/general/chargemode_config/pv_charging/switch_on_delay"
-						:default-value=20
-						unit="W">
-					</number-input>
-					<hr>
-					<number-input
-						title="Abschaltschwelle"
-						:min=0 :step=1
-						ref="openWB/general/chargemode_config/pv_charging/switch_off_threshold"
-						:default-value=0
-						unit="W">
-					</number-input>
-					<number-input
-						title="Abschaltverzögerung"
-						:min=0 :step=1
-						ref="openWB/general/chargemode_config/pv_charging/switch_off_delay"
-						:default-value=60
-						unit="W">
-					</number-input>
 				</card>
+
 				<card title="Phasenumschaltung">
-					<buttongroup-input
-						title="Anzahl Phasen"
-						ref="openWB/general/chargemode_config/pv_charging/phases_to_use"
-						toggle-selector="pvPhases"
-						:buttons="[
-							{buttonValue: 1, text: '1'},
-							{buttonValue: 3, text: 'Maximum'},
-							{buttonValue: 0, text: 'Automatisch'}
-						]"
-						:default-value=0>
-						<template #help>
-							ToDo
-						</template>
-					</buttongroup-input>
-					<div v-show='visibility.pvPhases=="auto"'>
-						<range-input
-							title="Schaltzeiten Automatikmodus"
-							:min=1 :max=15 :step=1
-							ref="openWB/general/chargemode_config/pv_charging/phase_switch_delay"
-							:default-value=8
-							unit="Minuten"
-							:is-disabled='visibility.pvPhases!="auto"'>
+					<div v-show="visibility.extOpenWBOn">
+						<alert
+							subtype="info">
+							Diese Einstellungen sind nicht verfügbar, solange sich diese openWB im Modus "Nur Ladepunkt" befindet.
+						</alert>
+					</div>
+					<div v-show="!visibility.extOpenWBOn">
+						<buttongroup-input
+							title="Anzahl Phasen"
+							ref="openWB/general/chargemode_config/pv_charging/phases_to_use"
+							toggle-selector="pvPhases"
+							:buttons="[
+								{buttonValue: 1, text: '1'},
+								{buttonValue: 3, text: 'Maximum'},
+								{buttonValue: 0, text: 'Automatisch'}
+							]"
+							:default-value=0>
 							<template #help>
-								Um zu viele Schaltungen im Automatikmodus zu vermeiden, wird hier definiert, wann die Umschaltung erfolgen soll. Ist bei einphasigen Laden für durchgehend x Minuten die Maximalstromstärke erreicht, wird auf dreiphasige Ladung umgestellt. Ist die Ladung nur für ein Intervall unterhalb der Maximalstromstärke, beginnt der Counter für die Umschaltung erneut. Ist die Ladung im dreiphasigen Modus für 16 - x Minuten bei der Minimalstromstärke, wird wieder auf einphasige Ladung gewechselt.<br>
-								Standardmäßig ist dieser Wert bei 8 Minuten, sprich nach 8 Minuten Maximalstromstärke wird auf 3 Phasige Ladung umgestellt und nach 16 - 8 = 8 Minuten bei Minimalstromstärke wird wieder auf einphasige Ladung gewechselt.
+								ToDo
+							</template>
+						</buttongroup-input>
+						<div v-show='visibility.pvPhases==0'>
+							<range-input
+								title="Schaltzeiten Automatikmodus"
+								:min=1 :max=15 :step=1
+								ref="openWB/general/chargemode_config/pv_charging/phase_switch_delay"
+								:default-value=8
+								unit="Minuten"
+								:is-disabled='visibility.pvPhases!=0 || visibility.extOpenWBOn'>
+								<template #help>
+									Um zu viele Schaltungen im Automatikmodus zu vermeiden, wird hier definiert, wann die Umschaltung erfolgen soll. Ist bei einphasigen Laden für durchgehend x Minuten die Maximalstromstärke erreicht, wird auf dreiphasige Ladung umgestellt. Ist die Ladung nur für ein Intervall unterhalb der Maximalstromstärke, beginnt der Counter für die Umschaltung erneut. Ist die Ladung im dreiphasigen Modus für 16 - x Minuten bei der Minimalstromstärke, wird wieder auf einphasige Ladung gewechselt.<br>
+									Standardmäßig ist dieser Wert bei 8 Minuten, sprich nach 8 Minuten Maximalstromstärke wird auf 3 Phasige Ladung umgestellt und nach 16 - 8 = 8 Minuten bei Minimalstromstärke wird wieder auf einphasige Ladung gewechselt.
+								</template>
+							</range-input>
+						</div>
+					</div>
+				</card>
+
+				<card title="Speicher-Beachtung">
+					<div v-show="visibility.extOpenWBOn">
+						<alert
+							subtype="info">
+							Diese Einstellungen sind nicht verfügbar, solange sich diese openWB im Modus "Nur Ladepunkt" befindet.
+						</alert>
+					</div>
+					<div v-show="!visibility.extOpenWBOn">
+						<buttongroup-input
+							title="Priorisierung"
+							ref="openWB/general/chargemode_config/pv_charging/bat_prio"
+							:buttons="[
+								{buttonValue: false, text: 'Fahrzeuge'},
+								{buttonValue: true, text: 'Speicher'}
+							]"
+							:default-value='true'>
+							<template #help>
+								ToDo
+							</template>
+						</buttongroup-input>
+						<range-input
+							title="Einschalt-SoC"
+							:min=0 :max=19 :step=1
+							ref="openWB/general/chargemode_config/pv_charging/switch_on_soc"
+							:default-value=0
+							unit="%"
+							:labels='[{"label":"Aus","value":0},{"label":5,"value":5},{"label":10,"value":10},{"label":15,"value":15},{"label":20,"value":20},{"label":25,"value":25},{"label":30,"value":30},{"label":35,"value":35},{"label":40,"value":40},{"label":45,"value":45},{"label":50,"value":50},{"label":55,"value":55},{"label":60,"value":60},{"label":65,"value":65},{"label":70,"value":70},{"label":75,"value":75},{"label":80,"value":80},{"label":85,"value":85},{"label":90,"value":90},{"label":95,"value":95}]'>
+							<template #help>
+								ToDo
+							</template>
+						</range-input>
+						<range-input
+							title="Ausschalt-SoC"
+							:min=0 :max=19 :step=1
+							ref="openWB/general/chargemode_config/pv_charging/switch_off_soc"
+							:default-value=0
+							unit="%"
+							:labels='[{"label":"Aus","value":0},{"label":5,"value":5},{"label":10,"value":10},{"label":15,"value":15},{"label":20,"value":20},{"label":25,"value":25},{"label":30,"value":30},{"label":35,"value":35},{"label":40,"value":40},{"label":45,"value":45},{"label":50,"value":50},{"label":55,"value":55},{"label":60,"value":60},{"label":65,"value":65},{"label":70,"value":70},{"label":75,"value":75},{"label":80,"value":80},{"label":85,"value":85},{"label":90,"value":90},{"label":95,"value":95}]'>
+							<template #help>
+								ToDo
+							</template>
+						</range-input>
+						<number-input
+							title="Reservierte Ladeleistung"
+							:min=0 :step=100
+							ref="openWB/general/chargemode_config/pv_charging/charging_power_reserve"
+							:default-value=0
+							unit="W">
+							<template #help>
+								ToDo
+							</template>
+						</number-input>
+						<number-input
+							title="Erlaubte Entladeleistung"
+							:min=0 :step=100
+							ref="openWB/general/chargemode_config/pv_charging/rundown_power"
+							:default-value=0
+							unit="W">
+							<template #help>
+								ToDo
+							</template>
+						</number-input>
+						<range-input
+							title="Minimaler Entlade-SoC"
+							:min=0 :max=20 :step=1
+							ref="openWB/general/chargemode_config/pv_charging/rundown_soc"
+							:default-value=0
+							unit="%"
+							:labels='[{"label":0,"value":0},{"label":5,"value":5},{"label":10,"value":10},{"label":15,"value":15},{"label":20,"value":20},{"label":25,"value":25},{"label":30,"value":30},{"label":35,"value":35},{"label":40,"value":40},{"label":45,"value":45},{"label":50,"value":50},{"label":55,"value":55},{"label":60,"value":60},{"label":65,"value":65},{"label":70,"value":70},{"label":75,"value":75},{"label":80,"value":80},{"label":85,"value":85},{"label":90,"value":90},{"label":95,"value":95},{"label":"Aus","value":100}]'>
+							<template #help>
+								ToDo
 							</template>
 						</range-input>
 					</div>
-				</card>
-				<card title="Speicher-Beachtung">
-					<buttongroup-input
-						title="Priorisierung"
-						ref="openWB/general/chargemode_config/pv_charging/bat_prio"
-						:buttons="[
-							{buttonValue: false, text: 'Fahrzeuge'},
-							{buttonValue: true, text: 'Speicher'}
-						]"
-						:default-value='true'>
-						<template #help>
-							ToDo
-						</template>
-					</buttongroup-input>
-					<range-input
-						title="Einschalt-SoC"
-						:min=0 :max=19 :step=1
-						ref="openWB/general/chargemode_config/pv_charging/switch_on_soc"
-						:default-value=0
-						unit="%"
-						:labels='[{"label":"Aus","value":0},{"label":5,"value":5},{"label":10,"value":10},{"label":15,"value":15},{"label":20,"value":20},{"label":25,"value":25},{"label":30,"value":30},{"label":35,"value":35},{"label":40,"value":40},{"label":45,"value":45},{"label":50,"value":50},{"label":55,"value":55},{"label":60,"value":60},{"label":65,"value":65},{"label":70,"value":70},{"label":75,"value":75},{"label":80,"value":80},{"label":85,"value":85},{"label":90,"value":90},{"label":95,"value":95}]'>
-						<template #help>
-							ToDo
-						</template>
-					</range-input>
-					<range-input
-						title="Ausschalt-SoC"
-						:min=0 :max=19 :step=1
-						ref="openWB/general/chargemode_config/pv_charging/switch_off_soc"
-						:default-value=0
-						unit="%"
-						:labels='[{"label":"Aus","value":0},{"label":5,"value":5},{"label":10,"value":10},{"label":15,"value":15},{"label":20,"value":20},{"label":25,"value":25},{"label":30,"value":30},{"label":35,"value":35},{"label":40,"value":40},{"label":45,"value":45},{"label":50,"value":50},{"label":55,"value":55},{"label":60,"value":60},{"label":65,"value":65},{"label":70,"value":70},{"label":75,"value":75},{"label":80,"value":80},{"label":85,"value":85},{"label":90,"value":90},{"label":95,"value":95}]'>
-						<template #help>
-							ToDo
-						</template>
-					</range-input>
-					<number-input
-						title="Reservierte Ladeleistung"
-						:min=0 :step=100
-						ref="openWB/general/chargemode_config/pv_charging/charging_power_reserve"
-						:default-value=0
-						unit="W">
-						<template #help>
-							ToDo
-						</template>
-					</number-input>
-					<number-input
-						title="Erlaubte Entladeleistung"
-						:min=0 :step=100
-						ref="openWB/general/chargemode_config/pv_charging/rundown_power"
-						:default-value=0
-						unit="W">
-						<template #help>
-							ToDo
-						</template>
-					</number-input>
-					<range-input
-						title="Minimaler Entlade-SoC"
-						:min=0 :max=20 :step=1
-						ref="openWB/general/chargemode_config/pv_charging/rundown_soc"
-						:default-value=0
-						unit="%"
-						:labels='[{"label":0,"value":0},{"label":5,"value":5},{"label":10,"value":10},{"label":15,"value":15},{"label":20,"value":20},{"label":25,"value":25},{"label":30,"value":30},{"label":35,"value":35},{"label":40,"value":40},{"label":45,"value":45},{"label":50,"value":50},{"label":55,"value":55},{"label":60,"value":60},{"label":65,"value":65},{"label":70,"value":70},{"label":75,"value":75},{"label":80,"value":80},{"label":85,"value":85},{"label":90,"value":90},{"label":95,"value":95},{"label":"Aus","value":100}]'>
-						<template #help>
-							ToDo
-						</template>
-					</range-input>
 				</card>
 
 			</content>

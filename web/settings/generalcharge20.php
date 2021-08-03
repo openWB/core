@@ -57,45 +57,69 @@
 		<div id="app">
 			<content title="Allgemeine Einstellungen der Lademodi" footer="Lademodi">
 
+				<!-- hidden toggle-only components: BEGIN -->
+				<buttongroup-input
+					title="Nur Ladepunkt"
+					ref="openWB/general/extern"
+					:is-hidden="true"
+					toggle-selector='extOpenWBOn'
+					:buttons="[
+						{buttonValue: false, text: 'Nein', class: 'btn-outline-danger', icon: 'fas fa-times'},
+						{buttonValue: true, text: 'Ja', class: 'btn-outline-success'}
+					]"
+					:default-value=false>
+				</buttongroup-input>
+				<!-- hidden toggle-only components: END -->
+
 				<card title="Allgemein">
-					<buttongroup-input
-						title="Lademodus"
-						ref="openWB/general/chargemode_config/individual_mode"
-						:buttons="[
-							{buttonValue: false, text: 'Einheitlich'},
-							{buttonValue: true, text: 'Individuell'}
-						]"
-						:default-value=false>
-						<template #help>
-							ToDo
-						</template>
-					</buttongroup-input>
-					<hr>
-					<buttongroup-input
-						title="Begrenzung der Schieflast"
-						ref="openWB/general/chargemode_config/unbalanced_load"
-						toggle-selector='unbalancedOn'
-						:buttons="[
-							{buttonValue: false, text: 'Nein', class: 'btn-outline-danger', icon: 'fas fa-times'},
-							{buttonValue: true, text: 'Ja', class: 'btn-outline-success'}
-						]"
-						:default-value=false>
-						<template #help>
-							ToDo
-						</template>
-					</buttongroup-input>
-					<div v-show="visibility.unbalancedOn">
-						<range-input
-							title="Erlaubte Schieflast"
-							:min=10 :max=32 :step=1
-							ref="openWB/general/chargemode_config/unbalanced_load_limit"
-							:default-value=20
-							unit="A"
-							:is-disabled='!visibility.unbalancedOn'>
+					<div v-show="visibility.extOpenWBOn">
+						<alert
+							subtype="info">
+							Diese Einstellungen sind nicht verfügbar, solange sich diese openWB im Modus "Nur Ladepunkt" befindet.
+						</alert>
+					</div>
+					<div v-show="!visibility.extOpenWBOn">
+						<buttongroup-input
+							title="Lademodus"
+							ref="openWB/general/chargemode_config/individual_mode"
+							:buttons="[
+								{buttonValue: false, text: 'Einheitlich'},
+								{buttonValue: true, text: 'Individuell'}
+							]"
+							:default-value=false
+							:is-disabled='visibility.extOpenWBOn'>
 							<template #help>
 								ToDo
 							</template>
-						</range-input>
+						</buttongroup-input>
+						<hr>
+						<buttongroup-input
+							title="Begrenzung der Schieflast"
+							ref="openWB/general/chargemode_config/unbalanced_load"
+							toggle-selector='unbalancedOn'
+							:buttons="[
+								{buttonValue: false, text: 'Nein', class: 'btn-outline-danger', icon: 'fas fa-times'},
+								{buttonValue: true, text: 'Ja', class: 'btn-outline-success'}
+							]"
+							:default-value=false
+							:is-disabled='visibility.extOpenWBOn'>
+							<template #help>
+								ToDo
+							</template>
+						</buttongroup-input>
+						<div v-show="visibility.unbalancedOn">
+							<range-input
+								title="Erlaubte Schieflast"
+								:min=10 :max=32 :step=1
+								ref="openWB/general/chargemode_config/unbalanced_load_limit"
+								:default-value=20
+								unit="A"
+								:is-disabled='!visibility.unbalancedOn || visibility.extOpenWBOn'>
+								<template #help>
+									ToDo
+								</template>
+							</range-input>
+						</div>
 					</div>
 				</card>
 
