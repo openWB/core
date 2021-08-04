@@ -1,12 +1,12 @@
 <?php
-session_start();
+	session_start();
 
-$themeCookie = "standard";
-if( isset($_COOKIE['openWBTheme'] )){
-	$themeCookie = $_COOKIE['openWBTheme'];
-} else {
-	setCookie("openWBTheme", $themeCookie, mktime().time()+60*60*24*365);
-}
+	$themeCookie = "standard";
+	if( isset($_COOKIE['openWBTheme'] )){
+		$themeCookie = $_COOKIE['openWBTheme'];
+	} else {
+		setCookie("openWBTheme", $themeCookie, mktime().time()+60*60*24*365);
+	}
 ?>
 <!DOCTYPE html>
 <html lang="de">
@@ -55,273 +55,216 @@ if( isset($_COOKIE['openWBTheme'] )){
 	</head>
 	<body>
 		<div id="app">
+			<content title="Allgemeine Einstellungen" footer="Allgemein">
 
-			<!-- Saveprogress -->
-			<div id="saveprogress" class="hide">
-				<div id="saveprogress-inner">
-					<div class="row">
-						<div class="mx-auto d-block justify-content-center">
-							<img id="saveprogress-image" src="img/favicons/preloader-image.png" alt="openWB">
-						</div>
+				<card title="openWB">
+					<buttongroup-input
+						title="Nur Ladepunkt"
+						ref="openWB/general/extern"
+						toggle-selector='extOpenWBOn'
+						:buttons="[
+							{buttonValue: false, text: 'Nein', class: 'btn-outline-danger', icon: 'fas fa-times'},
+							{buttonValue: true, text: 'Ja', class: 'btn-outline-success'}
+						]"
+						:default-value=false>
+						<template #help>
+							Wird hier "Ja" gewählt ist diese openWB nur ein Ladepunkt und übernimmt keine eigene Regelung.
+							Hier ist "Ja" zu wählen wenn, bereits eine openWB vorhanden ist und diese nur ein weiterer Ladepunkt der vorhandenen openWB sein soll.
+							<span class="text-danger">Alle in dieser openWB getätigten Einstellungen werden NICHT beachtet.</span>
+							An der Haupt openWB wird als Ladepunkt "externe openWB" gewählt und die IP Adresse eingetragen.
+						</template>
+					</buttongroup-input>
+					<div v-show="visibility.extOpenWBOn">
+						<select-input
+							id="select1"
+							title="Display-Theme"
+							ref="openWB/general/extOpenWBDisplay"
+							toggle-selector='displayTheme'
+							:options="[
+								{value: 'normal', text: 'Normal'},
+								{value: 'parent', text: 'Display der übergeordneten openWB'}
+							]"
+							default-value="normal"
+							:is-disabled='!visibility.extOpenWBOn'>
+							<template #help>
+								Das Theme "Normal" zeigt lediglich die Ladeleistung des Ladepunktes an. Änderungen sind nicht möglich.<br>
+								Wird hier "Display der übergeordneten openWB" ausgewählt, dann ist die Anzeige identisch zum Display der regelnden openWB. Alle Anzeigen und Änderungen sind möglich.
+							</template>
+						</select-input>
 					</div>
-					<div id="saveprogress-info" class="row justify-content-center mt-2">
-						<div class="col-10 col-sm-6">
-							Bitte warten, geänderte Einstellungen werden gespeichert.
-						</div>
+				</card>
+
+				<card title="Hardware" v-if="!visibility.extOpenWBOn">
+					<buttongroup-input
+						title="Geschwindigkeit Regelintervall"
+						ref="openWB/general/control_interval"
+						:buttons="[
+							{buttonValue: 10, text: 'Normal'},
+							{buttonValue: 20, text: 'Langsam'},
+							{buttonValue: 60, text: 'Sehr Langsam'}
+						]"
+						:default-value=10
+						:is-disabled='visibility.extOpenWBOn'>
+						<template #help>
+							Sollten Probleme oder fehler auftreten, zunächst das Regelintervall auf "Normal" (10s) stellen.<br>
+							Werden Module genutzt, welche z.B. eine Online-API nutzen oder soll langsamer geregelt werden, kann hier "Langsam" (20s) oder "Sehr Langsam" (60s) gewählt werden.<br>
+							<span class="text-danger">Nicht nur die Regelung der PV-geführten Ladung, sondern auch Lademoduswechsel werden dann nur noch in diesem Intervall ausgeführt!</span>
+						</template>
+					</buttongroup-input>
+					<buttongroup-input
+						title="Netzschutz"
+						ref="openWB/general/grid_protection_configured"
+						:buttons="[
+							{buttonValue: false, text: 'Aus'},
+							{buttonValue: true, text: 'An'}
+						]"
+						:default-value=false
+						:is-disabled='visibility.extOpenWBOn'>
+						<template #help>
+							Diese Option ist standardmäßig aktiviert und sollte so belassen werden.
+							Bei Unterschreitung einer kritischen Frequenz des Stromnetzes wird die Ladung nach einer zufälligen Zeit zwischen 1 und 90 Sekunden pausiert.
+							Der Lademodus wechselt auf "Stop". Sobald die Frequenz wieder in einem normalen Bereich ist wird automatisch der zuletzt gewählte Lademodus wieder aktiviert.
+							Ebenso wird die Ladung bei Überschreiten von 51,8 Hz unterbrochen. Dies ist dann der Fall, wenn der Energieversorger Wartungsarbeiten am (Teil-)Netz durchführt und auf einen vorübergehenden Generatorbetrieb umschaltet.
+							Die Erhöhung der Frequenz wird durchgeführt, um die PV Anlagen abzuschalten.<br>
+							<span class="text-danger">Die Option ist nur aktiv, wenn der Ladepunkt die Frequenz übermittelt. Jede openWB Series1/2 unterstützt dies.</span>
+						</template>
+					</buttongroup-input>
+					<buttongroup-input
+						title="Taster-Eingänge"
+						ref="openWB/general/external_buttons_hw"
+						:buttons="[
+							{buttonValue: false, text: 'Aus'},
+							{buttonValue: true, text: 'An'}
+						]"
+						:default-value=false
+						:is-disabled='visibility.extOpenWBOn'>
+						<template #help>
+							Wenn diese Option aktiviert ist, können bis zu fünf Taster an die openWB angeschlossen werden. Die entsprechenden Kontakte sind auf der Add-On-Platine beschriftet.<br>
+							Bei Installationen ohne die Zusatzplatine können folgende GPIOs benutzt werden, die durch die Taster auf Masse zu schalten sind:
+							<ul>
+								<li>Taster 1: Pin 32 / GPIO 12</li>
+								<li>Taster 2: Pin 36 / GPIO 16</li>
+								<li>Taster 3: Pin 31 / GPIO 6</li>
+								<li>Taster 4: Pin 33 / GPIO 13</li>
+								<li>Taster 5: Pin 40 / GPIO 21</li>
+							</ul>
+						</template>
+					</buttongroup-input>
+				</card>
+
+				<card title="Benachrichtigungen" v-if="!visibility.extOpenWBOn">
+					<select-input
+						title="Anbieter"
+						ref="openWB/general/notifications/selected"
+						toggle-selector="notificationProvider"
+						:options="[
+							{value: 'none', text: 'Kein Anbieter'},
+							{value: 'pushover', text: 'Pushover'}
+						]"
+						default-value="none"
+						:is-disabled='visibility.extOpenWBOn'>
+					</select-input>
+					<div v-show="visibility.notificationProvider=='pushover'">
+						<alert
+							subtype="info">
+							Zur Nutzung von Pushover muss ein Konto auf Pushover.net bestehen. Zudem muss im Pushover-Nutzerkonto eine Applikation openWB eingerichtet werden, um den benötigten API-Token/Key zu erhalten.<br>
+							Wenn Pushover eingeschaltet ist, werden die Zählerstände aller konfigurierten Ladepunkte immer zum 1. des Monats gepusht.
+						</alert>
+						<text-input
+							title="Einstellungen"
+							subtype="json"
+							ref="openWB/general/notifications/configuration"
+							:is-disabled='visibility.extOpenWBOn || visibility.notificationProvider!="pushover"'>
+							<template #help>
+								ToDo: JSON aufteilen
+							</template>
+						</text-input>
+						<!-- <text-input
+							title="Pushover User Key"
+							ref="ToDo/notifications/PushoverUser"
+							subtype="user"
+							:is-disabled='visibility.extOpenWBOn || visibility.notificationProvider!="pushover"'>
+						</text-input>
+						<password-input
+							title="Pushover API-Token/Key"
+							ref="ToDo/notifications/PushoverKey"
+							:is-disabled='visibility.extOpenWBOn || visibility.notificationProvider!="pushover"'>
+						</password-input> -->
+						<hr>
+						<heading>
+							Benachrichtigungen
+						</heading>
+						<buttongroup-input
+							title="Beim Starten der Ladung"
+							ref="openWB/general/notifications/start_charging"
+							:buttons="[
+								{buttonValue: false, text: 'Nein', class: 'btn-outline-danger', icon: 'fas fa-times'},
+								{buttonValue: true, text: 'Ja', class: 'btn-outline-success'}
+							]"
+							:default-value=false
+							:is-disabled='visibility.extOpenWBOn || visibility.notificationProvider!="pushover"'>
+						</buttongroup-input>
+						<buttongroup-input
+							title="Beim Stoppen der Ladung"
+							ref="openWB/general/notifications/stop_charging"
+							:buttons="[
+								{buttonValue: false, text: 'Nein', class: 'btn-outline-danger', icon: 'fas fa-times'},
+								{buttonValue: true, text: 'Ja', class: 'btn-outline-success'}
+							]"
+							:default-value=false
+							:is-disabled='visibility.extOpenWBOn || visibility.notificationProvider!="pushover"'>
+						</buttongroup-input>
+						<buttongroup-input
+							title="Beim Einstecken eines Fahrzeugs"
+							ref="openWB/general/notifications/plug"
+							:buttons="[
+								{buttonValue: false, text: 'Nein', class: 'btn-outline-danger', icon: 'fas fa-times'},
+								{buttonValue: true, text: 'Ja', class: 'btn-outline-success'}
+							]"
+							:default-value=false
+							:is-disabled='visibility.extOpenWBOn || visibility.notificationProvider!="pushover"'>
+						</buttongroup-input>
+						<buttongroup-input
+							title="Bei Triggern von Smart Home Aktionen"
+							ref="openWB/general/notifications/smart_home"
+							:buttons="[
+								{buttonValue: false, text: 'Nein', class: 'btn-outline-danger', icon: 'fas fa-times'},
+								{buttonValue: true, text: 'Ja', class: 'btn-outline-success'}
+							]"
+							:default-value=false
+							:is-disabled='visibility.extOpenWBOn || visibility.notificationProvider!="pushover"'>
+						</buttongroup-input>
 					</div>
-				</div>
-			</div>
+				</card>
 
-			<div id="nav"></div> <!-- placeholder for navbar -->
+				<card title="Ladelog" v-if="!visibility.extOpenWBOn">
+					<number-input
+						title="Preis je kWh"
+						:min=0 :step=0.0001
+						ref="openWB/general/price_kwh"
+						:default-value=0.30
+						:is-disabled='visibility.extOpenWBOn'>
+						<template #help>
+							Dient zur Berechnung der Ladekosten im Ladelog.<br>
+							Es können bis zu 4 Nachkommastellen genutzt werden.
+						</template>
+					</number-input>
+					<buttongroup-input
+					title="Einheit für Entfernungen"
+						ref="openWB/general/range_unit"
+						:buttons="[
+							{buttonValue: 'km', text: 'Kilometer'},
+							{buttonValue: 'mi', text: 'Meilen'}
+						]"
+						default-value='km'
+						:is-disabled='visibility.extOpenWBOn'>
+						<template #help>
+							ToDo: Hilfetext ergänzen!
+						</template>
+					</buttongroup-input>
+				</card>
 
-			<div role="main" class="container">
-
-				<div id="content">
-					<h1>Allgemeine Einstellungen</h1>
-
-					<form id="myForm">
-						<div class="card border-secondary">
-							<div class="card-header bg-secondary">
-								<div class="form-group mb-0">
-									<div class="form-row vaRow mb-1">
-										<div class="col">
-											openWB
-										</div>
-									</div>
-								</div>
-							</div>
-							<div class="card-body">
-								<buttongroup-input
-									title="Nur Ladepunkt"
-									ref="openWB/general/extern"
-									toggle-selector='extOpenWBOn'
-									:buttons="[
-										{buttonValue: false, text: 'Nein', class: 'btn-outline-danger', icon: 'fas fa-times'},
-										{buttonValue: true, text: 'Ja', class: 'btn-outline-success'}
-									]"
-									:default-value=false>
-									<template #help>
-										Wird hier "Ja" gewählt ist diese openWB nur ein Ladepunkt und übernimmt keine eigene Regelung.
-										Hier ist "Ja" zu wählen wenn, bereits eine openWB vorhanden ist und diese nur ein weiterer Ladepunkt der vorhandenen openWB sein soll.
-										<span class="text-danger">Alle in dieser openWB getätigten Einstellungen werden NICHT beachtet.</span>
-										An der Haupt openWB wird als Ladepunkt "externe openWB" gewählt und die IP Adresse eingetragen.
-									</template>
-								</buttongroup-input>
-								<div v-show="visibility.extOpenWBOn">
-									<select-input
-										id="select1"
-										title="Display-Theme"
-										ref="openWB/general/extOpenWBDisplay"
-										toggle-selector='displayTheme'
-										:options="[
-											{value: 'normal', text: 'Normal'},
-											{value: 'parent', text: 'Display der übergeordneten openWB'}
-										]"
-										default-value="normal"
-										:is-disabled='!visibility.extOpenWBOn'>
-										<template #help>
-											Das Theme "Normal" zeigt lediglich die Ladeleistung des Ladepunktes an. Änderungen sind nicht möglich.<br>
-											Wird hier "Display der übergeordneten openWB" ausgewählt, dann ist die Anzeige identisch zum Display der regelnden openWB. Alle Anzeigen und Änderungen sind möglich.
-										</template>
-									</select-input>
-								</div>
-							</div>
-						</div>
-
-						<div class="card border-secondary" v-show="!visibility.extOpenWBOn">
-							<div class="card-header bg-secondary">
-								<div class="form-group mb-0">
-									<div class="form-row vaRow mb-1">
-										<div class="col">
-											Hardware-Einstellungen
-										</div>
-									</div>
-								</div>
-							</div>
-							<div class="card-body">
-								<buttongroup-input
-									title="Geschwindigkeit Regelintervall"
-									ref="openWB/general/control_interval"
-									:buttons="[
-										{buttonValue: 10, text: 'Normal'},
-										{buttonValue: 20, text: 'Langsam'},
-										{buttonValue: 60, text: 'Sehr Langsam'}
-									]"
-									:default-value=10
-									:is-disabled='visibility.extOpenWBOn'>
-									<template #help>
-										Sollten Probleme oder fehler auftreten, zunächst das Regelintervall auf "Normal" (10s) stellen.<br>
-										Werden Module genutzt, welche z.B. eine Online-API nutzen oder soll langsamer geregelt werden, kann hier "Langsam" (20s) oder "Sehr Langsam" (60s) gewählt werden.<br>
-										<span class="text-danger">Nicht nur die Regelung der PV-geführten Ladung, sondern auch Lademoduswechsel werden dann nur noch in diesem Intervall ausgeführt!</span>
-									</template>
-								</buttongroup-input>
-								<buttongroup-input
-									title="Netzschutz"
-									ref="openWB/general/grid_protection_configured"
-									:buttons="[
-										{buttonValue: false, text: 'Aus'},
-										{buttonValue: true, text: 'An'}
-									]"
-									:default-value=false
-									:is-disabled='visibility.extOpenWBOn'>
-									<template #help>
-										Diese Option ist standardmäßig aktiviert und sollte so belassen werden.
-										Bei Unterschreitung einer kritischen Frequenz des Stromnetzes wird die Ladung nach einer zufälligen Zeit zwischen 1 und 90 Sekunden pausiert.
-										Der Lademodus wechselt auf "Stop". Sobald die Frequenz wieder in einem normalen Bereich ist wird automatisch der zuletzt gewählte Lademodus wieder aktiviert.
-										Ebenso wird die Ladung bei Überschreiten von 51,8 Hz unterbrochen. Dies ist dann der Fall, wenn der Energieversorger Wartungsarbeiten am (Teil-)Netz durchführt und auf einen vorübergehenden Generatorbetrieb umschaltet.
-										Die Erhöhung der Frequenz wird durchgeführt, um die PV Anlagen abzuschalten.<br>
-										<span class="text-danger">Die Option ist nur aktiv, wenn der Ladepunkt die Frequenz übermittelt. Jede openWB Series1/2 unterstützt dies.</span>
-									</template>
-								</buttongroup-input>
-							</div>
-						</div>
-
-						<div class="card border-secondary" v-show="!visibility.extOpenWBOn">
-							<div class="card-header bg-secondary">
-								<div class="form-group mb-0">
-									<div class="form-row vaRow mb-1">
-										<div class="col">
-											Benachrichtigungen
-										</div>
-									</div>
-								</div>
-							</div>
-							<div class="card-body">
-							<select-input
-									title="Anbieter"
-									ref="openWB/general/notifications/selected"
-									toggle-selector="notificationProvider"
-									:options="[
-										{value: 'none', text: 'Kein Anbieter'},
-										{value: 'pushover', text: 'Pushover'}
-									]"
-									default-value="none"
-									:is-disabled='visibility.extOpenWBOn'>
-								</select-input>
-								<div v-show="visibility.notificationProvider=='pushover'">
-									<alert
-										subtype="info">
-										<template #message>
-											Zur Nutzung von Pushover muss ein Konto auf Pushover.net bestehen. Zudem muss im Pushover-Nutzerkonto eine Applikation openWB eingerichtet werden, um den benötigten API-Token/Key zu erhalten.<br>
-											Wenn Pushover eingeschaltet ist, werden die Zählerstände aller konfigurierten Ladepunkte immer zum 1. des Monats gepusht.
-										</template>
-									</alert>
-									<text-input
-										title="Pushover User Key"
-										ref="ToDo/notifications/PushoverUser"
-										subtype="user"
-										:is-disabled='visibility.extOpenWBOn && visibility.notificationProvider!="pushover"'>
-									</text-input>
-									<password-input
-										title="Pushover API-Token/Key"
-										ref="ToDo/notifications/PushoverKey"
-										:is-disabled='visibility.extOpenWBOn && visibility.notificationProvider!="pushover"'>
-									</password-input>
-									<hr>
-									<heading>
-										Benachrichtigungen
-									</heading>
-									<buttongroup-input
-										title="Beim Starten der Ladung"
-										ref="openWB/general/notifications/start_charging"
-										:buttons="[
-											{buttonValue: false, text: 'Nein', class: 'btn-outline-danger', icon: 'fas fa-times'},
-											{buttonValue: true, text: 'Ja', class: 'btn-outline-success'}
-										]"
-										:default-value=false
-										:is-disabled='visibility.extOpenWBOn && visibility.notificationProvider!="pushover"'>
-									</buttongroup-input>
-									<buttongroup-input
-										title="Beim Stoppen der Ladung"
-										ref="openWB/general/notifications/stop_charging"
-										:buttons="[
-											{buttonValue: false, text: 'Nein', class: 'btn-outline-danger', icon: 'fas fa-times'},
-											{buttonValue: true, text: 'Ja', class: 'btn-outline-success'}
-										]"
-										:default-value=false
-										:is-disabled='visibility.extOpenWBOn && visibility.notificationProvider!="pushover"'>
-									</buttongroup-input>
-									<buttongroup-input
-										title="Beim Einstecken eines Fahrzeugs"
-										ref="openWB/general/notifications/plug"
-										:buttons="[
-											{buttonValue: false, text: 'Nein', class: 'btn-outline-danger', icon: 'fas fa-times'},
-											{buttonValue: true, text: 'Ja', class: 'btn-outline-success'}
-										]"
-										:default-value=false
-										:is-disabled='visibility.extOpenWBOn && visibility.notificationProvider!="pushover"'>
-									</buttongroup-input>
-									<buttongroup-input
-										title="Bei Triggern von Smart Home Aktionen"
-										ref="openWB/general/notifications/smart_home"
-										:buttons="[
-											{buttonValue: false, text: 'Nein', class: 'btn-outline-danger', icon: 'fas fa-times'},
-											{buttonValue: true, text: 'Ja', class: 'btn-outline-success'}
-										]"
-										:default-value=false
-										:is-disabled='visibility.extOpenWBOn && visibility.notificationProvider!="pushover"'>
-									</buttongroup-input>
-								</div>
-							</div>
-						</div>
-
-						<div class="card border-secondary" v-show="!visibility.extOpenWBOn">
-							<div class="card-header bg-secondary">
-								<div class="form-group mb-0">
-									<div class="form-row vaRow mb-1">
-										<div class="col">
-											Ladelog
-										</div>
-									</div>
-								</div>
-							</div>
-							<div class="card-body">
-								<number-input
-									title="Preis je kWh"
-									:min=0 :step=0.0001
-									ref="openWB/general/price_kwh"
-									:default-value=0.30
-									:is-disabled='visibility.extOpenWBOn'>
-									<template #help>
-										Dient zur Berechnung der Ladekosten im Ladelog.<br>
-										Es können bis zu 4 Nachkommastellen genutzt werden.
-									</template>
-								</number-input>
-							</div>
-						</div>
-
-						<div class="row justify-content-center">
-							<div class="col-md-4 d-flex py-1 justify-content-center">
-								<button id="saveSettingsBtn" type="button" class="btn btn-block btn-success" @click="saveSettings()">Speichern</button>
-							</div>
-							<div class="col-md-4 d-flex py-1 justify-content-center">
-								<button id="modalResetBtn" type="button" class="btn btn-block btn-warning" @click="showResetModal()">Änderungen verwerfen</button>
-							</div>
-							<div class="col-md-4 d-flex py-1 justify-content-center">
-								<button id="modalDefaultsBtn" type="button" class="btn btn-block btn-danger" @click="showDefaultsModal()">Werkseinstellungen</button>
-							</div>
-						</div>
-					</form>
-				</div>
-
-				<div class="mt-3 alert alert-dark text-center">
-					Open Source made with love!<br>
-					Jede Spende hilft die Weiterentwicklung von openWB voranzutreiben<br>
-					<form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_top">
-						<input type="hidden" name="cmd" value="_s-xclick">
-						<input type="hidden" name="hosted_button_id" value="2K8C4Y2JTGH7U">
-						<button type="submit" class="btn btn-warning">Spenden <i class="fab fa-paypal"></i></button>
-					</form>
-				</div>
-
-			</div>  <!-- main container -->
-
-			<footer id="footer" class="footer bg-dark text-light font-small">
-				<div class="container text-center">
-					<small>Sie befinden sich hier: Einstellungen / Allgemein</small>
-				</div>
-			</footer>
-
+			</content>
 		</div><!-- app -->
 
 		<script>
@@ -330,7 +273,7 @@ if( isset($_COOKIE['openWBTheme'] )){
 				function(data){
 					$("#nav").replaceWith(data);
 					// disable navbar entry for current page
-					$('#navAllgemein').addClass('disabled');
+					$('#navGeneral').addClass('disabled');
 				}
 			);
 		</script>

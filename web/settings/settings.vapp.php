@@ -125,7 +125,7 @@
 
 <!-- vue templates start here -->
 <script type="text/x-template" id="text-input-template">
-	<div class="form-row mb-1">
+	<div v-if="!isHidden" class="form-row mb-1">
 		<label v-on:click="toggleHelp" class="col-md-4 col-form-label">
 			{{ title }}
 			<i v-if="this.$slots.help" class="fa-question-circle" :class="showHelp ? 'fas text-info' : 'far'"></i>
@@ -139,9 +139,10 @@
 							<i v-if="subtype == 'host'" class="fas fa-fw fa-network-wired"></i>
 							<i v-if="subtype == 'url'" class="fas fa-fw fa-globe"></i>
 							<i v-if="subtype == 'user'" class="fa fa-fw fa-user"></i>
+							<i v-if="subtype == 'json'" class="fas fa-code"></i>
 						</div>
 					</div>
-					<input v-if="['text', 'user'].includes(subtype)" type="text" class="form-control" v-model="value" :disabled="disabled" :pattern="pattern">
+					<input v-if="['text', 'user', 'json'].includes(subtype)" type="text" class="form-control" v-model="value" :disabled="disabled" :pattern="pattern">
 					<input v-if="subtype === 'host'" type="text" class="form-control" v-model="value" :disabled="disabled" pattern="^(((\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.){3}(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])|[A-Za-z0-9\._\-]*)$">
 					<input v-if="['email', 'url'].includes(subtype)" :type="subtype" class="form-control" v-model="value" :disabled="disabled">
 				</div>
@@ -154,7 +155,7 @@
 </script>
 
 <script type="text/x-template" id="password-input-template">
-	<div class="form-row mb-1">
+	<div v-if="!isHidden" class="form-row mb-1">
 		<label v-on:click="toggleHelp" class="col-md-4 col-form-label">
 			{{ title }}
 			<i v-if="this.$slots.help" class="fa-question-circle" :class="showHelp ? 'fas text-info' : 'far'"></i>
@@ -167,7 +168,7 @@
 							<i class="fa fa-fw" :class="showPassword ? 'fa-unlock' : 'fa-lock'"></i>
 						</div>
 					</div>
-					<input :type="showPassword ? 'text' : 'password'" class="form-control" v-model="value" :disabled="disabled">
+					<input :type="showPassword ? 'text' : 'password'" class="form-control" v-model="value" :disabled="disabled" :pattern="pattern">
 					<div class="input-group-append" v-on:click="togglePassword">
 						<div class="input-group-text">
 							<i class="far fa-fw" :class="showPassword ? 'fa-eye' : 'fa-eye-slash'"></i>
@@ -183,7 +184,7 @@
 </script>
 
 <script type="text/x-template" id="number-input-template">
-	<div class="form-row mb-1">
+	<div v-if="!isHidden" class="form-row mb-1">
 		<label v-on:click="toggleHelp" class="col-md-4 col-form-label">
 			{{ title }}
 			<i v-if="this.$slots.help" class="fa-question-circle" :class="showHelp ? 'fas text-info' : 'far'"></i>
@@ -207,7 +208,7 @@
 </script>
 
 <script type="text/x-template" id="range-input-template">
-	<div class="form-row mb-1">
+	<div v-if="!isHidden" class="form-row mb-1">
 		<label v-on:click="toggleHelp" class="col-md-4 col-form-label">
 			{{ title }}
 			<i v-if="this.$slots.help" class="fa-question-circle" :class="showHelp ? 'fas text-info' : 'far'"></i>
@@ -225,15 +226,17 @@
 					<i class="fas fa-step-forward"></i>
 				</button>
 			</div>
-			<span v-if="showHelp" class="form-row alert alert-info my-1 small">
-				<slot name="help"></slot>
-			</span>
+			<div v-if="showHelp" class="form-row alert alert-info my-1 small">
+				<div class="col">
+					<slot name="help"></slot>
+				</div>
+			</div>
 		</div>
 	</div>
 </script>
 
 <script type="text/x-template" id="textarea-input-template">
-	<div class="form-row mb-1">
+	<div v-if="!isHidden" class="form-row mb-1">
 		<label v-on:click="toggleHelp" class="col-md-4 col-form-label">
 			{{ title }}
 			<i v-if="this.$slots.help" class="fa-question-circle" :class="showHelp ? 'fas text-info' : 'far'"></i>
@@ -250,7 +253,7 @@
 </script>
 
 <script type="text/x-template" id="select-input-template">
-	<div class="form-row mb-1">
+	<div v-if="!isHidden" class="form-row mb-1">
 		<label v-on:click="toggleHelp" class="col-md-4 col-form-label">
 			{{ title }}
 			<i v-if="this.$slots.help" class="fa-question-circle" :class="showHelp ? 'fas text-info' : 'far'"></i>
@@ -274,7 +277,7 @@
 </script>
 
 <script type="text/x-template" id="buttongroup-input-template">
-	<div class="form-row mb-1">
+	<div v-if="!isHidden" class="form-row mb-1">
 		<label v-on:click="toggleHelp" class="col-md-4 col-form-label">
 			{{ title }}
 			<i v-if="this.$slots.help" class="fa-question-circle" :class="showHelp ? 'fas text-info' : 'far'"></i>
@@ -296,7 +299,7 @@
 </script>
 
 <script type="text/x-template" id="checkbox-input-template">
-	<div class="form-row mb-1">
+	<div v-if="!isHidden" class="form-row mb-1">
 		<label v-on:click="toggleHelp" class="col-md-4 col-form-label">
 			{{ title }}
 			<i v-if="this.$slots.help" class="fa-question-circle" :class="showHelp ? 'fas text-info' : 'far'"></i>
@@ -314,7 +317,7 @@
 
 <script type="text/x-template" id="alert-template">
 	<div class="card-text alert" :class="'alert-'+subtype">
-		<slot name="message"></slot>
+		<slot></slot>
 	</div>
 </script>
 
@@ -324,17 +327,103 @@
 	</div>
 </script>
 
+<script type="text/x-template" id="submit-buttons-template">
+	<div class="row justify-content-center">
+		<div class="col-md-4 d-flex py-1 justify-content-center">
+			<button id="saveSettingsBtn" type="button" class="btn btn-block btn-success" @click="saveSettings()">Speichern</button>
+		</div>
+		<div class="col-md-4 d-flex py-1 justify-content-center">
+			<button id="modalResetBtn" type="button" class="btn btn-block btn-warning" @click="showResetModal()">Änderungen verwerfen</button>
+		</div>
+		<div class="col-md-4 d-flex py-1 justify-content-center">
+			<button id="modalDefaultsBtn" type="button" class="btn btn-block btn-danger" @click="showDefaultsModal()">Werkseinstellungen</button>
+		</div>
+	</div>
+</script>
+
+<script type="text/x-template" id="card-template">
+	<div class="card" :class="'border-'+subtype">
+		<div class="card-header" :class="'bg-'+subtype">
+			<div class="form-group mb-0">
+				<div class="form-row vaRow mb-1">
+					<div class="col">
+						{{ title }}
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="card-body">
+			<slot></slot>
+		</div>
+	</div>
+</script>
+
+<script type="text/x-template" id="page-footer-template">
+	<footer id="footer" class="footer bg-dark text-light font-small">
+		<div class="container text-center">
+			<small>Sie befinden sich hier: Einstellungen / {{ location }}</small>
+		</div>
+	</footer>
+</script>
+
+<script type="text/x-template" id="donation-banner-template">
+	<div class="mt-3 alert alert-dark text-center">
+		Open Source made with love!<br>
+		Jede Spende hilft die Weiterentwicklung von openWB voranzutreiben<br>
+		<form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_top">
+			<input type="hidden" name="cmd" value="_s-xclick">
+			<input type="hidden" name="hosted_button_id" value="2K8C4Y2JTGH7U">
+			<button type="submit" class="btn btn-warning">Spenden <i class="fab fa-paypal"></i></button>
+		</form>
+	</div>
+</script>
+
+<script type="text/x-template" id="content-template">
+	<!-- Saveprogress -->
+	<div id="saveprogress" class="hide">
+		<div id="saveprogress-inner">
+			<div class="row">
+				<div class="mx-auto d-block justify-content-center">
+					<img id="saveprogress-image" src="img/favicons/preloader-image.png" alt="openWB">
+				</div>
+			</div>
+			<div id="saveprogress-info" class="row justify-content-center mt-2">
+				<div class="col-10 col-sm-6">
+					Bitte warten, geänderte Einstellungen werden gespeichert.
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div id="nav"></div> <!-- placeholder for navbar -->
+
+	<div role="main" class="container">
+		<div id="content">
+			<h1>{{ title }}</h1>
+			<form id="myForm">
+				<slot></slot>
+				<submit-buttons></submit-buttons>
+			</form>
+		</div>
+		<donation-banner></donation-banner>
+	</div>  <!-- main container -->
+
+	<page-footer :location='footer'></page-footer>
+</script>
+
 <!-- vue apps start here -->
 <script>
 	const textInputComponent = {
+		name: "TextInput",
 		template: '#text-input-template',
 		props: {
 			title: String,
 			defaultValue: { type: String, default: "" },
 			isDisabled: { type: Boolean, default: false },
 			toggleSelector: String,
+			isHidden: { type: Boolean, default: false },
 			subtype: { validator: function(value){
-				return ['text', 'email', 'host', 'url', 'user'].indexOf(value) !== -1;
+				return ['text', 'email', 'host', 'url', 'user', 'json'].indexOf(value) !== -1;
 				}, default: 'text'
 			},
 			pattern: String
@@ -355,10 +444,17 @@
 			},
 			mqttValue: {
 				get() {
+					if(this.subtype == 'json') {
+						return JSON.parse(this.value);
+					}
 					return this.value;
 				},
 				set(newMqttValue) {
+					if(this.subtype == 'json') {
+						newMqttValue = JSON.stringify(newMqttValue);
+					}
 					this.value = newMqttValue;
+					this.initialValue = newMqttValue;
 				}
 			}
 		},
@@ -391,12 +487,15 @@
 	};
 
 	const passwordInputComponent = {
+		name: "PasswordInput",
 		template: '#password-input-template',
 		props: {
 			title: String,
 			defaultValue: { type: String, default: "" },
 			isDisabled: { type: Boolean, default: false },
-			toggleSelector: String
+			toggleSelector: String,
+			isHidden: { type: Boolean, default: false },
+			pattern: String
 		},
 		data() {
 			return {
@@ -419,6 +518,7 @@
 				},
 				set(newMqttValue) {
 					this.value = newMqttValue;
+					this.initialValue = newMqttValue;
 				}
 			}
 		},
@@ -454,12 +554,14 @@
 	};
 
 	const numberInputComponent = {
+		name: "NumberInput",
 		template: '#number-input-template',
 		props: {
 			title: String,
 			defaultValue: { type: Number, default: 0 },
 			isDisabled: { type: Boolean, default: false },
 			toggleSelector: String,
+			isHidden: { type: Boolean, default: false },
 			unit: String,
 			min: Number,
 			max: Number,
@@ -485,6 +587,7 @@
 				},
 				set(newMqttValue) {
 					this.value = newMqttValue;
+					this.initialValue = newMqttValue;
 				}
 			}
 		},
@@ -517,12 +620,14 @@
 	};
 
 	const rangeInputComponent = {
+		name: "RangeInput",
 		template: '#range-input-template',
 		props: {
 			title: String,
 			defaultValue: { type: Number, default: 0 },
 			isDisabled: { type: Boolean, default: false },
 			toggleSelector: String,
+			isHidden: { type: Boolean, default: false },
 			unit: String,
 			min: { type: Number, default: 0 },
 			max: { type: Number, default: 100 },
@@ -619,12 +724,14 @@
 	};
 
 	const textareaInputComponent = {
+		name: "TextareaInput",
 		template: '#textarea-input-template',
 		props: {
 			title: String,
 			defaultValue: { type: String, default: "" },
 			isDisabled: { type: Boolean, default: false },
-			toggleSelector: String
+			toggleSelector: String,
+			isHidden: { type: Boolean, default: false }
 		},
 		data() {
 			return {
@@ -646,6 +753,7 @@
 				},
 				set(newMqttValue) {
 					this.value = newMqttValue;
+					this.initialValue = newMqttValue;
 				}
 			}
 		},
@@ -678,12 +786,14 @@
 	};
 
 	const selectInputComponent = {
+		name: "SelectInput",
 		template: '#select-input-template',
 		props: {
 			title: String,
-			defaultValue: { type: [String, Number], default: "" },
+			defaultValue: { type: [String, Number, Array], default: "" },
 			isDisabled: { type: Boolean, default: false },
 			toggleSelector: String,
+			isHidden: { type: Boolean, default: false },
 			groups: Object,
 			options: Object
 		},
@@ -707,12 +817,19 @@
 				},
 				set(newMqttValue) {
 					this.value = newMqttValue;
+					this.initialValue = newMqttValue;
 				}
 			}
 		},
 		watch: {
 			value(newValue) {
+				this.setToggleSelector(newValue);
+			}
+		},
+		methods: {
+			setToggleSelector(newValue) {
 				if(this.toggleSelector) {
+					// console.debug('toggleSelector: '+this.toggleSelector+' newValue: '+newValue);
 					let toggleSelector = this.toggleSelector;
 					var done = false;
 					var appData = this.$root.$data['visibility'];
@@ -737,9 +854,7 @@
 						});
 					}
 				}
-			}
-		},
-		methods: {
+			},
 			setInitialValue(newDefault) {
 				this.initialValue = newDefault;
 			},
@@ -755,16 +870,52 @@
 			toggleHelp() {
 				this.showHelp = !this.showHelp && this.$slots.help;
 			}
-		}
+		},
+		beforeMount(){
+			// debug("beforeMount: "+this.title);
+			this.setToggleSelector(this.value);
+		},
+		// mounted() {
+		// 	console.debug("mounted: "+this.title);
+		// },
+		// beforeUpdate() {
+		// 	console.debug("beforeUpdate: "+this.title);
+		// },
+		// updated() {
+		// 	console.debug("updated: "+this.title);
+		// },
+		// beforeUnmount() {
+		// 	console.debug("beforeUnmount: "+this.title);
+		// },
+		// unmounted() {
+		// 	console.debug("unmounted: "+this.title);
+		// },
+		// errorCaptured() {
+		// 	console.error("errorCaptured: "+this.title);
+		// },
+		// renderTracked() {
+		// 	console.debug("renderTracked: "+this.title);
+		// },
+		// renderTriggered() {
+		// 	console.debug("renderTriggered: "+this.title);
+		// },
+		// activated() {
+		// 	console.debug("activated: "+this.title);
+		// },
+		// deactivated() {
+		// 	console.debug("deactivated: "+this.title);
+		// }
 	};
 
 	const buttongroupInputComponent = {
+		name: "ButtonGroupInput",
 		template: '#buttongroup-input-template',
 		props: {
 			title: String,
 			defaultValue: [String, Number, Boolean],
 			isDisabled: { type: Boolean, default: false },
 			toggleSelector: String,
+			isHidden: { type: Boolean, default: false },
 			buttons: Object
 		},
 		data() {
@@ -787,11 +938,17 @@
 				},
 				set(newMqttValue) {
 					this.value = newMqttValue;
+					this.initialValue = newMqttValue;
 				}
 			}
 		},
 		watch: {
 			value(newValue) {
+				this.setToggleSelector(newValue);
+			}
+		},
+		methods: {
+			setToggleSelector(newValue) {
 				if(this.toggleSelector) {
 					let toggleSelector = this.toggleSelector;
 					var appData = this.$root.$data['visibility'];
@@ -801,9 +958,7 @@
 						}
 					});
 				}
-			}
-		},
-		methods: {
+			},
 			setInitialValue(newDefault) {
 				this.initialValue = newDefault;
 			},
@@ -819,16 +974,52 @@
 			toggleHelp() {
 				this.showHelp = !this.showHelp && this.$slots.help;
 			}
-		}
+		},
+		beforeMount(){
+			// console.debug("beforeMount: "+this.title);
+			this.setToggleSelector(this.value);
+		},
+		// mounted() {
+		// 	console.debug("mounted: "+this.title);
+		// },
+		// beforeUpdate() {
+		// 	console.debug("beforeUpdate: "+this.title);
+		// },
+		// updated() {
+		// 	console.debug("updated: "+this.title);
+		// },
+		// beforeUnmount() {
+		// 	console.debug("beforeUnmount: "+this.title);
+		// },
+		// unmounted() {
+		// 	console.debug("unmounted: "+this.title);
+		// },
+		// errorCaptured() {
+		// 	console.error("errorCaptured: "+this.title);
+		// },
+		// renderTracked() {
+		// 	console.debug("renderTracked: "+this.title);
+		// },
+		// renderTriggered() {
+		// 	console.debug("renderTriggered: "+this.title);
+		// },
+		// activated() {
+		// 	console.debug("activated: "+this.title);
+		// },
+		// deactivated() {
+		// 	console.debug("deactivated: "+this.title);
+		// }
 	};
 
 	const checkboxInputComponent = {
+		name: "CheckboxInput",
 		template: '#checkbox-input-template',
 		props: {
 			title: String,
 			defaultValue: { type: Boolean, default: false },
 			isDisabled: { type: Boolean, default: false },
-			toggleSelector: String
+			toggleSelector: String,
+			isHidden: { type: Boolean, default: false }
 		},
 		data() {
 			return {
@@ -850,19 +1041,23 @@
 				},
 				set(newMqttValue) {
 					this.value = newMqttValue;
+					this.initialValue = newMqttValue;
 				}
 			}
 		},
 		watch: {
 			value(newValue) {
+				this.setToggleSelector(newValue);
+			}
+		},
+		methods: {
+			setToggleSelector(newValue) {
 				if(this.toggleSelector) {
 					let toggleSelector = this.toggleSelector;
 					var appData = this.$root.$data['visibility'];
 					appData[toggleSelector] = newValue;
 				}
-			}
-		},
-		methods: {
+			},
 			setInitialValue(newDefault) {
 				this.initialValue = newDefault;
 			},
@@ -878,10 +1073,45 @@
 			toggleHelp() {
 				this.showHelp = !this.showHelp && this.$slots.help;
 			}
-		}
+		},
+		beforeMount(){
+			// console.debug("beforeMount: "+this.title);
+			this.setToggleSelector(this.value);
+		},
+		// mounted() {
+		// 	console.debug("mounted: "+this.title);
+		// },
+		// beforeUpdate() {
+		// 	console.debug("beforeUpdate: "+this.title);
+		// },
+		// updated() {
+		// 	console.debug("updated: "+this.title);
+		// },
+		// beforeUnmount() {
+		// 	console.debug("beforeUnmount: "+this.title);
+		// },
+		// unmounted() {
+		// 	console.debug("unmounted: "+this.title);
+		// },
+		// errorCaptured() {
+		// 	console.error("errorCaptured: "+this.title);
+		// },
+		// renderTracked() {
+		// 	console.debug("renderTracked: "+this.title);
+		// },
+		// renderTriggered() {
+		// 	console.debug("renderTriggered: "+this.title);
+		// },
+		// activated() {
+		// 	console.debug("activated: "+this.title);
+		// },
+		// deactivated() {
+		// 	console.debug("deactivated: "+this.title);
+		// }
 	};
 
 	const alertComponent = {
+		name: "Alert",
 		template: '#alert-template',
 		props: {
 			subtype: { validator: function(value){
@@ -892,12 +1122,72 @@
 	};
 
 	const headingComponent = {
+		name: "Heading",
 		template: '#heading-template'
 	};
 
-	const ContentApp = {
+	const submitButtonsComponent = {
+		name: "SubmitButtons",
+		template: '#submit-buttons-template',
+		methods: {
+			saveSettings() {
+				this.$root.saveSettings();
+			},
+			showResetModal() {
+				this.$root.showResetModal();
+			},
+			showDefaultsModal() {
+				this.$root.showDefaultsModal();
+			}
+		}
+	}
+
+	const cardComponent = {
+		name: 'Card',
+		template: "#card-template",
+		props: {
+			title: { type: String, default: "# no title set #" },
+			subtype: { validator: function(value){
+				return ['info', 'success', 'warning', 'danger', 'primary', 'secondary', 'light', 'dark'].indexOf(value) !== -1;
+				}, default: 'secondary'
+			}
+		}
+	}
+
+	const pageFooterComponent = {
+		name: "PageFooter",
+		template: "#page-footer-template",
+		props: {
+			location: { type: String, default: "# no location set #" }
+		}
+	}
+
+	const donationBannerComponent = {
+		name: "DonationBanner",
+		template: '#donation-banner-template'
+	}
+
+	const contentComponent = {
+		name: "content",
+		template: "#content-template",
+		props: {
+			title: { type: String, default: "# no title set #" },
+			footer: { type: String, default: "# no footer set #" }
+		},
+		components: {
+			'submit-buttons': submitButtonsComponent,
+			'page-footer': pageFooterComponent,
+			'donation-banner': donationBannerComponent
+		}
+	}
+
+	const contentApp = {
+		name: "contentApp",
+		// template: "#settings-app-template",
 		data() {
 			return {
+				// title: document.getElementById('app').dataset.title,
+				// footer: document.getElementById('app').dataset.footer,
 				client: undefined,
 				clientOptions: {
 					timeout: 5,
@@ -912,10 +1202,6 @@
 				visibility: {}
 			}
 		},
-		props: {
-			title: { type: String, default: "# no title set #" },
-			footer: { type: String, default: "# no footer set #" }
-		},
 		components: {
 			'text-input': textInputComponent,
 			'password-input': passwordInputComponent,
@@ -926,7 +1212,9 @@
 			'buttongroup-input': buttongroupInputComponent,
 			'checkbox-input': checkboxInputComponent,
 			'alert': alertComponent,
-			'heading': headingComponent
+			'heading': headingComponent,
+			'card': cardComponent,
+			'content': contentComponent
 		},
 		methods: {
 			showResetModal() {
@@ -952,7 +1240,7 @@
 			saveSettings() {
 				// sends all changed values by mqtt if valid
 				var formValid = $("#myForm")[0].checkValidity();
-				console.log("validity: "+formValid);
+				console.info("validity: "+formValid);
 				if ( !formValid ) {
 					$('#formNotValidModal').modal();
 					return;
@@ -962,9 +1250,9 @@
 			},
 			getChangedValues() {
 				for (element in this.$refs) {
-					console.debug("checking: " + element);
+					// console.debug("checking: " + element);
 					if (this.$refs[element].changed && !this.$refs[element].disabled) {
-						console.debug("value ist changed and not disabled");
+						console.debug("value ist changed and not disabled: "+element);
 						var message = JSON.stringify(this.$refs[element].mqttValue);
 						var topic = element.replace(/^openWB\//, 'openWB/set/');
 						changedValues[topic] = message;
@@ -979,7 +1267,7 @@
 				 * @requires global var:changedValues - is declared with proxy in helperFunctions.js
 				 */
 				topic = topic.replace('openWB/', 'openWB/set/');
-				console.debug("checkAllSaved: "+topic);
+				// console.debug("checkAllSaved: "+topic);
 				if (changedValues.hasOwnProperty(topic) && changedValues[topic] == value) {
 					// received topic-value-pair equals one that was send before
 					delete changedValues[topic]; // delete it
@@ -1058,17 +1346,23 @@
 			},
 			onClientMessageArrived(message) {
 				//Gets called whenever you receive a message
-				console.debug("message received: "+message.destinationName+": "+message.payloadString);
+				console.info("message received: "+message.destinationName+": "+message.payloadString);
 				this.checkAllSaved(message.destinationName, message.payloadString);
 				if (message.destinationName in this.$refs) {
-					jsonPayload = JSON.parse(message.payloadString);
-					vApp.$refs[message.destinationName].mqttValue = jsonPayload;
+					if (message.payloadString.length) {
+						jsonPayload = JSON.parse(message.payloadString);
+						vApp.$refs[message.destinationName].mqttValue = jsonPayload;
+					} else {
+						// restore default value if empty message received
+						vApp.$refs[message.destinationName].value = vApp.$refs[message.destinationName].defaultValue;
+					}
 				} else {
 					console.warn("no ref found: " + message.destinationName33);
 				}
 			}
 		},
 		beforeMount(){
+			// setup mqtt client
 			var clientuid = Math.random().toString(36).replace(/[^a-z]+/g, "").substr(0, 5);
 			this.client = new Messaging.Client(location.hostname, 9001, clientuid);
 			// setup handlers
@@ -1114,5 +1408,5 @@
 		// }
 	}
 
-	const vApp = Vue.createApp(ContentApp).mount('#app');
+	const vApp = Vue.createApp(contentApp).mount('#app');
 </script>
