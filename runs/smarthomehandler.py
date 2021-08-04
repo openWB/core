@@ -213,7 +213,7 @@ def sepwatt(oldwatt,oldwattk,nummer):
         try:
             measureportsdm = str(config.get('smarthomedevices', 'device_measureportsdm_'+str(nummer)))
         except:
-            measureportsdm = 8899
+            measureportsdm = "8899"
         argumentList[1] = prefixpy +'sdm630/sdm630.py'
         argumentList[4] = config.get('smarthomedevices', 'device_measureid_'+str(nummer)) # replace uberschuss as third command line parameter with measureid
         argumentList.append(measureportsdm)
@@ -602,6 +602,7 @@ def on_message(client, userdata, msg):
 def getdevicevalues():
     global totalwatt
     global totalwattot
+    global totalminhaus
     for i in range(1, (numberOfSupportedDevices+1)):
         DeviceConfigured[i-1] = config.get('smarthomedevices', 'device_configured_'+str(i)) # list starts at 0
         if (DeviceConfigured[i-1] != DeviceConfiguredOld[i-1]) and (DeviceConfigured[i-1] == "0"):
@@ -620,6 +621,7 @@ def getdevicevalues():
     numberOfDevices = 0
     totalwatt = 0
     totalwattot = 0
+    totalminhaus = 0
     for n in DeviceConfigured:
         numberOfDevices += 1
         # prepare
@@ -675,6 +677,10 @@ def getdevicevalues():
                 device_acthorpower = int(config.get('smarthomedevices', 'device_acthorpower_'+str(numberOfDevices)))
             except:
                 device_acthorpower = 0
+            try:
+                device_homeconsumtion = int(config.get('smarthomedevices', 'device_homeconsumtion_'+str(numberOfDevices)))
+            except:
+                device_homeconsumtion = 0
             pyname0 = getdir(switchtyp,devicename)
             try:
                 pyname = pyname0 +"/watt.py"
@@ -753,6 +759,8 @@ def getdevicevalues():
                     totalwatt = totalwatt + watt
                 else:
                     totalwattot = totalwattot + watt
+                if (device_homeconsumtion == 0):
+                    totalminhaus = totalminhaus + watt
                 DeviceValues.update( {str(numberOfDevices) + "watt" : watt})
                 DeviceValues.update( {str(numberOfDevices) + "relais" : relais})
                 f = open(basePath+'/ramdisk/device' + str(numberOfDevices) + '_watt', 'w')
@@ -819,8 +827,12 @@ def getdevicevalues():
     f = open(basePath+'/ramdisk/devicetotal_watt_other', 'w')
     f.write(str(totalwattot))
     f.close()
+    f = open(basePath+'/ramdisk/devicetotal_watt_hausmin', 'w')
+    f.write(str(totalminhaus))
+    f.close()
     logDebug(LOGLEVELDEBUG, "Total Watt abschaltbarer smarthomedevices: " + str(totalwatt)  )
     logDebug(LOGLEVELDEBUG, "Total Watt nichtabschaltbarer smarthomedevices: " + str(totalwattot) )
+    logDebug(LOGLEVELDEBUG, "Total Watt nicht im Hausverbrauch: " + str(totalminhaus) )
     publishmqtt()
 
 def turndevicerelais(nummer, zustand,ueberschussberechnung,updatecnt):
@@ -916,6 +928,14 @@ def conditions(nummer):
     except:
         finishtime = '00:00'
     try:
+        starttimedev = str(config.get('smarthomedevices', 'device_starttime_'+str(nummer)))
+    except:
+        starttimedev = '00:00'
+    try:
+        endtime = str(config.get('smarthomedevices', 'device_endtime_'+str(nummer)))
+    except:
+        endtime = '00:00'
+    try:
         startupdetection = int(config.get('smarthomedevices', 'device_startupdetection_'+str(nummer)))
     except:
         startupdetection = 0
@@ -945,11 +965,11 @@ def conditions(nummer):
     maxeinschaltdauer = int(config.get('smarthomedevices', 'device_maxeinschaltdauer_'+str(nummer))) * 60
     name = str(config.get('smarthomedevices', 'device_name_'+str(nummer)))
     #logDebug(LOGLEVELDEBUG,"(" + str(nummer) + ") " + str(name) + " finishtime definiert " + str(finishtime) + ">" + str(DeviceOn[nummer-1]))
+    local_time = datetime.now(timezone.utc).astimezone()
+    localhour = int(local_time.strftime(format = "%H"))
+    localminute = int(local_time.strftime(format = "%M"))
+    localinsec = int(( localhour * 60 * 60 )  + (localminute * 60))
     if (finishtime != '00:00') and (DeviceOn[nummer-1] ==str("0")):
-        local_time = datetime.now(timezone.utc).astimezone()
-        localhour = int(local_time.strftime(format = "%H"))
-        localminute = int(local_time.strftime(format = "%M"))
-        localinsec = int(( localhour * 60 * 60 )  + (localminute * 60))
         finishhour = int(str("0") +str(finishtime).partition(':')[0])
         finishminute = int(str(finishtime)[-2:] )
         startspatsec = int(( finishhour * 60 * 60 )  + (finishminute * 60) - mineinschaltdauer)
@@ -1066,7 +1086,7 @@ def conditions(nummer):
             del DeviceCounters[str(nummer)+"ausverz"]
         except:
             pass
-        logDebug(LOGLEVELDEBUG,"(" + str(nummer) + ") " + str(config.get('smarthomedevices', 'device_name_'+str(nummer)))+ " Überschuss "  + str(devuberschuss) + " größer Einschaltschwelle" + str(einschwelle) )
+        logDebug(LOGLEVELDEBUG,"(" + str(nummer) + ") " + str(config.get('smarthomedevices', 'device_name_'+str(nummer)))+ " Überschuss "  + str(devuberschuss) + " größer Einschaltschwelle " + str(einschwelle) )
         if ( DeviceValues[str(nummer)+"relais"] == 0 ):
             #speichersocbeforestart
             #if ( speichersoc < speichersocbeforestart ):
@@ -1076,6 +1096,25 @@ def conditions(nummer):
             #    logDebug(LOGLEVELINFO,"(" + str(nummer) + ") " + str(name)+ " SoC " + str(speichersoc) + " grösser gleich als Einschalt SoC " + str(speichersocbeforestart) + " , pruefe weiter")
             logDebug(LOGLEVELDEBUG,"(" + str(nummer) + ") " + str(name)+ " SoC " + str(speichersoc) + " Einschalt SoC " + str(speichersocbeforestart) + " Ueberschuss " + str(devuberschuss))
             logDebug(LOGLEVELDEBUG,"(" + str(nummer) + ") " + str(name)+ " Ueberschussberechnung (1 = mit Speicher, 2 = mit Offset) " + str(ueberschussberechnung))
+            #check for valid time frame
+            #starttimedev
+            #endtime
+            if (starttimedev != '00:00'):
+                starthour = int(str("0") +str(starttimedev).partition(':')[0])
+                startminute = int(str(starttimedev)[-2:] )
+                logDebug(LOGLEVELDEBUG,"(" + str(nummer) + ") " + str(name) + " Fruehster Start um definiert " + str(starthour) + ":" +  str ('%.2d' % startminute) +   " aktuelle Zeit " + str (localhour) + ":" + str ('%.2d' % localminute))
+                if ((starthour > localhour )  or  ((starthour == localhour ) and (startminute >=localminute) )):
+                    logDebug(LOGLEVELDEBUG,"(" + str(nummer) + ") " + str(name) + " Fruehster Start noch nicht erreicht ")
+                    return
+            if (endtime != '00:00'):
+                endhour = int(str("0") +str(endtime).partition(':')[0])
+                endminute = int(str(endtime)[-2:] )
+                logDebug(LOGLEVELDEBUG,"(" + str(nummer) + ") " + str(name) + " Spaetester Start um definiert " + str(endhour) + ":" +  str ('%.2d' % endminute) +   " aktuelle Zeit " + str (localhour) + ":" + str ('%.2d' % localminute))
+                if ((endhour > localhour )  or  ((endhour == localhour ) and (endminute >=localminute) )):
+                    pass
+                else:
+                    logDebug(LOGLEVELDEBUG,"(" + str(nummer) + ") " + str(name) + " Spaetester Start vorbei ")
+                    return
             #speichersocbeforestart
             if  str(nummer)+"einverz" in DeviceCounters:
                 timesince = int(time.time()) - int(DeviceCounters[str(nummer)+"einverz"])

@@ -1341,10 +1341,10 @@ function processETProviderMessages(mqttmsg, mqttpayload) {
 // 		}
 // 	}
 // }
-
 // function processSmartHomeDevicesMessages(mqttmsg, mqttpayload) {
 // 	// processes mqttmsg for topic openWB/SmartHomeDevices - actual values only!
 // 	// called by handlevar
+// 	processPreloader(mqttmsg);
 // 	if ( mqttmsg.match( /^openwb\/SmartHome\/Devices\/[1-9][0-9]*\/Watt$/i ) ) {
 // 		var index = getIndex(mqttmsg);  // extract number between two / /
 // 		var parent = $('[data-dev="' + index + '"]');  // get parent row element for SH Device
@@ -1389,7 +1389,7 @@ function processETProviderMessages(mqttmsg, mqttpayload) {
 // 			actualPower += ' Min';
 // 		} else {
 // 			rest = (actualPower % 3600 / 60).toFixed(0);
-// 			ganz = (actualPower / 3600).toFixed(0);
+// 			ganz = Math.floor(actualPower / 3600);
 // 			actualPower = ganz + ' H ' + rest +' Min';
 // 		}
 // 		element.text(actualPower);
