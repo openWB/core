@@ -238,17 +238,22 @@ class chargepoint():
         message: str
             Text, dass geladen werden kann oder warum nicht geladen werden kann.
         """
+        state = False
+        message = None
         try:
-            if data.data.general_data["general"].data["grid_protection_configured"] == True:
-                if data.data.general_data["general"].data["grid_protection_active"] == False:
-                    state = False
-                    message = None
-                else:
-                    state = True
-                    message = "Ladepunkt gesperrt, da der Netzschutz aktiv ist."
-            else:
-                state = False
-                message = None
+            general_data = data.data.general_data["general"].data
+            if general_data["grid_protection_configured"] == True:
+                if general_data["grid_protection_active"] == True:
+                    if general_data["grid_protection_timestamp"] != "0":
+                        # Timer ist  abglaufen
+                        if timecheck.check_timestamp(general_data["grid_protection_timestamp"], general_data["grid_protection_random_stop"]) == False:
+                            state = True
+                            message = "Ladepunkt gesperrt, da der Netzschutz aktiv ist."
+                            pub.pub("openWB/set/general/grid_protection_timestamp","0")
+                            pub.pub("openWB/set/general/grid_protection_random_stop", 0)
+                    else:
+                        state = True
+                        message = "Ladepunkt gesperrt, da der Netzschutz aktiv ist."
             return state, message
         except Exception as e:
             log.exception_logging(e)

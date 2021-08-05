@@ -95,7 +95,7 @@ def check_plans_timeframe(plans, hours=None):
 
 
 def check_timeframe(plan, hours):
-    """ schaut, ob Plne aktiv sind, prüft, ob das Zeitfenster aktuell ist.
+    """ schaut, ob Plaene aktiv sind, prüft, ob das Zeitfenster aktuell ist.
 
     Parameters
     ----------

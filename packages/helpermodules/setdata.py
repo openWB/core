@@ -640,6 +640,10 @@ class setData():
                     re.search("^openWB/set/general/grid_protection_active$", msg.topic) != None or
                     re.search("^openWB/set/general/mqtt_bridge$", msg.topic) != None):
                 self._validate_value(msg, int, [(0, 1)])
+            elif re.search("^openWB/set/general/grid_protection_timestamp$", msg.topic) != None:
+                self._validate_value(msg, str)
+            elif re.search("^openWB/set/general/grid_protection_random_stop$", msg.topic) != None:
+                self._validate_value(msg, int, [(0, 90)])
             elif re.search("^openWB/set/general/notifications/selected$", msg.topic) != None:
                 self._validate_value(msg, str)
             elif (re.search("^openWB/set/general/notifications/start_charging$", msg.topic) != None or

@@ -1,9 +1,12 @@
 """Allgemeine Einstellungen
 """
 
+import random
+
 from . import data
 from ..helpermodules import log
 from ..helpermodules import pub
+from ..helpermodules import timecheck
 
 
 class general():
@@ -47,8 +50,20 @@ class general():
                 frequency = data.data.counter_data["counter0"].data["get"]["frequency"] * 100
                 grid_protection_active = self.data["grid_protection_active"]
                 if grid_protection_active == False:
-                    if 4500 < frequency < 4920 or 5180 < frequency < 5300:
+                    if 4500 < frequency < 4920 :
+                        self.data["grid_protection_random_stop"] = random.randint(1, 90)
+                        self.data["grid_protection_timestamp"] = timecheck.create_timestamp()
                         self.data["grid_protection_active"] = True
+                        pub.pub("openWB/set/general/grid_protection_timestamp", self.data["grid_protection_timestamp"])
+                        pub.pub("openWB/set/general/grid_protection_random_stop", self.data["grid_protection_random_stop"])
+                        pub.pub("openWB/set/general/grid_protection_active", self.data["grid_protection_active"])
+                        log.message_debug_log("info", "Netzschutz aktiv! Frequenz: "+str(data.data.counter_data["counter0"].data["get"]["frequency"])+"Hz")
+                    if 5180 < frequency < 5300:
+                        self.data["grid_protection_random_stop"] = 0
+                        self.data["grid_protection_timestamp"] = "0"
+                        self.data["grid_protection_active"] = True
+                        pub.pub("openWB/set/general/grid_protection_timestamp", self.data["grid_protection_timestamp"])
+                        pub.pub("openWB/set/general/grid_protection_random_stop", self.data["grid_protection_random_stop"])
                         pub.pub("openWB/set/general/grid_protection_active", self.data["grid_protection_active"])
                         log.message_debug_log("info", "Netzschutz aktiv! Frequenz: "+str(data.data.counter_data["counter0"].data["get"]["frequency"])+"Hz")
                 else:
@@ -56,5 +71,7 @@ class general():
                         self.data["grid_protection_active"] = False
                         pub.pub("openWB/set/general/grid_protection_active", self.data["grid_protection_active"])
                         log.message_debug_log("info", "Netzfrequenz wieder im normalen Bereich. Frequenz: "+str(data.data.counter_data["counter0"].data["get"]["frequency"])+"Hz")
+                        pub.pub("openWB/set/general/grid_protection_timestamp","0")
+                        pub.pub("openWB/set/general/grid_protection_random_stop", 0)
         except Exception as e:
             log.exception_logging(e)

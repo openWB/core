@@ -83,6 +83,7 @@ class loadvars():
         try:
             counter_threads = []
             for item in data.data.counter_data:
+                thread = None
                 if "counter" in item:
                     counter = data.data.counter_data[item]
                     if counter.data["config"]["selected"] == "openwb":
@@ -156,7 +157,8 @@ class loadvars():
                     elif counter.data["config"]["selected"] == "vz_logger":
                         pass
                     
-                    counter_threads.append(thread)
+                    if thread != None:
+                        counter_threads.append(thread)
             return counter_threads
         except Exception as e:
             log.exception_logging(e)
@@ -164,6 +166,7 @@ class loadvars():
     def get_cp(self):
         cp_threads = []
         for item in data.data.cp_data:
+            thread = None
             try:
                 if "cp" in item:
                     cp = data.data.cp_data[item]
@@ -174,7 +177,8 @@ class loadvars():
 
                     # elif cp.data["config"]["power_module"]["selected"] == "":
                     #     thread = threading.Thread(target=, args=(cp,))
-                cp_threads.append(thread)
+                    if thread != None:
+                        cp_threads.append(thread)
             except Exception as e:
                 log.exception_logging(e)
         return cp_threads
@@ -182,6 +186,7 @@ class loadvars():
     def get_pv(self):
         pv_threads = []
         for item in data.data.pv_data:
+            thread = None
             try:
                 if "pv" in item:
                     pv = data.data.pv_data[item]
@@ -253,7 +258,8 @@ class loadvars():
                     #     thread = threading.Thread(target=, args=(pv,))
                     # elif pv.data["config"]["selected"] == "vz_logger":
                     #     thread = threading.Thread(target=, args=(pv,))
-                    pv_threads.append(thread)
+                    if thread != None:
+                        pv_threads.append(thread)
             except Exception as e:
                 log.exception_logging(e)
         return pv_threads
@@ -261,6 +267,7 @@ class loadvars():
     def get_bat(self):
         bat_threads = []
         for item in data.data.bat_module_data:
+            thread = None
             try:
                 if "bat" in item:
                     bat = data.data.bat_module_data[item]
@@ -322,7 +329,8 @@ class loadvars():
                     #     thread = threading.Thread(target=, args=(bat,))
                     # elif bat.data["config"]["selected"] == "json":
                     #     thread = threading.Thread(target=, args=(bat,))
-                    bat_threads.append(thread)
+                    if thread != None:
+                        bat_threads.append(thread)
             except Exception as e:
                 log.exception_logging(e)
         return bat_threads
