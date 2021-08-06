@@ -366,3 +366,4 @@ class pvModule:
 
     def __init__(self):
         self.data = {}
+        self.pv_num = None

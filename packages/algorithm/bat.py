@@ -231,3 +231,4 @@ class batModule:
 
     def __init__(self):
         self.data={}
+        self.bat_num = None

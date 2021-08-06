@@ -319,10 +319,8 @@ class subData():
                     self.pv_data["all"] = pv.pv()
                 if "pv"+index not in self.pv_data:
                     self.pv_data["pv"+index]=pv.pvModule()
-                if re.search("^openWB/pv/[1-9][0-9]*/config/.+$", msg.topic) != None:
-                    if "config" not in self.pv_data["pv"+index].data:
-                        self.pv_data["pv"+index].data["config"]={}
-                    self.set_json_payload(self.pv_data["pv"+index].data["config"], msg)
+                if re.search("^openWB/pv/[1-9][0-9]*/config$", msg.topic) != None:
+                    self.set_json_payload(self.pv_data["pv"+index].data, msg)
                 elif re.search("^openWB/pv/[1-9][0-9]*/get/.+$", msg.topic) != None:
                     if "get" not in self.pv_data["pv"+index].data:
                         self.pv_data["pv"+index].data["get"]={}
