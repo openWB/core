@@ -97,17 +97,18 @@ function parseData(alldata) {
 				lineJson = JSON.parse(line);
 				lineJson.timestamp = lineJson.timestamp * 1000;
 				result.push(lineJson);
-				// console.log(lineJson);
 			} catch (e) {
 				if (e instanceof SyntaxError) {
-					console.log("bad json syntax: " + line);
+					console.warn("bad json syntax: " + line);
 				} else {
-					console.log(e.name + ': ' + e.message);
+					console.error(e.name + ': ' + e.message);
 				}
 			}
+		} else {
+			console.debug('line too short:');
+			console.debug(line);
 		}
 	});
-	// console.log(result);
 	return result;
 }
 
@@ -552,10 +553,10 @@ function getDatasetIndex(datasetId) {
 		return dataset.jsonKey == datasetId;
 	});
 	if (index != -1) {
-		// console.log('index for dataset "'+datasetId+'": '+index);
+		console.debug('index for dataset "' + datasetId + '": ' + index);
 		return index;
 	}
-	// console.log('no index found for "'+datasetId+'"');
+	console.debug('no index found for "' + datasetId + '"');
 	return
 }
 
@@ -565,7 +566,7 @@ function addDataset(datasetId) {
 	if (number = datasetId.match(/([\d]+)/g)) {
 		datasetIndex = number[0];
 	}
-	// console.log('template name: ' + datasetTemplate + ' index: ' + datasetIndex);
+	console.debug('template name: ' + datasetTemplate + ' index: ' + datasetIndex);
 	if (datasetTemplates[datasetTemplate]) {
 		newDataset = JSON.parse(JSON.stringify(datasetTemplates[datasetTemplate]));
 		newDataset.parsing.yAxisKey = datasetId;
@@ -575,13 +576,12 @@ function addDataset(datasetId) {
 		}
 		return chartDatasets.push(newDataset) - 1;
 	} else {
-		console.log('no matching template found: ' + datasetId);
+		console.warn('no matching template found: ' + datasetId);
 	}
 	return
 }
 
 function initDataset(datasetId) {
-	// console.log('initDataset: '+datasetId);
 	var index = getDatasetIndex(datasetId);
 	if (index == undefined) {
 		index = addDataset(datasetId);
@@ -591,13 +591,21 @@ function initDataset(datasetId) {
 	}
 }
 
+function truncateData(data) {
+	if (typeof maxDisplayLength !== "undefined" && data.length > maxDisplayLength) {
+		console.info("datasets: " + data.length + " removing: " + (data.length - maxDisplayLength));
+		data.splice(0, data.length - maxDisplayLength);
+	}
+}
+
 function putgraphtogether() {
 	if ((all1 == 1) && (all2 == 1) && (all3 == 1) && (all4 == 1) && (all5 == 1) && (all6 == 1) && (all7 == 1) && (all8 == 1) && (all9 == 1) && (all10 == 1) && (all11 == 1) && (all12 == 1) && (all13 == 1) && (all14 == 1) && (all15 == 1) && (all16 == 1)) {
 		var alldata = all1p + "\n" + all2p + "\n" + all3p + "\n" + all4p + "\n" + all5p + "\n" + all6p + "\n" + all7p + "\n" + all8p + "\n" + all9p + "\n" + all10p + "\n" + all11p + "\n" + all12p + "\n" + all13p + "\n" + all14p + "\n" + all15p + "\n" + all16p;
 		allChartData = parseData(alldata);
-		// console.log("allChartData.length: "+allChartData.length);
+		truncateData(allChartData);
+		console.debug("allChartData.length: " + allChartData.length);
 		if (allChartData.length >= 30) { // 5 minutes * 6 measurements/min
-			// console.log("received at least "+maxDisplayLength+" data sets for graph");
+			console.info("received at least 30 data sets for graph; will add up to " + maxDisplayLength + " datasets in total");
 			Object.keys(allChartData[allChartData.length - 1]).forEach(function(key) {
 				if (key != 'time' && key != 'timestamp') {
 					initDataset(key);
@@ -640,20 +648,15 @@ function updateGraph(dataset) {
 		chartUpdateBuffer.forEach(function(row, index) {
 			allChartData.push(row);
 		});
-		if (typeof maxDisplayLength !== "undefined" && allChartData.length > maxDisplayLength) {
-			// allChartData.splice(0, chartUpdateBuffer.length);
-			allChartData.splice(0, allChartData.length - maxDisplayLength);
-		}
-		// console.log("allChartData.length: "+allChartData.length);
+		truncateData(allChartData);
 		chartUpdateBuffer = [];
 		myLine.update();
 	} else {
-		console.log('graph not yet initialized, data stored in buffer');
+		console.info('graph not yet initialized, data stored in buffer');
 	}
 }
 
 function checkgraphload() {
-	// console.log("checkgraphload: graphloaded: "+graphloaded+" initialread: "+initialread);
 	if (graphloaded == 1) {
 		myLine.destroy();
 		loadgraph(0); // when reloading graph, no more "pumping" animations
@@ -678,7 +681,6 @@ function checkgraphload() {
 		typeof boolDisplayEvu === "boolean" &&
 		typeof boolDisplayPv === "boolean" &&
 		typeof boolDisplayLegend === "boolean") {
-		// console.log("all bools received");
 		if (initialread != 0) {
 			if (graphloaded == 0) {
 				graphloaded = 1;
@@ -750,7 +752,7 @@ function forcegraphload() {
 			showhidedataset('boolDisplayLegend');
 		}
 		if (typeof maxDisplayLength === "undefined") {
-			// console.log("setting graph duration to default of 30 minutes");
+			console.debug("setting graph duration to default of 30 minutes");
 			maxDisplayLength = 30 * 6;
 		}
 		checkgraphload();
@@ -788,7 +790,7 @@ function showhide(thedataset) {
 }
 
 function subscribeMqttGraphSegments() {
-	// console.log('subscribing to graph topics');
+	console.info('subscribing to graph topics');
 	for (var segments = 1; segments < 17; segments++) {
 		// topic = "openWB/graph/" + segments + "alllivevalues";
 		topic = "openWB/graph/alllivevaluesJson" + segments;
@@ -797,7 +799,7 @@ function subscribeMqttGraphSegments() {
 }
 
 function unsubscribeMqttGraphSegments() {
-	// console.log('unsubscribing from graph topics');
+	console.info('unsubscribing from graph topics');
 	for (var segments = 1; segments < 17; segments++) {
 		// topic = "openWB/graph/" + segments + "alllivevalues";
 		topic = "openWB/graph/alllivevaluesJson" + segments;

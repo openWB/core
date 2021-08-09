@@ -143,7 +143,7 @@
 						</div>
 					</div>
 					<input v-if="['text', 'user', 'json'].includes(subtype)" type="text" class="form-control" v-model="value" :disabled="disabled" :pattern="pattern">
-					<input v-if="subtype === 'host'" type="text" class="form-control" v-model="value" :disabled="disabled" pattern="^(((\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.){3}(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])|[A-Za-z0-9\._\-]*)$">
+					<input v-if="subtype == 'host'" type="text" class="form-control" pattern="^(((\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.){3}(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])|[A-Za-z0-9\._\-]*)$" v-model="value" :disabled="disabled">
 					<input v-if="['email', 'url'].includes(subtype)" :type="subtype" class="form-control" v-model="value" :disabled="disabled">
 				</div>
 			</div>
@@ -358,6 +358,15 @@
 	</div>
 </script>
 
+<script type="text/x-template" id="json-template">
+	<!-- json group BEGIN -->
+	<heading v-if="title">
+		{{ title }} / {{ textValue }}
+	</heading>
+	<slot></slot>
+	<!-- json group END -->
+</script>
+
 <script type="text/x-template" id="page-footer-template">
 	<footer id="footer" class="footer bg-dark text-light font-small">
 		<div class="container text-center">
@@ -418,7 +427,8 @@
 		template: '#text-input-template',
 		props: {
 			title: String,
-			defaultValue: { type: String, default: "" },
+			modelValue: { type: [String, Object] },
+			defaultValue: { type: [String, Object], default: "" },
 			isDisabled: { type: Boolean, default: false },
 			toggleSelector: String,
 			isHidden: { type: Boolean, default: false },
@@ -428,9 +438,12 @@
 			},
 			pattern: String
 		},
+		emits: [
+			'update:modelValue'
+		],
 		data() {
 			return {
-				value: this.defaultValue,
+				value: this.modelValue ? this.modelValue : this.defaultValue,
 				initialValue: this.defaultValue,
 				showHelp: false
 			}
@@ -445,7 +458,12 @@
 			mqttValue: {
 				get() {
 					if(this.subtype == 'json') {
-						return JSON.parse(this.value);
+						try {
+							return JSON.parse(this.value);
+						}
+						catch (error) {
+							return '"'+this.value+'"';
+						}
 					}
 					return this.value;
 				},
@@ -460,6 +478,8 @@
 		},
 		watch: {
 			value(newValue) {
+				console.log('value changed: '+this.value);
+				// this.$emit('update:modelValue', this.mqttValue);
 				if(this.toggleSelector) {
 					let toggleSelector = this.toggleSelector;
 					var appData = this.$root.$data['visibility'];
@@ -483,7 +503,52 @@
 			toggleHelp() {
 				this.showHelp = !this.showHelp && this.$slots.help;
 			}
-		}
+		},
+		beforeMount(){
+			// console.debug("beforeMount: "+this.title);
+			// console.debug(this.value);
+			this.$emit('update:modelValue', this.value);
+		},
+		// mounted() {
+		// 	console.debug("mounted: "+this.title);
+		// 	console.debug(this.value)
+		// },
+		// beforeUpdate() {
+		// 	console.debug("beforeUpdate: "+this.title);
+		// 	console.debug(this.value)
+		// },
+		// updated() {
+		// 	console.debug("updated: "+this.title);
+		// 	console.debug(this.value)
+		// },
+		// beforeUnmount() {
+		// 	console.debug("beforeUnmount: "+this.title);
+		// 	console.debug(this.value)
+		// },
+		// unmounted() {
+		// 	console.debug("unmounted: "+this.title);
+		// 	console.debug(this.value)
+		// },
+		// errorCaptured() {
+		// 	console.error("errorCaptured: "+this.title);
+		// 	console.debug(this.value)
+		// },
+		// renderTracked() {
+		// 	console.debug("renderTracked: "+this.title);
+		// 	console.debug(this.value)
+		// },
+		// renderTriggered() {
+		// 	console.debug("renderTriggered: "+this.title);
+		// 	console.debug(this.value)
+		// },
+		// activated() {
+		// 	console.debug("activated: "+this.title);
+		// 	console.debug(this.value)
+		// },
+		// deactivated() {
+		// 	console.debug("deactivated: "+this.title);
+		// 	console.debug(this.value)
+		// }
 	};
 
 	const passwordInputComponent = {
@@ -491,15 +556,19 @@
 		template: '#password-input-template',
 		props: {
 			title: String,
+			modelValue: { type: String },
 			defaultValue: { type: String, default: "" },
 			isDisabled: { type: Boolean, default: false },
 			toggleSelector: String,
 			isHidden: { type: Boolean, default: false },
 			pattern: String
 		},
+		emits: [
+			'update:modelValue'
+		],
 		data() {
 			return {
-				value: this.defaultValue,
+				value: this.modelValue ? this.modelValue : this.defaultValue,
 				initialValue: this.defaultValue,
 				showHelp: false,
 				showPassword: false
@@ -524,6 +593,8 @@
 		},
 		watch: {
 			value(newValue) {
+				console.log('value changed: '+this.value);
+				this.$emit('update:modelValue', this.value);
 				if(this.toggleSelector) {
 					let toggleSelector = this.toggleSelector;
 					var appData = this.$root.$data['visibility'];
@@ -558,6 +629,7 @@
 		template: '#number-input-template',
 		props: {
 			title: String,
+			modelValue: { type: Number },
 			defaultValue: { type: Number, default: 0 },
 			isDisabled: { type: Boolean, default: false },
 			toggleSelector: String,
@@ -567,9 +639,12 @@
 			max: Number,
 			step: Number
 		},
+		emits: [
+			'update:modelValue'
+		],
 		data() {
 			return {
-				value: this.defaultValue,
+				value: this.modelValue ? this.modelValue : this.defaultValue,
 				initialValue: this.defaultValue,
 				showHelp: false
 			}
@@ -593,6 +668,8 @@
 		},
 		watch: {
 			value(newValue) {
+				console.log('value changed: '+this.value);
+				this.$emit('update:modelValue', this.value);
 				if(this.toggleSelector) {
 					let toggleSelector = this.toggleSelector;
 					var appData = this.$root.$data['visibility'];
@@ -624,6 +701,7 @@
 		template: '#range-input-template',
 		props: {
 			title: String,
+			modelValue: { type: Number },
 			defaultValue: { type: Number, default: 0 },
 			isDisabled: { type: Boolean, default: false },
 			toggleSelector: String,
@@ -634,6 +712,9 @@
 			step: { type: Number, default: 1 },
 			labels: { type: Array },
 		},
+		emits: [
+			'update:modelValue'
+		],
 		data() {
 			return {
 				value: this.defaultValue,
@@ -691,6 +772,13 @@
 		},
 		watch: {
 			value(newValue) {
+				if(this.labels){
+					console.log('value changed: '+this.value+'->'+this.labels[this.value].value);
+					this.$emit('update:modelValue', this.labels[this.value].value);
+				} else {
+					console.log('value changed: '+this.value);
+					this.$emit('update:modelValue', this.value);
+				}
 				if(this.toggleSelector) {
 					let toggleSelector = this.toggleSelector;
 					var appData = this.$root.$data['visibility'];
@@ -759,6 +847,8 @@
 		},
 		watch: {
 			value(newValue) {
+				console.log('value changed: '+this.value);
+				this.$emit('update:', this.value);
 				if(this.toggleSelector) {
 					let toggleSelector = this.toggleSelector;
 					var appData = this.$root.$data['visibility'];
@@ -790,6 +880,7 @@
 		template: '#select-input-template',
 		props: {
 			title: String,
+			modelValue: { type: [String, Number, Array] },
 			defaultValue: { type: [String, Number, Array], default: "" },
 			isDisabled: { type: Boolean, default: false },
 			toggleSelector: String,
@@ -797,9 +888,12 @@
 			groups: Object,
 			options: Object
 		},
+		emits: [
+			'update:modelValue'
+		],
 		data() {
 			return {
-				value: this.defaultValue,
+				value: this.modelValue ? this.modelValue : this.defaultValue,
 				initialValue: this.defaultValue,
 				showHelp: false
 			}
@@ -823,6 +917,8 @@
 		},
 		watch: {
 			value(newValue) {
+				console.log('value changed: '+this.value);
+				this.$emit('update:modelValue', this.value);
 				this.setToggleSelector(newValue);
 			}
 		},
@@ -912,15 +1008,19 @@
 		template: '#buttongroup-input-template',
 		props: {
 			title: String,
-			defaultValue: [String, Number, Boolean],
+			modelValue: { type: [String, Number, Boolean] },
+			defaultValue: { type: [String, Number, Boolean] },
 			isDisabled: { type: Boolean, default: false },
 			toggleSelector: String,
 			isHidden: { type: Boolean, default: false },
 			buttons: Object
 		},
+		emits: [
+			'update:modelValue'
+		],
 		data() {
 			return {
-				value: this.defaultValue,
+				value: this.modelValue ? this.modelValue : this.defaultValue,
 				initialValue: this.defaultValue,
 				showHelp: false
 			}
@@ -944,6 +1044,8 @@
 		},
 		watch: {
 			value(newValue) {
+				console.log('value changed: '+this.value);
+				this.$emit('update:modelValue', this.value);
 				this.setToggleSelector(newValue);
 			}
 		},
@@ -1016,14 +1118,18 @@
 		template: '#checkbox-input-template',
 		props: {
 			title: String,
+			modelValue: { type: Boolean },
 			defaultValue: { type: Boolean, default: false },
 			isDisabled: { type: Boolean, default: false },
 			toggleSelector: String,
 			isHidden: { type: Boolean, default: false }
 		},
+		emits: [
+			'update:modelValue'
+		],
 		data() {
 			return {
-				value: this.defaultValue,
+				value: this.modelValue ? this.modelValue : this.defaultValue,
 				initialValue: this.defaultValue,
 				showHelp: false,
 			}
@@ -1047,6 +1153,8 @@
 		},
 		watch: {
 			value(newValue) {
+				console.log('value changed: '+this.value);
+				this.$emit('update:modelValue', this.value);
 				this.setToggleSelector(newValue);
 			}
 		},
@@ -1126,6 +1234,87 @@
 		template: '#heading-template'
 	};
 
+	const jsonComponent = {
+		name: "JSON",
+		template: '#json-template',
+		props: {
+			title: String,
+			modelValue: { type: [Object] },
+			defaultValue: { type: [Object], default: "" },
+			isDisabled: { type: Boolean, default: false },
+			isHidden: { type: Boolean, default: false }
+		},
+		emits: [
+			'update:modelValue'
+		],
+		data() {
+			return {
+				value: this.modelValue ? this.modelValue : this.defaultValue,
+				initialValue: this.defaultValue
+			}
+		},
+		components: {
+			'text-input': textInputComponent,
+			'password-input': passwordInputComponent,
+			'number-input': numberInputComponent,
+			'range-input': rangeInputComponent,
+			'textarea-input': textareaInputComponent,
+			'select-input': selectInputComponent,
+			'buttongroup-input': buttongroupInputComponent,
+			'checkbox-input': checkboxInputComponent,
+			'alert': alertComponent,
+			'heading': headingComponent
+		},
+		computed: {
+			disabled() {
+				return this.isDisabled;
+			},
+			changed() {
+				return this.value != this.initialValue;
+			},
+			textValue: {
+				get() {
+					return JSON.stringify(this.value);
+				}
+			},
+			mqttValue: {
+				get() {
+					return this.value;
+				},
+				set(newMqttValue) {
+					console.log("set mqttValue");
+					this.value = newMqttValue;
+					this.initialValue = newMqttValue;
+				}
+			}
+		},
+		watch: {
+			value(newValue) {
+				console.log('value changed: '+JSON.stringify(this.value));
+				this.$emit('update:modelValue', this.mqttValue);
+			}
+		},
+		methods: {
+			setInitialValue(newDefault) {
+				console.log("setInitialValue: "+newDefault);
+			},
+			setValue(newValue) {
+				this.value = newValue;
+			},
+			resetValue() {
+				this.value = this.initialValue;
+			},
+			setDefaultValue() {
+				this.value = this.defaultValue;
+			}
+		},
+		beforeMount(){
+			console.debug("beforeMount: "+this.title);
+			console.debug(this.value);
+			this.$emit('update:modelValue', this.value);
+		}
+	};
+
 	const submitButtonsComponent = {
 		name: "SubmitButtons",
 		template: '#submit-buttons-template',
@@ -1183,7 +1372,6 @@
 
 	const contentApp = {
 		name: "contentApp",
-		// template: "#settings-app-template",
 		data() {
 			return {
 				// title: document.getElementById('app').dataset.title,
@@ -1199,7 +1387,8 @@
 				},
 				topicsToSubscribe: [],
 				// will store all visibility options from components
-				visibility: {}
+				visibility: {},
+				componentData: {}
 			}
 		},
 		components: {
@@ -1214,7 +1403,8 @@
 			'alert': alertComponent,
 			'heading': headingComponent,
 			'card': cardComponent,
-			'content': contentComponent
+			'content': contentComponent,
+			'json': jsonComponent
 		},
 		methods: {
 			showResetModal() {
@@ -1308,7 +1498,7 @@
 				message.destinationName = topic;
 				message.qos = 2;
 				message.retained = true;
-				this.client.send(message);
+				// this.client.send(message);
 				console.debug("sent: "+topic+": "+payload);
 			},
 			addTopicToSubscribe(topic) {
