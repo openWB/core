@@ -21,16 +21,29 @@ from packages.modules import loadvars
 class HandlerAlgorithm():
     def __init__(self):
         self.heartbeat = False
+        self.interval_counter = 1
 
     def handler10Sec(self):
         """ führt den Algorithmus durch.
         """
         try:
-            vars.get_values()
-            self.heartbeat = True
-            prep.setup_algorithm()
-            control.calc_current()
-            char.start_charging()
+            try:
+                if (data.data.general_data["general"].data["control_interval"] / 10) == self.interval_counter:
+                    vars.get_values()
+                    self.heartbeat = True
+                    prep.setup_algorithm()
+                    control.calc_current()
+                    char.start_charging()
+                    self.interval_counter = 1
+                else:
+                    self.interval_counter = self.interval_counter + 1
+            except:
+                # Wenn kein Regelintervall bekannt ist, alle 10s regeln.
+                vars.get_values()
+                self.heartbeat = True
+                prep.setup_algorithm()
+                control.calc_current()
+                char.start_charging()
         except Exception as e:
             log.exception_logging(e)
 
