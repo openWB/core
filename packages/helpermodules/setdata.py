@@ -437,7 +437,7 @@ class setData():
             elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/log/timestamp_start_charging$", msg.topic) != None:
                 self._validate_value(msg, str)
             elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/config$", msg.topic) != None:
-                self._validate_value(msg, "json")
+                self._validate_value(msg, "json", pub_json = True)
             elif (re.search("^openWB/set/chargepoint/[1-9][0-9]*/get/voltage$", msg.topic) != None or
                     re.search("^openWB/set/chargepoint/[1-9][0-9]*/get/current$", msg.topic) != None or
                     re.search("^openWB/set/chargepoint/[1-9][0-9]*/get/power_factor$", msg.topic) != None):
