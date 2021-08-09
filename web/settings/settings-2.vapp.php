@@ -46,6 +46,11 @@
 		<div class="col-md-8">
 			<div class="form-row">
 				<div class="input-group">
+					<div class="input-group-prepend">
+						<div class="input-group-text">
+							<i class="fas fa-fw fa-calculator"></i>
+						</div>
+					</div>
 					<input type="number" class="form-control" :min="min" :max="max" :step="step" v-model.number="value">
 					<div v-if="unit" class="input-group-append">
 						<div class="input-group-text">
