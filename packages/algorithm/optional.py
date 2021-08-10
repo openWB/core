@@ -11,10 +11,14 @@ class optional():
     """
     """
 
-    def __init__(self):
-        self.data={}
-        self.data["et"] = {}
-        self.data["et"]["get"] = {}
+    def __init__(self, default):
+        try:
+            self.data={}
+            if default == False:
+                self.data["et"] = {}
+                self.data["et"]["get"] = {}
+        except Exception as e:
+            log.exception_logging(e)
     
     def et_price_lower_than_limit(self):
         """ prüft, ob der aktuelle Strompreis unter der festgelegten Preisgrenze liegt.

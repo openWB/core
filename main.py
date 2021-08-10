@@ -10,6 +10,7 @@ from packages.algorithm import algorithm
 from packages.algorithm import charge
 from packages.algorithm import daily_log
 from packages.algorithm import data
+from packages.helpermodules import defaults
 from packages.helpermodules import log
 from packages.algorithm import prepare
 from packages.helpermodules import pub
@@ -125,5 +126,6 @@ try:
     rt2 = RepeatedTimer(10, handler.handler10Sec)
 
     publishvars2.pub_settings()
+    defaults.pub_defaults()
 except Exception as e:
     log.exception_logging(e)

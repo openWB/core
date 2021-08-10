@@ -23,10 +23,14 @@ class counter():
     """
     """
 
-    def __init__(self):
-        self.data={}
-        self.data["set"] = {}
-        self.counter_num = None
+    def __init__(self, default):
+        try:
+            self.data={}
+            if default == False:
+                self.data["set"] = {}
+                self.counter_num = None
+        except Exception as e:
+            log.exception_logging(e)
 
     def setup_counter(self):
         # Zählvariablen vor dem Start der Regelung zurücksetzen
