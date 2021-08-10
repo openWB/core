@@ -55,7 +55,7 @@
 	</head>
 	<body>
 		<div id="app">
-			<content title="Einstellungen Sofortladen" footer="Sofortladen" nav="#navInstantCharge">
+			<content title="Einstellungen Sofortladen" footer="Sofortladen" nav="navInstantCharge">
 
 				<card title="Phasenumschaltung">
 					<div v-if="componentData['openWB/general/extern'] == true">

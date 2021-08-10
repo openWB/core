@@ -55,7 +55,7 @@
 	</head>
 	<body>
 		<div id="app">
-			<content title="Allgemeine Einstellungen" footer="Allgemein" nav="#navGeneral">
+			<content title="Allgemeine Einstellungen" footer="Allgemein" nav="navGeneral">
 
 				<card title="openWB">
 					<buttongroup-input

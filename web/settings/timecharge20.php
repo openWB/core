@@ -55,7 +55,7 @@
 	</head>
 	<body>
 		<div id="app">
-			<content title="Einstellungen Zeitladen" footer="Zeitladen" nav="#navTimeCharge">
+			<content title="Einstellungen Zeitladen" footer="Zeitladen" nav="navTimeCharge">
 
 				<card title="Phasenumschaltung">
 					<div v-if="componentData['openWB/general/extern'] == true">

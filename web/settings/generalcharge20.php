@@ -55,7 +55,7 @@
 	</head>
 	<body>
 		<div id="app">
-			<content title="Allgemeine Einstellungen der Lademodi" footer="Lademodi" nav="#navGeneralCharge">
+			<content title="Allgemeine Einstellungen der Lademodi" footer="Lademodi" nav="navGeneralCharge">
 
 				<card title="Allgemein">
 					<div v-if="componentData['openWB/general/extern'] == true">

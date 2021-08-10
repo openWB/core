@@ -55,7 +55,7 @@
 	</head>
 	<body>
 		<div id="app">
-			<content title="Optionale Komponenten" footer="Optionale Komponenten" nav="#navOptional">
+			<content title="Optionale Komponenten" footer="Optionale Komponenten" nav="navOptional">
 
 				<card title="RFID">
 					<div v-if="componentData['openWB/general/extern'] == true">

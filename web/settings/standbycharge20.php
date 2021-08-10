@@ -55,7 +55,7 @@
 	</head>
 	<body>
 		<div id="app">
-			<content title="Einstellungen Standby" footer="Standby" nav="#navStandby">
+			<content title="Einstellungen Standby" footer="Standby" nav="navStandby">
 
 				<card title="Phasenumschaltung">
 					<div v-show="visibility.extOpenWBOn">

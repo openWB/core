@@ -55,7 +55,7 @@ if( isset($_COOKIE['openWBTheme'] )){
 	</head>
 	<body>
 		<div id="app">
-			<content title="Beispiele" footer="Beispiele" nav="#navbarSample2">
+			<content title="Beispiele" footer="Beispiele" nav="navbarSample2">
 
 				<card title="Einfache Eingabefelder">
 					<text-input

@@ -237,6 +237,233 @@
 	</div>
 </script>
 
+<script type="text/x-template" id="navbar-template">
+	<!-- ToDo: NavBar in JSON -->
+	<header>
+		<!-- Fixed navbar -->
+		<nav class="navbar navbar-expand-sm bg-dark navbar-dark fixed-top">
+			<a class="navbar-brand" href="./index.php">
+				<span>openWB</span>
+			</a>
+			<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#collapsibleNavbar">
+				<span class="navbar-toggler-icon"></span>
+			</button>
+			<div class="collapse navbar-collapse" id="collapsibleNavbar">
+				<ul class="navbar-nav">
+					<li v-for="item in menue" class="nav-item" :class="item.submenue ? 'dropdown' : ''">
+						<a v-if="item.submenue" class="nav-link dropdown-toggle" href="#" :id="item.id" data-toggle="dropdown">
+							{{ item.name }}
+						</a>
+						<a v-else class="nav-link" :href="item.href" :id="item.id" :target="item.external ? '_blank' : ''" :class="item.id == activeItem ? 'disabled' : ''">
+							{{ item.name }}
+							<i v-if="item.external" class="fas fa-external-link-alt"></i>
+						</a>
+						<div v-if="item.submenue" class="dropdown-menu">
+							<a v-for="subitem in item.submenue" class="dropdown-item" :id="subitem.id" :href="subitem.href" :target="subitem.external ? '_blank' : ''" :class="subitem.id == activeItem ? 'disabled' : ''">
+								{{ subitem.name }}
+								<i v-if="subitem.external" class="fas fa-external-link-alt"></i>
+							</a>
+						</div>
+					</li>
+				</ul>
+			</div>
+		</nav>
+	</header>
+
+	<!-- modal backup-confirmation window -->
+	<div class="modal fade" id="backupConfirmationModal" role="dialog">
+		<div class="modal-dialog" role="document">
+			<div class="modal-content">
+				<!-- modal header -->
+				<div class="modal-header bg-info">
+					<h4 class="modal-title text-light">Info</h4>
+				</div>
+				<!-- modal body -->
+				<div class="modal-body text-center">
+					<p>
+						Das Erstellen des Backups kann einige Zeit in Anspruch nehmen.<br> Fortfahren?
+					</p>
+				</div>
+				<!-- modal footer -->
+				<div class="modal-footer d-flex justify-content-center">
+					<button type="button" class="btn btn-success" data-dismiss="modal" onclick="window.location.href='./settings/bckredirect20.html'">Backup</button>
+					<button type="button" class="btn btn-danger" data-dismiss="modal">Abbruch</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- modal restore-confirmation window -->
+	<div class="modal fade" id="restoreConfirmationModal" role="dialog">
+		<div class="modal-dialog" role="document">
+			<div class="modal-content">
+				<!-- modal header -->
+				<div class="modal-header bg-danger">
+					<h4 class="modal-title text-light">Achtung</h4>
+				</div>
+				<!-- modal body -->
+				<div class="modal-body text-center">
+					<p>
+						Soll wirklich ein gespeichertes Backup wiederhergestellt werden?<br> Die Wiederherstellung kann einige Zeit in Anspruch nehmen. Aktuelle Einstellungen als auch die installierte Version werden mit dem Backup überschrieben!<br> Eventuell vorhandene
+						externe openWB erhalten kein Backup/Downgrade.
+					</p>
+					<p>
+						<span class="text-danger">Fahrzeuge sind vor der Wiederherstellung abzustecken!</span>
+					</p>
+				</div>
+				<!-- modal footer -->
+				<div class="modal-footer d-flex justify-content-center">
+					<button type="button" class="btn btn-success" data-dismiss="modal" onclick="window.location.href='./settings/restore20.php'">Wiederherstellen</button>
+					<button type="button" class="btn btn-danger" data-dismiss="modal">Abbruch</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- modal reboot-confirmation window -->
+	<div class="modal fade" id="rebootConfirmationModal" role="dialog">
+		<div class="modal-dialog" role="document">
+			<div class="modal-content">
+				<!-- modal header -->
+				<div class="modal-header bg-danger">
+					<h4 class="modal-title text-light">Achtung</h4>
+				</div>
+				<!-- modal body -->
+				<div class="modal-body text-center">
+					<p>
+						<b>Soll die openWB wirklich neu gestartet werden?<br></b> Wenn ein Problem mit der openWB vorliegt bitte Debug Daten senden.<br> Ein Neustart löscht alle Debug Daten und macht es unmöglich, die Problemursache festzustellen.<br>
+						<span class="text-danger">Fahrzeuge sind vor dem Neustart abzustecken!</span>
+					</p>
+				</div>
+				<!-- modal footer -->
+				<div class="modal-footer d-flex justify-content-center">
+					<button type="button" class="btn btn-success" data-dismiss="modal" onclick="window.location.href='./settings/reboot20.html'">Reboot</button>
+					<button type="button" class="btn btn-danger" data-dismiss="modal">Abbruch</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- modal shutdown-confirmation window -->
+	<div class="modal fade" id="shutdownConfirmationModal" role="dialog">
+		<div class="modal-dialog" role="document">
+			<div class="modal-content">
+				<!-- modal header -->
+				<div class="modal-header bg-danger">
+					<h4 class="modal-title text-light">Achtung</h4>
+				</div>
+				<!-- modal body -->
+				<div class="modal-body text-center">
+					<p>
+						<b>Soll die openWB wirklich heruntergefahren werden?<br></b> Wenn ein Problem mit der openWB vorliegt bitte Debug Daten senden.<br> Ein Herunterfahren löscht alle Debug Daten und macht es unmöglich, die Problemursache festzustellen.<br> Nach dem
+						Herunterfahren kann die openWB nur durch Trennen und anschließendem Wiederverbinden mit dem Stromnetz erneut gestartet werden. (z.B. am Sicherungsautomat)
+						<br>
+						<span class="text-danger">Fahrzeuge sind vor dem Herunterfahren abzustecken!</span>
+					</p>
+				</div>
+				<!-- modal footer -->
+				<div class="modal-footer d-flex justify-content-center">
+					<button type="button" class="btn btn-success" data-dismiss="modal" onclick="window.location.href='./settings/shutdown20.html'">Shutdown</button>
+					<button type="button" class="btn btn-danger" data-dismiss="modal">Abbruch</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- modal modulkonfig-lp-confirmation window -->
+	<div class="modal fade" id="modulconfigConfirmationLPModal" role="dialog">
+		<div class="modal-dialog" role="document">
+			<div class="modal-content">
+				<!-- modal header -->
+				<div class="modal-header bg-danger">
+					<h4 class="modal-title text-light">Achtung</h4>
+				</div>
+				<!-- modal body -->
+				<div class="modal-body text-center">
+					<p>
+						Nach erfolgter Einrichtung der openWB ist in der Modulkonfiguration grundsätzlich <b>keine weitere
+							Einstellung notwendig</b>.<br>
+					</p>
+				</div>
+				<!-- modal footer -->
+				<div class="modal-footer d-flex justify-content-center">
+					<button type="button" class="btn btn-success" data-dismiss="modal" onclick="window.location.href='./settings/modulconfiglp20.php'">Weiter</button>
+					<button type="button" class="btn btn-danger" data-dismiss="modal">Abbruch</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- modal modulkonfig-evu-confirmation window -->
+	<div class="modal fade" id="modulconfigConfirmationEVUModal" role="dialog">
+		<div class="modal-dialog" role="document">
+			<div class="modal-content">
+				<!-- modal header -->
+				<div class="modal-header bg-danger">
+					<h4 class="modal-title text-light">Achtung</h4>
+				</div>
+				<!-- modal body -->
+				<div class="modal-body text-center">
+					<p>
+						Nach erfolgter Einrichtung der openWB ist in der Modulkonfiguration grundsätzlich keine weitere Einstellung notwendig.<br> Fortfahren?
+					</p>
+				</div>
+				<!-- modal footer -->
+				<div class="modal-footer d-flex justify-content-center">
+					<button type="button" class="btn btn-success" data-dismiss="modal" onclick="window.location.href='./settings/modulconfigevu20.php'">Weiter</button>
+					<button type="button" class="btn btn-danger" data-dismiss="modal">Abbruch</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- modal modulkonfig-pv-confirmation window -->
+	<div class="modal fade" id="modulconfigConfirmationPVModal" role="dialog">
+		<div class="modal-dialog" role="document">
+			<div class="modal-content">
+				<!-- modal header -->
+				<div class="modal-header bg-danger">
+					<h4 class="modal-title text-light">Achtung</h4>
+				</div>
+				<!-- modal body -->
+				<div class="modal-body text-center">
+					<p>
+						Nach erfolgter Einrichtung der openWB ist in der Modulkonfiguration grundsätzlich keine weitere Einstellung notwendig.<br> Fortfahren?
+					</p>
+				</div>
+				<!-- modal footer -->
+				<div class="modal-footer d-flex justify-content-center">
+					<button type="button" class="btn btn-success" data-dismiss="modal" onclick="window.location.href='./settings/modulconfigpv20.php'">Weiter</button>
+					<button type="button" class="btn btn-danger" data-dismiss="modal">Abbruch</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- modal modulkonfig-bat-confirmation window -->
+	<div class="modal fade" id="modulconfigConfirmationBATModal" role="dialog">
+		<div class="modal-dialog" role="document">
+			<div class="modal-content">
+				<!-- modal header -->
+				<div class="modal-header bg-danger">
+					<h4 class="modal-title text-light">Achtung</h4>
+				</div>
+				<!-- modal body -->
+				<div class="modal-body text-center">
+					<p>
+						Nach erfolgter Einrichtung der openWB ist in der Modulkonfiguration grundsätzlich keine weitere Einstellung notwendig.<br> Fortfahren?
+					</p>
+				</div>
+				<!-- modal footer -->
+				<div class="modal-footer d-flex justify-content-center">
+					<button type="button" class="btn btn-success" data-dismiss="modal" onclick="window.location.href='./settings/modulconfigbat20.php'">Weiter</button>
+					<button type="button" class="btn btn-danger" data-dismiss="modal">Abbruch</button>
+				</div>
+			</div>
+		</div>
+	</div>
+</script>
+
 <script type="text/x-template" id="content-template">
 	<!-- common modal dialogues start here >>> -->
 	<!-- save-in-progress overlay -->
@@ -350,7 +577,7 @@
 	</div>
 	<!-- <<< end of common modal dialogues -->
 
-	<div id="nav"></div> <!-- placeholder for navbar -->
+	<navbar :active-item="nav"></navbar>
 
 	<div role="main" class="container">
 		<div id="content">
@@ -360,6 +587,7 @@
 				<submit-buttons></submit-buttons>
 			</form>
 		</div>
+
 		<donation-banner></donation-banner>
 	</div>  <!-- main container -->
 
@@ -789,6 +1017,25 @@
 		}
 	};
 
+	const navbarComponent = {
+		name: "Navbar",
+		template: '#navbar-template',
+		props: {
+			activeItem: String
+		},
+		data() {
+			return {
+				menue: { "name": "Init" }
+			}
+		},
+		beforeMount(){
+			$.get(
+				{ url: "settings/navbar20.json", cache: false },
+				data => this.menue = data
+			);
+		}
+	};
+
 	const headingComponent = {
 		name: "Heading",
 		template: '#heading-template'
@@ -844,6 +1091,7 @@
 			nav: String
 		},
 		components: {
+			'navbar': navbarComponent,
 			'submit-buttons': submitButtonsComponent,
 			'page-footer': pageFooterComponent,
 			'donation-banner': donationBannerComponent
@@ -855,19 +1103,6 @@
 			setDefaultValues() {
 				this.$root.setDefaultValues();
 			}
-		},
-		beforeMount(){
-			// old jquery code
-			// ToDo: add nav component
-			const navElement = this.nav;
-			$.get(
-				{ url: "settings/navbar20.html", cache: false },
-				function(data){
-					$("#nav").replaceWith(data);
-					// disable navbar entry for current page
-					$(navElement).addClass('disabled');
-				}
-			);
 		}
 	}
 

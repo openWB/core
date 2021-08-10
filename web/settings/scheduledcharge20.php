@@ -55,7 +55,7 @@
 	</head>
 	<body>
 		<div id="app">
-			<content title="Einstellungen Zielladen" footer="Zielladen" nav="#navScheduledCharge">
+			<content title="Einstellungen Zielladen" footer="Zielladen" nav="navScheduledCharge">
 
 				<card title="Phasenumschaltung">
 					<div v-if="componentData['openWB/general/extern'] === true">

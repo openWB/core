@@ -55,7 +55,7 @@
 	</head>
 	<body>
 		<div id="app">
-			<content title="Einstellungen PV-Laden" footer="PV-Laden" nav="#navPVCharge">
+			<content title="Einstellungen PV-Laden" footer="PV-Laden" nav="navPVCharge">
 
 				<card title="Regelparameter">
 					<div v-if="componentData['openWB/general/extern'] === true">
