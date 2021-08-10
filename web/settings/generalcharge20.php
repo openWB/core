@@ -55,39 +55,23 @@
 	</head>
 	<body>
 		<div id="app">
-			<content title="Allgemeine Einstellungen der Lademodi" footer="Lademodi">
-
-				<!-- hidden toggle-only components: BEGIN -->
-				<buttongroup-input
-					title="Nur Ladepunkt"
-					ref="openWB/general/extern"
-					:is-hidden="true"
-					toggle-selector='extOpenWBOn'
-					:buttons="[
-						{buttonValue: false, text: 'Nein', class: 'btn-outline-danger', icon: 'fas fa-times'},
-						{buttonValue: true, text: 'Ja', class: 'btn-outline-success'}
-					]"
-					:default-value=false>
-				</buttongroup-input>
-				<!-- hidden toggle-only components: END -->
+			<content title="Allgemeine Einstellungen der Lademodi" footer="Lademodi" nav="#navGeneralCharge">
 
 				<card title="Allgemein">
-					<div v-show="visibility.extOpenWBOn">
+					<div v-if="componentData['openWB/general/extern'] == true">
 						<alert
 							subtype="info">
 							Diese Einstellungen sind nicht verfügbar, solange sich diese openWB im Modus "Nur Ladepunkt" befindet.
 						</alert>
 					</div>
-					<div v-show="!visibility.extOpenWBOn">
+					<div v-if="componentData['openWB/general/extern'] == false">
 						<buttongroup-input
 							title="Lademodus"
-							ref="openWB/general/chargemode_config/individual_mode"
+							v-model="componentData['openWB/general/chargemode_config/individual_mode']"
 							:buttons="[
 								{buttonValue: false, text: 'Einheitlich'},
 								{buttonValue: true, text: 'Individuell'}
-							]"
-							:default-value=false
-							:is-disabled='visibility.extOpenWBOn'>
+							]">
 							<template #help>
 								ToDo
 							</template>
@@ -95,26 +79,22 @@
 						<hr>
 						<buttongroup-input
 							title="Begrenzung der Schieflast"
-							ref="openWB/general/chargemode_config/unbalanced_load"
+							v-model="componentData['openWB/general/chargemode_config/unbalanced_load']"
 							toggle-selector='unbalancedOn'
 							:buttons="[
 								{buttonValue: false, text: 'Nein', class: 'btn-outline-danger', icon: 'fas fa-times'},
 								{buttonValue: true, text: 'Ja', class: 'btn-outline-success'}
-							]"
-							:default-value=false
-							:is-disabled='visibility.extOpenWBOn'>
+							]">
 							<template #help>
 								ToDo
 							</template>
 						</buttongroup-input>
-						<div v-show="visibility.unbalancedOn">
+						<div v-if="componentData['openWB/general/chargemode_config/unbalanced_load'] == true">
 							<range-input
 								title="Erlaubte Schieflast"
 								:min=10 :max=32 :step=1
-								ref="openWB/general/chargemode_config/unbalanced_load_limit"
-								:default-value=20
-								unit="A"
-								:is-disabled='!visibility.unbalancedOn || visibility.extOpenWBOn'>
+								v-model="componentData['openWB/general/chargemode_config/unbalanced_load_limit']"
+								unit="A">
 								<template #help>
 									ToDo
 								</template>
@@ -127,17 +107,15 @@
 		</div><!-- app -->
 
 		<script>
-			$.get(
-				{ url: "settings/navbar20.html", cache: false },
-				function(data){
-					$("#nav").replaceWith(data);
-					// disable navbar entry for current page
-					$('#navGeneralCharge').addClass('disabled');
-				}
-			);
+			// define topics and default values here
+			const componentDefaultData = {
+				'openWB/general/extern': false,
+				'openWB/general/chargemode_config/individual_mode': false,
+				'openWB/general/chargemode_config/unbalanced_load': false,
+				'openWB/general/chargemode_config/unbalanced_load_limit': 20
+			}
 		</script>
-
-		<?php include_once './settings.vapp.php'; ?>
+		<?php include_once './settings-2.vapp.php'; ?>
 
 	</body>
 </html>

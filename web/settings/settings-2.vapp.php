@@ -19,10 +19,10 @@
 							<i v-if="subtype == 'password'" class="fa fa-fw" :class="showPassword ? 'fa-unlock' : 'fa-lock'"></i>
 						</div>
 					</div>
-					<input v-if="['text', 'user', 'json'].includes(subtype)" type="text" class="form-control" v-model="value" :pattern="pattern">
-					<input v-if="subtype == 'password'" :type="showPassword ? 'text' : 'password'" class="form-control" v-model="value" :pattern="pattern">
-					<input v-if="subtype == 'host'" type="text" class="form-control" pattern="^(((\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.){3}(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])|[A-Za-z0-9\._\-]*)$" v-model="value">
-					<input v-if="['email', 'url'].includes(subtype)" :type="subtype" class="form-control" v-model="value">
+					<input v-if="['text', 'user', 'json'].includes(subtype)" type="text" class="form-control" v-model="value" v-bind="$attrs" :pattern="pattern">
+					<input v-if="subtype == 'password'" :type="showPassword ? 'text' : 'password'" class="form-control" v-model="value" v-bind="$attrs" :pattern="pattern">
+					<input v-if="subtype == 'host'" type="text" class="form-control" pattern="^(((\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.){3}(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])|[A-Za-z0-9\._\-]*)$" v-model="value" v-bind="$attrs">
+					<input v-if="['email', 'url'].includes(subtype)" :type="subtype" class="form-control" v-model="value" v-bind="$attrs">
 					<div v-if="subtype == 'password'" class="input-group-append" v-on:click="togglePassword">
 						<div class="input-group-text">
 							<i class="far fa-fw" :class="showPassword ? 'fa-eye' : 'fa-eye-slash'"></i>
@@ -51,7 +51,7 @@
 							<i class="fas fa-fw fa-calculator"></i>
 						</div>
 					</div>
-					<input type="number" class="form-control" :min="min" :max="max" :step="step" v-model.number="value">
+					<input type="number" class="form-control" :min="min" :max="max" :step="step" v-model.number="value" v-bind="$attrs">
 					<div v-if="unit" class="input-group-append">
 						<div class="input-group-text">
 							{{ unit }}
@@ -79,7 +79,7 @@
 					<i class="fas fa-step-backward"></i>
 				</button>
 				<div class="col">
-					<input type="range" class="form-control-range rangeInput" :min="min" :max="max" :step="step" v-model.number="sliderValue">
+					<input type="range" class="form-control-range rangeInput" :min="min" :max="max" :step="step" v-model.number="sliderValue" v-bind="$attrs">
 				</div>
 				<button class="col-1 btn btn-block btn-info" type="button" @click="increment">
 					<i class="fas fa-step-forward"></i>
@@ -102,7 +102,7 @@
 		</label>
 		<div class="col-md-8">
 			<div class="form-row">
-				<textarea class="form-control" v-model="value"></textarea>
+				<textarea class="form-control" v-model="value" v-bind="$attrs"></textarea>
 			</div>
 			<span v-if="showHelp" class="form-row alert alert-info my-1 small">
 				<slot name="help"></slot>
@@ -119,7 +119,7 @@
 		</label>
 		<div class="col-md-8">
 			<div class="form-row">
-				<select class="form-control" v-model="value">
+				<select class="form-control" v-model="value" v-bind="$attrs">
 					<!-- select elements without option groups -->
 					<option v-for="(option) in options" :value="option.value">{{ option.text }}</option>
 					<!-- option groups with options -->
@@ -165,7 +165,7 @@
 		</label>
 		<div class="col-md-8">
 			<div class="form-row">
-				<input class="form-control" type="checkbox" v-model="value">
+				<input class="form-control" type="checkbox" v-model="value" v-bind="$attrs">
 			</div>
 			<span v-if="showHelp" class="form-row alert alert-info my-1 small">
 				<slot name="help"></slot>
@@ -371,6 +371,7 @@
 	const textInputComponent = {
 		name: "TextInput",
 		template: '#text-input-template',
+		inheritAttrs: false,
 		props: {
 			title: String,
 			modelValue: { type: [String, Object] },
@@ -419,6 +420,7 @@
 	const numberInputComponent = {
 		name: "NumberInput",
 		template: '#number-input-template',
+		inheritAttrs: false,
 		props: {
 			title: String,
 			modelValue: { type: Number },
@@ -455,6 +457,7 @@
 	const rangeInputComponent = {
 		name: "RangeInput",
 		template: '#range-input-template',
+		inheritAttrs: false,
 		props: {
 			title: String,
 			modelValue: { type: Number },
@@ -542,6 +545,7 @@
 	const textareaInputComponent = {
 		name: "TextareaInput",
 		template: '#textarea-input-template',
+		inheritAttrs: false,
 		props: {
 			title: String,
 			modelValue: String
@@ -574,6 +578,7 @@
 	const selectInputComponent = {
 		name: "SelectInput",
 		template: '#select-input-template',
+		inheritAttrs: false,
 		props: {
 			title: String,
 			modelValue: { type: [String, Number, Array] },
@@ -709,6 +714,7 @@
 	const checkboxInputComponent = {
 		name: "CheckboxInput",
 		template: '#checkbox-input-template',
+		inheritAttrs: false,
 		props: {
 			title: String,
 			modelValue: { type: Boolean },
@@ -834,7 +840,8 @@
 		template: "#content-template",
 		props: {
 			title: { type: String, default: "# no title set #" },
-			footer: { type: String, default: "# no footer set #" }
+			footer: { type: String, default: "# no footer set #" },
+			nav: String
 		},
 		components: {
 			'submit-buttons': submitButtonsComponent,
@@ -848,6 +855,19 @@
 			setDefaultValues() {
 				this.$root.setDefaultValues();
 			}
+		},
+		beforeMount(){
+			// old jquery code
+			// ToDo: add nav component
+			const navElement = this.nav;
+			$.get(
+				{ url: "settings/navbar20.html", cache: false },
+				function(data){
+					$("#nav").replaceWith(data);
+					// disable navbar entry for current page
+					$(navElement).addClass('disabled');
+				}
+			);
 		}
 	}
 
