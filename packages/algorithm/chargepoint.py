@@ -188,45 +188,49 @@ class chargepoint():
     """ geht alle Ladepunkte durch, prüft, ob geladen werden darf und ruft die Funktion des angesteckten Autos auf. 
     """
 
-    def __init__(self, index):
-        self.data = {}
-        self.template = None  # Instanz des zugeordneten CP-Templates
-        self.cp_num = index
-        self.data["set"] = {}
-        self.data["get"] = {}
-        self.set_current_prev = 0 # set current aus dem vorherigen Zyklus, um zu wissen, ob am Ende des Zyklus die Ladung freigegeben wird (für Control-Pilot-Unterbrechung)
+    def __init__(self, index, default):
+        try:
+            self.data = {}
+            if default == False:
+                self.template = None  # Instanz des zugeordneten CP-Templates
+                self.cp_num = index
+                self.data["set"] = {}
+                self.data["get"] = {}
+                self.set_current_prev = 0 # set current aus dem vorherigen Zyklus, um zu wissen, ob am Ende des Zyklus die Ladung freigegeben wird (für Control-Pilot-Unterbrechung)
 
-        if "charging_ev" not in self.data["set"]:
-            self.data["set"]["charging_ev"] = -1
-        if "charging_ev_prev" not in self.data["set"]:
-            self.data["set"]["charging_ev_prev"] = -1
-        if "autolock_state" not in self.data["set"]:
-            self.data["set"]["autolock_state"] = 0
-        if "current" not in self.data["set"]:
-            self.data["set"]["current"] = 0
-        if "energy_to_charge" not in self.data["set"]:
-            self.data["set"]["energy_to_charge"] = 0
-        self.data["get"]["read_tag"] = {}
-        self.data["get"]["read_tag"]["tag"] = "0"
-        self.data["get"]["read_tag"]["timestamp"] = "0"
-        self.data["set"]["rfid"] = 0
-        self.data["set"]["log"] = {}
+                if "charging_ev" not in self.data["set"]:
+                    self.data["set"]["charging_ev"] = -1
+                if "charging_ev_prev" not in self.data["set"]:
+                    self.data["set"]["charging_ev_prev"] = -1
+                if "autolock_state" not in self.data["set"]:
+                    self.data["set"]["autolock_state"] = 0
+                if "current" not in self.data["set"]:
+                    self.data["set"]["current"] = 0
+                if "energy_to_charge" not in self.data["set"]:
+                    self.data["set"]["energy_to_charge"] = 0
+                self.data["get"]["read_tag"] = {}
+                self.data["get"]["read_tag"]["tag"] = "0"
+                self.data["get"]["read_tag"]["timestamp"] = "0"
+                self.data["set"]["rfid"] = 0
+                self.data["set"]["log"] = {}
 
-        # bestehende Logdaten auf dem Broker nicht zurücksetzen, daher nicht publishen
-        if "counter_at_plugtime" not in self.data["set"]["log"]:
-            self.data["set"]["log"]["counter_at_plugtime"] = 0
-        if "timestamp_start_charging" not in self.data["set"]["log"]:
-            self.data["set"]["log"]["timestamp_start_charging"] = "0"
-        if "counter_at_mode_switch" not in self.data["set"]["log"]:
-            self.data["set"]["log"]["counter_at_mode_switch"] = 0
-        if "charged_since_mode_switch" not in self.data["set"]["log"]:
-            self.data["set"]["log"]["charged_since_mode_switch"] = 0
-        if "range_charged" not in self.data["set"]["log"]:
-            self.data["set"]["log"]["range_charged"] = 0
-        if "time_charged" not in self.data["set"]["log"]:
-            self.data["set"]["log"]["time_charged"] = "00:00"
-        if "chargemode_log_entry" not in self.data["set"]["log"]:
-            self.data["set"]["log"]["chargemode_log_entry"] = "_"
+                # bestehende Logdaten auf dem Broker nicht zurücksetzen, daher nicht publishen
+                if "counter_at_plugtime" not in self.data["set"]["log"]:
+                    self.data["set"]["log"]["counter_at_plugtime"] = 0
+                if "timestamp_start_charging" not in self.data["set"]["log"]:
+                    self.data["set"]["log"]["timestamp_start_charging"] = "0"
+                if "counter_at_mode_switch" not in self.data["set"]["log"]:
+                    self.data["set"]["log"]["counter_at_mode_switch"] = 0
+                if "charged_since_mode_switch" not in self.data["set"]["log"]:
+                    self.data["set"]["log"]["charged_since_mode_switch"] = 0
+                if "range_charged" not in self.data["set"]["log"]:
+                    self.data["set"]["log"]["range_charged"] = 0
+                if "time_charged" not in self.data["set"]["log"]:
+                    self.data["set"]["log"]["time_charged"] = "00:00"
+                if "chargemode_log_entry" not in self.data["set"]["log"]:
+                    self.data["set"]["log"]["chargemode_log_entry"] = "_"
+        except Exception as e:
+            log.exception_logging(e)
 
     def _is_grid_protection_active(self):
         """ prüft, ob der Netzschutz aktiv ist und alle Ladepunkt gestoppt werden müssen.

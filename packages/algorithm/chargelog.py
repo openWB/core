@@ -84,6 +84,7 @@ Lena:haus_mit_garten:  14:42 Uhr
 Ich sehe, dass so wie Lutz. Wenn im PV-Laden die Ladung unterbrochen wird, sollte nicht immer ein Eintrag erzeugt werden.
 """
 
+
 import json
 import math
 import pathlib
@@ -279,50 +280,51 @@ def get_log_data(request):
         filter = request["filter"]
         # Liste mit gefilterten Einträgen erstellen
         for entry in chargelog:
-            # Jeden Eintrag nur einmal anfügen, auch wenn mehrere Kriterien zutreffen
-            appended = False
-            if "chargepoint" in filter:
-                if "id" in filter["chargepoint"]:
-                    for id in filter["chargepoint"]["id"]:
-                        if id == entry["chargepoint"]["id"]:
-                            data.append(entry)
-                            appended = True
-                            break
-                    if appended == True:
-                        continue
-            if "vehicle" in filter:
-                if "id" in filter["vehicle"]:
-                    for id in filter["vehicle"]["id"]:
-                        if id == entry["vehicle"]["id"]:
-                            data.append(entry)
-                            appended = True
-                            break
-                    if appended == True:
-                        continue
-                if "rfid" in filter["vehicle"]:
-                    for rfid in filter["vehicle"]["rfid"]:
-                        if rfid == entry["vehicle"]["rfid"]:
-                            data.append(entry)
-                            appended = True
-                            break
-                    if appended == True:
-                        continue
-                if "chargemode" in filter["vehicle"]:
-                    for chargemode in filter["vehicle"]["chargemode"]:
-                        if chargemode == entry["vehicle"]["chargemode"]:
-                            data.append(entry)
-                            appended = True
-                            break
-                    if appended == True:
-                        continue
-                if "prio" in filter["vehicle"]:
-                    for prio in filter["vehicle"]["prio"]:
-                        if prio == entry["vehicle"]["prio"]:
-                            data.append(entry)
-                            appended = True
-                            break
-                    if appended == True:
-                        continue
+            if len(entry) > 0:
+                # Jeden Eintrag nur einmal anfügen, auch wenn mehrere Kriterien zutreffen
+                appended = False
+                if "chargepoint" in filter:
+                    if "id" in filter["chargepoint"]:
+                        for id in filter["chargepoint"]["id"]:
+                            if id == entry["chargepoint"]["id"]:
+                                data.append(entry)
+                                appended = True
+                                break
+                        if appended == True:
+                            continue
+                if "vehicle" in filter:
+                    if "id" in filter["vehicle"]:
+                        for id in filter["vehicle"]["id"]:
+                            if id == entry["vehicle"]["id"]:
+                                data.append(entry)
+                                appended = True
+                                break
+                        if appended == True:
+                            continue
+                    if "rfid" in filter["vehicle"]:
+                        for rfid in filter["vehicle"]["rfid"]:
+                            if rfid == entry["vehicle"]["rfid"]:
+                                data.append(entry)
+                                appended = True
+                                break
+                        if appended == True:
+                            continue
+                    if "chargemode" in filter["vehicle"]:
+                        for chargemode in filter["vehicle"]["chargemode"]:
+                            if chargemode == entry["vehicle"]["chargemode"]:
+                                data.append(entry)
+                                appended = True
+                                break
+                        if appended == True:
+                            continue
+                    if "prio" in filter["vehicle"]:
+                        for prio in filter["vehicle"]["prio"]:
+                            if prio == entry["vehicle"]["prio"]:
+                                data.append(entry)
+                                appended = True
+                                break
+                        if appended == True:
+                            continue
 
         if len(data) > 0:
             # Summen bilden
@@ -422,3 +424,4 @@ def truncate(number, decimals=0):
         return math.trunc(number * factor) / factor
     except Exception as e:
         log.exception_logging(e)
+

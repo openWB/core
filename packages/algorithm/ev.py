@@ -43,26 +43,27 @@ class ev():
     """Logik des EV
     """
 
-    def __init__(self, index):
+    def __init__(self, index, default):
         try:
             self.data = {}
-            self.ev_template = None
-            self.charge_template = None
-            self.ev_num = index
-            if "set" not in self.data:
-                self.data["set"] = {}
-            if "get" not in self.data:
-                self.data["get"] = {}
-            if "control_parameter" not in self.data:
-                self.data["control_parameter"] = {}
-            self.data["control_parameter"]["required_current"] = 0 
-            self.data["control_parameter"]["phases"] = 0 
-            self.data["control_parameter"]["prio"] = False
-            self.data["control_parameter"]["timestamp_switch_on_off"] = "0"
-            self.data["control_parameter"]["timestamp_auto_phase_switch"] = "0"
-            self.data["control_parameter"]["timestamp_perform_phase_switch"] = "0"
-            self.data["control_parameter"]["submode"] = "stop"
-            self.data["control_parameter"]["chargemode"] = "stop"
+            if default == False:
+                self.ev_template = None
+                self.charge_template = None
+                self.ev_num = index
+                if "set" not in self.data:
+                    self.data["set"] = {}
+                if "get" not in self.data:
+                    self.data["get"] = {}
+                if "control_parameter" not in self.data:
+                    self.data["control_parameter"] = {}
+                self.data["control_parameter"]["required_current"] = 0 
+                self.data["control_parameter"]["phases"] = 0 
+                self.data["control_parameter"]["prio"] = False
+                self.data["control_parameter"]["timestamp_switch_on_off"] = "0"
+                self.data["control_parameter"]["timestamp_auto_phase_switch"] = "0"
+                self.data["control_parameter"]["timestamp_perform_phase_switch"] = "0"
+                self.data["control_parameter"]["submode"] = "stop"
+                self.data["control_parameter"]["chargemode"] = "stop"
         except Exception as e:
             log.exception_logging(e)
 

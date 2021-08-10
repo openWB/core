@@ -23,6 +23,7 @@ class prepare():
         """
         log.message_debug_log("info", "# ***Start*** ")
         self._copy_data()
+        self._set_default_values()
         self._counter()
         self._check_chargepoints()
         self._use_pv()
@@ -234,3 +235,52 @@ class prepare():
                     data.data.counter_data[counter].setup_counter()
         except Exception as e:
                 log.exception_logging(e)
+
+    def _set_default_values(self):
+        """ ruft für jedes Modul die rekursive Funktion zur Überprüfung auf fehlende Werte auf.
+        """
+        # für jeden LP müssen die defaults geprüft werden
+        for cp in data.data.cp_data:
+            if "cp" in cp:
+                self._check_key(subdata.subData.defaults_cp_data["cp0"].data, data.data.cp_data[cp].data)
+        for cpt in data.data.cp_template_data:
+            if "cpt" in cpt:
+                self._check_key(subdata.subData.defaults_cp_template_data["cpt0"].data, data.data.cp_template_data[cpt].data)
+        for pv in data.data.pv_data:
+            if "pv" in pv:
+                self._check_key(subdata.subData.defaults_pv_data["pv0"].data, data.data.pv_data[pv].data)
+        for ev in data.data.ev_data:
+            if "ev" in ev:
+                self._check_key(subdata.subData.defaults_ev_data["ev0"].data, data.data.ev_data[ev].data)
+        for et in data.data.ev_template_data:
+            if "et" in et:
+                self._check_key(subdata.subData.defaults_ev_template_data["et0"].data, data.data.ev_template_data[et].data)
+        for ct in data.data.ev_charge_template_data:
+            if "ct" in ct:
+                self._check_key(subdata.subData.defaults_ev_charge_template_data["ct0"].data, data.data.ev_charge_template_data[ct].data)
+        for counter in data.data.counter_data:
+            if "counter" in counter:
+                self._check_key(subdata.subData.defaults_counter_data["counter0"].data, data.data.counter_data[counter].data)
+        for bat in data.data.bat_module_data:
+            if "bat" in bat:
+                self._check_key(subdata.subData.defaults_bat_module_data["bat0"].data, data.data.bat_module_data[bat].data)
+        self._check_key(subdata.subData.defaults_general_data["general"].data, data.data.general_data["general"].data)
+        self._check_key(subdata.subData.defaults_optional_data["optional"].data, data.data.optional_data["optional"].data)
+
+    def _check_key(self, default, settings):
+        """ prüft, ob ein Wert, für den es einen default-Werte gäbe, gesetzt ist, sonst wird das Dictionary mit einem default-Wert gefüllt. Dictionaries werden rekursiv 
+        durchgegangen, bis das Dictionary nicht weiter verschachtelt ist.
+        """
+        # alle Einträge des Dictionaries durchgehen
+        for key in default:
+            # Ist der Value des Eintrags ein Dictionary? Dann erst dieses Dictionary durchgehen.
+            if isinstance(default[key], dict) == True:
+                # prüfen, ob das Dict auch in den Einstellungen angelegt ist, sonst anlegen.
+                if key not in settings:
+                    settings[key] = {}
+                    # Eine Verschachtelungsebene tiefer gehen.
+                self._check_key(default[key], settings[key])
+            # Der Value des Eintrags ist ein Wert. Prüfen, ob dieser Key im Modul-Dictionary exisitert, sonst Key-Value-Paar anlegen.
+            else:
+                if key not in settings:
+                    settings[key] = default[key]
