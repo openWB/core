@@ -55,42 +55,28 @@
 	</head>
 	<body>
 		<div id="app">
-			<content title="Optionale Komponenten" footer="Optionale Komponenten">
-				<!-- hidden toggle-only components: BEGIN -->
-				<buttongroup-input
-					title="Nur Ladepunkt"
-					ref="openWB/general/extern"
-					:is-hidden="true"
-					toggle-selector='extOpenWBOn'
-					:buttons="[
-						{buttonValue: false, text: 'Nein', class: 'btn-outline-danger', icon: 'fas fa-times'},
-						{buttonValue: true, text: 'Ja', class: 'btn-outline-success'}
-					]"
-					:default-value=false>
-				</buttongroup-input>
-				<!-- hidden toggle-only components: END -->
+			<content title="Optionale Komponenten" footer="Optionale Komponenten" nav="navOptional">
 
 				<card title="RFID">
-					<div v-show="visibility.extOpenWBOn">
+					<div v-if="componentData['openWB/general/extern'] == true">
 						<alert
 							subtype="info">
 							Diese Einstellungen sind nicht verfügbar, solange sich diese openWB im Modus "Nur Ladepunkt" befindet.<br>
 							RFID-Tags werden immer an die übergeordnete openWB gesendet und dort verarbeitet.
 						</alert>
 					</div>
-					<div v-show="!visibility.extOpenWBOn">
+					<div v-if="componentData['openWB/general/extern'] == false">
 						<buttongroup-input
 							title="Modus"
-							ref="openWB/optional/rfid/mode"
+							v-model="componentData['openWB/optional/rfid/mode']"
 							toggle-selector='rfidMode'
 							:buttons="[
 								{buttonValue: 0, text: 'Aus', class: 'btn-outline-danger', icon: 'fas fa-times'},
 								{buttonValue: 1, text: 'Modus 1', class: 'btn-outline-success'},
 								{buttonValue: 2, text: 'Modus 2', class: 'btn-outline-success'}
-							]"
-							:default-value=0>
+							]">
 						</buttongroup-input>
-						<div v-show="visibility.rfidMode != 0">
+						<div v-if="componentData['openWB/optional/rfid/mode'] != 0">
 							<hr>
 							<alert
 								subtype="info">
@@ -98,13 +84,13 @@
 							</alert>
 							<hr>
 						</div>
-						<div v-show="visibility.rfidMode == 1">
+						<div v-if="componentData['openWB/optional/rfid/mode'] == 1">
 							<alert
 								subtype="info">
 								ToDo: Anzeige Mode 1
 							</alert>
 						</div>
-						<div v-show="visibility.rfidMode == 2">
+						<div v-if="componentData['openWB/optional/rfid/mode'] == 2">
 							<alert
 								subtype="info">
 								Im Modus 2 wird eine Kommaseparierte Liste mit gültigen RFID Tags hinterlegt. Gescannt werden kann an jedem möglichen RFID Leser.<br>
@@ -119,34 +105,33 @@
 				<card title="LED-Ausgänge">
 					<buttongroup-input
 						title="LED-Ausgänge aktivieren"
-						ref="openWB/optional/led/active"
+						v-model="componentData['openWB/optional/led/active']"
 						toggle-selector='ledOn'
 						:buttons="[
 							{buttonValue: false, text: 'Aus', class: 'btn-outline-danger', icon: 'fas fa-times'},
 							{buttonValue: true, text: 'An', class: 'btn-outline-success'}
-						]"
-						:default-value=false>
+						]">
 					</buttongroup-input>
-					<div v-show="visibility.ledOn">
+					<div v-if="componentData['openWB/optional/led/active'] == true">
 						<alert
 							subtype="info">
 							ToDo: Informationen zu den verwendeten GPOIs ergänzen!
 						</alert>
 						<hr>
-						<div v-show="visibility.extOpenWBOn">
+						<div v-if="componentData['openWB/general/extern'] == true">
 							<alert
 								subtype="info">
 								Diese Einstellungen sind nicht verfügbar, solange sich diese openWB im Modus "Nur Ladepunkt" befindet.<br>
 								Das Verhalten der LEDs wird durch die übergeordnete openWB festgelegt.
 							</alert>
 						</div>
-						<div v-show="!visibility.extOpenWBOn">
+						<div v-if="componentData['openWB/general/extern'] == false">
 							<heading>
 								Ladung nicht freigegeben
 							</heading>
 							<select-input
 								title="Sofortladen"
-								ref="ToDo/optional/led/instant_blocked"
+								v-model="componentData['ToDo/optional/led/instant_blocked']"
 								:options="[
 									{value: ['off','off','off'], text: 'Alle aus'}
 								]"
@@ -169,13 +154,11 @@
 										{value: ['off',   'blink', 'blink' ], text: 'LEDs 2+3'},
 										{value: ['blink', 'blink', 'blink' ], text: 'alle'}
 									] }
-								]"
-								:default-value="['off','off','off']"
-								:is-disabled='!visibility.ledOn'>
+								]">
 							</select-input>
 							<select-input
 								title="PV"
-								ref="ToDo/optional/led/pv_blocked"
+								v-model="componentData['ToDo/optional/led/pv_blocked']"
 								:options="[
 									{value: ['off','off','off'], text: 'Alle aus'}
 								]"
@@ -198,13 +181,11 @@
 										{value: ['off',   'blink', 'blink' ], text: 'LEDs 2+3'},
 										{value: ['blink', 'blink', 'blink' ], text: 'alle'}
 									] }
-								]"
-								:default-value="['off','off','off']"
-								:is-disabled='!visibility.ledOn'>
+								]">
 							</select-input>
 							<select-input
 								title="Zielladen"
-								ref="ToDo/optional/led/scheduled_blocked"
+								v-model="componentData['ToDo/optional/led/scheduled_blocked']"
 								:options="[
 									{value: ['off','off','off'], text: 'Alle aus'}
 								]"
@@ -227,13 +208,11 @@
 										{value: ['off',   'blink', 'blink' ], text: 'LEDs 2+3'},
 										{value: ['blink', 'blink', 'blink' ], text: 'alle'}
 									] }
-								]"
-								:default-value="['off','off','off']"
-								:is-disabled='!visibility.ledOn'>
+								]">
 							</select-input>
 							<select-input
 								title="Standby"
-								ref="ToDo/optional/led/standby_blocked"
+								v-model="componentData['ToDo/optional/led/standby_blocked']"
 								:options="[
 									{value: ['off','off','off'], text: 'Alle aus'}
 								]"
@@ -256,13 +235,11 @@
 										{value: ['off',   'blink', 'blink' ], text: 'LEDs 2+3'},
 										{value: ['blink', 'blink', 'blink' ], text: 'alle'}
 									] }
-								]"
-								:default-value="['off','off','off']"
-								:is-disabled='!visibility.ledOn'>
+								]">
 							</select-input>
 							<select-input
 								title="Stop"
-								ref="ToDo/optional/led/stop_blocked"
+								v-model="componentData['ToDo/optional/led/stop_blocked']"
 								:options="[
 									{value: ['off','off','off'], text: 'Alle aus'}
 								]"
@@ -285,9 +262,7 @@
 										{value: ['off',   'blink', 'blink' ], text: 'LEDs 2+3'},
 										{value: ['blink', 'blink', 'blink' ], text: 'alle'}
 									] }
-								]"
-								:default-value="['off','off','off']"
-								:is-disabled='!visibility.ledOn'>
+								]">
 							</select-input>
 							<hr>
 							<heading>
@@ -295,7 +270,7 @@
 							</heading>
 							<select-input
 								title="Sofortladen"
-								ref="ToDo/optional/led/instant"
+								v-model="componentData['ToDo/optional/led/instant']"
 								:options="[
 									{value: ['off','off','off'], text: 'Alle aus'}
 								]"
@@ -318,13 +293,11 @@
 										{value: ['off',   'blink', 'blink' ], text: 'LEDs 2+3'},
 										{value: ['blink', 'blink', 'blink' ], text: 'alle'}
 									] }
-								]"
-								:default-value="['off','off','off']"
-								:is-disabled='!visibility.ledOn'>
+								]">
 							</select-input>
 							<select-input
 								title="PV"
-								ref="ToDo/optional/led/pv"
+								v-model="componentData['ToDo/optional/led/pv']"
 								:options="[
 									{value: ['off','off','off'], text: 'Alle aus'}
 								]"
@@ -347,13 +320,11 @@
 										{value: ['off',   'blink', 'blink' ], text: 'LEDs 2+3'},
 										{value: ['blink', 'blink', 'blink' ], text: 'alle'}
 									] }
-								]"
-								:default-value="['off','off','off']"
-								:is-disabled='!visibility.ledOn'>
+								]">
 							</select-input>
 							<select-input
 								title="Zielladen"
-								ref="ToDo/optional/led/scheduled"
+								v-model="componentData['ToDo/optional/led/scheduled']"
 								:options="[
 									{value: ['off','off','off'], text: 'Alle aus'}
 								]"
@@ -376,13 +347,11 @@
 										{value: ['off',   'blink', 'blink' ], text: 'LEDs 2+3'},
 										{value: ['blink', 'blink', 'blink' ], text: 'alle'}
 									] }
-								]"
-								:default-value="['off','off','off']"
-								:is-disabled='!visibility.ledOn'>
+								]">
 							</select-input>
 							<select-input
 								title="Standby"
-								ref="ToDo/optional/led/standby"
+								v-model="componentData['ToDo/optional/led/standby']"
 								:options="[
 									{value: ['off','off','off'], text: 'Alle aus'}
 								]"
@@ -405,13 +374,11 @@
 										{value: ['off',   'blink', 'blink' ], text: 'LEDs 2+3'},
 										{value: ['blink', 'blink', 'blink' ], text: 'alle'}
 									] }
-								]"
-								:default-value="['off','off','off']"
-								:is-disabled='!visibility.ledOn'>
+								]">
 							</select-input>
 							<select-input
 								title="Stop"
-								ref="ToDo/optional/led/stop"
+								v-model="componentData['ToDo/optional/led/stop']"
 								:options="[
 									{value: ['off','off','off'], text: 'Alle aus'}
 								]"
@@ -434,33 +401,30 @@
 										{value: ['off',   'blink', 'blink' ], text: 'LEDs 2+3'},
 										{value: ['blink', 'blink', 'blink' ], text: 'alle'}
 									] }
-								]"
-								:default-value="['off','off','off']"
-								:is-disabled='!visibility.ledOn'>
+								]">
 							</select-input>
 						</div>
 					</div>
 				</card>
 
 				<card title="Display (intern oder extern)">
-					<div v-show="visibility.extOpenWBOn">
+					<div v-if="componentData['openWB/optional/led/active'] == true">
 						<alert
 							subtype="info">
 							Diese Einstellungen sind nicht verfügbar, solange sich diese openWB im Modus "Nur Ladepunkt" befindet.
 						</alert>
 					</div>
-					<div v-show="!visibility.extOpenWBOn">
+					<div v-show="componentData['openWB/optional/led/active'] == false">
 						<buttongroup-input
 							title="Integriertes Display"
-							ref="openWB/optional/int_display/active"
+							v-model="componentData['openWB/optional/int_display/active']"
 							toggle-selector='intDisplayOn'
 							:buttons="[
 								{buttonValue: false, text: 'Nein', class: 'btn-outline-danger', icon: 'fas fa-times'},
 								{buttonValue: true, text: 'Ja', class: 'btn-outline-success'}
-							]"
-							:default-value=false>
+							]">
 						</buttongroup-input>
-						<div v-show="visibility.intDisplayOn">
+						<div v-show="componentData['openWB/optional/int_display/active'] == true">
 							<hr>
 							<heading>
 								Display Standby
@@ -468,21 +432,17 @@
 							<range-input
 								title="Ausschaltzeit"
 								:min=0 :max=12 :step=1
-								ref="openWB/optional/int_display/standby"
-								:default-value=0
+								v-model="componentData['openWB/optional/int_display/standby']"
 								unit="Sek"
-								:labels='[{"label":"Immer an","value":0},{"label":5,"value":5},{"label":10,"value":10},{"label":15,"value":15},{"label":30,"value":30},{"label":45,"value":45},{"label":"1 Min","value":60},{"label":"1,5 Min","value":90},{"label":"2 Min","value":120},{"label":"3 Min","value":180},{"label":"4 Min","value":240},{"label":"5 Min","value":300},{"label":"10 Min","value":600}]'
-								:is-disabled='!visibility.intDisplayOn'>
+								:labels='[{"label":"Immer an","value":0},{"label":5,"value":5},{"label":10,"value":10},{"label":15,"value":15},{"label":30,"value":30},{"label":45,"value":45},{"label":"1 Min","value":60},{"label":"1,5 Min","value":90},{"label":"2 Min","value":120},{"label":"3 Min","value":180},{"label":"4 Min","value":240},{"label":"5 Min","value":300},{"label":"10 Min","value":600}]'>
 							</range-input>
 							<buttongroup-input
 								title="Automatisch einschalten"
-								ref="openWB/optional/int_display/on_if_plugged_in"
+								v-model="componentData['openWB/optional/int_display/on_if_plugged_in']"
 								:buttons="[
 									{buttonValue: false, text: 'Nein', class: 'btn-outline-danger', icon: 'fas fa-times'},
 									{buttonValue: true, text: 'Ja', class: 'btn-outline-success'}
-								]"
-								:default-value='false'
-								:is-disabled='!visibility.intDisplayOn'>
+								]">
 								<template #help>
 									Wird diese Funktion aktiviert, dann schaltet sich das Display automatisch ein, wenn ein Fahrzeug angesteckt wird.
 								</template>
@@ -494,50 +454,46 @@
 						</heading>
 						<buttongroup-input
 							title="Display mit PIN schützen"
-							ref="openWB/optional/int_display/pin_active"
-							toggle-selector='intDisplayPinOn'
+							v-model="componentData['openWB/optional/int_display/pin_active']"
 							:buttons="[
 								{buttonValue: false, text: 'Nein', class: 'btn-outline-danger', icon: 'fas fa-times'},
 								{buttonValue: true, text: 'Ja', class: 'btn-outline-success'}
-							]"
-							:default-value='false'>
+							]">
 						</buttongroup-input>
-						<div v-show="visibility.intDisplayPinOn">
-							<password-input
+						<div v-if="componentData['openWB/optional/int_display/pin_active'] == true">
+							<text-input
 								title="PIN-Code"
-								ref="openWB/optional/int_display/pin_code"
-								pattern="[0-9]{4}"
-								:is-disabled='!visibility.intDisplayPinOn'>
+								v-model="componentData['openWB/optional/int_display/pin_code']"
+								subtype="password"
+								pattern="[0-9]{4}">
 								<template #help>
 									Der PIN-Code muss vierstellig sein und darf nur Zahlen enthalten.
 								</template>
-							</password-input>
+							</text-input>
 						</div>
 						<hr>
 						<select-input
 							title="Theme des Displays"
-							ref="openWB/optional/int_display/theme"
-							toggle-selector="displayTheme"
+							v-model="componentData['openWB/optional/int_display/theme']"
 							:options="[
 								{value: 'cards', text: 'Cards'},
 								{value: 'gauges', text: 'Gauges'},
 								{value: 'slave', text: 'Nur Ladeleistung (keine Bedienung möglich)'},
-							]"
-							default-value='cards'>
+							]">
 						</select-input>
-						<div v-show="visibility.displayTheme == 'cards'">
+						<div v-if="componentData['openWB/optional/int_display/theme'] == 'cards'">
 							<alert
 								subtype="info">
 								ToDo: Optionen für das Cards-Theme...
 							</alert>
 						</div>
-						<div v-show="visibility.displayTheme == 'gauges'">
+						<div v-if="componentData['openWB/optional/int_display/theme'] == 'gauges'">
 							<alert
 								subtype="info">
 								ToDo: Optionen für das Gauges-Theme...
 							</alert>
 						</div>
-						<div v-show="visibility.displayTheme == 'slave'">
+						<div v-if="componentData['openWB/optional/int_display/theme'] == 'slave'">
 							<alert
 								subtype="info">
 								Das Theme "Nur Ladeleistung" bietet keine Optionen.
@@ -547,35 +503,33 @@
 				</card>
 
 				<card title="Loadsharing">
-					<div v-show="visibility.extOpenWBOn">
+					<div v-if="componentData['openWB/general/extern'] == true">
 						<alert
 							subtype="info">
 							Diese Einstellungen sind nicht verfügbar, solange sich diese openWB im Modus "Nur Ladepunkt" befindet.
 						</alert>
 					</div>
-					<div v-show="!visibility.extOpenWBOn">
+					<div v-if="componentData['openWB/general/extern'] == false">
 						<buttongroup-input
 							title="Loadsharing aktivieren"
-							ref="openWB/optional/load_sharing/active"
+							v-model="componentData['openWB/optional/load_sharing/active']"
 							toggle-selector='loadsharingOn'
 							:buttons="[
 								{buttonValue: false, text: 'Aus', class: 'btn-outline-danger', icon: 'fas fa-times'},
 								{buttonValue: true, text: 'An', class: 'btn-outline-success'}
-							]"
-							:default-value=false>
+							]">
 							<template #help>
 								Wenn Ladepunkt 1 und 2 sich eine Zuleitung teilen, diese Option aktivieren. Sie stellt in jedem Lademodus sicher, dass nicht mehr als die eingestellte Stromstärke je Phase in der Summe von Ladepunkt 1 und 2 genutzt werden.<br>
 								<span class="text-danger">Bei der OpenWB Duo muss diese Option aktiviert werden!</span>
 							</template>
 						</buttongroup-input>
-						<div v-show="visibility.loadsharingOn">
+						<div v-if="componentData['openWB/optional/load_sharing/active'] == true">
 							<range-input
 								title="Maximaler Strom"
 								:min=16 :max=32 :step=1
-								ref="openWB/optional/load_sharing/max_current"
+								v-model="componentData['openWB/optional/load_sharing/max_current']"
 								:default-value=16
-								unit="A"
-								:is-disabled='!visibility.loadsharingOn'>
+								unit="A">
 								<template #help>
 									<p class="text-danger">Der richtige Anschluss ist zu gewährleisten.</p>
 									<div class="row">
@@ -606,42 +560,38 @@
 				</card>
 
 				<card title="Variable Stromtarife">
-					<div v-show="visibility.extOpenWBOn">
+					<div v-if="componentData['openWB/general/extern'] == true">
 						<alert
 							subtype="info">
 							Diese Einstellungen sind nicht verfügbar, solange sich diese openWB im Modus "Nur Ladepunkt" befindet.
 						</alert>
 					</div>
-					<div v-show="!visibility.extOpenWBOn">
+					<div v-if="componentData['openWB/general/extern'] == false">
 						<buttongroup-input
 							title="Stromtarife aktivieren"
-							ref="openWB/optional/et/active"
-							toggle-selector='etProviderOn'
+							v-model="componentData['openWB/optional/et/active']"
 							:buttons="[
 								{buttonValue: false, text: 'Aus', class: 'btn-outline-danger', icon: 'fas fa-times'},
 								{buttonValue: true, text: 'An', class: 'btn-outline-success'}
-							]"
-							:default-value=false>
+							]">
 						</buttongroup-input>
-						<div v-show="visibility.etProviderOn">
+						<div v-if="componentData['openWB/optional/et/active'] == true">
 							<text-input
 								title="Anbieter"
 								subtype="json"
-								ref="openWB/optional/et/config/provider"
-								:is-disabled='!visibility.etProviderOn'>
+								disabled="disabled"
+								v-model="componentData['openWB/optional/et/config/provider']">
 								<template #help>
-									ToDo: JSON aufteilen
+									Nur zur Info.
 								</template>
 							</text-input>
 							<range-input
 								title="Maximaler Strompreis"
 								:min=-30 :max=30 :step=0.1
-								ref="openWB/optional/et/config/max_price"
-								:default-value=0
-								unit="ct"
-								:is-disabled='!visibility.etProviderOn'>
+								v-model="componentData['openWB/optional/et/config/max_price']"
+								unit="ct">
 								<template #help>
-									ToDo: Rundungsfehler???
+									ToDo: Rundungsfehler bei den Buttons???
 								</template>
 							</range-input>
 						</div>
@@ -652,17 +602,35 @@
 		</div><!-- app -->
 
 		<script>
-			$.get(
-				{ url: "settings/navbar20.html", cache: false },
-				function(data){
-					$("#nav").replaceWith(data);
-					// disable navbar entry for current page
-					$('#navAllgemein').addClass('disabled');
-				}
-			);
+			// define topics and default values here
+			const componentDefaultData = {
+				'openWB/general/extern': false,
+				'openWB/optional/rfid/mode': 0,
+				'openWB/optional/led/active': false,
+				'ToDo/optional/led/instant_blocked': ['off','off','off'],
+				'ToDo/optional/led/pv_blocked': ['off','off','off'],
+				'ToDo/optional/led/scheduled_blocked': ['off','off','off'],
+				'ToDo/optional/led/standby_blocked': ['off','off','off'],
+				'ToDo/optional/led/stop_blocked': ['off','off','off'],
+				'ToDo/optional/led/instant': ['off','off','off'],
+				'ToDo/optional/led/pv': ['off','off','off'],
+				'ToDo/optional/led/scheduled': ['off','off','off'],
+				'ToDo/optional/led/standby': ['off','off','off'],
+				'ToDo/optional/led/stop': ['off','off','off'],
+				'openWB/optional/int_display/active': false,
+				'openWB/optional/int_display/standby': 15,
+				'openWB/optional/int_display/on_if_plugged_in': true,
+				'openWB/optional/int_display/pin_active': false,
+				'openWB/optional/int_display/pin_code': "1234",
+				'openWB/optional/int_display/theme': "cards",
+				'openWB/optional/load_sharing/active': false,
+				'openWB/optional/load_sharing/max_current': 16,
+				'openWB/optional/et/active': false,
+				'openWB/optional/et/config/provider': {},
+				'openWB/optional/et/config/max_price': 0
+			}
 		</script>
-
-		<?php include_once './settings.vapp.php'; ?>
+		<?php include_once './settings-2.vapp.php'; ?>
 
 	</body>
 </html>

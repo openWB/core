@@ -55,18 +55,16 @@
 	</head>
 	<body>
 		<div id="app">
-			<content title="Allgemeine Einstellungen" footer="Allgemein">
+			<content title="Allgemeine Einstellungen" footer="Allgemein" nav="navGeneral">
 
 				<card title="openWB">
 					<buttongroup-input
 						title="Nur Ladepunkt"
-						ref="openWB/general/extern"
-						toggle-selector='extOpenWBOn'
+						v-model="componentData['openWB/general/extern']"
 						:buttons="[
 							{buttonValue: false, text: 'Nein', class: 'btn-outline-danger', icon: 'fas fa-times'},
 							{buttonValue: true, text: 'Ja', class: 'btn-outline-success'}
-						]"
-						:default-value=false>
+						]">
 						<template #help>
 							Wird hier "Ja" gewählt ist diese openWB nur ein Ladepunkt und übernimmt keine eigene Regelung.
 							Hier ist "Ja" zu wählen wenn, bereits eine openWB vorhanden ist und diese nur ein weiterer Ladepunkt der vorhandenen openWB sein soll.
@@ -74,37 +72,31 @@
 							An der Haupt openWB wird als Ladepunkt "externe openWB" gewählt und die IP Adresse eingetragen.
 						</template>
 					</buttongroup-input>
-					<div v-show="visibility.extOpenWBOn">
-						<select-input
-							id="select1"
-							title="Display-Theme"
-							ref="openWB/general/extOpenWBDisplay"
-							toggle-selector='displayTheme'
-							:options="[
-								{value: 'normal', text: 'Normal'},
-								{value: 'parent', text: 'Display der übergeordneten openWB'}
-							]"
-							default-value="normal"
-							:is-disabled='!visibility.extOpenWBOn'>
-							<template #help>
-								Das Theme "Normal" zeigt lediglich die Ladeleistung des Ladepunktes an. Änderungen sind nicht möglich.<br>
-								Wird hier "Display der übergeordneten openWB" ausgewählt, dann ist die Anzeige identisch zum Display der regelnden openWB. Alle Anzeigen und Änderungen sind möglich.
-							</template>
-						</select-input>
-					</div>
+					<select-input
+						id="select1"
+						title="Display-Theme"
+						v-model="componentData['openWB/general/extOpenWBDisplay']"
+						:options="[
+							{value: 'normal', text: 'Normal'},
+							{value: 'parent', text: 'Display der übergeordneten openWB'}
+						]"
+						v-if="componentData['openWB/general/extern'] === true">
+						<template #help>
+							Das Theme "Normal" zeigt lediglich die Ladeleistung des Ladepunktes an. Änderungen sind nicht möglich.<br>
+							Wird hier "Display der übergeordneten openWB" ausgewählt, dann ist die Anzeige identisch zum Display der regelnden openWB. Alle Anzeigen und Änderungen sind möglich.
+						</template>
+					</select-input>
 				</card>
 
-				<card title="Hardware" v-if="!visibility.extOpenWBOn">
+				<card title="Hardware" v-if="componentData['openWB/general/extern'] === false">
 					<buttongroup-input
 						title="Geschwindigkeit Regelintervall"
-						ref="openWB/general/control_interval"
+						v-model="componentData['openWB/general/control_interval']"
 						:buttons="[
 							{buttonValue: 10, text: 'Normal'},
 							{buttonValue: 20, text: 'Langsam'},
 							{buttonValue: 60, text: 'Sehr Langsam'}
-						]"
-						:default-value=10
-						:is-disabled='visibility.extOpenWBOn'>
+						]">
 						<template #help>
 							Sollten Probleme oder fehler auftreten, zunächst das Regelintervall auf "Normal" (10s) stellen.<br>
 							Werden Module genutzt, welche z.B. eine Online-API nutzen oder soll langsamer geregelt werden, kann hier "Langsam" (20s) oder "Sehr Langsam" (60s) gewählt werden.<br>
@@ -113,13 +105,11 @@
 					</buttongroup-input>
 					<buttongroup-input
 						title="Netzschutz"
-						ref="openWB/general/grid_protection_configured"
+						v-model="componentData['openWB/general/grid_protection_configured']"
 						:buttons="[
 							{buttonValue: false, text: 'Aus'},
 							{buttonValue: true, text: 'An'}
-						]"
-						:default-value=false
-						:is-disabled='visibility.extOpenWBOn'>
+						]">
 						<template #help>
 							Diese Option ist standardmäßig aktiviert und sollte so belassen werden.
 							Bei Unterschreitung einer kritischen Frequenz des Stromnetzes wird die Ladung nach einer zufälligen Zeit zwischen 1 und 90 Sekunden pausiert.
@@ -131,13 +121,11 @@
 					</buttongroup-input>
 					<buttongroup-input
 						title="Taster-Eingänge"
-						ref="openWB/general/external_buttons_hw"
+						v-model="componentData['openWB/general/external_buttons_hw']"
 						:buttons="[
 							{buttonValue: false, text: 'Aus'},
 							{buttonValue: true, text: 'An'}
-						]"
-						:default-value=false
-						:is-disabled='visibility.extOpenWBOn'>
+						]">
 						<template #help>
 							Wenn diese Option aktiviert ist, können bis zu fünf Taster an die openWB angeschlossen werden. Die entsprechenden Kontakte sind auf der Add-On-Platine beschriftet.<br>
 							Bei Installationen ohne die Zusatzplatine können folgende GPIOs benutzt werden, die durch die Taster auf Masse zu schalten sind:
@@ -152,19 +140,16 @@
 					</buttongroup-input>
 				</card>
 
-				<card title="Benachrichtigungen" v-if="!visibility.extOpenWBOn">
+				<card title="Benachrichtigungen" v-if="componentData['openWB/general/extern'] === false">
 					<select-input
 						title="Anbieter"
-						ref="openWB/general/notifications/selected"
-						toggle-selector="notificationProvider"
+						v-model="componentData['openWB/general/notifications/selected']"
 						:options="[
 							{value: 'none', text: 'Kein Anbieter'},
 							{value: 'pushover', text: 'Pushover'}
-						]"
-						default-value="none"
-						:is-disabled='visibility.extOpenWBOn'>
+						]">
 					</select-input>
-					<div v-show="visibility.notificationProvider=='pushover'">
+					<div v-if="componentData['openWB/general/notifications/selected'] == 'pushover'">
 						<alert
 							subtype="info">
 							Zur Nutzung von Pushover muss ein Konto auf Pushover.net bestehen. Zudem muss im Pushover-Nutzerkonto eine Applikation openWB eingerichtet werden, um den benötigten API-Token/Key zu erhalten.<br>
@@ -173,91 +158,78 @@
 						<text-input
 							title="Einstellungen"
 							subtype="json"
-							ref="openWB/general/notifications/configuration"
-							:is-disabled='visibility.extOpenWBOn || visibility.notificationProvider!="pushover"'>
+							disabled="disabled"
+							v-model="componentData['openWB/general/notifications/configuration']">
 							<template #help>
-								ToDo: JSON aufteilen
+								Nur zur Info!
 							</template>
 						</text-input>
-						<!-- <text-input
+						<text-input
 							title="Pushover User Key"
-							ref="ToDo/notifications/PushoverUser"
-							subtype="user"
-							:is-disabled='visibility.extOpenWBOn || visibility.notificationProvider!="pushover"'>
+							v-model="componentData['openWB/general/notifications/configuration'].user"
+							subtype="user">
 						</text-input>
-						<password-input
+						<text-input
 							title="Pushover API-Token/Key"
-							ref="ToDo/notifications/PushoverKey"
-							:is-disabled='visibility.extOpenWBOn || visibility.notificationProvider!="pushover"'>
-						</password-input> -->
+							subtype="password"
+							v-model="componentData['openWB/general/notifications/configuration'].key">
+						</text-input>
 						<hr>
 						<heading>
 							Benachrichtigungen
 						</heading>
 						<buttongroup-input
 							title="Beim Starten der Ladung"
-							ref="openWB/general/notifications/start_charging"
+							v-model="componentData['openWB/general/notifications/start_charging']"
 							:buttons="[
 								{buttonValue: false, text: 'Nein', class: 'btn-outline-danger', icon: 'fas fa-times'},
 								{buttonValue: true, text: 'Ja', class: 'btn-outline-success'}
-							]"
-							:default-value=false
-							:is-disabled='visibility.extOpenWBOn || visibility.notificationProvider!="pushover"'>
+							]">
 						</buttongroup-input>
 						<buttongroup-input
 							title="Beim Stoppen der Ladung"
-							ref="openWB/general/notifications/stop_charging"
+							v-model="componentData['openWB/general/notifications/stop_charging']"
 							:buttons="[
 								{buttonValue: false, text: 'Nein', class: 'btn-outline-danger', icon: 'fas fa-times'},
 								{buttonValue: true, text: 'Ja', class: 'btn-outline-success'}
-							]"
-							:default-value=false
-							:is-disabled='visibility.extOpenWBOn || visibility.notificationProvider!="pushover"'>
+							]">
 						</buttongroup-input>
 						<buttongroup-input
 							title="Beim Einstecken eines Fahrzeugs"
-							ref="openWB/general/notifications/plug"
+							v-model="componentData['openWB/general/notifications/plug']"
 							:buttons="[
 								{buttonValue: false, text: 'Nein', class: 'btn-outline-danger', icon: 'fas fa-times'},
 								{buttonValue: true, text: 'Ja', class: 'btn-outline-success'}
-							]"
-							:default-value=false
-							:is-disabled='visibility.extOpenWBOn || visibility.notificationProvider!="pushover"'>
+							]">
 						</buttongroup-input>
 						<buttongroup-input
 							title="Bei Triggern von Smart Home Aktionen"
-							ref="openWB/general/notifications/smart_home"
+							v-model="componentData['openWB/general/notifications/smart_home']"
 							:buttons="[
 								{buttonValue: false, text: 'Nein', class: 'btn-outline-danger', icon: 'fas fa-times'},
 								{buttonValue: true, text: 'Ja', class: 'btn-outline-success'}
-							]"
-							:default-value=false
-							:is-disabled='visibility.extOpenWBOn || visibility.notificationProvider!="pushover"'>
+							]">
 						</buttongroup-input>
 					</div>
 				</card>
 
-				<card title="Ladelog" v-if="!visibility.extOpenWBOn">
+				<card title="Ladelog" v-if="componentData['openWB/general/extern'] === false">
 					<number-input
 						title="Preis je kWh"
 						:min=0 :step=0.0001
-						ref="openWB/general/price_kwh"
-						:default-value=0.30
-						:is-disabled='visibility.extOpenWBOn'>
+						v-model="componentData['openWB/general/price_kwh']">
 						<template #help>
 							Dient zur Berechnung der Ladekosten im Ladelog.<br>
 							Es können bis zu 4 Nachkommastellen genutzt werden.
 						</template>
 					</number-input>
 					<buttongroup-input
-					title="Einheit für Entfernungen"
-						ref="openWB/general/range_unit"
+						title="Einheit für Entfernungen"
+						v-model="componentData['openWB/general/range_unit']"
 						:buttons="[
 							{buttonValue: 'km', text: 'Kilometer'},
 							{buttonValue: 'mi', text: 'Meilen'}
-						]"
-						default-value='km'
-						:is-disabled='visibility.extOpenWBOn'>
+						]">
 						<template #help>
 							ToDo: Hilfetext ergänzen!
 						</template>
@@ -268,17 +240,24 @@
 		</div><!-- app -->
 
 		<script>
-			$.get(
-				{ url: "settings/navbar20.html", cache: false },
-				function(data){
-					$("#nav").replaceWith(data);
-					// disable navbar entry for current page
-					$('#navGeneral').addClass('disabled');
-				}
-			);
+			// define topics and default values here
+			const componentDefaultData = {
+				'openWB/general/extern': false,
+				'openWB/general/extOpenWBDisplay': "normal",
+				'openWB/general/control_interval': 10,
+				'openWB/general/grid_protection_configured': false,
+				'openWB/general/external_buttons_hw': false,
+				'openWB/general/notifications/selected': "none",
+				'openWB/general/notifications/configuration': {},
+				'openWB/general/notifications/start_charging': false,
+				'openWB/general/notifications/stop_charging': false,
+				'openWB/general/notifications/plug': false,
+				'openWB/general/notifications/smart_home': false,
+				'openWB/general/price_kwh': 0.30,
+				'openWB/general/range_unit': "km"
+			}
 		</script>
-
-		<?php include_once './settings.vapp.php'; ?>
+		<?php include_once './settings-2.vapp.php'; ?>
 
 	</body>
 </html>

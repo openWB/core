@@ -55,38 +55,23 @@
 	</head>
 	<body>
 		<div id="app">
-			<content title="Einstellungen Zeitladen" footer="Zeitladen">
-
-				<!-- hidden toggle-only components: BEGIN -->
-				<buttongroup-input
-					title="Nur Ladepunkt"
-					ref="openWB/general/extern"
-					:is-hidden="true"
-					toggle-selector='extOpenWBOn'
-					:buttons="[
-						{buttonValue: false, text: 'Nein', class: 'btn-outline-danger', icon: 'fas fa-times'},
-						{buttonValue: true, text: 'Ja', class: 'btn-outline-success'}
-					]"
-					:default-value=false>
-				</buttongroup-input>
-				<!-- hidden toggle-only components: END -->
+			<content title="Einstellungen Zeitladen" footer="Zeitladen" nav="navTimeCharge">
 
 				<card title="Phasenumschaltung">
-					<div v-show="visibility.extOpenWBOn">
+					<div v-if="componentData['openWB/general/extern'] == true">
 						<alert
 							subtype="info">
 							Diese Einstellungen sind nicht verfügbar, solange sich diese openWB im Modus "Nur Ladepunkt" befindet.
 						</alert>
 					</div>
-					<div v-show="!visibility.extOpenWBOn">
+					<div v-if="componentData['openWB/general/extern'] == false">
 						<buttongroup-input
 							title="Anzahl Phasen"
-							ref="openWB/general/chargemode_config/time_charging/phases_to_use"
+							v-model="componentData['openWB/general/chargemode_config/time_charging/phases_to_use']"
 							:buttons="[
 								{buttonValue: 1, text: '1'},
 								{buttonValue: 3, text: 'Maximum'}
-							]"
-							:default-value=3>
+							]">
 							<template #help>
 								ToDo
 							</template>
@@ -98,17 +83,13 @@
 		</div><!-- app -->
 
 		<script>
-			$.get(
-				{ url: "settings/navbar20.html", cache: false },
-				function(data){
-					$("#nav").replaceWith(data);
-					// disable navbar entry for current page
-					$('#navTimeCharge').addClass('disabled');
-				}
-			);
+			// define topics and default values here
+			const componentDefaultData = {
+				'openWB/general/extern': false,
+				'openWB/general/chargemode_config/time_charging/phases_to_use': 3
+			}
 		</script>
-
-		<?php include_once './settings.vapp.php'; ?>
+		<?php include_once './settings-2.vapp.php'; ?>
 
 	</body>
 </html>

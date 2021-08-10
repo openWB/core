@@ -55,7 +55,7 @@ if( isset($_COOKIE['openWBTheme'] )){
 	</head>
 	<body>
 		<div id="app">
-			<content title="Beispiele" footer="Beispiele">
+			<content title="Beispiele" footer="Beispiele" nav="navbarSample2">
 
 				<card title="Einfache Eingabefelder">
 					<text-input
@@ -249,17 +249,6 @@ if( isset($_COOKIE['openWBTheme'] )){
 
 			</content>
 		</div><!-- app -->
-
-		<script>
-			$.get(
-				{ url: "settings/navbar20.html", cache: false },
-				function(data){
-					$("#nav").replaceWith(data);
-					// disable navbar entry for current page
-					$('#navbarSample2').addClass('disabled');
-				}
-			);
-		</script>
 
 		<script>
 			// define topics and default values here
