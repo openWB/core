@@ -5,12 +5,16 @@ from . import chargelog
 from . import data
 from ..helpermodules import log
 from ..helpermodules import pub
+from ..modules.cp import master_eth_framer
+from ..modules.cp import ip_evse
+from ..modules.cp import modbus_evse
+from ..modules.cp import modbus_slave
 
 class charge():
     def __init__(self):
         pass
 
-    def start_charging(self):
+    def process_algorithm_results(self):
         try:
             log.message_debug_log("debug", "# Ladung starten.")
             for cp in data.data.cp_data:
@@ -34,6 +38,7 @@ class charge():
                             pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/get/state_str", chargepoint.data["get"]["state_str"])
                         else:
                             pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/get/state_str", "Ladevorgang läuft...")
+                        self._start_charging(chargepoint)
                 except Exception as e:
                     log.exception_logging(e)
             data.data.pv_data["all"].put_stats()
@@ -68,7 +73,47 @@ class charge():
                     chargepoint.data["set"]["current"] == 0):
                 log.message_debug_log("error", "LP"+str(chargepoint.cp_num)+": Ladung wurde trotz verhinderter Unterbrechung gestoppt.")
             
+            chargepoint.data["set"]["current"] = current
             pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/set/current", current)
             log.message_debug_log("debug", "LP"+str(chargepoint.cp_num)+": set current "+str(current)+" A")
         except Exception as e:
             log.exception_logging(e)
+
+    def _start_charging(self, chargepoint):
+        """ setzt den Ladestrom im Ladeleistungs-Modul.
+
+        Parameter
+        ---------
+        chargepoint: dict
+            Ladepunkt, dessen Strom gesetzt werden soll.
+        """
+        try:
+            current = chargepoint.data["set"]["current"]
+            if chargepoint.data["config"]["connection_module"]["selected"] == "external_openwb":
+                hostname = chargepoint.data["config"]["connection_module"]["config"]["external_openwb"]["ip"]
+                # Zweiter LP der Duo
+                if chargepoint.data["config"]["connection_module"]["config"]["external_openwb"]["chargepoint"] == 2:
+                    pub.pub_single("openWB/set/isss/Lp2Current", current, hostname=hostname)
+                else:
+                    pub.pub_single("openWB/set/isss/Current", current, hostname=hostname)
+            elif chargepoint.data["config"]["connection_module"]["selected"] == "daemon":
+                # Is handled in lldaemon.py
+                pass
+            elif chargepoint.data["config"]["connection_module"]["selected"] == "buchse":
+                # Is handled in buchse.py
+                pass
+            elif chargepoint.data["config"]["connection_module"]["selected"] == "masterethframer":
+                master_eth_framer.write_master_eth_framer(current)
+            elif chargepoint.data["config"]["connection_module"]["selected"] == "ip_evse":
+                ip_address = chargepoint.data["config"]["connection_module"]["config"]["ip_evse"]["ip_address"]
+                id = chargepoint.data["config"]["connection_module"]["config"]["ip_evse"]["id"]
+                ip_evse.write_ip_evse(ip_address, id, current)
+            elif chargepoint.data["config"]["connection_module"]["selected"] == "http":
+                pass
+            elif chargepoint.data["config"]["connection_module"]["selected"] == "modbus_evse":
+                modbus_evse.write_modbus_evse(chargepoint)
+            elif chargepoint.data["config"]["connection_module"]["selected"] == "modbus_slave":
+                modbus_slave.write_modbus_slave(current)
+        except Exception as e:
+            log.exception_logging(e)
+
