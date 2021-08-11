@@ -715,10 +715,21 @@
 				} else {
 					currentLabel = this.sliderValue;
 				}
-				if(typeof currentLabel == 'number' && this.unit){
+				if(typeof currentLabel == 'number'){
+					currentLabel = currentLabel.toLocaleString(undefined, { minimumFractionDigits: this.precision, maximumFractionDigits: this.precision });
+				}
+				if(this.unit){
 					currentLabel += ' ' + this.unit;
 				}
 				return currentLabel;
+			},
+			precision() {
+				if (!isFinite(this.step)) return 0;
+				var e = 1, p = 0;
+				while (Math.round(this.step * e) / e !== this.step) {
+					e *= 10; p++;
+				}
+				return p;
 			},
 			sliderValue: {
 				get() {
@@ -741,7 +752,6 @@
 				set(newSliderValue){
 					if(this.labels){
 						var myValue = this.labels[newSliderValue].value
-						// console.log("set sliderValue: "+newSliderValue+" -> "+myValue);
 						this.$emit('update:modelValue', myValue);
 					} else {
 						this.$emit('update:modelValue', newSliderValue);
@@ -762,10 +772,14 @@
 				this.showHelp = !this.showHelp && this.$slots.help;
 			},
 			increment() {
-				this.sliderValue = Math.min(this.sliderValue+this.step, this.max);
+				var newSliderValue = Math.min(this.sliderValue+this.step, this.max);
+				// rounding needed!
+				this.sliderValue = Math.round(newSliderValue * Math.pow(10,this.precision))/Math.pow(10,this.precision);
 			},
 			decrement() {
-				this.sliderValue = Math.max(this.sliderValue-this.step, this.min);
+				var newSliderValue = Math.max(this.sliderValue-this.step, this.min);
+				// rounding needed!
+				this.sliderValue = Math.round(newSliderValue * Math.pow(10,this.precision))/Math.pow(10,this.precision);
 			}
 		}
 	};
@@ -835,41 +849,7 @@
 			toggleHelp() {
 				this.showHelp = !this.showHelp && this.$slots.help;
 			}
-		},
-		// beforeMount(){
-		// 	debug("beforeMount: "+this.title);
-		// 	this.setToggleSelector(this.value);
-		// },
-		// mounted() {
-		// 	console.debug("mounted: "+this.title);
-		// },
-		// beforeUpdate() {
-		// 	console.debug("beforeUpdate: "+this.title);
-		// },
-		// updated() {
-		// 	console.debug("updated: "+this.title);
-		// },
-		// beforeUnmount() {
-		// 	console.debug("beforeUnmount: "+this.title);
-		// },
-		// unmounted() {
-		// 	console.debug("unmounted: "+this.title);
-		// },
-		// errorCaptured() {
-		// 	console.error("errorCaptured: "+this.title);
-		// },
-		// renderTracked() {
-		// 	console.debug("renderTracked: "+this.title);
-		// },
-		// renderTriggered() {
-		// 	console.debug("renderTriggered: "+this.title);
-		// },
-		// activated() {
-		// 	console.debug("activated: "+this.title);
-		// },
-		// deactivated() {
-		// 	console.debug("deactivated: "+this.title);
-		// }
+		}
 	};
 
 	const buttongroupInputComponent = {
@@ -902,41 +882,7 @@
 			toggleHelp() {
 				this.showHelp = !this.showHelp && this.$slots.help;
 			}
-		},
-		// beforeMount(){
-		// 	// console.debug("beforeMount: "+this.title);
-		// 	this.setToggleSelector(this.value);
-		// },
-		// mounted() {
-		// 	console.debug("mounted: "+this.title);
-		// },
-		// beforeUpdate() {
-		// 	console.debug("beforeUpdate: "+this.title);
-		// },
-		// updated() {
-		// 	console.debug("updated: "+this.title);
-		// },
-		// beforeUnmount() {
-		// 	console.debug("beforeUnmount: "+this.title);
-		// },
-		// unmounted() {
-		// 	console.debug("unmounted: "+this.title);
-		// },
-		// errorCaptured() {
-		// 	console.error("errorCaptured: "+this.title);
-		// },
-		// renderTracked() {
-		// 	console.debug("renderTracked: "+this.title);
-		// },
-		// renderTriggered() {
-		// 	console.debug("renderTriggered: "+this.title);
-		// },
-		// activated() {
-		// 	console.debug("activated: "+this.title);
-		// },
-		// deactivated() {
-		// 	console.debug("deactivated: "+this.title);
-		// }
+		}
 	};
 
 	const checkboxInputComponent = {
@@ -969,41 +915,7 @@
 			toggleHelp() {
 				this.showHelp = !this.showHelp && this.$slots.help;
 			}
-		},
-		// beforeMount(){
-		// 	// console.debug("beforeMount: "+this.title);
-		// 	this.setToggleSelector(this.value);
-		// },
-		// mounted() {
-		// 	console.debug("mounted: "+this.title);
-		// },
-		// beforeUpdate() {
-		// 	console.debug("beforeUpdate: "+this.title);
-		// },
-		// updated() {
-		// 	console.debug("updated: "+this.title);
-		// },
-		// beforeUnmount() {
-		// 	console.debug("beforeUnmount: "+this.title);
-		// },
-		// unmounted() {
-		// 	console.debug("unmounted: "+this.title);
-		// },
-		// errorCaptured() {
-		// 	console.error("errorCaptured: "+this.title);
-		// },
-		// renderTracked() {
-		// 	console.debug("renderTracked: "+this.title);
-		// },
-		// renderTriggered() {
-		// 	console.debug("renderTriggered: "+this.title);
-		// },
-		// activated() {
-		// 	console.debug("activated: "+this.title);
-		// },
-		// deactivated() {
-		// 	console.debug("deactivated: "+this.title);
-		// }
+		}
 	};
 
 	const alertComponent = {

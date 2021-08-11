@@ -535,9 +535,6 @@
 						:min=-30 :max=30 :step=0.1
 						v-model="componentData['openWB/optional/et/config/max_price']"
 						unit="ct">
-						<template #help>
-							ToDo: Rundungsfehler bei den Buttons???
-						</template>
 					</range-input>
 				</div>
 			</div>
