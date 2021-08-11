@@ -8,21 +8,23 @@ import time
 
 from packages.algorithm import algorithm
 from packages.algorithm import charge
-from packages.algorithm import daily_log
 from packages.algorithm import data
+from packages.algorithm import prepare
 from packages.helpermodules import defaults
 from packages.helpermodules import log
-from packages.algorithm import prepare
+from packages.helpermodules import measurement_log
 from packages.helpermodules import pub
 from packages.helpermodules import publishvars2
 from packages.helpermodules import setdata
 from packages.helpermodules import subdata
+from packages.helpermodules import timecheck
 from packages.modules import loadvars
 
 class HandlerAlgorithm():
     def __init__(self):
         self.heartbeat = False
         self.interval_counter = 1
+        self.current_day = None
 
     def handler10Sec(self):
         """ führt den Algorithmus durch.
@@ -47,6 +49,34 @@ class HandlerAlgorithm():
                 char.start_charging()
         except Exception as e:
             log.exception_logging(e)
+    
+    def handler5Min(self):
+        """ Handler, der alle 5 Minuten aufgerufen wird und die Heartbeats der Threads überprüft und die Aufgaben ausführt, die nur alle 5 Minuten ausgeführt werden müssen.
+        """
+        if self.heartbeat == False:
+            pass
+        else:
+            self.hartbeat = False
+
+        if sub.heartbeat == False:
+            pass
+        else:
+            sub.hartbeat = False
+
+        if set.heartbeat == False:
+            pass
+        else:
+            set.hartbeat = False
+
+        log.cleanup_logfiles()
+        measurement_log.save_log("daily")
+        #Wenn ein neuer Tag ist, Monatswerte schreiben.
+        day = timecheck.create_timestamp_YYYYMMDD[-2:]
+        if self.current_day != day:
+            self.current_day = day
+            measurement_log.save_log("mothly")
+        data.data.general_data["general"].grid_protection()
+        data.data.optional_data["optional"].et_get_prices()
 
 class RepeatedTimer(object):
     """ führt alle x Sekunden einen Thread aus, unabhängig davon, ob sich der Thread bei der vorherigen Ausführung aufgehängt etc hat.
@@ -78,28 +108,6 @@ class RepeatedTimer(object):
         self._timer.cancel()
         self.is_running = False
 
-def handler5Min():
-    """ Handler, der alle 5 Minuten aufgerufen wird und die Heartbeats der Threads überprüft und die Aufgaben ausführt, die nur alle 5 Minuten ausgeführt werden müssen.
-    """
-    if handler.heartbeat == False:
-        pass
-    else:
-        handler.hartbeat = False
-
-    if sub.heartbeat == False:
-        pass
-    else:
-        sub.hartbeat = False
-
-    if set.heartbeat == False:
-        pass
-    else:
-        set.hartbeat = False
-
-    daily_log.save_daily_log()
-    data.data.general_data["general"].grid_protection()
-    data.data.optional_data["optional"].et_get_prices()
-
 try:
     data.data_init()
     char = charge.charge()
@@ -122,7 +130,7 @@ try:
     pub.setup_connection()
     t_sub.start()
     t_set.start()
-    rt = RepeatedTimer(300, handler5Min)
+    rt = RepeatedTimer(300, handler.handler5Min)
     rt2 = RepeatedTimer(10, handler.handler10Sec)
 
     publishvars2.pub_settings()
