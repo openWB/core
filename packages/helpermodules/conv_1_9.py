@@ -170,20 +170,25 @@ def _chargelogfile_entry_generator_func(file):
                 pass
 
 
-def convert_csv_to_json_dailylog():
-    """ konvertiert die alten Tageslog-Dateien in das neue Format für 2.x.
+def convert_csv_to_json_measurement_log(folder):
+    """ konvertiert die alten Tages- und Monatslog-Dateien in das neue Format für 2.x.
 
-    alte Spaltenbelegung: date, $bezug,$einspeisung,$pv,$ll1,$ll2,$ll3,$llg,$speicheri,$speichere,$verbraucher1,$verbrauchere1,$verbraucher2,$verbrauchere2,$verbraucher3,
-                           $ll4,$ll5,$ll6,$ll7,$ll8,$speichersoc,$soc,$soc1,$temp1,$temp2,$temp3,$d1,$d2,$d3,$d4,$d5,$d6,$d7,$d8,$d9,$d10,$temp4,$temp5,$temp6
+    Parameter
+    ---------
+    folder: str
+        Ordner, der konvertiert werden soll.
     """
-    logfiles = os.listdir("/var/www/html/openWB/web/logging/data/daily")
+    logfiles = os.listdir("/var/www/html/openWB/web/logging/data/"+folder)
     for file in logfiles:
         try:
-            pathlib.Path('./data/daily_log').mkdir(mode=0o755, parents=True, exist_ok=True)
-            filepath = "./data/daily_log/"+file[:-4]+".json"
+            pathlib.Path('./data/'+folder+'_log').mkdir(mode=0o755, parents=True, exist_ok=True)
+            filepath = "./data/"+folder+"_log/"+file[:-4]+".json"
             pathlib.Path(filepath).touch(exist_ok=True)
             with open(filepath, 'w') as f:
-                generator_handle = _logfile_entry_generator_func(file)
+                if folder == "daily":
+                    generator_handle = _dailylog_entry_generator_func(file)
+                else:
+                     generator_handle = _monthlylog_entry_generator_func(file)
                 stream_array = StreamArray(generator_handle)
                 for entry in json.JSONEncoder().iterencode(stream_array):
                     f.write(entry)
@@ -191,10 +196,13 @@ def convert_csv_to_json_dailylog():
             pass
 
 
-def _logfile_entry_generator_func(file):
+def _dailylog_entry_generator_func(file):
     """ Generator-Funktion, die einen Eintrag aus dem Tageslog konvertiert.
+    alte Spaltenbelegung: date, $bezug,$einspeisung,$pv,$ll1,$ll2,$ll3,$llg,$speicheri,$speichere,$verbraucher1,$verbrauchere1,$verbraucher2,$verbrauchere2,$verbraucher3,
+                           $ll4,$ll5,$ll6,$ll7,$ll8,$speichersoc,$soc,$soc1,$temp1,$temp2,$temp3,$d1,$d2,$d3,$d4,$d5,$d6,$d7,$d8,$d9,$d10,$temp4,$temp5,$temp6
 
-    Parameter:
+    Parameter
+    ---------
     file: csv-Datei
         csv-Datei, deren Einträge konvertiert werden sollen.
     """
@@ -204,7 +212,7 @@ def _logfile_entry_generator_func(file):
             try:
                 if len(row) != 0:
                     new_entry = {
-                        "date": row[0],
+                        "date": row[0][:2]+":"+row[0][-2:],
                         "cp": {
                             "all": {
                                 "counter": row[7]
@@ -296,6 +304,17 @@ def _logfile_entry_generator_func(file):
                             },
                             "device10": {
                                 "counter": row[35]
+                            },
+                            "consumer1": {
+                                "imported": row[10],
+                                "exported": row[11]
+                            },
+                            "consumer2": {
+                                "imported": row[12],
+                                "exported": row[13]
+                            },
+                            "consumer3": {
+                                "imported": row[14]
                             }
                         }
                     }
@@ -304,3 +323,116 @@ def _logfile_entry_generator_func(file):
                 yield new_entry
             except Exception:
                 pass
+
+def _monthlylog_entry_generator_func(file):
+    """ Generator-Funktion, die einen Eintrag aus dem Tageslog konvertiert.
+    alte Spaltenbelegung: date,$bezug,$einspeisung,$pv,$ll1,$ll2,$ll3,$llg,$verbraucher1iwh,$verbraucher1ewh,$verbraucher2iwh,$verbraucher2ewh,
+                            $ll4,$ll5,$ll6,$ll7,$ll8,$speicherikwh,$speicherekwh,$d1,$d2,$d3,$d4,$d5,$d6,$d7,$d8,$d9,$d10
+
+    Parameter
+    ---------
+    file: csv-Datei
+        csv-Datei, deren Einträge konvertiert werden sollen.
+    """
+    with open('/var/www/html/openWB/web/logging/data/monthly/'+file) as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter=',')
+        for row in csv_reader:
+            try:
+                if len(row) != 0:
+                    new_entry = {
+                        "date": row[0],
+                        "cp": {
+                            "all": {
+                                "counter": row[7]
+                            },
+                            "cp1": {
+                                "counter": row[4],
+                            },
+                            "cp2": {
+                                "counter": row[5],
+                            },
+                            "cp3": {
+                                "counter": row[6],
+                            },
+                            "cp4": {
+                                "counter": row[12],
+                            },
+                            "cp5": {
+                                "counter": row[13],
+                            },
+                            "cp6": {
+                                "counter": row[14],
+                            },
+                            "cp7": {
+                                "counter": row[15],
+                            },
+                            "cp8": {
+                                "counter": row[16],
+                            }
+                        },
+                        "counter": {
+                            "counter0": {
+                                "imported": row[1],
+                                "exported": row[2]
+                            }
+                        },
+                        "pv": {
+                            "all": {
+                                "counter": row[3]
+                            }
+                        },
+                        "bat": {
+                            "all": {
+                                "imported": row[17],
+                                "exported": row[18]
+                            }
+                        },
+                        "smarthome_devices": {
+                            "device1": {
+                                "counter": row[19]
+                            },
+                            "device2": {
+                                "counter": row[20]
+                            },
+                            "device3": {
+                                "counter": row[21]
+                            },
+                            "device4": {
+                                "counter": row[22]
+                            },
+                            "device5": {
+                                "counter": row[23]
+                            },
+                            "device6": {
+                                "counter": row[24]
+                            },
+                            "device7": {
+                                "counter": row[25]
+                            },
+                            "device8": {
+                                "counter": row[26]
+                            },
+                            "device9": {
+                                "counter": row[27]
+                            },
+                            "device10": {
+                                "counter": row[28]
+                            },
+                            "consumer1": {
+                                "imported": row[8],
+                                "exported": row[9]
+                            },
+                            "consumer2": {
+                                "imported": row[10],
+                                "exported": row[11]
+                            }
+                        }
+                    }
+                else:
+                    new_entry = {}
+                yield new_entry
+            except Exception:
+                pass
+
+# convert_csv_to_json_measurement_log("monthly")
+# convert_csv_to_json_measurement_log("daily")

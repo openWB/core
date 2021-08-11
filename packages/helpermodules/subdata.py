@@ -94,6 +94,7 @@ class subData():
     def on_message(self, client, userdata, msg):
         """ wartet auf eingehende Topics.
         """
+        log.message_mqtt_log(str(msg.topic), str(msg.payload.decode("utf-8")))
         self.heartbeat = True
         if "openWB/vehicle/template/charge_template/" in msg.topic:
             self.process_vehicle_charge_template_topic(self.ev_charge_template_data, msg)

@@ -60,6 +60,7 @@ class setData():
             enthält Topic und Payload
         """
         self.heartbeat = True
+        log.message_mqtt_log(str(msg.topic), str(msg.payload.decode("utf-8")))
         if "openWB/set/vehicle/" in msg.topic:
             if "openWB/set/vehicle/template/ev_template/" in msg.topic:
                 self.event_ev_template.wait(5)
