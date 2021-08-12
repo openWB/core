@@ -13,9 +13,10 @@
 				<buttongroup-input
 					title="Regelmodus"
 					v-model="componentData['ToDo/pv_charge/control_mode']"
+					linked-component="openWB/general/chargemode_config/pv_charging/control_range"
 					:buttons="[
-						{buttonValue: 'export', text: 'Einspeisung'},
-						{buttonValue: 'import', text: 'Bezug'},
+						{buttonValue: 'export', text: 'Einspeisung', linkedComponentValue: [-230,0]},
+						{buttonValue: 'import', text: 'Bezug', linkedComponentValue: [0,230]},
 						{buttonValue: 'individual', text: 'Individuell'}
 					]">
 					<template #help>
