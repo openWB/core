@@ -891,7 +891,6 @@
 		},
 		watch: {
 			modelValue(newValue, oldValue){
-				console.log(oldValue+' -> '+newValue);
 				if(this.linkedComponent && this.linkedComponentValue){
 					this.$root.componentData[this.linkedComponent] = this.linkedComponentValue;
 				}
