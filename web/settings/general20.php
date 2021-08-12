@@ -52,8 +52,8 @@
 				title="Netzschutz"
 				v-model="componentData['openWB/general/grid_protection_configured']"
 				:buttons="[
-					{buttonValue: false, text: 'Aus'},
-					{buttonValue: true, text: 'An'}
+					{buttonValue: false, text: 'Aus', class: 'btn-outline-danger', icon: 'fas fa-times'},
+					{buttonValue: true, text: 'An', class: 'btn-outline-success'}
 				]">
 				<template #help>
 					Diese Option ist standardmäßig aktiviert und sollte so belassen werden.
@@ -68,8 +68,8 @@
 				title="Taster-Eingänge"
 				v-model="componentData['openWB/general/external_buttons_hw']"
 				:buttons="[
-					{buttonValue: false, text: 'Aus'},
-					{buttonValue: true, text: 'An'}
+					{buttonValue: false, text: 'Aus', class: 'btn-outline-danger', icon: 'fas fa-times'},
+					{buttonValue: true, text: 'An', class: 'btn-outline-success'}
 				]">
 				<template #help>
 					Wenn diese Option aktiviert ist, können bis zu fünf Taster an die openWB angeschlossen werden. Die entsprechenden Kontakte sind auf der Add-On-Platine beschriftet.<br>

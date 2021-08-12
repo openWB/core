@@ -120,7 +120,7 @@
 			</div>
 		</card>
 
-		<card title="Speicher-Beachtung">
+		<card title="Speicher-Beachtung" subtype="warning">
 			<div v-if="componentData['openWB/general/extern'] === true">
 				<alert
 					subtype="info">
@@ -128,65 +128,76 @@
 				</alert>
 			</div>
 			<div v-if="componentData['openWB/general/extern'] === false">
-				<buttongroup-input
-					title="Priorisierung"
-					v-model="componentData['openWB/general/chargemode_config/pv_charging/bat_prio']"
-					:buttons="[
-						{buttonValue: false, text: 'Fahrzeuge'},
-						{buttonValue: true, text: 'Speicher'}
-					]">
-					<template #help>
-						ToDo
-					</template>
-				</buttongroup-input>
-				<range-input
-					title="Einschalt-SoC"
-					:min=0 :max=19 :step=1
-					v-model="componentData['openWB/general/chargemode_config/pv_charging/switch_on_soc']"
-					unit="%"
-					:labels='[{"label":"Aus","value":0},{"label":5,"value":5},{"label":10,"value":10},{"label":15,"value":15},{"label":20,"value":20},{"label":25,"value":25},{"label":30,"value":30},{"label":35,"value":35},{"label":40,"value":40},{"label":45,"value":45},{"label":50,"value":50},{"label":55,"value":55},{"label":60,"value":60},{"label":65,"value":65},{"label":70,"value":70},{"label":75,"value":75},{"label":80,"value":80},{"label":85,"value":85},{"label":90,"value":90},{"label":95,"value":95}]'>
-					<template #help>
-						ToDo
-					</template>
-				</range-input>
-				<range-input
-					title="Ausschalt-SoC"
-					:min=0 :max=19 :step=1
-					v-model="componentData['openWB/general/chargemode_config/pv_charging/switch_off_soc']"
-					unit="%"
-					:labels='[{"label":"Aus","value":0},{"label":5,"value":5},{"label":10,"value":10},{"label":15,"value":15},{"label":20,"value":20},{"label":25,"value":25},{"label":30,"value":30},{"label":35,"value":35},{"label":40,"value":40},{"label":45,"value":45},{"label":50,"value":50},{"label":55,"value":55},{"label":60,"value":60},{"label":65,"value":65},{"label":70,"value":70},{"label":75,"value":75},{"label":80,"value":80},{"label":85,"value":85},{"label":90,"value":90},{"label":95,"value":95}]'>
-					<template #help>
-						ToDo
-					</template>
-				</range-input>
-				<number-input
-					title="Reservierte Ladeleistung"
-					:min=0 :step=100
-					v-model="componentData['openWB/general/chargemode_config/pv_charging/charging_power_reserve']"
-					unit="W">
-					<template #help>
-						ToDo
-					</template>
-				</number-input>
-				<number-input
-					title="Erlaubte Entladeleistung"
-					:min=0 :step=100
-					v-model="componentData['openWB/general/chargemode_config/pv_charging/rundown_power']"
-					unit="W">
-					<template #help>
-						ToDo
-					</template>
-				</number-input>
-				<range-input
-					title="Minimaler Entlade-SoC"
-					:min=0 :max=20 :step=1
-					v-model="componentData['openWB/general/chargemode_config/pv_charging/rundown_soc']"
-					unit="%"
-					:labels='[{"label":0,"value":0},{"label":5,"value":5},{"label":10,"value":10},{"label":15,"value":15},{"label":20,"value":20},{"label":25,"value":25},{"label":30,"value":30},{"label":35,"value":35},{"label":40,"value":40},{"label":45,"value":45},{"label":50,"value":50},{"label":55,"value":55},{"label":60,"value":60},{"label":65,"value":65},{"label":70,"value":70},{"label":75,"value":75},{"label":80,"value":80},{"label":85,"value":85},{"label":90,"value":90},{"label":95,"value":95},{"label":"Aus","value":100}]'>
-					<template #help>
-						ToDo
-					</template>
-				</range-input>
+				<div v-if="componentData['openWB/bat/config/configured'] == false">
+					<alert
+						subtype="info">
+						Diese Einstellungen sind nur verfügbar, wenn ein Speicher konfiguriert wurde.
+					</alert>
+				</div>
+				<div v-if="componentData['openWB/bat/config/configured'] == true">
+					<buttongroup-input
+						title="Priorisierung"
+						v-model="componentData['openWB/general/chargemode_config/pv_charging/bat_prio']"
+						:buttons="[
+							{buttonValue: false, text: 'Fahrzeuge'},
+							{buttonValue: true, text: 'Speicher'}
+						]">
+						<template #help>
+							ToDo
+						</template>
+					</buttongroup-input>
+					<range-input
+						title="Einschalt-SoC"
+						:min=0 :max=19 :step=1
+						v-model="componentData['openWB/general/chargemode_config/pv_charging/switch_on_soc']"
+						unit="%"
+						:labels='[{"label":"Aus","value":0},{"label":5,"value":5},{"label":10,"value":10},{"label":15,"value":15},{"label":20,"value":20},{"label":25,"value":25},{"label":30,"value":30},{"label":35,"value":35},{"label":40,"value":40},{"label":45,"value":45},{"label":50,"value":50},{"label":55,"value":55},{"label":60,"value":60},{"label":65,"value":65},{"label":70,"value":70},{"label":75,"value":75},{"label":80,"value":80},{"label":85,"value":85},{"label":90,"value":90},{"label":95,"value":95}]'>
+						<template #help>
+							ToDo
+						</template>
+					</range-input>
+					<range-input
+						title="Ausschalt-SoC"
+						:min=0 :max=19 :step=1
+						v-model="componentData['openWB/general/chargemode_config/pv_charging/switch_off_soc']"
+						unit="%"
+						:labels='[{"label":"Aus","value":0},{"label":5,"value":5},{"label":10,"value":10},{"label":15,"value":15},{"label":20,"value":20},{"label":25,"value":25},{"label":30,"value":30},{"label":35,"value":35},{"label":40,"value":40},{"label":45,"value":45},{"label":50,"value":50},{"label":55,"value":55},{"label":60,"value":60},{"label":65,"value":65},{"label":70,"value":70},{"label":75,"value":75},{"label":80,"value":80},{"label":85,"value":85},{"label":90,"value":90},{"label":95,"value":95}]'>
+						<template #help>
+							ToDo
+						</template>
+					</range-input>
+					<number-input
+						v-if="componentData['openWB/general/chargemode_config/pv_charging/bat_prio'] == false"
+						title="Reservierte Ladeleistung"
+						:min=0 :step=100
+						v-model="componentData['openWB/general/chargemode_config/pv_charging/charging_power_reserve']"
+						unit="W">
+						<template #help>
+							ToDo
+						</template>
+					</number-input>
+					<number-input
+						v-if="componentData['openWB/general/chargemode_config/pv_charging/bat_prio'] == true"
+						title="Erlaubte Entladeleistung"
+						:min=0 :step=100
+						v-model="componentData['openWB/general/chargemode_config/pv_charging/rundown_power']"
+						unit="W">
+						<template #help>
+							ToDo
+						</template>
+					</number-input>
+					<range-input
+						v-if="componentData['openWB/general/chargemode_config/pv_charging/bat_prio'] == true"
+						title="Minimaler Entlade-SoC"
+						:min=0 :max=20 :step=1
+						v-model="componentData['openWB/general/chargemode_config/pv_charging/rundown_soc']"
+						unit="%"
+						:labels='[{"label":0,"value":0},{"label":5,"value":5},{"label":10,"value":10},{"label":15,"value":15},{"label":20,"value":20},{"label":25,"value":25},{"label":30,"value":30},{"label":35,"value":35},{"label":40,"value":40},{"label":45,"value":45},{"label":50,"value":50},{"label":55,"value":55},{"label":60,"value":60},{"label":65,"value":65},{"label":70,"value":70},{"label":75,"value":75},{"label":80,"value":80},{"label":85,"value":85},{"label":90,"value":90},{"label":95,"value":95},{"label":"Aus","value":100}]'>
+						<template #help>
+							ToDo
+						</template>
+					</range-input>
+				</div>
 			</div>
 		</card>
 
@@ -197,6 +208,7 @@
 	// define topics and default values here
 	const componentDefaultData = {
 		'openWB/general/extern': false,
+		'openWB/bat/config/configured': false,
 		'ToDo/pv_charge/control_mode': "export",
 		'openWB/general/chargemode_config/pv_charging/control_range': [-230,0],
 		'openWB/general/chargemode_config/pv_charging/feed_in_yield': 0,
