@@ -25,10 +25,10 @@ RFID-Tags:
 Liste der Tags, mit denen der Ladepunkt freigeschaltet werden kann. Ist diese leer, kann mit jedem Tag der Ladepunkt freigeschaltet werden.
 """
 
-from . import charge
 from . import chargelog
 from . import data
 from . import ev
+from . import phase_switch
 from ..helpermodules import log
 from ..helpermodules import pub
 from ..helpermodules import timecheck
@@ -474,9 +474,9 @@ class chargepoint():
             charging_ev = self.data["set"]["charging_ev_data"]
             # Umschaltung im Gange
             if charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] != "0":
-                phase_switch_delay = data.data.general_data["general"].data["chargemode_config"]["pv_charging"]["phase_switch_delay"]
+                phase_switch_pause = charging_ev.ev_template.data["phase_switch_pause"]
                 # Umschaltung abgeschlossen
-                if timecheck.check_timestamp(charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"], 53+phase_switch_delay-1) == False:
+                if timecheck.check_timestamp(charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"], 6+phase_switch_pause-1) == False:
                     log.message_debug_log("debug", "phase switch running")
                     charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] = "0"
                     pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num) + "/control_parameter/timestamp_perform_phase_switch", "0")
@@ -503,6 +503,10 @@ class chargepoint():
                 if self.data["set"]["phases_to_use"] != charging_ev.data["control_parameter"]["phases"] and charging_ev.data["control_parameter"]["timestamp_auto_phase_switch"] == "0":
                     if self.data["config"]["auto_phase_switch_hw"] == True:
                         pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/phases_to_use", charging_ev.data["control_parameter"]["phases"])
+                        selected = self.data["config"]["connection_module"]["selected"]
+                        config = self.data["config"]["connection_module"]["config"][selected]
+                        charge_state = self.data["get"]["charge_state"]
+                        phase_switch.thread_phase_switch(self.cp_num, selected, config, self.data["set"]["phases_to_use"], charging_ev.ev_template.data["phase_switch_pause"], charge_state)
                         log.message_debug_log("debug", "start phase switch phases_to_use "+str(self.data["set"]["phases_to_use"])+"control_parameter phases "+str(charging_ev.data["control_parameter"]["phases"]))
                         # 1 -> 3
                         if charging_ev.data["control_parameter"]["phases"] == 3:

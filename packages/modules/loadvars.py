@@ -34,7 +34,11 @@ from .counter import sungrow as c_sungrow
 from .counter import varta as c_varta
 from .counter import victron as c_victron
 from .cp import ethmpm3pm as cp_etmpm3pm
+from .cp import external_openwb as cp_external_openwb
 from .cp import mqtt as cp_mqtt
+from .cp import modbus_evse as cp_modbus_evse
+from .cp import modbus_slave as cp_modbus_slave
+from .cp import ip_evse as cp_ip_evse
 from .pv import ethmpm3pm as p_ethmpm3pm
 from .pv import ethsdm120 as p_ethsdm120
 from .pv import huawei as p_huawei
@@ -170,6 +174,21 @@ class loadvars():
             try:
                 if "cp" in item:
                     cp = data.data.cp_data[item]
+                    # Anbindung
+                    if cp.data["config"]["connection_module"]["selected"] == "modbus_evse":
+                        thread = threading.Thread(target=cp_modbus_evse.read_modbus_evse, args=(cp,))
+                    elif cp.data["config"]["connection_module"]["selected"] == "ip_evse":
+                        thread = threading.Thread(target=cp_ip_evse.read_ip_evse, args=(cp,))
+                    elif cp.data["config"]["connection_module"]["selected"] == "modbus_slave":
+                        thread = threading.Thread(target=cp_modbus_slave.read_modbus_slave, args=(cp,))
+                    elif cp.data["config"]["connection_module"]["selected"] == "external_openwb":
+                        thread = threading.Thread(target=cp_external_openwb.read_external_openwb, args=(cp,))
+                    # elif cp.data["config"]["connection_module"]["selected"] == "":
+                    #     thread = threading.Thread(target=, args=(cp,))
+
+                    # Display, Pushover, SocTimer eher am Ende
+
+                    # Ladeleistungsmodul
                     if cp.data["config"]["power_module"]["selected"] == "ethmpm3pm" or cp.data["config"]["power_module"]["selected"] == "ethmpm3pm_framer":
                         thread = threading.Thread(target=cp_etmpm3pm.read_ethmpm3pm, args=(cp,))
                     elif cp.data["config"]["power_module"]["selected"] == "mqtt":

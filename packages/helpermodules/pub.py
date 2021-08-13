@@ -4,6 +4,7 @@
 import json
 import os
 import paho.mqtt.client as mqtt
+import paho.mqtt.publish as publish
 
 from . import log
 
@@ -40,50 +41,6 @@ def pub(topic, payload):
     except Exception as e:
         log.exception_logging(e)
 
-def pub_float(var, topic):
-    """konvertiert die Daten der Ramdisk-Datei in Float und published diese als json-Objekt.
-
-        Parameters
-    ----------
-    var : str
-        Pfad zur Ramdisk-Datei
-    topic : str
-        Topic, in das gepublished wird
-    """
-    try:
-        f = open( "/var/www/html/openWB/ramdisk/"+var , 'r')
-        value =f.read()
-        f.close()
-        if value == '\n':
-            value=float(0)
-        else:
-            value=float(value)
-        pub(topic, value)
-    except Exception as e:
-        log.exception_logging(e)
-
-def pub_dict(var, topic):
-    """konvertiert die Daten der übergebenen Ramdisk-Datei in ein Dictionary und published dieses als json-Objekt.
-
-        Parameters
-    ----------
-    var : str
-        Pfad zu Ramdisk-Datei
-    topic : str
-        Topic, in das gepublished wird
-    """
-    try:
-        payload = {}
-        f = open( "/var/www/html/openWB/ramdisk/"+var , 'r')
-        for line in f:
-            if "," in line:
-                value = line.rstrip('\n').split(",")
-                payload[value[0]] = value[1]
-        f.close()
-        pub(topic, payload)
-    except Exception as e:
-        log.exception_logging(e)
-
 def delete_connection():
     """ schließt die Verbindung zum Broker.
     """
@@ -92,3 +49,17 @@ def delete_connection():
         client.disconnect
     except Exception as e:
         log.exception_logging(e)
+
+def pub_single(topic, payload, hostname):
+    """ pbulsihed eine einzelne Nachricht an einen Host, der nicht der localhost ist.
+
+        Parameter
+    ---------
+    topic : str
+        Topic, an das gepusht werden soll
+    payload : int, str, list, float
+        Payload, der gepusht werden soll. Nicht als json, da ISSS kein json-Payload verwendet.
+    hostname: str
+        IP des Hosts
+    """
+    publish.single(topic, str(payload), str(hostname))

@@ -384,6 +384,8 @@ class setData():
                 self._validate_value(msg, int, [(4, 15)], pub_json = True)
             elif re.search("^openWB/set/vehicle/template/ev_template/[0-9]+/nominal_difference$", msg.topic) != None:
                 self._validate_value(msg, float, [(0, 4)], pub_json = True)
+            elif re.search("^openWB/set/vehicle/template/ev_template/[0-9]+/phase_switch_pause$", msg.topic) != None:
+                self._validate_value(msg, int, [(2, 150)], pub_json = True)
             else:
                 log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
                 pub.pub(msg.topic, "")

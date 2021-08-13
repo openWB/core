@@ -7,7 +7,8 @@ import threading
 import time
 
 from packages.algorithm import algorithm
-from packages.algorithm import charge
+from packages.algorithm import process
+from packages.algorithm import daily_log
 from packages.algorithm import data
 from packages.algorithm import prepare
 from packages.helpermodules import defaults
@@ -36,7 +37,7 @@ class HandlerAlgorithm():
                     self.heartbeat = True
                     prep.setup_algorithm()
                     control.calc_current()
-                    char.start_charging()
+                    proc.process_algorithm_results()
                     self.interval_counter = 1
                 else:
                     self.interval_counter = self.interval_counter + 1
@@ -46,7 +47,7 @@ class HandlerAlgorithm():
                 self.heartbeat = True
                 prep.setup_algorithm()
                 control.calc_current()
-                char.start_charging()
+                proc.process_algorithm_results()
         except Exception as e:
             log.exception_logging(e)
     
@@ -110,7 +111,7 @@ class RepeatedTimer(object):
 
 try:
     data.data_init()
-    char = charge.charge()
+    proc = process.process()
     control = algorithm.control()
     handler = HandlerAlgorithm()
     vars = loadvars.loadvars()
