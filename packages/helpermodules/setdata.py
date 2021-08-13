@@ -383,6 +383,8 @@ class setData():
                 self._validate_value(msg, int, [(4, 15)], pub_json = True)
             elif re.search("^openWB/set/vehicle/template/ev_template/[0-9]+/nominal_difference$", msg.topic) != None:
                 self._validate_value(msg, float, [(0, 4)], pub_json = True)
+            elif re.search("^openWB/set/vehicle/template/ev_template/[0-9]+/phase_switch_pause$", msg.topic) != None:
+                self._validate_value(msg, int, [(2, 150)], pub_json = True)
             else:
                 log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
                 pub.pub(msg.topic, "")
@@ -437,7 +439,7 @@ class setData():
             elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/log/timestamp_start_charging$", msg.topic) != None:
                 self._validate_value(msg, str)
             elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/config$", msg.topic) != None:
-                self._validate_value(msg, "json", pub_json = True)
+                self._validate_value(msg, "json")
             elif (re.search("^openWB/set/chargepoint/[1-9][0-9]*/get/voltage$", msg.topic) != None or
                     re.search("^openWB/set/chargepoint/[1-9][0-9]*/get/current$", msg.topic) != None or
                     re.search("^openWB/set/chargepoint/[1-9][0-9]*/get/power_factor$", msg.topic) != None):

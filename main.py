@@ -7,7 +7,7 @@ import threading
 import time
 
 from packages.algorithm import algorithm
-from packages.algorithm import charge
+from packages.algorithm import process
 from packages.algorithm import daily_log
 from packages.algorithm import data
 from packages.helpermodules import log
@@ -30,7 +30,7 @@ class HandlerAlgorithm():
             self.heartbeat = True
             prep.setup_algorithm()
             control.calc_current()
-            char.start_charging()
+            proc.process_algorithm_results()
         except Exception as e:
             log.exception_logging(e)
 
@@ -88,7 +88,7 @@ def handler5Min():
 
 try:
     data.data_init()
-    char = charge.charge()
+    proc = process.process()
     control = algorithm.control()
     handler = HandlerAlgorithm()
     vars = loadvars.loadvars()

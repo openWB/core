@@ -12,7 +12,7 @@ from ..modules.cp import modbus_evse
 from ..modules.cp import modbus_slave
 
 
-class charge():
+class process():
     def __init__(self):
         pass
 
@@ -90,7 +90,15 @@ class charge():
             Ladepunkt, dessen Strom gesetzt werden soll.
         """
         try:
-            current = chargepoint.data["set"]["current"]
+            if "charging_ev_data" in chargepoint.data["set"]:
+                charging_ev = chargepoint.data["set"]["charging_ev_data"]
+                # Wenn ein EV zugeordnet ist und die Phasenumschaltung aktiv ist, darf kein Strom gesetzt werden.
+                if charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] != "0":
+                    current = 0
+                else:
+                    current = chargepoint.data["set"]["current"]
+            else:
+                current = chargepoint.data["set"]["current"]
             if chargepoint.data["config"]["connection_module"]["selected"] == "external_openwb":
                 num = chargepoint.data["config"]["connection_module"]["config"]["external_openwb"]["chargepoint"]
                 ip_address = chargepoint.data["config"]["connection_module"]["config"]["external_openwb"]["ip_address"]

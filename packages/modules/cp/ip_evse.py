@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 from pymodbus.client.sync import ModbusTcpClient
 import re
+import time
 
 from ...helpermodules import log
 from ...helpermodules import pub
@@ -40,3 +41,15 @@ def write_ip_evse(ip_address, id, current):
         rq = client.write_registers(1000, current, unit=id)
     except Exception as e:
         log.exception_logging(e)
+
+def perform_phase_switcht(ip_address, id, duration, phases_to_use):
+    client = ModbusTcpClient(ip_address, port=8899)
+    if ( phases_to_use == 1 ):
+        rq = client.write_register(0x0001, 256, unit=id)
+        time.sleep(duration)
+        rq = client.write_register(0x0001, 512, unit=id)
+
+    elif ( phases_to_use == 3 ):
+        rq = client.write_register(0x0002, 256, unit=id)
+        time.sleep(duration)
+        rq = client.write_register(0x0002, 512, unit=id)
