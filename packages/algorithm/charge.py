@@ -5,10 +5,12 @@ from . import chargelog
 from . import data
 from ..helpermodules import log
 from ..helpermodules import pub
-from ..modules.cp import master_eth_framer
+from ..modules.cp import external_openwb
 from ..modules.cp import ip_evse
+from ..modules.cp import master_eth_framer
 from ..modules.cp import modbus_evse
 from ..modules.cp import modbus_slave
+
 
 class charge():
     def __init__(self):
@@ -90,12 +92,9 @@ class charge():
         try:
             current = chargepoint.data["set"]["current"]
             if chargepoint.data["config"]["connection_module"]["selected"] == "external_openwb":
-                hostname = chargepoint.data["config"]["connection_module"]["config"]["external_openwb"]["ip"]
-                # Zweiter LP der Duo
-                if chargepoint.data["config"]["connection_module"]["config"]["external_openwb"]["chargepoint"] == 2:
-                    pub.pub_single("openWB/set/isss/Lp2Current", current, hostname=hostname)
-                else:
-                    pub.pub_single("openWB/set/isss/Current", current, hostname=hostname)
+                num = chargepoint.data["config"]["connection_module"]["config"]["external_openwb"]["chargepoint"]
+                ip_address = chargepoint.data["config"]["connection_module"]["config"]["external_openwb"]["ip_address"]
+                external_openwb.write_external_openwb(ip_address, num, current)
             elif chargepoint.data["config"]["connection_module"]["selected"] == "daemon":
                 # Is handled in lldaemon.py
                 pass

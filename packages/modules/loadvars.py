@@ -34,6 +34,7 @@ from .counter import sungrow as c_sungrow
 from .counter import varta as c_varta
 from .counter import victron as c_victron
 from .cp import ethmpm3pm as cp_etmpm3pm
+from .cp import external_openwb as cp_external_openwb
 from .cp import mqtt as cp_mqtt
 from .cp import modbus_evse as cp_modbus_evse
 from .cp import modbus_slave as cp_modbus_slave
@@ -180,6 +181,8 @@ class loadvars():
                         thread = threading.Thread(target=cp_ip_evse.read_ip_evse, args=(cp,))
                     elif cp.data["config"]["connection_module"]["selected"] == "modbus_slave":
                         thread = threading.Thread(target=cp_modbus_slave.read_modbus_slave, args=(cp,))
+                    elif cp.data["config"]["connection_module"]["selected"] == "external_openwb":
+                        thread = threading.Thread(target=cp_external_openwb.read_external_openwb, args=(cp,))
                     # elif cp.data["config"]["connection_module"]["selected"] == "":
                     #     thread = threading.Thread(target=, args=(cp,))
 
