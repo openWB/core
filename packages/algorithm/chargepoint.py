@@ -264,6 +264,29 @@ class chargepoint():
             log.exception_logging(e)
             return True, "Keine Ladung, da ein interner Fehler aufgetreten ist."
 
+    def _is_ripple_control_receiver_active(self):
+        """ prüft, ob der Rundsteuerempfängerkontakt geschlossen ist und alle Ladepunkt gestoppt werden müssen.
+
+        Return
+        ------
+        state: bool
+            ist Netzschutz aktiv
+        message: str
+            Text, dass geladen werden kann oder warum nicht geladen werden kann.
+        """
+        state = False
+        message = None
+        try:
+            general_data = data.data.general_data["general"].data
+            if general_data["ripple_control_receiver"]["configured"] == True:
+                if general_data["ripple_control_receiver"]["r1_active"] == True or general_data["ripple_control_receiver"]["r2_active"] == True:
+                    state = True
+                    message = "Ladepunkt gesperrt, da der Rundsteuerempfängerkontakt geschlossen ist."
+            return state, message
+        except Exception as e:
+            log.exception_logging(e)
+            return True, "Keine Ladung, da ein interner Fehler aufgetreten ist."
+
     def _is_cp_available(self):
         """ prüft, ob sich der Ladepunkt in der vorgegebenen Zeit zurückgemeldet hat.
 
@@ -396,19 +419,21 @@ class chargepoint():
             charging_possbile = False
             state, message = self._is_grid_protection_active()
             if state == False:
-                state, message = self._is_cp_available()
-                if state == True:
-                    state, message = self._is_manual_lock_active()
-                    if state == False:
-                        state, message = self._is_ev_plugged()
-                        if state == True:
-                            state, message = self._is_autolock_active()
-                            if state == False:
-                                charging_possbile = True
-                            else:
-                                state, message = self._is_rfid_neccessary_matched()
-                                if state == True:
+                state, message = self._is_ripple_control_receiver_active()
+                if state == False:
+                    state, message = self._is_cp_available()
+                    if state == True:
+                        state, message = self._is_manual_lock_active()
+                        if state == False:
+                            state, message = self._is_ev_plugged()
+                            if state == True:
+                                state, message = self._is_autolock_active()
+                                if state == False:
                                     charging_possbile = True
+                                else:
+                                    state, message = self._is_rfid_neccessary_matched()
+                                    if state == True:
+                                        charging_possbile = True
             if charging_possbile == True:
                 ev_num, message = self.template.get_ev(self.data["set"]["rfid"], self.data["get"]["plug_time"])
                 if ev_num != -1:
@@ -462,8 +487,6 @@ class chargepoint():
             if self.data["config"]["control_pilot_interruption_hw"] == True and charging_ev.ev_template.data["control_pilot_interruption"] == True:
                 # Wird die Ladung gestartet?
                 if self.set_current_prev == 0 and self.data["set"]["current"] != 0:
-                    self.data["set"]["perform_control_pilot_interruption"] = charging_ev.ev_template.data["control_pilot_interruption_duration"]
-                    pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/perform_control_pilot_interruption", charging_ev.ev_template.data["control_pilot_interruption_duration"])
                     selected = self.data["config"]["connection_module"]["selected"]
                     config = self.data["config"]["connection_module"]["config"][selected]
                     cp_interruption.thread_cp_interruption(self.cp_num, selected, config, charging_ev.ev_template.data["control_pilot_interruption_duration"])

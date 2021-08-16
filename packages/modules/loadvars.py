@@ -3,6 +3,7 @@
 
 import threading
 
+from . import ripple_control_receiver
 from ..algorithm import data
 from ..helpermodules import log
 from .bat import alpha_ess as b_alpha_ess
@@ -59,13 +60,12 @@ class loadvars():
     def get_values(self):
         try:
             all_threads = []
-            counter_threads = self.get_counters()
-            if counter_threads:
-                all_threads.extend(counter_threads)
-            self.get_cp()
-            self.get_pv()
-            self.get_bat()
-            self.get_soc()
+            all_threads.extend(self.get_counters())
+            all_threads.extend(self.get_cp())
+            all_threads.extend(self.get_pv())
+            all_threads.extend(self.get_bat())
+            all_threads.extend(self.get_soc())
+            all_threads.extend(self.get_general())
             # Start them all
             if all_threads:
                 for thread in all_threads:
@@ -355,4 +355,23 @@ class loadvars():
         return bat_threads
 
     def get_soc(self):
-        pass
+        try:
+            soc_threads = []
+            thread = None
+            if thread != None:
+                soc_threads.append(thread)
+            return soc_threads
+        except Exception as e:
+            log.exception_logging(e)
+
+    def get_general(self):
+        try:
+            general_threads = []
+            thread = None
+            if data.data.general_data["general"].data["ripple_control_receiver"]["configured"] == True:
+                thread = threading.Thread(target=ripple_control_receiver.read_ripple_control_receiver, args=())
+            if thread != None:
+                general_threads.append(thread)
+            return general_threads
+        except Exception as e:
+            log.exception_logging(e)

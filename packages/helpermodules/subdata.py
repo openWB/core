@@ -504,6 +504,10 @@ class subData():
                     if "notifications" not in var["general"].data:
                         var["general"].data["notifications"]={}
                     self.set_json_payload(var["general"].data["notifications"], msg)
+                elif re.search("^.+/general/ripple_control_receiver/.+$", msg.topic) != None:
+                    if "ripple_control_receiver" not in var["general"].data:
+                        var["general"].data["ripple_control_receiver"]={}
+                    self.set_json_payload(var["general"].data["ripple_control_receiver"], msg)
                 elif re.search("^.+/general/chargemode_config/.+$", msg.topic) != None:
                     if "chargemode_config" not in var["general"].data:
                         var["general"].data["chargemode_config"]={}

@@ -276,6 +276,7 @@ def pub_settings():
     pub.pub("openWB/set/general/price_kwh", 0.2)
     pub.pub("openWB/set/general/grid_protection_configured", True)
     pub.pub("openWB/set/general/control_interval", 10)
+    pub.pub("openWB/set/general/ripple_control_receiver/configured", False)
 
     # graph
     pub.pub("openWB/graph/config/duration", 30)

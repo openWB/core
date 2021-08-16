@@ -658,6 +658,10 @@ class setData():
                 self._validate_value(msg, float, [(0, 99.99)])
             elif re.search("^openWB/set/general/range_unit$", msg.topic) != None:
                 self._validate_value(msg, str)
+            elif (re.search("^openWB/set/general/ripple_control_receiver/configured$", msg.topic) != None or
+                    re.search("^openWB/set/general/ripple_control_receiver/r1_active$", msg.topic) != None or
+                    re.search("^openWB/set/general/ripple_control_receiver/r2_active$", msg.topic) != None):
+                self._validate_value(msg, int, [(0, 1)])
             else:
                 log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
                 pub.pub(msg.topic, "")
