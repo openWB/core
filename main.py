@@ -8,7 +8,6 @@ import time
 
 from packages.algorithm import algorithm
 from packages.algorithm import process
-from packages.algorithm import daily_log
 from packages.algorithm import data
 from packages.algorithm import prepare
 from packages.helpermodules import defaults
@@ -72,7 +71,7 @@ class HandlerAlgorithm():
         log.cleanup_logfiles()
         measurement_log.save_log("daily")
         #Wenn ein neuer Tag ist, Monatswerte schreiben.
-        day = timecheck.create_timestamp_YYYYMMDD[-2:]
+        day = timecheck.create_timestamp_YYYYMMDD()[-2:]
         if self.current_day != day:
             self.current_day = day
             measurement_log.save_log("mothly")
