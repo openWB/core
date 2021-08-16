@@ -2,6 +2,8 @@
 import os
 import re
 import stat
+import subprocess
+import time
 from pymodbus.client.sync import ModbusSerialClient
 
 from ...helpermodules import log
@@ -28,9 +30,7 @@ def read_modbus_evse(cp):
             source = cp.data["config"]["connection_module"]["modbus_evse"]["source"]
             id = cp.data["config"]["connection_module"]["modbus_evse"]["id"]
 
-        client = ModbusSerialClient(method="rtu", port=source, baudrate=9600, stopbits=1, bytesize=8, timeout=1)
-        rq = client.read_holding_registers(1002, 1, unit=id)
-        state = int(rq.registers[0])
+        state = _read_regs(source, id, 1002, 1)
 
         if state == "" or re.search("^[0-9]+$", state) == None:
             # vorherigen Steckerstatus beibehalten (nichts publishen)
@@ -50,6 +50,21 @@ def read_modbus_evse(cp):
     except Exception as e:
         log.exception_logging(e)
 
+def _read_regs(source, id, reg, num):
+    try:
+        client = ModbusSerialClient(method = "rtu", port=source, baudrate=9600, stopbits=1, bytesize=8, timeout=1)
+        rq = client.read_holding_registers(reg,num,unit=id)
+        return int(rq.registers[0])
+    except Exception as e:
+        log.exception_logging(e)
+
+def _write_regs(source, id, reg, value):
+    try:
+        client = ModbusSerialClient(method = "rtu", port=source, baudrate=9600, stopbits=1, bytesize=8, timeout=1)
+        rq = client.write_registers(reg, value, unit=id)
+    except Exception as e:
+        log.exception_logging(e)
+
 def write_modbus_evse(cp):
     try:
         if cp.data["config"]["connection_module"]["modbus_evse"]["id"] == 0:
@@ -65,7 +80,25 @@ def write_modbus_evse(cp):
                 pub.pub("openWB/set/chargepoint/"+str(cp.cp_num)+"/config", {"connection_module": {"config": {"modbus_evse": {"source": source}}}})
                 id = 1
         
-        client = ModbusSerialClient(method = "rtu", port=source, baudrate=9600, stopbits=1, bytesize=8, timeout=1)
-        rq = client.write_registers(1000, cp.data["set"]["current"], unit=id)
+        _write_regs(source, id, 1000, cp.data["set"]["current"])
+    except Exception as e:
+        log.exception_logging(e)
+
+def check_modbus_evse(cp):
+    try:
+        source = cp.data["config"]["connection_module"]["modbus_evse"]["source"]
+        ip_address = cp.data["config"]["connection_module"]["modbus_evse"]["ip_address"]
+        if "virtual" in source:
+            try:
+                subprocess.check_output(['ps ax |grep -v grep |grep "socat", "pty,link="+str(source)+",raw", "tcp:"+str(ip_address)+":26" > /dev/null'])
+            except:
+                subprocess.Popen(["sudo", "socat", "pty,link="+str(source)+",raw", "tcp:"+str(ip_address)+":26"])
+        evsedinstat= _read_regs(source, id, 1000, 1)
+        time.sleep(1)
+        if evsedinstat == cp.data["set"]["current"]:
+            log.message_debug_log("debug", "LP"+str(cp.cp_num)+" Modbus-Stromstaerke ist korrekt.")
+        else:
+            log.message_debug_log("error", "LP"+str(cp.cp_num)+" Modbus-Stromstaerke "+str(evsedinstat)+" ist nicht korrekt.")
+            _write_regs(source, id, 1000, cp.data["set"]["current"])
     except Exception as e:
         log.exception_logging(e)

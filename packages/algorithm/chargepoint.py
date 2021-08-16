@@ -33,6 +33,7 @@ from . import phase_switch
 from ..helpermodules import log
 from ..helpermodules import pub
 from ..helpermodules import timecheck
+from ..modules.cp import modbus_evse
 
 
 class allChargepoints():
@@ -183,7 +184,19 @@ class allChargepoints():
                         pub.pub("openWB/set/chargepoint/"+chargepoint.cp_num+"/get/read_tag", chargepoint.data["get"]["read_tag"])
         except Exception as e:
             log.exception_logging(e)
-        
+    
+    def check_all_modbus_evse_connections():
+        try:
+            for cp in data.data.cp_data:
+                try:
+                    if "cp" in cp:
+                        chargepoint = data.data.cp_data[cp]
+                        if chargepoint.data["config"]["connection_module"]["selected"] == "modbus_evse":
+                            modbus_evse.check_modbus_evse(chargepoint)
+                except Exception as e:
+                    log.exception_logging(e)
+        except Exception as e:
+            log.exception_logging(e)
 
 class chargepoint():
     """ geht alle Ladepunkte durch, prüft, ob geladen werden darf und ruft die Funktion des angesteckten Autos auf. 
