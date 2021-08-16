@@ -26,6 +26,7 @@ Liste der Tags, mit denen der Ladepunkt freigeschaltet werden kann. Ist diese le
 """
 
 from . import chargelog
+from . import cp_interruption
 from . import data
 from . import ev
 from . import phase_switch
@@ -463,7 +464,12 @@ class chargepoint():
                 if self.set_current_prev == 0 and self.data["set"]["current"] != 0:
                     self.data["set"]["perform_control_pilot_interruption"] = charging_ev.ev_template.data["control_pilot_interruption_duration"]
                     pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/perform_control_pilot_interruption", charging_ev.ev_template.data["control_pilot_interruption_duration"])
-                    log.message_debug_log("debug", "Control-Pilot-Unterbrechung an Ladepunkt"+str(self.cp_num)+" fuer "+str(charging_ev.ev_template.data["control_pilot_interruption_duration"])+"s angestoßen.")
+                    selected = self.data["config"]["connection_module"]["selected"]
+                    config = self.data["config"]["connection_module"]["config"][selected]
+                    cp_interruption.thread_cp_interruption(self.cp_num, selected, config, charging_ev.ev_template.data["control_pilot_interruption_duration"])
+                    message = "Control-Pilot-Unterbrechung fuer "+str(charging_ev.ev_template.data["control_pilot_interruption_duration"])+"s."
+                    log.message_debug_log("info", "LP "+str(self.cp_num)+": "+message)
+                    self.data["get"]["state_str"] = message
         except Exception as e:
             log.exception_logging(e)
 

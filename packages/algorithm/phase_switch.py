@@ -32,16 +32,13 @@ def thread_phase_switch(cp_num, selected, config, phases_to_use, duration, charg
     try:
         global phase_switch_threads
         # fertige Threads aus der Liste löschen:
-        for t in phase_switch_threads:
-            if not phase_switch_threads[t].is_alive():
-                # get results from thread
-                phase_switch_threads[t].handled = True
-        phase_switch_threads = {t: phase_switch_threads[t] for t in phase_switch_threads if not phase_switch_threads[t].handled}
+        phase_switch_threads = {t: phase_switch_threads[t] for t in phase_switch_threads if phase_switch_threads[t].is_alive()}
 
         # prüfen, ob Thread in der Liste ist. Dann ist noch eine Phasenumschaltung aktiv und es darf keine neue gestartet werden.
         if "thread_cp"+str(cp_num) not in phase_switch_threads:
             # Thread zur Phasenumschaltung erstellen, starten und der Liste hinzufügen.
             phase_switch_threads["thread_cp"+str(cp_num)] = threading.Thread(target=_perform_phase_switch, args=(selected, config, phases_to_use, duration, charge_state))
+            phase_switch_threads["thread_cp"+str(cp_num)].start()
             log.message_debug_log("debug", "Thread zur Phasenumschaltung an LP"+str(cp_num)+" gestartet.")
     except Exception as e:
         log.exception_logging(e)
@@ -60,6 +57,7 @@ def _perform_phase_switch(selected, config, phases_to_use, duration, charge_stat
             num = config["chargepoint"]
             ip_address = config["ip_address"]
             pub.pub_single("openWB/set/isss/U1p3p", phases_to_use, ip_address)
+            time.sleep(6+duration-1)
         elif selected == "ip_evse":
             ip_address = config["ip_address"]
             id = config["id"]

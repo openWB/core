@@ -53,3 +53,9 @@ def perform_phase_switcht(ip_address, id, duration, phases_to_use):
         rq = client.write_register(0x0002, 256, unit=id)
         time.sleep(duration)
         rq = client.write_register(0x0002, 512, unit=id)
+
+def perform_cp_interruption(ip_address, id, duration):
+    client = ModbusTcpClient(ip_address, port=8899)
+    rq = client.write_register(0x0001, 256, unit=id)
+    time.sleep(duration)
+    rq = client.write_register(0x0001, 512, unit=id)
