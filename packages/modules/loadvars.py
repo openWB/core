@@ -34,6 +34,7 @@ from .counter import solax as c_solax
 from .counter import sungrow as c_sungrow
 from .counter import varta as c_varta
 from .counter import victron as c_victron
+from .counter import virtual as c_virtual
 from .cp import ethmpm3pm as cp_etmpm3pm
 from .cp import external_openwb as cp_external_openwb
 from .cp import mqtt as cp_mqtt
@@ -150,6 +151,8 @@ class loadvars():
                         thread = threading.Thread(target=c_varta.read_varta, args=(counter,))
                     elif counter.data["config"]["selected"] == "victron":
                         thread = threading.Thread(target=c_victron.read_victron, args=(counter,))
+                    elif counter.data["config"]["selected"] == "virtual":
+                        thread = threading.Thread(target=c_virtual.read_virtual_counter, args=(counter,))
                     elif counter.data["config"]["selected"] == "http":
                         pass
                     elif counter.data["config"]["selected"] == "json":
@@ -185,7 +188,9 @@ class loadvars():
                         thread = threading.Thread(target=cp_external_openwb.read_external_openwb, args=(cp,))
                     # elif cp.data["config"]["connection_module"]["selected"] == "":
                     #     thread = threading.Thread(target=, args=(cp,))
-
+                    if thread != None:
+                        cp_threads.append(thread)
+                        
                     # Display, Pushover, SocTimer eher am Ende
 
                     # Ladeleistungsmodul

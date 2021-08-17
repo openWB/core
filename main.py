@@ -20,6 +20,9 @@ from packages.helpermodules import subdata
 from packages.helpermodules import timecheck
 from packages.modules import loadvars
 
+# Wenn debug True ist, wird der 10s Handler nicht durch den Timer-Thread gesteuert, sondern macht ein 10s Sleep am Ende, da sonst beim Pausieren immer mehr Threads im Hintergrund auflaufen.
+debug = False
+
 class HandlerAlgorithm():
     def __init__(self):
         self.heartbeat = False
@@ -53,30 +56,34 @@ class HandlerAlgorithm():
     def handler5Min(self):
         """ Handler, der alle 5 Minuten aufgerufen wird und die Heartbeats der Threads überprüft und die Aufgaben ausführt, die nur alle 5 Minuten ausgeführt werden müssen.
         """
-        if self.heartbeat == False:
-            pass
-        else:
-            self.hartbeat = False
+        try:
+            if self.heartbeat == False:
+                pass
+            else:
+                self.hartbeat = False
 
-        if sub.heartbeat == False:
-            pass
-        else:
-            sub.hartbeat = False
+            if sub.heartbeat == False:
+                pass
+            else:
+                sub.hartbeat = False
 
-        if set.heartbeat == False:
-            pass
-        else:
-            set.hartbeat = False
+            if set.heartbeat == False:
+                pass
+            else:
+                set.hartbeat = False
 
-        log.cleanup_logfiles()
-        measurement_log.save_log("daily")
-        #Wenn ein neuer Tag ist, Monatswerte schreiben.
-        day = timecheck.create_timestamp_YYYYMMDD()[-2:]
-        if self.current_day != day:
-            self.current_day = day
-            measurement_log.save_log("mothly")
-        data.data.general_data["general"].grid_protection()
-        data.data.optional_data["optional"].et_get_prices()
+            log.cleanup_logfiles()
+            measurement_log.save_log("daily")
+            #Wenn ein neuer Tag ist, Monatswerte schreiben.
+            day = timecheck.create_timestamp_YYYYMMDD()[-2:]
+            if self.current_day != day:
+                self.current_day = day
+                measurement_log.save_log("mothly")
+            data.data.general_data["general"].grid_protection()
+            data.data.optional_data["optional"].et_get_prices()
+            data.data.cp_data["all"].check_all_modbus_evse_connections()
+        except Exception as e:
+            log.exception_logging(e)
 
 class RepeatedTimer(object):
     """ führt alle x Sekunden einen Thread aus, unabhängig davon, ob sich der Thread bei der vorherigen Ausführung aufgehängt etc hat.
@@ -131,9 +138,15 @@ try:
     t_sub.start()
     t_set.start()
     rt = RepeatedTimer(300, handler.handler5Min)
-    rt2 = RepeatedTimer(10, handler.handler10Sec)
+    if debug == False:
+        rt2 = RepeatedTimer(10, handler.handler10Sec)
 
     publishvars2.pub_settings()
     defaults.pub_defaults()
+
+    if debug == True:
+        while True:
+            handler.handler10Sec()
+            time.sleep(10)
 except Exception as e:
     log.exception_logging(e)

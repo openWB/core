@@ -38,7 +38,6 @@ def loadmanagement_for_cp(chargepoint, required_power, required_current, phases)
     loadmanagement_all_conditions = False
     global overloaded_counters
     overloaded_counters.clear()
-    required_current_phases = []
     try:
         # Wenn dreiphasig geladen werden soll, ist es egal, auf welcher Phase L1 angeschlossen ist.
         if phases == 3:
@@ -49,17 +48,11 @@ def loadmanagement_for_cp(chargepoint, required_power, required_current, phases)
                 # Es muss noch auf allen 3 Phasen genügend Reserve sein.
                  required_current_phases = [required_current]*3
             elif chargepoint.data["config"]["phase_1"] == 1:
-                required_current_phases[0] = required_current
-                required_current_phases[1] = 0
-                required_current_phases[2] = 0
+                required_current_phases = [required_current, 0, 0]
             elif chargepoint.data["config"]["phase_1"] == 2:
-                required_current_phases[0] = 0
-                required_current_phases[1] = required_current
-                required_current_phases[2] = 0
+                required_current_phases= [0, required_current, 0]
             elif chargepoint.data["config"]["phase_1"] == 3:
-                required_current_phases[0] = 0
-                required_current_phases[1] = 0
-                required_current_phases[2] = required_current
+                required_current_phases = [0, 0, required_current]
         counters = _get_counters_to_check(chargepoint)
         # Stromstärke merken, wenn das Lastmanagement nicht aktiv wird, wird nach der Prüfung die neue verwendete Stromstärke gesetzt.
         for counter in counters[:-1]:
@@ -105,7 +98,7 @@ def loadmanagement_for_counters():
         log.exception_logging(e)
         return False, None
 
-def perform_loadmanagement(counter):
+def get_chargepionts_of_counter(counter):
     """ gibt eine Liste der Ladepunkte, die in den folgenden Zweigen des Zählers sind, zurück.
 
     Parameter

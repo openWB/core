@@ -729,8 +729,13 @@ class setData():
                 payload = json.loads(str(msg.payload.decode("utf-8")))
                 msg.payload = json.dumps(int(payload)).encode("utf-8")
                 self._validate_value(msg, int, [(0, None)])
-            elif re.search("^openWB/set/counter/[0-9]+/set/consumption_left$", msg.topic) != None:
+            elif (re.search("^openWB/set/counter/[0-9]+/set/consumption_left$", msg.topic) != None or
+                    re.search("^openWB/set/counter/[0-9]+/set/present_power_all$", msg.topic) != None or
+                    re.search("^openWB/set/counter/[0-9]+/set/present_imported$", msg.topic) != None or
+                    re.search("^openWB/set/counter/[0-9]+/set/present_exported$", msg.topic) != None):
                 self._validate_value(msg, float)
+            elif re.search("^openWB/set/counter/[0-9]+/set/sim_timestamp$", msg.topic) != None:
+                self._validate_value(msg, str)
             elif re.search("^openWB/set/counter/[0-9]+/set/current_left$", msg.topic) != None:
                 self._validate_value(msg, float, [(0, None)], collection=list)
             elif re.search("^openWB/set/counter/[0-9]+/config$", msg.topic) != None:
