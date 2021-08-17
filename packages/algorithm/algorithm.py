@@ -136,7 +136,7 @@ class control():
                 # Begrenzung der Schleifendurchläufe: Im ersten Durchlauf wird versucht, die Überlast durch Reduktion zu eliminieren, 
                 # im zweiten durch Abschalten. Daher die zweifache Anzahl von Zählern als Durchläufe.
                 for b in range(0, len(data.data.counter_data)*2):
-                    chargepoints = loadmanagement.get_chargepionts_of_counter(overloaded_counters[n][0])
+                    chargepoints = data.data.counter_data["all"].get_chargepionts_of_counter(overloaded_counters[n][0])
                     overshoot = overloaded_counters[n][1][0]
                     # Das Lademodi-Tupel rückwärts durchgehen und LP mit niedrig priorisiertem Lademodus zuerst reduzieren/stoppen.
                     for mode in reversed(self.chargemodes[:-4]):
@@ -608,7 +608,7 @@ class control():
                 overloaded_counters = sorted(overloaded_counters.items(), key=lambda e: e[1][1], reverse = True)
                 # Ergebnisse des Lastmanagements holen, das beim Einschalten durchgeführt worden ist. Es ist ausreichend, 
                 # Zähler mit der größten Überlastung im Pfad zu betrachten. Kann diese nicht eliminiert werden, kann der Ladpunkt nicht laden. 
-                chargepoints = loadmanagement.get_chargepionts_of_counter(overloaded_counters[0][0])
+                chargepoints = data.data.counter_data["all"].get_chargepionts_of_counter(overloaded_counters[0][0])
                 remaining_current_overshoot = overloaded_counters[0][1][0]
                 # LP mit niedrigerer Priorität reduzieren und ggf. stoppen
                 for mode in reversed(self.chargemodes[(current_mode+1):-4]):

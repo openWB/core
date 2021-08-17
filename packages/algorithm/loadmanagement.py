@@ -53,7 +53,7 @@ def loadmanagement_for_cp(chargepoint, required_power, required_current, phases)
                 required_current_phases= [0, required_current, 0]
             elif chargepoint.data["config"]["phase_1"] == 3:
                 required_current_phases = [0, 0, required_current]
-        counters = _get_counters_to_check(chargepoint)
+        counters = data.data.counter_data["all"].get_counters_to_check(chargepoint)
         # Stromstärke merken, wenn das Lastmanagement nicht aktiv wird, wird nach der Prüfung die neue verwendete Stromstärke gesetzt.
         for counter in counters[:-1]:
             try:
@@ -98,38 +98,12 @@ def loadmanagement_for_counters():
         log.exception_logging(e)
         return False, None
 
-def get_chargepionts_of_counter(counter):
-    """ gibt eine Liste der Ladepunkte, die in den folgenden Zweigen des Zählers sind, zurück.
 
-    Parameter
-    ---------
-    counter: str
-        Zähler, dessen Lp ermittelt werden sollen.
-
-    Return
-    ------
-    chargepoints: list
-        Ladepunkte, die in den folgenden Zweigen des Zählers sind
-    """
-    global chargepoints
-    chargepoints.clear()
-    try:
-        if counter == "counter0":
-            counter_object = data.data.counter_data["all"].data["get"]["hierarchy"][0]
-        else:
-            counter_object = _look_for_object(data.data.counter_data["all"].data["get"]["hierarchy"][0], "counter", counter[7:])
-        _get_all_cp_connected_to_counter(counter_object)
-        return chargepoints
-    except Exception as e:
-        log.exception_logging(e)
-        return None
 
 def get_overloaded_counters():
     return overloaded_counters
 
-# Verarbeiten der Liste aus Zählern und Ladepunkten
-counters = []
-chargepoints = []
+
 
 def _check_all_intermediate_counters(child):
     """ Rekursive Funktion, die für alle Zwischenzähler prüft, ob die Maximal-Stromstärke ohne Beachtung des Offsets eingehalten wird.
@@ -161,94 +135,6 @@ def _check_all_intermediate_counters(child):
     # Wenn alle durchgegangen wurden und das Lastamangement nicht aktiv geworden ist.
     else:
         return False
-
-def _get_counters_to_check(chargepoint):
-    """ ermittelt alle Zähler, die für das Lastmanagement des angegebenen Ladepunkts relevant sind.
-
-    Parameter
-    ---------
-    chargepoint: class
-        Ladepunkt
-
-    Return
-    ------
-    counters: list
-        Liste der gesuchten Zähler
-    """
-    try:
-        counters.clear()
-        _look_for_object(data.data.counter_data["all"].data["get"]["hierarchy"][0], "cp", chargepoint.cp_num)
-        return counters
-    except Exception as e:
-        log.exception_logging(e)
-        return None
-
-def _look_for_object(child, object, num):
-    """ Rekursive Funktion, die alle Zweige durchgeht, bis der entsprechende Ladepunkt gefunden wird und dann alle Zähler in diesem Pfad der Liste anhängt.
-
-    Parameter
-    ---------
-    child: object
-        Zweig, der als nächstes durchsucht werden soll
-    object: str "cp"/"counter"
-        soll nach einem Ladepunkt oder einem Zähler in der Liste gesucht werden.
-    num: int
-        Nummer des gesuchten Ladepunkts/Zählers
-
-    Return
-    ------
-    True/False: Ladepunkt wurde gefunden.
-    """
-    try:
-        parent = child["id"]
-        for child in child["children"]:
-            try:
-                if object == "cp":
-                    if "cp" in child["id"]:
-                        if child["id"][2:] == str(num):
-                            counters.append(parent)
-                            return True
-                        else:
-                            continue
-                elif object == "counter":
-                    if "counter" in child["id"]:
-                        if child["id"][7:] == str(num):
-                            return child
-                else:
-                    if len(child["children"]) != 0:
-                        found = _look_for_object(child, object, num)
-                        if found != False:
-                            if object == "cp":
-                                counters.append(parent)
-                                return True
-                        elif object == "counter":
-                            return found
-            except Exception as e:
-                log.exception_logging(e)
-        else:
-            return False
-    except Exception as e:
-        log.exception_logging(e)
-        return False
-
-def _get_all_cp_connected_to_counter(child):
-    """ Rekursive Funktion, die alle Ladepunkte ermittelt, die an den angegebenen Zähler angeschlossen sind.
-
-    Parameter
-    ---------
-    child: object
-        Zähler, dessen Ladepunkte ermittelt werden sollen
-    """
-    # Alle Objekte der Ebene durchgehen
-    for child in child["children"]:
-        try:
-            if "cp" in child["id"]:
-                chargepoints.append(child["id"])
-            # Wenn das Objekt noch Kinder hat, diese ebenfalls untersuchen.
-            elif len(child["children"]) != 0:
-                _get_all_cp_connected_to_counter(child)
-        except Exception as e:
-            log.exception_logging(e)
 
 # Überprüfen der Werte
 
