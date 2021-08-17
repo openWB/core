@@ -185,7 +185,7 @@ class allChargepoints():
         except Exception as e:
             log.exception_logging(e)
     
-    def check_all_modbus_evse_connections():
+    def check_all_modbus_evse_connections(self):
         try:
             for cp in data.data.cp_data:
                 try:

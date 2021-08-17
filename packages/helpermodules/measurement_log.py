@@ -131,8 +131,8 @@ def save_log(folder):
             pathlib.Path('./data/daily_log').mkdir(mode = 0o755, parents=True, exist_ok=True)
             filepath = "./data/daily_log/"+timecheck.create_timestamp_YYYYMMDD()+".json"
         else:
-            pathlib.Path('./data/monthy_log').mkdir(mode = 0o755, parents=True, exist_ok=True)
-            filepath = "./data/monthy_log/"+timecheck.create_timestamp_YYYYMM()+".json"
+            pathlib.Path('./data/monthly_log').mkdir(mode = 0o755, parents=True, exist_ok=True)
+            filepath = "./data/monthly_log/"+timecheck.create_timestamp_YYYYMM()+".json"
         try:
             with open(filepath, "r") as jsonFile:
                 content = json.load(jsonFile)

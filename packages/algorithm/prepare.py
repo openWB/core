@@ -22,7 +22,6 @@ class prepare():
         """ bereitet die Daten für den Algorithmus vor und startet diesen.
         """
         log.message_debug_log("info", "# ***Start*** ")
-        self._copy_data()
         self._set_default_values()
         self._counter()
         self._check_chargepoints()
@@ -30,7 +29,7 @@ class prepare():
         self._bat()
         data.data.print_all()
 
-    def _copy_data(self):
+    def copy_data(self):
         """ kopiert die Daten, die per MQTT empfangen wurden.
         """
         try:

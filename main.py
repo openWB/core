@@ -21,7 +21,7 @@ from packages.helpermodules import timecheck
 from packages.modules import loadvars
 
 # Wenn debug True ist, wird der 10s Handler nicht durch den Timer-Thread gesteuert, sondern macht ein 10s Sleep am Ende, da sonst beim Pausieren immer mehr Threads im Hintergrund auflaufen.
-debug = False
+debug = True
 
 class HandlerAlgorithm():
     def __init__(self):
@@ -35,18 +35,50 @@ class HandlerAlgorithm():
         try:
             try:
                 if (data.data.general_data["general"].data["control_interval"] / 10) == self.interval_counter:
+                    # Mit aktuellen Einstellungen arbeiten.
+                    log.message_debug_log("info", " Start copy_data 1")
+                    prep.copy_data()
+                    log.message_debug_log("info", " Stop copy_data 1")
                     vars.get_values()
+                    # Virtuelle Module ermitteln die Werte rechnerisch auf Bais der Messwerte anderer Module. 
+                    # Daher können sie erst die Werte ermitteln, wenn die physischen Module ihre Werte ermittelt haben.
+                    # Würde man allle Module parallel abfragen, wären die virtuellen Module immer einen Zyklus hinterher.
+                    log.message_debug_log("info", " Start copy_data 2")
+                    prep.copy_data()
+                    log.message_debug_log("info", " Stop copy_data 2")
+                    vars.get_virtual_values()
+                    # Kurz warten, damit alle Topics von setdata und subdata verarbeitet werden könnnen.
+                    time.sleep(0.3)
+                    log.message_debug_log("info", " Start copy_data 3")
+                    prep.copy_data()
+                    log.message_debug_log("info", " Stop copy_data 3")
                     self.heartbeat = True
                     prep.setup_algorithm()
                     control.calc_current()
                     proc.process_algorithm_results()
                     self.interval_counter = 1
+                    log.cleanup_logfiles()
+                    measurement_log.save_log("daily")
+                    #Wenn ein neuer Tag ist, Monatswerte schreiben.
+                    day = timecheck.create_timestamp_YYYYMMDD()[-2:]
+                    if self.current_day != day:
+                        self.current_day = day
+                        measurement_log.save_log("monthly")
+                    data.data.general_data["general"].grid_protection()
+                    data.data.optional_data["optional"].et_get_prices()
+                    data.data.cp_data["all"].check_all_modbus_evse_connections()
                 else:
                     self.interval_counter = self.interval_counter + 1
             except:
                 # Wenn kein Regelintervall bekannt ist, alle 10s regeln.
+                prep.copy_data()
                 vars.get_values()
+                prep.copy_data()
+                vars.get_virtual_values()
                 self.heartbeat = True
+                # Kurz warten, damit alle Topics von setdata und subdata verarbeitet werden könnnen.
+                time.sleep(0.3)
+                prep.copy_data()
                 prep.setup_algorithm()
                 control.calc_current()
                 proc.process_algorithm_results()
@@ -78,7 +110,7 @@ class HandlerAlgorithm():
             day = timecheck.create_timestamp_YYYYMMDD()[-2:]
             if self.current_day != day:
                 self.current_day = day
-                measurement_log.save_log("mothly")
+                measurement_log.save_log("monthly")
             data.data.general_data["general"].grid_protection()
             data.data.optional_data["optional"].et_get_prices()
             data.data.cp_data["all"].check_all_modbus_evse_connections()

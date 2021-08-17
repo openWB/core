@@ -61,12 +61,12 @@ class loadvars():
     def get_values(self):
         try:
             all_threads = []
-            all_threads.extend(self.get_counters())
-            all_threads.extend(self.get_cp())
-            all_threads.extend(self.get_pv())
-            all_threads.extend(self.get_bat())
-            all_threads.extend(self.get_soc())
-            all_threads.extend(self.get_general())
+            all_threads.extend(self._get_cp())
+            all_threads.extend(self._get_counters())
+            all_threads.extend(self._get_pv())
+            all_threads.extend(self._get_bat())
+            all_threads.extend(self._get_soc())
+            all_threads.extend(self._get_general())
             # Start them all
             if all_threads:
                 for thread in all_threads:
@@ -82,7 +82,26 @@ class loadvars():
         # Hausverbrauch
         # Überschuss unter Beachtung abschaltbarer SH-Devices
 
-    def get_counters(self):
+    def get_virtual_values(self):
+        """ Virtuelle Module ermitteln die Werte rechnerisch auf Bais der Messwerte anderer Module. 
+        Daher können sie erst die Werte ermitteln, wenn die physischen Module ihre Werte ermittelt haben.
+        Würde man allle Module parallel abfragen, wären die virtuellen Module immer einen Zyklus hinterher.
+        """
+        try:
+            all_threads = []
+            all_threads.extend(self._get_virtual_counters())
+            # Start them all
+            if all_threads:
+                for thread in all_threads:
+                    thread.start()
+
+                # Wait for all to complete
+                for thread in all_threads:
+                    thread.join(timeout=3)
+        except Exception as e:
+            log.exception_logging(e)
+
+    def _get_counters(self):
         """ vorhandene Zähler durchgehen und je nach Konfiguration Module zur Abfrage der Werte aufrufen
         """
         try:
@@ -170,7 +189,25 @@ class loadvars():
         except Exception as e:
             log.exception_logging(e)
 
-    def get_cp(self):
+    def _get_virtual_counters(self):
+        """ vorhandene Zähler durchgehen und je nach Konfiguration Module zur Abfrage der Werte aufrufen
+        """
+        try:
+            counter_threads = []
+            for item in data.data.counter_data:
+                thread = None
+                if "counter" in item:
+                    counter = data.data.counter_data[item]
+                    if counter.data["config"]["selected"] == "virtual":
+                        thread = threading.Thread(target=c_virtual.read_virtual_counter, args=(counter,))
+
+                    if thread != None:
+                        counter_threads.append(thread)
+            return counter_threads
+        except Exception as e:
+            log.exception_logging(e)
+
+    def _get_cp(self):
         cp_threads = []
         for item in data.data.cp_data:
             thread = None
@@ -207,7 +244,7 @@ class loadvars():
                 log.exception_logging(e)
         return cp_threads
 
-    def get_pv(self):
+    def _get_pv(self):
         pv_threads = []
         for item in data.data.pv_data:
             thread = None
@@ -288,7 +325,7 @@ class loadvars():
                 log.exception_logging(e)
         return pv_threads
 
-    def get_bat(self):
+    def _get_bat(self):
         bat_threads = []
         for item in data.data.bat_module_data:
             thread = None
@@ -359,7 +396,7 @@ class loadvars():
                 log.exception_logging(e)
         return bat_threads
 
-    def get_soc(self):
+    def _get_soc(self):
         try:
             soc_threads = []
             thread = None
@@ -369,7 +406,7 @@ class loadvars():
         except Exception as e:
             log.exception_logging(e)
 
-    def get_general(self):
+    def _get_general(self):
         try:
             general_threads = []
             thread = None
