@@ -21,7 +21,7 @@ from packages.helpermodules import timecheck
 from packages.modules import loadvars
 
 # Wenn debug True ist, wird der 10s Handler nicht durch den Timer-Thread gesteuert, sondern macht ein 10s Sleep am Ende, da sonst beim Pausieren immer mehr Threads im Hintergrund auflaufen.
-debug = True
+debug = False
 
 class HandlerAlgorithm():
     def __init__(self):
@@ -48,7 +48,7 @@ class HandlerAlgorithm():
                     log.message_debug_log("info", " Stop copy_data 2")
                     vars.get_virtual_values()
                     # Kurz warten, damit alle Topics von setdata und subdata verarbeitet werden könnnen.
-                    time.sleep(0.3)
+                    time.sleep(1)
                     log.message_debug_log("info", " Start copy_data 3")
                     prep.copy_data()
                     log.message_debug_log("info", " Stop copy_data 3")
@@ -57,16 +57,6 @@ class HandlerAlgorithm():
                     control.calc_current()
                     proc.process_algorithm_results()
                     self.interval_counter = 1
-                    log.cleanup_logfiles()
-                    measurement_log.save_log("daily")
-                    #Wenn ein neuer Tag ist, Monatswerte schreiben.
-                    day = timecheck.create_timestamp_YYYYMMDD()[-2:]
-                    if self.current_day != day:
-                        self.current_day = day
-                        measurement_log.save_log("monthly")
-                    data.data.general_data["general"].grid_protection()
-                    data.data.optional_data["optional"].et_get_prices()
-                    data.data.cp_data["all"].check_all_modbus_evse_connections()
                 else:
                     self.interval_counter = self.interval_counter + 1
             except:
@@ -178,7 +168,7 @@ try:
 
     if debug == True:
         while True:
-            handler.handler10Sec()
             time.sleep(10)
+            handler.handler10Sec()
 except Exception as e:
     log.exception_logging(e)

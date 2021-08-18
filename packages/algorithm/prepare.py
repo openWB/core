@@ -42,7 +42,6 @@ class prepare():
                 try:
                     if "cp" in chargepoint:
                         data.data.cp_data[chargepoint].template = data.data.cp_template_data["cpt" +str(data.data.cp_data[chargepoint].data["config"]["template"])]
-                        data.data.cp_data[chargepoint].cp_num = chargepoint[2:]
                         # Status zurücksetzen (wird jeden Zyklus neu ermittelt)
                         data.data.cp_data[chargepoint].data["get"]["state_str"] = None
                 except Exception as e:
@@ -67,17 +66,7 @@ class prepare():
                     log.exception_logging(e)
 
             data.data.counter_data = copy.deepcopy(subdata.subData.counter_data)
-            for counter in data.data.counter_data:
-                try:
-                    data.data.counter_data[counter].counter_num = counter[7:]
-                except Exception as e:
-                    log.exception_logging(e)
             data.data.bat_module_data = copy.deepcopy(subdata.subData.bat_module_data)
-            for bat in data.data.bat_module_data:
-                try:
-                    data.data.bat_module_data[bat].bat_num = bat[3:]
-                except Exception as e:
-                    log.exception_logging(e)
         except Exception as e:
             log.exception_logging(e)
 
@@ -102,7 +91,7 @@ class prepare():
                                 cp.data["set"]["charging_ev"] == vehicle or
                                 cp.data["set"]["charging_ev_prev"] == vehicle):
                             cp.data["set"]["charging_ev"] = vehicle
-                            pub.pub("openWB/set/chargepoint/"+cp.cp_num+"/set/charging_ev", vehicle)
+                            pub.pub("openWB/set/chargepoint/"+str(cp.cp_num)+"/set/charging_ev", vehicle)
                             charging_ev.ev_template.data = charging_ev.data["set"]["ev_template"]
                             cp.data["set"]["charging_ev_data"] = charging_ev
                         else:
@@ -119,7 +108,7 @@ class prepare():
                             
                             if message_ev != None:
                                 message = message_ev
-                            log.message_debug_log("debug", "Ladepunkt "+cp.cp_num+", EV: "+cp.data["set"]["charging_ev_data"].data["name"]+" (EV-Nr."+str(vehicle)+")")
+                            log.message_debug_log("debug", "Ladepunkt "+str(cp.cp_num)+", EV: "+cp.data["set"]["charging_ev_data"].data["name"]+" (EV-Nr."+str(vehicle)+")")
                             
                             # Die benötigte Stromstärke hat sich durch eine Änderung des Lademdous oder der Konfiguration geändert. Die Zuteilung entsprechend der Priorisierung muss neu geprüft werden.
                             # Daher muss der LP zurückgesetzt werden, wenn er gerade lädt, um in der Regelung wieder berücksichtigt zu werden.

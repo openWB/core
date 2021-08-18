@@ -408,7 +408,7 @@ class subData():
                 if "all" not in var:
                     var["all"] = pv.pv()
                 if "pv"+index not in var:
-                    var["pv"+index]=pv.pvModule()
+                    var["pv"+index]=pv.pvModule(int(index))
                 if re.search("^.+/pv/[0-9]+/config$", msg.topic) != None:
                     self.set_json_payload(var["pv"+index].data, msg)
                 elif re.search("^.+/pv/[0-9]+/get/.+$", msg.topic) != None:
@@ -455,7 +455,7 @@ class subData():
                 if "all" not in var:
                     var["all"] = bat.bat()
                 if "bat"+index not in var:
-                    var["bat"+index]=bat.batModule()
+                    var["bat"+index]=bat.batModule(int(index))
                 if re.search("^.+/bat/[0-9]+/config$", msg.topic) != None:
                     self.set_json_payload(var["bat"+index].data, msg)
                 elif re.search("^.+/bat/[0-9]+/get/.+$", msg.topic) != None:
@@ -605,7 +605,7 @@ class subData():
             elif re.search("^.+/counter/[0-9]+/.+$", msg.topic) != None:
                 index=self.get_index(msg.topic)
                 if "counter"+index not in var:
-                    var["counter"+index]=counter.counter(default)
+                    var["counter"+index]=counter.counter(int(index), default)
                 if re.search("^.+/counter/[0-9]+/get.+$", msg.topic) != None:
                     if "get" not in var["counter"+index].data:
                         var["counter"+index].data["get"]={}

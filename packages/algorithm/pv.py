@@ -364,6 +364,6 @@ class pv():
 
 class pvModule:
 
-    def __init__(self):
+    def __init__(self, index):
         self.data = {}
-        self.pv_num = None
+        self.pv_num = index

@@ -51,7 +51,7 @@ def delete_connection():
         log.exception_logging(e)
 
 def pub_single(topic, payload, hostname):
-    """ pbulsihed eine einzelne Nachricht an einen Host, der nicht der localhost ist.
+    """ published eine einzelne Nachricht an einen Host, der nicht der localhost ist.
 
         Parameter
     ---------
@@ -62,4 +62,7 @@ def pub_single(topic, payload, hostname):
     hostname: str
         IP des Hosts
     """
-    publish.single(topic, str(payload), str(hostname))
+    try:
+        publish.single(topic, json.dumps(payload), hostname=hostname)
+    except Exception as e:
+        log.exception_logging(e)

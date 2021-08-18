@@ -21,7 +21,9 @@ def pub_settings():
     # # cp2
     pub.pub("openWB/set/chargepoint/2/set/manual_lock", False)
     pub.pub("openWB/set/chargepoint/2/get/plug_time", "6/28/2021, 08:21:22")
+    #pub.pub("openWB/set/chargepoint/2/config", {"name": "LP2", "template": 2, "connected_phases": 3, "phase_1": 2, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": False, "connection_module": {"selected": "external_openwb", "config": { "external_openwb": {"ip_address": "localhost", "chargepoint":1}}}, "power_module": {"selected": "mqtt"}})
     pub.pub("openWB/set/chargepoint/2/config", {"name": "LP2", "template": 2, "connected_phases": 3, "phase_1": 2, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": False, "connection_module": {"selected": "mqtt"}, "power_module": {"selected": "mqtt"}})
+
     # # cpt2
     pub.pub("openWB/set/chargepoint/template/2/autolock/1/frequency/selected", "daily")
     pub.pub("openWB/set/chargepoint/template/2/autolock/1/time", ["07:00", "11:20"])
@@ -35,7 +37,9 @@ def pub_settings():
     # #cp3
     pub.pub("openWB/set/chargepoint/3/set/manual_lock", False)
     pub.pub("openWB/set/chargepoint/3/get/plug_time", "6/28/2021, 08:23:22")
+    #pub.pub("openWB/set/chargepoint/3/config", {"name": "LP3", "template": 3, "connected_phases": 3, "phase_1": 3, "auto_phase_switch_hw": True, "control_pilot_interruption_hw": False, "connection_module": {"selected": "external_openwb", "config": { "external_openwb": {"ip_address": "localhost", "chargepoint":2}}}, "power_module": {"selected": "mqtt"}})
     pub.pub("openWB/set/chargepoint/3/config", {"name": "LP3", "template": 3, "connected_phases": 3, "phase_1": 3, "auto_phase_switch_hw": True, "control_pilot_interruption_hw": False, "connection_module": {"selected": "mqtt"}, "power_module": {"selected": "mqtt"}})
+
     # # cpt3
     pub.pub("openWB/set/chargepoint/template/3/autolock/1/frequency/selected", "daily")
     pub.pub("openWB/set/chargepoint/template/3/autolock/1/time", ["07:00", "11:15"])

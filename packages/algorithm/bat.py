@@ -229,6 +229,6 @@ class bat:
 
 class batModule:
 
-    def __init__(self):
+    def __init__(self, index):
         self.data={}
-        self.bat_num = None
+        self.bat_num = index

@@ -12,7 +12,7 @@ def read_virtual_counter(counter):
     try:
         # "Angeschlossene" Ladepunkte ermitteln
         counter_name = "counter"+str(counter.counter_num)
-        chargepoints = data.data.counter_data["all"].get_chargepionts_of_counter(counter_name)
+        chargepoints = data.data.counter_data["all"].get_chargepoints_of_counter(counter_name)
         # Ladeleistungen, Ströme addieren
         current = [0]*3
         power_all = 0

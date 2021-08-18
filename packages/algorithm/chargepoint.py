@@ -454,12 +454,12 @@ class chargepoint():
                 # Tag zurücksetzen, wenn kein EV zugeordnet werden kann
                 if self.data["set"]["rfid"] != "0":
                     self.data["set"]["rfid"] = "0"
-                    pub.pub("openWB/set/chargepoint/"+self.cp_num+"/set/rfid", self.data["set"]["rfid"])
+                    pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/rfid", self.data["set"]["rfid"])
             # Charging Ev ist noch das EV des vorherigen Zyklus, wenn das nicht -1 war und jetzt nicht mehr geladen werden soll (-1), Daten zurücksetzen.
             if self.data["set"]["charging_ev"] != -1:
                 # Altes EV merken
                 self.data["set"]["charging_ev_prev"] = self.data["set"]["charging_ev"]
-                pub.pub("openWB/set/chargepoint/"+self.cp_num+"/set/charging_ev_prev", self.data["set"]["charging_ev_prev"])
+                pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/charging_ev_prev", self.data["set"]["charging_ev_prev"])
             if self.data["set"]["charging_ev_prev"] != -1:
                 # Daten zurücksetzen, wenn nicht geladen werden soll.
                 data.data.ev_data["ev"+str(self.data["set"]["charging_ev_prev"])].reset_ev()
@@ -473,15 +473,15 @@ class chargepoint():
                     # Ladepunkt nach Abstecken sperren
                     if data.data.ev_data["ev"+str(self.data["set"]["charging_ev_prev"])].charge_template.data["disable_after_unplug"] == True:
                         self.data["set"]["manual_lock"] = True
-                        pub.pub("openWB/set/chargepoint/"+self.cp_num+"/set/manual_lock", True)
+                        pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/manual_lock", True)
                     # Ev wurde noch nicht aktualisiert.
                     chargelog.reset_data(self, data.data.ev_data["ev"+str(self.data["set"]["charging_ev_prev"])])
                     self.data["set"]["charging_ev_prev"] = -1
-                    pub.pub("openWB/set/chargepoint/"+self.cp_num+"/set/charging_ev_prev", self.data["set"]["charging_ev_prev"])
+                    pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/charging_ev_prev", self.data["set"]["charging_ev_prev"])
                     self.data["set"]["rfid"] = "0"
                     pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/rfid", "0")
             self.data["set"]["charging_ev"] = -1
-            pub.pub("openWB/set/chargepoint/"+self.cp_num+"/set/charging_ev", -1)
+            pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/charging_ev", -1)
             self.data["set"]["current"] = 0
             pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/current", 0)
             self.data["set"]["energy_to_charge"] = 0
@@ -667,7 +667,7 @@ class cpTemplate():
                     else:
                         state = 3
 
-                    pub.pub("openWB/set/chargepoint/"+cp_num+"/set/autolock_state", state)
+                    pub.pub("openWB/set/chargepoint/"+str(cp_num)+"/set/autolock_state", state)
                     if (state == 1) or (state == 3):
                         return False
                     elif state == 2:

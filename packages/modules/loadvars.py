@@ -170,8 +170,6 @@ class loadvars():
                         thread = threading.Thread(target=c_varta.read_varta, args=(counter,))
                     elif counter.data["config"]["selected"] == "victron":
                         thread = threading.Thread(target=c_victron.read_victron, args=(counter,))
-                    elif counter.data["config"]["selected"] == "virtual":
-                        thread = threading.Thread(target=c_virtual.read_virtual_counter, args=(counter,))
                     elif counter.data["config"]["selected"] == "http":
                         pass
                     elif counter.data["config"]["selected"] == "json":

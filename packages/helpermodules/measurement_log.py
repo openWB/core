@@ -74,7 +74,7 @@ def save_log(folder):
         if folder == "daily":
             date = timecheck.create_timestamp_time()
         else:
-            date = timecheck.create_timestamp_YYYYMMDD
+            date = timecheck.create_timestamp_YYYYMMDD()
         cp_dict = {}
         for cp in data.data.cp_data:
             try:
