@@ -3,6 +3,7 @@
 
 import threading
 
+from . import ripple_control_receiver
 from ..algorithm import data
 from ..helpermodules import log
 from .bat import alpha_ess as b_alpha_ess
@@ -33,8 +34,13 @@ from .counter import solax as c_solax
 from .counter import sungrow as c_sungrow
 from .counter import varta as c_varta
 from .counter import victron as c_victron
+from .counter import virtual as c_virtual
 from .cp import ethmpm3pm as cp_etmpm3pm
+from .cp import external_openwb as cp_external_openwb
 from .cp import mqtt as cp_mqtt
+from .cp import modbus_evse as cp_modbus_evse
+from .cp import modbus_slave as cp_modbus_slave
+from .cp import ip_evse as cp_ip_evse
 from .pv import ethmpm3pm as p_ethmpm3pm
 from .pv import ethsdm120 as p_ethsdm120
 from .pv import huawei as p_huawei
@@ -55,13 +61,12 @@ class loadvars():
     def get_values(self):
         try:
             all_threads = []
-            counter_threads = self.get_counters()
-            if counter_threads:
-                all_threads.extend(counter_threads)
-            self.get_cp()
-            self.get_pv()
-            self.get_bat()
-            self.get_soc()
+            all_threads.extend(self._get_cp())
+            all_threads.extend(self._get_counters())
+            all_threads.extend(self._get_pv())
+            all_threads.extend(self._get_bat())
+            all_threads.extend(self._get_soc())
+            all_threads.extend(self._get_general())
             # Start them all
             if all_threads:
                 for thread in all_threads:
@@ -77,7 +82,26 @@ class loadvars():
         # Hausverbrauch
         # Überschuss unter Beachtung abschaltbarer SH-Devices
 
-    def get_counters(self):
+    def get_virtual_values(self):
+        """ Virtuelle Module ermitteln die Werte rechnerisch auf Bais der Messwerte anderer Module. 
+        Daher können sie erst die Werte ermitteln, wenn die physischen Module ihre Werte ermittelt haben.
+        Würde man allle Module parallel abfragen, wären die virtuellen Module immer einen Zyklus hinterher.
+        """
+        try:
+            all_threads = []
+            all_threads.extend(self._get_virtual_counters())
+            # Start them all
+            if all_threads:
+                for thread in all_threads:
+                    thread.start()
+
+                # Wait for all to complete
+                for thread in all_threads:
+                    thread.join(timeout=3)
+        except Exception as e:
+            log.exception_logging(e)
+
+    def _get_counters(self):
         """ vorhandene Zähler durchgehen und je nach Konfiguration Module zur Abfrage der Werte aufrufen
         """
         try:
@@ -163,13 +187,48 @@ class loadvars():
         except Exception as e:
             log.exception_logging(e)
 
-    def get_cp(self):
+    def _get_virtual_counters(self):
+        """ vorhandene Zähler durchgehen und je nach Konfiguration Module zur Abfrage der Werte aufrufen
+        """
+        try:
+            counter_threads = []
+            for item in data.data.counter_data:
+                thread = None
+                if "counter" in item:
+                    counter = data.data.counter_data[item]
+                    if counter.data["config"]["selected"] == "virtual":
+                        thread = threading.Thread(target=c_virtual.read_virtual_counter, args=(counter,))
+
+                    if thread != None:
+                        counter_threads.append(thread)
+            return counter_threads
+        except Exception as e:
+            log.exception_logging(e)
+
+    def _get_cp(self):
         cp_threads = []
         for item in data.data.cp_data:
             thread = None
             try:
                 if "cp" in item:
                     cp = data.data.cp_data[item]
+                    # Anbindung
+                    if cp.data["config"]["connection_module"]["selected"] == "modbus_evse":
+                        thread = threading.Thread(target=cp_modbus_evse.read_modbus_evse, args=(cp,))
+                    elif cp.data["config"]["connection_module"]["selected"] == "ip_evse":
+                        thread = threading.Thread(target=cp_ip_evse.read_ip_evse, args=(cp,))
+                    elif cp.data["config"]["connection_module"]["selected"] == "modbus_slave":
+                        thread = threading.Thread(target=cp_modbus_slave.read_modbus_slave, args=(cp,))
+                    elif cp.data["config"]["connection_module"]["selected"] == "external_openwb":
+                        thread = threading.Thread(target=cp_external_openwb.read_external_openwb, args=(cp,))
+                    # elif cp.data["config"]["connection_module"]["selected"] == "":
+                    #     thread = threading.Thread(target=, args=(cp,))
+                    if thread != None:
+                        cp_threads.append(thread)
+                        
+                    # Display, Pushover, SocTimer eher am Ende
+
+                    # Ladeleistungsmodul
                     if cp.data["config"]["power_module"]["selected"] == "ethmpm3pm" or cp.data["config"]["power_module"]["selected"] == "ethmpm3pm_framer":
                         thread = threading.Thread(target=cp_etmpm3pm.read_ethmpm3pm, args=(cp,))
                     elif cp.data["config"]["power_module"]["selected"] == "mqtt":
@@ -183,7 +242,7 @@ class loadvars():
                 log.exception_logging(e)
         return cp_threads
 
-    def get_pv(self):
+    def _get_pv(self):
         pv_threads = []
         for item in data.data.pv_data:
             thread = None
@@ -264,7 +323,7 @@ class loadvars():
                 log.exception_logging(e)
         return pv_threads
 
-    def get_bat(self):
+    def _get_bat(self):
         bat_threads = []
         for item in data.data.bat_module_data:
             thread = None
@@ -335,5 +394,24 @@ class loadvars():
                 log.exception_logging(e)
         return bat_threads
 
-    def get_soc(self):
-        pass
+    def _get_soc(self):
+        try:
+            soc_threads = []
+            thread = None
+            if thread != None:
+                soc_threads.append(thread)
+            return soc_threads
+        except Exception as e:
+            log.exception_logging(e)
+
+    def _get_general(self):
+        try:
+            general_threads = []
+            thread = None
+            if data.data.general_data["general"].data["ripple_control_receiver"]["configured"] == True:
+                thread = threading.Thread(target=ripple_control_receiver.read_ripple_control_receiver, args=())
+            if thread != None:
+                general_threads.append(thread)
+            return general_threads
+        except Exception as e:
+            log.exception_logging(e)

@@ -3,11 +3,11 @@
 import json
 import pathlib
 
-from . import data
-from ..helpermodules import log
-from ..helpermodules import timecheck
+from ..algorithm import data
+from . import log
+from . import timecheck
 
-def save_daily_log():
+def save_log(folder):
     """ erstellt für jeden Tag eine Datei, die die Daten für den Langzeitgraph enthält.
     Dazu werden alle 5 Min folgende Daten als json-Liste gespeichert:
     {
@@ -64,8 +64,17 @@ def save_daily_log():
             ... (dynamsich, je nach Anzahl konfigurierter Geräte)
         }
     }
+
+    Parameter
+    ---------
+    folder: str
+        gibt an, ob ein Tages-oder Monatslogeintrag erstellt werden soll.
     """
     try:
+        if folder == "daily":
+            date = timecheck.create_timestamp_time()
+        else:
+            date = timecheck.create_timestamp_YYYYMMDD()
         cp_dict = {}
         for cp in data.data.cp_data:
             try:
@@ -109,7 +118,7 @@ def save_daily_log():
                 log.exception_logging(e)
 
         new_entry = {
-            "date": timecheck.create_timestamp_time(),
+            "date": date,
             "cp": cp_dict,
             "ev": ev_dict,
             "counter": counter_dict,
@@ -118,8 +127,12 @@ def save_daily_log():
         }
 
         # json-Objekt in Datei einfügen
-        pathlib.Path('./data/daily_log').mkdir(mode = 0o755, parents=True, exist_ok=True)
-        filepath = "./data/daily_log/"+timecheck.create_timestamp_YYYYMMDD()+".json"
+        if folder == "daily":
+            pathlib.Path('./data/daily_log').mkdir(mode = 0o755, parents=True, exist_ok=True)
+            filepath = "./data/daily_log/"+timecheck.create_timestamp_YYYYMMDD()+".json"
+        else:
+            pathlib.Path('./data/monthly_log').mkdir(mode = 0o755, parents=True, exist_ok=True)
+            filepath = "./data/monthly_log/"+timecheck.create_timestamp_YYYYMM()+".json"
         try:
             with open(filepath, "r") as jsonFile:
                 content = json.load(jsonFile)

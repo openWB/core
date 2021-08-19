@@ -7,7 +7,7 @@ def pub_settings():
     # cp1
     pub.pub("openWB/set/chargepoint/1/set/manual_lock", False)
     pub.pub("openWB/set/chargepoint/1/get/plug_time", "6/28/2021, 08:17:22")
-    pub.pub("openWB/set/chargepoint/1/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 0, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "mqtt"}, "power_module": {"selected": "mqtt"}})
+    pub.pub("openWB/set/chargepoint/1/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "mqtt"}, "power_module": {"selected": "mqtt"}})
     # cpt1
     pub.pub("openWB/set/chargepoint/template/1/autolock/1/frequency/selected", "daily")
     pub.pub("openWB/set/chargepoint/template/1/autolock/1/time", ["07:00", "16:15"])
@@ -21,7 +21,9 @@ def pub_settings():
     # # cp2
     pub.pub("openWB/set/chargepoint/2/set/manual_lock", False)
     pub.pub("openWB/set/chargepoint/2/get/plug_time", "6/28/2021, 08:21:22")
-    pub.pub("openWB/set/chargepoint/2/config", {"name": "LP2", "template": 2, "connected_phases": 3, "phase_1": 0, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": False, "connection_module": {"selected": "mqtt"}, "power_module": {"selected": "mqtt"}})
+    #pub.pub("openWB/set/chargepoint/2/config", {"name": "LP2", "template": 2, "connected_phases": 3, "phase_1": 2, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": False, "connection_module": {"selected": "external_openwb", "config": { "external_openwb": {"ip_address": "localhost", "chargepoint":1}}}, "power_module": {"selected": "mqtt"}})
+    pub.pub("openWB/set/chargepoint/2/config", {"name": "LP2", "template": 2, "connected_phases": 3, "phase_1": 2, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": False, "connection_module": {"selected": "mqtt"}, "power_module": {"selected": "mqtt"}})
+
     # # cpt2
     pub.pub("openWB/set/chargepoint/template/2/autolock/1/frequency/selected", "daily")
     pub.pub("openWB/set/chargepoint/template/2/autolock/1/time", ["07:00", "11:20"])
@@ -35,7 +37,9 @@ def pub_settings():
     # #cp3
     pub.pub("openWB/set/chargepoint/3/set/manual_lock", False)
     pub.pub("openWB/set/chargepoint/3/get/plug_time", "6/28/2021, 08:23:22")
-    pub.pub("openWB/set/chargepoint/3/config", {"name": "LP3", "template": 3, "connected_phases": 3, "phase_1": 0, "auto_phase_switch_hw": True, "control_pilot_interruption_hw": False, "connection_module": {"selected": "mqtt"}, "power_module": {"selected": "mqtt"}})
+    #pub.pub("openWB/set/chargepoint/3/config", {"name": "LP3", "template": 3, "connected_phases": 3, "phase_1": 3, "auto_phase_switch_hw": True, "control_pilot_interruption_hw": False, "connection_module": {"selected": "external_openwb", "config": { "external_openwb": {"ip_address": "localhost", "chargepoint":2}}}, "power_module": {"selected": "mqtt"}})
+    pub.pub("openWB/set/chargepoint/3/config", {"name": "LP3", "template": 3, "connected_phases": 3, "phase_1": 3, "auto_phase_switch_hw": True, "control_pilot_interruption_hw": False, "connection_module": {"selected": "mqtt"}, "power_module": {"selected": "mqtt"}})
+
     # # cpt3
     pub.pub("openWB/set/chargepoint/template/3/autolock/1/frequency/selected", "daily")
     pub.pub("openWB/set/chargepoint/template/3/autolock/1/time", ["07:00", "11:15"])
@@ -96,7 +100,7 @@ def pub_settings():
     pub.pub("openWB/set/vehicle/3/match_ev/selected", "rfid")
     pub.pub("openWB/set/vehicle/3/match_ev/tag_id", "89")
 
-    # # evt0 - default
+    # # # evt0 - default
     # pub.pub("openWB/set/vehicle/template/ev_template/0/min_current", 6)
     # pub.pub("openWB/set/vehicle/template/ev_template/0/battery_capacity", 20)
     # pub.pub("openWB/set/vehicle/template/ev_template/0/max_current_one_phase", 32)
@@ -106,7 +110,8 @@ def pub_settings():
     # pub.pub("openWB/set/vehicle/template/ev_template/0/control_pilot_interruption", False)
     # pub.pub("openWB/set/vehicle/template/ev_template/0/nominal_difference", 2)
     # pub.pub("openWB/set/vehicle/template/ev_template/0/prevent_switch_stop", True)
-    # #evt1 - Tesla Facelift
+    pub.pub("openWB/set/vehicle/template/ev_template/0/phase_switch_pause", 2)
+    # # #evt1 - Tesla Facelift
     # pub.pub("openWB/set/vehicle/template/ev_template/1/min_current", 6)
     # pub.pub("openWB/set/vehicle/template/ev_template/1/battery_capacity", 82)
     # pub.pub("openWB/set/vehicle/template/ev_template/1/max_current_one_phase", 32)
@@ -115,7 +120,8 @@ def pub_settings():
     # pub.pub("openWB/set/vehicle/template/ev_template/1/average_consump", 17)
     # pub.pub("openWB/set/vehicle/template/ev_template/1/control_pilot_interruption", False)
     # pub.pub("openWB/set/vehicle/template/ev_template/1/nominal_difference", 2)
-    # pub.pub("openWB/set/vehicle/template/ev_template/1/prevent_switch_stop", True)
+    # pub.pub("openWB/set/vehicle/template/ev_template/1/prevent_switch_stop", False)
+    pub.pub("openWB/set/vehicle/template/ev_template/1/phase_switch_pause", 30)
     # #evt2 - Inoiq
     # pub.pub("openWB/set/vehicle/template/ev_template/2/min_current", 6)
     # pub.pub("openWB/set/vehicle/template/ev_template/2/battery_capacity", 82)
@@ -126,6 +132,7 @@ def pub_settings():
     # pub.pub("openWB/set/vehicle/template/ev_template/2/control_pilot_interruption", False)
     # pub.pub("openWB/set/vehicle/template/ev_template/2/nominal_difference", 2)
     # pub.pub("openWB/set/vehicle/template/ev_template/2/prevent_switch_stop", True)
+    pub.pub("openWB/set/vehicle/template/ev_template/2/phase_switch_pause", 2)
     # #evt3 - Tesla
     # pub.pub("openWB/set/vehicle/template/ev_template/3/min_current", 6)
     # pub.pub("openWB/set/vehicle/template/ev_template/3/battery_capacity", 82)
@@ -136,6 +143,7 @@ def pub_settings():
     # pub.pub("openWB/set/vehicle/template/ev_template/3/control_pilot_interruption", False)
     # pub.pub("openWB/set/vehicle/template/ev_template/3/nominal_difference", 2)
     # pub.pub("openWB/set/vehicle/template/ev_template/3/prevent_switch_stop", False)
+    pub.pub("openWB/set/vehicle/template/ev_template/3/phase_switch_pause", 2)
 
     plans_for_scheduled_charging = {
         "1": {"name": "abc", "time": "14:15", "soc": 85, "active": 1, "frequency": {"selected": "daily"}},
@@ -263,7 +271,7 @@ def pub_settings():
     pub.pub("openWB/set/general/chargemode_config/pv_charging/switch_on_threshold", 1500)
     pub.pub("openWB/set/general/chargemode_config/pv_charging/feed_in_yield", 15000)
     pub.pub("openWB/set/general/chargemode_config/pv_charging/phase_switch_delay", 15)
-    pub.pub("openWB/set/general/chargemode_config/pv_charging/phases_to_use", 0)
+    pub.pub("openWB/set/general/chargemode_config/pv_charging/phases_to_use", 1)
     pub.pub("openWB/set/general/chargemode_config/scheduled_charging/phases_to_use", 0)
     pub.pub("openWB/set/general/chargemode_config/time_charging/phases_to_use", 1)
     pub.pub("openWB/set/general/chargemode_config/standby/phases_to_use", 1)
@@ -272,6 +280,7 @@ def pub_settings():
     pub.pub("openWB/set/general/price_kwh", 0.2)
     pub.pub("openWB/set/general/grid_protection_configured", True)
     pub.pub("openWB/set/general/control_interval", 10)
+    pub.pub("openWB/set/general/ripple_control_receiver/configured", False)
 
     # graph
     pub.pub("openWB/graph/config/duration", 30)
