@@ -130,9 +130,9 @@ class prepare():
                             if cp.data["set"]["charging_ev"] != -1:
                                 # Altes EV merken
                                 cp.data["set"]["charging_ev_prev"] = cp.data["set"]["charging_ev"]
-                                pub.pub("openWB/set/chargepoint/"+cp.cp_num+"/set/charging_ev_prev", cp.data["set"]["charging_ev_prev"])
+                                pub.pub("openWB/set/chargepoint/"+str(cp.cp_num)+"/set/charging_ev_prev", cp.data["set"]["charging_ev_prev"])
                             cp.data["set"]["charging_ev"] = -1
-                            pub.pub("openWB/set/chargepoint/"+cp.cp_num+"/set/charging_ev", -1)
+                            pub.pub("openWB/set/chargepoint/"+str(cp.cp_num)+"/set/charging_ev", -1)
                             log.message_debug_log("debug", "EV"+str(charging_ev.ev_num)+": Lademodus "+str(charging_ev.charge_template.data["chargemode"]["selected"])+", Submodus: "+str(charging_ev.data["control_parameter"]["submode"]))
                         else:
                             if (charging_ev.data["control_parameter"]["timestamp_switch_on_off"] != "0" and
