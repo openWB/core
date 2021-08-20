@@ -502,7 +502,7 @@ class chargepoint():
                 if self.set_current_prev == 0 and self.data["set"]["current"] != 0:
                     selected = self.data["config"]["connection_module"]["selected"]
                     config = self.data["config"]["connection_module"]["config"][selected]
-                    cp_interruption.thread_cp_interruption(self.cp_num, selected, config, charging_ev.ev_template.data["control_pilot_interruption_duration"])
+                    #cp_interruption.thread_cp_interruption(self.cp_num, selected, config, charging_ev.ev_template.data["control_pilot_interruption_duration"])
                     message = "Control-Pilot-Unterbrechung fuer "+str(charging_ev.ev_template.data["control_pilot_interruption_duration"])+"s."
                     log.message_debug_log("info", "LP "+str(self.cp_num)+": "+message)
                     self.data["get"]["state_str"] = message
@@ -548,7 +548,7 @@ class chargepoint():
                         selected = self.data["config"]["connection_module"]["selected"]
                         config = self.data["config"]["connection_module"]["config"][selected]
                         charge_state = self.data["get"]["charge_state"]
-                        phase_switch.thread_phase_switch(self.cp_num, selected, config, self.data["set"]["phases_to_use"], charging_ev.ev_template.data["phase_switch_pause"], charge_state)
+                        #phase_switch.thread_phase_switch(self.cp_num, selected, config, self.data["set"]["phases_to_use"], charging_ev.ev_template.data["phase_switch_pause"], charge_state)
                         log.message_debug_log("debug", "start phase switch phases_to_use "+str(self.data["set"]["phases_to_use"])+"control_parameter phases "+str(charging_ev.data["control_parameter"]["phases"]))
                         # 1 -> 3
                         if charging_ev.data["control_parameter"]["phases"] == 3:
