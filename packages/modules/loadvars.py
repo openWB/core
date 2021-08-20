@@ -1,4 +1,4 @@
-"""
+""" Fragt die Werte der Module ab. Nur die openWB Kits können mit mehreren Threads gleichzeitig abgefragt werden.
 """
 
 import threading
@@ -61,12 +61,13 @@ class loadvars():
     def get_values(self):
         try:
             all_threads = []
-            all_threads.extend(self._get_cp())
-            all_threads.extend(self._get_counters())
-            all_threads.extend(self._get_pv())
-            all_threads.extend(self._get_bat())
-            all_threads.extend(self._get_soc())
-            all_threads.extend(self._get_general())
+            self._get_cp()
+            self._get_counters()
+            self._get_pv()
+            self._get_bat()
+            self._get_soc()
+            self._get_general()
+            all_threads = self._get_kits()
             # Start them all
             if all_threads:
                 for thread in all_threads:
@@ -105,21 +106,17 @@ class loadvars():
         """ vorhandene Zähler durchgehen und je nach Konfiguration Module zur Abfrage der Werte aufrufen
         """
         try:
-            counter_threads = []
             for item in data.data.counter_data:
-                thread = None
                 if "counter" in item:
                     counter = data.data.counter_data[item]
-                    if counter.data["config"]["selected"] == "openwb":
-                        thread = threading.Thread(target=c_ethmpm3pm.read_ethmpm3pm, args=(counter,))
-                    elif counter.data["config"]["selected"] == "alpha_ess":
-                        thread = threading.Thread(target=c_alpha_ess.read_alpha_ess, args=(counter, data.data.bat_module_data["bat1"].data["config"]["config"]["alpha_ess"]["version"]))
+                    if counter.data["config"]["selected"] == "alpha_ess":
+                        c_alpha_ess.read_alpha_ess(counter, data.data.bat_module_data["bat1"].data["config"]["config"]["alpha_ess"]["version"])
                     elif counter.data["config"]["selected"] == "carlogavazzi_lan":
-                        thread = threading.Thread(target=c_carlogavazzi_lan.read_gavazzi, args=(counter,))
+                        c_carlogavazzi_lan.read_gavazzi(counter)
                     elif counter.data["config"]["selected"] == "discovergy":
-                        thread = threading.Thread(target=c_discovergy.read_discovergy, args=(counter,))
+                        c_discovergy.read_discovergy(counter)
                     elif counter.data["config"]["selected"] == "e3dc":
-                        thread = threading.Thread(target=c_e3dc.read_e3dc, args=(counter, data.data.bat_module_data["bat1"].data["config"]["config"]["e3dc"]["ip_address"]))
+                        c_e3dc.read_e3dc(counter, data.data.bat_module_data["bat1"].data["config"]["config"]["e3dc"]["ip_address"])
                     elif counter.data["config"]["selected"] == "fronius_energy_meter":
                         pass
                     elif counter.data["config"]["selected"] == "fronius_s0":
@@ -129,23 +126,23 @@ class loadvars():
                     elif counter.data["config"]["selected"] == "kostal_plenticore":
                         pass
                     elif counter.data["config"]["selected"] == "kostal_smart_energy_meter":
-                        thread = threading.Thread(target=c_kostal_smart_energy_meter.read_kostal_smart_energy_meter, args=(counter,))
+                        c_kostal_smart_energy_meter.read_kostal_smart_energy_meter(counter)
                     elif counter.data["config"]["selected"] == "lg_ess_v1":
                         pass
                     elif counter.data["config"]["selected"] == "janitza":
-                        thread = threading.Thread(target=c_janitza.read_janitza, args=(counter,))
+                        c_janitza.read_janitza(counter)
                     elif counter.data["config"]["selected"] == "open_ems":
                         pass
                     elif counter.data["config"]["selected"] == "powerdog":
-                        thread = threading.Thread(target=c_powerdog.read_powerdog, args=(counter,))
+                        c_powerdog.read_powerdog(counter)
                     elif counter.data["config"]["selected"] == "powerfox":
                         pass
                     elif counter.data["config"]["selected"] == "rct":
-                        thread = threading.Thread(target=c_rct.read_rct, args=(counter,))
+                        c_rct.read_rct(counter)
                     elif counter.data["config"]["selected"] == "sbs25":
-                        thread = threading.Thread(target=c_sbs25.read_sbs25, args=(counter,))
+                        c_sbs25.read_sbs25(counter)
                     elif counter.data["config"]["selected"] == "siemens":
-                        thread = threading.Thread(target=c_siemens.read_siemens, args=(counter,))
+                        c_siemens.read_siemens(counter)
                     elif counter.data["config"]["selected"] == "sma_homemanager":
                         pass
                     elif counter.data["config"]["selected"] == "smartfox":
@@ -153,7 +150,7 @@ class loadvars():
                     elif counter.data["config"]["selected"] == "smartme":
                         pass
                     elif counter.data["config"]["selected"] == "solaredge":
-                        thread = threading.Thread(target=c_solaredge.read_solaredge, args=(counter,))
+                        c_solaredge.read_solaredge(counter)
                     elif counter.data["config"]["selected"] == "solarlog":
                         pass
                     elif counter.data["config"]["selected"] == "solarview":
@@ -163,13 +160,13 @@ class loadvars():
                     elif counter.data["config"]["selected"] == "solarworld":
                         pass
                     elif counter.data["config"]["selected"] == "solax":
-                        thread = threading.Thread(target=c_solax.read_solax, args=(counter,))
+                        c_solax.read_solax(counter)
                     elif counter.data["config"]["selected"] == "solax":
-                        thread = threading.Thread(target=c_sungrow.read_sungrow, args=(counter,))
+                        c_sungrow.read_sungrow(counter)
                     elif counter.data["config"]["selected"] == "varta":
-                        thread = threading.Thread(target=c_varta.read_varta, args=(counter,))
+                        c_varta.read_varta(counter)
                     elif counter.data["config"]["selected"] == "victron":
-                        thread = threading.Thread(target=c_victron.read_victron, args=(counter,))
+                        c_victron.read_victron(counter)
                     elif counter.data["config"]["selected"] == "http":
                         pass
                     elif counter.data["config"]["selected"] == "json":
@@ -180,10 +177,6 @@ class loadvars():
                         pass
                     elif counter.data["config"]["selected"] == "vz_logger":
                         pass
-                    
-                    if thread != None:
-                        counter_threads.append(thread)
-            return counter_threads
         except Exception as e:
             log.exception_logging(e)
 
@@ -191,7 +184,7 @@ class loadvars():
         """ vorhandene Zähler durchgehen und je nach Konfiguration Module zur Abfrage der Werte aufrufen
         """
         try:
-            counter_threads = []
+            virtual_threads = []
             for item in data.data.counter_data:
                 thread = None
                 if "counter" in item:
@@ -200,218 +193,229 @@ class loadvars():
                         thread = threading.Thread(target=c_virtual.read_virtual_counter, args=(counter,))
 
                     if thread != None:
-                        counter_threads.append(thread)
-            return counter_threads
+                        virtual_threads.append(thread)
+            return virtual_threads
         except Exception as e:
             log.exception_logging(e)
 
     def _get_cp(self):
-        cp_threads = []
         for item in data.data.cp_data:
-            thread = None
             try:
                 if "cp" in item:
                     cp = data.data.cp_data[item]
                     # Anbindung
                     if cp.data["config"]["connection_module"]["selected"] == "modbus_evse":
-                        thread = threading.Thread(target=cp_modbus_evse.read_modbus_evse, args=(cp,))
+                        cp_modbus_evse.read_modbus_evse(cp)
                     elif cp.data["config"]["connection_module"]["selected"] == "ip_evse":
-                        thread = threading.Thread(target=cp_ip_evse.read_ip_evse, args=(cp,))
+                        cp_ip_evse.read_ip_evse(cp)
                     elif cp.data["config"]["connection_module"]["selected"] == "modbus_slave":
-                        thread = threading.Thread(target=cp_modbus_slave.read_modbus_slave, args=(cp,))
+                        cp_modbus_slave.read_modbus_slave(cp)
                     elif cp.data["config"]["connection_module"]["selected"] == "external_openwb":
-                        thread = threading.Thread(target=cp_external_openwb.read_external_openwb, args=(cp,))
+                        cp_external_openwb.read_external_openwb(cp)
                     # elif cp.data["config"]["connection_module"]["selected"] == "":
-                    #     thread = threading.Thread(target=, args=(cp,))
-                    if thread != None:
-                        cp_threads.append(thread)
+                    #     (cp)
                         
                     # Display, Pushover, SocTimer eher am Ende
 
                     # Ladeleistungsmodul
                     if cp.data["config"]["power_module"]["selected"] == "ethmpm3pm" or cp.data["config"]["power_module"]["selected"] == "ethmpm3pm_framer":
-                        thread = threading.Thread(target=cp_etmpm3pm.read_ethmpm3pm, args=(cp,))
+                        cp_etmpm3pm.read_ethmpm3pm(cp)
                     elif cp.data["config"]["power_module"]["selected"] == "mqtt":
-                        thread = threading.Thread(target=cp_mqtt.mqtt_state, args=(cp,))
+                        cp_mqtt.mqtt_state(cp)
 
                     # elif cp.data["config"]["power_module"]["selected"] == "":
-                    #     thread = threading.Thread(target=, args=(cp,))
-                    if thread != None:
-                        cp_threads.append(thread)
+                    #     (cp)
             except Exception as e:
                 log.exception_logging(e)
-        return cp_threads
 
     def _get_pv(self):
-        pv_threads = []
         for item in data.data.pv_data:
-            thread = None
             try:
                 if "pv" in item:
                     pv = data.data.pv_data[item]
-                    if pv.data["config"]["selected"] == "openwb_pv_kit" or pv.data["config"]["selected"] == "openwb_evu_kit":
-                        thread = threading.Thread(target=p_ethmpm3pm, args=(pv,))
                     # elif pv.data["config"]["selected"] == "discovergy":
-                    #     thread = threading.Thread(target=, args=(pv,))
-                    elif pv.data["config"]["selected"] == "ethsdm120":
-                        thread = threading.Thread(target=p_ethsdm120.read_ethsdm120, args=(pv,))
+                    #     (pv)
+                    
                     # elif pv.data["config"]["selected"] == "fronius_energy_meter":
-                    #     thread = threading.Thread(target=, args=(pv,))
+                    #     (pv)
                     # elif pv.data["config"]["selected"] == "fronius":
-                    #     thread = threading.Thread(target=, args=(pv,))
+                    #     (pv)
                     # elif pv.data["config"]["selected"] == "http":
-                    #     thread = threading.Thread(target=, args=(pv,))
-                    elif pv.data["config"]["selected"] == "huawei":
-                        thread = threading.Thread(target=p_huawei.read_huawei, args=(pv,))
+                    #     (pv)
+                    if pv.data["config"]["selected"] == "huawei":
+                        p_huawei.read_huawei(pv)
                     # elif pv.data["config"]["selected"] == "json":
-                    #     thread = threading.Thread(target=, args=(pv,))
+                    #     (pv)
                     # elif pv.data["config"]["selected"] == "kostal_piko":
-                    #     thread = threading.Thread(target=, args=(pv,))
+                    #     (pv)
                     # elif pv.data["config"]["selected"] == "kostal_piko_deprecated":
-                    #     thread = threading.Thread(target=, args=(pv,))
+                    #     (pv)
                     # elif pv.data["config"]["selected"] == "lg_ess_v1":
-                    #     thread = threading.Thread(target=, args=(pv,))
+                    #     (pv)
                     # elif pv.data["config"]["selected"] == "mqtt":
-                    #     thread = threading.Thread(target=, args=(pv,))
+                    #     (pv)
                     # elif pv.data["config"]["selected"] == "kostal_plenticore":
-                    #     thread = threading.Thread(target=, args=(pv,))
+                    #     (pv)
                     elif pv.data["config"]["selected"] == "powerdog":
-                        thread = threading.Thread(target=p_powerdog.read_powerdog, args=(pv,))
+                        p_powerdog.read_powerdog(pv)
                     # elif pv.data["config"]["selected"] == "powerwall":
-                    #     thread = threading.Thread(target=, args=(pv,))
+                    #     (pv)
                     # elif pv.data["config"]["selected"] == "rct":
-                    #     thread = threading.Thread(target=, args=(pv,))
+                    #     (pv)
                     # elif pv.data["config"]["selected"] == "shelly":
-                    #     thread = threading.Thread(target=, args=(pv,))
+                    #     (pv)
                     elif pv.data["config"]["selected"] == "siemens":
-                        thread = threading.Thread(target=p_siemens.read_siemens, args=(pv,))
+                        p_siemens.read_siemens(pv)
                     # elif pv.data["config"]["selected"] == "smartme":
-                    #     thread = threading.Thread(target=, args=(pv,))
+                    #     (pv)
                     # elif pv.data["config"]["selected"] == "solaredge":
-                    #     thread = threading.Thread(target=, args=(pv,))
+                    #     (pv)
                     # elif pv.data["config"]["selected"] == "solarlog":
-                    #     thread = threading.Thread(target=, args=(pv,))
+                    #     (pv)
                     # elif pv.data["config"]["selected"] == "solarview":
-                    #     thread = threading.Thread(target=, args=(pv,))
+                    #     (pv)
                     # elif pv.data["config"]["selected"] == "solarwatt":
-                    #     thread = threading.Thread(target=, args=(pv,))
+                    #     (pv)
                     # elif pv.data["config"]["selected"] == "solarworld":
-                    #     thread = threading.Thread(target=, args=(pv,))
+                    #     (pv)
                     elif pv.data["config"]["selected"] == "solax":
-                        thread = threading.Thread(target=p_solax.read_solax, args=(pv,))
+                        p_solax.read_solax(pv)
                     elif pv.data["config"]["selected"] == "studer_innotec":
-                        thread = threading.Thread(target=p_studer_innotec.read_studer_innotec, args=(pv,))
+                        p_studer_innotec.read_studer_innotec(pv)
                     elif pv.data["config"]["selected"] == "sungrow":
-                        thread = threading.Thread(target=p_sungrow.read_sungrow, args=(pv,))
+                        p_sungrow.read_sungrow(pv)
                     # elif pv.data["config"]["selected"] == "sunwaves":
-                    #     thread = threading.Thread(target=, args=(pv,))
+                    #     (pv)
                     # elif pv.data["config"]["selected"] == "sunways":
-                    #     thread = threading.Thread(target=, args=(pv,))
+                    #     (pv)
                     # elif pv.data["config"]["selected"] == "tripower":
-                    #     thread = threading.Thread(target=, args=(pv,))
+                    #     (pv)
                     elif pv.data["config"]["selected"] == "victron":
-                        thread = threading.Thread(target=p_victron.read_victron, args=(pv,))
+                        p_victron.read_victron(pv)
                     # elif pv.data["config"]["selected"] == "youless":
-                    #     thread = threading.Thread(target=, args=(pv,))
+                    #     (pv)
                     # elif pv.data["config"]["selected"] == "smamodbus":
-                    #     thread = threading.Thread(target=, args=(pv,))
+                    #     (pv)
                     # elif pv.data["config"]["selected"] == "vz_logger":
-                    #     thread = threading.Thread(target=, args=(pv,))
-                    if thread != None:
-                        pv_threads.append(thread)
+                    #     (pv)
             except Exception as e:
                 log.exception_logging(e)
-        return pv_threads
 
     def _get_bat(self):
-        bat_threads = []
         for item in data.data.bat_module_data:
-            thread = None
             try:
                 if "bat" in item:
                     bat = data.data.bat_module_data[item]
-                    if bat.data["config"]["selected"] == "openwb":
-                        thread = threading.Thread(target=b_openwb.read_openwb, args=(bat,))
-                    elif bat.data["config"]["selected"] == "alpha_ess":
-                        thread = threading.Thread(target=b_alpha_ess.read_alpha_ess, args=(bat,))
+                    if bat.data["config"]["selected"] == "alpha_ess":
+                        b_alpha_ess.read_alpha_ess(bat)
                     # elif bat.data["config"]["selected"] == "byd":
-                    #     thread = threading.Thread(target=, args=(bat,))
+                    #     (bat)
                     # elif bat.data["config"]["selected"] == "e3dc":
-                    #     thread = threading.Thread(target=, args=(bat,))
+                    #     (bat)
                     # elif bat.data["config"]["selected"] == "fronius_energy_meter":
-                    #     thread = threading.Thread(target=, args=(bat,))
+                    #     (bat)
                     # elif bat.data["config"]["selected"] == "fronius":
-                    #     thread = threading.Thread(target=, args=(bat,))
+                    #     (bat)
                     # elif bat.data["config"]["selected"] == "kostal_plenticore":
-                    #     thread = threading.Thread(target=, args=(bat,))
+                    #     (bat)
                     # elif bat.data["config"]["selected"] == "lg_ess":
-                    #     thread = threading.Thread(target=, args=(bat,))
+                    #     (bat)
                     elif bat.data["config"]["selected"] == "mpm3pm":
-                        thread = threading.Thread(target=b_mpm3pm.read_mpm3pm, args=(bat,))
+                        b_mpm3pm.read_mpm3pm(bat)
                     # elif bat.data["config"]["selected"] == "open_ems":
-                    #     thread = threading.Thread(target=, args=(bat,))
+                    #     (bat)
                     elif bat.data["config"]["selected"] == "openwb":
-                        thread = threading.Thread(target=b_openwb.read_openwb, args=(bat,))
+                        b_openwb.read_openwb(bat)
                     # elif bat.data["config"]["selected"] == "rct":
-                    #     thread = threading.Thread(target=, args=(bat,))
+                    #     (bat)
                     elif bat.data["config"]["selected"] == "saxpower":
-                        thread = threading.Thread(target=b_saxpower.read_saxpower, args=(bat,))
+                        b_saxpower.read_saxpower(bat)
                     elif bat.data["config"]["selected"] == "sbs25":
-                        thread = threading.Thread(target=b_sbs25.read_sbs25, args=(bat,))
+                        b_sbs25.read_sbs25(bat)
                     elif bat.data["config"]["selected"] == "siemens":
-                        thread = threading.Thread(target=b_siemens.read_siemens, args=(bat,))
+                        b_siemens.read_siemens(bat)
                     # elif bat.data["config"]["selected"] == "sma_sunny_boy":
-                    #     thread = threading.Thread(target=, args=(bat,))
+                    #     (bat)
                     elif bat.data["config"]["selected"] == "sma_sunny_island":
-                        thread = threading.Thread(target=b_sma_sunny_island.read_sma_sunny_island, args=(bat,))
+                        b_sma_sunny_island.read_sma_sunny_island(bat)
                     # elif bat.data["config"]["selected"] == "solaredge":
-                    #     thread = threading.Thread(target=, args=(bat,))
+                    #     (bat)
                     # elif bat.data["config"]["selected"] == "solarwatt":
-                    #     thread = threading.Thread(target=, args=(bat,))
+                    #     (bat)
                     elif bat.data["config"]["selected"] == "solax":
-                        thread = threading.Thread(target=b_solax.read_solax, args=(bat,))
+                        b_solax.read_solax(bat)
                     # elif bat.data["config"]["selected"] == "sonnen_eco":
-                    #     thread = threading.Thread(target=, args=(bat,))
+                    #     (bat)
                     elif bat.data["config"]["selected"] == "studer_innotec":
-                        thread = threading.Thread(target=b_studer_innotec.read_studer_innotec, args=(bat,))
+                        b_studer_innotec.read_studer_innotec(bat)
                     elif bat.data["config"]["selected"] == "sungrow":
-                        thread = threading.Thread(target=b_sungrow.read_sungrow, args=(bat,))
+                        b_sungrow.read_sungrow(bat)
                     # elif bat.data["config"]["selected"] == "powerwall":
-                    #     thread = threading.Thread(target=, args=(bat,))
+                    #     (bat)
                     elif bat.data["config"]["selected"] == "tesvolt":
-                        thread = threading.Thread(target=b_tesvolt.read_tesvolt, args=(bat,))
+                        b_tesvolt.read_tesvolt(bat)
                     # elif bat.data["config"]["selected"] == "varta":
-                    #     thread = threading.Thread(target=, args=(bat,))
+                    #     (bat)
                     elif bat.data["config"]["selected"] == "victron":
-                        thread = threading.Thread(target=b_victron.read_victron, args=(bat,))
+                        b_victron.read_victron(bat)
                     # elif bat.data["config"]["selected"] == "http":
-                    #     thread = threading.Thread(target=, args=(bat,))
+                    #     (bat)
                     # elif bat.data["config"]["selected"] == "json":
-                    #     thread = threading.Thread(target=, args=(bat,))
-                    if thread != None:
-                        bat_threads.append(thread)
+                    #     (bat)
             except Exception as e:
                 log.exception_logging(e)
-        return bat_threads
 
     def _get_soc(self):
         try:
-            soc_threads = []
-            thread = None
-            if thread != None:
-                soc_threads.append(thread)
-            return soc_threads
+            pass
         except Exception as e:
             log.exception_logging(e)
 
     def _get_general(self):
         try:
-            general_threads = []
-            thread = None
             if data.data.general_data["general"].data["ripple_control_receiver"]["configured"] == True:
-                thread = threading.Thread(target=ripple_control_receiver.read_ripple_control_receiver, args=())
-            if thread != None:
-                general_threads.append(thread)
-            return general_threads
+                ripple_control_receiver.read_ripple_control_receiver()
+        except Exception as e:
+            log.exception_logging(e)
+
+    def _get_kits(self):
+        try:
+            kits_threads = []
+            for item in data.data.counter_data:
+                try:
+                    if "counter" in item:
+                        thread = None
+                        counter = data.data.counter_data[item]
+                        if counter.data["config"]["selected"] == "openwb":
+                            thread = threading.Thread(target=c_ethmpm3pm.read_ethmpm3pm, args=(counter,))
+                        if thread != None:
+                            kits_threads.append(thread)
+                except Exception as e:
+                    log.exception_logging(e)
+            for item in data.data.pv_data:
+                try:
+                    if "pv" in item:
+                        thread = None
+                        pv = data.data.pv_data[item]
+                        if pv.data["config"]["selected"] == "openwb_pv_kit" or pv.data["config"]["selected"] == "openwb_evu_kit":
+                            thread = threading.Thread(target=p_ethmpm3pm.read_ethmpm3pm, args=(pv,))
+                        elif pv.data["config"]["selected"] == "ethsdm120":
+                            thread = threading.Thread(target=p_ethsdm120.read_ethsdm120, args=(pv,))
+                        if thread != None:
+                            kits_threads.append(thread)
+                except Exception as e:
+                    log.exception_logging(e)
+            for item in data.data.bat_module_data:
+                try:
+                    if "bat" in item:
+                        thread = None
+                        bat = data.data.bat_module_data[item]
+                        if bat.data["config"]["selected"] == "openwb":
+                            thread = threading.Thread(target=b_openwb.read_openwb, args=(bat,))
+                        if thread != None:
+                            kits_threads.append(thread)
+                except Exception as e:
+                    log.exception_logging(e)
+            return kits_threads
         except Exception as e:
             log.exception_logging(e)

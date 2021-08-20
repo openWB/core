@@ -244,7 +244,7 @@ class counter():
         # Zählvariablen vor dem Start der Regelung zurücksetzen
         try:
             # Nur beim EVU-Zähler (counter0) wird auch die maximale Leistung geprüft.
-            if self.counter_num == "0":
+            if self.counter_num == 0:
                 # max Leistung
                 if self.data["get"]["power_all"] > 0:
                     self.data["set"]["consumption_left"] = self.data["config"]["max_consumption"] - self.data["get"]["power_all"]
