@@ -72,6 +72,25 @@ class allChargepoints():
         except Exception as e:
             log.exception_logging(e)
 
+    def get_power_counter_all(self):
+        """ ermittelt die aktuelle Leistung und Zählerstand von allen Ladepunkten.
+        """
+        counter_all = 0
+        power_all = 0
+        try:
+            for cp in data.data.cp_data:
+                try:
+                    if "cp" in cp:
+                        chargepoint = data.data.cp_data[cp]
+                        power_all = power_all + chargepoint.data["get"]["power_all"]
+                        counter_all = counter_all + chargepoint.data["get"]["counter"]
+                except Exception as e:
+                    log.exception_logging(e)
+            pub.pub("openWB/set/chargepoint/get/power_all", power_all)
+            pub.pub("openWB/set/chargepoint/get/counter_all", counter_all)
+        except Exception as e:
+            log.exception_logging(e)
+
     def match_rfid_to_cp(self):
         """ ordnet einen gescannten Tag einem Ladepunkt zu. Allgemeine Funktion, da auch an einem zentralen Ladepunkt gescannt werden kann.
         Wenn der RFID-Modus 1 ist, wird die Funktion zur Zuordnung bei zentralem Scanner genutzt, wenn es eine openWB Duo ist. 
@@ -166,8 +185,8 @@ class allChargepoints():
                                 # Wenn man einen Tag hat, der nicht vor mehr als 5 Min gescannt wurde, ist es egal, ob das Auto vor oder nach dem Scannen angesteckt wurde. 
                                 # Um den Tag zuzuordnen, muss RFID-Zuordnung aktiviert sein, es darf kein Tag zugeordnet sein (wird beim Abstecken zurückgesetzt) und es muss ein Auto angesteckt sein.
                                 if chargepoint.data["set"]["rfid"] == "0" and chargepoint.data["get"]["plug_state"] == True:
-                                    if plug_time == 0 or timecheck.get_difference(plug_time, chargepoint.data["get"]["plug_time"]) < 0:
-                                        plug_time = chargepoint.data["get"]["plug_time"]
+                                    if plug_time == 0 or timecheck.get_difference(plug_time, chargepoint.data["set"]["plug_time"]) < 0:
+                                        plug_time = chargepoint.data["set"]["plug_time"]
                                         last_plugged_cp = chargepoint
                     except Exception as e:
                         log.exception_logging(e)
@@ -222,6 +241,7 @@ class chargepoint():
                     self.data["set"]["current"] = 0
                 if "energy_to_charge" not in self.data["set"]:
                     self.data["set"]["energy_to_charge"] = 0
+                self.data["set"]["plug_time"] = "0"
                 self.data["get"]["read_tag"] = {}
                 self.data["get"]["read_tag"]["tag"] = "0"
                 self.data["get"]["read_tag"]["timestamp"] = "0"
@@ -243,6 +263,11 @@ class chargepoint():
                     self.data["set"]["log"]["time_charged"] = "00:00"
                 if "chargemode_log_entry" not in self.data["set"]["log"]:
                     self.data["set"]["log"]["chargemode_log_entry"] = "_"
+                self.data["get"]["connected_vehicle"] = {}
+                self.data["get"]["connected_vehicle"]["soc_config"] = {}
+                self.data["get"]["connected_vehicle"]["soc"] = {}
+                self.data["get"]["connected_vehicle"]["info"] = {}
+                self.data["get"]["connected_vehicle"]["config"] = {}
         except Exception as e:
             log.exception_logging(e)
 
@@ -380,6 +405,10 @@ class chargepoint():
             if state == False:
                 message = "Keine Ladung, da kein Auto angesteckt ist."
             else:
+                log.message_debug_log("debug", "ev"+str(self.cp_num)+" plugged"+str(self.data["set"]["plug_time"]))
+                if self.data["set"]["plug_time"] == "0":
+                    self.data["set"]["plug_time"] = timecheck.create_timestamp()
+                    pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/plug_time", self.data["set"]["plug_time"])
                 message = None
             return state, message
         except Exception as e:
@@ -430,16 +459,16 @@ class chargepoint():
                 self.set_current_prev = self.data["set"]["current"]
             message = "Keine Ladung, da ein Fehler aufgetreten ist."
             charging_possbile = False
-            state, message = self._is_grid_protection_active()
-            if state == False:
-                state, message = self._is_ripple_control_receiver_active()
+            state, message = self._is_ev_plugged()
+            if state == True:
+                state, message = self._is_grid_protection_active()
                 if state == False:
-                    state, message = self._is_cp_available()
-                    if state == True:
-                        state, message = self._is_manual_lock_active()
-                        if state == False:
-                            state, message = self._is_ev_plugged()
-                            if state == True:
+                    state, message = self._is_ripple_control_receiver_active()
+                    if state == False:
+                        state, message = self._is_cp_available()
+                        if state == True:
+                            state, message = self._is_manual_lock_active()
+                            if state == False:
                                 state, message = self._is_autolock_active()
                                 if state == False:
                                     charging_possbile = True
@@ -448,7 +477,8 @@ class chargepoint():
                                     if state == True:
                                         charging_possbile = True
             if charging_possbile == True:
-                ev_num, message = self.template.get_ev(self.data["set"]["rfid"], self.data["get"]["plug_time"])
+                ev_num, message = self.template.get_ev(self.data["set"]["rfid"], self.data["set"]["plug_time"])
+                log.message_debug_log("debug", "possible"+str(ev_num))
                 if ev_num != -1:
                     return ev_num, message
                 # Tag zurücksetzen, wenn kein EV zugeordnet werden kann
@@ -480,6 +510,8 @@ class chargepoint():
                     pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/charging_ev_prev", self.data["set"]["charging_ev_prev"])
                     self.data["set"]["rfid"] = "0"
                     pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/rfid", "0")
+                    self.data["set"]["plug_time"] = "0"
+                    pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/plug_time", "0")
             self.data["set"]["charging_ev"] = -1
             pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/charging_ev", -1)
             self.data["set"]["current"] = 0
