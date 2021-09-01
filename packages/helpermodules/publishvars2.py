@@ -1,790 +1,337 @@
-""" Modul, um die Daten vom Broker zu erhalten.
-"""
-
-import copy
-import json
-import paho.mqtt.client as mqtt
-import re
-
-from . import log
 from . import pub
-from . import subdata
 
-class setData():
- 
-    def __init__(self, event_ev_template, event_charge_template):
-        self.event_ev_template = event_ev_template
-        self.event_charge_template = event_charge_template
-        self.heartbeat = False
 
-    def set_data(self):
-        """ abonniert alle set-Topics.
-        """
-        mqtt_broker_ip = "localhost"
-        client = mqtt.Client("openWB-mqttsub-" + self.getserial())
-        # ipallowed='^[0-9.]+$'
-        # nameallowed='^[a-zA-Z ]+$'
-        # namenumballowed='^[0-9a-zA-Z ]+$'
+def pub_settings():
+    """ruft für alle Ramdisk-Dateien aus initRamdisk die zum Typ passende Funktion zum publishen auf.
+    """
+    # cp1
+    pub.pub("openWB/set/chargepoint/1/set/manual_lock", False)
+    pub.pub("openWB/set/chargepoint/1/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.163", "chargepoint": 1}}}, "power_module": {"selected": None}})
 
-        client.on_connect = self.on_connect
-        client.on_message = self.on_message
+    # cp2
+    pub.pub("openWB/set/chargepoint/2/set/manual_lock", False)
+    pub.pub("openWB/set/chargepoint/2/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.194", "chargepoint": 1}}}, "power_module": {"selected": None}})
 
-        client.connect(mqtt_broker_ip, 1883)
-        client.loop_forever()
-        client.disconnect()
+    # cp3
+    pub.pub("openWB/set/chargepoint/3/set/manual_lock", False)
+    pub.pub("openWB/set/chargepoint/3/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.176", "chargepoint": 1}}}, "power_module": {"selected": None}})
+    
+    # cp4
+    pub.pub("openWB/set/chargepoint/4/set/manual_lock", False)
+    pub.pub("openWB/set/chargepoint/4/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.187", "chargepoint": 1}}}, "power_module": {"selected": None}})
 
-    def getserial(self):
-        """ Extract serial from cpuinfo file
-        """
-        with open('/proc/cpuinfo','r') as f:
-            for line in f:
-                if line[0:6] == 'Serial':
-                    return line[10:26]
-            return "0000000000000000"
+    # cp5
+    pub.pub("openWB/set/chargepoint/5/set/manual_lock", False)
+    pub.pub("openWB/set/chargepoint/5/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.107", "chargepoint": 1}}}, "power_module": {"selected": None}})
 
-    def on_connect(self, client, userdata, flags, rc):
-        """ connect to broker and subscribe to set topics
-        """
-        client.subscribe("openWB/set/#", 2)
+    # cp6
+    pub.pub("openWB/set/chargepoint/6/set/manual_lock", False)
+    pub.pub("openWB/set/chargepoint/6/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.214", "chargepoint": 1}}}, "power_module": {"selected": None}})
 
-    def on_message(self, client, userdata, msg):
-        """ ruft die Funktion auf, um das Topic zu verarbeiten. Wenn die Topics mit Locking verarbeitet werden, wird gewartet, bis das Locking aufgehoben wird.
+    # cp7
+    pub.pub("openWB/set/chargepoint/7/set/manual_lock", False)
+    pub.pub("openWB/set/chargepoint/7/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.37", "chargepoint": 1}}}, "power_module": {"selected": None}})
 
-        Parameters
-        ----------
-        client : (unused)
-            vorgegebener Parameter
-        userdata : (unused)
-            vorgegebener Parameter
-        msg:
-            enthält Topic und Payload
-        """
-        self.heartbeat = True
-        log.message_mqtt_log(str(msg.topic), str(msg.payload.decode("utf-8")))
-        if "openWB/set/vehicle/" in msg.topic:
-            if "openWB/set/vehicle/template/ev_template/" in msg.topic:
-                self.event_ev_template.wait(5)
-            elif "openWB/set/vehicle/template/charge_template/" in msg.topic:
-                self.event_charge_template.wait(5)
-            self.process_vehicle_topic(client, userdata, msg)
-        elif "openWB/set/chargepoint/" in msg.topic:
-            self.process_chargepoint_topic(client, userdata, msg)
-        elif "openWB/set/pv/" in msg.topic:
-            self.process_pv_topic(client, userdata, msg)
-        elif "openWB/set/bat/" in msg.topic:
-            self.process_bat_topic(client, userdata, msg)
-        elif "openWB/set/general/" in msg.topic:
-            self.process_general_topic(client, userdata, msg)
-        elif "openWB/set/optional/" in msg.topic:
-            self.process_optional_topic(client, userdata, msg)
-        elif "openWB/set/counter/" in msg.topic:
-            self.process_counter_topic(client, userdata, msg)
-        elif "openWB/set/log/" in msg.topic:
-            self.process_log_topic(client, userdata, msg)
-        elif "openWB/set/loadvarsdone" in msg.topic:
-            self._validate_value(msg, int, [(0, 1)])
+    # cp8
+    pub.pub("openWB/set/chargepoint/8/set/manual_lock", False)
+    pub.pub("openWB/set/chargepoint/8/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.19", "chargepoint": 1}}}, "power_module": {"selected": None}})
 
-    def _validate_value(self, msg, data_type, ranges = None, collection = None, pub_json = False):
-        """ prüft, ob der Wert vom angegebenen Typ ist.
+    # cp9
+    pub.pub("openWB/set/chargepoint/9/set/manual_lock", False)
+    pub.pub("openWB/set/chargepoint/9/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.249", "chargepoint": 1}}}, "power_module": {"selected": None}})
 
-        Parameter
-        ---------
-        msg:
-            Broker-Nachricht
-        data_type: float, int, str, "json", None
-            Datentyp (None für komplexe Datenstrukturen, wie z.B. Hierarchie)
-        ranges: [(int/float/None, int/float/None), ..]
-            Liste mit Tuples, die die Wertebereiche enthalten (None für unendlich)
-        collection = list/dict
-            Angabe, ob und welche Kollektion erwartet wird
-        pub_json : true/false
-            gibt an, ob das Topic von openWB/set/.. an openWB/.. gepublished werden soll oder ein json-Objekt, dass mehrere Daten enthält.
-        """
-        valid = False
-        try:
-            if msg.payload:
-                value = json.loads(str(msg.payload.decode("utf-8")))
-                if data_type == None or data_type == "json":
-                    # Wenn kein gültiges json-Objekt übergeben worden wäre, wäre bei loads eine Exception aufgetreten.
-                    valid = True
-                elif collection != None:
-                        if self._validate_collection_value(msg, data_type, ranges, collection) == True:
-                            valid = True
-                elif data_type == str:
-                    if isinstance(value, str) == True:
-                        valid = True
-                    else:
-                        log.message_debug_log("error", "Payload ungueltig: Topic "+str(msg.topic)+", Payload "+str(value)+" sollte ein String sein.")
-                elif data_type == int or data_type == float:
-                    if self._validate_min_max_value(value, msg, data_type, ranges) == True:
-                        valid = True
-                
-                if valid == True:
-                    if pub_json == False:
-                        pub.pub(msg.topic.replace('set/', '', 1), value)
-                        pub.pub(msg.topic, "")
-                    else:
-                        # aktuelles json-Objekt liegt in subdata
-                        index = re.search('(?!/)([0-9]*)(?=/|$)', msg.topic).group()
-                        if "charge_template" in msg.topic:
-                            event = self.event_charge_template
-                            if "ct"+str(index) in subdata.subData.ev_charge_template_data:
-                                template = copy.deepcopy(subdata.subData.ev_charge_template_data["ct"+str(index)].data)
-                            else:
-                                template = {}
-                        elif "ev_template" in msg.topic:
-                            event = self.event_ev_template
-                            if "et"+str(index) in subdata.subData.ev_template_data:
-                                template = copy.deepcopy(subdata.subData.ev_template_data["et"+str(index)].data)
-                            else:
-                                template = {}
-                        # Wert, der aktualisiert werden soll, erstellen/finden und updaten
-                        key_list = msg.topic.split("/")[6:]
-                        self._change_key(template, key_list, value)
-                        # publish
-                        index_pos = re.search('(?!/)([0-9]*)(?=/|$)', msg.topic).start()
-                        topic = msg.topic[:index_pos+1]
-                        topic = topic.replace('set/', '', 1)
-                        pub.pub(topic, template)
-                        pub.pub(msg.topic, "")
-                        event.clear()
-                else:
-                    pub.pub(msg.topic, "")
-        except Exception as e:
-            log.exception_logging(e)
-            pub.pub(msg.topic, "")
+    # cp10
+    pub.pub("openWB/set/chargepoint/10/set/manual_lock", False)
+    pub.pub("openWB/set/chargepoint/10/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.34", "chargepoint": 1}}}, "power_module": {"selected": None}})
 
-    def _change_key(self, next_level, key_list, value):
-        """ rekursive Funktion, die den Eintrag im entsprechenden Dictionary aktualisiert oder anlegt.
-        
-        Parameter
-        ---------
-        next_level: dict
-            Beim ersten Aufruf: Dictionary, das aktualisiert werden soll. 
-            Danach: Dictionary aus den verschachtelten Dictionarys, das gerade betrachtet werden soll.
-        key_list: list
-            Liste der Keys aus den verschachtelten Dictionarys, unter denen der Eintrag zu finden ist.
-        value:
-            Wert, der geschrieben werden soll.
-        """
-        try:
-            if len(key_list) == 1:
-                next_level[key_list[0]] = value
-            else:
-                if key_list[0] not in next_level:
-                    next_level[key_list[0]] = {}
-                next_key = key_list[0]
-                key_list.pop(0)
-                self._change_key(next_level[next_key], key_list, value)
-        except Exception as e:
-            log.exception_logging(e)
+    # cp11
+    pub.pub("openWB/set/chargepoint/11/set/manual_lock", False)
+    pub.pub("openWB/set/chargepoint/11/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.55", "chargepoint": 1}}}, "power_module": {"selected": None}})
+    
+    # cp12
+    pub.pub("openWB/set/chargepoint/12/set/manual_lock", False)
+    pub.pub("openWB/set/chargepoint/12/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.22", "chargepoint": 1}}}, "power_module": {"selected": None}})
 
-    def _validate_collection_value(self, msg, data_type, ranges = None, collection = None):
-        """ prüft, ob die Liste vom angegebenen Typ ist und ob Minimal- und Maximalwert eingehalten werden.
+    # cp13
+    pub.pub("openWB/set/chargepoint/13/set/manual_lock", False)
+    pub.pub("openWB/set/chargepoint/13/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.225", "chargepoint": 1}}}, "power_module": {"selected": None}})
 
-        Parameter
-        ---------
-        msg:
-            Broker-Nachricht
-        data_type: float, int
-            Datentyp, den die Liste enthalten soll
-        min_value: int/float
-            Minimalwert, den die Elemente in der Liste nicht unterschreiten dürfen
-        max_value= int/float
-            Maximalwert, den die Elemente in der Liste nicht überschreiten dürfen
-        collection = list/dict
-            Angabe, ob und welche Kollektion erwartet wird
-        """
-        try:
-            valid = False
-            value = json.loads(str(msg.payload.decode("utf-8")))
-            if isinstance(value, list) == True:
-                for item in value:
-                    if self._validate_min_max_value(item, msg, data_type, ranges) == False:
-                        break
-                else:
-                    valid = True
-            elif isinstance(value, dict) == True:
-                for item in value.values():
-                    if self._validate_min_max_value(item, msg, data_type, ranges) == False:
-                        break
-                else:
-                    valid = True
-            else:
-                log.message_debug_log("error", "Payload ungueltig: Topic "+str(msg.topic)+", Payload "+str(value)+" sollte eine Kollektion vom Typ "+str(collection)+" sein.")
-            return valid
-        except Exception as e:
-            log.exception_logging(e)
+    # # cp14
+    # pub.pub("openWB/set/chargepoint/14/set/manual_lock", False)
+    # pub.pub("openWB/set/chargepoint/14/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.109", "chargepoint": 1}}}, "power_module": {"selected": None}})
 
-    def _validate_min_max_value(self, value, msg, data_type, ranges = None):
-        """ prüft, ob der Payload Minimal- und Maximalwert einhält.
+    # # cp15
+    # pub.pub("openWB/set/chargepoint/15/set/manual_lock", False)
+    # pub.pub("openWB/set/chargepoint/15/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.212", "chargepoint": 1}}}, "power_module": {"selected": None}})
 
-        Parameter
-        ---------
-        value: int/float
-            dekodierter Payload
-        msg:
-            Broker-Nachricht
-        data_type: float, int
-            Datentyp
-        min_value: int/float
-            Minimalwert
-        max_value= int/float
-            Maximalwert
-        """
-        try:
-            valid = True
-            # Wenn es ein Float erwartet wird, kann auch ein Int akzeptiert werden. Da dies automatisch umgewandelt wird, falls erfoderlich.
-            if isinstance(value, data_type) == True or (data_type == float and isinstance(value, int) == True):
-                if ranges != None:
-                    for range in ranges:
-                        if range[0] != None and range[1] != None:
-                            if range[0] <= value <= range[1]:
-                                break
-                        elif range[0] != None:
-                            if value >= range[0]:
-                                break
-                        elif range[1] != None:
-                            if value <= range[1]:
-                                break
-                    else:
-                        log.message_debug_log("error", "Payload ungueltig: Topic "+str(msg.topic)+", Payload "+str(value)+" liegt in keinem der angegebenen Wertebereiche.")
-                        valid = False
-            else:
-                if data_type == int:
-                    log.message_debug_log("error", "Payload ungueltig: Topic "+str(msg.topic)+", Payload "+str(value)+" sollte ein Int sein.")
-                elif data_type == float:
-                    log.message_debug_log("error", "Payload ungueltig: Topic "+str(msg.topic)+", Payload "+str(value)+" sollte ein Float sein.")
-                valid = False
-            return valid
-        except Exception as e:
-            log.exception_logging(e)
- 
-    def process_vehicle_topic(self, client, userdata, msg):
-        """ Handler für die EV-Topics
+    # # cp16
+    # pub.pub("openWB/set/chargepoint/16/set/manual_lock", False)
+    # pub.pub("openWB/set/chargepoint/16/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.111", "chargepoint": 1}}}, "power_module": {"selected": None}})
 
-         Parameters
-        ----------
-        client : (unused)
-            vorgegebener Parameter
-        userdata : (unused)
-            vorgegebener Parameter
-        msg:
-            enthält Topic und Payload
-        """
-        try:
-            if re.search("^openWB/set/vehicle/[0-9]+/name$", msg.topic) != None:
-                self._validate_value(msg, str)
-            elif (re.search("^openWB/set/vehicle/[0-9]+/soc/config/request_interval_charging$", msg.topic) != None or
-                    re.search("^openWB/set/vehicle/[0-9]+/soc/config/reques_interval_not_charging$", msg.topic) != None):
-                self._validate_value(msg, int, [(0, None)])
-            elif (re.search("^openWB/set/vehicle/[0-9]+/soc/config/request_only_plugged$", msg.topic) != None or
-                    re.search("^openWB/set/vehicle/[0-9]+/soc/config/configured$", msg.topic) != None or
-                    re.search("^openWB/set/vehicle/[0-9]+/soc/config/manual$", msg.topic) != None):
-                self._validate_value(msg, int, [(0, 1)])
-            elif re.search("^openWB/set/vehicle/[0-9]+/soc/get/fault_state$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, 2)])
-            elif re.search("^openWB/set/vehicle/[0-9]+/soc/get/fault_str$", msg.topic) != None:
-                self._validate_value(msg, str)
-            elif re.search("^openWB/set/vehicle/[0-9]+/match_ev/selected$", msg.topic) != None:
-                self._validate_value(msg, str)
-            elif re.search("^openWB/set/vehicle/[0-9]+/match_ev/tag_id$", msg.topic) != None:
-                self._validate_value(msg, str)
-            elif re.search("^openWB/set/vehicle/[0-9]+/match_ev/inactive$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, 1)])
-            elif (re.search("^openWB/set/vehicle/[0-9]+/charge_template$", msg.topic) != None or
-                    re.search("^openWB/set/vehicle/[0-9]+/ev_template$", msg.topic) != None):
-                self._validate_value(msg, int, [(0, None)])
-            elif re.search("^openWB/set/vehicle/[0-9]+/get/soc_timestamp$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, None)])
-            elif re.search("^openWB/set/vehicle/[0-9]+/get/soc$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, 100)])
-            elif re.search("^openWB/set/vehicle/[0-9]+/set/ev_template$", msg.topic) != None:
-                self._validate_value(msg, "json")
-            elif re.search("^openWB/set/vehicle/[0-9]+/control_parameter/required_current$", msg.topic) != None:
-                self._validate_value(msg, float, [(6, 32), (0, 0)])
-            elif re.search("^openWB/set/vehicle/[0-9]+/control_parameter/phases$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, 3)])
-            elif (re.search("^openWB/set/vehicle/[0-9]+/control_parameter/submode$", msg.topic) != None or
-                    re.search("^openWB/set/vehicle/[0-9]+/control_parameter/chargemode$", msg.topic) != None):
-                self._validate_value(msg, str)
-            elif re.search("^openWB/set/vehicle/[0-9]+/control_parameter/prio$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, 1)])
-            elif (re.search("^openWB/set/vehicle/[0-9]+/control_parameter/timestamp_switch_on_off$", msg.topic) != None or
-                    re.search("^openWB/set/vehicle/[0-9]+/control_parameter/timestamp_auto_phase_switch$", msg.topic) != None or
-                    re.search("^openWB/set/vehicle/[0-9]+/control_parameter/timestamp_perform_phase_switch$", msg.topic) != None):
-                self._validate_value(msg, str)
-            elif "openWB/set/vehicle/template" in msg.topic:
-                self._subprocess_vehicle_chargemode_topic(msg)
-            else:
-                log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
-                pub.pub(msg.topic, "")
-        except Exception as e:
-            log.exception_logging(e)
+    # cpt1
+    pub.pub("openWB/set/chargepoint/template/1/autolock/1/frequency/selected", "daily")
+    pub.pub("openWB/set/chargepoint/template/1/autolock/1/time", ["07:00", "16:15"])
+    pub.pub("openWB/set/chargepoint/template/1/autolock/1/active", True)
+    pub.pub("openWB/set/chargepoint/template/1/autolock/wait_for_charging_end", False)
+    pub.pub("openWB/set/chargepoint/template/1/autolock/active", False)
+    #pub.pub("openWB/set/chargepoint/template/1/ev", 1)
+    pub.pub("openWB/set/chargepoint/template/1/rfid_enabling", False)
+    pub.pub("openWB/set/chargepoint/template/1/valid_tags", ["257", "258", "259"])
 
-    def _subprocess_vehicle_chargemode_topic(self, msg):
-        """ Handler für die EV-Chargemode-Template-Topics
-        Parameters
-        ----------
-        msg:
-            enthält Topic und Payload
-        """
-        try:
-            if re.search("^openWB/set/vehicle/template/charge_template/[0-9]+/name$", msg.topic) != None:
-                self._validate_value(msg, str, pub_json = True)
-            elif (re.search("^openWB/set/vehicle/template/charge_template/[0-9]+/load_default$", msg.topic) != None or
-                    re.search("^openWB/set/vehicle/template/charge_template/[0-9]+/disable_after_unplug$", msg.topic) != None or
-                    re.search("^openWB/set/vehicle/template/charge_template/[0-9]+/prio$", msg.topic) != None):
-                self._validate_value(msg, int, [(0, 1)], pub_json = True)
-            elif re.search("^openWB/set/vehicle/template/charge_template/[0-9]+/chargemode/selected$", msg.topic) != None:
-                self._validate_value(msg, str, pub_json = True)
-            elif re.search("^openWB/set/vehicle/template/charge_template/[0-9]+/chargemode/instant_charging/current$", msg.topic) != None:
-                self._validate_value(msg, int, [(6, 32)], pub_json = True)
-            elif re.search("^openWB/set/vehicle/template/charge_template/[0-9]+/chargemode/instant_charging/limit/selected$", msg.topic) != None:
-                self._validate_value(msg, str, pub_json = True)
-            elif re.search("^openWB/set/vehicle/template/charge_template/[0-9]+/chargemode/instant_charging/limit/soc$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, 100)], pub_json = True)
-            elif re.search("^openWB/set/vehicle/template/charge_template/[0-9]+/chargemode/instant_charging/limit/amount$", msg.topic) != None:
-                self._validate_value(msg, int, [(2, 100)], pub_json = True)
-            elif re.search("^openWB/set/vehicle/template/charge_template/[0-9]+/chargemode/pv_charging/feed_in_limit$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, 1)], pub_json = True)
-            elif re.search("^openWB/set/vehicle/template/charge_template/[0-9]+/chargemode/pv_charging/min_current$", msg.topic) != None:
-                self._validate_value(msg, int, [(0,0), (6, 16)], pub_json = True)
-            elif re.search("^openWB/set/vehicle/template/charge_template/[0-9]+/chargemode/pv_charging/min_soc$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, 100)], pub_json = True)
-            elif re.search("^openWB/set/vehicle/template/charge_template/[0-9]+/chargemode/pv_charging/min_soc_current$", msg.topic) != None:
-                self._validate_value(msg, int, [(6, 32)], pub_json = True)
-            elif re.search("^openWB/set/vehicle/template/charge_template/[0-9]+/chargemode/pv_charging/max_soc$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, 100)], pub_json = True)
-            elif re.search("^openWB/set/vehicle/template/charge_template/[0-9]+/chargemode/scheduled_charging/[0-9]+/active$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, 1)], pub_json = True)
-            elif re.search("^openWB/set/vehicle/template/charge_template/[0-9]+/chargemode/scheduled_charging$", msg.topic) != None:
-                self._validate_value(msg, "json", pub_json = True)
-            elif re.search("^openWB/set/vehicle/template/charge_template/[0-9]+/time_charging/active$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, 1)], pub_json = True)
-            elif re.search("^openWB/set/vehicle/template/charge_template/[0-9]+/time_charging/plans$", msg.topic) != None:
-                self._validate_value(msg, "json", pub_json = True)
-            elif re.search("^openWB/set/vehicle/template/ev_template/[0-9]+/name$", msg.topic) != None:
-                self._validate_value(msg, str, pub_json = True)
-            elif re.search("^openWB/set/vehicle/template/ev_template/[0-9]+/average_consump$", msg.topic) != None:
-                self._validate_value(msg, float, [(0, None)], pub_json = True)
-            elif re.search("^openWB/set/vehicle/template/ev_template/[0-9]+/battery_capacity$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, None)], pub_json = True)
-            elif re.search("^openWB/set/vehicle/template/ev_template/[0-9]+/max_phases$", msg.topic) != None:
-                self._validate_value(msg, int, [(1, 3)], pub_json = True)
-            elif re.search("^openWB/set/vehicle/template/ev_template/[0-9]+/min_current$", msg.topic) != None:
-                self._validate_value(msg, int, [(6, 32)], pub_json = True)
-            elif (re.search("^openWB/set/vehicle/template/ev_template/[0-9]+/max_current_one_phase$", msg.topic) != None or
-                    re.search("^openWB/set/vehicle/template/ev_template/[0-9]+/max_current_multi_phases$", msg.topic) != None):
-                self._validate_value(msg, int, [(0, 0), (6, 32)], pub_json = True)
-            elif (re.search("^openWB/set/vehicle/template/ev_template/[0-9]+/control_pilot_interruption$", msg.topic) != None or
-                    re.search("^openWB/set/vehicle/template/ev_template/[0-9]+/prevent_switch_stop$", msg.topic) != None):
-                self._validate_value(msg, int, [(0, 1)], pub_json = True)
-            elif re.search("^openWB/set/vehicle/template/ev_template/[0-9]+/control_pilot_interruption_duration$", msg.topic) != None:
-                self._validate_value(msg, int, [(4, 15)], pub_json = True)
-            elif re.search("^openWB/set/vehicle/template/ev_template/[0-9]+/nominal_difference$", msg.topic) != None:
-                self._validate_value(msg, float, [(0, 4)], pub_json = True)
-            elif re.search("^openWB/set/vehicle/template/ev_template/[0-9]+/phase_switch_pause$", msg.topic) != None:
-                self._validate_value(msg, int, [(2, 150)], pub_json = True)
-            else:
-                log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
-                pub.pub(msg.topic, "")
-        except Exception as e:
-            log.exception_logging(e)
+    # ev0
+    pub.pub("openWB/set/vehicle/0/charge_template", 0)
+    pub.pub("openWB/set/vehicle/0/ev_template", 0)
+    pub.pub("openWB/set/vehicle/0/name", "default")
+    pub.pub("openWB/set/vehicle/0/soc/config/configured", False)
+    pub.pub("openWB/set/vehicle/0/soc/config/manual", False)
+    pub.pub("openWB/set/vehicle/0/soc/get/fault_state", 0)
+    pub.pub("openWB/set/vehicle/0/soc/get/fault_str", "Kein Fehler.")
+    pub.pub("openWB/set/vehicle/0/get/soc", 0)
+    pub.pub("openWB/set/vehicle/0/get/soc_timestamp", 0)
+    pub.pub("openWB/set/vehicle/0/match_ev/selected", "cp")
+    pub.pub("openWB/set/vehicle/0/match_ev/tag_id", "45")
 
-    def process_chargepoint_topic(self, client, userdata, msg):
-        """ Handler für die Ladepunkt-Topics
+    # ev1-Ioniq
+    pub.pub("openWB/set/vehicle/1/charge_template", 1)
+    pub.pub("openWB/set/vehicle/1/ev_template", 1)
+    pub.pub("openWB/set/vehicle/1/name", "Ioniq")
+    pub.pub("openWB/set/vehicle/1/soc/config/configured", False)
+    pub.pub("openWB/set/vehicle/1/soc/config/manual", False)
+    pub.pub("openWB/set/vehicle/1/soc/get/fault_state", 0)
+    pub.pub("openWB/set/vehicle/1/soc/get/fault_str", "Kein Fehler.")
+    pub.pub("openWB/set/vehicle/1/get/soc", 0)
+    pub.pub("openWB/set/vehicle/1/get/soc_timestamp", 1619568005)
+    pub.pub("openWB/set/vehicle/1/match_ev/selected", "rfid")
+    pub.pub("openWB/set/vehicle/1/match_ev/tag_id", "259")
+    # ev2
+    pub.pub("openWB/set/vehicle/2/charge_template", 2)
+    pub.pub("openWB/set/vehicle/2/ev_template", 2)
+    pub.pub("openWB/set/vehicle/2/name", "M3LR")
+    pub.pub("openWB/set/vehicle/2/soc/config/configured", False)
+    pub.pub("openWB/set/vehicle/2/soc/config/manual", False)
+    pub.pub("openWB/set/vehicle/2/soc/get/fault_state", 0)
+    pub.pub("openWB/set/vehicle/2/soc/get/fault_str", "Kein Fehler.")
+    pub.pub("openWB/set/vehicle/2/get/soc", 25)
+    pub.pub("openWB/set/vehicle/2/get/soc_timestamp", 1619568005)
+    pub.pub("openWB/set/vehicle/2/match_ev/selected", "rfid")
+    pub.pub("openWB/set/vehicle/2/match_ev/tag_id", "258")
+    #ev3
+    pub.pub("openWB/set/vehicle/3/charge_template", 3)
+    pub.pub("openWB/set/vehicle/3/ev_template", 3)
+    pub.pub("openWB/set/vehicle/3/name", "M3P")
+    pub.pub("openWB/set/vehicle/3/soc/config/configured", False)
+    pub.pub("openWB/set/vehicle/3/soc/config/manual", False)
+    pub.pub("openWB/set/vehicle/3/soc/get/fault_state", 0)
+    pub.pub("openWB/set/vehicle/3/soc/get/fault_str", "Kein Fehler.")
+    pub.pub("openWB/set/vehicle/3/get/soc", 82)
+    pub.pub("openWB/set/vehicle/3/get/soc_timestamp", 1619568005)
+    pub.pub("openWB/set/vehicle/3/match_ev/selected", "rfid")
+    pub.pub("openWB/set/vehicle/3/match_ev/tag_id", "257")
 
-         Parameters
-        ----------
-        client : (unused)
-            vorgegebener Parameter
-        userdata : (unused)
-            vorgegebener Parameter
-        msg:
-            enthält Topic und Payload
-        """
-        try:
-            if (re.search("^openWB/set/chargepoint/get/counter_all$", msg.topic) != None or
-                    re.search("^openWB/set/chargepoint/get/power_all$", msg.topic) != None):
-                self._validate_value(msg, float, [(0, None)])
-            elif (re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/charging_ev$", msg.topic) != None or
-                    re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/charging_ev_prev$", msg.topic) != None):
-                self._validate_value(msg, int, [(-1, None)])
-            elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/current$", msg.topic) != None:
-                self._validate_value(msg, float, [(6, 32), (0, 0)])
-            elif (re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/energy_to_charge$", msg.topic) != None or
-                    re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/required_power$", msg.topic) != None):
-                self._validate_value(msg, float, [(0, None)])
-            elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/phases_to_use$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, 3)])
-            elif (re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/manual_lock$", msg.topic) != None or
-                    re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/perform_control_pilot_interruption$", msg.topic) != None or
-                    re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/perform_phase_switch$", msg.topic) != None):
-                self._validate_value(msg, int, [(0, 1)])
-            elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/autolock_state$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, 4)])
-            elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/rfid$", msg.topic) != None:
-                self._validate_value(msg, str)
-            elif (re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/log/time_charged$", msg.topic) != None or
-                    re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/log/chargemode_log_entry$", msg.topic) != None):
-                self._validate_value(msg, str)
-            elif (re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/log/daily_counter$", msg.topic) != None or
-                    re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/log/range_charged$", msg.topic) != None or
-                    re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/log/counter$", msg.topic) != None or
-                    re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/log/charged_since_mode_switch$", msg.topic) != None or 
-                    re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/log/charged_since_plugged_counter$", msg.topic) != None or 
-                    re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/log/counter_at_mode_switch$", msg.topic) != None or
-                    re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/log/counter_at_plugtime$", msg.topic) != None):
-                self._validate_value(msg, float, [(0, None)])
-            elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/log/timestamp_start_charging$", msg.topic) != None:
-                self._validate_value(msg, str)
-            elif re.search("^openWB/set/chargepoint/[0-9]+/set/plug_time$", msg.topic) != None:
-                self._validate_value(msg, str)
-            elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/config$", msg.topic) != None:
-                self._validate_value(msg, "json")
-            elif (re.search("^openWB/set/chargepoint/[1-9][0-9]*/get/voltage$", msg.topic) != None or
-                    re.search("^openWB/set/chargepoint/[1-9][0-9]*/get/current$", msg.topic) != None or
-                    re.search("^openWB/set/chargepoint/[1-9][0-9]*/get/power_factor$", msg.topic) != None):
-                self._validate_value(msg, float, [(0, None)], collection=list)
-            elif (re.search("^openWB/set/chargepoint/[1-9][0-9]*/get/daily_counter$", msg.topic) != None or
-                    re.search("^openWB/set/chargepoint/[1-9][0-9]*/get/power_all$", msg.topic) != None or
-                    re.search("^openWB/set/chargepoint/[1-9][0-9]*/get/counter$", msg.topic) != None or
-                    re.search("^openWB/set/chargepoint/[1-9][0-9]*/get/charged_since_plugged_counter$", msg.topic) != None):
-                self._validate_value(msg, float, [(0, None)])
-            elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/get/phases_in_use", msg.topic) != None:
-                self._validate_value(msg, int, [(0, 3)])
-            elif (re.search("^openWB/set/chargepoint/[1-9][0-9]*/get/charge_state$", msg.topic) != None or
-                    re.search("^openWB/set/chargepoint/[1-9][0-9]*/get/plug_state$", msg.topic) != None):
-                self._validate_value(msg, int, [(0, 1)])
-            elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/get/fault_state$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, 2)])
-            elif (re.search("^openWB/set/chargepoint/[0-9]+/get/fault_str$", msg.topic) != None or
-                    re.search("^openWB/set/chargepoint/[0-9]+/get/state_str$", msg.topic) != None or
-                    re.search("^openWB/set/chargepoint/[0-9]+/get/heartbeat$", msg.topic) != None):
-                self._validate_value(msg, str)
-            elif re.search("^openWB/set/chargepoint/[0-9]+/get/read_tag$", msg.topic) != None:
-                self._validate_value(msg, "json")
-            elif (re.search("^openWB/set/chargepoint/template/[1-9][0-9]*/autolock/active$", msg.topic) != None or
-                    re.search("^openWB/set/chargepoint/template/[1-9][0-9]*/autolock/wait_for_charging_end$", msg.topic) != None):
-                self._validate_value(msg, int, [(0, 1)])
-            elif re.search("^openWB/set/chargepoint/template/[1-9][0-9]*/autolock/[1-9][0-9]*/active$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, 1)])
-            elif (re.search("^openWB/set/chargepoint/template/[1-9][0-9]*/autolock/[1-9][0-9]*/frequency/selected$", msg.topic) != None or
-                    re.search("^openWB/set/chargepoint/template/[1-9][0-9]*/autolock/[1-9][0-9]*/frequency/once$", msg.topic) != None):
-                self._validate_value(msg, str)
-            elif re.search("^openWB/set/chargepoint/template/[1-9][0-9]*/autolock/[1-9][0-9]*/frequency/weekly$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, 1)], collection=list)
-            elif re.search("^openWB/set/chargepoint/template/[1-9][0-9]*/autolock/[1-9][0-9]*/time$", msg.topic) != None:
-                self._validate_value(msg, str, collection=list)
-            elif re.search("^openWB/set/chargepoint/template/[1-9][0-9]*/ev$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, None)])
-            elif re.search("^openWB/set/chargepoint/template/[1-9][0-9]*/rfid_enabling$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, 1)])
-            elif re.search("^openWB/set/chargepoint/template/[1-9][0-9]*/valid_tags$", msg.topic) != None:
-                self._validate_value(msg, str, collection=list)
-            else:
-                log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
-                pub.pub(msg.topic, "")
-        except Exception as e:
-            log.exception_logging(e)
+    # # evt0 - default
+    # pub.pub("openWB/set/vehicle/template/ev_template/0/min_current", 6)
+    # pub.pub("openWB/set/vehicle/template/ev_template/0/battery_capacity", 20)
+    # pub.pub("openWB/set/vehicle/template/ev_template/0/max_current_one_phase", 32)
+    # pub.pub("openWB/set/vehicle/template/ev_template/0/max_current_multi_phases", 32)
+    # pub.pub("openWB/set/vehicle/template/ev_template/0/max_phases", 3)
+    # pub.pub("openWB/set/vehicle/template/ev_template/0/average_consump", 17)
+    # pub.pub("openWB/set/vehicle/template/ev_template/0/control_pilot_interruption", False)
+    # pub.pub("openWB/set/vehicle/template/ev_template/0/nominal_difference", 2)
+    # pub.pub("openWB/set/vehicle/template/ev_template/0/prevent_switch_stop", True)
+    # pub.pub("openWB/set/vehicle/template/ev_template/0/phase_switch_pause", 2)
+    # #evt1 - Ioniq
+    # pub.pub("openWB/set/vehicle/template/ev_template/1/min_current", 6)
+    # pub.pub("openWB/set/vehicle/template/ev_template/1/battery_capacity", 38)
+    # pub.pub("openWB/set/vehicle/template/ev_template/1/max_current_one_phase", 32)
+    # pub.pub("openWB/set/vehicle/template/ev_template/1/max_current_multi_phases", 16)
+    # pub.pub("openWB/set/vehicle/template/ev_template/1/max_phases", 1)
+    # pub.pub("openWB/set/vehicle/template/ev_template/1/average_consump", 17)
+    # pub.pub("openWB/set/vehicle/template/ev_template/1/control_pilot_interruption", False)
+    # pub.pub("openWB/set/vehicle/template/ev_template/1/nominal_difference", 2)
+    # pub.pub("openWB/set/vehicle/template/ev_template/1/prevent_switch_stop", False)
+    # pub.pub("openWB/set/vehicle/template/ev_template/1/phase_switch_pause", 2)
+    # evt2 - M3LR
+    # pub.pub("openWB/set/vehicle/template/ev_template/2/min_current", 6)
+    # pub.pub("openWB/set/vehicle/template/ev_template/2/battery_capacity", 78)
+    # pub.pub("openWB/set/vehicle/template/ev_template/2/max_current_one_phase", 32)
+    # pub.pub("openWB/set/vehicle/template/ev_template/2/max_current_multi_phases", 16)
+    # pub.pub("openWB/set/vehicle/template/ev_template/2/max_phases", 3)
+    # pub.pub("openWB/set/vehicle/template/ev_template/2/average_consump", 17)
+    # pub.pub("openWB/set/vehicle/template/ev_template/2/control_pilot_interruption", False)
+    # pub.pub("openWB/set/vehicle/template/ev_template/2/nominal_difference", 2)
+    # pub.pub("openWB/set/vehicle/template/ev_template/2/prevent_switch_stop", False)
+    # pub.pub("openWB/set/vehicle/template/ev_template/2/phase_switch_pause", 30)
+    #evt3 - M3P
+    # pub.pub("openWB/set/vehicle/template/ev_template/3/min_current", 6)
+    # pub.pub("openWB/set/vehicle/template/ev_template/3/battery_capacity", 82)
+    # pub.pub("openWB/set/vehicle/template/ev_template/3/max_current_one_phase", 32)
+    # pub.pub("openWB/set/vehicle/template/ev_template/3/max_current_multi_phases", 16)
+    # pub.pub("openWB/set/vehicle/template/ev_template/3/max_phases", 3)
+    # pub.pub("openWB/set/vehicle/template/ev_template/3/average_consump", 17)
+    # pub.pub("openWB/set/vehicle/template/ev_template/3/control_pilot_interruption", False)
+    # pub.pub("openWB/set/vehicle/template/ev_template/3/nominal_difference", 2)
+    # pub.pub("openWB/set/vehicle/template/ev_template/3/prevent_switch_stop", True)
+    # pub.pub("openWB/set/vehicle/template/ev_template/3/phase_switch_pause", 2)
 
-    def process_pv_topic(self, client, userdata, msg):
-        """ Handler für die PV-Topics
+    plans_for_scheduled_charging = {
+        "1": {"name": "abc", "time": "14:15", "soc": 85, "active": 1, "frequency": {"selected": "daily"}},
+        "2": {"name": "def", "time": "18:45", "soc": 95, "active": 0, "frequency": {"selected": "daily"}}
+        }
 
-         Parameters
-        ----------
-        client : (unused)
-            vorgegebener Parameter
-        userdata : (unused)
-            vorgegebener Parameter
-        msg:
-            enthält Topic und Payload
-        """
-        try:
-            if re.search("^openWB/set/pv/config/configured$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, 1)])
-            elif (re.search("^openWB/set/pv/get/daily_yield$", msg.topic) != None or
-                    re.search("^openWB/set/pv/get/monthly_yield$", msg.topic) != None or
-                    re.search("^openWB/set/pv/get/yearly_yield$", msg.topic) != None):
-                self._validate_value(msg, float, [(0, None)])
-            elif re.search("^openWB/set/pv/get/counter$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, None)])
-            elif re.search("^openWB/set/pv/get/power$", msg.topic) != None:
-                self._validate_value(msg, int, [(None, 0)])
-            elif (re.search("^openWB/set/pv/set/overhang_power_left$", msg.topic) != None or
-                    re.search("^openWB/set/pv/set/reserved_evu_overhang$", msg.topic) != None or
-                    re.search("^openWB/set/pv/set/released_evu_overhang$", msg.topic) != None):
-                self._validate_value(msg, float)
-            elif re.search("^openWB/set/pv/set/available_power$", msg.topic) != None:
-                self._validate_value(msg, float)
-            elif re.search("^openWB/set/pv/[1-9][0-9]*/config$", msg.topic) != None:
-                self._validate_value(msg, "json")
-            elif re.search("^openWB/set/pv/[1-9][0-9]*/get/fault_state$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, 2)])
-            elif re.search("^openWB/set/pv/[1-9][0-9]*/get/fault_str$", msg.topic) != None:
-                self._validate_value(msg, str)
-            elif (re.search("^openWB/set/pv/[1-9][0-9]*/get/daily_yield$", msg.topic) != None or
-                    re.search("^openWB/set/pv/[1-9][0-9]*/get/monthly_yield$", msg.topic) != None or
-                    re.search("^openWB/set/pv/[1-9][0-9]*/get/yearly_yield$", msg.topic) != None or
-                    re.search("^openWB/set/pv/[1-9][0-9]*/get/energy$", msg.topic) != None):
-                self._validate_value(msg, float, [(0, None)])
-            elif re.search("^openWB/set/pv/[1-9][0-9]*/get/counter$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, None)])
-            elif re.search("^openWB/set/pv/[1-9][0-9]*/get/power$", msg.topic) != None:
-                self._validate_value(msg, int, [(None, 0)])
-            elif re.search("^openWB/set/pv/[1-9][0-9]*/get/actual_power_phase$", msg.topic) != None:
-                self._validate_value(msg, float, [(0, None)], collection=list)
-            else:
-                log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
-                pub.pub(msg.topic, "")
-        except Exception as e:
-            log.exception_logging(e)
+    plans_for_time_charging = {
+        "1": {"name": "abc", "time": ["07:00", "17:20"], "current": 10, "active": 1, "frequency": {"selected": "daily"} },
+        "2": {"name": "def", "time": ["07:00", "17:20"], "current": 16, "active": 0, "frequency": {"selected": "daily"} }
+        }
+    
+    # # ct0 - default
+    # pub.pub("openWB/set/vehicle/template/charge_template/0/load_default", False)
+    # pub.pub("openWB/set/vehicle/template/charge_template/0/disable_after_unplug", False)
+    # pub.pub("openWB/set/vehicle/template/charge_template/0/prio", False)
+    # pub.pub("openWB/set/vehicle/template/charge_template/0/time_charging/active", False)
+    # pub.pub("openWB/set/vehicle/template/charge_template/0/time_charging/plans", plans_for_time_charging)
+    # pub.pub("openWB/set/vehicle/template/charge_template/0/chargemode/selected", "stop")
+    # pub.pub("openWB/set/vehicle/template/charge_template/0/chargemode/pv_charging/min_current", 6)
+    # pub.pub("openWB/set/vehicle/template/charge_template/0/chargemode/pv_charging/min_soc", 0)
+    # pub.pub("openWB/set/vehicle/template/charge_template/0/chargemode/pv_charging/min_soc_current", 10)
+    # pub.pub("openWB/set/vehicle/template/charge_template/0/chargemode/pv_charging/max_soc", 100)
+    # pub.pub("openWB/set/vehicle/template/charge_template/0/chargemode/pv_charging/feed_in_limit", False)
+    # pub.pub("openWB/set/vehicle/template/charge_template/0/chargemode/instant_charging/current", 10)
+    # pub.pub("openWB/set/vehicle/template/charge_template/0/chargemode/instant_charging/limit/selected", "none")
+    # pub.pub("openWB/set/vehicle/template/charge_template/0/chargemode/instant_charging/limit/soc", 50)
+    # pub.pub("openWB/set/vehicle/template/charge_template/0/chargemode/instant_charging/limit/amount", 10)
+    # pub.pub("openWB/set/vehicle/template/charge_template/0/chargemode/scheduled_charging", plans_for_scheduled_charging)
 
-    def process_bat_topic(self, client, userdata, msg):
-        """ Handler für die Hausspeicher-Topics
+    # #ct1
+    # pub.pub("openWB/set/vehicle/template/charge_template/1/load_default", False)
+    # pub.pub("openWB/set/vehicle/template/charge_template/1/disable_after_unplug", False)
+    # pub.pub("openWB/set/vehicle/template/charge_template/1/prio", False)
+    # pub.pub("openWB/set/vehicle/template/charge_template/1/time_charging/active", False)
+    # pub.pub("openWB/set/vehicle/template/charge_template/1/time_charging/plans", plans_for_time_charging)
+    # pub.pub("openWB/set/vehicle/template/charge_template/1/chargemode/selected", "pv_charging")
+    # pub.pub("openWB/set/vehicle/template/charge_template/1/chargemode/pv_charging/min_current", 6)
+    # pub.pub("openWB/set/vehicle/template/charge_template/1/chargemode/pv_charging/min_soc", 0)
+    # pub.pub("openWB/set/vehicle/template/charge_template/1/chargemode/pv_charging/min_soc_current", 13)
+    # pub.pub("openWB/set/vehicle/template/charge_template/1/chargemode/pv_charging/max_soc", 90)
+    # pub.pub("openWB/set/vehicle/template/charge_template/1/chargemode/pv_charging/feed_in_limit", False)
+    # pub.pub("openWB/set/vehicle/template/charge_template/1/chargemode/instant_charging/current", 12)
+    # pub.pub("openWB/set/vehicle/template/charge_template/1/chargemode/instant_charging/limit/selected", "soc")
+    # pub.pub("openWB/set/vehicle/template/charge_template/1/chargemode/instant_charging/limit/soc", 50)
+    # pub.pub("openWB/set/vehicle/template/charge_template/1/chargemode/instant_charging/limit/amount", 10)
+    # pub.pub("openWB/set/vehicle/template/charge_template/1/chargemode/scheduled_charging", plans_for_scheduled_charging)
+    # #ct2
+    # pub.pub("openWB/set/vehicle/template/charge_template/2/load_default", False)
+    # pub.pub("openWB/set/vehicle/template/charge_template/2/disable_after_unplug", False)
+    # pub.pub("openWB/set/vehicle/template/charge_template/2/prio", False)
+    # pub.pub("openWB/set/vehicle/template/charge_template/2/time_charging/active", False)
+    # pub.pub("openWB/set/vehicle/template/charge_template/2/time_charging/plans", plans_for_time_charging)
+    # pub.pub("openWB/set/vehicle/template/charge_template/2/chargemode/selected", "pv_charging")
+    # pub.pub("openWB/set/vehicle/template/charge_template/2/chargemode/pv_charging/min_current", 12)
+    # pub.pub("openWB/set/vehicle/template/charge_template/2/chargemode/pv_charging/min_soc", 23)
+    # pub.pub("openWB/set/vehicle/template/charge_template/2/chargemode/pv_charging/min_soc_current", 13)
+    # pub.pub("openWB/set/vehicle/template/charge_template/2/chargemode/pv_charging/max_soc", 80)
+    # pub.pub("openWB/set/vehicle/template/charge_template/2/chargemode/pv_charging/feed_in_limit", False)
+    # pub.pub("openWB/set/vehicle/template/charge_template/2/chargemode/instant_charging/current", 12)
+    # pub.pub("openWB/set/vehicle/template/charge_template/2/chargemode/instant_charging/limit/selected", "soc")
+    # pub.pub("openWB/set/vehicle/template/charge_template/2/chargemode/instant_charging/limit/soc", 50)
+    # pub.pub("openWB/set/vehicle/template/charge_template/2/chargemode/instant_charging/limit/amount", 10)
+    # pub.pub("openWB/set/vehicle/template/charge_template/2/chargemode/scheduled_charging", plans_for_scheduled_charging)
+    # # #ct3
+    # pub.pub("openWB/set/vehicle/template/charge_template/3/load_default", False)
+    # pub.pub("openWB/set/vehicle/template/charge_template/3/disable_after_unplug", False)
+    # pub.pub("openWB/set/vehicle/template/charge_template/3/prio", False)
+    # pub.pub("openWB/set/vehicle/template/charge_template/3/time_charging/active", False)
+    # pub.pub("openWB/set/vehicle/template/charge_template/3/time_charging/plans", plans_for_time_charging)
+    # pub.pub("openWB/set/vehicle/template/charge_template/3/chargemode/selected", "instant_charging")
+    # pub.pub("openWB/set/vehicle/template/charge_template/3/chargemode/pv_charging/min_current", 12)
+    # pub.pub("openWB/set/vehicle/template/charge_template/3/chargemode/pv_charging/min_soc", 23)
+    # pub.pub("openWB/set/vehicle/template/charge_template/3/chargemode/pv_charging/min_soc_current", 13)
+    # pub.pub("openWB/set/vehicle/template/charge_template/3/chargemode/pv_charging/max_soc", 80)
+    # pub.pub("openWB/set/vehicle/template/charge_template/3/chargemode/pv_charging/feed_in_limit", False)
+    # pub.pub("openWB/set/vehicle/template/charge_template/3/chargemode/instant_charging/current", 12)
+    # pub.pub("openWB/set/vehicle/template/charge_template/3/chargemode/instant_charging/limit/selected", "soc")
+    # pub.pub("openWB/set/vehicle/template/charge_template/3/chargemode/instant_charging/limit/soc", 50)
+    # pub.pub("openWB/set/vehicle/template/charge_template/3/chargemode/instant_charging/limit/amount", 10)
+    # pub.pub("openWB/set/vehicle/template/charge_template/3/chargemode/scheduled_charging", plans_for_scheduled_charging)
+    
+    # optional
+    pub.pub("openWB/set/optional/et/active", False)
+    pub.pub("openWB/set/optional/et/config/max_price", 5.5)
+    #pub.pub("openWB/set/optional/et/config/provider", {"provider": "awattar", "country": "de"})
+    pub.pub("openWB/set/optional/et/config/provider", {"provider": "tibber", "token": "d1007ead2dc84a2b82f0de19451c5fb22112f7ae11d19bf2bedb224a003ff74a", "id": "c70dcbe5-4485-4821-933d-a8a86452737b"})
+    pub.pub("openWB/set/optional/rfid/mode", 2)
+    pub.pub("openWB/set/optional/rfid/match_ev_per_tag_only", False)
 
-         Parameters
-        ----------
-        client : (unused)
-            vorgegebener Parameter
-        userdata : (unused)
-            vorgegebener Parameter
-        msg:
-            enthält Topic und Payload
-        """
-        try:
-            if (re.search("^openWB/set/bat/config/configured$", msg.topic) != None or 
-                    re.search("^openWB/set/bat/set/switch_on_soc_reached$", msg.topic) != None or
-                    re.search("^openWB/set/bat/set/hybrid_system_detected$", msg.topic) != None):
-                self._validate_value(msg, int, [(0, 1)])
-            elif re.search("^openWB/set/bat/set/charging_power_left$", msg.topic) != None:
-                self._validate_value(msg, int)
-            elif re.search("^openWB/set/bat/get/soc$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, 100)])
-            elif re.search("^openWB/set/bat/get/power$", msg.topic) != None:
-                self._validate_value(msg, int)
-            elif (re.search("^openWB/set/bat/get/imported$", msg.topic) != None or
-                    re.search("^openWB/set/bat/get/exported$", msg.topic) != None or
-                    re.search("^openWB/set/bat/get/daily_yield_export$", msg.topic) != None or
-                    re.search("^openWB/set/bat/get/daily_yield_import$", msg.topic) != None):
-                self._validate_value(msg, float, [(0, None)])
-            elif re.search("^openWB/set/bat/[1-9][0-9]*/config$", msg.topic) != None:
-                self._validate_value(msg, "json")
-            elif re.search("^openWB/set/bat/[1-9][0-9]*/get/power$", msg.topic) != None:
-                self._validate_value(msg, float)
-            elif (re.search("^openWB/set/bat/[1-9][0-9]*/get/imported$", msg.topic) != None or
-                    re.search("^openWB/set/bat/[1-9][0-9]*/get/exported$", msg.topic) != None or
-                    re.search("^openWB/set/bat/[1-9][0-9]*/get/daily_yield_export$", msg.topic) != None or
-                    re.search("^openWB/set/bat/[1-9][0-9]*/get/daily_yield_import$", msg.topic) != None):
-                self._validate_value(msg, float, [(0, None)])
-            elif re.search("^openWB/set/bat/[1-9][0-9]*/get/soc$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, 100)])
-            elif re.search("^openWB/set/bat/[1-9][0-9]*/get/fault_state$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, 2)])
-            elif re.search("^openWB/set/bat/[1-9][0-9]*/get/fault_str$", msg.topic) != None:
-                self._validate_value(msg, str)
-            else:
-                log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
-                pub.pub(msg.topic, "")
-        except Exception as e:
-            log.exception_logging(e)
+    # pv
+    # pub.pub("openWB/set/pv/1/get/counter", 500)
+    # pub.pub("openWB/set/pv/1/get/daily_yield", 10)
+    # pub.pub("openWB/set/pv/1/get/monthly_yield", 10)
+    # pub.pub("openWB/set/pv/1/get/yearly_yield", 10)
+    # pub.pub("openWB/set/pv/1/config", {"selected": "mqtt"})
 
-    def process_general_topic(self, client, userdata, msg):
-        """ Handler für die Allgemeinen-Topics
+    # counter
+    hierarchy = [
+        {
+            "id": "counter0", 
+            "children": 
+            [
+                {"id": "cp1", "children": []}, 
+                {"id": "cp2", "children": []}, 
+                {"id": "cp3", "children": []},
+                {"id": "cp4", "children": []},
+                {"id": "cp5", "children": []},
+                {"id": "cp6", "children": []},
+                {"id": "cp7", "children": []},
+                {"id": "cp8", "children": []},
+                {"id": "cp9", "children": []},
+                {"id": "cp10", "children": []},
+                {"id": "cp11", "children": []},
+                {"id": "cp12", "children": []},
+                {"id": "cp13", "children": []}
+                # {"id": "cp14", "children": []},
+                # {"id": "cp15", "children": []},
+                # {"id": "cp16", "children": []}
+                ]
+            }
+        ]
+    #hierarchy = [{"id": "counter0", "children": [{"id": "cp1", "children": []}]}]
+    pub.pub("openWB/set/counter/get/hierarchy", hierarchy)
+    pub.pub("openWB/set/counter/0/get/frequency", 50.2)
+    pub.pub("openWB/set/counter/0/config", {"max_current": [30, 30, 30], "max_consumption": 30000, "selected":"openwb", "config": {"openwb":{"version": 2, "ip_address": "192.168.1.101", "id": 105}}})
 
-         Parameters
-        ----------
-        client : (unused)
-            vorgegebener Parameter
-        userdata : (unused)
-            vorgegebener Parameter
-        msg:
-            enthält Topic und Payload
-        """
-        try:
-            if re.search("^openWB/set/general/extern$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, 1)])
-            elif re.search("^openWB/set/general/control_interval$", msg.topic) != None:
-                self._validate_value(msg, int, [(10, 10), (20, 20), (60, 60)])
-            elif re.search("^openWB/set/general/external_buttons_hw$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, 1)])
-            elif re.search("^openWB/set/general/chargemode_config/individual_mode$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, 1)])
-            elif re.search("^openWB/set/general/chargemode_config/unbalanced_load$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, 1)])
-            elif re.search("^openWB/set/general/chargemode_config/unbalanced_load_limit$", msg.topic) != None:
-                self._validate_value(msg, int, [(10, 32)])
-            elif (re.search("^openWB/set/general/chargemode_config/pv_charging/feed_in_yield$", msg.topic) != None or 
-                    re.search("^openWB/set/general/chargemode_config/pv_charging/switch_on_threshold$", msg.topic) != None or
-                    re.search("^openWB/set/general/chargemode_config/pv_charging/switch_on_delay$", msg.topic) != None or
-                    re.search("^openWB/set/general/chargemode_config/pv_charging/switch_off_threshold$", msg.topic) != None or
-                    re.search("^openWB/set/general/chargemode_config/pv_charging/switch_off_delay$", msg.topic) != None):
-                self._validate_value(msg, int, [(0, None)])
-            elif re.search("^openWB/set/general/chargemode_config/pv_charging/phase_switch_delay$", msg.topic) != None:
-                self._validate_value(msg, int, [(1, 15)])
-            elif re.search("^openWB/set/general/chargemode_config/pv_charging/control_range$", msg.topic) != None:
-                self._validate_value(msg, int, collection=list)
-            elif ((re.search("^openWB/set/general/chargemode_config/pv_charging/phases_to_use$", msg.topic) != None or
-                    re.search("^openWB/set/general/chargemode_config/scheduled_charging/phases_to_use$", msg.topic) != None)):
-                self._validate_value(msg, int, [(0, 0), (1, 1), (3, 3)])
-            elif re.search("^openWB/set/general/chargemode_config/pv_charging/bat_prio$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, 1)])
-            elif (re.search("^openWB/set/general/chargemode_config/pv_charging/switch_on_soc$", msg.topic) != None or
-                    re.search("^openWB/set/general/chargemode_config/pv_charging/switch_off_soc$", msg.topic) != None or
-                    re.search("^openWB/set/general/chargemode_config/pv_charging/rundown_soc$", msg.topic) != None):
-                self._validate_value(msg, int, [(0, 100)])
-            elif (re.search("^openWB/set/general/chargemode_config/pv_charging/rundown_power$", msg.topic) != None or
-                    re.search("^openWB/set/general/chargemode_config/pv_charging/charging_power_reserve$", msg.topic) != None):
-                self._validate_value(msg, int, [(0, None)])
-            elif re.search("^openWB/set/general/chargemode_config/[a-z,_]+/phases_to_use$", msg.topic) != None:
-                self._validate_value(msg, int, [(1, 1), (3, 3)])
-            elif (re.search("^openWB/set/general/grid_protection_configured$", msg.topic) != None or
-                    re.search("^openWB/set/general/grid_protection_active$", msg.topic) != None or
-                    re.search("^openWB/set/general/mqtt_bridge$", msg.topic) != None):
-                self._validate_value(msg, int, [(0, 1)])
-            elif re.search("^openWB/set/general/grid_protection_timestamp$", msg.topic) != None:
-                self._validate_value(msg, str)
-            elif re.search("^openWB/set/general/grid_protection_random_stop$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, 90)])
-            elif re.search("^openWB/set/general/notifications/selected$", msg.topic) != None:
-                self._validate_value(msg, str)
-            elif (re.search("^openWB/set/general/notifications/start_charging$", msg.topic) != None or
-                    re.search("^openWB/set/general/notifications/stop_charging$", msg.topic) != None or
-                    re.search("^openWB/set/general/notifications/plug$", msg.topic) != None or
-                    re.search("^openWB/set/general/notifications/smart_home$", msg.topic) != None):
-                self._validate_value(msg, int, [(0, 1)])
-            elif re.search("^openWB/set/general/price_kwh$", msg.topic) != None:
-                self._validate_value(msg, float, [(0, 99.99)])
-            elif re.search("^openWB/set/general/range_unit$", msg.topic) != None:
-                self._validate_value(msg, str)
-            elif (re.search("^openWB/set/general/ripple_control_receiver/configured$", msg.topic) != None or
-                    re.search("^openWB/set/general/ripple_control_receiver/r1_active$", msg.topic) != None or
-                    re.search("^openWB/set/general/ripple_control_receiver/r2_active$", msg.topic) != None):
-                self._validate_value(msg, int, [(0, 1)])
-            else:
-                log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
-                pub.pub(msg.topic, "")
-        except Exception as e:
-            log.exception_logging(e)
+    # # bat
+    # pub.pub("openWB/set/bat/1/config", {"selected": "mqtt"})
+    # pub.pub("openWB/set/bat/1/get/daily_yield_export", 10)
+    # pub.pub("openWB/set/bat/1/get/daily_yield_import", 10)
 
-    def process_optional_topic(self, client, userdata, msg):
-        """ Handler für die Optionalen-Topics
+    # general
+    pub.pub("openWB/set/general/chargemode_config/individual_mode", True)
+    pub.pub("openWB/set/general/chargemode_config/unbalanced_load", False)
+    pub.pub("openWB/set/general/chargemode_config/unbalanced_load_limit", 18)
+    pub.pub("openWB/set/general/chargemode_config/instant_charging/phases_to_use", 3)
+    # pub.pub("openWB/set/general/chargemode_config/pv_charging/bat_prio", 1)
+    pub.pub("openWB/set/bat/config/configured", False)
+    pub.pub("openWB/set/general/chargemode_config/pv_charging/switch_on_soc", 60)
+    pub.pub("openWB/set/general/chargemode_config/pv_charging/switch_off_soc", 40)
+    pub.pub("openWB/set/general/chargemode_config/pv_charging/rundown_power", 1000)
+    pub.pub("openWB/set/general/chargemode_config/pv_charging/rundown_soc", 50)
+    pub.pub("openWB/set/general/chargemode_config/pv_charging/charging_power_reserve", 200)
+    pub.pub("openWB/set/general/chargemode_config/pv_charging/control_range", [0,230])
+    pub.pub("openWB/set/general/chargemode_config/pv_charging/switch_off_threshold", 5)
+    pub.pub("openWB/set/general/chargemode_config/pv_charging/switch_off_delay", 60)
+    pub.pub("openWB/set/general/chargemode_config/pv_charging/switch_on_delay", 30)
+    pub.pub("openWB/set/general/chargemode_config/pv_charging/switch_on_threshold", 1500)
+    pub.pub("openWB/set/general/chargemode_config/pv_charging/feed_in_yield", 15000)
+    pub.pub("openWB/set/general/chargemode_config/pv_charging/phase_switch_delay", 15)
+    pub.pub("openWB/set/general/chargemode_config/pv_charging/phases_to_use", 1)
+    pub.pub("openWB/set/general/chargemode_config/scheduled_charging/phases_to_use", 0)
+    pub.pub("openWB/set/general/chargemode_config/time_charging/phases_to_use", 1)
+    pub.pub("openWB/set/general/chargemode_config/standby/phases_to_use", 1)
+    pub.pub("openWB/set/general/chargemode_config/stop/phases_to_use", 1)
+    pub.pub("openWB/set/general/range_unit", "km")
+    pub.pub("openWB/set/general/price_kwh", 0.2)
+    pub.pub("openWB/set/general/grid_protection_configured", True)
+    pub.pub("openWB/set/general/control_interval", 10)
+    pub.pub("openWB/set/general/ripple_control_receiver/configured", False)
 
-         Parameters
-        ----------
-        client : (unused)
-            vorgegebener Parameter
-        userdata : (unused)
-            vorgegebener Parameter
-        msg:
-            enthält Topic und Payload
-        """
-        try:
-            if re.search("^openWB/set/optional/load_sharing/active$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, 1)])
-            elif re.search("^openWB/set/optional/load_sharing/max_current$", msg.topic) != None:
-                self._validate_value(msg, int, [(16, 32)])
-            elif re.search("^openWB/set/optional/et/active$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, 1)])
-            elif re.search("^openWB/set/optional/et/get/price_list$", msg.topic) != None:
-                self._validate_value(msg, "json")
-            elif re.search("^openWB/set/optional/et/get/price$", msg.topic) != None:
-                self._validate_value(msg, float)
-            elif re.search("^openWB/set/optional/et/get/source$", msg.topic) != None:
-                self._validate_value(msg, str)
-            elif re.search("^openWB/set/optional/et/config/max_price$", msg.topic) != None:
-                self._validate_value(msg, float)
-            elif re.search("^openWB/set/optional/et/config/provider$", msg.topic) != None:
-                self._validate_value(msg, "json")
-            elif re.search("^openWB/set/optional/rfid/mode$", msg.topic) != None:
-                self._validate_value(msg, int, [(1, 2)])
-            elif re.search("^openWB/set/optional/rfid/match_ev_per_tag_only$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, 1)])
-            else:
-                log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
-                pub.pub(msg.topic, "")
-        except Exception as e:
-            log.exception_logging(e)
-
-    def process_counter_topic(self, client, userdata, msg):
-        """ Handler für die Zähler-Topics
-
-         Parameters
-        ----------
-        client : (unused)
-            vorgegebener Parameter
-        userdata : (unused)
-            vorgegebener Parameter
-        msg:
-            enthält Topic und Payload
-        """
-        try:
-            if re.search("^openWB/set/counter/set/loadmanagement$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, 1)])
-            elif re.search("^openWB/set/counter/get/hierarchy$", msg.topic) != None:
-                self._validate_value(msg, None)
-            elif re.search("^openWB/set/counter/get/home_consumption$", msg.topic) != None:
-                # Inkonsistenz: Kann auch als Float kommen, soll aber immer als Int gepublished werden.
-                payload = json.loads(str(msg.payload.decode("utf-8")))
-                msg.payload = json.dumps(int(payload)).encode("utf-8")
-                self._validate_value(msg, int, [(0, None)])
-            elif (re.search("^openWB/set/counter/[0-9]+/set/consumption_left$", msg.topic) != None or
-                    re.search("^openWB/set/counter/[0-9]+/set/present_power_all$", msg.topic) != None or
-                    re.search("^openWB/set/counter/[0-9]+/set/present_imported$", msg.topic) != None or
-                    re.search("^openWB/set/counter/[0-9]+/set/present_exported$", msg.topic) != None):
-                self._validate_value(msg, float)
-            elif re.search("^openWB/set/counter/[0-9]+/set/sim_timestamp$", msg.topic) != None:
-                self._validate_value(msg, str)
-            elif re.search("^openWB/set/counter/[0-9]+/set/current_left$", msg.topic) != None:
-                self._validate_value(msg, float, [(0, None)], collection=list)
-            elif re.search("^openWB/set/counter/[0-9]+/config$", msg.topic) != None:
-                self._validate_value(msg, "json")
-            elif re.search("^openWB/set/counter/[0-9]+/get/power_all$", msg.topic) != None:
-                self._validate_value(msg, int)
-            elif re.search("^openWB/set/counter/[0-9]+/get/current$", msg.topic) != None:
-                self._validate_value(msg, float, collection=list)
-            elif (re.search("^openWB/set/counter/[0-9]+/get/voltage$", msg.topic) != None or
-                    re.search("^openWB/set/counter/[0-9]+/get/power_phase$", msg.topic) != None or
-                    re.search("^openWB/set/counter/[0-9]+/get/power_factor$", msg.topic) != None):
-                self._validate_value(msg, float, [(0, None)], collection=list)
-            elif (re.search("^openWB/set/counter/[0-9]+/get/power_average$", msg.topic) != None
-                    or re.search("^openWB/set/counter/[0-9]+/get/unbalanced_load$", msg.topic) != None
-                    or re.search("^openWB/set/counter/[0-9]+/get/frequency$", msg.topic) != None
-                    or re.search("^openWB/set/counter/[0-9]+/get/daily_yield_export$", msg.topic) != None
-                    or re.search("^openWB/set/counter/[0-9]+/get/daily_yield_import$", msg.topic) != None
-                    or re.search("^openWB/set/counter/[0-9]+/get/imported$", msg.topic) != None
-                    or re.search("^openWB/set/counter/[0-9]+/get/exported$", msg.topic) != None):
-                self._validate_value(msg, float, [(0, None)])
-            elif re.search("^openWB/set/counter/[0-9]/get/fault_state$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, 2)])
-            elif re.search("^openWB/set/counter/[0-9]/get/fault_str$", msg.topic) != None:
-                self._validate_value(msg, str)
-            else:
-                log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
-                pub.pub(msg.topic, "")
-        except Exception as e:
-            log.exception_logging(e)
-
-    def process_log_topic(self, client, userdata, msg):
-        """Handler für die Log-Topics
-
-         Parameters
-        ----------
-        client : (unused)
-            vorgegebener Parameter
-        userdata : (unused)
-            vorgegebener Parameter
-        msg:
-            enthält Topic und Payload
-        """
-        try:
-            if (re.search("^openWB/set/log/request$", msg.topic) != None or
-                    re.search("^openWB/set/log/data$", msg.topic) != None):
-                self._validate_value(msg, "json")
-            else:
-                log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
-                pub.pub(msg.topic, "")
-        except Exception as e:
-            log.exception_logging(e)
-
+    # graph
+    pub.pub("openWB/graph/config/duration", 30)
