@@ -242,7 +242,7 @@ def _read_sdm(counter):
     resp = client.read_input_registers(0x0A,2, unit=id)
     lla1 = float(struct.unpack('>f',struct.pack('>HH',*resp.registers))[0])
     lla3 = float("%.1f" % lla1)
-    pub.pub("openWB/set/counter/"+str(counter_num)+"/get/current", [abs(lla1), abs(lla2). abs(lla3)])
+    pub.pub("openWB/set/counter/"+str(counter_num)+"/get/current", [abs(lla1), abs(lla2), abs(lla3)])
     # evuhz
     resp = client.read_input_registers(0x46,2, unit=id)
     hz = struct.unpack('>f',struct.pack('>HH',*resp.registers))[0]
