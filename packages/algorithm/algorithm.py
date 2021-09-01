@@ -897,7 +897,7 @@ class control():
                     elif condition_types[condition] == "soc":
                         valid_chargepoints.update((cp, cp.data["set"]["charging_ev_data"].data["get"]["soc"]) for cp, val in valid_chargepoints.items())
                     elif condition_types[condition] == "plug_in":
-                        valid_chargepoints.update((cp, cp.data["get"]["plug_time"]) for cp, val in valid_chargepoints.items())
+                        valid_chargepoints.update((cp, cp.data["set"]["plug_time"]) for cp, val in valid_chargepoints.items())
                     elif condition_types[condition] == "charged_since_plugged":
                         valid_chargepoints.update((cp, cp.data["get"]["charged_since_plugged_counter"]) for cp, val in valid_chargepoints.items())
                     else:

@@ -314,6 +314,8 @@ class subData():
                 index=self.get_index(msg.topic)
                 if "cp"+index not in var:
                     var["cp"+index]=chargepoint.chargepoint(int(index), default)
+                if "all" not in var:
+                    var["all"]=chargepoint.allChargepoints()
                 if re.search("^.+/chargepoint/[0-9]+/set/.+$", msg.topic) != None:
                     if "set" not in var["cp"+index].data:
                         var["cp"+index].data["set"]={}

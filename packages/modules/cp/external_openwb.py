@@ -13,7 +13,7 @@ def read_external_openwb(cp):
                 myipaddress = str(f.read())
         except:
             myipaddress = "192.168.193.5"
-        pub.pub_single("openWB/set/isss/heartbeat", str(0), hostname=ip_address)
+        pub.pub_single("openWB/set/isss/heartbeat", 0, hostname=ip_address)
         pub.pub_single("openWB/set/isss/parentWB", str(myipaddress), hostname=ip_address)
         if (duo_num == 2):
             pub.pub_single("openWB/set/isss/parentCPlp2", str(cp_num), hostname=ip_address)
@@ -28,9 +28,9 @@ def write_external_openwb(ip_address, num, current):
     try:
         # Zweiter LP der Duo
         if num == 2:
-            pub.pub_single("openWB/set/isss/Lp2Current", str(current), hostname=ip_address)
+            pub.pub_single("openWB/set/isss/Lp2Current", current, hostname=ip_address)
         else:
-            pub.pub_single("openWB/set/isss/Current", str(current), hostname=ip_address)
+            pub.pub_single("openWB/set/isss/Current", current, hostname=ip_address)
     except Exception as e:
         log.exception_logging(e)
 
