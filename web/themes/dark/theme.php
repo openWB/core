@@ -416,7 +416,7 @@
 			</div>
 
 			<div class="accordion" id="chargepointaccordion">
-				<div class="chargepoint-card card border-dark text-grey chargepoint-template hide" data-cp="0" data-chargetemplate="0" data-evtemplate="0">
+				<div class="chargepoint-card card border-dark text-grey chargepoint-template hide" data-cp="0" data-chargepointtemplate="0" data-chargetemplate="0" data-evtemplate="0">
 					<div class="card-header bg-lightgrey collapsed" data-toggle="collapse" data-target="#collapseChargepoint0">
 						<div class="form-row">
 							<div class="col-3">
@@ -480,7 +480,7 @@
 										Fahrzeug
 									</label>
 									<div class="col-md-8">
-										<select name="chargepoint-vehicleselect" class="form-control chargepoint-vehicleselect" data-topic="openWB/set/chargepoint/template/<ct>/ev">
+										<select name="chargepoint-vehicleselect" class="form-control chargepoint-vehicleselect" data-topic="openWB/set/chargepoint/template/<cpt>/ev">
 											<option value="0">-- Nicht ausgewählt --</option>
 										</select>
 									</div>
@@ -935,15 +935,17 @@
 						var cp = parseInt($(this).closest('[data-cp]').data('cp'));  // get attribute cp-# of parent element
 						var ev = parseInt($(this).closest('[data-ev]').data('ev'));  // get attribute ev-# of parent element
 						var ct = parseInt($(this).closest('[data-chargetemplate]').data('chargetemplate'));  // get attribute chargetemplate-# of parent element
+						var cpt = parseInt($(this).closest('[data-chargepointtemplate]').data('chargepointtemplate'));  // get attribute chargepointtemplate-# of parent element
 						var et = parseInt($(this).closest('[data-evtemplate]').data('evtemplate'));  // get attribute evtemplate-# of parent element
 						var schedule = parseInt($(this).closest('[data-plan]').data('plan'));  // get attribute plan-# of parent element
 						topic = topic.replace( '<cp>', cp );
 						topic = topic.replace( '<ev>', ev );
 						topic = topic.replace( '<ct>', ct );
+						topic = topic.replace( '<cpt>', cpt );
 						topic = topic.replace( '<et>', et );
 						topic = topic.replace( '<sched>', schedule );
 						if( topic.includes('/NaN/') ) {
-							console.log( 'missing cp, ev, ct, et or sched data' );
+							console.log( 'missing cp, ev, ct, cpt, et or sched data' );
 						} else {
 							if ( $(this).prop('checked') ) {
 								publish(true, topic);
@@ -965,13 +967,15 @@
 						var cp = parseInt($(this).closest('[data-cp]').data('cp'));  // get attribute cp-# of parent element
 						var ev = parseInt($(this).closest('[data-ev]').data('ev'));  // get attribute ev-# of parent element
 						var ct = parseInt($(this).closest('[data-chargetemplate]').data('chargetemplate'));  // get attribute chargetemplate-# of parent element
+						var cpt = parseInt($(this).closest('[data-chargepointtemplate]').data('chargepointtemplate'));  // get attribute chargepointtemplate-# of parent element
 						var et = parseInt($(this).closest('[data-evtemplate]').data('evtemplate'));  // get attribute evtemplate-# of parent element
 						topic = topic.replace( '<cp>', cp );
 						topic = topic.replace( '<ev>', ev );
 						topic = topic.replace( '<ct>', ct );
-						topic = topic.replace( '<et>', ct );
+						topic = topic.replace( '<cpt>', cpt );
+						topic = topic.replace( '<et>', et );
 						if( topic.includes('/NaN/') ) {
-							console.log( 'missing cp, ev, ct, or et data' );
+							console.log( 'missing cp, ev, ct, cpt, or et data' );
 						} else {
 							publish(parseInt($(this).val()), topic);
 						}

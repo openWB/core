@@ -11,70 +11,71 @@
 
 // add topics here which should be subscribed bevore any other topics
 var topicsToSubscribeFirst = [
-	["openWB/counter/get/hierarchy", 0]	// hierarchy of all counters and chargepoints
+	["openWB/counter/get/hierarchy", 0] // hierarchy of all counters and chargepoints
 ];
 
 // add any other topics here
 var topicsToSubscribe = [
 	// data for all chargepoints
-	["openWB/chargepoint/get/power_all", 1],			// total actual charging power; int, unit: Wh
-	["openWB/chargepoint/get/daily_imported_all", 1],	// total counted energy for charging; float, unit: kWh
-	["openWB/chargepoint/get/daily_exported_all", 1],	// total counted energy for discharging (V2G/V2H); float, unit: kWh
+	["openWB/chargepoint/get/power_all", 1], // total actual charging power; int, unit: Wh
+	["openWB/chargepoint/get/daily_imported_all", 1], // total counted energy for charging; float, unit: kWh
+	["openWB/chargepoint/get/daily_exported_all", 1], // total counted energy for discharging (V2G/V2H); float, unit: kWh
 
 	// // pv topics
-	["openWB/pv/config/configured", 1],	// is a pv module configured? bool
-	["openWB/pv/get/power", 1],			// total actual power; negative int, unit: W
-	["openWB/pv/get/daily_yield", 1],	// total daily yield; float, unit: kWh
+	["openWB/pv/config/configured", 1], // is a pv module configured? bool
+	["openWB/pv/get/power", 1], // total actual power; negative int, unit: W
+	["openWB/pv/get/daily_yield", 1], // total daily yield; float, unit: kWh
 
 	// // housebattery
-	["openWB/bat/config/configured", 1],		// is a battery module configured? bool
-	["openWB/bat/get/power", 1],				// total actual power; int, unit: W
-	["openWB/bat/get/soc", 1],					// total actual soc; int, unit: %, 0-100
-	["openWB/bat/get/daily_yield_export", 1],	// total daily imported energy; float, unit: kWh
-	["openWB/bat/get/daily_yield_import", 1],	// total daily imported energy; float, unit: kWh
+	["openWB/bat/config/configured", 1], // is a battery module configured? bool
+	["openWB/bat/get/power", 1], // total actual power; int, unit: W
+	["openWB/bat/get/soc", 1], // total actual soc; int, unit: %, 0-100
+	["openWB/bat/get/daily_yield_export", 1], // total daily imported energy; float, unit: kWh
+	["openWB/bat/get/daily_yield_import", 1], // total daily imported energy; float, unit: kWh
 
 	// counter topics, counter with index 0 is always main grid counter
-	["openWB/counter/set/home_consumption", 1],					// actual home power
-	["openWB/counter/set/daily_energy_home_consumption", 1],	// daily home energy
-	["openWB/counter/0/get/power_all", 1],						// actual power; int, unit: W
-	["openWB/counter/0/get/daily_yield_import", 1],				// daily imported energy; float, unit: kWh
-	["openWB/counter/0/get/daily_yield_export", 1],				// daily exported energy; float, unit: kWh
+	["openWB/counter/set/home_consumption", 1], // actual home power
+	["openWB/counter/set/daily_energy_home_consumption", 1], // daily home energy
+	["openWB/counter/0/get/power_all", 1], // actual power; int, unit: W
+	["openWB/counter/0/get/daily_yield_import", 1], // daily imported energy; float, unit: kWh
+	["openWB/counter/0/get/daily_yield_export", 1], // daily exported energy; float, unit: kWh
 
 	// chargepoint topics
-	["openWB/chargepoint/+/config/name", 1],						// chargepoint name, used to detect configured chargepoints and create html elements before receiving chargepoint data
-	["openWB/chargepoint/+/get/state_str", 1],						// information about actual state; str
-	["openWB/chargepoint/+/get/fault_str", 1],						// any error messages; str
-	["openWB/chargepoint/+/get/fault_state", 1],					// error state; int, 0 = ok, 1 = warning, 2 = error
-	["openWB/chargepoint/+/get/charged_since_plugged_counter", 1],	// energy charged since the vehicle was plugged in; float, unit: kWh
-	["openWB/chargepoint/+/get/power_all", 1],						// actuel charging power
-	["openWB/chargepoint/+/get/phases_in_use", 1],					// actual number of phases used while charging; int, 0-3
-	["openWB/chargepoint/+/get/plug_state", 1],						// state of plug; int, 0 = disconnected, 1 = connected
-	["openWB/chargepoint/+/get/charge_state", 1],					// state of charge; int, 0 = not charging, 1 = charging
-	["openWB/chargepoint/+/get/manual_lock", 1],					// is manual lock active? int, 0 = off, 1 = on
-	["openWB/chargepoint/+/get/enabled", 1],						// is the chargepoint enabled? int, 0 = disabled, 1 = enabled
-	["openWB/chargepoint/+/set/current", 1],						// actual set current; float, unit: A
+	["openWB/chargepoint/+/config/name", 1], // chargepoint name, used to detect configured chargepoints and create html elements before receiving chargepoint data
+	["openWB/chargepoint/+/config/template", 1], // chargepoint template; int
+	["openWB/chargepoint/+/get/state_str", 1], // information about actual state; str
+	["openWB/chargepoint/+/get/fault_str", 1], // any error messages; str
+	["openWB/chargepoint/+/get/fault_state", 1], // error state; int, 0 = ok, 1 = warning, 2 = error
+	["openWB/chargepoint/+/get/charged_since_plugged_counter", 1], // energy charged since the vehicle was plugged in; float, unit: kWh
+	["openWB/chargepoint/+/get/power_all", 1], // actuel charging power
+	["openWB/chargepoint/+/get/phases_in_use", 1], // actual number of phases used while charging; int, 0-3
+	["openWB/chargepoint/+/get/plug_state", 1], // state of plug; int, 0 = disconnected, 1 = connected
+	["openWB/chargepoint/+/get/charge_state", 1], // state of charge; int, 0 = not charging, 1 = charging
+	["openWB/chargepoint/+/get/manual_lock", 1], // is manual lock active? int, 0 = off, 1 = on
+	["openWB/chargepoint/+/get/enabled", 1], // is the chargepoint enabled? int, 0 = disabled, 1 = enabled
+	["openWB/chargepoint/+/set/current", 1], // actual set current; float, unit: A
 
 	// information for connected vehicle
-	["openWB/chargepoint/+/get/connected_vehicle/info", 1],			// general info of the vehicle; JSON { "id": int, "name": str }
-	["openWB/chargepoint/+/get/connected_vehicle/config", 1],		// general configuration of the vehicle; JSON { "charge_template": int, "ev_template": int, "chargemode": str, "priority": bool, "average_consumption": int (Wh/100km) }
-	["openWB/chargepoint/+/get/connected_vehicle/soc", 1],			// soc info of the vehicle; JSON {"soc": float (%), "range": int, "range_unit": str, "timestamp": int, "fault_stat": int, "fault_str": str }
-	["openWB/chargepoint/+/get/connected_vehicle/soc_config", 1],	// soc configuration of the vehicle; JSON { "configured": bool, "manual": bool }
+	["openWB/chargepoint/+/get/connected_vehicle/info", 1], // general info of the vehicle; JSON { "id": int, "name": str }
+	["openWB/chargepoint/+/get/connected_vehicle/config", 1], // general configuration of the vehicle; JSON { "charge_template": int, "ev_template": int, "chargemode": str, "priority": bool, "average_consumption": int (Wh/100km) }
+	["openWB/chargepoint/+/get/connected_vehicle/soc", 1], // soc info of the vehicle; JSON {"soc": float (%), "range": int, "range_unit": str, "timestamp": int, "fault_stat": int, "fault_str": str }
+	["openWB/chargepoint/+/get/connected_vehicle/soc_config", 1], // soc configuration of the vehicle; JSON { "configured": bool, "manual": bool }
 
 	// vehicle topics
-	["openWB/vehicle/+/name", 1],						// populate a list of vehicle id/name info
-	["openWB/vehicle/template/charge_template/+", 1],	// populate a list of charge templates
+	["openWB/vehicle/+/name", 1], // populate a list of vehicle id/name info
+	["openWB/vehicle/template/charge_template/+", 1], // populate a list of charge templates
 
 	// chargemode config
 	["openWB/general/chargemode_config/pv_charging/bat_prio", 0],
 
 	// electricity tariff
-	["openWB/optional/et/active", 1],			// et provider is configured
-	["openWB/optional/et/provider", 1],			// et privider name
-	["openWB/optional/et/get/price", 1],		// current price
-	["openWB/optional/et/config/max_price", 1],	// configured max price
+	["openWB/optional/et/active", 1], // et provider is configured
+	["openWB/optional/et/provider", 1], // et privider name
+	["openWB/optional/et/get/price", 1], // current price
+	["openWB/optional/et/config/max_price", 1], // configured max price
 
 	// graph topcis
-	["openWB/graph/config/duration", 1],				// maximum duration to display in landing page
+	["openWB/graph/config/duration", 1], // maximum duration to display in landing page
 	["openWB/graph/boolDisplayLp1", 1],
 	["openWB/graph/boolDisplayLp2", 1],
 	["openWB/graph/boolDisplayLp3", 1],
@@ -260,19 +261,19 @@ var options = {
 	timeout: 5,
 	useSSL: isSSL,
 	//Gets Called if the connection has sucessfully been established
-	onSuccess: function () {
+	onSuccess: function() {
 		retries = 0;
 		topicsToSubscribeFirst.forEach((topic) => {
-			client.subscribe(topic[0], {qos: 0});
+			client.subscribe(topic[0], { qos: 0 });
 		});
-		setTimeout(function(){
+		setTimeout(function() {
 			topicsToSubscribe.forEach((topic) => {
-				client.subscribe(topic[0], {qos: 0});
+				client.subscribe(topic[0], { qos: 0 });
 			});
 		}, 200);
 	},
 	//Gets Called if the connection could not be established
-	onFailure: function (message) {
+	onFailure: function(message) {
 		setTimeout(function() { client.connect(options); }, 5000);
 	}
 };
@@ -280,25 +281,25 @@ var options = {
 var clientuid = Math.random().toString(36).replace(/[^a-z]+/g, "").substr(0, 5);
 var client = new Messaging.Client(location.hostname, 9001, clientuid);
 
-$(document).ready(function(){
+$(document).ready(function() {
 	client.connect(options);
 	timeOfLastMqttMessage = Date.now();
 });
 
 //Gets  called if the websocket/mqtt connection gets disconnected for any reason
-client.onConnectionLost = function (responseObject) {
+client.onConnectionLost = function(responseObject) {
 	client.connect(options);
 };
 
 //Gets called whenever you receive a message
-client.onMessageArrived = function (message) {
+client.onMessageArrived = function(message) {
 	handlevar(message.destinationName, message.payloadString);
 };
 
 //Creates a new Messaging.Message Object and sends it
 function publish(payload, topic) {
-	console.log("publish: "+topic+": "+payload);
-	if ( topic != undefined ) {
+	console.log("publish: " + topic + ": " + payload);
+	if (topic != undefined) {
 		var message = new Messaging.Message(JSON.stringify(payload));
 		message.destinationName = topic;
 		message.qos = 2;

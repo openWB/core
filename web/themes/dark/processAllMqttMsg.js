@@ -53,6 +53,7 @@ function createChargepoint(hierarchy) {
 				// sourceElement.find('input[type=checkbox][data-toggle^=toggle]').bootstrapToggle();
 				// update all data referencing the old index in our clone
 				clonedElement.attr('data-cp', chargepointIndex).data('cp', chargepointIndex);
+				clonedElement.attr('data-chargepointtemplate', 0).data('chargepointtemplate', 0);
 				clonedElement.attr('data-chargetemplate', 0).data('chargetemplate', 0);
 				clonedElement.attr('data-evtemplate', 0).data('evtemplate', 0);
 				clonedElement.find('.card-header').attr('data-target', '#collapseChargepoint' + chargepointIndex).data('target', '#collapseChargepoint' + chargepointIndex).addClass('collapsed');
@@ -563,6 +564,12 @@ function processChargepointMessages(mqttmsg, mqttpayload) {
 		var parent = $('.chargepoint-card[data-cp="' + index + '"]'); // get parent row element for charge point
 		var element = parent.find('.chargepoint-name'); // now get parents respective child element
 		$(element).text(JSON.parse(mqttpayload));
+	} else if (mqttmsg.match(/^openwb\/chargepoint\/[1-9][0-9]*\/config\/template$/i)) {
+		var index = getIndex(mqttmsg); // extract number between two / /
+		var parent = $('.chargepoint-card[data-cp="' + index + '"]'); // get parent row element for charge point
+		var cpt = JSON.parse(mqttpayload);
+		console.log('cp: ' + index + " cpt: " + mqttpayload);
+		parent.attr('data-chargepointtemplate', cpt).data('chargepointtemplate', cpt);
 	} else if (mqttmsg.match(/^openwb\/chargepoint\/[1-9][0-9]*\/get\/state_str$/i)) {
 		var index = getIndex(mqttmsg); // extract number between two / /
 		var parent = $('.chargepoint-card[data-cp="' + index + '"]'); // get parent row element for charge point
