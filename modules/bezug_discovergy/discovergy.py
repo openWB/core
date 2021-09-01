@@ -1,12 +1,21 @@
 #!/usr/bin/env python3
 
-import json
 import requests
 import sys
+import traceback
 
 username = str(sys.argv[1])
 password = str(sys.argv[2])
 id = str(sys.argv[3])
+
+def get_value(key, file, div, toint = False):
+    value = response["values"][key] / div
+    f = open('/var/www/html/openWB/ramdisk/'+file, 'w')
+    if(toint):
+        value = int(value)
+    f.write(str(value))
+    f.close()
+    return value
 
 params = (
     ('meterId', id),
@@ -14,45 +23,36 @@ params = (
 
 response = requests.get('https://api.discovergy.com/public/v1/last_reading', params=params, auth=(username, password), timeout = 3).json()
 
-einspeisungwh = response["values"]["energyOut"] / 10000000
-f = open('/var/www/html/openWB/ramdisk/einspeisungkwh', 'w')
-f.write(str(einspeisungwh))
-f.close()
+get_value("energyOut", "einspeisungkwh", 10000000)
+get_value("energy", "bezugkwh", 10000000)
 
-bezugwh = response["values"]["energy"] / 10000000
-f = open('/var/www/html/openWB/ramdisk/bezugkwh', 'w')
-f.write(str(bezugwh))
-f.close()
+try:
+    vl1=get_value("phase1Voltage", "evuv1", 1000)
+except KeyError:
+    vl1=0
+try:
+    vl2=get_value("phase2Voltage", "evuv2", 1000)
+except KeyError:
+    vl2=0
+try:
+    vl3=get_value("phase3Voltage", "evuv3", 1000)
+except KeyError:
+    vl3=0
 
-vl1=response["values"]["voltage1"] / 1000
-f = open('/var/www/html/openWB/ramdisk/evuv1', 'w')
-f.write(str(vl1))
-f.close()
-vl2=response["values"]["voltage2"] / 1000
-f = open('/var/www/html/openWB/ramdisk/evuv2', 'w')
-f.write(str(vl2))
-f.close()
-vl3=response["values"]["voltage3"] / 1000
-f = open('/var/www/html/openWB/ramdisk/evuv3', 'w')
-f.write(str(vl3))
-f.close()
+get_value("power", "wattbezug", 1000, True)
+try:
+    wattl1=get_value("phase1Power", "bezugw1", 1000)
+except KeyError:
+    wattl1=get_value("power1", "bezugw1", 1000)
+try:
+    wattl2=get_value("phase2Power", "bezugw2", 1000)
+except KeyError:
+    wattl2=get_value("power2", "bezugw2", 1000)
+try:
+    wattl3=get_value("phase3Power", "bezugw3", 1000)
+except KeyError:
+    wattl3=get_value("power3", "bezugw3", 1000)
 
-watt = response["values"]["power"] / 1000
-f = open('/var/www/html/openWB/ramdisk/wattbezug', 'w')
-f.write(str(watt))
-f.close()
-wattl1 = response["values"]["power1"] / 1000
-f = open('/var/www/html/openWB/ramdisk/bezugw1', 'w')
-f.write(str(wattl1))
-f.close()
-wattl2 = response["values"]["power2"] / 1000
-f = open('/var/www/html/openWB/ramdisk/bezugw2', 'w')
-f.write(str(wattl2))
-f.close()
-wattl3 = response["values"]["power3"] / 1000
-f = open('/var/www/html/openWB/ramdisk/bezugw3', 'w')
-f.write(str(wattl3))
-f.close()
 if vl1 > 150:
     al1 = wattl1 / vl1 
 else:
@@ -65,6 +65,7 @@ if vl3 > 150:
     al3 = wattl3 / vl3
 else:
     al3 = wattl3 / 230
+
 f = open('/var/www/html/openWB/ramdisk/bezuga1', 'w')
 f.write(str(al1))
 f.close()
