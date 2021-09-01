@@ -480,7 +480,7 @@
 										Fahrzeug
 									</label>
 									<div class="col-md-8">
-										<select name="chargepoint-vehicleselect" class="form-control chargepoint-vehicleselect" data-topic="openWB/set/chargepoint/template/<et>/ev">
+										<select name="chargepoint-vehicleselect" class="form-control chargepoint-vehicleselect" data-topic="openWB/set/chargepoint/template/<ct>/ev">
 											<option value="0">-- Nicht ausgewählt --</option>
 										</select>
 									</div>
