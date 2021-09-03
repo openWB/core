@@ -41,8 +41,7 @@ var topicsToSubscribe = [
 	["openWB/counter/0/get/daily_yield_export", 1], // daily exported energy; float, unit: kWh
 
 	// chargepoint topics
-	["openWB/chargepoint/+/config/name", 1], // chargepoint name, used to detect configured chargepoints and create html elements before receiving chargepoint data
-	["openWB/chargepoint/+/config/template", 1], // chargepoint template; int
+	["openWB/chargepoint/+/config", 1], // chargepoint configuration; JSON { name: str, template: int, connected_phases: int, phase_1: int, auto_phase_switch_hardware: bool, control_pilot_interruption_hw: bool, connection_module: JSON { selected: str, config: JSON } }
 	["openWB/chargepoint/+/get/state_str", 1], // information about actual state; str
 	["openWB/chargepoint/+/get/fault_str", 1], // any error messages; str
 	["openWB/chargepoint/+/get/fault_state", 1], // error state; int, 0 = ok, 1 = warning, 2 = error

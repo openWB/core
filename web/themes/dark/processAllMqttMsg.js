@@ -559,17 +559,23 @@ function processChargepointMessages(mqttmsg, mqttpayload) {
 			dailyYield = dailyYield.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 		}
 		$('.chargepoint-sum-exportdaily').text(dailyYield + ' ' + unitPrefix + unit);
-	} else if (mqttmsg.match(/^openwb\/chargepoint\/[1-9][0-9]*\/config\/name$/i)) {
+	} else if (mqttmsg.match(/^openwb\/chargepoint\/[1-9][0-9]*\/config$/i)) {
+		// JSON data
+		// name: str
+		// template: int
+		// connected_phases: int
+		// phase_1: int
+		// auto_phase_switch_hw: bool
+		// control_pilot_interruption_hw: bool
+		// connection_module: JSON: { selected: str, config: JSON: individual configuration parameters for module }
 		var index = getIndex(mqttmsg); // extract number between two / /
+		var configMessage = JSON.parse(mqttpayload);
 		var parent = $('.chargepoint-card[data-cp="' + index + '"]'); // get parent row element for charge point
+		// name
 		var element = parent.find('.chargepoint-name'); // now get parents respective child element
-		$(element).text(JSON.parse(mqttpayload));
-	} else if (mqttmsg.match(/^openwb\/chargepoint\/[1-9][0-9]*\/config\/template$/i)) {
-		var index = getIndex(mqttmsg); // extract number between two / /
-		var parent = $('.chargepoint-card[data-cp="' + index + '"]'); // get parent row element for charge point
-		var cpt = JSON.parse(mqttpayload);
-		console.log('cp: ' + index + " cpt: " + mqttpayload);
-		parent.attr('data-chargepointtemplate', cpt).data('chargepointtemplate', cpt);
+		$(element).text(configMessage.name);
+		// template
+		parent.attr('data-chargepointtemplate', configMessage.template).data('chargepointtemplate', configMessage.template);
 	} else if (mqttmsg.match(/^openwb\/chargepoint\/[1-9][0-9]*\/get\/state_str$/i)) {
 		var index = getIndex(mqttmsg); // extract number between two / /
 		var parent = $('.chargepoint-card[data-cp="' + index + '"]'); // get parent row element for charge point
