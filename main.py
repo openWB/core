@@ -96,6 +96,7 @@ class HandlerAlgorithm():
 
             log.cleanup_logfiles()
             measurement_log.save_log("daily")
+            measurement_log.update_daily_yields()
             #Wenn ein neuer Tag ist, Monatswerte schreiben.
             day = timecheck.create_timestamp_YYYYMMDD()[-2:]
             if self.current_day != day:
@@ -104,6 +105,7 @@ class HandlerAlgorithm():
             data.data.general_data["general"].grid_protection()
             data.data.optional_data["optional"].et_get_prices()
             data.data.cp_data["all"].check_all_modbus_evse_connections()
+            data.data.counter_data["all"].calc_daily_yield_home_consumption()
         except Exception as e:
             log.exception_logging(e)
 
