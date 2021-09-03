@@ -406,7 +406,8 @@ class setData():
         """
         try:
             if (re.search("^openWB/set/chargepoint/get/counter_all$", msg.topic) != None or
-                    re.search("^openWB/set/chargepoint/get/power_all$", msg.topic) != None):
+                    re.search("^openWB/set/chargepoint/get/power_all$", msg.topic) != None or
+                    re.search("^openWB/set/chargepoint/get/daily_yield$", msg.topic) != None):
                 self._validate_value(msg, float, [(0, None)])
             elif (re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/charging_ev$", msg.topic) != None or
                     re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/charging_ev_prev$", msg.topic) != None):
@@ -427,10 +428,10 @@ class setData():
             elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/rfid$", msg.topic) != None:
                 self._validate_value(msg, str)
             elif (re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/log/time_charged$", msg.topic) != None or
-                    re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/log/chargemode_log_entry$", msg.topic) != None):
+                    re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/log/chargemode_log_entry$", msg.topic) != None or
+                    re.search("^openWB/set/chargepoint/[0-9]+/set/plug_time$", msg.topic) != None):
                 self._validate_value(msg, str)
-            elif (re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/log/daily_counter$", msg.topic) != None or
-                    re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/log/range_charged$", msg.topic) != None or
+            elif (re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/log/range_charged$", msg.topic) != None or
                     re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/log/counter$", msg.topic) != None or
                     re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/log/charged_since_mode_switch$", msg.topic) != None or 
                     re.search("^openWB/set/chargepoint/[1-9][0-9]*/set/log/charged_since_plugged_counter$", msg.topic) != None or 
@@ -445,7 +446,7 @@ class setData():
                     re.search("^openWB/set/chargepoint/[1-9][0-9]*/get/current$", msg.topic) != None or
                     re.search("^openWB/set/chargepoint/[1-9][0-9]*/get/power_factor$", msg.topic) != None):
                 self._validate_value(msg, float, [(0, None)], collection=list)
-            elif (re.search("^openWB/set/chargepoint/[1-9][0-9]*/get/daily_counter$", msg.topic) != None or
+            elif (re.search("^openWB/set/chargepoint/[1-9][0-9]*/get/daily_yield$", msg.topic) != None or
                     re.search("^openWB/set/chargepoint/[1-9][0-9]*/get/power_all$", msg.topic) != None or
                     re.search("^openWB/set/chargepoint/[1-9][0-9]*/get/counter$", msg.topic) != None or
                     re.search("^openWB/set/chargepoint/[1-9][0-9]*/get/charged_since_plugged_counter$", msg.topic) != None):
@@ -455,8 +456,6 @@ class setData():
             elif (re.search("^openWB/set/chargepoint/[1-9][0-9]*/get/charge_state$", msg.topic) != None or
                     re.search("^openWB/set/chargepoint/[1-9][0-9]*/get/plug_state$", msg.topic) != None):
                 self._validate_value(msg, int, [(0, 1)])
-            elif re.search("^openWB/set/chargepoint/[0-9]+/get/plug_time$", msg.topic) != None:
-                self._validate_value(msg, str)
             elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/get/fault_state$", msg.topic) != None:
                 self._validate_value(msg, int, [(0, 2)])
             elif (re.search("^openWB/set/chargepoint/[0-9]+/get/fault_str$", msg.topic) != None or
@@ -722,13 +721,16 @@ class setData():
         try:
             if re.search("^openWB/set/counter/set/loadmanagement$", msg.topic) != None:
                 self._validate_value(msg, int, [(0, 1)])
-            elif re.search("^openWB/set/counter/get/hierarchy$", msg.topic) != None:
-                self._validate_value(msg, None)
-            elif re.search("^openWB/set/counter/get/home_consumption$", msg.topic) != None:
+            elif re.search("^openWB/set/counter/set/invalid_home_consumption$", msg.topic) != None:
+                self._validate_value(msg, int, [(0, 3)])
+            elif (re.search("^openWB/set/counter/set/home_consumption$", msg.topic) != None or
+                    re.search("^openWB/set/counter/set/daily_yield_home_consumption$", msg.topic) != None):
                 # Inkonsistenz: Kann auch als Float kommen, soll aber immer als Int gepublished werden.
                 payload = json.loads(str(msg.payload.decode("utf-8")))
                 msg.payload = json.dumps(int(payload)).encode("utf-8")
                 self._validate_value(msg, int, [(0, None)])
+            elif re.search("^openWB/set/counter/get/hierarchy$", msg.topic) != None:
+                self._validate_value(msg, None)
             elif (re.search("^openWB/set/counter/[0-9]+/set/consumption_left$", msg.topic) != None or
                     re.search("^openWB/set/counter/[0-9]+/set/present_power_all$", msg.topic) != None or
                     re.search("^openWB/set/counter/[0-9]+/set/present_imported$", msg.topic) != None or

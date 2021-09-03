@@ -232,3 +232,6 @@ class batModule:
     def __init__(self, index):
         self.data={}
         self.bat_num = index
+        self.data["get"] = {}
+        self.data["get"]["daily_yield_import"] = 0
+        self.data["get"]["daily_yield_export"] = 0

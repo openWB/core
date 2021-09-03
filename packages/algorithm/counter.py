@@ -1,6 +1,6 @@
 """Zähler-Logik
 """
-
+from . import data
 from ..helpermodules import log
 from ..helpermodules import pub
 
@@ -13,6 +13,9 @@ class counterAll():
         self.data = {}
         self.data["set"] = {}
         self.data["set"]["loadmanagement"] = False
+        self.data["set"]["home_consumption"] = 0
+        self.data["set"]["invalid_home_consumption"] = 0
+        self.data["set"]["daily_yield_home_consumption"] = 0
         # Hilfsvariablen für die rekursiven Funktionen
         self.connected_counters = []
         self.connected_chargepoints = []
@@ -20,6 +23,47 @@ class counterAll():
     def put_stats(self):
         try:
             pub.pub("openWB/set/counter/set/loadmanagement", self.data["set"]["loadmanagement"])
+        except Exception as e:
+            log.exception_logging(e)
+
+    def calc_home_consumption(self):
+        """ berechnet den Hausverbrauch.
+        """
+        try:
+            evu = data.data.counter_data["counter0"].data["get"]["power_all"]
+            pv = data.data.pv_data["all"].data["get"]["power"]
+            bat = data.data.bat_module_data["all"].data["get"]["power"]
+            cp = data.data.cp_data["all"].data["get"]["power_all"]
+            home_consumption = evu - pv - bat - cp
+            if home_consumption < 0:
+                if self.data["set"]["invalid_home_consumption"] < 3:
+                    self.data["set"]["invalid_home_consumption"] += 1
+                    return
+                else:
+                    self.data["set"]["invalid_home_consumption"] += 1
+                    home_consumption = 0
+            else:
+                self.data["set"]["invalid_home_consumption"] = 0
+                self.data["set"]["home_consumption"] = home_consumption
+            pub.pub("openWB/set/counter/set/invalid_home_consumption",  self.data["set"]["invalid_home_consumption"])
+            pub.pub("openWB/set/counter/set/home_consumption", self.data["set"]["home_consumption"])
+            
+        except Exception as e:
+            log.exception_logging(e)
+
+    def calc_daily_yield_home_consumption(self):
+        """ berechnet die heute im Haus verbrauchte Energie.
+        """
+        try:
+            evu_imported = data.data.counter_data["counter0"].data["get"]["daily_yield_import"]
+            evu_exported = data.data.counter_data["counter0"].data["get"]["daily_yield_export"]
+            pv = data.data.pv_data["all"].data["get"]["daily_yield"]
+            bat_imported = data.data.bat_module_data["all"].data["get"]["daily_yield_import"]
+            bat_exported = data.data.bat_module_data["all"].data["get"]["daily_yield_export"]
+            cp = data.data.cp_data["all"].data["get"]["daily_imported_all"]
+            daily_yield_home_consumption = evu_imported + pv - cp + bat_exported - bat_imported - evu_exported
+            pub.pub("openWB/set/counter/set/daily_yield_home_consumption", daily_yield_home_consumption)
+            self.data["set"]["daily_yield_home_consumption"] = daily_yield_home_consumption
         except Exception as e:
             log.exception_logging(e)
 
@@ -236,6 +280,9 @@ class counter():
             self.data = {}
             if default == False:
                 self.data["set"] = {}
+                self.data["get"] = {}
+                self.data["get"]["daily_yield_export"] = 0
+                self.data["get"]["daily_yield_import"] = 0
                 self.counter_num = index
         except Exception as e:
             log.exception_logging(e)

@@ -43,6 +43,7 @@ class allChargepoints():
     def __init__(self):
         self.data = {}
         self.data["get"] = {}
+        self.data["get"]["daily_yield"] = 0
         pub.pub("openWB/set/chargepoint/get/power_all", 0)
 
     def no_charge(self):
@@ -86,7 +87,9 @@ class allChargepoints():
                         counter_all = counter_all + chargepoint.data["get"]["counter"]
                 except Exception as e:
                     log.exception_logging(e)
+            self.data["get"]["power_all"] = power_all
             pub.pub("openWB/set/chargepoint/get/power_all", power_all)
+            self.data["get"]["counter_all"] = counter_all
             pub.pub("openWB/set/chargepoint/get/counter_all", counter_all)
         except Exception as e:
             log.exception_logging(e)
@@ -231,22 +234,18 @@ class chargepoint():
                 self.data["get"] = {}
                 self.set_current_prev = 0 # set current aus dem vorherigen Zyklus, um zu wissen, ob am Ende des Zyklus die Ladung freigegeben wird (für Control-Pilot-Unterbrechung)
 
-                if "charging_ev" not in self.data["set"]:
-                    self.data["set"]["charging_ev"] = -1
-                if "charging_ev_prev" not in self.data["set"]:
-                    self.data["set"]["charging_ev_prev"] = -1
-                if "autolock_state" not in self.data["set"]:
-                    self.data["set"]["autolock_state"] = 0
-                if "current" not in self.data["set"]:
-                    self.data["set"]["current"] = 0
-                if "energy_to_charge" not in self.data["set"]:
-                    self.data["set"]["energy_to_charge"] = 0
+                self.data["set"]["charging_ev"] = -1
+                self.data["set"]["charging_ev_prev"] = -1
+                self.data["set"]["autolock_state"] = 0
+                self.data["set"]["current"] = 0
+                self.data["set"]["energy_to_charge"] = 0
                 self.data["set"]["plug_time"] = "0"
+                self.data["set"]["rfid"] = 0
+                self.data["set"]["log"] = {}
                 self.data["get"]["read_tag"] = {}
                 self.data["get"]["read_tag"]["tag"] = "0"
                 self.data["get"]["read_tag"]["timestamp"] = "0"
-                self.data["set"]["rfid"] = 0
-                self.data["set"]["log"] = {}
+                self.data["get"]["daily_yield"] = 0
 
                 # bestehende Logdaten auf dem Broker nicht zurücksetzen, daher nicht publishen
                 if "counter_at_plugtime" not in self.data["set"]["log"]:
