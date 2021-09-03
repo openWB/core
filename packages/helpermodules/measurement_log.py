@@ -5,6 +5,7 @@ import pathlib
 
 from ..algorithm import data
 from . import log
+from . import pub
 from . import timecheck
 
 def save_log(folder):
@@ -17,6 +18,9 @@ def save_log(folder):
                 "counter": Zählerstand in Wh,
                 }
             ... (dynamsich, je nach konfigurierter Anzahl)
+            "all": {
+                "counter": Zählerstand in Wh,
+                }
         }
         "ev": {
             "ev1": {
@@ -82,6 +86,7 @@ def save_log(folder):
                     cp_dict.update({cp: {"counter": data.data.cp_data[cp].data["get"]["counter"]}})
             except Exception as e:
                 log.exception_logging(e)
+        cp_dict.update({"all": {"counter": data.data.cp_data["all"].data["get"]["counter"]}})
 
         ev_dict = {}
         for ev in data.data.ev_data:
@@ -103,17 +108,16 @@ def save_log(folder):
         pv_dict = {}
         for pv in data.data.pv_data:
             try:
-                    pv_dict.update({pv: {"imported": data.data.pv_data[pv].data["get"]["counter"]}})
+                pv_dict.update({pv: {"imported": data.data.pv_data[pv].data["get"]["counter"]}})
             except Exception as e:
                 log.exception_logging(e)
 
         bat_dict = {}
         for bat in data.data.bat_module_data:
             try:
-                if "bat" in bat:
-                    bat_dict.update({bat: {"imported": data.data.bat_module_data[bat].data["get"]["imported"],
-                        "exported": data.data.bat_module_data[bat].data["get"]["exported"],
-                        "soc": data.data.bat_module_data[bat].data["get"]["soc"]}})
+                bat_dict.update({bat: {"imported": data.data.bat_module_data[bat].data["get"]["imported"],
+                    "exported": data.data.bat_module_data[bat].data["get"]["exported"],
+                    "soc": data.data.bat_module_data[bat].data["get"]["soc"]}})
             except Exception as e:
                 log.exception_logging(e)
 
@@ -144,5 +148,51 @@ def save_log(folder):
         content.append(new_entry)
         with open(filepath, "w") as jsonFile:
             json.dump(content, jsonFile)
+    except Exception as e:
+        log.exception_logging(e)
+
+def update_daily_yields():
+    """ berechnet die Tageserträge für Ladepunkte, Zähler, PV und Speicher. Dazu wird der erste Eintrag des Tageslogs (Mitternacht) vom aktuellen Zählerstand subtrahiert.
+    """
+    try:
+        filepath = "./data/daily_log/"+timecheck.create_timestamp_YYYYMMDD()+".json"
+        try:
+            with open(filepath, "r") as jsonFile:
+                daily_log = json.load(jsonFile)
+        except FileNotFoundError:
+            log.message_debug_log("error", "Fuer "+str(timecheck.create_timestamp_YYYYMMDD())+" existiert kein Tageslog.")
+        # Tagesertrag Zähler
+        for counter in daily_log[0]["counter"]:
+            daily_yield_import = data.data.counter_data[counter].data["get"]["imported"] - daily_log[0]["counter"][counter]["imported"]
+            pub.pub("openWB/set/counter/"+str(data.data.counter_data[counter].counter_num)+"/get/daily_yield_import", daily_yield_import)
+            daily_yield_export = data.data.counter_data[counter].data["get"]["exported"] - daily_log[0]["counter"][counter]["exported"]
+            pub.pub("openWB/set/counter/"+str(data.data.counter_data[counter].counter_num)+"/get/daily_yield_export", daily_yield_export)
+        # Tagesertrag Ladepunkte
+        for cp in daily_log[0]["cp"]:
+            if "cp" in cp:
+                daily_yield = data.data.cp_data[cp].data["get"]["counter"] - daily_log[0]["cp"][cp]["counter"]
+                pub.pub("openWB/set/chargepoint/"+str(data.data.cp_data[cp].cp_num)+"/get/daily_yield", daily_yield)
+            else:
+                daily_yield = data.data.cp_data[cp].data["get"]["counter_all"] - daily_log[0]["cp"][cp]["counter"]
+                pub.pub("openWB/set/chargepoint/get/daily_yield", daily_yield)
+        # Tagesertrag PV
+        for pv in daily_log[0]["pv"]:
+            daily_yield = data.data.pv_data[pv].data["get"]["counter"] - daily_log[0]["pv"][pv]["imported"]
+            if "pv" in pv:
+                pub.pub("openWB/set/pv/"+str(data.data.pv_data[pv].pv_num)+"/get/daily_yield", daily_yield)
+            else:
+                pub.pub("openWB/set/pv/get/daily_yield", daily_yield)
+        # Tagesertrag Speicher
+        for bat in daily_log[0]["bat"]:
+            daily_yield_imported = data.data.bat_module_data[bat].data["get"]["imported"] - daily_log[0]["bat"][bat]["imported"]
+            if "bat" in bat:
+                pub.pub("openWB/set/bat/"+str(data.data.bat_module_data[bat].bat_num)+"/get/daily_yield_import", daily_yield_imported)
+            else:
+                pub.pub("openWB/set/bat/get/daily_yield_import", daily_yield_imported)
+            daily_yield_exported = data.data.bat_module_data[bat].data["get"]["exported"] - daily_log[0]["bat"][bat]["exported"]
+            if "bat" in bat:
+                pub.pub("openWB/set/bat/"+str(data.data.bat_module_data[bat].bat_num)+"/get/daily_yield_export", daily_yield_exported)
+            else:
+                pub.pub("openWB/set/bat/get/daily_yield_export", daily_yield_exported)
     except Exception as e:
         log.exception_logging(e)

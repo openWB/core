@@ -2,71 +2,86 @@ from . import pub
 
 
 def pub_settings():
+    simulator = True
     """ruft für alle Ramdisk-Dateien aus initRamdisk die zum Typ passende Funktion zum publishen auf.
     """
-    # cp1
-    pub.pub("openWB/set/chargepoint/1/set/manual_lock", False)
-    pub.pub("openWB/set/chargepoint/1/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"ip_address": "192.168.90.163", "chargepoint": 1}}, "power_module": {"selected": None}})
+    if simulator == True:
+        # cp1
+        pub.pub("openWB/set/chargepoint/1/set/manual_lock", False)
+        pub.pub("openWB/set/chargepoint/1/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "mqtt"}, "power_module": {"selected": None}})
 
-    # cp2
-    pub.pub("openWB/set/chargepoint/2/set/manual_lock", False)
-    pub.pub("openWB/set/chargepoint/2/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"ip_address": "192.168.90.194", "chargepoint": 1}}, "power_module": {"selected": None}})
+        # cp2
+        pub.pub("openWB/set/chargepoint/2/set/manual_lock", False)
+        pub.pub("openWB/set/chargepoint/2/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "mqtt"}, "power_module": {"selected": None}})
 
-    # cp3
-    pub.pub("openWB/set/chargepoint/3/set/manual_lock", False)
-    pub.pub("openWB/set/chargepoint/3/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"ip_address": "192.168.90.176", "chargepoint": 1}}, "power_module": {"selected": None}})
+        # cp3
+        pub.pub("openWB/set/chargepoint/3/set/manual_lock", False)
+        pub.pub("openWB/set/chargepoint/3/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "mqtt"}, "power_module": {"selected": None}})
     
-    # cp4
-    pub.pub("openWB/set/chargepoint/4/set/manual_lock", False)
-    pub.pub("openWB/set/chargepoint/4/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"ip_address": "192.168.90.187", "chargepoint": 1}}, "power_module": {"selected": None}})
+    else:
+        # cp1
+        pub.pub("openWB/set/chargepoint/1/set/manual_lock", False)
+        pub.pub("openWB/set/chargepoint/1/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.163", "chargepoint": 1}}}, "power_module": {"selected": None}})
 
-    # cp5
-    pub.pub("openWB/set/chargepoint/5/set/manual_lock", False)
-    pub.pub("openWB/set/chargepoint/5/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"ip_address": "192.168.90.107", "chargepoint": 1}}, "power_module": {"selected": None}})
+        # cp2
+        pub.pub("openWB/set/chargepoint/2/set/manual_lock", False)
+        pub.pub("openWB/set/chargepoint/2/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.194", "chargepoint": 1}}}, "power_module": {"selected": None}})
 
-    # cp6
-    pub.pub("openWB/set/chargepoint/6/set/manual_lock", False)
-    pub.pub("openWB/set/chargepoint/6/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"ip_address": "192.168.90.214", "chargepoint": 1}}, "power_module": {"selected": None}})
+        # cp3
+        pub.pub("openWB/set/chargepoint/3/set/manual_lock", False)
+        pub.pub("openWB/set/chargepoint/3/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.176", "chargepoint": 1}}}, "power_module": {"selected": None}})
+        
+        # cp4
+        pub.pub("openWB/set/chargepoint/4/set/manual_lock", False)
+        pub.pub("openWB/set/chargepoint/4/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.187", "chargepoint": 1}}}, "power_module": {"selected": None}})
 
-    # cp7
-    pub.pub("openWB/set/chargepoint/7/set/manual_lock", False)
-    pub.pub("openWB/set/chargepoint/7/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"ip_address": "192.168.90.37", "chargepoint": 1}}, "power_module": {"selected": None}})
+        # cp5
+        pub.pub("openWB/set/chargepoint/5/set/manual_lock", False)
+        pub.pub("openWB/set/chargepoint/5/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.107", "chargepoint": 1}}}, "power_module": {"selected": None}})
 
-    # cp8
-    pub.pub("openWB/set/chargepoint/8/set/manual_lock", False)
-    pub.pub("openWB/set/chargepoint/8/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"ip_address": "192.168.90.19", "chargepoint": 1}}, "power_module": {"selected": None}})
+        # cp6
+        pub.pub("openWB/set/chargepoint/6/set/manual_lock", False)
+        pub.pub("openWB/set/chargepoint/6/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.214", "chargepoint": 1}}}, "power_module": {"selected": None}})
 
-    # cp9
-    pub.pub("openWB/set/chargepoint/9/set/manual_lock", False)
-    pub.pub("openWB/set/chargepoint/9/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"ip_address": "192.168.90.249", "chargepoint": 1}}, "power_module": {"selected": None}})
+        # cp7
+        pub.pub("openWB/set/chargepoint/7/set/manual_lock", False)
+        pub.pub("openWB/set/chargepoint/7/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.37", "chargepoint": 1}}}, "power_module": {"selected": None}})
 
-    # cp10
-    pub.pub("openWB/set/chargepoint/10/set/manual_lock", False)
-    pub.pub("openWB/set/chargepoint/10/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"ip_address": "192.168.90.34", "chargepoint": 1}}, "power_module": {"selected": None}})
+        # cp8
+        pub.pub("openWB/set/chargepoint/8/set/manual_lock", False)
+        pub.pub("openWB/set/chargepoint/8/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.19", "chargepoint": 1}}}, "power_module": {"selected": None}})
 
-    # cp11
-    pub.pub("openWB/set/chargepoint/11/set/manual_lock", False)
-    pub.pub("openWB/set/chargepoint/11/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"ip_address": "192.168.90.55", "chargepoint": 1}}, "power_module": {"selected": None}})
-    
-    # cp12
-    pub.pub("openWB/set/chargepoint/12/set/manual_lock", False)
-    pub.pub("openWB/set/chargepoint/12/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"ip_address": "192.168.90.22", "chargepoint": 1}}, "power_module": {"selected": None}})
+        # cp9
+        pub.pub("openWB/set/chargepoint/9/set/manual_lock", False)
+        pub.pub("openWB/set/chargepoint/9/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.249", "chargepoint": 1}}}, "power_module": {"selected": None}})
 
-    # cp13
-    pub.pub("openWB/set/chargepoint/13/set/manual_lock", False)
-    pub.pub("openWB/set/chargepoint/13/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"ip_address": "192.168.90.225", "chargepoint": 1}}, "power_module": {"selected": None}})
+        # cp10
+        pub.pub("openWB/set/chargepoint/10/set/manual_lock", False)
+        pub.pub("openWB/set/chargepoint/10/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.34", "chargepoint": 1}}}, "power_module": {"selected": None}})
 
-    # # cp14
-    # pub.pub("openWB/set/chargepoint/14/set/manual_lock", False)
-    # pub.pub("openWB/set/chargepoint/14/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"ip_address": "192.168.90.109", "chargepoint": 1}}, "power_module": {"selected": None}})
+        # cp11
+        pub.pub("openWB/set/chargepoint/11/set/manual_lock", False)
+        pub.pub("openWB/set/chargepoint/11/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.55", "chargepoint": 1}}}, "power_module": {"selected": None}})
+        
+        # cp12
+        pub.pub("openWB/set/chargepoint/12/set/manual_lock", False)
+        pub.pub("openWB/set/chargepoint/12/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.22", "chargepoint": 1}}}, "power_module": {"selected": None}})
 
-    # # cp15
-    # pub.pub("openWB/set/chargepoint/15/set/manual_lock", False)
-    # pub.pub("openWB/set/chargepoint/15/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"ip_address": "192.168.90.212", "chargepoint": 1}}, "power_module": {"selected": None}})
+        # cp13
+        pub.pub("openWB/set/chargepoint/13/set/manual_lock", False)
+        pub.pub("openWB/set/chargepoint/13/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.225", "chargepoint": 1}}}, "power_module": {"selected": None}})
 
-    # # cp16
-    # pub.pub("openWB/set/chargepoint/16/set/manual_lock", False)
-    # pub.pub("openWB/set/chargepoint/16/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"ip_address": "192.168.90.111", "chargepoint": 1}}, "power_module": {"selected": None}})
+        # # cp14
+        # pub.pub("openWB/set/chargepoint/14/set/manual_lock", False)
+        # pub.pub("openWB/set/chargepoint/14/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.109", "chargepoint": 1}}}, "power_module": {"selected": None}})
+
+        # # cp15
+        # pub.pub("openWB/set/chargepoint/15/set/manual_lock", False)
+        # pub.pub("openWB/set/chargepoint/15/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.212", "chargepoint": 1}}}, "power_module": {"selected": None}})
+
+        # # cp16
+        # pub.pub("openWB/set/chargepoint/16/set/manual_lock", False)
+        # pub.pub("openWB/set/chargepoint/16/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.111", "chargepoint": 1}}}, "power_module": {"selected": None}})
 
     # cpt1
     pub.pub("openWB/set/chargepoint/template/1/autolock/1/frequency/selected", "daily")
@@ -74,7 +89,7 @@ def pub_settings():
     pub.pub("openWB/set/chargepoint/template/1/autolock/1/active", True)
     pub.pub("openWB/set/chargepoint/template/1/autolock/wait_for_charging_end", False)
     pub.pub("openWB/set/chargepoint/template/1/autolock/active", False)
-    #pub.pub("openWB/set/chargepoint/template/1/ev", 1)
+    pub.pub("openWB/set/chargepoint/template/1/ev", 1)
     pub.pub("openWB/set/chargepoint/template/1/rfid_enabling", False)
     pub.pub("openWB/set/chargepoint/template/1/valid_tags", ["257", "258", "259"])
 
@@ -266,40 +281,54 @@ def pub_settings():
     # pub.pub("openWB/set/pv/1/get/daily_yield", 10)
     # pub.pub("openWB/set/pv/1/get/monthly_yield", 10)
     # pub.pub("openWB/set/pv/1/get/yearly_yield", 10)
-    # pub.pub("openWB/set/pv/1/config", {"selected": "mqtt"})
+    if simulator == True:
+        pub.pub("openWB/set/pv/1/config", {"selected": "mqtt"})
 
     # counter
-    hierarchy = [
-        {
-            "id": "counter0", 
-            "children": 
-            [
-                {"id": "cp1", "children": []}, 
-                {"id": "cp2", "children": []}, 
-                {"id": "cp3", "children": []},
-                {"id": "cp4", "children": []},
-                {"id": "cp5", "children": []},
-                {"id": "cp6", "children": []},
-                {"id": "cp7", "children": []},
-                {"id": "cp8", "children": []},
-                {"id": "cp9", "children": []},
-                {"id": "cp10", "children": []},
-                {"id": "cp11", "children": []},
-                {"id": "cp12", "children": []},
-                {"id": "cp13", "children": []}
-                # {"id": "cp14", "children": []},
-                # {"id": "cp15", "children": []},
-                # {"id": "cp16", "children": []}
-                ]
-            }
-        ]
-    #hierarchy = [{"id": "counter0", "children": [{"id": "cp1", "children": []}]}]
-    pub.pub("openWB/set/counter/get/hierarchy", hierarchy)
-    pub.pub("openWB/set/counter/0/get/frequency", 50.2)
-    pub.pub("openWB/set/counter/0/config", {"max_current": [30, 30, 30], "max_consumption": 30000, "selected":"openwb", "config":{"version": 2, "ip_address": "192.168.1.101", "id": 105}})
+    if simulator == True:
+        hierarchy = [{"id": "counter0", "children": [{"id": "cp1", "children": []}]}]
+        pub.pub("openWB/set/counter/get/hierarchy", hierarchy)
+        pub.pub("openWB/set/counter/0/get/frequency", 50.2)
+        pub.pub("openWB/set/counter/0/config", {"max_current": [30, 30, 30], "max_consumption": 30000, "selected":"mqtt"})
+    else:
+        # Firma
+        hierarchy = [
+            {
+                "id": "counter0", 
+                "children": 
+                [
+                    {
+                        "id": "counter1", "children": 
+                        [
+                            {"id": "cp1", "children": []}, 
+                            {"id": "cp2", "children": []}, 
+                            {"id": "cp3", "children": []},
+                            {"id": "cp4", "children": []},
+                            {"id": "cp5", "children": []},
+                            {"id": "cp6", "children": []},
+                            {"id": "cp7", "children": []},
+                            {"id": "cp8", "children": []},
+                            {"id": "cp9", "children": []},
+                            {"id": "cp10", "children": []},
+                            {"id": "cp11", "children": []},
+                            {"id": "cp12", "children": []},
+                            {"id": "cp13", "children": []}
+                            # {"id": "cp14", "children": []},
+                            # {"id": "cp15", "children": []},
+                            # {"id": "cp16", "children": []}
+                            ]
+                        }
+                    ]
+                }
+            ]
+        pub.pub("openWB/set/counter/get/hierarchy", hierarchy)
+        pub.pub("openWB/set/counter/0/get/frequency", 50.2)
+        pub.pub("openWB/set/counter/0/config", {"max_current": [30, 30, 30], "max_consumption": 30000, "selected":"openwb", "config": {"openwb":{"version": 2, "ip_address": "192.168.1.102", "id": 105}}})
+        pub.pub("openWB/set/counter/1/config", {"max_current": [30, 30, 30], "selected":"openwb", "config": {"openwb":{"version": 2, "ip_address": "192.168.1.169", "id": 1}}})
 
     # # bat
-    # pub.pub("openWB/set/bat/1/config", {"selected": "mqtt"})
+    if simulator == True:
+        pub.pub("openWB/set/bat/1/config", {"selected": "mqtt"})
     # pub.pub("openWB/set/bat/1/get/daily_yield_export", 10)
     # pub.pub("openWB/set/bat/1/get/daily_yield_import", 10)
 

@@ -367,3 +367,7 @@ class pvModule:
     def __init__(self, index):
         self.data = {}
         self.pv_num = index
+        self.data["get"] = {}
+        self.data["get"]["daily_yield"] = 0
+        self.data["get"]["monthly_yield"] = 0
+        self.data["get"]["yearly_yield"] = 0

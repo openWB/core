@@ -339,7 +339,7 @@ class subData():
             elif re.search("^.+/chargepoint/get/.+$", msg.topic) != None:
                 if "all" not in var:
                     var["all"]=chargepoint.allChargepoints()
-                self.set_json_payload(var["all"].data, msg)
+                self.set_json_payload(var["all"].data["get"], msg)
         except Exception as e:
             log.exception_logging(e)
 
