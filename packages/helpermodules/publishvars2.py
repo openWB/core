@@ -71,17 +71,17 @@ def pub_settings():
         pub.pub("openWB/set/chargepoint/13/set/manual_lock", False)
         pub.pub("openWB/set/chargepoint/13/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.225", "chargepoint": 1}}}, "power_module": {"selected": None}})
 
-        # # cp14
-        # pub.pub("openWB/set/chargepoint/14/set/manual_lock", False)
-        # pub.pub("openWB/set/chargepoint/14/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.109", "chargepoint": 1}}}, "power_module": {"selected": None}})
+        # cp14
+        pub.pub("openWB/set/chargepoint/14/set/manual_lock", False)
+        pub.pub("openWB/set/chargepoint/14/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.109", "chargepoint": 1}}}, "power_module": {"selected": None}})
 
-        # # cp15
-        # pub.pub("openWB/set/chargepoint/15/set/manual_lock", False)
-        # pub.pub("openWB/set/chargepoint/15/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.212", "chargepoint": 1}}}, "power_module": {"selected": None}})
+        # cp15
+        pub.pub("openWB/set/chargepoint/15/set/manual_lock", False)
+        pub.pub("openWB/set/chargepoint/15/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.212", "chargepoint": 1}}}, "power_module": {"selected": None}})
 
-        # # cp16
-        # pub.pub("openWB/set/chargepoint/16/set/manual_lock", False)
-        # pub.pub("openWB/set/chargepoint/16/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.111", "chargepoint": 1}}}, "power_module": {"selected": None}})
+        # cp16
+        pub.pub("openWB/set/chargepoint/16/set/manual_lock", False)
+        pub.pub("openWB/set/chargepoint/16/config", {"name": "LP1", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.111", "chargepoint": 1}}}, "power_module": {"selected": None}})
 
     # cpt1
     pub.pub("openWB/set/chargepoint/template/1/autolock/1/frequency/selected", "daily")
@@ -312,10 +312,10 @@ def pub_settings():
                             {"id": "cp10", "children": []},
                             {"id": "cp11", "children": []},
                             {"id": "cp12", "children": []},
-                            {"id": "cp13", "children": []}
-                            # {"id": "cp14", "children": []},
-                            # {"id": "cp15", "children": []},
-                            # {"id": "cp16", "children": []}
+                            {"id": "cp13", "children": []},
+                            {"id": "cp14", "children": []},
+                            {"id": "cp15", "children": []},
+                            {"id": "cp16", "children": []}
                             ]
                         }
                     ]
