@@ -1,5 +1,7 @@
 import pathlib
 import subprocess
+import time
+import datetime
 
 from ..algorithm import data
 from . import pub
@@ -21,7 +23,7 @@ def _convert_to_kW(value):
 def pub_graph_data():
     """ schreibt die Graph-Daten, sodass sie zu dem 1.9er graphing.sh passen.
     """
-    dataline={"timestamp":timecheck.create_timestamp_YYYYMMDD(),"time":timecheck.create_timestamp_time()}
+    dataline={"timestamp":int(time.time()),"time":datetime.datetime.today().strftime("%H:%M:%S")}
     dataline.update({"grid": _convert_to_kW(data.data.counter_data["counter0"].data["get"]["power_all"])})
     dataline.update({"house-power":_convert_to_kW(data.data.counter_data["all"].data["set"]["home_consumption"])})
     dataline.update({"charging-all":_convert_to_kW(data.data.cp_data["all"].data["get"]["power_all"])})
@@ -49,16 +51,16 @@ def pub_graph_data():
 
     pathlib.Path('./data/graph').mkdir(mode = 0o755, parents=True, exist_ok=True)
     try:
-        with open('./data/graph/all_live.graph', "r") as f:
+        with open('./data/graph/all_live.json', "r") as f:
             file = f.readlines()
             file_len = len(file)
     except FileNotFoundError:
         file_len = 0
     if file_len > 180:
-        with open("./data/graph/all_live.graph", "w+") as f:
+        with open("./data/graph/all_live.json", "w+") as f:
             f.writelines(file[180:])
-    with open("./data/graph/all_live.graph", "a") as f:
-        f.write(str(dataline))
+    with open("./data/graph/all_live.json", "a") as f:
+        f.write(str(dataline).replace("'",'"'))
         f.write("\n")
     #subprocess.run(["./graphing.sh"])
     # with open('./data/graph/all_live.graph', "r") as f:
