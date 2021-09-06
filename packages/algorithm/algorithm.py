@@ -518,7 +518,10 @@ class control():
                                 charging_ev = chargepoint.data["set"]["charging_ev_data"]
                                 #set-> current enthält einen Wert, wenn das EV in diesem Zyklus eingeschaltet werden soll, aktuell aber noch nicht lädt.
                                 if "current" in chargepoint.data["set"]:
-                                    if chargepoint.data["set"]["current"] != 0 or charging_ev.data["control_parameter"]["required_current"] == 0:
+                                    if ((chargepoint.data["set"]["current"] != 0 or charging_ev.data["control_parameter"]["required_current"] == 0) and
+                                            # Wenn bei Sofortladen nicht mit der Sollstromstärke geladen wird, muss die fehlende Leistung/Strom wieder allokiert werden.
+                                            not (charging_ev.data["control_parameter"]["chargemode"] == "instant_charging" and 
+                                            max(chargepoint.data["get"]["current"]) < chargepoint.data["set"]["current"] - charging_ev.ev_template.data["nominal_difference"])):
                                         continue
                                 if( (charging_ev.charge_template.data["prio"] == prio) and 
                                     (charging_ev.charge_template.data["chargemode"]["selected"] == mode or mode == None) and 
