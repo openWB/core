@@ -11,6 +11,7 @@ from packages.algorithm import process
 from packages.algorithm import data
 from packages.algorithm import prepare
 from packages.helpermodules import defaults
+from packages.helpermodules import graph
 from packages.helpermodules import log
 from packages.helpermodules import measurement_log
 from packages.helpermodules import pub
@@ -21,7 +22,7 @@ from packages.helpermodules import timecheck
 from packages.modules import loadvars
 
 # Wenn debug True ist, wird der 10s Handler nicht durch den Timer-Thread gesteuert, sondern macht ein 10s Sleep am Ende, da sonst beim Pausieren immer mehr Threads im Hintergrund auflaufen.
-debug = False
+debug = True
 
 class HandlerAlgorithm():
     def __init__(self):
@@ -56,6 +57,7 @@ class HandlerAlgorithm():
                     prep.setup_algorithm()
                     control.calc_current()
                     proc.process_algorithm_results()
+                    graph.pub_graph_data()
                     self.interval_counter = 1
                 else:
                     self.interval_counter = self.interval_counter + 1
@@ -72,6 +74,7 @@ class HandlerAlgorithm():
                 prep.setup_algorithm()
                 control.calc_current()
                 proc.process_algorithm_results()
+                graph.pub_graph_data()
         except Exception as e:
             log.exception_logging(e)
     
