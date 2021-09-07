@@ -44,10 +44,10 @@ class subData():
     defaults_general_data={}
     defaults_optional_data={}
 
-    def __init__(self, event_ev_template, event_charge_template, loadvarsdone):
+    def __init__(self, event_ev_template, event_charge_template, event_cp_config):
         self.event_ev_template = event_ev_template
         self.event_charge_template = event_charge_template
-        self.loadvarsdone = loadvarsdone
+        self.event_cp_config = event_cp_config
         self.heartbeat = False
 
     def sub_topics(self):
@@ -90,7 +90,6 @@ class subData():
         client.subscribe("openWB/counter/#", 2)
         client.subscribe("openWB/defaults/#", 2)
         client.subscribe("openWB/log/#", 2)
-        client.subscribe("openWB/loadvarsdone", 2)
 
     def on_message(self, client, userdata, msg):
         """ wartet auf eingehende Topics.
@@ -141,8 +140,6 @@ class subData():
             self.process_counter_topic(self.defaults_counter_data, msg, True)
         elif "openWB/log/" in msg.topic:
             self.process_log_topic(msg)
-        elif "openWB/loadvarsdone" in msg.topic:
-            self.process_loadvarsdone(msg)
         else:
             log.message_debug_log("warning", "unknown subdata-topic: "+str(msg.topic))
 
@@ -339,6 +336,7 @@ class subData():
                         self.set_json_payload(var["cp"+index].data["get"], msg)
                 elif re.search("^.+/chargepoint/[0-9]+/config$", msg.topic) != None:
                     self.set_json_payload(var["cp"+index].data, msg)
+                    self.event_cp_config.set()
             elif re.search("^.+/chargepoint/get/.+$", msg.topic) != None:
                 if "all" not in var:
                     var["all"]=chargepoint.allChargepoints()
@@ -676,15 +674,5 @@ class subData():
         try:
             if "openWB/log/request" in msg.topic:
                 chargelog.get_log_data(json.loads(str(msg.payload.decode("utf-8"))))
-        except Exception as e:
-            log.exception_logging(e)
-
-    def process_loadvarsdone(self, msg):
-        try:
-            if json.loads(str(msg.payload.decode("utf-8"))) == 1:
-                self.loadvarsdone.set()
-                pub.pub("openWB/loadvarsdone", 0)
-            else:
-                self.loadvarsdone.clear()
         except Exception as e:
             log.exception_logging(e)

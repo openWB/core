@@ -476,7 +476,7 @@ class chargepoint():
                                     if state == True:
                                         charging_possbile = True
             if charging_possbile == True:
-                ev_num, message = self.template.get_ev(self.data["set"]["rfid"], self.data["set"]["plug_time"])
+                ev_num, message = self.template.get_ev(self.data["set"]["rfid"], self.data["config"]["ev"], self.data["set"]["plug_time"])
                 log.message_debug_log("debug", "possible"+str(ev_num))
                 if ev_num != -1:
                     return ev_num, message
@@ -497,7 +497,7 @@ class chargepoint():
                 if self.data["get"]["plug_state"] == False:
                     # Standardprofil nach Abstecken laden
                     if data.data.ev_data["ev"+str(self.data["set"]["charging_ev_prev"])].charge_template.data["load_default"] == True:
-                        self.template.data["ev"] = 0
+                        self.data["config"]["ev"] = 0
                         pub.pub("openWB/set/chargepoint/template/"+str(self.data["config"]["template"])+"/ev", 0)
                     # Ladepunkt nach Abstecken sperren
                     if data.data.ev_data["ev"+str(self.data["set"]["charging_ev_prev"])].charge_template.data["disable_after_unplug"] == True:
@@ -753,13 +753,15 @@ class cpTemplate():
         except Exception as e:
             log.exception_logging(e)
 
-    def get_ev(self, rfid, plug_time):
+    def get_ev(self, rfid, assigned_ev, plug_time):
         """ermittelt das dem Ladepunkt zugeordnete EV
 
         Parameter
         ---------
         rfid: str
             Tag, der einem EV zugeordnet werden soll.
+        assigned_ev: int
+            dem Ladepunkt fest zugeordnetes EV
         plug_time: str
             Zeitpunkt des Ansteckens
         Return
@@ -777,7 +779,7 @@ class cpTemplate():
                     vehicle = ev.get_ev_to_rfid(rfid)
                     if vehicle == None:
                         if data.data.optional_data["optional"].data["rfid"]["match_ev_per_tag_only"] == False:
-                            ev_num = self.data["ev"]
+                            ev_num = assigned_ev
                         else:
                             ev_num = -1
                             message = "Keine Ladung, da dem RFID-Tag kein EV-Profil zugeordnet werden kann."
@@ -787,12 +789,12 @@ class cpTemplate():
                     if data.data.optional_data["optional"].data["rfid"]["match_ev_per_tag_only"] == False:
                         if timecheck.check_timestamp(plug_time, 300) == False:
                             #abgelaufen
-                            ev_num = self.data["ev"]
+                            ev_num = assigned_ev
                     else:
                         ev_num = -1
                         message = "Keine Ladung, da noch kein RFID-Tag vorgehalten wurde."
             else:
-                ev_num = self.data["ev"]
+                ev_num = assigned_ev
             
             return ev_num, message
         except Exception as e:
