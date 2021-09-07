@@ -280,15 +280,17 @@ def pub_settings():
     # pub.pub("openWB/set/pv/1/get/daily_yield", 10)
     # pub.pub("openWB/set/pv/1/get/monthly_yield", 10)
     # pub.pub("openWB/set/pv/1/get/yearly_yield", 10)
-    if simulator == True:
-        pub.pub("openWB/set/pv/1/config", {"selected": "mqtt"})
+    # if simulator == True:
+    #     pub.pub("openWB/set/pv/1/config", {"selected": "mqtt"})
 
     # counter
     if simulator == True:
-        hierarchy = [{"id": "counter0", "children": [{"id": "cp1", "children": []}]}]
+        hierarchy = [{"id": "counter0", "children": [{"id": "cp1", "children": []}, {"id": "cp2", "children": []}, {"id": "cp3", "children": []}]}]
         pub.pub("openWB/set/counter/get/hierarchy", hierarchy)
         pub.pub("openWB/set/counter/0/get/frequency", 50.2)
-        pub.pub("openWB/set/counter/0/config", {"max_current": [30, 30, 30], "max_consumption": 30000, "selected":"mqtt"})
+        pub.pub("openWB/set/counter/0/config/max_current", [30, 30, 30])
+        pub.pub("openWB/set/counter/0/config/max_consumption", 30000)
+        pub.pub("openWB/set/counter/0/module", {"selected": "mqtt_read"})
     else:
         # Firma
         hierarchy = [
@@ -326,8 +328,8 @@ def pub_settings():
         pub.pub("openWB/set/counter/1/config", {"max_current": [30, 30, 30], "selected":"openwb", "config": {"openwb":{"version": 2, "ip_address": "192.168.1.169", "id": 1}}})
 
     # # bat
-    if simulator == True:
-        pub.pub("openWB/set/bat/1/config", {"selected": "mqtt"})
+    # if simulator == True:
+    #     pub.pub("openWB/set/bat/1/config", {"selected": "mqtt"})
     # pub.pub("openWB/set/bat/1/get/daily_yield_export", 10)
     # pub.pub("openWB/set/bat/1/get/daily_yield_import", 10)
 
