@@ -612,8 +612,6 @@ class chargepoint():
         ------
         phases: int
             Anzahl Phasen
-        mode: str
-            aktivierter Lademodus
         """
         try:
             phases = 0
@@ -647,9 +645,11 @@ class chargepoint():
                 if charging_ev.ev_template.data["prevent_switch_stop"] == False or charging_ev.data["get"]["charged_since_plugged_counter"] == 0:
                     charging_ev.data["control_parameter"]["phases"] = phases
                     pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/control_parameter/phases", phases)
+                    return phases
                 else:
                     log.message_debug_log("info", "An Ladepunkt "+str(self.cp_num)+" darf keine Phasenumschaltung durchgeführt werden.")
                     pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/control_parameter/phases", self.data["get"]["phases_in_use"])
+                    return self.data["get"]["phases_in_use"]
         except Exception as e:
             log.exception_logging(e)
 

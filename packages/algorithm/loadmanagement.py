@@ -300,27 +300,27 @@ def _check_unbalanced_load(current_used, offset):
     max_current_overshoot: maximale Überschreitung der Stromstärke
     int: Phase, die den höchsten Strom verbraucht
     """
-    max_current_overshoot = 0
-    if offset == True:
-        offset_current = 1
-    else:
-        offset_current = 0
-    try:
-        min_current = min(current_used)
-        if min_current < 0:
-            min_current = 0
-        max_current = max(current_used)
-        if max_current < 0:
-            max_current = 0
-        if (max_current - min_current) <= data.data.general_data["general"].data["chargemode_config"]["unbalanced_load_limit"] - offset_current:
-            return False, None, 0
+    if data.data.general_data["general"].data["chargemode_config"]["unbalanced_load"] == True:
+        max_current_overshoot = 0
+        if offset == True:
+            offset_current = 1
         else:
-            max_current_overshoot = (max_current - min_current) - data.data.general_data["general"].data["chargemode_config"]["unbalanced_load_limit"]
-            log.message_debug_log("warning", "Schieflast wurde ueberschritten.")
-            if data.data.general_data["general"].data["chargemode_config"]["unbalanced_load"] == True:
-                return True, max_current_overshoot + 1, current_used.index(max_current)+1
-            else:
+            offset_current = 0
+        try:
+            min_current = min(current_used)
+            if min_current < 0:
+                min_current = 0
+            max_current = max(current_used)
+            if max_current < 0:
+                max_current = 0
+            if (max_current - min_current) <= data.data.general_data["general"].data["chargemode_config"]["unbalanced_load_limit"] - offset_current:
                 return False, None, 0
-    except Exception as e:
-        log.exception_logging(e)
-        return False, 0, 0
+            else:
+                max_current_overshoot = (max_current - min_current) - data.data.general_data["general"].data["chargemode_config"]["unbalanced_load_limit"]
+                log.message_debug_log("warning", "Schieflast wurde ueberschritten.")
+                return True, max_current_overshoot + 1, current_used.index(max_current)+1
+        except Exception as e:
+            log.exception_logging(e)
+            return False, 0, 0
+    else:
+        return False, None, 0

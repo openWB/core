@@ -740,8 +740,14 @@ class setData():
                 self._validate_value(msg, str)
             elif re.search("^openWB/set/counter/[0-9]+/set/current_left$", msg.topic) != None:
                 self._validate_value(msg, float, [(0, None)], collection=list)
-            elif re.search("^openWB/set/counter/[0-9]+/config$", msg.topic) != None:
+            elif re.search("^openWB/set/counter/[0-9]+/config/selected$", msg.topic) != None:
+                self._validate_value(msg, str)
+            elif re.search("^openWB/set/counter/[0-9]+/module$", msg.topic) != None:
                 self._validate_value(msg, "json")
+            elif re.search("^openWB/set/counter/[0-9]+/config/max_current$", msg.topic) != None:
+                self._validate_value(msg, int, [(7, 1500)], collection = list)
+            elif re.search("^openWB/set/counter/[0-9]+/config/max_consumption$", msg.topic) != None:
+                self._validate_value(msg, int, [(2000, 1000000)])
             elif re.search("^openWB/set/counter/[0-9]+/get/power_all$", msg.topic) != None:
                 self._validate_value(msg, int)
             elif re.search("^openWB/set/counter/[0-9]+/get/current$", msg.topic) != None:

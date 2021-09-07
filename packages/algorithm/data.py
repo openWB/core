@@ -19,6 +19,7 @@ class Data:
         self._ev_template_data = {}
         self._ev_charge_template_data = {}
         self._counter_data = {}
+        self._counter_module_data = {}
         self._bat_module_data = {}
         self._general_data = {}
         self._optional_data = {}
@@ -142,6 +143,21 @@ class Data:
         self.event.set()
 
     @property
+    def counter_module_data(self):
+        self.event.wait()
+        self.event.clear()
+        temp = self._counter_module_data
+        self.event.set()
+        return temp
+
+    @counter_module_data.setter
+    def counter_module_data(self, value):
+        self.event.wait()
+        self.event.clear()
+        self._counter_module_data = value
+        self.event.set()
+
+    @property
     def bat_module_data(self):
         self.event.wait()
         self.event.clear()
@@ -194,6 +210,7 @@ class Data:
         self._print_dictionaries(self._ev_template_data)
         self._print_dictionaries(self._ev_charge_template_data)
         self._print_dictionaries(self._counter_data)
+        self._print_dictionaries(self._counter_module_data)
         self._print_dictionaries(self._bat_module_data)
         self._print_dictionaries(self._general_data)
         self._print_dictionaries(self._optional_data)

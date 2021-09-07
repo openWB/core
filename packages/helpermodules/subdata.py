@@ -1,6 +1,6 @@
 """ Modul, um die Daten vom Broker zu erhalten.
 """
-
+import importlib
 import json
 import paho.mqtt.client as mqtt
 import re
@@ -29,6 +29,7 @@ class subData():
     ev_template_data={}
     ev_charge_template_data={}
     counter_data={}
+    counter_module_data={}
     bat_module_data={}
     general_data={}
     optional_data={}
@@ -132,6 +133,8 @@ class subData():
             self.process_optional_topic(self.optional_data, msg)
         elif "openWB/defaults/optional/" in msg.topic:
             self.process_optional_topic(self.defaults_optional_data, msg, True)
+        elif re.search("^.+/counter/[0-9]+/module$", msg.topic) != None:
+            self.process_counter_module_topic(self.counter_module_data, msg)
         elif "openWB/counter/" in msg.topic:
             self.process_counter_topic(self.counter_data, msg)
         elif "openWB/defaults/counter/" in msg.topic:
@@ -629,6 +632,30 @@ class subData():
                     if "set" not in var["all"].data:
                         var["all"].data["set"]={}
                     self.set_json_payload(var["all"].data["set"], msg)
+        except Exception as e:
+            log.exception_logging(e)
+
+    def process_counter_module_topic(self, var, msg):
+        """ Handler für die Zähler-MOdul-Topics
+
+         Parameters
+        ----------
+        client : (unused)
+            vorgegebener Parameter
+        userdata : (unused)
+            vorgegebener Parameter
+        msg:
+            enthält Topic und Payload
+        """
+        try:
+            index=self.get_index(msg.topic)
+            if json.loads(str(msg.payload.decode("utf-8")))=="":
+                if "counter"+index in var:
+                    var.pop("counter"+index)
+            data = json.loads(str(msg.payload.decode("utf-8")))
+            mod = importlib.import_module(".modules.counter."+data["selected"], "packages")
+            var["counter"+index]=mod.module(index)
+            self.set_json_payload(var["counter"+index].data, msg)
         except Exception as e:
             log.exception_logging(e)
 
