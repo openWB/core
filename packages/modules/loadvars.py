@@ -93,9 +93,27 @@ class loadvars():
                 if "cp" in item:
                     cp = data.data.cp_data[item]
                     # Anbindung
-                    pass
+                    if cp.data["config"]["connection_module"]["selected"] == "modbus_evse":
+                        cp_modbus_evse.read_modbus_evse(cp)
+                    elif cp.data["config"]["connection_module"]["selected"] == "ip_evse":
+                        cp_ip_evse.read_ip_evse(cp)
+                    elif cp.data["config"]["connection_module"]["selected"] == "modbus_slave":
+                        cp_modbus_slave.read_modbus_slave(cp)
+                    elif cp.data["config"]["connection_module"]["selected"] == "external_openwb":
+                        cp_external_openwb.read_external_openwb(cp)
+                    # elif cp.data["config"]["connection_module"]["selected"] == "":
+                    #     (cp)
+                        
+                    # Display, Pushover, SocTimer eher am Ende
 
                     # Ladeleistungsmodul
+                    if cp.data["config"]["power_module"]["selected"] == "ethmpm3pm" or cp.data["config"]["power_module"]["selected"] == "ethmpm3pm_framer":
+                        cp_etmpm3pm.read_ethmpm3pm(cp)
+                    elif cp.data["config"]["power_module"]["selected"] == "mqtt":
+                        cp_mqtt.mqtt_state(cp)
+
+                    # elif cp.data["config"]["power_module"]["selected"] == "":
+                    #     (cp)
             except Exception as e:
                 log.exception_logging(e)
 

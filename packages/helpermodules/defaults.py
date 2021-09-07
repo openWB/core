@@ -20,6 +20,8 @@ from . import pub
 def pub_defaults():
     """ruft für alle Ramdisk-Dateien aus initRamdisk die zum Typ passende Funktion zum publishen auf.
     """
+    # Alte Default-Werte löschen
+    pub.pub("openWB/defaults/counter/0/config", "")
     # Ladepunkt
     pub.pub("openWB/defaults/chargepoint/0/set/manual_lock", False)
     config = {"name": "LP", "template": 1, "connected_phases": 3, "phase_1": 0, "auto_phase_switch_hw": False,
@@ -135,9 +137,9 @@ def pub_defaults():
     hierarchy = [{"id": "counter0", "children": [{"id": "cp1", "children": []}, {"id": "cp2", "children": []}, {"id": "cp3", "children": []}]}]
     #hierarchy = [{"id": "counter0", "children": [{"id": "cp1", "children": []}]}]
     pub.pub("openWB/defaults/counter/0/get/hierarchy", hierarchy)
-    pub.pub("openWB/defaults/counter/0/config", {"max_current": [30, 30, 30], "max_consumption": 30000, "selected": "openwb", "config": {"openwb": {"version": 0, "ip_address": "192.168.193.15", "id": 5}}})
-    # pub.pub("openWB/defaults/counter/0/config", {"max_current": [30, 30, 30], "max_consumption": 30000, "selected": "openwb", "config": {"openwb": {"version": 1, "ip_address": "192.168.193.15", "id": 0x02}}})
-    # pub.pub("openWB/defaults/counter/0/config", {"max_current": [30, 30, 30], "max_consumption": 30000, "selected": "openwb", "config": {"openwb": {"version": 2, "ip_address": "192.168.193.15", "id": 115}}})
+    pub.pub("openWB/defaults/counter/0/config/max_current", [30, 30, 30])
+    pub.pub("openWB/defaults/counter/0/config/max_consumption", 30000)
+    pub.pub("openWB/defaults/counter/0/module", {"selected": "mqtt_read"})
 
     # Speicher
     pub.pub("openWB/defaults/bat/0/config", {"selected": "mqtt"})

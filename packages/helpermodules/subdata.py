@@ -619,8 +619,10 @@ class subData():
                     if "set" not in var["counter"+index].data:
                         var["counter"+index].data["set"]={}
                     self.set_json_payload(var["counter"+index].data["set"], msg)
-                elif re.search("^.+/counter/[0-9]+/config$", msg.topic) != None:
-                    self.set_json_payload(var["counter"+index].data, msg)
+                elif re.search("^.+/counter/[0-9]+/config/.+$", msg.topic) != None:
+                    if "config" not in var["counter"+index].data:
+                        var["counter"+index].data["config"]={}
+                    self.set_json_payload(var["counter"+index].data["config"], msg)
             elif re.search("^.+/counter/.+$", msg.topic) != None:
                 if "all" not in var:
                     var["all"]=counter.counterAll()
