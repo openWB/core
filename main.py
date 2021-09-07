@@ -22,7 +22,7 @@ from packages.helpermodules import timecheck
 from packages.modules import loadvars
 
 # Wenn debug True ist, wird der 10s Handler nicht durch den Timer-Thread gesteuert, sondern macht ein 10s Sleep am Ende, da sonst beim Pausieren immer mehr Threads im Hintergrund auflaufen.
-debug = True
+debug = False
 
 class HandlerAlgorithm():
     def __init__(self):
@@ -149,13 +149,14 @@ try:
     handler = HandlerAlgorithm()
     vars = loadvars.loadvars()
     prep = prepare.prepare()
-    loadvarsdone = threading.Event()
     event_ev_template = threading.Event()
     event_ev_template.set()
     event_charge_template = threading.Event()
     event_charge_template.set()
-    set = setdata.setData(event_ev_template, event_charge_template)
-    sub = subdata.subData(event_ev_template, event_charge_template, loadvarsdone)
+    event_cp_config = threading.Event()
+    event_cp_config.set()
+    set = setdata.setData(event_ev_template, event_charge_template, event_cp_config)
+    sub = subdata.subData(event_ev_template, event_charge_template, event_cp_config)
     t_sub = Thread(target=sub.sub_topics, args=())
     t_set = Thread(target=set.set_data, args=())
 
