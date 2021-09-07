@@ -86,23 +86,17 @@ class prepare():
                     if vehicle != -1:
                         charging_ev = data.data.ev_data["ev"+str(vehicle)]
                         # Ev wurde neu angesteckt, Kopie der aktuellen Templates erstellen und publishen
-                        if cp.data["set"]["charging_ev"] == -1 and cp.data["set"]["charging_ev_prev"] == -1:
-                            charging_ev.data["set"]["ev_template"] = charging_ev.ev_template.data
-                            pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num) +"/set/ev_template", charging_ev.data["set"]["ev_template"])
-                        if ((cp.data["set"]["charging_ev"] == -1 and cp.data["set"]["charging_ev_prev"] == -1) or
-                                # Das EV lädt oder war angesteckt, wurde im Algorithmus aber nicht berücksichtigt.
-                                cp.data["set"]["charging_ev"] == vehicle or
-                                cp.data["set"]["charging_ev_prev"] == vehicle):
-                            cp.data["set"]["charging_ev"] = vehicle
-                            pub.pub("openWB/set/chargepoint/"+str(cp.cp_num)+"/set/charging_ev", vehicle)
-                            charging_ev.ev_template.data = charging_ev.data["set"]["ev_template"]
-                            cp.data["set"]["charging_ev_data"] = charging_ev
-                        else:
-                            message = "Das zugeordnete EV darf nur geändert werden, wenn kein EV angesteckt ist."
-                            state = False
+                        #if cp.data["set"]["charging_ev"] == -1 and cp.data["set"]["charging_ev_prev"] == -1:
+                        charging_ev.data["set"]["ev_template"] = data.data.ev_template_data["et"+str(charging_ev.data["ev_template"])].data
+                        pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num) +"/set/ev_template", charging_ev.data["set"]["ev_template"])
+
+                        cp.data["set"]["charging_ev"] = vehicle
+                        pub.pub("openWB/set/chargepoint/"+str(cp.cp_num)+"/set/charging_ev", vehicle)
+                        charging_ev.ev_template.data = charging_ev.data["set"]["ev_template"]
+                        cp.data["set"]["charging_ev_data"] = charging_ev
 
                         if state == True:
-                            cp.get_phases(charging_ev.charge_template.data["chargemode"]["selected"])
+                            phases = cp.get_phases(charging_ev.charge_template.data["chargemode"]["selected"])
                             state, message_ev, submode, required_current = charging_ev.get_required_current()
                             self._pub_connected_vehicle(charging_ev, cp)
                             # Einhaltung des Minimal- und Maximalstroms prüfen
@@ -116,7 +110,7 @@ class prepare():
                             # Die benötigte Stromstärke hat sich durch eine Änderung des Lademdous oder der Konfiguration geändert. Die Zuteilung entsprechend der Priorisierung muss neu geprüft werden.
                             # Daher muss der LP zurückgesetzt werden, wenn er gerade lädt, um in der Regelung wieder berücksichtigt zu werden.
                             if current_changed == True:
-                                log.message_debug_log("debug", "LP"+str(charging_ev.ev_num)+" : Da sich die Stromstärke geändert hat, muss der Ladepunkt im Algorithmus neu priorisiert werden.")
+                                log.message_debug_log("debug", "LP"+str(cp.cp_num)+" : Da sich die Stromstärke geändert hat, muss der Ladepunkt im Algorithmus neu priorisiert werden.")
                                 data.data.pv_data["all"].reset_switch_on_off(cp, charging_ev)
                                 charging_ev.reset_phase_switch()
                                 if max(cp.data["get"]["current"]) != 0:
@@ -144,7 +138,7 @@ class prepare():
                                 log.message_debug_log("error", "Reservierte Leistung kann nicht 0 sein.")
                             
                             log.message_debug_log("debug", "EV"+str(charging_ev.ev_num)+": Theroretisch benötigter Strom "+str(required_current)+"A, Lademodus "+str(
-                                charging_ev.charge_template.data["chargemode"]["selected"])+", Submodus: "+str(charging_ev.data["control_parameter"]["submode"])+", Prioritaet: "+str(charging_ev.charge_template.data["prio"])+", max. Ist-Strom: "+str(max(cp.data["get"]["current"])))
+                                charging_ev.charge_template.data["chargemode"]["selected"])+", Submodus: "+str(charging_ev.data["control_parameter"]["submode"])+", Phasen: "+str(phases)+", Prioritaet: "+str(charging_ev.charge_template.data["prio"])+", max. Ist-Strom: "+str(max(cp.data["get"]["current"])))
                     else:
                         # Wenn kein EV zur Ladung zugeordnet wird, auf hinterlegtes EV zurückgreifen.
                         self._pub_connected_vehicle(data.data.ev_data["ev"+str(cp.template.data["ev"])], cp)

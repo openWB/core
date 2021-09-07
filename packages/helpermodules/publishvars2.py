@@ -2,7 +2,7 @@ from . import pub
 
 
 def pub_settings():
-    simulator = True
+    simulator = False
     """ruft für alle Ramdisk-Dateien aus initRamdisk die zum Typ passende Funktion zum publishen auf.
     """
     if simulator == True:
@@ -71,17 +71,17 @@ def pub_settings():
         pub.pub("openWB/set/chargepoint/13/set/manual_lock", False)
         pub.pub("openWB/set/chargepoint/13/config", {"name": "LP13", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.225", "chargepoint": 1}}}, "power_module": {"selected": None}})
 
-        # # cp14
-        # pub.pub("openWB/set/chargepoint/14/set/manual_lock", False)
-        # pub.pub("openWB/set/chargepoint/14/config", {"name": "LP14", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.109", "chargepoint": 1}}}, "power_module": {"selected": None}})
+        # cp14
+        pub.pub("openWB/set/chargepoint/14/set/manual_lock", False)
+        pub.pub("openWB/set/chargepoint/14/config", {"name": "LP14", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.109", "chargepoint": 1}}}, "power_module": {"selected": None}})
 
-        # # cp15
-        # pub.pub("openWB/set/chargepoint/15/set/manual_lock", False)
-        # pub.pub("openWB/set/chargepoint/15/config", {"name": "LP15", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.212", "chargepoint": 1}}}, "power_module": {"selected": None}})
+        # cp15
+        pub.pub("openWB/set/chargepoint/15/set/manual_lock", False)
+        pub.pub("openWB/set/chargepoint/15/config", {"name": "LP15", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.212", "chargepoint": 1}}}, "power_module": {"selected": None}})
 
-        # # cp16
-        # pub.pub("openWB/set/chargepoint/16/set/manual_lock", False)
-        # pub.pub("openWB/set/chargepoint/16/config", {"name": "LP16", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.111", "chargepoint": 1}}}, "power_module": {"selected": None}})
+        # cp16
+        pub.pub("openWB/set/chargepoint/16/set/manual_lock", False)
+        pub.pub("openWB/set/chargepoint/16/config", {"name": "LP16", "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.111", "chargepoint": 1}}}, "power_module": {"selected": None}})
     # cpt1
     pub.pub("openWB/set/chargepoint/template/1/autolock/1/frequency/selected", "daily")
     pub.pub("openWB/set/chargepoint/template/1/autolock/1/time", ["07:00", "16:15"])
@@ -293,39 +293,63 @@ def pub_settings():
         pub.pub("openWB/set/counter/0/module", {"selected": "mqtt_read"})
     else:
         # Firma
+        # hierarchy = [
+        #     {
+        #         "id": "counter0", 
+        #         "children": 
+        #         [
+        #             {
+        #                 "id": "counter1", "children": 
+        #                 [
+        #                     {"id": "cp1", "children": []}, 
+        #                     {"id": "cp2", "children": []}, 
+        #                     {"id": "cp3", "children": []},
+        #                     {"id": "cp4", "children": []},
+        #                     {"id": "cp5", "children": []},
+        #                     {"id": "cp6", "children": []},
+        #                     {"id": "cp7", "children": []},
+        #                     {"id": "cp8", "children": []},
+        #                     {"id": "cp9", "children": []},
+        #                     {"id": "cp10", "children": []},
+        #                     {"id": "cp11", "children": []},
+        #                     {"id": "cp12", "children": []},
+        #                     {"id": "cp13", "children": []},
+        #                     {"id": "cp14", "children": []},
+        #                     {"id": "cp15", "children": []},
+        #                     {"id": "cp16", "children": []}
+        #                     ]
+        #                 }
+        #             ]
+        #         }
+        #     ]
         hierarchy = [
             {
                 "id": "counter0", 
                 "children": 
                 [
-                    {
-                        "id": "counter1", "children": 
-                        [
-                            {"id": "cp1", "children": []}, 
-                            {"id": "cp2", "children": []}, 
-                            {"id": "cp3", "children": []},
-                            {"id": "cp4", "children": []},
-                            {"id": "cp5", "children": []},
-                            {"id": "cp6", "children": []},
-                            {"id": "cp7", "children": []},
-                            {"id": "cp8", "children": []},
-                            {"id": "cp9", "children": []},
-                            {"id": "cp10", "children": []},
-                            {"id": "cp11", "children": []},
-                            {"id": "cp12", "children": []},
-                            {"id": "cp13", "children": []},
-                            {"id": "cp14", "children": []},
-                            {"id": "cp15", "children": []},
-                            {"id": "cp16", "children": []}
-                            ]
-                        }
+                    {"id": "cp1", "children": []}, 
+                    {"id": "cp2", "children": []}, 
+                    {"id": "cp3", "children": []},
+                    {"id": "cp4", "children": []},
+                    {"id": "cp5", "children": []},
+                    {"id": "cp6", "children": []},
+                    {"id": "cp7", "children": []},
+                    {"id": "cp8", "children": []},
+                    {"id": "cp9", "children": []},
+                    {"id": "cp10", "children": []},
+                    {"id": "cp11", "children": []},
+                    {"id": "cp12", "children": []},
+                    {"id": "cp13", "children": []},
+                    {"id": "cp14", "children": []},
+                    {"id": "cp15", "children": []},
+                    {"id": "cp16", "children": []}
                     ]
                 }
             ]
         pub.pub("openWB/set/counter/get/hierarchy", hierarchy)
         pub.pub("openWB/set/counter/0/get/frequency", 50.2)
-        pub.pub("openWB/set/counter/0/config", {"max_current": [30, 30, 30], "max_consumption": 30000, "selected":"openwb", "config": {"openwb":{"version": 2, "ip_address": "192.168.1.102", "id": 105}}})
-        pub.pub("openWB/set/counter/1/config", {"max_current": [30, 30, 30], "selected":"openwb", "config": {"openwb":{"version": 2, "ip_address": "192.168.1.169", "id": 1}}})
+        pub.pub("openWB/set/counter/0/config", {"max_current": [30, 30, 30], "max_consumption": 30000, "selected":"openwb", "config": {"openwb":{"version": 2, "ip_address": "192.168.1.101", "id": 105}}})
+        #pub.pub("openWB/set/counter/1/config", {"max_current": [30, 30, 30], "selected":"openwb", "config": {"openwb":{"version": 2, "ip_address": "192.168.1.169", "id": 1}}})
 
     # # bat
     # if simulator == True:
