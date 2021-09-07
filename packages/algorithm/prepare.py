@@ -273,6 +273,7 @@ class prepare():
                 else:
                     if key not in settings:
                         settings[key] = default[key]
+                        log.message_debug_log("warning", "default-Wert für "+str(key)+" in "+str(settings)+" gesetzt.")
         except Exception as e:
             log.exception_logging(e)
 

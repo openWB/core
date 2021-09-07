@@ -20,6 +20,8 @@ from . import pub
 def pub_defaults():
     """ruft für alle Ramdisk-Dateien aus initRamdisk die zum Typ passende Funktion zum publishen auf.
     """
+    # Alte Default-Werte löschen
+    pub.pub("openWB/defaults/counter/0/config", "")
     # Ladepunkt
     pub.pub("openWB/defaults/chargepoint/0/set/manual_lock", False)
     config = {"name": "LP", "template": 1, "connected_phases": 3, "phase_1": 0, "auto_phase_switch_hw": False,
