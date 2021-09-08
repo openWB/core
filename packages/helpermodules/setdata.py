@@ -152,11 +152,11 @@ class setData():
                             key_list = msg.topic.split("/")[6:]
                         self._change_key(template, key_list, value)
                         # publish
-                        index_pos = re.search('(?!/)([0-9]*)(?=/|$)', msg.topic).start()
+                        index_pos = re.search('(?!/)([0-9]*)(?=/|$)', msg.topic).end()
                         if event == self.event_cp_config:
-                            topic = msg.topic[:index_pos+1]+"/config"
+                            topic = msg.topic[:index_pos]+"/config"
                         else:
-                            topic = msg.topic[:index_pos+1]
+                            topic = msg.topic[:index_pos]
                         topic = topic.replace('set/', '', 1)
                         pub.pub(topic, template)
                         pub.pub(msg.topic, "")
