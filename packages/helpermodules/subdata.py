@@ -649,13 +649,19 @@ class subData():
         """
         try:
             index=self.get_index(msg.topic)
-            if json.loads(str(msg.payload.decode("utf-8")))=="":
-                if "counter"+index in var:
-                    var.pop("counter"+index)
-            data = json.loads(str(msg.payload.decode("utf-8")))
-            mod = importlib.import_module(".modules.counter."+data["selected"], "packages")
-            var["counter"+index]=mod.module(index)
-            self.set_json_payload(var["counter"+index].data, msg)
+            if re.search("^.+/counter/[0-9]/module$", msg.topic) != None:
+                if json.loads(str(msg.payload.decode("utf-8")))=="":
+                    if "counter"+index in var:
+                        var.pop("counter"+index)
+                else:
+                    data = json.loads(str(msg.payload.decode("utf-8")))
+                    mod = importlib.import_module(".modules.counter."+data["selected"], "packages")
+                    var["counter"+index]=mod.module(index)
+                    self.set_json_payload(var["counter"+index].data, msg)
+            elif re.search("^.+/counter/[0-9]/module/simulation$", msg.topic) != None:
+                if "simulation" not in var["counter"+index].data:
+                    var["counter"+index].data["simulation"]={}
+                self.set_json_payload(var["counter"+index].data["simulation"], msg)
         except Exception as e:
             log.exception_logging(e)
 

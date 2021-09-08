@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 import os
 from pathlib import Path
+import traceback
 
 from ...helpermodules import log
 from ...helpermodules import pub
@@ -17,6 +18,7 @@ class set_values():
                 [current1, current2, current3],
                 [power1, power2, power3],
                 [power_factor1, power_factor2, power_factor3],
+                [imported, exported],
                 power_all,
                 frequency]
         """
@@ -44,8 +46,10 @@ class set_values():
             self.write_to_file("/evupf1", values[3][0])
             self.write_to_file("/evupf2", values[3][1])
             self.write_to_file("/evupf3", values[3][2])
-            self.write_to_file("/wattbezug", int(values[4]))
-            self.write_to_file("/evuhz", round(values[5], 2))
+            self.write_to_file("/bezugkwh", values[4][0])
+            self.write_to_file("/einspeisungkwh", values[4][1])
+            self.write_to_file("/wattbezug", int(values[6]))
+            self.write_to_file("/evuhz", round(values[7], 2))
             if int(os.environ.get('debug')) >= 1:
                 log.log_1_9('EVU Watt: ' + str(int(values[4])))
         except Exception as e:
@@ -70,5 +74,17 @@ class set_values():
             pub.pub("openWB/set/counter/"+str(num)+"/get/power_factor", values[3])
             pub.pub("openWB/set/counter/"+str(num)+"/get/power_all", values[4])
             pub.pub("openWB/set/counter/"+str(num)+"/get/frequency", values[5])
+        except Exception as e:
+            log.exception_logging(e)
+
+    def log_exception(self, exception, ramdisk):
+        """
+        """
+        try:
+            if ramdisk == False:
+                log.exception_logging(exception)
+            else:
+                traceback.print_exc()
+                exit(1)
         except Exception as e:
             log.exception_logging(e)
