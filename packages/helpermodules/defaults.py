@@ -24,7 +24,7 @@ def pub_defaults():
     pub.pub("openWB/defaults/counter/0/config", "")
     # Ladepunkt
     pub.pub("openWB/defaults/chargepoint/0/set/manual_lock", False)
-    config = {"name": "LP", "template": 1, "connected_phases": 3, "phase_1": 0, "auto_phase_switch_hw": False,
+    config = {"name": "LP", "ev": 0, "template": 1, "connected_phases": 3, "phase_1": 0, "auto_phase_switch_hw": False,
               "control_pilot_interruption_hw": True, "connection_module": {"selected": "mqtt"}, "power_module": {"selected": "mqtt"}}
     pub.pub("openWB/defaults/chargepoint/0/config", config)
     # Ladepunkt-Vorlage
@@ -33,7 +33,6 @@ def pub_defaults():
     pub.pub("openWB/defaults/chargepoint/template/0/autolock/1/active", True)
     pub.pub("openWB/defaults/chargepoint/template/0/autolock/wait_for_charging_end", False)
     pub.pub("openWB/defaults/chargepoint/template/0/autolock/active", True)
-    pub.pub("openWB/defaults/chargepoint/template/0/ev", 0)
     pub.pub("openWB/defaults/chargepoint/template/0/rfid_enabling", False)
     pub.pub("openWB/defaults/chargepoint/template/0/valid_tags", ["8910"])
 

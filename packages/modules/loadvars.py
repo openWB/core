@@ -7,6 +7,13 @@ from . import ripple_control_receiver
 from ..algorithm import data
 from ..helpermodules import log
 
+from .cp import ethmpm3pm as cp_etmpm3pm
+from .cp import external_openwb as cp_external_openwb
+from .cp import mqtt as cp_mqtt
+from .cp import modbus_evse as cp_modbus_evse
+from .cp import modbus_slave as cp_modbus_slave
+from .cp import ip_evse as cp_ip_evse
+
 class loadvars():
     """ fragt die Werte der konfigurierten Module ab
     """

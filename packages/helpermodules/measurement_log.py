@@ -86,7 +86,10 @@ def save_log(folder):
                     cp_dict.update({cp: {"counter": data.data.cp_data[cp].data["get"]["counter"]}})
             except Exception as e:
                 log.exception_logging(e)
-        cp_dict.update({"all": {"counter": data.data.cp_data["all"].data["get"]["counter"]}})
+        try:
+            cp_dict.update({"all": {"counter": data.data.cp_data["all"].data["get"]["counter_all"]}})
+        except Exception as e:
+            log.exception_logging(e)
 
         ev_dict = {}
         for ev in data.data.ev_data:

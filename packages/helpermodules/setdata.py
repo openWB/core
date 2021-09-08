@@ -12,9 +12,10 @@ from . import subdata
 
 class setData():
  
-    def __init__(self, event_ev_template, event_charge_template):
+    def __init__(self, event_ev_template, event_charge_template, event_cp_config):
         self.event_ev_template = event_ev_template
         self.event_charge_template = event_charge_template
+        self.event_cp_config = event_cp_config
         self.heartbeat = False
 
     def set_data(self):
@@ -138,12 +139,24 @@ class setData():
                                 template = copy.deepcopy(subdata.subData.ev_template_data["et"+str(index)].data)
                             else:
                                 template = {}
+                        elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/config.*$", msg.topic) != None:
+                            event = self.event_cp_config
+                            if "cp"+str(index) in subdata.subData.cp_data:
+                                template = copy.deepcopy(subdata.subData.cp_data["cp"+str(index)].data["config"])
+                            else:
+                                template = {}
                         # Wert, der aktualisiert werden soll, erstellen/finden und updaten
-                        key_list = msg.topic.split("/")[6:]
+                        if event == self.event_cp_config:
+                            key_list = msg.topic.split("/")[5:]
+                        else:
+                            key_list = msg.topic.split("/")[6:]
                         self._change_key(template, key_list, value)
                         # publish
                         index_pos = re.search('(?!/)([0-9]*)(?=/|$)', msg.topic).start()
-                        topic = msg.topic[:index_pos+1]
+                        if event == self.event_cp_config:
+                            topic = msg.topic[:index_pos+1]+"/config"
+                        else:
+                            topic = msg.topic[:index_pos+1]
                         topic = topic.replace('set/', '', 1)
                         pub.pub(topic, template)
                         pub.pub(msg.topic, "")
@@ -442,6 +455,8 @@ class setData():
                 self._validate_value(msg, str)
             elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/config$", msg.topic) != None:
                 self._validate_value(msg, "json")
+            elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/config/ev$", msg.topic) != None:
+                self._validate_value(msg, int, [(0, None)], pub_json = True)
             elif (re.search("^openWB/set/chargepoint/[1-9][0-9]*/get/voltage$", msg.topic) != None or
                     re.search("^openWB/set/chargepoint/[1-9][0-9]*/get/current$", msg.topic) != None or
                     re.search("^openWB/set/chargepoint/[1-9][0-9]*/get/power_factor$", msg.topic) != None):
@@ -476,8 +491,6 @@ class setData():
                 self._validate_value(msg, int, [(0, 1)], collection=list)
             elif re.search("^openWB/set/chargepoint/template/[1-9][0-9]*/autolock/[1-9][0-9]*/time$", msg.topic) != None:
                 self._validate_value(msg, str, collection=list)
-            elif re.search("^openWB/set/chargepoint/template/[1-9][0-9]*/ev$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, None)])
             elif re.search("^openWB/set/chargepoint/template/[1-9][0-9]*/rfid_enabling$", msg.topic) != None:
                 self._validate_value(msg, int, [(0, 1)])
             elif re.search("^openWB/set/chargepoint/template/[1-9][0-9]*/valid_tags$", msg.topic) != None:
@@ -725,9 +738,6 @@ class setData():
                 self._validate_value(msg, int, [(0, 3)])
             elif (re.search("^openWB/set/counter/set/home_consumption$", msg.topic) != None or
                     re.search("^openWB/set/counter/set/daily_yield_home_consumption$", msg.topic) != None):
-                # Inkonsistenz: Kann auch als Float kommen, soll aber immer als Int gepublished werden.
-                payload = json.loads(str(msg.payload.decode("utf-8")))
-                msg.payload = json.dumps(int(payload)).encode("utf-8")
                 self._validate_value(msg, int, [(0, None)])
             elif re.search("^openWB/set/counter/get/hierarchy$", msg.topic) != None:
                 self._validate_value(msg, None)
@@ -749,7 +759,7 @@ class setData():
             elif re.search("^openWB/set/counter/[0-9]+/config/max_consumption$", msg.topic) != None:
                 self._validate_value(msg, int, [(2000, 1000000)])
             elif re.search("^openWB/set/counter/[0-9]+/get/power_all$", msg.topic) != None:
-                self._validate_value(msg, int)
+                self._validate_value(msg, float)
             elif re.search("^openWB/set/counter/[0-9]+/get/current$", msg.topic) != None:
                 self._validate_value(msg, float, collection=list)
             elif (re.search("^openWB/set/counter/[0-9]+/get/voltage$", msg.topic) != None or

@@ -141,7 +141,7 @@ class prepare():
                                 charging_ev.charge_template.data["chargemode"]["selected"])+", Submodus: "+str(charging_ev.data["control_parameter"]["submode"])+", Phasen: "+str(phases)+", Prioritaet: "+str(charging_ev.charge_template.data["prio"])+", max. Ist-Strom: "+str(max(cp.data["get"]["current"])))
                     else:
                         # Wenn kein EV zur Ladung zugeordnet wird, auf hinterlegtes EV zurückgreifen.
-                        self._pub_connected_vehicle(data.data.ev_data["ev"+str(cp.template.data["ev"])], cp)
+                        self._pub_connected_vehicle(data.data.ev_data["ev"+str(cp.data["config"]["ev"])], cp)
                     if message != None and cp.data["get"]["state_str"] == None:
                         log.message_debug_log("info", "LP "+str(cp.cp_num)+": "+message)
                         cp.data["get"]["state_str"] = message
@@ -273,7 +273,6 @@ class prepare():
                 else:
                     if key not in settings:
                         settings[key] = default[key]
-                        log.message_debug_log("warning", "default-Wert für "+str(key)+" in "+str(settings)+" gesetzt.")
         except Exception as e:
             log.exception_logging(e)
 

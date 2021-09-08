@@ -58,15 +58,15 @@ class set_values():
     def pub_to_broker(self, num, values):
         try:
             # Format
-            for val in values:
-                if isinstance(val, list) == True:
-                    for val2 in val:
-                        val2 = round(val2, 2)
+            for n in range(len(values)):
+                if isinstance(values[n], list) == True:
+                    for m in range(len(values[n])):
+                        values[n][m] = round(values[n][m], 2)
                 else:
-                    val = round(val, 2)
+                    values[n] = round(values[n], 2)
             pub.pub("openWB/set/counter/"+str(num)+"/get/voltage", values[0])
             pub.pub("openWB/set/counter/"+str(num)+"/get/current", values[1])
-            pub.pub("openWB/set/counter/"+str(num)+"/get/power", values[2])
+            pub.pub("openWB/set/counter/"+str(num)+"/get/power_phase", values[2])
             pub.pub("openWB/set/counter/"+str(num)+"/get/power_factor", values[3])
             pub.pub("openWB/set/counter/"+str(num)+"/get/power_all", values[4])
             pub.pub("openWB/set/counter/"+str(num)+"/get/frequency", values[5])
