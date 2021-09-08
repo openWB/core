@@ -242,6 +242,7 @@ class chargepoint():
                 self.data["set"]["plug_time"] = "0"
                 self.data["set"]["rfid"] = 0
                 self.data["set"]["log"] = {}
+                self.data["set"]["log"]["charged_since_plugged_counter"] = 0
                 self.data["get"]["read_tag"] = {}
                 self.data["get"]["read_tag"]["tag"] = "0"
                 self.data["get"]["read_tag"]["timestamp"] = "0"
