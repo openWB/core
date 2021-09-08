@@ -5,7 +5,8 @@ import os
 import sys
 import time
 
-from ..helpermodules import pub
+if __name__ != "__main__":
+    from ..helpermodules import pub
 
 
 def sim_count(present_power_all, topic="", data={}, ramdisk = False, pref = ""):
