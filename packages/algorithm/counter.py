@@ -34,7 +34,7 @@ class counterAll():
             pv = data.data.pv_data["all"].data["get"]["power"]
             bat = data.data.bat_module_data["all"].data["get"]["power"]
             cp = data.data.cp_data["all"].data["get"]["power_all"]
-            home_consumption = evu - pv - bat - cp
+            home_consumption = int(evu - pv - bat - cp)
             if home_consumption < 0:
                 if self.data["set"]["invalid_home_consumption"] < 3:
                     self.data["set"]["invalid_home_consumption"] += 1
@@ -57,10 +57,20 @@ class counterAll():
         try:
             evu_imported = data.data.counter_data["counter0"].data["get"]["daily_yield_import"]
             evu_exported = data.data.counter_data["counter0"].data["get"]["daily_yield_export"]
-            pv = data.data.pv_data["all"].data["get"]["daily_yield"]
-            bat_imported = data.data.bat_module_data["all"].data["get"]["daily_yield_import"]
-            bat_exported = data.data.bat_module_data["all"].data["get"]["daily_yield_export"]
-            cp = data.data.cp_data["all"].data["get"]["daily_imported_all"]
+            if len(data.data.pv_data) > 1:
+                pv = data.data.pv_data["all"].data["get"]["daily_yield"]
+            else:
+                pv = 0
+            if len(data.data.bat_module_data) > 1:
+                bat_imported = data.data.bat_module_data["all"].data["get"]["daily_yield_import"]
+                bat_exported = data.data.bat_module_data["all"].data["get"]["daily_yield_export"]
+            else:
+                bat_imported = 0
+                bat_exported = 0
+            if len(data.data.cp_data) > 1:
+                cp = data.data.cp_data["all"].data["get"]["daily_imported_all"]
+            else:
+                cp = 0
             daily_yield_home_consumption = evu_imported + pv - cp + bat_exported - bat_imported - evu_exported
             pub.pub("openWB/set/counter/set/daily_yield_home_consumption", daily_yield_home_consumption)
             self.data["set"]["daily_yield_home_consumption"] = daily_yield_home_consumption

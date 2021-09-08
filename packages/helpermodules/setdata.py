@@ -738,9 +738,6 @@ class setData():
                 self._validate_value(msg, int, [(0, 3)])
             elif (re.search("^openWB/set/counter/set/home_consumption$", msg.topic) != None or
                     re.search("^openWB/set/counter/set/daily_yield_home_consumption$", msg.topic) != None):
-                # Inkonsistenz: Kann auch als Float kommen, soll aber immer als Int gepublished werden.
-                payload = json.loads(str(msg.payload.decode("utf-8")))
-                msg.payload = json.dumps(int(payload)).encode("utf-8")
                 self._validate_value(msg, int, [(0, None)])
             elif re.search("^openWB/set/counter/get/hierarchy$", msg.topic) != None:
                 self._validate_value(msg, None)
@@ -762,7 +759,7 @@ class setData():
             elif re.search("^openWB/set/counter/[0-9]+/config/max_consumption$", msg.topic) != None:
                 self._validate_value(msg, int, [(2000, 1000000)])
             elif re.search("^openWB/set/counter/[0-9]+/get/power_all$", msg.topic) != None:
-                self._validate_value(msg, int)
+                self._validate_value(msg, float)
             elif re.search("^openWB/set/counter/[0-9]+/get/current$", msg.topic) != None:
                 self._validate_value(msg, float, collection=list)
             elif (re.search("^openWB/set/counter/[0-9]+/get/voltage$", msg.topic) != None or

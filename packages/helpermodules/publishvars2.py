@@ -348,10 +348,9 @@ def pub_settings():
             ]
         pub.pub("openWB/set/counter/get/hierarchy", hierarchy)
         pub.pub("openWB/set/counter/0/get/frequency", 50.2)
-        pub.pub("openWB/set/counter/0/config/max_current", [40, 30, 30])
+        pub.pub("openWB/set/counter/0/config/max_current", [60, 60, 60])
         pub.pub("openWB/set/counter/0/config/max_consumption", 30000)
-        pub.pub("openWB/set/counter/0/module", {"selected": "mqtt_read"})
-        #pub.pub("openWB/set/counter/0/config", {"max_current": [30, 30, 30], "max_consumption": 30000, "selected":"openwb", "config": {"openwb":{"version": 2, "ip_address": "192.168.1.101", "id": 105}}})
+        pub.pub("openWB/set/counter/0/module", {"selected":"openwb", "config": {"version": 2, "ip_address": "192.168.1.101", "id": 105}})
         #pub.pub("openWB/set/counter/1/config", {"max_current": [30, 30, 30], "selected":"openwb", "config": {"openwb":{"version": 2, "ip_address": "192.168.1.169", "id": 1}}})
 
     # # bat

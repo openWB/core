@@ -5,21 +5,21 @@ import sys
 from. import set_values
 from ...helpermodules import simcount
 
-class module(set_values):
+class module(set_values.set_values):
     def __init__(self, counter_num, ramdisk=False) -> None:
         super().__init__()
         self.ramdisk = ramdisk
         self.data = {}
         self.counter_num = counter_num
 
-    def read_(self):
+    def read(self):
         """ unterscheidet die Version des EVU-Kits und liest die Werte des Moduls aus.
         """
-        if self.data["config"]["version"] == 0:
+        if self.data["module"]["config"]["version"] == 0:
             self._read_version0()
-        elif self.data["config"]["version"] == 1:
+        elif self.data["module"]["config"]["version"] == 1:
             self._read_lovato()
-        elif self.data["config"]["version"] == 2:
+        elif self.data["module"]["config"]["version"] == 2:
             self._read_sdm()
 
     def _read_version0(self):
@@ -210,8 +210,8 @@ class module(set_values):
         ------
         power_all: float
         """
-        ip_address = self.data["config"]["ip_address"]
-        id = self.data["config"]["id"]
+        ip_address = self.data["module"]["config"]["ip_address"]
+        id = self.data["module"]["config"]["id"]
         client = ModbusTcpClient(ip_address, port=8899)
 
         # Voltage
@@ -269,17 +269,18 @@ class module(set_values):
 if __name__ == "__main__":
     counter_num = 1
     mod = module(True)
-    mod.data["config"] = {}
+    mod.data["module"] = {}
+    mod.data["module"]["config"] = {}
     version = sys.argv[1]
-    mod.data["config"]["version"] = version
+    mod.data["module"]["config"]["version"] = version
     if version == 0:
-        mod.data["config"]["ip_address"] = "192.168.193.15"
-        mod.data["config"]["id"] = 5
+        mod.data["module"]["config"]["ip_address"] = "192.168.193.15"
+        mod.data["module"]["config"]["id"] = 5
     elif version == 1:
-        mod.data["config"]["ip_address"] = "192.168.193.15"
-        mod.data["config"]["id"] = 0x02
+        mod.data["module"]["config"]["ip_address"] = "192.168.193.15"
+        mod.data["module"]["config"]["id"] = 0x02
     elif version == 2:
-        mod.data["config"]["ip_address"] = "192.168.193.15"
-        mod.data["config"]["id"] = 115
+        mod.data["module"]["config"]["ip_address"] = "192.168.193.15"
+        mod.data["module"]["config"]["id"] = 115
 
     mod.read()

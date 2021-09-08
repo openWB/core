@@ -132,7 +132,7 @@ class subData():
             self.process_optional_topic(self.optional_data, msg)
         elif "openWB/defaults/optional/" in msg.topic:
             self.process_optional_topic(self.defaults_optional_data, msg, True)
-        elif re.search("^.+/counter/[0-9]+/module$", msg.topic) != None:
+        elif re.search("^openWB/counter/[0-9]+/module$", msg.topic) != None:
             self.process_counter_module_topic(self.counter_module_data, msg)
         elif "openWB/counter/" in msg.topic:
             self.process_counter_topic(self.counter_data, msg)
