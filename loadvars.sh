@@ -1024,7 +1024,7 @@ loadvars(){
 			openwbDebugLog "MAIN" 0 "loadvars read openWB/evu/WHExport_temp from mosquito $exporttemp"
 			echo $exporttemp > /var/www/html/openWB/ramdisk/bezugwatt0neg
 		fi
-		sudo python /var/www/html/openWB/runs/simcount.py $watt2 bezug bezugkwh einspeisungkwh
+		sudo python /var/www/html/openWB/packages/helpermodules/simcount.py $watt2 bezug
 		importtemp1=$(</var/www/html/openWB/ramdisk/bezugwatt0pos)
 		exporttemp1=$(</var/www/html/openWB/ramdisk/bezugwatt0neg)
 		if [[ $importtemp !=  $importtemp1 ]]; then

@@ -73,7 +73,7 @@ def pub_settings():
 
         # cp14
         pub.pub("openWB/set/chargepoint/14/set/manual_lock", False)
-        pub.pub("openWB/set/chargepoint/14/config", {"name": "LP14", "ev": 0, "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.109", "chargepoint": 1}}}, "power_module": {"selected": None}})
+        pub.pub("openWB/set/chargepoint/14/config", {"name": "LP14", "ev": 2, "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.109", "chargepoint": 1}}}, "power_module": {"selected": None}})
 
         # cp15
         pub.pub("openWB/set/chargepoint/15/set/manual_lock", False)
@@ -81,7 +81,7 @@ def pub_settings():
 
         # cp16
         pub.pub("openWB/set/chargepoint/16/set/manual_lock", False)
-        pub.pub("openWB/set/chargepoint/16/config", {"name": "LP16", "ev": 0, "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.111", "chargepoint": 1}}}, "power_module": {"selected": None}})
+        pub.pub("openWB/set/chargepoint/16/config", {"name": "LP16", "ev": 1, "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.111", "chargepoint": 1}}}, "power_module": {"selected": None}})
     
     # cpt1
     pub.pub("openWB/set/chargepoint/template/1/autolock/1/frequency/selected", "daily")

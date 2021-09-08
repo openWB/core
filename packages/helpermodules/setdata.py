@@ -152,11 +152,11 @@ class setData():
                             key_list = msg.topic.split("/")[6:]
                         self._change_key(template, key_list, value)
                         # publish
-                        index_pos = re.search('(?!/)([0-9]*)(?=/|$)', msg.topic).start()
+                        index_pos = re.search('(?!/)([0-9]*)(?=/|$)', msg.topic).end()
                         if event == self.event_cp_config:
-                            topic = msg.topic[:index_pos+1]+"/config"
+                            topic = msg.topic[:index_pos]+"/config"
                         else:
-                            topic = msg.topic[:index_pos+1]
+                            topic = msg.topic[:index_pos]
                         topic = topic.replace('set/', '', 1)
                         pub.pub(topic, template)
                         pub.pub(msg.topic, "")
@@ -743,19 +743,20 @@ class setData():
                 self._validate_value(msg, int, [(0, None)])
             elif re.search("^openWB/set/counter/get/hierarchy$", msg.topic) != None:
                 self._validate_value(msg, None)
-            elif (re.search("^openWB/set/counter/[0-9]+/set/consumption_left$", msg.topic) != None or
-                    re.search("^openWB/set/counter/[0-9]+/set/present_power_all$", msg.topic) != None or
-                    re.search("^openWB/set/counter/[0-9]+/set/present_imported$", msg.topic) != None or
-                    re.search("^openWB/set/counter/[0-9]+/set/present_exported$", msg.topic) != None):
+            elif re.search("^openWB/set/counter/[0-9]+/set/consumption_left$", msg.topic) != None:
                 self._validate_value(msg, float)
-            elif re.search("^openWB/set/counter/[0-9]+/set/sim_timestamp$", msg.topic) != None:
-                self._validate_value(msg, str)
             elif re.search("^openWB/set/counter/[0-9]+/set/current_left$", msg.topic) != None:
                 self._validate_value(msg, float, [(0, None)], collection=list)
             elif re.search("^openWB/set/counter/[0-9]+/config/selected$", msg.topic) != None:
                 self._validate_value(msg, str)
             elif re.search("^openWB/set/counter/[0-9]+/module$", msg.topic) != None:
                 self._validate_value(msg, "json")
+            elif (re.search("^openWB/set/counter/[0-9]+/module/simulation/present_power_all$", msg.topic) != None or
+                    re.search("^openWB/set/counter/[0-9]+/module/simulation/present_imported$", msg.topic) != None or
+                    re.search("^openWB/set/counter/[0-9]+/module/simulation/present_exported$", msg.topic) != None):
+                self._validate_value(msg, float)
+            elif re.search("^openWB/set/counter/[0-9]+/module/simulation/sim_timestamp$", msg.topic) != None:
+                self._validate_value(msg, str)
             elif re.search("^openWB/set/counter/[0-9]+/config/max_current$", msg.topic) != None:
                 self._validate_value(msg, int, [(7, 1500)], collection = list)
             elif re.search("^openWB/set/counter/[0-9]+/config/max_consumption$", msg.topic) != None:
