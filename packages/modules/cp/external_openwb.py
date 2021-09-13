@@ -10,11 +10,11 @@ def read_external_openwb(cp):
         duo_num = cp.data["config"]["connection_module"]["config"]["external_openwb"]["chargepoint"]
         try:
             with open('/var/www/html/openWB/ramdisk/ipaddress', 'r') as f:
-                myipaddress = str(f.read())
+                myipaddress = f.readline().replace("\n","")
         except:
             myipaddress = "192.168.193.5"
         pub.pub_single("openWB/set/isss/heartbeat", 0, hostname=ip_address)
-        pub.pub_single("openWB/set/isss/parentWB", str(myipaddress), hostname=ip_address)
+        pub.pub_single("openWB/set/isss/parentWB", myipaddress, hostname=ip_address, no_json = True)
         if (duo_num == 2):
             pub.pub_single("openWB/set/isss/parentCPlp2", str(cp_num), hostname=ip_address)
             _check_duo_virtual_counter(cp)
