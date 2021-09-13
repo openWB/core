@@ -48,6 +48,7 @@ def pub_graph_data():
     # fi
 
     pub.pub("openWB/graph/lastlivevaluesJson", str(dataline))
+    pub.pub("openWB/system/lastlivevaluesJson", str(dataline))
 
     pathlib.Path('./data/graph').mkdir(mode = 0o755, parents=True, exist_ok=True)
     try:
@@ -56,9 +57,9 @@ def pub_graph_data():
             file_len = len(file)
     except FileNotFoundError:
         file_len = 0
-    if file_len > 180:
-        with open("./data/graph/all_live.json", "w+") as f:
-            f.writelines(file[180:])
+    # if file_len > 180:
+    #     with open("./data/graph/all_live.json", "w+") as f:
+    #         f.writelines(file[180:])
     with open("./data/graph/all_live.json", "a") as f:
         f.write(str(dataline).replace("'",'"'))
         f.write("\n")
