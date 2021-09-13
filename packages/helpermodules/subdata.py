@@ -63,7 +63,7 @@ class subData():
             client.on_connect = self.on_connect
             client.on_message = self.on_message
 
-            client.connect(mqtt_broker_ip, 1883)
+            client.connect(mqtt_broker_ip, 1886)
             client.loop_forever()
             client.disconnect()
         except Exception as e:

@@ -233,12 +233,15 @@ if [ ! -f /etc/mosquitto/mosquitto.conf ]; then
 fi
 
 # check for mosquitto configuration
-if [ ! -f /etc/mosquitto/conf.d/openwb.conf ] || ! sudo grep -Fq "persistent_client_expiration" /etc/mosquitto/mosquitto.conf; then
-	echo "updating mosquitto config file"
-	sudo cp /var/www/html/openWB/web/files/mosquitto.conf /etc/mosquitto/conf.d/openwb.conf
-	sudo service mosquitto reload
-fi
-
+# if [ ! -f /etc/mosquitto/conf.d/openwb.conf ] || ! sudo grep -Fq "persistent_client_expiration" /etc/mosquitto/mosquitto.conf; then
+# 	echo "updating mosquitto config file"
+# 	sudo cp /var/www/html/openWB/web/files/mosquitto.conf /etc/mosquitto/conf.d/openwb.conf
+# 	sudo service mosquitto reload
+# fi
+sudo cp /var/www/html/openWB/data/config/mosquitto_local.conf /etc/mosquitto/conf.d/openwb.conf
+sudo service mosquitto reload
+sleep 3
+mosquitto -c /var/www/html/openWB/data/config/mosquitto_public.conf -d
 # check for other dependencies
 echo "packages 2..."
 if python3 -c "import paho.mqtt.publish as publish" &> /dev/null; then

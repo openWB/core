@@ -17,4 +17,6 @@ modules/soc_eq/soc_eq_acc_*
 .vscode/settings.json
 __pycache__
 smarthome.ini
-data/
+data/daily_log
+data/debug
+data/monthly_log
