@@ -110,6 +110,7 @@ function handlevar(mqttmsg, mqttpayload) {
 	// receives all messages and calls respective function to process them
 	if ( mqttmsg.match( /^openwb\/evu\//i) ) { processEvuMessages(mqttmsg, mqttpayload); }
 	else if ( mqttmsg.match( /^openwb\/global\//i) ) { processGlobalMessages(mqttmsg, mqttpayload); }
+	else if ( mqttmsg.match( /^openwb\/optional\//i) ) { processOptionalMessages(mqttmsg, mqttpayload); }
 	else if ( mqttmsg.match( /^openwb\/housebattery\//i) ) { processHousebatteryMessages(mqttmsg, mqttpayload); }
 	else if ( mqttmsg.match( /^openwb\/system\//i) ) { processSystemMessages(mqttmsg, mqttpayload); }
 	else if ( mqttmsg.match( /^openwb\/pv\//i) ) { processPvMessages(mqttmsg, mqttpayload); }
@@ -233,7 +234,7 @@ function processEvuMessages(mqttmsg, mqttpayload) {
 		var element = $('#evul');
 		var elementChart = $('#evulchart');
 		updateDashboardElement(element, elementChart, prefix + powerEvuText + unit, powerEvu);
-	 }
+	}
 }
 
 function processGlobalMessages(mqttmsg, mqttpayload) {
@@ -333,7 +334,11 @@ function processGlobalMessages(mqttmsg, mqttpayload) {
 				break;
 		}
 	}
-	else if ( mqttmsg == 'openWB/global/rfidConfigured' ) {
+}
+function processOptionalMessages(mqttmsg, mqttpayload) {
+	// processes mqttmsg for topic openWB/optional
+	// called by handlevar
+	if ( mqttmsg == 'openWB/optional/rfid/active' ) {
 		if ( mqttpayload == '0' ) {
 			// disable manuel Rfid Code
 			$('#rfidCodeBtn').addClass('hide');

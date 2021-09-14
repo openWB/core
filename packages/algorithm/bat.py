@@ -32,12 +32,10 @@ from ..helpermodules import pub
 class bat:
     def __init__(self):
         self.data={}
-        if "get" not in self.data:
-            self.data["get"]={}
-        if "set" not in self.data:
-            self.data["set"]={}
-        if "config" not in self.data:
-            self.data["config"]={}
+        self.data["get"]={}
+        self.data["get"]["power"]= 0
+        self.data["set"]={}
+        self.data["config"]={}
         self.data["config"]["configured"] = False
         self.data["set"]["charging_power_left"] = 0
         self.data["set"]["switch_on_soc_reached"] = 0

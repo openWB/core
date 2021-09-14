@@ -20,6 +20,8 @@ var topicsToSubscribe = [
 	["openWB/lp/8/boolChargePointConfigured", 0],
 	// housebattery Konfiguration
 	["openWB/housebattery/boolHouseBatteryConfigured", 0],
+	//optional topics
+	["openWB/optional/rfid/active", 1],
 	// global topics
 	["openWB/global/WHouseConsumption", 1],
 	["openWB/global/ChargeMode", 1],

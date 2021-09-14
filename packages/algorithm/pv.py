@@ -17,12 +17,10 @@ class pv():
 
     def __init__(self):
         self.data = {}
-        if "set" not in self.data:
-            self.data["set"] = {}
-        if "get" not in self.data:
-            self.data["get"] = {}
-        if "config" not in self.data:
-            self.data["config"] = {}
+        self.data["set"] = {}
+        self.data["get"] = {}
+        self.data["get"]["power"] = 0
+        self.data["config"] = {}
         self.data["set"]["overhang_power_left"] = 0
         self.data["set"]["available_power"] = 0
         self.data["config"]["configured"] = False       

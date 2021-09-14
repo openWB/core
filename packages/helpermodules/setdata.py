@@ -711,8 +711,8 @@ class setData():
                 self._validate_value(msg, float)
             elif re.search("^openWB/set/optional/et/config/provider$", msg.topic) != None:
                 self._validate_value(msg, "json")
-            elif re.search("^openWB/set/optional/rfid/mode$", msg.topic) != None:
-                self._validate_value(msg, int, [(1, 2)])
+            elif re.search("^openWB/set/optional/rfid/active$", msg.topic) != None:
+                self._validate_value(msg, int, [(0, 1)])
             elif re.search("^openWB/set/optional/rfid/match_ev_per_tag_only$", msg.topic) != None:
                 self._validate_value(msg, int, [(0, 1)])
             else:

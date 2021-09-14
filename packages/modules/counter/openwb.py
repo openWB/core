@@ -10,6 +10,7 @@ class module(set_values.set_values):
         super().__init__()
         self.ramdisk = ramdisk
         self.data = {}
+        self.data["simulation"] = {}
         self.counter_num = counter_num
 
     def read(self):
@@ -174,10 +175,6 @@ class module(set_values.set_values):
     def _read_lovato(self):
         """ liest die Werte des openWB EVU Kit Version 1 - Lovato.
 
-        Parameters
-        ----------
-        counter_num: int
-            Nummer des Zähles
         Return
         ------
         power_all: float
@@ -263,7 +260,7 @@ class module(set_values.set_values):
                 power_factor2 = 0
                 power_factor3 = 0
 
-            imported, exported = simcount.sim_count(power_all, topic="openWB/set/counter/"+str(counter_num)+"/", data=self.data["simulation"])
+            imported, exported = simcount.sim_count(power_all, topic="openWB/set/counter/"+str(self.counter_num)+"/", data=self.data["simulation"])
 
             values = [[voltage1, voltage2, voltage3],
                         [current1, current2, current3],
@@ -280,10 +277,6 @@ class module(set_values.set_values):
     def _read_sdm(self):
         """ liest die Werte des openWB EVU Kit Version 2 - SDM.
 
-        Parameters
-        ----------
-        counter_num: int
-            Nummer des Zähles
         Return
         ------
         power_all: float
@@ -369,7 +362,7 @@ class module(set_values.set_values):
                     power_all,
                     frequency]
             self.set(self.counter_num, values, self.ramdisk)
-            simcount.sim_count(power_all, topic="openWB/set/counter/"+str(counter_num)+"/", data=self.data["simulation"])
+            simcount.sim_count(power_all, topic="openWB/set/counter/"+str(self.counter_num)+"/", data=self.data["simulation"])
         except Exception as e:
             self.log_exception(e, self.ramdisk)
 
