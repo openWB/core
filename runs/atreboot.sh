@@ -238,10 +238,13 @@ fi
 # 	sudo cp /var/www/html/openWB/web/files/mosquitto.conf /etc/mosquitto/conf.d/openwb.conf
 # 	sudo service mosquitto reload
 # fi
-sudo cp /var/www/html/openWB/data/config/mosquitto_local.conf /etc/mosquitto/conf.d/openwb.conf
+#sudo cp /var/www/html/openWB/web/files/mosquitto.conf /etc/mosquitto/conf.d/openwb.conf
+
+sudo cp /var/www/html/openWB/data/config/mosquitto_local.conf /etc/mosquitto/conf.d/openwb_local.conf
+sudo cp /var/www/html/openWB/data/config/mosquitto_public.conf /etc/mosquitto/conf.d/openwb_public.conf
 sudo service mosquitto reload
-sleep 3
-mosquitto -c /var/www/html/openWB/data/config/mosquitto_public.conf -d
+
+
 # check for other dependencies
 echo "packages 2..."
 if python3 -c "import paho.mqtt.publish as publish" &> /dev/null; then
