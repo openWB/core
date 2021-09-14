@@ -50,12 +50,10 @@ class ev():
                 self.ev_template = None
                 self.charge_template = None
                 self.ev_num = index
-                if "set" not in self.data:
-                    self.data["set"] = {}
-                if "get" not in self.data:
-                    self.data["get"] = {}
-                if "control_parameter" not in self.data:
-                    self.data["control_parameter"] = {}
+                self.data["set"] = {}
+                self.data["get"] = {}
+                self.data["get"]["range_charged"] = 0
+                self.data["control_parameter"] = {}
                 self.data["control_parameter"]["required_current"] = 0 
                 self.data["control_parameter"]["phases"] = 0 
                 self.data["control_parameter"]["prio"] = False

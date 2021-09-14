@@ -458,13 +458,12 @@ def get_difference(timestamp_begin, timestamp_end):
     ------
     diff: int
         Differenz in Sekunden
-        Wenn das Ende vor dem Beginn liegt, ist das Ergebnis negativ.
     """
     try:
         begin = datetime.datetime.strptime(timestamp_begin, "%m/%d/%Y, %H:%M:%S")
         end = datetime.datetime.strptime(timestamp_end, "%m/%d/%Y, %H:%M:%S")
         diff = (begin - end)
-        return diff.to_secondes()
+        return diff.total_seconds()
     except Exception as e:
         log.exception_logging(e)
         return 0

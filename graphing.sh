@@ -38,12 +38,12 @@
 # 		echo $verbraucher2_watt >> /var/www/html/openWB/ramdisk/verbraucher2-live.graph
 # 	fi
 
-# 	if [[ $livegraph =~ $re ]] ; then
-# 		livegraph=$((livegraph * 6 ))
-# 		if ! [[ $livegraph =~ $re ]] ; then
-# 			livegraph="180"
-# 		fi
-# 	fi
+	if [[ $livegraph =~ $re ]] ; then
+		livegraph=$((livegraph * 6 ))
+		if ! [[ $livegraph =~ $re ]] ; then
+			livegraph="180"
+		fi
+	fi
 
 # 	# JSON graphing
 # 	# begin JSON
@@ -73,8 +73,8 @@
 
 # 	dataline="$dataline}"
 # 	printf "$dataline\n" >> /var/www/html/openWB/ramdisk/all-live.json
-# 	echo "$(tail -$livegraph /var/www/html/openWB/ramdisk/all-live.json)" > /var/www/html/openWB/ramdisk/all-live.json
-# 	mosquitto_pub -t openWB/graph/alllivevaluesJson -r -m "$(cat /var/www/html/openWB/ramdisk/all-live.json | tail -n 50)" &
+	echo "$(tail -$livegraph /var/www/html/openWB/data/graph/all_live.json)" > /var/www/html/openWB/data/graph/all_live.json
+	mosquitto_pub -t openWB/graph/alllivevaluesJson -r -m "$(cat /var/www/html/openWB/data/graph/all_live.json | tail -n 50)" &
 # 	mosquitto_pub -t openWB/graph/lastlivevaluesJson -r -m "$dataline" &
 # 	mosquitto_pub -t openWB/system/lastlivevaluesJson -r -m "$dataline" &
 	mosquitto_pub -t openWB/graph/alllivevaluesJson1 -r -m "$(< /var/www/html/openWB/data/graph/all_live.json tail -n +"0" | head -n "$((50 - 0))")" &
