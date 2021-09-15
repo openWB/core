@@ -74,10 +74,10 @@
 # 	dataline="$dataline}"
 # 	printf "$dataline\n" >> /var/www/html/openWB/ramdisk/all-live.json
 	echo "$(tail -$livegraph /var/www/html/openWB/data/graph/all_live.json)" > /var/www/html/openWB/data/graph/all_live.json
-	mosquitto_pub -t openWB/graph/alllivevaluesJson -r -m "$(cat /var/www/html/openWB/data/graph/all_live.json | tail -n 50)" &
+	mosquitto_pub -p 1886 -t openWB/graph/alllivevaluesJson -r -m "$(cat /var/www/html/openWB/data/graph/all_live.json | tail -n 50)" &
 # 	mosquitto_pub -t openWB/graph/lastlivevaluesJson -r -m "$dataline" &
 # 	mosquitto_pub -t openWB/system/lastlivevaluesJson -r -m "$dataline" &
-	mosquitto_pub -t openWB/graph/alllivevaluesJson1 -r -m "$(< /var/www/html/openWB/data/graph/all_live.json tail -n +"0" | head -n "$((50 - 0))")" &
+	mosquitto_pub -p 1886 -t openWB/graph/alllivevaluesJson1 -r -m "$(< /var/www/html/openWB/data/graph/all_live.json tail -n +"0" | head -n "$((50 - 0))")" &
 	all2livevalues=$(< ramdisk/all-live.json tail -n +"50" | head -n "$((100 - 50))")
 	all3livevalues="$(< ramdisk/all-live.json tail -n +"100" | head -n "$((150 - 100))")"
 	all4livevalues="$(< ramdisk/all-live.json tail -n +"150" | head -n "$((200 - 150))")"
@@ -93,21 +93,21 @@
 	all14livevalues="$(< ramdisk/all-live.json tail -n +"650" | head -n "$((700 - 650))")"
 	all15livevalues="$(< ramdisk/all-live.json tail -n +"700" | head -n "$((750 - 700))")"
 	all16livevalues="$(< ramdisk/all-live.json tail -n +"750" | head -n "$((800 - 750))")"
-	mosquitto_pub -t openWB/graph/alllivevaluesJson2 -r -m "$([ ${#all2livevalues} -ge 10 ] && echo "$all2livevalues" || echo "-")" &
-	mosquitto_pub -t openWB/graph/alllivevaluesJson3 -r -m "$([ ${#all3livevalues} -ge 10 ] && echo "$all3livevalues" || echo "-")" &
-	mosquitto_pub -t openWB/graph/alllivevaluesJson4 -r -m "$([ ${#all4livevalues} -ge 10 ] && echo "$all4livevalues" || echo "-")" &
-	mosquitto_pub -t openWB/graph/alllivevaluesJson5 -r -m "$([ ${#all5livevalues} -ge 10 ] && echo "$all5livevalues" || echo "-")" &
-	mosquitto_pub -t openWB/graph/alllivevaluesJson6 -r -m "$([ ${#all6livevalues} -ge 10 ] && echo "$all6livevalues" || echo "-")" &
-	mosquitto_pub -t openWB/graph/alllivevaluesJson7 -r -m "$([ ${#all7livevalues} -ge 10 ] && echo "$all7livevalues" || echo "-")" &
-	mosquitto_pub -t openWB/graph/alllivevaluesJson8 -r -m "$([ ${#all8livevalues} -ge 10 ] && echo "$all8livevalues" || echo "-")" &
-	mosquitto_pub -t openWB/graph/alllivevaluesJson9 -r -m "$([ ${#all9livevalues} -ge 10 ] && echo "$all9livevalues" || echo "-")" &
-	mosquitto_pub -t openWB/graph/alllivevaluesJson10 -r -m "$([ ${#all10livevalues} -ge 10 ] && echo "$all10livevalues" || echo "-")" &
-	mosquitto_pub -t openWB/graph/alllivevaluesJson11 -r -m "$([ ${#all11livevalues} -ge 10 ] && echo "$all11livevalues" || echo "-")" &
-	mosquitto_pub -t openWB/graph/alllivevaluesJson12 -r -m "$([ ${#all12livevalues} -ge 10 ] && echo "$all12livevalues" || echo "-")" &
-	mosquitto_pub -t openWB/graph/alllivevaluesJson13 -r -m "$([ ${#all13livevalues} -ge 10 ] && echo "$all13livevalues" || echo "-")" &
-	mosquitto_pub -t openWB/graph/alllivevaluesJson14 -r -m "$([ ${#all14livevalues} -ge 10 ] && echo "$all14livevalues" || echo "-")" &
-	mosquitto_pub -t openWB/graph/alllivevaluesJson15 -r -m "$([ ${#all15livevalues} -ge 10 ] && echo "$all15livevalues" || echo "-")" &
-	mosquitto_pub -t openWB/graph/alllivevaluesJson16 -r -m "$([ ${#all16livevalues} -ge 10 ] && echo "$all16livevalues" || echo "-")" &
+	mosquitto_pub -p 1886 -t openWB/graph/alllivevaluesJson2 -r -m "$([ ${#all2livevalues} -ge 10 ] && echo "$all2livevalues" || echo "-")" &
+	mosquitto_pub -p 1886 -t openWB/graph/alllivevaluesJson3 -r -m "$([ ${#all3livevalues} -ge 10 ] && echo "$all3livevalues" || echo "-")" &
+	mosquitto_pub -p 1886 -t openWB/graph/alllivevaluesJson4 -r -m "$([ ${#all4livevalues} -ge 10 ] && echo "$all4livevalues" || echo "-")" &
+	mosquitto_pub -p 1886 -t openWB/graph/alllivevaluesJson5 -r -m "$([ ${#all5livevalues} -ge 10 ] && echo "$all5livevalues" || echo "-")" &
+	mosquitto_pub -p 1886 -t openWB/graph/alllivevaluesJson6 -r -m "$([ ${#all6livevalues} -ge 10 ] && echo "$all6livevalues" || echo "-")" &
+	mosquitto_pub -p 1886 -t openWB/graph/alllivevaluesJson7 -r -m "$([ ${#all7livevalues} -ge 10 ] && echo "$all7livevalues" || echo "-")" &
+	mosquitto_pub -p 1886 -t openWB/graph/alllivevaluesJson8 -r -m "$([ ${#all8livevalues} -ge 10 ] && echo "$all8livevalues" || echo "-")" &
+	mosquitto_pub -p 1886 -t openWB/graph/alllivevaluesJson9 -r -m "$([ ${#all9livevalues} -ge 10 ] && echo "$all9livevalues" || echo "-")" &
+	mosquitto_pub -p 1886 -t openWB/graph/alllivevaluesJson10 -r -m "$([ ${#all10livevalues} -ge 10 ] && echo "$all10livevalues" || echo "-")" &
+	mosquitto_pub -p 1886 -t openWB/graph/alllivevaluesJson11 -r -m "$([ ${#all11livevalues} -ge 10 ] && echo "$all11livevalues" || echo "-")" &
+	mosquitto_pub -p 1886 -t openWB/graph/alllivevaluesJson12 -r -m "$([ ${#all12livevalues} -ge 10 ] && echo "$all12livevalues" || echo "-")" &
+	mosquitto_pub -p 1886 -t openWB/graph/alllivevaluesJson13 -r -m "$([ ${#all13livevalues} -ge 10 ] && echo "$all13livevalues" || echo "-")" &
+	mosquitto_pub -p 1886 -t openWB/graph/alllivevaluesJson14 -r -m "$([ ${#all14livevalues} -ge 10 ] && echo "$all14livevalues" || echo "-")" &
+	mosquitto_pub -p 1886 -t openWB/graph/alllivevaluesJson15 -r -m "$([ ${#all15livevalues} -ge 10 ] && echo "$all15livevalues" || echo "-")" &
+	mosquitto_pub -p 1886 -t openWB/graph/alllivevaluesJson16 -r -m "$([ ${#all16livevalues} -ge 10 ] && echo "$all16livevalues" || echo "-")" &
 # 	# end JSON
 
 # 	# csv graphing

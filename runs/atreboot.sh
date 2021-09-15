@@ -233,17 +233,27 @@ if [ ! -f /etc/mosquitto/mosquitto.conf ]; then
 fi
 
 # check for mosquitto configuration
-# if [ ! -f /etc/mosquitto/conf.d/openwb.conf ] || ! sudo grep -Fq "persistent_client_expiration" /etc/mosquitto/mosquitto.conf; then
-# 	echo "updating mosquitto config file"
-# 	sudo cp /var/www/html/openWB/web/files/mosquitto.conf /etc/mosquitto/conf.d/openwb.conf
-# 	sudo service mosquitto reload
-# fi
-#sudo cp /var/www/html/openWB/web/files/mosquitto.conf /etc/mosquitto/conf.d/openwb.conf
+if [ ! -f /etc/mosquitto/conf.d/openwb.conf ] || ! sudo grep -Fq "persistent_client_expiration" /etc/mosquitto/mosquitto.conf; then
+	echo "updating mosquitto config file"
+	sudo cp /var/www/html/openWB/data/config/openwb.conf /etc/mosquitto/conf.d/openwb.conf
+	sudo service mosquitto reload
+fi
 
-sudo cp /var/www/html/openWB/data/config/mosquitto_local.conf /etc/mosquitto/conf.d/openwb_local.conf
-sudo cp /var/www/html/openWB/data/config/mosquitto_public.conf /etc/mosquitto/conf.d/openwb_public.conf
-sudo service mosquitto reload
+#check for mosquitto_local instance
+if [ ! -f /etc/mosquitto/mosquitto_local.conf ]; then
+	echo "setting up mosquitto local instance"
+	sudo install -d -m 0755 -o root -g root /etc/mosquitto/conf_local.d/
+	sudo install -d -m 0755 -o mosquitto -g root /var/lib/mosquitto_local
+	sudo cp -a /var/www/html/openWB/data/config/mosquitto_local.conf /etc/mosquitto/mosquitto_local.conf
+	sudo cp -a /var/www/html/openWB/data/config/openwb_local.conf /etc/mosquitto/conf_local.d/
 
+	sudo cp /var/www/html/openWB/data/config/mosquitto_local_init /etc/init.d/mosquitto_local
+	sudo chown root.root /etc/init.d/mosquitto_local
+	sudo chmod 755 /etc/init.d/mosquitto_local
+
+	sudo systemctl daemon-reload
+fi
+sudo service mosquitto_local start
 
 # check for other dependencies
 echo "packages 2..."

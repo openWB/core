@@ -99,7 +99,6 @@ class prepare():
                             if cp.data["set"]["log"]["counter_at_plugtime"] == 0 or cp.data["set"]["log"]["counter_at_plugtime"] == cp.data["get"]["counter"]:
                                 cp.data["set"]["charging_ev"] = vehicle
                                 pub.pub("openWB/set/chargepoint/"+str(cp.cp_num)+"/set/charging_ev", vehicle)
-                                charging_ev.ev_template.data = charging_ev.data["set"]["ev_template"]
                                 cp.data["set"]["charging_ev_data"] = charging_ev
                                 pub.pub("openWB/set/chargepoint/"+str(cp.cp_num)+"/set/change_ev_permitted", [True, ""])
                                 charging_ev.data["set"]["ev_template"] = charging_ev.ev_template.data
@@ -119,7 +118,7 @@ class prepare():
                                 log.message_debug_log("warning", "Das Fahrzeug darf nur geändert werden, wenn noch nicht geladen wurde.")
 
                         phases = cp.get_phases(charging_ev.charge_template.data["chargemode"]["selected"])
-                        state, message_ev, submode, required_current = charging_ev.get_required_current()
+                        state, message_ev, submode, required_current = charging_ev.get_required_current(cp.data["set"]["log"]["charged_since_mode_switch"])
                         self._pub_connected_vehicle(charging_ev, cp)
                         # Einhaltung des Minimal- und Maximalstroms prüfen
                         required_current = charging_ev.check_min_max_current(required_current, charging_ev.data["control_parameter"]["phases"])
@@ -187,7 +186,7 @@ class prepare():
             soc_config_obj = {"configured": vehicle.data["soc"]["config"]["configured"], 
                     "manual": vehicle.data["soc"]["config"]["manual"]}
             soc_obj = {"soc": vehicle.data["get"]["soc"],
-                    "range": vehicle.data["get"]["range_charged"],
+                    "range": chargepoint.data["set"]["log"]["range_charged"],
                     "range_unit": data.data.general_data["general"].data["range_unit"],
                     "timestamp": vehicle.data["get"]["soc_timestamp"],
                     "fault_stat": vehicle.data["soc"]["get"]["fault_state"],
