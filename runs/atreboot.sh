@@ -245,7 +245,6 @@ if [ ! -f /etc/mosquitto/mosquitto_local.conf ]; then
 	sudo install -d -m 0755 -o root -g root /etc/mosquitto/conf_local.d/
 	sudo install -d -m 0755 -o mosquitto -g root /var/lib/mosquitto_local
 	sudo cp -a /var/www/html/openWB/data/config/mosquitto_local.conf /etc/mosquitto/mosquitto_local.conf
-	#sudo cp -a /etc/mosquitto/conf.d/mqtt.conf /etc/mosquitto/conf_local.d/
 	sudo cp -a /var/www/html/openWB/data/config/openwb_local.conf /etc/mosquitto/conf_local.d/
 
 	sudo cp /var/www/html/openWB/data/config/mosquitto_local_init /etc/init.d/mosquitto_local
