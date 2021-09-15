@@ -497,6 +497,9 @@ class setData():
                 self._validate_value(msg, int, [(0, 1)])
             elif re.search("^openWB/set/chargepoint/template/[1-9][0-9]*/valid_tags$", msg.topic) != None:
                 self._validate_value(msg, str, collection=list)
+            elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/get/rfid$", msg.topic) != None:
+                ### isss Anpassung muss noch in die nightly
+                pub.pub(msg.topic, "")
             else:
                 log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
                 pub.pub(msg.topic, "")

@@ -82,9 +82,13 @@ class ev():
         except Exception as e:
             log.exception_logging(e)
 
-    def get_required_current(self):
+    def get_required_current(self, charged_since_mode_switch):
         """ ermittelt, ob und mit welchem Strom das EV geladen werden soll (unabhängig vom Lastmanagement)
 
+        Parameter
+        ---------
+        charged_since_mode_switch: float
+            seit dem letzten Lademodi-Wechsel geladene Energie.
         Return
         ------
         state: bool
@@ -107,7 +111,7 @@ class ev():
                 required_current, submode, message = self.charge_template.time_charging()
             if (required_current == 0) or (required_current == None):
                 if self.charge_template.data["chargemode"]["selected"] == "instant_charging":
-                    required_current, submode, message = self.charge_template.instant_charging(self.data["get"]["soc"], self.data["get"]["charged_since_mode_switch"])
+                    required_current, submode, message = self.charge_template.instant_charging(self.data["get"]["soc"], charged_since_mode_switch)
                 elif self.charge_template.data["chargemode"]["selected"] == "pv_charging":
                     required_current, submode, message = self.charge_template.pv_charging(self.data["get"]["soc"])
                 elif self.charge_template.data["chargemode"]["selected"] == "standby":

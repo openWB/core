@@ -237,28 +237,21 @@ class chargepoint():
                 self.data["set"]["energy_to_charge"] = 0
                 self.data["set"]["plug_time"] = "0"
                 self.data["set"]["rfid"] = 0
-                self.data["set"]["log"] = {}
-                self.data["set"]["log"]["charged_since_plugged_counter"] = 0
                 self.data["get"]["read_tag"] = {}
                 self.data["get"]["read_tag"]["tag"] = "0"
                 self.data["get"]["read_tag"]["timestamp"] = "0"
                 self.data["get"]["daily_yield"] = 0
 
                 # bestehende Logdaten auf dem Broker nicht zurücksetzen, daher nicht publishen
-                if "counter_at_plugtime" not in self.data["set"]["log"]:
-                    self.data["set"]["log"]["counter_at_plugtime"] = 0
-                if "timestamp_start_charging" not in self.data["set"]["log"]:
-                    self.data["set"]["log"]["timestamp_start_charging"] = "0"
-                if "counter_at_mode_switch" not in self.data["set"]["log"]:
-                    self.data["set"]["log"]["counter_at_mode_switch"] = 0
-                if "charged_since_mode_switch" not in self.data["set"]["log"]:
-                    self.data["set"]["log"]["charged_since_mode_switch"] = 0
-                if "range_charged" not in self.data["set"]["log"]:
-                    self.data["set"]["log"]["range_charged"] = 0
-                if "time_charged" not in self.data["set"]["log"]:
-                    self.data["set"]["log"]["time_charged"] = "00:00"
-                if "chargemode_log_entry" not in self.data["set"]["log"]:
-                    self.data["set"]["log"]["chargemode_log_entry"] = "_"
+                self.data["set"]["log"] = {}
+                self.data["set"]["log"]["counter_at_plugtime"] = 0
+                self.data["set"]["log"]["timestamp_start_charging"] = "0"
+                self.data["set"]["log"]["counter_at_mode_switch"] = 0
+                self.data["set"]["log"]["charged_since_mode_switch"] = 0
+                self.data["set"]["log"]["charged_since_plugged_counter"] = 0
+                self.data["set"]["log"]["range_charged"] = 0
+                self.data["set"]["log"]["time_charged"] = "00:00"
+                self.data["set"]["log"]["chargemode_log_entry"] = "_"
                 self.data["get"]["connected_vehicle"] = {}
                 self.data["get"]["connected_vehicle"]["soc_config"] = {}
                 self.data["get"]["connected_vehicle"]["soc"] = {}
@@ -564,7 +557,7 @@ class chargepoint():
                     self.data["get"]["state_str"] = message
                 return
             # Wenn noch kein Logeintrag erstellt wurde, wurde noch nicht geladen und die Phase kann noch umgeschaltet werden.
-            if charging_ev.ev_template.data["prevent_switch_stop"] == False or charging_ev.data["get"]["charged_since_plugged_counter"] == 0:
+            if charging_ev.ev_template.data["prevent_switch_stop"] == False or self.data["set"]["log"]["charged_since_plugged_counter"] == 0:
                 # Einmal muss die Anzahl der Phasen gesetzt werden.
                 if "phases_to_use" not in self.data["set"]:
                     pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/phases_to_use", charging_ev.data["control_parameter"]["phases"])
@@ -639,7 +632,7 @@ class chargepoint():
             log.message_debug_log("debug", "phases "+str(phases))
             if phases != charging_ev.data["control_parameter"]["phases"]:
                 # Wenn noch kein Logeintrag erstellt wurde, wurde noch nicht geladen und die Phase kann noch umgeschaltet werden.
-                if charging_ev.ev_template.data["prevent_switch_stop"] == False or charging_ev.data["get"]["charged_since_plugged_counter"] == 0:
+                if charging_ev.ev_template.data["prevent_switch_stop"] == False or self.data["set"]["log"]["charged_since_plugged_counter"] == 0:
                     charging_ev.data["control_parameter"]["phases"] = phases
                     pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/control_parameter/phases", phases)
                     return phases
@@ -779,7 +772,7 @@ class cpTemplate():
                             ev_num = assigned_ev
                         else:
                             ev_num = -1
-                            message = "Keine Ladung, da dem RFID-Tag kein EV-Profil zugeordnet werden kann."
+                            message = "Keine Ladung, da dem RFID-Tag "+str(rfid)+" kein EV-Profil zugeordnet werden kann."
                     else:
                         ev_num = vehicle
                 else:

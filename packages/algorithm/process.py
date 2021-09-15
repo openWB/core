@@ -61,7 +61,7 @@ class process():
 
             # Wenn bei einem EV, das keine Umschaltung verträgt, vor dem ersten Laden noch umgeschaltet wird, darf kein Strom gesetzt werden.
             if (charging_ev.ev_template.data["prevent_switch_stop"] == True and 
-                    charging_ev.data["get"]["charged_since_plugged_counter"] == 0 and 
+                    chargepoint.data["set"]["log"]["charged_since_plugged_counter"] == 0 and 
                     charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] != "0"):
                 current = 0
 

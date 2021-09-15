@@ -15,6 +15,7 @@ class general():
 
     def __init__(self):
         self.data={}
+        self.data["grid_protection_active"] = False
 
 
     def get_phases_chargemode(self, chargemode):

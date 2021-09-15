@@ -267,7 +267,7 @@ def pub_settings():
     pub.pub("openWB/set/general/chargemode_config/unbalanced_load", False)
     pub.pub("openWB/set/general/chargemode_config/unbalanced_load_limit", 18)
     pub.pub("openWB/set/general/chargemode_config/instant_charging/phases_to_use", 3)
-    # pub.pub("openWB/set/general/chargemode_config/pv_charging/bat_prio", 1)
+    pub.pub("openWB/set/general/chargemode_config/pv_charging/bat_prio", 1)
     pub.pub("openWB/set/bat/config/configured", False)
     pub.pub("openWB/set/general/chargemode_config/pv_charging/switch_on_soc", 60)
     pub.pub("openWB/set/general/chargemode_config/pv_charging/switch_off_soc", 40)
