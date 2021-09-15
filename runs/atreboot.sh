@@ -294,6 +294,11 @@ if python3 -c "import filelock" &> /dev/null; then
 	echo 'filelock installed...'
 else
 	sudo pip3 install filelock
+#Prepare for ipparser in Python
+if python3 -c "import ipparser" &> /dev/null; then
+	echo 'ipparser installed...'
+else
+	sudo pip3 install ipparser
 fi
 
 # update version
