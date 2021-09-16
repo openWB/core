@@ -1,8 +1,10 @@
 """Log-Modul, dass die KOnfiguration für die Log-Dateien und Funktionen zum Aufruf der einzelnen Handler enthält
 """
 
+from datetime import datetime, timezone
 import filelock
 import logging
+import os
 import pathlib
 import subprocess
 import traceback
@@ -136,3 +138,10 @@ def cleanup_logfiles():
         subprocess.run(["./packages/helpermodules/cleanup_log.sh", "/var/www/html/openWB/data/debug/debug.log"])
     with mqtt_lock.acquire(timeout=1):
         subprocess.run(["./packages/helpermodules/cleanup_log.sh", "/var/www/html/openWB/data/debug/mqtt.log"])
+
+def log_1_9(message):
+    """ Logging für 1.9
+    """
+    local_time = datetime.now(timezone.utc).astimezone()
+    myPid = str(os.getpid())
+    print(local_time.strftime(format = "%Y-%m-%d %H:%M:%S") + ": PID: "+ myPid +": " + message)

@@ -5,8 +5,12 @@ import os
 import sys
 import time
 
-if __name__ != "__main__":
-    from ..helpermodules import pub
+# for 1.9 compability
+from pathlib import Path
+import sys
+parentdir2 = str(Path(os.path.abspath(__file__)).parents[2])
+sys.path.insert(0, parentdir2)
+from helpermodules import pub
 
 
 def sim_count(present_power_all, topic="", data={}, ramdisk = False, pref = ""):
@@ -35,10 +39,10 @@ def sim_count(present_power_all, topic="", data={}, ramdisk = False, pref = ""):
             seconds1=float(f.read())
             f.close()
             f = open('/var/www/html/openWB/ramdisk/'+pref+'wh0', 'r')
-            watt1=int(f.read())
+            watt1=int(float(f.read()))
             f.close()
             f = open('/var/www/html/openWB/ramdisk/'+pref+'watt0pos', 'r')
-            wattposh=int(f.read())
+            wattposh=int(float(f.read()))
             f.close()
             f = open('/var/www/html/openWB/ramdisk/'+pref+'watt0neg', 'r')
             wattnegh=int(f.read())
