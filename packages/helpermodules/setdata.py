@@ -819,7 +819,8 @@ class setData():
             if re.search("^openWB/set/system/lastlivevaluesJson$", msg.topic) != None:
                 self._validate_value(msg, "json")
             else:
-                log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
+                # hier kommen auch noch alte Topics ohne json-Format an.
+                #log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
                 pub.pub(msg.topic, "")
         except Exception as e:
             log.exception_logging(e)
