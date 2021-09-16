@@ -47,8 +47,8 @@ def pub_graph_data():
     #     dataline="$dataline,\"load2-power\":$(convertTokW $verbraucher2_watt)"
     # fi
 
-    pub.pub("openWB/graph/lastlivevaluesJson", str(dataline))
-    pub.pub("openWB/system/lastlivevaluesJson", str(dataline))
+    pub.pub("openWB/set/graph/lastlivevaluesJson", str(dataline))
+    pub.pub("openWB/set/system/lastlivevaluesJson", str(dataline))
 
     pathlib.Path('./data/graph').mkdir(mode = 0o755, parents=True, exist_ok=True)
     try:

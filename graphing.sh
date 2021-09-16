@@ -78,21 +78,21 @@
 # 	mosquitto_pub -t openWB/graph/lastlivevaluesJson -r -m "$dataline" &
 # 	mosquitto_pub -t openWB/system/lastlivevaluesJson -r -m "$dataline" &
 	mosquitto_pub -p 1886 -t openWB/graph/alllivevaluesJson1 -r -m "$(< /var/www/html/openWB/data/graph/all_live.json tail -n +"0" | head -n "$((50 - 0))")" &
-	all2livevalues=$(< ramdisk/all-live.json tail -n +"50" | head -n "$((100 - 50))")
-	all3livevalues="$(< ramdisk/all-live.json tail -n +"100" | head -n "$((150 - 100))")"
-	all4livevalues="$(< ramdisk/all-live.json tail -n +"150" | head -n "$((200 - 150))")"
-	all5livevalues="$(< ramdisk/all-live.json tail -n +"200" | head -n "$((250 - 200))")"
-	all6livevalues="$(< ramdisk/all-live.json tail -n +"250" | head -n "$((300 - 250))")"
-	all7livevalues="$(< ramdisk/all-live.json tail -n +"300" | head -n "$((350 - 300))")"
-	all8livevalues="$(< ramdisk/all-live.json tail -n +"350" | head -n "$((400 - 350))")"
-	all9livevalues="$(< ramdisk/all-live.json tail -n +"400" | head -n "$((450 - 400))")"
-	all10livevalues="$(< ramdisk/all-live.json tail -n +"450" | head -n "$((500 - 450))")"
-	all11livevalues="$(< ramdisk/all-live.json tail -n +"500" | head -n "$((550 - 500))")"
-	all12livevalues="$(< ramdisk/all-live.json tail -n +"550" | head -n "$((600 - 550))")"
-	all13livevalues="$(< ramdisk/all-live.json tail -n +"600" | head -n "$((650 - 600))")"
-	all14livevalues="$(< ramdisk/all-live.json tail -n +"650" | head -n "$((700 - 650))")"
-	all15livevalues="$(< ramdisk/all-live.json tail -n +"700" | head -n "$((750 - 700))")"
-	all16livevalues="$(< ramdisk/all-live.json tail -n +"750" | head -n "$((800 - 750))")"
+	all2livevalues=$(< /var/www/html/openWB/data/graph/all_live.json tail -n +"50" | head -n "$((100 - 50))")
+	all3livevalues="$(< /var/www/html/openWB/data/graph/all_live.json tail -n +"100" | head -n "$((150 - 100))")"
+	all4livevalues="$(< /var/www/html/openWB/data/graph/all_live.json tail -n +"150" | head -n "$((200 - 150))")"
+	all5livevalues="$(< /var/www/html/openWB/data/graph/all_live.json tail -n +"200" | head -n "$((250 - 200))")"
+	all6livevalues="$(< /var/www/html/openWB/data/graph/all_live.json tail -n +"250" | head -n "$((300 - 250))")"
+	all7livevalues="$(< /var/www/html/openWB/data/graph/all_live.json tail -n +"300" | head -n "$((350 - 300))")"
+	all8livevalues="$(< /var/www/html/openWB/data/graph/all_live.json tail -n +"350" | head -n "$((400 - 350))")"
+	all9livevalues="$(< /var/www/html/openWB/data/graph/all_live.json tail -n +"400" | head -n "$((450 - 400))")"
+	all10livevalues="$(< /var/www/html/openWB/data/graph/all_live.json tail -n +"450" | head -n "$((500 - 450))")"
+	all11livevalues="$(< /var/www/html/openWB/data/graph/all_live.json tail -n +"500" | head -n "$((550 - 500))")"
+	all12livevalues="$(< /var/www/html/openWB/data/graph/all_live.json tail -n +"550" | head -n "$((600 - 550))")"
+	all13livevalues="$(< /var/www/html/openWB/data/graph/all_live.json tail -n +"600" | head -n "$((650 - 600))")"
+	all14livevalues="$(< /var/www/html/openWB/data/graph/all_live.json tail -n +"650" | head -n "$((700 - 650))")"
+	all15livevalues="$(< /var/www/html/openWB/data/graph/all_live.json tail -n +"700" | head -n "$((750 - 700))")"
+	all16livevalues="$(< /var/www/html/openWB/data/graph/all_live.json tail -n +"750" | head -n "$((800 - 750))")"
 	mosquitto_pub -p 1886 -t openWB/graph/alllivevaluesJson2 -r -m "$([ ${#all2livevalues} -ge 10 ] && echo "$all2livevalues" || echo "-")" &
 	mosquitto_pub -p 1886 -t openWB/graph/alllivevaluesJson3 -r -m "$([ ${#all3livevalues} -ge 10 ] && echo "$all3livevalues" || echo "-")" &
 	mosquitto_pub -p 1886 -t openWB/graph/alllivevaluesJson4 -r -m "$([ ${#all4livevalues} -ge 10 ] && echo "$all4livevalues" || echo "-")" &

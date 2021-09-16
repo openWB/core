@@ -67,23 +67,25 @@ class setData():
                 self.event_ev_template.wait(5)
             elif "openWB/set/vehicle/template/charge_template/" in msg.topic:
                 self.event_charge_template.wait(5)
-            self.process_vehicle_topic(client, userdata, msg)
+            self.process_vehicle_topic(msg)
         elif "openWB/set/chargepoint/" in msg.topic:
-            self.process_chargepoint_topic(client, userdata, msg)
+            self.process_chargepoint_topic(msg)
         elif "openWB/set/pv/" in msg.topic:
-            self.process_pv_topic(client, userdata, msg)
+            self.process_pv_topic(msg)
         elif "openWB/set/bat/" in msg.topic:
-            self.process_bat_topic(client, userdata, msg)
+            self.process_bat_topic(msg)
         elif "openWB/set/general/" in msg.topic:
-            self.process_general_topic(client, userdata, msg)
+            self.process_general_topic(msg)
         elif "openWB/set/optional/" in msg.topic:
-            self.process_optional_topic(client, userdata, msg)
+            self.process_optional_topic(msg)
         elif "openWB/set/counter/" in msg.topic:
-            self.process_counter_topic(client, userdata, msg)
+            self.process_counter_topic(msg)
         elif "openWB/set/log/" in msg.topic:
-            self.process_log_topic(client, userdata, msg)
-        elif "openWB/set/loadvarsdone" in msg.topic:
-            self._validate_value(msg, int, [(0, 1)])
+            self.process_log_topic(msg)
+        elif "openWB/set/graph/" in msg.topic:
+            self.process_graph_topic(msg)
+        elif "openWB/set/system/" in msg.topic:
+            self.process_system_topic(msg)
 
     def _validate_value(self, msg, data_type, ranges = None, collection = None, pub_json = False):
         """ prüft, ob der Wert vom angegebenen Typ ist.
@@ -273,15 +275,11 @@ class setData():
         except Exception as e:
             log.exception_logging(e)
  
-    def process_vehicle_topic(self, client, userdata, msg):
+    def process_vehicle_topic(self, msg):
         """ Handler für die EV-Topics
 
          Parameters
         ----------
-        client : (unused)
-            vorgegebener Parameter
-        userdata : (unused)
-            vorgegebener Parameter
         msg:
             enthält Topic und Payload
         """
@@ -405,15 +403,12 @@ class setData():
         except Exception as e:
             log.exception_logging(e)
 
-    def process_chargepoint_topic(self, client, userdata, msg):
+    def process_chargepoint_topic(self, msg):
         """ Handler für die Ladepunkt-Topics
 
          Parameters
         ----------
-        client : (unused)
-            vorgegebener Parameter
-        userdata : (unused)
-            vorgegebener Parameter
+
         msg:
             enthält Topic und Payload
         """
@@ -506,15 +501,12 @@ class setData():
         except Exception as e:
             log.exception_logging(e)
 
-    def process_pv_topic(self, client, userdata, msg):
+    def process_pv_topic(self, msg):
         """ Handler für die PV-Topics
 
          Parameters
         ----------
-        client : (unused)
-            vorgegebener Parameter
-        userdata : (unused)
-            vorgegebener Parameter
+
         msg:
             enthält Topic und Payload
         """
@@ -558,15 +550,12 @@ class setData():
         except Exception as e:
             log.exception_logging(e)
 
-    def process_bat_topic(self, client, userdata, msg):
+    def process_bat_topic(self, msg):
         """ Handler für die Hausspeicher-Topics
 
          Parameters
         ----------
-        client : (unused)
-            vorgegebener Parameter
-        userdata : (unused)
-            vorgegebener Parameter
+
         msg:
             enthält Topic und Payload
         """
@@ -607,15 +596,12 @@ class setData():
         except Exception as e:
             log.exception_logging(e)
 
-    def process_general_topic(self, client, userdata, msg):
+    def process_general_topic(self, msg):
         """ Handler für die Allgemeinen-Topics
 
          Parameters
         ----------
-        client : (unused)
-            vorgegebener Parameter
-        userdata : (unused)
-            vorgegebener Parameter
+
         msg:
             enthält Topic und Payload
         """
@@ -685,15 +671,12 @@ class setData():
         except Exception as e:
             log.exception_logging(e)
 
-    def process_optional_topic(self, client, userdata, msg):
+    def process_optional_topic(self, msg):
         """ Handler für die Optionalen-Topics
 
          Parameters
         ----------
-        client : (unused)
-            vorgegebener Parameter
-        userdata : (unused)
-            vorgegebener Parameter
+
         msg:
             enthält Topic und Payload
         """
@@ -724,15 +707,12 @@ class setData():
         except Exception as e:
             log.exception_logging(e)
 
-    def process_counter_topic(self, client, userdata, msg):
+    def process_counter_topic(self, msg):
         """ Handler für die Zähler-Topics
 
          Parameters
         ----------
-        client : (unused)
-            vorgegebener Parameter
-        userdata : (unused)
-            vorgegebener Parameter
+
         msg:
             enthält Topic und Payload
         """
@@ -790,15 +770,12 @@ class setData():
         except Exception as e:
             log.exception_logging(e)
 
-    def process_log_topic(self, client, userdata, msg):
+    def process_log_topic(self, msg):
         """Handler für die Log-Topics
 
          Parameters
         ----------
-        client : (unused)
-            vorgegebener Parameter
-        userdata : (unused)
-            vorgegebener Parameter
+
         msg:
             enthält Topic und Payload
         """
@@ -812,3 +789,37 @@ class setData():
         except Exception as e:
             log.exception_logging(e)
 
+    def process_graph_topic(self, msg):
+        """Handler für die Graph-Topics
+
+         Parameters
+        ----------
+        msg:
+            enthält Topic und Payload
+        """
+        try:
+            if (re.search("^openWB/set/graph/alllivevaluesJson[0-9]*$", msg.topic) != None or
+                    re.search("^openWB/set/graph/lastlivevaluesJson$", msg.topic) != None):
+                self._validate_value(msg, "json")
+            else:
+                log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
+                pub.pub(msg.topic, "")
+        except Exception as e:
+            log.exception_logging(e)
+
+    def process_system_topic(self, msg):
+        """Handler für die System-Topics
+
+         Parameters
+        ----------
+        msg:
+            enthält Topic und Payload
+        """
+        try:
+            if re.search("^openWB/set/system/lastlivevaluesJson$", msg.topic) != None:
+                self._validate_value(msg, "json")
+            else:
+                log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
+                pub.pub(msg.topic, "")
+        except Exception as e:
+            log.exception_logging(e)

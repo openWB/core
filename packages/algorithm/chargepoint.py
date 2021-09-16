@@ -488,7 +488,7 @@ class chargepoint():
                     # Standardprofil nach Abstecken laden
                     if data.data.ev_data["ev"+str(self.data["set"]["charging_ev_prev"])].charge_template.data["load_default"] == True:
                         self.data["config"]["ev"] = 0
-                        pub.pub("openWB/set/chargepoint/template/"+str(self.data["config"]["template"])+"/ev", 0)
+                        pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/config/ev", 0)
                     # Ladepunkt nach Abstecken sperren
                     if data.data.ev_data["ev"+str(self.data["set"]["charging_ev_prev"])].charge_template.data["disable_after_unplug"] == True:
                         self.data["set"]["manual_lock"] = True
@@ -569,7 +569,7 @@ class chargepoint():
                         selected = self.data["config"]["connection_module"]["selected"]
                         config = self.data["config"]["connection_module"]["config"][selected]
                         charge_state = self.data["get"]["charge_state"]
-                        #phase_switch.thread_phase_switch(self.cp_num, selected, config, self.data["set"]["phases_to_use"], charging_ev.ev_template.data["phase_switch_pause"], charge_state)
+                        phase_switch.thread_phase_switch(self.cp_num, selected, config, charging_ev.data["control_parameter"]["phases"], charging_ev.ev_template.data["phase_switch_pause"], charge_state)
                         log.message_debug_log("debug", "start phase switch phases_to_use "+str(self.data["set"]["phases_to_use"])+"control_parameter phases "+str(charging_ev.data["control_parameter"]["phases"]))
                         # 1 -> 3
                         if charging_ev.data["control_parameter"]["phases"] == 3:
@@ -640,6 +640,7 @@ class chargepoint():
                     log.message_debug_log("info", "An Ladepunkt "+str(self.cp_num)+" darf keine Phasenumschaltung durchgeführt werden.")
                     pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/control_parameter/phases", self.data["get"]["phases_in_use"])
                     return self.data["get"]["phases_in_use"]
+            return phases
         except Exception as e:
             log.exception_logging(e)
 

@@ -250,9 +250,10 @@ if [ ! -f /etc/mosquitto/mosquitto_local.conf ]; then
 	sudo cp /var/www/html/openWB/data/config/mosquitto_local_init /etc/init.d/mosquitto_local
 	sudo chown root.root /etc/init.d/mosquitto_local
 	sudo chmod 755 /etc/init.d/mosquitto_local
-
-	sudo systemctl daemon-reload
+else
+	sudo cp -a /var/www/html/openWB/data/config/openwb_local.conf /etc/mosquitto/conf_local.d/
 fi
+sudo systemctl daemon-reload
 sudo service mosquitto_local start
 
 # check for other dependencies
@@ -294,6 +295,7 @@ if python3 -c "import filelock" &> /dev/null; then
 	echo 'filelock installed...'
 else
 	sudo pip3 install filelock
+fi
 #Prepare for ipparser in Python
 if python3 -c "import ipparser" &> /dev/null; then
 	echo 'ipparser installed...'
