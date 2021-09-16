@@ -2,46 +2,46 @@
 echo "atreboot.sh started"
 (sleep 600; sudo kill $(ps aux |grep '[a]treboot.sh' | awk '{print $2}'); echo 0 > /var/www/html/openWB/ramdisk/bootinprogress; echo 0 > /var/www/html/openWB/ramdisk/updateinprogress) &
 
-# read openwb.conf
-echo "loading config"
-. /var/www/html/openWB/loadconfig.sh
+# # read openwb.conf
+# echo "loading config"
+# . /var/www/html/openWB/loadconfig.sh
 
-# load functions to init ramdisk and update config
-# no code will run here, functions need to be called
-. /var/www/html/openWB/runs/initRamdisk.sh
-. /var/www/html/openWB/runs/updateConfig.sh
+# # load functions to init ramdisk and update config
+# # no code will run here, functions need to be called
+# . /var/www/html/openWB/runs/initRamdisk.sh
+# . /var/www/html/openWB/runs/updateConfig.sh
 
-sleep 5
-mkdir -p /var/www/html/openWB/web/backup
-touch /var/www/html/openWB/web/backup/.donotdelete
-sudo chown -R www-data:www-data /var/www/html/openWB/web/backup
-sudo chown -R www-data:www-data /var/www/html/openWB/web/tools/upload
-sudo chmod 777 /var/www/html/openWB/openwb.conf
-sudo chmod 777 /var/www/html/openWB/smarthome.ini
-sudo chmod 777 /var/www/html/openWB/ramdisk
-sudo chmod 777 /var/www/html/openWB/ramdisk/
-sudo chmod 777 /var/www/html/openWB/web/files/*
-sudo chmod -R +x /var/www/html/openWB/modules/*
+# sleep 5
+# mkdir -p /var/www/html/openWB/web/backup
+# touch /var/www/html/openWB/web/backup/.donotdelete
+# sudo chown -R www-data:www-data /var/www/html/openWB/web/backup
+# sudo chown -R www-data:www-data /var/www/html/openWB/web/tools/upload
+# sudo chmod 777 /var/www/html/openWB/openwb.conf
+# sudo chmod 777 /var/www/html/openWB/smarthome.ini
+# sudo chmod 777 /var/www/html/openWB/ramdisk
+# sudo chmod 777 /var/www/html/openWB/ramdisk/
+# sudo chmod 777 /var/www/html/openWB/web/files/*
+# sudo chmod -R +x /var/www/html/openWB/modules/*
 
-sudo chmod -R 777 /var/www/html/openWB/modules/soc_i3
-sudo chmod -R 777 /var/www/html/openWB/modules/soc_eq
-sudo chmod -R 777 /var/www/html/openWB/modules/soc_tesla
+# sudo chmod -R 777 /var/www/html/openWB/modules/soc_i3
+# sudo chmod -R 777 /var/www/html/openWB/modules/soc_eq
+# sudo chmod -R 777 /var/www/html/openWB/modules/soc_tesla
 
-sudo chmod 777 /var/www/html/openWB/web/files/*
-sudo chmod -R +x /var/www/html/openWB/modules/*
+# sudo chmod 777 /var/www/html/openWB/web/files/*
+# sudo chmod -R +x /var/www/html/openWB/modules/*
 
-mkdir -p /var/www/html/openWB/web/logging/data/daily
-mkdir -p /var/www/html/openWB/web/logging/data/monthly
-mkdir -p /var/www/html/openWB/web/logging/data/ladelog
-mkdir -p /var/www/html/openWB/web/logging/data/v001
-sudo chmod -R 777 /var/www/html/openWB/web/logging/data/
+# mkdir -p /var/www/html/openWB/web/logging/data/daily
+# mkdir -p /var/www/html/openWB/web/logging/data/monthly
+# mkdir -p /var/www/html/openWB/web/logging/data/ladelog
+# mkdir -p /var/www/html/openWB/web/logging/data/v001
+# sudo chmod -R 777 /var/www/html/openWB/web/logging/data/
 
-# update openwb.conf
-updateConfig
-# reload our changed openwb.conf
-. /var/www/html/openWB/loadconfig.sh
-# now setup all files in ramdisk
-initRamdisk
+# # update openwb.conf
+# updateConfig
+# # reload our changed openwb.conf
+# . /var/www/html/openWB/loadconfig.sh
+# # now setup all files in ramdisk
+# initRamdisk
 
 # standard socket - activated after reboot due to RASPI init defaults so we need to disable it as soon as we can
 if [[ $standardSocketInstalled == "1" ]]; then
@@ -56,45 +56,45 @@ if (( u1p3paktiv == 1 )); then
 	sudo python /var/www/html/openWB/runs/triginit.py
 fi
 
-# check if buttons are configured and start daemon
-if (( ladetaster == 1 )); then
-	echo "pushbuttons..."
-	if ! [ -x "$(command -v nmcli)" ]; then
-		if ps ax |grep -v grep |grep "python /var/www/html/openWB/runs/ladetaster.py" > /dev/null
-		then
-			echo "test" > /dev/null
-		else
-			sudo python /var/www/html/openWB/runs/ladetaster.py &
-		fi
-	fi
-fi
+# # check if buttons are configured and start daemon
+# if (( ladetaster == 1 )); then
+# 	echo "pushbuttons..."
+# 	if ! [ -x "$(command -v nmcli)" ]; then
+# 		if ps ax |grep -v grep |grep "python /var/www/html/openWB/runs/ladetaster.py" > /dev/null
+# 		then
+# 			echo "test" > /dev/null
+# 		else
+# 			sudo python /var/www/html/openWB/runs/ladetaster.py &
+# 		fi
+# 	fi
+# fi
 
-# check for rse and start daemon
-if (( rseenabled == 1 )); then
-	echo "rse..."
-	if ! [ -x "$(command -v nmcli)" ]; then
-		if ps ax |grep -v grep |grep "python /var/www/html/openWB/runs/rse.py" > /dev/null
-		then
-			echo "test" > /dev/null
-		else
-			sudo python /var/www/html/openWB/runs/rse.py &
-		fi
-	fi
-fi
+# # check for rse and start daemon
+# if (( rseenabled == 1 )); then
+# 	echo "rse..."
+# 	if ! [ -x "$(command -v nmcli)" ]; then
+# 		if ps ax |grep -v grep |grep "python /var/www/html/openWB/runs/rse.py" > /dev/null
+# 		then
+# 			echo "test" > /dev/null
+# 		else
+# 			sudo python /var/www/html/openWB/runs/rse.py &
+# 		fi
+# 	fi
+# fi
 
 # check if rfid is configured and start daemons to listen on input devices
-if (( rfidakt == 1 )); then
-	echo "rfid 1..."
-	sudo kill $(ps aux |grep '[r]eadrfid.py' | awk '{print $2}')
-	(sleep 10; sudo python /var/www/html/openWB/runs/readrfid.py $displayaktiv) &
-	(sleep 10; sudo python /var/www/html/openWB/runs/readrfid2.py $displayaktiv) &
-fi
-if (( rfidakt == 2 )); then
-	echo "rfid 2..."
-	sudo kill $(ps aux |grep '[r]eadrfid.py' | awk '{print $2}')
-	(sleep 10; sudo python /var/www/html/openWB/runs/readrfid.py $displayaktiv) &
-	(sleep 10; sudo python /var/www/html/openWB/runs/readrfid2.py $displayaktiv) &
-fi
+# if (( rfidakt == 1 )); then
+# 	echo "rfid 1..."
+# 	sudo kill $(ps aux |grep '[r]eadrfid.py' | awk '{print $2}')
+# 	(sleep 10; sudo python /var/www/html/openWB/runs/readrfid.py $displayaktiv) &
+# 	(sleep 10; sudo python /var/www/html/openWB/runs/readrfid2.py $displayaktiv) &
+# fi
+# if (( rfidakt == 2 )); then
+# 	echo "rfid 2..."
+# 	sudo kill $(ps aux |grep '[r]eadrfid.py' | awk '{print $2}')
+# 	(sleep 10; sudo python /var/www/html/openWB/runs/readrfid.py $displayaktiv) &
+# 	(sleep 10; sudo python /var/www/html/openWB/runs/readrfid2.py $displayaktiv) &
+# fi
 
 # check if tesla wall connector is configured and start daemon
 if [[ $evsecon == twcmanager ]]; then
@@ -117,21 +117,21 @@ if (( displayaktiv == 1 )); then
 	fi
 fi
 
-# restart smarthomehandler
-echo "smarthome handler..."
-if ps ax |grep -v grep |grep "python3 /var/www/html/openWB/runs/smarthomehandler.py" > /dev/null
-then
-	sudo kill $(ps aux |grep '[s]marthomehandler.py' | awk '{print $2}')
-fi
-python3 /var/www/html/openWB/runs/smarthomehandler.py >> /var/www/html/openWB/ramdisk/smarthome.log 2>&1 &
+# # restart smarthomehandler
+# echo "smarthome handler..."
+# if ps ax |grep -v grep |grep "python3 /var/www/html/openWB/runs/smarthomehandler.py" > /dev/null
+# then
+# 	sudo kill $(ps aux |grep '[s]marthomehandler.py' | awk '{print $2}')
+# fi
+# python3 /var/www/html/openWB/runs/smarthomehandler.py >> /var/www/html/openWB/ramdisk/smarthome.log 2>&1 &
 
 # restart mqttsub handler
-echo "mqtt handler..."
-if ps ax |grep -v grep |grep "python3 /var/www/html/openWB/runs/mqttsub.py" > /dev/null
-then
-	sudo kill $(ps aux |grep '[m]qttsub.py' | awk '{print $2}')
-fi
-python3 /var/www/html/openWB/runs/mqttsub.py &
+# echo "mqtt handler..."
+# if ps ax |grep -v grep |grep "python3 /var/www/html/openWB/runs/mqttsub.py" > /dev/null
+# then
+# 	sudo kill $(ps aux |grep '[m]qttsub.py' | awk '{print $2}')
+# fi
+# python3 /var/www/html/openWB/runs/mqttsub.py &
 
 # check crontab for user pi
 echo "crontab 1..."
@@ -309,11 +309,11 @@ uuid=$(</sys/class/net/eth0/address)
 owbv=$(</var/www/html/openWB/web/version)
 curl -d "update="$releasetrain$uuid"vers"$owbv"" -H "Content-Type: application/x-www-form-urlencoded" -X POST https://openwb.de/tools/update.php
 
-# all done, remove warning in display
-echo "clear warning..."
-echo "" > /var/www/html/openWB/ramdisk/lastregelungaktiv
-echo "" > /var/www/html/openWB/ramdisk/mqttlastregelungaktiv
-chmod 777 /var/www/html/openWB/ramdisk/mqttlastregelungaktiv
+# # all done, remove warning in display
+# echo "clear warning..."
+# echo "" > /var/www/html/openWB/ramdisk/lastregelungaktiv
+# echo "" > /var/www/html/openWB/ramdisk/mqttlastregelungaktiv
+# chmod 777 /var/www/html/openWB/ramdisk/mqttlastregelungaktiv
 
 # check for slave config and start handler
 if (( isss == 1 )); then
@@ -347,15 +347,15 @@ if [[ "$evsecon" == "buchse" ]]  && [[ "$isss" == "0" ]]; then
 	python3 /var/www/html/openWB/runs/buchse.py &
 fi
 
-# check for rfid mode 2 and start handler
-if [[ "$rfidakt" == "2" ]]; then
-	echo "rfid 2 handler..."
-	if ps ax |grep -v grep |grep "python3 /var/www/html/openWB/runs/rfid.py" > /dev/null
-	then
-		sudo kill $(ps aux |grep '[r]fid.py' | awk '{print $2}')
-	fi
-	python3 /var/www/html/openWB/runs/rfid.py &
-fi
+# # check for rfid mode 2 and start handler
+# if [[ "$rfidakt" == "2" ]]; then
+# 	echo "rfid 2 handler..."
+# 	if ps ax |grep -v grep |grep "python3 /var/www/html/openWB/runs/rfid.py" > /dev/null
+# 	then
+# 		sudo kill $(ps aux |grep '[r]fid.py' | awk '{print $2}')
+# 	fi
+# 	python3 /var/www/html/openWB/runs/rfid.py &
+# fi
 
 # update display configuration
 echo "display update..."
@@ -376,46 +376,46 @@ curl -s https://raw.githubusercontent.com/snaptec/openWB/stable/web/version > /v
 # update our local version
 sudo git -C /var/www/html/openWB show --pretty='format:%ci [%h]' | head -n1 > /var/www/html/openWB/web/lastcommit
 
-# update broker
-echo "update broker..."
-for i in $(seq 1 9);
-do
-	configured=$(timeout 1 mosquitto_sub -C 1 -t openWB/config/get/SmartHome/Devices/$i/device_configured)
-	if ! [[ "$configured" == 0 || "$configured" == 1 ]]; then
-		mosquitto_pub -r -t openWB/config/get/SmartHome/Devices/$i/device_configured -m "0"
-	fi
-done
-mosquitto_pub -r -t openWB/graph/boolDisplayLiveGraph -m "1"
-mosquitto_pub -t openWB/global/strLastmanagementActive -r -m ""
-mosquitto_pub -t openWB/lp/1/W -r -m "0"
-mosquitto_pub -t openWB/lp/2/W -r -m "0"
-mosquitto_pub -t openWB/lp/3/W -r -m "0"
-mosquitto_pub -t openWB/lp/1/boolChargePointConfigured -r -m "1"
-mosquitto_pub -r -t openWB/SmartHome/Devices/1/TemperatureSensor0 -m ""
-mosquitto_pub -r -t openWB/SmartHome/Devices/1/TemperatureSensor1 -m ""
-mosquitto_pub -r -t openWB/SmartHome/Devices/1/TemperatureSensor2 -m ""
-mosquitto_pub -r -t openWB/SmartHome/Devices/2/TemperatureSensor0 -m ""
-mosquitto_pub -r -t openWB/SmartHome/Devices/2/TemperatureSensor1 -m ""
-mosquitto_pub -r -t openWB/SmartHome/Devices/2/TemperatureSensor2 -m ""
-rm -rf /var/www/html/openWB/web/themes/dark19_01
-(sleep 10; mosquitto_pub -t openWB/set/ChargeMode -r -m "$bootmodus") &
-(sleep 10; mosquitto_pub -t openWB/global/ChargeMode -r -m "$bootmodus") &
-echo " " > /var/www/html/openWB/ramdisk/lastregelungaktiv
-chmod 777 /var/www/html/openWB/ramdisk/lastregelungaktiv
-chmod 777 /var/www/html/openWB/ramdisk/smarthome.log
-chmod 777 /var/www/html/openWB/ramdisk/smarthomehandlerloglevel
+# # update broker
+# echo "update broker..."
+# for i in $(seq 1 9);
+# do
+# 	configured=$(timeout 1 mosquitto_sub -C 1 -t openWB/config/get/SmartHome/Devices/$i/device_configured)
+# 	if ! [[ "$configured" == 0 || "$configured" == 1 ]]; then
+# 		mosquitto_pub -r -t openWB/config/get/SmartHome/Devices/$i/device_configured -m "0"
+# 	fi
+# done
+# mosquitto_pub -r -t openWB/graph/boolDisplayLiveGraph -m "1"
+# mosquitto_pub -t openWB/global/strLastmanagementActive -r -m ""
+# mosquitto_pub -t openWB/lp/1/W -r -m "0"
+# mosquitto_pub -t openWB/lp/2/W -r -m "0"
+# mosquitto_pub -t openWB/lp/3/W -r -m "0"
+# mosquitto_pub -t openWB/lp/1/boolChargePointConfigured -r -m "1"
+# mosquitto_pub -r -t openWB/SmartHome/Devices/1/TemperatureSensor0 -m ""
+# mosquitto_pub -r -t openWB/SmartHome/Devices/1/TemperatureSensor1 -m ""
+# mosquitto_pub -r -t openWB/SmartHome/Devices/1/TemperatureSensor2 -m ""
+# mosquitto_pub -r -t openWB/SmartHome/Devices/2/TemperatureSensor0 -m ""
+# mosquitto_pub -r -t openWB/SmartHome/Devices/2/TemperatureSensor1 -m ""
+# mosquitto_pub -r -t openWB/SmartHome/Devices/2/TemperatureSensor2 -m ""
+# rm -rf /var/www/html/openWB/web/themes/dark19_01
+# (sleep 10; mosquitto_pub -t openWB/set/ChargeMode -r -m "$bootmodus") &
+# (sleep 10; mosquitto_pub -t openWB/global/ChargeMode -r -m "$bootmodus") &
+# echo " " > /var/www/html/openWB/ramdisk/lastregelungaktiv
+# chmod 777 /var/www/html/openWB/ramdisk/lastregelungaktiv
+# chmod 777 /var/www/html/openWB/ramdisk/smarthome.log
+# chmod 777 /var/www/html/openWB/ramdisk/smarthomehandlerloglevel
 
-# update etprovider pricelist
-echo "etprovider..."
-if [[ "$etprovideraktiv" == "1" ]]; then
-	echo "update electricity pricelist..."
-	echo "" > /var/www/html/openWB/ramdisk/etprovidergraphlist
-	mosquitto_pub -r -t openWB/global/ETProvider/modulePath -m "$etprovider"
-	/var/www/html/openWB/modules/$etprovider/main.sh > /var/log/openWB.log 2>&1 &
-else
-	echo "not activated, skipping"
-	mosquitto_pub -r -t openWB/global/awattar/pricelist -m ""
-fi
+# # update etprovider pricelist
+# echo "etprovider..."
+# if [[ "$etprovideraktiv" == "1" ]]; then
+# 	echo "update electricity pricelist..."
+# 	echo "" > /var/www/html/openWB/ramdisk/etprovidergraphlist
+# 	mosquitto_pub -r -t openWB/global/ETProvider/modulePath -m "$etprovider"
+# 	/var/www/html/openWB/modules/$etprovider/main.sh > /var/log/openWB.log 2>&1 &
+# else
+# 	echo "not activated, skipping"
+# 	mosquitto_pub -r -t openWB/global/awattar/pricelist -m ""
+# fi
 
 # set upload limit in php
 #prepare for Buster
