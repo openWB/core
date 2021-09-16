@@ -54,6 +54,10 @@ class HandlerAlgorithm():
                     prep.copy_data()
                     log.message_debug_log("info", " Stop copy_data 3")
                     self.heartbeat = True
+                    if data.data.system_data["system"].data["perform_update"] == True:
+                        data.data.system_data["system"].perform_update()
+                    elif data.data.system_data["system"].data["update_in_progress"] == True:
+                        return
                     prep.setup_algorithm()
                     control.calc_current()
                     proc.process_algorithm_results()

@@ -174,3 +174,6 @@ def pub_defaults():
 
     # graph
     pub.pub("openWB/graph/config/duration", 30)
+
+    #System
+    pub.pub("openWB/defaults/system/releaseTrain", "stable17")

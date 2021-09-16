@@ -435,5 +435,5 @@ sudo /usr/sbin/apachectl -k graceful
 echo $(date +"%Y-%m-%d %H:%M:%S:") "boot done :-)"
 echo 0 > /var/www/html/openWB/ramdisk/bootinprogress
 echo 0 > /var/www/html/openWB/ramdisk/updateinprogress
-mosquitto_pub -t openWB/system/updateInProgress -r -m "0"
+mosquitto_pub -t openWB/system/update_in_progress -r -m "0"
 mosquitto_pub -t openWB/system/reloadDisplay -m "1"
