@@ -17,7 +17,7 @@ def setup_connection():
     try:
         global client
         client = mqtt.Client("openWB-python-bulkpublisher-" + str(os.getpid()))
-        client.connect("localhost", 1883)
+        client.connect("localhost", 1886)
         client.loop_start()
     except Exception as e:
         log.exception_logging(e)
