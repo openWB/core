@@ -109,20 +109,22 @@ def save_log(folder):
                 log.exception_logging(e)
 
         pv_dict = {}
-        for pv in data.data.pv_data:
-            try:
-                pv_dict.update({pv: {"imported": data.data.pv_data[pv].data["get"]["counter"]}})
-            except Exception as e:
-                log.exception_logging(e)
+        if data.data.pv_data["all"]["config"]["configured"] == True:
+            for pv in data.data.pv_data:
+                try:
+                    pv_dict.update({pv: {"imported": data.data.pv_data[pv].data["get"]["counter"]}})
+                except Exception as e:
+                    log.exception_logging(e)
 
         bat_dict = {}
-        for bat in data.data.bat_module_data:
-            try:
-                bat_dict.update({bat: {"imported": data.data.bat_module_data[bat].data["get"]["imported"],
-                    "exported": data.data.bat_module_data[bat].data["get"]["exported"],
-                    "soc": data.data.bat_module_data[bat].data["get"]["soc"]}})
-            except Exception as e:
-                log.exception_logging(e)
+        if data.data.bat_module_data["all"]["config"]["configured"] == True:
+            for bat in data.data.bat_module_data:
+                try:
+                    bat_dict.update({bat: {"imported": data.data.bat_module_data[bat].data["get"]["imported"],
+                        "exported": data.data.bat_module_data[bat].data["get"]["exported"],
+                        "soc": data.data.bat_module_data[bat].data["get"]["soc"]}})
+                except Exception as e:
+                    log.exception_logging(e)
 
         new_entry = {
             "date": date,

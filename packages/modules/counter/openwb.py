@@ -355,14 +355,15 @@ class module(set_values.set_values):
                 power_factor2 = 0
                 power_factor3 = 0
 
+            imported, exported = simcount.sim_count(power_all, topic="openWB/set/counter/"+str(self.counter_num)+"/", data=self.data["simulation"])
             values = [[voltage1, voltage2, voltage3],
                     [current1, current2, current3],
                     [power1, power2, power3],
                     [power_factor1, power_factor2, power_factor3],
+                    [imported, exported],
                     power_all,
                     frequency]
             self.set(self.counter_num, values, self.ramdisk)
-            simcount.sim_count(power_all, topic="openWB/set/counter/"+str(self.counter_num)+"/", data=self.data["simulation"])
         except Exception as e:
             self.log_exception(e, self.ramdisk)
 

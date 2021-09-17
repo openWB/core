@@ -37,7 +37,7 @@ class control():
         """
         try:
             log.message_debug_log("debug", "# Algorithmus-Start")
-
+            log.message_debug_log("debug", "current used "+str(data.data.counter_data["counter0"].data["set"]["current_used"]))
             # erstmal die PV-Überschuss-Ladung zurück nehmen
             log.message_debug_log("debug", "## Ueberschuss-Ladung ueber Mindeststrom bei PV-Laden zuruecknehmen.")
             self._reduce_used_evu_overhang()
@@ -374,7 +374,9 @@ class control():
                             phases = cp.data["get"]["phases_in_use"]
                         required_power = 230 * phases * missing_current
                         # Lastmanagement für den fehlenden Ladestrom durchführen
+                        log.message_debug_log("debug", "adjust missing_current "+str(missing_current)+" required_power "+str(required_power))
                         loadmanagement_state, overloaded_counters = loadmanagement.loadmanagement_for_cp(cp, required_power, missing_current, phases)
+                        log.message_debug_log("debug", "loadmanagement_state "+str(loadmanagement_state))
                         if loadmanagement_state == True:
                             overloaded_counters = sorted(overloaded_counters.items(), key=lambda e: e[1][1], reverse = True)
                             # Wenn max_overshoot_phase -1 ist, wurde die maximale Gesamtleistung überschrittten und max_current_overshoot muss, 
@@ -391,6 +393,7 @@ class control():
                                 data.data.pv_data = pv_data_old
                                 data.data.bat_module_data = bat_module_data
                                 data.data.cp_data = cp_data_old
+                                log.message_debug_log("debug", "adjust 1")
                                 message = "Das Lastmanagement hat den Ladestrom um "+str(round((missing_current), 2))+"A angepasst."
                                 # Beim Wiederherstellen der Kopie wird die Adresse der Kopie zugewiesen, sodass die Adresse des LP aktualisiert werden muss,
                                 # um Änderungen in der Klasse vorzunehmen, die das data-Modul referenziert.
@@ -401,10 +404,12 @@ class control():
                                 # Werte aktualisieren
                                 loadmanagement.loadmanagement_for_cp(cp, required_power, undo_missing_current, phases)
                                 self._process_data(cp, cp.data["set"]["current"] + missing_current + undo_missing_current)
+                                log.message_debug_log("debug", "adjust 2")
                                 message = "Das Lastmanagement hat den Ladestrom um "+str(round((missing_current + undo_missing_current), 2))+"A angepasst."
                         # Zuvor fehlender Ladestrom kann nun genutzt werden
                         else:
                             self._process_data(cp, cp.data["set"]["current"] + missing_current)
+                            log.message_debug_log("debug", "adjust 3")
                             message = "Das Lastmanagement hat den Ladestrom um "+str(round(missing_current, 2))+"A angepasst."
                         if message != None:
                             cp.data["get"]["state_str"] = message
@@ -600,11 +605,13 @@ class control():
                 current_to_allocate -= max_used_current
                 power_to_allocate -= phases * 230 * max_used_current
 
+            log.message_debug_log("debug", "power_to_allocate "+str(power_to_allocate)+" current_to_allocate "+str(current_to_allocate))
             _, overloaded_counters = allocate_power(chargepoint, power_to_allocate, current_to_allocate, phases)
             self._process_data(chargepoint, required_current)
             
             if data.data.counter_data["all"].data["set"]["loadmanagement"] == True and len(overloaded_counters) != 0:
                 #Lastmanagement hat eingegriffen
+                log.message_debug_log("debug", "current used 2"+str(data.data.counter_data["counter0"].data["set"]["current_used"]))
                 log.message_debug_log("info", "Für die Ladung an LP"+str(chargepoint.cp_num)+" muss erst ein Ladepunkt mit gleicher/niedrigerer Prioritaet reduziert/gestoppt werden.")
                 data.data.counter_data["counter0"].print_stats()
                 # Zähler mit der größten Überlastung ermitteln
