@@ -136,7 +136,7 @@ class subData():
             self.process_optional_topic(self.optional_data, msg)
         elif "openWB/defaults/optional/" in msg.topic:
             self.process_optional_topic(self.defaults_optional_data, msg, True)
-        elif re.search("^openWB/counter/[0-9]+/module$", msg.topic) != None:
+        elif re.search("^openWB/counter/[0-9]+/module.*$", msg.topic) != None:
             self.process_counter_module_topic(self.counter_module_data, msg)
         elif "openWB/counter/" in msg.topic:
             self.process_counter_topic(self.counter_data, msg)
@@ -657,7 +657,7 @@ class subData():
         """
         try:
             index=self.get_index(msg.topic)
-            if re.search("^.+/counter/[0-9]/module$", msg.topic) != None:
+            if re.search("^.+/counter/[0-9]+/module$", msg.topic) != None:
                 if json.loads(str(msg.payload.decode("utf-8")))=="":
                     if "counter"+index in var:
                         var.pop("counter"+index)
@@ -666,7 +666,7 @@ class subData():
                     mod = importlib.import_module(".modules.counter."+data["selected"], "packages")
                     var["counter"+index]=mod.module(index)
                     self.set_json_payload(var["counter"+index].data, msg)
-            elif re.search("^.+/counter/[0-9]/module/simulation$", msg.topic) != None:
+            elif re.search("^.+/counter/[0-9]+/module/simulation/.+$", msg.topic) != None:
                 if "simulation" not in var["counter"+index].data:
                     var["counter"+index].data["simulation"]={}
                 self.set_json_payload(var["counter"+index].data["simulation"], msg)
