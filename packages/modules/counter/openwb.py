@@ -1,9 +1,17 @@
+#!/usr/bin/env python3
 from pymodbus.client.sync import ModbusTcpClient
 import struct
 import sys
+import set_values
 
-from. import set_values
-from ...helpermodules import simcount
+if __name__ == "__main__":
+    from pathlib import Path
+    import os
+    parentdir2 = str(Path(os.path.abspath(__file__)).parents[2])
+    sys.path.insert(0, parentdir2)
+    from helpermodules import simcount
+else:
+    from ...helpermodules import simcount
 
 class module(set_values.set_values):
     def __init__(self, counter_num, ramdisk=False) -> None:
@@ -260,7 +268,10 @@ class module(set_values.set_values):
                 power_factor2 = 0
                 power_factor3 = 0
 
-            imported, exported = simcount.sim_count(power_all, topic="openWB/set/counter/"+str(self.counter_num)+"/", data=self.data["simulation"])
+            if self.ramdisk == True:
+                imported, exported = simcount.sim_count(power_all, ramdisk=True, pref="bezug")
+            else:
+                imported, exported = simcount.sim_count(power_all, topic="openWB/set/counter/"+str(self.counter_num)+"/", data=self.data["simulation"])
 
             values = [[voltage1, voltage2, voltage3],
                         [current1, current2, current3],
@@ -355,7 +366,10 @@ class module(set_values.set_values):
                 power_factor2 = 0
                 power_factor3 = 0
 
-            imported, exported = simcount.sim_count(power_all, topic="openWB/set/counter/"+str(self.counter_num)+"/", data=self.data["simulation"])
+            if self.ramdisk == True:
+                imported, exported = simcount.sim_count(power_all, ramdisk=True, pref="bezug")
+            else:
+                imported, exported = simcount.sim_count(power_all, topic="openWB/set/counter/"+str(self.counter_num)+"/", data=self.data["simulation"])
             values = [[voltage1, voltage2, voltage3],
                     [current1, current2, current3],
                     [power1, power2, power3],
@@ -370,10 +384,10 @@ class module(set_values.set_values):
 
 if __name__ == "__main__":
     counter_num = 1
-    mod = module(True)
+    mod = module(0, True)
     mod.data["module"] = {}
     mod.data["module"]["config"] = {}
-    version = sys.argv[1]
+    version = int(sys.argv[1])
     mod.data["module"]["config"]["version"] = version
     if version == 0:
         mod.data["module"]["config"]["ip_address"] = "192.168.193.15"
