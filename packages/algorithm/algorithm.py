@@ -350,7 +350,9 @@ class control():
                                 if((charging_ev.charge_template.data["prio"] == prio) and 
                                         (charging_ev.charge_template.data["chargemode"]["selected"] == mode or mode == None) and 
                                         (charging_ev.data["control_parameter"]["submode"] == submode) and
-                                        (chargepoint.data["set"]["charging_ev_data"].data["control_parameter"]["required_current"] > chargepoint.data["set"]["current"])):
+                                        (chargepoint.data["set"]["charging_ev_data"].data["control_parameter"]["required_current"] > chargepoint.data["set"]["current"]) and
+                                        # nur die hochregeln, die auch mit der Sollstromstärke laden
+                                        (max(chargepoint.data["get"]["current"]) > chargepoint.data["set"]["current"] - charging_ev.ev_template.data["nominal_difference"])):
                                     valid_chargepoints[chargepoint] = None
                 except Exception as e:
                     log.exception_logging(e)
@@ -525,6 +527,7 @@ class control():
                                 if "current" in chargepoint.data["set"]:
                                     if ((chargepoint.data["set"]["current"] != 0 or charging_ev.data["control_parameter"]["required_current"] == 0) and
                                             # Wenn bei Sofortladen nicht mit der Sollstromstärke geladen wird, muss die fehlende Leistung/Strom wieder allokiert werden.
+                                            # Bei PV-Laden wird zu Beginn der überschüssige Strom rausgerechnet. 
                                             not (charging_ev.data["control_parameter"]["chargemode"] == "instant_charging" and 
                                             max(chargepoint.data["get"]["current"]) < chargepoint.data["set"]["current"] - charging_ev.ev_template.data["nominal_difference"])):
                                         continue

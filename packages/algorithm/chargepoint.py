@@ -782,9 +782,7 @@ class cpTemplate():
                         ev_num = vehicle
                 else:
                     if data.data.optional_data["optional"].data["rfid"]["match_ev_per_tag_only"] == False:
-                        if timecheck.check_timestamp(plug_time, 300) == False:
-                            #abgelaufen
-                            ev_num = assigned_ev
+                        ev_num = assigned_ev
                     else:
                         ev_num = -1
                         message = "Keine Ladung, da noch kein RFID-Tag vorgehalten wurde."
