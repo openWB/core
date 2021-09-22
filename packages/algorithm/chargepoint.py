@@ -241,6 +241,7 @@ class chargepoint():
                 self.data["get"]["read_tag"]["tag"] = "0"
                 self.data["get"]["read_tag"]["timestamp"] = "0"
                 self.data["get"]["daily_yield"] = 0
+                self.data["get"]["plug_state"] = False
 
                 # bestehende Logdaten auf dem Broker nicht zurücksetzen, daher nicht publishen
                 self.data["set"]["log"] = {}
@@ -501,6 +502,8 @@ class chargepoint():
                     pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/rfid", "0")
                     self.data["set"]["plug_time"] = "0"
                     pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/plug_time", "0")
+                    self.data["set"]["phases_to_use"] = self.data["get"]["phases_in_use"]
+                    pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/phases_to_use", self.data["set"]["phases_to_use"])
             self.data["set"]["charging_ev"] = -1
             pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/charging_ev", -1)
             self.data["set"]["current"] = 0
@@ -562,12 +565,12 @@ class chargepoint():
                 if "phases_to_use" not in self.data["set"]:
                     pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/phases_to_use", charging_ev.data["control_parameter"]["phases"])
                     self.data["set"]["phases_to_use"] = charging_ev.data["control_parameter"]["phases"]
-                # Wenn die Umschaltverzögerung aktiv ist, darf nicht umgeschaltet werden.
-                if self.data["config"]["auto_phase_switch_hw"] == True:
+                # Manche EVs brauchen nach der Umschaltung mehrere Zyklen, bis sie mit den drei Phasen laden. Dann darf nicht zwischendurch eine neue Umschaltung getriggert werden.
+                if (self.data["set"]["phases_to_use"] != charging_ev.data["control_parameter"]["phases"] and self.data["set"]["log"]["charged_since_mode_switch"] > 0 or
+                        self.data["get"]["phases_in_use"] != charging_ev.data["control_parameter"]["phases"] and self.data["set"]["log"]["charged_since_mode_switch"] == 0):
+                    # Wenn die Umschaltverzögerung aktiv ist, darf nicht umgeschaltet werden.
                     if charging_ev.data["control_parameter"]["timestamp_auto_phase_switch"] == "0":
-                        # Manche EVs brauchen nach der Umschaltung mehrere Zyklen, bis sie mit den drei Phasen laden. Dann darf nicht zwischendurch eine neue Umschaltung getriggert werden.
-                        if (self.data["set"]["phases_to_use"] != charging_ev.data["control_parameter"]["phases"] and self.data["set"]["log"]["charged_since_mode_switch"] > 0 or
-                                self.data["get"]["phases_in_use"] != charging_ev.data["control_parameter"]["phases"] and self.data["set"]["log"]["charged_since_mode_switch"] == 0):
+                        if self.data["config"]["auto_phase_switch_hw"] == True:
                             selected = self.data["config"]["connection_module"]["selected"]
                             config = self.data["config"]["connection_module"]["config"][selected]
                             charge_state = self.data["get"]["charge_state"]
@@ -592,10 +595,10 @@ class chargepoint():
                                 data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] += charging_ev.ev_template.data["max_current_one_phase"] * 230
                                 log.message_debug_log("info", "LP "+str(self.cp_num)+": "+message)
                                 self.data["get"]["state_str"] = message
+                        else:
+                            log.message_debug_log("error", "Phasenumschaltung an Ladepunkt"+str(self.cp_num)+" nicht möglich, da der Ladepunkt keine Phasenumschaltung unterstützt.")
                     else:
                         log.message_debug_log("error", "Phasenumschaltung an Ladepunkt"+str(self.cp_num)+" nicht möglich, da gerade eine Umschaltung im Gange ist.")
-                else:
-                    log.message_debug_log("error", "Phasenumschaltung an Ladepunkt"+str(self.cp_num)+" nicht möglich, da der Ladepunkt keine Phasenumschaltung unterstützt.")
             if self.data["set"]["phases_to_use"] != charging_ev.data["control_parameter"]["phases"]:
                 pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/phases_to_use", charging_ev.data["control_parameter"]["phases"])
                 self.data["set"]["phases_to_use"] = charging_ev.data["control_parameter"]["phases"]

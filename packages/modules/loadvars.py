@@ -39,6 +39,10 @@ class loadvars():
                 # Wait for all to complete
                 for thread in all_threads:
                     thread.join(timeout=3)
+
+                for thread in all_threads:
+                    if thread.is_alive() == True:
+                        log.message_debug_log("error", thread.name+" konnte nicht innerhalb des Timeouts die Werte abfragen, die abgefragten Werte werden nicht in der Regelung verwendet.")
         except Exception as e:
             log.exception_logging(e)
 
