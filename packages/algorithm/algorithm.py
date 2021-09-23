@@ -365,7 +365,7 @@ class control():
                         # aktuelle Werte speichern (werden wieder hergestellt, wenn das Lastmanagement die Anpassung verhindert)
                         counter_data_old = copy.deepcopy(data.data.counter_data)
                         pv_data_old = copy.deepcopy(data.data.pv_data)
-                        bat_module_data = copy.deepcopy(data.data.bat_module_data)
+                        bat_data = copy.deepcopy(data.data.bat_data)
                         cp_data_old = copy.deepcopy(data.data.cp_data)
                         # Fehlenden Ladestrom ermitteln
                         missing_current = cp.data["set"]["charging_ev_data"].data["control_parameter"]["required_current"] - cp.data["set"]["current"]
@@ -393,7 +393,7 @@ class control():
                                 # Zustand von vor dem Lastmanagement wieder herstellen
                                 data.data.counter_data = counter_data_old
                                 data.data.pv_data = pv_data_old
-                                data.data.bat_module_data = bat_module_data
+                                data.data.bat_data = bat_data
                                 data.data.cp_data = cp_data_old
                                 log.message_debug_log("debug", "adjust 1")
                                 message = "Das Lastmanagement hat den Ladestrom um "+str(round((missing_current), 2))+"A angepasst."
@@ -593,7 +593,7 @@ class control():
             # aktuelle Werte speichern (werden wieder hergestellt, wenn das Lastmanagement die Ladung verhindert)
             counter_data_old = copy.deepcopy(data.data.counter_data)
             pv_data_old = copy.deepcopy(data.data.pv_data)
-            bat_module_data = copy.deepcopy(data.data.bat_module_data)
+            bat_data = copy.deepcopy(data.data.bat_data)
             cp_data_old = copy.deepcopy(data.data.cp_data)
 
             # Wenn bereits geladen wird, nur die Änderung allokieren
@@ -649,7 +649,7 @@ class control():
                         # Zustand von vor dem Lastmanagement wieder herstellen
                         data.data.counter_data = counter_data_old
                         data.data.pv_data = pv_data_old
-                        data.data.bat_module_data = bat_module_data
+                        data.data.bat_data = bat_data
                         data.data.cp_data = cp_data_old
                         # Beim Wiederherstellen der Kopie wird die Adresse der Kopie zugewiesen, sodass die Adresse des LP aktualisiert werden muss,
                         # um Änderungen in der Klasse vorzunehmen, die das data-Modul referenziert.
@@ -691,7 +691,7 @@ class control():
                 log.message_debug_log("warning", "PV-Laden im Modus Zielladen aktiv und es wurden keine Einstellungen für PV-Laden konfiguriert.")
             else:
                 if self._check_cp_without_feed_in_is_prioritised(chargepoint) == True:
-                    set_current, threshold_not_reached = data.data.pv_data["all"].switch_on(chargepoint, required_power, required_current, phases, data.data.bat_module_data["all"].power_for_bat_charging())
+                    set_current, threshold_not_reached = data.data.pv_data["all"].switch_on(chargepoint, required_power, required_current, phases, data.data.bat_data["all"].power_for_bat_charging())
                 else:
                     set_current = 0
             
@@ -733,7 +733,7 @@ class control():
                                     self._process_data(cp, 0)
                                     log.message_debug_log("debug", "LP"+str(cp.cp_num)+" abgeschaltet, um die Einschaltverzoegerung an LP"+str(chargepoint.cp_num)+" zu starten.")
                                     # switch_on erneut durchführen
-                                    set_current, threshold_not_reached = data.data.pv_data["all"].switch_on(chargepoint, required_power, required_current, phases, data.data.bat_module_data["all"].power_for_bat_charging())
+                                    set_current, threshold_not_reached = data.data.pv_data["all"].switch_on(chargepoint, required_power, required_current, phases, data.data.bat_data["all"].power_for_bat_charging())
                                     if threshold_not_reached == False:
                                         break
                             except Exception as e:
@@ -801,7 +801,7 @@ class control():
             # Ladung aktiv?
             if num_of_ev > 0:
                 new_current = 0
-                bat_overhang = data.data.bat_module_data["all"].power_for_bat_charging()
+                bat_overhang = data.data.bat_data["all"].power_for_bat_charging()
                 if feed_in_limit == False:
                     diff_per_ev_power = (data.data.pv_data["all"].overhang_left() + bat_overhang) / num_of_ev
                 else:
@@ -998,7 +998,7 @@ class control():
         verfügbarer Überhang
         """
         try:
-            return data.data.bat_module_data["all"].power_for_bat_charging() + data.data.pv_data["all"].overhang_left()
+            return data.data.bat_data["all"].power_for_bat_charging() + data.data.pv_data["all"].overhang_left()
         except Exception as e:
             log.exception_logging(e)
             return 0
@@ -1026,7 +1026,7 @@ def allocate_power(chargepoint, required_power, required_current, phases):
         Zähler, die überlastet würden
     """
     try:
-        bat_overhang = data.data.bat_module_data["all"].power_for_bat_charging()
+        bat_overhang = data.data.bat_data["all"].power_for_bat_charging()
         evu_overhang = data.data.pv_data["all"].overhang_left()
         remaining_required_power = required_power
         overloaded_counters = {}
@@ -1082,7 +1082,7 @@ def use_evu_bat_power(chargepoint, required_power, required_current, phases, pv_
         if pv_mode == True:
             return_power = data.data.pv_data["all"].allocate_evu_power(required_power)
         else:
-            return_power = data.data.bat_module_data["all"].allocate_bat_power(required_power)
+            return_power = data.data.bat_data["all"].allocate_bat_power(required_power)
         if return_power != 0:
             required_current += return_power / phases / 230
             required_current = chargepoint.data["set"]["charging_ev_data"].check_min_max_current(required_current, phases, pv = True)

@@ -68,7 +68,7 @@ class prepare():
 
             data.data.counter_data = copy.deepcopy(subdata.subData.counter_data)
             data.data.counter_module_data = copy.deepcopy(subdata.subData.counter_module_data)
-            data.data.bat_module_data = copy.deepcopy(subdata.subData.bat_module_data)
+            data.data.bat_data = copy.deepcopy(subdata.subData.bat_data)
             data.data.system_data = copy.deepcopy(subdata.subData.system_data)
         except Exception as e:
             log.exception_logging(e)
@@ -233,7 +233,7 @@ class prepare():
         """ ermittelt, ob Überschuss am Speicher verfügbar ist.
         """
         try:
-            data.data.bat_module_data["all"].setup_bat()
+            data.data.bat_data["all"].setup_bat()
         except Exception as e:
             log.exception_logging(e)
 
@@ -273,9 +273,9 @@ class prepare():
             for counter in data.data.counter_data:
                 if "counter" in counter:
                     self._check_key(subdata.subData.defaults_counter_data["counter0"].data, data.data.counter_data[counter].data)
-            for bat in data.data.bat_module_data:
+            for bat in data.data.bat_data:
                 if "bat" in bat:
-                    self._check_key(subdata.subData.defaults_bat_module_data["bat0"].data, data.data.bat_module_data[bat].data)
+                    self._check_key(subdata.subData.defaults_bat_data["bat0"].data, data.data.bat_data[bat].data)
             self._check_key(subdata.subData.defaults_general_data["general"].data, data.data.general_data["general"].data)
             self._check_key(subdata.subData.defaults_optional_data["optional"].data, data.data.optional_data["optional"].data)
         except Exception as e:

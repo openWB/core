@@ -11,7 +11,7 @@ from ..helpermodules import pub
 from ..helpermodules import timecheck
 
 
-class pv():
+class pvAll():
     """
     """
 
@@ -360,7 +360,7 @@ class pv():
             log.exception_logging(e)
 
 
-class pvModule:
+class pv:
 
     def __init__(self, index):
         self.data = {}
