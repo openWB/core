@@ -110,6 +110,10 @@ class prepare():
                                     vehicle = cp.data["set"]["charging_ev"]
                                 elif cp.data["set"]["charging_ev_prev"] != -1:
                                     vehicle = cp.data["set"]["charging_ev_prev"]
+                                    cp.data["set"]["charging_ev"] = vehicle
+                                    pub.pub("openWB/set/chargepoint/"+str(cp.cp_num)+"/set/charging_ev", vehicle)
+                                    cp.data["set"]["charging_ev_prev"] = -1
+                                    pub.pub("openWB/set/chargepoint/"+str(cp.cp_num)+"/set/charging_ev_prev", -1)
                                 else:
                                     raise ValueError ("Wenn kein aktuelles und kein vorheriges Ev zugeordnet waren, sollte noch nicht geladen worden sein.")
                                 charging_ev = data.data.ev_data["ev"+str(vehicle)]
