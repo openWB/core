@@ -69,6 +69,7 @@ class prepare():
             data.data.counter_data = copy.deepcopy(subdata.subData.counter_data)
             data.data.counter_module_data = copy.deepcopy(subdata.subData.counter_module_data)
             data.data.bat_module_data = copy.deepcopy(subdata.subData.bat_module_data)
+            data.data.system_data = copy.deepcopy(subdata.subData.system_data)
         except Exception as e:
             log.exception_logging(e)
 

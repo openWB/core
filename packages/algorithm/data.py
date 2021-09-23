@@ -23,6 +23,7 @@ class Data:
         self._bat_module_data = {}
         self._general_data = {}
         self._optional_data = {}
+        self._system_data = {}
 
     # getter-Funktion, der Zugriff erfolgt wie bei einem Zugriff auf eine öffentliche Variable.
     @property
@@ -202,18 +203,34 @@ class Data:
         self._optional_data = value
         self.event.set()
 
+    @property
+    def system_data(self):
+        self.event.wait()
+        self.event.clear()
+        temp = self._system_data
+        self.event.set()
+        return temp
+
+    @system_data.setter
+    def system_data(self, value):
+        self.event.wait()
+        self.event.clear()
+        self._system_data = value
+        self.event.set()
+
     def print_all(self):
+        self._print_dictionaries(self._bat_module_data)
         self._print_dictionaries(self._cp_data)
         self._print_dictionaries(self._cp_template_data)
-        self._print_dictionaries(self._pv_data)
-        self._print_dictionaries(self._ev_data)
-        self._print_dictionaries(self._ev_template_data)
-        self._print_dictionaries(self._ev_charge_template_data)
         self._print_dictionaries(self._counter_data)
         self._print_dictionaries(self._counter_module_data)
-        self._print_dictionaries(self._bat_module_data)
+        self._print_dictionaries(self._ev_charge_template_data)
+        self._print_dictionaries(self._ev_data)
+        self._print_dictionaries(self._ev_template_data)
         self._print_dictionaries(self._general_data)
         self._print_dictionaries(self._optional_data)
+        self._print_dictionaries(self._pv_data)
+        self._print_dictionaries(self._system_data)
         log.message_data_log("debug", "\n")
 
     def _print_dictionaries(self, data):

@@ -14,6 +14,7 @@ from ..algorithm import general
 from . import log
 from ..algorithm import optional
 from . import pub
+from . import system
 from ..algorithm import pv
 
 class subData():
@@ -33,6 +34,7 @@ class subData():
     bat_module_data={}
     general_data={}
     optional_data={}
+    system_data={}
     defaults_cp_data={}
     defaults_cp_template_data={}
     defaults_pv_data={}
@@ -43,6 +45,7 @@ class subData():
     defaults_bat_module_data={}
     defaults_general_data={}
     defaults_optional_data={}
+    defaults_system_data={}
 
     def __init__(self, event_ev_template, event_charge_template, event_cp_config):
         self.event_ev_template = event_ev_template
@@ -90,6 +93,7 @@ class subData():
         client.subscribe("openWB/counter/#", 2)
         client.subscribe("openWB/defaults/#", 2)
         client.subscribe("openWB/log/#", 2)
+        client.subscribe("openWB/system/#", 2)
 
     def on_message(self, client, userdata, msg):
         """ wartet auf eingehende Topics.
@@ -132,7 +136,7 @@ class subData():
             self.process_optional_topic(self.optional_data, msg)
         elif "openWB/defaults/optional/" in msg.topic:
             self.process_optional_topic(self.defaults_optional_data, msg, True)
-        elif re.search("^openWB/counter/[0-9]+/module$", msg.topic) != None:
+        elif re.search("^openWB/counter/[0-9]+/module.*$", msg.topic) != None:
             self.process_counter_module_topic(self.counter_module_data, msg)
         elif "openWB/counter/" in msg.topic:
             self.process_counter_topic(self.counter_data, msg)
@@ -140,6 +144,10 @@ class subData():
             self.process_counter_topic(self.defaults_counter_data, msg, True)
         elif "openWB/log/" in msg.topic:
             self.process_log_topic(msg)
+        elif "openWB/system/" in msg.topic:
+            self.process_system_topic(self.system_data, msg)
+        elif "openWB/defaults/system" in msg.topic:
+            self.process_system_topic(self.defaults_system_data, msg)
         else:
             log.message_debug_log("warning", "unknown subdata-topic: "+str(msg.topic))
 
@@ -649,7 +657,7 @@ class subData():
         """
         try:
             index=self.get_index(msg.topic)
-            if re.search("^.+/counter/[0-9]/module$", msg.topic) != None:
+            if re.search("^.+/counter/[0-9]+/module$", msg.topic) != None:
                 if json.loads(str(msg.payload.decode("utf-8")))=="":
                     if "counter"+index in var:
                         var.pop("counter"+index)
@@ -658,7 +666,7 @@ class subData():
                     mod = importlib.import_module(".modules.counter."+data["selected"], "packages")
                     var["counter"+index]=mod.module(index)
                     self.set_json_payload(var["counter"+index].data, msg)
-            elif re.search("^.+/counter/[0-9]/module/simulation$", msg.topic) != None:
+            elif re.search("^.+/counter/[0-9]+/module/simulation/.+$", msg.topic) != None:
                 if "simulation" not in var["counter"+index].data:
                     var["counter"+index].data["simulation"]={}
                 self.set_json_payload(var["counter"+index].data["simulation"], msg)
@@ -680,5 +688,28 @@ class subData():
         try:
             if "openWB/log/request" in msg.topic:
                 chargelog.get_log_data(json.loads(str(msg.payload.decode("utf-8"))))
+        except Exception as e:
+            log.exception_logging(e)
+
+    def process_system_topic(self, var, msg):
+        """Handler für die System-Topics
+
+         Parameters
+        ----------
+        client : (unused)
+            vorgegebener Parameter
+        userdata : (unused)
+            vorgegebener Parameter
+        msg:
+            enthält Topic und Payload
+        """
+        try:
+            if "system" not in var:
+                if json.loads(str(msg.payload.decode("utf-8")))=="":
+                    if "system" in var:
+                        var.pop("system")
+                else:
+                    var["system"]=system.system()
+            self.set_json_payload(var["system"].data, msg)
         except Exception as e:
             log.exception_logging(e)

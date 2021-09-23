@@ -1,9 +1,21 @@
+#!/usr/bin/env python3
 from pymodbus.client.sync import ModbusTcpClient
 import struct
 import sys
 
-from. import set_values
-from ...helpermodules import simcount
+
+if __name__ == "__main__":
+    from pathlib import Path
+    import os
+    parentdir2 = str(Path(os.path.abspath(__file__)).parents[2])
+    sys.path.insert(0, parentdir2)
+    from helpermodules import log
+    from helpermodules import simcount
+    import set_values
+else:
+    from ...helpermodules import log
+    from ...helpermodules import simcount
+    from . import set_values
 
 class module(set_values.set_values):
     def __init__(self, counter_num, ramdisk=False) -> None:
@@ -24,7 +36,7 @@ class module(set_values.set_values):
             elif self.data["module"]["config"]["version"] == 2:
                 self._read_sdm()
         except Exception as e:
-            self.log_exception(e, self.ramdisk)
+            log.log_exception_comp(e, self.ramdisk)
 
     def _read_version0(self):
         """ liest die Werte des openWB EVU Kit Version 0.
@@ -51,7 +63,7 @@ class module(set_values.set_values):
                 voltage3 = resp.registers[1]
                 voltage3 = float(voltage3) / 10
             except Exception as e:
-                self.log_exception(e, self.ramdisk)
+                log.log_exception_comp(e, self.ramdisk)
                 voltage1 = 0
                 voltage2 = 0
                 voltage3 = 0
@@ -64,7 +76,7 @@ class module(set_values.set_values):
                 imported = int(struct.unpack('>i', all.decode('hex'))[0])
                 imported = float(imported) * 10
             except Exception as e:
-                self.log_exception(e, self.ramdisk)
+                log.log_exception_comp(e, self.ramdisk)
                 imported = 0
 
             # phasen watt
@@ -85,7 +97,7 @@ class module(set_values.set_values):
                 all = format(value1, '04x') + format(value2, '04x')
                 power3 = int(struct.unpack('>i', all.decode('hex'))[0]) / 100
             except Exception as e:
-                self.log_exception(e, self.ramdisk)
+                log.log_exception_comp(e, self.ramdisk)
                 power1 = 0
                 power2 = 0
                 power3 = 0
@@ -95,7 +107,7 @@ class module(set_values.set_values):
                 current2=round(float(float(power2) / float(voltage2)), 2)
                 current3=round(float(float(power3) / float(voltage3)), 2)
             except Exception as e:
-                self.log_exception(e, self.ramdisk)
+                log.log_exception_comp(e, self.ramdisk)
                 current1 = 0
                 current2 = 0
                 current3 = 0
@@ -108,7 +120,7 @@ class module(set_values.set_values):
                 all = format(value1, '04x') + format(value2, '04x')
                 power_all = int(struct.unpack('>i', all.decode('hex'))[0]) / 100
             except Exception as e:
-                self.log_exception(e, self.ramdisk)
+                log.log_exception_comp(e, self.ramdisk)
                 power_all = 0
 
             # export kwh
@@ -120,7 +132,7 @@ class module(set_values.set_values):
                 exported = int(struct.unpack('>i', all.decode('hex'))[0])
                 exported = float(exported) * 10
             except Exception as e:
-                self.log_exception(e, self.ramdisk)
+                log.log_exception_comp(e, self.ramdisk)
                 exported = 0
 
             # evuhz
@@ -132,7 +144,7 @@ class module(set_values.set_values):
                 frequency = int(struct.unpack('>i', all.decode('hex'))[0])
                 frequency = round((float(frequency) / 100), 2)
             except Exception as e:
-                self.log_exception(e, self.ramdisk)
+                log.log_exception_comp(e, self.ramdisk)
                 frequency = 0
 
             # Power Factor
@@ -156,7 +168,7 @@ class module(set_values.set_values):
                 evupf3 = int(struct.unpack('>i', all.decode('hex'))[0])
                 evupf3 = round((float(evupf3) / 10), 0)
             except Exception as e:
-                self.log_exception(e, self.ramdisk)
+                log.log_exception_comp(e, self.ramdisk)
                 power_factor1 = 0
                 power_factor2 = 0
                 power_factor3 = 0
@@ -170,7 +182,7 @@ class module(set_values.set_values):
                         frequency]
             self.set(self.counter_num, values, self.ramdisk)
         except Exception as e:
-            self.log_exception(e, self.ramdisk)
+            log.log_exception_comp(e, self.ramdisk)
 
     def _read_lovato(self):
         """ liest die Werte des openWB EVU Kit Version 1 - Lovato.
@@ -193,7 +205,7 @@ class module(set_values.set_values):
                 resp = client.read_input_registers(0x0005,2, unit=id)
                 voltage3 = float(resp.registers[1] / 100)
             except Exception as e:
-                self.log_exception(e, self.ramdisk)
+                log.log_exception_comp(e, self.ramdisk)
                 voltage1 = 0
                 voltage2 = 0
                 voltage3 = 0
@@ -212,7 +224,7 @@ class module(set_values.set_values):
 
                 power_all= power1 + power2 + power3
             except Exception as e:
-                self.log_exception(e, self.ramdisk)
+                log.log_exception_comp(e, self.ramdisk)
                 power1 = 0
                 power2 = 0
                 power3 = 0
@@ -230,7 +242,7 @@ class module(set_values.set_values):
                 all = format(resp.registers[0], '04x') + format(resp.registers[1], '04x')
                 current3 = abs(float(struct.unpack('>i', all.decode('hex'))[0]) / 10000)
             except Exception as e:
-                self.log_exception(e, self.ramdisk)
+                log.log_exception_comp(e, self.ramdisk)
                 current1 = 0
                 current2 = 0
                 current3 = 0
@@ -243,7 +255,7 @@ class module(set_values.set_values):
                 if frequency > 100:
                     frequency=float(frequency / 10)
             except Exception as e:
-                self.log_exception(e, self.ramdisk)
+                log.log_exception_comp(e, self.ramdisk)
                 frequency = 0
 
             #Power Factor
@@ -255,12 +267,15 @@ class module(set_values.set_values):
                 resp = client.read_input_registers(0x0029,2, unit=id)
                 power_factor3 = float(resp.registers[1]) / 10000
             except Exception as e:
-                self.log_exception(e, self.ramdisk)
+                log.log_exception_comp(e, self.ramdisk)
                 power_factor1 = 0
                 power_factor2 = 0
                 power_factor3 = 0
 
-            imported, exported = simcount.sim_count(power_all, topic="openWB/set/counter/"+str(self.counter_num)+"/", data=self.data["simulation"])
+            if self.ramdisk == True:
+                imported, exported = simcount.sim_count(power_all, ramdisk=True, pref="bezug")
+            else:
+                imported, exported = simcount.sim_count(power_all, topic="openWB/set/counter/"+str(self.counter_num)+"/", data=self.data["simulation"])
 
             values = [[voltage1, voltage2, voltage3],
                         [current1, current2, current3],
@@ -272,7 +287,7 @@ class module(set_values.set_values):
             self.set(self.counter_num, values, self.ramdisk)
             
         except Exception as e:
-            self.log_exception(e, self.ramdisk)
+            log.log_exception_comp(e, self.ramdisk)
 
     def _read_sdm(self):
         """ liest die Werte des openWB EVU Kit Version 2 - SDM.
@@ -295,7 +310,7 @@ class module(set_values.set_values):
                 resp = client.read_input_registers(0x04, 2, unit=id)
                 voltage3 = struct.unpack('>f', struct.pack('>HH', *resp.registers))[0]
             except Exception as e:
-                self.log_exception(e, self.ramdisk)
+                log.log_exception_comp(e, self.ramdisk)
                 voltage1 = 0
                 voltage2 = 0
                 voltage3 = 0
@@ -311,7 +326,7 @@ class module(set_values.set_values):
 
                 power_all = power1 + power2 + power3
             except Exception as e:
-                self.log_exception(e, self.ramdisk)
+                log.log_exception_comp(e, self.ramdisk)
                 power1 = 0
                 power2 = 0
                 power3 = 0
@@ -326,7 +341,7 @@ class module(set_values.set_values):
                 resp = client.read_input_registers(0x0A, 2, unit=id)
                 current3 = abs(float(struct.unpack('>f', struct.pack('>HH', *resp.registers))[0]))
             except Exception as e:
-                self.log_exception(e, self.ramdisk)
+                log.log_exception_comp(e, self.ramdisk)
                 current1 = 0
                 current2 = 0
                 current3 = 0
@@ -338,7 +353,7 @@ class module(set_values.set_values):
                 if float(frequency) > 100:
                     frequency = float(frequency / 10)
             except Exception as e:
-                self.log_exception(e, self.ramdisk)
+                log.log_exception_comp(e, self.ramdisk)
                 frequency = 0
 
             try:
@@ -350,38 +365,45 @@ class module(set_values.set_values):
                 resp = client.read_input_registers(0x22, 2, unit=id)
                 power_factor3 = struct.unpack('>f', struct.pack('>HH', *resp.registers))[0]
             except Exception as e:
-                self.log_exception(e, self.ramdisk)
+                log.log_exception_comp(e, self.ramdisk)
                 power_factor1 = 0
                 power_factor2 = 0
                 power_factor3 = 0
 
+            if self.ramdisk == True:
+                imported, exported = simcount.sim_count(power_all, ramdisk=True, pref="bezug")
+            else:
+                imported, exported = simcount.sim_count(power_all, topic="openWB/set/counter/"+str(self.counter_num)+"/", data=self.data["simulation"])
             values = [[voltage1, voltage2, voltage3],
                     [current1, current2, current3],
                     [power1, power2, power3],
                     [power_factor1, power_factor2, power_factor3],
+                    [imported, exported],
                     power_all,
                     frequency]
             self.set(self.counter_num, values, self.ramdisk)
-            simcount.sim_count(power_all, topic="openWB/set/counter/"+str(self.counter_num)+"/", data=self.data["simulation"])
         except Exception as e:
-            self.log_exception(e, self.ramdisk)
+            log.log_exception_comp(e, self.ramdisk)
 
 
 if __name__ == "__main__":
-    counter_num = 1
-    mod = module(True)
-    mod.data["module"] = {}
-    mod.data["module"]["config"] = {}
-    version = sys.argv[1]
-    mod.data["module"]["config"]["version"] = version
-    if version == 0:
-        mod.data["module"]["config"]["ip_address"] = "192.168.193.15"
-        mod.data["module"]["config"]["id"] = 5
-    elif version == 1:
-        mod.data["module"]["config"]["ip_address"] = "192.168.193.15"
-        mod.data["module"]["config"]["id"] = 0x02
-    elif version == 2:
-        mod.data["module"]["config"]["ip_address"] = "192.168.193.15"
-        mod.data["module"]["config"]["id"] = 115
+    try:
+        counter_num = 1
+        mod = module(0, True)
+        mod.data["module"] = {}
+        mod.data["module"]["config"] = {}
+        version = int(sys.argv[1])
+        mod.data["module"]["config"]["version"] = version
+        if version == 0:
+            mod.data["module"]["config"]["ip_address"] = "192.168.193.15"
+            mod.data["module"]["config"]["id"] = 5
+        elif version == 1:
+            mod.data["module"]["config"]["ip_address"] = "192.168.193.15"
+            mod.data["module"]["config"]["id"] = 0x02
+        elif version == 2:
+            mod.data["module"]["config"]["ip_address"] = "192.168.193.15"
+            mod.data["module"]["config"]["id"] = 115
 
-    mod.read()
+        mod.read()
+    except Exception as e:
+        log.log_exception_comp(e, True)

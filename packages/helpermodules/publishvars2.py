@@ -2,7 +2,7 @@ from . import pub
 
 
 def pub_settings():
-    simulator = True
+    simulator = False
     """ruft für alle Ramdisk-Dateien aus initRamdisk die zum Typ passende Funktion zum publishen auf.
     """
     if simulator == True:
@@ -73,7 +73,7 @@ def pub_settings():
 
         # cp14
         pub.pub("openWB/set/chargepoint/14/set/manual_lock", False)
-        pub.pub("openWB/set/chargepoint/14/config", {"name": "LP14", "ev": 2, "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.109", "chargepoint": 1}}}, "power_module": {"selected": None}})
+        pub.pub("openWB/set/chargepoint/14/config", {"name": "LP14", "ev": 0, "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": True, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.109", "chargepoint": 1}}}, "power_module": {"selected": None}})
 
         # cp15
         pub.pub("openWB/set/chargepoint/15/set/manual_lock", False)
@@ -81,7 +81,7 @@ def pub_settings():
 
         # cp16
         pub.pub("openWB/set/chargepoint/16/set/manual_lock", False)
-        pub.pub("openWB/set/chargepoint/16/config", {"name": "LP16", "ev": 1, "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.111", "chargepoint": 1}}}, "power_module": {"selected": None}})
+        pub.pub("openWB/set/chargepoint/16/config", {"name": "LP16", "ev": 0, "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.111", "chargepoint": 1}}}, "power_module": {"selected": None}})
     
     # cpt1
     pub.pub("openWB/set/chargepoint/template/1/autolock/1/frequency/selected", "daily")
@@ -90,7 +90,7 @@ def pub_settings():
     pub.pub("openWB/set/chargepoint/template/1/autolock/wait_for_charging_end", False)
     pub.pub("openWB/set/chargepoint/template/1/autolock/active", False)
     pub.pub("openWB/set/chargepoint/template/1/rfid_enabling", True)
-    pub.pub("openWB/set/chargepoint/template/1/valid_tags", ["257", "258", "259"])
+    pub.pub("openWB/set/chargepoint/template/1/valid_tags", ["248", "257", "258", "259"])
 
     # ev0
     pub.pub("openWB/set/vehicle/0/charge_template", 0)
@@ -141,6 +141,18 @@ def pub_settings():
     pub.pub("openWB/set/vehicle/3/get/soc_timestamp", 1619568005)
     pub.pub("openWB/set/vehicle/3/match_ev/selected", "rfid")
     pub.pub("openWB/set/vehicle/3/match_ev/tag_id", "257")
+    #ev4 MX
+    pub.pub("openWB/set/vehicle/4/charge_template", 4)
+    pub.pub("openWB/set/vehicle/4/ev_template", 4)
+    pub.pub("openWB/set/vehicle/4/name", "MX")
+    pub.pub("openWB/set/vehicle/4/soc/config/configured", False)
+    pub.pub("openWB/set/vehicle/4/soc/config/manual", False)
+    pub.pub("openWB/set/vehicle/4/soc/get/fault_state", 0)
+    pub.pub("openWB/set/vehicle/4/soc/get/fault_str", "Kein Fehler.")
+    pub.pub("openWB/set/vehicle/4/get/soc", 82)
+    pub.pub("openWB/set/vehicle/4/get/soc_timestamp", 1619568005)
+    pub.pub("openWB/set/vehicle/4/match_ev/selected", "rfid")
+    pub.pub("openWB/set/vehicle/4/match_ev/tag_id", "248")
 
     # evt0 - default
     pub.pub("openWB/vehicle/template/ev_template/0", {"min_current": 6, "battery_capacity": 20, "max_current_one_phase": 32, "max_current_multi_phases": 32, "max_phases": 3, "average_consump": 17, "control_pilot_interruption": False, "nominal_difference": 2, "prevent_switch_stop": True, "phase_switch_pause": 2})
@@ -150,6 +162,8 @@ def pub_settings():
     pub.pub("openWB/vehicle/template/ev_template/2", {"min_current": 6, "battery_capacity": 78, "max_current_one_phase": 32, "max_current_multi_phases": 16, "max_phases": 3, "average_consump": 17, "control_pilot_interruption": False, "nominal_difference": 2, "prevent_switch_stop": False, "phase_switch_pause": 30})
     #evt3 - M3P
     pub.pub("openWB/vehicle/template/ev_template/3", {"min_current": 6, "battery_capacity": 82, "max_current_one_phase": 32, "max_current_multi_phases": 16, "max_phases": 3, "average_consump": 17, "control_pilot_interruption": False, "nominal_difference": 2, "prevent_switch_stop": True, "phase_switch_pause": 2})
+    #evt4 - MX
+    pub.pub("openWB/vehicle/template/ev_template/4", {"min_current": 6, "battery_capacity": 100, "max_current_one_phase": 32, "max_current_multi_phases": 24, "max_phases": 3, "average_consump": 17, "control_pilot_interruption": False, "nominal_difference": 2, "prevent_switch_stop": True, "phase_switch_pause": 2})
 
     plans_for_scheduled_charging = {
         "1": {"name": "abc", "time": "14:15", "soc": 85, "active": 1, "frequency": {"selected": "daily"}},
@@ -162,21 +176,23 @@ def pub_settings():
         }
     
     # ct0 - default
-    pub.pub("openWB/vehicle/template/charge_template/0", {"chargemode": {"scheduled_charging": {"1": {"time": "14:15", "active": 1, "soc": 85, "frequency": {"selected": "daily"}, "name": "abc"}, "2": {"time": "18:45", "active": 0, "soc": 95, "frequency": {"selected": "daily"}, "name": "def"}}, "instant_charging": {"limit": {"amount": 10, "soc": 50, "selected": "none"}, "current": 16}, "pv_charging": {"min_current": 6, "max_soc": 100, "min_soc": 0, "min_soc_current": 10}, "selected": "instant_charging"}, "prio": False, "time_charging": {"plans": {"1": {"time": ["07:00", "17:20"], "active": 1, "name": "abc", "frequency": {"selected": "daily"}, "current": 10}, "2": {"time": ["07:00", "17:20"], "active": 0, "name": "def", "frequency": {"selected": "daily"}, "current": 16}}, "active": False}, "disable_after_unplug": False, "load_default": True})
+    pub.pub("openWB/vehicle/template/charge_template/0", {"chargemode": {"scheduled_charging": {"1": {"time": "14:15", "active": 1, "soc": 85, "frequency": {"selected": "daily"}, "name": "abc"}, "2": {"time": "18:45", "active": 0, "soc": 95, "frequency": {"selected": "daily"}, "name": "def"}}, "instant_charging": {"limit": {"amount": 10, "soc": 50, "selected": "none"}, "current": 16}, "pv_charging": {"min_current": 6, "max_soc": 100, "min_soc": 0, "min_soc_current": 10}, "selected": "stop"}, "prio": False, "time_charging": {"plans": {"1": {"time": ["07:00", "17:20"], "active": 1, "name": "abc", "frequency": {"selected": "daily"}, "current": 10}, "2": {"time": ["07:00", "17:20"], "active": 0, "name": "def", "frequency": {"selected": "daily"}, "current": 16}}, "active": False}, "disable_after_unplug": False, "load_default": True})
     #ct1
     pub.pub("openWB/vehicle/template/charge_template/1", {"time_charging": {"active": False, "plans": {"2": {"frequency": {"selected": "daily"}, "active": 0, "time": ["07:00", "17:20"], "current": 16, "name": "def"}, "1": {"frequency": {"selected": "daily"}, "active": 1, "time": ["07:00", "17:20"], "current": 10, "name": "abc"}}}, "disable_after_unplug": False, "prio": True, "chargemode": {"selected": "instant_charging", "instant_charging": {"limit": {"selected": "none", "soc": 50, "amount": 10}, "current": 32}, "scheduled_charging": {"2": {"frequency": {"selected": "daily"}, "active": 0, "time": "18:45", "name": "def", "soc": 95}, "1": {"frequency": {"selected": "daily"}, "active": 1, "time": "14:15", "name": "abc", "soc": 85}}, "pv_charging": {"max_soc": 90, "min_soc_current": 13, "feed_in_limit": False, "min_soc": 0, "min_current": 6}}, "load_default": True})
     #ct2
     pub.pub("openWB/vehicle/template/charge_template/2", {"load_default": True, "chargemode": {"scheduled_charging": {"1": {"name": "abc", "active": 1, "time": "14:15", "frequency": {"selected": "daily"}, "soc": 85}, "2": {"name": "def", "active": 0, "time": "18:45", "frequency": {"selected": "daily"}, "soc": 95}}, "instant_charging": {"current": 32, "limit": {"selected": "none", "soc": 50, "amount": 10}}, "selected": "instant_charging", "pv_charging": {"min_soc": 23, "max_soc": 100, "feed_in_limit": False, "min_current": 6, "min_soc_current": 13}}, "prio": True, "time_charging": {"plans": {"1": {"name": "abc", "active": 1, "time": ["07:00", "17:20"], "frequency": {"selected": "daily"}, "current": 10}, "2": {"name": "def", "active": 0, "time": ["07:00", "17:20"], "frequency": {"selected": "daily"}, "current": 16}}, "active": False}, "disable_after_unplug": False})
-    # #ct3
+    #ct3
     pub.pub("openWB/vehicle/template/charge_template/3", {"load_default": True, "time_charging": {"plans": {"1": {"name": "abc", "active": 1, "time": ["07:00", "17:20"], "frequency": {"selected": "daily"}, "current": 10}, "2": {"name": "def", "active": 0, "time": ["07:00", "17:20"], "frequency": {"selected": "daily"}, "current": 16}}, "active": False}, "disable_after_unplug": False, "prio": True, "chargemode": {"pv_charging": {"min_soc": 23, "min_current": 6, "min_soc_current": 13, "feed_in_limit": False, "max_soc": 95}, "instant_charging": {"current": 25, "limit": {"soc": 90, "amount": 10, "selected": "none"}}, "scheduled_charging": {"1": {"name": "abc", "soc": 85, "active": 1, "time": "14:15", "frequency": {"selected": "daily"}}, "2": {"name": "def", "soc": 95, "active": 0, "time": "18:45", "frequency": {"selected": "daily"}}}, "selected": "instant_charging"}})
-    
+    #ct4
+    pub.pub("openWB/vehicle/template/charge_template/4", {"load_default": True, "time_charging": {"plans": {"1": {"name": "abc", "active": 1, "time": ["07:00", "17:20"], "frequency": {"selected": "daily"}, "current": 10}, "2": {"name": "def", "active": 0, "time": ["07:00", "17:20"], "frequency": {"selected": "daily"}, "current": 16}}, "active": False}, "disable_after_unplug": False, "prio": True, "chargemode": {"pv_charging": {"min_soc": 23, "min_current": 6, "min_soc_current": 13, "feed_in_limit": False, "max_soc": 95}, "instant_charging": {"current": 25, "limit": {"soc": 90, "amount": 10, "selected": "none"}}, "scheduled_charging": {"1": {"name": "abc", "soc": 85, "active": 1, "time": "14:15", "frequency": {"selected": "daily"}}, "2": {"name": "def", "soc": 95, "active": 0, "time": "18:45", "frequency": {"selected": "daily"}}}, "selected": "instant_charging"}})
+
     # optional
     pub.pub("openWB/set/optional/et/active", False)
     pub.pub("openWB/set/optional/et/config/max_price", 5.5)
     #pub.pub("openWB/set/optional/et/config/provider", {"provider": "awattar", "country": "de"})
     pub.pub("openWB/set/optional/et/config/provider", {"provider": "tibber", "token": "d1007ead2dc84a2b82f0de19451c5fb22112f7ae11d19bf2bedb224a003ff74a", "id": "c70dcbe5-4485-4821-933d-a8a86452737b"})
     pub.pub("openWB/set/optional/rfid/active", True)
-    pub.pub("openWB/set/optional/rfid/match_ev_per_tag_only", True)
+    pub.pub("openWB/set/optional/rfid/match_ev_per_tag_only", False)
 
     # pv
     # pub.pub("openWB/set/pv/1/get/counter", 500)

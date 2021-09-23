@@ -3,12 +3,20 @@ import os
 from pathlib import Path
 import traceback
 
-from ...helpermodules import log
-from ...helpermodules import pub
+try:
+    from ...helpermodules import log
+    from ...helpermodules import pub
+except:
+    # for 1.9 compability
+    import sys
+    parentdir2 = str(Path(os.path.abspath(__file__)).parents[2])
+    sys.path.insert(0, parentdir2)
+    from helpermodules import log
+    from helpermodules import pub
 
 class set_values():
     def __init__(self) -> None:
-        self.base_dir = Path(os.path.abspath(__file__)).parents[2]
+        pass
 
     def set(self, num, values, ramdisk):
         """
@@ -22,11 +30,13 @@ class set_values():
                 power_all,
                 frequency]
         """
-        
-        if ramdisk == True:
-            self.write_to_ramdisk(values)
-        else:
-            self.pub_to_broker(num, values)
+        try:
+            if ramdisk == True:
+                self.write_to_ramdisk(values)
+            else:
+                self.pub_to_broker(num, values)
+        except Exception as e:
+            log.log_exception_comp(e, ramdisk)
 
     def write_to_ramdisk(self, values):
         try:
@@ -48,16 +58,19 @@ class set_values():
             self.write_to_file("/evupf3", values[3][2])
             self.write_to_file("/bezugkwh", values[4][0])
             self.write_to_file("/einspeisungkwh", values[4][1])
-            self.write_to_file("/wattbezug", int(values[6]))
-            self.write_to_file("/evuhz", round(values[7], 2))
+            self.write_to_file("/wattbezug", int(values[5]))
+            self.write_to_file("/evuhz", round(values[6], 2))
             if int(os.environ.get('debug')) >= 1:
                 log.log_1_9('EVU Watt: ' + str(int(values[4])))
         except Exception as e:
-            log.exception_logging(e)
+            log.log_exception_comp(e, True)
 
     def write_to_file(self, file, value):
-        with open(file, "w") as f:
-                f.write(self.base_dir + value)
+        try:
+            with open("/var/www/html/openWB/ramdisk/" + file, "w") as f:
+                    f.write(str(value))
+        except Exception as e:
+            log.log_exception_comp(e, True)
 
     def pub_to_broker(self, num, values):
         try:
@@ -72,19 +85,10 @@ class set_values():
             pub.pub("openWB/set/counter/"+str(num)+"/get/current", values[1])
             pub.pub("openWB/set/counter/"+str(num)+"/get/power_phase", values[2])
             pub.pub("openWB/set/counter/"+str(num)+"/get/power_factor", values[3])
-            pub.pub("openWB/set/counter/"+str(num)+"/get/power_all", values[4])
-            pub.pub("openWB/set/counter/"+str(num)+"/get/frequency", values[5])
+            pub.pub("openWB/set/counter/"+str(num)+"/get/imported", values[4][0])
+            pub.pub("openWB/set/counter/"+str(num)+"/get/exported", values[4][1])
+            pub.pub("openWB/set/counter/"+str(num)+"/get/power_all", values[5])
+            pub.pub("openWB/set/counter/"+str(num)+"/get/frequency", values[6])
         except Exception as e:
-            log.exception_logging(e)
+            log.log_exception_comp(e, False)
 
-    def log_exception(self, exception, ramdisk):
-        """
-        """
-        try:
-            if ramdisk == False:
-                log.exception_logging(exception)
-            else:
-                traceback.print_exc()
-                exit(1)
-        except Exception as e:
-            log.exception_logging(e)
