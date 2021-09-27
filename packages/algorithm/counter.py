@@ -32,7 +32,7 @@ class counterAll():
         try:
             evu = data.data.counter_data["counter0"].data["get"]["power_all"]
             pv = data.data.pv_data["all"].data["get"]["power"]
-            bat = data.data.bat_module_data["all"].data["get"]["power"]
+            bat = data.data.bat_data["all"].data["get"]["power"]
             cp = data.data.cp_data["all"].data["get"]["power_all"]
             home_consumption = int(evu - pv - bat - cp)
             if home_consumption < 0:
@@ -61,9 +61,9 @@ class counterAll():
                 pv = data.data.pv_data["all"].data["get"]["daily_yield"]
             else:
                 pv = 0
-            if len(data.data.bat_module_data) > 1:
-                bat_imported = data.data.bat_module_data["all"].data["get"]["daily_yield_import"]
-                bat_exported = data.data.bat_module_data["all"].data["get"]["daily_yield_export"]
+            if len(data.data.bat_data) > 1:
+                bat_imported = data.data.bat_data["all"].data["get"]["daily_yield_import"]
+                bat_exported = data.data.bat_data["all"].data["get"]["daily_yield_export"]
             else:
                 bat_imported = 0
                 bat_exported = 0

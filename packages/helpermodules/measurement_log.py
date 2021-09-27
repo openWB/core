@@ -117,12 +117,12 @@ def save_log(folder):
                     log.exception_logging(e)
 
         bat_dict = {}
-        if data.data.bat_module_data["all"].data["config"]["configured"] == True:
-            for bat in data.data.bat_module_data:
+        if data.data.bat_data["all"].data["config"]["configured"] == True:
+            for bat in data.data.bat_data:
                 try:
-                    bat_dict.update({bat: {"imported": data.data.bat_module_data[bat].data["get"]["imported"],
-                        "exported": data.data.bat_module_data[bat].data["get"]["exported"],
-                        "soc": data.data.bat_module_data[bat].data["get"]["soc"]}})
+                    bat_dict.update({bat: {"imported": data.data.bat_data[bat].data["get"]["imported"],
+                        "exported": data.data.bat_data[bat].data["get"]["exported"],
+                        "soc": data.data.bat_data[bat].data["get"]["soc"]}})
                 except Exception as e:
                     log.exception_logging(e)
 
@@ -198,12 +198,12 @@ def update_daily_yields():
                 pub.pub("openWB/set/pv/get/daily_yield", daily_yield)
         # Tagesertrag Speicher
         for bat in daily_log[0]["bat"]:
-            daily_yield_imported = data.data.bat_module_data[bat].data["get"]["imported"] - daily_log[0]["bat"][bat]["imported"]
-            daily_yield_exported = data.data.bat_module_data[bat].data["get"]["exported"] - daily_log[0]["bat"][bat]["exported"]
+            daily_yield_imported = data.data.bat_data[bat].data["get"]["imported"] - daily_log[0]["bat"][bat]["imported"]
+            daily_yield_exported = data.data.bat_data[bat].data["get"]["exported"] - daily_log[0]["bat"][bat]["exported"]
             if "bat" in bat:
-                if bat in data.data.bat_module_data:
-                    pub.pub("openWB/set/bat/"+str(data.data.bat_module_data[bat].bat_num)+"/get/daily_yield_import", daily_yield_imported)
-                    pub.pub("openWB/set/bat/"+str(data.data.bat_module_data[bat].bat_num)+"/get/daily_yield_export", daily_yield_exported)
+                if bat in data.data.bat_data:
+                    pub.pub("openWB/set/bat/"+str(data.data.bat_data[bat].bat_num)+"/get/daily_yield_import", daily_yield_imported)
+                    pub.pub("openWB/set/bat/"+str(data.data.bat_data[bat].bat_num)+"/get/daily_yield_export", daily_yield_exported)
                 else:
                     log.message_debug_log("info", "Speicher "+str(bat)+" wurde zwischenzeitlich geloescht und wird daher nicht mehr aufgefuehrt.")
             else:

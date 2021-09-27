@@ -36,9 +36,9 @@ def pub_graph_data():
                 dataline.update({"cp"+str(chargepoint.cp_num)+"-power": _convert_to_kW(chargepoint.data["get"]["power_all"])})
                 if chargepoint.data["get"]["connected_vehicle"]["soc_config"]["configured"] == True:
                     dataline.update({"cp"+str(chargepoint.cp_num)+"-soc": _convert_to_kW(chargepoint.data["get"]["connected_vehicle"]["soc"]["soc"])})
-    if len(data.data.bat_module_data) > 1:
-        dataline.update({"bat-all-power": _convert_to_kW(data.data.bat_module_data["all"].data["get"]["power"])})
-        dataline.update({"bat-all-soc": _convert_to_kW(data.data.bat_module_data["all"].data["get"]["soc"])})
+    if len(data.data.bat_data) > 1:
+        dataline.update({"bat-all-power": _convert_to_kW(data.data.bat_data["all"].data["get"]["power"])})
+        dataline.update({"bat-all-soc": _convert_to_kW(data.data.bat_data["all"].data["get"]["soc"])})
     # # smarthome 1
     # if (( verbraucher1_aktiv == 1 )); then
     #     dataline="$dataline,\"load1-power\":$(convertTokW $verbraucher1_watt)"

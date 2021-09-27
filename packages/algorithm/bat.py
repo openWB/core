@@ -29,7 +29,7 @@ from . import data
 from ..helpermodules import log
 from ..helpermodules import pub
 
-class bat:
+class batAll:
     def __init__(self):
         self.data={}
         self.data["get"]={}
@@ -45,9 +45,9 @@ class bat:
         """ prüft, ob mind ein Speicher vorhanden ist und berechnet die Summentopics.
         """
         try:
-            if len(data.data.bat_module_data) > 1:
-                if "all" not in data.data.bat_module_data:
-                    data.data.bat_module_data["all"] = {}
+            if len(data.data.bat_data) > 1:
+                if "all" not in data.data.bat_data:
+                    data.data.bat_data["all"] = {}
                 self.data["config"]["configured"] = True
                 # Summe für alle konfigurierten Speicher bilden
                 soc_sum = 0
@@ -57,15 +57,15 @@ class bat:
                 self.data["get"]["exported"] = 0
                 self.data["get"]["daily_yield_export"] = 0
                 self.data["get"]["daily_yield_import"] = 0
-                for bat in data.data.bat_module_data:
+                for bat in data.data.bat_data:
                     try:
                         if "bat" in bat:
-                            self.data["get"]["power"] += data.data.bat_module_data[bat].data["get"]["power"]
-                            self.data["get"]["imported"] += data.data.bat_module_data[bat].data["get"]["imported"]
-                            self.data["get"]["exported"] += data.data.bat_module_data[bat].data["get"]["exported"]
-                            self.data["get"]["daily_yield_export"] += data.data.bat_module_data[bat].data["get"]["daily_yield_export"]
-                            self.data["get"]["daily_yield_import"] += data.data.bat_module_data[bat].data["get"]["daily_yield_import"]
-                            soc_sum += data.data.bat_module_data[bat].data["get"]["soc"]
+                            self.data["get"]["power"] += data.data.bat_data[bat].data["get"]["power"]
+                            self.data["get"]["imported"] += data.data.bat_data[bat].data["get"]["imported"]
+                            self.data["get"]["exported"] += data.data.bat_data[bat].data["get"]["exported"]
+                            self.data["get"]["daily_yield_export"] += data.data.bat_data[bat].data["get"]["daily_yield_export"]
+                            self.data["get"]["daily_yield_import"] += data.data.bat_data[bat].data["get"]["daily_yield_import"]
+                            soc_sum += data.data.bat_data[bat].data["get"]["soc"]
                             soc_count += 1
                     except Exception as e:
                         log.exception_logging(e)
@@ -225,7 +225,7 @@ class bat:
         except Exception as e:
             log.exception_logging(e)
 
-class batModule:
+class bat:
 
     def __init__(self, index):
         self.data={}
