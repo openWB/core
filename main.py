@@ -54,9 +54,12 @@ class HandlerAlgorithm():
                     prep.copy_data()
                     log.message_debug_log("info", " Stop copy_data 3")
                     self.heartbeat = True
+                    data.data.system_data["system"].set_default_values()
                     if data.data.system_data["system"].data["perform_update"] == True:
                         data.data.system_data["system"].perform_update()
+                        return
                     elif data.data.system_data["system"].data["update_in_progress"] == True:
+                        log.message_debug_log("info", "Regelung pausiert, da ein Update durchgefuehrt wird.")
                         return
                     prep.setup_algorithm()
                     control.calc_current()

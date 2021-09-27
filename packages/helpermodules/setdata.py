@@ -723,7 +723,7 @@ class setData():
                 self._validate_value(msg, int, [(0, 3)])
             elif (re.search("^openWB/set/counter/set/home_consumption$", msg.topic) != None or
                     re.search("^openWB/set/counter/set/daily_yield_home_consumption$", msg.topic) != None):
-                self._validate_value(msg, int, [(0, None)])
+                self._validate_value(msg, float, [(0, None)])
             elif re.search("^openWB/set/counter/get/hierarchy$", msg.topic) != None:
                 self._validate_value(msg, None)
             elif re.search("^openWB/set/counter/[0-9]+/set/consumption_left$", msg.topic) != None:
@@ -818,6 +818,9 @@ class setData():
         try:
             if re.search("^openWB/set/system/lastlivevaluesJson$", msg.topic) != None:
                 self._validate_value(msg, "json")
+            elif (re.search("^openWB/set/system/perform_update$", msg.topic) != None or
+                    re.search("^openWB/set/system/update_in_progress$", msg.topic) != None):
+                self._validate_value(msg, int, [(0, 1)])
             else:
                 # hier kommen auch noch alte Topics ohne json-Format an.
                 #log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
