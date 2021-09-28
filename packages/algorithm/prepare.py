@@ -48,6 +48,7 @@ class prepare():
                     log.exception_logging(e)
 
             data.data.pv_data = copy.deepcopy(subdata.subData.pv_data)
+            data.data.pv_module_data = copy.deepcopy(subdata.subData.pv_module_data)
             data.data.ev_data = copy.deepcopy(subdata.subData.ev_data)
             data.data.ev_template_data = copy.deepcopy(
                 subdata.subData.ev_template_data)
@@ -68,6 +69,7 @@ class prepare():
             data.data.counter_data = copy.deepcopy(subdata.subData.counter_data)
             data.data.counter_module_data = copy.deepcopy(subdata.subData.counter_module_data)
             data.data.bat_data = copy.deepcopy(subdata.subData.bat_data)
+            data.data.bat_module_data = copy.deepcopy(subdata.subData.bat_module_data)
             data.data.system_data = copy.deepcopy(subdata.subData.system_data)
         except Exception as e:
             log.exception_logging(e)

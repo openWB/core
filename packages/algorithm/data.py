@@ -59,7 +59,7 @@ class Data:
     def bat_module_data(self):
         self.event.wait()
         self.event.clear()
-        temp = self.bat_module_data
+        temp = self._bat_module_data
         self.event.set()
         return temp
 
@@ -67,7 +67,7 @@ class Data:
     def bat_module_data(self, value):
         self.event.wait()
         self.event.clear()
-        self.bat_module_data = value
+        self._bat_module_data = value
         self.event.set()
 
     @property
@@ -224,7 +224,7 @@ class Data:
     def pv_module_data(self):
         self.event.wait()
         self.event.clear()
-        temp = self.pv_module_data
+        temp = self._pv_module_data
         self.event.set()
         return temp
 
@@ -232,7 +232,7 @@ class Data:
     def pv_module_data(self, value):
         self.event.wait()
         self.event.clear()
-        self.pv_module_data = value
+        self._pv_module_data = value
         self.event.set()
 
     @property

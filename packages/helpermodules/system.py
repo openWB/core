@@ -84,9 +84,9 @@ class system:
             for counter in data.data.counter_data:
                 if "counter" in counter:
                     self._check_key(subdata.subData.defaults_counter_data["counter0"].data, data.data.counter_data[counter].data)
-            for bat in data.data.bat_module_data:
+            for bat in data.data.bat_data:
                 if "bat" in bat:
-                    self._check_key(subdata.subData.defaults_bat_module_data["bat0"].data, data.data.bat_module_data[bat].data)
+                    self._check_key(subdata.subData.defaults_bat_data["bat0"].data, data.data.bat_data[bat].data)
             self._check_key(subdata.subData.defaults_general_data["general"].data, data.data.general_data["general"].data)
             self._check_key(subdata.subData.defaults_optional_data["optional"].data, data.data.optional_data["optional"].data)
             self._check_key(subdata.subData.defaults_system_data["system"].data, data.data.system_data["system"].data)
