@@ -45,8 +45,7 @@ def pub_defaults():
     pub.pub("openWB/defaults/vehicle/0/soc/config/request_interval_charging", 10)
     pub.pub("openWB/defaults/vehicle/0/soc/config/reques_interval_not_charging", 60)
     pub.pub("openWB/defaults/vehicle/0/soc/config/request_only_plugged", False)
-    pub.pub("openWB/defaults/vehicle/0/match_ev/selected", "cp")
-    pub.pub("openWB/defaults/vehicle/0/match_ev/tag_id", "1234")
+    pub.pub("openWB/defaults/vehicle/0/tag_id", ["1234"])
     # EV-Vorlage
     ev_template = {
         "max_current_multi_phases": 16, 
@@ -127,7 +126,6 @@ def pub_defaults():
     #pub.pub("openWB/defaults/optional/et/config/provider", {"provider": "awattar", "country": "de"})
     pub.pub("openWB/defaults/optional/et/config/provider", {"provider": "tibber", "token": "d1007ead2dc84a2b82f0de19451c5fb22112f7ae11d19bf2bedb224a003ff74a", "id": "c70dcbe5-4485-4821-933d-a8a86452737b"})
     pub.pub("openWB/defaults/optional/rfid/active", False)
-    pub.pub("openWB/defaults/optional/rfid/match_ev_per_tag_only", 1)
 
     # PV
     pub.pub("openWB/defaults/pv/0/config", {"selected": "mqtt"})

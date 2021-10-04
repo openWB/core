@@ -297,12 +297,8 @@ class setData():
                 self._validate_value(msg, int, [(0, 2)])
             elif re.search("^openWB/set/vehicle/[0-9]+/soc/get/fault_str$", msg.topic) != None:
                 self._validate_value(msg, str)
-            elif re.search("^openWB/set/vehicle/[0-9]+/match_ev/selected$", msg.topic) != None:
-                self._validate_value(msg, str)
-            elif re.search("^openWB/set/vehicle/[0-9]+/match_ev/tag_id$", msg.topic) != None:
-                self._validate_value(msg, str)
-            elif re.search("^openWB/set/vehicle/[0-9]+/match_ev/inactive$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, 1)])
+            elif re.search("^openWB/set/vehicle/[0-9]+/tag_id$", msg.topic) != None:
+                self._validate_value(msg, str, collection=list)
             elif (re.search("^openWB/set/vehicle/[0-9]+/charge_template$", msg.topic) != None or
                     re.search("^openWB/set/vehicle/[0-9]+/ev_template$", msg.topic) != None):
                 self._validate_value(msg, int, [(0, None)])
@@ -698,8 +694,6 @@ class setData():
             elif re.search("^openWB/set/optional/et/config/provider$", msg.topic) != None:
                 self._validate_value(msg, "json")
             elif re.search("^openWB/set/optional/rfid/active$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, 1)])
-            elif re.search("^openWB/set/optional/rfid/match_ev_per_tag_only$", msg.topic) != None:
                 self._validate_value(msg, int, [(0, 1)])
             else:
                 log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))

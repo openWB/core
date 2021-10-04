@@ -242,10 +242,6 @@ class subData():
                         if "get" not in var["ev"+index].data["soc"]:
                             var["ev"+index].data["soc"]["get"] = {}
                         self.set_json_payload(var["ev"+index].data["soc"]["get"], msg)
-                    elif re.search("^.+/vehicle/[0-9]+/match_ev/.+$", msg.topic) != None:
-                        if "match_ev" not in var["ev"+index].data:
-                            var["ev"+index].data["match_ev"] = {}
-                        self.set_json_payload(var["ev"+index].data["match_ev"], msg)
                     elif re.search("^.+/vehicle/[0-9]+/control_parameter/.+$", msg.topic) != None:
                         if "control_parameter" not in var["ev"+index].data:
                             var["ev"+index].data["control_parameter"] = {}

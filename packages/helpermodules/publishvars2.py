@@ -2,21 +2,21 @@ from . import pub
 
 
 def pub_settings():
-    simulator = False
+    simulator = True
     """ruft für alle Ramdisk-Dateien aus initRamdisk die zum Typ passende Funktion zum publishen auf.
     """
     if simulator == True:
         # cp1
         pub.pub("openWB/set/chargepoint/1/set/manual_lock", False)
-        pub.pub("openWB/set/chargepoint/1/config", {"name": "LP1", "ev": 1, "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "mqtt"}, "power_module": {"selected": None}})
+        pub.pub("openWB/set/chargepoint/1/config", {"name": "LP1", "ev": 0, "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "mqtt"}, "power_module": {"selected": None}})
 
         # cp2
         pub.pub("openWB/set/chargepoint/2/set/manual_lock", False)
-        pub.pub("openWB/set/chargepoint/2/config", {"name": "LP2", "ev": 2, "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "mqtt"}, "power_module": {"selected": None}})
+        pub.pub("openWB/set/chargepoint/2/config", {"name": "LP2", "ev": 0, "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "mqtt"}, "power_module": {"selected": None}})
 
         # cp3
         pub.pub("openWB/set/chargepoint/3/set/manual_lock", False)
-        pub.pub("openWB/set/chargepoint/3/config", {"name": "LP3", "ev": 3, "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "mqtt"}, "power_module": {"selected": None}})
+        pub.pub("openWB/set/chargepoint/3/config", {"name": "LP3", "ev": 0, "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "mqtt"}, "power_module": {"selected": None}})
     
     else:
         pass
@@ -89,9 +89,9 @@ def pub_settings():
     pub.pub("openWB/set/chargepoint/template/1/autolock/1/time", ["07:00", "16:15"])
     pub.pub("openWB/set/chargepoint/template/1/autolock/1/active", True)
     pub.pub("openWB/set/chargepoint/template/1/autolock/wait_for_charging_end", False)
-    pub.pub("openWB/set/chargepoint/template/1/autolock/active", False)
+    pub.pub("openWB/set/chargepoint/template/1/autolock/active", True)
     pub.pub("openWB/set/chargepoint/template/1/rfid_enabling", True)
-    pub.pub("openWB/set/chargepoint/template/1/valid_tags", ["248", "257", "258", "259", "1", "2", "3"])
+    pub.pub("openWB/set/chargepoint/template/1/valid_tags", ["248", "257", "258", "259", "1", "2", "3", "c"])
 
     # ev0
     pub.pub("openWB/set/vehicle/0/charge_template", 0)
@@ -103,8 +103,7 @@ def pub_settings():
     pub.pub("openWB/set/vehicle/0/soc/get/fault_str", "Kein Fehler.")
     pub.pub("openWB/set/vehicle/0/get/soc", 0)
     pub.pub("openWB/set/vehicle/0/get/soc_timestamp", 0)
-    pub.pub("openWB/set/vehicle/0/match_ev/selected", "cp")
-    pub.pub("openWB/set/vehicle/0/match_ev/tag_id", "45")
+    pub.pub("openWB/set/vehicle/0/tag_id", ["45"])
 
     # ev1-Ioniq
     pub.pub("openWB/set/vehicle/1/charge_template", 1)
@@ -116,8 +115,7 @@ def pub_settings():
     pub.pub("openWB/set/vehicle/1/soc/get/fault_str", "Kein Fehler.")
     pub.pub("openWB/set/vehicle/1/get/soc", 0)
     pub.pub("openWB/set/vehicle/1/get/soc_timestamp", 1619568005)
-    pub.pub("openWB/set/vehicle/1/match_ev/selected", "rfid")
-    pub.pub("openWB/set/vehicle/1/match_ev/tag_id", "259")
+    pub.pub("openWB/set/vehicle/1/tag_id", ["259"])
     # ev2
     pub.pub("openWB/set/vehicle/2/charge_template", 2)
     pub.pub("openWB/set/vehicle/2/ev_template", 2)
@@ -128,8 +126,7 @@ def pub_settings():
     pub.pub("openWB/set/vehicle/2/soc/get/fault_str", "Kein Fehler.")
     pub.pub("openWB/set/vehicle/2/get/soc", 25)
     pub.pub("openWB/set/vehicle/2/get/soc_timestamp", 1619568005)
-    pub.pub("openWB/set/vehicle/2/match_ev/selected", "rfid")
-    pub.pub("openWB/set/vehicle/2/match_ev/tag_id", "258")
+    pub.pub("openWB/set/vehicle/2/tag_id", ["258"])
     #ev3
     pub.pub("openWB/set/vehicle/3/charge_template", 3)
     pub.pub("openWB/set/vehicle/3/ev_template", 3)
@@ -140,8 +137,7 @@ def pub_settings():
     pub.pub("openWB/set/vehicle/3/soc/get/fault_str", "Kein Fehler.")
     pub.pub("openWB/set/vehicle/3/get/soc", 82)
     pub.pub("openWB/set/vehicle/3/get/soc_timestamp", 1619568005)
-    pub.pub("openWB/set/vehicle/3/match_ev/selected", "rfid")
-    pub.pub("openWB/set/vehicle/3/match_ev/tag_id", "257")
+    pub.pub("openWB/set/vehicle/3/tag_id", ["257"])
     #ev4 MX
     pub.pub("openWB/set/vehicle/4/charge_template", 4)
     pub.pub("openWB/set/vehicle/4/ev_template", 4)
@@ -152,8 +148,7 @@ def pub_settings():
     pub.pub("openWB/set/vehicle/4/soc/get/fault_str", "Kein Fehler.")
     pub.pub("openWB/set/vehicle/4/get/soc", 82)
     pub.pub("openWB/set/vehicle/4/get/soc_timestamp", 1619568005)
-    pub.pub("openWB/set/vehicle/4/match_ev/selected", "rfid")
-    pub.pub("openWB/set/vehicle/4/match_ev/tag_id", "248")
+    pub.pub("openWB/set/vehicle/4/tag_id", ["248"])
     #ev5 Gast 1
     pub.pub("openWB/set/vehicle/5/charge_template", 5)
     pub.pub("openWB/set/vehicle/5/ev_template", 5)
@@ -164,8 +159,7 @@ def pub_settings():
     pub.pub("openWB/set/vehicle/5/soc/get/fault_str", "Kein Fehler.")
     pub.pub("openWB/set/vehicle/5/get/soc", 82)
     pub.pub("openWB/set/vehicle/5/get/soc_timestamp", 1619568005)
-    pub.pub("openWB/set/vehicle/5/match_ev/selected", "rfid")
-    pub.pub("openWB/set/vehicle/5/match_ev/tag_id", "1")
+    pub.pub("openWB/set/vehicle/5/tag_id", ["1"])
     #ev6 Gast 2
     pub.pub("openWB/set/vehicle/6/charge_template", 6)
     pub.pub("openWB/set/vehicle/6/ev_template", 6)
@@ -176,8 +170,7 @@ def pub_settings():
     pub.pub("openWB/set/vehicle/6/soc/get/fault_str", "Kein Fehler.")
     pub.pub("openWB/set/vehicle/6/get/soc", 82)
     pub.pub("openWB/set/vehicle/6/get/soc_timestamp", 1619568005)
-    pub.pub("openWB/set/vehicle/6/match_ev/selected", "rfid")
-    pub.pub("openWB/set/vehicle/6/match_ev/tag_id", "2")
+    pub.pub("openWB/set/vehicle/6/tag_id", ["2"])
     #ev7 Gast 3
     pub.pub("openWB/set/vehicle/7/charge_template", 7)
     pub.pub("openWB/set/vehicle/7/ev_template", 7)
@@ -188,8 +181,7 @@ def pub_settings():
     pub.pub("openWB/set/vehicle/7/soc/get/fault_str", "Kein Fehler.")
     pub.pub("openWB/set/vehicle/7/get/soc", 82)
     pub.pub("openWB/set/vehicle/7/get/soc_timestamp", 1619568005)
-    pub.pub("openWB/set/vehicle/7/match_ev/selected", "rfid")
-    pub.pub("openWB/set/vehicle/7/match_ev/tag_id", "3")
+    pub.pub("openWB/set/vehicle/7/tag_id", ["3", "c"])
 
     # evt0 - default
     pub.pub("openWB/vehicle/template/ev_template/0", {"min_current": 6, "battery_capacity": 20, "max_current_one_phase": 32, "max_current_multi_phases": 32, "max_phases": 3, "average_consump": 17, "control_pilot_interruption": False, "nominal_difference": 2, "prevent_switch_stop": True, "phase_switch_pause": 2})
@@ -241,7 +233,6 @@ def pub_settings():
     #pub.pub("openWB/set/optional/et/config/provider", {"provider": "awattar", "country": "de"})
     pub.pub("openWB/set/optional/et/config/provider", {"provider": "tibber", "token": "d1007ead2dc84a2b82f0de19451c5fb22112f7ae11d19bf2bedb224a003ff74a", "id": "c70dcbe5-4485-4821-933d-a8a86452737b"})
     pub.pub("openWB/set/optional/rfid/active", True)
-    pub.pub("openWB/set/optional/rfid/match_ev_per_tag_only", False)
 
     # pv
     # pub.pub("openWB/set/pv/1/get/counter", 500)
