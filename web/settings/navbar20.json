@@ -11,7 +11,7 @@
 		"id": "navbardropChargeSettings",
 		"submenue": [
 			{ "name": "Übergreifendes", "id": "navGeneralCharge", "href": "./settings/generalcharge20.php" },
-			{ "name": "Sofortladen", "id": "navOptional", "href": "./settings/instantcharge20.php" },
+			{ "name": "Sofortladen", "id": "navInstantCharge", "href": "./settings/instantcharge20.php" },
 			{ "name": "PV", "id": "navPVCharge", "href": "./settings/pvcharge20.php" },
 			{ "name": "Zeitladen", "id": "navTimeCharge", "href": "./settings/timecharge20.php" },
 			{ "name": "Zielladen", "id": "navScheduledCharge", "href": "./settings/scheduledcharge20.php" },
@@ -19,11 +19,17 @@
 		]
 	},
 	{
+		"name": "Erscheinungsbild",
+		"id": "navbardropDesign",
+		"submenue": [
+			{ "name": "Diagramm", "id": "navGraphSettings", "href": "./settings/graph20.php" }
+		]
+	},
+	{
 		"name": "Beispiele",
 		"id": "navbardropSamples",
 		"submenue": [
-			{ "name": "Beispiel 1", "id": "navbarSample1", "href": "./settings/sample-1.php" },
-			{ "name": "Beispiel 2", "id": "navbarSample2", "href": "./settings/sample-2.php" }
+			{ "name": "Beispiel 1", "id": "navbarSample1", "href": "./settings/sample.php" }
 		]
 	},
 	{ "name": "Wiki", "href": "https://github.com/snaptec/openWB/wiki", "external": true }

@@ -53,7 +53,7 @@ var changedValuesHandler = {
 		if (Object.keys(changedValues).length === 0) {
 			console.log("done");
 			setTimeout(function() {
-				$('#saveprogress').addClass('hide');
+				$('#saveprogressModal').modal('hide');
 				// window.location.href = './index.php';
 			}, 200);
 		} else {
