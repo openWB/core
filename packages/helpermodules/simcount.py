@@ -64,14 +64,8 @@ def sim_count(present_power_all, topic="", data={}, ramdisk = False, pref = ""):
             if "sim_timestamp" in data:
                 seconds1 = float(data["sim_timestamp"])
                 watt1 = int(data["present_power_all"])
-                if "present_imported" in data:
-                    wattposh = int(data["present_imported"])
-                else:
-                    wattposh = 0
-                if "present_exported" in data:
-                    wattnegh = int(data["present_exported"])
-                else:
-                    wattnegh = 0
+                wattposh = int(data["present_imported"])
+                wattnegh = int(data["present_exported"])
                 value1 = "%22.6f" % sim_timestamp
                 pub.pub(topic+"module/simulation/sim_timestamp", value1)
                 pub.pub(topic+"module/simulation/present_power_all", present_power_all)
