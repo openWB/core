@@ -9,6 +9,8 @@ var cpBgColor = style.getPropertyValue('--lp1bgCol');
 var cpSocColor = style.getPropertyValue('--lp1SocCol');
 var evuColor = style.getPropertyValue('--evuCol');
 var evuBgColor = style.getPropertyValue('--evubgCol');
+var counterColor = style.getPropertyValue('--counterCol');
+var counterBgColor = style.getPropertyValue('--counterbgCol');
 var pvAllColor = style.getPropertyValue('--pvCol');
 var pvAllBgColor = style.getPropertyValue('--pvbgCol');
 var batAllColor = style.getPropertyValue('--speicherCol');
@@ -180,6 +182,23 @@ let datasetTemplates = {
 		borderWidth: 2,
 		data: null,
 		yAxisID: 'y2',
+		parsing: {
+			xAxisKey: 'timestamp',
+			yAxisKey: null
+		}
+	},
+	// additional counter
+	"counter-power": {
+		label: 'Zähler',
+		jsonKey: null,
+		borderColor: counterColor,
+		backgroundColor: counterBgColor,
+		borderWidth: 2,
+		hidden: false,
+		fill: false,
+		lineTension: 0.2,
+		data: null,
+		yAxisID: 'y1',
 		parsing: {
 			xAxisKey: 'timestamp',
 			yAxisKey: null
