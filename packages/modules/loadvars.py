@@ -23,24 +23,26 @@ class loadvars():
 
     def get_values(self):
         try:
-            all_threads = []
             self._get_cp()
-            self._get_counters()
-            self._get_pv()
-            self._get_bat()
+            self._get_modules_except_kits(data.data.counter_module_data)
+            self._get_modules_except_kits(data.data.pv_module_data)
+            self._get_modules_except_kits(data.data.bat_module_data)
             self._get_soc()
             self._get_general()
-            all_threads = self._get_kits()
+            kits_threads = []
+            kits_threads = self._get_kits(kits_threads, data.data.counter_module_data)
+            kits_threads = self._get_kits(kits_threads, data.data.pv_module_data)
+            kits_threads = self._get_kits(kits_threads, data.data.bat_module_data)
             # Start them all
-            if all_threads:
-                for thread in all_threads:
+            if kits_threads:
+                for thread in kits_threads:
                     thread.start()
 
                 # Wait for all to complete
-                for thread in all_threads:
+                for thread in kits_threads:
                     thread.join(timeout=3)
 
-                for thread in all_threads:
+                for thread in kits_threads:
                     if thread.is_alive() == True:
                         log.message_debug_log("error", thread.name+" konnte nicht innerhalb des Timeouts die Werte abfragen, die abgefragten Werte werden nicht in der Regelung verwendet.")
         except Exception as e:
@@ -69,14 +71,16 @@ class loadvars():
         except Exception as e:
             log.exception_logging(e)
 
-    def _get_counters(self):
-        """ vorhandene Zähler durchgehen und je nach Konfiguration Module zur Abfrage der Werte aufrufen
+    def _get_modules_except_kits(self, dict):
+        """ vorhandene Zähler durchgehen und je nach Konfiguration Module zur Abfrage der Werte aufrufen.
+        openWB-Kits können in mehreren Threads parallel abgefragt werden. Virtuelle Module werden nach den 
+        physischen ermittelt, da diese auf den Werten der physischen Module basieren.
         """
         try:
-            for item in data.data.counter_module_data:
-                counter = data.data.counter_module_data[item]
-                if counter.data["module"]["selected"] != "openwb":
-                    counter.read()
+            for item in dict:
+                module = dict[item]
+                if module.data["module"]["selected"] != "openwb" and module.data["module"]["selected"] != "virtual":
+                    module.read()
         except Exception as e:
             log.exception_logging(e)
 
@@ -128,23 +132,6 @@ class loadvars():
             except Exception as e:
                 log.exception_logging(e)
 
-    def _get_pv(self):
-        for item in data.data.pv_data:
-            try:
-                if "pv" in item:
-                    pv = data.data.pv_data[item]
-                    pass
-            except Exception as e:
-                log.exception_logging(e)
-
-    def _get_bat(self):
-        for item in data.data.bat_module_data:
-            try:
-                if "bat" in item:
-                    bat = data.data.bat_module_data[item]
-            except Exception as e:
-                log.exception_logging(e)
-
     def _get_soc(self):
         try:
             pass
@@ -158,42 +145,16 @@ class loadvars():
         except Exception as e:
             log.exception_logging(e)
 
-    def _get_kits(self):
+    def _get_kits(self, kits_threads, dict):
         try:
-            kits_threads = []
-            for item in data.data.counter_module_data:
+            for item in dict:
                 try:
-                    if "counter" in item:
-                        thread = None
-                        counter = data.data.counter_module_data[item]
-                        if counter.data["module"]["selected"] == "openwb":
-                            thread = threading.Thread(target=counter.read, args=())
-                        if thread != None:
-                            kits_threads.append(thread)
-                except Exception as e:
-                    log.exception_logging(e)
-            for item in data.data.pv_data:
-                try:
-                    if "pv" in item:
-                        thread = None
-                        pv = data.data.pv_data[item]
-                        # if pv.data["config"]["selected"] == "openwb_pv_kit" or pv.data["config"]["selected"] == "openwb_evu_kit":
-                        #     thread = threading.Thread(target=p_ethmpm3pm.read_ethmpm3pm, args=(pv,))
-                        # elif pv.data["config"]["selected"] == "ethsdm120":
-                        #     thread = threading.Thread(target=p_ethsdm120.read_ethsdm120, args=(pv,))
-                        if thread != None:
-                            kits_threads.append(thread)
-                except Exception as e:
-                    log.exception_logging(e)
-            for item in data.data.bat_module_data:
-                try:
-                    if "bat" in item:
-                        thread = None
-                        bat = data.data.bat_module_data[item]
-                        # if bat.data["config"]["selected"] == "openwb":
-                        #     thread = threading.Thread(target=b_openwb.read_openwb, args=(bat,))
-                        if thread != None:
-                            kits_threads.append(thread)
+                    thread = None
+                    module = dict[item]
+                    if module.data["module"]["selected"] == "openwb":
+                        thread = threading.Thread(target=module.read, args=())
+                    if thread != None:
+                        kits_threads.append(thread)
                 except Exception as e:
                     log.exception_logging(e)
             return kits_threads

@@ -297,12 +297,8 @@ class setData():
                 self._validate_value(msg, int, [(0, 2)])
             elif re.search("^openWB/set/vehicle/[0-9]+/soc/get/fault_str$", msg.topic) != None:
                 self._validate_value(msg, str)
-            elif re.search("^openWB/set/vehicle/[0-9]+/match_ev/selected$", msg.topic) != None:
-                self._validate_value(msg, str)
-            elif re.search("^openWB/set/vehicle/[0-9]+/match_ev/tag_id$", msg.topic) != None:
-                self._validate_value(msg, str)
-            elif re.search("^openWB/set/vehicle/[0-9]+/match_ev/inactive$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, 1)])
+            elif re.search("^openWB/set/vehicle/[0-9]+/tag_id$", msg.topic) != None:
+                self._validate_value(msg, str, collection=list)
             elif (re.search("^openWB/set/vehicle/[0-9]+/charge_template$", msg.topic) != None or
                     re.search("^openWB/set/vehicle/[0-9]+/ev_template$", msg.topic) != None):
                 self._validate_value(msg, int, [(0, None)])
@@ -699,8 +695,6 @@ class setData():
                 self._validate_value(msg, "json")
             elif re.search("^openWB/set/optional/rfid/active$", msg.topic) != None:
                 self._validate_value(msg, int, [(0, 1)])
-            elif re.search("^openWB/set/optional/rfid/match_ev_per_tag_only$", msg.topic) != None:
-                self._validate_value(msg, int, [(0, 1)])
             else:
                 log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
                 pub.pub(msg.topic, "")
@@ -723,7 +717,7 @@ class setData():
                 self._validate_value(msg, int, [(0, 3)])
             elif (re.search("^openWB/set/counter/set/home_consumption$", msg.topic) != None or
                     re.search("^openWB/set/counter/set/daily_yield_home_consumption$", msg.topic) != None):
-                self._validate_value(msg, int, [(0, None)])
+                self._validate_value(msg, float, [(0, None)])
             elif re.search("^openWB/set/counter/get/hierarchy$", msg.topic) != None:
                 self._validate_value(msg, None)
             elif re.search("^openWB/set/counter/[0-9]+/set/consumption_left$", msg.topic) != None:
@@ -818,6 +812,9 @@ class setData():
         try:
             if re.search("^openWB/set/system/lastlivevaluesJson$", msg.topic) != None:
                 self._validate_value(msg, "json")
+            elif (re.search("^openWB/set/system/perform_update$", msg.topic) != None or
+                    re.search("^openWB/set/system/update_in_progress$", msg.topic) != None):
+                self._validate_value(msg, int, [(0, 1)])
             else:
                 # hier kommen auch noch alte Topics ohne json-Format an.
                 #log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))

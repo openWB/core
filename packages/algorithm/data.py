@@ -12,22 +12,24 @@ class Data:
     def __init__(self):
         self.event = threading.Event()
         self.event.set()
-        self._cp_data = {}
-        self._cp_template_data = {}
-        self._pv_data = {}
-        self._ev_data = {}
-        self._ev_template_data = {}
-        self._ev_charge_template_data = {}
+        self._bat_data = {}
+        self._bat_module_data = {}
         self._counter_data = {}
         self._counter_module_data = {}
-        self._bat_module_data = {}
+        self._cp_data = {}
+        self._cp_template_data = {}
+        self._ev_charge_template_data = {}
+        self._ev_data = {}
+        self._ev_template_data = {}
         self._general_data = {}
         self._optional_data = {}
+        self._pv_data = {}
+        self._pv_module_data = {}
         self._system_data = {}
 
     # getter-Funktion, der Zugriff erfolgt wie bei einem Zugriff auf eine öffentliche Variable.
     @property
-    def cp_data(self):
+    def bat_data(self):
         """ gibt die Variable zurück. Durch das Event wird verhindert, das gleichzeitig geschrieben und gelesen wird.
 
         Return
@@ -36,12 +38,12 @@ class Data:
         """
         self.event.wait()
         self.event.clear()
-        temp = self._cp_data
+        temp = self._bat_data
         self.event.set()
         return temp
 
-    @cp_data.setter
-    def cp_data(self, value):
+    @bat_data.setter
+    def bat_data(self, value):
         """ setzt die Variable. Durch das Event wird verhindert, das gleichzeitig geschrieben und gelesen wird.
 
         Parameter
@@ -50,82 +52,22 @@ class Data:
         """
         self.event.wait()
         self.event.clear()
-        self._cp_data = value
+        self._bat_data = value
         self.event.set()
 
     @property
-    def cp_template_data(self):
+    def bat_module_data(self):
         self.event.wait()
         self.event.clear()
-        temp = self._cp_template_data
+        temp = self._bat_module_data
         self.event.set()
         return temp
 
-    @cp_template_data.setter
-    def cp_template_data(self, value):
+    @bat_module_data.setter
+    def bat_module_data(self, value):
         self.event.wait()
         self.event.clear()
-        self._cp_template_data = value
-        self.event.set()
-
-    @property
-    def pv_data(self):
-        self.event.wait()
-        self.event.clear()
-        temp = self._pv_data
-        self.event.set()
-        return temp
-
-    @pv_data.setter
-    def pv_data(self, value):
-        self.event.wait()
-        self.event.clear()
-        self._pv_data = value
-        self.event.set()
-
-    @property
-    def ev_data(self):
-        self.event.wait()
-        self.event.clear()
-        temp = self._ev_data
-        self.event.set()
-        return temp
-
-    @ev_data.setter
-    def ev_data(self, value):
-        self.event.wait()
-        self.event.clear()
-        self._ev_data = value
-        self.event.set()
-
-    @property
-    def ev_template_data (self):
-        self.event.wait()
-        self.event.clear()
-        temp = self._ev_template_data 
-        self.event.set()
-        return temp
-
-    @ev_template_data .setter
-    def ev_template_data (self, value):
-        self.event.wait()
-        self.event.clear()
-        self._ev_template_data = value
-        self.event.set()
-
-    @property
-    def ev_charge_template_data(self):
-        self.event.wait()
-        self.event.clear()
-        temp = self._ev_charge_template_data
-        self.event.set()
-        return temp
-
-    @ev_charge_template_data.setter
-    def ev_charge_template_data(self, value):
-        self.event.wait()
-        self.event.clear()
-        self._ev_charge_template_data = value
+        self._bat_module_data = value
         self.event.set()
 
     @property
@@ -159,18 +101,78 @@ class Data:
         self.event.set()
 
     @property
-    def bat_module_data(self):
+    def cp_data(self):
         self.event.wait()
         self.event.clear()
-        temp = self._bat_module_data
+        temp = self._cp_data
         self.event.set()
         return temp
 
-    @bat_module_data.setter
-    def bat_module_data(self, value):
+    @cp_data.setter
+    def cp_data(self, value):
         self.event.wait()
         self.event.clear()
-        self._bat_module_data = value
+        self._cp_data = value
+        self.event.set()
+
+    @property
+    def cp_template_data(self):
+        self.event.wait()
+        self.event.clear()
+        temp = self._cp_template_data
+        self.event.set()
+        return temp
+
+    @cp_template_data.setter
+    def cp_template_data(self, value):
+        self.event.wait()
+        self.event.clear()
+        self._cp_template_data = value
+        self.event.set()
+
+    @property
+    def ev_charge_template_data(self):
+        self.event.wait()
+        self.event.clear()
+        temp = self._ev_charge_template_data
+        self.event.set()
+        return temp
+
+    @ev_charge_template_data.setter
+    def ev_charge_template_data(self, value):
+        self.event.wait()
+        self.event.clear()
+        self._ev_charge_template_data = value
+        self.event.set()
+
+    @property
+    def ev_data(self):
+        self.event.wait()
+        self.event.clear()
+        temp = self._ev_data
+        self.event.set()
+        return temp
+
+    @ev_data.setter
+    def ev_data(self, value):
+        self.event.wait()
+        self.event.clear()
+        self._ev_data = value
+        self.event.set()
+
+    @property
+    def ev_template_data (self):
+        self.event.wait()
+        self.event.clear()
+        temp = self._ev_template_data 
+        self.event.set()
+        return temp
+
+    @ev_template_data .setter
+    def ev_template_data (self, value):
+        self.event.wait()
+        self.event.clear()
+        self._ev_template_data = value
         self.event.set()
 
     @property
@@ -204,6 +206,36 @@ class Data:
         self.event.set()
 
     @property
+    def pv_data(self):
+        self.event.wait()
+        self.event.clear()
+        temp = self._pv_data
+        self.event.set()
+        return temp
+
+    @pv_data.setter
+    def pv_data(self, value):
+        self.event.wait()
+        self.event.clear()
+        self._pv_data = value
+        self.event.set()
+
+    @property
+    def pv_module_data(self):
+        self.event.wait()
+        self.event.clear()
+        temp = self._pv_module_data
+        self.event.set()
+        return temp
+
+    @pv_module_data.setter
+    def pv_module_data(self, value):
+        self.event.wait()
+        self.event.clear()
+        self._pv_module_data = value
+        self.event.set()
+
+    @property
     def system_data(self):
         self.event.wait()
         self.event.clear()
@@ -219,6 +251,7 @@ class Data:
         self.event.set()
 
     def print_all(self):
+        self._print_dictionaries(self._bat_data)
         self._print_dictionaries(self._bat_module_data)
         self._print_dictionaries(self._cp_data)
         self._print_dictionaries(self._cp_template_data)
@@ -230,6 +263,7 @@ class Data:
         self._print_dictionaries(self._general_data)
         self._print_dictionaries(self._optional_data)
         self._print_dictionaries(self._pv_data)
+        self._print_dictionaries(self._pv_module_data)
         self._print_dictionaries(self._system_data)
         log.message_data_log("debug", "\n")
 

@@ -29,9 +29,8 @@ def get_ev_to_rfid(rfid):
     for vehicle in data.data.ev_data:
         try:
             if "ev" in vehicle:
-                if data.data.ev_data[vehicle].data["match_ev"]["selected"] == "rfid":
-                    if data.data.ev_data[vehicle].data["match_ev"]["tag_id"] == rfid:
-                        return data.data.ev_data[vehicle].ev_num
+                if rfid in data.data.ev_data[vehicle].data["tag_id"]:
+                    return data.data.ev_data[vehicle].ev_num
         except Exception as e:
             log.exception_logging(e)
             return data.data.ev_data[0].ev_num

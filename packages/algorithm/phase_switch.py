@@ -61,7 +61,7 @@ def _perform_phase_switch(selected, config, phases_to_use, duration, charge_stat
         elif selected == "ip_evse":
             ip_address = config["ip_address"]
             id = config["id"]
-            ip_evse.perform_phase_switcht(ip_address, id, duration, phases_to_use)
+            ip_evse.perform_phase_switch(ip_address, id, duration, phases_to_use)
         elif selected == "modbus_evse":
             num = config["chargepoint"]
             _phase_switch_internal(num, duration, phases_to_use)

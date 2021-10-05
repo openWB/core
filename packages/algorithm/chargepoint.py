@@ -463,11 +463,12 @@ class chargepoint():
                                 if state == False:
                                     charging_possbile = True
                                 else:
+                                    # Darf Autolock durch Tag überschrieben werden?
                                     state, message = self._is_rfid_neccessary_matched()
                                     if state == True:
                                         charging_possbile = True
             if charging_possbile == True:
-                ev_num, message = self.template.get_ev(self.data["set"]["rfid"], self.data["config"]["ev"], self.data["set"]["plug_time"])
+                ev_num, message = self.template.get_ev(self.data["set"]["rfid"], self.data["config"]["ev"])
                 log.message_debug_log("debug", "possible"+str(ev_num))
                 if ev_num != -1:
                     return ev_num, message
@@ -751,7 +752,7 @@ class cpTemplate():
         except Exception as e:
             log.exception_logging(e)
 
-    def get_ev(self, rfid, assigned_ev, plug_time):
+    def get_ev(self, rfid, assigned_ev):
         """ermittelt das dem Ladepunkt zugeordnete EV
 
         Parameter
@@ -760,8 +761,6 @@ class cpTemplate():
             Tag, der einem EV zugeordnet werden soll.
         assigned_ev: int
             dem Ladepunkt fest zugeordnetes EV
-        plug_time: str
-            Zeitpunkt des Ansteckens
         Return
         ------
         ev_num: int
@@ -776,19 +775,13 @@ class cpTemplate():
                 if rfid != "0":
                     vehicle = ev.get_ev_to_rfid(rfid)
                     if vehicle == None:
-                        if data.data.optional_data["optional"].data["rfid"]["match_ev_per_tag_only"] == False:
-                            ev_num = assigned_ev
-                        else:
-                            ev_num = -1
-                            message = "Keine Ladung, da dem RFID-Tag "+str(rfid)+" kein EV-Profil zugeordnet werden kann."
+                        ev_num = -1
+                        message = "Keine Ladung, da dem RFID-Tag "+str(rfid)+" kein EV-Profil zugeordnet werden kann."
                     else:
                         ev_num = vehicle
                 else:
-                    if data.data.optional_data["optional"].data["rfid"]["match_ev_per_tag_only"] == False:
-                        ev_num = assigned_ev
-                    else:
-                        ev_num = -1
-                        message = "Keine Ladung, da noch kein RFID-Tag vorgehalten wurde."
+                    ev_num = -1
+                    message = "Keine Ladung, da noch kein RFID-Tag vorgehalten wurde."
             else:
                 ev_num = assigned_ev
             
