@@ -354,6 +354,8 @@ h3 {
 	--lp2bgCol: rgba(50, 30, 105, 0.7);
 	--evuCol: rgba(255, 0, 0, 0.7);
 	--evubgCol: rgba(255, 10, 13, 0.3);
+	--counterCol: rgba(255, 127, 127, 0.7);
+	--counterbgCol: rgba(255, 127, 127, 0.3);
 	--pvCol: rgba(0, 255, 0, 1);
 	--pvbgCol: rgba(10, 255, 13, 0.3);
 	--speicherCol: rgba(255, 153, 0, 0.8);
