@@ -286,6 +286,8 @@ class setData():
         try:
             if "/name" in msg.topic:
                 self._validate_value(msg, str)
+            elif "openWB/set/vehicle/template" in msg.topic:
+                self._subprocess_vehicle_chargemode_topic(msg)
             elif ("/soc/config/request_interval_charging" in msg.topic or
                     "/soc/config/reques_interval_not_charging" in msg.topic):
                 self._validate_value(msg, int, [(0, None)])
@@ -299,6 +301,8 @@ class setData():
                 self._validate_value(msg, str)
             elif "/tag_id" in msg.topic:
                 self._validate_value(msg, str, collection=list)
+            elif "/set/ev_template" in msg.topic:
+                self._validate_value(msg, "json")
             elif ("/charge_template" in msg.topic or
                     "/ev_template" in msg.topic):
                 self._validate_value(msg, int, [(0, None)])
@@ -306,8 +310,6 @@ class setData():
                 self._validate_value(msg, int, [(0, None)])
             elif "/get/soc" in msg.topic:
                 self._validate_value(msg, int, [(0, 100)])
-            elif "/set/ev_template" in msg.topic:
-                self._validate_value(msg, "json")
             elif "/control_parameter/required_current" in msg.topic:
                 self._validate_value(msg, float, [(6, 32), (0, 0)])
             elif "/control_parameter/phases" in msg.topic:
@@ -321,8 +323,6 @@ class setData():
                     "/control_parameter/timestamp_auto_phase_switch" in msg.topic or
                     "/control_parameter/timestamp_perform_phase_switch" in msg.topic):
                 self._validate_value(msg, str)
-            elif "openWB/set/vehicle/template" in msg.topic:
-                self._subprocess_vehicle_chargemode_topic(msg)
             else:
                 log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
                 pub.pub(msg.topic, "")
@@ -456,10 +456,10 @@ class setData():
                 self._validate_value(msg, float, [(0, None)])
             elif "/set/log/timestamp_start_charging" in msg.topic:
                 self._validate_value(msg, str)
-            elif "/config" in msg.topic:
-                self._validate_value(msg, "json")
             elif "/config/ev" in msg.topic:
                 self._validate_value(msg, int, [(0, None)], pub_json = True)
+            elif "/config" in msg.topic:
+                self._validate_value(msg, "json")
             elif ("/get/voltage" in msg.topic or
                     "/get/current" in msg.topic or
                     "/get/power_factor" in msg.topic):
@@ -844,8 +844,6 @@ class setData():
                     else:
                         log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
                         pub.pub(msg.topic, "")
-                elif "/config" in msg.topic:
-                    self._validate_value(msg, "json")
                 elif "/config" in msg.topic:
                     self._validate_value(msg, "json")
                 else:

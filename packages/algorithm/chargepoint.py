@@ -261,17 +261,17 @@ class chargepoint():
         except Exception as e:
             log.exception_logging(e)
 
-    def _is_grid_protection_active(self):
-        """ prüft, ob der Netzschutz aktiv ist und alle Ladepunkt gestoppt werden müssen.
+    def _is_grid_protection_inactive(self):
+        """ prüft, ob der Netzschutz inaktiv ist oder ob alle Ladepunkt gestoppt werden müssen.
 
         Return
         ------
         state: bool
-            ist Netzschutz aktiv
+            ist Netzschutz inaktiv
         message: str
             Text, dass geladen werden kann oder warum nicht geladen werden kann.
         """
-        state = False
+        state = True
         message = None
         try:
             general_data = data.data.general_data["general"].data
@@ -280,35 +280,35 @@ class chargepoint():
                     if general_data["grid_protection_timestamp"] != "0":
                         # Timer ist  abglaufen
                         if timecheck.check_timestamp(general_data["grid_protection_timestamp"], general_data["grid_protection_random_stop"]) == False:
-                            state = True
+                            state = False
                             message = "Ladepunkt gesperrt, da der Netzschutz aktiv ist."
                             pub.pub("openWB/set/general/grid_protection_timestamp","0")
                             pub.pub("openWB/set/general/grid_protection_random_stop", 0)
                     else:
-                        state = True
+                        state = False
                         message = "Ladepunkt gesperrt, da der Netzschutz aktiv ist."
             return state, message
         except Exception as e:
             log.exception_logging(e)
             return True, "Keine Ladung, da ein interner Fehler aufgetreten ist."
 
-    def _is_ripple_control_receiver_active(self):
-        """ prüft, ob der Rundsteuerempfängerkontakt geschlossen ist und alle Ladepunkt gestoppt werden müssen.
+    def _is_ripple_control_receiver_inactive(self):
+        """ prüft, dass der Rundsteuerempfängerkontakt nicht geschlossen ist.
 
         Return
         ------
         state: bool
-            ist Netzschutz aktiv
+            ist Netzschutz inaktiv
         message: str
             Text, dass geladen werden kann oder warum nicht geladen werden kann.
         """
-        state = False
+        state = True
         message = None
         try:
             general_data = data.data.general_data["general"].data
             if general_data["ripple_control_receiver"]["configured"] == True:
                 if general_data["ripple_control_receiver"]["r1_active"] == True or general_data["ripple_control_receiver"]["r2_active"] == True:
-                    state = True
+                    state = False
                     message = "Ladepunkt gesperrt, da der Rundsteuerempfängerkontakt geschlossen ist."
             return state, message
         except Exception as e:
@@ -338,8 +338,8 @@ class chargepoint():
             log.exception_logging(e)
             return False, "Keine Ladung, da ein interner Fehler aufgetreten ist."
 
-    def _is_autolock_active(self):
-        """ ruft die Funktion der Template-Klasse auf.
+    def _is_autolock_inactive(self):
+        """ prüft, ob Autolock nicht aktiv ist oder ob die Sperrung durch einen dem LP zugeordneten RFID-Tag aufgehoben werden kann.
 
         Return
         ------
@@ -349,22 +349,33 @@ class chargepoint():
             Text, dass geladen werden kann oder warum nicht geladen werden kann.
         """
         try:
+            message = None
             state = self.template.autolock(self.data["set"]["autolock_state"], self.data["get"]["charge_state"], self.cp_num)
-            if state == True:
-                message = "Keine Ladung, da Autolock aktiv ist."
+            if state == False:
+                state = True
             else:
-                message = None
+                # Darf Autolock durch Tag überschrieben werden?
+                if data.data.optional_data["optional"].data["rfid"]["active"] == True and self.template.data["rfid_enabling"] == True:
+                    if self.data["set"]["rfid"] == "0":
+                        state = False
+                        message = "Keine Ladung, da der Ladepunkt durch Autolock gesperrt ist und erst per RFID freigeschaltet werden muss."
+                    else:
+                        state = True
+                        message = None
+                else:
+                    state = False
+                    message = "Keine Ladung, da Autolock aktiv ist."
             return state, message
         except Exception as e:
             log.exception_logging(e)
             return True, "Keine Ladung, da ein interner Fehler aufgetreten ist."
 
-    def _is_manual_lock_active(self):
-        """ prüft, ob der Ladepunkt manuell gesperrt wurde.
+    def _is_manual_lock_inactive(self):
+        """ prüft, das der Ladepunkt nicht manuell gesperrt wurde.
 
         Return
         ------
-        state: bool
+        charging_possbile: bool
             wurde der Ladepunkt gesperrt
         message: str
             Text, dass geladen werden kann oder warum nicht geladen werden kann.
@@ -372,10 +383,12 @@ class chargepoint():
         try:
             state = self.data["set"]["manual_lock"]
             if state == True:
+                charging_possbile = False
                 message = "Keine Ladung, da der Ladepunkt manuell gesperrt wurde."
             else:
+                charging_possbile = True
                 message = None
-            return state, message
+            return charging_possbile, message
         except Exception as e:
             log.exception_logging(e)
             return True, "Keine Ladung, da ein interner Fehler aufgetreten ist."
@@ -405,32 +418,6 @@ class chargepoint():
             log.exception_logging(e)
             return False, "Keine Ladung, da ein interner Fehler aufgetreten ist."
     
-    def _is_rfid_neccessary_matched(self):
-        """ 
-
-        Return
-        ------
-        state: bool
-            ist ein EV angesteckt
-        message: str
-            Text, dass geladen werden kann oder warum nicht geladen werden kann.
-        """
-        try:
-            if self.template.data["rfid_enabling"] == True:
-                if self.data["set"]["rfid"] != "0":
-                    state = True
-                    message = None
-                else:
-                    state = False
-                    message = "Keine Ladung, da der Ladepunkt erst per RFID freigeschaltet werden muss."
-            else:
-                state = True
-                message = None
-            return state, message
-        except Exception as e:
-            log.exception_logging(e)
-            return False, "Keine Ladung, da ein interner Fehler aufgetreten ist."
-
     def get_state(self):
         """prüft alle Bedingungen und ruft die EV-Logik auf.
 
@@ -451,22 +438,15 @@ class chargepoint():
             charging_possbile = False
             state, message = self._is_ev_plugged()
             if state == True:
-                state, message = self._is_grid_protection_active()
-                if state == False:
-                    state, message = self._is_ripple_control_receiver_active()
-                    if state == False:
+                state, message = self._is_grid_protection_inactive()
+                if state == True:
+                    state, message = self._is_ripple_control_receiver_inactive()
+                    if state == True:
                         state, message = self._is_cp_available()
                         if state == True:
-                            state, message = self._is_manual_lock_active()
-                            if state == False:
-                                state, message = self._is_autolock_active()
-                                if state == False:
-                                    charging_possbile = True
-                                else:
-                                    # Darf Autolock durch Tag überschrieben werden?
-                                    state, message = self._is_rfid_neccessary_matched()
-                                    if state == True:
-                                        charging_possbile = True
+                            state, message = self._is_manual_lock_inactive()
+                            if state == True:
+                                charging_possbile, message = self._is_autolock_inactive()
             if charging_possbile == True:
                 ev_num, message = self.template.get_ev(self.data["set"]["rfid"], self.data["config"]["ev"])
                 log.message_debug_log("debug", "possible"+str(ev_num))
@@ -771,17 +751,15 @@ class cpTemplate():
         ev_num = -1
         message = None
         try:
-            if self.data["rfid_enabling"] == True:
-                if rfid != "0":
-                    vehicle = ev.get_ev_to_rfid(rfid)
-                    if vehicle == None:
-                        ev_num = -1
-                        message = "Keine Ladung, da dem RFID-Tag "+str(rfid)+" kein EV-Profil zugeordnet werden kann."
-                    else:
-                        ev_num = vehicle
-                else:
+            if (data.data.optional_data["optional"].data["rfid"]["active"] == True 
+                    and self.data["rfid_enabling"] == True 
+                    and rfid != "0"):
+                vehicle = ev.get_ev_to_rfid(rfid)
+                if vehicle == None:
                     ev_num = -1
-                    message = "Keine Ladung, da noch kein RFID-Tag vorgehalten wurde."
+                    message = "Keine Ladung, da dem RFID-Tag "+str(rfid)+" kein EV-Profil zugeordnet werden kann."
+                else:
+                    ev_num = vehicle
             else:
                 ev_num = assigned_ev
             
