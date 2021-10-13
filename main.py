@@ -38,14 +38,14 @@ class HandlerAlgorithm():
                 if (data.data.general_data["general"].data["control_interval"] / 10) == self.interval_counter:
                     # Mit aktuellen Einstellungen arbeiten.
                     log.message_debug_log("info", " Start copy_data 1")
-                    prep.copy_data()
+                    prep.copy_system_data()
                     log.message_debug_log("info", " Stop copy_data 1")
                     vars.get_values()
                     # Virtuelle Module ermitteln die Werte rechnerisch auf Bais der Messwerte anderer Module. 
                     # Daher können sie erst die Werte ermitteln, wenn die physischen Module ihre Werte ermittelt haben.
                     # Würde man allle Module parallel abfragen, wären die virtuellen Module immer einen Zyklus hinterher.
                     log.message_debug_log("info", " Start copy_data 2")
-                    prep.copy_data()
+                    prep.copy_counter_data()
                     log.message_debug_log("info", " Stop copy_data 2")
                     vars.get_virtual_values()
                     # Kurz warten, damit alle Topics von setdata und subdata verarbeitet werden könnnen.
@@ -70,9 +70,9 @@ class HandlerAlgorithm():
                     self.interval_counter = self.interval_counter + 1
             except:
                 # Wenn kein Regelintervall bekannt ist, alle 10s regeln.
-                prep.copy_data()
+                prep.copy_system_data()
                 vars.get_values()
-                prep.copy_data()
+                prep.copy_counter_data()
                 vars.get_virtual_values()
                 self.heartbeat = True
                 # Kurz warten, damit alle Topics von setdata und subdata verarbeitet werden könnnen.

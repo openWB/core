@@ -120,6 +120,8 @@ def sim_count(present_power_all, topic="", data={}, ramdisk = False, pref = ""):
             else:
                 pub.pub(topic+"module/simulation/sim_timestamp", value1)
                 pub.pub(topic+"module/simulation/present_power_all", present_power_all)
+                pub.pub(topic+"module/simulation/present_imported", 0)
+                pub.pub(topic+"module/simulation/present_exported", 0)
             return 0, 0
     except Exception as e:
         log.log_exception_comp(e, ramdisk)

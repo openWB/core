@@ -25,6 +25,10 @@ def pub_graph_data():
     """
     dataline={"timestamp":int(time.time()),"time":datetime.datetime.today().strftime("%H:%M:%S")}
     dataline.update({"grid": _convert_to_kW(data.data.counter_data["counter0"].data["get"]["power_all"])})
+    for c in data.data.counter_data:
+        if "counter" in c and not "counter0" in c:
+            counter = data.data.counter_data[c]
+            dataline.update({"counter"+str(counter.counter_num)+"-power": _convert_to_kW(counter.data["get"]["power_all"])})
     dataline.update({"house-power":_convert_to_kW(data.data.counter_data["all"].data["set"]["home_consumption"])})
     dataline.update({"charging-all":_convert_to_kW(data.data.cp_data["all"].data["get"]["power_all"])})
     if len(data.data.pv_data) > 1:
@@ -47,8 +51,8 @@ def pub_graph_data():
     #     dataline="$dataline,\"load2-power\":$(convertTokW $verbraucher2_watt)"
     # fi
 
-    pub.pub("openWB/set/graph/lastlivevaluesJson", str(dataline))
-    pub.pub("openWB/set/system/lastlivevaluesJson", str(dataline))
+    pub.pub("openWB/set/graph/lastlivevaluesJson", dataline)
+    pub.pub("openWB/set/system/lastlivevaluesJson", dataline)
 
     pathlib.Path('./data/graph').mkdir(mode = 0o755, parents=True, exist_ok=True)
     try:
