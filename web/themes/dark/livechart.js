@@ -612,7 +612,7 @@ function initDataset(datasetId) {
 
 function truncateData(data) {
 	if (typeof maxDisplayLength !== "undefined" && data.length > maxDisplayLength) {
-		console.info("datasets: " + data.length + " removing: " + (data.length - maxDisplayLength));
+		console.debug("datasets: " + data.length + " removing: " + (data.length - maxDisplayLength));
 		data.splice(0, data.length - maxDisplayLength);
 	}
 }
@@ -624,7 +624,7 @@ function putgraphtogether() {
 		truncateData(allChartData);
 		console.debug("allChartData.length: " + allChartData.length);
 		if (allChartData.length >= 30) { // 5 minutes * 6 measurements/min
-			console.info("received at least 30 data sets for graph; will add up to " + maxDisplayLength + " datasets in total");
+			console.debug("received at least 30 data sets for graph; will add up to " + maxDisplayLength + " datasets in total");
 			Object.keys(allChartData[allChartData.length - 1]).forEach(function(key) {
 				if (key != 'time' && key != 'timestamp') {
 					initDataset(key);
