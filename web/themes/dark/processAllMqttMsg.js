@@ -238,8 +238,15 @@ function handlevar(mqttmsg, mqttpayload) {
 	// console.log("newmessage: "+mqttmsg+": "+mqttpayload);
 	processPreloader(mqttmsg);
 	if (mqttmsg.match(/^openwb\/counter\/0\//i)) { processEvuMessages(mqttmsg, mqttpayload); } // counter/0 is always EVU
-	else if (mqttmsg.match(/^openwb\/counter\/[1-9][0-9]*\//i)) { /* nothing here yet */ } else if (mqttmsg.match(/^openwb\/counter\//i)) { processGlobalCounterMessages(mqttmsg, mqttpayload); } // counter/0 is always EVU
-	else if (mqttmsg.match(/^openwb\/bat\//i)) { processBatteryMessages(mqttmsg, mqttpayload); } else if (mqttmsg.match(/^openwb\/pv\//i)) { processPvMessages(mqttmsg, mqttpayload); } else if (mqttmsg.match(/^openwb\/chargepoint\//i)) { processChargepointMessages(mqttmsg, mqttpayload); } else if (mqttmsg.match(/^openwb\/vehicle\//i)) { processVehicleMessages(mqttmsg, mqttpayload); } else if (mqttmsg.match(/^openwb\/general\/chargemode_config\/pv_charging\//i)) { processPvConfigMessages(mqttmsg, mqttpayload); } else if (mqttmsg.match(/^openwb\/graph\//i)) { processGraphMessages(mqttmsg, mqttpayload); } else if (mqttmsg.match(/^openwb\/optional\/et\//i)) { processETProviderMessages(mqttmsg, mqttpayload); }
+	else if (mqttmsg.match(/^openwb\/counter\/[1-9][0-9]*\//i)) { /* nothing here yet */ }
+	else if (mqttmsg.match(/^openwb\/counter\//i)) { processGlobalCounterMessages(mqttmsg, mqttpayload); } // counter/0 is always EVU
+	else if (mqttmsg.match(/^openwb\/bat\//i)) { processBatteryMessages(mqttmsg, mqttpayload); }
+	else if (mqttmsg.match(/^openwb\/pv\//i)) { processPvMessages(mqttmsg, mqttpayload); }
+	else if (mqttmsg.match(/^openwb\/chargepoint\//i)) { processChargepointMessages(mqttmsg, mqttpayload); }
+	else if (mqttmsg.match(/^openwb\/vehicle\//i)) { processVehicleMessages(mqttmsg, mqttpayload); }
+	else if (mqttmsg.match(/^openwb\/general\/chargemode_config\/pv_charging\//i)) { processPvConfigMessages(mqttmsg, mqttpayload); }
+	else if (mqttmsg.match(/^openwb\/graph\//i)) { processGraphMessages(mqttmsg, mqttpayload); }
+	else if (mqttmsg.match(/^openwb\/optional\/et\//i)) { processETProviderMessages(mqttmsg, mqttpayload); }
 	// else if ( mqttmsg.match( /^openwb\/global\//i) ) { processGlobalMessages(mqttmsg, mqttpayload); }
 	// else if ( mqttmsg.match( /^openwb\/system\//i) ) { processSystemMessages(mqttmsg, mqttpayload); }
 	// else if ( mqttmsg.match( /^openwb\/verbraucher\//i) ) { processVerbraucherMessages(mqttmsg, mqttpayload); }

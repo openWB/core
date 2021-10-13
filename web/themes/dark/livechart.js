@@ -670,8 +670,9 @@ function updateGraph(dataset) {
 		truncateData(allChartData);
 		chartUpdateBuffer = [];
 		myLine.update();
+		console.debug('graph updated, last dataset:', allChartData[allChartData.length-1].timestamp, allChartData[allChartData.length-1].time);
 	} else {
-		console.info('graph not yet initialized, data stored in buffer');
+		console.debug('graph not yet initialized, data stored in buffer');
 	}
 }
 
