@@ -396,7 +396,7 @@ class control():
                                 data.data.bat_data = bat_data
                                 data.data.cp_data = cp_data_old
                                 log.message_debug_log("debug", "adjust 1")
-                                message = "Das Lastmanagement hat den Ladestrom um "+str(round((missing_current), 2))+"A angepasst."
+                                message = "Das Lastmanagement hat den Ladestrom um 0A angepasst."
                                 # Beim Wiederherstellen der Kopie wird die Adresse der Kopie zugewiesen, sodass die Adresse des LP aktualisiert werden muss,
                                 # um Änderungen in der Klasse vorzunehmen, die das data-Modul referenziert.
                                 chargepoint = data.data.cp_data["cp"+str(chargepoint.cp_num)]

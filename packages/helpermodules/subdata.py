@@ -123,13 +123,13 @@ class subData():
             self.process_chargepoint_topic(self.cp_data, msg)
         elif "openWB/defaults/chargepoint/" in msg.topic:
             self.process_chargepoint_topic(self.defaults_cp_data, msg, True)
-        elif "openWB/pv/" in msg.topic and "/module/" in msg.topic:
+        elif "openWB/pv/" in msg.topic and "/module" in msg.topic:
             self.process_pv_module_topic(self.pv_data, msg)
         elif "openWB/pv/" in msg.topic:
             self.process_pv_topic(self.pv_data, msg)
         elif "openWB/defaults/pv/" in msg.topic:
             self.process_pv_topic(self.defaults_pv_data, msg)
-        elif "openWB/bat/" in msg.topic and "/module/" in msg.topic:
+        elif "openWB/bat/" in msg.topic and "/module" in msg.topic:
             self.process_bat_module_topic(self.bat_data, msg)
         elif "openWB/bat/" in msg.topic:
             self.process_bat_topic(self.bat_data, msg)
@@ -143,7 +143,7 @@ class subData():
             self.process_optional_topic(self.optional_data, msg)
         elif "openWB/defaults/optional/" in msg.topic:
             self.process_optional_topic(self.defaults_optional_data, msg, True)
-        elif re.search("^openWB/counter/[0-9]+/module.*$", msg.topic) != None:
+        elif "openWB/counter/" in msg.topic and "/module" in msg.topic:
             self.process_counter_module_topic(self.counter_module_data, msg)
         elif "openWB/counter/" in msg.topic:
             self.process_counter_topic(self.counter_data, msg)

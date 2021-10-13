@@ -12,11 +12,11 @@ def pub_settings():
 
         # cp2
         pub.pub("openWB/set/chargepoint/2/set/manual_lock", False)
-        pub.pub("openWB/set/chargepoint/2/config", {"name": "LP2", "ev": 0, "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "mqtt"}, "power_module": {"selected": None}})
+        pub.pub("openWB/set/chargepoint/2/config", {"name": "LP2", "ev": 0, "template": 1, "connected_phases": 3, "phase_1": 2, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "mqtt"}, "power_module": {"selected": None}})
 
         # cp3
         pub.pub("openWB/set/chargepoint/3/set/manual_lock", False)
-        pub.pub("openWB/set/chargepoint/3/config", {"name": "LP3", "ev": 0, "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "mqtt"}, "power_module": {"selected": None}})
+        pub.pub("openWB/set/chargepoint/3/config", {"name": "LP3", "ev": 0, "template": 1, "connected_phases": 3, "phase_1": 3, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "mqtt"}, "power_module": {"selected": None}})
     
     else:
         pass
@@ -26,11 +26,11 @@ def pub_settings():
 
         # # cp2
         # pub.pub("openWB/set/chargepoint/2/set/manual_lock", False)
-        # pub.pub("openWB/set/chargepoint/2/config", {"name": "LP2", "ev": 0, "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.194", "chargepoint": 1}}}, "power_module": {"selected": None}})
+        # pub.pub("openWB/set/chargepoint/2/config", {"name": "LP2", "ev": 0, "template": 1, "connected_phases": 3, "phase_1": 2, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.194", "chargepoint": 1}}}, "power_module": {"selected": None}})
 
         # # cp3
         # pub.pub("openWB/set/chargepoint/3/set/manual_lock", False)
-        # pub.pub("openWB/set/chargepoint/3/config", {"name": "LP3", "ev": 0, "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.176", "chargepoint": 1}}}, "power_module": {"selected": None}})
+        # pub.pub("openWB/set/chargepoint/3/config", {"name": "LP3", "ev": 0, "template": 1, "connected_phases": 3, "phase_1": 3, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.176", "chargepoint": 1}}}, "power_module": {"selected": None}})
 
         # # cp4
         # pub.pub("openWB/set/chargepoint/4/set/manual_lock", False)
@@ -38,11 +38,11 @@ def pub_settings():
 
         # # cp5
         # pub.pub("openWB/set/chargepoint/5/set/manual_lock", False)
-        # pub.pub("openWB/set/chargepoint/5/config", {"name": "LP5", "ev": 0, "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.107", "chargepoint": 1}}}, "power_module": {"selected": None}})
+        # pub.pub("openWB/set/chargepoint/5/config", {"name": "LP5", "ev": 0, "template": 1, "connected_phases": 3, "phase_1": 2, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.107", "chargepoint": 1}}}, "power_module": {"selected": None}})
 
         # # cp6
         # pub.pub("openWB/set/chargepoint/6/set/manual_lock", False)
-        # pub.pub("openWB/set/chargepoint/6/config", {"name": "LP6", "ev": 0, "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.214", "chargepoint": 1}}}, "power_module": {"selected": None}})
+        # pub.pub("openWB/set/chargepoint/6/config", {"name": "LP6", "ev": 0, "template": 1, "connected_phases": 3, "phase_1": 3, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.214", "chargepoint": 1}}}, "power_module": {"selected": None}})
 
         # # cp7
         # pub.pub("openWB/set/chargepoint/7/set/manual_lock", False)
@@ -50,11 +50,11 @@ def pub_settings():
 
         # # cp8
         # pub.pub("openWB/set/chargepoint/8/set/manual_lock", False)
-        # pub.pub("openWB/set/chargepoint/8/config", {"name": "LP8", "ev": 0, "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.19", "chargepoint": 1}}}, "power_module": {"selected": None}})
+        # pub.pub("openWB/set/chargepoint/8/config", {"name": "LP8", "ev": 0, "template": 1, "connected_phases": 3, "phase_1": 2, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.19", "chargepoint": 1}}}, "power_module": {"selected": None}})
 
         # # cp9
         # pub.pub("openWB/set/chargepoint/9/set/manual_lock", False)
-        # pub.pub("openWB/set/chargepoint/9/config", {"name": "LP9", "ev": 0, "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.249", "chargepoint": 1}}}, "power_module": {"selected": None}})
+        # pub.pub("openWB/set/chargepoint/9/config", {"name": "LP9", "ev": 0, "template": 1, "connected_phases": 3, "phase_1": 3, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.249", "chargepoint": 1}}}, "power_module": {"selected": None}})
 
         # # cp10
         # pub.pub("openWB/set/chargepoint/10/set/manual_lock", False)
@@ -62,11 +62,11 @@ def pub_settings():
 
         # # cp11
         # pub.pub("openWB/set/chargepoint/11/set/manual_lock", False)
-        # pub.pub("openWB/set/chargepoint/11/config", {"name": "LP11", "ev": 0, "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.55", "chargepoint": 1}}}, "power_module": {"selected": None}})
+        # pub.pub("openWB/set/chargepoint/11/config", {"name": "LP11", "ev": 0, "template": 1, "connected_phases": 3, "phase_1": 2, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.55", "chargepoint": 1}}}, "power_module": {"selected": None}})
 
         # # cp12
         # pub.pub("openWB/set/chargepoint/12/set/manual_lock", False)
-        # pub.pub("openWB/set/chargepoint/12/config", {"name": "LP12", "ev": 0, "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.22", "chargepoint": 1}}}, "power_module": {"selected": None}})
+        # pub.pub("openWB/set/chargepoint/12/config", {"name": "LP12", "ev": 0, "template": 1, "connected_phases": 3, "phase_1": 3, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.22", "chargepoint": 1}}}, "power_module": {"selected": None}})
 
         # # cp13
         # pub.pub("openWB/set/chargepoint/13/set/manual_lock", False)
@@ -74,11 +74,11 @@ def pub_settings():
 
         # # cp14
         # pub.pub("openWB/set/chargepoint/14/set/manual_lock", False)
-        # pub.pub("openWB/set/chargepoint/14/config", {"name": "LP14", "ev": 0, "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": True, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.109", "chargepoint": 1}}}, "power_module": {"selected": None}})
+        # pub.pub("openWB/set/chargepoint/14/config", {"name": "LP14", "ev": 0, "template": 1, "connected_phases": 3, "phase_1": 2, "auto_phase_switch_hw": True, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.109", "chargepoint": 1}}}, "power_module": {"selected": None}})
 
         # # cp15
         # pub.pub("openWB/set/chargepoint/15/set/manual_lock", False)
-        # pub.pub("openWB/set/chargepoint/15/config", {"name": "LP15", "ev": 0, "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.212", "chargepoint": 1}}}, "power_module": {"selected": None}})
+        # pub.pub("openWB/set/chargepoint/15/config", {"name": "LP15", "ev": 0, "template": 1, "connected_phases": 3, "phase_1": 3, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.212", "chargepoint": 1}}}, "power_module": {"selected": None}})
 
         # # cp16
         # pub.pub("openWB/set/chargepoint/16/set/manual_lock", False)
@@ -89,7 +89,7 @@ def pub_settings():
     pub.pub("openWB/set/chargepoint/template/1/autolock/1/time", ["07:00", "16:15"])
     pub.pub("openWB/set/chargepoint/template/1/autolock/1/active", True)
     pub.pub("openWB/set/chargepoint/template/1/autolock/wait_for_charging_end", False)
-    pub.pub("openWB/set/chargepoint/template/1/autolock/active", True)
+    pub.pub("openWB/set/chargepoint/template/1/autolock/active", False)
     pub.pub("openWB/set/chargepoint/template/1/rfid_enabling", True)
     pub.pub("openWB/set/chargepoint/template/1/valid_tags", ["248", "257", "258", "259", "1", "2", "3", "c"])
 
@@ -228,11 +228,11 @@ def pub_settings():
     pub.pub("openWB/vehicle/template/charge_template/7", {"load_default": True, "time_charging": {"plans": {"1": {"name": "abc", "active": 1, "time": ["07:00", "17:20"], "frequency": {"selected": "daily"}, "current": 10}, "2": {"name": "def", "active": 0, "time": ["07:00", "17:20"], "frequency": {"selected": "daily"}, "current": 16}}, "active": False}, "disable_after_unplug": False, "prio": True, "chargemode": {"pv_charging": {"min_soc": 23, "min_current": 6, "min_soc_current": 13, "feed_in_limit": False, "max_soc": 95}, "instant_charging": {"current": 25, "limit": {"soc": 90, "amount": 10, "selected": "none"}}, "scheduled_charging": {"1": {"name": "abc", "soc": 85, "active": 1, "time": "14:15", "frequency": {"selected": "daily"}}, "2": {"name": "def", "soc": 95, "active": 0, "time": "18:45", "frequency": {"selected": "daily"}}}, "selected": "instant_charging"}})
 
     # optional
-    pub.pub("openWB/set/optional/et/active", False)
+    #pub.pub("openWB/set/optional/et/active", False)
     pub.pub("openWB/set/optional/et/config/max_price", 5.5)
     #pub.pub("openWB/set/optional/et/config/provider", {"provider": "awattar", "country": "de"})
     pub.pub("openWB/set/optional/et/config/provider", {"provider": "tibber", "token": "d1007ead2dc84a2b82f0de19451c5fb22112f7ae11d19bf2bedb224a003ff74a", "id": "c70dcbe5-4485-4821-933d-a8a86452737b"})
-    pub.pub("openWB/set/optional/rfid/active", True)
+    #pub.pub("openWB/set/optional/rfid/active", True)
 
     # pv
     # pub.pub("openWB/set/pv/1/get/counter", 500)
@@ -321,33 +321,33 @@ def pub_settings():
     # pub.pub("openWB/set/bat/1/get/daily_yield_import", 10)
 
     # general
-    pub.pub("openWB/set/general/chargemode_config/individual_mode", True)
-    pub.pub("openWB/set/general/chargemode_config/unbalanced_load", False)
-    pub.pub("openWB/set/general/chargemode_config/unbalanced_load_limit", 18)
-    pub.pub("openWB/set/general/chargemode_config/instant_charging/phases_to_use", 3)
-    pub.pub("openWB/set/general/chargemode_config/pv_charging/bat_prio", 1)
+    #pub.pub("openWB/set/general/chargemode_config/individual_mode", True)
+    #pub.pub("openWB/set/general/chargemode_config/unbalanced_load", False)
+    #pub.pub("openWB/set/general/chargemode_config/unbalanced_load_limit", 18)
+    #pub.pub("openWB/set/general/chargemode_config/instant_charging/phases_to_use", 3)
+    #pub.pub("openWB/set/general/chargemode_config/pv_charging/bat_prio", 1)
     pub.pub("openWB/set/bat/config/configured", False)
-    pub.pub("openWB/set/general/chargemode_config/pv_charging/switch_on_soc", 60)
-    pub.pub("openWB/set/general/chargemode_config/pv_charging/switch_off_soc", 40)
-    pub.pub("openWB/set/general/chargemode_config/pv_charging/rundown_power", 1000)
-    pub.pub("openWB/set/general/chargemode_config/pv_charging/rundown_soc", 50)
-    pub.pub("openWB/set/general/chargemode_config/pv_charging/charging_power_reserve", 200)
-    pub.pub("openWB/set/general/chargemode_config/pv_charging/control_range", [0,230])
-    pub.pub("openWB/set/general/chargemode_config/pv_charging/switch_off_threshold", 5)
-    pub.pub("openWB/set/general/chargemode_config/pv_charging/switch_off_delay", 60)
-    pub.pub("openWB/set/general/chargemode_config/pv_charging/switch_on_delay", 30)
-    pub.pub("openWB/set/general/chargemode_config/pv_charging/switch_on_threshold", 1500)
-    pub.pub("openWB/set/general/chargemode_config/pv_charging/feed_in_yield", 15000)
+    # pub.pub("openWB/set/general/chargemode_config/pv_charging/switch_on_soc", 60)
+    # pub.pub("openWB/set/general/chargemode_config/pv_charging/switch_off_soc", 40)
+    # pub.pub("openWB/set/general/chargemode_config/pv_charging/rundown_power", 1000)
+    # pub.pub("openWB/set/general/chargemode_config/pv_charging/rundown_soc", 50)
+    # pub.pub("openWB/set/general/chargemode_config/pv_charging/charging_power_reserve", 200)
+    # pub.pub("openWB/set/general/chargemode_config/pv_charging/control_range", [0,230])
+    # pub.pub("openWB/set/general/chargemode_config/pv_charging/switch_off_threshold", 5)
+    # pub.pub("openWB/set/general/chargemode_config/pv_charging/switch_off_delay", 60)
+    # pub.pub("openWB/set/general/chargemode_config/pv_charging/switch_on_delay", 30)
+    # pub.pub("openWB/set/general/chargemode_config/pv_charging/switch_on_threshold", 1500)
+    # pub.pub("openWB/set/general/chargemode_config/pv_charging/feed_in_yield", 15000)
     pub.pub("openWB/set/general/chargemode_config/pv_charging/phase_switch_delay", 15)
-    pub.pub("openWB/set/general/chargemode_config/pv_charging/phases_to_use", 1)
-    pub.pub("openWB/set/general/chargemode_config/scheduled_charging/phases_to_use", 0)
-    pub.pub("openWB/set/general/chargemode_config/time_charging/phases_to_use", 1)
-    pub.pub("openWB/set/general/chargemode_config/standby/phases_to_use", 1)
+    # pub.pub("openWB/set/general/chargemode_config/pv_charging/phases_to_use", 1)
+    # pub.pub("openWB/set/general/chargemode_config/scheduled_charging/phases_to_use", 0)
+    # pub.pub("openWB/set/general/chargemode_config/time_charging/phases_to_use", 1)
+    # pub.pub("openWB/set/general/chargemode_config/standby/phases_to_use", 1)
     pub.pub("openWB/set/general/chargemode_config/stop/phases_to_use", 1)
-    pub.pub("openWB/set/general/range_unit", "km")
-    pub.pub("openWB/set/general/price_kwh", 0.2)
-    pub.pub("openWB/set/general/grid_protection_configured", True)
-    pub.pub("openWB/set/general/control_interval", 10)
+    #pub.pub("openWB/set/general/range_unit", "km")
+    #pub.pub("openWB/set/general/price_kwh", 0.2)
+    #pub.pub("openWB/set/general/grid_protection_configured", True)
+    #pub.pub("openWB/set/general/control_interval", 10)
     pub.pub("openWB/set/general/ripple_control_receiver/configured", False)
 
     # graph
