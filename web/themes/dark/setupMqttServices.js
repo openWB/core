@@ -297,7 +297,7 @@ client.onMessageArrived = function(message) {
 
 //Creates a new Messaging.Message Object and sends it
 function publish(payload, topic) {
-	console.log("publish: " + topic + ": " + payload);
+	console.debug("publish: " + topic + ": " + payload);
 	if (topic != undefined) {
 		var message = new Messaging.Message(JSON.stringify(payload));
 		message.destinationName = topic;
@@ -310,6 +310,6 @@ function publish(payload, topic) {
 		message.retained = true;
 		client.send(message);
 	} else {
-		console.log("not publishing message without topic!");
+		console.error("not publishing message without topic!");
 	}
 }

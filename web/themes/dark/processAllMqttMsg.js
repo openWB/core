@@ -38,13 +38,11 @@ function getIndex(topic) {
 }
 
 function createChargepoint(hierarchy) {
-	// console.log(hierarchy);
 	if (hierarchy.id.match(/cp([1-9][0-9]*)/g)) {
 		var chargepointIndex = hierarchy.id.replace('cp', '');
 		if ($('.chargepoint-card[data-cp=' + chargepointIndex + ']').length == 0) {
-			// console.log( "index: "+chargepointIndex);
 			if (typeof chargepointIndex !== 'undefined') {
-				// console.log("creating chargepoint "+chargepointIndex);
+				console.debug("creating chargepoint "+chargepointIndex);
 				var sourceElement = $('.chargepoint-card.chargepoint-template');
 				// remove checkbox toggle button style as they will not function after cloning
 				sourceElement.find('input[type=checkbox][data-toggle^=toggle]').bootstrapToggle('destroy');
@@ -86,7 +84,7 @@ function createChargepoint(hierarchy) {
 				chargepointElement.removeClass('chargepoint-template').removeClass('hide');
 			}
 		} else {
-			console.log("chargepoint '" + chargepointIndex + "' already exists");
+			console.error("chargepoint '" + chargepointIndex + "' already exists");
 		}
 	}
 	hierarchy.children.forEach(element => {
@@ -218,17 +216,17 @@ function refreshChargetemplate(templateIndex) {
 								schedulePlanElement.find('.chargepoint-schedulefrequencyvalue').text(daysText);
 								break;
 							default:
-								console.log("unknown schedule frequency: " + value.frequency.selected);
+								console.error("unknown schedule frequency: " + value.frequency.selected);
 						}
 						// finally show our new chargepoint
 						clonedElement.removeClass('chargepoint-scheduleplan-template').removeClass('hide');
 					} else {
-						console.log('schedule plan ' + key + ' already exists');
+						console.error('schedule plan ' + key + ' already exists');
 					}
 				}
 			}
 		} else {
-			console.log('no chargepoints with chargetemplate "' + templateIndex + '" found');
+			console.debug('no chargepoints with chargetemplate "' + templateIndex + '" found');
 		}
 	}
 }
@@ -1079,7 +1077,7 @@ function processGraphMessages(mqttmsg, mqttpayload) {
 		console.debug("graph duration: " + mqttpayload + " minutes");
 		var duration = JSON.parse(mqttpayload);
 		if (isNaN(duration) || duration < 10 || duration > 120) {
-			console.warn("bad graph duration received: " + mqttpayload + " setting to default of 30");
+			console.error("bad graph duration received: " + mqttpayload + " setting to default of 30");
 			duration = 30;
 		}
 		maxDisplayLength = duration * 6; // we get 6 measurements in every minute
