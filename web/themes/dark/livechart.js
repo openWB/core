@@ -107,8 +107,7 @@ function parseData(alldata) {
 				}
 			}
 		} else {
-			console.debug('line too short:');
-			console.debug(line);
+			console.debug('line too short:', line);
 		}
 	});
 	return result;
@@ -622,9 +621,8 @@ function putgraphtogether() {
 		var alldata = all1p + "\n" + all2p + "\n" + all3p + "\n" + all4p + "\n" + all5p + "\n" + all6p + "\n" + all7p + "\n" + all8p + "\n" + all9p + "\n" + all10p + "\n" + all11p + "\n" + all12p + "\n" + all13p + "\n" + all14p + "\n" + all15p + "\n" + all16p;
 		allChartData = parseData(alldata);
 		truncateData(allChartData);
-		console.debug("allChartData.length: " + allChartData.length);
 		if (allChartData.length >= 30) { // 5 minutes * 6 measurements/min
-			console.debug("received at least 30 data sets for graph; will add up to " + maxDisplayLength + " datasets in total");
+			console.info("received at least 30 data sets for graph; will add up to " + maxDisplayLength + " datasets in total");
 			Object.keys(allChartData[allChartData.length - 1]).forEach(function(key) {
 				if (key != 'time' && key != 'timestamp') {
 					initDataset(key);
@@ -665,7 +663,12 @@ function updateGraph(dataset) {
 	chartUpdateBuffer = chartUpdateBuffer.concat(parseData(dataset));
 	if (initialread == 1 && myLine != undefined) {
 		chartUpdateBuffer.forEach(function(row, index) {
-			allChartData.push(row);
+			if (row.timestamp > allChartData[allChartData.length-1].timestamp) {
+				allChartData.push(row);
+			} else {
+				console.warn("old data detected:", row.timestamp, row.time);
+				console.warn("last timestamp:", allChartData[allChartData.length-1].timestamp, allChartData[allChartData.length-1].time);
+			}
 		});
 		truncateData(allChartData);
 		chartUpdateBuffer = [];
@@ -772,7 +775,7 @@ function forcegraphload() {
 			showhidedataset('boolDisplayLegend');
 		}
 		if (typeof maxDisplayLength === "undefined") {
-			console.debug("setting graph duration to default of 30 minutes");
+			console.info("setting graph duration to default of 30 minutes");
 			maxDisplayLength = 30 * 6;
 		}
 		checkgraphload();
@@ -810,7 +813,7 @@ function showhide(thedataset) {
 }
 
 function subscribeMqttGraphSegments() {
-	console.info('subscribing to graph topics');
+	console.debug('subscribing to graph topics');
 	for (var segments = 1; segments < 17; segments++) {
 		// topic = "openWB/graph/" + segments + "alllivevalues";
 		topic = "openWB/graph/alllivevaluesJson" + segments;
@@ -819,7 +822,7 @@ function subscribeMqttGraphSegments() {
 }
 
 function unsubscribeMqttGraphSegments() {
-	console.info('unsubscribing from graph topics');
+	console.debug('unsubscribing from graph topics');
 	for (var segments = 1; segments < 17; segments++) {
 		// topic = "openWB/graph/" + segments + "alllivevalues";
 		topic = "openWB/graph/alllivevaluesJson" + segments;
