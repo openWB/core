@@ -184,21 +184,21 @@ def pub_settings():
     pub.pub("openWB/set/vehicle/7/tag_id", ["3", "c"])
 
     # evt0 - default
-    pub.pub("openWB/vehicle/template/ev_template/0", {"min_current": 6, "battery_capacity": 20, "max_current_one_phase": 32, "max_current_multi_phases": 32, "max_phases": 3, "average_consump": 17, "control_pilot_interruption": False, "nominal_difference": 2, "prevent_switch_stop": True, "phase_switch_pause": 2})
+    pub.pub("openWB/vehicle/template/ev_template/0", {"name": "Standard", "min_current": 6, "battery_capacity": 20, "max_current_one_phase": 32, "max_current_multi_phases": 32, "max_phases": 3, "average_consump": 17, "control_pilot_interruption": False, "nominal_difference": 2, "prevent_switch_stop": True, "phase_switch_pause": 2})
     #evt1 - Ioniq
-    pub.pub("openWB/vehicle/template/ev_template/1", {"min_current": 6, "battery_capacity": 38, "max_current_one_phase": 32, "max_current_multi_phases": 16, "max_phases": 1, "average_consump": 17, "control_pilot_interruption": False, "nominal_difference": 2, "prevent_switch_stop": False, "phase_switch_pause": 2})
+    pub.pub("openWB/vehicle/template/ev_template/1", {"name": "Vorlage 1", "min_current": 6, "battery_capacity": 38, "max_current_one_phase": 32, "max_current_multi_phases": 16, "max_phases": 1, "average_consump": 17, "control_pilot_interruption": False, "nominal_difference": 2, "prevent_switch_stop": False, "phase_switch_pause": 2})
     #evt2 - M3LR
-    pub.pub("openWB/vehicle/template/ev_template/2", {"min_current": 6, "battery_capacity": 78, "max_current_one_phase": 32, "max_current_multi_phases": 16, "max_phases": 3, "average_consump": 17, "control_pilot_interruption": False, "nominal_difference": 2, "prevent_switch_stop": False, "phase_switch_pause": 30})
+    pub.pub("openWB/vehicle/template/ev_template/2", {"name": "Vorlage 2", "min_current": 6, "battery_capacity": 78, "max_current_one_phase": 32, "max_current_multi_phases": 16, "max_phases": 3, "average_consump": 17, "control_pilot_interruption": False, "nominal_difference": 2, "prevent_switch_stop": False, "phase_switch_pause": 30})
     #evt3 - M3P
-    pub.pub("openWB/vehicle/template/ev_template/3", {"min_current": 6, "battery_capacity": 82, "max_current_one_phase": 32, "max_current_multi_phases": 16, "max_phases": 3, "average_consump": 17, "control_pilot_interruption": False, "nominal_difference": 2, "prevent_switch_stop": True, "phase_switch_pause": 2})
+    pub.pub("openWB/vehicle/template/ev_template/3", {"name": "Vorlage 3", "min_current": 6, "battery_capacity": 82, "max_current_one_phase": 32, "max_current_multi_phases": 16, "max_phases": 3, "average_consump": 17, "control_pilot_interruption": False, "nominal_difference": 2, "prevent_switch_stop": True, "phase_switch_pause": 2})
     #evt4 - MX
-    pub.pub("openWB/vehicle/template/ev_template/4", {"min_current": 6, "battery_capacity": 100, "max_current_one_phase": 32, "max_current_multi_phases": 24, "max_phases": 3, "average_consump": 17, "control_pilot_interruption": False, "nominal_difference": 2, "prevent_switch_stop": True, "phase_switch_pause": 2})
+    pub.pub("openWB/vehicle/template/ev_template/4", {"name": "Vorlage 4", "min_current": 6, "battery_capacity": 100, "max_current_one_phase": 32, "max_current_multi_phases": 24, "max_phases": 3, "average_consump": 17, "control_pilot_interruption": False, "nominal_difference": 2, "prevent_switch_stop": True, "phase_switch_pause": 2})
     #evt5
-    pub.pub("openWB/vehicle/template/ev_template/5", {"min_current": 6, "battery_capacity": 100, "max_current_one_phase": 32, "max_current_multi_phases": 16, "max_phases": 3, "average_consump": 17, "control_pilot_interruption": False, "nominal_difference": 2, "prevent_switch_stop": True, "phase_switch_pause": 2})
+    pub.pub("openWB/vehicle/template/ev_template/5", {"name": "Vorlage 5", "min_current": 6, "battery_capacity": 100, "max_current_one_phase": 32, "max_current_multi_phases": 16, "max_phases": 3, "average_consump": 17, "control_pilot_interruption": False, "nominal_difference": 2, "prevent_switch_stop": True, "phase_switch_pause": 2})
     #evt6
-    pub.pub("openWB/vehicle/template/ev_template/6", {"min_current": 6, "battery_capacity": 100, "max_current_one_phase": 32, "max_current_multi_phases": 16, "max_phases": 3, "average_consump": 17, "control_pilot_interruption": False, "nominal_difference": 2, "prevent_switch_stop": True, "phase_switch_pause": 2})
+    pub.pub("openWB/vehicle/template/ev_template/6", {"name": "Vorlage 6", "min_current": 6, "battery_capacity": 100, "max_current_one_phase": 32, "max_current_multi_phases": 16, "max_phases": 3, "average_consump": 17, "control_pilot_interruption": False, "nominal_difference": 2, "prevent_switch_stop": True, "phase_switch_pause": 2})
     #evt7
-    pub.pub("openWB/vehicle/template/ev_template/7", {"min_current": 6, "battery_capacity": 100, "max_current_one_phase": 32, "max_current_multi_phases": 16, "max_phases": 3, "average_consump": 17, "control_pilot_interruption": False, "nominal_difference": 2, "prevent_switch_stop": True, "phase_switch_pause": 2})
+    pub.pub("openWB/vehicle/template/ev_template/7", {"name": "Vorlage 7", "min_current": 6, "battery_capacity": 100, "max_current_one_phase": 32, "max_current_multi_phases": 16, "max_phases": 3, "average_consump": 17, "control_pilot_interruption": False, "nominal_difference": 2, "prevent_switch_stop": True, "phase_switch_pause": 2})
 
     plans_for_scheduled_charging = {
         "1": {"name": "abc", "time": "14:15", "soc": 85, "active": 1, "frequency": {"selected": "daily"}},
@@ -302,9 +302,9 @@ def pub_settings():
                     {"id": "cp14", "children": []},
                     {"id": "cp15", "children": []},
                     {"id": "cp16", "children": []}
-                    ]
-                }
-            ]
+                ]
+            }
+        ]
         pub.pub("openWB/set/counter/get/hierarchy", hierarchy)
         pub.pub("openWB/set/counter/0/get/frequency", 50.2)
         pub.pub("openWB/set/counter/0/config/max_current", [60, 60, 60])
