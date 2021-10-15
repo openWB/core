@@ -48,39 +48,6 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _com
 
 /***/ }),
 
-/***/ "./node_modules/core-js/internals/correct-is-regexp-logic.js":
-/*!*******************************************************************!*\
-  !*** ./node_modules/core-js/internals/correct-is-regexp-logic.js ***!
-  \*******************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-eval("var wellKnownSymbol = __webpack_require__(/*! ../internals/well-known-symbol */ \"./node_modules/core-js/internals/well-known-symbol.js\");\n\nvar MATCH = wellKnownSymbol('match');\n\nmodule.exports = function (METHOD_NAME) {\n  var regexp = /./;\n  try {\n    '/./'[METHOD_NAME](regexp);\n  } catch (error1) {\n    try {\n      regexp[MATCH] = false;\n      return '/./'[METHOD_NAME](regexp);\n    } catch (error2) { /* empty */ }\n  } return false;\n};\n\n\n//# sourceURL=webpack:///./node_modules/core-js/internals/correct-is-regexp-logic.js?");
-
-/***/ }),
-
-/***/ "./node_modules/core-js/internals/is-regexp.js":
-/*!*****************************************************!*\
-  !*** ./node_modules/core-js/internals/is-regexp.js ***!
-  \*****************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-eval("var isObject = __webpack_require__(/*! ../internals/is-object */ \"./node_modules/core-js/internals/is-object.js\");\nvar classof = __webpack_require__(/*! ../internals/classof-raw */ \"./node_modules/core-js/internals/classof-raw.js\");\nvar wellKnownSymbol = __webpack_require__(/*! ../internals/well-known-symbol */ \"./node_modules/core-js/internals/well-known-symbol.js\");\n\nvar MATCH = wellKnownSymbol('match');\n\n// `IsRegExp` abstract operation\n// https://tc39.es/ecma262/#sec-isregexp\nmodule.exports = function (it) {\n  var isRegExp;\n  return isObject(it) && ((isRegExp = it[MATCH]) !== undefined ? !!isRegExp : classof(it) == 'RegExp');\n};\n\n\n//# sourceURL=webpack:///./node_modules/core-js/internals/is-regexp.js?");
-
-/***/ }),
-
-/***/ "./node_modules/core-js/internals/not-a-regexp.js":
-/*!********************************************************!*\
-  !*** ./node_modules/core-js/internals/not-a-regexp.js ***!
-  \********************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-eval("var isRegExp = __webpack_require__(/*! ../internals/is-regexp */ \"./node_modules/core-js/internals/is-regexp.js\");\n\nmodule.exports = function (it) {\n  if (isRegExp(it)) {\n    throw TypeError(\"The method doesn't accept regular expressions\");\n  } return it;\n};\n\n\n//# sourceURL=webpack:///./node_modules/core-js/internals/not-a-regexp.js?");
-
-/***/ }),
-
 /***/ "./node_modules/core-js/modules/es.string.starts-with.js":
 /*!***************************************************************!*\
   !*** ./node_modules/core-js/modules/es.string.starts-with.js ***!
