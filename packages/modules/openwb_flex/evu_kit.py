@@ -40,7 +40,7 @@ class EvuKitFlex():
             simcount_factory = simcount.SimCountFactory().get_sim_counter()
             self.sim_count = simcount_factory()
         except Exception as e:
-            log.MainLogger().error("Fehler im Modul "+self.data["config"]["components"]["component0"]["name"], e)
+            log.MainLogger().exception("Fehler im Modul "+self.data["config"]["components"]["component0"]["name"])
 
     def __counter_factory(self, version: int):
         try:
@@ -51,7 +51,7 @@ class EvuKitFlex():
             elif version == 2:
                 return sdm630.Sdm630
         except Exception as e:
-            log.MainLogger().error("Fehler im Modul "+self.data["config"]["components"]["component0"]["name"], e)
+            log.MainLogger().exception("Fehler im Modul "+self.data["config"]["components"]["component0"]["name"])
 
     def read(self):
         """ liest die Werte des Moduls aus.
@@ -66,7 +66,7 @@ class EvuKitFlex():
                 try:
                     currents = [(power_per_phase[i]/voltages[i]) for i in range(3)]
                 except Exception as e:
-                    log.MainLogger().error("Fehler im Modul "+self.data["config"]["components"]["component0"]["name"], e)
+                    log.MainLogger().exception("Fehler im Modul "+self.data["config"]["components"]["component0"]["name"])
                     currents = [0, 0, 0]
                 imported = self.counter.get_imported()
                 exported = self.counter.get_exported()
@@ -78,4 +78,4 @@ class EvuKitFlex():
 
             self.value_store.set(self.data["config"]["components"]["component0"]["id"], voltages=voltages, currents=currents, powers=power_per_phase, power_factors=power_factors, imported=imported, exported=exported, power_all=power_all, frequency=frequency)
         except Exception as e:
-            log.MainLogger().error("Fehler im Modul "+self.data["config"]["components"]["component0"]["name"], e)
+            log.MainLogger().exception("Fehler im Modul "+self.data["config"]["components"]["component0"]["name"])

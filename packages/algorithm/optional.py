@@ -18,7 +18,7 @@ class optional():
                 self.data["et"] = {}
                 self.data["et"]["get"] = {}
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im Optional-Modul")
     
     def et_price_lower_than_limit(self):
         """ prüft, ob der aktuelle Strompreis unter der festgelegten Preisgrenze liegt.
@@ -35,7 +35,7 @@ class optional():
                 return False
         except Exception as e:
             self.et_get_prices()
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im Optional-Modul")
             return False
 
     def et_get_loading_hours(self, duration):
@@ -55,7 +55,7 @@ class optional():
             return [i[0] for i in sorted(price_list, key=lambda x: x[1])[:ceil(duration)]]
         except Exception as e:
             self.et_get_prices()
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im Optional-Modul")
             return []
 
     def et_get_prices(self):
@@ -68,6 +68,6 @@ class optional():
                 elif self.data["et"]["config"]["provider"]["provider"] == "tibber":
                     tibbergetprices.update_pricedata(self.data["et"]["config"]["provider"]["token"], self.data["et"]["config"]["provider"]["id"])
                 else:
-                    log.message_debug_log("error", "Unbekannter Et-Provider.")
+                    log.MainLogger().error("Unbekannter Et-Provider.")
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im Optional-Modul")

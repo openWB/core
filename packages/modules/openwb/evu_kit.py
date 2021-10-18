@@ -37,4 +37,4 @@ class EvuKit(EvuKitFlex):
 
             super().__init__(self.data)
         except Exception as e:
-            log.MainLogger().error("Fehler im Modul "+self.data["config"]["components"]["component0"]["name"], e)
+            log.MainLogger().exception("Fehler im Modul "+self.data["config"]["components"]["component0"]["name"])

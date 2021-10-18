@@ -37,29 +37,29 @@ class HandlerAlgorithm():
             try:
                 if (data.data.general_data["general"].data["control_interval"] / 10) == self.interval_counter:
                     # Mit aktuellen Einstellungen arbeiten.
-                    log.message_debug_log("info", " Start copy_data 1")
+                    log.MainLogger().info(" Start copy_data 1")
                     prep.copy_system_data()
-                    log.message_debug_log("info", " Stop copy_data 1")
+                    log.MainLogger().info(" Stop copy_data 1")
                     vars.get_values()
                     # Virtuelle Module ermitteln die Werte rechnerisch auf Bais der Messwerte anderer Module. 
                     # Daher können sie erst die Werte ermitteln, wenn die physischen Module ihre Werte ermittelt haben.
                     # Würde man allle Module parallel abfragen, wären die virtuellen Module immer einen Zyklus hinterher.
-                    log.message_debug_log("info", " Start copy_data 2")
+                    log.MainLogger().info(" Start copy_data 2")
                     prep.copy_counter_data()
-                    log.message_debug_log("info", " Stop copy_data 2")
+                    log.MainLogger().info(" Stop copy_data 2")
                     vars.get_virtual_values()
                     # Kurz warten, damit alle Topics von setdata und subdata verarbeitet werden könnnen.
                     time.sleep(4)
-                    log.message_debug_log("info", " Start copy_data 3")
+                    log.MainLogger().info(" Start copy_data 3")
                     prep.copy_data()
-                    log.message_debug_log("info", " Stop copy_data 3")
+                    log.MainLogger().info(" Stop copy_data 3")
                     self.heartbeat = True
                     data.data.system_data["system"].set_default_values()
                     if data.data.system_data["system"].data["perform_update"] == True:
                         data.data.system_data["system"].perform_update()
                         return
                     elif data.data.system_data["system"].data["update_in_progress"] == True:
-                        log.message_debug_log("info", "Regelung pausiert, da ein Update durchgefuehrt wird.")
+                        log.MainLogger().info("Regelung pausiert, da ein Update durchgefuehrt wird.")
                         return
                     prep.setup_algorithm()
                     control.calc_current()
@@ -83,7 +83,7 @@ class HandlerAlgorithm():
                 proc.process_algorithm_results()
                 graph.pub_graph_data()
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im Main-Modul")
     
     def handler5Min(self):
         """ Handler, der alle 5 Minuten aufgerufen wird und die Heartbeats der Threads überprüft und die Aufgaben ausführt, die nur alle 5 Minuten ausgeführt werden müssen.
@@ -117,7 +117,7 @@ class HandlerAlgorithm():
             data.data.cp_data["all"].check_all_modbus_evse_connections()
             data.data.counter_data["all"].calc_daily_yield_home_consumption()
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im Main-Modul")
 
 class RepeatedTimer(object):
     """ führt alle x Sekunden einen Thread aus, unabhängig davon, ob sich der Thread bei der vorherigen Ausführung aufgehängt etc hat.
@@ -168,7 +168,6 @@ try:
     t_set = Thread(target=set.set_data, args=())
 
 
-    log.setup_logger()
     pub.setup_connection()
     t_sub.start()
     t_set.start()
@@ -184,4 +183,4 @@ try:
             time.sleep(10)
             handler.handler10Sec()
 except Exception as e:
-    log.exception_logging(e)
+    log.MainLogger().exception("Fehler im Main-Modul")

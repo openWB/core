@@ -32,7 +32,7 @@ def write_to_file(file: str, value):
             with open("/var/www/html/openWB/ramdisk/" + file, "w") as f:
                 f.write(str(value))
     except Exception as e:
-        log.MainLogger().error("Fehler im Modul store", e)
+        log.MainLogger().exception("Fehler im Modul store")
 
 
 class ValueStore:
@@ -50,7 +50,7 @@ class BatteryValueStoreRamdisk(ValueStore):
             write_to_file("/speicherekwh", round(exported, 2))
             log.MainLogger().info('BAT Watt: ' + str(int(power)))
         except Exception as e:
-            log.MainLogger().error("Fehler im Modul store", e)
+            log.MainLogger().exception("Fehler im Modul store")
 
 
 class BatteryValueStoreBroker(ValueStore):
@@ -61,7 +61,7 @@ class BatteryValueStoreBroker(ValueStore):
             pub.pub("openWB/set/bat/"+str(num)+"/get/imported", round(imported, 2))
             pub.pub("openWB/set/bat/"+str(num)+"/get/exported", round(exported, 2))
         except Exception as e:
-            log.MainLogger().error("Fehler im Modul store", e)
+            log.MainLogger().exception("Fehler im Modul store")
 
 
 class CounterValueStoreRamdisk(ValueStore):
@@ -91,7 +91,7 @@ class CounterValueStoreRamdisk(ValueStore):
             log.MainLogger().info('EVU Bezug: ' + str(int(imported)))
             log.MainLogger().info('EVU Einspeisung: ' + str(int(exported)))
         except Exception as e:
-            log.MainLogger().error("Fehler im Modul store", e)
+            log.MainLogger().exception("Fehler im Modul store")
 
 
 class CounterValueStoreBroker(ValueStore):
@@ -106,7 +106,7 @@ class CounterValueStoreBroker(ValueStore):
             pub.pub("openWB/set/counter/"+str(num)+"/get/power_all", power_all)
             pub.pub("openWB/set/counter/"+str(num)+"/get/frequency", frequency)
         except Exception as e:
-            log.MainLogger().error("Fehler im Modul store", e)
+            log.MainLogger().exception("Fehler im Modul store")
 
 
 class InverterValueStoreRamdisk(ValueStore):
@@ -120,7 +120,7 @@ class InverterValueStoreRamdisk(ValueStore):
             write_to_file("/pva3", round(currents[2], 1))
             log.MainLogger().info('PV Watt: ' + str(int(power)))
         except Exception as e:
-            log.MainLogger().error("Fehler im Modul store", e)
+            log.MainLogger().exception("Fehler im Modul store")
 
 
 class InverterValueStoreBroker(ValueStore):
@@ -131,4 +131,4 @@ class InverterValueStoreBroker(ValueStore):
             currents = [round(val, 1) for val in currents]
             pub.pub("openWB/set/pv/"+str(num)+"/get/currents", currents)
         except Exception as e:
-            log.MainLogger().error("Fehler im Modul store", e)
+            log.MainLogger().exception("Fehler im Modul store")

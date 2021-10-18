@@ -16,7 +16,7 @@ def read_studer_innotec(bat):
     request = client.read_input_registers(6, 2, unit=60)
     if request.isError():
         # handle error, log?
-        log.message_debug_log("error", 'Modbus Error:'+request)
+        log.MainLogger().error('Modbus Error:'+request)
     else:
         result = request.registers
     decoder = BinaryPayloadDecoder.fromRegisters(result, byteorder=Endian.Big)
@@ -27,7 +27,7 @@ def read_studer_innotec(bat):
     request = client.read_input_registers(4, 2, unit=60)
     if request.isError():
         # handle error, log?
-        log.message_debug_log("error", 'Modbus Error:'+request)
+        log.MainLogger().error('Modbus Error:'+request)
     else:
         result = request.registers
     decoder = BinaryPayloadDecoder.fromRegisters(result, byteorder=Endian.Big)
@@ -38,7 +38,7 @@ def read_studer_innotec(bat):
     request = client.read_input_registers(14, 2, unit=60)
     if request.isError():
         # handle error, log?
-        log.message_debug_log("error", 'Modbus Error:'+request)
+        log.MainLogger().error('Modbus Error:'+request)
     else:
         result = request.registers
     decoder = BinaryPayloadDecoder.fromRegisters(result, byteorder=Endian.Big)
@@ -49,7 +49,7 @@ def read_studer_innotec(bat):
     request = client.read_input_registers(16, 2, unit=60)
     if request.isError():
         # handle error, log?
-        log.message_debug_log("error", 'Modbus Error:'+request)
+        log.MainLogger().error('Modbus Error:'+request)
     else:
         result = request.registers
     decoder = BinaryPayloadDecoder.fromRegisters(result, byteorder=Endian.Big)

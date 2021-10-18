@@ -22,13 +22,13 @@ class Module():
             if device["components"]["component0"]["type"] == "counter":
                 self.mod = evu_kit.EvuKitFlex(device)
         except Exception as e:
-            log.MainLogger().error("Fehler im Modul "+device["name"], e)
+            log.MainLogger().exception("Fehler im Modul "+device["name"])
 
     def read(self):
         try:
             self.mod.read()
         except Exception as e:
-            log.MainLogger().error("Fehler im Modul "+self.data["config"]["name"], e)
+            log.MainLogger().exception("Fehler im Modul "+self.data["config"]["name"])
 
 
 def read_legacy(argv: List):
@@ -52,7 +52,7 @@ def read_legacy(argv: List):
 
         mod.read()
     except Exception as e:
-        log.MainLogger().error("Fehler im Modul openwb_flex", e)
+        log.MainLogger().exception("Fehler im Modul openwb_flex")
 
 
 if __name__ == "__main__":

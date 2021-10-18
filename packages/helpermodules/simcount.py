@@ -27,7 +27,7 @@ class SimCountFactory:
             ramdisk = Path(str(Path(os.path.abspath(__file__)).parents[2])+"/ramdisk/bootinprogress").is_file()
             return SimCountLegacy if ramdisk else SimCount
         except Exception as e:
-            log.MainLogger().error("Fehler im Modul simcount", e)
+           log.MainLogger().exception("Fehler im Modul simcount")
 
 
 class SimCountLegacy:
@@ -86,21 +86,21 @@ class SimCountLegacy:
             else:
                 return 0, 0
         except Exception as e:
-            log.MainLogger().error("Fehler im Modul simcount", e)
+           log.MainLogger().exception("Fehler im Modul simcount")
 
     def read_ramdisk_file(self, name: str):
         try:
             with open('/var/www/html/openWB/ramdisk/' + name, 'r') as f:
                 return f.read()
         except Exception as e:
-            log.MainLogger().error("Fehler im Modul simcount", e)
+           log.MainLogger().exception("Fehler im Modul simcount")
 
     def write_ramdisk_file(self, name: str, value):
         try:
             with open('/var/www/html/openWB/ramdisk/' + name, 'w') as f:
                 f.write(str(value))
         except Exception as e:
-            log.MainLogger().error("Fehler im Modul simcount", e)
+           log.MainLogger().exception("Fehler im Modul simcount")
 
     def restore(self, value, prefix: str):
         """ stellt die Werte vom Broker wieder her.
@@ -125,7 +125,7 @@ class SimCountLegacy:
                 log.log_1_9("loadvars read openWB/pv/WHExport_temp from mosquito "+str(temp))
             return temp
         except Exception as e:
-            log.MainLogger().error("Fehler im Modul simcount", e)
+           log.MainLogger().exception("Fehler im Modul simcount")
 
     def abort(self, signal, frame):
         raise Exception
@@ -182,7 +182,7 @@ class SimCount:
                 pub.pub(topic+"module/simulation/present_exported", 0)
                 return 0, 0
         except Exception as e:
-            log.MainLogger().error("Fehler im Modul simcount", e)
+           log.MainLogger().exception("Fehler im Modul simcount")
 
 
 Number = typing.Union[int, float]
@@ -202,11 +202,11 @@ def calculate_import_export(seconds_since_previous: Number, power1: Number, powe
             return energy_total - energy_exported, energy_exported * -1
         return (energy_total, 0) if energy_total >= 0 else (0, -energy_total)
     except Exception as e:
-        log.MainLogger().error("Fehler im Modul simcount", e)
+       log.MainLogger().exception("Fehler im Modul simcount")
 
 
 if __name__ == "__main__":
     try:
         SimCountLegacy.sim_count(int(sys.argv[1]), prefix=str(sys.argv[2]))
     except Exception as e:
-        log.MainLogger().error("Fehler im Modul simcount", e)
+       log.MainLogger().exception("Fehler im Modul simcount")

@@ -35,7 +35,7 @@ def thread_cp_interruption(cp_num, selected, config, duration):
             # Thread zur Phasenumschaltung erstellen, starten und der Liste hinzufügen.
             cp_interruption_threads["thread_cp"+str(cp_num)] = threading.Thread(target=_perform_cp_interruption, args=(selected, config, duration))
             cp_interruption_threads["thread_cp"+str(cp_num)].start()
-            log.message_debug_log("debug", "Thread zur CP-Unterbrechung an LP"+str(cp_num)+" gestartet.")
+            log.MainLogger().debug("Thread zur CP-Unterbrechung an LP"+str(cp_num)+" gestartet.")
     except Exception as e:
         log.exception_logging(e)
 
@@ -53,31 +53,6 @@ def _perform_cp_interruption(selected, config, duration):
             ip_address = config["ip_address"]
             id = config["id"]
             ip_evse.perform_cp_interruption(ip_address, id, duration)
-        elif selected == "simple_evse_wifi":
-            pass
-        else:
-            num = config["chargepoint"]
-            _cp_interruption_internal(num, duration)
     except Exception as e:
-        log.exception_logging(e)
+        log.MainLogger().exception("Fehler im Modul fuer die CP-Unterbrechung")
 
-
-def _cp_interruption_internal(duo_num, duration):
-    """ CP-Unterbrechung im Master durchführen
-    """
-    if duo_num == 1:
-        GPIO.setwarnings(False)
-        GPIO.setmode(GPIO.BOARD)
-        GPIO.setup(22, GPIO.OUT)
-
-        GPIO.output(22, GPIO.HIGH)
-        time.sleep(duration)
-        GPIO.output(22, GPIO.LOW)
-    else:
-        GPIO.setwarnings(False)
-        GPIO.setmode(GPIO.BOARD)
-        GPIO.setup(15, GPIO.OUT)
-
-        GPIO.output(15, GPIO.HIGH)
-        time.sleep(duration)
-        GPIO.output(15, GPIO.LOW)

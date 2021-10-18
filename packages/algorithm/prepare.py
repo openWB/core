@@ -21,7 +21,7 @@ class prepare():
     def setup_algorithm(self):
         """ bereitet die Daten für den Algorithmus vor und startet diesen.
         """
-        log.message_debug_log("info", "# ***Start*** ")
+        log.MainLogger().info("# ***Start*** ")
         self._counter()
         self._check_chargepoints()
         self._use_pv()
@@ -35,7 +35,7 @@ class prepare():
         try:
             data.data.system_data = copy.deepcopy(subdata.subData.system_data)
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im Prepare-Modul")
 
     def copy_counter_data(self):
         """ kopiert die Daten, die per MQTT empfangen wurden.
@@ -43,7 +43,7 @@ class prepare():
         try:
             data.data.counter_data = copy.deepcopy(subdata.subData.counter_data)
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im Prepare-Modul")
 
     def copy_data(self):
         """ kopiert die Daten, die per MQTT empfangen wurden.
@@ -61,7 +61,7 @@ class prepare():
                         # Status zurücksetzen (wird jeden Zyklus neu ermittelt)
                         data.data.cp_data[chargepoint].data["get"]["state_str"] = None
                 except Exception as e:
-                    log.exception_logging(e)
+                    log.MainLogger().exception("Fehler im Prepare-Modul fuer Ladepunkt "+str(chargepoint))
 
             data.data.pv_data = copy.deepcopy(subdata.subData.pv_data)
             data.data.pv_module_data = copy.deepcopy(subdata.subData.pv_module_data)
@@ -80,13 +80,13 @@ class prepare():
                     # erstmal das aktuelle Template laden
                     data.data.ev_data[vehicle].ev_template = data.data.ev_template_data["et" +str(data.data.ev_data[vehicle].data["ev_template"])]
                 except Exception as e:
-                    log.exception_logging(e)
+                    log.MainLogger().exception("Fehler im Prepare-Modul fuer EV "+str(vehicle))
 
             data.data.counter_module_data = copy.deepcopy(subdata.subData.counter_module_data)
             data.data.bat_data = copy.deepcopy(subdata.subData.bat_data)
             data.data.bat_module_data = copy.deepcopy(subdata.subData.bat_module_data)
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im Prepare-Modul")
 
     def _check_chargepoints(self):
         """ ermittelt die gewünschte Stromstärke für jeden LP.
@@ -135,7 +135,7 @@ class prepare():
                                 charging_ev.ev_template.data = charging_ev.data["set"]["ev_template"]
                                 cp.data["set"]["charging_ev_data"] = charging_ev
                                 pub.pub("openWB/set/chargepoint/"+str(cp.cp_num)+"/set/change_ev_permitted", [False, "Das Fahrzeug darf nur geändert werden, wenn noch nicht geladen wurde. Bitte abstecken, dann wird das gewählte Fahrzeug verwendet."])
-                                log.message_debug_log("warning", "Das Fahrzeug darf nur geändert werden, wenn noch nicht geladen wurde.")
+                                log.MainLogger().warning("Das Fahrzeug darf nur geändert werden, wenn noch nicht geladen wurde.")
 
                         phases = cp.get_phases(charging_ev.charge_template.data["chargemode"]["selected"])
                         state, message_ev, submode, required_current = charging_ev.get_required_current(cp.data["set"]["log"]["charged_since_mode_switch"])
@@ -146,12 +146,12 @@ class prepare():
                         
                         if message_ev != None:
                             message = message_ev
-                        log.message_debug_log("debug", "Ladepunkt "+str(cp.cp_num)+", EV: "+cp.data["set"]["charging_ev_data"].data["name"]+" (EV-Nr."+str(vehicle)+")")
+                        log.MainLogger().debug("Ladepunkt "+str(cp.cp_num)+", EV: "+cp.data["set"]["charging_ev_data"].data["name"]+" (EV-Nr."+str(vehicle)+")")
                         
                         # Die benötigte Stromstärke hat sich durch eine Änderung des Lademdous oder der Konfiguration geändert. Die Zuteilung entsprechend der Priorisierung muss neu geprüft werden.
                         # Daher muss der LP zurückgesetzt werden, wenn er gerade lädt, um in der Regelung wieder berücksichtigt zu werden.
                         if current_changed == True:
-                            log.message_debug_log("debug", "LP"+str(cp.cp_num)+" : Da sich die Stromstärke geändert hat, muss der Ladepunkt im Algorithmus neu priorisiert werden.")
+                            log.MainLogger().debug("LP"+str(cp.cp_num)+" : Da sich die Stromstärke geändert hat, muss der Ladepunkt im Algorithmus neu priorisiert werden.")
                             data.data.pv_data["all"].reset_switch_on_off(cp, charging_ev)
                             charging_ev.reset_phase_switch()
                             if max(cp.data["get"]["current"]) != 0:
@@ -171,23 +171,23 @@ class prepare():
                                 pub.pub("openWB/set/chargepoint/"+str(cp.cp_num)+"/set/charging_ev_prev", cp.data["set"]["charging_ev_prev"])
                             cp.data["set"]["charging_ev"] = -1
                             pub.pub("openWB/set/chargepoint/"+str(cp.cp_num)+"/set/charging_ev", -1)
-                            log.message_debug_log("debug", "EV"+str(charging_ev.ev_num)+": Lademodus "+str(charging_ev.charge_template.data["chargemode"]["selected"])+", Submodus: "+str(charging_ev.data["control_parameter"]["submode"]))
+                            log.MainLogger().debug("EV"+str(charging_ev.ev_num)+": Lademodus "+str(charging_ev.charge_template.data["chargemode"]["selected"])+", Submodus: "+str(charging_ev.data["control_parameter"]["submode"]))
                         else:
                             if (charging_ev.data["control_parameter"]["timestamp_switch_on_off"] != "0" and
                                     cp.data["get"]["charge_state"] == False and 
                                     data.data.pv_data["all"].data["set"]["overhang_power_left"] == 0):
-                                log.message_debug_log("error", "Reservierte Leistung kann nicht 0 sein.")
+                                log.MainLogger().error("Reservierte Leistung kann nicht 0 sein.")
                             
-                            log.message_debug_log("debug", "EV"+str(charging_ev.ev_num)+": Theroretisch benötigter Strom "+str(required_current)+"A, Lademodus "+str(
+                            log.MainLogger().debug("EV"+str(charging_ev.ev_num)+": Theroretisch benötigter Strom "+str(required_current)+"A, Lademodus "+str(
                                 charging_ev.charge_template.data["chargemode"]["selected"])+", Submodus: "+str(charging_ev.data["control_parameter"]["submode"])+", Phasen: "+str(phases)+", Prioritaet: "+str(charging_ev.charge_template.data["prio"])+", max. Ist-Strom: "+str(max(cp.data["get"]["current"])))
                     else:
                         # Wenn kein EV zur Ladung zugeordnet wird, auf hinterlegtes EV zurückgreifen.
                         self._pub_connected_vehicle(data.data.ev_data["ev"+str(cp.data["config"]["ev"])], cp)
                     if message != None and cp.data["get"]["state_str"] == None:
-                        log.message_debug_log("info", "LP "+str(cp.cp_num)+": "+message)
+                        log.MainLogger().info("LP "+str(cp.cp_num)+": "+message)
                         cp.data["get"]["state_str"] = message
             except Exception as e:
-                log.exception_logging(e)
+                log.MainLogger().exception("Fehler im Prepare-Modul fuer Ladepunkt "+str(cp_item))
         if "all" not in data.data.cp_data:
             data.data.cp_data["all"]=chargepoint.allChargepoints()
         data.data.cp_data["all"].no_charge()
@@ -234,7 +234,7 @@ class prepare():
             if config_obj != chargepoint.data["get"]["connected_vehicle"]["config"]:
                 pub.pub("openWB/chargepoint/"+str(chargepoint.cp_num)+"/get/connected_vehicle/config", config_obj)
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im Prepare-Modul")
 
     def _use_pv(self):
         """ ermittelt, ob Überschuss an der EVU vorhanden ist.
@@ -242,7 +242,7 @@ class prepare():
         try:
             data.data.pv_data["all"].calc_power_for_control()
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im Prepare-Modul")
 
     def _bat(self):
         """ ermittelt, ob Überschuss am Speicher verfügbar ist.
@@ -250,7 +250,7 @@ class prepare():
         try:
             data.data.bat_data["all"].setup_bat()
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im Prepare-Modul")
 
     def _counter(self):
         """ initialisiert alle Zähler für den Algorithmus
@@ -260,7 +260,7 @@ class prepare():
                 if "counter" in counter:
                     data.data.counter_data[counter].setup_counter()
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im Prepare-Modul")
 
     def _get_home_consumption(self):
         """ ermittelt den Hausverbrauch.
@@ -268,5 +268,5 @@ class prepare():
         try:
             data.data.counter_data["all"].calc_home_consumption()
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im Prepare-Modul")
 
