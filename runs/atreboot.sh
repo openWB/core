@@ -115,6 +115,8 @@ if (( displayaktiv == 1 )); then
 		echo "@xset s 600" >> /home/pi/.config/lxsession/LXDE-pi/autostart
 		echo "@chromium-browser --incognito --disable-pinch --kiosk http://localhost/openWB/web/display.php" >> /home/pi/.config/lxsession/LXDE-pi/autostart
 	fi
+	echo "deleting browser cache"
+	rm -rf /home/pi/.cache/chromium
 fi
 
 # # restart smarthomehandler
@@ -223,6 +225,14 @@ fi
 # setup timezone
 echo "timezone..."
 sudo cp /usr/share/zoneinfo/Europe/Berlin /etc/localtime
+
+
+if [ ! -f /home/pi/ssl_patched ]; then 
+	sudo apt-get update 
+	sudo apt-get -qq install -y openssl libcurl3 curl libgcrypt20 libgnutls30 libssl1.1 libcurl3-gnutls libssl1.0.2 php7.0-cli php7.0-gd php7.0-opcache php7.0 php7.0-common php7.0-json php7.0-readline php7.0-xml php7.0-curl libapache2-mod-php7.0 
+	touch /home/pi/ssl_patched 
+fi
+
 
 # check for mosquitto packages
 echo "mosquitto..."

@@ -20,7 +20,8 @@ def setup_connection():
         client.connect("localhost", 1886)
         client.loop_start()
     except Exception as e:
-        log.exception_logging(e)
+        log.MainLogger().error("Fehler im pub-Modul", e)
+
 
 def pub(topic, payload):
     """ published das übergebene Payload als json-Objekt an das übergebene Topic.
@@ -39,7 +40,8 @@ def pub(topic, payload):
         else:
             client.publish(topic, payload=json.dumps(payload), qos=0, retain=True)
     except Exception as e:
-        log.exception_logging(e)
+        log.MainLogger().error("Fehler im pub-Modul", e)
+
 
 def delete_connection():
     """ schließt die Verbindung zum Broker.
@@ -48,9 +50,10 @@ def delete_connection():
         client.loop_stop()
         client.disconnect
     except Exception as e:
-        log.exception_logging(e)
+        log.MainLogger().error("Fehler im pub-Modul", e)
 
-def pub_single(topic, payload, hostname, no_json = False):
+
+def pub_single(topic, payload, hostname="localhost", no_json=False):
     """ published eine einzelne Nachricht an einen Host, der nicht der localhost ist.
 
         Parameter
@@ -65,9 +68,9 @@ def pub_single(topic, payload, hostname, no_json = False):
         Kompabilität mit isss, die ramdisk verwenden.
     """
     try:
-        if no_json == False:
-            publish.single(topic, json.dumps(payload), hostname=hostname)
+        if no_json == True:
+            publish.single(topic, payload, hostname=hostname, retain=True)
         else:
-            publish.single(topic, payload, hostname=hostname)
+            publish.single(topic, json.dumps(payload), hostname=hostname, retain=True)
     except Exception as e:
-        log.exception_logging(e)
+        log.MainLogger().error("Fehler im pub-Modul", e)
