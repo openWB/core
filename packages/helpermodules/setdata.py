@@ -373,8 +373,7 @@ class setData():
                 elif "/time_charging/plans" in msg.topic:
                     self._validate_value(msg, "json", pub_json = True)
                 else:
-                    log.MainLogger().error("Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
-                    pub.pub(msg.topic, "")
+                    self._validate_value(msg, "json")
             elif "ev_template" in msg.topic:
                 if "/name" in msg.topic:
                     self._validate_value(msg, str, pub_json = True)
@@ -399,8 +398,7 @@ class setData():
                 elif "/phase_switch_pause" in msg.topic:
                     self._validate_value(msg, int, [(2, 150)], pub_json = True)
                 else:
-                    log.MainLogger().error("Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
-                    pub.pub(msg.topic, "")
+                    self._validate_value(msg, "json")
             else:
                 log.MainLogger().error("Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
                 pub.pub(msg.topic, "")
@@ -516,8 +514,7 @@ class setData():
             elif "/valid_tags" in msg.topic:
                 self._validate_value(msg, str, collection=list)
             else:
-                log.MainLogger().error("Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
-                pub.pub(msg.topic, "")
+                self._validate_value(msg, "json")
         except Exception as e:
             log.MainLogger().exception("Fehler im setdata-Modul")
 
