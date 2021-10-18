@@ -1,6 +1,10 @@
 #!/bin/bash
 echo "atreboot.sh started"
-(sleep 600; sudo kill $(ps aux |grep '[a]treboot.sh' | awk '{print $2}'); echo 0 > /var/www/html/openWB/ramdisk/bootinprogress; echo 0 > /var/www/html/openWB/ramdisk/updateinprogress) &
+(sleep 600; sudo kill $(ps aux |grep '[a]treboot.sh' | awk '{print $2}')) &
+
+if [ ! -f /var/www/html/openWB/ramdisk/bootinprogress ]; then
+	rm /var/www/html/openWB/ramdisk/bootinprogress
+fi
 
 # # read openwb.conf
 # echo "loading config"
@@ -115,6 +119,8 @@ if (( displayaktiv == 1 )); then
 		echo "@xset s 600" >> /home/pi/.config/lxsession/LXDE-pi/autostart
 		echo "@chromium-browser --incognito --disable-pinch --kiosk http://localhost/openWB/web/display.php" >> /home/pi/.config/lxsession/LXDE-pi/autostart
 	fi
+	echo "deleting browser cache"
+	rm -rf /home/pi/.cache/chromium
 fi
 
 # # restart smarthomehandler
@@ -223,6 +229,14 @@ fi
 # setup timezone
 echo "timezone..."
 sudo cp /usr/share/zoneinfo/Europe/Berlin /etc/localtime
+
+
+if [ ! -f /home/pi/ssl_patched ]; then 
+	sudo apt-get update 
+	sudo apt-get -qq install -y openssl libcurl3 curl libgcrypt20 libgnutls30 libssl1.1 libcurl3-gnutls libssl1.0.2 php7.0-cli php7.0-gd php7.0-opcache php7.0 php7.0-common php7.0-json php7.0-readline php7.0-xml php7.0-curl libapache2-mod-php7.0 
+	touch /home/pi/ssl_patched 
+fi
+
 
 # check for mosquitto packages
 echo "mosquitto..."
@@ -433,7 +447,5 @@ sudo /usr/sbin/apachectl -k graceful
 
 # all done, remove boot and update status
 echo $(date +"%Y-%m-%d %H:%M:%S:") "boot done :-)"
-echo 0 > /var/www/html/openWB/ramdisk/bootinprogress
-echo 0 > /var/www/html/openWB/ramdisk/updateinprogress
 mosquitto_pub -p 1886 -t openWB/set/system/update_in_progress -r -m 'false'
 mosquitto_pub -t openWB/system/reloadDisplay -m "1"
