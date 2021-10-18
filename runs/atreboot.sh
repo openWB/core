@@ -1,6 +1,10 @@
 #!/bin/bash
 echo "atreboot.sh started"
-(sleep 600; sudo kill $(ps aux |grep '[a]treboot.sh' | awk '{print $2}'); echo 0 > /var/www/html/openWB/ramdisk/bootinprogress; echo 0 > /var/www/html/openWB/ramdisk/updateinprogress) &
+(sleep 600; sudo kill $(ps aux |grep '[a]treboot.sh' | awk '{print $2}')) &
+
+if [ -f /var/www/html/openWB/ramdisk/bootinprogress ]; then
+	rm /var/www/html/openWB/ramdisk/bootinprogress
+fi
 
 # # read openwb.conf
 # echo "loading config"
@@ -443,7 +447,5 @@ sudo /usr/sbin/apachectl -k graceful
 
 # all done, remove boot and update status
 echo $(date +"%Y-%m-%d %H:%M:%S:") "boot done :-)"
-echo 0 > /var/www/html/openWB/ramdisk/bootinprogress
-echo 0 > /var/www/html/openWB/ramdisk/updateinprogress
 mosquitto_pub -p 1886 -t openWB/set/system/update_in_progress -r -m 'false'
 mosquitto_pub -t openWB/system/reloadDisplay -m "1"
