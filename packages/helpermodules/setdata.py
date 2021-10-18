@@ -61,7 +61,7 @@ class setData():
             enthält Topic und Payload
         """
         self.heartbeat = True
-        log.message_mqtt_log(str(msg.topic), str(msg.payload.decode("utf-8")))
+        log.MqttLogger().debug("Topic: "+str(msg.topic)+", Payload: "+str(msg.payload.decode("utf-8")))
         if "openWB/set/vehicle/" in msg.topic:
             if "openWB/set/vehicle/template/ev_template/" in msg.topic:
                 self.event_ev_template.wait(5)
@@ -117,7 +117,7 @@ class setData():
                     if isinstance(value, str) == True:
                         valid = True
                     else:
-                        log.message_debug_log("error", "Payload ungueltig: Topic "+str(msg.topic)+", Payload "+str(value)+" sollte ein String sein.")
+                        log.MainLogger().error("Payload ungueltig: Topic "+str(msg.topic)+", Payload "+str(value)+" sollte ein String sein.")
                 elif data_type == int or data_type == float:
                     if self._validate_min_max_value(value, msg, data_type, ranges) == True:
                         valid = True
@@ -166,7 +166,7 @@ class setData():
                 else:
                     pub.pub(msg.topic, "")
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im setdata-Modul")
             pub.pub(msg.topic, "")
 
     def _change_key(self, next_level, key_list, value):
@@ -192,7 +192,7 @@ class setData():
                 key_list.pop(0)
                 self._change_key(next_level[next_key], key_list, value)
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im setdata-Modul")
 
     def _validate_collection_value(self, msg, data_type, ranges = None, collection = None):
         """ prüft, ob die Liste vom angegebenen Typ ist und ob Minimal- und Maximalwert eingehalten werden.
@@ -226,10 +226,10 @@ class setData():
                 else:
                     valid = True
             else:
-                log.message_debug_log("error", "Payload ungueltig: Topic "+str(msg.topic)+", Payload "+str(value)+" sollte eine Kollektion vom Typ "+str(collection)+" sein.")
+                log.MainLogger().error("Payload ungueltig: Topic "+str(msg.topic)+", Payload "+str(value)+" sollte eine Kollektion vom Typ "+str(collection)+" sein.")
             return valid
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im setdata-Modul")
 
     def _validate_min_max_value(self, value, msg, data_type, ranges = None):
         """ prüft, ob der Payload Minimal- und Maximalwert einhält.
@@ -263,17 +263,17 @@ class setData():
                             if value <= range[1]:
                                 break
                     else:
-                        log.message_debug_log("error", "Payload ungueltig: Topic "+str(msg.topic)+", Payload "+str(value)+" liegt in keinem der angegebenen Wertebereiche.")
+                        log.MainLogger().error("Payload ungueltig: Topic "+str(msg.topic)+", Payload "+str(value)+" liegt in keinem der angegebenen Wertebereiche.")
                         valid = False
             else:
                 if data_type == int:
-                    log.message_debug_log("error", "Payload ungueltig: Topic "+str(msg.topic)+", Payload "+str(value)+" sollte ein Int sein.")
+                    log.MainLogger().error("Payload ungueltig: Topic "+str(msg.topic)+", Payload "+str(value)+" sollte ein Int sein.")
                 elif data_type == float:
-                    log.message_debug_log("error", "Payload ungueltig: Topic "+str(msg.topic)+", Payload "+str(value)+" sollte ein Float sein.")
+                    log.MainLogger().error("Payload ungueltig: Topic "+str(msg.topic)+", Payload "+str(value)+" sollte ein Float sein.")
                 valid = False
             return valid
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im setdata-Modul")
  
     def process_vehicle_topic(self, msg):
         """ Handler für die EV-Topics
@@ -324,10 +324,10 @@ class setData():
                     "/control_parameter/timestamp_perform_phase_switch" in msg.topic):
                 self._validate_value(msg, str)
             else:
-                log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
+                log.MainLogger().error("Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
                 pub.pub(msg.topic, "")
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im setdata-Modul")
 
     def _subprocess_vehicle_chargemode_topic(self, msg):
         """ Handler für die EV-Chargemode-Template-Topics
@@ -400,10 +400,10 @@ class setData():
                 else:
                     self._validate_value(msg, "json")
             else:
-                log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
+                log.MainLogger().error("Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
                 pub.pub(msg.topic, "")
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im setdata-Modul")
 
     def process_chargepoint_topic(self, msg):
         """ Handler für die Ladepunkt-Topics
@@ -484,10 +484,10 @@ class setData():
                 ### isss Anpassung muss noch in die nightly
                 pub.pub(msg.topic, "")
             else:
-                log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
+                log.MainLogger().error("Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
                 pub.pub(msg.topic, "")
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im setdata-Modul")
 
     def _subprocess_chargepoint_template_topic(self, msg):
         """ Handler für die Cahrgepoint-Template-Topics
@@ -516,7 +516,7 @@ class setData():
             else:
                 self._validate_value(msg, "json")
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im setdata-Modul")
 
     def process_pv_topic(self, msg):
         """ Handler für die PV-Topics
@@ -562,10 +562,10 @@ class setData():
             elif "/get/actual_power_phase" in msg.topic:
                 self._validate_value(msg, float, [(0, None)], collection=list)
             else:
-                log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
+                log.MainLogger().error("Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
                 pub.pub(msg.topic, "")
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im setdata-Modul")
 
     def process_bat_topic(self, msg):
         """ Handler für die Hausspeicher-Topics
@@ -608,10 +608,10 @@ class setData():
             elif "/get/fault_str" in msg.topic:
                 self._validate_value(msg, str)
             else:
-                log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
+                log.MainLogger().error("Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
                 pub.pub(msg.topic, "")
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im setdata-Modul")
 
     def process_general_topic(self, msg):
         """ Handler für die Allgemeinen-Topics
@@ -683,10 +683,10 @@ class setData():
                     "openWB/set/general/ripple_control_receiver/r2_active" in msg.topic):
                 self._validate_value(msg, int, [(0, 1)])
             else:
-                log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
+                log.MainLogger().error("Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
                 pub.pub(msg.topic, "")
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im setdata-Modul")
 
     def process_optional_topic(self, msg):
         """ Handler für die Optionalen-Topics
@@ -717,10 +717,10 @@ class setData():
             elif "openWB/set/optional/rfid/active" in msg.topic:
                 self._validate_value(msg, int, [(0, 1)])
             else:
-                log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
+                log.MainLogger().error("Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
                 pub.pub(msg.topic, "")
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im setdata-Modul")
 
     def process_counter_topic(self, msg):
         """ Handler für die Zähler-Topics
@@ -774,10 +774,10 @@ class setData():
             elif "/get/fault_str" in msg.topic:
                 self._validate_value(msg, str)
             else:
-                log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
+                log.MainLogger().error("Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
                 pub.pub(msg.topic, "")
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im setdata-Modul")
 
     def process_log_topic(self, msg):
         """Handler für die Log-Topics
@@ -793,10 +793,10 @@ class setData():
                     "openWB/set/log/data" in msg.topic):
                 self._validate_value(msg, "json")
             else:
-                log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
+                log.MainLogger().error("Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
                 pub.pub(msg.topic, "")
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im setdata-Modul")
 
     def process_graph_topic(self, msg):
         """Handler für die Graph-Topics
@@ -811,10 +811,10 @@ class setData():
                     "openWB/set/graph/lastlivevaluesJson" in msg.topic):
                 self._validate_value(msg, "json")
             else:
-                log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
+                log.MainLogger().error("Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
                 pub.pub(msg.topic, "")
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im setdata-Modul")
 
     def process_system_topic(self, msg):
         """Handler für die System-Topics
@@ -839,16 +839,16 @@ class setData():
                     elif "/simulation/sim_timestamp" in msg.topic:
                         self._validate_value(msg, str)
                     else:
-                        log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
+                        log.MainLogger().error("Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
                         pub.pub(msg.topic, "")
                 elif "/config" in msg.topic:
                     self._validate_value(msg, "json")
                 else:
-                    log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
+                    log.MainLogger().error("Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
                     pub.pub(msg.topic, "")
             else:
                 # hier kommen auch noch alte Topics ohne json-Format an.
-                #log.message_debug_log("error", "Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
+                #log.MainLogger().error("Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
                 pub.pub(msg.topic, "")
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im setdata-Modul")

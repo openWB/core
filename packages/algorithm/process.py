@@ -18,7 +18,7 @@ class process():
 
     def process_algorithm_results(self):
         try:
-            log.message_debug_log("debug", "# Ladung starten.")
+            log.MainLogger().debug("# Ladung starten.")
             for cp in data.data.cp_data:
                 try:
                     if "cp" in cp:
@@ -42,12 +42,12 @@ class process():
                             pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/get/state_str", "Ladevorgang läuft...")
                         self._start_charging(chargepoint)
                 except Exception as e:
-                    log.exception_logging(e)
+                    log.MainLogger().exception("Fehler im Process-Modul fuer Ladepunkt "+str(cp))
             data.data.pv_data["all"].put_stats()
             data.data.pv_data["all"].print_stats()
             data.data.counter_data["counter0"].put_stats()
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im Process-Modul")
 
     def _update_state(self, chargepoint):
         """aktualisiert den Zustand des Ladepunkts.
@@ -69,17 +69,17 @@ class process():
             if (charging_ev.data["control_parameter"]["timestamp_switch_on_off"] != "0" and
                     chargepoint.data["get"]["charge_state"] == False and 
                     data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] == 0):
-                log.message_debug_log("error", "Reservierte Leistung kann am Algorithmus-Ende nicht 0 sein.")
+                log.MainLogger().error("Reservierte Leistung kann am Algorithmus-Ende nicht 0 sein.")
             if (chargepoint.data["set"]["charging_ev_data"].ev_template.data["prevent_switch_stop"] == True and
                     chargepoint.data["get"]["charge_state"] == True and
                     chargepoint.data["set"]["current"] == 0):
-                log.message_debug_log("error", "LP"+str(chargepoint.cp_num)+": Ladung wurde trotz verhinderter Unterbrechung gestoppt.")
+                log.MainLogger().error("LP"+str(chargepoint.cp_num)+": Ladung wurde trotz verhinderter Unterbrechung gestoppt.")
             
             chargepoint.data["set"]["current"] = current
             pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/set/current", current)
-            log.message_debug_log("debug", "LP"+str(chargepoint.cp_num)+": set current "+str(current)+" A")
+            log.MainLogger().debug("LP"+str(chargepoint.cp_num)+": set current "+str(current)+" A")
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im Process-Modul")
 
     def _start_charging(self, chargepoint):
         """ setzt den Ladestrom im Ladeleistungs-Modul.
@@ -122,5 +122,5 @@ class process():
             elif chargepoint.data["config"]["connection_module"]["selected"] == "modbus_slave":
                 modbus_slave.write_modbus_slave(current)
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im Process-Modul")
 

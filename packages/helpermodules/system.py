@@ -34,7 +34,7 @@ class system:
             #subprocess.run(["/var/www/html/openWB/packages/helpermodules/update_self.sh", train])
             subprocess.run("/var/www/html/openWB/runs/atreboot.sh")
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im System-Modul")
 
     def _trigger_ext_update(self, train):
         """ triggert das Update auf den externen WBs.
@@ -50,13 +50,13 @@ class system:
                     if "cp" in cp:
                         chargepoint = data.data.cp_data[cp]
                         if chargepoint.data["config"]["connection_module"]["selected"] == "external_openwb":
-                            log.message_debug_log("info", "Update an LP "+str(chargepoint.cp_num)+" angestossen.")
+                            log.MainLogger().info("Update an LP "+str(chargepoint.cp_num)+" angestossen.")
                             pub.pub_single("openWB/set/system/releaseTrain", train, chargepoint.data["config"]["connection_module"]["config"]["external_openwb"]["ip_address"], no_json=True)
                             pub.pub_single("openWB/set/system/PerformUpdate", "1", chargepoint.data["config"]["connection_module"]["config"]["external_openwb"]["ip_address"], no_json=True)
                 except Exception as e:
-                    log.exception_logging(e)
+                    log.MainLogger().exception("Fehler im System-Modul")
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im System-Modul")
 
     def set_default_values(self):
         """ ruft für jedes Modul die rekursive Funktion zur Überprüfung auf fehlende Werte auf.
@@ -91,7 +91,7 @@ class system:
             self._check_key(subdata.subData.defaults_optional_data["optional"].data, data.data.optional_data["optional"].data)
             self._check_key(subdata.subData.defaults_system_data["system"].data, data.data.system_data["system"].data)
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im System-Modul")
 
     def _check_key(self, default, settings):
         """ prüft, ob ein Wert, für den es einen default-Werte gäbe, gesetzt ist, sonst wird das Dictionary mit einem default-Wert gefüllt. Dictionaries werden rekursiv 
@@ -112,4 +112,4 @@ class system:
                     if key not in settings:
                         settings[key] = default[key]
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im System-Modul")

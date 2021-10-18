@@ -24,7 +24,7 @@ class ConnectTcp:
             self.tcp_client = ModbusTcpClient(ip_address, port)
             self.name = name
         except Exception as e:
-            log.MainLogger().error(self.name, e)
+            log.MainLogger().exception(self.name)
 
     def _log_connection_error(self):
         log.MainLogger().error(self.name+" konnte keine Verbindung aufbauen. Bitte Einstellungen (IP-Adresse, ..) und Hardware-Anschluss prüfen.")
@@ -38,7 +38,7 @@ class ConnectTcp:
         except pymodbus.exceptions.ConnectionException:
             self._log_connection_error()
         except Exception as e:
-            log.MainLogger().error(self.name, e)
+            log.MainLogger().exception(self.name)
             return None
 
     def read_short_int_registers(self, reg: int, len: int, id: int) -> int:
@@ -50,7 +50,7 @@ class ConnectTcp:
         except pymodbus.exceptions.ConnectionException:
             self._log_connection_error()
         except Exception as e:
-            log.MainLogger().error(self.name, e)
+            log.MainLogger().exception(self.name)
             return None
 
     def read_float_registers(self, reg: int, len: int, id: int) -> float:
@@ -61,7 +61,7 @@ class ConnectTcp:
         except pymodbus.exceptions.ConnectionException:
             self._log_connection_error()
         except Exception as e:
-            log.MainLogger().error(self.name, e)
+            log.MainLogger().exception(self.name)
             return None
 
     def read_registers(self, reg: int, len: int, id: int):
@@ -70,7 +70,7 @@ class ConnectTcp:
         except pymodbus.exceptions.ConnectionException:
             self._log_connection_error()
         except Exception as e:
-            log.MainLogger().error(self.name, e)
+            log.MainLogger().exception(self.name)
             return None
 
     def read_binary_registers_to_int(self, reg: int, len: int, id: int, bit: int, signed=True) -> int:
@@ -91,7 +91,7 @@ class ConnectTcp:
         except pymodbus.exceptions.ConnectionException:
             self._log_connection_error()
         except Exception as e:
-            log.MainLogger().error(self.name, e)
+            log.MainLogger().exception(self.name)
             return None
 
     def read_binary_registers_to_float(self, reg: int, len: int, id: int, bit: int) -> float:
@@ -106,5 +106,5 @@ class ConnectTcp:
         except pymodbus.exceptions.ConnectionException:
             self._log_connection_error()
         except Exception as e:
-            log.MainLogger().error(self.name, e)
+            log.MainLogger().exception(self.name)
             return None

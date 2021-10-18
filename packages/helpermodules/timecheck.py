@@ -30,7 +30,7 @@ def set_date(now, begin, end):
             end = end + datetime.timedelta(days=1)
         return begin, end
     except Exception as e:
-        log.exception_logging(e)
+        log.MainLogger().exception("Fehler im System-Modul")
         return None, None
 
 
@@ -57,7 +57,7 @@ def is_timeframe_valid(now, begin, end):
         else:
             return False
     except Exception as e:
-        log.exception_logging(e)
+        log.MainLogger().exception("Fehler im System-Modul")
         return False
 
 
@@ -90,7 +90,7 @@ def check_plans_timeframe(plans, hours=None):
         else:
             return None
     except Exception as e:
-        log.exception_logging(e)
+        log.MainLogger().exception("Fehler im System-Modul")
         return None
 
 
@@ -175,7 +175,7 @@ def check_timeframe(plan, hours):
                     else:
                         state = False
     except Exception as e:
-        log.exception_logging(e)
+        log.MainLogger().exception("Fehler im System-Modul")
         return None
     return state
 
@@ -198,7 +198,7 @@ def _calc_begin(end, hours):
         prev = datetime.timedelta(hours)
         return end - prev
     except Exception as e:
-        log.exception_logging(e)
+        log.MainLogger().exception("Fehler im System-Modul")
         return None
 
 def check_duration(plan, duration):
@@ -271,7 +271,7 @@ def check_duration(plan, duration):
             else:
                 return False, 0
     except Exception as e:
-        log.exception_logging(e)
+        log.MainLogger().exception("Fehler im System-Modul")
         return False
 
 
@@ -308,7 +308,7 @@ def _is_duration_valid(now, duration, end):
         else:
             return 0, 0
     except Exception as e:
-        log.exception_logging(e)
+        log.MainLogger().exception("Fehler im System-Modul")
         return 1, 0
 
 
@@ -334,7 +334,7 @@ def is_list_valid(hourlist):
             else:
                 return False
     except Exception as e:
-        log.exception_logging(e)
+        log.MainLogger().exception("Fehler im System-Modul")
         return False
 
 
@@ -362,7 +362,7 @@ def check_timestamp(timestamp, duration):
         else:
             return True
     except Exception as e:
-        log.exception_logging(e)
+        log.MainLogger().exception("Fehler im System-Modul")
         return True
 
 
@@ -377,7 +377,7 @@ def create_timestamp():
         stamp = datetime.datetime.today().strftime("%m/%d/%Y, %H:%M:%S")
         return stamp
     except Exception as e:
-        log.exception_logging(e)
+        log.MainLogger().exception("Fehler im System-Modul")
         return None
 
 def create_timestamp_YYYYMM():
@@ -391,7 +391,7 @@ def create_timestamp_YYYYMM():
         stamp = datetime.datetime.today().strftime("%Y%m")
         return stamp
     except Exception as e:
-        log.exception_logging(e)
+        log.MainLogger().exception("Fehler im System-Modul")
         return None
 
 def create_timestamp_YYYYMMDD():
@@ -405,7 +405,7 @@ def create_timestamp_YYYYMMDD():
         stamp = datetime.datetime.today().strftime("%Y%m%d")
         return stamp
     except Exception as e:
-        log.exception_logging(e)
+        log.MainLogger().exception("Fehler im System-Modul")
         return None
 
 def create_timestamp_time():
@@ -419,7 +419,7 @@ def create_timestamp_time():
         stamp = datetime.datetime.today().strftime("%H:%M")
         return stamp
     except Exception as e:
-        log.exception_logging(e)
+        log.MainLogger().exception("Fehler im System-Modul")
         return None
 
 def get_difference_to_now(timestamp_begin):
@@ -441,7 +441,7 @@ def get_difference_to_now(timestamp_begin):
         diff = (now - begin)
         return str(diff)[:-10]
     except Exception as e:
-        log.exception_logging(e)
+        log.MainLogger().exception("Fehler im System-Modul")
         return 0
 
 def get_difference(timestamp_begin, timestamp_end):
@@ -465,7 +465,7 @@ def get_difference(timestamp_begin, timestamp_end):
         diff = (begin - end)
         return diff.total_seconds()
     except Exception as e:
-        log.exception_logging(e)
+        log.MainLogger().exception("Fehler im System-Modul")
         return 0
 
 def duration_sum(first, second):
@@ -480,10 +480,13 @@ def duration_sum(first, second):
     sum: str
         Summe der Zeitstrings
     """
-    first = __get_timedelta_obj(first)
-    second = __get_timedelta_obj(second)
-    sum = first + second 
-    return str(sum)
+    try:
+        first = __get_timedelta_obj(first)
+        second = __get_timedelta_obj(second)
+        sum = first + second 
+        return str(sum)
+    except Exception as e:
+        log.MainLogger().exception("Fehler im System-Modul")
 
 def __get_timedelta_obj(time):
     """ erstellt aus einem String ein timedelta-Objekt.
@@ -496,9 +499,12 @@ def __get_timedelta_obj(time):
     ------
     time: timedelta
     """
-    time_charged = time.split(":")
-    if len(time_charged) == 2:
-        time = datetime.timedelta(hours=int(time_charged[0]), minutes=int(time_charged[1]))
-    elif len(time_charged) == 3:
-        time = datetime.timedelta(days=int(time_charged[0]), hours=int(time_charged[1]), minutes=int(time_charged[2]))
-    return time
+    try:
+        time_charged = time.split(":")
+        if len(time_charged) == 2:
+            time = datetime.timedelta(hours=int(time_charged[0]), minutes=int(time_charged[1]))
+        elif len(time_charged) == 3:
+            time = datetime.timedelta(days=int(time_charged[0]), hours=int(time_charged[1]), minutes=int(time_charged[2]))
+        return time
+    except Exception as e:
+        log.MainLogger().exception("Fehler im System-Modul")

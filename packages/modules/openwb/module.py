@@ -29,14 +29,14 @@ class Module():
                 elif component["type"] == "inverter":
                     pass
         except Exception as e:
-            log.MainLogger().error("Fehler im Modul "+self.data["config"]["name"], e)
+            log.MainLogger().exception("Fehler im Modul "+self.data["config"]["name"])
 
     def read(self):
         try:
             for component in self.data["components"]:
                 component.read()
         except Exception as e:
-            log.MainLogger().error("Fehler im Modul "+self.data["config"]["name"], e)
+            log.MainLogger().exception("Fehler im Modul "+self.data["config"]["name"])
 
 
 def read_legacy(argv: List):
@@ -53,7 +53,7 @@ def read_legacy(argv: List):
 
         mod.read()
     except Exception as e:
-        log.MainLogger().error("Fehler im Modul openwb", e)
+        log.MainLogger().exception("Fehler im Modul openwb")
 
 
 if __name__ == "__main__":

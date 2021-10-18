@@ -33,7 +33,7 @@ class Lovato:
                 voltage.append(value)
             return voltage
         except Exception as e:
-            log.MainLogger().error(self.name, e)
+            log.MainLogger().exception("Fehler beim Auslesen von "+str(self.name))
             return [None, None, None]
 
     def get_imported(self) -> float:
@@ -43,7 +43,7 @@ class Lovato:
             imported = self.client.read_float_registers(0x0048, 2, self.id) * 1000
             return imported
         except Exception as e:
-            log.MainLogger().error(self.name, e)
+            log.MainLogger().exception("Fehler beim Auslesen von "+str(self.name))
             return None
 
     def get_power(self) -> Tuple[List[int], float]:
@@ -61,7 +61,7 @@ class Lovato:
 
             return power_per_phase, power_all
         except Exception as e:
-            log.MainLogger().error(self.name, e)
+            log.MainLogger().exception("Fehler beim Auslesen von "+str(self.name))
             return [None, None, None], None
 
     def get_exported(self) -> float:
@@ -71,7 +71,7 @@ class Lovato:
             exported = self.client.read_float_registers(0x004a, 2, self.id) * 1000
             return exported
         except Exception as e:
-            log.MainLogger().error(self.name, e)
+            log.MainLogger().exception("Fehler beim Auslesen von "+str(self.name))
             return None
 
     def get_power_factor(self) -> List[int]:
@@ -85,7 +85,7 @@ class Lovato:
                 power_factor.append(value)
             return power_factor
         except Exception as e:
-            log.MainLogger().error(self.name, e)
+            log.MainLogger().exception("Fehler beim Auslesen von "+str(self.name))
             return [None, None, None]
 
     def get_frequency(self) -> float:
@@ -97,7 +97,7 @@ class Lovato:
                 frequency = frequency / 10
             return frequency
         except Exception as e:
-            log.MainLogger().error(self.name, e)
+            log.MainLogger().exception("Fehler beim Auslesen von "+str(self.name))
             return None
 
     def get_current(self) -> List[int]:
@@ -111,7 +111,7 @@ class Lovato:
                 current.append(value)
             return current
         except Exception as e:
-            log.MainLogger().error(self.name, e)
+            log.MainLogger().exception("Fehler beim Auslesen von "+str(self.name))
             return [None, None, None]
 
     def get_counter(self) -> float:
@@ -124,5 +124,5 @@ class Lovato:
                 counter = finalbezug2
             return counter
         except Exception as e:
-            log.log_exception_comp(e, self.ramdisk, self.type+str(self.pv_num))
+            log.MainLogger().exception("Fehler beim Auslesen von "+str(self.name))
             return None
