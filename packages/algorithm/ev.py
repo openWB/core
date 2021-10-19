@@ -68,6 +68,7 @@ class ev():
         """ setzt alle Werte zurück, die während des Algorithmus gesetzt werden.
         """
         try:
+            log.MainLogger().debug("EV "+str(self.ev_num)+" zurueckgesetzt.")
             pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/required_current", 0)
             pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/timestamp_auto_phase_switch", "0")
             pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/timestamp_perform_phase_switch", "0")
@@ -166,6 +167,7 @@ class ev():
                 else:
                     current_changed = True
             
+            log.MainLogger().debug("Aenderung der Sollstromstaerke :"+str(current_changed)+", Aenderung des Lademodus :"+str(mode_changed))
             return current_changed, mode_changed
         except Exception as e:
             log.MainLogger().exception("Fehler im ev-Modul "+str(self.ev_num)) 
@@ -217,6 +219,7 @@ class ev():
         float: Strom, mit dem das EV laden darf
         """
         try:
+            required_current_prev = required_current
             # Überprüfung bei 0 (automatische Umschaltung) erfolgt nach der Prüfung der Phasenumschaltung, wenn fest steht, mit vielen Phasen geladen werden soll.
             if phases != 0:
                 # EV soll/darf nicht laden
@@ -234,6 +237,8 @@ class ev():
                             max_current = self.ev_template.data["max_current_multi_phases"]
                         if required_current > max_current:
                             required_current = max_current
+            if required_current != required_current_prev:
+                log.MainLogger().debug("Anpassen der Sollstromstaerke an EV-Vorgaben. Sollstromstarke: "+str(required_current_prev)+" neue Sollstromstarke: "+str(required_current))
             return required_current
         except Exception as e:
             log.MainLogger().exception("Fehler im ev-Modul "+str(self.ev_num)) 
@@ -335,10 +340,10 @@ class ev():
             # Wenn der Timer läuft, ist den Control-Paranetern die alte Phasenzahl hinterlegt.
             if self.data["control_parameter"]["phases"] == 3:
                 data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= self.ev_template.data["max_current_one_phase"] * 230 - self.data["control_parameter"]["required_current"] * 3 * 230
-                log.MainLogger().debug("reserved_evu_overhang 6 "+str(data.data.pv_data["all"].data["set"]["reserved_evu_overhang"]))
+                log.MainLogger().debug("Zuruecksetzen der reservierten Leistung fuer die Phasenumschaltung. reservierte Leistung: "+str(data.data.pv_data["all"].data["set"]["reserved_evu_overhang"]))
             else:
                 data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= self.data["control_parameter"]["required_current"] * 3 * 230 - self.ev_template.data["max_current_one_phase"] * 230
-                log.MainLogger().debug("reserved_evu_overhang 7 "+str(data.data.pv_data["all"].data["set"]["reserved_evu_overhang"]))
+                log.MainLogger().debug("Zuruecksetzen der reservierten Leistung fuer die Phasenumschaltung. reservierte Leistung: "+str(data.data.pv_data["all"].data["set"]["reserved_evu_overhang"]))
 
     def load_default_profile(self):
         """ prüft, ob nach dem Abstecken das Standardprofil geladen werden soll und lädt dieses ggf..

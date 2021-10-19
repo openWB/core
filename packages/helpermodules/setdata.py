@@ -275,6 +275,18 @@ class setData():
         except Exception as e:
             log.MainLogger().exception("Fehler im setdata-Modul")
  
+    def __unknown_topic(self, msg) -> None:
+        try:
+            if msg.payload:
+                log.MainLogger().error("Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
+                pub.pub(msg.topic, "")
+            else:
+                log.MainLogger().error("Unbekanntes set-Topic: "+str(msg.topic)+" mit leerem Payload")
+                pub.pub(msg.topic, "")
+        except Exception as e:
+            log.MainLogger().exception("Fehler im setdata-Modul")
+
+
     def process_vehicle_topic(self, msg):
         """ Handler für die EV-Topics
 
@@ -363,7 +375,7 @@ class setData():
                 elif "/chargemode/pv_charging/min_soc_current" in msg.topic:
                     self._validate_value(msg, int, [(6, 32)], pub_json = True)
                 elif "/chargemode/pv_charging/max_soc" in msg.topic:
-                    self._validate_value(msg, int, [(0, 100)], pub_json = True)
+                    self._validate_value(msg, int, [(0, 101)], pub_json = True)
                 elif "/chargemode/scheduled_charging/[0-9]+/active" in msg.topic:
                     self._validate_value(msg, int, [(0, 1)], pub_json = True)
                 elif "/chargemode/scheduled_charging" in msg.topic:
@@ -832,11 +844,11 @@ class setData():
                 self._validate_value(msg, int, [(0, 1)])
             elif "devices" in msg.topic:
                 if "components" in msg.topic:
-                    if ("/simulation/present_power_all" in msg.topic or
+                    if ("/simulation/power_present" in msg.topic or
                             "/simulation/present_imported" in msg.topic or
                             "/simulation/present_exported" in msg.topic):
                         self._validate_value(msg, float)
-                    elif "/simulation/sim_timestamp" in msg.topic:
+                    elif "/simulation/timestamp_present" in msg.topic:
                         self._validate_value(msg, str)
                     else:
                         log.MainLogger().error("Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
