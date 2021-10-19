@@ -22,12 +22,16 @@ class ConnectTcp:
     def __init__(self, name: str, ip_address: str, port: int) -> None:
         try:
             self.tcp_client = ModbusTcpClient(ip_address, port)
+            # Den Verbinungsaufbau übenrimmt der tcp_client automatisch.
             self.name = name
         except Exception as e:
             log.MainLogger().exception(self.name)
 
     def _log_connection_error(self):
-        log.MainLogger().error(self.name+" konnte keine Verbindung aufbauen. Bitte Einstellungen (IP-Adresse, ..) und Hardware-Anschluss prüfen.")
+        try:
+            log.MainLogger().error(self.name+" konnte keine Verbindung aufbauen. Bitte Einstellungen (IP-Adresse, ..) und Hardware-Anschluss prüfen.")
+        except Exception as e:
+            log.MainLogger().exception(self.name)
 
     def read_integer_registers(self, reg: int, len: int, id: int) -> int:
         try:

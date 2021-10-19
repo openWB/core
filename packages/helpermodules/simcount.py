@@ -132,7 +132,7 @@ class SimCountLegacy:
 
 
 class SimCount:
-    def sim_count(power_present: float, topic: str = "", data: dict = {}, prefix: str = "") -> typing.Tuple[float, float]:
+    def sim_count(self, power_present: float, topic: str = "", data: dict = {}, prefix: str = "") -> typing.Tuple[float, float]:
         """ emulate import export
 
         Parameters
@@ -161,9 +161,9 @@ class SimCount:
                     counter_export_present = int(data["present_exported"])
                 else:
                     counter_export_present = 0
-                value1 = "%22.6f" % timestamp_present
+                log.MainLogger().debug("Fortsetzen der Simulation: Importzaehler: "+str(counter_import_present)+"Wh, Export-Zaehler: "+str(counter_export_present)+"Wh")
                 start_new = False
-            pub.pub(topic+"module/simulation/timestamp_present", value1)
+            pub.pub(topic+"module/simulation/timestamp_present", "%22.6f" % timestamp_present)
             pub.pub(topic+"module/simulation/power_present", power_present)
 
             if start_new == False:
@@ -178,6 +178,7 @@ class SimCount:
                 pub.pub(topic+"module/simulation/present_exported", counter_export_present)
                 return wattposkh, wattnegkh
             else:
+                log.MainLogger().debug("Neue Simulation")
                 pub.pub(topic+"module/simulation/present_imported", 0)
                 pub.pub(topic+"module/simulation/present_exported", 0)
                 return 0, 0

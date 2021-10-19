@@ -143,8 +143,6 @@ class subData():
             self.process_optional_topic(self.optional_data, msg)
         elif "openWB/defaults/optional/" in msg.topic:
             self.process_optional_topic(self.defaults_optional_data, msg, True)
-        elif "openWB/counter/" in msg.topic and "/module" in msg.topic:
-            self.process_counter_module_topic(self.counter_module_data, msg)
         elif "openWB/counter/" in msg.topic:
             self.process_counter_topic(self.counter_data, msg)
         elif "openWB/defaults/counter/" in msg.topic:
@@ -706,36 +704,6 @@ class subData():
         except Exception as e:
             log.MainLogger().exception("Fehler im subdata-Modul")
 
-    def process_counter_module_topic(self, var, msg):
-        """ Handler für die Zähler-MOdul-Topics
-
-         Parameters
-        ----------
-        client : (unused)
-            vorgegebener Parameter
-        userdata : (unused)
-            vorgegebener Parameter
-        msg:
-            enthält Topic und Payload
-        """
-        try:
-            index = self.get_index(msg.topic)
-            if re.search("^.+/counter/[0-9]+/module$", msg.topic) != None:
-                if json.loads(str(msg.payload.decode("utf-8"))) == "":
-                    if "counter"+index in var:
-                        var.pop("counter"+index)
-                else:
-                    data = json.loads(str(msg.payload.decode("utf-8")))
-                    mod = importlib.import_module(".modules.counter."+data["selected"], "packages")
-                    var["counter"+index] = mod.module(index)
-                    self.set_json_payload(var["counter"+index].data, msg)
-            elif re.search("^.+/counter/[0-9]+/module/simulation/.+$", msg.topic) != None:
-                if "simulation" not in var["counter"+index].data:
-                    var["counter"+index].data["simulation"] = {}
-                self.set_json_payload(var["counter"+index].data["simulation"], msg)
-        except Exception as e:
-            log.MainLogger().exception("Fehler im subdata-Modul")
-
     def process_log_topic(self, msg):
         """Handler für die Log-Topics
 
@@ -773,6 +741,20 @@ class subData():
                         var.pop("system")
                 else:
                     var["system"] = system.system()
-            self.set_json_payload(var["system"].data, msg)
+            if re.search("^.+/devices/[0-9]+/config$", msg.topic) != None:
+                index = self.get_index(msg.topic)
+                if json.loads(str(msg.payload.decode("utf-8"))) == "":
+                    if "device"+index in var:
+                        var.pop("device"+index)
+                else:
+                    device_config = json.loads(str(msg.payload.decode("utf-8")))
+                    mod = importlib.import_module(".modules."+device_config["type"]+".module", "packages")
+                    var["device"+index] = mod.Module(device_config)
+            elif re.search("^.+/devices/[0-9]+/component/[0-9]+/simulation/.+$", msg.topic) != None:
+                index = self.get_index(msg.topic)
+                index_second = self.get_second_index(msg.topic)
+                self.set_json_payload(var["device"+index].data["components"]["components"+index_second].data["simulation"], msg)
+            else:
+                self.set_json_payload(var["system"].data, msg)
         except Exception as e:
             log.MainLogger().exception("Fehler im subdata-Modul")
