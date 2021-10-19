@@ -68,7 +68,7 @@ class batAll:
                             soc_sum += data.data.bat_data[bat].data["get"]["soc"]
                             soc_count += 1
                     except Exception as e:
-                        log.exception_logging(e)
+                        log.MainLogger().exception("Fehler im Bat-Modul "+bat)
                 self.data["get"]["soc"] = int(soc_sum / soc_count)
                 # Alle Summentopics im Dict publishen
                 {pub.pub("openWB/set/bat/get/"+k, v)for (k,v) in self.data["get"].items()}
@@ -78,7 +78,7 @@ class batAll:
                 # Speicher wird entladen -> Wert wird ebenfalls benötigt, um zu prüfen, ob Abschaltschwelle erreicht wird.
                 else:
                     self.data["set"]["charging_power_left"] = self.data["get"]["power"]
-                log.message_debug_log("debug", str(self.data["set"]["charging_power_left"])+"W verbliebende Speicher-Leistung")
+                log.MainLogger().debug(str(self.data["set"]["charging_power_left"])+"W verbliebende Speicher-Leistung")
             else:
                 self.data["config"]["configured"] = False
                 self.data["set"]["charging_power_left"] = 0
@@ -88,7 +88,7 @@ class batAll:
             pub.pub("openWB/set/bat/set/switch_on_soc_reached", self.data["set"]["switch_on_soc_reached"])
             pub.pub("openWB/set/bat/set/hybrid_system_detected", self.data["set"]["hybrid_system_detected"])
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im Bat-Modul")
 
     def _get_charging_power_left(self):
         """ ermittelt die Lade-Leistung des Speichers, die zum Laden der EV verwendet werden darf.
@@ -154,7 +154,7 @@ class batAll:
                 else:
                     self.data["set"]["charging_power_left"] = -50
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im Bat-Modul")
 
     def get_power(self):
         """ gibt die Leistung zurück, die gerade am Speicher anliegt (Summe, wenn es mehrere Speicher gibt).
@@ -169,7 +169,7 @@ class batAll:
             else:
                 return 0
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im Bat-Modul")
             return 0
 
     def power_for_bat_charging(self):
@@ -185,7 +185,7 @@ class batAll:
             else:
                 return 0
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im Bat-Modul")
             return 0
 
     def allocate_bat_power(self, required_power):
@@ -205,13 +205,13 @@ class batAll:
             if self.data["config"]["configured"] == True:
                 self.data["set"]["charging_power_left"] -= required_power
                 if self.data["set"]["charging_power_left"] < 0:
-                    log.message_debug_log("error", "Es wurde versucht, mehr Speicher-Leistung zu allokieren, als geladen wird.")
+                    log.MainLogger().error("Es wurde versucht, mehr Speicher-Leistung zu allokieren, als geladen wird.")
                     too_much = self.data["set"]["charging_power_left"]
                     self.data["set"]["charging_power_left"] = 0
                     return too_much
             return 0
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im Bat-Modul")
             return required_power
 
     def put_stats(self):
@@ -221,9 +221,9 @@ class batAll:
             pub.pub("openWB/set/bat/config/configured", self.data["config"]["configured"])
             if self.data["config"]["configured"] == True:
                 pub.pub("openWB/set/bat/set/charging_power_left", self.data["set"]["charging_power_left"])
-                log.message_debug_log("debug", str(self.data["set"]["charging_power_left"])+"W Speicher-Leistung , die fuer die folgenden Ladepunkte uebrig ist.")
+                log.MainLogger().debug(str(self.data["set"]["charging_power_left"])+"W Speicher-Leistung , die fuer die folgenden Ladepunkte uebrig ist.")
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im Bat-Modul")
 
 class bat:
 

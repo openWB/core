@@ -2,7 +2,7 @@
 echo "atreboot.sh started"
 (sleep 600; sudo kill $(ps aux |grep '[a]treboot.sh' | awk '{print $2}')) &
 
-if [ ! -f /var/www/html/openWB/ramdisk/bootinprogress ]; then
+if [ -f /var/www/html/openWB/ramdisk/bootinprogress ]; then
 	rm /var/www/html/openWB/ramdisk/bootinprogress
 fi
 

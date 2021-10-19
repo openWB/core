@@ -24,15 +24,8 @@ class loadvars():
     def get_values(self):
         try:
             self._get_cp()
-            self._get_modules_except_kits(data.data.counter_module_data)
-            self._get_modules_except_kits(data.data.pv_module_data)
-            self._get_modules_except_kits(data.data.bat_module_data)
-            self._get_soc()
             self._get_general()
-            kits_threads = []
-            kits_threads = self._get_kits(kits_threads, data.data.counter_module_data)
-            kits_threads = self._get_kits(kits_threads, data.data.pv_module_data)
-            kits_threads = self._get_kits(kits_threads, data.data.bat_module_data)
+            kits_threads = self._get_modules()
             # Start them all
             if kits_threads:
                 for thread in kits_threads:
@@ -44,9 +37,9 @@ class loadvars():
 
                 for thread in kits_threads:
                     if thread.is_alive() == True:
-                        log.message_debug_log("error", thread.name+" konnte nicht innerhalb des Timeouts die Werte abfragen, die abgefragten Werte werden nicht in der Regelung verwendet.")
+                        log.MainLogger().error(thread.name+" konnte nicht innerhalb des Timeouts die Werte abfragen, die abgefragten Werte werden nicht in der Regelung verwendet.")
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im loadvars-Modul")
 
     # eher zu prepare
         # Hausverbrauch
@@ -69,20 +62,7 @@ class loadvars():
                 for thread in all_threads:
                     thread.join(timeout=3)
         except Exception as e:
-            log.exception_logging(e)
-
-    def _get_modules_except_kits(self, dict):
-        """ vorhandene Zähler durchgehen und je nach Konfiguration Module zur Abfrage der Werte aufrufen.
-        openWB-Kits können in mehreren Threads parallel abgefragt werden. Virtuelle Module werden nach den 
-        physischen ermittelt, da diese auf den Werten der physischen Module basieren.
-        """
-        try:
-            for item in dict:
-                module = dict[item]
-                if module.data["module"]["selected"] != "openwb" and module.data["module"]["selected"] != "virtual":
-                    module.read()
-        except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im loadvars-Modul")
 
     def _get_virtual_counters(self):
         """ vorhandene Zähler durchgehen und je nach Konfiguration Module zur Abfrage der Werte aufrufen
@@ -100,7 +80,7 @@ class loadvars():
                         virtual_threads.append(thread)
             return virtual_threads
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im loadvars-Modul")
 
     def _get_cp(self):
         for item in data.data.cp_data:
@@ -130,33 +110,28 @@ class loadvars():
                     # elif cp.data["config"]["power_module"]["selected"] == "":
                     #     (cp)
             except Exception as e:
-                log.exception_logging(e)
-
-    def _get_soc(self):
-        try:
-            pass
-        except Exception as e:
-            log.exception_logging(e)
+                log.MainLogger().exception("Fehler im loadvars-Modul")
 
     def _get_general(self):
         try:
             if data.data.general_data["general"].data["ripple_control_receiver"]["configured"] == True:
                 ripple_control_receiver.read_ripple_control_receiver()
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im loadvars-Modul")
 
-    def _get_kits(self, kits_threads, dict):
+    def _get_modules(self):
         try:
-            for item in dict:
+            modules_threads = []
+            for item in data.data.system_data:
                 try:
-                    thread = None
-                    module = dict[item]
-                    if module.data["module"]["selected"] == "openwb":
+                    if "device" in item:
+                        thread = None
+                        module = data.data.system_data[item]
                         thread = threading.Thread(target=module.read, args=())
-                    if thread != None:
-                        kits_threads.append(thread)
+                        if thread != None:
+                            modules_threads.append(thread)
                 except Exception as e:
-                    log.exception_logging(e)
-            return kits_threads
+                    log.MainLogger().exception("Fehler im loadvars-Modul")
+            return modules_threads
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im loadvars-Modul")

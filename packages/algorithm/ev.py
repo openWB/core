@@ -32,7 +32,7 @@ def get_ev_to_rfid(rfid):
                 if rfid in data.data.ev_data[vehicle].data["tag_id"]:
                     return data.data.ev_data[vehicle].ev_num
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im ev-Modul "+vehicle)
             return data.data.ev_data[0].ev_num
     else:
         return None
@@ -62,12 +62,13 @@ class ev():
                 self.data["control_parameter"]["submode"] = "stop"
                 self.data["control_parameter"]["chargemode"] = "stop"
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im ev-Modul "+str(self.ev_num)) 
 
     def reset_ev(self):
         """ setzt alle Werte zurück, die während des Algorithmus gesetzt werden.
         """
         try:
+            log.MainLogger().debug("EV "+str(self.ev_num)+" zurueckgesetzt.")
             pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/required_current", 0)
             pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/timestamp_auto_phase_switch", "0")
             pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/timestamp_perform_phase_switch", "0")
@@ -79,7 +80,7 @@ class ev():
             self.data["control_parameter"]["submode"] = "stop"
             self.data["control_parameter"]["chargemode"] = "stop"
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im ev-Modul "+str(self.ev_num)) 
 
     def get_required_current(self, charged_since_mode_switch):
         """ ermittelt, ob und mit welchem Strom das EV geladen werden soll (unabhängig vom Lastmanagement)
@@ -122,7 +123,7 @@ class ev():
 
             return state, message, submode, required_current
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im ev-Modul "+str(self.ev_num)) 
             return False, "ein interner Fehler aufgetreten ist.", "stop", 0
 
     def check_state(self, required_current, set_current, charge_state):
@@ -166,9 +167,10 @@ class ev():
                 else:
                     current_changed = True
             
+            log.MainLogger().debug("Aenderung der Sollstromstaerke :"+str(current_changed)+", Aenderung des Lademodus :"+str(mode_changed))
             return current_changed, mode_changed
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im ev-Modul "+str(self.ev_num)) 
             return True
 
     def set_control_parameter(self, submode, required_current):
@@ -189,7 +191,7 @@ class ev():
             self.data["control_parameter"]["required_current"] = required_current
             pub.pub("openWB/set/vehicle/"+str(self.ev_num )+"/control_parameter/required_current", required_current)
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im ev-Modul "+str(self.ev_num)) 
 
     def get_soc(self):
         """ermittelt den SoC, wenn die Zugangsdaten konfiguriert sind.
@@ -217,6 +219,7 @@ class ev():
         float: Strom, mit dem das EV laden darf
         """
         try:
+            required_current_prev = required_current
             # Überprüfung bei 0 (automatische Umschaltung) erfolgt nach der Prüfung der Phasenumschaltung, wenn fest steht, mit vielen Phasen geladen werden soll.
             if phases != 0:
                 # EV soll/darf nicht laden
@@ -234,9 +237,11 @@ class ev():
                             max_current = self.ev_template.data["max_current_multi_phases"]
                         if required_current > max_current:
                             required_current = max_current
+            if required_current != required_current_prev:
+                log.MainLogger().debug("Anpassen der Sollstromstaerke an EV-Vorgaben. Sollstromstarke: "+str(required_current_prev)+" neue Sollstromstarke: "+str(required_current))
             return required_current
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im ev-Modul "+str(self.ev_num)) 
             return 0
 
     def auto_phase_switch(self, cp_num, current, phases_in_use, current_get):
@@ -284,7 +289,7 @@ class ev():
                         pub.pub("openWB/set/vehicle/"+str(self.ev_num) +
                             "/control_parameter/timestamp_auto_phase_switch", self.data["control_parameter"]["timestamp_auto_phase_switch"])
                         message = "Umschaltverzoegerung von 1 auf 3 Phasen für "+str(pv_config["phase_switch_delay"]) + " Min aktiv."
-                        log.message_debug_log("info", "LP "+str(cp_num)+": "+message)
+                        log.MainLogger().info("LP "+str(cp_num)+": "+message)
                     # Wenn der Timer läuft und nicht mit Maximalstromstärke geladen wird, Timer stoppen.
                     elif (self.data["control_parameter"]["timestamp_auto_phase_switch"] != "0" and 
                             max(current_get) < (self.ev_template.data["max_current_one_phase"] - self.ev_template.data["nominal_difference"])):
@@ -292,7 +297,7 @@ class ev():
                         pub.pub("openWB/set/vehicle/"+str(self.ev_num) +
                                 "/control_parameter/timestamp_auto_phase_switch", "0")
                         message = "Umschaltverzoegerung von 1 auf 3 Phasen abgebrochen."
-                        log.message_debug_log("info", "LP "+str(cp_num)+": "+message)
+                        log.MainLogger().info("LP "+str(cp_num)+": "+message)
                 # 3 -> 1
                 else:
                     if (self.data["control_parameter"]["timestamp_auto_phase_switch"] != "0" and 
@@ -308,20 +313,20 @@ class ev():
                     # Wenn im dreiphasigen Laden die Minimalstromstärke erreicht wird und der Timer noch nicht läuft, Timer für das Umschalten auf eine Phase starten.
                     elif (self.data["control_parameter"]["timestamp_auto_phase_switch"] == "0" and 
                             all((current <= (self.data["control_parameter"]["required_current"] + self.ev_template.data["nominal_difference"]) or current <= self.ev_template.data["nominal_difference"]) for current in current_get)):
-                        log.message_debug_log("debug", "create timestamp p switch")
+                        log.MainLogger().debug("create timestamp p switch")
                         self.data["control_parameter"]["timestamp_auto_phase_switch"] = timecheck.create_timestamp()
                         pub.pub("openWB/set/vehicle/"+str(self.ev_num) + "/control_parameter/timestamp_auto_phase_switch", self.data["control_parameter"]["timestamp_auto_phase_switch"])
                         message = "Umschaltverzoegerung von 3 auf 1 Phase für "+str( 16-pv_config["phase_switch_delay"]) + " Min aktiv."
-                        log.message_debug_log("info", "LP "+str(cp_num)+": "+message)
+                        log.MainLogger().info("LP "+str(cp_num)+": "+message)
                     # Wenn der Timer läuft und mit mehr als Minimalstromstärke geladen wird, Timer stoppen.
                     elif self.data["control_parameter"]["timestamp_auto_phase_switch"] != "0" and any(current > (self.data["control_parameter"]["required_current"] + self.ev_template.data["nominal_difference"]) for current in current_get):
                         self.data["control_parameter"]["timestamp_auto_phase_switch"] = "0"
                         pub.pub("openWB/set/vehicle/"+str(self.ev_num) + "/control_parameter/timestamp_auto_phase_switch", "0")
                         message = "Umschaltverzoegerung von 3 auf 1 Phase abgebrochen."
-                        log.message_debug_log("info", "LP "+str(cp_num)+": "+message)
+                        log.MainLogger().info("LP "+str(cp_num)+": "+message)
             return phases_to_use, current, message
         except Exception as e:
-            log.exception_logging(e) 
+            log.MainLogger().exception("Fehler im ev-Modul "+str(self.ev_num))  
             return phases_to_use, current, None
 
     def reset_phase_switch(self):
@@ -335,10 +340,10 @@ class ev():
             # Wenn der Timer läuft, ist den Control-Paranetern die alte Phasenzahl hinterlegt.
             if self.data["control_parameter"]["phases"] == 3:
                 data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= self.ev_template.data["max_current_one_phase"] * 230 - self.data["control_parameter"]["required_current"] * 3 * 230
-                log.message_debug_log("debug", "reserved_evu_overhang 6 "+str(data.data.pv_data["all"].data["set"]["reserved_evu_overhang"]))
+                log.MainLogger().debug("Zuruecksetzen der reservierten Leistung fuer die Phasenumschaltung. reservierte Leistung: "+str(data.data.pv_data["all"].data["set"]["reserved_evu_overhang"]))
             else:
                 data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= self.data["control_parameter"]["required_current"] * 3 * 230 - self.ev_template.data["max_current_one_phase"] * 230
-                log.message_debug_log("debug", "reserved_evu_overhang 7 "+str(data.data.pv_data["all"].data["set"]["reserved_evu_overhang"]))
+                log.MainLogger().debug("Zuruecksetzen der reservierten Leistung fuer die Phasenumschaltung. reservierte Leistung: "+str(data.data.pv_data["all"].data["set"]["reserved_evu_overhang"]))
 
     def load_default_profile(self):
         """ prüft, ob nach dem Abstecken das Standardprofil geladen werden soll und lädt dieses ggf..
@@ -387,7 +392,7 @@ class chargeTemplate():
                 message = "Keine Ladung, da keine Zeitfenster konfiguriert sind."
                 return 0, "stop", message
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im ev-Modul "+str(self.ct_num))
             return 0, "stop", "Keine Ladung, da da ein interner Fehler aufgetreten ist."
 
     def instant_charging(self, soc, amount):
@@ -423,7 +428,7 @@ class chargeTemplate():
                     message = "Keine Ladung, da die Energiemenge bereits geladen wurde."
                     return 0, "stop", message
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im ev-Modul "+str(self.ct_num))
             return 0, "stop", "Keine Ladung, da da ein interner Fehler aufgetreten ist."
 
     def pv_charging(self, soc):
@@ -454,7 +459,7 @@ class chargeTemplate():
                 message = "Keine Ladung, da der maximale Soc bereits erreicht wurde."
                 return 0, "stop", message
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im ev-Modul "+str(self.ct_num))
             return 0, "stop", "Keine Ladung, da ein interner Fehler aufgetreten ist."
 
     def scheduled_charging(self, soc, ev_template, phases):
@@ -507,7 +512,7 @@ class chargeTemplate():
                             message = "Keine Ladung, da der Ziel-Soc bereits erreicht wurde."
                             return 0, "stop", message
                     except Exception as e:
-                        log.exception_logging(e)
+                        log.MainLogger().exception("Fehler im ev-Modul "+str(self.ct_num))
             else:
                 if start == -1:
                     self.data["chargemode"]["current_plan"] = ""
@@ -551,7 +556,7 @@ class chargeTemplate():
                             message = "Keine Ladung, da noch mehr als ein Tag bis zum Zieltermmin ist. "
                             return 0, "stop", message
         except Exception as e:
-            log.exception_logging(e)
+            log.MainLogger().exception("Fehler im ev-Modul "+str(self.ct_num))
             return 0, "stop", "Keine Ladung, da ein interner Fehler aufgetreten ist."
 
     def standby(self):

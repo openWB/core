@@ -86,11 +86,11 @@ function getTopicToSendTo (elementId) {
         topic = topic.replace( '<ev>', ev );
         topic = topic.replace( '<ct>', ct );
         if( topic.includes('/NaN/') ) {
-            console.log( 'missing cp, ev or ct data' );
+            console.error( 'missing cp, ev or ct data' );
             topic = undefined;
         }
     } else {
-        console.log("element without topic changed!");
+        console.warn("element without topic changed!");
     }
     return topic;
 }
