@@ -114,6 +114,7 @@ class loadvars():
 
     def _get_general(self):
         try:
+            # Beim ersten Durchlauf wird in jedem Fall eine Exception geworfen, da die Daten erstmalig ins data-Modul kopiert werden müssen.
             if data.data.general_data["general"].data["ripple_control_receiver"]["configured"] == True:
                 ripple_control_receiver.read_ripple_control_receiver()
         except Exception as e:

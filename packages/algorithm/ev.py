@@ -519,6 +519,7 @@ class chargeTemplate():
                     message = "Keine Ladung, da keine Ziel-Termine konfiguriert sind."
                     return 0, "stop", message
                 else:
+                    log.MainLogger().debug("".join("Verwendeter Plan: ", str(plan_data)))
                     self.data["chargemode"]["current_plan"] = plan_data["plan"]
                     for plan in self.data["chargemode"]["scheduled_charging"]:
                         if plan == plan_data["plan"]:
