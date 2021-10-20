@@ -34,6 +34,7 @@ class HandlerAlgorithm():
         """ führt den Algorithmus durch.
         """
         try:
+            # Beim ersten Durchlauf wird in jedem Fall eine Exception geworfen, da die Daten erstmalig ins data-Modul kopiert werden müssen.
             try:
                 if (data.data.general_data["general"].data["control_interval"] / 10) == self.interval_counter:
                     # Mit aktuellen Einstellungen arbeiten.

@@ -82,7 +82,7 @@ class prepare():
                 except Exception as e:
                     log.MainLogger().exception("Fehler im Prepare-Modul fuer EV "+str(vehicle))
 
-            data.data.counter_module_data = copy.deepcopy(subdata.subData.counter_module_data)
+            data.data.counter_data = copy.deepcopy(subdata.subData.counter_data)
             data.data.bat_data = copy.deepcopy(subdata.subData.bat_data)
             data.data.bat_module_data = copy.deepcopy(subdata.subData.bat_module_data)
         except Exception as e:
