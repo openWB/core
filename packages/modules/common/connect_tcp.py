@@ -22,7 +22,7 @@ class ConnectTcp:
     def __init__(self, name: str, ip_address: str, port: int) -> None:
         try:
             self.tcp_client = ModbusTcpClient(ip_address, port)
-            # Den Verbinungsaufbau übenrimmt der tcp_client automatisch.
+            # Den Verbinungsaufbau übernimmt der tcp_client automatisch.
             self.name = name
         except Exception as e:
             log.MainLogger().exception(self.name)

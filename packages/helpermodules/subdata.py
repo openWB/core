@@ -32,7 +32,6 @@ class subData():
     ev_template_data = {}
     ev_charge_template_data = {}
     counter_data = {}
-    counter_module_data = {}
     bat_data = {}
     bat_module_data = {}
     general_data = {}

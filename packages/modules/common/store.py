@@ -97,8 +97,8 @@ class CounterValueStoreRamdisk(ValueStore):
 class CounterValueStoreBroker(ValueStore):
     def set(self, num, voltages: List[float], currents: List[float], powers: List[float], power_factors: List[float], imported: float, exported: float, power_all: float, frequency: float):
         try:
-            pub.pub("openWB/set/counter/"+str(num)+"/get/voltages", [round(value, 2) for value in voltages])
-            pub.pub("openWB/set/counter/"+str(num)+"/get/currents", [round(value, 2) for value in currents])
+            pub.pub("openWB/set/counter/"+str(num)+"/get/voltage", [round(value, 2) for value in voltages])
+            pub.pub("openWB/set/counter/"+str(num)+"/get/current", [round(value, 2) for value in currents])
             pub.pub("openWB/set/counter/"+str(num)+"/get/power_phase", [round(value, 2) for value in powers])
             pub.pub("openWB/set/counter/"+str(num)+"/get/power_factors", [round(value, 2) for value in power_factors])
             pub.pub("openWB/set/counter/"+str(num)+"/get/imported", imported)
