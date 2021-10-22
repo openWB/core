@@ -154,8 +154,11 @@ class prepare():
                             log.MainLogger().debug("LP"+str(cp.cp_num)+" : Da sich die Stromstärke geändert hat, muss der Ladepunkt im Algorithmus neu priorisiert werden.")
                             data.data.pv_data["all"].reset_switch_on_off(cp, charging_ev)
                             charging_ev.reset_phase_switch()
-                            if max(cp.data["get"]["current"]) != 0:
+                            if max(cp.data["get"]["current"]) > charging_ev.ev_template.data["nominal_difference"]:
                                 cp.data["set"]["current"] = 0
+                            else:
+                                # Wenn nicht geladen wird, obwohl geladen werde kann, soll das EV im Algorithmus nicht berücksichtigt werden.
+                                cp.data["set"]["current"] = required_current
                             # Da nicht bekannt ist, ob mit Bezug, Überschuss oder aus dem Speicher geladen wird, wird die freiwerdende Leistung erst im nächsten Durchlauf berücksichtigt.
                             # Ggf. entsteht so eine kurze Unterbrechung der Ladung, wenn während dem Laden umkonfiguriert wird.
                         charging_ev.set_control_parameter(submode, required_current)

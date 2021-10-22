@@ -265,7 +265,7 @@ class Data:
         self._print_dictionaries(self._pv_data)
         self._print_dictionaries(self._pv_module_data)
         self._print_dictionaries(self._system_data)
-        log.DataLogger().debug("\n")
+        log.MainLogger().debug("\n")
 
     def _print_dictionaries(self, data):
         """ gibt zu Debug-Zwecken für jeden Key im übergebenen Dictionary das Dictionary aus.
@@ -277,9 +277,9 @@ class Data:
         for key in data:
             try:
                 if isinstance(data[key], dict) == False:
-                    log.DataLogger().debug(key+"\n"+str(data[key].data))
+                    log.MainLogger().debug(key+"\n"+str(data[key].data))
                 else:
-                    log.DataLogger().debug(key+"\n"+"Klasse fehlt")
+                    log.MainLogger().debug(key+"\n"+"Klasse fehlt")
             except Exception as e:
                 log.MainLogger().exception("Fehler im Data-Modul")
 
