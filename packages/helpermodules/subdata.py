@@ -18,7 +18,7 @@ from . import system
 from ..algorithm import pv
 
 
-class subData():
+class SubData():
     """ Klasse, die die benötigten Topics abonniert, die Instanzen ertstellt, wenn z.b. ein Modul neu konfiguriert wird, 
     Instanzen löscht, wenn Module gelöscht werden, und die Werte in die Attribute der Instanzen schreibt.
     """
@@ -742,7 +742,7 @@ class subData():
                     var["system"] = system.system()
             if re.search("^.+/devices/[0-9]+/config$", msg.topic) != None:
                 index = self.get_index(msg.topic)
-                if json.loads(str(msg.payload.decode("utf-8"))) == "":
+                if str(msg.payload.decode("utf-8")) == "":
                     if "device"+index in var:
                         var.pop("device"+index)
                 else:
@@ -752,7 +752,15 @@ class subData():
             elif re.search("^.+/devices/[0-9]+/component/[0-9]+/simulation/.+$", msg.topic) != None:
                 index = self.get_index(msg.topic)
                 index_second = self.get_second_index(msg.topic)
-                self.set_json_payload(var["device"+index].data["components"]["components"+index_second].data["simulation"], msg)
+                self.set_json_payload(var["device"+index].data["components"]["component"+index_second].data["simulation"], msg)
+            elif re.search("^.+/devices/[0-9]+/component/[0-9]+/config$", msg.topic) != None:
+                index = self.get_index(msg.topic)
+                if json.loads(str(msg.payload.decode("utf-8"))) == "":
+                    index_second = self.get_second_index(msg.topic)
+                    var["device"+index].data["components"].remove("component"+str(index_second))
+                    pub.pub("openWB/system/devices/"+str(index)+"/component/"+str(index_second), "")
+                else:
+                    var["device"+index].add_component(json.loads(str(msg.payload.decode("utf-8"))))
             else:
                 self.set_json_payload(var["system"].data, msg)
         except Exception as e:

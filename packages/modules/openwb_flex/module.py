@@ -18,15 +18,20 @@ class Module():
         try:
             self.data = {}
             self.data["config"] = device
-            self.data["simulation"] = {}
-            if device["components"]["component0"]["type"] == "counter":
-                self.mod = evu_kit.EvuKitFlex(device)
+            self.data["components"] = {}
         except Exception as e:
             log.MainLogger().exception("Fehler im Modul "+device["name"])
 
+    def add_component(self, component_config):
+        if type == "counter":
+            self.data["components"]["component"+component_config["id"]] = evu_kit.EvuKitFlex(self.data["config"], component_config)
+
     def read(self):
         try:
-            self.mod.read()
+            if len(self.data["components"]) > 0:
+                self.data["components"]["component0"].read()
+            else:
+                log.MainLogger().debug(self.data["config"]["name"]+": Es konnten keine Werte gelesen werden, da noch keine Komponenten konfiguriert wurden.")
         except Exception as e:
             log.MainLogger().exception("Fehler im Modul "+self.data["config"]["name"])
 

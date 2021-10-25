@@ -17,6 +17,9 @@ Für Module mit dynamischen Anzahlen, wie LP, gibt es dann ein openWB/defaults/c
 from . import log
 from . import pub
 
+def get_device_defaults(type: str) -> dict:
+    #if type == "openwb_flex":
+    return {"name": "OpenWB-Kit", "type": "openwb_flex", "id": None, "configuration": {"ip_address": "192.168.193.15", "port": "8899"}}
 
 def pub_defaults():
     """ruft für alle Ramdisk-Dateien aus initRamdisk die zum Typ passende Funktion zum publishen auf.

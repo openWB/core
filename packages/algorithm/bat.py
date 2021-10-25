@@ -155,7 +155,7 @@ class batAll:
                 if config["rundown_soc"] != 100:
                     if self.data["get"]["soc"] > config["rundown_soc"]:
                         self.data["set"]["charging_power_left"] = config["rundown_power"]
-                        log.MainLogger().debug("".join(("Erlaubte Entlade-Leistung nutzen (", config["rundown_power"], "W)")))
+                        log.MainLogger().debug("".join(("Erlaubte Entlade-Leistung nutzen (", str(config["rundown_power"]), "W)")))
                     else:
                         # 50 W Überschuss übrig lassen, die sich der Speicher dann nehmen kann. Wenn der Speicher schneller regelt, als die LP, würde sonst der Speicher reduziert werden.
                         self.data["set"]["charging_power_left"] = -50

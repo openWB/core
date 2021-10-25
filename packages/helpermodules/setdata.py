@@ -61,7 +61,7 @@ class setData():
             enthält Topic und Payload
         """
         self.heartbeat = True
-        if msg.payload:
+        if str(msg.payload.decode("utf-8")) != "":
             log.MqttLogger().debug("Topic: "+str(msg.topic)+", Payload: "+str(msg.payload.decode("utf-8")))
             if "openWB/set/vehicle/" in msg.topic:
                 if "openWB/set/vehicle/template/ev_template/" in msg.topic:
@@ -87,6 +87,8 @@ class setData():
                 self.process_graph_topic(msg)
             elif "openWB/set/system/" in msg.topic:
                 self.process_system_topic(msg)
+            elif "openWB/set/command/" in msg.topic:
+                self.process_command_topic(msg)
 
     def _validate_value(self, msg, data_type, ranges = [], collection = None, pub_json = False):
         """ prüft, ob der Wert vom angegebenen Typ ist.
@@ -131,20 +133,20 @@ class setData():
                     index = re.search('(?!/)([0-9]*)(?=/|$)', msg.topic).group()
                     if "charge_template" in msg.topic:
                         event = self.event_charge_template
-                        if "ct"+str(index) in subdata.subData.ev_charge_template_data:
-                            template = copy.deepcopy(subdata.subData.ev_charge_template_data["ct"+str(index)].data)
+                        if "ct"+str(index) in subdata.SubData.ev_charge_template_data:
+                            template = copy.deepcopy(subdata.SubData.ev_charge_template_data["ct"+str(index)].data)
                         else:
                             template = {}
                     elif "ev_template" in msg.topic:
                         event = self.event_ev_template
-                        if "et"+str(index) in subdata.subData.ev_template_data:
-                            template = copy.deepcopy(subdata.subData.ev_template_data["et"+str(index)].data)
+                        if "et"+str(index) in subdata.SubData.ev_template_data:
+                            template = copy.deepcopy(subdata.SubData.ev_template_data["et"+str(index)].data)
                         else:
                             template = {}
                     elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/config.*$", msg.topic) != None:
                         event = self.event_cp_config
-                        if "cp"+str(index) in subdata.subData.cp_data:
-                            template = copy.deepcopy(subdata.subData.cp_data["cp"+str(index)].data["config"])
+                        if "cp"+str(index) in subdata.SubData.cp_data:
+                            template = copy.deepcopy(subdata.SubData.cp_data["cp"+str(index)].data["config"])
                         else:
                             template = {}
                     # Wert, der aktualisiert werden soll, erstellen/finden und updaten
@@ -849,5 +851,24 @@ class setData():
                 # hier kommen auch noch alte Topics ohne json-Format an.
                 #log.MainLogger().error("Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
                 pub.pub(msg.topic, "")
+        except Exception as e:
+            log.MainLogger().exception("Fehler im setdata-Modul")
+
+
+    def process_command_topic(self, msg):
+        """Handler für die Befehl-Topics
+
+         Parameters
+        ----------
+        msg:
+            enthält Topic und Payload
+        """
+        try:
+            if "openWB/set/command/max_id" in msg.topic:
+                self._validate_value(msg, int, [(0, float("inf"))])
+            elif "todo" in msg.topic:
+                self._validate_value(msg, "json")
+            else:
+                self.__unknown_topic(msg)
         except Exception as e:
             log.MainLogger().exception("Fehler im setdata-Modul")
