@@ -753,6 +753,11 @@ class SubData():
                     device_config = json.loads(str(msg.payload.decode("utf-8")))
                     mod = importlib.import_module(".modules."+device_config["type"]+".module", "packages")
                     var["device"+index] = mod.Module(device_config)
+            elif re.search("^.+/device/[0-9]+/get$", msg.topic) != None:
+                index = self.get_index(msg.topic)
+                if "get" not in var["device"+index].data:
+                    var["device"+index].data["get"] = {}
+                self.set_json_payload(var["device"+index].data["get"], msg)
             elif re.search("^.+/device/[0-9]+/component/[0-9]+/simulation/.+$", msg.topic) != None:
                 index = self.get_index(msg.topic)
                 index_second = self.get_second_index(msg.topic)

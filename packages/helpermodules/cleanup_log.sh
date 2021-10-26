@@ -1,2 +1,2 @@
 #!/bin/bash
-echo "$(tail -1000 $1)" > $1
+echo "$(tail -25000 $1)" > $1
