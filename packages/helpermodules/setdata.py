@@ -867,7 +867,7 @@ class setData():
         """
         try:
             if "openWB/set/command/max_id" in msg.topic:
-                self._validate_value(msg, int, [(0, float("inf"))])
+                self._validate_value(msg, int, [(-1, float("inf"))])
             elif "todo" in msg.topic:
                 self._validate_value(msg, "json")
             else:

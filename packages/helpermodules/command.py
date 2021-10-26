@@ -26,17 +26,17 @@ class Command():
                     self.__process_max_id_topic(msg)
             except:
                 log.MainLogger().exception("Fehler im Command-Modul")
-            self.__chech_max_id_initalisation(self.max_id_device, "Devices")
-            self.__chech_max_id_initalisation(self.max_id_component, "Komponenten")
+            self.__chech_max_id_initalisation(self.max_id_device, "device", "Devices")
+            self.__chech_max_id_initalisation(self.max_id_component, "component", "Komponenten")
         except:
             log.MainLogger().exception("Fehler im Command-Modul")
 
-    def __chech_max_id_initalisation(self, var: int, name: str) -> None:
+    def __chech_max_id_initalisation(self, var: int, topic: str, name: str) -> None:
         try:
             if var == None:
-                var = 0
-                pub.pub("openWB/set/command/max_id/device", var)
-                log.MainLogger().warning("Maximale ID für "+name+" wurde mit 0 initialisiert.")
+                var = -1
+                pub.pub("openWB/set/command/max_id/"+topic, var)
+                log.MainLogger().warning("Maximale ID für "+name+" wurde mit -1 initialisiert.")
         except Exception as e:
             log.MainLogger().exception("Fehler im Command-Modul")
 
