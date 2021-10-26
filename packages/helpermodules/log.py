@@ -75,7 +75,7 @@ class MainLogger:
             else:
                 MainLogger.instance = logging.getLogger("main")
                 MainLogger.instance.setLevel(logging.DEBUG)
-                formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+                formatter = logging.Formatter('%(asctime)s - {%(pathname)s:%(lineno)s} - %(levelname)s - %(message)s')
                 fh = logging.FileHandler('/var/www/html/openWB/ramdisk/main.log')
                 fh.setLevel(logging.DEBUG)
                 fh.setFormatter(formatter)
@@ -103,26 +103,8 @@ class MqttLogger:
         return getattr(self.instance, name)
 
 
-class DataLogger:
-    instance = None
-
-    def __init__(self):
-        if not DataLogger.instance:
-            DataLogger.instance = logging.getLogger("data")
-            DataLogger.instance.setLevel(logging.DEBUG)
-            formatter = logging.Formatter(
-                '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-            fh = logging.FileHandler('/var/www/html/openWB/ramdisk/data.log')
-            fh.setLevel(logging.DEBUG)
-            fh.setFormatter(formatter)
-            DataLogger.instance.addHandler(fh)
-
-    def __getattr__(self, name):
-        return getattr(self.instance, name)
-
 def cleanup_logfiles():
     """ kürzt die Logfiles auf die letzten 1000 Zeilen.
     """
-    subprocess.run(["./packages/helpermodules/cleanup_log.sh", "/var/www/html/openWB/ramdisk/data.log"])
     subprocess.run(["./packages/helpermodules/cleanup_log.sh", "/var/www/html/openWB/ramdisk/main.log"])
     subprocess.run(["./packages/helpermodules/cleanup_log.sh", "/var/www/html/openWB/ramdisk/mqtt.log"])

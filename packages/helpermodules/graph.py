@@ -54,9 +54,8 @@ def pub_graph_data():
     pub.pub("openWB/set/graph/lastlivevaluesJson", dataline)
     pub.pub("openWB/set/system/lastlivevaluesJson", dataline)
 
-    pathlib.Path('./data/graph').mkdir(mode = 0o755, parents=True, exist_ok=True)
     try:
-        with open('./data/graph/all_live.json', "r") as f:
+        with open('./ramdisk/graph_live.json', "r") as f:
             file = f.readlines()
             file_len = len(file)
     except FileNotFoundError:
@@ -64,7 +63,7 @@ def pub_graph_data():
     # if file_len > 180:
     #     with open("./data/graph/all_live.json", "w+") as f:
     #         f.writelines(file[180:])
-    with open("./data/graph/all_live.json", "a") as f:
+    with open("./ramdisk/graph_live.json", "a") as f:
         f.write(str(dataline).replace("'",'"'))
         f.write("\n")
     subprocess.run(["/var/www/html/openWB/graphing.sh"])

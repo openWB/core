@@ -10,6 +10,7 @@ from packages.algorithm import algorithm
 from packages.algorithm import process
 from packages.algorithm import data
 from packages.algorithm import prepare
+from packages.helpermodules import command
 from packages.helpermodules import defaults
 from packages.helpermodules import graph
 from packages.helpermodules import log
@@ -152,6 +153,7 @@ class RepeatedTimer(object):
 
 try:
     data.data_init()
+    pub.setup_connection()
     proc = process.process()
     control = algorithm.control()
     handler = HandlerAlgorithm()
@@ -164,14 +166,17 @@ try:
     event_cp_config = threading.Event()
     event_cp_config.set()
     set = setdata.setData(event_ev_template, event_charge_template, event_cp_config)
-    sub = subdata.subData(event_ev_template, event_charge_template, event_cp_config)
+    sub = subdata.SubData(event_ev_template, event_charge_template, event_cp_config)
+    comm = command.Command()
     t_sub = Thread(target=sub.sub_topics, args=())
     t_set = Thread(target=set.set_data, args=())
+    t_comm = Thread(target=comm.sub_commands, args=())
 
 
-    pub.setup_connection()
+    
     t_sub.start()
     t_set.start()
+    t_comm.start()
     rt = RepeatedTimer(300, handler.handler5Min)
     if debug == False:
         rt2 = RepeatedTimer(10, handler.handler10Sec)

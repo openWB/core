@@ -33,7 +33,7 @@ class prepare():
         """ kopiert die Daten, die per MQTT empfangen wurden.
         """
         try:
-            data.data.system_data = copy.deepcopy(subdata.subData.system_data)
+            data.data.system_data = copy.deepcopy(subdata.SubData.system_data)
         except Exception as e:
             log.MainLogger().exception("Fehler im Prepare-Modul")
 
@@ -41,7 +41,7 @@ class prepare():
         """ kopiert die Daten, die per MQTT empfangen wurden.
         """
         try:
-            data.data.counter_data = copy.deepcopy(subdata.subData.counter_data)
+            data.data.counter_data = copy.deepcopy(subdata.SubData.counter_data)
         except Exception as e:
             log.MainLogger().exception("Fehler im Prepare-Modul")
 
@@ -49,11 +49,11 @@ class prepare():
         """ kopiert die Daten, die per MQTT empfangen wurden.
         """
         try:
-            data.data.general_data = copy.deepcopy(subdata.subData.general_data)
-            data.data.optional_data = copy.deepcopy(subdata.subData.optional_data)
-            data.data.cp_data = copy.deepcopy(subdata.subData.cp_data)
+            data.data.general_data = copy.deepcopy(subdata.SubData.general_data)
+            data.data.optional_data = copy.deepcopy(subdata.SubData.optional_data)
+            data.data.cp_data = copy.deepcopy(subdata.SubData.cp_data)
             data.data.cp_template_data = copy.deepcopy(
-                subdata.subData.cp_template_data)
+                subdata.SubData.cp_template_data)
             for chargepoint in data.data.cp_data:
                 try:
                     if "cp" in chargepoint:
@@ -63,13 +63,13 @@ class prepare():
                 except Exception as e:
                     log.MainLogger().exception("Fehler im Prepare-Modul fuer Ladepunkt "+str(chargepoint))
 
-            data.data.pv_data = copy.deepcopy(subdata.subData.pv_data)
-            data.data.pv_module_data = copy.deepcopy(subdata.subData.pv_module_data)
-            data.data.ev_data = copy.deepcopy(subdata.subData.ev_data)
+            data.data.pv_data = copy.deepcopy(subdata.SubData.pv_data)
+            data.data.pv_module_data = copy.deepcopy(subdata.SubData.pv_module_data)
+            data.data.ev_data = copy.deepcopy(subdata.SubData.ev_data)
             data.data.ev_template_data = copy.deepcopy(
-                subdata.subData.ev_template_data)
+                subdata.SubData.ev_template_data)
             data.data.ev_charge_template_data = copy.deepcopy(
-                subdata.subData.ev_charge_template_data)
+                subdata.SubData.ev_charge_template_data)
             for vehicle in data.data.ev_data:
                 try:
                     # Globaler oder individueller Lademodus?
@@ -82,9 +82,9 @@ class prepare():
                 except Exception as e:
                     log.MainLogger().exception("Fehler im Prepare-Modul fuer EV "+str(vehicle))
 
-            data.data.counter_data = copy.deepcopy(subdata.subData.counter_data)
-            data.data.bat_data = copy.deepcopy(subdata.subData.bat_data)
-            data.data.bat_module_data = copy.deepcopy(subdata.subData.bat_module_data)
+            data.data.counter_data = copy.deepcopy(subdata.SubData.counter_data)
+            data.data.bat_data = copy.deepcopy(subdata.SubData.bat_data)
+            data.data.bat_module_data = copy.deepcopy(subdata.SubData.bat_module_data)
         except Exception as e:
             log.MainLogger().exception("Fehler im Prepare-Modul")
 
@@ -154,8 +154,11 @@ class prepare():
                             log.MainLogger().debug("LP"+str(cp.cp_num)+" : Da sich die Stromstärke geändert hat, muss der Ladepunkt im Algorithmus neu priorisiert werden.")
                             data.data.pv_data["all"].reset_switch_on_off(cp, charging_ev)
                             charging_ev.reset_phase_switch()
-                            if max(cp.data["get"]["current"]) != 0:
+                            if max(cp.data["get"]["current"]) > charging_ev.ev_template.data["nominal_difference"]:
                                 cp.data["set"]["current"] = 0
+                            else:
+                                # Wenn nicht geladen wird, obwohl geladen werde kann, soll das EV im Algorithmus nicht berücksichtigt werden.
+                                cp.data["set"]["current"] = required_current
                             # Da nicht bekannt ist, ob mit Bezug, Überschuss oder aus dem Speicher geladen wird, wird die freiwerdende Leistung erst im nächsten Durchlauf berücksichtigt.
                             # Ggf. entsteht so eine kurze Unterbrechung der Ladung, wenn während dem Laden umkonfiguriert wird.
                         charging_ev.set_control_parameter(submode, required_current)
