@@ -28,6 +28,22 @@ def get_component_defaults(device_type: str, type: str) -> dict:
         #     {"name": "EVU-Kit flex", "type": "counter", "id": None, "configuration": {"version": 2, "id": 115}}
     return {"name": "EVU-Kit flex", "type": "counter", "id": None, "configuration": {"version": 2, "id": 115}}
 
+
+def get_vehicle_defaults() -> dict:
+    vehicle_default = {
+        "charge_template": 0, 
+        "ev_template": 0, 
+        "name": "EV", 
+        "soc/config/configured": False, 
+        "soc/config/manual": False, 
+        "soc/config/request_interval_charging": 10, 
+        "soc/config/reques_interval_not_charging": 60, 
+        "soc/config/request_only_plugged": False, 
+        "tag_id": ["1234"],
+        "get/soc": 0
+        }
+    return vehicle_default
+
 def pub_defaults():
     """ruft für alle Ramdisk-Dateien aus initRamdisk die zum Typ passende Funktion zum publishen auf.
     """

@@ -211,13 +211,15 @@ class SubData():
         """
         try:
             index = self.get_index(msg.topic)
-            if re.search("^.+/vehicle/[0-9]+/.+$", msg.topic) != None:
+            if re.search("^.+/vehicle/[0-9]+$", msg.topic) != None:
+                if str(msg.payload.decode("utf-8")) == "":
+                    if "ev"+index in var:
+                        var.pop("ev"+index)
+                    else:
+                        log.MainLogger().error("Es konnte kein Vehicle mit der ID "+str(index)+" gefunden werden.")
+            elif re.search("^.+/vehicle/[0-9]+/.+$", msg.topic) != None:
                 if "ev"+index not in var:
                     var["ev"+index] = ev.ev(int(index), default)
-                if re.search("^.+/vehicle/[0-9]+$", msg.topic) != None:
-                    if str(msg.payload.decode("utf-8")) == "":
-                        if "ev"+index in var:
-                            var.pop("ev"+index)
                 else:
                     if re.search("^.+/vehicle/[0-9]+/get.+$", msg.topic) != None:
                         if "get" not in var["ev"+index].data:
