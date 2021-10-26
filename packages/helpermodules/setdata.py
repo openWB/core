@@ -833,14 +833,16 @@ class setData():
             elif ("openWB/set/system/perform_update" in msg.topic or
                     "openWB/set/system/update_in_progress" in msg.topic):
                 self._validate_value(msg, int, [(0, 1)])
-            elif "devices" in msg.topic:
-                if "components" in msg.topic:
+            elif "device" in msg.topic:
+                if "component" in msg.topic:
                     if ("/simulation/power_present" in msg.topic or
                             "/simulation/present_imported" in msg.topic or
                             "/simulation/present_exported" in msg.topic):
                         self._validate_value(msg, float)
                     elif "/simulation/timestamp_present" in msg.topic:
                         self._validate_value(msg, str)
+                    elif "/config" in msg.topic:
+                        self._validate_value(msg, "json")
                     else:
                         self.__unknown_topic(msg)
                 elif "/config" in msg.topic:

@@ -153,6 +153,7 @@ class RepeatedTimer(object):
 
 try:
     data.data_init()
+    pub.setup_connection()
     proc = process.process()
     control = algorithm.control()
     handler = HandlerAlgorithm()
@@ -172,7 +173,7 @@ try:
     t_comm = Thread(target=comm.sub_commands, args=())
 
 
-    pub.setup_connection()
+    
     t_sub.start()
     t_set.start()
     t_comm.start()

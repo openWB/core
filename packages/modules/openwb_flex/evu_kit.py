@@ -73,7 +73,7 @@ class EvuKitFlex():
             else:
                 currents = self.counter.get_current()
                 currents = [abs(currents[i]) for i in range(3)]
-                topic_str = "openWB/set/system/devices/" +str(self.data["device_config"]["id"])+"/components/"+str(self.data["config"]["id"])+"/"
+                topic_str = "openWB/set/system/device/" +str(self.data["device_config"]["id"])+"/component/"+str(self.data["config"]["id"])+"/"
                 imported, exported = self.sim_count.sim_count(power_all, topic=topic_str, data=self.data["simulation"], prefix="bezug")
 
             self.value_store.set(self.data["config"]["id"], voltages=voltages, currents=currents, powers=power_per_phase, power_factors=power_factors, imported=imported, exported=exported, power_all=power_all, frequency=frequency)

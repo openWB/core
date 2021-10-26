@@ -19,7 +19,14 @@ from . import pub
 
 def get_device_defaults(type: str) -> dict:
     #if type == "openwb_flex":
+        # {"name": "OpenWB-Kit", "type": "openwb_flex", "id": None, "configuration": {"ip_address": "192.168.193.15", "port": "8899"}}
     return {"name": "OpenWB-Kit", "type": "openwb_flex", "id": None, "configuration": {"ip_address": "192.168.193.15", "port": "8899"}}
+
+def get_component_defaults(device_type: str, type: str) -> dict:
+    #if device_type == "openwb_flex":
+        # if type == "counter":
+        #     {"name": "EVU-Kit flex", "type": "counter", "id": None, "configuration": {"version": 2, "id": 115}}
+    return {"name": "EVU-Kit flex", "type": "counter", "id": None, "configuration": {"version": 2, "id": 115}}
 
 def pub_defaults():
     """ruft für alle Ramdisk-Dateien aus initRamdisk die zum Typ passende Funktion zum publishen auf.

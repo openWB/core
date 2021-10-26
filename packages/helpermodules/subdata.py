@@ -215,7 +215,7 @@ class SubData():
                 if "ev"+index not in var:
                     var["ev"+index] = ev.ev(int(index), default)
                 if re.search("^.+/vehicle/[0-9]+$", msg.topic) != None:
-                    if json.loads(str(msg.payload.decode("utf-8"))) == "":
+                    if str(msg.payload.decode("utf-8")) == "":
                         if "ev"+index in var:
                             var.pop("ev"+index)
                 else:
@@ -263,7 +263,7 @@ class SubData():
         try:
             index = self.get_index(msg.topic)
             if re.search("^.+/vehicle/template/charge_template/[0-9]+$", msg.topic) != None:
-                if json.loads(str(msg.payload.decode("utf-8"))) == "":
+                if str(msg.payload.decode("utf-8")) == "":
                     if "ct"+index in var:
                         var.pop("ct"+index)
                 else:
@@ -289,7 +289,7 @@ class SubData():
         try:
             index = self.get_index(msg.topic)
             if re.search("^.+/vehicle/template/ev_template/[0-9]+$", msg.topic) != None:
-                if json.loads(str(msg.payload.decode("utf-8"))) == "":
+                if str(msg.payload.decode("utf-8")) == "":
                     if "et"+index in var:
                         var.pop("et"+index)
                 else:
@@ -315,7 +315,7 @@ class SubData():
         try:
             if re.search("^.+/chargepoint/[0-9]+$", msg.topic) != None:
                 index = self.get_index(msg.topic)
-                if json.loads(str(msg.payload.decode("utf-8"))) == "":
+                if str(msg.payload.decode("utf-8")) == "":
                     if "cp"+index in var:
                         var.pop("cp"+index)
             elif re.search("^.+/chargepoint/[0-9]+/.+$", msg.topic) != None:
@@ -411,7 +411,7 @@ class SubData():
         """
         try:
             if re.search("^.+/pv$", msg.topic) != None:
-                if json.loads(str(msg.payload.decode("utf-8"))) == "":
+                if str(msg.payload.decode("utf-8")) == "":
                     if "all" in var:
                         var.pop("all")
             elif re.search("^.+/pv/[0-9]+/.+$", msg.topic) != None:
@@ -459,7 +459,7 @@ class SubData():
         try:
             index = self.get_index(msg.topic)
             if re.search("^.+/pv/[0-9]+/module$", msg.topic) != None:
-                if json.loads(str(msg.payload.decode("utf-8"))) == "":
+                if str(msg.payload.decode("utf-8")) == "":
                     if "pv"+index in var:
                         var.pop("pv"+index)
                 else:
@@ -488,7 +488,7 @@ class SubData():
         """
         try:
             if re.search("^.+/bat$", msg.topic) != None:
-                if json.loads(str(msg.payload.decode("utf-8"))) == "":
+                if str(msg.payload.decode("utf-8")) == "":
                     if "all" in var:
                         var.pop("all")
             elif re.search("^.+/bat/[0-9]+/.+$", msg.topic) != None:
@@ -540,7 +540,7 @@ class SubData():
         try:
             index = self.get_index(msg.topic)
             if re.search("^.+/bat/[0-9]+/module$", msg.topic) != None:
-                if json.loads(str(msg.payload.decode("utf-8"))) == "":
+                if str(msg.payload.decode("utf-8")) == "":
                     if "bat"+index in var:
                         var.pop("bat"+index)
                 else:
@@ -670,7 +670,7 @@ class SubData():
         try:
             if re.search("^.+/counter/[0-9]+$", msg.topic) != None:
                 index = self.get_index(msg.topic)
-                if json.loads(str(msg.payload.decode("utf-8"))) == "":
+                if str(msg.payload.decode("utf-8")) == "":
                     if "counter"+index in var:
                         var.pop("counter"+index)
             elif re.search("^.+/counter/[0-9]+/.+$", msg.topic) != None:
@@ -735,30 +735,38 @@ class SubData():
         """
         try:
             if "system" not in var:
-                if json.loads(str(msg.payload.decode("utf-8"))) == "":
+                if str(msg.payload.decode("utf-8")) == "":
                     if "system" in var:
                         var.pop("system")
                 else:
                     var["system"] = system.system()
-            if re.search("^.+/devices/[0-9]+/config$", msg.topic) != None:
+            if re.search("^.+/device/[0-9]+/config$", msg.topic) != None:
                 index = self.get_index(msg.topic)
                 if str(msg.payload.decode("utf-8")) == "":
                     if "device"+index in var:
                         var.pop("device"+index)
+                    else:
+                        log.MainLogger().error("Es konnte kein Device mit der ID "+str(index)+" gefunden werden.")
                 else:
                     device_config = json.loads(str(msg.payload.decode("utf-8")))
                     mod = importlib.import_module(".modules."+device_config["type"]+".module", "packages")
                     var["device"+index] = mod.Module(device_config)
-            elif re.search("^.+/devices/[0-9]+/component/[0-9]+/simulation/.+$", msg.topic) != None:
+            elif re.search("^.+/device/[0-9]+/component/[0-9]+/simulation/.+$", msg.topic) != None:
                 index = self.get_index(msg.topic)
                 index_second = self.get_second_index(msg.topic)
                 self.set_json_payload(var["device"+index].data["components"]["component"+index_second].data["simulation"], msg)
-            elif re.search("^.+/devices/[0-9]+/component/[0-9]+/config$", msg.topic) != None:
+            elif re.search("^.+/device/[0-9]+/component/[0-9]+/config$", msg.topic) != None:
                 index = self.get_index(msg.topic)
-                if json.loads(str(msg.payload.decode("utf-8"))) == "":
+                if str(msg.payload.decode("utf-8")) == "":
                     index_second = self.get_second_index(msg.topic)
-                    var["device"+index].data["components"].remove("component"+str(index_second))
-                    pub.pub("openWB/system/devices/"+str(index)+"/component/"+str(index_second), "")
+                    if "device"+index in var:
+                        if "component"+str(index_second) in var["device"+index].data["components"]:
+                            var["device"+index].data["components"].remove("component"+str(index_second))
+                            pub.pub("openWB/system/device/"+str(index)+"/component/"+str(index_second), "")
+                        else:
+                            log.MainLogger().error("Es konnte keine Komponente mit der ID "+str(index_second)+" gefunden werden.")
+                    else:
+                        log.MainLogger().error("Es konnte kein Device mit der ID "+str(index)+" gefunden werden.")
                 else:
                     var["device"+index].add_component(json.loads(str(msg.payload.decode("utf-8"))))
             else:
