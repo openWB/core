@@ -16,25 +16,31 @@ from .system import exit_after
 class Command():
     """
     """
-    @exit_after(3)
     def __init__(self):
         try:
             self.max_id_device = None
             self.max_id_component = None
             self.max_id_vehicle = None
-            try:
-                messages = subscribe.simple("openWB/command/max_id/+", port=1886, msg_count=3)
-                for msg in messages:
-                    self.__process_max_id_topic(msg)
-            except:
-                log.MainLogger().exception("Fehler im Command-Modul")
+            self.__get_max_id("device")
+            self.__get_max_id("component")
+            self.__get_max_id("vehicle")
             self.__chech_max_id_initalisation(self.max_id_device, "device", "Devices")
             self.__chech_max_id_initalisation(self.max_id_component, "component", "Komponenten")
             self.__chech_max_id_initalisation(self.max_id_vehicle, "vehicle", "EVs")
         except:
             log.MainLogger().exception("Fehler im Command-Modul")
 
+    @exit_after(1)
+    def __get_max_id(self, topic: str)-> None:
+        """ ermittelt die maximale ID vom Broker """
+        try:
+            msg = subscribe.simple("openWB/command/max_id/"+topic, port=1886)
+            self.__process_max_id_topic(msg, no_log = True)
+        except:
+            log.MainLogger().exception("Fehler im Command-Modul")
+
     def __chech_max_id_initalisation(self, var: int, topic: str, name: str) -> None:
+        """ Wenn keine ID vom Broker empfangen wurde, wird die maximale ID mit -1 initalisiert. (Dies sollte nur beim initialen Boot vorkommen.)"""
         try:
             if var == None:
                 var = -1
@@ -49,9 +55,6 @@ class Command():
         try:
             mqtt_broker_ip = "localhost"
             client = mqtt.Client("openWB-command-" + self.getserial())
-            # ipallowed='^[0-9.]+$'
-            # nameallowed='^[a-zA-Z ]+$'
-            # namenumballowed='^[0-9a-zA-Z ]+$'
 
             client.on_connect = self.on_connect
             client.on_message = self.on_message
@@ -120,17 +123,20 @@ class Command():
         except Exception as e:
             log.MainLogger().exception("Fehler im Command-Modul")
 
-    def __process_max_id_topic(self, msg) -> None:
+    def __process_max_id_topic(self, msg, no_log: bool = False) -> None:
         try:
             if "openWB/command/max_id/device" in msg.topic:
                 self.max_id_device = json.loads(str(msg.payload.decode("utf-8")))
-                log.MainLogger().debug("Max ID Device "+str(self.max_id_device))
+                if no_log == False:
+                    log.MainLogger().debug("Max ID Device "+str(self.max_id_device))
             elif "openWB/command/max_id/component" in msg.topic:
                 self.max_id_component = json.loads(str(msg.payload.decode("utf-8")))
-                log.MainLogger().debug("Max ID Komponente "+str(self.max_id_component))
+                if no_log == False:
+                    log.MainLogger().debug("Max ID Komponente "+str(self.max_id_component))
             elif "openWB/command/max_id/vehicle" in msg.topic:
                 self.max_id_vehicle = json.loads(str(msg.payload.decode("utf-8")))
-                log.MainLogger().debug("Max ID EV "+str(self.max_id_component))
+                if no_log == False:
+                    log.MainLogger().debug("Max ID EV "+str(self.max_id_component))
         except Exception as e:
             log.MainLogger().exception("Fehler im Command-Modul")
 
