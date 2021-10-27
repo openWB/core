@@ -55,7 +55,7 @@ class EvuKitFlex():
         except:
             log.MainLogger().exception("Fehler im Modul "+self.data["config"]["name"])
 
-    @exit_after(3)
+    #@exit_after(3)
     def read(self):
         """ liest die Werte des Moduls aus.
         """
@@ -85,10 +85,13 @@ class EvuKitFlex():
                     currents = [abs(currents[i]) for i in range(3)]
                 else:
                     currents = [0, 0, 0]
-                topic_str = "openWB/set/system/devices/" +str(self.data["config"]["id"])+"/components/"+str(self.data["config"]["components"]["component0"]["id"])+"/"
-                imported, exported = self.sim_count.sim_count(power_all, topic=topic_str, data=self.data["simulation"], prefix="bezug")
+                topic_str = "openWB/set/system/device/" +str(self.data["device_config"]["id"])+"/component/"+str(self.data["config"]["id"])+"/"
+                if power_all != None:
+                    imported, exported = self.sim_count.sim_count(power_all, topic=topic_str, data=self.data["simulation"], prefix="bezug")
+                else:
+                    imported, exported = None, None
 
-            self.value_store.set(self.data["config"]["components"]["component0"]["id"], voltages=voltages, currents=currents, powers=power_per_phase, power_factors=power_factors, imported=imported, exported=exported, power_all=power_all, frequency=frequency)
+            self.value_store.set(self.data["config"]["id"], voltages=voltages, currents=currents, powers=power_per_phase, power_factors=power_factors, imported=imported, exported=exported, power_all=power_all, frequency=frequency)
             log.MainLogger().debug("Stop kit reading "+str(power_all))
         except:
             log.MainLogger().exception("Fehler im Modul "+self.data["config"]["name"])
