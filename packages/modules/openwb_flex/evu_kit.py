@@ -27,13 +27,14 @@ except:
 class EvuKitFlex():
     def __init__(self, device_config: dict, component_config: dict) -> None:
         try:
-            self.data = component_config
+            self.data = {}
+            self.data["config"] = component_config
             self.data["device_config"] = device_config
             version = self.data["config"]["configuration"]["version"]
             ip_address = self.data["device_config"]["configuration"]["ip_address"]
             port = self.data["device_config"]["configuration"]["port"]
             self.data["simulation"] = {}
-            self.client = connect_tcp.ConnectTcp(self.data["config"]["name"], self.data["config"]["id"], ip_address, port)
+            self.client = connect_tcp.ConnectTcp(self.data["config"]["name"], ip_address, port)
             factory = self.__counter_factory(version)
             self.counter = factory(self.data["config"], self.client)
             self.value_store = (store.ValueStoreFactory().get_storage("counter"))()
@@ -57,14 +58,20 @@ class EvuKitFlex():
         """ liest die Werte des Moduls aus.
         """
         try:
+            log.MainLogger().debug("Start kit reading")
             voltages = self.counter.get_voltage()
             power_per_phase, power_all = self.counter.get_power()
+            with open("/var/www/html/openWB/ramdisk/wattbezug", "w") as f:
+                f.write(str(power_all))
             frequency = self.counter.get_frequency()
             power_factors = self.counter.get_power_factor()
 
             if self.data["config"]["configuration"]["version"] == 0:
                 try:
-                    currents = [(power_per_phase[i]/voltages[i]) for i in range(3)]
+                    if None not in power_per_phase and None not in voltages:
+                        currents = [(power_per_phase[i]/voltages[i]) for i in range(3)]
+                    else:
+                        currents = [0, 0, 0]
                 except:
                     log.MainLogger().exception("Fehler im Modul "+self.data["config"]["name"])
                     currents = [0, 0, 0]
@@ -72,10 +79,14 @@ class EvuKitFlex():
                 exported = self.counter.get_exported()
             else:
                 currents = self.counter.get_current()
-                currents = [abs(currents[i]) for i in range(3)]
-                topic_str = "openWB/set/system/device/" +str(self.data["device_config"]["id"])+"/component/"+str(self.data["config"]["id"])+"/"
+                if None not in currents:
+                    currents = [abs(currents[i]) for i in range(3)]
+                else:
+                    currents = [0, 0, 0]
+                topic_str = "openWB/set/system/devices/" +str(self.data["config"]["id"])+"/components/"+str(self.data["config"]["components"]["component0"]["id"])+"/"
                 imported, exported = self.sim_count.sim_count(power_all, topic=topic_str, data=self.data["simulation"], prefix="bezug")
 
-            self.value_store.set(self.data["config"]["id"], voltages=voltages, currents=currents, powers=power_per_phase, power_factors=power_factors, imported=imported, exported=exported, power_all=power_all, frequency=frequency)
+            self.value_store.set(self.data["config"]["components"]["component0"]["id"], voltages=voltages, currents=currents, powers=power_per_phase, power_factors=power_factors, imported=imported, exported=exported, power_all=power_all, frequency=frequency)
+            log.MainLogger().debug("Stop kit reading "+str(power_all))
         except:
             log.MainLogger().exception("Fehler im Modul "+self.data["config"]["name"])

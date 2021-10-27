@@ -95,7 +95,8 @@ class SubData():
         client.subscribe("openWB/counter/#", 2)
         client.subscribe("openWB/defaults/#", 2)
         client.subscribe("openWB/log/#", 2)
-        client.subscribe("openWB/system/#", 2)
+        client.subscribe("openWB/system/+", 2)
+        client.subscribe("openWB/system/device/+/config", 2)
 
     def on_message(self, client, userdata, msg):
         """ wartet auf eingehende Topics.
@@ -149,9 +150,9 @@ class SubData():
         elif "openWB/log/" in msg.topic:
             self.process_log_topic(msg)
         elif "openWB/system/" in msg.topic:
-            self.process_system_topic(self.system_data, msg)
+            self.process_system_topic(client, self.system_data, msg)
         elif "openWB/defaults/system" in msg.topic:
-            self.process_system_topic(self.defaults_system_data, msg)
+            self.process_system_topic(client, self.defaults_system_data, msg)
         else:
             log.MainLogger().warning("unknown subdata-topic: "+str(msg.topic))
 
@@ -211,40 +212,41 @@ class SubData():
         """
         try:
             index = self.get_index(msg.topic)
-            if re.search("^.+/vehicle/[0-9]+/.+$", msg.topic) != None:
+            if re.search("^.+/vehicle/[0-9]+$", msg.topic) != None:
+                if str(msg.payload.decode("utf-8")) == "":
+                    if "ev"+index in var:
+                        var.pop("ev"+index)
+                    else:
+                        log.MainLogger().error("Es konnte kein Vehicle mit der ID "+str(index)+" gefunden werden.")
+            elif re.search("^.+/vehicle/[0-9]+/.+$", msg.topic) != None:
                 if "ev"+index not in var:
                     var["ev"+index] = ev.ev(int(index), default)
-                if re.search("^.+/vehicle/[0-9]+$", msg.topic) != None:
-                    if str(msg.payload.decode("utf-8")) == "":
-                        if "ev"+index in var:
-                            var.pop("ev"+index)
+                if re.search("^.+/vehicle/[0-9]+/get.+$", msg.topic) != None:
+                    if "get" not in var["ev"+index].data:
+                        var["ev"+index].data["get"] = {}
+                    self.set_json_payload(var["ev"+index].data["get"], msg)
+                elif re.search("^.+/vehicle/[0-9]+/set.+$", msg.topic) != None:
+                    if "set" not in var["ev"+index].data:
+                        var["ev"+index].data["set"] = {}
+                    self.set_json_payload(var["ev"+index].data["set"], msg)
+                elif re.search("^.+/vehicle/[0-9]+/soc/config/.+$", msg.topic) != None:
+                    if "soc" not in var["ev"+index].data:
+                        var["ev"+index].data["soc"] = {}
+                    if "config" not in var["ev"+index].data["soc"]:
+                        var["ev"+index].data["soc"]["config"] = {}
+                    self.set_json_payload(var["ev"+index].data["soc"]["config"], msg)
+                elif re.search("^.+/vehicle/[0-9]+/soc/get/.+$", msg.topic) != None:
+                    if "soc" not in var["ev"+index].data:
+                        var["ev"+index].data["soc"] = {}
+                    if "get" not in var["ev"+index].data["soc"]:
+                        var["ev"+index].data["soc"]["get"] = {}
+                    self.set_json_payload(var["ev"+index].data["soc"]["get"], msg)
+                elif re.search("^.+/vehicle/[0-9]+/control_parameter/.+$", msg.topic) != None:
+                    if "control_parameter" not in var["ev"+index].data:
+                        var["ev"+index].data["control_parameter"] = {}
+                    self.set_json_payload(var["ev"+index].data["control_parameter"], msg)
                 else:
-                    if re.search("^.+/vehicle/[0-9]+/get.+$", msg.topic) != None:
-                        if "get" not in var["ev"+index].data:
-                            var["ev"+index].data["get"] = {}
-                        self.set_json_payload(var["ev"+index].data["get"], msg)
-                    elif re.search("^.+/vehicle/[0-9]+/set.+$", msg.topic) != None:
-                        if "set" not in var["ev"+index].data:
-                            var["ev"+index].data["set"] = {}
-                        self.set_json_payload(var["ev"+index].data["set"], msg)
-                    elif re.search("^.+/vehicle/[0-9]+/soc/config/.+$", msg.topic) != None:
-                        if "soc" not in var["ev"+index].data:
-                            var["ev"+index].data["soc"] = {}
-                        if "config" not in var["ev"+index].data["soc"]:
-                            var["ev"+index].data["soc"]["config"] = {}
-                        self.set_json_payload(var["ev"+index].data["soc"]["config"], msg)
-                    elif re.search("^.+/vehicle/[0-9]+/soc/get/.+$", msg.topic) != None:
-                        if "soc" not in var["ev"+index].data:
-                            var["ev"+index].data["soc"] = {}
-                        if "get" not in var["ev"+index].data["soc"]:
-                            var["ev"+index].data["soc"]["get"] = {}
-                        self.set_json_payload(var["ev"+index].data["soc"]["get"], msg)
-                    elif re.search("^.+/vehicle/[0-9]+/control_parameter/.+$", msg.topic) != None:
-                        if "control_parameter" not in var["ev"+index].data:
-                            var["ev"+index].data["control_parameter"] = {}
-                        self.set_json_payload(var["ev"+index].data["control_parameter"], msg)
-                    else:
-                        self.set_json_payload(var["ev"+index].data, msg)
+                    self.set_json_payload(var["ev"+index].data, msg)
         except Exception as e:
             log.MainLogger().exception("Fehler im subdata-Modul")
 
@@ -721,7 +723,7 @@ class SubData():
         except Exception as e:
             log.MainLogger().exception("Fehler im subdata-Modul")
 
-    def process_system_topic(self, var, msg):
+    def process_system_topic(self, client, var, msg):
         """Handler für die System-Topics
 
          Parameters
@@ -747,10 +749,16 @@ class SubData():
                         var.pop("device"+index)
                     else:
                         log.MainLogger().error("Es konnte kein Device mit der ID "+str(index)+" gefunden werden.")
-                else:
+                elif "device"+index not in var:
                     device_config = json.loads(str(msg.payload.decode("utf-8")))
                     mod = importlib.import_module(".modules."+device_config["type"]+".module", "packages")
                     var["device"+index] = mod.Module(device_config)
+                    client.subscribe("openWB/system/device/"+index+"/#", 2)
+            elif re.search("^.+/device/[0-9]+/get$", msg.topic) != None:
+                index = self.get_index(msg.topic)
+                if "get" not in var["device"+index].data:
+                    var["device"+index].data["get"] = {}
+                self.set_json_payload(var["device"+index].data["get"], msg)
             elif re.search("^.+/device/[0-9]+/component/[0-9]+/simulation/.+$", msg.topic) != None:
                 index = self.get_index(msg.topic)
                 index_second = self.get_second_index(msg.topic)

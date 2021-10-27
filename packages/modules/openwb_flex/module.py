@@ -22,9 +22,13 @@ class Module():
         except Exception as e:
             log.MainLogger().exception("Fehler im Modul "+device["name"])
 
-    def add_component(self, component_config):
-        if type == "counter":
-            self.data["components"]["component"+component_config["id"]] = evu_kit.EvuKitFlex(self.data["config"], component_config)
+    def add_component(self, component_config: dict) -> None:
+        try:
+            if component_config["type"] == "counter":
+                if "component"+str(component_config["id"]) not in self.data["components"]:
+                    self.data["components"]["component"+str(component_config["id"])] = evu_kit.EvuKitFlex(self.data["config"], component_config)
+        except Exception as e:
+            log.MainLogger().exception("Fehler im Modul "+self.data["config"]["name"])
 
     def read(self):
         try:
