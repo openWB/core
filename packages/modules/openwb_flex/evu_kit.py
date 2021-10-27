@@ -10,6 +10,7 @@ try:
     from ..common import mpm3pm
     from ..common import sdm630
     from ..common import store
+    from ...helpermodules.system import exit_after
 except:
     from pathlib import Path
     import os
@@ -34,7 +35,7 @@ class EvuKitFlex():
             ip_address = self.data["device_config"]["configuration"]["ip_address"]
             port = self.data["device_config"]["configuration"]["port"]
             self.data["simulation"] = {}
-            self.client = connect_tcp.ConnectTcp(self.data["config"]["name"], ip_address, port)
+            self.client = connect_tcp.ConnectTcp(self.data["config"]["name"], self.data["config"]["id"], ip_address, port)
             factory = self.__counter_factory(version)
             self.counter = factory(self.data["config"], self.client)
             self.value_store = (store.ValueStoreFactory().get_storage("counter"))()
@@ -54,6 +55,7 @@ class EvuKitFlex():
         except:
             log.MainLogger().exception("Fehler im Modul "+self.data["config"]["name"])
 
+    @exit_after(3)
     def read(self):
         """ liest die Werte des Moduls aus.
         """

@@ -92,17 +92,17 @@ class HandlerAlgorithm():
         """
         try:
             if self.heartbeat == False:
-                pass
+                log.MainLogger().error("Heartbeat fuer Algorithmus nicht zurueckgesetzt.")
             else:
                 self.hartbeat = False
 
             if sub.heartbeat == False:
-                pass
+                log.MainLogger().error("Heartbeat fuer Subdata nicht zurueckgesetzt.")
             else:
                 sub.hartbeat = False
 
             if set.heartbeat == False:
-                pass
+                log.MainLogger().error("Heartbeat fuer Setdata nicht zurueckgesetzt.")
             else:
                 set.hartbeat = False
 

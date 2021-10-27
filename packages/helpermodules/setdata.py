@@ -847,6 +847,10 @@ class setData():
                         self.__unknown_topic(msg)
                 elif "/config" in msg.topic:
                     self._validate_value(msg, "json")
+                elif "/get/fault_state" in msg.topic:
+                    self._validate_value(msg, int, [(0, 2)])
+                elif "/get/fault_str" in msg.topic:
+                    self._validate_value(msg, str)
                 else:
                     self.__unknown_topic(msg)
             else:

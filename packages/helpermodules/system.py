@@ -122,6 +122,7 @@ def quit_function(fn_name):
     # print to stderr, unbuffered in Python 2.
     sys.stderr.flush() # Python 3 stderr is likely buffered.
     thread.interrupt_main() # raises KeyboardInterrupt
+    log.MainLogger().error("Ausfuehrung durch exit_after gestoppt.")
 
 def exit_after(s):
     '''
