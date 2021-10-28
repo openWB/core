@@ -2,6 +2,7 @@ from typing import List
 
 try:
     from ...helpermodules import log
+    from ..common import connect_tcp
     from . import evu_kit
 except:
     from pathlib import Path
@@ -10,6 +11,7 @@ except:
     parentdir2 = str(Path(os.path.abspath(__file__)).parents[2])
     sys.path.insert(0, parentdir2)
     from helpermodules import log
+    from modules.common import connect_tcp
     import evu_kit
 
 
@@ -19,14 +21,16 @@ class Module():
             self.data = {}
             self.data["config"] = device
             self.data["components"] = {}
+            ip_address = self.data["config"]["configuration"]["ip_address"]
+            port = self.data["config"]["configuration"]["port"]
+            self.client = connect_tcp.ConnectTcp(self.data["config"]["name"], self.data["config"]["id"], ip_address, port)
         except Exception as e:
             log.MainLogger().exception("Fehler im Modul "+device["name"])
 
     def add_component(self, component_config: dict) -> None:
         try:
             if component_config["type"] == "counter":
-                if "component"+str(component_config["id"]) not in self.data["components"]:
-                    self.data["components"]["component"+str(component_config["id"])] = evu_kit.EvuKitFlex(self.data["config"], component_config)
+                self.data["components"]["component"+str(component_config["id"])] = evu_kit.EvuKitFlex(self.data["config"]["id"], component_config, self.client)
         except Exception as e:
             log.MainLogger().exception("Fehler im Modul "+self.data["config"]["name"])
 

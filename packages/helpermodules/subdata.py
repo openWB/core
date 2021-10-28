@@ -778,7 +778,8 @@ class SubData():
                     device_config = json.loads(str(msg.payload.decode("utf-8")))
                     mod = importlib.import_module(".modules."+device_config["type"]+".module", "packages")
                     var["device"+index] = mod.Module(device_config)
-                    client.subscribe("openWB/system/device/"+index+"/#", 2)
+                    # Durch das erneute Subscriben werden die Komponenten mit dem aktualisierten TCP-Client angelegt.
+                    client.subscribe("openWB/system/device/"+index+"/component/#", 2)
             elif re.search("^.+/device/[0-9]+/get$", msg.topic) != None:
                 index = self.get_index(msg.topic)
                 if "get" not in var["device"+index].data:
@@ -804,6 +805,7 @@ class SubData():
                     sim_data = None
                     if "component"+index_second in var["device"+index].data["components"]:
                         sim_data = var["device"+index].data["components"]["component"+index_second].data["simulation"]
+                    # Es darf nicht einfach data["config"] aktualisiert werden, da in der __init__ auch die TCP-Verbindung aufgebaut wird, deren IP dann nicht aktualisiert werden würde.
                     var["device"+index].add_component(json.loads(str(msg.payload.decode("utf-8"))))
                     if sim_data:
                         var["device"+index].data["components"]["component"+index_second].data["simulation"] = sim_data
