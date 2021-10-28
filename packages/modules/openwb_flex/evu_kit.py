@@ -91,6 +91,7 @@ class EvuKitFlex():
                 else:
                     imported, exported = None, None
 
+            self.client.close_connection()
             self.value_store.set(self.data["config"]["id"], voltages=voltages, currents=currents, powers=power_per_phase, power_factors=power_factors, imported=imported, exported=exported, power_all=power_all, frequency=frequency)
             log.MainLogger().debug("Stop kit reading "+str(power_all))
         except:

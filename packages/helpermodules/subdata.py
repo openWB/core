@@ -749,7 +749,7 @@ class SubData():
                         var.pop("device"+index)
                     else:
                         log.MainLogger().error("Es konnte kein Device mit der ID "+str(index)+" gefunden werden.")
-                elif "device"+index not in var:
+                else:
                     device_config = json.loads(str(msg.payload.decode("utf-8")))
                     mod = importlib.import_module(".modules."+device_config["type"]+".module", "packages")
                     var["device"+index] = mod.Module(device_config)
@@ -765,8 +765,8 @@ class SubData():
                 self.set_json_payload(var["device"+index].data["components"]["component"+index_second].data["simulation"], msg)
             elif re.search("^.+/device/[0-9]+/component/[0-9]+/config$", msg.topic) != None:
                 index = self.get_index(msg.topic)
+                index_second = self.get_second_index(msg.topic)
                 if str(msg.payload.decode("utf-8")) == "":
-                    index_second = self.get_second_index(msg.topic)
                     if "device"+index in var:
                         if "component"+str(index_second) in var["device"+index].data["components"]:
                             var["device"+index].data["components"].remove("component"+str(index_second))
@@ -776,7 +776,12 @@ class SubData():
                     else:
                         log.MainLogger().error("Es konnte kein Device mit der ID "+str(index)+" gefunden werden.")
                 else:
+                    sim_data = None
+                    if "component"+index_second in var["device"+index].data["components"]:
+                        sim_data = var["device"+index].data["components"]["component"+index_second].data["simulation"]
                     var["device"+index].add_component(json.loads(str(msg.payload.decode("utf-8"))))
+                    if sim_data:
+                        var["device"+index].data["components"]["component"+index_second].data["simulation"] = sim_data
             else:
                 self.set_json_payload(var["system"].data, msg)
         except Exception as e:
