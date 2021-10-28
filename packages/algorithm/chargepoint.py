@@ -315,8 +315,8 @@ class chargepoint():
             log.MainLogger().exception("Fehler in der Ladepunkt-Klasse von "+str(self.cp_num))
             return True, "Keine Ladung, da ein interner Fehler aufgetreten ist."
 
-    def _is_cp_available(self):
-        """ prüft, ob sich der Ladepunkt in der vorgegebenen Zeit zurückgemeldet hat.
+    def _is_loadmanagement_available(self):
+        """ prüft, ob Lastmanagement verfügbar ist. Wenn keine Werte vom EVU-Zähler empfangen werden, darf nicht geladen werden.
 
         Return
         ------
@@ -326,14 +326,13 @@ class chargepoint():
             Text, dass geladen werden kann oder warum nicht geladen werden kann.
         """
         try:
-            if True:
-            #if self.data["get"]["fault_state"] == 0:
+            if data.data.counter_data["all"].data["set"]["loadmanagement_available"] == True:
                 state = True
                 message = None
             else:
                 state = False
-                message = "Ladepunkt gesperrt, da sich der Ladepunkt nicht innerhalb der vorgegebenen Zeit zurueckgemeldet hat."
-            return state, message
+                message = "Ladepunkt gesperrt, da keine Werte vom EVU-Zähler empfangen wurden und deshalb kein Lastmanagement durchgeführt werden kann. Falls Sie dennoch laden möchten, können Sie als EVU-Zähler 'nicht vorhanden' auswählen und einen konstanten Hausverbrauch angeben."
+            return state, message 
         except Exception as e:
             log.MainLogger().exception("Fehler in der Ladepunkt-Klasse von "+str(self.cp_num))
             return False, "Keine Ladung, da ein interner Fehler aufgetreten ist."
@@ -442,7 +441,7 @@ class chargepoint():
                 if state == True:
                     state, message = self._is_ripple_control_receiver_inactive()
                     if state == True:
-                        state, message = self._is_cp_available()
+                        state, message = self._is_loadmanagement_available()
                         if state == True:
                             state, message = self._is_manual_lock_inactive()
                             if state == True:

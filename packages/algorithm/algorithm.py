@@ -38,6 +38,9 @@ class control():
         try:
             log.MainLogger().debug("# Algorithmus-Start")
             log.MainLogger().debug("EVU-Punkt: "+str(data.data.counter_data["counter0"].data["get"]["power_all"]))
+            if data.data.counter_data["all"].data["set"]["loadmanagement_available"] == False:
+                return
+            
             # erstmal die PV-Überschuss-Ladung zurück nehmen
             log.MainLogger().info("## Ueberschuss-Ladung ueber Mindeststrom bei PV-Laden zuruecknehmen.")
             self._reduce_used_evu_overhang()
@@ -612,7 +615,7 @@ class control():
             _, overloaded_counters = allocate_power(chargepoint, power_to_allocate, current_to_allocate, phases)
             self._process_data(chargepoint, required_current)
             
-            if data.data.counter_data["all"].data["set"]["loadmanagement"] == True and len(overloaded_counters) != 0:
+            if data.data.counter_data["all"].data["set"]["loadmanagement_active"] == True and len(overloaded_counters) != 0:
                 #Lastmanagement hat eingegriffen
                 log.MainLogger().debug("Aktuell kalkulierte Stroeme am EVU-Punkt[A]: "+str(data.data.counter_data["counter0"].data["set"]["current_used"]))
                 log.MainLogger().warning("Für die Ladung an LP"+str(chargepoint.cp_num)+" muss erst ein Ladepunkt mit gleicher/niedrigerer Prioritaet reduziert/gestoppt werden.")

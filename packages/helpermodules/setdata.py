@@ -267,6 +267,13 @@ class setData():
                     else:
                         log.MainLogger().error("Payload ungueltig: Topic "+str(msg.topic)+", Payload "+str(value)+" liegt in keinem der angegebenen Wertebereiche.")
                         valid = False
+            elif value == None:
+                for range in ranges:
+                    if range[0] == None and range[1] == None:
+                        break
+                else:
+                    log.MainLogger().error("Payload ungueltig: Topic "+str(msg.topic)+", Payload "+str(value)+" darf nicht 'None' sein.")
+                    valid = False
             else:
                 if data_type == int:
                     log.MainLogger().error("Payload ungueltig: Topic "+str(msg.topic)+", Payload "+str(value)+" sollte ein Int sein.")
@@ -740,7 +747,7 @@ class setData():
             enthält Topic und Payload
         """
         try:
-            if "openWB/set/counter/set/loadmanagement" in msg.topic:
+            if "openWB/set/counter/set/loadmanagement_active" in msg.topic:
                 self._validate_value(msg, int, [(0, 1)])
             elif "openWB/set/counter/set/invalid_home_consumption" in msg.topic:
                 self._validate_value(msg, int, [(0, 3)])
@@ -762,13 +769,13 @@ class setData():
             elif "/config/max_consumption" in msg.topic:
                 self._validate_value(msg, int, [(2000, 1000000)])
             elif "/get/power_all" in msg.topic:
-                self._validate_value(msg, float)
+                self._validate_value(msg, float, [(float("-inf"), float("inf")), (None, None)])
             elif "/get/current" in msg.topic:
-                self._validate_value(msg, float, collection=list)
+                self._validate_value(msg, float, [(float("-inf"), float("inf")), (None, None)], collection=list)
             elif ("/get/voltage" in msg.topic or
                     "/get/power_phase" in msg.topic or
                     "/get/power_factor" in msg.topic):
-                self._validate_value(msg, float, [(0, float("inf"))], collection=list)
+                self._validate_value(msg, float, [(0, float("inf")), (None, None)], collection=list)
             elif ("/get/power_average" in msg.topic
                     or "/get/unbalanced_load" in msg.topic
                     or "/get/frequency" in msg.topic
@@ -776,7 +783,7 @@ class setData():
                     or "/get/daily_yield_import" in msg.topic
                     or "/get/imported" in msg.topic
                     or "/get/exported" in msg.topic):
-                self._validate_value(msg, float, [(0, float("inf"))])
+                self._validate_value(msg, float, [(0, float("inf")), (None, None)])
             elif "/get/fault_state" in msg.topic:
                 self._validate_value(msg, int, [(0, 2)])
             elif "/get/fault_str" in msg.topic:

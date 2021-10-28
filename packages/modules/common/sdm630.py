@@ -52,7 +52,10 @@ class Sdm630:
             for register in regs:
                 value = self.client.read_float_registers(register, 2, self.id)
                 power_per_phase.append(value)
-            power_all = sum(power_per_phase)
+            if None not in power_per_phase:
+                power_all = sum(power_per_phase)
+            else:
+                power_all = None
             return power_per_phase, power_all
         except:
             log.MainLogger().exception("Fehler beim Auslesen von "+str(self.name))
@@ -87,8 +90,11 @@ class Sdm630:
         """
         try:
             frequency = self.client.read_float_registers(0x46, 2, self.id)
-            if frequency > 100:
-                frequency = frequency / 10
+            if frequency != None:
+                if frequency > 100:
+                    frequency = frequency / 10
+            else:
+                frequency = None
             return frequency
         except:
             log.MainLogger().exception("Fehler beim Auslesen von "+str(self.name))

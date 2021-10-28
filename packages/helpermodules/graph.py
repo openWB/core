@@ -24,7 +24,8 @@ def pub_graph_data():
     """ schreibt die Graph-Daten, sodass sie zu dem 1.9er graphing.sh passen.
     """
     dataline={"timestamp":int(time.time()),"time":datetime.datetime.today().strftime("%H:%M:%S")}
-    dataline.update({"grid": _convert_to_kW(data.data.counter_data["counter0"].data["get"]["power_all"])})
+    if data.data.counter_data["all"].data["set"]["loadmanagement_available"] == True:
+        dataline.update({"grid": _convert_to_kW(data.data.counter_data["counter0"].data["get"]["power_all"])})
     for c in data.data.counter_data:
         if "counter" in c and not "counter0" in c:
             counter = data.data.counter_data[c]
