@@ -37,7 +37,7 @@ class control():
         """
         try:
             log.MainLogger().debug("# Algorithmus-Start")
-            log.MainLogger().debug("EVU-Punkt: "+str(data.data.counter_data["counter0"].data["get"]["power_all"]))
+            log.MainLogger().debug("EVU-Punkt: Leistung[W] "+str(data.data.counter_data["counter0"].data["get"]["power_all"])+", Stroeme[A] "+str(data.data.counter_data["counter0"].data["get"]["current"]))
             # erstmal die PV-Überschuss-Ladung zurück nehmen
             log.MainLogger().info("## Ueberschuss-Ladung ueber Mindeststrom bei PV-Laden zuruecknehmen.")
             self._reduce_used_evu_overhang()

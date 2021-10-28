@@ -51,7 +51,7 @@ class HandlerAlgorithm():
                     log.MainLogger().info(" Stop copy_data 2")
                     vars.get_virtual_values()
                     # Kurz warten, damit alle Topics von setdata und subdata verarbeitet werden könnnen.
-                    time.sleep(4)
+                    time.sleep(0.5)
                     log.MainLogger().info(" Start copy_data 3")
                     prep.copy_data()
                     log.MainLogger().info(" Stop copy_data 3")
