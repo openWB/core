@@ -83,6 +83,7 @@ class EvuKitFlex():
                     currents = [abs(currents[i]) for i in range(3)]
                 else:
                     currents = [0, 0, 0]
+                log.MainLogger().debug("EVU-Kit Leistung[W]: "+str(power_all))
                 topic_str = "openWB/set/system/devices/" +str(self.data["config"]["id"])+"/components/"+str(self.data["config"]["components"]["component0"]["id"])+"/"
                 imported, exported = self.sim_count.sim_count(power_all, topic=topic_str, data=self.data["simulation"], prefix="bezug")
 

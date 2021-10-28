@@ -5,6 +5,7 @@ import logging
 import os
 import traceback
 import subprocess
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -47,6 +48,7 @@ class MainLogger:
             self.__write_log(message)
 
         def exception(self, message: str, exception=None):
+            exception = str(sys.exc_info())
             self.__process_exception(exception)
             self.__write_log(message)
 
@@ -104,7 +106,7 @@ class MqttLogger:
 
 
 def cleanup_logfiles():
-    """ kürzt die Logfiles auf die letzten 1000 Zeilen.
+    """ ruft das Skript zum Kürzen der Logfiles auf.
     """
     subprocess.run(["./packages/helpermodules/cleanup_log.sh", "/var/www/html/openWB/ramdisk/main.log"])
     subprocess.run(["./packages/helpermodules/cleanup_log.sh", "/var/www/html/openWB/ramdisk/mqtt.log"])

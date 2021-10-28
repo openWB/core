@@ -36,6 +36,7 @@ def write_to_file(file: str, value, digits: int = None) -> None:
                     value = round(value, digits)
             with open("/var/www/html/openWB/ramdisk/" + file, "w") as f:
                 f.write(str(value))
+        return value
     except Exception as e:
         log.MainLogger().exception("Fehler im Modul store")
 
@@ -69,11 +70,13 @@ class ValueStore:
 class BatteryValueStoreRamdisk(ValueStore):
     def set(self, num, power: float, soc: int, imported: float, exported: float):
         try:
-            write_to_file("/speicherleistung", power, 0)
+            power = write_to_file("/speicherleistung", power, 0)
             write_to_file("/speichersoc", soc, 0)
             write_to_file("/speicherikwh", imported, 2)
             write_to_file("/speicherekwh", exported, 2)
-            log.MainLogger().info('BAT Watt: ' + str(int(power)))
+            log.MainLogger().info('BAT Watt: ' + str(power))
+            log.MainLogger().info('BAT Einspeisung: ' + str(exported))
+            log.MainLogger().info('BAT Bezug: ' + str(imported))
         except Exception as e:
             log.MainLogger().exception("Fehler im Modul store")
 
@@ -104,13 +107,13 @@ class CounterValueStoreRamdisk(ValueStore):
             write_to_file("/evupf1", power_factors[0], 2)
             write_to_file("/evupf2", power_factors[1], 2)
             write_to_file("/evupf3", power_factors[2], 2)
-            write_to_file("/bezugkwh", imported)
-            write_to_file("/einspeisungkwh", exported)
-            write_to_file("/wattbezug", power_all, 0)
+            imported = write_to_file("/bezugkwh", imported)
+            exported = write_to_file("/einspeisungkwh", exported)
+            power_all = write_to_file("/wattbezug", power_all, 0)
             write_to_file("/evuhz", frequency, 2)
-            log.MainLogger().info('EVU Watt: ' + str(int(power_all)))
-            log.MainLogger().info('EVU Bezug: ' + str(int(imported)))
-            log.MainLogger().info('EVU Einspeisung: ' + str(int(exported)))
+            log.MainLogger().info('EVU Watt: ' + str(power_all))
+            log.MainLogger().info('EVU Bezug: ' + str(imported))
+            log.MainLogger().info('EVU Einspeisung: ' + str(exported))
         except Exception as e:
             log.MainLogger().exception("Fehler im Modul store")
 
@@ -133,13 +136,13 @@ class CounterValueStoreBroker(ValueStore):
 class InverterValueStoreRamdisk(ValueStore):
     def set(self, num, power: float, counter: float, currents: List[float]):
         try:
-            write_to_file("/pvwatt", power, 0)
+            power = write_to_file("/pvwatt", power, 0)
             write_to_file("/pvkwh", counter, 3)
             write_to_file("/pvkwhk", counter/1000, 3)
             write_to_file("/pva1", currents[0], 1)
             write_to_file("/pva2", currents[1], 1)
             write_to_file("/pva3", currents[2], 1)
-            log.MainLogger().info('PV Watt: ' + str(int(power)))
+            log.MainLogger().info('PV Watt: ' + str(power))
         except Exception as e:
             log.MainLogger().exception("Fehler im Modul store")
 
