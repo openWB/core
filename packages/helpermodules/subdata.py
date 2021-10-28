@@ -775,6 +775,11 @@ class SubData():
                     else:
                         log.MainLogger().error("Es konnte kein Device mit der ID "+str(index)+" gefunden werden.")
                 else:
+                    # Komponenten bleiben bei Neukonfiguration unverändert.
+                    if "device"+index in var:
+                        components = var["device"+index].data["components"]
+                    else:
+                        components = None
                     device_config = json.loads(str(msg.payload.decode("utf-8")))
                     mod = importlib.import_module(".modules."+device_config["type"]+".module", "packages")
                     var["device"+index] = mod.Module(device_config)
