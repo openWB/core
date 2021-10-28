@@ -87,7 +87,7 @@ class EvuKitFlex():
                     imported, exported = self.sim_count.sim_count(power_all, topic=topic_str, data=self.data["simulation"], prefix="bezug")
                 else:
                     imported, exported = None, None
-
+            log.MainLogger().debug("EVU-Kit Leistung[W]: "+str(power_all))
             self.tcp_client.close_connection()
             self.value_store.set(self.data["config"]["id"], voltages=voltages, currents=currents, powers=power_per_phase, power_factors=power_factors, imported=imported, exported=exported, power_all=power_all, frequency=frequency)
             log.MainLogger().debug("Stop kit reading "+str(power_all))
