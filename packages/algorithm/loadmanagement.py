@@ -68,7 +68,7 @@ def loadmanagement_for_cp(chargepoint, required_power, required_current, phases)
         if loadmanagement == True:
             loadmanagement_all_conditions = True
         
-        data.data.counter_data["all"].data["set"]["loadmanagement"] = loadmanagement_all_conditions
+        data.data.counter_data["all"].data["set"]["loadmanagement_active"] = loadmanagement_all_conditions
         return loadmanagement_all_conditions, overloaded_counters
     except Exception as e:
         log.MainLogger().exception("Fehler im Lastmanagement-Modul")
@@ -92,7 +92,7 @@ def loadmanagement_for_counters():
         # Wenn das Lastmanagement aktiv war, darf es nicht wieder zurück gesetzt werden.
         if loadmanagement_all_conditions == False:
             loadmanagement_all_conditions = loadmanagement
-        data.data.counter_data["all"].data["set"]["loadmanagement"] = loadmanagement_all_conditions
+        data.data.counter_data["all"].data["set"]["loadmanagement_active"] = loadmanagement_all_conditions
         return loadmanagement_all_conditions, overloaded_counters
     except Exception as e:
         log.MainLogger().exception("Fehler im Lastmanagement-Modul")

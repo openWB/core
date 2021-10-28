@@ -370,6 +370,9 @@ class chargeTemplate():
 
     def __init__(self, index):
         self.data = {}
+        self.data["chargemode"] = {}
+        self.data["chargemode"]["scheduled_charging"] = {}
+        self.data["chargemode"]["scheduled_charging"]["plans"] = {}
         self.ct_num = index
 
     def time_charging(self):
@@ -488,18 +491,18 @@ class chargeTemplate():
             message = None
             battery_capacity = ev_template.data["battery_capacity"]
             start = -1 # Es wurde noch kein Plan geprüft.
-            for plan in self.data["chargemode"]["scheduled_charging"]:
-                if self.data["chargemode"]["scheduled_charging"][plan]["active"] == True:
+            for plan in self.data["chargemode"]["scheduled_charging"]["plans"]:
+                if self.data["chargemode"]["scheduled_charging"]["plans"][plan]["active"] == True:
                     try:
-                        if soc < self.data["chargemode"]["scheduled_charging"][plan]["soc"]:
+                        if soc < self.data["chargemode"]["scheduled_charging"]["plans"][plan]["soc"]:
                             if phases == 1:
                                 max_current = ev_template.data["max_current_one_phase"]
                             else:
                                 max_current = ev_template.data["max_current_multi_phases"]
                             available_current = 0.8*max_current*phases
-                            required_wh = ((self.data["chargemode"]["scheduled_charging"][plan]["soc"] - soc)/100) * battery_capacity*1000
+                            required_wh = ((self.data["chargemode"]["scheduled_charging"]["plans"][plan]["soc"] - soc)/100) * battery_capacity*1000
                             duration = required_wh/(available_current*230)
-                            start, remaining_time = timecheck.check_duration(self.data["chargemode"]["scheduled_charging"][plan], duration)
+                            start, remaining_time = timecheck.check_duration(self.data["chargemode"]["scheduled_charging"]["plans"][plan], duration)
                             # Erster Plan
                             if (start == plan_data["start"] and remaining_time <= smallest_remaining_time) or start > plan_data["start"]:
                                 smallest_remaining_time = remaining_time
@@ -523,7 +526,7 @@ class chargeTemplate():
                     self.data["chargemode"]["current_plan"] = plan_data["plan"]
                     for plan in self.data["chargemode"]["scheduled_charging"]:
                         if plan == plan_data["plan"]:
-                            current_plan = self.data["chargemode"]["scheduled_charging"][plan]
+                            current_plan = self.data["chargemode"]["scheduled_charging"]["plans"][plan]
                             break
                     else:
                         return 0, "stop", "Keine Ladung, da ein interner Fehler aufgetreten ist."

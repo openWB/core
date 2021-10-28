@@ -36,8 +36,11 @@ class control():
         """ Einstiegspunkt in den Regel-Algorithmus
         """
         try:
-            log.MainLogger().info("# Algorithmus-Start")
-            log.MainLogger().debug("current used "+str(data.data.counter_data["counter0"].data["set"]["current_used"]))
+            log.MainLogger().debug("# Algorithmus-Start")
+            log.MainLogger().debug("EVU-Punkt: Leistung[W] "+str(data.data.counter_data["counter0"].data["get"]["power_all"])+", Stroeme[A] "+str(data.data.counter_data["counter0"].data["get"]["current"]))
+            if data.data.counter_data["all"].data["set"]["loadmanagement_available"] == False:
+                return
+            
             # erstmal die PV-Überschuss-Ladung zurück nehmen
             log.MainLogger().info("## Ueberschuss-Ladung ueber Mindeststrom bei PV-Laden zuruecknehmen.")
             self._reduce_used_evu_overhang()
@@ -229,7 +232,8 @@ class control():
             except Exception as e:
                 log.MainLogger().exception("Fehler im Algorithmus-Modul fuer Ladepunkt"+cp)
         preferenced_chargepoints = self._get_preferenced_chargepoint(valid_chargepoints, False)
-        log.MainLogger().debug("Zu reduzierende Ladepunkte "+str(preferenced_chargepoints)+" in Lademodus "+str(mode)+" Submodus "+str(submode)+" Prio "+str(prio))
+        if len(preferenced_chargepoints) != 0:
+            log.MainLogger().debug("Zu reduzierende Ladepunkte "+str(preferenced_chargepoints)+" in Lademodus "+str(mode)+" Submodus "+str(submode)+" Prio "+str(prio))
         return self._perform_down_regulation(preferenced_chargepoints, max_current_overshoot, max_overshoot_phase, prevent_stop)
 
     def _perform_down_regulation(self, preferenced_chargepoints, max_current_overshoot, max_overshoot_phase, prevent_stop = False):
@@ -358,10 +362,10 @@ class control():
                 except Exception as e:
                     log.MainLogger().exception("Fehler im Algorithmus-Modul fuer Ladepunkt"+cp)
             preferenced_chargepoints = self._get_preferenced_chargepoint(valid_chargepoints, False)
-            log.MainLogger().debug("Hochzuregelnde Ladepunkte "+str(preferenced_chargepoints)+" in Lademodus "+str(mode)+" Submodus "+str(submode)+" Prio "+str(prio))
 
             if len(preferenced_chargepoints) != 0:
                 log.MainLogger().info("## Ladepunkte, die nicht mit Maximalstromstaerke laden, wieder hochregeln.")
+                log.MainLogger().debug("Hochzuregelnde Ladepunkte "+str(preferenced_chargepoints)+" in Lademodus "+str(mode)+" Submodus "+str(submode)+" Prio "+str(prio))
                 for cp in preferenced_chargepoints:
                     try:
                         # aktuelle Werte speichern (werden wieder hergestellt, wenn das Lastmanagement die Anpassung verhindert)
@@ -460,12 +464,13 @@ class control():
             except Exception as e:
                 log.MainLogger().exception("Fehler im Algorithmus-Modul fuer Ladepunkt"+cp)
         preferenced_chargepoints = self._get_preferenced_chargepoint(valid_chargepoints, False)
-        log.MainLogger().debug("Switch-Off-Threshold fuer Ladepunkte "+str(preferenced_chargepoints)+" in Lademodus "+str(mode)+" Submodus "+str(submode)+" Prio "+str(prio)+" pruefen.")
 
         if len(preferenced_chargepoints) == 0:
             # Es gibt keine Ladepunkte in diesem Lademodus, die noch nicht laden oder die noch gestoppt werden können.
             return 
         else:
+            log.MainLogger().debug("Switch-Off-Threshold fuer Ladepunkte "+str(preferenced_chargepoints)+" in Lademodus "+str(mode)+" Submodus "+str(submode)+" Prio "+str(prio)+" pruefen.")
+
             # Solange die Liste durchgehen, bis die Abschaltschwelle nicht mehr erreicht wird.
             for cp in preferenced_chargepoints:
                 try:
@@ -536,9 +541,9 @@ class control():
                 except Exception as e:
                     log.MainLogger().exception("Fehler im Algorithmus-Modul fuer Ladepunkt"+cp)
                 preferenced_chargepoints = self._get_preferenced_chargepoint(valid_chargepoints, True)
-                log.MainLogger().debug("Zuteilung fuer Ladepunkte "+str(preferenced_chargepoints)+" in Lademodus "+str(mode)+" Submodus "+str(submode)+" Prio "+str(prio))
 
                 if len(preferenced_chargepoints) != 0:
+                    log.MainLogger().debug("Zuteilung fuer Ladepunkte "+str(preferenced_chargepoints)+" in Lademodus "+str(mode)+" Submodus "+str(submode)+" Prio "+str(prio))
                     current_mode = self.chargemodes.index(mode_tuple)
                     self._distribute_power_to_cp(preferenced_chargepoints, current_mode)
             else:
@@ -611,7 +616,7 @@ class control():
             _, overloaded_counters = allocate_power(chargepoint, power_to_allocate, current_to_allocate, phases)
             self._process_data(chargepoint, required_current)
             
-            if data.data.counter_data["all"].data["set"]["loadmanagement"] == True and len(overloaded_counters) != 0:
+            if data.data.counter_data["all"].data["set"]["loadmanagement_active"] == True and len(overloaded_counters) != 0:
                 #Lastmanagement hat eingegriffen
                 log.MainLogger().debug("Aktuell kalkulierte Stroeme am EVU-Punkt[A]: "+str(data.data.counter_data["counter0"].data["set"]["current_used"]))
                 log.MainLogger().warning("Für die Ladung an LP"+str(chargepoint.cp_num)+" muss erst ein Ladepunkt mit gleicher/niedrigerer Prioritaet reduziert/gestoppt werden.")

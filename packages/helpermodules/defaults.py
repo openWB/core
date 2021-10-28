@@ -18,19 +18,19 @@ from . import log
 from . import pub
 
 def get_device_defaults(type: str) -> dict:
-    #if type == "openwb_flex":
-        # {"name": "OpenWB-Kit", "type": "openwb_flex", "id": None, "configuration": {"ip_address": "192.168.193.15", "port": "8899"}}
-    return {"name": "OpenWB-Kit", "type": "openwb_flex", "id": None, "configuration": {"ip_address": "192.168.193.15", "port": "8899"}}
+    if type == "openwb_flex":
+        device_default = {"name": "OpenWB-Kit", "type": "openwb_flex", "id": None, "configuration": {"ip_address": "192.168.193.15", "port": "8899"}}
+    return device_default
 
 def get_component_defaults(device_type: str, type: str) -> dict:
-    #if device_type == "openwb_flex":
-        # if type == "counter":
-        #     {"name": "EVU-Kit flex", "type": "counter", "id": None, "configuration": {"version": 2, "id": 115}}
-    return {"name": "EVU-Kit flex", "type": "counter", "id": None, "configuration": {"version": 2, "id": 115}}
-
+    if device_type == "openwb_flex":
+        if type == "counter":
+            component_default = {"name": "EVU-Kit flex", "type": "counter", "id": None, "configuration": {"version": 2, "id": 115}}
+    return component_default
 
 def get_vehicle_defaults() -> dict:
     vehicle_default = {
+        "name": "Standard-Vorlage",
         "charge_template": 0, 
         "ev_template": 0, 
         "name": "EV", 
@@ -43,6 +43,93 @@ def get_vehicle_defaults() -> dict:
         "get/soc": 0
         }
     return vehicle_default
+
+def get_ev_template_defaults() -> dict:
+    ev_template_default = {
+            "max_current_multi_phases": 16, 
+            "max_phases": 3,
+            "prevent_switch_stop": False, 
+            "control_pilot_interruption": False, 
+            "average_consump": 17, 
+            "min_current": 6, 
+            "max_current_one_phase": 32, 
+            "battery_capacity": 82, 
+            "nominal_difference": 2
+            }
+    return ev_template_default
+
+def get_charge_template_defaults() -> dict:
+    charge_template_default = {
+            "disable_after_unplug": False, 
+            "prio": False, 
+            "load_default": False, 
+            "time_charging": 
+            {
+                "active": False, 
+                },
+            "chargemode": 
+            {
+                "selected": "stop", 
+                "pv_charging":
+                {
+                    "min_soc_current": 10,
+                    "min_current": 6,
+                    "feed_in_limit": False, 
+                    "min_soc": 0, 
+                    "max_soc": 100
+                    }, 
+                "scheduled_charging":
+                {
+                    "1": 
+                    {
+                        "name": "abc", 
+                        "active": 1, 
+                        "time": "14:15", 
+                        "soc": 85, 
+                        "frequency": 
+                        {
+                            "selected": "daily"
+                            }
+                        }
+                    }, 
+                "instant_charging": 
+                {
+                    "current": 10, 
+                    "limit": 
+                    {
+                        "selected": "none", 
+                        "soc": 50, 
+                        "amount": 10
+                        }
+                    }
+                }
+            }
+    return charge_template_default
+
+def get_charge_template_scheduled_plan_defaults() -> dict:
+    charge_template_scheduled_plan_default = {
+            "name": "abc", 
+            "active": 1, 
+            "time": "14:15", 
+            "soc": 85, 
+            "frequency": 
+            {
+                "selected": "daily"
+                }
+            }
+    return charge_template_scheduled_plan_default
+
+def get_charge_template_time_charging_plan_defaults():
+    charge_template_time_charging_plan_default = {
+        "name": "def", 
+        "active": 0, 
+        "time": ["07:00", "17:20"], 
+        "current": 16, "frequency": 
+        {
+            "selected": "daily"
+            }
+        }
+    return charge_template_time_charging_plan_default
 
 def pub_defaults():
     """ruft für alle Ramdisk-Dateien aus initRamdisk die zum Typ passende Funktion zum publishen auf.
@@ -63,90 +150,6 @@ def pub_defaults():
         pub.pub("openWB/defaults/chargepoint/template/0/autolock/active", True)
         pub.pub("openWB/defaults/chargepoint/template/0/rfid_enabling", False)
         pub.pub("openWB/defaults/chargepoint/template/0/valid_tags", ["8910"])
-
-        # EV
-        pub.pub("openWB/defaults/vehicle/0/charge_template", 0)
-        pub.pub("openWB/defaults/vehicle/0/ev_template", 0)
-        pub.pub("openWB/defaults/vehicle/0/name", "EV")
-        pub.pub("openWB/defaults/vehicle/0/soc/config/configured", False)
-        pub.pub("openWB/defaults/vehicle/0/soc/config/manual", False)
-        pub.pub("openWB/defaults/vehicle/0/soc/config/request_interval_charging", 10)
-        pub.pub("openWB/defaults/vehicle/0/soc/config/reques_interval_not_charging", 60)
-        pub.pub("openWB/defaults/vehicle/0/soc/config/request_only_plugged", False)
-        pub.pub("openWB/defaults/vehicle/0/tag_id", ["1234"])
-        # EV-Vorlage
-        ev_template = {
-            "max_current_multi_phases": 16, 
-            "max_phases": 3,
-            "prevent_switch_stop": False, 
-            "control_pilot_interruption": False, 
-            "average_consump": 17, 
-            "min_current": 6, 
-            "max_current_one_phase": 32, 
-            "battery_capacity": 82, 
-            "nominal_difference": 2}
-        pub.pub("openWB/defaults/vehicle/template/ev_template/0", ev_template)
-
-        # Lade-Vorlage
-        charge_template = {
-            "disable_after_unplug": False, 
-            "prio": False, 
-            "load_default": False, 
-            "time_charging": 
-            {
-                "active": False, 
-                "plans": 
-                {
-                    "1": 
-                    {
-                        "name": "def", 
-                        "active": 0, 
-                        "time": ["07:00", "17:20"], 
-                        "current": 16, "frequency": 
-                        {
-                            "selected": "daily"
-                            }
-                        }, 
-                    }, 
-                "chargemode": 
-                {
-                    "selected": "stop", 
-                    "pv_charging":
-                    {
-                        "min_soc_current": 10,
-                        "min_current": 6,
-                        "feed_in_limit": False, 
-                        "min_soc": 0, 
-                        "max_soc": 100
-                        }, 
-                    "scheduled_charging":
-                    {
-                        "1": 
-                        {
-                            "name": "abc", 
-                            "active": 1, 
-                            "time": "14:15", 
-                            "soc": 85, 
-                            "frequency": 
-                            {
-                                "selected": "daily"
-                                }
-                            }
-                        }, 
-                    "instant_charging": 
-                    {
-                        "current": 10, 
-                        "limit": 
-                        {
-                            "selected": "none", 
-                            "soc": 50, 
-                            "amount": 10
-                            }
-                        }
-                    }
-                }
-            }
-        pub.pub("openWB/defaults/vehicle/template/charge_template/0", charge_template)
 
         # Optionale Module
         pub.pub("openWB/defaults/optional/et/active", False)

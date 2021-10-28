@@ -5,11 +5,11 @@ import sys
 try:
     from ...helpermodules import log
     from ...helpermodules import simcount
-    from ..common import connect_tcp
     from ..common import lovato
     from ..common import mpm3pm
     from ..common import sdm630
     from ..common import store
+    from ...helpermodules.system import exit_after
 except:
     from pathlib import Path
     import os
@@ -18,25 +18,23 @@ except:
     from helpermodules import log
     from helpermodules import simcount
     from modules.common import store
-    from modules.common import connect_tcp
+    
     from modules.common import lovato
     from modules.common import mpm3pm
     from modules.common import sdm630
 
 
 class EvuKitFlex():
-    def __init__(self, device_config: dict, component_config: dict) -> None:
+    def __init__(self, device_id: int, component_config: dict, tcp_client) -> None:
         try:
             self.data = {}
             self.data["config"] = component_config
-            self.data["device_config"] = device_config
+            self.device_id = device_id
             version = self.data["config"]["configuration"]["version"]
-            ip_address = self.data["device_config"]["configuration"]["ip_address"]
-            port = self.data["device_config"]["configuration"]["port"]
             self.data["simulation"] = {}
-            self.client = connect_tcp.ConnectTcp(self.data["config"]["name"], ip_address, port)
             factory = self.__counter_factory(version)
-            self.counter = factory(self.data["config"], self.client)
+            self.tcp_client = tcp_client
+            self.counter = factory(self.data["config"], self.tcp_client)
             self.value_store = (store.ValueStoreFactory().get_storage("counter"))()
             simcount_factory = simcount.SimCountFactory().get_sim_counter()
             self.sim_count = simcount_factory()
@@ -54,6 +52,7 @@ class EvuKitFlex():
         except:
             log.MainLogger().exception("Fehler im Modul "+self.data["config"]["name"])
 
+    #@exit_after(3)
     def read(self):
         """ liest die Werte des Moduls aus.
         """
@@ -83,11 +82,14 @@ class EvuKitFlex():
                     currents = [abs(currents[i]) for i in range(3)]
                 else:
                     currents = [0, 0, 0]
-                log.MainLogger().debug("EVU-Kit Leistung[W]: "+str(power_all))
-                topic_str = "openWB/set/system/devices/" +str(self.data["config"]["id"])+"/components/"+str(self.data["config"]["components"]["component0"]["id"])+"/"
-                imported, exported = self.sim_count.sim_count(power_all, topic=topic_str, data=self.data["simulation"], prefix="bezug")
-
-            self.value_store.set(self.data["config"]["components"]["component0"]["id"], voltages=voltages, currents=currents, powers=power_per_phase, power_factors=power_factors, imported=imported, exported=exported, power_all=power_all, frequency=frequency)
+                topic_str = "openWB/set/system/device/" +str(self.device_id)+"/component/"+str(self.data["config"]["id"])+"/"
+                if power_all != None:
+                    imported, exported = self.sim_count.sim_count(power_all, topic=topic_str, data=self.data["simulation"], prefix="bezug")
+                else:
+                    imported, exported = None, None
+            log.MainLogger().debug("EVU-Kit Leistung[W]: "+str(power_all))
+            self.tcp_client.close_connection()
+            self.value_store.set(self.data["config"]["id"], voltages=voltages, currents=currents, powers=power_per_phase, power_factors=power_factors, imported=imported, exported=exported, power_all=power_all, frequency=frequency)
             log.MainLogger().debug("Stop kit reading "+str(power_all))
         except:
             log.MainLogger().exception("Fehler im Modul "+self.data["config"]["name"])

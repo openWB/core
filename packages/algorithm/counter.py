@@ -12,7 +12,8 @@ class counterAll():
     def __init__(self):
         self.data = {}
         self.data["set"] = {}
-        self.data["set"]["loadmanagement"] = False
+        self.data["set"]["loadmanagement_active"] = False
+        self.data["set"]["loadmanagement_available"] = True
         self.data["set"]["home_consumption"] = 0
         self.data["set"]["invalid_home_consumption"] = 0
         self.data["set"]["daily_yield_home_consumption"] = 0
@@ -22,7 +23,7 @@ class counterAll():
 
     def put_stats(self):
         try:
-            pub.pub("openWB/set/counter/set/loadmanagement", self.data["set"]["loadmanagement"])
+            pub.pub("openWB/set/counter/set/loadmanagement_active", self.data["set"]["loadmanagement_active"])
         except Exception as e:
             log.MainLogger().exception("Fehler in der allgemeinen Zaehler-Klasse")
 
@@ -302,6 +303,13 @@ class counter():
         try:
             # Nur beim EVU-Zähler (counter0) wird auch die maximale Leistung geprüft.
             if self.counter_num == 0:
+                # Wenn der EVU-Zähler keine Werte liefert, darf nicht geladen werden.
+                if self.data["get"]["power_all"] == None or self.data["get"]["current"] == None:
+                    data.data.counter_data["all"].data["set"]["loadmanagement_available"] = False
+                    self.data["get"]["power_all"] = 0
+                    return
+                else:
+                    data.data.counter_data["all"].data["set"]["loadmanagement_available"] = True
                 # max Leistung
                 if self.data["get"]["power_all"] > 0:
                     self.data["set"]["consumption_left"] = self.data["config"]["max_consumption"] - self.data["get"]["power_all"]
