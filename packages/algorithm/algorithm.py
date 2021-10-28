@@ -229,7 +229,8 @@ class control():
             except Exception as e:
                 log.MainLogger().exception("Fehler im Algorithmus-Modul fuer Ladepunkt"+cp)
         preferenced_chargepoints = self._get_preferenced_chargepoint(valid_chargepoints, False)
-        log.MainLogger().debug("Zu reduzierende Ladepunkte "+str(preferenced_chargepoints)+" in Lademodus "+str(mode)+" Submodus "+str(submode)+" Prio "+str(prio))
+        if len(preferenced_chargepoints) != 0:
+            log.MainLogger().debug("Zu reduzierende Ladepunkte "+str(preferenced_chargepoints)+" in Lademodus "+str(mode)+" Submodus "+str(submode)+" Prio "+str(prio))
         return self._perform_down_regulation(preferenced_chargepoints, max_current_overshoot, max_overshoot_phase, prevent_stop)
 
     def _perform_down_regulation(self, preferenced_chargepoints, max_current_overshoot, max_overshoot_phase, prevent_stop = False):

@@ -35,7 +35,7 @@ class Module():
             if len(self.data["components"]) > 0:
                 self.data["components"]["component0"].read()
             else:
-                log.MainLogger().debug(self.data["config"]["name"]+": Es konnten keine Werte gelesen werden, da noch keine Komponenten konfiguriert wurden.")
+                log.MainLogger().warning(self.data["config"]["name"]+": Es konnten keine Werte gelesen werden, da noch keine Komponenten konfiguriert wurden.")
         except Exception as e:
             log.MainLogger().exception("Fehler im Modul "+self.data["config"]["name"])
 
