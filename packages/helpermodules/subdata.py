@@ -176,7 +176,14 @@ class SubData():
             Topic, aus dem der Index extrahiert wird
         """
         index = re.search('^.+/([0-9]*)/.+/([0-9]+)/.+$', topic)
-        return index.group(2)
+        if index != None:
+            return index.group(2)
+        else: 
+            index = re.search('^.+/([0-9]*)/.+/([0-9]+)$', topic)
+            if index != None:
+                return index.group(2)
+            else:
+                return index
 
     def set_json_payload(self, dict, msg):
         """ dekodiert das JSON-Objekt und setzt diesen für den Value in das übergebene Dictionary, als Key wird der Name nach dem letzten / verwendet.
@@ -264,15 +271,33 @@ class SubData():
         """
         try:
             index = self.get_index(msg.topic)
-            if re.search("^.+/vehicle/template/charge_template/[0-9]+$", msg.topic) != None:
+            if str(msg.payload.decode("utf-8")) == "":
+                if "ct"+index in var:
+                    var.pop("ct"+index)
+            else:
+                if "ct"+index not in var:
+                    var["ct"+index] = ev.chargeTemplate(int(index))
+            if re.search("^.+/vehicle/template/charge_template/[0-9]+/chargemode/scheduled_charging/plans/[0-9]+$", msg.topic) != None:
+                index_second = self.get_second_index(msg.topic)
                 if str(msg.payload.decode("utf-8")) == "":
-                    if "ct"+index in var:
+                    if "ct"+index in var["ct"+index].data["chargemode"]["scheduled_charging"]["plans"]:
                         var.pop("ct"+index)
+                    else:
+                        log.MainLogger().error("Es konnte kein Zielladen-Plan mit der ID "+str(index_second)+" in der Ladevorlage "+str(index)+" gefunden werden.")
                 else:
-                    if "ct"+index not in var:
-                        var["ct"+index] = ev.chargeTemplate(int(index))
-                    var["ct"+index].data = json.loads(str(msg.payload.decode("utf-8")))
-                    self.event_charge_template.set()
+                    var["ct"+index].data["chargemode"]["scheduled_charging"]["plans"][str(index)] = json.loads(str(msg.payload.decode("utf-8")))
+            elif re.search("^.+/vehicle/template/charge_template/[0-9]+/time_charging/plans/[0-9]+$", msg.topic) != None:
+                index_second = self.get_second_index(msg.topic)
+                if str(msg.payload.decode("utf-8")) == "":
+                    if "ct"+index in var["ct"+index].data["time_charging"]["plans"]:
+                        var.pop("ct"+index)
+                    else:
+                        log.MainLogger().error("Es konnte kein Zeitladen-Plan mit der ID "+str(index_second)+" in der Ladevorlage "+str(index)+" gefunden werden.")
+                else:
+                    var["ct"+index].data["time_charging"]["plans"][str(index)] = json.loads(str(msg.payload.decode("utf-8")))
+            else:
+                var["ct"+index].data = json.loads(str(msg.payload.decode("utf-8")))
+                self.event_charge_template.set()
         except Exception as e:
             log.MainLogger().exception("Fehler im subdata-Modul")
 

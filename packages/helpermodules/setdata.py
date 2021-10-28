@@ -378,12 +378,14 @@ class setData():
                     self._validate_value(msg, int, [(0, 101)], pub_json = True)
                 elif "/chargemode/scheduled_charging/[0-9]+/active" in msg.topic:
                     self._validate_value(msg, int, [(0, 1)], pub_json = True)
+                elif "/chargemode/scheduled_charging/plans" in msg.topic:
+                    self._validate_value(msg, "json")
                 elif "/chargemode/scheduled_charging" in msg.topic:
                     self._validate_value(msg, "json", pub_json = True)
                 elif "/time_charging/active" in msg.topic:
                     self._validate_value(msg, int, [(0, 1)], pub_json = True)
                 elif "/time_charging/plans" in msg.topic:
-                    self._validate_value(msg, "json", pub_json = True)
+                    self._validate_value(msg, "json")
                 else:
                     self._validate_value(msg, "json")
             elif "ev_template" in msg.topic:
