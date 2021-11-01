@@ -883,6 +883,8 @@ class setData():
                 self._validate_value(msg, int, [(-1, float("inf"))])
             elif "todo" in msg.topic:
                 self._validate_value(msg, "json")
+            elif "error" in msg.topic:
+                self._validate_value(msg, str)
             else:
                 self.__unknown_topic(msg)
         except Exception as e:

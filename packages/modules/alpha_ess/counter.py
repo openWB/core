@@ -17,25 +17,37 @@ except:
     from modules.common import connect_tcp
 
 
+def get_default() -> dict:
+    return {
+        "name": "Alpha ESS Zähler",
+        "id": None,
+        "type": "counter",
+        "configuration":
+        {
+            "version": 1
+        }
+    }
+
+
 class AlphaEssCounter():
-    def __init__(self, client: connect_tcp.ConnectTcp, component: dict) -> None:
+    def __init__(self, client: connect_tcp.ConnectTcp, component_config: dict) -> None:
         try:
             self.client = client
-            self.component = component
+            self.data["config"] = component_config
             self.value_store = (store.ValueStoreFactory().get_storage("counter"))()
         except Exception as e:
-            log.MainLogger().error("Fehler im Modul "+self.component["name"], e)
+            log.MainLogger().error("Fehler im Modul "+self.data["config"]["name"], e)
 
     def read(self):
         try:
-            log.MainLogger().debug("Komponente "+self.component["name"]+" auslesen.")
+            log.MainLogger().debug("Komponente "+self.data["config"]["name"]+" auslesen.")
             time.sleep(0.1)
-            factory_method = self.__version_factory(self.component["configuration"]["version"])
+            factory_method = self.__version_factory(self.data["config"]["configuration"]["version"])
             power_all, exported, imported, currents = factory_method(sdmid=85)
 
-            self.value_store.set(self.component["id"], voltages=[0, 0, 0], currents=currents, powers=[0, 0, 0], power_factors=[0, 0, 0], imported=imported, exported=exported, power_all=power_all, frequency=50)
+            self.value_store.set(self.data["config"]["id"], voltages=[0, 0, 0], currents=currents, powers=[0, 0, 0], power_factors=[0, 0, 0], imported=imported, exported=exported, power_all=power_all, frequency=50)
         except Exception as e:
-            log.MainLogger().error("Fehler im Modul "+self.component["name"], e)
+            log.MainLogger().error("Fehler im Modul "+self.data["config"]["name"], e)
 
     def __version_factory(self, version: int):
         try:
@@ -44,7 +56,7 @@ class AlphaEssCounter():
             else:
                 return self.__read_since_v123
         except Exception as e:
-            log.MainLogger().error("Fehler im Modul "+self.component["name"], e)
+            log.MainLogger().error("Fehler im Modul "+self.data["config"]["name"], e)
 
     def __read_before_v123(self, sdmid: int) -> Tuple[float, float, float, List[float]]:
         try:
@@ -64,7 +76,7 @@ class AlphaEssCounter():
                 currents.append(value)
             return power_all, exported, imported, currents
         except Exception as e:
-            log.MainLogger().error("Fehler im Modul "+self.component["name"], e)
+            log.MainLogger().error("Fehler im Modul "+self.data["config"]["name"], e)
 
     def __read_since_v123(self, sdmid: int) -> Tuple[float, float, float, List[float]]:
         try:
@@ -84,4 +96,4 @@ class AlphaEssCounter():
                 currents.append(value)
             return power_all, exported, imported, currents
         except Exception as e:
-            log.MainLogger().error("Fehler im Modul "+self.component["name"], e)
+            log.MainLogger().error("Fehler im Modul "+self.data["config"]["name"], e)

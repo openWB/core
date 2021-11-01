@@ -12,6 +12,17 @@ except:
     from helpermodules import log
     import evu_kit
 
+def get_default() -> dict:
+    return {
+        "name": "OpenWB-Kit", 
+        "type": "openwb_flex", 
+        "id": None, 
+        "configuration": 
+        {
+            "ip_address": "192.168.193.15", 
+            "port": "8899"
+            }
+        }
 
 class Module():
     def __init__(self, device_config: dict) -> None:
