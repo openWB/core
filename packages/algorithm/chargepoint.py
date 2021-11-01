@@ -31,6 +31,24 @@ from ..helpermodules import pub
 from ..helpermodules import timecheck
 from ..modules.cp import modbus_evse
 
+def get_chargepoint_default() -> dict:
+    return {
+        "name": "Standard-Ladepunkt", 
+        "ev": 0, 
+        "template": 0, 
+        "connected_phases": 3, 
+        "phase_1": 0, 
+        "auto_phase_switch_hw": False,
+        "control_pilot_interruption_hw": False, 
+        "connection_module": 
+        {
+            "selected": "mqtt"
+            }, 
+        "power_module": 
+        {
+            "selected": "mqtt"
+            }
+        }
 
 class allChargepoints():
     """
@@ -630,6 +648,17 @@ class chargepoint():
             return phases
         except Exception as e:
             log.MainLogger().exception("Fehler in der Ladepunkt-Klasse von "+str(self.cp_num))
+
+def get_chargepoint_template_default():
+    return {
+        "autolock": 
+        {
+            "wait_for_charging_end": False, 
+            "active": False
+            }, 
+            "rfid_enabling": False, 
+            "valid_tags": ["1234"]
+            }
 
 class cpTemplate():
     """ Vorlage für einen Ladepunkt.

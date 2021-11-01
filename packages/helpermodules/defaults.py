@@ -17,119 +17,14 @@ Für Module mit dynamischen Anzahlen, wie LP, gibt es dann ein openWB/defaults/c
 from . import log
 from . import pub
 
-def get_device_defaults(type: str) -> dict:
-    if type == "openwb_flex":
-        device_default = {"name": "OpenWB-Kit", "type": "openwb_flex", "id": None, "configuration": {"ip_address": "192.168.193.15", "port": "8899"}}
-    return device_default
 
-def get_component_defaults(device_type: str, type: str) -> dict:
-    if device_type == "openwb_flex":
-        if type == "counter":
-            component_default = {"name": "EVU-Kit flex", "type": "counter", "id": None, "configuration": {"version": 2, "id": 115}}
-    return component_default
 
-def get_vehicle_defaults() -> dict:
-    vehicle_default = {
-        "name": "Standard-Vorlage",
-        "charge_template": 0, 
-        "ev_template": 0, 
-        "name": "EV", 
-        "soc/config/configured": False, 
-        "soc/config/manual": False, 
-        "soc/config/request_interval_charging": 10, 
-        "soc/config/reques_interval_not_charging": 60, 
-        "soc/config/request_only_plugged": False, 
-        "tag_id": ["1234"],
-        "get/soc": 0
-        }
-    return vehicle_default
 
-def get_ev_template_defaults() -> dict:
-    ev_template_default = {
-            "max_current_multi_phases": 16, 
-            "max_phases": 3,
-            "prevent_switch_stop": False, 
-            "control_pilot_interruption": False, 
-            "average_consump": 17, 
-            "min_current": 6, 
-            "max_current_one_phase": 32, 
-            "battery_capacity": 82, 
-            "nominal_difference": 2
-            }
-    return ev_template_default
 
-def get_charge_template_defaults() -> dict:
-    charge_template_default = {
-            "disable_after_unplug": False, 
-            "prio": False, 
-            "load_default": False, 
-            "time_charging": 
-            {
-                "active": False, 
-                },
-            "chargemode": 
-            {
-                "selected": "stop", 
-                "pv_charging":
-                {
-                    "min_soc_current": 10,
-                    "min_current": 6,
-                    "feed_in_limit": False, 
-                    "min_soc": 0, 
-                    "max_soc": 100
-                    }, 
-                "scheduled_charging":
-                {
-                    "1": 
-                    {
-                        "name": "abc", 
-                        "active": 1, 
-                        "time": "14:15", 
-                        "soc": 85, 
-                        "frequency": 
-                        {
-                            "selected": "daily"
-                            }
-                        }
-                    }, 
-                "instant_charging": 
-                {
-                    "current": 10, 
-                    "limit": 
-                    {
-                        "selected": "none", 
-                        "soc": 50, 
-                        "amount": 10
-                        }
-                    }
-                }
-            }
-    return charge_template_default
 
-def get_charge_template_scheduled_plan_defaults() -> dict:
-    charge_template_scheduled_plan_default = {
-            "name": "abc", 
-            "active": 1, 
-            "time": "14:15", 
-            "soc": 85, 
-            "frequency": 
-            {
-                "selected": "daily"
-                }
-            }
-    return charge_template_scheduled_plan_default
 
-def get_charge_template_time_charging_plan_defaults():
-    charge_template_time_charging_plan_default = {
-        "name": "def", 
-        "active": 0, 
-        "time": ["07:00", "17:20"], 
-        "current": 16, "frequency": 
-        {
-            "selected": "daily"
-            }
-        }
-    return charge_template_time_charging_plan_default
+
+
 
 def pub_defaults():
     """ruft für alle Ramdisk-Dateien aus initRamdisk die zum Typ passende Funktion zum publishen auf.

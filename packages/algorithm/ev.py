@@ -12,6 +12,20 @@ from ..helpermodules import log
 from ..helpermodules import pub
 from ..helpermodules import timecheck
 
+def get_vehicle_default() -> dict:
+    return {
+        "name": "Standard-Vorlage",
+        "charge_template": 0, 
+        "ev_template": 0, 
+        "name": "Standard-EV", 
+        "soc/config/configured": False, 
+        "soc/config/manual": False, 
+        "soc/config/request_interval_charging": 10, 
+        "soc/config/reques_interval_not_charging": 60, 
+        "soc/config/request_only_plugged": False, 
+        "tag_id": ["1234"],
+        "get/soc": 0
+        }
 
 def get_ev_to_rfid(rfid):
     """ sucht zur übergebenen RFID-ID das EV.
@@ -355,6 +369,18 @@ class ev():
         """
         pass
 
+def get_ev_template_default() -> dict:
+    return {
+            "max_current_multi_phases": 16, 
+            "max_phases": 3,
+            "prevent_switch_stop": False, 
+            "control_pilot_interruption": False, 
+            "average_consump": 17, 
+            "min_current": 6, 
+            "max_current_one_phase": 32, 
+            "battery_capacity": 82, 
+            "nominal_difference": 2
+            }
 
 class evTemplate():
     """ Klasse mit den EV-Daten
@@ -363,6 +389,68 @@ class evTemplate():
     def __init__(self, index):
         self.data = {}
         self.et_num = index
+
+def get_charge_template_default() -> dict:
+    return {
+            "disable_after_unplug": False, 
+            "prio": False, 
+            "load_default": False, 
+            "time_charging": 
+            {
+                "active": False, 
+                },
+            "chargemode": 
+            {
+                "selected": "stop", 
+                "pv_charging":
+                {
+                    "min_soc_current": 10,
+                    "min_current": 6,
+                    "feed_in_limit": False, 
+                    "min_soc": 0, 
+                    "max_soc": 100
+                    }, 
+                "scheduled_charging":
+                {
+                    }, 
+                "instant_charging": 
+                {
+                    "current": 10, 
+                    "limit": 
+                    {
+                        "selected": "none", 
+                        "soc": 50, 
+                        "amount": 10
+                        }
+                    }
+                }
+            }
+
+def get_charge_template_scheduled_plan_default() -> dict:
+    charge_template_scheduled_plan_default = {
+            "name": "Zielladen-Standard", 
+            "active": True, 
+            "time": "07:00", 
+            "soc": 85, 
+            "frequency": 
+            {
+                "selected": "daily"
+                }
+            }
+    return charge_template_scheduled_plan_default
+
+def get_charge_template_time_charging_plan_default():
+    charge_template_time_charging_plan_default = {
+        "name": "Zeitladen-Standard", 
+        "active": True, 
+        "time": ["06:00", "07:00"], 
+        "current": 16, 
+        "frequency": 
+        {
+            "selected": "daily"
+            }
+        }
+    return charge_template_time_charging_plan_default
 
 class chargeTemplate():
     """ Klasse der Lademodus-Vorlage

@@ -22,7 +22,15 @@ else:
     from . import inverter
 
 
-class module():
+def get_default() -> dict:
+    return {
+        "name": "Alpha ESS",
+        "type": "alpha_ess",
+        "id": None
+    }
+
+
+class Device():
     def __init__(self, device_config: dict) -> None:
         try:
             super().__init__()
@@ -36,6 +44,13 @@ class module():
                 self.data["components"].append(factory(self.client, component))
         except Exception as e:
             log.MainLogger().error("Fehler im Modul "+self.data["config"]["name"], e)
+
+    def add_component(self, component_config: dict) -> None:
+        try:
+            factory = self.__component_factory(component_config["type"])
+            self.data["components"]["component"+str(component_config["id"])] = factory(self.data["config"]["id"], self.client, component_config)
+        except Exception as e:
+            log.MainLogger().exception("Fehler im Modul "+self.data["config"]["name"])
 
     def __component_factory(self, component_type: str):
         try:
@@ -62,12 +77,17 @@ def read_legacy(argv: List):
         component_type = str(argv[1])
         version = int(argv[2])
 
-        device0 = {"name": "Alpha Ess", "type": "alpha_ess", "components": {"component0": {"name": "Alpha Ess "+component_type, "id": 0, "type": component_type, "configuration": {"version": version}}}}
-        mod = module(device0)
+        default = get_default()
+        default["id"] = 0
+        dev = Device(default)
+        component_default = globals()[component_type].get_default()
+        component_default["id"] = 0
+        component_default["configuration"]["version"] = version
+        dev.add_component(component_default)
 
         log.MainLogger().debug('alpha_ess Version: ' + str(version))
 
-        mod.read()
+        dev.read()
     except Exception as e:
         log.MainLogger().error("Fehler im Modul Alpha Ess", e)
 
