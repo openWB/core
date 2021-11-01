@@ -171,8 +171,8 @@ class Command():
         try:
             new_id = self.max_id_device + 1
             log.MainLogger().info("Neues Device vom Typ"+str(payload["data"]["type"])+" mit ID "+str(new_id)+" hinzugefuegt.")
-            mod = importlib.import_module(".modules."+payload["data"]["type"]+".module", "packages")
-            device_default = mod.get_default()
+            dev = importlib.import_module(".modules."+payload["data"]["type"]+".device", "packages")
+            device_default = dev.get_default()
             device_default["id"] = new_id
             pub.pub("openWB/set/system/device/"+str(new_id)+"/config", device_default)
             self.max_id_device = self.max_id_device + 1

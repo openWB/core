@@ -30,7 +30,7 @@ def get_default() -> dict:
     }
 
 
-class module():
+class Device():
     def __init__(self, device_config: dict) -> None:
         try:
             super().__init__()
@@ -79,15 +79,15 @@ def read_legacy(argv: List):
 
         default = get_default()
         default["id"] = 0
-        mod = module(default)
+        dev = Device(default)
         component_default = globals()[component_type].get_default()
         component_default["id"] = 0
         component_default["configuration"]["version"] = version
-        mod.add_component(component_default)
+        dev.add_component(component_default)
 
         log.MainLogger().debug('alpha_ess Version: ' + str(version))
 
-        mod.read()
+        dev.read()
     except Exception as e:
         log.MainLogger().error("Fehler im Modul Alpha Ess", e)
 

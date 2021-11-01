@@ -28,7 +28,7 @@ def get_default() -> dict:
     }
 
 
-class Module():
+class Device():
     def __init__(self, device: dict) -> None:
         try:
             self.data = {}
@@ -72,19 +72,19 @@ def read_legacy(argv: List):
         default["id"] = 0
         default["ip_address"] = ip_address
         default["port"] = port
-        mod = Module(default)
+        dev = Device(default)
         component_default = evu_kit.get_default(component_type)
         component_default["id"] = 0
         component_default["configuration"]["version"] = version
         component_default["configuration"]["id"] = id
-        mod.add_component(component_default)
+        dev.add_component(component_default)
 
         log.MainLogger().debug('openWB Version: ' + str(version))
         log.MainLogger().debug('openWB-Kit IP-Adresse: ' + str(ip_address))
         log.MainLogger().debug('openWB-Kit Port: ' + str(port))
         log.MainLogger().debug('openWB-Kit ID: ' + str(id))
 
-        mod.read()
+        dev.read()
     except Exception as e:
         log.MainLogger().exception("Fehler im Modul openwb_flex")
 

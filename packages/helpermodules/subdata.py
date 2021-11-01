@@ -776,8 +776,8 @@ class SubData():
                         log.MainLogger().error("Es konnte kein Device mit der ID "+str(index)+" gefunden werden.")
                 else:
                     device_config = json.loads(str(msg.payload.decode("utf-8")))
-                    mod = importlib.import_module(".modules."+device_config["type"]+".module", "packages")
-                    var["device"+index] = mod.Module(device_config)
+                    dev = importlib.import_module(".modules."+device_config["type"]+".device", "packages")
+                    var["device"+index] = dev.Device(device_config)
                     # Durch das erneute Subscriben werden die Komponenten mit dem aktualisierten TCP-Client angelegt.
                     client.subscribe("openWB/system/device/"+index+"/component/#", 2)
             elif re.search("^.+/device/[0-9]+/get$", msg.topic) != None:
