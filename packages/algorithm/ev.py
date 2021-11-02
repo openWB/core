@@ -12,20 +12,22 @@ from ..helpermodules import log
 from ..helpermodules import pub
 from ..helpermodules import timecheck
 
+
 def get_vehicle_default() -> dict:
     return {
         "name": "Standard-Vorlage",
-        "charge_template": 0, 
-        "ev_template": 0, 
-        "name": "Standard-EV", 
-        "soc/config/configured": False, 
-        "soc/config/manual": False, 
-        "soc/config/request_interval_charging": 10, 
-        "soc/config/reques_interval_not_charging": 60, 
-        "soc/config/request_only_plugged": False, 
+        "charge_template": 0,
+        "ev_template": 0,
+        "name": "Standard-EV",
+        "soc/config/configured": False,
+        "soc/config/manual": False,
+        "soc/config/request_interval_charging": 10,
+        "soc/config/reques_interval_not_charging": 60,
+        "soc/config/request_only_plugged": False,
         "tag_id": ["1234"],
         "get/soc": 0
-        }
+    }
+
 
 def get_ev_to_rfid(rfid):
     """ sucht zur übergebenen RFID-ID das EV.
@@ -67,8 +69,8 @@ class ev():
                 self.data["get"] = {}
                 self.data["get"]["range_charged"] = 0
                 self.data["control_parameter"] = {}
-                self.data["control_parameter"]["required_current"] = 0 
-                self.data["control_parameter"]["phases"] = 0 
+                self.data["control_parameter"]["required_current"] = 0
+                self.data["control_parameter"]["phases"] = 0
                 self.data["control_parameter"]["prio"] = False
                 self.data["control_parameter"]["timestamp_switch_on_off"] = "0"
                 self.data["control_parameter"]["timestamp_auto_phase_switch"] = "0"
@@ -76,25 +78,25 @@ class ev():
                 self.data["control_parameter"]["submode"] = "stop"
                 self.data["control_parameter"]["chargemode"] = "stop"
         except Exception as e:
-            log.MainLogger().exception("Fehler im ev-Modul "+str(self.ev_num)) 
+            log.MainLogger().exception("Fehler im ev-Modul "+str(self.ev_num))
 
     def reset_ev(self):
         """ setzt alle Werte zurück, die während des Algorithmus gesetzt werden.
         """
         try:
             log.MainLogger().debug("EV "+str(self.ev_num)+" zurueckgesetzt.")
-            pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/required_current", 0)
-            pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/timestamp_auto_phase_switch", "0")
-            pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/timestamp_perform_phase_switch", "0")
-            pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/submode", "stop")
-            pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/chargemode", "stop")
-            self.data["control_parameter"]["required_current"] = 0 
+            pub.pub("openWB/set/vehicle/"+str(self.ev_num) + "/control_parameter/required_current", 0)
+            pub.pub("openWB/set/vehicle/"+str(self.ev_num) + "/control_parameter/timestamp_auto_phase_switch", "0")
+            pub.pub("openWB/set/vehicle/"+str(self.ev_num) + "/control_parameter/timestamp_perform_phase_switch", "0")
+            pub.pub("openWB/set/vehicle/"+str(self.ev_num) + "/control_parameter/submode", "stop")
+            pub.pub("openWB/set/vehicle/"+str(self.ev_num) + "/control_parameter/chargemode", "stop")
+            self.data["control_parameter"]["required_current"] = 0
             self.data["control_parameter"]["timestamp_auto_phase_switch"] = "0"
             self.data["control_parameter"]["timestamp_perform_phase_switch"] = "0"
             self.data["control_parameter"]["submode"] = "stop"
             self.data["control_parameter"]["chargemode"] = "stop"
         except Exception as e:
-            log.MainLogger().exception("Fehler im ev-Modul "+str(self.ev_num)) 
+            log.MainLogger().exception("Fehler im ev-Modul "+str(self.ev_num))
 
     def get_required_current(self, charged_since_mode_switch):
         """ ermittelt, ob und mit welchem Strom das EV geladen werden soll (unabhängig vom Lastmanagement)
@@ -137,7 +139,7 @@ class ev():
 
             return state, message, submode, required_current
         except Exception as e:
-            log.MainLogger().exception("Fehler im ev-Modul "+str(self.ev_num)) 
+            log.MainLogger().exception("Fehler im ev-Modul "+str(self.ev_num))
             return False, "ein interner Fehler aufgetreten ist.", "stop", 0
 
     def check_state(self, required_current, set_current, charge_state):
@@ -148,7 +150,7 @@ class ev():
         ---------
         required_current: int
             neue Stromstärke, mit der geladen werden soll
-        
+
         set_current: int
             Soll-Stromstärke
 
@@ -162,29 +164,29 @@ class ev():
         try:
             current_changed = False
             mode_changed = False
-            
+
             if self.data["control_parameter"]["chargemode"] != self.charge_template.data["chargemode"]["selected"]:
                 mode_changed = True
-            
+
             # Die benötigte Stromstärke hat sich durch eine Änderung des Lademdous oder der Konfiguration geändert.
             # Der Ladepunkt muss in der Regelung neu priorisiert werden.
             if self.data["control_parameter"]["required_current"] != required_current:
-                # Wenn im PV-Laden mit übrigem Überschuss geladen wird und dadurch die aktuelle Soll-Stromstärke über der neuen benötigten Stromstärke liegt, 
-                # muss der LP im Algorithmus nicht neu eingeordnet werden, da der LP mit der bisherigen Stormstärke weiter laden kann und sich die benötigte 
-                # Stromstärke nur auf die Reihenfolge innerhalb des Prioritätstupels bezieht und auf dieser Ebene kein LP, der bereits lädt, für einen neu 
+                # Wenn im PV-Laden mit übrigem Überschuss geladen wird und dadurch die aktuelle Soll-Stromstärke über der neuen benötigten Stromstärke liegt,
+                # muss der LP im Algorithmus nicht neu eingeordnet werden, da der LP mit der bisherigen Stormstärke weiter laden kann und sich die benötigte
+                # Stromstärke nur auf die Reihenfolge innerhalb des Prioritätstupels bezieht und auf dieser Ebene kein LP, der bereits lädt, für einen neu
                 # hinzugekommenen abgeschaltet werden darf.
                 # Wenn sich auch der Lademodus geändert hat, muss die neue Stromstärke in jedem Fall berücksichtigt werden.
-                if ((self.charge_template.data["chargemode"]["selected"] == "pv_charging" or self.charge_template.data["chargemode"]["selected"] == "scheduled_charging") and 
-                        ((self.data["control_parameter"]["submode"] == "pv_charging" or self.data["control_parameter"]["chargemode"] == "pv_charging") and 
-                        set_current > self.data["control_parameter"]["required_current"])):
+                if ((self.charge_template.data["chargemode"]["selected"] == "pv_charging" or self.charge_template.data["chargemode"]["selected"] == "scheduled_charging") and
+                        ((self.data["control_parameter"]["submode"] == "pv_charging" or self.data["control_parameter"]["chargemode"] == "pv_charging") and
+                         set_current > self.data["control_parameter"]["required_current"])):
                     current_changed = False
                 else:
                     current_changed = True
-            
+
             log.MainLogger().debug("Aenderung der Sollstromstaerke :"+str(current_changed)+", Aenderung des Lademodus :"+str(mode_changed))
             return current_changed, mode_changed
         except Exception as e:
-            log.MainLogger().exception("Fehler im ev-Modul "+str(self.ev_num)) 
+            log.MainLogger().exception("Fehler im ev-Modul "+str(self.ev_num))
             return True
 
     def set_control_parameter(self, submode, required_current):
@@ -197,22 +199,22 @@ class ev():
         """
         try:
             self.data["control_parameter"]["submode"] = submode
-            pub.pub("openWB/set/vehicle/"+str(self.ev_num) +"/control_parameter/submode", submode)
+            pub.pub("openWB/set/vehicle/"+str(self.ev_num) + "/control_parameter/submode", submode)
             self.data["control_parameter"]["chargemode"] = self.charge_template.data["chargemode"]["selected"]
-            pub.pub("openWB/set/vehicle/"+str(self.ev_num )+"/control_parameter/chargemode", self.charge_template.data["chargemode"]["selected"])
+            pub.pub("openWB/set/vehicle/"+str(self.ev_num)+"/control_parameter/chargemode", self.charge_template.data["chargemode"]["selected"])
             self.data["control_parameter"]["prio"] = self.charge_template.data["prio"]
-            pub.pub("openWB/set/vehicle/"+str(self.ev_num )+"/control_parameter/prio", self.charge_template.data["prio"])
+            pub.pub("openWB/set/vehicle/"+str(self.ev_num)+"/control_parameter/prio", self.charge_template.data["prio"])
             self.data["control_parameter"]["required_current"] = required_current
-            pub.pub("openWB/set/vehicle/"+str(self.ev_num )+"/control_parameter/required_current", required_current)
+            pub.pub("openWB/set/vehicle/"+str(self.ev_num)+"/control_parameter/required_current", required_current)
         except Exception as e:
-            log.MainLogger().exception("Fehler im ev-Modul "+str(self.ev_num)) 
+            log.MainLogger().exception("Fehler im ev-Modul "+str(self.ev_num))
 
     def get_soc(self):
         """ermittelt den SoC, wenn die Zugangsdaten konfiguriert sind.
         """
         pass
 
-    def check_min_max_current(self, required_current, phases, pv = False):
+    def check_min_max_current(self, required_current, phases, pv=False):
         """ prüft, ob der gesetzte Ladestrom über dem Mindest-Ladestrom und unter dem Maximal-Ladestrom des EVs liegt. Falls nicht, wird der 
         Ladestrom auf den Mindest-Ladestrom bzw. den Maximal-Ladestrom des EV gesetzt.
         Wenn PV-Laden aktiv ist, darf die Stromstärke nicht unter den PV-Mindeststrom gesetzt werden.
@@ -255,7 +257,7 @@ class ev():
                 log.MainLogger().debug("Anpassen der Sollstromstaerke an EV-Vorgaben. Sollstromstarke: "+str(required_current_prev)+" neue Sollstromstarke: "+str(required_current))
             return required_current
         except Exception as e:
-            log.MainLogger().exception("Fehler im ev-Modul "+str(self.ev_num)) 
+            log.MainLogger().exception("Fehler im ev-Modul "+str(self.ev_num))
             return 0
 
     def auto_phase_switch(self, cp_num, current, phases_in_use, current_get):
@@ -286,7 +288,7 @@ class ev():
                 # 1 -> 3
                 if phases_in_use == 1:
                     # Wenn im einphasigen Laden mit Maximalstromstärke geladen wird und der Timer abläuft, wird auf 3 Phasen umgeschaltet.
-                    if (self.data["control_parameter"]["timestamp_auto_phase_switch"] != "0" and 
+                    if (self.data["control_parameter"]["timestamp_auto_phase_switch"] != "0" and
                             max(current_get) >= (self.ev_template.data["max_current_one_phase"] - self.ev_template.data["nominal_difference"])):
                         if timecheck.check_timestamp(self.data["control_parameter"]["timestamp_auto_phase_switch"], pv_config["phase_switch_delay"]*60) == False:
                             phases_to_use = 3
@@ -297,15 +299,15 @@ class ev():
                         else:
                             message = "Umschaltverzoegerung von 1 auf 3 Phasen für "+str(pv_config["phase_switch_delay"]) + " Min aktiv."
                     # Wenn im einphasigen Laden die Maximalstromstärke erreicht wird und der Timer noch nicht läuft, Timer für das Umschalten auf 3 Phasen starten.
-                    elif (self.data["control_parameter"]["timestamp_auto_phase_switch"] == "0" and 
+                    elif (self.data["control_parameter"]["timestamp_auto_phase_switch"] == "0" and
                             max(current_get) >= (self.ev_template.data["max_current_one_phase"] - self.ev_template.data["nominal_difference"])):
                         self.data["control_parameter"]["timestamp_auto_phase_switch"] = timecheck.create_timestamp()
                         pub.pub("openWB/set/vehicle/"+str(self.ev_num) +
-                            "/control_parameter/timestamp_auto_phase_switch", self.data["control_parameter"]["timestamp_auto_phase_switch"])
+                                "/control_parameter/timestamp_auto_phase_switch", self.data["control_parameter"]["timestamp_auto_phase_switch"])
                         message = "Umschaltverzoegerung von 1 auf 3 Phasen für "+str(pv_config["phase_switch_delay"]) + " Min aktiv."
                         log.MainLogger().info("LP "+str(cp_num)+": "+message)
                     # Wenn der Timer läuft und nicht mit Maximalstromstärke geladen wird, Timer stoppen.
-                    elif (self.data["control_parameter"]["timestamp_auto_phase_switch"] != "0" and 
+                    elif (self.data["control_parameter"]["timestamp_auto_phase_switch"] != "0" and
                             max(current_get) < (self.ev_template.data["max_current_one_phase"] - self.ev_template.data["nominal_difference"])):
                         self.data["control_parameter"]["timestamp_auto_phase_switch"] = "0"
                         pub.pub("openWB/set/vehicle/"+str(self.ev_num) +
@@ -314,7 +316,7 @@ class ev():
                         log.MainLogger().info("LP "+str(cp_num)+": "+message)
                 # 3 -> 1
                 else:
-                    if (self.data["control_parameter"]["timestamp_auto_phase_switch"] != "0" and 
+                    if (self.data["control_parameter"]["timestamp_auto_phase_switch"] != "0" and
                             all((current <= (self.data["control_parameter"]["required_current"]+self.ev_template.data["nominal_difference"]) or current <= self.ev_template.data["nominal_difference"]) for current in current_get)):
                         if timecheck.check_timestamp(self.data["control_parameter"]["timestamp_auto_phase_switch"], (16-pv_config["phase_switch_delay"])*60) == False:
                             phases_to_use = 1
@@ -323,14 +325,14 @@ class ev():
                             self.data["control_parameter"]["timestamp_auto_phase_switch"] = "0"
                             pub.pub("openWB/set/vehicle/"+str(self.ev_num) + "/control_parameter/timestamp_auto_phase_switch", "0")
                         else:
-                            message = "Umschaltverzoegerung von 3 auf 1 Phase für "+str( 16-pv_config["phase_switch_delay"]) + " Min aktiv."
+                            message = "Umschaltverzoegerung von 3 auf 1 Phase für "+str(16-pv_config["phase_switch_delay"]) + " Min aktiv."
                     # Wenn im dreiphasigen Laden die Minimalstromstärke erreicht wird und der Timer noch nicht läuft, Timer für das Umschalten auf eine Phase starten.
-                    elif (self.data["control_parameter"]["timestamp_auto_phase_switch"] == "0" and 
+                    elif (self.data["control_parameter"]["timestamp_auto_phase_switch"] == "0" and
                             all((current <= (self.data["control_parameter"]["required_current"] + self.ev_template.data["nominal_difference"]) or current <= self.ev_template.data["nominal_difference"]) for current in current_get)):
                         log.MainLogger().debug("create timestamp p switch")
                         self.data["control_parameter"]["timestamp_auto_phase_switch"] = timecheck.create_timestamp()
                         pub.pub("openWB/set/vehicle/"+str(self.ev_num) + "/control_parameter/timestamp_auto_phase_switch", self.data["control_parameter"]["timestamp_auto_phase_switch"])
-                        message = "Umschaltverzoegerung von 3 auf 1 Phase für "+str( 16-pv_config["phase_switch_delay"]) + " Min aktiv."
+                        message = "Umschaltverzoegerung von 3 auf 1 Phase für "+str(16-pv_config["phase_switch_delay"]) + " Min aktiv."
                         log.MainLogger().info("LP "+str(cp_num)+": "+message)
                     # Wenn der Timer läuft und mit mehr als Minimalstromstärke geladen wird, Timer stoppen.
                     elif self.data["control_parameter"]["timestamp_auto_phase_switch"] != "0" and any(current > (self.data["control_parameter"]["required_current"] + self.ev_template.data["nominal_difference"]) for current in current_get):
@@ -340,7 +342,7 @@ class ev():
                         log.MainLogger().info("LP "+str(cp_num)+": "+message)
             return phases_to_use, current, message
         except Exception as e:
-            log.MainLogger().exception("Fehler im ev-Modul "+str(self.ev_num))  
+            log.MainLogger().exception("Fehler im ev-Modul "+str(self.ev_num))
             return phases_to_use, current, None
 
     def reset_phase_switch(self):
@@ -369,18 +371,20 @@ class ev():
         """
         pass
 
+
 def get_ev_template_default() -> dict:
     return {
-            "max_current_multi_phases": 16, 
-            "max_phases": 3,
-            "prevent_switch_stop": False, 
-            "control_pilot_interruption": False, 
-            "average_consump": 17, 
-            "min_current": 6, 
-            "max_current_one_phase": 32, 
-            "battery_capacity": 82, 
-            "nominal_difference": 2
-            }
+        "max_current_multi_phases": 16,
+        "max_phases": 3,
+        "prevent_switch_stop": False,
+        "control_pilot_interruption": False,
+        "average_consump": 17,
+        "min_current": 6,
+        "max_current_one_phase": 32,
+        "battery_capacity": 82,
+        "nominal_difference": 2
+    }
+
 
 class evTemplate():
     """ Klasse mit den EV-Daten
@@ -390,67 +394,75 @@ class evTemplate():
         self.data = {}
         self.et_num = index
 
+
 def get_charge_template_default() -> dict:
     return {
-            "disable_after_unplug": False, 
-            "prio": False, 
-            "load_default": False, 
-            "time_charging": 
+        "disable_after_unplug": False,
+        "prio": False,
+        "load_default": False,
+        "time_charging":
             {
-                "active": False, 
-                },
-            "chargemode": 
+                "active": False,
+            },
+        "chargemode":
             {
-                "selected": "stop", 
+                "selected": "stop",
                 "pv_charging":
                 {
                     "min_soc_current": 10,
                     "min_current": 6,
-                    "feed_in_limit": False, 
-                    "min_soc": 0, 
+                    "feed_in_limit": False,
+                    "min_soc": 0,
                     "max_soc": 100
-                    }, 
+                },
                 "scheduled_charging":
                 {
-                    }, 
-                "instant_charging": 
+                },
+                "instant_charging":
                 {
-                    "current": 10, 
-                    "limit": 
+                    "current": 10,
+                    "limit":
                     {
-                        "selected": "none", 
-                        "soc": 50, 
+                        "selected": "none",
+                        "soc": 50,
                         "amount": 10
-                        }
                     }
                 }
             }
+    }
+
 
 def get_charge_template_scheduled_plan_default() -> dict:
     charge_template_scheduled_plan_default = {
-            "name": "Zielladen-Standard", 
-            "active": True, 
-            "time": "07:00", 
-            "soc": 85, 
-            "frequency": 
+        "name": "Zielladen-Standard",
+        "active": True,
+        "time": "07:00",
+        "soc": 85,
+        "frequency":
             {
-                "selected": "daily"
-                }
+                "selected": "daily",
+                "once": ["2021-11-01"],
+                "weekly": [False, False, False, False, False, False, False]
             }
+    }
     return charge_template_scheduled_plan_default
+
 
 def get_charge_template_time_charging_plan_default():
     charge_template_time_charging_plan_default = {
-        "name": "Zeitladen-Standard", 
-        "active": True, 
-        "time": ["06:00", "07:00"], 
-        "current": 16, 
-        "frequency": 
+        "name": "Zeitladen-Standard",
+        "active": True,
+        "time": ["06:00", "07:00"],
+        "current": 16,
+        "frequency":
         {
-            "selected": "daily"
-            }
+            "selected": "daily",
+            "once": ["2021-11-01", "2021-11-05"],
+            "weekly": [False, False, False, False, False, False, False]
         }
+    }
     return charge_template_time_charging_plan_default
+
 
 class chargeTemplate():
     """ Klasse der Lademodus-Vorlage
@@ -545,7 +557,7 @@ class chargeTemplate():
                 if pv_charging["min_current"] == 0:
                     return 1, "pv_charging", message  # nur PV; Ampere darf nicht 0 sein, wenn geladen werden soll
                 else:
-                    return pv_charging["min_current"], "instant_charging", message # Min PV
+                    return pv_charging["min_current"], "instant_charging", message  # Min PV
             else:
                 message = "Keine Ladung, da der maximale Soc bereits erreicht wurde."
                 return 0, "stop", message
@@ -578,7 +590,7 @@ class chargeTemplate():
             plan_data = {"start": -1}
             message = None
             battery_capacity = ev_template.data["battery_capacity"]
-            start = -1 # Es wurde noch kein Plan geprüft.
+            start = -1  # Es wurde noch kein Plan geprüft.
             for plan in self.data["chargemode"]["scheduled_charging"]["plans"]:
                 if self.data["chargemode"]["scheduled_charging"]["plans"][plan]["active"] == True:
                     try:
@@ -618,7 +630,7 @@ class chargeTemplate():
                             break
                     else:
                         return 0, "stop", "Keine Ladung, da ein interner Fehler aufgetreten ist."
-                    if plan_data["start"] == 1: # Ladung sollte jetzt starten
+                    if plan_data["start"] == 1:  # Ladung sollte jetzt starten
                         message = "Zielladen mit "+str(plan_data["available_current"])+"A, um einen SoC von "+str(current_plan["soc"])+"%% um "+str(current_plan["time"])+" zu erreichen."
                         return plan_data["available_current"], "instant_charging", message
                     elif plan_data["start"] == 2:  # weniger als die berechnete Zeit verfügbar
@@ -627,7 +639,8 @@ class chargeTemplate():
                             plan_data["available_current"] = plan_data["max_current"]
                         else:
                             plan_data["available_current"] = required_current
-                        message = "Zielladen mit "+str(plan_data["available_current"])+"A. Der verfügbare Ladezeitraum reicht nicht aus, um den Ziel-SoC zu erreichen. Daher wird bis max. 20 Minuten nach dem angegebenen Zieltermin geladen."
+                        message = "Zielladen mit "+str(plan_data["available_current"]) + \
+                            "A. Der verfügbare Ladezeitraum reicht nicht aus, um den Ziel-SoC zu erreichen. Daher wird bis max. 20 Minuten nach dem angegebenen Zieltermin geladen."
                         return plan_data["available_current"], "instant_charging", message
                     else:
                         # Liegt der Zieltermin innerhalb der nächsten 24h?
