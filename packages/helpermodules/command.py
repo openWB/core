@@ -344,12 +344,8 @@ class Command():
         try:
             new_id = self.max_id_component + 1
             log.MainLogger().info("Neue Komponente vom Typ"+str(payload["data"]["type"])+" mit ID "+str(new_id)+" hinzugefuegt.")
-            if payload["data"]["deviceType"] == "openwb_flex" or payload["data"]["deviceType"] == "openwb":
-                component = importlib.import_module(".modules."+payload["data"]["deviceType"]+".evu_kit", "packages")
-                component_default = component.get_default(payload["data"]["type"])
-            else:
-                component = importlib.import_module(".modules."+payload["data"]["deviceType"]+"."+payload["data"]["type"], "packages")
-                component_default = component.get_default()
+            component = importlib.import_module(".modules."+payload["data"]["deviceType"]+"."+payload["data"]["type"], "packages")
+            component_default = component.get_default()
             component_default["id"] = new_id
             pub.pub("openWB/set/system/device/"+str(payload["data"]["deviceId"])+"/component/"+str(new_id)+"/config", component_default)
             self.max_id_component = self.max_id_component + 1

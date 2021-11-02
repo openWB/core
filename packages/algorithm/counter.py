@@ -21,6 +21,12 @@ class counterAll():
         self.connected_counters = []
         self.connected_chargepoints = []
 
+    def get_evu_counter(self):
+        try:
+            return self.data["get"]["hierarchy"][0]["id"]
+        except Exception as e:
+            log.MainLogger().exception("Fehler in der allgemeinen Zaehler-Klasse")
+
     def put_stats(self):
         try:
             pub.pub("openWB/set/counter/set/loadmanagement_active", self.data["set"]["loadmanagement_active"])
