@@ -18,10 +18,25 @@ except:
     from helpermodules import log
     from helpermodules import simcount
     from modules.common import store
-    
+
     from modules.common import lovato
     from modules.common import mpm3pm
     from modules.common import sdm630
+
+
+def get_default(type: str) -> dict:
+    if type == "counter":
+        component_default = {
+            "name": "EVU-Kit flex",
+            "type": "counter",
+            "id": None,
+            "configuration":
+            {
+                "version": 2,
+                "id": 115
+            }
+        }
+    return component_default
 
 
 class EvuKitFlex():
@@ -52,7 +67,7 @@ class EvuKitFlex():
         except:
             log.MainLogger().exception("Fehler im Modul "+self.data["config"]["name"])
 
-    #@exit_after(3)
+    # @exit_after(3)
     def read(self):
         """ liest die Werte des Moduls aus.
         """
@@ -82,14 +97,15 @@ class EvuKitFlex():
                     currents = [abs(currents[i]) for i in range(3)]
                 else:
                     currents = [0, 0, 0]
-                topic_str = "openWB/set/system/device/" +str(self.device_id)+"/component/"+str(self.data["config"]["id"])+"/"
+                topic_str = "openWB/set/system/device/" + str(self.device_id)+"/component/"+str(self.data["config"]["id"])+"/"
                 if power_all != None:
                     imported, exported = self.sim_count.sim_count(power_all, topic=topic_str, data=self.data["simulation"], prefix="bezug")
                 else:
                     imported, exported = None, None
             log.MainLogger().debug("EVU-Kit Leistung[W]: "+str(power_all))
             self.tcp_client.close_connection()
-            self.value_store.set(self.data["config"]["id"], voltages=voltages, currents=currents, powers=power_per_phase, power_factors=power_factors, imported=imported, exported=exported, power_all=power_all, frequency=frequency)
+            self.value_store.set(self.data["config"]["id"], voltages=voltages, currents=currents, powers=power_per_phase,
+                                 power_factors=power_factors, imported=imported, exported=exported, power_all=power_all, frequency=frequency)
             log.MainLogger().debug("Stop kit reading "+str(power_all))
         except:
             log.MainLogger().exception("Fehler im Modul "+self.data["config"]["name"])

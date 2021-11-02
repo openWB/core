@@ -15,7 +15,20 @@ except:
     import evu_kit
 
 
-class Module():
+def get_default() -> dict:
+    return {
+        "name": "OpenWB-Kit",
+        "type": "openwb_flex",
+        "id": None,
+        "configuration":
+        {
+            "ip_address": "192.168.193.15",
+            "port": "8899"
+        }
+    }
+
+
+class Device():
     def __init__(self, device: dict) -> None:
         try:
             self.data = {}
@@ -37,7 +50,8 @@ class Module():
     def read(self):
         try:
             if len(self.data["components"]) > 0:
-                self.data["components"]["component0"].read()
+                for component in self.data["components"]:
+                    self.data["components"][component].read()
             else:
                 log.MainLogger().warning(self.data["config"]["name"]+": Es konnten keine Werte gelesen werden, da noch keine Komponenten konfiguriert wurden.")
         except Exception as e:
@@ -54,16 +68,23 @@ def read_legacy(argv: List):
         port = int(argv[4])
         id = int(argv[5])
 
-        device0 = {"name": "OpenWB-Kit", "type": "openwb_flex", "id": 0, "configuration": {"ip_address": ip_address, "port": port},
-                   "components": {"component0": {"name": "EVU-Kit flex", "type": component_type, "id": 0, "configuration": {"version": version, "id": id}}}}
-        mod = Module(device0)
+        default = get_default()
+        default["id"] = 0
+        default["ip_address"] = ip_address
+        default["port"] = port
+        dev = Device(default)
+        component_default = evu_kit.get_default(component_type)
+        component_default["id"] = 0
+        component_default["configuration"]["version"] = version
+        component_default["configuration"]["id"] = id
+        dev.add_component(component_default)
 
         log.MainLogger().debug('openWB Version: ' + str(version))
-        log.MainLogger().debug('Counter-Module EVU-Kit IP-Adresse: ' + str(ip_address))
-        log.MainLogger().debug('Counter-Module EVU-Kit Port: ' + str(port))
-        log.MainLogger().debug('Counter-Module EVU-Kit ID: ' + str(id))
+        log.MainLogger().debug('openWB-Kit IP-Adresse: ' + str(ip_address))
+        log.MainLogger().debug('openWB-Kit Port: ' + str(port))
+        log.MainLogger().debug('openWB-Kit ID: ' + str(id))
 
-        mod.read()
+        dev.read()
     except Exception as e:
         log.MainLogger().exception("Fehler im Modul openwb_flex")
 

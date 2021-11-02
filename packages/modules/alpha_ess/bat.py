@@ -19,30 +19,42 @@ except:
     from modules.common import store
 
 
+def get_default() -> dict:
+    return {
+        "name": "Alpha ESS Speicher",
+        "id": None,
+        "type": "bat",
+        "configuration":
+        {
+            "version": 1
+        }
+    }
+
+
 class AlphaEssBat():
-    def __init__(self, client: connect_tcp.ConnectTcp, component: dict) -> None:
+    def __init__(self, client: connect_tcp.ConnectTcp, component_config: dict) -> None:
         try:
             self.client = client
-            self.component = component
+            self.data["config"] = component_config
             self.data = {}
             self.data["simulation"] = {}
             self.value_store = (store.ValueStoreFactory().get_storage("bat"))()
             simcount_factory = simcount.SimCountFactory().get_sim_counter()
             self.sim_count = simcount_factory()
         except Exception as e:
-            log.MainLogger().error("Fehler im Modul "+self.component["name"], e)
+            log.MainLogger().error("Fehler im Modul "+self.data["config"]["name"], e)
 
     def read(self):
-        try: 
-            log.MainLogger().debug("Komponente "+self.component["name"]+" auslesen.")
+        try:
+            log.MainLogger().debug("Komponente "+self.data["config"]["name"]+" auslesen.")
             # keine Unterschiede zwischen den Versionen
-            sdmid=85
+            sdmid = 85
 
             time.sleep(0.1)
             voltage = self.client.read_binary_registers_to_int(0x0100, 2, sdmid, 16)
             time.sleep(0.1)
             current = self.client.read_binary_registers_to_int(0x0101, 2, sdmid, 16)
-            
+
             if voltage != None and current != None:
                 power = float(voltage * current * -1 / 100)
             else:
@@ -55,7 +67,10 @@ class AlphaEssBat():
             else:
                 soc = None
 
-            imported, exported = self.sim_count.sim_count(power, topic="openWB/set/bat/"+str(self.component["id"])+"/", data=self.data["simulation"], prefix="speicher")
-            self.value_store.set(self.component["id"], power=power, soc=soc, imported=imported, exported=exported)
+            if power != None:
+                imported, exported = self.sim_count.sim_count(power, topic="openWB/set/bat/"+str(self.data["config"]["id"])+"/", data=self.data["simulation"], prefix="speicher")
+            else:
+                imported, exported = None, None
+            self.value_store.set(self.data["config"]["id"], power=power, soc=soc, imported=imported, exported=exported)
         except Exception as e:
-            log.MainLogger().error("Fehler im Modul "+self.component["name"], e)
+            log.MainLogger().error("Fehler im Modul "+self.data["config"]["name"], e)
