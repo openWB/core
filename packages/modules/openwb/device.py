@@ -1,8 +1,9 @@
 from typing import List
 
 try:
+    from ..common import connect_tcp
     from ...helpermodules import log
-    from . import evu_kit
+    from . import counter
 except:
     from pathlib import Path
     import os
@@ -10,42 +11,43 @@ except:
     parentdir2 = str(Path(os.path.abspath(__file__)).parents[2])
     sys.path.insert(0, parentdir2)
     from helpermodules import log
-    import evu_kit
+    from modules.common import connect_tcp
+    import counter
 
 def get_default() -> dict:
     return {
         "name": "OpenWB-Kit", 
-        "type": "openwb_flex", 
-        "id": None, 
-        "configuration": 
-        {
-            "ip_address": "192.168.193.15", 
-            "port": "8899"
-            }
+        "type": "openwb", 
+        "id": None
         }
 
-class Module():
+class Device():
     def __init__(self, device_config: dict) -> None:
         try:
             self.data = {}
             self.data["config"] = device_config
-            self.data["simulation"] = {}
-            self.data["components"] = []
-            for c in self.data["config"]["components"]:
-                component = self.data["config"]["components"][c]
-                if component["type"] == "bat":
-                    pass
-                elif component["type"] == "counter":
-                    self.data["components"].append(evu_kit.EvuKit(self.data["config"]))
-                elif component["type"] == "inverter":
-                    pass
+            self.data["components"] = {}
+            #ip_address = "192.168.193.15"
+            ip_address = "192.168.1.101"
+            port = "8899"
+            self.client = connect_tcp.ConnectTcp(self.data["config"]["name"], self.data["config"]["id"], ip_address, port)
+        except Exception as e:
+            log.MainLogger().exception("Fehler im Modul "+self.data["config"]["name"])
+
+    def add_component(self, component_config: dict) -> None:
+        try:
+            if component_config["type"] == "counter":
+                self.data["components"]["component"+str(component_config["id"])] = counter.EvuKit(self.data["config"]["id"], component_config, self.client)
         except Exception as e:
             log.MainLogger().exception("Fehler im Modul "+self.data["config"]["name"])
 
     def read(self):
         try:
-            for component in self.data["components"]:
-                component.read()
+            if len(self.data["components"]) > 0:
+                for component in self.data["components"]:
+                    self.data["components"][component].read()
+            else:
+                log.MainLogger().warning(self.data["config"]["name"]+": Es konnten keine Werte gelesen werden, da noch keine Komponenten konfiguriert wurden.")
         except Exception as e:
             log.MainLogger().exception("Fehler im Modul "+self.data["config"]["name"])
 

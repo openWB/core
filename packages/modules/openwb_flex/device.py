@@ -3,7 +3,7 @@ from typing import List
 try:
     from ...helpermodules import log
     from ..common import connect_tcp
-    from . import evu_kit
+    from . import counter
 except:
     from pathlib import Path
     import os
@@ -12,7 +12,7 @@ except:
     sys.path.insert(0, parentdir2)
     from helpermodules import log
     from modules.common import connect_tcp
-    import evu_kit
+    import counter
 
 
 def get_default() -> dict:
@@ -43,7 +43,7 @@ class Device():
     def add_component(self, component_config: dict) -> None:
         try:
             if component_config["type"] == "counter":
-                self.data["components"]["component"+str(component_config["id"])] = evu_kit.EvuKitFlex(self.data["config"]["id"], component_config, self.client)
+                self.data["components"]["component"+str(component_config["id"])] = counter.EvuKitFlex(self.data["config"]["id"], component_config, self.client)
         except Exception as e:
             log.MainLogger().exception("Fehler im Modul "+self.data["config"]["name"])
 
@@ -73,7 +73,7 @@ def read_legacy(argv: List):
         default["ip_address"] = ip_address
         default["port"] = port
         dev = Device(default)
-        component_default = evu_kit.get_default(component_type)
+        component_default = counter.get_default(component_type)
         component_default["id"] = 0
         component_default["configuration"]["version"] = version
         component_default["configuration"]["id"] = id
