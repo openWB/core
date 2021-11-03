@@ -6,10 +6,12 @@ import json
 import paho.mqtt.client as mqtt
 import re
 import time
+import traceback
 
 from . import log
 from . import pub
 from ..algorithm import chargepoint
+from ..algorithm import data
 from ..algorithm import ev
 
 
@@ -43,7 +45,7 @@ class Command():
         """ abonniert alle Topics.
         """
         try:
-            # kurze Pause, damit die ID vom Broker ermittelt werden können. Sonst werden noch vorher die retained Topics empfangen, was zu doppeltenLogmeldungen führt.
+            # kurze Pause, damit die ID vom Broker ermittelt werden können. Sonst werden noch vorher die retained Topics empfangen, was zu doppelten Logmeldungen führt.
             time.sleep(1)
             mqtt_broker_ip = "localhost"
             client = mqtt.Client("openWB-command-" + self.getserial())
@@ -136,7 +138,7 @@ class Command():
             pub.pub("openWB/set/command/max_id/device", self.max_id_device)
         except Exception as e:
             log.MainLogger().exception("Fehler im Command-Modul")
-            self.__pub_error(payload, connection_id, "Es ist ein interner Fehler aufgetreten.")
+            self.__pub_error(payload, connection_id, "Es ist ein interner Fehler aufgetreten: "+traceback.format_exc())
 
     def removeDevice(self, connection_id: str, payload: dict) -> None:
         """ löscht ein Device.
@@ -149,7 +151,7 @@ class Command():
                 self.__pub_error(payload, connection_id, "Die ID ist groesser als die maximal vergebene ID.")
         except Exception as e:
             log.MainLogger().exception("Fehler im Command-Modul")
-            self.__pub_error(payload, connection_id, "Es ist ein interner Fehler aufgetreten.")
+            self.__pub_error(payload, connection_id, "Es ist ein interner Fehler aufgetreten: "+traceback.format_exc())
 
     def addChargepoint(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem ein neuer Chargepoint erstellt werden soll.
@@ -159,6 +161,7 @@ class Command():
             log.MainLogger().info("Neuer Ladepunkt vom Typ"+str(payload["data"]["type"])+" mit ID "+str(new_id)+" hinzugefuegt.")
             chargepoint_default = chargepoint.get_chargepoint_default()
             chargepoint_default["id"] = new_id
+            data.data.counter_data["all"].hierarchy_add_item_below("cp"+str(new_id), data.data.counter_data["all"].data["get"]["hierarchy"][0]["id"])
             pub.pub("openWB/set/chargepoint/"+str(new_id)+"/config", chargepoint_default)
             self.max_id_chargepoint = self.max_id_chargepoint + 1
             pub.pub("openWB/set/command/max_id/chargepoint", self.max_id_chargepoint)
@@ -166,20 +169,21 @@ class Command():
                 self.addChargepointTemplate("addChargepoint", {})
         except Exception as e:
             log.MainLogger().exception("Fehler im Command-Modul")
-            self.__pub_error(payload, connection_id, "Es ist ein interner Fehler aufgetreten.")
+            self.__pub_error(payload, connection_id, "Es ist ein interner Fehler aufgetreten: "+traceback.format_exc())
 
     def removeChargepoint(self, connection_id: str, payload: dict) -> None:
         """ löscht ein Chargepoint.
         """
         try:
             if self.max_id_chargepoint >= payload["data"]["id"]:
+                data.data.counter_data["all"].hierarchy_remove_item("cp"+str(payload["data"]["id"]))
                 log.MainLogger().info("Ladepunkt mit ID "+str(payload["data"]["id"])+" geloescht.")
                 ProcessBrokerBranch("chargepoint/"+str(payload["data"]["id"])).remove_topics()
             else:
                 self.__pub_error(payload, connection_id, "Die ID ist groesser als die maximal vergebene ID.")
         except Exception as e:
             log.MainLogger().exception("Fehler im Command-Modul")
-            self.__pub_error(payload, connection_id, "Es ist ein interner Fehler aufgetreten.")
+            self.__pub_error(payload, connection_id, "Es ist ein interner Fehler aufgetreten: "+traceback.format_exc())
 
     def addChargepointTemplate(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem eine neue Ladepunkt-Vorlage erstellt werden soll.
@@ -199,7 +203,7 @@ class Command():
             pub.pub("openWB/set/command/max_id/chargepoint_template", self.max_id_chargepoint_template)
         except Exception as e:
             log.MainLogger().exception("Fehler im Command-Modul")
-            self.__pub_error(payload, connection_id, "Es ist ein interner Fehler aufgetreten.")
+            self.__pub_error(payload, connection_id, "Es ist ein interner Fehler aufgetreten: "+traceback.format_exc())
 
     def removeChargepointTemplate(self, connection_id: str, payload: dict) -> None:
         """ löscht eine ladepunkt-Vorlage.
@@ -212,7 +216,7 @@ class Command():
                 self.__pub_error(payload, connection_id, "Die ID ist groesser als die maximal vergebene ID.")
         except Exception as e:
             log.MainLogger().exception("Fehler im Command-Modul")
-            self.__pub_error(payload, connection_id, "Es ist ein interner Fehler aufgetreten.")
+            self.__pub_error(payload, connection_id, "Es ist ein interner Fehler aufgetreten: "+traceback.format_exc())
 
     def addChargeTemplate(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem eine neue Lade-Vorlage erstellt werden soll.
@@ -226,7 +230,7 @@ class Command():
             pub.pub("openWB/set/command/max_id/charge_template", new_id)
         except Exception as e:
             log.MainLogger().exception("Fehler im Command-Modul")
-            self.__pub_error(payload, connection_id, "Es ist ein interner Fehler aufgetreten.")
+            self.__pub_error(payload, connection_id, "Es ist ein interner Fehler aufgetreten: "+traceback.format_exc())
 
     def removeChargeTemplate(self, connection_id: str, payload: dict) -> None:
         """ löscht eine Lade-Vorlage.
@@ -239,7 +243,7 @@ class Command():
                 self.__pub_error(payload, connection_id, "Die ID ist groesser als die maximal vergebene ID.")
         except Exception as e:
             log.MainLogger().exception("Fehler im Command-Modul")
-            self.__pub_error(payload, connection_id, "Es ist ein interner Fehler aufgetreten.")
+            self.__pub_error(payload, connection_id, "Es ist ein interner Fehler aufgetreten: "+traceback.format_exc())
 
     def addChargeTemplateSchedulePlan(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem ein neuer Zielladen-Plan erstellt werden soll.
@@ -253,7 +257,7 @@ class Command():
             pub.pub("openWB/set/command/max_id/charge_template_scheduled_plan", new_id)
         except Exception as e:
             log.MainLogger().exception("Fehler im Command-Modul")
-            self.__pub_error(payload, connection_id, "Es ist ein interner Fehler aufgetreten.")
+            self.__pub_error(payload, connection_id, "Es ist ein interner Fehler aufgetreten: "+traceback.format_exc())
 
     def removeChargeTemplateSchedulePlan(self, connection_id: str, payload: dict) -> None:
         """ löscht einen Zielladen-Plan.
@@ -266,7 +270,7 @@ class Command():
                 self.__pub_error(payload, connection_id, "Die ID ist groesser als die maximal vergebene ID.")
         except Exception as e:
             log.MainLogger().exception("Fehler im Command-Modul")
-            self.__pub_error(payload, connection_id, "Es ist ein interner Fehler aufgetreten.")
+            self.__pub_error(payload, connection_id, "Es ist ein interner Fehler aufgetreten: "+traceback.format_exc())
 
     def addChargeTemplateTimeChargingPlan(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem ein neuer Zeitladen-Plan erstellt werden soll.
@@ -280,7 +284,7 @@ class Command():
             pub.pub("openWB/set/command/max_id/charge_template_time_charging_plan", new_id)
         except Exception as e:
             log.MainLogger().exception("Fehler im Command-Modul")
-            self.__pub_error(payload, connection_id, "Es ist ein interner Fehler aufgetreten.")
+            self.__pub_error(payload, connection_id, "Es ist ein interner Fehler aufgetreten: "+traceback.format_exc())
 
     def removeChargeTemplateTimeChargingPlan(self, connection_id: str, payload: dict) -> None:
         """ löscht einen Zeitladen-Plan.
@@ -293,7 +297,7 @@ class Command():
                 self.__pub_error(payload, connection_id, "Die ID ist groesser als die maximal vergebene ID.")
         except Exception as e:
             log.MainLogger().exception("Fehler im Command-Modul")
-            self.__pub_error(payload, connection_id, "Es ist ein interner Fehler aufgetreten.")
+            self.__pub_error(payload, connection_id, "Es ist ein interner Fehler aufgetreten: "+traceback.format_exc())
 
     def addComponent(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem eine neue Komponente erstellt werden soll.
@@ -304,25 +308,29 @@ class Command():
             component = importlib.import_module(".modules."+payload["data"]["deviceType"]+"."+payload["data"]["type"], "packages")
             component_default = component.get_default()
             component_default["id"] = new_id
+            if payload["data"]["type"] == "counter":
+                data.data.counter_data["all"].hierarchy_add_item_below("counter"+str(new_id), data.data.counter_data["all"].data["get"]["hierarchy"][0]["id"])
             pub.pub("openWB/set/system/device/"+str(payload["data"]["deviceId"])+"/component/"+str(new_id)+"/config", component_default)
             self.max_id_component = self.max_id_component + 1
             pub.pub("openWB/set/command/max_id/component", self.max_id_component)
         except Exception as e:
             log.MainLogger().exception("Fehler im Command-Modul")
-            self.__pub_error(payload, connection_id, "Es ist ein interner Fehler aufgetreten.")
+            self.__pub_error(payload, connection_id, "Es ist ein interner Fehler aufgetreten: "+traceback.format_exc())
 
     def removeComponent(self, connection_id: str, payload: dict) -> None:
         """ löscht eine Komponente.
         """
         try:
             if self.max_id_component >= payload["data"]["id"]:
+                if payload["data"]["type"] == "counter":
+                    data.data.counter_data["all"].hierarchy_remove_item("counter"+str(payload["data"]["id"]))
                 log.MainLogger().info("Komponente mit ID "+str(payload["data"]["id"])+" geloescht.")
                 ProcessBrokerBranch("system/device/"+str(payload["data"]["deviceId"])+"/component/"+str(payload["data"]["id"])).remove_topics()
             else:
                 self.__pub_error(payload, connection_id, "Die ID ist groesser als die maximal vergebene ID.")
         except Exception as e:
             log.MainLogger().exception("Fehler im Command-Modul")
-            self.__pub_error(payload, connection_id, "Es ist ein interner Fehler aufgetreten.")
+            self.__pub_error(payload, connection_id, "Es ist ein interner Fehler aufgetreten: "+traceback.format_exc())
 
     def addEvTemplate(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem ein neues EV-Template erstellt werden soll.
@@ -336,7 +344,7 @@ class Command():
             pub.pub("openWB/set/command/max_id/ev_template", new_id)
         except Exception as e:
             log.MainLogger().exception("Fehler im Command-Modul")
-            self.__pub_error(payload, connection_id, "Es ist ein interner Fehler aufgetreten.")
+            self.__pub_error(payload, connection_id, "Es ist ein interner Fehler aufgetreten: "+traceback.format_exc())
 
     def removeEvTemplate(self, connection_id: str, payload: dict) -> None:
         """ löscht ein EV-Template.
@@ -349,7 +357,7 @@ class Command():
                 self.__pub_error(payload, connection_id, "Die ID ist groesser als die maximal vergebene ID.")
         except Exception as e:
             log.MainLogger().exception("Fehler im Command-Modul")
-            self.__pub_error(payload, connection_id, "Es ist ein interner Fehler aufgetreten.")
+            self.__pub_error(payload, connection_id, "Es ist ein interner Fehler aufgetreten: "+traceback.format_exc())
 
     def addVehicle(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem ein neues Vehicle erstellt werden soll.
@@ -369,7 +377,7 @@ class Command():
                 self.addEvTemplate("addVehicle", {})
         except Exception as e:
             log.MainLogger().exception("Fehler im Command-Modul")
-            self.__pub_error(payload, connection_id, "Es ist ein interner Fehler aufgetreten.")
+            self.__pub_error(payload, connection_id, "Es ist ein interner Fehler aufgetreten: "+traceback.format_exc())
 
     def removeVehicle(self, connection_id: str, payload: dict) -> None:
         """ löscht ein Vehicle.
@@ -383,7 +391,7 @@ class Command():
                 self.__pub_error(payload, connection_id, "Die ID ist groesser als die maximal vergebene ID.")
         except Exception as e:
             log.MainLogger().exception("Fehler im Command-Modul")
-            self.__pub_error(payload, connection_id, "Es ist ein interner Fehler aufgetreten.")
+            self.__pub_error(payload, connection_id, "Es ist ein interner Fehler aufgetreten: "+traceback.format_exc())
 
 
 class ProcessBrokerBranch:

@@ -20,6 +20,7 @@ Sonst müsste man auch bei Autolock immer einen Tag vorhalten, auch wenn der Lad
 RFID-Tags:
 Liste der Tags, mit denen der Ladepunkt freigeschaltet werden kann. Ist diese leer, kann mit jedem Tag der Ladepunkt freigeschaltet werden.
 """
+import traceback
 
 from . import chargelog
 from . import cp_interruption
@@ -260,6 +261,8 @@ class chargepoint():
                 self.data["get"]["read_tag"]["timestamp"] = "0"
                 self.data["get"]["daily_yield"] = 0
                 self.data["get"]["plug_state"] = False
+                self.data["get"]["charge_state"] = False
+                self.data["get"]["power_all"] = 0
 
                 # bestehende Logdaten auf dem Broker nicht zurücksetzen, daher nicht publishen
                 self.data["set"]["log"] = {}
@@ -308,7 +311,7 @@ class chargepoint():
             return state, message
         except Exception as e:
             log.MainLogger().exception("Fehler in der Ladepunkt-Klasse von "+str(self.cp_num))
-            return True, "Keine Ladung, da ein interner Fehler aufgetreten ist."
+            return True, "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
 
     def _is_ripple_control_receiver_inactive(self):
         """ prüft, dass der Rundsteuerempfängerkontakt nicht geschlossen ist.
@@ -331,7 +334,7 @@ class chargepoint():
             return state, message
         except Exception as e:
             log.MainLogger().exception("Fehler in der Ladepunkt-Klasse von "+str(self.cp_num))
-            return True, "Keine Ladung, da ein interner Fehler aufgetreten ist."
+            return True, "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
 
     def _is_loadmanagement_available(self):
         """ prüft, ob Lastmanagement verfügbar ist. Wenn keine Werte vom EVU-Zähler empfangen werden, darf nicht geladen werden.
@@ -353,7 +356,7 @@ class chargepoint():
             return state, message 
         except Exception as e:
             log.MainLogger().exception("Fehler in der Ladepunkt-Klasse von "+str(self.cp_num))
-            return False, "Keine Ladung, da ein interner Fehler aufgetreten ist."
+            return False, "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
 
     def _is_autolock_inactive(self):
         """ prüft, ob Autolock nicht aktiv ist oder ob die Sperrung durch einen dem LP zugeordneten RFID-Tag aufgehoben werden kann.
@@ -385,7 +388,7 @@ class chargepoint():
             return state, message
         except Exception as e:
             log.MainLogger().exception("Fehler in der Ladepunkt-Klasse von "+str(self.cp_num))
-            return True, "Keine Ladung, da ein interner Fehler aufgetreten ist."
+            return True, "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
 
     def _is_manual_lock_inactive(self):
         """ prüft, das der Ladepunkt nicht manuell gesperrt wurde.
@@ -408,7 +411,7 @@ class chargepoint():
             return charging_possbile, message
         except Exception as e:
             log.MainLogger().exception("Fehler in der Ladepunkt-Klasse von "+str(self.cp_num))
-            return True, "Keine Ladung, da ein interner Fehler aufgetreten ist."
+            return True, "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
 
     def _is_ev_plugged(self):
         """ prüft, ob ein EV angesteckt ist
@@ -433,7 +436,7 @@ class chargepoint():
             return state, message
         except Exception as e:
             log.MainLogger().exception("Fehler in der Ladepunkt-Klasse von "+str(self.cp_num))
-            return False, "Keine Ladung, da ein interner Fehler aufgetreten ist."
+            return False, "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
     
     def get_state(self):
         """prüft alle Bedingungen und ruft die EV-Logik auf.
@@ -794,4 +797,4 @@ class cpTemplate():
             return ev_num, message
         except Exception as e:
             log.MainLogger().exception("Fehler in der Ladepunkt-Template Klasse von "+self.cp_num)
-            return ev_num, "Keine Ladung, da ein interner Fehler aufgetreten ist."
+            return ev_num, "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc()

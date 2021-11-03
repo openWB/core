@@ -156,6 +156,7 @@ def _loadmanagement_for_evu(required_power, required_current_phases, phases, off
     loadmanagement: bool
         Lastmanagement aktiv/inaktiv, verbleibende verfügbare Leistung, genutzter Strom
     """
+    evu_counter = data.data.counter_data["all"].get_evu_counter()
     max_current_overshoot = 0
     max_overshoot_phase = 0
     consumption_left = 0
@@ -173,7 +174,7 @@ def _loadmanagement_for_evu(required_power, required_current_phases, phases, off
             if max_current_overshoot < overshoot:
                 max_current_overshoot = overshoot
                 max_overshoot_phase = -1
-        loadmanagement, overshoot, phase = _check_max_current("counter0", required_current_phases, phases, offset)
+        loadmanagement, overshoot, phase = _check_max_current(evu_counter, required_current_phases, phases, offset)
         if loadmanagement == True:
             loadmanagement_all_conditions = True
             # Wenn max_overshoot_phase -1 ist, wurde die maximale Gesamtleistung überschrittten und max_current_overshoot muss, 
@@ -185,7 +186,7 @@ def _loadmanagement_for_evu(required_power, required_current_phases, phases, off
             if overshoot_one_phase < overshoot:
                 max_current_overshoot = overshoot
                 max_overshoot_phase = phase
-        loadmanagement, overshoot, phase = _check_unbalanced_load(data.data.counter_data["counter0"].data["set"]["current_used"], offset)
+        loadmanagement, overshoot, phase = _check_unbalanced_load(data.data.counter_data[evu_counter].data["set"]["current_used"], offset)
         if loadmanagement == True:
             loadmanagement_all_conditions = True
             # Wenn max_overshoot_phase -1 ist, wurde die maximale Gesamtleistung überschrittten und max_current_overshoot muss, 
@@ -198,7 +199,7 @@ def _loadmanagement_for_evu(required_power, required_current_phases, phases, off
                 max_current_overshoot = overshoot
                 max_overshoot_phase = phase
         if loadmanagement_all_conditions == True:
-            overloaded_counters["counter0"] = [max_current_overshoot, max_overshoot_phase]
+            overloaded_counters[evu_counter] = [max_current_overshoot, max_overshoot_phase]
         return loadmanagement_all_conditions
     except Exception as e:
         log.MainLogger().exception("Fehler im Lastmanagement-Modul")
@@ -218,18 +219,19 @@ def _check_max_power(required_power, offset):
     loadmanagement, consumption_left: bool, int
         Lastmanagement aktiv/inaktiv, verbleibende verfügbare Leistung inkl Offset (da beim Anpassen des Ladestroms nie  der Maximalbezug ausgereizt werden)
     """
+    evu_counter = data.data.counter_data["all"].get_evu_counter()
     if offset == True:
         offset_power = 300
     else:
         offset_power = 0
     try:
-        consumption_left = data.data.counter_data["counter0"].data["set"]["consumption_left"] - required_power - offset_power
-        data.data.counter_data["counter0"].data["set"]["consumption_left"] -= required_power
+        consumption_left = data.data.counter_data[evu_counter].data["set"]["consumption_left"] - required_power - offset_power
+        data.data.counter_data[evu_counter].data["set"]["consumption_left"] -= required_power
         # Float-Ungenauigkeiten abfangen
         if consumption_left >= -0.01:
-            return False, data.data.counter_data["counter0"].data["set"]["consumption_left"] - 300
+            return False, data.data.counter_data[evu_counter].data["set"]["consumption_left"] - 300
         else:
-            return True, data.data.counter_data["counter0"].data["set"]["consumption_left"] - 300
+            return True, data.data.counter_data[evu_counter].data["set"]["consumption_left"] - 300
     except Exception as e:
         log.MainLogger().exception("Fehler im Lastmanagement-Modul")
         return 0, False

@@ -843,6 +843,8 @@ class setData():
             elif ("openWB/set/system/perform_update" in msg.topic or
                     "openWB/set/system/update_in_progress" in msg.topic):
                 self._validate_value(msg, int, [(0, 1)])
+            elif "configurable" in msg.topic:
+                self._validate_value(msg, None)
             elif "device" in msg.topic:
                 if "component" in msg.topic:
                     if ("/simulation/power_present" in msg.topic or

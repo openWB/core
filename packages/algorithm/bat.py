@@ -94,14 +94,15 @@ class batAll:
         """ ermittelt die Lade-Leistung des Speichers, die zum Laden der EV verwendet werden darf.
         """
         try:
+            evu_counter = data.data.counter_data["all"].get_evu_counter()
             config = data.data.general_data["general"].data["chargemode_config"]["pv_charging"]
             if config["bat_prio"] == False:
                 # Wenn der Speicher lädt und gleichzeitg Bezug da ist, sind entweder die Werte sehr ungünstig abgefragt worden 
                 # (deshalb wird noch ein Zyklus gewartet) oder es liegt ein Hybrid-System vor.
-                if data.data.counter_data["counter0"].data["get"]["power_all"] > 0:
+                if data.data.counter_data[evu_counter].data["get"]["power_all"] > 0:
                     if self.data["set"]["hybrid_system_detected"] == True:
-                        log.MainLogger().debug("".join(("verbleibende Speicher-Leistung fuer Hybrid-System: max(", self.data["set"]["charging_power_left"]," - ", data.data.counter_data["counter0"].data["get"]["power_all"],", 0)")))
-                        self.data["set"]["charging_power_left"] = max(self.data["set"]["charging_power_left"] - data.data.counter_data["counter0"].data["get"]["power_all"], 0)
+                        log.MainLogger().debug("".join(("verbleibende Speicher-Leistung fuer Hybrid-System: max(", self.data["set"]["charging_power_left"]," - ", data.data.counter_data[evu_counter].data["get"]["power_all"],", 0)")))
+                        self.data["set"]["charging_power_left"] = max(self.data["set"]["charging_power_left"] - data.data.counter_data[evu_counter].data["get"]["power_all"], 0)
                     else:
                         self.data["set"]["hybrid_system_detected"] = True
                         log.MainLogger().debug("Erstmalig Hybrid-System detektiert.")

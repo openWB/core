@@ -58,7 +58,7 @@ class pvAll():
                 {pub.pub("openWB/set/pv/get/"+k, v)for (k,v) in self.data["get"].items()}
                 self.data["config"]["configured"]=True
                 # aktuelle Leistung an der EVU, enthält die Leistung der Einspeisungsgrenze
-                evu_overhang = data.data.counter_data["counter0"].data["get"]["power_all"] * (-1)
+                evu_overhang = data.data.counter_data[data.data.counter_data["all"].get_evu_counter()].data["get"]["power_all"] * (-1)
                 
                 # Regelmodus
                 control_range_low = data.data.general_data["general"].data["chargemode_config"]["pv_charging"]["control_range"][0]

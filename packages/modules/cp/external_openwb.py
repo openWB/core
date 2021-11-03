@@ -88,11 +88,11 @@ def _check_duo_virtual_counter(cp):
             if ret == False:
                 log.message_debug_log("error", "counter"+str(index)+" konnte nicht auf der Ebene von cp"+str(cp.cp_num)+" in die Zaehlerhierarchie eingefuegt werden.")
                 return
-            ret = data.data.counter_data["all"].hierarchy_remove_item("cp"+str(data.data.cp_data[connected_cps[0]].cp_num))
+            ret = data.data.counter_data["all"].hierarchy_remove_item("cp"+str(data.data.cp_data[connected_cps[0]].cp_num), keep_children=False)
             if ret == False:
                 log.message_debug_log("error", "cp"+str(data.data.cp_data[connected_cps[0]].cp_num)+" konnte nicht aus der Zaehlerhierarchie geloescht werden.")
                 return
-            ret = data.data.counter_data["all"].hierarchy_remove_item("cp"+str(data.data.cp_data[connected_cps[1]].cp_num))
+            ret = data.data.counter_data["all"].hierarchy_remove_item("cp"+str(data.data.cp_data[connected_cps[1]].cp_num), keep_children=False)
             if ret == False:
                 log.message_debug_log("error", "cp"+str(data.data.cp_data[connected_cps[1]].cp_num)+" konnte nicht aus der Zaehlerhierarchie geloescht werden.")
                 return
@@ -104,8 +104,5 @@ def _check_duo_virtual_counter(cp):
             if ret == False:
                 log.message_debug_log("error", "cp"+str(cp.cp_num)+" konnte nicht unter der Ebene von counter"+str(index)+" in die Zaehlerhierarchie eingefuegt werden.")
                 return
-
-            pub.pub("openWB/set/counter/get/hierarchy", data.data.counter_data["all"].data["get"]["hierarchy"])
-
     except Exception as e:
         log.exception_logging(e)
