@@ -47,8 +47,9 @@ class general():
         der Netzschutz aktiv ist und dann die Ladung gestoppt.
         """
         try:
+            evu_counter = data.data.counter_data["all"].get_evu_counter()
             if self.data["grid_protection_configured"] == True:
-                frequency = data.data.counter_data["counter0"].data["get"]["frequency"] * 100
+                frequency = data.data.counter_data[evu_counter].data["get"]["frequency"] * 100
                 grid_protection_active = self.data["grid_protection_active"]
                 if grid_protection_active == False:
                     if 4500 < frequency < 4920 :
@@ -58,7 +59,7 @@ class general():
                         pub.pub("openWB/set/general/grid_protection_timestamp", self.data["grid_protection_timestamp"])
                         pub.pub("openWB/set/general/grid_protection_random_stop", self.data["grid_protection_random_stop"])
                         pub.pub("openWB/set/general/grid_protection_active", self.data["grid_protection_active"])
-                        log.MainLogger().info("Netzschutz aktiv! Frequenz: "+str(data.data.counter_data["counter0"].data["get"]["frequency"])+"Hz")
+                        log.MainLogger().info("Netzschutz aktiv! Frequenz: "+str(data.data.counter_data[evu_counter].data["get"]["frequency"])+"Hz")
                     if 5180 < frequency < 5300:
                         self.data["grid_protection_random_stop"] = 0
                         self.data["grid_protection_timestamp"] = "0"
@@ -66,12 +67,12 @@ class general():
                         pub.pub("openWB/set/general/grid_protection_timestamp", self.data["grid_protection_timestamp"])
                         pub.pub("openWB/set/general/grid_protection_random_stop", self.data["grid_protection_random_stop"])
                         pub.pub("openWB/set/general/grid_protection_active", self.data["grid_protection_active"])
-                        log.MainLogger().info("Netzschutz aktiv! Frequenz: "+str(data.data.counter_data["counter0"].data["get"]["frequency"])+"Hz")
+                        log.MainLogger().info("Netzschutz aktiv! Frequenz: "+str(data.data.counter_data[evu_counter].data["get"]["frequency"])+"Hz")
                 else:
                     if 4962 < frequency < 5100:
                         self.data["grid_protection_active"] = False
                         pub.pub("openWB/set/general/grid_protection_active", self.data["grid_protection_active"])
-                        log.MainLogger().info("Netzfrequenz wieder im normalen Bereich. Frequenz: "+str(data.data.counter_data["counter0"].data["get"]["frequency"])+"Hz")
+                        log.MainLogger().info("Netzfrequenz wieder im normalen Bereich. Frequenz: "+str(data.data.counter_data[evu_counter].data["get"]["frequency"])+"Hz")
                         pub.pub("openWB/set/general/grid_protection_timestamp","0")
                         pub.pub("openWB/set/general/grid_protection_random_stop", 0)
         except Exception as e:

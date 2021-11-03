@@ -37,7 +37,8 @@ class control():
         """
         try:
             log.MainLogger().debug("# Algorithmus-Start")
-            log.MainLogger().debug("EVU-Punkt: Leistung[W] "+str(data.data.counter_data["counter0"].data["get"]["power_all"])+", Stroeme[A] "+str(data.data.counter_data["counter0"].data["get"]["current"]))
+            evu_counter = data.data.counter_data["all"].get_evu_counter()
+            log.MainLogger().debug("EVU-Punkt: Leistung[W] "+str(data.data.counter_data[evu_counter].data["get"]["power_all"])+", Stroeme[A] "+str(data.data.counter_data[evu_counter].data["get"]["current"]))
             if data.data.counter_data["all"].data["set"]["loadmanagement_available"] == False:
                 return
             
@@ -306,7 +307,7 @@ class control():
                         adapted_power = taken_current * 230 * phases
                         # Werte aktualisieren
                         loadmanagement.loadmanagement_for_cp(cp, adapted_power, taken_current, phases)
-                        data.data.counter_data["counter0"].print_stats()
+                        data.data.counter_data[data.data.counter_data["all"].get_evu_counter()].print_stats()
                         # Wenn max_overshoot_phase -1 ist, wurde die maximale Gesamtleistung überschrittten und max_current_overshoot muss, 
                         # wenn weniger als 3 Phasen genutzt werden, entsprechend dividiert werden.
                         if max_overshoot_phase == -1 and phases < 3:
@@ -423,7 +424,7 @@ class control():
                             cp.data["get"]["state_str"] = message
                     except Exception as e:
                         log.MainLogger().exception("Fehler im Algorithmus-Modul fuer Ladepunkt"+cp)
-                data.data.counter_data["counter0"].print_stats()
+                data.data.counter_data[data.data.counter_data["all"].get_evu_counter()].print_stats()
         except Exception as e:
             log.MainLogger().exception("Fehler im Algorithmus-Modul")
 
@@ -598,6 +599,7 @@ class control():
             aktueller Lademodus, Submodus und Priorität
         """
         try:
+            evu_counter = data.data.counter_data["all"].get_evu_counter()
             # aktuelle Werte speichern (werden wieder hergestellt, wenn das Lastmanagement die Ladung verhindert)
             counter_data_old = copy.deepcopy(data.data.counter_data)
             pv_data_old = copy.deepcopy(data.data.pv_data)
@@ -618,9 +620,9 @@ class control():
             
             if data.data.counter_data["all"].data["set"]["loadmanagement_active"] == True and len(overloaded_counters) != 0:
                 #Lastmanagement hat eingegriffen
-                log.MainLogger().debug("Aktuell kalkulierte Stroeme am EVU-Punkt[A]: "+str(data.data.counter_data["counter0"].data["set"]["current_used"]))
+                log.MainLogger().debug("Aktuell kalkulierte Stroeme am EVU-Punkt[A]: "+str(data.data.counter_data[evu_counter].data["set"]["current_used"]))
                 log.MainLogger().warning("Für die Ladung an LP"+str(chargepoint.cp_num)+" muss erst ein Ladepunkt mit gleicher/niedrigerer Prioritaet reduziert/gestoppt werden.")
-                data.data.counter_data["counter0"].print_stats()
+                data.data.counter_data[evu_counter].print_stats()
                 # Zähler mit der größten Überlastung ermitteln
                 overloaded_counters = sorted(overloaded_counters.items(), key=lambda e: e[1][1], reverse = True)
                 # Ergebnisse des Lastmanagements holen, das beim Einschalten durchgeführt worden ist. Es ist ausreichend, 
@@ -671,7 +673,7 @@ class control():
             else:
                 (log.MainLogger().info("LP: "+str(chargepoint.cp_num)+", Ladestrom: "+str(chargepoint.data["set"]["current"])+"A, Phasen: "+str(chargepoint.data["set"]["charging_ev_data"].data["control_parameter"]["phases"])+
                 ", Ladeleistung: "+str((chargepoint.data["set"]["charging_ev_data"].data["control_parameter"]["phases"]*chargepoint.data["set"]["current"]*230))+"W"))
-            data.data.counter_data["counter0"].print_stats()
+            data.data.counter_data[evu_counter].print_stats()
         except Exception as e:
             log.MainLogger().exception("Fehler im Algorithmus-Modul")
 

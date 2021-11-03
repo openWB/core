@@ -45,7 +45,7 @@ class process():
                     log.MainLogger().exception("Fehler im Process-Modul fuer Ladepunkt "+str(cp))
             data.data.pv_data["all"].put_stats()
             data.data.pv_data["all"].print_stats()
-            data.data.counter_data["counter0"].put_stats()
+            data.data.counter_data[data.data.counter_data["all"].get_evu_counter()].put_stats()
         except Exception as e:
             log.MainLogger().exception("Fehler im Process-Modul")
 

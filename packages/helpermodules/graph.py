@@ -24,10 +24,11 @@ def pub_graph_data():
     """ schreibt die Graph-Daten, sodass sie zu dem 1.9er graphing.sh passen.
     """
     dataline={"timestamp":int(time.time()),"time":datetime.datetime.today().strftime("%H:%M:%S")}
+    evu_counter = data.data.counter_data["all"].get_evu_counter()
     if data.data.counter_data["all"].data["set"]["loadmanagement_available"] == True:
-        dataline.update({"grid": _convert_to_kW(data.data.counter_data["counter0"].data["get"]["power_all"])})
+        dataline.update({"grid": _convert_to_kW(data.data.counter_data[evu_counter].data["get"]["power_all"])})
     for c in data.data.counter_data:
-        if "counter" in c and not "counter0" in c:
+        if "counter" in c and not evu_counter in c:
             counter = data.data.counter_data[c]
             dataline.update({"counter"+str(counter.counter_num)+"-power": _convert_to_kW(counter.data["get"]["power_all"])})
     dataline.update({"house-power":_convert_to_kW(data.data.counter_data["all"].data["set"]["home_consumption"])})

@@ -37,7 +37,7 @@ class counterAll():
         """ berechnet den Hausverbrauch.
         """
         try:
-            evu = data.data.counter_data["counter0"].data["get"]["power_all"]
+            evu = data.data.counter_data[self.get_evu_counter()].data["get"]["power_all"]
             pv = data.data.pv_data["all"].data["get"]["power"]
             bat = data.data.bat_data["all"].data["get"]["power"]
             cp = data.data.cp_data["all"].data["get"]["power_all"]
@@ -62,8 +62,8 @@ class counterAll():
         """ berechnet die heute im Haus verbrauchte Energie.
         """
         try:
-            evu_imported = data.data.counter_data["counter0"].data["get"]["daily_yield_import"]
-            evu_exported = data.data.counter_data["counter0"].data["get"]["daily_yield_export"]
+            evu_imported = data.data.counter_data[self.get_evu_counter()].data["get"]["daily_yield_import"]
+            evu_exported = data.data.counter_data[self.get_evu_counter()].data["get"]["daily_yield_export"]
             if len(data.data.pv_data) > 1:
                 pv = data.data.pv_data["all"].data["get"]["daily_yield"]
             else:
@@ -101,7 +101,7 @@ class counterAll():
         """
         self.connected_chargepoints.clear()
         try:
-            if counter == "counter0":
+            if counter == self.get_evu_counter():
                 counter_object = self.data["get"]["hierarchy"][0]
             else:
                 counter_object = self._look_for_object(self.data["get"]["hierarchy"][0], "counter", counter[7:])
