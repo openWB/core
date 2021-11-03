@@ -24,19 +24,17 @@ except:
     from modules.common import sdm630
 
 
-def get_default(type: str) -> dict:
-    if type == "counter":
-        component_default = {
-            "name": "EVU-Kit flex",
-            "type": "counter",
-            "id": None,
-            "configuration":
-            {
-                "version": 2,
-                "id": 115
-            }
+def get_default() -> dict:
+    return {
+        "name": "EVU-Kit flex",
+        "type": "counter",
+        "id": None,
+        "configuration":
+        {
+            "version": 2,
+            "id": 115
         }
-    return component_default
+    }
 
 
 class EvuKitFlex():
