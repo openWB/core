@@ -43,6 +43,8 @@ class Command():
         """ abonniert alle Topics.
         """
         try:
+            # kurze Pause, damit die ID vom Broker ermittelt werden können. Sonst werden noch vorher die retained Topics empfangen, was zu doppeltenLogmeldungen führt.
+            time.sleep(1)
             mqtt_broker_ip = "localhost"
             client = mqtt.Client("openWB-command-" + self.getserial())
 
