@@ -54,7 +54,7 @@ class counterAll():
                 self.data["set"]["home_consumption"] = home_consumption
             pub.pub("openWB/set/counter/set/invalid_home_consumption",  self.data["set"]["invalid_home_consumption"])
             pub.pub("openWB/set/counter/set/home_consumption", self.data["set"]["home_consumption"])
-            
+
         except Exception as e:
             log.MainLogger().exception("Fehler in der allgemeinen Zaehler-Klasse")
 
@@ -214,6 +214,7 @@ class counterAll():
                 try:
                     if lower_level in child["id"]:
                         upper_level["children"].append({"id": id, "children": []})
+                        pub.pub("openWB/set/counter/get/hierarchy", data.data.counter_data["all"].data["get"]["hierarchy"])
                         return True
                     else:
                         if len(child["children"]) != 0:
@@ -227,22 +228,25 @@ class counterAll():
             log.MainLogger().exception("Fehler in der allgemeinen Zaehler-Klasse")
             return False
 
-    def hierarchy_remove_item(self, id):
-        """ruft die rekursive Funtion zum Löschen eines Elements und seiner Kinder aus der Zählerhierarchie.
+    def hierarchy_remove_item(self, id, keep_children=True):
+        """ruft die rekursive Funtion zum Löschen eines Elements. Je nach Flag werden die Kinder gelöscht oder auf die Ebene des gelöschten Elements gehoben.
 
         Parameter
         ---------
         id: str (counterX/cpX)
             Id des zu löschenden Elements
         """
-        return self._remove_item(self.data["get"]["hierarchy"][0], id)
+        return self._remove_item(self.data["get"]["hierarchy"][0], id, keep_children)
 
-    def _remove_item(self, upper_level, id):
+    def _remove_item(self, upper_level, id, keep_children):
         try:
             for child in upper_level["children"]:
                 try:
                     if id in child["id"]:
+                        if keep_children:
+                            upper_level["children"].extend(child["children"])
                         upper_level["children"].remove(child)
+                        pub.pub("openWB/set/counter/get/hierarchy", data.data.counter_data["all"].data["get"]["hierarchy"])
                         return True
                     else:
                         if len(child["children"]) != 0:
@@ -266,7 +270,18 @@ class counterAll():
         lower_level: str
             Id des Elements, als dessen Kind das neue Element eingefügt werden soll.
         """
-        return self._add_item_below(self.data["get"]["hierarchy"][0], id, below)
+        try:
+            if below in self.data["get"]["hierarchy"][0]["id"]:
+                self.data["get"]["hierarchy"][0]["children"].append({"id": id, "children": []})
+                pub.pub("openWB/set/counter/get/hierarchy", data.data.counter_data["all"].data["get"]["hierarchy"])
+                return True
+            else:
+                if len(self.data["get"]["hierarchy"][0]["children"]) != 0:
+                    added = self._add_item_below(self.data["get"]["hierarchy"][0], id, below)
+                    return added
+        except Exception as e:
+            log.MainLogger().exception("Fehler in der allgemeinen Zaehler-Klasse")
+            return False
 
     def _add_item_below(self, upper_level, id, below):
         try:
@@ -274,6 +289,7 @@ class counterAll():
                 try:
                     if below in child["id"]:
                         child["children"].append({"id": id, "children": []})
+                        pub.pub("openWB/set/counter/get/hierarchy", data.data.counter_data["all"].data["get"]["hierarchy"])
                         return True
                     else:
                         if len(child["children"]) != 0:

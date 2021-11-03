@@ -20,6 +20,7 @@ from packages.helpermodules import publishvars2
 from packages.helpermodules import setdata
 from packages.helpermodules import subdata
 from packages.helpermodules import timecheck
+from packages.modules import configuration
 from packages.modules import loadvars
 
 # Wenn debug True ist, wird der 10s Handler nicht durch den Timer-Thread gesteuert, sondern macht ein 10s Sleep am Ende, da sonst beim Pausieren immer mehr Threads im Hintergrund auflaufen.
@@ -182,7 +183,7 @@ try:
         rt2 = RepeatedTimer(10, handler.handler10Sec)
 
     publishvars2.pub_settings()
-    defaults.pub_defaults()
+    configuration.pub_configurable()
 
     if debug == True:
         while True:
