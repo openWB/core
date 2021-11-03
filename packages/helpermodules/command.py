@@ -18,6 +18,7 @@ from .system import exit_after
 class Command():
     """
     """
+
     def __init__(self):
         try:
             self.max_id_charge_template = None
@@ -51,11 +52,11 @@ class Command():
             log.MainLogger().exception("Fehler im Command-Modul")
 
     @exit_after(1)
-    def __get_max_id(self, topic: str)-> None:
+    def __get_max_id(self, topic: str) -> None:
         """ ermittelt die maximale ID vom Broker """
         try:
             msg = subscribe.simple("openWB/command/max_id/"+topic, port=1886)
-            self.__process_max_id_topic(msg, no_log = True)
+            self.__process_max_id_topic(msg, no_log=True)
         except:
             log.MainLogger().exception("Fehler im Command-Modul")
 
@@ -112,7 +113,7 @@ class Command():
             if str(msg.payload.decode("utf-8")) != '':
                 if "todo" in msg.topic:
                     payload = json.loads(str(msg.payload.decode("utf-8")))
-                    connection_id = self.get_connection_id(msg.topic)
+                    connection_id = msg.topic.split("/")[2]
                     # Methoden-Name = Befehl
                     try:
                         func = getattr(self, payload["command"])
@@ -126,26 +127,12 @@ class Command():
         except Exception as e:
             log.MainLogger().exception("Fehler im Command-Modul")
 
-    def get_connection_id(self, topic: str) -> str:
-        """extrahiert die Connection ID aus einem Topic (Zahl zwischen zwei // oder am Stringende)
-
-         Parameters
-        ----------
-        topic : str
-            Topic, aus dem der Index extrahiert wird
-        """
-        try:
-            connection_id = re.search('(?!/)([0-9]*)(?=/|$)', topic)
-            return connection_id.group()
-        except Exception as e:
-            log.MainLogger().exception("Fehler im Command-Modul")
-
     def __process_max_id_topic(self, msg, no_log: bool = False) -> None:
         try:
             payload = json.loads(str(msg.payload.decode("utf-8")))
             var = re.search("/([a-z,A-Z,0-9,_]+)(?!.*/)", msg.topic).group(1)
             # Der Variablen-Name für die maximale ID setzt sich aus "max_id_" und dem Topic-Namen nach dem letzten / zusammen.
-            setattr(self, "max_id_"+var, payload) 
+            setattr(self, "max_id_"+var, payload)
             if no_log == False:
                 log.MainLogger().debug("Max ID "+var+" "+str(payload))
         except Exception as e:
@@ -160,7 +147,7 @@ class Command():
                 "data": payload["data"],
                 "error": error_str
             }
-            pub.pub("openWB/set/command/"+str(connection_id)+"/error", str(error_payload))
+            pub.pub("openWB/set/command/"+str(connection_id)+"/error", error_payload)
             log.MainLogger().error("Befehl konnte nicht ausgefuehrt werden: "+str(error_payload))
         except Exception as e:
             log.MainLogger().exception("Fehler im Command-Modul")
@@ -428,9 +415,11 @@ class Command():
             log.MainLogger().exception("Fehler im Command-Modul")
             self.__pub_error(payload, connection_id, "Es ist ein interner Fehler aufgetreten.")
 
+
 class RemoveTopicsRecursively:
     """ löscht mehrere Topics in einem Ordner. Payload "" löscht nur ein einzelnes Topic.
     """
+
     def __init__(self, topic_str: str) -> None:
         self.topic_str = topic_str
         self.remove_topics()
@@ -449,7 +438,7 @@ class RemoveTopicsRecursively:
             client.loop_start()
             time.sleep(0.5)
             client.loop_stop()
-            
+
         except Exception as e:
             log.MainLogger().exception("Fehler im Command-Modul")
 

@@ -10,8 +10,9 @@ from . import log
 from . import pub
 from . import subdata
 
+
 class setData():
- 
+
     def __init__(self, event_ev_template, event_charge_template, event_cp_config):
         self.event_ev_template = event_ev_template
         self.event_charge_template = event_charge_template
@@ -37,7 +38,7 @@ class setData():
     def getserial(self):
         """ Extract serial from cpuinfo file
         """
-        with open('/proc/cpuinfo','r') as f:
+        with open('/proc/cpuinfo', 'r') as f:
             for line in f:
                 if line[0:6] == 'Serial':
                     return line[10:26]
@@ -90,7 +91,7 @@ class setData():
             elif "openWB/set/command/" in msg.topic:
                 self.process_command_topic(msg)
 
-    def _validate_value(self, msg, data_type, ranges = [], collection = None, pub_json = False):
+    def _validate_value(self, msg, data_type, ranges=[], collection=None, pub_json=False):
         """ prüft, ob der Wert vom angegebenen Typ ist.
 
         Parameter
@@ -113,8 +114,8 @@ class setData():
                 # Wenn kein gültiges json-Objekt übergeben worden wäre, wäre bei loads eine Exception aufgetreten.
                 valid = True
             elif collection != None:
-                    if self._validate_collection_value(msg, data_type, ranges, collection) == True:
-                        valid = True
+                if self._validate_collection_value(msg, data_type, ranges, collection) == True:
+                    valid = True
             elif data_type == str:
                 if isinstance(value, str) == True:
                     valid = True
@@ -123,7 +124,7 @@ class setData():
             elif data_type == int or data_type == float:
                 if self._validate_min_max_value(value, msg, data_type, ranges) == True:
                     valid = True
-            
+
             if valid == True:
                 if pub_json == False:
                     pub.pub(msg.topic.replace('set/', '', 1), value)
@@ -173,7 +174,7 @@ class setData():
 
     def _change_key(self, next_level, key_list, value):
         """ rekursive Funktion, die den Eintrag im entsprechenden Dictionary aktualisiert oder anlegt.
-        
+
         Parameter
         ---------
         next_level: dict
@@ -196,7 +197,7 @@ class setData():
         except Exception as e:
             log.MainLogger().exception("Fehler im setdata-Modul")
 
-    def _validate_collection_value(self, msg, data_type, ranges = None, collection = None):
+    def _validate_collection_value(self, msg, data_type, ranges=None, collection=None):
         """ prüft, ob die Liste vom angegebenen Typ ist und ob Minimal- und Maximalwert eingehalten werden.
 
         Parameter
@@ -233,7 +234,7 @@ class setData():
         except Exception as e:
             log.MainLogger().exception("Fehler im setdata-Modul")
 
-    def _validate_min_max_value(self, value, msg, data_type, ranges = None):
+    def _validate_min_max_value(self, value, msg, data_type, ranges=None):
         """ prüft, ob der Payload Minimal- und Maximalwert einhält.
 
         Parameter
@@ -283,11 +284,11 @@ class setData():
             return valid
         except Exception as e:
             log.MainLogger().exception("Fehler im setdata-Modul")
- 
+
     def __unknown_topic(self, msg) -> None:
         try:
             if msg.payload:
-                log.MainLogger().error("Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
+                log.MainLogger().error("Unbekanntes set-Topic: "+str(msg.topic)+", " + str(json.loads(str(msg.payload.decode("utf-8")))))
                 pub.pub(msg.topic, "")
             else:
                 log.MainLogger().error("Unbekanntes set-Topic: "+str(msg.topic)+" mit leerem Payload")
@@ -358,66 +359,66 @@ class setData():
         try:
             if "charge_template" in msg.topic:
                 if "/name" in msg.topic:
-                    self._validate_value(msg, str, pub_json = True)
+                    self._validate_value(msg, str, pub_json=True)
                 elif ("/load_default" in msg.topic or
                         "/disable_after_unplug" in msg.topic or
                         "/prio" in msg.topic):
-                    self._validate_value(msg, int, [(0, 1)], pub_json = True)
+                    self._validate_value(msg, int, [(0, 1)], pub_json=True)
                 elif "/chargemode/selected" in msg.topic:
-                    self._validate_value(msg, str, pub_json = True)
+                    self._validate_value(msg, str, pub_json=True)
                 elif "/chargemode/instant_charging/current" in msg.topic:
-                    self._validate_value(msg, int, [(6, 32)], pub_json = True)
+                    self._validate_value(msg, int, [(6, 32)], pub_json=True)
                 elif "/chargemode/instant_charging/limit/selected" in msg.topic:
-                    self._validate_value(msg, str, pub_json = True)
+                    self._validate_value(msg, str, pub_json=True)
                 elif "/chargemode/instant_charging/limit/soc" in msg.topic:
-                    self._validate_value(msg, int, [(0, 100)], pub_json = True)
+                    self._validate_value(msg, int, [(0, 100)], pub_json=True)
                 elif "/chargemode/instant_charging/limit/amount" in msg.topic:
-                    self._validate_value(msg, int, [(2, 100)], pub_json = True)
+                    self._validate_value(msg, int, [(2, 100)], pub_json=True)
                 elif "/chargemode/pv_charging/feed_in_limit" in msg.topic:
-                    self._validate_value(msg, int, [(0, 1)], pub_json = True)
+                    self._validate_value(msg, int, [(0, 1)], pub_json=True)
                 elif "/chargemode/pv_charging/min_current" in msg.topic:
-                    self._validate_value(msg, int, [(0,0), (6, 16)], pub_json = True)
+                    self._validate_value(msg, int, [(0, 0), (6, 16)], pub_json=True)
                 elif "/chargemode/pv_charging/min_soc" in msg.topic:
-                    self._validate_value(msg, int, [(0, 100)], pub_json = True)
+                    self._validate_value(msg, int, [(0, 100)], pub_json=True)
                 elif "/chargemode/pv_charging/min_soc_current" in msg.topic:
-                    self._validate_value(msg, int, [(6, 32)], pub_json = True)
+                    self._validate_value(msg, int, [(6, 32)], pub_json=True)
                 elif "/chargemode/pv_charging/max_soc" in msg.topic:
-                    self._validate_value(msg, int, [(0, 101)], pub_json = True)
+                    self._validate_value(msg, int, [(0, 101)], pub_json=True)
                 elif "/chargemode/scheduled_charging/[0-9]+/active" in msg.topic:
-                    self._validate_value(msg, int, [(0, 1)], pub_json = True)
+                    self._validate_value(msg, int, [(0, 1)], pub_json=True)
                 elif "/chargemode/scheduled_charging/plans" in msg.topic:
                     self._validate_value(msg, "json")
                 elif "/chargemode/scheduled_charging" in msg.topic:
-                    self._validate_value(msg, "json", pub_json = True)
+                    self._validate_value(msg, "json", pub_json=True)
                 elif "/time_charging/active" in msg.topic:
-                    self._validate_value(msg, int, [(0, 1)], pub_json = True)
+                    self._validate_value(msg, int, [(0, 1)], pub_json=True)
                 elif "/time_charging/plans" in msg.topic:
                     self._validate_value(msg, "json")
                 else:
                     self._validate_value(msg, "json")
             elif "ev_template" in msg.topic:
                 if "/name" in msg.topic:
-                    self._validate_value(msg, str, pub_json = True)
+                    self._validate_value(msg, str, pub_json=True)
                 elif "/average_consump" in msg.topic:
-                    self._validate_value(msg, float, [(0, float("inf"))], pub_json = True)
+                    self._validate_value(msg, float, [(0, float("inf"))], pub_json=True)
                 elif "/battery_capacity" in msg.topic:
-                    self._validate_value(msg, int, [(0, float("inf"))], pub_json = True)
+                    self._validate_value(msg, int, [(0, float("inf"))], pub_json=True)
                 elif "/max_phases" in msg.topic:
-                    self._validate_value(msg, int, [(1, 3)], pub_json = True)
+                    self._validate_value(msg, int, [(1, 3)], pub_json=True)
                 elif "/min_current" in msg.topic:
-                    self._validate_value(msg, int, [(6, 32)], pub_json = True)
+                    self._validate_value(msg, int, [(6, 32)], pub_json=True)
                 elif ("/max_current_one_phase" in msg.topic or
                         "/max_current_multi_phases" in msg.topic):
-                    self._validate_value(msg, int, [(0, 0), (6, 32)], pub_json = True)
+                    self._validate_value(msg, int, [(0, 0), (6, 32)], pub_json=True)
                 elif ("/control_pilot_interruption" in msg.topic or
                         "/prevent_switch_stop" in msg.topic):
-                    self._validate_value(msg, int, [(0, 1)], pub_json = True)
+                    self._validate_value(msg, int, [(0, 1)], pub_json=True)
                 elif "/control_pilot_interruption_duration" in msg.topic:
-                    self._validate_value(msg, int, [(4, 15)], pub_json = True)
+                    self._validate_value(msg, int, [(4, 15)], pub_json=True)
                 elif "/nominal_difference" in msg.topic:
-                    self._validate_value(msg, float, [(0, 4)], pub_json = True)
+                    self._validate_value(msg, float, [(0, 4)], pub_json=True)
                 elif "/phase_switch_pause" in msg.topic:
-                    self._validate_value(msg, int, [(2, 150)], pub_json = True)
+                    self._validate_value(msg, int, [(2, 150)], pub_json=True)
                 else:
                     self._validate_value(msg, "json")
             else:
@@ -467,15 +468,15 @@ class setData():
                 self._validate_value(msg, "json")
             elif ("/set/log/range_charged" in msg.topic or
                     "/set/log/counter" in msg.topic or
-                    "/set/log/charged_since_mode_switch" in msg.topic or 
-                    "/set/log/charged_since_plugged_counter" in msg.topic or 
+                    "/set/log/charged_since_mode_switch" in msg.topic or
+                    "/set/log/charged_since_plugged_counter" in msg.topic or
                     "/set/log/counter_at_mode_switch" in msg.topic or
                     "/set/log/counter_at_plugtime" in msg.topic):
                 self._validate_value(msg, float, [(0, float("inf"))])
             elif "/set/log/timestamp_start_charging" in msg.topic:
                 self._validate_value(msg, str)
             elif "/config/ev" in msg.topic:
-                self._validate_value(msg, int, [(0, float("inf"))], pub_json = True)
+                self._validate_value(msg, int, [(0, float("inf"))], pub_json=True)
             elif "/config" in msg.topic:
                 self._validate_value(msg, "json")
             elif ("/get/voltage" in msg.topic or
@@ -501,7 +502,7 @@ class setData():
             elif "/get/read_tag" in msg.topic:
                 self._validate_value(msg, "json")
             elif "/get/rfid" in msg.topic:
-                ### isss Anpassung muss noch in die nightly
+                # isss Anpassung muss noch in die nightly
                 pub.pub(msg.topic, "")
             else:
                 self.__unknown_topic(msg)
@@ -595,7 +596,7 @@ class setData():
             enthält Topic und Payload
         """
         try:
-            if ("openWB/set/bat/config/configured" in msg.topic or 
+            if ("openWB/set/bat/config/configured" in msg.topic or
                     "openWB/set/bat/set/switch_on_soc_reached" in msg.topic or
                     "openWB/set/bat/set/hybrid_system_detected" in msg.topic):
                 self._validate_value(msg, int, [(0, 1)])
@@ -652,7 +653,7 @@ class setData():
                 self._validate_value(msg, int, [(10, 32)])
             elif "openWB/set/general/chargemode_config/unbalanced_load" in msg.topic:
                 self._validate_value(msg, int, [(0, 1)])
-            elif ("openWB/set/general/chargemode_config/pv_charging/feed_in_yield" in msg.topic or 
+            elif ("openWB/set/general/chargemode_config/pv_charging/feed_in_yield" in msg.topic or
                     "openWB/set/general/chargemode_config/pv_charging/switch_on_threshold" in msg.topic or
                     "openWB/set/general/chargemode_config/pv_charging/switch_on_delay" in msg.topic or
                     "openWB/set/general/chargemode_config/pv_charging/switch_off_threshold" in msg.topic or
@@ -765,7 +766,7 @@ class setData():
             elif "/module" in msg.topic:
                 self._validate_value(msg, "json")
             elif "/config/max_current" in msg.topic:
-                self._validate_value(msg, int, [(7, 1500)], collection = list)
+                self._validate_value(msg, int, [(7, 1500)], collection=list)
             elif "/config/max_consumption" in msg.topic:
                 self._validate_value(msg, int, [(2000, 1000000)])
             elif "/get/power_all" in msg.topic:
@@ -869,7 +870,6 @@ class setData():
         except Exception as e:
             log.MainLogger().exception("Fehler im setdata-Modul")
 
-
     def process_command_topic(self, msg):
         """Handler für die Befehl-Topics
 
@@ -884,7 +884,7 @@ class setData():
             elif "todo" in msg.topic:
                 self._validate_value(msg, "json")
             elif "error" in msg.topic:
-                self._validate_value(msg, str)
+                self._validate_value(msg, "json")
             else:
                 self.__unknown_topic(msg)
         except Exception as e:
