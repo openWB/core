@@ -6,6 +6,7 @@ mit denen das EV aktuell in der Regelung berücksichtigt wird. Bei der Ermittlun
 stärke wird auch geprüft, ob sich an diesen Parametern etwas geändert hat. Falls ja, muss das EV
 in der Regelung neu priorisiert werden und eine neue Zuteilung des Stroms erhalten.
 """
+import traceback
 
 from . import data
 from ..helpermodules import log
@@ -140,7 +141,7 @@ class ev():
             return state, message, submode, required_current
         except Exception as e:
             log.MainLogger().exception("Fehler im ev-Modul "+str(self.ev_num))
-            return False, "ein interner Fehler aufgetreten ist.", "stop", 0
+            return False, "ein interner Fehler aufgetreten ist: "+traceback.format_exc(), "stop", 0
 
     def check_state(self, required_current, set_current, charge_state):
         """ prüft, ob sich etwas an den Parametern für die Regelung geändert hat, 
@@ -496,7 +497,7 @@ class chargeTemplate():
                 return 0, "stop", message
         except Exception as e:
             log.MainLogger().exception("Fehler im ev-Modul "+str(self.ct_num))
-            return 0, "stop", "Keine Ladung, da da ein interner Fehler aufgetreten ist."
+            return 0, "stop", "Keine Ladung, da da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
 
     def instant_charging(self, soc, amount):
         """ prüft, ob die Lademengenbegrenzung erreicht wurde und setzt entsprechend den Ladestrom.
@@ -532,7 +533,7 @@ class chargeTemplate():
                     return 0, "stop", message
         except Exception as e:
             log.MainLogger().exception("Fehler im ev-Modul "+str(self.ct_num))
-            return 0, "stop", "Keine Ladung, da da ein interner Fehler aufgetreten ist."
+            return 0, "stop", "Keine Ladung, da da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
 
     def pv_charging(self, soc):
         """ prüft, ob Min-oder Max-Soc erreicht wurden und setzt entsprechend den Ladestrom.
@@ -563,7 +564,7 @@ class chargeTemplate():
                 return 0, "stop", message
         except Exception as e:
             log.MainLogger().exception("Fehler im ev-Modul "+str(self.ct_num))
-            return 0, "stop", "Keine Ladung, da ein interner Fehler aufgetreten ist."
+            return 0, "stop", "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
 
     def scheduled_charging(self, soc, ev_template, phases):
         """ prüft, ob der Ziel-SoC erreicht wurde und stellt den zur Erreichung nötigen Ladestrom ein.
@@ -629,7 +630,7 @@ class chargeTemplate():
                             current_plan = self.data["chargemode"]["scheduled_charging"]["plans"][plan]
                             break
                     else:
-                        return 0, "stop", "Keine Ladung, da ein interner Fehler aufgetreten ist."
+                        return 0, "stop", "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
                     if plan_data["start"] == 1:  # Ladung sollte jetzt starten
                         message = "Zielladen mit "+str(plan_data["available_current"])+"A, um einen SoC von "+str(current_plan["soc"])+"%% um "+str(current_plan["time"])+" zu erreichen."
                         return plan_data["available_current"], "instant_charging", message
@@ -662,7 +663,7 @@ class chargeTemplate():
                             return 0, "stop", message
         except Exception as e:
             log.MainLogger().exception("Fehler im ev-Modul "+str(self.ct_num))
-            return 0, "stop", "Keine Ladung, da ein interner Fehler aufgetreten ist."
+            return 0, "stop", "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
 
     def standby(self):
         """ setzt den benötigten Strom auf 0.
