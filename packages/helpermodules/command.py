@@ -4,7 +4,6 @@
 import importlib
 import json
 import paho.mqtt.client as mqtt
-import paho.mqtt.subscribe as subscribe
 import re
 import time
 
@@ -12,67 +11,40 @@ from . import log
 from . import pub
 from ..algorithm import chargepoint
 from ..algorithm import ev
-from .system import exit_after
 
 
 class Command():
     """
     """
+
     def __init__(self):
         try:
-            self.max_id_charge_template = None
-            self.max_id_charge_template_scheduled_plan = None
-            self.max_id_charge_template_time_charging_plan = None
-            self.max_id_chargepoint = None
-            self.max_id_chargepoint_template = None
-            self.max_id_component = None
-            self.max_id_device = None
-            self.max_id_ev_template = None
-            self.max_id_vehicle = None
-            self.__get_max_id("charge_template")
-            self.__get_max_id("charge_template_scheduled_plan")
-            self.__get_max_id("charge_template_time_charging_plan")
-            self.__get_max_id("chargepoint")
-            self.__get_max_id("chargepoint_template")
-            self.__get_max_id("component")
-            self.__get_max_id("device")
-            self.__get_max_id("ev_template")
-            self.__get_max_id("vehicle")
-            self.__chech_max_id_initalisation(self.max_id_charge_template, "charge_template", "Ladevorlage")
-            self.__chech_max_id_initalisation(self.max_id_charge_template_scheduled_plan, "charge_template_scheduled_plan", "Ladevorlage - Zielladen-Plan")
-            self.__chech_max_id_initalisation(self.max_id_charge_template_time_charging_plan, "charge_template_time_charging_plan", "Ladevorlage - Zeit-Plan")
-            self.__chech_max_id_initalisation(self.max_id_chargepoint, "chargepoint", "Ladepunkt")
-            self.__chech_max_id_initalisation(self.max_id_chargepoint_template, "chargepoint_template", "Ladepunkt-Vorlage")
-            self.__chech_max_id_initalisation(self.max_id_component, "component", "Komponenten")
-            self.__chech_max_id_initalisation(self.max_id_device, "device", "Devices")
-            self.__chech_max_id_initalisation(self.max_id_ev_template, "ev_template", "EV-Vorlage")
-            self.__chech_max_id_initalisation(self.max_id_vehicle, "vehicle", "EVs")
+            self.__get_max_id("charge_template", "vehicle/template/charge_template")
+            self.__get_max_id("charge_template_scheduled_plan", "vehicle/template/charge_template/+/chargemode/scheduled_charging/plans/")
+            self.__get_max_id("charge_template_time_charging_plan", "vehicle/template/charge_template/+/chargemode/time_charging/plans/")
+            self.__get_max_id("chargepoint", "chargepoint")
+            self.__get_max_id("chargepoint_template", "chargepoint/template")
+            self.__get_max_id("component", "system/device/+/component")
+            self.__get_max_id("device", "system/device")
+            self.__get_max_id("ev_template", "vehicle/template/ev_template")
+            self.__get_max_id("vehicle", "vehicle")
         except:
             log.MainLogger().exception("Fehler im Command-Modul")
 
-    @exit_after(1)
-    def __get_max_id(self, topic: str)-> None:
+    def __get_max_id(self, id_topic: str, topic: str) -> None:
         """ ermittelt die maximale ID vom Broker """
         try:
-            msg = subscribe.simple("openWB/command/max_id/"+topic, port=1886)
-            self.__process_max_id_topic(msg, no_log = True)
+            max_id = ProcessBrokerBranch(topic).get_max_id()
+            pub.pub("openWB/set/command/max_id/"+id_topic, max_id)
         except:
-            log.MainLogger().exception("Fehler im Command-Modul")
-
-    def __chech_max_id_initalisation(self, var: int, topic: str, name: str) -> None:
-        """ Wenn keine ID vom Broker empfangen wurde, wird die maximale ID mit -1 initalisiert. (Dies sollte nur beim initialen Boot vorkommen.)"""
-        try:
-            if var == None:
-                var = -1
-                pub.pub("openWB/set/command/max_id/"+topic, var)
-                log.MainLogger().warning("Maximale ID für "+name+" wurde mit -1 initialisiert.")
-        except Exception as e:
             log.MainLogger().exception("Fehler im Command-Modul")
 
     def sub_commands(self):
         """ abonniert alle Topics.
         """
         try:
+            # kurze Pause, damit die ID vom Broker ermittelt werden können. Sonst werden noch vorher die retained Topics empfangen, was zu doppeltenLogmeldungen führt.
+            time.sleep(1)
             mqtt_broker_ip = "localhost"
             client = mqtt.Client("openWB-command-" + self.getserial())
 
@@ -112,7 +84,7 @@ class Command():
             if str(msg.payload.decode("utf-8")) != '':
                 if "todo" in msg.topic:
                     payload = json.loads(str(msg.payload.decode("utf-8")))
-                    connection_id = self.get_connection_id(msg.topic)
+                    connection_id = msg.topic.split("/")[2]
                     # Methoden-Name = Befehl
                     try:
                         func = getattr(self, payload["command"])
@@ -126,28 +98,13 @@ class Command():
         except Exception as e:
             log.MainLogger().exception("Fehler im Command-Modul")
 
-    def get_connection_id(self, topic: str) -> str:
-        """extrahiert die Connection ID aus einem Topic (Zahl zwischen zwei // oder am Stringende)
-
-         Parameters
-        ----------
-        topic : str
-            Topic, aus dem der Index extrahiert wird
-        """
-        try:
-            connection_id = re.search('(?!/)([0-9]*)(?=/|$)', topic)
-            return connection_id.group()
-        except Exception as e:
-            log.MainLogger().exception("Fehler im Command-Modul")
-
     def __process_max_id_topic(self, msg, no_log: bool = False) -> None:
         try:
             payload = json.loads(str(msg.payload.decode("utf-8")))
             var = re.search("/([a-z,A-Z,0-9,_]+)(?!.*/)", msg.topic).group(1)
             # Der Variablen-Name für die maximale ID setzt sich aus "max_id_" und dem Topic-Namen nach dem letzten / zusammen.
-            setattr(self, "max_id_"+var, payload) 
-            if no_log == False:
-                log.MainLogger().debug("Max ID "+var+" "+str(payload))
+            setattr(self, "max_id_"+var, payload)
+            log.MainLogger().debug("Max ID "+var+" "+str(payload))
         except Exception as e:
             log.MainLogger().exception("Fehler im Command-Modul")
 
@@ -160,7 +117,7 @@ class Command():
                 "data": payload["data"],
                 "error": error_str
             }
-            pub.pub("openWB/set/command/"+str(connection_id)+"/error", str(error_payload))
+            pub.pub("openWB/set/command/"+str(connection_id)+"/error", error_payload)
             log.MainLogger().error("Befehl konnte nicht ausgefuehrt werden: "+str(error_payload))
         except Exception as e:
             log.MainLogger().exception("Fehler im Command-Modul")
@@ -187,7 +144,7 @@ class Command():
         try:
             if self.max_id_device >= payload["data"]["id"]:
                 log.MainLogger().info("Device mit ID "+str(payload["data"]["id"])+" geloescht.")
-                RemoveTopicsRecursively("system/device/"+str(payload["data"]["id"]))
+                ProcessBrokerBranch("system/device/"+str(payload["data"]["id"])).remove_topics()
             else:
                 self.__pub_error(payload, connection_id, "Die ID ist groesser als die maximal vergebene ID.")
         except Exception as e:
@@ -217,7 +174,7 @@ class Command():
         try:
             if self.max_id_chargepoint >= payload["data"]["id"]:
                 log.MainLogger().info("Ladepunkt mit ID "+str(payload["data"]["id"])+" geloescht.")
-                RemoveTopicsRecursively("chargepoint/"+str(payload["data"]["id"]))
+                ProcessBrokerBranch("chargepoint/"+str(payload["data"]["id"])).remove_topics()
             else:
                 self.__pub_error(payload, connection_id, "Die ID ist groesser als die maximal vergebene ID.")
         except Exception as e:
@@ -250,7 +207,7 @@ class Command():
         try:
             if self.max_id_chargepoint_template >= payload["data"]["id"]:
                 log.MainLogger().info("Ladepunkt-Vorlage mit ID "+str(payload["data"]["id"])+" geloescht.")
-                RemoveTopicsRecursively("chargepoint/template/"+str(payload["data"]["id"]))
+                ProcessBrokerBranch("chargepoint/template/"+str(payload["data"]["id"])).remove_topics()
             else:
                 self.__pub_error(payload, connection_id, "Die ID ist groesser als die maximal vergebene ID.")
         except Exception as e:
@@ -360,7 +317,7 @@ class Command():
         try:
             if self.max_id_component >= payload["data"]["id"]:
                 log.MainLogger().info("Komponente mit ID "+str(payload["data"]["id"])+" geloescht.")
-                RemoveTopicsRecursively("system/device/"+str(payload["data"]["deviceId"])+"/component/"+str(payload["data"]["id"]))
+                ProcessBrokerBranch("system/device/"+str(payload["data"]["deviceId"])+"/component/"+str(payload["data"]["id"])).remove_topics()
             else:
                 self.__pub_error(payload, connection_id, "Die ID ist groesser als die maximal vergebene ID.")
         except Exception as e:
@@ -421,39 +378,54 @@ class Command():
             if self.max_id_vehicle >= payload["data"]["id"]:
                 log.MainLogger().info("EV mit ID "+str(payload["data"]["id"])+" geloescht.")
                 pub.pub("openWB/vehicle/"+str(payload["data"]["id"]), "")
-                RemoveTopicsRecursively("vehicle"+payload["data"]["id"])
+                ProcessBrokerBranch("vehicle"+payload["data"]["id"]).remove_topics()
             else:
                 self.__pub_error(payload, connection_id, "Die ID ist groesser als die maximal vergebene ID.")
         except Exception as e:
             log.MainLogger().exception("Fehler im Command-Modul")
             self.__pub_error(payload, connection_id, "Es ist ein interner Fehler aufgetreten.")
 
-class RemoveTopicsRecursively:
-    """ löscht mehrere Topics in einem Ordner. Payload "" löscht nur ein einzelnes Topic.
-    """
+
+class ProcessBrokerBranch:
     def __init__(self, topic_str: str) -> None:
         self.topic_str = topic_str
-        self.remove_topics()
 
     def remove_topics(self):
+        """ löscht einen Topic-Zweig auf dem Broker. Payload "" löscht nur ein einzelnes Topic.
+        """
+        try:
+            self.__connect_to_broker(self.__on_message_rm)
+        except Exception as e:
+            log.MainLogger().exception("Fehler im Command-Modul")
+
+    def get_max_id(self):
+        try:
+            self.max_id = -1
+            self.search_str = "openWB/" + self.topic_str.replace("+", "[0-9]+")
+            self.__connect_to_broker(self.__on_message_max_id)
+            return self.max_id
+        except Exception as e:
+            log.MainLogger().exception("Fehler im Command-Modul")
+
+    def __connect_to_broker(self, on_message):
         """ abonniert alle Topics.
         """
         try:
             mqtt_broker_ip = "localhost"
-            client = mqtt.Client("openWB-remove-" + self.getserial())
+            client = mqtt.Client("openWB-proccesBrokerBranch-" + self.__getserial())
 
-            client.on_connect = self.on_connect_rm
-            client.on_message = self.on_message_rm
+            client.on_connect = self.__on_connect
+            client.on_message = on_message
 
             client.connect(mqtt_broker_ip, 1886)
             client.loop_start()
             time.sleep(0.5)
             client.loop_stop()
-            
+
         except Exception as e:
             log.MainLogger().exception("Fehler im Command-Modul")
 
-    def on_connect_rm(self, client, userdata, flags, rc):
+    def __on_connect(self, client, userdata, flags, rc):
         """ connect to broker and subscribe to set topics
         """
         try:
@@ -461,7 +433,7 @@ class RemoveTopicsRecursively:
         except Exception as e:
             log.MainLogger().exception("Fehler im Command-Modul")
 
-    def on_message_rm(self, client, userdata, msg):
+    def __on_message_rm(self, client, userdata, msg):
         """ wartet auf eingehende Topics.
         """
         try:
@@ -471,7 +443,18 @@ class RemoveTopicsRecursively:
         except Exception as e:
             log.MainLogger().exception("Fehler im Command-Modul")
 
-    def getserial(self):
+    def __on_message_max_id(self, client, userdata, msg):
+        try:
+            topic_found= re.search('^('+self.search_str+'/*).*$', msg.topic).group(1)
+            topic_rest = msg.topic.replace(topic_found, "")
+            current_id_regex = re.search('^([0-9]+)/*.*$', topic_rest)
+            if current_id_regex != None:
+                current_id = int(current_id_regex.group(1))
+                self.max_id = max(current_id, self.max_id)
+        except Exception as e:
+            log.MainLogger().exception("Fehler im Command-Modul")
+
+    def __getserial(self):
         """ Extract serial from cpuinfo file
         """
         try:

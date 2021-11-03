@@ -175,15 +175,8 @@ class SubData():
         topic : str
             Topic, aus dem der Index extrahiert wird
         """
-        index = re.search('^.+/([0-9]*)/.+/([0-9]+)/.+$', topic)
-        if index != None:
-            return index.group(2)
-        else: 
-            index = re.search('^.+/([0-9]*)/.+/([0-9]+)$', topic)
-            if index != None:
-                return index.group(2)
-            else:
-                return index
+        index = re.search('^.+/([0-9]*)/.+/([0-9]+)/*.*$', topic)
+        return index.group(2)
 
     def set_json_payload(self, dict, msg):
         """ dekodiert das JSON-Objekt und setzt diesen für den Value in das übergebene Dictionary, als Key wird der Name nach dem letzten / verwendet.
