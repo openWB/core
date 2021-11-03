@@ -386,7 +386,7 @@ class Command():
             if self.max_id_vehicle >= payload["data"]["id"]:
                 log.MainLogger().info("EV mit ID "+str(payload["data"]["id"])+" geloescht.")
                 pub.pub("openWB/vehicle/"+str(payload["data"]["id"]), "")
-                ProcessBrokerBranch("vehicle"+payload["data"]["id"]).remove_topics()
+                ProcessBrokerBranch("vehicle"+str(payload["data"]["id"])).remove_topics()
             else:
                 self.__pub_error(payload, connection_id, "Die ID ist groesser als die maximal vergebene ID.")
         except Exception as e:

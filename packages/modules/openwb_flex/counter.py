@@ -26,15 +26,15 @@ except:
 
 def get_default() -> dict:
     return {
-            "name": "EVU-Kit flex",
-            "type": "counter",
-            "id": None,
-            "configuration":
-            {
-                "version": 2,
-                "id": 115
-            }
+        "name": "EVU-Kit flex",
+        "type": "counter",
+        "id": None,
+        "configuration":
+        {
+            "version": 2,
+            "id": 115
         }
+    }
 
 
 class EvuKitFlex():

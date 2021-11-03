@@ -23,7 +23,7 @@ def get_default() -> dict:
         "configuration":
         {
             "ip_address": "192.168.193.15",
-            "port": "8899"
+            "port": 8899
         }
     }
 

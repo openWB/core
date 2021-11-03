@@ -15,14 +15,14 @@ except:
 
 def get_default() -> dict:
     return {
-            "name": "EVU-Kit",
-            "type": "counter",
-            "id": None,
-            "configuration":
-            {
-                "version": 2
-            }
+        "name": "EVU-Kit",
+        "type": "counter",
+        "id": None,
+        "configuration":
+        {
+            "version": 2
         }
+    }
 
 class EvuKit(EvuKitFlex):
     def __init__(self, device_id: int, component_config: dict, tcp_client) -> None:
