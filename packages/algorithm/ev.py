@@ -59,25 +59,21 @@ class ev():
     """Logik des EV
     """
 
-    def __init__(self, index, default):
+    def __init__(self, index):
         try:
-            self.data = {}
-            if default == False:
-                self.ev_template = None
-                self.charge_template = None
-                self.ev_num = index
-                self.data["set"] = {}
-                self.data["get"] = {}
-                self.data["get"]["range_charged"] = 0
-                self.data["control_parameter"] = {}
-                self.data["control_parameter"]["required_current"] = 0
-                self.data["control_parameter"]["phases"] = 0
-                self.data["control_parameter"]["prio"] = False
-                self.data["control_parameter"]["timestamp_switch_on_off"] = "0"
-                self.data["control_parameter"]["timestamp_auto_phase_switch"] = "0"
-                self.data["control_parameter"]["timestamp_perform_phase_switch"] = "0"
-                self.data["control_parameter"]["submode"] = "stop"
-                self.data["control_parameter"]["chargemode"] = "stop"
+            self.ev_template = None
+            self.charge_template = None
+            self.ev_num = index
+            self.data = {"set": {},
+                         "get": {"range_charged": 0},
+                         "control_parameter": {"required_current": 0,
+                                               "phases": 0,
+                                               "prio": False,
+                                               "timestamp_switch_on_off": "0",
+                                               "timestamp_auto_phase_switch": "0",
+                                               "timestamp_perform_phase_switch": "0",
+                                               "submode": "stop",
+                                               "chargemode": "stop"}}
         except Exception as e:
             log.MainLogger().exception("Fehler im ev-Modul "+str(self.ev_num))
 

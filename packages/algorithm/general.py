@@ -14,9 +14,7 @@ class general():
     """
 
     def __init__(self):
-        self.data={}
-        self.data["grid_protection_active"] = False
-
+        self.data = {"grid_protection_active": False}
 
     def get_phases_chargemode(self, chargemode):
         """ gibt die Anazhl Phasen zurück, mit denen im jeweiligen Lademodus geladen wird. 
@@ -27,7 +25,7 @@ class general():
         ---------
         chargemode: str
             Lademodus
-        
+
         Return
         ------
         int: Anzahl Phasen
@@ -52,7 +50,7 @@ class general():
                 frequency = data.data.counter_data[evu_counter].data["get"]["frequency"] * 100
                 grid_protection_active = self.data["grid_protection_active"]
                 if grid_protection_active == False:
-                    if 4500 < frequency < 4920 :
+                    if 4500 < frequency < 4920:
                         self.data["grid_protection_random_stop"] = random.randint(1, 90)
                         self.data["grid_protection_timestamp"] = timecheck.create_timestamp()
                         self.data["grid_protection_active"] = True
@@ -73,7 +71,7 @@ class general():
                         self.data["grid_protection_active"] = False
                         pub.pub("openWB/set/general/grid_protection_active", self.data["grid_protection_active"])
                         log.MainLogger().info("Netzfrequenz wieder im normalen Bereich. Frequenz: "+str(data.data.counter_data[evu_counter].data["get"]["frequency"])+"Hz")
-                        pub.pub("openWB/set/general/grid_protection_timestamp","0")
+                        pub.pub("openWB/set/general/grid_protection_timestamp", "0")
                         pub.pub("openWB/set/general/grid_protection_random_stop", 0)
         except Exception as e:
             log.MainLogger().exception("Fehler im General-Modul")

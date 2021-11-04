@@ -32,33 +32,33 @@ from ..helpermodules import pub
 from ..helpermodules import timecheck
 from ..modules.cp import modbus_evse
 
+
 def get_chargepoint_default() -> dict:
     return {
-        "name": "Standard-Ladepunkt", 
-        "ev": 0, 
-        "template": 0, 
-        "connected_phases": 3, 
-        "phase_1": 0, 
+        "name": "Standard-Ladepunkt",
+        "ev": 0,
+        "template": 0,
+        "connected_phases": 3,
+        "phase_1": 0,
         "auto_phase_switch_hw": False,
-        "control_pilot_interruption_hw": False, 
-        "connection_module": 
+        "control_pilot_interruption_hw": False,
+        "connection_module":
         {
             "selected": "mqtt"
-            }, 
-        "power_module": 
+        },
+        "power_module":
         {
             "selected": "mqtt"
-            }
         }
+    }
+
 
 class allChargepoints():
     """
     """
 
     def __init__(self):
-        self.data = {}
-        self.data["get"] = {}
-        self.data["get"]["daily_yield"] = 0
+        self.data = {"get": {"daily_yield": 0}}
         pub.pub("openWB/set/chargepoint/get/power_all", 0)
 
     def no_charge(self):
@@ -71,13 +71,13 @@ class allChargepoints():
                     if "cp" in cp:
                         chargepoint = data.data.cp_data[cp]
                         # Kein EV angesteckt
-                        if ( chargepoint.data["get"]["plug_state"] == False or
+                        if (chargepoint.data["get"]["plug_state"] == False or
                                 # Kein EV, das Laden soll
-                                chargepoint.data["set"]["charging_ev"] == -1 or 
+                                chargepoint.data["set"]["charging_ev"] == -1 or
                                 # Kein EV, das auf das Ablaufen der Einschalt- oder Phasenumschaltverzögerung wartet
-                                (chargepoint.data["set"]["charging_ev"] != -1 and 
-                                chargepoint.data["set"]["charging_ev_data"].data["control_parameter"]["timestamp_perform_phase_switch"] == "0" and
-                                chargepoint.data["set"]["charging_ev_data"].data["control_parameter"]["timestamp_switch_on_off"] == "0")):
+                                (chargepoint.data["set"]["charging_ev"] != -1 and
+                                 chargepoint.data["set"]["charging_ev_data"].data["control_parameter"]["timestamp_perform_phase_switch"] == "0" and
+                                 chargepoint.data["set"]["charging_ev_data"].data["control_parameter"]["timestamp_switch_on_off"] == "0")):
                             continue
                         else:
                             break
@@ -130,7 +130,7 @@ class allChargepoints():
                                     # Ersten Ladepunkt der Duo finden (gleiche IP)
                                     for cp2 in chargepoints:
                                         if cp2 != cp:
-                                            if (chargepoint.data["config"]["connection_module"]["config"]["external_openwb"]["ip_adress"] == 
+                                            if (chargepoint.data["config"]["connection_module"]["config"]["external_openwb"]["ip_adress"] ==
                                                     data.data.cp_data[cp2].data["config"]["connection_module"]["config"]["external_openwb"]["ip_adress"]):
                                                 self._match_rfid_of_multiple_cp([cp, cp2])
                                                 chargepoints.remove(cp)
@@ -181,7 +181,7 @@ class allChargepoints():
                             read_tag = chargepoint_read.data["get"]["read_tag"]["tag"]
                             # Scannen darf nicht länger als 5 Min zurück liegen
                             if timecheck.check_timestamp(chargepoint_read.data["get"]["read_tag"]["timestamp"], 300) == False:
-                                #abgelaufen
+                                # abgelaufen
                                 chargepoint_read.data["get"]["read_tag"]["tag"] = "0"
                                 chargepoint_read.data["get"]["read_tag"]["timestamp"] = "0"
                                 pub.pub("openWB/set/chargepoint/"+str(chargepoint_read.cp_num)+"/get/read_tag", chargepoint_read.data["get"]["read_tag"])
@@ -195,7 +195,7 @@ class allChargepoints():
                         if "cp" in cp:
                             chargepoint_match = data.data.cp_data[cp]
                             if chargepoint_match.template.data["rfid_enabling"] == True:
-                                # Wenn man einen Tag hat, der nicht vor mehr als 5 Min gescannt wurde, ist es egal, ob das Auto vor oder nach dem Scannen angesteckt wurde. 
+                                # Wenn man einen Tag hat, der nicht vor mehr als 5 Min gescannt wurde, ist es egal, ob das Auto vor oder nach dem Scannen angesteckt wurde.
                                 # Um den Tag zuzuordnen, muss RFID-Zuordnung aktiviert sein, es darf kein Tag zugeordnet sein (wird beim Abstecken zurückgesetzt) und es muss ein Auto angesteckt sein.
                                 if chargepoint_match.data["set"]["rfid"] == "0" and chargepoint_match.data["get"]["plug_state"] == True:
                                     if plug_time == 0 or timecheck.get_difference(plug_time, chargepoint_match.data["set"]["plug_time"]) < 0:
@@ -221,7 +221,7 @@ class allChargepoints():
                         pub.pub("openWB/set/chargepoint/"+str(chargepoint_read.cp_num)+"/get/read_tag", chargepoint_read.data["get"]["read_tag"])
         except Exception as e:
             log.MainLogger().exception("Fehler in der allgemeinen Ladepunkt-Klasse")
-    
+
     def check_all_modbus_evse_connections(self):
         try:
             for cp in data.data.cp_data:
@@ -235,50 +235,44 @@ class allChargepoints():
         except Exception as e:
             log.MainLogger().exception("Fehler in der allgemeinen Ladepunkt-Klasse")
 
+
 class chargepoint():
     """ geht alle Ladepunkte durch, prüft, ob geladen werden darf und ruft die Funktion des angesteckten Autos auf. 
     """
 
-    def __init__(self, index, default):
+    def __init__(self, index):
         try:
-            self.data = {}
-            if default == False:
-                self.template = None  # Instanz des zugeordneten CP-Templates
-                self.cp_num = index
-                self.data["set"] = {}
-                self.data["get"] = {}
-                self.set_current_prev = 0 # set current aus dem vorherigen Zyklus, um zu wissen, ob am Ende des Zyklus die Ladung freigegeben wird (für Control-Pilot-Unterbrechung)
-
-                self.data["set"]["charging_ev"] = -1
-                self.data["set"]["charging_ev_prev"] = -1
-                self.data["set"]["autolock_state"] = 0
-                self.data["set"]["current"] = 0
-                self.data["set"]["energy_to_charge"] = 0
-                self.data["set"]["plug_time"] = "0"
-                self.data["set"]["rfid"] = 0
-                self.data["get"]["read_tag"] = {}
-                self.data["get"]["read_tag"]["tag"] = "0"
-                self.data["get"]["read_tag"]["timestamp"] = "0"
-                self.data["get"]["daily_yield"] = 0
-                self.data["get"]["plug_state"] = False
-                self.data["get"]["charge_state"] = False
-                self.data["get"]["power_all"] = 0
-
-                # bestehende Logdaten auf dem Broker nicht zurücksetzen, daher nicht publishen
-                self.data["set"]["log"] = {}
-                self.data["set"]["log"]["counter_at_plugtime"] = 0
-                self.data["set"]["log"]["timestamp_start_charging"] = "0"
-                self.data["set"]["log"]["counter_at_mode_switch"] = 0
-                self.data["set"]["log"]["charged_since_mode_switch"] = 0
-                self.data["set"]["log"]["charged_since_plugged_counter"] = 0
-                self.data["set"]["log"]["range_charged"] = 0
-                self.data["set"]["log"]["time_charged"] = "00:00"
-                self.data["set"]["log"]["chargemode_log_entry"] = "_"
-                self.data["get"]["connected_vehicle"] = {}
-                self.data["get"]["connected_vehicle"]["soc_config"] = {}
-                self.data["get"]["connected_vehicle"]["soc"] = {}
-                self.data["get"]["connected_vehicle"]["info"] = {}
-                self.data["get"]["connected_vehicle"]["config"] = {}
+            self.template = None  # Instanz des zugeordneten CP-Templates
+            self.cp_num = index
+            self.set_current_prev = 0  # set current aus dem vorherigen Zyklus, um zu wissen, ob am Ende des Zyklus die Ladung freigegeben wird (für Control-Pilot-Unterbrechung)
+            # bestehende Daten auf dem Broker nicht zurücksetzen, daher nicht publishen
+            self.data = {
+                "set": {"charging_ev": -1,
+                        "charging_ev_prev": -1,
+                        "autolock_state": 0,
+                        "current": 0,
+                        "energy_to_charge": 0,
+                        "plug_time": "0",
+                        "rfid": 0,
+                        "log": {"counter_at_plugtime": 0,
+                                "timestamp_start_charging": "0",
+                                "counter_at_mode_switch": 0,
+                                "charged_since_mode_switch": 0,
+                                "charged_since_plugged_counter": 0,
+                                "range_charged": 0,
+                                "time_charged": "00:00",
+                                "chargemode_log_entry": "_"}},
+                "get": {
+                    "read_tag": {"tag": "0",
+                                 "timestamp": "0"},
+                    "daily_yield": 0,
+                    "plug_state": False,
+                    "charge_state": False,
+                    "power_all": 0,
+                    "connected_vehicle": {"soc_config": {},
+                                          "soc": {},
+                                          "info": {},
+                                          "config": {}}}}
         except Exception as e:
             log.MainLogger().exception("Fehler in der Ladepunkt-Klasse von "+str(self.cp_num))
 
@@ -303,7 +297,7 @@ class chargepoint():
                         if timecheck.check_timestamp(general_data["grid_protection_timestamp"], general_data["grid_protection_random_stop"]) == False:
                             state = False
                             message = "Ladepunkt gesperrt, da der Netzschutz aktiv ist."
-                            pub.pub("openWB/set/general/grid_protection_timestamp","0")
+                            pub.pub("openWB/set/general/grid_protection_timestamp", "0")
                             pub.pub("openWB/set/general/grid_protection_random_stop", 0)
                     else:
                         state = False
@@ -353,7 +347,7 @@ class chargepoint():
             else:
                 state = False
                 message = "Ladepunkt gesperrt, da keine Werte vom EVU-Zähler empfangen wurden und deshalb kein Lastmanagement durchgeführt werden kann. Falls Sie dennoch laden möchten, können Sie als EVU-Zähler 'nicht vorhanden' auswählen und einen konstanten Hausverbrauch angeben."
-            return state, message 
+            return state, message
         except Exception as e:
             log.MainLogger().exception("Fehler in der Ladepunkt-Klasse von "+str(self.cp_num))
             return False, "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
@@ -437,7 +431,7 @@ class chargepoint():
         except Exception as e:
             log.MainLogger().exception("Fehler in der Ladepunkt-Klasse von "+str(self.cp_num))
             return False, "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
-    
+
     def get_state(self):
         """prüft alle Bedingungen und ruft die EV-Logik auf.
 
@@ -624,11 +618,12 @@ class chargepoint():
                 phases = config["connected_phases"]
             log.MainLogger().debug("phases1 "+str(phases))
             chargemode_phases = data.data.general_data["general"].get_phases_chargemode(mode)
-            # Wenn die Lademodus-Phasen 0 sind, wird die bisher genutzte Phasenzahl weiter genutzt, 
-            # bis der Algorithmus eine Umschaltung vorgibt, zB weil der gewählte Lademodus eine 
+            # Wenn die Lademodus-Phasen 0 sind, wird die bisher genutzte Phasenzahl weiter genutzt,
+            # bis der Algorithmus eine Umschaltung vorgibt, zB weil der gewählte Lademodus eine
             # andere Phasenzahl benötigt oder bei PV-Laden die automatische Umschaltung aktiv ist.
             if chargemode_phases == 0:
-                log.MainLogger().debug("timestamp_perform_phase_switch "+str(charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"])+"control_parameter phases "+str(charging_ev.data["control_parameter"]["phases"])+"phases_in_use "+str(self.data["get"]["phases_in_use"]))
+                log.MainLogger().debug("timestamp_perform_phase_switch "+str(charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"]) +
+                                       "control_parameter phases "+str(charging_ev.data["control_parameter"]["phases"])+"phases_in_use "+str(self.data["get"]["phases_in_use"]))
                 charging_ev.data["control_parameter"]["phases"] = self.data["get"]["phases_in_use"]
                 if charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] == "0":
                     if self.data["get"]["phases_in_use"] == 1:
@@ -652,16 +647,18 @@ class chargepoint():
         except Exception as e:
             log.MainLogger().exception("Fehler in der Ladepunkt-Klasse von "+str(self.cp_num))
 
+
 def get_chargepoint_template_default():
     return {
-        "autolock": 
+        "autolock":
         {
-            "wait_for_charging_end": False, 
+            "wait_for_charging_end": False,
             "active": False
-            }, 
-            "rfid_enabling": False, 
+        },
+            "rfid_enabling": False,
             "valid_tags": ["1234"]
-            }
+    }
+
 
 class cpTemplate():
     """ Vorlage für einen Ladepunkt.
@@ -782,8 +779,8 @@ class cpTemplate():
         ev_num = -1
         message = None
         try:
-            if (data.data.optional_data["optional"].data["rfid"]["active"] == True 
-                    and self.data["rfid_enabling"] == True 
+            if (data.data.optional_data["optional"].data["rfid"]["active"] == True
+                    and self.data["rfid_enabling"] == True
                     and rfid != "0"):
                 vehicle = ev.get_ev_to_rfid(rfid)
                 if vehicle is None:
@@ -793,7 +790,7 @@ class cpTemplate():
                     ev_num = vehicle
             else:
                 ev_num = assigned_ev
-            
+
             return ev_num, message
         except Exception as e:
             log.MainLogger().exception("Fehler in der Ladepunkt-Template Klasse von "+self.cp_num)

@@ -10,13 +10,11 @@ class counterAll():
     """
 
     def __init__(self):
-        self.data = {}
-        self.data["set"] = {}
-        self.data["set"]["loadmanagement_active"] = False
-        self.data["set"]["loadmanagement_available"] = True
-        self.data["set"]["home_consumption"] = 0
-        self.data["set"]["invalid_home_consumption"] = 0
-        self.data["set"]["daily_yield_home_consumption"] = 0
+        self.data = {"set": {"loadmanagement_active": False,
+                             "loadmanagement_available": True,
+                             "home_consumption": 0,
+                             "invalid_home_consumption": 0,
+                             "daily_yield_home_consumption": 0}}
         # Hilfsvariablen für die rekursiven Funktionen
         self.connected_counters = []
         self.connected_chargepoints = []
@@ -308,15 +306,13 @@ class counter():
     """
     """
 
-    def __init__(self, index, default):
+    def __init__(self, index):
         try:
-            self.data = {}
-            if default == False:
-                self.data["set"] = {}
-                self.data["get"] = {}
-                self.data["get"]["daily_yield_export"] = 0
-                self.data["get"]["daily_yield_import"] = 0
-                self.counter_num = index
+            self.data = {"set": {},
+                            "get": {
+                "daily_yield_export": 0,
+                "daily_yield_import": 0}}
+            self.counter_num = index
         except Exception as e:
             log.MainLogger().exception("Fehler in der Zaehler-Klasse von "+self.counter_num)
 

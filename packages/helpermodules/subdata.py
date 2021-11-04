@@ -37,17 +37,6 @@ class SubData():
     general_data = {}
     optional_data = {}
     system_data = {}
-    defaults_cp_data = {}
-    defaults_cp_template_data = {}
-    defaults_pv_data = {}
-    defaults_ev_data = {}
-    defaults_ev_template_data = {}
-    defaults_ev_charge_template_data = {}
-    defaults_counter_data = {}
-    defaults_bat_data = {}
-    defaults_general_data = {}
-    defaults_optional_data = {}
-    defaults_system_data = {}
 
     def __init__(self, event_ev_template, event_charge_template, event_cp_config):
         self.event_ev_template = event_ev_template
@@ -105,54 +94,32 @@ class SubData():
         self.heartbeat = True
         if "openWB/vehicle/template/charge_template/" in msg.topic:
             self.process_vehicle_charge_template_topic(self.ev_charge_template_data, msg)
-        elif "openWB/defaults/vehicle/template/charge_template/" in msg.topic:
-            self.process_vehicle_charge_template_topic(self.defaults_ev_charge_template_data, msg)
         elif "openWB/vehicle/template/ev_template/" in msg.topic:
             self.process_vehicle_ev_template_topic(self.ev_template_data, msg)
-        elif "openWB/defaults/vehicle/template/ev_template/" in msg.topic:
-            self.process_vehicle_ev_template_topic(self.defaults_ev_template_data, msg)
         elif "openWB/vehicle/" in msg.topic:
             self.process_vehicle_topic(self.ev_data, msg)
-        elif "openWB/defaults/vehicle/" in msg.topic:
-            self.process_vehicle_topic(self.defaults_ev_data, msg, True)
         elif "openWB/chargepoint/template/" in msg.topic:
             self.process_chargepoint_template_topic(self.cp_template_data, msg)
-        elif "openWB/defaults/chargepoint/template/" in msg.topic:
-            self.process_chargepoint_template_topic(self.defaults_cp_template_data, msg)
         elif "openWB/chargepoint/" in msg.topic:
             self.process_chargepoint_topic(self.cp_data, msg)
-        elif "openWB/defaults/chargepoint/" in msg.topic:
-            self.process_chargepoint_topic(self.defaults_cp_data, msg, True)
         elif "openWB/pv/" in msg.topic and "/module" in msg.topic:
             self.process_pv_module_topic(self.pv_data, msg)
         elif "openWB/pv/" in msg.topic:
             self.process_pv_topic(self.pv_data, msg)
-        elif "openWB/defaults/pv/" in msg.topic:
-            self.process_pv_topic(self.defaults_pv_data, msg)
         elif "openWB/bat/" in msg.topic and "/module" in msg.topic:
             self.process_bat_module_topic(self.bat_data, msg)
         elif "openWB/bat/" in msg.topic:
             self.process_bat_topic(self.bat_data, msg)
-        elif "openWB/defaults/bat/" in msg.topic:
-            self.process_bat_topic(self.defaults_bat_data, msg)
         elif "openWB/general/" in msg.topic:
             self.process_general_topic(self.general_data, msg)
-        elif "openWB/defaults/general/" in msg.topic:
-            self.process_general_topic(self.defaults_general_data, msg)
         elif "openWB/optional/" in msg.topic:
             self.process_optional_topic(self.optional_data, msg)
-        elif "openWB/defaults/optional/" in msg.topic:
-            self.process_optional_topic(self.defaults_optional_data, msg, True)
         elif "openWB/counter/" in msg.topic:
             self.process_counter_topic(self.counter_data, msg)
-        elif "openWB/defaults/counter/" in msg.topic:
-            self.process_counter_topic(self.defaults_counter_data, msg, True)
         elif "openWB/log/" in msg.topic:
             self.process_log_topic(msg)
         elif "openWB/system/" in msg.topic:
             self.process_system_topic(client, self.system_data, msg)
-        elif "openWB/defaults/system" in msg.topic:
-            self.process_system_topic(client, self.defaults_system_data, msg)
         else:
             log.MainLogger().warning("unknown subdata-topic: "+str(msg.topic))
 
@@ -198,7 +165,7 @@ class SubData():
         except Exception as e:
             log.MainLogger().exception("Fehler im subdata-Modul")
 
-    def process_vehicle_topic(self, var, msg, default=False):
+    def process_vehicle_topic(self, var, msg):
         """ Handler für die EV-Topics
 
          Parameters
@@ -220,7 +187,7 @@ class SubData():
                         log.MainLogger().error("Es konnte kein Vehicle mit der ID "+str(index)+" gefunden werden.")
             elif re.search("^.+/vehicle/[0-9]+/.+$", msg.topic) is not None:
                 if "ev"+index not in var:
-                    var["ev"+index] = ev.ev(int(index), default)
+                    var["ev"+index] = ev.ev(int(index))
                 if re.search("^.+/vehicle/[0-9]+/get.+$", msg.topic) is not None:
                     if "get" not in var["ev"+index].data:
                         var["ev"+index].data["get"] = {}
@@ -320,7 +287,7 @@ class SubData():
         except Exception as e:
             log.MainLogger().exception("Fehler im subdata-Modul")
 
-    def process_chargepoint_topic(self, var, msg, default=False):
+    def process_chargepoint_topic(self, var, msg):
         """ Handler für die Ladepunkt-Topics
 
          Parameters
@@ -341,7 +308,7 @@ class SubData():
             elif re.search("^.+/chargepoint/[0-9]+/.+$", msg.topic) is not None:
                 index = self.get_index(msg.topic)
                 if "cp"+index not in var:
-                    var["cp"+index] = chargepoint.chargepoint(int(index), default)
+                    var["cp"+index] = chargepoint.chargepoint(int(index))
                 if "all" not in var:
                     var["all"] = chargepoint.allChargepoints()
                 if re.search("^.+/chargepoint/[0-9]+/set/.+$", msg.topic) is not None:
@@ -629,7 +596,7 @@ class SubData():
         except Exception as e:
             log.MainLogger().exception("Fehler im subdata-Modul")
 
-    def process_optional_topic(self, var, msg, default=False):
+    def process_optional_topic(self, var, msg):
         """ Handler für die Optionalen-Topics
 
          Parameters
@@ -644,7 +611,7 @@ class SubData():
         try:
             if re.search("^.+/optional/.+$", msg.topic) is not None:
                 if "optional" not in var:
-                    var["optional"] = optional.optional(default)
+                    var["optional"] = optional.optional()
                 if re.search("^.+/optional/led/.+$", msg.topic) is not None:
                     if "led" not in var["optional"].data:
                         var["optional"].data["led"] = {}
@@ -675,7 +642,7 @@ class SubData():
         except Exception as e:
             log.MainLogger().exception("Fehler im subdata-Modul")
 
-    def process_counter_topic(self, var, msg, default=False):
+    def process_counter_topic(self, var, msg):
         """ Handler für die Zähler-Topics
 
          Parameters
@@ -696,7 +663,7 @@ class SubData():
             elif re.search("^.+/counter/[0-9]+/.+$", msg.topic) is not None:
                 index = self.get_index(msg.topic)
                 if "counter"+index not in var:
-                    var["counter"+index] = counter.counter(int(index), default)
+                    var["counter"+index] = counter.counter(int(index))
                 if re.search("^.+/counter/[0-9]+/get.+$", msg.topic) is not None:
                     if "get" not in var["counter"+index].data:
                         var["counter"+index].data["get"] = {}
