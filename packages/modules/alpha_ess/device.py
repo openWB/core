@@ -26,7 +26,8 @@ def get_default() -> dict:
     return {
         "name": "Alpha ESS",
         "type": "alpha_ess",
-        "id": None
+        "id": None,
+        "configuration": {}
     }
 
 
