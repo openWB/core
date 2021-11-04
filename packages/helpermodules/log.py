@@ -53,7 +53,7 @@ class MainLogger:
             self.__write_log(message)
 
         def __process_exception(self, exception):
-            if exception != None:
+            if exception is not None:
                 traceback.print_exc()
                 exit(1)
 

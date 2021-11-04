@@ -187,7 +187,7 @@ class allChargepoints():
                                 pub.pub("openWB/set/chargepoint/"+str(chargepoint_read.cp_num)+"/get/read_tag", chargepoint_read.data["get"]["read_tag"])
                 except Exception as e:
                     log.MainLogger().exception("Fehler in der allgemeinen Ladepunkt-Klasse fuer Ladepunkt "+cp)
-            if read_tag != None:
+            if read_tag is not None:
                 last_plugged_cp = None
                 plug_time = 0
                 for cp in chargepoints:
@@ -203,7 +203,7 @@ class allChargepoints():
                                         last_plugged_cp = chargepoint_match
                     except Exception as e:
                         log.MainLogger().exception("Fehler in der allgemeinen Ladepunkt-Klasse fuer Ladepunkt "+cp)
-                if last_plugged_cp == None:
+                if last_plugged_cp is None:
                     log.MainLogger().info("Es wurde kein EV angesteckt, dessen Ladepunkt auf eine Zuweisung per RFID wartet. Gescannter Tag: "+str(read_tag))
                 else:
                     # Darf mit diesem Tag der LP freigeschaltet werden?
@@ -697,7 +697,7 @@ class cpTemplate():
         try:
             if (self.data["autolock"]["active"] == True):
                 if autolock_state != 4:
-                    if timecheck.check_plans_timeframe(self.data["autolock"]) != None:
+                    if timecheck.check_plans_timeframe(self.data["autolock"]) is not None:
                         if self.data["autolock"]["wait_for_charging_end"] == True:
                             if charge_state == True:
                                 state = 1
@@ -786,7 +786,7 @@ class cpTemplate():
                     and self.data["rfid_enabling"] == True 
                     and rfid != "0"):
                 vehicle = ev.get_ev_to_rfid(rfid)
-                if vehicle == None:
+                if vehicle is None:
                     ev_num = -1
                     message = "Keine Ladung, da dem RFID-Tag "+str(rfid)+" kein EV-Profil zugeordnet werden kann."
                 else:

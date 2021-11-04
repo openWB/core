@@ -456,7 +456,7 @@ class ProcessBrokerBranch:
             topic_found= re.search('^('+self.search_str+'/*).*$', msg.topic).group(1)
             topic_rest = msg.topic.replace(topic_found, "")
             current_id_regex = re.search('^([0-9]+)/*.*$', topic_rest)
-            if current_id_regex != None:
+            if current_id_regex is not None:
                 current_id = int(current_id_regex.group(1))
                 self.max_id = max(current_id, self.max_id)
         except Exception as e:

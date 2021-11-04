@@ -113,14 +113,14 @@ def check_timeframe(plan, hours):
     try:
         if plan["active"] == True:
             now = datetime.datetime.today()
-            if hours == None:
+            if hours is None:
                 begin = datetime.datetime.strptime(plan["time"][0], '%H:%M')
                 end = datetime.datetime.strptime(plan["time"][1], '%H:%M')
             else:
                 end = datetime.datetime.strptime(plan["time"], '%H:%M')
 
             if plan["frequency"]["selected"] == "once":
-                if hours == None:
+                if hours is None:
                     beginDate = datetime.datetime.strptime(
                         plan["frequency"]["once"][0], "%y-%m-%d")
                     begin = begin.replace(
@@ -138,7 +138,7 @@ def check_timeframe(plan, hours):
                 state = is_timeframe_valid(now, begin, end)
 
             elif plan["frequency"]["selected"] == "daily":
-                if hours == None:
+                if hours is None:
                     begin, end = set_date(now, begin, end)
                 else:
                     end = end.replace(now.year, now.month, now.day)
@@ -149,7 +149,7 @@ def check_timeframe(plan, hours):
                 state = is_timeframe_valid(now, begin, end)
 
             elif plan["frequency"]["selected"] == "weekly":
-                if hours == None:
+                if hours is None:
                     if begin < end:
                         # Endzeit ist am gleichen Tag
                         if plan["frequency"]["weekly"][now.weekday()] == True:

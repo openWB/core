@@ -28,8 +28,8 @@ class ValueStoreFactory:
 
 def write_to_file(file: str, value, digits: int = None) -> None:
     try:
-        if value != None:
-            if digits != None:
+        if value is not None:
+            if digits is not None:
                 if digits == 0:
                     value = int(value)
                 else:
@@ -44,15 +44,15 @@ def pub_to_broker(topic: str, value, digits: int = None) -> None:
     try:
         if isinstance(value, list):
             if None not in value:
-                if digits != None:
+                if digits is not None:
                     if digits == 0:
                         value = [int(val,) for val in value]
                     else:
                         value = [round(val, digits) for val in value]
             pub.pub(topic, value)
         else:
-            if value != None:
-                if digits != None:
+            if value is not None:
+                if digits is not None:
                     if digits == 0:
                         value = int(value)
                     else:

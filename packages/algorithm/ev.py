@@ -126,7 +126,7 @@ class ev():
                 required_current, submode, message = self.charge_template.scheduled_charging(self.data["get"]["soc"], self.ev_template, self.data["control_parameter"]["phases"])
             elif self.charge_template.data["time_charging"]["active"] == True:
                 required_current, submode, message = self.charge_template.time_charging()
-            if (required_current == 0) or (required_current == None):
+            if (required_current == 0) or (required_current is None):
                 if self.charge_template.data["chargemode"]["selected"] == "instant_charging":
                     required_current, submode, message = self.charge_template.instant_charging(self.data["get"]["soc"], charged_since_mode_switch)
                 elif self.charge_template.data["chargemode"]["selected"] == "pv_charging":
@@ -484,7 +484,7 @@ class chargeTemplate():
             # Ein Eintrag gibt an, ob aktiv/inaktiv, alle weiteren sind Zeitpläne.
             if len(self.data["time_charging"]) > 1:
                 plan = timecheck.check_plans_timeframe(self.data["time_charging"]["plans"])
-                if plan != None:
+                if plan is not None:
                     self.data["chargemode"]["current_plan"] = plan["id"]
                     return plan["current"], "time_charging", message
                 else:

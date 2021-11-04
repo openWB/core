@@ -55,19 +55,19 @@ class AlphaEssBat():
             time.sleep(0.1)
             current = self.client.read_binary_registers_to_int(0x0101, 2, sdmid, 16)
 
-            if voltage != None and current != None:
+            if voltage is not None and current is not None:
                 power = float(voltage * current * -1 / 100)
             else:
                 power = None
             log.MainLogger().debug("Alpha Ess Leistung[W]: "+str(power)+", Speicher-Register: Spannung[V] "+str(voltage)+" Strom[A] "+str(current))
             time.sleep(0.1)
             soc_reg = self.client.read_binary_registers_to_int(0x0102, 2, sdmid, 16)
-            if soc_reg != None:
+            if soc_reg is not None:
                 soc = int(soc_reg * 0.1)
             else:
                 soc = None
 
-            if power != None:
+            if power is not None:
                 imported, exported = self.sim_count.sim_count(power, topic="openWB/set/bat/"+str(self.data["config"]["id"])+"/", data=self.data["simulation"], prefix="speicher")
             else:
                 imported, exported = None, None

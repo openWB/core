@@ -18,7 +18,7 @@ def read_ip_evse(cp):
         rq = client.read_holding_registers(1002, 1, unit=id)
         state = int(rq.registers[0])
 
-        if state == "" or re.search("^[0-9]+$", state) == None:
+        if state == "" or re.search("^[0-9]+$", state) is None:
             # vorherigen Steckerstatus beibehalten (nichts publishen)
             log.message_debug_log("error", "Modbus EVSE read CP"+str(cp_num)+" issue - using previous state")
         if state > 1:

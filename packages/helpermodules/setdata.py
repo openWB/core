@@ -110,10 +110,10 @@ class setData():
         valid = False
         try:
             value = json.loads(str(msg.payload.decode("utf-8")))
-            if data_type == None or data_type == "json":
+            if data_type is None or data_type == "json":
                 # Wenn kein gültiges json-Objekt übergeben worden wäre, wäre bei loads eine Exception aufgetreten.
                 valid = True
-            elif collection != None:
+            elif collection is not None:
                 if self._validate_collection_value(msg, data_type, ranges, collection) == True:
                     valid = True
             elif data_type == str:
@@ -144,7 +144,7 @@ class setData():
                             template = copy.deepcopy(subdata.SubData.ev_template_data["et"+str(index)].data)
                         else:
                             template = {}
-                    elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/config.*$", msg.topic) != None:
+                    elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/config.*$", msg.topic) is not None:
                         event = self.event_cp_config
                         if "cp"+str(index) in subdata.SubData.cp_data:
                             template = copy.deepcopy(subdata.SubData.cp_data["cp"+str(index)].data["config"])
@@ -256,21 +256,21 @@ class setData():
             if isinstance(value, data_type) == True or (data_type == float and isinstance(value, int) == True):
                 if len(ranges) > 0:
                     for range in ranges:
-                        if range[0] != None and range[1] != None:
+                        if range[0] is not None and range[1] is not None:
                             if range[0] <= value <= range[1]:
                                 break
-                        elif range[0] != None:
+                        elif range[0] is not None:
                             if value >= range[0]:
                                 break
-                        elif range[1] != None:
+                        elif range[1] is not None:
                             if value <= range[1]:
                                 break
                     else:
                         log.MainLogger().error("Payload ungueltig: Topic "+str(msg.topic)+", Payload "+str(value)+" liegt in keinem der angegebenen Wertebereiche.")
                         valid = False
-            elif value == None:
+            elif value is None:
                 for range in ranges:
-                    if range[0] == None and range[1] == None:
+                    if range[0] is None and range[1] is None:
                         break
                 else:
                     log.MainLogger().error("Payload ungueltig: Topic "+str(msg.topic)+", Payload "+str(value)+" darf nicht 'None' sein.")
