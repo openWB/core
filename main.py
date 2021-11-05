@@ -27,7 +27,7 @@ from packages.modules import loadvars
 debug = True
 
 
-class HandlerAlgorithm():
+class HandlerAlgorithm:
     def __init__(self):
         self.heartbeat = False
         self.interval_counter = 1
@@ -58,7 +58,6 @@ class HandlerAlgorithm():
                     prep.copy_data()
                     log.MainLogger().info(" Stop copy_data 3")
                     self.heartbeat = True
-                    data.data.system_data["system"].set_default_values()
                     if data.data.system_data["system"].data["perform_update"] == True:
                         data.data.system_data["system"].perform_update()
                         return

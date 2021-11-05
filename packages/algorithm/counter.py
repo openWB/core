@@ -5,7 +5,7 @@ from ..helpermodules import log
 from ..helpermodules import pub
 
 
-class counterAll():
+class counterAll:
     """
     """
 
@@ -248,7 +248,7 @@ class counterAll():
                         return True
                     else:
                         if len(child["children"]) != 0:
-                            removed = self._remove_item(child, id)
+                            removed = self._remove_item(child, id, keep_children)
                             return removed
                 except Exception as e:
                     log.MainLogger().exception("Fehler in der allgemeinen Zaehler-Klasse für "+child)
@@ -302,7 +302,7 @@ class counterAll():
             return False
 
 
-class counter():
+class counter:
     """
     """
 

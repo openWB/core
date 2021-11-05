@@ -42,7 +42,7 @@ def write_ip_evse(ip_address, id, current):
     except Exception as e:
         log.exception_logging(e)
 
-def perform_phase_switcht(ip_address, id, duration, phases_to_use):
+def perform_phase_switch(ip_address, id, duration, phases_to_use):
     client = ModbusTcpClient(ip_address, port=8899)
     if ( phases_to_use == 1 ):
         rq = client.write_register(0x0001, 256, unit=id)

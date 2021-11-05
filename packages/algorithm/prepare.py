@@ -11,7 +11,7 @@ from ..helpermodules import pub
 from ..helpermodules import subdata
 
 
-class prepare():
+class prepare:
     """ 
     """
 

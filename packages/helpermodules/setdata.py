@@ -11,7 +11,7 @@ from . import pub
 from . import subdata
 
 
-class setData():
+class setData:
 
     def __init__(self, event_ev_template, event_charge_template, event_cp_config):
         self.event_ev_template = event_ev_template
@@ -254,7 +254,7 @@ class setData():
             valid = True
             # Wenn es ein Float erwartet wird, kann auch ein Int akzeptiert werden. Da dies automatisch umgewandelt wird, falls erfoderlich.
             if isinstance(value, data_type) == True or (data_type == float and isinstance(value, int) == True):
-                if len(ranges) > 0:
+                if ranges:
                     for range in ranges:
                         if range[0] is not None and range[1] is not None:
                             if range[0] <= value <= range[1]:

@@ -14,7 +14,7 @@ from .cp import modbus_evse as cp_modbus_evse
 from .cp import modbus_slave as cp_modbus_slave
 from .cp import ip_evse as cp_ip_evse
 
-class loadvars():
+class loadvars:
     """ fragt die Werte der konfigurierten Module ab
     """
 

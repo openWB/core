@@ -376,9 +376,8 @@ def create_timestamp():
     try:
         stamp = datetime.datetime.today().strftime("%m/%d/%Y, %H:%M:%S")
         return stamp
-    except Exception as e:
-        log.MainLogger().exception("Fehler im System-Modul")
-        return None
+    except:
+        raise
 
 def create_timestamp_YYYYMM():
     """ erzeugt einen Zeitstempel mit dem aktuellen Jahr und Monat
@@ -390,9 +389,8 @@ def create_timestamp_YYYYMM():
     try:
         stamp = datetime.datetime.today().strftime("%Y%m")
         return stamp
-    except Exception as e:
-        log.MainLogger().exception("Fehler im System-Modul")
-        return None
+    except:
+        raise
 
 def create_timestamp_YYYYMMDD():
     """ erzeugt einen Zeitstempel mit dem aktuellen Jahr und Monat und Tag
@@ -404,9 +402,8 @@ def create_timestamp_YYYYMMDD():
     try:
         stamp = datetime.datetime.today().strftime("%Y%m%d")
         return stamp
-    except Exception as e:
-        log.MainLogger().exception("Fehler im System-Modul")
-        return None
+    except:
+        raise
 
 def create_timestamp_time():
     """ erzeugt einen Zeitstempel mit der aktuellen Uhrzeit
@@ -418,9 +415,8 @@ def create_timestamp_time():
     try:
         stamp = datetime.datetime.today().strftime("%H:%M")
         return stamp
-    except Exception as e:
-        log.MainLogger().exception("Fehler im System-Modul")
-        return None
+    except:
+        raise
 
 def get_difference_to_now(timestamp_begin):
     """ ermittelt den Abstand zwischen zwei Zeitstempeln.

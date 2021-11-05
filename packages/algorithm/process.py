@@ -12,7 +12,7 @@ from ..modules.cp import modbus_evse
 from ..modules.cp import modbus_slave
 
 
-class process():
+class process:
     def __init__(self):
         pass
 

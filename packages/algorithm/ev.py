@@ -55,7 +55,7 @@ def get_ev_to_rfid(rfid):
         return None
 
 
-class ev():
+class ev:
     """Logik des EV
     """
 
@@ -383,7 +383,7 @@ def get_ev_template_default() -> dict:
     }
 
 
-class evTemplate():
+class evTemplate:
     """ Klasse mit den EV-Daten
     """
 
@@ -461,7 +461,7 @@ def get_charge_template_time_charging_plan_default():
     return charge_template_time_charging_plan_default
 
 
-class chargeTemplate():
+class chargeTemplate:
     """ Klasse der Lademodus-Vorlage
     """
 
@@ -619,7 +619,7 @@ class chargeTemplate():
                     message = "Keine Ladung, da keine Ziel-Termine konfiguriert sind."
                     return 0, "stop", message
                 else:
-                    log.MainLogger().debug("".join("Verwendeter Plan: ", str(plan_data)))
+                    log.MainLogger().debug("Verwendeter Plan: "+str(plan_data))
                     self.data["chargemode"]["current_plan"] = plan_data["plan"]
                     for plan in self.data["chargemode"]["scheduled_charging"]:
                         if plan == plan_data["plan"]:

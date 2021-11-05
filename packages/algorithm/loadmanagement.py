@@ -9,6 +9,7 @@ welche LP-Phase an welche EVU-Phase angeschlossen ist, nicht. Beim einphasigen L
 ob genug Leistung/Stromstärke verfügbar ist.
 """
 
+from typing import Tuple
 from . import data
 from ..helpermodules import log
 
@@ -53,6 +54,8 @@ def loadmanagement_for_cp(chargepoint, required_power, required_current, phases)
                 required_current_phases= [0, required_current, 0]
             elif chargepoint.data["config"]["phase_1"] == 3:
                 required_current_phases = [0, 0, required_current]
+            else:
+                raise ValueError(chargepoint.data["config"]["phase_1"]+"ist keine gueltige Zahl für die angeschlossene Phase (0-3")
         counters = data.data.counter_data["all"].get_counters_to_check(chargepoint)
         # Stromstärke merken, wenn das Lastmanagement nicht aktiv wird, wird nach der Prüfung die neue verwendete Stromstärke gesetzt.
         for counter in counters[:-1]:
@@ -74,7 +77,7 @@ def loadmanagement_for_cp(chargepoint, required_power, required_current, phases)
         log.MainLogger().exception("Fehler im Lastmanagement-Modul")
         return False, None
 
-def loadmanagement_for_counters():
+def loadmanagement_for_counters() -> Tuple[bool, dict]:
     """ überprüft bei allen Zählern, ob die Maximal-Werte eingehalten werden.
 
     Return
@@ -96,7 +99,7 @@ def loadmanagement_for_counters():
         return loadmanagement_all_conditions, overloaded_counters
     except Exception as e:
         log.MainLogger().exception("Fehler im Lastmanagement-Modul")
-        return False, None
+        return False, {}
 
 
 
@@ -278,10 +281,10 @@ def _check_max_current(counter, required_current_phases, phases, offset):
             loadmanagement = True
             if offset == True:
                 log.MainLogger().debug("Strom "+str(current_used))
-                log.MainLogger().warning("Benoetigte Stromstaerke "+str(required_current_phases[phase])+" ueberschreitet unter Beachtung des Offsets die zulaessige Stromstaerke an Phase "+str(current_used.index(max(current_used)))+ " um "+str(max_current_overshoot)+"A.")
+                log.MainLogger().warning("Benoetigte Stromstaerke "+str(current_used.index(max(current_used)))+" ueberschreitet unter Beachtung des Offsets die zulaessige Stromstaerke an Phase "+str(current_used.index(max(current_used)))+ " um "+str(max_current_overshoot)+"A.")
             else:
                 log.MainLogger().debug("Strom "+str(current_used))
-                log.MainLogger().warning("Benoetigte Stromstaerke "+str(required_current_phases[phase])+" ueberschreitet ohne Beachtung des Offsets die zulaessige Stromstaerke an Phase "+str(current_used.index(max(current_used)))+ " um "+str(max_current_overshoot)+"A.")
+                log.MainLogger().warning("Benoetigte Stromstaerke "+str(current_used.index(max(current_used)))+" ueberschreitet ohne Beachtung des Offsets die zulaessige Stromstaerke an Phase "+str(current_used.index(max(current_used)))+ " um "+str(max_current_overshoot)+"A.")
         data.data.counter_data[counter].data["set"]["current_used"] = current_used
         # Wenn Zähler geprüft werden, wird ohne Offset geprüft. Beim Runterregeln soll aber das Offset berücksichtigt werden, um Schwingen zu vermeiden.
         return loadmanagement, max_current_overshoot + (300 / 230 / phases), current_used.index(max(current_used))

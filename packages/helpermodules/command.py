@@ -15,7 +15,7 @@ from ..algorithm import data
 from ..algorithm import ev
 
 
-class Command():
+class Command:
     """
     """
 

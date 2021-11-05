@@ -8,7 +8,7 @@ from ..helpermodules import log
 from ..modules.et import tibbergetprices
 
 
-class optional():
+class optional:
     """
     """
 

@@ -53,7 +53,7 @@ def get_chargepoint_default() -> dict:
     }
 
 
-class allChargepoints():
+class allChargepoints:
     """
     """
 
@@ -236,7 +236,7 @@ class allChargepoints():
             log.MainLogger().exception("Fehler in der allgemeinen Ladepunkt-Klasse")
 
 
-class chargepoint():
+class chargepoint:
     """ geht alle Ladepunkte durch, prüft, ob geladen werden darf und ruft die Funktion des angesteckten Autos auf. 
     """
 
@@ -508,7 +508,7 @@ class chargepoint():
             return -1, message
         except Exception as e:
             log.MainLogger().exception("Fehler in der Ladepunkt-Klasse von "+str(self.cp_num))
-            return -1, message
+            return -1, "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
 
     def initiate_control_pilot_interruption(self):
         """ prüft, ob eine Control Pilot- Unterbrechung erforderlich ist und führt diese durch.
@@ -552,6 +552,8 @@ class chargepoint():
                         message = "Umschaltung von 1 auf 3 Phasen."
                     elif self.data["set"]["phases_to_use"] == 1:
                         message = "Umschaltung von 3 auf 1 Phase."
+                    else:
+                        raise ValueError (str(self.data["set"]["phases_to_use"])+" ist keine gültige Phasenzahl (1/3).")
                     self.data["get"]["state_str"] = message
                 return
             # Wenn noch kein Logeintrag erstellt wurde, wurde noch nicht geladen und die Phase kann noch umgeschaltet werden.
@@ -660,7 +662,7 @@ def get_chargepoint_template_default():
     }
 
 
-class cpTemplate():
+class cpTemplate:
     """ Vorlage für einen Ladepunkt.
     """
 
@@ -715,7 +717,7 @@ class cpTemplate():
             else:
                 return False
         except Exception as e:
-            log.MainLogger().exception("Fehler in der Ladepunkt-Template Klasse von "+self.cp_num)
+            log.MainLogger().exception("Fehler in der Ladepunkt-Template Klasse von "+str(cp_num))
             return False
 
     def autolock_manual_disabling(self, topic_path):
@@ -730,7 +732,7 @@ class cpTemplate():
             if (self.data["autolock"]["active"] == True):
                 pub.pub(topic_path+"/get/autolock", 4)
         except Exception as e:
-            log.MainLogger().exception("Fehler in der Ladepunkt-Template Klasse von "+self.cp_num)
+            log.MainLogger().exception("Fehler in der Ladepunkt-Template Klasse")
 
     def autolock_manual_enabling(self, topic_path):
         """ aktuelles Autolock wird wieder aktiviert.
@@ -744,7 +746,7 @@ class cpTemplate():
             if (self.data["autolock"]["active"] == True):
                 pub.pub(topic_path+"/get/autolock", 0)
         except Exception as e:
-            log.MainLogger().exception("Fehler in der Ladepunkt-Template Klasse von "+self.cp_num)
+            log.MainLogger().exception("Fehler in der Ladepunkt-Template Klasse")
 
     def autolock_enable_after_charging_end(self, autolock_state, topic_path):
         """Wenn kein Strom für den Ladepunkt übrig ist, muss Autolock ggf noch aktiviert werden.
@@ -758,7 +760,7 @@ class cpTemplate():
             if (self.data["autolock"]["active"] == True) and autolock_state == 1:
                 pub.pub(topic_path+"/set/autolock", 2)
         except Exception as e:
-            log.MainLogger().exception("Fehler in der Ladepunkt-Template Klasse von "+self.cp_num)
+            log.MainLogger().exception("Fehler in der Ladepunkt-Template Klasse")
 
     def get_ev(self, rfid, assigned_ev):
         """ermittelt das dem Ladepunkt zugeordnete EV
@@ -793,5 +795,5 @@ class cpTemplate():
 
             return ev_num, message
         except Exception as e:
-            log.MainLogger().exception("Fehler in der Ladepunkt-Template Klasse von "+self.cp_num)
+            log.MainLogger().exception("Fehler in der Ladepunkt-Template Klasse")
             return ev_num, "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc()

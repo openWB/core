@@ -18,7 +18,7 @@ from . import system
 from ..algorithm import pv
 
 
-class SubData():
+class SubData:
     """ Klasse, die die benötigten Topics abonniert, die Instanzen ertstellt, wenn z.b. ein Modul neu konfiguriert wird, 
     Instanzen löscht, wenn Module gelöscht werden, und die Werte in die Attribute der Instanzen schreibt.
     """

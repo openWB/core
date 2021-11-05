@@ -9,7 +9,7 @@ from ..helpermodules import pub
 from ..helpermodules import timecheck
 
 
-class general():
+class general:
     """
     """
 
