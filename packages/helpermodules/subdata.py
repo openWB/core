@@ -82,7 +82,6 @@ class SubData:
         client.subscribe("openWB/general/#", 2)
         client.subscribe("openWB/optional/#", 2)
         client.subscribe("openWB/counter/#", 2)
-        client.subscribe("openWB/defaults/#", 2)
         client.subscribe("openWB/log/#", 2)
         client.subscribe("openWB/system/+", 2)
         client.subscribe("openWB/system/device/+/config", 2)

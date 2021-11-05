@@ -158,8 +158,8 @@ def pub_settings():
 
     # counter
     if simulator == True:
-        hierarchy = [{"id": "counter0", "children": [{"id": "cp1", "children": []}, {"id": "cp2", "children": []}, {"id": "cp3", "children": []}]}]
-        pub.pub("openWB/set/counter/get/hierarchy", hierarchy)
+        # hierarchy = [{"id": "counter0", "children": [{"id": "cp1", "children": []}, {"id": "cp2", "children": []}, {"id": "cp3", "children": []}]}]
+        # pub.pub("openWB/set/counter/get/hierarchy", hierarchy)
         pub.pub("openWB/set/counter/0/get/frequency", 50.2)
         pub.pub("openWB/set/counter/0/config/max_current", [30, 30, 30])
         pub.pub("openWB/set/counter/0/config/max_consumption", 30000)
