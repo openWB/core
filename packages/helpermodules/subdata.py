@@ -102,12 +102,8 @@ class SubData:
             self.process_chargepoint_template_topic(self.cp_template_data, msg)
         elif "openWB/chargepoint/" in msg.topic:
             self.process_chargepoint_topic(self.cp_data, msg)
-        elif "openWB/pv/" in msg.topic and "/module" in msg.topic:
-            self.process_pv_module_topic(self.pv_data, msg)
         elif "openWB/pv/" in msg.topic:
             self.process_pv_topic(self.pv_data, msg)
-        elif "openWB/bat/" in msg.topic and "/module" in msg.topic:
-            self.process_bat_module_topic(self.bat_data, msg)
         elif "openWB/bat/" in msg.topic:
             self.process_bat_topic(self.bat_data, msg)
         elif "openWB/general/" in msg.topic:
@@ -431,36 +427,6 @@ class SubData:
         except Exception as e:
             log.MainLogger().exception("Fehler im subdata-Modul")
 
-    def process_pv_module_topic(self, var, msg):
-        """ Handler für die Wechselrichter-Modul-Topics
-
-         Parameters
-        ----------
-        client : (unused)
-            vorgegebener Parameter
-        userdata : (unused)
-            vorgegebener Parameter
-        msg:
-            enthält Topic und Payload
-        """
-        try:
-            index = self.get_index(msg.topic)
-            if re.search("^.+/pv/[0-9]+/module$", msg.topic) is not None:
-                if str(msg.payload.decode("utf-8")) == "":
-                    if "pv"+index in var:
-                        var.pop("pv"+index)
-                else:
-                    data = json.loads(str(msg.payload.decode("utf-8")))
-                    mod = importlib.import_module(".modules.pv."+data["selected"], "packages")
-                    var["pv"+index] = mod.module(index)
-                    self.set_json_payload(var["pv"+index].data, msg)
-            elif re.search("^.+/pv/[0-9]+/module/simulation/.+$", msg.topic) is not None:
-                if "simulation" not in var["pv"+index].data:
-                    var["pv"+index].data["simulation"] = {}
-                self.set_json_payload(var["pv"+index].data["simulation"], msg)
-        except Exception as e:
-            log.MainLogger().exception("Fehler im subdata-Modul")
-
     def process_bat_topic(self, var, msg):
         """ Handler für die Hausspeicher-Hardware_Topics
 
@@ -509,36 +475,6 @@ class SubData:
                     if "config" not in var["all"].data:
                         var["all"].data["config"] = {}
                     self.set_json_payload(var["all"].data["config"], msg)
-        except Exception as e:
-            log.MainLogger().exception("Fehler im subdata-Modul")
-
-    def process_bat_module_topic(self, var, msg):
-        """ Handler für die Speicher-Modul-Topics
-
-         Parameters
-        ----------
-        client : (unused)
-            vorgegebener Parameter
-        userdata : (unused)
-            vorgegebener Parameter
-        msg:
-            enthält Topic und Payload
-        """
-        try:
-            index = self.get_index(msg.topic)
-            if re.search("^.+/bat/[0-9]+/module$", msg.topic) is not None:
-                if str(msg.payload.decode("utf-8")) == "":
-                    if "bat"+index in var:
-                        var.pop("bat"+index)
-                else:
-                    data = json.loads(str(msg.payload.decode("utf-8")))
-                    mod = importlib.import_module(".modules.bat."+data["selected"], "packages")
-                    var["bat"+index] = mod.module(index)
-                    self.set_json_payload(var["bat"+index].data, msg)
-            elif re.search("^.+/bat/[0-9]+/module/simulation/.+$", msg.topic) is not None:
-                if "simulation" not in var["bat"+index].data:
-                    var["bat"+index].data["simulation"] = {}
-                self.set_json_payload(var["bat"+index].data["simulation"], msg)
         except Exception as e:
             log.MainLogger().exception("Fehler im subdata-Modul")
 

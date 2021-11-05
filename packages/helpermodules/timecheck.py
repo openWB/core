@@ -110,6 +110,7 @@ def check_timeframe(plan, hours):
     False: Zeitfenster nicht gültig
     """
     state = None
+    begin = datetime()
     try:
         if plan["active"] == True:
             now = datetime.datetime.today()

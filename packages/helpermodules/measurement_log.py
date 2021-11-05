@@ -165,7 +165,7 @@ def update_daily_yields():
             with open(filepath, "r") as jsonFile:
                 daily_log = json.load(jsonFile)
         except FileNotFoundError:
-            log.MainLogger().error("Fuer "+str(timecheck.create_timestamp_YYYYMMDD())+" existiert kein Tageslog.")
+            raise FileNotFoundError("Fuer "+str(timecheck.create_timestamp_YYYYMMDD())+" existiert kein Tageslog.")
         # Tagesertrag Zähler
         for counter in daily_log[0]["counter"]:
             if counter in data.data.counter_data:

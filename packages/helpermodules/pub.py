@@ -8,7 +8,7 @@ import paho.mqtt.publish as publish
 
 from . import log
 
-client = None
+client
 
 
 def setup_connection():

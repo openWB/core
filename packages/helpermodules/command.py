@@ -48,7 +48,7 @@ class Command:
             # kurze Pause, damit die ID vom Broker ermittelt werden können. Sonst werden noch vorher die retained Topics empfangen, was zu doppelten Logmeldungen führt.
             time.sleep(1)
             mqtt_broker_ip = "localhost"
-            client = mqtt.Client("openWB-command-" + self.getserial())
+            client = mqtt.Client("openWB-command-" + str(self.getserial()))
 
             client.on_connect = self.on_connect
             client.on_message = self.on_message
@@ -420,7 +420,7 @@ class ProcessBrokerBranch:
         """
         try:
             mqtt_broker_ip = "localhost"
-            client = mqtt.Client("openWB-proccesBrokerBranch-" + self.__getserial())
+            client = mqtt.Client("openWB-proccesBrokerBranch-" + str(self.__getserial()))
 
             client.on_connect = self.__on_connect
             client.on_message = on_message

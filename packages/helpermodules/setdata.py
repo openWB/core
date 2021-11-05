@@ -150,6 +150,8 @@ class setData:
                             template = copy.deepcopy(subdata.SubData.cp_data["cp"+str(index)].data["config"])
                         else:
                             template = {}
+                    else:
+                        raise ValueError("Zu "+msg.topic+" konnte kein passendes json-Objekt gefunden werden.")
                     # Wert, der aktualisiert werden soll, erstellen/finden und updaten
                     if event == self.event_cp_config:
                         key_list = msg.topic.split("/")[5:]
