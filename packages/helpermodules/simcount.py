@@ -143,7 +143,7 @@ class SimCountLegacy:
             signal.alarm(0)
             temp = int(float(temp.payload.decode("utf-8")))
             ra = '^-?[0-9]+$'
-            if re.search(ra, str(temp)) == None:
+            if re.search(ra, str(temp)) is None:
                 temp = "0"
             self.write_ramdisk_file(prefix+value, temp)
             if value == "watt0pos":

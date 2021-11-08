@@ -117,6 +117,8 @@ def _chargelogfile_entry_generator_func(file):
                         chargemode = "stop"
                     elif row[7] == "4":
                         chargemode = "standby"
+                    else:
+                        raise ValueError(str(row[7])+" ist kein bekannter Lademodus.")
                     # Format Datum-Uhrzeit anpassen
                     begin = conv_1_9_datetimes(row[0])
                     end = conv_1_9_datetimes(row[1])
@@ -125,10 +127,12 @@ def _chargelogfile_entry_generator_func(file):
                     if len(duration_list) == 2:
                         duration_list.pop(1)  # "Min"
                         duration = duration_list[0] + ":00"
-                    elif len(duration_list == 4):
+                    elif len(duration_list) == 4:
                         duration_list.pop(1)  # "H"
                         duration_list.pop(2)  # "Min"
                         duration = duration_list[0] + ":" + duration_list[1] + ":00"
+                    else:
+                        raise ValueError(str(duration_list)+" hat kein bekanntes Format.")
                     try:
                         costs = data.data.general_data["general"].data["price_kwh"] * row[3]
                     except:

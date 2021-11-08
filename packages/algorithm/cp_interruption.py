@@ -37,7 +37,7 @@ def thread_cp_interruption(cp_num, selected, config, duration):
             cp_interruption_threads["thread_cp"+str(cp_num)].start()
             log.MainLogger().debug("Thread zur CP-Unterbrechung an LP"+str(cp_num)+" gestartet.")
     except Exception as e:
-        log.exception_logging(e)
+        log.MainLogger().exception("Fehler im Modul fuer die CP-Unterbrechung")
 
 
 def _perform_cp_interruption(selected, config, duration):

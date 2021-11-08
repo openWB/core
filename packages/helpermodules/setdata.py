@@ -11,7 +11,7 @@ from . import pub
 from . import subdata
 
 
-class setData():
+class setData:
 
     def __init__(self, event_ev_template, event_charge_template, event_cp_config):
         self.event_ev_template = event_ev_template
@@ -110,10 +110,10 @@ class setData():
         valid = False
         try:
             value = json.loads(str(msg.payload.decode("utf-8")))
-            if data_type == None or data_type == "json":
+            if data_type is None or data_type == "json":
                 # Wenn kein gültiges json-Objekt übergeben worden wäre, wäre bei loads eine Exception aufgetreten.
                 valid = True
-            elif collection != None:
+            elif collection is not None:
                 if self._validate_collection_value(msg, data_type, ranges, collection) == True:
                     valid = True
             elif data_type == str:
@@ -144,12 +144,14 @@ class setData():
                             template = copy.deepcopy(subdata.SubData.ev_template_data["et"+str(index)].data)
                         else:
                             template = {}
-                    elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/config.*$", msg.topic) != None:
+                    elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/config.*$", msg.topic) is not None:
                         event = self.event_cp_config
                         if "cp"+str(index) in subdata.SubData.cp_data:
                             template = copy.deepcopy(subdata.SubData.cp_data["cp"+str(index)].data["config"])
                         else:
                             template = {}
+                    else:
+                        raise ValueError("Zu "+msg.topic+" konnte kein passendes json-Objekt gefunden werden.")
                     # Wert, der aktualisiert werden soll, erstellen/finden und updaten
                     if event == self.event_cp_config:
                         key_list = msg.topic.split("/")[5:]
@@ -254,23 +256,23 @@ class setData():
             valid = True
             # Wenn es ein Float erwartet wird, kann auch ein Int akzeptiert werden. Da dies automatisch umgewandelt wird, falls erfoderlich.
             if isinstance(value, data_type) == True or (data_type == float and isinstance(value, int) == True):
-                if len(ranges) > 0:
+                if ranges:
                     for range in ranges:
-                        if range[0] != None and range[1] != None:
+                        if range[0] is not None and range[1] is not None:
                             if range[0] <= value <= range[1]:
                                 break
-                        elif range[0] != None:
+                        elif range[0] is not None:
                             if value >= range[0]:
                                 break
-                        elif range[1] != None:
+                        elif range[1] is not None:
                             if value <= range[1]:
                                 break
                     else:
                         log.MainLogger().error("Payload ungueltig: Topic "+str(msg.topic)+", Payload "+str(value)+" liegt in keinem der angegebenen Wertebereiche.")
                         valid = False
-            elif value == None:
+            elif value is None:
                 for range in ranges:
-                    if range[0] == None and range[1] == None:
+                    if range[0] is None and range[1] is None:
                         break
                 else:
                     log.MainLogger().error("Payload ungueltig: Topic "+str(msg.topic)+", Payload "+str(value)+" darf nicht 'None' sein.")
@@ -441,7 +443,7 @@ class setData():
                     "openWB/set/chargepoint/get/daily_yield" in msg.topic):
                 self._validate_value(msg, float, [(0, float("inf"))])
             elif "template" in msg.topic:
-                self._subprocess_chargepoint_template_topic(msg)
+                self._validate_value(msg, "json")
             elif ("/set/charging_ev" in msg.topic or
                     "/set/charging_ev_prev" in msg.topic):
                 self._validate_value(msg, int, [(-1, float("inf"))])
@@ -506,35 +508,6 @@ class setData():
                 pub.pub(msg.topic, "")
             else:
                 self.__unknown_topic(msg)
-        except Exception as e:
-            log.MainLogger().exception("Fehler im setdata-Modul")
-
-    def _subprocess_chargepoint_template_topic(self, msg):
-        """ Handler für die Cahrgepoint-Template-Topics
-        Parameters
-        ----------
-        msg:
-            enthält Topic und Payload
-        """
-        try:
-            if ("/autolock/active" in msg.topic or
-                    "/autolock/wait_for_charging_end" in msg.topic):
-                self._validate_value(msg, int, [(0, 1)])
-            elif "/active" in msg.topic:
-                self._validate_value(msg, int, [(0, 1)])
-            elif ("/frequency/selected" in msg.topic or
-                    "/frequency/once" in msg.topic):
-                self._validate_value(msg, str)
-            elif "/frequency/weekly" in msg.topic:
-                self._validate_value(msg, int, [(0, 1)], collection=list)
-            elif "/time" in msg.topic:
-                self._validate_value(msg, str, collection=list)
-            elif "/rfid_enabling" in msg.topic:
-                self._validate_value(msg, int, [(0, 1)])
-            elif "/valid_tags" in msg.topic:
-                self._validate_value(msg, str, collection=list)
-            else:
-                self._validate_value(msg, "json")
         except Exception as e:
             log.MainLogger().exception("Fehler im setdata-Modul")
 

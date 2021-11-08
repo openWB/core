@@ -12,7 +12,7 @@ from ..modules.cp import modbus_evse
 from ..modules.cp import modbus_slave
 
 
-class process():
+class process:
     def __init__(self):
         pass
 
@@ -36,7 +36,7 @@ class process():
                                 chargelog.save_data(chargepoint, data.data.ev_data["ev"+str(chargepoint.data["set"]["charging_ev_prev"])], immediately = False)
                             chargepoint.data["set"]["current"] = 0
                             pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/set/current", 0)
-                        if chargepoint.data["get"]["state_str"] != None:
+                        if chargepoint.data["get"]["state_str"] is not None:
                             pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/get/state_str", chargepoint.data["get"]["state_str"])
                         else:
                             pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/get/state_str", "Ladevorgang läuft...")

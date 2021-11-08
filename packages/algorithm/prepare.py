@@ -11,7 +11,7 @@ from ..helpermodules import pub
 from ..helpermodules import subdata
 
 
-class prepare():
+class prepare:
     """ 
     """
 
@@ -144,7 +144,7 @@ class prepare():
                         required_current = charging_ev.check_min_max_current(required_current, charging_ev.data["control_parameter"]["phases"])
                         current_changed, mode_changed = charging_ev.check_state(required_current, cp.data["set"]["current"], cp.data["get"]["charge_state"])
                         
-                        if message_ev != None:
+                        if message_ev is not None:
                             message = message_ev
                         log.MainLogger().debug("Ladepunkt "+str(cp.cp_num)+", EV: "+cp.data["set"]["charging_ev_data"].data["name"]+" (EV-Nr."+str(vehicle)+")")
                         
@@ -186,7 +186,7 @@ class prepare():
                     else:
                         # Wenn kein EV zur Ladung zugeordnet wird, auf hinterlegtes EV zurückgreifen.
                         self._pub_connected_vehicle(data.data.ev_data["ev"+str(cp.data["config"]["ev"])], cp)
-                    if message != None and cp.data["get"]["state_str"] == None:
+                    if message is not None and cp.data["get"]["state_str"] is None:
                         log.MainLogger().info("LP "+str(cp.cp_num)+": "+message)
                         cp.data["get"]["state_str"] = message
             except Exception as e:

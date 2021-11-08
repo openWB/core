@@ -26,7 +26,8 @@ from packages.modules import loadvars
 # Wenn debug True ist, wird der 10s Handler nicht durch den Timer-Thread gesteuert, sondern macht ein 10s Sleep am Ende, da sonst beim Pausieren immer mehr Threads im Hintergrund auflaufen.
 debug = False
 
-class HandlerAlgorithm():
+
+class HandlerAlgorithm:
     def __init__(self):
         self.heartbeat = False
         self.interval_counter = 1
@@ -44,7 +45,7 @@ class HandlerAlgorithm():
                     prep.copy_system_data()
                     log.MainLogger().info(" Stop copy_data 1")
                     vars.get_values()
-                    # Virtuelle Module ermitteln die Werte rechnerisch auf Bais der Messwerte anderer Module. 
+                    # Virtuelle Module ermitteln die Werte rechnerisch auf Bais der Messwerte anderer Module.
                     # Daher können sie erst die Werte ermitteln, wenn die physischen Module ihre Werte ermittelt haben.
                     # Würde man allle Module parallel abfragen, wären die virtuellen Module immer einen Zyklus hinterher.
                     log.MainLogger().info(" Start copy_data 2")
@@ -57,7 +58,6 @@ class HandlerAlgorithm():
                     prep.copy_data()
                     log.MainLogger().info(" Stop copy_data 3")
                     self.heartbeat = True
-                    data.data.system_data["system"].set_default_values()
                     if data.data.system_data["system"].data["perform_update"] == True:
                         data.data.system_data["system"].perform_update()
                         return
@@ -87,7 +87,7 @@ class HandlerAlgorithm():
                 graph.pub_graph_data()
         except Exception as e:
             log.MainLogger().exception("Fehler im Main-Modul")
-    
+
     def handler5Min(self):
         """ Handler, der alle 5 Minuten aufgerufen wird und die Heartbeats der Threads überprüft und die Aufgaben ausführt, die nur alle 5 Minuten ausgeführt werden müssen.
         """
@@ -110,7 +110,7 @@ class HandlerAlgorithm():
             log.cleanup_logfiles()
             measurement_log.save_log("daily")
             measurement_log.update_daily_yields()
-            #Wenn ein neuer Tag ist, Monatswerte schreiben.
+            # Wenn ein neuer Tag ist, Monatswerte schreiben.
             day = timecheck.create_timestamp_YYYYMMDD()[-2:]
             if self.current_day != day:
                 self.current_day = day
@@ -122,10 +122,12 @@ class HandlerAlgorithm():
         except Exception as e:
             log.MainLogger().exception("Fehler im Main-Modul")
 
+
 class RepeatedTimer(object):
     """ führt alle x Sekunden einen Thread aus, unabhängig davon, ob sich der Thread bei der vorherigen Ausführung aufgehängt etc hat.
     https://stackoverflow.com/a/40965385
     """
+
     def __init__(self, interval, function, *args, **kwargs):
         self._timer = None
         self.interval = interval
@@ -152,6 +154,7 @@ class RepeatedTimer(object):
         self._timer.cancel()
         self.is_running = False
 
+
 try:
     data.data_init()
     pub.setup_connection()
@@ -173,19 +176,17 @@ try:
     t_set = Thread(target=set.set_data, args=())
     t_comm = Thread(target=comm.sub_commands, args=())
 
-
-    
     t_sub.start()
     t_set.start()
     t_comm.start()
-    rt = RepeatedTimer(300, handler.handler5Min)
-    if debug == False:
-        rt2 = RepeatedTimer(10, handler.handler10Sec)
 
     publishvars2.pub_settings()
     configuration.pub_configurable()
 
-    if debug == True:
+    rt = RepeatedTimer(300, handler.handler5Min)
+    if debug == False:
+        rt2 = RepeatedTimer(10, handler.handler10Sec)
+    else:
         while True:
             time.sleep(10)
             handler.handler10Sec()

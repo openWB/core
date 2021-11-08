@@ -49,7 +49,7 @@ class AlphaEssInverter():
             reg_p = self.__version_factory(self.data["config"]["configuration"]["version"])
             power = self.__get_power(85, reg_p)
 
-            if power != None:
+            if power is not None:
                 _, counter = self.sim_count.sim_count(power, topic="openWB/set/pv/"+str(self.data["config"]["id"])+"/", data=self.data["simulation"], prefix="pv")
             else:
                 counter = None
@@ -69,14 +69,14 @@ class AlphaEssInverter():
     def __get_power(self, sdmid: int, reg_p: int) -> float:
         try:
             p_reg = self.client.read_binary_registers_to_int(reg_p, 4, sdmid, 32)
-            if p_reg != None:
+            if p_reg is not None:
                 if (p_reg < 0):
                     p_reg = p_reg * -1
             time.sleep(0.1)
             p2_reg = self.client.read_binary_registers_to_int(0x041F, 4, sdmid, 32)
             p3_reg = self.client.read_binary_registers_to_int(0x0423, 4, sdmid, 32)
             p4_reg = self.client.read_binary_registers_to_int(0x0427, 4, sdmid, 32)
-            if p2_reg != None and p3_reg != None and p4_reg != None:
+            if p2_reg is not None and p3_reg is not None and p4_reg is not None:
                 power = (p_reg + p2_reg + p3_reg + p4_reg) * -1
             else:
                 power = None

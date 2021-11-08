@@ -62,16 +62,16 @@ class AlphaEssCounter():
         try:
             power_all = self.client.read_binary_registers_to_int(0x0006, 4, sdmid, 32)
             exported = self.client.read_binary_registers_to_int(0x0008, 4, sdmid, 32)
-            if exported != None:
+            if exported is not None:
                 exported = exported * 10
             imported = self.client.read_binary_registers_to_int(0x000A, 4, sdmid, 32)
-            if imported != None:
+            if imported is not None:
                 imported = imported * 10
             currents = []
             regs = [0x0000, 0x0002, 0x0004]
             for register in regs:
                 value = self.client.read_binary_registers_to_int(register, 4, sdmid, 32)
-                if value != None:
+                if value is not None:
                     value = value / 230
                 currents.append(value)
             return power_all, exported, imported, currents
@@ -82,16 +82,16 @@ class AlphaEssCounter():
         try:
             power_all = self.client.read_binary_registers_to_int(0x0021, 4, sdmid, 32)
             exported = self.client.read_binary_registers_to_int(0x0010, 4, sdmid, 32)
-            if exported != None:
+            if exported is not None:
                 exported = exported * 10
             imported = self.client.read_binary_registers_to_int(0x0012, 4, sdmid, 32)
-            if imported != None:
+            if imported is not None:
                 imported = imported * 10
             currents = []
             regs = [0x0017, 0x0018, 0x0019]
             for register in regs:
                 value = self.client.read_binary_registers_to_int(register, 2, sdmid, 16)
-                if value != None:
+                if value is not None:
                     value = value / 1000
                 currents.append(value)
             return power_all, exported, imported, currents

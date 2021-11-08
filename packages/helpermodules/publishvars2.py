@@ -7,14 +7,17 @@ def pub_settings():
     """
     if simulator == True:
         # cp1
-        pub.pub("openWB/set/chargepoint/1/config", {"name": "LP1", "ev": 0, "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "mqtt"}, "power_module": {"selected": None}})
+        pub.pub("openWB/set/chargepoint/1/config", {"name": "LP1", "ev": 0, "template": 0, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False,
+                                                    "control_pilot_interruption_hw": True, "connection_module": {"selected": "mqtt"}, "power_module": {"selected": None}})
 
         # cp2
-        pub.pub("openWB/set/chargepoint/2/config", {"name": "LP2", "ev": 0, "template": 1, "connected_phases": 3, "phase_1": 2, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "mqtt"}, "power_module": {"selected": None}})
+        pub.pub("openWB/set/chargepoint/2/config", {"name": "LP2", "ev": 0, "template": 0, "connected_phases": 3, "phase_1": 2, "auto_phase_switch_hw": False,
+                                                    "control_pilot_interruption_hw": True, "connection_module": {"selected": "mqtt"}, "power_module": {"selected": None}})
 
         # cp3
-        pub.pub("openWB/set/chargepoint/3/config", {"name": "LP3", "ev": 0, "template": 1, "connected_phases": 3, "phase_1": 3, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "mqtt"}, "power_module": {"selected": None}})
-    
+        pub.pub("openWB/set/chargepoint/3/config", {"name": "LP3", "ev": 0, "template": 0, "connected_phases": 3, "phase_1": 3, "auto_phase_switch_hw": False,
+                                                    "control_pilot_interruption_hw": True, "connection_module": {"selected": "mqtt"}, "power_module": {"selected": None}})
+
     else:
         pass
         # # cp1
@@ -64,15 +67,23 @@ def pub_settings():
 
         # # cp16
         # pub.pub("openWB/set/chargepoint/16/config", {"name": "LP16", "ev": 0, "template": 1, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.111", "chargepoint": 1}}}, "power_module": {"selected": None}})
-    
-    # cpt1
-    pub.pub("openWB/set/chargepoint/template/0/autolock/1/frequency/selected", "daily")
-    pub.pub("openWB/set/chargepoint/template/0/autolock/1/time", ["07:00", "16:15"])
-    pub.pub("openWB/set/chargepoint/template/0/autolock/1/active", True)
-    pub.pub("openWB/set/chargepoint/template/0/autolock/wait_for_charging_end", False)
-    pub.pub("openWB/set/chargepoint/template/0/autolock/active", False)
-    pub.pub("openWB/set/chargepoint/template/0/rfid_enabling", True)
-    pub.pub("openWB/set/chargepoint/template/0/valid_tags", ["248", "257", "258", "259", "1", "2", "3", "c"])
+
+    # cpt0
+    pub.pub("openWB/set/chargepoint/template/0/autolock/0", {"name": "Standard Autolock-Plan",
+                                                             "frequency":
+                                                             {
+                                                                 "selected": "daily",
+                                                                 "once": ["2021-11-01", "2021-11-05"],
+                                                                 "weekly": [False, False, False, False, False, False, False]
+                                                             },
+                                                             "time": ["07:00", "16:00"],
+                                                             "active": True})
+    pub.pub("openWB/set/chargepoint/template/0", {"name": "Standard Ladepunkt-Vorlage",
+                                                  "autolock": {
+                                                      "wait_for_charging_end": False,
+                                                      "active": False},
+                                                  "rfid_enabling": False,
+                                                  "valid_tags": ["1234"]})
 
     # ev0
     pub.pub("openWB/set/vehicle/0/soc/config/configured", False)
@@ -99,7 +110,7 @@ def pub_settings():
     pub.pub("openWB/set/vehicle/2/get/soc", 25)
     pub.pub("openWB/set/vehicle/2/get/soc_timestamp", 1619568005)
     pub.pub("openWB/set/vehicle/2/tag_id", ["258"])
-    #ev3
+    # ev3
     pub.pub("openWB/set/vehicle/3/soc/config/configured", False)
     pub.pub("openWB/set/vehicle/3/soc/config/manual", False)
     pub.pub("openWB/set/vehicle/3/soc/get/fault_state", 0)
@@ -107,7 +118,7 @@ def pub_settings():
     pub.pub("openWB/set/vehicle/3/get/soc", 82)
     pub.pub("openWB/set/vehicle/3/get/soc_timestamp", 1619568005)
     pub.pub("openWB/set/vehicle/3/tag_id", ["257"])
-    #ev4 MX
+    # ev4 MX
     pub.pub("openWB/set/vehicle/4/soc/config/configured", False)
     pub.pub("openWB/set/vehicle/4/soc/config/manual", False)
     pub.pub("openWB/set/vehicle/4/soc/get/fault_state", 0)
@@ -115,7 +126,7 @@ def pub_settings():
     pub.pub("openWB/set/vehicle/4/get/soc", 82)
     pub.pub("openWB/set/vehicle/4/get/soc_timestamp", 1619568005)
     pub.pub("openWB/set/vehicle/4/tag_id", ["248"])
-    #ev5 Gast 1
+    # ev5 Gast 1
     pub.pub("openWB/set/vehicle/5/soc/config/configured", False)
     pub.pub("openWB/set/vehicle/5/soc/config/manual", False)
     pub.pub("openWB/set/vehicle/5/soc/get/fault_state", 0)
@@ -123,7 +134,7 @@ def pub_settings():
     pub.pub("openWB/set/vehicle/5/get/soc", 82)
     pub.pub("openWB/set/vehicle/5/get/soc_timestamp", 1619568005)
     pub.pub("openWB/set/vehicle/5/tag_id", ["1"])
-    #ev6 Gast 2
+    # ev6 Gast 2
     pub.pub("openWB/set/vehicle/6/soc/config/configured", False)
     pub.pub("openWB/set/vehicle/6/soc/config/manual", False)
     pub.pub("openWB/set/vehicle/6/soc/get/fault_state", 0)
@@ -131,7 +142,7 @@ def pub_settings():
     pub.pub("openWB/set/vehicle/6/get/soc", 82)
     pub.pub("openWB/set/vehicle/6/get/soc_timestamp", 1619568005)
     pub.pub("openWB/set/vehicle/6/tag_id", ["2"])
-    #ev7 Gast 3
+    # ev7 Gast 3
     pub.pub("openWB/set/vehicle/7/soc/config/configured", False)
     pub.pub("openWB/set/vehicle/7/soc/config/manual", False)
     pub.pub("openWB/set/vehicle/7/soc/get/fault_state", 0)
@@ -140,12 +151,12 @@ def pub_settings():
     pub.pub("openWB/set/vehicle/7/get/soc_timestamp", 1619568005)
     pub.pub("openWB/set/vehicle/7/tag_id", ["3", "c"])
 
-
     # optional
     #pub.pub("openWB/set/optional/et/active", False)
     pub.pub("openWB/set/optional/et/config/max_price", 5.5)
     #pub.pub("openWB/set/optional/et/config/provider", {"provider": "awattar", "country": "de"})
-    pub.pub("openWB/set/optional/et/config/provider", {"provider": "tibber", "token": "d1007ead2dc84a2b82f0de19451c5fb22112f7ae11d19bf2bedb224a003ff74a", "id": "c70dcbe5-4485-4821-933d-a8a86452737b"})
+    pub.pub("openWB/set/optional/et/config/provider",
+            {"provider": "tibber", "token": "d1007ead2dc84a2b82f0de19451c5fb22112f7ae11d19bf2bedb224a003ff74a", "id": "c70dcbe5-4485-4821-933d-a8a86452737b"})
     #pub.pub("openWB/set/optional/rfid/active", True)
 
     # pv
@@ -158,8 +169,8 @@ def pub_settings():
 
     # counter
     if simulator == True:
-        hierarchy = [{"id": "counter0", "children": [{"id": "cp1", "children": []}, {"id": "cp2", "children": []}, {"id": "cp3", "children": []}]}]
-        pub.pub("openWB/set/counter/get/hierarchy", hierarchy)
+        # hierarchy = [{"id": "counter0", "children": [{"id": "cp1", "children": []}, {"id": "cp2", "children": []}, {"id": "cp3", "children": []}]}]
+        # pub.pub("openWB/set/counter/get/hierarchy", hierarchy)
         pub.pub("openWB/set/counter/0/get/frequency", 50.2)
         pub.pub("openWB/set/counter/0/config/max_current", [30, 30, 30])
         pub.pub("openWB/set/counter/0/config/max_consumption", 30000)
@@ -168,14 +179,14 @@ def pub_settings():
         # Firma
         hierarchy = [
             {
-                "id": "counter0", 
-                "children": 
+                "id": "counter0",
+                "children":
                 [
                     {
-                        "id": "counter1", "children": 
+                        "id": "counter1", "children":
                         [
-                            {"id": "cp1", "children": []}, 
-                            {"id": "cp2", "children": []}, 
+                            {"id": "cp1", "children": []},
+                            {"id": "cp2", "children": []},
                             {"id": "cp3", "children": []},
                             {"id": "cp4", "children": []},
                             {"id": "cp5", "children": []},
@@ -190,18 +201,18 @@ def pub_settings():
                             {"id": "cp14", "children": []},
                             {"id": "cp15", "children": []},
                             {"id": "cp16", "children": []}
-                            ]
-                        }
-                    ]
-                }
-            ]
+                        ]
+                    }
+                ]
+            }
+        ]
         # hierarchy = [
         #     {
-        #         "id": "counter0", 
-        #         "children": 
+        #         "id": "counter0",
+        #         "children":
         #         [
-        #             {"id": "cp1", "children": []}, 
-        #             {"id": "cp2", "children": []}, 
+        #             {"id": "cp1", "children": []},
+        #             {"id": "cp2", "children": []},
         #             {"id": "cp3", "children": []},
         #             {"id": "cp4", "children": []},
         #             {"id": "cp5", "children": []},
@@ -223,10 +234,12 @@ def pub_settings():
         pub.pub("openWB/set/counter/0/get/frequency", 50.2)
         pub.pub("openWB/set/counter/0/config/max_current", [60, 60, 60])
         pub.pub("openWB/set/counter/0/config/max_consumption", 30000)
-        pub.pub("openWB/set/counter/0/module", {"selected":"openwb", "config": {"version": 2, "ip_address": "192.168.1.101", "id": 105}})
+        pub.pub("openWB/set/counter/0/module", {"selected": "openwb", "config": {
+                "version": 2, "ip_address": "192.168.1.101", "id": 105}})
 
         pub.pub("openWB/set/counter/1/config/max_current", [60, 60, 60])
-        pub.pub("openWB/set/counter/1/module", {"selected":"openwb", "config": {"version": 2, "ip_address": "192.168.1.169", "id": 1}})
+        pub.pub("openWB/set/counter/1/module", {"selected": "openwb", "config": {
+                "version": 2, "ip_address": "192.168.1.169", "id": 1}})
 
     # # bat
     # if simulator == True:

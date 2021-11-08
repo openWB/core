@@ -1,25 +1,23 @@
 """Optionale Module
 """
 
-from math import ceil #Aufrunden
+from math import ceil  # Aufrunden
 
 from ..modules.et import awattargetprices
 from ..helpermodules import log
 from ..modules.et import tibbergetprices
 
-class optional():
+
+class optional:
     """
     """
 
-    def __init__(self, default):
+    def __init__(self):
         try:
-            self.data={}
-            if default == False:
-                self.data["et"] = {}
-                self.data["et"]["get"] = {}
+            self.data = {"et": {"get": {}}}
         except Exception as e:
             log.MainLogger().exception("Fehler im Optional-Modul")
-    
+
     def et_price_lower_than_limit(self):
         """ prüft, ob der aktuelle Strompreis unter der festgelegten Preisgrenze liegt.
 
@@ -45,7 +43,7 @@ class optional():
         ---------
         duration: float 
             benötigte Ladezeit
-        
+
         Return
         ------
         list: Key des Dictionarys (Unix-Sekunden der günstigen Stunden)

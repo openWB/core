@@ -31,15 +31,13 @@ from ..helpermodules import pub
 
 class batAll:
     def __init__(self):
-        self.data={}
-        self.data["get"]={}
-        self.data["get"]["power"]= 0
-        self.data["set"]={}
-        self.data["config"]={}
-        self.data["config"]["configured"] = False
-        self.data["set"]["charging_power_left"] = 0
-        self.data["set"]["switch_on_soc_reached"] = 0
-        self.data["set"]["hybrid_system_detected"] = False
+        self.data = {
+            "get": {"power":  0},
+            "config": {"configured": False},
+            "set": {"charging_power_left": 0,
+                    "switch_on_soc_reached": 0,
+                    "hybrid_system_detected": False}
+        }
 
     def setup_bat(self):
         """ prüft, ob mind ein Speicher vorhanden ist und berechnet die Summentopics.

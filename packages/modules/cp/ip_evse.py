@@ -18,7 +18,7 @@ def read_ip_evse(cp):
         rq = client.read_holding_registers(1002, 1, unit=id)
         state = int(rq.registers[0])
 
-        if state == "" or re.search("^[0-9]+$", state) == None:
+        if state == "" or re.search("^[0-9]+$", state) is None:
             # vorherigen Steckerstatus beibehalten (nichts publishen)
             log.message_debug_log("error", "Modbus EVSE read CP"+str(cp_num)+" issue - using previous state")
         if state > 1:
@@ -42,7 +42,7 @@ def write_ip_evse(ip_address, id, current):
     except Exception as e:
         log.exception_logging(e)
 
-def perform_phase_switcht(ip_address, id, duration, phases_to_use):
+def perform_phase_switch(ip_address, id, duration, phases_to_use):
     client = ModbusTcpClient(ip_address, port=8899)
     if ( phases_to_use == 1 ):
         rq = client.write_register(0x0001, 256, unit=id)

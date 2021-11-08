@@ -5,18 +5,16 @@ from ..helpermodules import log
 from ..helpermodules import pub
 
 
-class counterAll():
+class counterAll:
     """
     """
 
     def __init__(self):
-        self.data = {}
-        self.data["set"] = {}
-        self.data["set"]["loadmanagement_active"] = False
-        self.data["set"]["loadmanagement_available"] = True
-        self.data["set"]["home_consumption"] = 0
-        self.data["set"]["invalid_home_consumption"] = 0
-        self.data["set"]["daily_yield_home_consumption"] = 0
+        self.data = {"set": {"loadmanagement_active": False,
+                             "loadmanagement_available": True,
+                             "home_consumption": 0,
+                             "invalid_home_consumption": 0,
+                             "daily_yield_home_consumption": 0}}
         # Hilfsvariablen für die rekursiven Funktionen
         self.connected_counters = []
         self.connected_chargepoints = []
@@ -250,7 +248,7 @@ class counterAll():
                         return True
                     else:
                         if len(child["children"]) != 0:
-                            removed = self._remove_item(child, id)
+                            removed = self._remove_item(child, id, keep_children)
                             return removed
                 except Exception as e:
                     log.MainLogger().exception("Fehler in der allgemeinen Zaehler-Klasse für "+child)
@@ -304,19 +302,17 @@ class counterAll():
             return False
 
 
-class counter():
+class counter:
     """
     """
 
-    def __init__(self, index, default):
+    def __init__(self, index):
         try:
-            self.data = {}
-            if default == False:
-                self.data["set"] = {}
-                self.data["get"] = {}
-                self.data["get"]["daily_yield_export"] = 0
-                self.data["get"]["daily_yield_import"] = 0
-                self.counter_num = index
+            self.data = {"set": {},
+                            "get": {
+                "daily_yield_export": 0,
+                "daily_yield_import": 0}}
+            self.counter_num = index
         except Exception as e:
             log.MainLogger().exception("Fehler in der Zaehler-Klasse von "+self.counter_num)
 
@@ -326,7 +322,7 @@ class counter():
             # Nur beim EVU-Zähler (counter0) wird auch die maximale Leistung geprüft.
             if self.counter_num == 0:
                 # Wenn der EVU-Zähler keine Werte liefert, darf nicht geladen werden.
-                if self.data["get"]["power_all"] == None or self.data["get"]["current"] == None:
+                if self.data["get"]["power_all"] is None or self.data["get"]["current"] is None:
                     data.data.counter_data["all"].data["set"]["loadmanagement_available"] = False
                     self.data["get"]["power_all"] = 0
                     return

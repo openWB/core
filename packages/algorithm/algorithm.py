@@ -9,7 +9,7 @@ from ..helpermodules import log
 from ..helpermodules import pub
 
 
-class control():
+class control:
     """Verteilung des Stroms auf die Ladepunkte
     """
 
@@ -226,7 +226,7 @@ class control():
                             else:
                                 phases = chargepoint.data["get"]["phases_in_use"]
                             if((charging_ev.charge_template.data["prio"] == prio) and 
-                                    (charging_ev.charge_template.data["chargemode"]["selected"] == mode or mode == None) and 
+                                    (charging_ev.charge_template.data["chargemode"]["selected"] == mode or mode is None) and 
                                     (charging_ev.data["control_parameter"]["submode"] == submode) and
                                     (phases >= max_overshoot_phase)):
                                 valid_chargepoints[chargepoint] = None
@@ -258,6 +258,7 @@ class control():
             Verbleibende Überlastung
         """
         message = None
+        remaining_current_overshoot = 0
         try:
             if len(preferenced_chargepoints) == 0:
                 # Es gibt keine Ladepunkte in diesem Lademodus, die noch nicht laden oder die noch gestoppt werden können.
@@ -316,11 +317,11 @@ class control():
                             break
                         else:
                             max_current_overshoot = remaining_current_overshoot
+                        if message is not None:
+                            cp.data["get"]["state_str"] = message
+                            log.MainLogger().debug("LP "+str(cp.cp_num)+": "+message)
                     except Exception as e:
                         log.MainLogger().exception("Fehler im Algorithmus-Modul fuer Ladepunkt"+cp)
-                if message != None:
-                    cp.data["get"]["state_str"] = message
-                    log.MainLogger().debug("LP "+str(cp.cp_num)+": "+message)
                 return remaining_current_overshoot
         except Exception as e:
             log.MainLogger().exception("Fehler im Algorithmus-Modul")
@@ -354,7 +355,7 @@ class control():
                             if chargepoint.data["set"]["charging_ev"] != -1:
                                 charging_ev = chargepoint.data["set"]["charging_ev_data"]
                                 if((charging_ev.charge_template.data["prio"] == prio) and 
-                                        (charging_ev.charge_template.data["chargemode"]["selected"] == mode or mode == None) and 
+                                        (charging_ev.charge_template.data["chargemode"]["selected"] == mode or mode is None) and 
                                         (charging_ev.data["control_parameter"]["submode"] == submode) and
                                         (chargepoint.data["set"]["charging_ev_data"].data["control_parameter"]["required_current"] > chargepoint.data["set"]["current"]) and
                                         # nur die hochregeln, die auch mit der Sollstromstärke laden
@@ -420,7 +421,7 @@ class control():
                             self._process_data(cp, cp.data["set"]["current"] + missing_current)
                             message = "Das Lastmanagement hat den Ladestrom um "+str(round(missing_current, 2))+"A angepasst."
                             log.MainLogger().debug(message)
-                        if message != None:
+                        if message is not None:
                             cp.data["get"]["state_str"] = message
                     except Exception as e:
                         log.MainLogger().exception("Fehler im Algorithmus-Modul fuer Ladepunkt"+cp)
@@ -459,7 +460,7 @@ class control():
                     if chargepoint.data["set"]["charging_ev"] != -1:
                         charging_ev = chargepoint.data["set"]["charging_ev_data"]
                         if( (charging_ev.charge_template.data["prio"] == prio) and 
-                            (charging_ev.charge_template.data["chargemode"]["selected"] == mode or mode == None) and 
+                            (charging_ev.charge_template.data["chargemode"]["selected"] == mode or mode is None) and 
                             (charging_ev.data["control_parameter"]["submode"] == submode)):
                             valid_chargepoints[chargepoint] = None
             except Exception as e:
@@ -499,7 +500,7 @@ class control():
                             # Falls keine Umschaltung erforderlich ist, werden Strom und Phasen, die übergeben wurden, wieder zurückgegeben.
                             log.MainLogger().debug("Ladepunkt "+str(cp)+": Pruefen, ob Phasenumschaltung durchgefuehrt werden soll.")
                             phases, current, message = charging_ev.auto_phase_switch(chargepoint.cp_num, charging_ev.data["control_parameter"]["required_current"], charging_ev.data["control_parameter"]["phases"], chargepoint.data["get"]["current"])
-                            if message != None:
+                            if message is not None:
                                 chargepoint.data["get"]["state_str"] = message
                             # Nachdem im Automatikmodus die Anzahl Phasen bekannt ist, Einhaltung des Maximalstroms prüfen.
                             required_current = charging_ev.check_min_max_current(current, charging_ev.data["control_parameter"]["phases"])
@@ -536,17 +537,17 @@ class control():
                                     if chargepoint.data["set"]["current"] != 0 or charging_ev.data["control_parameter"]["required_current"] == 0:
                                         continue
                                 if( (charging_ev.charge_template.data["prio"] == prio) and 
-                                    (charging_ev.charge_template.data["chargemode"]["selected"] == mode or mode == None) and 
+                                    (charging_ev.charge_template.data["chargemode"]["selected"] == mode or mode is None) and 
                                     (charging_ev.data["control_parameter"]["submode"] == submode)):
                                     valid_chargepoints[chargepoint] = None
+                    preferenced_chargepoints = self._get_preferenced_chargepoint(valid_chargepoints, True)
+
+                    if len(preferenced_chargepoints) != 0:
+                        log.MainLogger().debug("Zuteilung fuer Ladepunkte "+str(preferenced_chargepoints)+" in Lademodus "+str(mode)+" Submodus "+str(submode)+" Prio "+str(prio))
+                        current_mode = self.chargemodes.index(mode_tuple)
+                        self._distribute_power_to_cp(preferenced_chargepoints, current_mode)
                 except Exception as e:
                     log.MainLogger().exception("Fehler im Algorithmus-Modul fuer Ladepunkt"+cp)
-                preferenced_chargepoints = self._get_preferenced_chargepoint(valid_chargepoints, True)
-
-                if len(preferenced_chargepoints) != 0:
-                    log.MainLogger().debug("Zuteilung fuer Ladepunkte "+str(preferenced_chargepoints)+" in Lademodus "+str(mode)+" Submodus "+str(submode)+" Prio "+str(prio))
-                    current_mode = self.chargemodes.index(mode_tuple)
-                    self._distribute_power_to_cp(preferenced_chargepoints, current_mode)
             else:
                 # kein Ladepunkt, der noch auf Zuteilung wartet
                 log.MainLogger().info("## Zuteilung beendet, da kein Ladepunkt mehr auf Zuteilung wartet.")
@@ -647,7 +648,7 @@ class control():
                                     self._process_data(chargepoint, chargepoint.data["set"]["charging_ev_data"].data["control_parameter"]["required_current"])
                                     break
                     except Exception as e:
-                        log.MainLogger().exception("Fehler im Algorithmus-Modul fuer Modus "+mode)
+                        log.MainLogger().exception("Fehler im Algorithmus-Modul fuer Modus "+str(mode))
                 else:
                     # Ladepunkt, der gestartet werden soll reduzieren
                     remaining_current_overshoot = self._perform_down_regulation([chargepoint], remaining_current_overshoot, overloaded_counters[0][1][1], prevent_stop = True)
@@ -728,13 +729,13 @@ class control():
                                         if cp.data["set"]["current"] == 0:
                                             continue
                                     if( (charging_ev.charge_template.data["prio"] == prio) and 
-                                        (charging_ev.charge_template.data["chargemode"]["selected"] == mode or mode == None) and 
+                                        (charging_ev.charge_template.data["chargemode"]["selected"] == mode or mode is None) and 
                                         (charging_ev.data["control_parameter"]["submode"] == submode)):
                                         valid_chargepoints[cp] = None
                         except Exception as e:
                             log.MainLogger().exception("Fehler im Algorithmus-Modul fuer Ladepunkt "+item)
                     preferenced_chargepoints = self._get_preferenced_chargepoint(valid_chargepoints, False)
-                    if len(preferenced_chargepoints) > 0:
+                    if preferenced_chargepoints:
                         for cp in preferenced_chargepoints:
                             try:
                                 #abschalten
@@ -799,7 +800,7 @@ class control():
                         if data.data.cp_data[chargepoint].data["set"]["charging_ev"] != -1:
                             charging_ev = data.data.cp_data[chargepoint].data["set"]["charging_ev_data"]
                             if ( ((charging_ev.charge_template.data["prio"] == prio) and 
-                                (charging_ev.charge_template.data["chargemode"]["selected"] == mode or mode == None) and 
+                                (charging_ev.charge_template.data["chargemode"]["selected"] == mode or mode is None) and 
                                 (charging_ev.data["control_parameter"]["submode"] == submode) )and
                                     data.data.cp_data[chargepoint].data["set"]["current"] != 0):
                                 # Erst hochregeln, wenn geladen wird.
@@ -812,6 +813,8 @@ class control():
             # Ladung aktiv?
             if num_of_ev > 0:
                 new_current = 0
+                diff_per_ev_power = 0
+                dif_per_ev_current = 0
                 bat_overhang = data.data.bat_data["all"].power_for_bat_charging()
                 if feed_in_limit == False:
                     diff_per_ev_power = (data.data.pv_data["all"].overhang_left() + bat_overhang) / num_of_ev
@@ -832,7 +835,7 @@ class control():
                                 if chargepoint.data["set"]["charging_ev"] != -1:
                                     charging_ev = chargepoint.data["set"]["charging_ev_data"]
                                     if ((charging_ev.charge_template.data["prio"] == prio and 
-                                            (charging_ev.charge_template.data["chargemode"]["selected"] == mode or mode == None) and 
+                                            (charging_ev.charge_template.data["chargemode"]["selected"] == mode or mode is None) and 
                                             charging_ev.data["control_parameter"]["submode"] == submode ) and
                                             chargepoint.data["set"]["current"] != 0):
                                         if ((chargepoint.data["set"]["current"] - charging_ev.ev_template.data["nominal_difference"]) < max(chargepoint.data["get"]["current"]) and
@@ -901,8 +904,8 @@ class control():
         preferenced_chargepoints: list
             Liste der Ladepunkte in der Reihenfolge, in der sie geladen/gestoppt werden sollen.
         """
+        preferenced_chargepoints = []
         try:
-            preferenced_chargepoints = []
             # Bedingungen in der Reihenfolge, in der sie geprüft werden. 3. Bedingung, ist abhängig davon, ob ein- oder ausgeschaltet werden soll.
             if start == True:
                 condition_types = ("min_current", "soc", "plug_in", "cp_num") 
@@ -910,7 +913,7 @@ class control():
                 condition_types = ("min_current", "soc", "charged_since_plugged", "cp_num") 
             # Bedingung, die geprüft wird (entspricht Index von condition_types)
             condition = 0
-            if len(valid_chargepoints) > 0:
+            if valid_chargepoints:
                 while len(valid_chargepoints) > 0:
                     # entsprechend der Bedingung die Values im Dictionary füllen
                     if condition_types[condition] == "min_current":

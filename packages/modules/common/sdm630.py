@@ -90,7 +90,7 @@ class Sdm630:
         """
         try:
             frequency = self.client.read_float_registers(0x46, 2, self.id)
-            if frequency != None:
+            if frequency is not None:
                 if frequency > 100:
                     frequency = frequency / 10
             else:

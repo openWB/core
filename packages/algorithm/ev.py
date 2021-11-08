@@ -55,29 +55,25 @@ def get_ev_to_rfid(rfid):
         return None
 
 
-class ev():
+class ev:
     """Logik des EV
     """
 
-    def __init__(self, index, default):
+    def __init__(self, index):
         try:
-            self.data = {}
-            if default == False:
-                self.ev_template = None
-                self.charge_template = None
-                self.ev_num = index
-                self.data["set"] = {}
-                self.data["get"] = {}
-                self.data["get"]["range_charged"] = 0
-                self.data["control_parameter"] = {}
-                self.data["control_parameter"]["required_current"] = 0
-                self.data["control_parameter"]["phases"] = 0
-                self.data["control_parameter"]["prio"] = False
-                self.data["control_parameter"]["timestamp_switch_on_off"] = "0"
-                self.data["control_parameter"]["timestamp_auto_phase_switch"] = "0"
-                self.data["control_parameter"]["timestamp_perform_phase_switch"] = "0"
-                self.data["control_parameter"]["submode"] = "stop"
-                self.data["control_parameter"]["chargemode"] = "stop"
+            self.ev_template = None
+            self.charge_template = None
+            self.ev_num = index
+            self.data = {"set": {},
+                         "get": {"range_charged": 0},
+                         "control_parameter": {"required_current": 0,
+                                               "phases": 0,
+                                               "prio": False,
+                                               "timestamp_switch_on_off": "0",
+                                               "timestamp_auto_phase_switch": "0",
+                                               "timestamp_perform_phase_switch": "0",
+                                               "submode": "stop",
+                                               "chargemode": "stop"}}
         except Exception as e:
             log.MainLogger().exception("Fehler im ev-Modul "+str(self.ev_num))
 
@@ -126,7 +122,7 @@ class ev():
                 required_current, submode, message = self.charge_template.scheduled_charging(self.data["get"]["soc"], self.ev_template, self.data["control_parameter"]["phases"])
             elif self.charge_template.data["time_charging"]["active"] == True:
                 required_current, submode, message = self.charge_template.time_charging()
-            if (required_current == 0) or (required_current == None):
+            if (required_current == 0) or (required_current is None):
                 if self.charge_template.data["chargemode"]["selected"] == "instant_charging":
                     required_current, submode, message = self.charge_template.instant_charging(self.data["get"]["soc"], charged_since_mode_switch)
                 elif self.charge_template.data["chargemode"]["selected"] == "pv_charging":
@@ -375,6 +371,7 @@ class ev():
 
 def get_ev_template_default() -> dict:
     return {
+        "name": "Standard-EV-Vorlage",
         "max_current_multi_phases": 16,
         "max_phases": 3,
         "prevent_switch_stop": False,
@@ -387,7 +384,7 @@ def get_ev_template_default() -> dict:
     }
 
 
-class evTemplate():
+class evTemplate:
     """ Klasse mit den EV-Daten
     """
 
@@ -398,6 +395,7 @@ class evTemplate():
 
 def get_charge_template_default() -> dict:
     return {
+        "name": "Standard-Ladevorlage",
         "disable_after_unplug": False,
         "prio": False,
         "load_default": False,
@@ -465,7 +463,7 @@ def get_charge_template_time_charging_plan_default():
     return charge_template_time_charging_plan_default
 
 
-class chargeTemplate():
+class chargeTemplate:
     """ Klasse der Lademodus-Vorlage
     """
 
@@ -484,7 +482,7 @@ class chargeTemplate():
             # Ein Eintrag gibt an, ob aktiv/inaktiv, alle weiteren sind Zeitpläne.
             if len(self.data["time_charging"]) > 1:
                 plan = timecheck.check_plans_timeframe(self.data["time_charging"]["plans"])
-                if plan != None:
+                if plan is not None:
                     self.data["chargemode"]["current_plan"] = plan["id"]
                     return plan["current"], "time_charging", message
                 else:
@@ -623,7 +621,7 @@ class chargeTemplate():
                     message = "Keine Ladung, da keine Ziel-Termine konfiguriert sind."
                     return 0, "stop", message
                 else:
-                    log.MainLogger().debug("".join("Verwendeter Plan: ", str(plan_data)))
+                    log.MainLogger().debug("Verwendeter Plan: "+str(plan_data))
                     self.data["chargemode"]["current_plan"] = plan_data["plan"]
                     for plan in self.data["chargemode"]["scheduled_charging"]:
                         if plan == plan_data["plan"]:

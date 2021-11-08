@@ -110,17 +110,18 @@ def check_timeframe(plan, hours):
     False: Zeitfenster nicht gültig
     """
     state = None
+    begin = datetime()
     try:
         if plan["active"] == True:
             now = datetime.datetime.today()
-            if hours == None:
+            if hours is None:
                 begin = datetime.datetime.strptime(plan["time"][0], '%H:%M')
                 end = datetime.datetime.strptime(plan["time"][1], '%H:%M')
             else:
                 end = datetime.datetime.strptime(plan["time"], '%H:%M')
 
             if plan["frequency"]["selected"] == "once":
-                if hours == None:
+                if hours is None:
                     beginDate = datetime.datetime.strptime(
                         plan["frequency"]["once"][0], "%y-%m-%d")
                     begin = begin.replace(
@@ -138,7 +139,7 @@ def check_timeframe(plan, hours):
                 state = is_timeframe_valid(now, begin, end)
 
             elif plan["frequency"]["selected"] == "daily":
-                if hours == None:
+                if hours is None:
                     begin, end = set_date(now, begin, end)
                 else:
                     end = end.replace(now.year, now.month, now.day)
@@ -149,7 +150,7 @@ def check_timeframe(plan, hours):
                 state = is_timeframe_valid(now, begin, end)
 
             elif plan["frequency"]["selected"] == "weekly":
-                if hours == None:
+                if hours is None:
                     if begin < end:
                         # Endzeit ist am gleichen Tag
                         if plan["frequency"]["weekly"][now.weekday()] == True:
@@ -376,9 +377,8 @@ def create_timestamp():
     try:
         stamp = datetime.datetime.today().strftime("%m/%d/%Y, %H:%M:%S")
         return stamp
-    except Exception as e:
-        log.MainLogger().exception("Fehler im System-Modul")
-        return None
+    except:
+        raise
 
 def create_timestamp_YYYYMM():
     """ erzeugt einen Zeitstempel mit dem aktuellen Jahr und Monat
@@ -390,9 +390,8 @@ def create_timestamp_YYYYMM():
     try:
         stamp = datetime.datetime.today().strftime("%Y%m")
         return stamp
-    except Exception as e:
-        log.MainLogger().exception("Fehler im System-Modul")
-        return None
+    except:
+        raise
 
 def create_timestamp_YYYYMMDD():
     """ erzeugt einen Zeitstempel mit dem aktuellen Jahr und Monat und Tag
@@ -404,9 +403,8 @@ def create_timestamp_YYYYMMDD():
     try:
         stamp = datetime.datetime.today().strftime("%Y%m%d")
         return stamp
-    except Exception as e:
-        log.MainLogger().exception("Fehler im System-Modul")
-        return None
+    except:
+        raise
 
 def create_timestamp_time():
     """ erzeugt einen Zeitstempel mit der aktuellen Uhrzeit
@@ -418,9 +416,8 @@ def create_timestamp_time():
     try:
         stamp = datetime.datetime.today().strftime("%H:%M")
         return stamp
-    except Exception as e:
-        log.MainLogger().exception("Fehler im System-Modul")
-        return None
+    except:
+        raise
 
 def get_difference_to_now(timestamp_begin):
     """ ermittelt den Abstand zwischen zwei Zeitstempeln.
