@@ -251,7 +251,24 @@ class SubData:
                 else:
                     var["ct"+index].data["time_charging"]["plans"][str(index)] = json.loads(str(msg.payload.decode("utf-8")))
             else:
+                # Pläne unverändert übernehmen
+                try:
+                    scheduled_charging_plans = var["ct"+index].data["chargemode"]["scheduled_charging"]["plans"][str(index)]
+                except:
+                    pass
+                try:
+                    time_charging_plans = var["ct"+index].data["time_charging"]["plans"][str(index)]
+                except:
+                    pass
                 var["ct"+index].data = json.loads(str(msg.payload.decode("utf-8")))
+                try:
+                    var["ct"+index].data =["time_charging"]["plans"][str(index)] = time_charging_plans
+                except:
+                    pass
+                try:
+                    var["ct"+index].data["chargemode"]["scheduled_charging"]["plans"][str(index)] = scheduled_charging_plans
+                except:
+                    pass
                 self.event_charge_template.set()
         except Exception as e:
             log.MainLogger().exception("Fehler im subdata-Modul")
@@ -349,33 +366,29 @@ class SubData:
         try:
             if re.search("^.+/chargepoint/template/[0-9]+$", msg.topic) is not None:
                 index = self.get_index(msg.topic)
-                if json.loads(str(msg.payload.decode("utf-8"))) == 1:
+                if json.loads(str(msg.payload.decode("utf-8"))):
                     if "cpt"+index not in var:
                         var["cpt"+index] = chargepoint.cpTemplate()
                 else:
                     if "cpt"+index in var:
                         var.pop("cpt"+index)
-            elif re.search("^.+/chargepoint/template/[0-9]+/.+$", msg.topic) is not None:
-                index = self.get_index(msg.topic)
-                if "cpt"+index not in var:
-                    var["cpt"+index] = chargepoint.cpTemplate()
                 if re.search("^.+/chargepoint/template/[0-9]+/autolock/.+$", msg.topic) is not None:
                     if "autolock" not in var["cpt"+index].data:
                         var["cpt"+index].data["autolock"] = {}
-                    if re.search("^.+/chargepoint/template/[0-9]+/autolock/[0-9]+/.+$", msg.topic) is not None:
-                        index_second = self.get_second_index(msg.topic)
-                        if "plan"+index_second not in var["cpt"+index].data["autolock"]:
-                            var["cpt"+index].data["autolock"]["plan"+index_second] = {}
-                        if re.search("^.+/chargepoint/template/[0-9]+/autolock/[0-9]+/frequency/.+$", msg.topic) is not None:
-                            if "frequency" not in var["cpt"+index].data["autolock"]["plan"+index_second]:
-                                var["cpt"+index].data["autolock"]["plan"+index_second]["frequency"] = {}
-                            self.set_json_payload(var["cpt"+index].data["autolock"]["plan"+index_second]["frequency"], msg)
-                        else:
-                            self.set_json_payload(var["cpt"+index].data["autolock"]["plan"+index_second], msg)
-                    else:
-                        self.set_json_payload(var["cpt"+index].data["autolock"], msg)
+                    index_second = self.get_second_index(msg.topic)
+                    if "plan"+index_second not in var["cpt"+index].data["autolock"]:
+                        var["cpt"+index].data["autolock"]["plans"][index_second] = {}
+                        self.set_json_payload(var["cpt"+index].data["autolock"]["plans"][index_second], msg)
                 else:
-                    self.set_json_payload(var["cpt"+index].data, msg)
+                    try:
+                        autolock_plans = var["cpt"+index].data["autolock"]["plans"]
+                    except:
+                        pass
+                    var["cpt"+index].data = json.loads(str(msg.payload.decode("utf-8")))
+                    try:
+                        var["cpt"+index].data["autolock"]["plans"] = autolock_plans
+                    except:
+                        pass
         except Exception as e:
             log.MainLogger().exception("Fehler im subdata-Modul")
 

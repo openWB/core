@@ -6,6 +6,7 @@ def pub_configurable():
     """
     _pub_configurable_soc_modules()
     _pub_configurable_devices_components()
+    _pub_configurable_chargepoints()
 
 def _pub_configurable_soc_modules() -> None:
     try:
@@ -78,5 +79,21 @@ def _pub_configurable_devices_components() -> None:
             }
         ]
         pub.pub("openWB/set/system/configurable/devices_components", devices_components)
+    except Exception:
+        log.MainLogger().exception("Fehler im configuration-Modul")
+
+def _pub_configurable_chargepoints() -> None:
+    try:
+        chargepoints = [
+            {
+                "value": "openwb_daemon",
+                "text": "openWB Daemon"
+            },
+            {
+                "value": "openwb_ip_evse",
+                "text": "openWB IP-EVSE"
+            }
+        ]
+        pub.pub("openWB/set/system/configurable/soc_modules", chargepoints)
     except Exception:
         log.MainLogger().exception("Fehler im configuration-Modul")

@@ -371,6 +371,7 @@ class ev:
 
 def get_ev_template_default() -> dict:
     return {
+        "name": "Standard-EV-Vorlage",
         "max_current_multi_phases": 16,
         "max_phases": 3,
         "prevent_switch_stop": False,
@@ -394,6 +395,7 @@ class evTemplate:
 
 def get_charge_template_default() -> dict:
     return {
+        "name": "Standard-Ladevorlage",
         "disable_after_unplug": False,
         "prio": False,
         "load_default": False,

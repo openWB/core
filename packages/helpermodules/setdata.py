@@ -443,7 +443,7 @@ class setData:
                     "openWB/set/chargepoint/get/daily_yield" in msg.topic):
                 self._validate_value(msg, float, [(0, float("inf"))])
             elif "template" in msg.topic:
-                self._subprocess_chargepoint_template_topic(msg)
+                self._validate_value(msg, "json")
             elif ("/set/charging_ev" in msg.topic or
                     "/set/charging_ev_prev" in msg.topic):
                 self._validate_value(msg, int, [(-1, float("inf"))])
@@ -508,35 +508,6 @@ class setData:
                 pub.pub(msg.topic, "")
             else:
                 self.__unknown_topic(msg)
-        except Exception as e:
-            log.MainLogger().exception("Fehler im setdata-Modul")
-
-    def _subprocess_chargepoint_template_topic(self, msg):
-        """ Handler für die Cahrgepoint-Template-Topics
-        Parameters
-        ----------
-        msg:
-            enthält Topic und Payload
-        """
-        try:
-            if ("/autolock/active" in msg.topic or
-                    "/autolock/wait_for_charging_end" in msg.topic):
-                self._validate_value(msg, int, [(0, 1)])
-            elif "/active" in msg.topic:
-                self._validate_value(msg, int, [(0, 1)])
-            elif ("/frequency/selected" in msg.topic or
-                    "/frequency/once" in msg.topic):
-                self._validate_value(msg, str)
-            elif "/frequency/weekly" in msg.topic:
-                self._validate_value(msg, int, [(0, 1)], collection=list)
-            elif "/time" in msg.topic:
-                self._validate_value(msg, str, collection=list)
-            elif "/rfid_enabling" in msg.topic:
-                self._validate_value(msg, int, [(0, 1)])
-            elif "/valid_tags" in msg.topic:
-                self._validate_value(msg, str, collection=list)
-            else:
-                self._validate_value(msg, "json")
         except Exception as e:
             log.MainLogger().exception("Fehler im setdata-Modul")
 

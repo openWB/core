@@ -21,6 +21,7 @@ class Command:
 
     def __init__(self):
         try:
+            self.__get_max_id("autolock_plan", "chargepoint/template/+/autolock")
             self.__get_max_id("charge_template", "vehicle/template/charge_template")
             self.__get_max_id("charge_template_scheduled_plan", "vehicle/template/charge_template/+/chargemode/scheduled_charging/plans/")
             self.__get_max_id("charge_template_time_charging_plan", "vehicle/template/charge_template/+/chargemode/time_charging/plans/")
@@ -190,15 +191,10 @@ class Command:
         """
         try:
             new_id = self.max_id_chargepoint_template + 1
-            log.MainLogger().info("Neue Ladepunkt-Vorlage vom Typ"+str(payload["data"]["type"])+" mit ID "+str(new_id)+" hinzugefuegt.")
+            log.MainLogger().info("Neue Ladepunkt-Vorlage mit ID "+str(new_id)+" hinzugefuegt.")
             default = chargepoint.get_chargepoint_template_default()
             default["id"] = new_id
-            for d in default:
-                if isinstance(d, dict):
-                    for d2 in d:
-                        pub.pub("openWB/set/chargepoint/template/"+str(new_id)+"/"+str(d)+"/"+str(d2), default[d][d2])
-                else:
-                    pub.pub("openWB/set/chargepoint/template/"+str(new_id)+"/"+str(d), default[d])
+            pub.pub("openWB/set/chargepoint/template/"+str(new_id), default)
             self.max_id_chargepoint_template = self.max_id_chargepoint_template + 1
             pub.pub("openWB/set/command/max_id/chargepoint_template", self.max_id_chargepoint_template)
         except Exception as e:
@@ -212,6 +208,33 @@ class Command:
             if self.max_id_chargepoint_template >= payload["data"]["id"]:
                 log.MainLogger().info("Ladepunkt-Vorlage mit ID "+str(payload["data"]["id"])+" geloescht.")
                 ProcessBrokerBranch("chargepoint/template/"+str(payload["data"]["id"])).remove_topics()
+            else:
+                self.__pub_error(payload, connection_id, "Die ID ist groesser als die maximal vergebene ID.")
+        except Exception as e:
+            log.MainLogger().exception("Fehler im Command-Modul")
+            self.__pub_error(payload, connection_id, "Es ist ein interner Fehler aufgetreten: "+traceback.format_exc())
+
+    def addAutolockPlan(self, connection_id: str, payload: dict) -> None:
+        """ sendet das Topic, zu dem ein neuer Zielladen-Plan erstellt werden soll.
+        """
+        try:
+            new_id = self.max_id_autolock_plan + 1
+            log.MainLogger().info("Neuer Autolock-Plan mit ID "+str(new_id)+" zu Template "+str(payload["data"]["template"])+" hinzugefuegt.")
+            default = chargepoint.get_autolock_plan_default()
+            pub.pub("openWB/set/chargepoint/template/"+str(payload["data"]["template"])+"/autolock/"+str(new_id), default)
+            self.max_id_autolock_plan = new_id
+            pub.pub("openWB/set/command/max_id/autolock_plan", new_id)
+        except Exception as e:
+            log.MainLogger().exception("Fehler im Command-Modul")
+            self.__pub_error(payload, connection_id, "Es ist ein interner Fehler aufgetreten: "+traceback.format_exc())
+
+    def removeAutolockPlan(self, connection_id: str, payload: dict) -> None:
+        """ löscht einen Zielladen-Plan.
+        """
+        try:
+            if self.max_id_autolock_plan >= payload["data"]["plan"]:
+                log.MainLogger().info("Autolock-Plan mit ID "+str(payload["data"]["plan"])+" zu Template "+str(payload["data"]["template"])+" geloescht.")
+                pub.pub("openWB/chargepoint/template/"+str(payload["data"]["template"])+"/autolock/"+str(payload["data"]["plan"]), "")
             else:
                 self.__pub_error(payload, connection_id, "Die ID ist groesser als die maximal vergebene ID.")
         except Exception as e:

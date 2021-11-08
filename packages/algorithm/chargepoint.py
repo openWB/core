@@ -553,7 +553,7 @@ class chargepoint:
                     elif self.data["set"]["phases_to_use"] == 1:
                         message = "Umschaltung von 3 auf 1 Phase."
                     else:
-                        raise ValueError (str(self.data["set"]["phases_to_use"])+" ist keine gültige Phasenzahl (1/3).")
+                        raise ValueError(str(self.data["set"]["phases_to_use"])+" ist keine gültige Phasenzahl (1/3).")
                     self.data["get"]["state_str"] = message
                 return
             # Wenn noch kein Logeintrag erstellt wurde, wurde noch nicht geladen und die Phase kann noch umgeschaltet werden.
@@ -652,13 +652,25 @@ class chargepoint:
 
 def get_chargepoint_template_default():
     return {
-        "autolock":
-        {
+        "name": "Standard Ladepunkt-Vorlage",
+        "autolock": {
             "wait_for_charging_end": False,
-            "active": False
+            "active": False},
+        "rfid_enabling": False,
+        "valid_tags": ["1234"]
+    }
+
+def get_autolock_plan_default():
+    return {
+        "name": "Standard Autolock-Plan",
+        "frequency":
+        {
+            "selected": "daily",
+            "once": ["2021-11-01", "2021-11-05"],
+            "weekly": [False, False, False, False, False, False, False]
         },
-            "rfid_enabling": False,
-            "valid_tags": ["1234"]
+        "time": ["07:00", "16:00"],
+        "active": True
     }
 
 
@@ -696,7 +708,7 @@ class cpTemplate:
         try:
             if (self.data["autolock"]["active"] == True):
                 if autolock_state != 4:
-                    if timecheck.check_plans_timeframe(self.data["autolock"]) is not None:
+                    if timecheck.check_plans_timeframe(self.data["autolock"]["plans"]) is not None:
                         if self.data["autolock"]["wait_for_charging_end"] == True:
                             if charge_state == True:
                                 state = 1
