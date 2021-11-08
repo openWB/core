@@ -24,7 +24,7 @@ from packages.modules import configuration
 from packages.modules import loadvars
 
 # Wenn debug True ist, wird der 10s Handler nicht durch den Timer-Thread gesteuert, sondern macht ein 10s Sleep am Ende, da sonst beim Pausieren immer mehr Threads im Hintergrund auflaufen.
-debug = True
+debug = False
 
 
 class HandlerAlgorithm:
@@ -179,6 +179,10 @@ try:
     t_sub.start()
     t_set.start()
     t_comm.start()
+
+    publishvars2.pub_settings()
+    configuration.pub_configurable()
+
     rt = RepeatedTimer(300, handler.handler5Min)
     if debug == False:
         rt2 = RepeatedTimer(10, handler.handler10Sec)
@@ -186,8 +190,5 @@ try:
         while True:
             time.sleep(10)
             handler.handler10Sec()
-
-    publishvars2.pub_settings()
-    configuration.pub_configurable()
 except Exception as e:
     log.MainLogger().exception("Fehler im Main-Modul")
