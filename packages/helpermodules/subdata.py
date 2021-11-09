@@ -262,7 +262,7 @@ class SubData:
                     pass
                 var["ct"+index].data = json.loads(str(msg.payload.decode("utf-8")))
                 try:
-                    var["ct"+index].data =["time_charging"]["plans"][str(index)] = time_charging_plans
+                    var["ct"+index].data["time_charging"]["plans"][str(index)] = time_charging_plans
                 except:
                     pass
                 try:
