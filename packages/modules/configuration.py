@@ -94,6 +94,6 @@ def _pub_configurable_chargepoints() -> None:
                 "text": "openWB IP-EVSE"
             }
         ]
-        pub.pub("openWB/set/system/configurable/soc_modules", chargepoints)
+        pub.pub("openWB/set/system/configurable/chargepoints", chargepoints)
     except Exception:
         log.MainLogger().exception("Fehler im configuration-Modul")
