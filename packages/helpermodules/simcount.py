@@ -13,7 +13,7 @@ from pathlib import Path
 try:
     from . import log
     from . import pub
-except:
+except Exception:
     # for 1.9 compability
     import sys
     parentdir2 = str(Path(os.path.abspath(__file__)).parents[2])
@@ -27,7 +27,7 @@ class SimCountFactory:
             ramdisk = Path(str(Path(os.path.abspath(__file__)
                                     ).parents[2])+"/ramdisk/bootinprogress").is_file()
             return SimCountLegacy if ramdisk else SimCount
-        except:
+        except Exception:
             log.MainLogger().exception("Fehler im Modul simcount")
 
 
@@ -59,13 +59,13 @@ class SimCountLegacy:
                 try:
                     counter_import_present = int(
                         float(self.read_ramdisk_file(prefix+'watt0pos')))
-                except:
+                except Exception:
                     counter_import_present = self.restore("watt0pos", prefix)
                 counter_import_previous = counter_import_present
                 try:
                     counter_export_present = int(
                         float(self.read_ramdisk_file(prefix+'watt0neg')))
-                except:
+                except Exception:
                     counter_export_present = self.restore("watt0neg", prefix)
                 if counter_export_present < 0:
                     # runs/simcount.py speichert das Zwischenergebnis des Exports negativ ab.
@@ -108,7 +108,7 @@ class SimCountLegacy:
                 return wattposkh, wattnegkh
             else:
                 return 0, 0
-        except:
+        except Exception:
             log.MainLogger().exception("Fehler im Modul simcount")
 
     def __get_topic(self, prefix: str) -> str:
@@ -130,14 +130,14 @@ class SimCountLegacy:
         try:
             with open('/var/www/html/openWB/ramdisk/' + name, 'r') as f:
                 return f.read()
-        except:
+        except Exception:
             log.MainLogger().exception("Fehler im Modul simcount")
 
     def write_ramdisk_file(self, name: str, value):
         try:
             with open('/var/www/html/openWB/ramdisk/' + name, 'w') as f:
                 f.write(str(value))
-        except:
+        except Exception:
             log.MainLogger().exception("Fehler im Modul simcount")
 
     def restore(self, value, prefix: str):
@@ -170,7 +170,7 @@ class SimCountLegacy:
                 log.MainLogger().info("loadvars read openWB/"+topic +
                                       "/WHExport_temp from mosquito "+str(temp))
             return temp
-        except:
+        except Exception:
             log.MainLogger().exception("Fehler im Modul simcount")
 
     def abort(self, signal, frame):
@@ -239,7 +239,7 @@ class SimCount:
                 pub.pub(topic+"simulation/present_imported", 0)
                 pub.pub(topic+"simulation/present_exported", 0)
                 return 0, 0
-        except:
+        except Exception:
             log.MainLogger().exception("Fehler im Modul simcount")
 
 
@@ -269,12 +269,12 @@ def calculate_import_export(seconds_since_previous: Number, power1: Number, powe
             # Betragsmäßige Gesamtfläche: oberhalb der x-Achse = Import, unterhalb der x-Achse: Export
             return energy_total - energy_exported, energy_exported * -1
         return (energy_total, 0) if energy_total >= 0 else (0, -energy_total)
-    except:
+    except Exception:
         log.MainLogger().exception("Fehler im Modul simcount")
 
 
 if __name__ == "__main__":
     try:
         SimCountLegacy.sim_count(int(sys.argv[1]), prefix=str(sys.argv[2]))
-    except:
+    except Exception:
         log.MainLogger().exception("Fehler im Modul simcount")

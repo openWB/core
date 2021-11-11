@@ -65,7 +65,7 @@ class MainLogger:
                 myPid = str(os.getpid())
                 print(local_time.strftime(format="%Y-%m-%d %H:%M:%S") +
                       ": PID: " + myPid + ": " + message)
-            except:
+            except Exception:
                 traceback.print_exc()
 
     instance = None

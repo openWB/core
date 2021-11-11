@@ -5,7 +5,7 @@ from typing import List, Tuple
 try:
     from ..common import connect_tcp
     from ...helpermodules import log
-except:
+except Exception:
     # for 1.9 compability
     import os
     from pathlib import Path
@@ -29,7 +29,8 @@ class Lovato:
             voltage = []
             regs = [0x0001, 0x0003, 0x0005]
             for register in regs:
-                value = float(self.client.read_registers(register, 2, self.id) / 100)
+                value = float(self.client.read_registers(
+                    register, 2, self.id) / 100)
                 voltage.append(value)
             return voltage
         except Exception as e:
@@ -40,7 +41,8 @@ class Lovato:
         """
         """
         try:
-            imported = self.client.read_float_registers(0x0048, 2, self.id) * 1000
+            imported = self.client.read_float_registers(
+                0x0048, 2, self.id) * 1000
             return imported
         except Exception as e:
             log.MainLogger().exception("Fehler beim Auslesen von "+str(self.name))
@@ -51,11 +53,13 @@ class Lovato:
             power_per_phase = []
             regs = [0x0013, 0x0015, 0x0017]
             for register in regs:
-                value = self.client.read_integer_registers(register, 2, self.id) / 100
+                value = self.client.read_integer_registers(
+                    register, 2, self.id) / 100
                 power_per_phase.append(value)
 
             if self.type == "Bat-Kit":
-                power_all = self.client.read_float_registers(0x000C, 2, self.id)
+                power_all = self.client.read_float_registers(
+                    0x000C, 2, self.id)
             else:
                 power_all = sum(power_per_phase)
 
@@ -68,7 +72,8 @@ class Lovato:
         """
         """
         try:
-            exported = self.client.read_float_registers(0x004a, 2, self.id) * 1000
+            exported = self.client.read_float_registers(
+                0x004a, 2, self.id) * 1000
             return exported
         except Exception as e:
             log.MainLogger().exception("Fehler beim Auslesen von "+str(self.name))
@@ -81,7 +86,8 @@ class Lovato:
             power_factor = []
             regs = [0x0025, 0x0027, 0x0029]
             for register in regs:
-                value = float(self.client.read_registers(register, 2, self.id)) / 10000
+                value = float(self.client.read_registers(
+                    register, 2, self.id)) / 10000
                 power_factor.append(value)
             return power_factor
         except Exception as e:
@@ -92,7 +98,8 @@ class Lovato:
         """
         """
         try:
-            frequency = float(self.client.read_registers(0x0031, 2, self.id)) / 100
+            frequency = float(self.client.read_registers(
+                0x0031, 2, self.id)) / 100
             if frequency > 100:
                 frequency = frequency / 10
             return frequency
@@ -107,7 +114,8 @@ class Lovato:
             current = []
             regs = [0x0007, 0x0009, 0x000b]
             for register in regs:
-                value = self.client.read_integer_registers(register, 2, self.id) / 10000
+                value = self.client.read_integer_registers(
+                    register, 2, self.id) / 10000
                 current.append(value)
             return current
         except Exception as e:
@@ -116,7 +124,8 @@ class Lovato:
 
     def get_counter(self) -> float:
         try:
-            finalbezug1 = self.client.read_integer_registers(0x1a1f, 2, self.id)
+            finalbezug1 = self.client.read_integer_registers(
+                0x1a1f, 2, self.id)
             finalbezug2 = self.client.read_input_registers(0x1a21, 2, self.id)
             if (finalbezug1 > finalbezug2):
                 counter = finalbezug1

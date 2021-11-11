@@ -7,7 +7,7 @@ try:
     from ...helpermodules import simcount
     from ..common import connect_tcp
     from ..common import store
-except:
+except Exception:
     from pathlib import Path
     import os
     import sys
@@ -42,35 +42,44 @@ class AlphaEssBat():
             simcount_factory = simcount.SimCountFactory().get_sim_counter()
             self.sim_count = simcount_factory()
         except Exception as e:
-            log.MainLogger().error("Fehler im Modul "+self.data["config"]["name"], e)
+            log.MainLogger().error("Fehler im Modul " +
+                                   self.data["config"]["name"], e)
 
     def read(self):
         try:
-            log.MainLogger().debug("Komponente "+self.data["config"]["name"]+" auslesen.")
+            log.MainLogger().debug(
+                "Komponente "+self.data["config"]["name"]+" auslesen.")
             # keine Unterschiede zwischen den Versionen
             sdmid = 85
 
             time.sleep(0.1)
-            voltage = self.client.read_binary_registers_to_int(0x0100, 2, sdmid, 16)
+            voltage = self.client.read_binary_registers_to_int(
+                0x0100, 2, sdmid, 16)
             time.sleep(0.1)
-            current = self.client.read_binary_registers_to_int(0x0101, 2, sdmid, 16)
+            current = self.client.read_binary_registers_to_int(
+                0x0101, 2, sdmid, 16)
 
             if voltage is not None and current is not None:
                 power = float(voltage * current * -1 / 100)
             else:
                 power = None
-            log.MainLogger().debug("Alpha Ess Leistung[W]: "+str(power)+", Speicher-Register: Spannung[V] "+str(voltage)+" Strom[A] "+str(current))
+            log.MainLogger().debug("Alpha Ess Leistung[W]: "+str(
+                power)+", Speicher-Register: Spannung[V] "+str(voltage)+" Strom[A] "+str(current))
             time.sleep(0.1)
-            soc_reg = self.client.read_binary_registers_to_int(0x0102, 2, sdmid, 16)
+            soc_reg = self.client.read_binary_registers_to_int(
+                0x0102, 2, sdmid, 16)
             if soc_reg is not None:
                 soc = int(soc_reg * 0.1)
             else:
                 soc = None
 
             if power is not None:
-                imported, exported = self.sim_count.sim_count(power, topic="openWB/set/bat/"+str(self.data["config"]["id"])+"/", data=self.data["simulation"], prefix="speicher")
+                imported, exported = self.sim_count.sim_count(power, topic="openWB/set/bat/"+str(
+                    self.data["config"]["id"])+"/", data=self.data["simulation"], prefix="speicher")
             else:
                 imported, exported = None, None
-            self.value_store.set(self.data["config"]["id"], power=power, soc=soc, imported=imported, exported=exported)
+            self.value_store.set(
+                self.data["config"]["id"], power=power, soc=soc, imported=imported, exported=exported)
         except Exception as e:
-            log.MainLogger().error("Fehler im Modul "+self.data["config"]["name"], e)
+            log.MainLogger().error("Fehler im Modul " +
+                                   self.data["config"]["name"], e)

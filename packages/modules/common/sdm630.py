@@ -4,7 +4,7 @@ from typing import List, Tuple
 try:
     from ..common import connect_tcp
     from ...helpermodules import log
-except:
+except Exception:
     # for 1.9 compability
     import os
     from pathlib import Path
@@ -31,7 +31,7 @@ class Sdm630:
                 value = self.client.read_float_registers(register, 2, self.id)
                 voltage.append(value)
             return voltage
-        except:
+        except Exception:
             log.MainLogger().exception("Fehler beim Auslesen von "+str(self.name))
             return [None, None, None]
 
@@ -39,9 +39,10 @@ class Sdm630:
         """
         """
         try:
-            imported = self.client.read_float_registers(0x0048, 2, self.id) * 1000
+            imported = self.client.read_float_registers(
+                0x0048, 2, self.id) * 1000
             return imported
-        except:
+        except Exception:
             log.MainLogger().exception("Fehler beim Auslesen von "+str(self.name))
             return None
 
@@ -57,7 +58,7 @@ class Sdm630:
             else:
                 power_all = None
             return power_per_phase, power_all
-        except:
+        except Exception:
             log.MainLogger().exception("Fehler beim Auslesen von "+str(self.name))
             return [None, None, None], None
 
@@ -65,9 +66,10 @@ class Sdm630:
         """
         """
         try:
-            exported = self.client.read_float_registers(0x004a, 2, self.id) * 1000
+            exported = self.client.read_float_registers(
+                0x004a, 2, self.id) * 1000
             return exported
-        except:
+        except Exception:
             log.MainLogger().exception("Fehler beim Auslesen von "+str(self.name))
             return None
 
@@ -81,7 +83,7 @@ class Sdm630:
                 value = self.client.read_float_registers(register, 2, self.id)
                 power_factor.append(value)
             return power_factor
-        except:
+        except Exception:
             log.MainLogger().exception("Fehler beim Auslesen von "+str(self.name))
             return [None, None, None]
 
@@ -96,7 +98,7 @@ class Sdm630:
             else:
                 frequency = None
             return frequency
-        except:
+        except Exception:
             log.MainLogger().exception("Fehler beim Auslesen von "+str(self.name))
             return None
 
@@ -110,14 +112,15 @@ class Sdm630:
                 value = self.client.read_float_registers(register, 2, self.id)
                 current.append(value)
             return current
-        except:
+        except Exception:
             log.MainLogger().exception("Fehler beim Auslesen von "+str(self.name))
             return [None, None, None]
 
     def get_counter(self) -> float:
         try:
-            counter = self.client.read_float_registers(0x0156, 2, self.id) * 1000
+            counter = self.client.read_float_registers(
+                0x0156, 2, self.id) * 1000
             return counter
-        except:
+        except Exception:
             log.MainLogger().exception("Fehler beim Auslesen von "+str(self.name))
             return None

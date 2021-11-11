@@ -5,13 +5,14 @@ import sys
 try:
     from ...helpermodules import log
     from ..openwb_flex.counter import EvuKitFlex
-except:
+except Exception:
     from pathlib import Path
     import os
     parentdir2 = str(Path(os.path.abspath(__file__)).parents[2])
     sys.path.insert(0, parentdir2)
     from helpermodules import log
     from modules.openwb_flex.counter import EvuKitFlex
+
 
 def get_default() -> dict:
     return {
@@ -23,6 +24,7 @@ def get_default() -> dict:
             "version": 2
         }
     }
+
 
 class EvuKit(EvuKitFlex):
     def __init__(self, device_id: int, component_config: dict, tcp_client) -> None:
@@ -40,4 +42,5 @@ class EvuKit(EvuKitFlex):
 
             super().__init__(device_id, self.data["config"], tcp_client)
         except Exception as e:
-            log.MainLogger().exception("Fehler im Modul "+self.data["config"]["components"]["component0"]["name"])
+            log.MainLogger().exception("Fehler im Modul " +
+                                       self.data["config"]["components"]["component0"]["name"])

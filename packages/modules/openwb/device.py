@@ -4,7 +4,7 @@ try:
     from ..common import connect_tcp
     from ...helpermodules import log
     from . import counter
-except:
+except Exception:
     from pathlib import Path
     import os
     import sys
@@ -14,12 +14,14 @@ except:
     from modules.common import connect_tcp
     import counter
 
+
 def get_default() -> dict:
     return {
-        "name": "OpenWB-Kit", 
-        "type": "openwb", 
+        "name": "OpenWB-Kit",
+        "type": "openwb",
         "id": None
-        }
+    }
+
 
 class Device():
     def __init__(self, device_config: dict) -> None:
@@ -30,16 +32,20 @@ class Device():
             #ip_address = "192.168.193.15"
             ip_address = "192.168.1.101"
             port = "8899"
-            self.client = connect_tcp.ConnectTcp(self.data["config"]["name"], self.data["config"]["id"], ip_address, port)
+            self.client = connect_tcp.ConnectTcp(
+                self.data["config"]["name"], self.data["config"]["id"], ip_address, port)
         except Exception as e:
-            log.MainLogger().exception("Fehler im Modul "+self.data["config"]["name"])
+            log.MainLogger().exception(
+                "Fehler im Modul "+self.data["config"]["name"])
 
     def add_component(self, component_config: dict) -> None:
         try:
             if component_config["type"] == "counter":
-                self.data["components"]["component"+str(component_config["id"])] = counter.EvuKit(self.data["config"]["id"], component_config, self.client)
+                self.data["components"]["component"+str(component_config["id"])] = counter.EvuKit(
+                    self.data["config"]["id"], component_config, self.client)
         except Exception as e:
-            log.MainLogger().exception("Fehler im Modul "+self.data["config"]["name"])
+            log.MainLogger().exception(
+                "Fehler im Modul "+self.data["config"]["name"])
 
     def read(self):
         try:
@@ -47,9 +53,11 @@ class Device():
                 for component in self.data["components"]:
                     self.data["components"][component].read()
             else:
-                log.MainLogger().warning(self.data["config"]["name"]+": Es konnten keine Werte gelesen werden, da noch keine Komponenten konfiguriert wurden.")
+                log.MainLogger().warning(
+                    self.data["config"]["name"]+": Es konnten keine Werte gelesen werden, da noch keine Komponenten konfiguriert wurden.")
         except Exception as e:
-            log.MainLogger().exception("Fehler im Modul "+self.data["config"]["name"])
+            log.MainLogger().exception(
+                "Fehler im Modul "+self.data["config"]["name"])
 
 
 def read_legacy(argv: List):
@@ -59,7 +67,8 @@ def read_legacy(argv: List):
         component_type = str(sys.argv[1])
         version = int(sys.argv[2])
 
-        device0 = {"name": "OpenWB-Kit", "type": "openwb", "id": 0, "components": {"component0": {"name": "EVU-Kit", "type": component_type, "id": 0, "configuration": {"version": version}}}}
+        device0 = {"name": "OpenWB-Kit", "type": "openwb", "id": 0, "components": {"component0": {
+            "name": "EVU-Kit", "type": component_type, "id": 0, "configuration": {"version": version}}}}
         mod = Module(device0)
 
         log.MainLogger().debug('openWB Version: ' + str(version))

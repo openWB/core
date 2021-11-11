@@ -6,7 +6,7 @@ from typing import List
 try:
     from ...helpermodules import log
     from ...helpermodules import pub
-except:
+except Exception:
     # for 1.9 compability
     import sys
     parentdir2 = str(Path(os.path.abspath(__file__)).parents[2])
@@ -17,7 +17,8 @@ except:
 
 class ValueStoreFactory:
     def get_storage(self, component_type: str):
-        ramdisk = Path(str(Path(os.path.abspath(__file__)).parents[3])+"/ramdisk/bootinprogress").is_file()
+        ramdisk = Path(str(Path(os.path.abspath(__file__)
+                                ).parents[3])+"/ramdisk/bootinprogress").is_file()
         if component_type == "bat":
             return BatteryValueStoreRamdisk if ramdisk else BatteryValueStoreBroker
         elif component_type == "counter":
@@ -40,6 +41,7 @@ def write_to_file(file: str, value, digits: int = None) -> None:
     except Exception as e:
         log.MainLogger().exception("Fehler im Modul store")
 
+
 def pub_to_broker(topic: str, value, digits: int = None) -> None:
     try:
         if isinstance(value, list):
@@ -60,6 +62,7 @@ def pub_to_broker(topic: str, value, digits: int = None) -> None:
             pub.pub(topic, value)
     except Exception as e:
         log.MainLogger().exception("Fehler im Modul store")
+
 
 class ValueStore:
     @abstractmethod
@@ -86,8 +89,10 @@ class BatteryValueStoreBroker(ValueStore):
         try:
             pub_to_broker("openWB/set/bat/"+str(num)+"/get/power", power, 2)
             pub_to_broker("openWB/set/bat/"+str(num)+"/get/soc", soc, 0)
-            pub_to_broker("openWB/set/bat/"+str(num)+"/get/imported", imported, 2)
-            pub_to_broker("openWB/set/bat/"+str(num)+"/get/exported", exported, 2)
+            pub_to_broker("openWB/set/bat/"+str(num) +
+                          "/get/imported", imported, 2)
+            pub_to_broker("openWB/set/bat/"+str(num) +
+                          "/get/exported", exported, 2)
         except Exception as e:
             log.MainLogger().exception("Fehler im Modul store")
 
@@ -121,14 +126,22 @@ class CounterValueStoreRamdisk(ValueStore):
 class CounterValueStoreBroker(ValueStore):
     def set(self, num, voltages: List[float], currents: List[float], powers: List[float], power_factors: List[float], imported: float, exported: float, power_all: float, frequency: float):
         try:
-            pub_to_broker("openWB/set/counter/"+str(num)+"/get/voltage", voltages, 2)
-            pub_to_broker("openWB/set/counter/"+str(num)+"/get/current", currents, 2)
-            pub_to_broker("openWB/set/counter/"+str(num)+"/get/power_phase", powers, 2)
-            pub_to_broker("openWB/set/counter/"+str(num)+"/get/power_factors", power_factors, 2)
-            pub_to_broker("openWB/set/counter/"+str(num)+"/get/imported", imported)
-            pub_to_broker("openWB/set/counter/"+str(num)+"/get/exported", exported)
-            pub_to_broker("openWB/set/counter/"+str(num)+"/get/power_all", power_all)
-            pub_to_broker("openWB/set/counter/"+str(num)+"/get/frequency", frequency)
+            pub_to_broker("openWB/set/counter/"+str(num) +
+                          "/get/voltage", voltages, 2)
+            pub_to_broker("openWB/set/counter/"+str(num) +
+                          "/get/current", currents, 2)
+            pub_to_broker("openWB/set/counter/"+str(num) +
+                          "/get/power_phase", powers, 2)
+            pub_to_broker("openWB/set/counter/"+str(num) +
+                          "/get/power_factors", power_factors, 2)
+            pub_to_broker("openWB/set/counter/"+str(num) +
+                          "/get/imported", imported)
+            pub_to_broker("openWB/set/counter/"+str(num) +
+                          "/get/exported", exported)
+            pub_to_broker("openWB/set/counter/"+str(num) +
+                          "/get/power_all", power_all)
+            pub_to_broker("openWB/set/counter/"+str(num) +
+                          "/get/frequency", frequency)
         except Exception as e:
             log.MainLogger().exception("Fehler im Modul store")
 
@@ -152,6 +165,7 @@ class InverterValueStoreBroker(ValueStore):
         try:
             pub_to_broker("openWB/set/pv/"+str(num)+"/get/power", power, 2)
             pub_to_broker("openWB/set/pv/"+str(num)+"/get/counter", counter, 3)
-            pub_to_broker("openWB/set/pv/"+str(num)+"/get/currents", currents, 1)
+            pub_to_broker("openWB/set/pv/"+str(num) +
+                          "/get/currents", currents, 1)
         except Exception as e:
             log.MainLogger().exception("Fehler im Modul store")

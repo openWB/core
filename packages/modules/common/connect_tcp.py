@@ -11,7 +11,7 @@ import struct
 try:
     from ...helpermodules import log
     from ...helpermodules import pub
-except:
+except Exception:
     from pathlib import Path
     import os
     import sys
@@ -29,14 +29,14 @@ class ConnectTcp:
             self.name = name
             self.id = id
             self.decode_hex = codecs.getdecoder("hex_codec")
-        except:
+        except Exception:
             log.MainLogger().exception(self.name)
 
     def close_connection(self):
         try:
             log.MainLogger().debug("Close Modbus TCP connection")
             self.tcp_client.close()
-        except:
+        except Exception:
             log.MainLogger().exception(self.name)
 
     def _log_connection_error(self):
@@ -47,7 +47,7 @@ class ConnectTcp:
             pub.pub("openWB/set/devices/"+str(self.id) +
                     "/get/fault_str", error_text)
             pub.pub("openWB/set/devices/"+str(self.id)+"/get/fault_state", 2)
-        except:
+        except Exception:
             log.MainLogger().exception(self.name)
 
     def _log_modbus_error(self, reg):
@@ -59,7 +59,7 @@ class ConnectTcp:
                     "/get/fault_str", error_text)
             pub.pub("openWB/set/devices/"+str(self.id)+"/get/fault_state", 1)
             self.tcp_client.close()
-        except:
+        except Exception:
             log.MainLogger().exception(self.name)
 
     def read_integer_registers(self, reg: int, len: int, id: int) -> int:
@@ -76,7 +76,7 @@ class ConnectTcp:
                 self._log_modbus_error(reg)
             else:
                 log.MainLogger().exception(self.name)
-        except:
+        except Exception:
             log.MainLogger().exception(self.name)
             return None
 
@@ -93,7 +93,7 @@ class ConnectTcp:
                 self._log_modbus_error(reg)
             else:
                 log.MainLogger().exception(self.name)
-        except:
+        except Exception:
             log.MainLogger().exception(self.name)
             return None
 
@@ -110,7 +110,7 @@ class ConnectTcp:
                 self._log_modbus_error(reg)
             else:
                 log.MainLogger().exception(self.name)
-        except:
+        except Exception:
             log.MainLogger().exception(self.name)
             return None
 
@@ -126,7 +126,7 @@ class ConnectTcp:
                 self._log_modbus_error(reg)
             else:
                 log.MainLogger().exception(self.name)
-        except:
+        except Exception:
             log.MainLogger().exception(self.name)
             return None
 
@@ -153,7 +153,7 @@ class ConnectTcp:
                 self._log_modbus_error(reg)
             else:
                 log.MainLogger().exception(self.name)
-        except:
+        except Exception:
             log.MainLogger().exception(self.name)
             return None
 
@@ -174,6 +174,6 @@ class ConnectTcp:
                 self._log_modbus_error(reg)
             else:
                 log.MainLogger().exception(self.name)
-        except:
+        except Exception:
             log.MainLogger().exception(self.name)
             return None

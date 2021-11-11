@@ -6,7 +6,7 @@ import traceback
 try:
     from ...helpermodules import log
     from ...helpermodules import pub
-except:
+except Exception:
     # for 1.9 compability
     import sys
     parentdir2 = str(Path(os.path.abspath(__file__)).parents[2])
