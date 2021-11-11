@@ -60,11 +60,13 @@ class optional:
         """
         """
         try:
-            if self.data["et"]["active"] == True:
+            if self.data["et"]["active"]:
                 if self.data["et"]["config"]["provider"]["provider"] == "awattar":
-                    awattargetprices.update_pricedata(self.data["et"]["config"]["provider"]["country"], 0)
+                    awattargetprices.update_pricedata(
+                        self.data["et"]["config"]["provider"]["country"], 0)
                 elif self.data["et"]["config"]["provider"]["provider"] == "tibber":
-                    tibbergetprices.update_pricedata(self.data["et"]["config"]["provider"]["token"], self.data["et"]["config"]["provider"]["id"])
+                    tibbergetprices.update_pricedata(
+                        self.data["et"]["config"]["provider"]["token"], self.data["et"]["config"]["provider"]["id"])
                 else:
                     log.MainLogger().error("Unbekannter Et-Provider.")
         except Exception as e:

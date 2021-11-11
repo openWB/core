@@ -38,7 +38,8 @@ def pub(topic, payload):
         if payload == "":
             client.publish(topic, payload, qos=0, retain=True)
         else:
-            client.publish(topic, payload=json.dumps(payload), qos=0, retain=True)
+            client.publish(topic, payload=json.dumps(
+                payload), qos=0, retain=True)
     except Exception as e:
         log.MainLogger().exception("Fehler im pub-Modul")
 
@@ -68,9 +69,10 @@ def pub_single(topic, payload, hostname="localhost", no_json=False):
         Kompabilität mit isss, die ramdisk verwenden.
     """
     try:
-        if no_json == True:
+        if no_json:
             publish.single(topic, payload, hostname=hostname, retain=True)
         else:
-            publish.single(topic, json.dumps(payload), hostname=hostname, retain=True)
+            publish.single(topic, json.dumps(payload),
+                           hostname=hostname, retain=True)
     except Exception as e:
         log.MainLogger().exception("Fehler im pub-Modul")

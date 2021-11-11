@@ -2,10 +2,10 @@ from . import pub
 
 
 def pub_settings():
-    simulator = False
+    simulator = True
     """ruft für alle Ramdisk-Dateien aus initRamdisk die zum Typ passende Funktion zum publishen auf.
     """
-    if simulator == True:
+    if simulator:
         # cp1
         pub.pub("openWB/set/chargepoint/1/config", {"name": "LP1", "ev": 0, "template": 0, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False,
                                                     "control_pilot_interruption_hw": True, "connection_module": {"selected": "mqtt"}, "power_module": {"selected": None}})
@@ -74,14 +74,14 @@ def pub_settings():
                                                              {
                                                                  "selected": "daily",
                                                                  "once": ["2021-11-01", "2021-11-05"],
-                                                                 "weekly": [False, False, False, False, False, False, False]
+                                                                 "weekly": [True]*7
                                                              },
-                                                             "time": ["07:00", "16:00"],
+                                                             "time": ["18:00", "12:00"],
                                                              "active": True})
     pub.pub("openWB/set/chargepoint/template/0", {"name": "Standard Ladepunkt-Vorlage",
                                                   "autolock": {
                                                       "wait_for_charging_end": False,
-                                                      "active": False},
+                                                      "active": True},
                                                   "rfid_enabling": True,
                                                   "valid_tags": ["248", "257", "258", "259", "1", "2", "3", "c"]})
 
@@ -164,11 +164,11 @@ def pub_settings():
     # pub.pub("openWB/set/pv/1/get/daily_yield", 10)
     # pub.pub("openWB/set/pv/1/get/monthly_yield", 10)
     # pub.pub("openWB/set/pv/1/get/yearly_yield", 10)
-    # if simulator == True:
+    # if simulator:
     #     pub.pub("openWB/set/pv/1/config", {"selected": "mqtt"})
 
     # counter
-    if simulator == True:
+    if simulator:
         # hierarchy = [{"id": "counter0", "children": [{"id": "cp1", "children": []}, {"id": "cp2", "children": []}, {"id": "cp3", "children": []}]}]
         # pub.pub("openWB/set/counter/get/hierarchy", hierarchy)
         pub.pub("openWB/set/counter/0/get/frequency", 50.2)
@@ -242,7 +242,7 @@ def pub_settings():
                 "version": 2, "ip_address": "192.168.1.169", "id": 1}})
 
     # # bat
-    # if simulator == True:
+    # if simulator:
     #     pub.pub("openWB/set/bat/1/config", {"selected": "mqtt"})
     # pub.pub("openWB/set/bat/1/get/daily_yield_export", 10)
     # pub.pub("openWB/set/bat/1/get/daily_yield_import", 10)

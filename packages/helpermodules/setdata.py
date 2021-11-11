@@ -63,7 +63,8 @@ class setData:
         """
         self.heartbeat = True
         if str(msg.payload.decode("utf-8")) != "":
-            log.MqttLogger().debug("Topic: "+str(msg.topic)+", Payload: "+str(msg.payload.decode("utf-8")))
+            log.MqttLogger().debug("Topic: "+str(msg.topic) +
+                                   ", Payload: "+str(msg.payload.decode("utf-8")))
             if "openWB/set/vehicle/" in msg.topic:
                 if "openWB/set/vehicle/template/ev_template/" in msg.topic:
                     self.event_ev_template.wait(5)
@@ -114,44 +115,50 @@ class setData:
                 # Wenn kein gültiges json-Objekt übergeben worden wäre, wäre bei loads eine Exception aufgetreten.
                 valid = True
             elif collection is not None:
-                if self._validate_collection_value(msg, data_type, ranges, collection) == True:
+                if self._validate_collection_value(msg, data_type, ranges, collection):
                     valid = True
             elif data_type == str:
-                if isinstance(value, str) == True:
+                if isinstance(value, str):
                     valid = True
                 else:
-                    log.MainLogger().error("Payload ungueltig: Topic "+str(msg.topic)+", Payload "+str(value)+" sollte ein String sein.")
+                    log.MainLogger().error("Payload ungueltig: Topic "+str(msg.topic) +
+                                           ", Payload "+str(value)+" sollte ein String sein.")
             elif data_type == int or data_type == float:
-                if self._validate_min_max_value(value, msg, data_type, ranges) == True:
+                if self._validate_min_max_value(value, msg, data_type, ranges):
                     valid = True
 
-            if valid == True:
+            if valid:
                 if pub_json == False:
                     pub.pub(msg.topic.replace('set/', '', 1), value)
                     pub.pub(msg.topic, "")
                 else:
                     # aktuelles json-Objekt liegt in subdata
-                    index = re.search('(?!/)([0-9]*)(?=/|$)', msg.topic).group()
+                    index = re.search(
+                        '(?!/)([0-9]*)(?=/|$)', msg.topic).group()
                     if "charge_template" in msg.topic:
                         event = self.event_charge_template
                         if "ct"+str(index) in subdata.SubData.ev_charge_template_data:
-                            template = copy.deepcopy(subdata.SubData.ev_charge_template_data["ct"+str(index)].data)
+                            template = copy.deepcopy(
+                                subdata.SubData.ev_charge_template_data["ct"+str(index)].data)
                         else:
                             template = {}
                     elif "ev_template" in msg.topic:
                         event = self.event_ev_template
                         if "et"+str(index) in subdata.SubData.ev_template_data:
-                            template = copy.deepcopy(subdata.SubData.ev_template_data["et"+str(index)].data)
+                            template = copy.deepcopy(
+                                subdata.SubData.ev_template_data["et"+str(index)].data)
                         else:
                             template = {}
                     elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/config.*$", msg.topic) is not None:
                         event = self.event_cp_config
                         if "cp"+str(index) in subdata.SubData.cp_data:
-                            template = copy.deepcopy(subdata.SubData.cp_data["cp"+str(index)].data["config"])
+                            template = copy.deepcopy(
+                                subdata.SubData.cp_data["cp"+str(index)].data["config"])
                         else:
                             template = {}
                     else:
-                        raise ValueError("Zu "+msg.topic+" konnte kein passendes json-Objekt gefunden werden.")
+                        raise ValueError(
+                            "Zu "+msg.topic+" konnte kein passendes json-Objekt gefunden werden.")
                     # Wert, der aktualisiert werden soll, erstellen/finden und updaten
                     if event == self.event_cp_config:
                         key_list = msg.topic.split("/")[5:]
@@ -159,7 +166,8 @@ class setData:
                         key_list = msg.topic.split("/")[6:]
                     self._change_key(template, key_list, value)
                     # publish
-                    index_pos = re.search('(?!/)([0-9]*)(?=/|$)', msg.topic).end()
+                    index_pos = re.search(
+                        '(?!/)([0-9]*)(?=/|$)', msg.topic).end()
                     if event == self.event_cp_config:
                         topic = msg.topic[:index_pos]+"/config"
                     else:
@@ -218,20 +226,21 @@ class setData:
         try:
             valid = False
             value = json.loads(str(msg.payload.decode("utf-8")))
-            if isinstance(value, list) == True:
+            if isinstance(value, list):
                 for item in value:
                     if self._validate_min_max_value(item, msg, data_type, ranges) == False:
                         break
                 else:
                     valid = True
-            elif isinstance(value, dict) == True:
+            elif isinstance(value, dict):
                 for item in value.values():
                     if self._validate_min_max_value(item, msg, data_type, ranges) == False:
                         break
                 else:
                     valid = True
             else:
-                log.MainLogger().error("Payload ungueltig: Topic "+str(msg.topic)+", Payload "+str(value)+" sollte eine Kollektion vom Typ "+str(collection)+" sein.")
+                log.MainLogger().error("Payload ungueltig: Topic "+str(msg.topic)+", Payload " +
+                                       str(value)+" sollte eine Kollektion vom Typ "+str(collection)+" sein.")
             return valid
         except Exception as e:
             log.MainLogger().exception("Fehler im setdata-Modul")
@@ -255,7 +264,7 @@ class setData:
         try:
             valid = True
             # Wenn es ein Float erwartet wird, kann auch ein Int akzeptiert werden. Da dies automatisch umgewandelt wird, falls erfoderlich.
-            if isinstance(value, data_type) == True or (data_type == float and isinstance(value, int) == True):
+            if isinstance(value, data_type) or (data_type == float and isinstance(value, int)):
                 if ranges:
                     for range in ranges:
                         if range[0] is not None and range[1] is not None:
@@ -268,20 +277,24 @@ class setData:
                             if value <= range[1]:
                                 break
                     else:
-                        log.MainLogger().error("Payload ungueltig: Topic "+str(msg.topic)+", Payload "+str(value)+" liegt in keinem der angegebenen Wertebereiche.")
+                        log.MainLogger().error("Payload ungueltig: Topic "+str(msg.topic)+", Payload " +
+                                               str(value)+" liegt in keinem der angegebenen Wertebereiche.")
                         valid = False
             elif value is None:
                 for range in ranges:
                     if range[0] is None and range[1] is None:
                         break
                 else:
-                    log.MainLogger().error("Payload ungueltig: Topic "+str(msg.topic)+", Payload "+str(value)+" darf nicht 'None' sein.")
+                    log.MainLogger().error("Payload ungueltig: Topic "+str(msg.topic) +
+                                           ", Payload "+str(value)+" darf nicht 'None' sein.")
                     valid = False
             else:
                 if data_type == int:
-                    log.MainLogger().error("Payload ungueltig: Topic "+str(msg.topic)+", Payload "+str(value)+" sollte ein Int sein.")
+                    log.MainLogger().error("Payload ungueltig: Topic "+str(msg.topic) +
+                                           ", Payload "+str(value)+" sollte ein Int sein.")
                 elif data_type == float:
-                    log.MainLogger().error("Payload ungueltig: Topic "+str(msg.topic)+", Payload "+str(value)+" sollte ein Float sein.")
+                    log.MainLogger().error("Payload ungueltig: Topic "+str(msg.topic) +
+                                           ", Payload "+str(value)+" sollte ein Float sein.")
                 valid = False
             return valid
         except Exception as e:
@@ -290,10 +303,12 @@ class setData:
     def __unknown_topic(self, msg) -> None:
         try:
             if msg.payload:
-                log.MainLogger().error("Unbekanntes set-Topic: "+str(msg.topic)+", " + str(json.loads(str(msg.payload.decode("utf-8")))))
+                log.MainLogger().error("Unbekanntes set-Topic: "+str(msg.topic) +
+                                       ", " + str(json.loads(str(msg.payload.decode("utf-8")))))
                 pub.pub(msg.topic, "")
             else:
-                log.MainLogger().error("Unbekanntes set-Topic: "+str(msg.topic)+" mit leerem Payload")
+                log.MainLogger().error("Unbekanntes set-Topic: " +
+                                       str(msg.topic)+" mit leerem Payload")
                 pub.pub(msg.topic, "")
         except Exception as e:
             log.MainLogger().exception("Fehler im setdata-Modul")
@@ -379,7 +394,8 @@ class setData:
                 elif "/chargemode/pv_charging/feed_in_limit" in msg.topic:
                     self._validate_value(msg, int, [(0, 1)], pub_json=True)
                 elif "/chargemode/pv_charging/min_current" in msg.topic:
-                    self._validate_value(msg, int, [(0, 0), (6, 16)], pub_json=True)
+                    self._validate_value(
+                        msg, int, [(0, 0), (6, 16)], pub_json=True)
                 elif "/chargemode/pv_charging/min_soc" in msg.topic:
                     self._validate_value(msg, int, [(0, 100)], pub_json=True)
                 elif "/chargemode/pv_charging/min_soc_current" in msg.topic:
@@ -402,16 +418,19 @@ class setData:
                 if "/name" in msg.topic:
                     self._validate_value(msg, str, pub_json=True)
                 elif "/average_consump" in msg.topic:
-                    self._validate_value(msg, float, [(0, float("inf"))], pub_json=True)
+                    self._validate_value(
+                        msg, float, [(0, float("inf"))], pub_json=True)
                 elif "/battery_capacity" in msg.topic:
-                    self._validate_value(msg, int, [(0, float("inf"))], pub_json=True)
+                    self._validate_value(
+                        msg, int, [(0, float("inf"))], pub_json=True)
                 elif "/max_phases" in msg.topic:
                     self._validate_value(msg, int, [(1, 3)], pub_json=True)
                 elif "/min_current" in msg.topic:
                     self._validate_value(msg, int, [(6, 32)], pub_json=True)
                 elif ("/max_current_one_phase" in msg.topic or
                         "/max_current_multi_phases" in msg.topic):
-                    self._validate_value(msg, int, [(0, 0), (6, 32)], pub_json=True)
+                    self._validate_value(
+                        msg, int, [(0, 0), (6, 32)], pub_json=True)
                 elif ("/control_pilot_interruption" in msg.topic or
                         "/prevent_switch_stop" in msg.topic):
                     self._validate_value(msg, int, [(0, 1)], pub_json=True)
@@ -478,13 +497,15 @@ class setData:
             elif "/set/log/timestamp_start_charging" in msg.topic:
                 self._validate_value(msg, str)
             elif "/config/ev" in msg.topic:
-                self._validate_value(msg, int, [(0, float("inf"))], pub_json=True)
+                self._validate_value(
+                    msg, int, [(0, float("inf"))], pub_json=True)
             elif "/config" in msg.topic:
                 self._validate_value(msg, "json")
             elif ("/get/voltage" in msg.topic or
                     "/get/current" in msg.topic or
                     "/get/power_factor" in msg.topic):
-                self._validate_value(msg, float, [(0, float("inf"))], collection=list)
+                self._validate_value(
+                    msg, float, [(0, float("inf"))], collection=list)
             elif ("/get/daily_yield" in msg.topic or
                     "/get/power_all" in msg.topic or
                     "/get/counter" in msg.topic or
@@ -553,7 +574,8 @@ class setData:
             elif "/get/power" in msg.topic:
                 self._validate_value(msg, int, [(float("-inf"), 0)])
             elif "/get/actual_power_phase" in msg.topic:
-                self._validate_value(msg, float, [(0, float("inf"))], collection=list)
+                self._validate_value(
+                    msg, float, [(0, float("inf"))], collection=list)
             else:
                 self.__unknown_topic(msg)
         except Exception as e:
@@ -733,7 +755,8 @@ class setData:
             elif "/set/consumption_left" in msg.topic:
                 self._validate_value(msg, float)
             elif "/set/current_left" in msg.topic:
-                self._validate_value(msg, float, [(0, float("inf"))], collection=list)
+                self._validate_value(
+                    msg, float, [(0, float("inf"))], collection=list)
             elif "/config/selected" in msg.topic:
                 self._validate_value(msg, str)
             elif "/module" in msg.topic:
@@ -743,13 +766,16 @@ class setData:
             elif "/config/max_consumption" in msg.topic:
                 self._validate_value(msg, int, [(2000, 1000000)])
             elif "/get/power_all" in msg.topic:
-                self._validate_value(msg, float, [(float("-inf"), float("inf")), (None, None)])
+                self._validate_value(
+                    msg, float, [(float("-inf"), float("inf")), (None, None)])
             elif "/get/current" in msg.topic:
-                self._validate_value(msg, float, [(float("-inf"), float("inf")), (None, None)], collection=list)
+                self._validate_value(
+                    msg, float, [(float("-inf"), float("inf")), (None, None)], collection=list)
             elif ("/get/voltage" in msg.topic or
                     "/get/power_phase" in msg.topic or
                     "/get/power_factor" in msg.topic):
-                self._validate_value(msg, float, [(0, float("inf")), (None, None)], collection=list)
+                self._validate_value(
+                    msg, float, [(0, float("inf")), (None, None)], collection=list)
             elif ("/get/power_average" in msg.topic
                     or "/get/unbalanced_load" in msg.topic
                     or "/get/frequency" in msg.topic
@@ -757,7 +783,8 @@ class setData:
                     or "/get/daily_yield_import" in msg.topic
                     or "/get/imported" in msg.topic
                     or "/get/exported" in msg.topic):
-                self._validate_value(msg, float, [(0, float("inf")), (None, None)])
+                self._validate_value(
+                    msg, float, [(0, float("inf")), (None, None)])
             elif "/get/fault_state" in msg.topic:
                 self._validate_value(msg, int, [(0, 2)])
             elif "/get/fault_str" in msg.topic:

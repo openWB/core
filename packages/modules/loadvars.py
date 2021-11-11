@@ -14,6 +14,7 @@ from .cp import modbus_evse as cp_modbus_evse
 from .cp import modbus_slave as cp_modbus_slave
 from .cp import ip_evse as cp_ip_evse
 
+
 class loadvars:
     """ fragt die Werte der konfigurierten Module ab
     """
@@ -36,8 +37,9 @@ class loadvars:
                     thread.join(timeout=3)
 
                 for thread in kits_threads:
-                    if thread.is_alive() == True:
-                        log.MainLogger().error(thread.name+" konnte nicht innerhalb des Timeouts die Werte abfragen, die abgefragten Werte werden nicht in der Regelung verwendet.")
+                    if thread.is_alive():
+                        log.MainLogger().error(thread.name +
+                                               " konnte nicht innerhalb des Timeouts die Werte abfragen, die abgefragten Werte werden nicht in der Regelung verwendet.")
         except Exception as e:
             log.MainLogger().exception("Fehler im loadvars-Modul")
 
@@ -98,7 +100,7 @@ class loadvars:
                         cp_external_openwb.read_external_openwb(cp)
                     # elif cp.data["config"]["connection_module"]["selected"] == "":
                     #     (cp)
-                        
+
                     # Display, Pushover, SocTimer eher am Ende
 
                     # Ladeleistungsmodul
@@ -115,7 +117,7 @@ class loadvars:
     def _get_general(self):
         try:
             # Beim ersten Durchlauf wird in jedem Fall eine Exception geworfen, da die Daten erstmalig ins data-Modul kopiert werden müssen.
-            if data.data.general_data["general"].data["ripple_control_receiver"]["configured"] == True:
+            if data.data.general_data["general"].data["ripple_control_receiver"]["configured"]:
                 ripple_control_receiver.read_ripple_control_receiver()
         except Exception as e:
             log.MainLogger().exception("Fehler im loadvars-Modul")

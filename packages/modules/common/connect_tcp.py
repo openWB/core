@@ -41,18 +41,22 @@ class ConnectTcp:
 
     def _log_connection_error(self):
         try:
-            error_text = self.name+" konnte keine Verbindung aufbauen. Bitte Einstellungen (IP-Adresse, ..) und Hardware-Anschluss pruefen."
+            error_text = self.name + \
+                " konnte keine Verbindung aufbauen. Bitte Einstellungen (IP-Adresse, ..) und Hardware-Anschluss pruefen."
             log.MainLogger().error(error_text)
-            pub.pub("openWB/set/devices/"+str(self.id)+"/get/fault_str", error_text)
+            pub.pub("openWB/set/devices/"+str(self.id) +
+                    "/get/fault_str", error_text)
             pub.pub("openWB/set/devices/"+str(self.id)+"/get/fault_state", 2)
         except:
             log.MainLogger().exception(self.name)
 
     def _log_modbus_error(self, reg):
         try:
-            error_text = self.name+" konnte keine Werte fuer Register "+str(reg)+" abfragen. Falls vorhanden, parallele Verbindungen, zB. node red, beenden und bei anhaltender Fehlermeldung Zaehler neustarten."
+            error_text = self.name+" konnte keine Werte fuer Register " + \
+                str(reg)+" abfragen. Falls vorhanden, parallele Verbindungen, zB. node red, beenden und bei anhaltender Fehlermeldung Zaehler neustarten."
             log.MainLogger().error(error_text)
-            pub.pub("openWB/set/devices/"+str(self.id)+"/get/fault_str", error_text)
+            pub.pub("openWB/set/devices/"+str(self.id) +
+                    "/get/fault_str", error_text)
             pub.pub("openWB/set/devices/"+str(self.id)+"/get/fault_state", 1)
             self.tcp_client.close()
         except:
@@ -61,7 +65,8 @@ class ConnectTcp:
     def read_integer_registers(self, reg: int, len: int, id: int) -> int:
         try:
             resp = self.tcp_client.read_input_registers(reg, len, unit=id)
-            all = format(resp.registers[0], '04x') + format(resp.registers[1], '04x')
+            all = format(resp.registers[0], '04x') + \
+                format(resp.registers[1], '04x')
             value = int(struct.unpack('>i', self.decode_hex(all)[0])[0])
             return value
         except pymodbus.exceptions.ConnectionException:
@@ -95,7 +100,8 @@ class ConnectTcp:
     def read_float_registers(self, reg: int, len: int, id: int) -> float:
         try:
             resp = self.tcp_client.read_input_registers(reg, len, unit=id)
-            value = float(struct.unpack('>f', struct.pack('>HH', *resp.registers))[0])
+            value = float(struct.unpack(
+                '>f', struct.pack('>HH', *resp.registers))[0])
             return value
         except pymodbus.exceptions.ConnectionException:
             self._log_connection_error()
@@ -127,14 +133,15 @@ class ConnectTcp:
     def read_binary_registers_to_int(self, reg: int, len: int, id: int, bit: int, signed=True) -> int:
         try:
             resp = self.tcp_client.read_holding_registers(reg, len, unit=id)
-            decoder = BinaryPayloadDecoder.fromRegisters(resp.registers, byteorder=Endian.Big, wordorder=Endian.Big)
+            decoder = BinaryPayloadDecoder.fromRegisters(
+                resp.registers, byteorder=Endian.Big, wordorder=Endian.Big)
             if bit == 32:
-                if signed == True:
+                if signed:
                     value = int(decoder.decode_32bit_int())
                 else:
                     value = int(decoder.decode_32bit_uint())
             elif bit == 16:
-                if signed == True:
+                if signed:
                     value = int(decoder.decode_16bit_int())
                 else:
                     value = int(decoder.decode_16bit_uint())
@@ -153,7 +160,8 @@ class ConnectTcp:
     def read_binary_registers_to_float(self, reg: int, len: int, id: int, bit: int) -> float:
         try:
             resp = self.tcp_client.read_holding_registers(reg, len, unit=id)
-            decoder = BinaryPayloadDecoder.fromRegisters(resp.registers, byteorder=Endian.Big, wordorder=Endian.Big)
+            decoder = BinaryPayloadDecoder.fromRegisters(
+                resp.registers, byteorder=Endian.Big, wordorder=Endian.Big)
             if bit == 32:
                 value = float(decoder.decode_32bit_float())
             elif bit == 16:

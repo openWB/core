@@ -63,7 +63,8 @@ class MainLogger:
             try:
                 local_time = datetime.now(timezone.utc).astimezone()
                 myPid = str(os.getpid())
-                print(local_time.strftime(format="%Y-%m-%d %H:%M:%S") + ": PID: " + myPid + ": " + message)
+                print(local_time.strftime(format="%Y-%m-%d %H:%M:%S") +
+                      ": PID: " + myPid + ": " + message)
             except:
                 traceback.print_exc()
 
@@ -71,14 +72,17 @@ class MainLogger:
 
     def __init__(self):
         if not MainLogger.instance:
-            ramdisk = Path(str(Path(os.path.abspath(__file__)).parents[2])+"/ramdisk/bootinprogress").is_file()
-            if ramdisk == True:
+            ramdisk = Path(str(Path(os.path.abspath(__file__)
+                                    ).parents[2])+"/ramdisk/bootinprogress").is_file()
+            if ramdisk:
                 MainLogger.instance = MainLogger.__Logger()
             else:
                 MainLogger.instance = logging.getLogger("main")
                 MainLogger.instance.setLevel(logging.DEBUG)
-                formatter = logging.Formatter('%(asctime)s - {%(pathname)s:%(lineno)s} - %(levelname)s - %(message)s')
-                fh = logging.FileHandler('/var/www/html/openWB/ramdisk/main.log')
+                formatter = logging.Formatter(
+                    '%(asctime)s - {%(pathname)s:%(lineno)s} - %(levelname)s - %(message)s')
+                fh = logging.FileHandler(
+                    '/var/www/html/openWB/ramdisk/main.log')
                 fh.setLevel(logging.DEBUG)
                 fh.setFormatter(formatter)
                 MainLogger.instance.addHandler(fh)
@@ -108,5 +112,7 @@ class MqttLogger:
 def cleanup_logfiles():
     """ ruft das Skript zum Kürzen der Logfiles auf.
     """
-    subprocess.run(["./packages/helpermodules/cleanup_log.sh", "/var/www/html/openWB/ramdisk/main.log"])
-    subprocess.run(["./packages/helpermodules/cleanup_log.sh", "/var/www/html/openWB/ramdisk/mqtt.log"])
+    subprocess.run(["./packages/helpermodules/cleanup_log.sh",
+                    "/var/www/html/openWB/ramdisk/main.log"])
+    subprocess.run(["./packages/helpermodules/cleanup_log.sh",
+                    "/var/www/html/openWB/ramdisk/mqtt.log"])
