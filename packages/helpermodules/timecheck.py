@@ -30,7 +30,7 @@ def set_date(now, begin, end):
             # Endzeit ist am nächsten Tag
             end = end + datetime.timedelta(days=1)
         return begin, end
-    except Exception as e:
+    except Exception:
         log.MainLogger().exception("Fehler im System-Modul")
         return None, None
 
@@ -57,7 +57,7 @@ def is_timeframe_valid(now, begin, end):
             return True
         else:
             return False
-    except Exception as e:
+    except Exception:
         log.MainLogger().exception("Fehler im System-Modul")
         return False
 
@@ -87,7 +87,7 @@ def check_plans_timeframe(plans, hours=None):
                     return plan
         else:
             return None
-    except Exception as e:
+    except Exception:
         log.MainLogger().exception("Fehler im System-Modul")
         return None
 
@@ -172,7 +172,7 @@ def check_timeframe(plan, hours):
                             now, begin, end)
                     else:
                         state = False
-    except Exception as e:
+    except Exception:
         log.MainLogger().exception("Fehler im System-Modul")
         return None
     return state
@@ -195,7 +195,7 @@ def _calc_begin(end, hours):
     try:
         prev = datetime.timedelta(hours)
         return end - prev
-    except Exception as e:
+    except Exception:
         log.MainLogger().exception("Fehler im System-Modul")
         return None
 
@@ -270,7 +270,7 @@ def check_duration(plan, duration):
                 return _is_duration_valid(now, duration, end)
             else:
                 return False, 0
-    except Exception as e:
+    except Exception:
         log.MainLogger().exception("Fehler im System-Modul")
         return False
 
@@ -307,7 +307,7 @@ def _is_duration_valid(now, duration, end):
             return 1, 0
         else:
             return 0, 0
-    except Exception as e:
+    except Exception:
         log.MainLogger().exception("Fehler im System-Modul")
         return 1, 0
 
@@ -333,7 +333,7 @@ def is_list_valid(hourlist):
                 return True
             else:
                 return False
-    except Exception as e:
+    except Exception:
         log.MainLogger().exception("Fehler im System-Modul")
         return False
 
@@ -361,7 +361,7 @@ def check_timestamp(timestamp, duration):
             return False
         else:
             return True
-    except Exception as e:
+    except Exception:
         log.MainLogger().exception("Fehler im System-Modul")
         return True
 
@@ -441,7 +441,7 @@ def get_difference_to_now(timestamp_begin):
         now = datetime.datetime.today()
         diff = (now - begin)
         return str(diff)[:-10]
-    except Exception as e:
+    except Exception:
         log.MainLogger().exception("Fehler im System-Modul")
         return 0
 
@@ -467,7 +467,7 @@ def get_difference(timestamp_begin, timestamp_end):
         end = datetime.datetime.strptime(timestamp_end, "%m/%d/%Y, %H:%M:%S")
         diff = (begin - end)
         return diff.total_seconds()
-    except Exception as e:
+    except Exception:
         log.MainLogger().exception("Fehler im System-Modul")
         return 0
 
@@ -489,7 +489,7 @@ def duration_sum(first, second):
         second = __get_timedelta_obj(second)
         sum = first + second
         return str(sum)
-    except Exception as e:
+    except Exception:
         log.MainLogger().exception("Fehler im System-Modul")
 
 
@@ -513,5 +513,5 @@ def __get_timedelta_obj(time):
             time = datetime.timedelta(days=int(time_charged[0]), hours=int(
                 time_charged[1]), minutes=int(time_charged[2]))
         return time
-    except Exception as e:
+    except Exception:
         log.MainLogger().exception("Fehler im System-Modul")

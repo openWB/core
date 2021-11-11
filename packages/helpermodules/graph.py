@@ -1,11 +1,9 @@
-import pathlib
 import subprocess
 import time
 import datetime
 
 from ..algorithm import data
 from . import pub
-from . import timecheck
 
 
 def _convert_to_kW(value):
@@ -68,12 +66,12 @@ def pub_graph_data():
     pub.pub("openWB/set/graph/lastlivevaluesJson", dataline)
     pub.pub("openWB/set/system/lastlivevaluesJson", dataline)
 
-    try:
-        with open('./ramdisk/graph_live.json', "r") as f:
-            file = f.readlines()
-            file_len = len(file)
-    except FileNotFoundError:
-        file_len = 0
+    # try:
+    #     with open('./ramdisk/graph_live.json', "r") as f:
+    #         file = f.readlines()
+    #         file_len = len(file)
+    # except FileNotFoundError:
+    #     file_len = 0
     # if file_len > 180:
     #     with open("./data/graph/all_live.json", "w+") as f:
     #         f.writelines(file[180:])
