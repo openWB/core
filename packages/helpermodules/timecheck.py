@@ -53,7 +53,7 @@ def is_timeframe_valid(now, begin, end):
     False : nicht aktuell
     """
     try:
-        if ((now < begin) == False) and ((now < end) == True):
+        if ((now < begin) == False) and ((now < end)):
             return True
         else:
             return False
@@ -81,9 +81,9 @@ def check_plans_timeframe(plans, hours=None):
     try:
         for plan in plans:
             # Nur Keys mit Plannummer berücksichtigen
-            if isinstance(plans[plan], dict) == True:
+            if isinstance(plans[plan], dict):
                 state = check_timeframe(plans[plan], hours)
-                if state == True:
+                if state:
                     return plan
         else:
             return None
@@ -109,7 +109,7 @@ def check_timeframe(plan, hours):
     """
     state = None
     try:
-        if plan["active"] == True:
+        if plan["active"]:
             now = datetime.datetime.today()
             if hours is None:
                 begin = datetime.datetime.strptime(plan["time"][0], '%H:%M')
@@ -150,21 +150,21 @@ def check_timeframe(plan, hours):
                 if hours is None:
                     if begin < end:
                         # Endzeit ist am gleichen Tag
-                        if plan["frequency"]["weekly"][now.weekday()] == True:
+                        if plan["frequency"]["weekly"][now.weekday()]:
                             begin, end = set_date(now, begin, end)
                             state = is_timeframe_valid(
                                 now, begin, end)
                         else:
                             state = False
                     else:
-                        if (plan["frequency"]["weekly"][now.weekday()] or plan["frequency"]["weekly"][now.weekday()+1]) == True:
+                        if (plan["frequency"]["weekly"][now.weekday()] or plan["frequency"]["weekly"][now.weekday()+1]):
                             begin, end = set_date(now, begin, end)
                             state = is_timeframe_valid(
                                 now, begin, end)
                         else:
                             state = False
                 else:
-                    if plan["frequency"]["weekly"][now.weekday()] == True:
+                    if plan["frequency"]["weekly"][now.weekday()]:
                         end = end.replace(
                             end.year, end.month, end.day)
                         begin = _calc_begin(end, hours)
@@ -247,7 +247,7 @@ def check_duration(plan, duration):
                 state, remaining_time = _is_duration_valid(now, duration, end)
             return state, remaining_time
         elif plan["frequency"]["selected"] == "weekly":
-            if plan["frequency"]["weekly"][now.weekday()] == True:
+            if plan["frequency"]["weekly"][now.weekday()]:
                 end = end.replace(now.year, now.month, now.day)
                 state, remaining_time = _is_duration_valid(now, duration, end)
                 # Zeitpunkt ist an diesem Tag noch nicht vorbei
@@ -263,7 +263,7 @@ def check_duration(plan, duration):
                         now, duration, end)
                 return state, remaining_time
             # prüfen, ob für den nächsten Tag ein Termin ansteht und heute schon begonnen werden muss
-            if plan["frequency"]["weekly"][now.weekday()+1] == True:
+            if plan["frequency"]["weekly"][now.weekday()+1]:
                 end = end.replace(now.year, now.month, now.day)
                 delta = datetime.timedelta(days=1)
                 end += delta

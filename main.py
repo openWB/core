@@ -58,10 +58,10 @@ class HandlerAlgorithm:
                     prep.copy_data()
                     log.MainLogger().info(" Stop copy_data 3")
                     self.heartbeat = True
-                    if data.data.system_data["system"].data["perform_update"] == True:
+                    if data.data.system_data["system"].data["perform_update"]:
                         data.data.system_data["system"].perform_update()
                         return
-                    elif data.data.system_data["system"].data["update_in_progress"] == True:
+                    elif data.data.system_data["system"].data["update_in_progress"]:
                         log.MainLogger().info("Regelung pausiert, da ein Update durchgefuehrt wird.")
                         return
                     prep.setup_algorithm()
@@ -146,7 +146,8 @@ class RepeatedTimer(object):
     def start(self):
         if not self.is_running:
             self.next_call += self.interval
-            self._timer = threading.Timer(self.next_call - time.time(), self._run)
+            self._timer = threading.Timer(
+                self.next_call - time.time(), self._run)
             self._timer.start()
             self.is_running = True
 
@@ -169,8 +170,10 @@ try:
     event_charge_template.set()
     event_cp_config = threading.Event()
     event_cp_config.set()
-    set = setdata.setData(event_ev_template, event_charge_template, event_cp_config)
-    sub = subdata.SubData(event_ev_template, event_charge_template, event_cp_config)
+    set = setdata.setData(
+        event_ev_template, event_charge_template, event_cp_config)
+    sub = subdata.SubData(
+        event_ev_template, event_charge_template, event_cp_config)
     comm = command.Command()
     t_sub = Thread(target=sub.sub_topics, args=())
     t_set = Thread(target=set.set_data, args=())

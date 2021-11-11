@@ -32,12 +32,14 @@ def thread_phase_switch(cp_num, selected, config, phases_to_use, duration, charg
     try:
         global phase_switch_threads
         # fertige Threads aus der Liste löschen:
-        phase_switch_threads = {t: phase_switch_threads[t] for t in phase_switch_threads if phase_switch_threads[t].is_alive()}
+        phase_switch_threads = {
+            t: phase_switch_threads[t] for t in phase_switch_threads if phase_switch_threads[t].is_alive()}
 
         # prüfen, ob Thread in der Liste ist. Dann ist noch eine Phasenumschaltung aktiv und es darf keine neue gestartet werden.
         if "thread_cp"+str(cp_num) not in phase_switch_threads:
             # Thread zur Phasenumschaltung erstellen, starten und der Liste hinzufügen.
-            phase_switch_threads["thread_cp"+str(cp_num)] = threading.Thread(target=_perform_phase_switch, args=(selected, config, phases_to_use, duration, charge_state))
+            phase_switch_threads["thread_cp"+str(cp_num)] = threading.Thread(
+                target=_perform_phase_switch, args=(selected, config, phases_to_use, duration, charge_state))
             phase_switch_threads["thread_cp"+str(cp_num)].start()
             log.MainLogger().debug("Thread zur Phasenumschaltung an LP"+str(cp_num)+" gestartet.")
     except Exception as e:
@@ -50,7 +52,7 @@ def _perform_phase_switch(selected, config, phases_to_use, duration, charge_stat
     # Stoppen der Ladung wird in start_charging bei gesetztem phase_switch_timestamp durchgeführt.
     # Wenn gerade geladen wird, muss vor der Umschaltung eine Pause von 5s gemacht werden.
     try:
-        if charge_state == True:
+        if charge_state:
             time.sleep(5)
         # Phasenumschaltung entsprechend Modul
         if selected == "external_openwb":
@@ -61,13 +63,11 @@ def _perform_phase_switch(selected, config, phases_to_use, duration, charge_stat
         elif selected == "ip_evse":
             ip_address = config["ip_address"]
             id = config["id"]
-            ip_evse.perform_phase_switch(ip_address, id, duration, phases_to_use)
+            ip_evse.perform_phase_switch(
+                ip_address, id, duration, phases_to_use)
         # Kurze Pause, bevor mit der Ladung gestartet wird.
         # Die Ladung wird in start_charging wieder gestartet, wenn phase_switch_timestamp wieder auf "0" gesetzt wird.
-        if charge_state == True:
+        if charge_state:
             time.sleep(1)
     except Exception as e:
         log.MainLogger().exception("Fehler im Phasenumschaltungs-Modul")
-
-
-

@@ -14,6 +14,7 @@ except:
     from helpermodules import log
     from helpermodules import pub
 
+
 class set_values():
     def __init__(self) -> None:
         pass
@@ -31,7 +32,7 @@ class set_values():
                 frequency]
         """
         try:
-            if ramdisk == True:
+            if ramdisk:
                 self.write_to_ramdisk(values)
             else:
                 self.pub_to_broker(num, values)
@@ -68,7 +69,7 @@ class set_values():
     def write_to_file(self, file, value):
         try:
             with open("/var/www/html/openWB/ramdisk/" + file, "w") as f:
-                    f.write(str(value))
+                f.write(str(value))
         except Exception as e:
             log.log_exception_comp(e, True)
 
@@ -76,19 +77,22 @@ class set_values():
         try:
             # Format
             for n in range(len(values)):
-                if isinstance(values[n], list) == True:
+                if isinstance(values[n], list):
                     for m in range(len(values[n])):
                         values[n][m] = round(values[n][m], 2)
                 else:
                     values[n] = round(values[n], 2)
             pub.pub("openWB/set/counter/"+str(num)+"/get/voltage", values[0])
             pub.pub("openWB/set/counter/"+str(num)+"/get/current", values[1])
-            pub.pub("openWB/set/counter/"+str(num)+"/get/power_phase", values[2])
-            pub.pub("openWB/set/counter/"+str(num)+"/get/power_factor", values[3])
-            pub.pub("openWB/set/counter/"+str(num)+"/get/imported", values[4][0])
-            pub.pub("openWB/set/counter/"+str(num)+"/get/exported", values[4][1])
+            pub.pub("openWB/set/counter/"+str(num) +
+                    "/get/power_phase", values[2])
+            pub.pub("openWB/set/counter/"+str(num) +
+                    "/get/power_factor", values[3])
+            pub.pub("openWB/set/counter/"+str(num) +
+                    "/get/imported", values[4][0])
+            pub.pub("openWB/set/counter/"+str(num) +
+                    "/get/exported", values[4][1])
             pub.pub("openWB/set/counter/"+str(num)+"/get/power_all", values[5])
             pub.pub("openWB/set/counter/"+str(num)+"/get/frequency", values[6])
         except Exception as e:
             log.log_exception_comp(e, False)
-

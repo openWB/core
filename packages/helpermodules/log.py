@@ -80,8 +80,10 @@ class MainLogger:
             else:
                 MainLogger.instance = logging.getLogger("main")
                 MainLogger.instance.setLevel(logging.DEBUG)
-                formatter = logging.Formatter('%(asctime)s - {%(pathname)s:%(lineno)s} - %(levelname)s - %(message)s')
-                fh = logging.FileHandler('/var/www/html/openWB/ramdisk/main.log')
+                formatter = logging.Formatter(
+                    '%(asctime)s - {%(pathname)s:%(lineno)s} - %(levelname)s - %(message)s')
+                fh = logging.FileHandler(
+                    '/var/www/html/openWB/ramdisk/main.log')
                 fh.setLevel(logging.DEBUG)
                 fh.setFormatter(formatter)
                 MainLogger.instance.addHandler(fh)
@@ -111,5 +113,7 @@ class MqttLogger:
 def cleanup_logfiles():
     """ ruft das Skript zum Kürzen der Logfiles auf.
     """
-    subprocess.run(["./packages/helpermodules/cleanup_log.sh", "/var/www/html/openWB/ramdisk/main.log"])
-    subprocess.run(["./packages/helpermodules/cleanup_log.sh", "/var/www/html/openWB/ramdisk/mqtt.log"])
+    subprocess.run(["./packages/helpermodules/cleanup_log.sh",
+                    "/var/www/html/openWB/ramdisk/main.log"])
+    subprocess.run(["./packages/helpermodules/cleanup_log.sh",
+                    "/var/www/html/openWB/ramdisk/mqtt.log"])
