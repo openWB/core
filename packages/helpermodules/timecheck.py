@@ -5,6 +5,7 @@ import datetime
 
 from . import log
 
+
 def set_date(now, begin, end):
     """ setzt das Datum auf das heutige Datum, bzw. falls der Endzeitpunkt am nächsten Tag ist, auf morgen
 
@@ -80,13 +81,10 @@ def check_plans_timeframe(plans, hours=None):
     try:
         for plan in plans:
             # Nur Keys mit Plannummer berücksichtigen
-            try:
-                if isinstance(plans[plan], dict) == True:
-                    state = check_timeframe(plans[plan], hours)
-                    if state == True:
-                        return plan
-            except:
-                pass
+            if isinstance(plans[plan], dict) == True:
+                state = check_timeframe(plans[plan], hours)
+                if state == True:
+                    return plan
         else:
             return None
     except Exception as e:
@@ -110,7 +108,6 @@ def check_timeframe(plan, hours):
     False: Zeitfenster nicht gültig
     """
     state = None
-    begin = datetime()
     try:
         if plan["active"] == True:
             now = datetime.datetime.today()
@@ -145,7 +142,7 @@ def check_timeframe(plan, hours):
                     end = end.replace(now.year, now.month, now.day)
                     # Wenn der Zeitpunkt an diesem Tag schon vorüber ist, nächsten Tag prüfen.
                     if end < now:
-                        end += datetime.timedelta(days = 1)
+                        end += datetime.timedelta(days=1)
                     begin = _calc_begin(end, hours)
                 state = is_timeframe_valid(now, begin, end)
 
@@ -202,6 +199,7 @@ def _calc_begin(end, hours):
         log.MainLogger().exception("Fehler im System-Modul")
         return None
 
+
 def check_duration(plan, duration):
     """ prüft, ob der in angegebene Zeitpunkt abzüglich der Dauer jetzt ist. 
     Um etwas Puffer zu haben, werden bei Überschreiten des Zeitpunkts die nachfolgenden 20 Min auch noch als Ladezeit zurückgegeben.
@@ -244,7 +242,7 @@ def check_duration(plan, duration):
             if -0.33 <= remaining_time < 0:
                 remaining_time = remaining_time * -1
             elif remaining_time < -0.33:
-                delta = datetime.timedelta(days = 1)
+                delta = datetime.timedelta(days=1)
                 end += delta
                 state, remaining_time = _is_duration_valid(now, duration, end)
             return state, remaining_time
@@ -258,15 +256,16 @@ def check_duration(plan, duration):
                 elif -0.33 <= remaining_time < 0:
                     remaining_time = remaining_time * -1
                 else:
-                # Wenn der Zeitpunkt an diesem Tag schon vorüber ist (verbleibende Zeit ist negativ), nächsten Tag prüfen.
-                    delta = datetime.timedelta(days = 1)
+                    # Wenn der Zeitpunkt an diesem Tag schon vorüber ist (verbleibende Zeit ist negativ), nächsten Tag prüfen.
+                    delta = datetime.timedelta(days=1)
                     end += delta
-                    state, remaining_time = _is_duration_valid(now, duration, end)
+                    state, remaining_time = _is_duration_valid(
+                        now, duration, end)
                 return state, remaining_time
             # prüfen, ob für den nächsten Tag ein Termin ansteht und heute schon begonnen werden muss
             if plan["frequency"]["weekly"][now.weekday()+1] == True:
                 end = end.replace(now.year, now.month, now.day)
-                delta = datetime.timedelta(days = 1)
+                delta = datetime.timedelta(days=1)
                 end += delta
                 return _is_duration_valid(now, duration, end)
             else:
@@ -380,6 +379,7 @@ def create_timestamp():
     except:
         raise
 
+
 def create_timestamp_YYYYMM():
     """ erzeugt einen Zeitstempel mit dem aktuellen Jahr und Monat
 
@@ -392,6 +392,7 @@ def create_timestamp_YYYYMM():
         return stamp
     except:
         raise
+
 
 def create_timestamp_YYYYMMDD():
     """ erzeugt einen Zeitstempel mit dem aktuellen Jahr und Monat und Tag
@@ -406,6 +407,7 @@ def create_timestamp_YYYYMMDD():
     except:
         raise
 
+
 def create_timestamp_time():
     """ erzeugt einen Zeitstempel mit der aktuellen Uhrzeit
 
@@ -418,6 +420,7 @@ def create_timestamp_time():
         return stamp
     except:
         raise
+
 
 def get_difference_to_now(timestamp_begin):
     """ ermittelt den Abstand zwischen zwei Zeitstempeln.
@@ -433,13 +436,15 @@ def get_difference_to_now(timestamp_begin):
         Differenz HH:MM, ggf DD days, HH:MM
     """
     try:
-        begin = datetime.datetime.strptime(timestamp_begin[:-3], "%m/%d/%Y, %H:%M")
+        begin = datetime.datetime.strptime(
+            timestamp_begin[:-3], "%m/%d/%Y, %H:%M")
         now = datetime.datetime.today()
         diff = (now - begin)
         return str(diff)[:-10]
     except Exception as e:
         log.MainLogger().exception("Fehler im System-Modul")
         return 0
+
 
 def get_difference(timestamp_begin, timestamp_end):
     """ ermittelt den Abstand zwischen zwei Zeitstempeln in Sekunden.
@@ -457,13 +462,15 @@ def get_difference(timestamp_begin, timestamp_end):
         Differenz in Sekunden
     """
     try:
-        begin = datetime.datetime.strptime(timestamp_begin, "%m/%d/%Y, %H:%M:%S")
+        begin = datetime.datetime.strptime(
+            timestamp_begin, "%m/%d/%Y, %H:%M:%S")
         end = datetime.datetime.strptime(timestamp_end, "%m/%d/%Y, %H:%M:%S")
         diff = (begin - end)
         return diff.total_seconds()
     except Exception as e:
         log.MainLogger().exception("Fehler im System-Modul")
         return 0
+
 
 def duration_sum(first, second):
     """ addiert zwei Zeitstrings und gibt das Ergebnis als String zurück.
@@ -480,10 +487,11 @@ def duration_sum(first, second):
     try:
         first = __get_timedelta_obj(first)
         second = __get_timedelta_obj(second)
-        sum = first + second 
+        sum = first + second
         return str(sum)
     except Exception as e:
         log.MainLogger().exception("Fehler im System-Modul")
+
 
 def __get_timedelta_obj(time):
     """ erstellt aus einem String ein timedelta-Objekt.
@@ -499,9 +507,11 @@ def __get_timedelta_obj(time):
     try:
         time_charged = time.split(":")
         if len(time_charged) == 2:
-            time = datetime.timedelta(hours=int(time_charged[0]), minutes=int(time_charged[1]))
+            time = datetime.timedelta(
+                hours=int(time_charged[0]), minutes=int(time_charged[1]))
         elif len(time_charged) == 3:
-            time = datetime.timedelta(days=int(time_charged[0]), hours=int(time_charged[1]), minutes=int(time_charged[2]))
+            time = datetime.timedelta(days=int(time_charged[0]), hours=int(
+                time_charged[1]), minutes=int(time_charged[2]))
         return time
     except Exception as e:
         log.MainLogger().exception("Fehler im System-Modul")
