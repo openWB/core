@@ -61,7 +61,7 @@ class SubData:
             client.connect(mqtt_broker_ip, 1886)
             client.loop_forever()
             client.disconnect()
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im subdata-Modul")
 
     def getserial(self):
@@ -160,7 +160,7 @@ class SubData:
             else:
                 if key in dict:
                     dict.pop(key)
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im subdata-Modul")
 
     def process_vehicle_topic(self, var, msg):
@@ -216,7 +216,7 @@ class SubData:
                         var["ev"+index].data["control_parameter"], msg)
                 else:
                     self.set_json_payload(var["ev"+index].data, msg)
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im subdata-Modul")
 
     def process_vehicle_charge_template_topic(self, var, msg):
@@ -286,7 +286,7 @@ class SubData:
                 except Exception:
                     pass
                 self.event_charge_template.set()
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im subdata-Modul")
 
     def process_vehicle_ev_template_topic(self, var, msg):
@@ -313,7 +313,7 @@ class SubData:
                     var["et" +
                         index].data = json.loads(str(msg.payload.decode("utf-8")))
                     self.event_ev_template.set()
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im subdata-Modul")
 
     def process_chargepoint_topic(self, var, msg):
@@ -367,7 +367,7 @@ class SubData:
                 if "all" not in var:
                     var["all"] = chargepoint.allChargepoints()
                 self.set_json_payload(var["all"].data["get"], msg)
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im subdata-Modul")
 
     def process_chargepoint_template_topic(self, var, msg):
@@ -410,7 +410,7 @@ class SubData:
                     var["cpt"+index].data["autolock"]["plans"] = autolock_plans
                 except Exception:
                     pass
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im subdata-Modul")
 
     def process_pv_topic(self, var, msg):
@@ -457,7 +457,7 @@ class SubData:
                     if "set" not in var["all"].data:
                         var["all"].data["set"] = {}
                     self.set_json_payload(var["all"].data["set"], msg)
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im subdata-Modul")
 
     def process_bat_topic(self, var, msg):
@@ -508,7 +508,7 @@ class SubData:
                     if "config" not in var["all"].data:
                         var["all"].data["config"] = {}
                     self.set_json_payload(var["all"].data["config"], msg)
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im subdata-Modul")
 
     def process_general_topic(self, var, msg):
@@ -570,7 +570,7 @@ class SubData:
                             var["general"].data["chargemode_config"], msg)
                 else:
                     self.set_json_payload(var["general"].data, msg)
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im subdata-Modul")
 
     def process_optional_topic(self, var, msg):
@@ -619,7 +619,7 @@ class SubData:
                         self.set_json_payload(var["optional"].data["et"], msg)
                 else:
                     self.set_json_payload(var["optional"].data, msg)
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im subdata-Modul")
 
     def process_counter_topic(self, var, msg):
@@ -670,7 +670,7 @@ class SubData:
                     if "set" not in var["all"].data:
                         var["all"].data["set"] = {}
                     self.set_json_payload(var["all"].data["set"], msg)
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im subdata-Modul")
 
     def process_log_topic(self, msg):
@@ -689,7 +689,7 @@ class SubData:
             if "openWB/log/request" in msg.topic:
                 chargelog.get_log_data(json.loads(
                     str(msg.payload.decode("utf-8"))))
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im subdata-Modul")
 
     def process_system_topic(self, client, var, msg):
@@ -767,5 +767,5 @@ class SubData:
                                                                index_second].component.simulation = sim_data
             else:
                 self.set_json_payload(var["system"].data, msg)
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im subdata-Modul")

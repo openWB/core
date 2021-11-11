@@ -178,7 +178,7 @@ class setData:
                     event.clear()
             else:
                 pub.pub(msg.topic, "")
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im setdata-Modul")
             pub.pub(msg.topic, "")
 
@@ -204,7 +204,7 @@ class setData:
                 next_key = key_list[0]
                 key_list.pop(0)
                 self._change_key(next_level[next_key], key_list, value)
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im setdata-Modul")
 
     def _validate_collection_value(self, msg, data_type, ranges=None, collection=None):
@@ -242,7 +242,7 @@ class setData:
                 log.MainLogger().error("Payload ungueltig: Topic "+str(msg.topic)+", Payload " +
                                        str(value)+" sollte eine Kollektion vom Typ "+str(collection)+" sein.")
             return valid
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im setdata-Modul")
 
     def _validate_min_max_value(self, value, msg, data_type, ranges=None):
@@ -297,7 +297,7 @@ class setData:
                                            ", Payload "+str(value)+" sollte ein Float sein.")
                 valid = False
             return valid
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im setdata-Modul")
 
     def __unknown_topic(self, msg) -> None:
@@ -310,7 +310,7 @@ class setData:
                 log.MainLogger().error("Unbekanntes set-Topic: " +
                                        str(msg.topic)+" mit leerem Payload")
                 pub.pub(msg.topic, "")
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im setdata-Modul")
 
     def process_vehicle_topic(self, msg):
@@ -363,7 +363,7 @@ class setData:
                 self._validate_value(msg, str)
             else:
                 self.__unknown_topic(msg)
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im setdata-Modul")
 
     def _subprocess_vehicle_chargemode_topic(self, msg):
@@ -444,7 +444,7 @@ class setData:
                     self._validate_value(msg, "json")
             else:
                 self.__unknown_topic(msg)
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im setdata-Modul")
 
     def process_chargepoint_topic(self, msg):
@@ -529,7 +529,7 @@ class setData:
                 pub.pub(msg.topic, "")
             else:
                 self.__unknown_topic(msg)
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im setdata-Modul")
 
     def process_pv_topic(self, msg):
@@ -578,7 +578,7 @@ class setData:
                     msg, float, [(0, float("inf"))], collection=list)
             else:
                 self.__unknown_topic(msg)
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im setdata-Modul")
 
     def process_bat_topic(self, msg):
@@ -623,7 +623,7 @@ class setData:
                 self._validate_value(msg, str)
             else:
                 self.__unknown_topic(msg)
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im setdata-Modul")
 
     def process_general_topic(self, msg):
@@ -697,7 +697,7 @@ class setData:
                 self._validate_value(msg, int, [(0, 1)])
             else:
                 self.__unknown_topic(msg)
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im setdata-Modul")
 
     def process_optional_topic(self, msg):
@@ -730,7 +730,7 @@ class setData:
                 self._validate_value(msg, int, [(0, 1)])
             else:
                 self.__unknown_topic(msg)
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im setdata-Modul")
 
     def process_counter_topic(self, msg):
@@ -791,7 +791,7 @@ class setData:
                 self._validate_value(msg, str)
             else:
                 self.__unknown_topic(msg)
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im setdata-Modul")
 
     def process_log_topic(self, msg):
@@ -809,7 +809,7 @@ class setData:
                 self._validate_value(msg, "json")
             else:
                 self.__unknown_topic(msg)
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im setdata-Modul")
 
     def process_graph_topic(self, msg):
@@ -826,7 +826,7 @@ class setData:
                 self._validate_value(msg, "json")
             else:
                 self.__unknown_topic(msg)
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im setdata-Modul")
 
     def process_system_topic(self, msg):
@@ -869,7 +869,7 @@ class setData:
                 # hier kommen auch noch alte Topics ohne json-Format an.
                 #log.MainLogger().error("Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
                 pub.pub(msg.topic, "")
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im setdata-Modul")
 
     def process_command_topic(self, msg):
@@ -889,5 +889,5 @@ class setData:
                 self._validate_value(msg, "json")
             else:
                 self.__unknown_topic(msg)
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im setdata-Modul")
