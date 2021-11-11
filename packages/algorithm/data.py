@@ -8,6 +8,7 @@ from ..helpermodules import log
 
 data = None
 
+
 class Data:
     def __init__(self):
         self.event = threading.Event()
@@ -161,15 +162,15 @@ class Data:
         self.event.set()
 
     @property
-    def ev_template_data (self):
+    def ev_template_data(self):
         self.event.wait()
         self.event.clear()
-        temp = self._ev_template_data 
+        temp = self._ev_template_data
         self.event.set()
         return temp
 
     @ev_template_data .setter
-    def ev_template_data (self, value):
+    def ev_template_data(self, value):
         self.event.wait()
         self.event.clear()
         self._ev_template_data = value
@@ -276,13 +277,12 @@ class Data:
         """
         for key in data:
             try:
-                if isinstance(data[key], dict) == False:
+                if isinstance(data[key], dict) is False:
                     log.MainLogger().debug(key+"\n"+str(data[key].data))
                 else:
                     log.MainLogger().debug(key+"\n"+"Klasse fehlt")
             except Exception as e:
                 log.MainLogger().exception("Fehler im Data-Modul")
-
 
 
 def data_init():

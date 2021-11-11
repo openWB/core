@@ -128,7 +128,7 @@ class setData:
                     valid = True
 
             if valid:
-                if pub_json == False:
+                if pub_json is False:
                     pub.pub(msg.topic.replace('set/', '', 1), value)
                     pub.pub(msg.topic, "")
                 else:
@@ -228,13 +228,13 @@ class setData:
             value = json.loads(str(msg.payload.decode("utf-8")))
             if isinstance(value, list):
                 for item in value:
-                    if self._validate_min_max_value(item, msg, data_type, ranges) == False:
+                    if self._validate_min_max_value(item, msg, data_type, ranges) is False:
                         break
                 else:
                     valid = True
             elif isinstance(value, dict):
                 for item in value.values():
-                    if self._validate_min_max_value(item, msg, data_type, ranges) == False:
+                    if self._validate_min_max_value(item, msg, data_type, ranges) is False:
                         break
                 else:
                     valid = True

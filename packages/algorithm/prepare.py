@@ -195,7 +195,7 @@ class prepare:
                             chargelog.save_data(cp, charging_ev)
 
                         # Wenn die Nachrichten gesendet wurden, EV wieder löschen, wenn das EV im Algorithmus nicht berücksichtigt werden soll.
-                        if state == False:
+                        if state is False:
                             if cp.data["set"]["charging_ev"] != -1:
                                 # Altes EV merken
                                 cp.data["set"]["charging_ev_prev"] = cp.data["set"]["charging_ev"]
@@ -208,7 +208,7 @@ class prepare:
                                                    str(charging_ev.charge_template.data["chargemode"]["selected"])+", Submodus: "+str(charging_ev.data["control_parameter"]["submode"]))
                         else:
                             if (charging_ev.data["control_parameter"]["timestamp_switch_on_off"] != "0" and
-                                    cp.data["get"]["charge_state"] == False and
+                                    cp.data["get"]["charge_state"] is False and
                                     data.data.pv_data["all"].data["set"]["overhang_power_left"] == 0):
                                 log.MainLogger().error("Reservierte Leistung kann nicht 0 sein.")
 
