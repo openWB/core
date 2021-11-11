@@ -102,7 +102,7 @@ def loadmanagement_for_counters() -> Tuple[bool, dict]:
         loadmanagement = _check_all_intermediate_counters(
             data.data.counter_data["all"].data["get"]["hierarchy"][0])
         # Wenn das Lastmanagement aktiv war, darf es nicht wieder zurück gesetzt werden.
-        if loadmanagement_all_conditions == False:
+        if loadmanagement_all_conditions is False:
             loadmanagement_all_conditions = loadmanagement
         data.data.counter_data["all"].data["set"]["loadmanagement_active"] = loadmanagement_all_conditions
         return loadmanagement_all_conditions, overloaded_counters

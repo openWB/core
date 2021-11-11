@@ -92,17 +92,17 @@ class HandlerAlgorithm:
         """ Handler, der alle 5 Minuten aufgerufen wird und die Heartbeats der Threads überprüft und die Aufgaben ausführt, die nur alle 5 Minuten ausgeführt werden müssen.
         """
         try:
-            if self.heartbeat == False:
+            if self.heartbeat is False:
                 log.MainLogger().error("Heartbeat fuer Algorithmus nicht zurueckgesetzt.")
             else:
                 self.hartbeat = False
 
-            if sub.heartbeat == False:
+            if sub.heartbeat is False:
                 log.MainLogger().error("Heartbeat fuer Subdata nicht zurueckgesetzt.")
             else:
                 sub.hartbeat = False
 
-            if set.heartbeat == False:
+            if set.heartbeat is False:
                 log.MainLogger().error("Heartbeat fuer Setdata nicht zurueckgesetzt.")
             else:
                 set.hartbeat = False
@@ -187,7 +187,7 @@ try:
     configuration.pub_configurable()
 
     rt = RepeatedTimer(300, handler.handler5Min)
-    if debug == False:
+    if debug is False:
         rt2 = RepeatedTimer(10, handler.handler10Sec)
     else:
         while True:

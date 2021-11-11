@@ -178,7 +178,7 @@ def save_data(chargepoint, charging_ev, immediately=True, reset=False):
         if log_data["timestamp_start_charging"] == "0":
             # Die Daten wurden schon erfasst.
             return
-        if immediately == False:
+        if immediately is False:
             if chargepoint.data["get"]["power_all"] != 0:
                 return
         # Daten vor dem Speichern nochmal aktualisieren, auch wenn nicht mehr geladen wird.
@@ -431,7 +431,7 @@ def reset_data(chargepoint, charging_ev, immediately=True):
         if charging_ev == -1:
             # Es wurde noch nie ein Auto zugeordnet.
             return
-        if immediately == False:
+        if immediately is False:
             if chargepoint.data["get"]["power_all"] != 0:
                 return
         save_data(chargepoint, charging_ev, immediately, reset=True)

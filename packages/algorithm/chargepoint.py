@@ -71,7 +71,7 @@ class allChargepoints:
                     if "cp" in cp:
                         chargepoint = data.data.cp_data[cp]
                         # Kein EV angesteckt
-                        if (chargepoint.data["get"]["plug_state"] == False or
+                        if (chargepoint.data["get"]["plug_state"] is False or
                                 # Kein EV, das Laden soll
                                 chargepoint.data["set"]["charging_ev"] == -1 or
                                 # Kein EV, das auf das Ablaufen der Einschalt- oder Phasenumschaltverzögerung wartet
@@ -192,7 +192,7 @@ class allChargepoints:
                         if chargepoint_read.data["get"]["read_tag"]["tag"] != "0":
                             read_tag = chargepoint_read.data["get"]["read_tag"]["tag"]
                             # Scannen darf nicht länger als 5 Min zurück liegen
-                            if timecheck.check_timestamp(chargepoint_read.data["get"]["read_tag"]["timestamp"], 300) == False:
+                            if timecheck.check_timestamp(chargepoint_read.data["get"]["read_tag"]["timestamp"], 300) is False:
                                 # abgelaufen
                                 chargepoint_read.data["get"]["read_tag"]["tag"] = "0"
                                 chargepoint_read.data["get"]["read_tag"]["timestamp"] = "0"
@@ -316,7 +316,7 @@ class chargepoint:
                 if general_data["grid_protection_active"]:
                     if general_data["grid_protection_timestamp"] != "0":
                         # Timer ist  abglaufen
-                        if timecheck.check_timestamp(general_data["grid_protection_timestamp"], general_data["grid_protection_random_stop"]) == False:
+                        if timecheck.check_timestamp(general_data["grid_protection_timestamp"], general_data["grid_protection_random_stop"]) is False:
                             state = False
                             message = "Ladepunkt gesperrt, da der Netzschutz aktiv ist."
                             pub.pub(
@@ -390,7 +390,7 @@ class chargepoint:
             message = None
             state = self.template.autolock(
                 self.data["set"]["autolock_state"], self.data["get"]["charge_state"], self.cp_num)
-            if state == False:
+            if state is False:
                 state = True
             else:
                 # Darf Autolock durch Tag überschrieben werden?
@@ -444,7 +444,7 @@ class chargepoint:
         """
         try:
             state = self.data["get"]["plug_state"]
-            if state == False:
+            if state is False:
                 message = "Keine Ladung, da kein Auto angesteckt ist."
             else:
                 log.MainLogger().debug("ev"+str(self.cp_num)+" plugged" +
@@ -512,7 +512,7 @@ class chargepoint:
                 data.data.pv_data["all"].reset_switch_on_off(
                     self, data.data.ev_data["ev"+str(self.data["set"]["charging_ev_prev"])])
                 # Abstecken
-                if self.data["get"]["plug_state"] == False:
+                if self.data["get"]["plug_state"] is False:
                     # Standardprofil nach Abstecken laden
                     if data.data.ev_data["ev"+str(self.data["set"]["charging_ev_prev"])].charge_template.data["load_default"]:
                         self.data["config"]["ev"] = 0
@@ -581,7 +581,7 @@ class chargepoint:
             if charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] != "0":
                 phase_switch_pause = charging_ev.ev_template.data["phase_switch_pause"]
                 # Umschaltung abgeschlossen
-                if timecheck.check_timestamp(charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"], 6+phase_switch_pause-1) == False:
+                if timecheck.check_timestamp(charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"], 6+phase_switch_pause-1) is False:
                     log.MainLogger().debug("phase switch running")
                     charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] = "0"
                     pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num) +
@@ -603,7 +603,7 @@ class chargepoint:
                     self.data["get"]["state_str"] = message
                 return
             # Wenn noch kein Logeintrag erstellt wurde, wurde noch nicht geladen und die Phase kann noch umgeschaltet werden.
-            if charging_ev.ev_template.data["prevent_switch_stop"] == False or self.data["set"]["log"]["charged_since_plugged_counter"] == 0:
+            if charging_ev.ev_template.data["prevent_switch_stop"] is False or self.data["set"]["log"]["charged_since_plugged_counter"] == 0:
                 # Einmal muss die Anzahl der Phasen gesetzt werden.
                 if "phases_to_use" not in self.data["set"]:
                     pub.pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/phases_to_use",

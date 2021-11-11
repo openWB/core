@@ -121,11 +121,11 @@ class pvAll:
             all_overhang = self.overhang_left()
             # Berücksichtigung der Speicherleistung
             all_overhang += bat_overhang
-            if chargepoint.data["set"]["charging_ev_data"].ev_template.data["prevent_switch_stop"] == False or max(chargepoint.data["get"]["current"]) == 0:
+            if chargepoint.data["set"]["charging_ev_data"].ev_template.data["prevent_switch_stop"] is False or max(chargepoint.data["get"]["current"]) == 0:
                 if control_parameter["timestamp_switch_on_off"] != "0":
                     # Wurde die Einschaltschwelle erreicht? Reservierte Leistung aus all_overhang rausrechnen,
                     # da diese Leistung ja schon reserviert wurde, als die Einschaltschwelle erreicht wurde.
-                    if ((chargepoint.data["set"]["charging_ev_data"].charge_template.data["chargemode"]["pv_charging"]["feed_in_limit"] == False and
+                    if ((chargepoint.data["set"]["charging_ev_data"].charge_template.data["chargemode"]["pv_charging"]["feed_in_limit"] is False and
                             all_overhang + required_power > pv_config["switch_on_threshold"]*phases) or
                             (chargepoint.data["set"]["charging_ev_data"].charge_template.data["chargemode"]["pv_charging"]["feed_in_limit"] and
                              all_overhang + required_power >= data.data.general_data["general"].data["chargemode_config"]["pv_charging"]["feed_in_yield"])):
@@ -157,7 +157,7 @@ class pvAll:
                         threshold_not_reached = True
                 else:
                     # Timer starten
-                    if ((chargepoint.data["set"]["charging_ev_data"].charge_template.data["chargemode"]["pv_charging"]["feed_in_limit"] == False and
+                    if ((chargepoint.data["set"]["charging_ev_data"].charge_template.data["chargemode"]["pv_charging"]["feed_in_limit"] is False and
                             all_overhang > pv_config["switch_on_threshold"]*phases) or
                             (chargepoint.data["set"]["charging_ev_data"].charge_template.data["chargemode"]["pv_charging"]["feed_in_limit"] and
                              all_overhang >= data.data.general_data["general"].data["chargemode_config"]["pv_charging"]["feed_in_yield"] and
@@ -213,7 +213,7 @@ class pvAll:
             control_parameter = chargepoint.data["set"]["charging_ev_data"].data["control_parameter"]
 
             if control_parameter["timestamp_switch_on_off"] != "0":
-                if timecheck.check_timestamp(control_parameter["timestamp_switch_on_off"], pv_config["switch_off_delay"]) == False:
+                if timecheck.check_timestamp(control_parameter["timestamp_switch_on_off"], pv_config["switch_off_delay"]) is False:
                     control_parameter["timestamp_switch_on_off"] = "0"
                     self.data["set"]["released_evu_overhang"] -= chargepoint.data["set"]["required_power"]
                     message = "Ladevorgang nach Ablauf der Abschaltverzoegerung gestoppt."
@@ -262,7 +262,7 @@ class pvAll:
             else:
                 # Wurde die Abschaltschwelle ggf. durch die Verzögerung anderer LP erreicht?
                 if (overhang + self.data["set"]["released_evu_overhang"]) < (pv_config["switch_off_threshold"]*-1 + feed_in_yield):
-                    if chargepoint.data["set"]["charging_ev_data"].ev_template.data["prevent_switch_stop"] == False:
+                    if chargepoint.data["set"]["charging_ev_data"].ev_template.data["prevent_switch_stop"] is False:
                         control_parameter["timestamp_switch_on_off"] = timecheck.create_timestamp(
                         )
                         # merken, dass ein LP verzögert wird, damit nicht zu viele LP verzögert werden.
@@ -296,7 +296,7 @@ class pvAll:
                         "/control_parameter/timestamp_switch_on_off", "0")
                 # Wenn bereits geladen wird, freigegebene Leistung freigeben. Wenn nicht geladen wird, reservierte Leistung freigeben.
                 pv_config = data.data.general_data["general"].data["chargemode_config"]["pv_charging"]
-                if chargepoint.data["get"]["charge_state"] == False:
+                if chargepoint.data["get"]["charge_state"] is False:
                     data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= pv_config["switch_on_threshold"] * \
                         chargepoint.data["set"]["phases_to_use"]
                     log.MainLogger().debug("reserved_evu_overhang 10 " +
