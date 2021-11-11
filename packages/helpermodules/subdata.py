@@ -266,24 +266,24 @@ class SubData:
                 try:
                     scheduled_charging_plans = var["ct" +
                                                    index].data["chargemode"]["scheduled_charging"]["plans"][str(index)]
-                except:
+                except Exception:
                     pass
                 try:
                     time_charging_plans = var["ct" +
                                               index].data["time_charging"]["plans"][str(index)]
-                except:
+                except Exception:
                     pass
                 var["ct" +
                     index].data = json.loads(str(msg.payload.decode("utf-8")))
                 try:
                     var["ct"+index].data["time_charging"]["plans"][str(
                         index)] = time_charging_plans
-                except:
+                except Exception:
                     pass
                 try:
                     var["ct"+index].data["chargemode"]["scheduled_charging"]["plans"][str(
                         index)] = scheduled_charging_plans
-                except:
+                except Exception:
                     pass
                 self.event_charge_template.set()
         except Exception as e:
@@ -402,13 +402,13 @@ class SubData:
             else:
                 try:
                     autolock_plans = var["cpt"+index].data["autolock"]["plans"]
-                except:
+                except Exception:
                     pass
                 var["cpt" +
                     index].data = json.loads(str(msg.payload.decode("utf-8")))
                 try:
                     var["cpt"+index].data["autolock"]["plans"] = autolock_plans
-                except:
+                except Exception:
                     pass
         except Exception as e:
             log.MainLogger().exception("Fehler im subdata-Modul")

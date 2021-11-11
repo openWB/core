@@ -114,7 +114,7 @@ def decode_value(id, data):
             return hexdump(data, 512)
         else:
             return 0
-    except:
+    except Exception:
         return 0
 
 # encode a value according to the id data type
@@ -377,7 +377,7 @@ def connect_to_server():
         clientsocket.connect((host, port))
         dbglog('connect to ', host, 'port', port)
         return clientsocket
-    except:
+    except Exception:
         errlog('unable to connect to', host, 'port', port)
         return None
 

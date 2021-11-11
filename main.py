@@ -71,7 +71,7 @@ class HandlerAlgorithm:
                     self.interval_counter = 1
                 else:
                     self.interval_counter = self.interval_counter + 1
-            except:
+            except Exception:
                 # Wenn kein Regelintervall bekannt ist, alle 10s regeln.
                 prep.copy_system_data()
                 vars.get_values()

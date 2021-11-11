@@ -103,7 +103,7 @@ def check_modbus_evse(cp):
             try:
                 subprocess.check_output(
                     ['ps ax |grep -v grep |grep "socat", "pty,link="+str(source)+",raw", "tcp:"+str(ip_address)+":26" > /dev/null'])
-            except:
+            except Exception:
                 subprocess.Popen(
                     ["sudo", "socat", "pty,link="+str(source)+",raw", "tcp:"+str(ip_address)+":26"])
         evsedinstat = _read_regs(source, id, 1000, 1)

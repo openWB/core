@@ -376,7 +376,7 @@ def create_timestamp():
     try:
         stamp = datetime.datetime.today().strftime("%m/%d/%Y, %H:%M:%S")
         return stamp
-    except:
+    except Exception:
         raise
 
 
@@ -390,7 +390,7 @@ def create_timestamp_YYYYMM():
     try:
         stamp = datetime.datetime.today().strftime("%Y%m")
         return stamp
-    except:
+    except Exception:
         raise
 
 
@@ -404,7 +404,7 @@ def create_timestamp_YYYYMMDD():
     try:
         stamp = datetime.datetime.today().strftime("%Y%m%d")
         return stamp
-    except:
+    except Exception:
         raise
 
 
@@ -418,7 +418,7 @@ def create_timestamp_time():
     try:
         stamp = datetime.datetime.today().strftime("%H:%M")
         return stamp
-    except:
+    except Exception:
         raise
 
 

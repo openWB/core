@@ -11,7 +11,7 @@ def read_external_openwb(cp):
         try:
             with open('/var/www/html/openWB/ramdisk/ipaddress', 'r') as f:
                 myipaddress = f.readline().replace("\n", "")
-        except:
+        except Exception:
             myipaddress = "192.168.193.5"
         pub.pub_single("openWB/set/isss/heartbeat", 0, hostname=ip_address)
         pub.pub_single("openWB/set/isss/parentWB", myipaddress,
