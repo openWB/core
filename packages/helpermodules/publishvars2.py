@@ -7,16 +7,58 @@ def pub_settings():
     """
     if simulator:
         # cp1
-        pub.pub("openWB/set/chargepoint/1/config", {"name": "LP1", "ev": 0, "template": 0, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False,
-                                                    "control_pilot_interruption_hw": True, "connection_module": {"selected": "mqtt"}, "power_module": {"selected": None}})
+        pub.pub(
+            "openWB/set/chargepoint/1/config", {
+                "name": "LP1",
+                "ev": 0,
+                "template": 0,
+                "connected_phases": 3,
+                "phase_1": 1,
+                "auto_phase_switch_hw": False,
+                "control_pilot_interruption_hw": True,
+                "connection_module": {
+                    "selected": "mqtt"
+                },
+                "power_module": {
+                    "selected": None
+                }
+            })
 
         # cp2
-        pub.pub("openWB/set/chargepoint/2/config", {"name": "LP2", "ev": 0, "template": 0, "connected_phases": 3, "phase_1": 2, "auto_phase_switch_hw": False,
-                                                    "control_pilot_interruption_hw": True, "connection_module": {"selected": "mqtt"}, "power_module": {"selected": None}})
+        pub.pub(
+            "openWB/set/chargepoint/2/config", {
+                "name": "LP2",
+                "ev": 0,
+                "template": 0,
+                "connected_phases": 3,
+                "phase_1": 2,
+                "auto_phase_switch_hw": False,
+                "control_pilot_interruption_hw": True,
+                "connection_module": {
+                    "selected": "mqtt"
+                },
+                "power_module": {
+                    "selected": None
+                }
+            })
 
         # cp3
-        pub.pub("openWB/set/chargepoint/3/config", {"name": "LP3", "ev": 0, "template": 0, "connected_phases": 3, "phase_1": 3, "auto_phase_switch_hw": False,
-                                                    "control_pilot_interruption_hw": True, "connection_module": {"selected": "mqtt"}, "power_module": {"selected": None}})
+        pub.pub(
+            "openWB/set/chargepoint/3/config", {
+                "name": "LP3",
+                "ev": 0,
+                "template": 0,
+                "connected_phases": 3,
+                "phase_1": 3,
+                "auto_phase_switch_hw": False,
+                "control_pilot_interruption_hw": True,
+                "connection_module": {
+                    "selected": "mqtt"
+                },
+                "power_module": {
+                    "selected": None
+                }
+            })
 
     else:
         pass
@@ -69,21 +111,27 @@ def pub_settings():
         # pub.pub("openWB/set/chargepoint/16/config", {"name": "LP16", "ev": 0, "template": 0, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.111", "chargepoint": 1}}}, "power_module": {"selected": None}})
 
     # cpt0
-    pub.pub("openWB/set/chargepoint/template/0/autolock/0", {"name": "Standard Autolock-Plan",
-                                                             "frequency":
-                                                             {
-                                                                 "selected": "daily",
-                                                                 "once": ["2021-11-01", "2021-11-05"],
-                                                                 "weekly": [True]*7
-                                                             },
-                                                             "time": ["18:00", "12:00"],
-                                                             "active": True})
-    pub.pub("openWB/set/chargepoint/template/0", {"name": "Standard Ladepunkt-Vorlage",
-                                                  "autolock": {
-                                                      "wait_for_charging_end": False,
-                                                      "active": True},
-                                                  "rfid_enabling": True,
-                                                  "valid_tags": ["248", "257", "258", "259", "1", "2", "3", "c"]})
+    pub.pub(
+        "openWB/set/chargepoint/template/0/autolock/0", {
+            "name": "Standard Autolock-Plan",
+            "frequency": {
+                "selected": "daily",
+                "once": ["2021-11-01", "2021-11-05"],
+                "weekly": [True] * 7
+            },
+            "time": ["12:00", "18:00"],
+            "active": True
+        })
+    pub.pub(
+        "openWB/set/chargepoint/template/0", {
+            "name": "Standard Ladepunkt-Vorlage",
+            "autolock": {
+                "wait_for_charging_end": False,
+                "active": True
+            },
+            "rfid_enabling": True,
+            "valid_tags": ["248", "257", "258", "259", "1", "2", "3", "c"]
+        })
 
     # ev0
     pub.pub("openWB/set/vehicle/0/soc/config/configured", False)
@@ -155,8 +203,13 @@ def pub_settings():
     #pub.pub("openWB/set/optional/et/active", False)
     pub.pub("openWB/set/optional/et/config/max_price", 5.5)
     #pub.pub("openWB/set/optional/et/config/provider", {"provider": "awattar", "country": "de"})
-    pub.pub("openWB/set/optional/et/config/provider",
-            {"provider": "tibber", "token": "d1007ead2dc84a2b82f0de19451c5fb22112f7ae11d19bf2bedb224a003ff74a", "id": "c70dcbe5-4485-4821-933d-a8a86452737b"})
+    pub.pub(
+        "openWB/set/optional/et/config/provider", {
+            "provider": "tibber",
+            "token":
+            "d1007ead2dc84a2b82f0de19451c5fb22112f7ae11d19bf2bedb224a003ff74a",
+            "id": "c70dcbe5-4485-4821-933d-a8a86452737b"
+        })
     #pub.pub("openWB/set/optional/rfid/active", True)
 
     # pv
@@ -177,35 +230,63 @@ def pub_settings():
         pub.pub("openWB/set/counter/0/module", {"selected": "mqtt_read"})
     else:
         # Firma
-        hierarchy = [
-            {
-                "id": "counter0",
-                "children":
-                [
-                    {
-                        "id": "counter1", "children":
-                        [
-                            {"id": "cp1", "children": []},
-                            {"id": "cp2", "children": []},
-                            {"id": "cp3", "children": []},
-                            {"id": "cp4", "children": []},
-                            {"id": "cp5", "children": []},
-                            {"id": "cp6", "children": []},
-                            {"id": "cp7", "children": []},
-                            {"id": "cp8", "children": []},
-                            {"id": "cp9", "children": []},
-                            {"id": "cp10", "children": []},
-                            {"id": "cp11", "children": []},
-                            {"id": "cp12", "children": []},
-                            {"id": "cp13", "children": []},
-                            {"id": "cp14", "children": []},
-                            {"id": "cp15", "children": []},
-                            {"id": "cp16", "children": []}
-                        ]
-                    }
-                ]
-            }
-        ]
+        hierarchy = [{
+            "id":
+            "counter0",
+            "children": [{
+                "id":
+                "counter1",
+                "children": [{
+                    "id": "cp1",
+                    "children": []
+                }, {
+                    "id": "cp2",
+                    "children": []
+                }, {
+                    "id": "cp3",
+                    "children": []
+                }, {
+                    "id": "cp4",
+                    "children": []
+                }, {
+                    "id": "cp5",
+                    "children": []
+                }, {
+                    "id": "cp6",
+                    "children": []
+                }, {
+                    "id": "cp7",
+                    "children": []
+                }, {
+                    "id": "cp8",
+                    "children": []
+                }, {
+                    "id": "cp9",
+                    "children": []
+                }, {
+                    "id": "cp10",
+                    "children": []
+                }, {
+                    "id": "cp11",
+                    "children": []
+                }, {
+                    "id": "cp12",
+                    "children": []
+                }, {
+                    "id": "cp13",
+                    "children": []
+                }, {
+                    "id": "cp14",
+                    "children": []
+                }, {
+                    "id": "cp15",
+                    "children": []
+                }, {
+                    "id": "cp16",
+                    "children": []
+                }]
+            }]
+        }]
         # hierarchy = [
         #     {
         #         "id": "counter0",
@@ -234,12 +315,26 @@ def pub_settings():
         pub.pub("openWB/set/counter/0/get/frequency", 50.2)
         pub.pub("openWB/set/counter/0/config/max_current", [60, 60, 60])
         pub.pub("openWB/set/counter/0/config/max_consumption", 30000)
-        pub.pub("openWB/set/counter/0/module", {"selected": "openwb", "config": {
-                "version": 2, "ip_address": "192.168.1.101", "id": 105}})
+        pub.pub(
+            "openWB/set/counter/0/module", {
+                "selected": "openwb",
+                "config": {
+                    "version": 2,
+                    "ip_address": "192.168.1.101",
+                    "id": 105
+                }
+            })
 
         pub.pub("openWB/set/counter/1/config/max_current", [60, 60, 60])
-        pub.pub("openWB/set/counter/1/module", {"selected": "openwb", "config": {
-                "version": 2, "ip_address": "192.168.1.169", "id": 1}})
+        pub.pub(
+            "openWB/set/counter/1/module", {
+                "selected": "openwb",
+                "config": {
+                    "version": 2,
+                    "ip_address": "192.168.1.169",
+                    "id": 1
+                }
+            })
 
     # # bat
     # if simulator:
@@ -265,7 +360,9 @@ def pub_settings():
     # pub.pub("openWB/set/general/chargemode_config/pv_charging/switch_on_delay", 30)
     # pub.pub("openWB/set/general/chargemode_config/pv_charging/switch_on_threshold", 1500)
     # pub.pub("openWB/set/general/chargemode_config/pv_charging/feed_in_yield", 15000)
-    pub.pub("openWB/set/general/chargemode_config/pv_charging/phase_switch_delay", 15)
+    pub.pub(
+        "openWB/set/general/chargemode_config/pv_charging/phase_switch_delay",
+        15)
     # pub.pub("openWB/set/general/chargemode_config/pv_charging/phases_to_use", 1)
     # pub.pub("openWB/set/general/chargemode_config/scheduled_charging/phases_to_use", 0)
     # pub.pub("openWB/set/general/chargemode_config/time_charging/phases_to_use", 1)

@@ -7,18 +7,13 @@ from . import ripple_control_receiver
 from ..algorithm import data
 from ..helpermodules import log
 
-from .cp import ethmpm3pm as cp_etmpm3pm
 from .cp import external_openwb as cp_external_openwb
-from .cp import mqtt as cp_mqtt
-from .cp import modbus_evse as cp_modbus_evse
-from .cp import modbus_slave as cp_modbus_slave
 from .cp import ip_evse as cp_ip_evse
 
 
 class loadvars:
     """ fragt die Werte der konfigurierten Module ab
     """
-
     def __init__(self):
         pass
 
@@ -38,14 +33,16 @@ class loadvars:
 
                 for thread in kits_threads:
                     if thread.is_alive():
-                        log.MainLogger().error(thread.name +
-                                               " konnte nicht innerhalb des Timeouts die Werte abfragen, die abgefragten Werte werden nicht in der Regelung verwendet.")
+                        log.MainLogger().error(
+                            thread.name +
+                            " konnte nicht innerhalb des Timeouts die Werte abfragen, die abgefragten Werte werden nicht in der Regelung verwendet."
+                        )
         except Exception as e:
             log.MainLogger().exception("Fehler im loadvars-Modul")
 
     # eher zu prepare
-        # Hausverbrauch
-        # Überschuss unter Beachtung abschaltbarer SH-Devices
+    # Hausverbrauch
+    # Überschuss unter Beachtung abschaltbarer SH-Devices
 
     def get_virtual_values(self):
         """ Virtuelle Module ermitteln die Werte rechnerisch auf Bais der Messwerte anderer Module. 
@@ -90,24 +87,11 @@ class loadvars:
                 if "cp" in item:
                     cp = data.data.cp_data[item]
                     # Anbindung
-                    if cp.data["config"]["connection_module"]["selected"] == "modbus_evse":
-                        cp_modbus_evse.read_modbus_evse(cp)
-                    elif cp.data["config"]["connection_module"]["selected"] == "ip_evse":
-                        cp_ip_evse.read_ip_evse(cp)
-                    elif cp.data["config"]["connection_module"]["selected"] == "modbus_slave":
-                        cp_modbus_slave.read_modbus_slave(cp)
-                    elif cp.data["config"]["connection_module"]["selected"] == "external_openwb":
+                    if cp.data["config"]["connection_module"][
+                            "selected"] == "external_openwb":
                         cp_external_openwb.read_external_openwb(cp)
                     # elif cp.data["config"]["connection_module"]["selected"] == "":
                     #     (cp)
-
-                    # Display, Pushover, SocTimer eher am Ende
-
-                    # Ladeleistungsmodul
-                    if cp.data["config"]["power_module"]["selected"] == "ethmpm3pm" or cp.data["config"]["power_module"]["selected"] == "ethmpm3pm_framer":
-                        cp_etmpm3pm.read_ethmpm3pm(cp)
-                    elif cp.data["config"]["power_module"]["selected"] == "mqtt":
-                        cp_mqtt.mqtt_state(cp)
 
                     # elif cp.data["config"]["power_module"]["selected"] == "":
                     #     (cp)
@@ -117,7 +101,8 @@ class loadvars:
     def _get_general(self):
         try:
             # Beim ersten Durchlauf wird in jedem Fall eine Exception geworfen, da die Daten erstmalig ins data-Modul kopiert werden müssen.
-            if data.data.general_data["general"].data["ripple_control_receiver"]["configured"]:
+            if data.data.general_data["general"].data[
+                    "ripple_control_receiver"]["configured"]:
                 ripple_control_receiver.read_ripple_control_receiver()
         except Exception as e:
             log.MainLogger().exception("Fehler im loadvars-Modul")
