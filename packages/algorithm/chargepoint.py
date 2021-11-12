@@ -762,8 +762,8 @@ class cpTemplate:
 
         Return
         ------
-        True: nicht durch Autolock gesperrt -> Ladung möglich
-        False: durch Autolock gesperrt
+        False: nicht durch Autolock gesperrt -> Ladung möglich
+        True: durch Autolock gesperrt
         """
         try:
             if (self.data["autolock"]["active"]):
