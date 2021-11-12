@@ -1,7 +1,8 @@
 """prüft, ob Zeitfenster aktuell sind
 """
 
-import datetime
+from datetime import datetime, timedelta
+from typing import Type, cast
 
 from . import log
 
@@ -28,7 +29,7 @@ def set_date(now, begin, end):
         end = end.replace(now.year, now.month, now.day)
         if begin > end:
             # Endzeit ist am nächsten Tag
-            end = end + datetime.timedelta(days=1)
+            end = end + timedelta(days=1)
         return begin, end
     except Exception:
         log.MainLogger().exception("Fehler im System-Modul")
@@ -60,6 +61,67 @@ def is_timeframe_valid(now, begin, end):
     except Exception:
         log.MainLogger().exception("Fehler im System-Modul")
         return False
+
+
+def is_autolock_plan_active(plans: dict) -> bool:
+    for plan in plans:
+        if is_autolock_of_plan_active(plans[plan]):
+            return True
+    else:
+        return False
+
+
+def is_autolock_of_plan_active(plan: dict) -> bool:
+    if plan["active"]:
+        now = datetime.today()
+        lock = None  # type:datetime
+        unlock = None  # type:datetime
+        if plan["frequency"]["selected"] == "once":
+            lock = datetime.strptime(
+                plan["frequency"]["once"][0] + plan["time"][0],
+                "%y-%m-%d%H:%M")
+            unlock = datetime.strptime(
+                plan["frequency"]["once"][1] + plan["time"][1],
+                "%y-%m-%d%H:%M")
+        else:
+            lock, unlock = set_date(
+                now, datetime.strptime(plan["time"][0], '%H:%M'),
+                datetime.strptime(plan["time"][1], '%H:%M'))
+            if plan["frequency"]["selected"] == "weekly" and not plan[
+                    "frequency"]["weekly"][now.weekday()]:
+                # Tag ist nicht konfiguriert
+                return False
+        return is_now_in_locking_time(now, lock, unlock)
+    return False
+
+
+def is_now_in_locking_time(now: datetime, lock: datetime,
+                           unlock: datetime) -> bool:
+    # Es gibt nur einen Entsperrzeitpunkt.
+    if lock is None:
+        if now < unlock:
+            return True
+        else:
+            return False
+    elif unlock is None:
+        if now < lock:
+            return False
+        else:
+            return True
+    # Sperrzeitpunkt liegt vor Entsperrzeitpunkt
+    elif lock < unlock:
+        # Laden - Sperrzeitpunkt - nicht laden -Entsperrzeitpunkt - laden
+        if now < lock or unlock < now:
+            return False
+        else:
+            return True
+    # Entsperrzeitpunkt liegt vor Sperrzeitpunkt
+    else:
+        # nicht Laden - Entsperrzeitpunkt - laden - Sperrzeitpunkt - nicht laden
+        if now < lock or unlock < now:
+            return True
+        else:
+            return False
 
 
 def check_plans_timeframe(plans, hours=None):
@@ -110,29 +172,27 @@ def check_timeframe(plan, hours):
     state = None
     try:
         if plan["active"]:
-            now = datetime.datetime.today()
+            now = datetime.today()
             if hours is None:
-                begin = datetime.datetime.strptime(plan["time"][0], '%H:%M')
-                end = datetime.datetime.strptime(plan["time"][1], '%H:%M')
+                begin = datetime.strptime(plan["time"][0], '%H:%M')
+                end = datetime.strptime(plan["time"][1], '%H:%M')
             else:
-                end = datetime.datetime.strptime(plan["time"], '%H:%M')
+                end = datetime.strptime(plan["time"], '%H:%M')
 
             if plan["frequency"]["selected"] == "once":
                 if hours is None:
-                    beginDate = datetime.datetime.strptime(
-                        plan["frequency"]["once"][0], "%y-%m-%d")
-                    begin = begin.replace(
-                        beginDate.year, beginDate.month, beginDate.day)
-                    endDate = datetime.datetime.strptime(
-                        plan["frequency"]["once"][1], "%y-%m-%d")
+                    beginDate = datetime.strptime(plan["frequency"]["once"][0],
+                                                  "%y-%m-%d")
+                    begin = begin.replace(beginDate.year, beginDate.month,
+                                          beginDate.day)
+                    endDate = datetime.strptime(plan["frequency"]["once"][1],
+                                                "%y-%m-%d")
                 else:
-                    endDate = datetime.datetime.strptime(
-                        plan["frequency"]["once"][0], "%y-%m-%d")
-                    end = end.replace(
-                        endDate.year, endDate.month, endDate.day)
+                    endDate = datetime.strptime(plan["frequency"]["once"][0],
+                                                "%y-%m-%d")
+                    end = end.replace(endDate.year, endDate.month, endDate.day)
                     begin = _calc_begin(end, hours)
-                end = end.replace(
-                    endDate.year, endDate.month, endDate.day)
+                end = end.replace(endDate.year, endDate.month, endDate.day)
                 state = is_timeframe_valid(now, begin, end)
 
             elif plan["frequency"]["selected"] == "daily":
@@ -142,7 +202,7 @@ def check_timeframe(plan, hours):
                     end = end.replace(now.year, now.month, now.day)
                     # Wenn der Zeitpunkt an diesem Tag schon vorüber ist, nächsten Tag prüfen.
                     if end < now:
-                        end += datetime.timedelta(days=1)
+                        end += timedelta(days=1)
                     begin = _calc_begin(end, hours)
                 state = is_timeframe_valid(now, begin, end)
 
@@ -152,24 +212,22 @@ def check_timeframe(plan, hours):
                         # Endzeit ist am gleichen Tag
                         if plan["frequency"]["weekly"][now.weekday()]:
                             begin, end = set_date(now, begin, end)
-                            state = is_timeframe_valid(
-                                now, begin, end)
+                            state = is_timeframe_valid(now, begin, end)
                         else:
                             state = False
                     else:
-                        if (plan["frequency"]["weekly"][now.weekday()] or plan["frequency"]["weekly"][now.weekday()+1]):
+                        if (plan["frequency"]["weekly"][now.weekday()]
+                                or plan["frequency"]["weekly"][now.weekday() +
+                                                               1]):
                             begin, end = set_date(now, begin, end)
-                            state = is_timeframe_valid(
-                                now, begin, end)
+                            state = is_timeframe_valid(now, begin, end)
                         else:
                             state = False
                 else:
                     if plan["frequency"]["weekly"][now.weekday()]:
-                        end = end.replace(
-                            end.year, end.month, end.day)
+                        end = end.replace(end.year, end.month, end.day)
                         begin = _calc_begin(end, hours)
-                        state = is_timeframe_valid(
-                            now, begin, end)
+                        state = is_timeframe_valid(now, begin, end)
                     else:
                         state = False
     except Exception:
@@ -193,7 +251,7 @@ def _calc_begin(end, hours):
     datetime: berechneter Zeitpunkt
     """
     try:
-        prev = datetime.timedelta(hours)
+        prev = timedelta(hours)
         return end - prev
     except Exception:
         log.MainLogger().exception("Fehler im System-Modul")
@@ -219,12 +277,12 @@ def check_duration(plan, duration):
     0, 0: hat noch Zeit
     """
     try:
-        now = datetime.datetime.today()
-        end = datetime.datetime.strptime(plan["time"], '%H:%M')
+        now = datetime.today()
+        end = datetime.strptime(plan["time"], '%H:%M')
 
         if plan["frequency"]["selected"] == "once":
-            endDate = datetime.datetime.strptime(
-                plan["frequency"]["once"][0], "%y-%m-%d")
+            endDate = datetime.strptime(plan["frequency"]["once"][0],
+                                        "%y-%m-%d")
             end = end.replace(endDate.year, endDate.month, endDate.day)
             state, remaining_time = _is_duration_valid(now, duration, end)
             if -0.33 <= remaining_time < 0:
@@ -242,7 +300,7 @@ def check_duration(plan, duration):
             if -0.33 <= remaining_time < 0:
                 remaining_time = remaining_time * -1
             elif remaining_time < -0.33:
-                delta = datetime.timedelta(days=1)
+                delta = timedelta(days=1)
                 end += delta
                 state, remaining_time = _is_duration_valid(now, duration, end)
             return state, remaining_time
@@ -257,15 +315,15 @@ def check_duration(plan, duration):
                     remaining_time = remaining_time * -1
                 else:
                     # Wenn der Zeitpunkt an diesem Tag schon vorüber ist (verbleibende Zeit ist negativ), nächsten Tag prüfen.
-                    delta = datetime.timedelta(days=1)
+                    delta = timedelta(days=1)
                     end += delta
                     state, remaining_time = _is_duration_valid(
                         now, duration, end)
                 return state, remaining_time
             # prüfen, ob für den nächsten Tag ein Termin ansteht und heute schon begonnen werden muss
-            if plan["frequency"]["weekly"][now.weekday()+1]:
+            if plan["frequency"]["weekly"][now.weekday() + 1]:
                 end = end.replace(now.year, now.month, now.day)
-                delta = datetime.timedelta(days=1)
+                delta = timedelta(days=1)
                 end += delta
                 return _is_duration_valid(now, duration, end)
             else:
@@ -296,12 +354,11 @@ def _is_duration_valid(now, duration, end):
     0, 0: hat noch Zeit
     """
     try:
-        delta = datetime.timedelta(
-            hours=int(duration), minutes=((duration % 1)*60))
+        delta = timedelta(hours=int(duration), minutes=((duration % 1) * 60))
         begin = end - delta
         difference = (now - begin).total_seconds()
         if difference > 0:
-            remaining_time = duration-(difference/3600)
+            remaining_time = duration - (difference / 3600)
             return 2, remaining_time
         elif difference > (-300):
             return 1, 0
@@ -326,9 +383,9 @@ def is_list_valid(hourlist):
     False: aktuelle Stunde ist nicht in der Liste enthalten
     """
     try:
-        now = datetime.datetime.today()
+        now = datetime.today()
         for hour in hourlist:
-            timestamp = datetime.datetime.fromtimestamp(float(hour))
+            timestamp = datetime.fromtimestamp(float(hour))
             if timestamp.hour == now.hour:
                 return True
             else:
@@ -354,10 +411,10 @@ def check_timestamp(timestamp, duration):
     False: Zeit ist abgelaufen
     """
     try:
-        stamp = datetime.datetime.strptime(timestamp, "%m/%d/%Y, %H:%M:%S")
-        now = datetime.datetime.today()
-        delta = datetime.timedelta(seconds=duration)
-        if (now-delta) > stamp:
+        stamp = datetime.strptime(timestamp, "%m/%d/%Y, %H:%M:%S")
+        now = datetime.today()
+        delta = timedelta(seconds=duration)
+        if (now - delta) > stamp:
             return False
         else:
             return True
@@ -374,7 +431,7 @@ def create_timestamp():
     str: aktuelles Datum und Uhrzeit
     """
     try:
-        stamp = datetime.datetime.today().strftime("%m/%d/%Y, %H:%M:%S")
+        stamp = datetime.today().strftime("%m/%d/%Y, %H:%M:%S")
         return stamp
     except Exception:
         raise
@@ -388,7 +445,7 @@ def create_timestamp_YYYYMM():
     str: aktuelles Datum
     """
     try:
-        stamp = datetime.datetime.today().strftime("%Y%m")
+        stamp = datetime.today().strftime("%Y%m")
         return stamp
     except Exception:
         raise
@@ -402,7 +459,7 @@ def create_timestamp_YYYYMMDD():
     str: aktuelles Datum
     """
     try:
-        stamp = datetime.datetime.today().strftime("%Y%m%d")
+        stamp = datetime.today().strftime("%Y%m%d")
         return stamp
     except Exception:
         raise
@@ -416,7 +473,7 @@ def create_timestamp_time():
     str: aktuelle Uhrzeit
     """
     try:
-        stamp = datetime.datetime.today().strftime("%H:%M")
+        stamp = datetime.today().strftime("%H:%M")
         return stamp
     except Exception:
         raise
@@ -436,9 +493,8 @@ def get_difference_to_now(timestamp_begin):
         Differenz HH:MM, ggf DD days, HH:MM
     """
     try:
-        begin = datetime.datetime.strptime(
-            timestamp_begin[:-3], "%m/%d/%Y, %H:%M")
-        now = datetime.datetime.today()
+        begin = datetime.strptime(timestamp_begin[:-3], "%m/%d/%Y, %H:%M")
+        now = datetime.today()
         diff = (now - begin)
         return str(diff)[:-10]
     except Exception:
@@ -462,9 +518,8 @@ def get_difference(timestamp_begin, timestamp_end):
         Differenz in Sekunden
     """
     try:
-        begin = datetime.datetime.strptime(
-            timestamp_begin, "%m/%d/%Y, %H:%M:%S")
-        end = datetime.datetime.strptime(timestamp_end, "%m/%d/%Y, %H:%M:%S")
+        begin = datetime.strptime(timestamp_begin, "%m/%d/%Y, %H:%M:%S")
+        end = datetime.strptime(timestamp_end, "%m/%d/%Y, %H:%M:%S")
         diff = (begin - end)
         return diff.total_seconds()
     except Exception:
@@ -507,11 +562,12 @@ def __get_timedelta_obj(time):
     try:
         time_charged = time.split(":")
         if len(time_charged) == 2:
-            time = datetime.timedelta(
-                hours=int(time_charged[0]), minutes=int(time_charged[1]))
+            time = timedelta(hours=int(time_charged[0]),
+                             minutes=int(time_charged[1]))
         elif len(time_charged) == 3:
-            time = datetime.timedelta(days=int(time_charged[0]), hours=int(
-                time_charged[1]), minutes=int(time_charged[2]))
+            time = timedelta(days=int(time_charged[0]),
+                             hours=int(time_charged[1]),
+                             minutes=int(time_charged[2]))
         return time
     except Exception:
         log.MainLogger().exception("Fehler im System-Modul")
