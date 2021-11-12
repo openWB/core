@@ -28,14 +28,22 @@ def thread_cp_interruption(cp_num, selected, config, duration):
     try:
         global cp_interruption_threads
         # fertige Threads aus der Liste löschen:
-        cp_interruption_threads = {t: cp_interruption_threads[t] for t in cp_interruption_threads if cp_interruption_threads[t].is_alive()}
+        cp_interruption_threads = {
+            t: cp_interruption_threads[t]
+            for t in cp_interruption_threads
+            if cp_interruption_threads[t].is_alive()
+        }
 
         # prüfen, ob Thread in der Liste ist. Dann ist noch eine Phasenumschaltung aktiv und es darf keine neue gestartet werden.
-        if "thread_cp"+str(cp_num) not in cp_interruption_threads:
+        if "thread_cp" + str(cp_num) not in cp_interruption_threads:
             # Thread zur Phasenumschaltung erstellen, starten und der Liste hinzufügen.
-            cp_interruption_threads["thread_cp"+str(cp_num)] = threading.Thread(target=_perform_cp_interruption, args=(selected, config, duration))
-            cp_interruption_threads["thread_cp"+str(cp_num)].start()
-            log.MainLogger().debug("Thread zur CP-Unterbrechung an LP"+str(cp_num)+" gestartet.")
+            cp_interruption_threads["thread_cp" +
+                                    str(cp_num)] = threading.Thread(
+                                        target=_perform_cp_interruption,
+                                        args=(selected, config, duration))
+            cp_interruption_threads["thread_cp" + str(cp_num)].start()
+            log.MainLogger().debug("Thread zur CP-Unterbrechung an LP" +
+                                   str(cp_num) + " gestartet.")
     except Exception as e:
         log.MainLogger().exception("Fehler im Modul fuer die CP-Unterbrechung")
 
@@ -55,4 +63,3 @@ def _perform_cp_interruption(selected, config, duration):
             ip_evse.perform_cp_interruption(ip_address, id, duration)
     except Exception as e:
         log.MainLogger().exception("Fehler im Modul fuer die CP-Unterbrechung")
-

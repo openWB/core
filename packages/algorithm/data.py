@@ -169,7 +169,7 @@ class Data:
         self.event.set()
         return temp
 
-    @ev_template_data .setter
+    @ev_template_data.setter
     def ev_template_data(self, value):
         self.event.wait()
         self.event.clear()
@@ -278,9 +278,9 @@ class Data:
         for key in data:
             try:
                 if isinstance(data[key], dict) is False:
-                    log.MainLogger().debug(key+"\n"+str(data[key].data))
+                    log.MainLogger().debug(key + "\n" + str(data[key].data))
                 else:
-                    log.MainLogger().debug(key+"\n"+"Klasse fehlt")
+                    log.MainLogger().debug(key + "\n" + "Klasse fehlt")
             except Exception as e:
                 log.MainLogger().exception("Fehler im Data-Modul")
 

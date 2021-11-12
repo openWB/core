@@ -8,6 +8,7 @@ from . import pub
 from ..algorithm import data
 from ..helpermodules import subdata
 
+
 class system:
     def __init__(self):
         """
@@ -49,24 +50,40 @@ class system:
                 try:
                     if "cp" in cp:
                         chargepoint = data.data.cp_data[cp]
-                        if chargepoint.data["config"]["connection_module"]["selected"] == "external_openwb":
-                            log.MainLogger().info("Update an LP "+str(chargepoint.cp_num)+" angestossen.")
-                            pub.pub_single("openWB/set/system/releaseTrain", train, chargepoint.data["config"]["connection_module"]["config"]["external_openwb"]["ip_address"], no_json=True)
-                            pub.pub_single("openWB/set/system/PerformUpdate", "1", chargepoint.data["config"]["connection_module"]["config"]["external_openwb"]["ip_address"], no_json=True)
+                        if chargepoint.data["config"]["connection_module"][
+                                "selected"] == "external_openwb":
+                            log.MainLogger().info("Update an LP " +
+                                                  str(chargepoint.cp_num) +
+                                                  " angestossen.")
+                            pub.pub_single(
+                                "openWB/set/system/releaseTrain",
+                                train,
+                                chargepoint.data["config"]["connection_module"]
+                                ["config"]["external_openwb"]["ip_address"],
+                                no_json=True)
+                            pub.pub_single(
+                                "openWB/set/system/PerformUpdate",
+                                "1",
+                                chargepoint.data["config"]["connection_module"]
+                                ["config"]["external_openwb"]["ip_address"],
+                                no_json=True)
                 except Exception as e:
                     log.MainLogger().exception("Fehler im System-Modul")
         except Exception as e:
             log.MainLogger().exception("Fehler im System-Modul")
 
+
 import threading
 import _thread as thread
 import sys
 
+
 def quit_function(fn_name):
     # print to stderr, unbuffered in Python 2.
-    sys.stderr.flush() # Python 3 stderr is likely buffered.
-    thread.interrupt_main() # raises KeyboardInterrupt
+    sys.stderr.flush()  # Python 3 stderr is likely buffered.
+    thread.interrupt_main()  # raises KeyboardInterrupt
     log.MainLogger().error("Ausfuehrung durch exit_after gestoppt.")
+
 
 def exit_after(s):
     '''
@@ -82,5 +99,7 @@ def exit_after(s):
             finally:
                 timer.cancel()
             return result
+
         return inner
+
     return outer

@@ -23,7 +23,6 @@ class StreamArray(list):
     IE. It converts it to a list without having to exhaust the generator
     and keep it's contents in memory.
     """
-
     def __init__(self, generator):
         self.generator = generator
         self._len = 1
@@ -70,7 +69,7 @@ def truncate(number, decimals=0):
         elif decimals == 0:
             return math.trunc(number)
 
-        factor = 10.0 ** decimals
+        factor = 10.0**decimals
         return math.trunc(number * factor) / factor
     except Exception as e:
         pass
@@ -83,8 +82,9 @@ def convert_csv_to_json_chargelog():
     for file in logfiles:
         try:
             pathlib.Path('./data/monthly_log').mkdir(mode=0o755,
-                                                     parents=True, exist_ok=True)
-            filepath = "./data/monthly_log/"+file[:-4]+".json"
+                                                     parents=True,
+                                                     exist_ok=True)
+            filepath = "./data/monthly_log/" + file[:-4] + ".json"
             pathlib.Path(filepath).touch(exist_ok=True)
             with open(filepath, 'w') as f:
                 generator_handle = _chargelogfile_entry_generator_func(file)
@@ -102,7 +102,8 @@ def _chargelogfile_entry_generator_func(file):
     file: csv-Datei
         csv-Datei, deren Einträge konvertiert werden sollen.
     """
-    with open('/var/www/html/openWB/web/logging/data/ladelog/'+file) as csv_file:
+    with open('/var/www/html/openWB/web/logging/data/ladelog/' +
+              file) as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         for row in csv_reader:
             try:
@@ -120,7 +121,7 @@ def _chargelogfile_entry_generator_func(file):
                         chargemode = "standby"
                     else:
                         raise ValueError(
-                            str(row[7])+" ist kein bekannter Lademodus.")
+                            str(row[7]) + " ist kein bekannter Lademodus.")
                     # Format Datum-Uhrzeit anpassen
                     begin = conv_1_9_datetimes(row[0])
                     end = conv_1_9_datetimes(row[1])
@@ -135,34 +136,31 @@ def _chargelogfile_entry_generator_func(file):
                         duration = duration_list[0] + \
                             ":" + duration_list[1] + ":00"
                     else:
-                        raise ValueError(str(duration_list) +
-                                         " hat kein bekanntes Format.")
+                        raise ValueError(
+                            str(duration_list) + " hat kein bekanntes Format.")
                     try:
-                        costs = data.data.general_data["general"].data["price_kwh"] * row[3]
+                        costs = data.data.general_data["general"].data[
+                            "price_kwh"] * row[3]
                     except Exception:
                         costs = 0
                     new_entry = {
-                        "chargepoint":
-                        {
+                        "chargepoint": {
                             "id": int(row[6]),
                             "name": "-",
                         },
-                        "vehicle":
-                        {
+                        "vehicle": {
                             "id": "-",
                             "name": "-",
                             "chargemode": chargemode,
                             "prio": "-",
                             "rfid": row[8]
                         },
-                        "time":
-                        {
+                        "time": {
                             "begin": begin,
                             "end": end,
                             "time_charged": duration
                         },
-                        "data":
-                        {
+                        "data": {
                             "range_charged": float(row[2]),
                             "charged_since_mode_switch": 0,
                             "charged_since_plugged_counter": float(row[3]),
@@ -186,12 +184,13 @@ def convert_csv_to_json_measurement_log(folder):
     folder: str
         Ordner, der konvertiert werden soll.
     """
-    logfiles = os.listdir("/var/www/html/openWB/web/logging/data/"+folder)
+    logfiles = os.listdir("/var/www/html/openWB/web/logging/data/" + folder)
     for file in logfiles:
         try:
-            pathlib.Path('./data/'+folder+'_log').mkdir(mode=0o755,
-                                                        parents=True, exist_ok=True)
-            filepath = "./data/"+folder+"_log/"+file[:-4]+".json"
+            pathlib.Path('./data/' + folder + '_log').mkdir(mode=0o755,
+                                                            parents=True,
+                                                            exist_ok=True)
+            filepath = "./data/" + folder + "_log/" + file[:-4] + ".json"
             pathlib.Path(filepath).touch(exist_ok=True)
             with open(filepath, 'w') as f:
                 if folder == "daily":
@@ -215,13 +214,14 @@ def _dailylog_entry_generator_func(file):
     file: csv-Datei
         csv-Datei, deren Einträge konvertiert werden sollen.
     """
-    with open('/var/www/html/openWB/web/logging/data/daily/'+file) as csv_file:
+    with open('/var/www/html/openWB/web/logging/data/daily/' +
+              file) as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         for row in csv_reader:
             try:
                 if len(row) != 0:
                     new_entry = {
-                        "date": row[0][:2]+":"+row[0][-2:],
+                        "date": row[0][:2] + ":" + row[0][-2:],
                         "cp": {
                             "all": {
                                 "counter": row[7]
@@ -344,7 +344,8 @@ def _monthlylog_entry_generator_func(file):
     file: csv-Datei
         csv-Datei, deren Einträge konvertiert werden sollen.
     """
-    with open('/var/www/html/openWB/web/logging/data/monthly/'+file) as csv_file:
+    with open('/var/www/html/openWB/web/logging/data/monthly/' +
+              file) as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         for row in csv_reader:
             try:
@@ -443,6 +444,7 @@ def _monthlylog_entry_generator_func(file):
                 yield new_entry
             except Exception:
                 pass
+
 
 # convert_csv_to_json_measurement_log("monthly")
 # convert_csv_to_json_measurement_log("daily")
