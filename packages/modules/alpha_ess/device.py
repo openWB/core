@@ -49,7 +49,8 @@ class Device():
     def add_component(self, component_config: dict) -> None:
         try:
             factory = self.__component_factory(component_config["type"])
-            self.data["components"]["component"+str(component_config["id"])] = factory(self.data["config"]["id"], self.client, component_config)
+            self.data["components"]["component"+str(component_config["id"])
+                                    ] = factory(self.data["config"]["id"], self.client, component_config)
         except Exception as e:
             log.MainLogger().exception("Fehler im Modul "+self.data["config"]["name"])
 
