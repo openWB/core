@@ -60,8 +60,10 @@ class SimCountLegacy:
             timestamp_previous = 0.0
             start_new = True
             if os.path.isfile('/var/www/html/openWB/ramdisk/'+prefix+'sec0'):
-                timestamp_previous = float(self.read_ramdisk_file(prefix+'sec0'))
-                power_previous = int(float(self.read_ramdisk_file(prefix+'wh0')))
+                timestamp_previous = float(
+                    self.read_ramdisk_file(prefix+'sec0'))
+                power_previous = int(
+                    float(self.read_ramdisk_file(prefix+'wh0')))
                 try:
                     counter_import_present = int(float(self.read_ramdisk_file(prefix+'watt0pos')))
                 except Exception:
@@ -79,7 +81,8 @@ class SimCountLegacy:
                     counter_import_previous) + " Export: " + str(counter_export_previous) + " Power: " + str(
                     power_previous))
                 start_new = False
-            self.write_ramdisk_file(prefix+'sec0', "%22.6f" % timestamp_present)
+            self.write_ramdisk_file(
+                prefix+'sec0', "%22.6f" % timestamp_present)
             self.write_ramdisk_file(prefix+'wh0', power_present)
 
             if start_new:
@@ -87,7 +90,8 @@ class SimCountLegacy:
             else:
                 timestamp_previous = timestamp_previous+1
                 seconds_since_previous = timestamp_present - timestamp_previous
-                imp_exp = calculate_import_export(seconds_since_previous, power_previous, power_present)
+                imp_exp = calculate_import_export(
+                    seconds_since_previous, power_previous, power_present)
                 counter_export_present = counter_export_present + imp_exp[1]
                 counter_import_present = counter_import_present + imp_exp[0]
                 log.MainLogger().debug(
@@ -107,10 +111,13 @@ class SimCountLegacy:
                 )
                 self.write_ramdisk_file(prefix+'watt0pos', counter_import_present)
                 if counter_import_present != counter_import_previous:
-                    pub.pub_single("openWB/"+topic+"/WHImported_temp", counter_import_present, no_json=True)
-                self.write_ramdisk_file(prefix+'watt0neg', counter_export_present)
+                    pub.pub_single("openWB/"+topic+"/WHImported_temp",
+                                   counter_import_present, no_json=True)
+                self.write_ramdisk_file(
+                    prefix+'watt0neg', counter_export_present)
                 if counter_export_present != counter_export_previous:
-                    pub.pub_single("openWB/"+topic+"/WHExport_temp", counter_export_present, no_json=True)
+                    pub.pub_single("openWB/"+topic+"/WHExport_temp",
+                                   counter_export_present, no_json=True)
                 return wattposkh, wattnegkh
         except Exception as e:
             process_error(e)
@@ -153,9 +160,11 @@ class SimCountLegacy:
             try:
                 topic = self.__get_topic(prefix)
                 if value == "watt0pos":
-                    temp = subscribe.simple("openWB/"+topic+"/WHImported_temp", hostname="localhost")
+                    temp = subscribe.simple(
+                        "openWB/"+topic+"/WHImported_temp", hostname="localhost")
                 else:
-                    temp = subscribe.simple("openWB/"+topic+"/WHExport_temp", hostname="localhost")
+                    temp = subscribe.simple(
+                        "openWB/"+topic+"/WHExport_temp", hostname="localhost")
             except Exception as e:
                 raise ModuleError(__name__+" "+str(type(e))+" "+str(e), ModuleErrorLevel.ERROR) from e
             # Signal-Handler stoppen
@@ -166,9 +175,11 @@ class SimCountLegacy:
                 temp = "0"
             self.write_ramdisk_file(prefix+value, temp)
             if value == "watt0pos":
-                log.MainLogger().info("loadvars read openWB/"+topic+"/WHImported_temp from mosquito "+str(temp))
+                log.MainLogger().info("loadvars read openWB/"+topic +
+                                      "/WHImported_temp from mosquito "+str(temp))
             else:
-                log.MainLogger().info("loadvars read openWB/"+topic+"/WHExport_temp from mosquito "+str(temp))
+                log.MainLogger().info("loadvars read openWB/"+topic +
+                                      "/WHExport_temp from mosquito "+str(temp))
             return temp
         except Exception as e:
             process_error(e)
@@ -214,7 +225,8 @@ class SimCount:
                     str(counter_export_present) + "Ws"
                 )
                 start_new = False
-            pub.pub(topic+"simulation/timestamp_present", "%22.6f" % timestamp_present)
+            pub.pub(topic+"simulation/timestamp_present",
+                    "%22.6f" % timestamp_present)
             pub.pub(topic+"simulation/power_present", power_present)
 
             if start_new:
@@ -225,7 +237,8 @@ class SimCount:
             else:
                 timestamp_previous = timestamp_previous+1
                 seconds_since_previous = timestamp_present - timestamp_previous
-                imp_exp = calculate_import_export(seconds_since_previous, power_previous, power_present)
+                imp_exp = calculate_import_export(
+                    seconds_since_previous, power_previous, power_present)
                 counter_export_present = counter_export_present + imp_exp[1]
                 counter_import_present = counter_import_present + imp_exp[0]
                 log.MainLogger().debug(
@@ -272,7 +285,8 @@ def calculate_import_export(
             # Berechnung der Fläche im vierten Quadranten -> Export
             power_zero_seconds = -power_low / gradient
             energy_exported = energy_function(power_zero_seconds)
-            log.MainLogger().debug("simcount exportierte Energie im Zeitintervall: "+str(energy_exported))
+            log.MainLogger().debug(
+                "simcount exportierte Energie im Zeitintervall: "+str(energy_exported))
             # Betragsmäßige Gesamtfläche: oberhalb der x-Achse = Import, unterhalb der x-Achse: Export
             return energy_total - energy_exported, energy_exported * -1
         return (energy_total, 0) if energy_total >= 0 else (0, -energy_total)

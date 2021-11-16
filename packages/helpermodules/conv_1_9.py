@@ -11,7 +11,7 @@ import pathlib
 
 try:
     from . import data
-except:
+except Exception:
     pass
 
 
@@ -82,7 +82,8 @@ def convert_csv_to_json_chargelog():
     logfiles = os.listdir("/var/www/html/openWB/web/logging/data/ladelog")
     for file in logfiles:
         try:
-            pathlib.Path('./data/monthly_log').mkdir(mode=0o755, parents=True, exist_ok=True)
+            pathlib.Path('./data/monthly_log').mkdir(mode=0o755,
+                                                     parents=True, exist_ok=True)
             filepath = "./data/monthly_log/"+file[:-4]+".json"
             pathlib.Path(filepath).touch(exist_ok=True)
             with open(filepath, 'w') as f:
@@ -118,7 +119,8 @@ def _chargelogfile_entry_generator_func(file):
                     elif row[7] == "4":
                         chargemode = "standby"
                     else:
-                        raise ValueError(str(row[7])+" ist kein bekannter Lademodus.")
+                        raise ValueError(
+                            str(row[7])+" ist kein bekannter Lademodus.")
                     # Format Datum-Uhrzeit anpassen
                     begin = conv_1_9_datetimes(row[0])
                     end = conv_1_9_datetimes(row[1])
@@ -130,12 +132,14 @@ def _chargelogfile_entry_generator_func(file):
                     elif len(duration_list) == 4:
                         duration_list.pop(1)  # "H"
                         duration_list.pop(2)  # "Min"
-                        duration = duration_list[0] + ":" + duration_list[1] + ":00"
+                        duration = duration_list[0] + \
+                            ":" + duration_list[1] + ":00"
                     else:
-                        raise ValueError(str(duration_list)+" hat kein bekanntes Format.")
+                        raise ValueError(str(duration_list) +
+                                         " hat kein bekanntes Format.")
                     try:
                         costs = data.data.general_data["general"].data["price_kwh"] * row[3]
-                    except:
+                    except Exception:
                         costs = 0
                     new_entry = {
                         "chargepoint":
@@ -185,14 +189,15 @@ def convert_csv_to_json_measurement_log(folder):
     logfiles = os.listdir("/var/www/html/openWB/web/logging/data/"+folder)
     for file in logfiles:
         try:
-            pathlib.Path('./data/'+folder+'_log').mkdir(mode=0o755, parents=True, exist_ok=True)
+            pathlib.Path('./data/'+folder+'_log').mkdir(mode=0o755,
+                                                        parents=True, exist_ok=True)
             filepath = "./data/"+folder+"_log/"+file[:-4]+".json"
             pathlib.Path(filepath).touch(exist_ok=True)
             with open(filepath, 'w') as f:
                 if folder == "daily":
                     generator_handle = _dailylog_entry_generator_func(file)
                 else:
-                     generator_handle = _monthlylog_entry_generator_func(file)
+                    generator_handle = _monthlylog_entry_generator_func(file)
                 stream_array = StreamArray(generator_handle)
                 for entry in json.JSONEncoder().iterencode(stream_array):
                     f.write(entry)
@@ -327,6 +332,7 @@ def _dailylog_entry_generator_func(file):
                 yield new_entry
             except Exception:
                 pass
+
 
 def _monthlylog_entry_generator_func(file):
     """ Generator-Funktion, die einen Eintrag aus dem Tageslog konvertiert.

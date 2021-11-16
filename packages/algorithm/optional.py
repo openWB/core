@@ -3,15 +3,12 @@
 
 from math import ceil  # Aufrunden
 
-from ..modules.et import awattargetprices
 from ..helpermodules import log
-from ..modules.et import tibbergetprices
 
 
 class optional:
     """
     """
-
     def __init__(self):
         try:
             self.data = {"et": {"get": {}}}
@@ -27,7 +24,8 @@ class optional:
         False: Preis liegt darüber
         """
         try:
-            if self.data["et"]["get"]["price"] <= self.data["et"]["config"]["max_price"]:
+            if self.data["et"]["get"]["price"] <= self.data["et"]["config"][
+                    "max_price"]:
                 return True
             else:
                 return False
@@ -50,7 +48,10 @@ class optional:
         """
         try:
             price_list = self.data["et"]["get"]["price_list"]
-            return [i[0] for i in sorted(price_list, key=lambda x: x[1])[:ceil(duration)]]
+            return [
+                i[0] for i in sorted(price_list, key=lambda x: x[1])
+                [:ceil(duration)]
+            ]
         except Exception as e:
             self.et_get_prices()
             log.MainLogger().exception("Fehler im Optional-Modul")
@@ -60,12 +61,14 @@ class optional:
         """
         """
         try:
-            if self.data["et"]["active"] == True:
-                if self.data["et"]["config"]["provider"]["provider"] == "awattar":
-                    awattargetprices.update_pricedata(self.data["et"]["config"]["provider"]["country"], 0)
-                elif self.data["et"]["config"]["provider"]["provider"] == "tibber":
-                    tibbergetprices.update_pricedata(self.data["et"]["config"]["provider"]["token"], self.data["et"]["config"]["provider"]["id"])
-                else:
-                    log.MainLogger().error("Unbekannter Et-Provider.")
+            if self.data["et"]["active"]:
+                # if self.data["et"]["config"]["provider"]["provider"] == "awattar":
+                #     awattargetprices.update_pricedata(
+                #         self.data["et"]["config"]["provider"]["country"], 0)
+                # elif self.data["et"]["config"]["provider"]["provider"] == "tibber":
+                #     tibbergetprices.update_pricedata(
+                #         self.data["et"]["config"]["provider"]["token"], self.data["et"]["config"]["provider"]["id"])
+                # else:
+                log.MainLogger().error("Unbekannter Et-Provider.")
         except Exception as e:
             log.MainLogger().exception("Fehler im Optional-Modul")

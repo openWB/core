@@ -39,7 +39,8 @@ class HandlerAlgorithm:
         try:
             # Beim ersten Durchlauf wird in jedem Fall eine Exception geworfen, da die Daten erstmalig ins data-Modul kopiert werden müssen.
             try:
-                if (data.data.general_data["general"].data["control_interval"] / 10) == self.interval_counter:
+                if (data.data.general_data["general"].data["control_interval"]
+                        / 10) == self.interval_counter:
                     # Mit aktuellen Einstellungen arbeiten.
                     log.MainLogger().info(" Start copy_data 1")
                     prep.copy_system_data()
@@ -58,11 +59,14 @@ class HandlerAlgorithm:
                     prep.copy_data()
                     log.MainLogger().info(" Stop copy_data 3")
                     self.heartbeat = True
-                    if data.data.system_data["system"].data["perform_update"] == True:
+                    if data.data.system_data["system"].data["perform_update"]:
                         data.data.system_data["system"].perform_update()
                         return
-                    elif data.data.system_data["system"].data["update_in_progress"] == True:
-                        log.MainLogger().info("Regelung pausiert, da ein Update durchgefuehrt wird.")
+                    elif data.data.system_data["system"].data[
+                            "update_in_progress"]:
+                        log.MainLogger().info(
+                            "Regelung pausiert, da ein Update durchgefuehrt wird."
+                        )
                         return
                     prep.setup_algorithm()
                     control.calc_current()
@@ -71,7 +75,7 @@ class HandlerAlgorithm:
                     self.interval_counter = 1
                 else:
                     self.interval_counter = self.interval_counter + 1
-            except:
+            except Exception:
                 # Wenn kein Regelintervall bekannt ist, alle 10s regeln.
                 prep.copy_system_data()
                 vars.get_values()
@@ -92,18 +96,21 @@ class HandlerAlgorithm:
         """ Handler, der alle 5 Minuten aufgerufen wird und die Heartbeats der Threads überprüft und die Aufgaben ausführt, die nur alle 5 Minuten ausgeführt werden müssen.
         """
         try:
-            if self.heartbeat == False:
-                log.MainLogger().error("Heartbeat fuer Algorithmus nicht zurueckgesetzt.")
+            if self.heartbeat is False:
+                log.MainLogger().error(
+                    "Heartbeat fuer Algorithmus nicht zurueckgesetzt.")
             else:
                 self.hartbeat = False
 
-            if sub.heartbeat == False:
-                log.MainLogger().error("Heartbeat fuer Subdata nicht zurueckgesetzt.")
+            if sub.heartbeat is False:
+                log.MainLogger().error(
+                    "Heartbeat fuer Subdata nicht zurueckgesetzt.")
             else:
                 sub.hartbeat = False
 
-            if set.heartbeat == False:
-                log.MainLogger().error("Heartbeat fuer Setdata nicht zurueckgesetzt.")
+            if set.heartbeat is False:
+                log.MainLogger().error(
+                    "Heartbeat fuer Setdata nicht zurueckgesetzt.")
             else:
                 set.hartbeat = False
 
@@ -117,7 +124,6 @@ class HandlerAlgorithm:
                 measurement_log.save_log("monthly")
             data.data.general_data["general"].grid_protection()
             data.data.optional_data["optional"].et_get_prices()
-            data.data.cp_data["all"].check_all_modbus_evse_connections()
             data.data.counter_data["all"].calc_daily_yield_home_consumption()
         except Exception as e:
             log.MainLogger().exception("Fehler im Main-Modul")
@@ -127,7 +133,6 @@ class RepeatedTimer(object):
     """ führt alle x Sekunden einen Thread aus, unabhängig davon, ob sich der Thread bei der vorherigen Ausführung aufgehängt etc hat.
     https://stackoverflow.com/a/40965385
     """
-
     def __init__(self, interval, function, *args, **kwargs):
         self._timer = None
         self.interval = interval
@@ -146,7 +151,8 @@ class RepeatedTimer(object):
     def start(self):
         if not self.is_running:
             self.next_call += self.interval
-            self._timer = threading.Timer(self.next_call - time.time(), self._run)
+            self._timer = threading.Timer(self.next_call - time.time(),
+                                          self._run)
             self._timer.start()
             self.is_running = True
 
@@ -169,8 +175,10 @@ try:
     event_charge_template.set()
     event_cp_config = threading.Event()
     event_cp_config.set()
-    set = setdata.setData(event_ev_template, event_charge_template, event_cp_config)
-    sub = subdata.SubData(event_ev_template, event_charge_template, event_cp_config)
+    set = setdata.setData(event_ev_template, event_charge_template,
+                          event_cp_config)
+    sub = subdata.SubData(event_ev_template, event_charge_template,
+                          event_cp_config)
     comm = command.Command()
     t_sub = Thread(target=sub.sub_topics, args=())
     t_set = Thread(target=set.set_data, args=())
@@ -184,7 +192,7 @@ try:
     configuration.pub_configurable()
 
     rt = RepeatedTimer(300, handler.handler5Min)
-    if debug == False:
+    if debug is False:
         rt2 = RepeatedTimer(10, handler.handler10Sec)
     else:
         while True:
