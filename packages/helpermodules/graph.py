@@ -78,7 +78,7 @@ def pub_graph_data():
     with open("./ramdisk/graph_live.json", "a") as f:
         f.write(str(dataline).replace("'", '"'))
         f.write("\n")
-    subprocess.run(["/var/www/html/openWB/graphing.sh"])
+    subprocess.run(["/var/www/html/openWB/packages/helpermodules/graphing.sh"])
     # with open('./data/graph/all_live.graph', "r") as f:
     #     file = f.readlines()
     #     min_line = 0
