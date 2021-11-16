@@ -86,12 +86,12 @@ def save_log(folder):
                 if "cp" in cp:
                     cp_dict.update(
                         {cp: {"counter": data.data.cp_data[cp].data["get"]["counter"]}})
-            except Exception as e:
+            except Exception:
                 log.MainLogger().exception("Fehler im Werte-Loggingmodul fuer Ladepunkt "+str(cp))
         try:
             cp_dict.update(
                 {"all": {"counter": data.data.cp_data["all"].data["get"]["counter_all"]}})
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im Werte-Loggingmodul")
 
         ev_dict = {}
@@ -100,16 +100,17 @@ def save_log(folder):
                 if "ev" in ev:
                     ev_dict.update(
                         {ev: {"soc": data.data.ev_data[ev].data["get"]["soc"]}})
-            except Exception as e:
+            except Exception:
                 log.MainLogger().exception("Fehler im Werte-Loggingmodul fuer EV "+str(ev))
 
         counter_dict = {}
         for counter in data.data.counter_data:
             try:
                 if "counter" in counter:
-                    counter_dict.update({counter: {"imported": data.data.counter_data[counter].data["get"]["imported"],
-                                                   "exported": data.data.counter_data[counter].data["get"]["exported"]}})
-            except Exception as e:
+                    counter_dict.update({counter:
+                                         {"imported": data.data.counter_data[counter].data["get"]["imported"],
+                                          "exported": data.data.counter_data[counter].data["get"]["exported"]}})
+            except Exception:
                 log.MainLogger().exception("Fehler im Werte-Loggingmodul fuer Zaehler "+str(counter))
 
         pv_dict = {}
@@ -118,7 +119,7 @@ def save_log(folder):
                 try:
                     pv_dict.update(
                         {pv: {"imported": data.data.pv_data[pv].data["get"]["counter"]}})
-                except Exception as e:
+                except Exception:
                     log.MainLogger().exception("Fehler im Werte-Loggingmodul fuer Wechselrichter "+str(pv))
 
         bat_dict = {}
@@ -128,7 +129,7 @@ def save_log(folder):
                     bat_dict.update({bat: {"imported": data.data.bat_data[bat].data["get"]["imported"],
                                            "exported": data.data.bat_data[bat].data["get"]["exported"],
                                            "soc": data.data.bat_data[bat].data["get"]["soc"]}})
-                except Exception as e:
+                except Exception:
                     log.MainLogger().exception("Fehler im Werte-Loggingmodul fuer Speicher "+str(bat))
 
         new_entry = {
@@ -160,12 +161,13 @@ def save_log(folder):
         content.append(new_entry)
         with open(filepath, "w") as jsonFile:
             json.dump(content, jsonFile)
-    except Exception as e:
+    except Exception:
         log.MainLogger().exception("Fehler im Werte-Loggingmodul")
 
 
 def update_daily_yields():
-    """ berechnet die Tageserträge für Ladepunkte, Zähler, PV und Speicher. Dazu wird der erste Eintrag des Tageslogs (Mitternacht) vom aktuellen Zählerstand subtrahiert.
+    """ berechnet die Tageserträge für Ladepunkte, Zähler, PV und Speicher. Dazu wird der erste Eintrag des Tageslogs
+    (Mitternacht) vom aktuellen Zählerstand subtrahiert.
     """
     try:
         filepath = "./data/daily_log/"+timecheck.create_timestamp_YYYYMMDD()+".json"
@@ -237,5 +239,5 @@ def update_daily_yields():
                         daily_yield_imported)
                 pub.pub("openWB/set/bat/get/daily_yield_export",
                         daily_yield_exported)
-    except Exception as e:
+    except Exception:
         log.MainLogger().exception("Fehler im Werte-Loggingmodul")

@@ -1,12 +1,15 @@
 """ Modul zum Updaten der Steuerung und Triggern der externen Wbs, zu updaten."""
 
+import threading
+import sys
+import _thread as thread
 import subprocess
 import time
 
 from . import log
 from . import pub
 from ..algorithm import data
-from ..helpermodules import subdata
+
 
 class system:
     def __init__(self):
@@ -31,9 +34,9 @@ class system:
             self._trigger_ext_update(train)
             time.sleep(15)
             # aktuell soll kein Update für den Master durchgeführt werden.
-            #subprocess.run(["/var/www/html/openWB/packages/helpermodules/update_self.sh", train])
+            # subprocess.run(["/var/www/html/openWB/packages/helpermodules/update_self.sh", train])
             subprocess.run("/var/www/html/openWB/runs/atreboot.sh")
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im System-Modul")
 
     def _trigger_ext_update(self, train):
@@ -51,36 +54,11 @@ class system:
                         chargepoint = data.data.cp_data[cp]
                         if chargepoint.data["config"]["connection_module"]["selected"] == "external_openwb":
                             log.MainLogger().info("Update an LP "+str(chargepoint.cp_num)+" angestossen.")
-                            pub.pub_single("openWB/set/system/releaseTrain", train, chargepoint.data["config"]["connection_module"]["config"]["external_openwb"]["ip_address"], no_json=True)
-                            pub.pub_single("openWB/set/system/PerformUpdate", "1", chargepoint.data["config"]["connection_module"]["config"]["external_openwb"]["ip_address"], no_json=True)
-                except Exception as e:
+                            ip_address = chargepoint.data["config"]["connection_module"]["config"]["external_openwb"][
+                                "ip_address"]
+                            pub.pub_single("openWB/set/system/releaseTrain", train, ip_address, no_json=True)
+                            pub.pub_single("openWB/set/system/PerformUpdate", "1", ip_address, no_json=True)
+                except Exception:
                     log.MainLogger().exception("Fehler im System-Modul")
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im System-Modul")
-
-import threading
-import _thread as thread
-import sys
-
-def quit_function(fn_name):
-    # print to stderr, unbuffered in Python 2.
-    sys.stderr.flush() # Python 3 stderr is likely buffered.
-    thread.interrupt_main() # raises KeyboardInterrupt
-    log.MainLogger().error("Ausfuehrung durch exit_after gestoppt.")
-
-def exit_after(s):
-    '''
-    use as decorator to exit process if 
-    function takes longer than s seconds
-    '''
-    def outer(fn):
-        def inner(*args, **kwargs):
-            timer = threading.Timer(s, quit_function, args=[fn.__name__])
-            timer.start()
-            try:
-                result = fn(*args, **kwargs)
-            finally:
-                timer.cancel()
-            return result
-        return inner
-    return outer

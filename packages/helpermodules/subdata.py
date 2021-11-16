@@ -20,8 +20,8 @@ from ..modules.common.abstract_device import DeviceUpdater
 
 
 class SubData:
-    """ Klasse, die die benötigten Topics abonniert, die Instanzen ertstellt, wenn z.b. ein Modul neu konfiguriert wird, 
-    Instanzen löscht, wenn Module gelöscht werden, und die Werte in die Attribute der Instanzen schreibt.
+    """ Klasse, die die benötigten Topics abonniert, die Instanzen ertstellt, wenn z.b. ein Modul neu konfiguriert
+    wird, Instanzen löscht, wenn Module gelöscht werden, und die Werte in die Attribute der Instanzen schreibt.
     """
 
     # Instanzen
@@ -144,13 +144,14 @@ class SubData:
         return index.group(2)
 
     def set_json_payload(self, dict, msg):
-        """ dekodiert das JSON-Objekt und setzt diesen für den Value in das übergebene Dictionary, als Key wird der Name nach dem letzten / verwendet.
+        """ dekodiert das JSON-Objekt und setzt diesen für den Value in das übergebene Dictionary, als Key wird der 
+        Name nach dem letzten / verwendet.
 
          Parameters
         ----------
         dict : dictionary
             Dictionary, in dem der Wert abgelegt wird
-        msg : 
+        msg :
             enthält den Payload als json-Objekt
         """
         try:
@@ -239,7 +240,8 @@ class SubData:
             else:
                 if "ct"+index not in var:
                     var["ct"+index] = ev.chargeTemplate(int(index))
-            if re.search("^.+/vehicle/template/charge_template/[0-9]+/chargemode/scheduled_charging/plans/[0-9]+$", msg.topic) is not None:
+            if re.search("^.+/vehicle/template/charge_template/[0-9]+/chargemode/scheduled_charging/plans/[0-9]+$",
+                         msg.topic) is not None:
                 index_second = self.get_second_index(msg.topic)
                 if str(msg.payload.decode("utf-8")) == "":
                     if "ct"+index in var["ct"+index].data["chargemode"]["scheduled_charging"]["plans"]:
@@ -250,7 +252,8 @@ class SubData:
                 else:
                     var["ct"+index].data["chargemode"]["scheduled_charging"]["plans"][str(
                         index)] = json.loads(str(msg.payload.decode("utf-8")))
-            elif re.search("^.+/vehicle/template/charge_template/[0-9]+/time_charging/plans/[0-9]+$", msg.topic) is not None:
+            elif re.search("^.+/vehicle/template/charge_template/[0-9]+/time_charging/plans/[0-9]+$",
+                           msg.topic) is not None:
                 index_second = self.get_second_index(msg.topic)
                 if str(msg.payload.decode("utf-8")) == "":
                     if "ct"+index in var["ct"+index].data["time_charging"]["plans"]:
@@ -759,7 +762,8 @@ class SubData:
                     if "component"+index_second in var["device"+index].device._components:
                         sim_data = var["device"+index].device._components["component" +
                                                                           index_second].component.simulation
-                    # Es darf nicht einfach data["config"] aktualisiert werden, da in der __init__ auch die TCP-Verbindung aufgebaut wird, deren IP dann nicht aktualisiert werden würde.
+                    # Es darf nicht einfach data["config"] aktualisiert werden, da in der __init__ auch die TCP-Verbindung
+                    # aufgebaut wird, deren IP dann nicht aktualisiert werden würde.
                     var["device"+index].device.add_component(
                         json.loads(str(msg.payload.decode("utf-8"))))
                     if sim_data:
