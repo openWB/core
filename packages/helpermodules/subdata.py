@@ -16,6 +16,7 @@ from ..algorithm import optional
 from . import pub
 from . import system
 from ..algorithm import pv
+from ..modules.common.abstract_device import DeviceUpdater
 
 
 class SubData:
@@ -723,7 +724,7 @@ class SubData:
                         str(msg.payload.decode("utf-8")))
                     dev = importlib.import_module(
                         ".modules."+device_config["type"]+".device", "packages")
-                    var["device"+index] = dev.Device(device_config)
+                    var["device"+index] = DeviceUpdater(dev.Device((device_config)))
                     # Durch das erneute Subscriben werden die Komponenten mit dem aktualisierten TCP-Client angelegt.
                     client.subscribe("openWB/system/device/" +
                                      index+"/component/#", 2)
@@ -736,14 +737,14 @@ class SubData:
                 index = self.get_index(msg.topic)
                 index_second = self.get_second_index(msg.topic)
                 self.set_json_payload(
-                    var["device"+index].data["components"]["component"+index_second].data["simulation"], msg)
+                    var["device"+index].device._components["component"+index_second].component.simulation, msg)
             elif re.search("^.+/device/[0-9]+/component/[0-9]+/config$", msg.topic) is not None:
                 index = self.get_index(msg.topic)
                 index_second = self.get_second_index(msg.topic)
                 if str(msg.payload.decode("utf-8")) == "":
                     if "device"+index in var:
-                        if "component"+str(index_second) in var["device"+index].data["components"]:
-                            var["device"+index].data["components"].remove(
+                        if "component"+str(index_second) in var["device"+index].device._components:
+                            var["device"+index].device._components.remove(
                                 "component"+str(index_second))
                             pub.pub("openWB/system/device/"+str(index) +
                                     "/component/"+str(index_second), "")
@@ -755,15 +756,15 @@ class SubData:
                                                str(index)+" gefunden werden.")
                 else:
                     sim_data = None
-                    if "component"+index_second in var["device"+index].data["components"]:
-                        sim_data = var["device"+index].data["components"]["component" +
-                                                                          index_second].data["simulation"]
+                    if "component"+index_second in var["device"+index].device._components:
+                        sim_data = var["device"+index].device._components["component" +
+                                                                          index_second].component.simulation
                     # Es darf nicht einfach data["config"] aktualisiert werden, da in der __init__ auch die TCP-Verbindung aufgebaut wird, deren IP dann nicht aktualisiert werden würde.
-                    var["device"+index].add_component(
+                    var["device"+index].device.add_component(
                         json.loads(str(msg.payload.decode("utf-8"))))
                     if sim_data:
-                        var["device"+index].data["components"]["component" +
-                                                               index_second].data["simulation"] = sim_data
+                        var["device"+index].device._components["component" +
+                                                               index_second].component.simulation = sim_data
             else:
                 self.set_json_payload(var["system"].data, msg)
         except Exception as e:

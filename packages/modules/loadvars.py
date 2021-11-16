@@ -14,6 +14,7 @@ from .cp import modbus_evse as cp_modbus_evse
 from .cp import modbus_slave as cp_modbus_slave
 from .cp import ip_evse as cp_ip_evse
 
+
 class loadvars:
     """ fragt die Werte der konfigurierten Module ab
     """
@@ -37,7 +38,9 @@ class loadvars:
 
                 for thread in kits_threads:
                     if thread.is_alive() == True:
-                        log.MainLogger().error(thread.name+" konnte nicht innerhalb des Timeouts die Werte abfragen, die abgefragten Werte werden nicht in der Regelung verwendet.")
+                        log.MainLogger().error(
+                            thread.name +
+                            " konnte nicht innerhalb des Timeouts die Werte abfragen, die abgefragten Werte werden nicht in der Regelung verwendet.")
         except Exception as e:
             log.MainLogger().exception("Fehler im loadvars-Modul")
 
@@ -98,11 +101,12 @@ class loadvars:
                         cp_external_openwb.read_external_openwb(cp)
                     # elif cp.data["config"]["connection_module"]["selected"] == "":
                     #     (cp)
-                        
+
                     # Display, Pushover, SocTimer eher am Ende
 
                     # Ladeleistungsmodul
-                    if cp.data["config"]["power_module"]["selected"] == "ethmpm3pm" or cp.data["config"]["power_module"]["selected"] == "ethmpm3pm_framer":
+                    if cp.data["config"]["power_module"]["selected"] == "ethmpm3pm" or cp.data["config"][
+                            "power_module"]["selected"] == "ethmpm3pm_framer":
                         cp_etmpm3pm.read_ethmpm3pm(cp)
                     elif cp.data["config"]["power_module"]["selected"] == "mqtt":
                         cp_mqtt.mqtt_state(cp)
@@ -128,7 +132,7 @@ class loadvars:
                     if "device" in item:
                         thread = None
                         module = data.data.system_data[item]
-                        thread = threading.Thread(target=module.read, args=())
+                        thread = threading.Thread(target=module.get_values, args=())
                         if thread is not None:
                             modules_threads.append(thread)
                 except Exception as e:

@@ -1,18 +1,14 @@
 from abc import abstractmethod
 from collections.abc import Iterable
-from pathlib import Path
-from typing import Callable, Union
+from typing import Callable, Generic, TypeVar, Union
 
 try:
     from ..common.module_error import ModuleError, ModuleErrorLevel
     from ...helpermodules import compatibility
     from ...helpermodules import log
     from ...helpermodules import pub
-    from component_state import BatState, CounterState, InverterState
-except (ImportError, ValueError):
-    # for 1.9 compatibility
-    import sys
-    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+    from .component_state import BatState, CounterState, InverterState
+except (ImportError, ValueError, SystemError):
     from helpermodules import compatibility
     from helpermodules import log
     from helpermodules import pub
@@ -21,12 +17,13 @@ except (ImportError, ValueError):
 
 
 def process_error(e):
-    raise ModuleError(__name__+" "+str(type(e))+" "+str(e), ModuleErrorLevel.ERROR) from e
+    raise ModuleError(__name__ + " " + str(type(e)) + " " + str(e),
+                      ModuleErrorLevel.ERROR) from e
 
 
 def write_array_to_files(prefix: str, values: Iterable, digits: int = None):
     for index, value in enumerate(values):
-        write_to_file(prefix+str(index + 1), value, digits)
+        write_to_file(prefix + str(index + 1), value, digits)
 
 
 def write_to_file(file: str, value, digits: Union[int, None] = None) -> None:
@@ -59,13 +56,16 @@ def pub_to_broker(topic: str, value, digits: Union[int, None] = None) -> None:
         process_error(e)
 
 
-class ValueStore:
+T = TypeVar("T")
+
+
+class ValueStore(Generic[T]):
     @abstractmethod
     def set(self, *kwargs) -> None:
         pass
 
 
-class BatteryValueStoreRamdisk(ValueStore):
+class BatteryValueStoreRamdisk(ValueStore[BatState]):
     def __init__(self, component_num: int) -> None:
         self.num = component_num
 
@@ -76,27 +76,32 @@ class BatteryValueStoreRamdisk(ValueStore):
             write_to_file("/speicherikwh", bat_state.imported, 2)
             write_to_file("/speicherekwh", bat_state.exported, 2)
             log.MainLogger().info('BAT Watt: ' + str(power))
-            log.MainLogger().info('BAT Einspeisung: ' + str(bat_state.exported))
+            log.MainLogger().info('BAT Einspeisung: ' +
+                                  str(bat_state.exported))
             log.MainLogger().info('BAT Bezug: ' + str(bat_state.imported))
         except Exception as e:
             process_error(e)
 
 
-class BatteryValueStoreBroker(ValueStore):
+class BatteryValueStoreBroker(ValueStore[BatState]):
     def __init__(self, component_num: int) -> None:
         self.num = component_num
 
     def set(self, bat_state: BatState):
         try:
-            pub_to_broker("openWB/set/bat/"+str(self.num)+"/get/power", bat_state.power, 2)
-            pub_to_broker("openWB/set/bat/"+str(self.num)+"/get/soc", bat_state.soc, 0)
-            pub_to_broker("openWB/set/bat/"+str(self.num)+"/get/imported", bat_state.imported, 2)
-            pub_to_broker("openWB/set/bat/"+str(self.num)+"/get/exported", bat_state.exported, 2)
+            pub_to_broker("openWB/set/bat/" + str(self.num) + "/get/power",
+                          bat_state.power, 2)
+            pub_to_broker("openWB/set/bat/" + str(self.num) + "/get/soc",
+                          bat_state.soc, 0)
+            pub_to_broker("openWB/set/bat/" + str(self.num) + "/get/imported",
+                          bat_state.imported, 2)
+            pub_to_broker("openWB/set/bat/" + str(self.num) + "/get/exported",
+                          bat_state.exported, 2)
         except Exception as e:
             process_error(e)
 
 
-class CounterValueStoreRamdisk(ValueStore):
+class CounterValueStoreRamdisk(ValueStore[CounterState]):
     def __init__(self, component_num: int) -> None:
         self.num = component_num
 
@@ -117,25 +122,41 @@ class CounterValueStoreRamdisk(ValueStore):
             process_error(e)
 
 
-class CounterValueStoreBroker(ValueStore):
+class CounterValueStoreBroker(ValueStore[CounterState]):
     def __init__(self, component_num: int) -> None:
         self.num = component_num
 
     def set(self, counter_state: CounterState):
         try:
-            pub_to_broker("openWB/set/counter/"+str(self.num)+"/get/voltage", counter_state.voltages, 2)
-            pub_to_broker("openWB/set/counter/"+str(self.num)+"/get/current", counter_state.currents, 2)
-            pub_to_broker("openWB/set/counter/"+str(self.num)+"/get/power_phase", counter_state.powers, 2)
-            pub_to_broker("openWB/set/counter/"+str(self.num)+"/get/power_factors", counter_state.power_factors, 2)
-            pub_to_broker("openWB/set/counter/"+str(self.num)+"/get/imported", counter_state.imported)
-            pub_to_broker("openWB/set/counter/"+str(self.num)+"/get/exported", counter_state.exported)
-            pub_to_broker("openWB/set/counter/"+str(self.num)+"/get/power_all", counter_state.power_all)
-            pub_to_broker("openWB/set/counter/"+str(self.num)+"/get/frequency", counter_state.frequency)
+            pub_to_broker(
+                "openWB/set/counter/" + str(self.num) + "/get/voltage",
+                counter_state.voltages, 2)
+            pub_to_broker(
+                "openWB/set/counter/" + str(self.num) + "/get/current",
+                counter_state.currents, 2)
+            pub_to_broker(
+                "openWB/set/counter/" + str(self.num) + "/get/power_phase",
+                counter_state.powers, 2)
+            pub_to_broker(
+                "openWB/set/counter/" + str(self.num) + "/get/power_factors",
+                counter_state.power_factors, 2)
+            pub_to_broker(
+                "openWB/set/counter/" + str(self.num) + "/get/imported",
+                counter_state.imported)
+            pub_to_broker(
+                "openWB/set/counter/" + str(self.num) + "/get/exported",
+                counter_state.exported)
+            pub_to_broker(
+                "openWB/set/counter/" + str(self.num) + "/get/power_all",
+                counter_state.power_all)
+            pub_to_broker(
+                "openWB/set/counter/" + str(self.num) + "/get/frequency",
+                counter_state.frequency)
         except Exception as e:
             process_error(e)
 
 
-class InverterValueStoreRamdisk(ValueStore):
+class InverterValueStoreRamdisk(ValueStore[InverterState]):
     def __init__(self, component_num: int) -> None:
         self.num = component_num
 
@@ -146,48 +167,53 @@ class InverterValueStoreRamdisk(ValueStore):
             elif self.num == 2:
                 filename_extension = "2"
             else:
-                raise ModuleError("Unbekannte PV-Nummer "+str(self.num), ModuleErrorLevel.ERROR)
-            power = write_to_file("/pv"+filename_extension+"watt", inverter_state.power, 0)
-            write_to_file("/pv"+filename_extension+"kwh", inverter_state.counter, 3)
-            write_to_file("/pv"+filename_extension+"kwhk", inverter_state.counter/1000, 3)
-            write_array_to_files("/pv"+filename_extension+"a", inverter_state.currents, 1)
+                raise ModuleError("Unbekannte PV-Nummer " + str(self.num),
+                                  ModuleErrorLevel.ERROR)
+            power = write_to_file("/pv" + filename_extension + "watt",
+                                  inverter_state.power, 0)
+            write_to_file("/pv" + filename_extension + "kwh",
+                          inverter_state.counter, 3)
+            write_to_file("/pv" + filename_extension + "kwhk",
+                          inverter_state.counter / 1000, 3)
+            write_array_to_files("/pv" + filename_extension + "a",
+                                 inverter_state.currents, 1)
             log.MainLogger().info('PV Watt: ' + str(power))
         except Exception as e:
             process_error(e)
 
 
-class InverterValueStoreBroker(ValueStore):
+class InverterValueStoreBroker(ValueStore[InverterState]):
     def __init__(self, component_num: int) -> None:
         self.num = component_num
 
     def set(self, inverter_state: InverterState):
         try:
-            pub_to_broker("openWB/set/pv/"+str(self.num)+"/get/power", inverter_state.power, 2)
-            pub_to_broker("openWB/set/pv/"+str(self.num)+"/get/counter", inverter_state.counter, 3)
-            pub_to_broker("openWB/set/pv/"+str(self.num)+"/get/currents", inverter_state.currents, 1)
+            pub_to_broker("openWB/set/pv/" + str(self.num) + "/get/power",
+                          inverter_state.power, 2)
+            pub_to_broker("openWB/set/pv/" + str(self.num) + "/get/counter",
+                          inverter_state.counter, 3)
+            pub_to_broker("openWB/set/pv/" + str(self.num) + "/get/currents",
+                          inverter_state.currents, 1)
         except Exception as e:
             process_error(e)
 
 
-value_store_classes = Union[
-    BatteryValueStoreRamdisk,
-    BatteryValueStoreBroker,
-    CounterValueStoreRamdisk,
-    CounterValueStoreBroker,
-    InverterValueStoreRamdisk,
-    InverterValueStoreBroker
-]
+def get_bat_value_store(component_num: int) -> ValueStore[BatState]:
+    if compatibility.is_ramdisk_in_use():
+        return BatteryValueStoreRamdisk(component_num)
+    else:
+        return BatteryValueStoreBroker(component_num)
 
 
-class ValueStoreFactory:
-    def get_storage(self, component_type: str) -> value_store_classes:
-        try:
-            ramdisk = compatibility.is_ramdisk_in_use()
-            if component_type == "bat":
-                return BatteryValueStoreRamdisk if ramdisk else BatteryValueStoreBroker
-            elif component_type == "counter":
-                return CounterValueStoreRamdisk if ramdisk else CounterValueStoreBroker
-            elif component_type == "inverter":
-                return InverterValueStoreRamdisk if ramdisk else InverterValueStoreBroker
-        except Exception as e:
-            process_error(e)
+def get_counter_value_store(component_num: int) -> ValueStore[CounterState]:
+    if compatibility.is_ramdisk_in_use():
+        return CounterValueStoreRamdisk(component_num)
+    else:
+        return CounterValueStoreBroker(component_num)
+
+
+def get_inverter_value_store(component_num: int) -> ValueStore[InverterState]:
+    if compatibility.is_ramdisk_in_use():
+        return InverterValueStoreRamdisk(component_num)
+    else:
+        return InverterValueStoreBroker(component_num)

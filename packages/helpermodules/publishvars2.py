@@ -7,16 +7,25 @@ def pub_settings():
     """
     if simulator == True:
         # cp1
-        pub.pub("openWB/set/chargepoint/1/config", {"name": "LP1", "ev": 0, "template": 0, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False,
-                                                    "control_pilot_interruption_hw": True, "connection_module": {"selected": "mqtt"}, "power_module": {"selected": None}})
+        pub.pub("openWB/set/chargepoint/1/config",
+                {"name": "LP1", "ev": 0, "template": 0, "connected_phases": 3, "phase_1": 1,
+                 "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True,
+                 "connection_module": {"selected": "mqtt"},
+                 "power_module": {"selected": None}})
 
         # cp2
-        pub.pub("openWB/set/chargepoint/2/config", {"name": "LP2", "ev": 0, "template": 0, "connected_phases": 3, "phase_1": 2, "auto_phase_switch_hw": False,
-                                                    "control_pilot_interruption_hw": True, "connection_module": {"selected": "mqtt"}, "power_module": {"selected": None}})
+        pub.pub("openWB/set/chargepoint/2/config",
+                {"name": "LP2", "ev": 0, "template": 0, "connected_phases": 3, "phase_1": 2,
+                 "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True,
+                 "connection_module": {"selected": "mqtt"},
+                 "power_module": {"selected": None}})
 
         # cp3
-        pub.pub("openWB/set/chargepoint/3/config", {"name": "LP3", "ev": 0, "template": 0, "connected_phases": 3, "phase_1": 3, "auto_phase_switch_hw": False,
-                                                    "control_pilot_interruption_hw": True, "connection_module": {"selected": "mqtt"}, "power_module": {"selected": None}})
+        pub.pub("openWB/set/chargepoint/3/config",
+                {"name": "LP3", "ev": 0, "template": 0, "connected_phases": 3, "phase_1": 3,
+                 "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True,
+                 "connection_module": {"selected": "mqtt"},
+                 "power_module": {"selected": None}})
 
     else:
         pass
@@ -69,15 +78,14 @@ def pub_settings():
         # pub.pub("openWB/set/chargepoint/16/config", {"name": "LP16", "ev": 0, "template": 0, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True, "connection_module": {"selected": "external_openwb", "config": {"external_openwb": {"ip_address": "192.168.90.111", "chargepoint": 1}}}, "power_module": {"selected": None}})
 
     # cpt0
-    pub.pub("openWB/set/chargepoint/template/0/autolock/0", {"name": "Standard Autolock-Plan",
-                                                             "frequency":
-                                                             {
-                                                                 "selected": "daily",
-                                                                 "once": ["2021-11-01", "2021-11-05"],
-                                                                 "weekly": [False, False, False, False, False, False, False]
-                                                             },
-                                                             "time": ["07:00", "16:00"],
-                                                             "active": True})
+    pub.pub(
+        "openWB/set/chargepoint/template/0/autolock/0",
+        {"name": "Standard Autolock-Plan",
+         "frequency":
+         {"selected": "daily", "once": ["2021-11-01", "2021-11-05"],
+          "weekly": [False, False, False, False, False, False, False]},
+         "time": ["07:00", "16:00"],
+         "active": True})
     pub.pub("openWB/set/chargepoint/template/0", {"name": "Standard Ladepunkt-Vorlage",
                                                   "autolock": {
                                                       "wait_for_charging_end": False,
@@ -155,8 +163,10 @@ def pub_settings():
     #pub.pub("openWB/set/optional/et/active", False)
     pub.pub("openWB/set/optional/et/config/max_price", 5.5)
     #pub.pub("openWB/set/optional/et/config/provider", {"provider": "awattar", "country": "de"})
-    pub.pub("openWB/set/optional/et/config/provider",
-            {"provider": "tibber", "token": "d1007ead2dc84a2b82f0de19451c5fb22112f7ae11d19bf2bedb224a003ff74a", "id": "c70dcbe5-4485-4821-933d-a8a86452737b"})
+    pub.pub(
+        "openWB/set/optional/et/config/provider",
+        {"provider": "tibber", "token": "d1007ead2dc84a2b82f0de19451c5fb22112f7ae11d19bf2bedb224a003ff74a",
+         "id": "c70dcbe5-4485-4821-933d-a8a86452737b"})
     #pub.pub("openWB/set/optional/rfid/active", True)
 
     # pv
@@ -237,9 +247,9 @@ def pub_settings():
         pub.pub("openWB/set/counter/0/module", {"selected": "openwb", "config": {
                 "version": 2, "ip_address": "192.168.1.101", "id": 105}})
 
-        pub.pub("openWB/set/counter/1/config/max_current", [60, 60, 60])
-        pub.pub("openWB/set/counter/1/module", {"selected": "openwb", "config": {
-                "version": 2, "ip_address": "192.168.1.169", "id": 1}})
+        # pub.pub("openWB/set/counter/1/config/max_current", [60, 60, 60])
+        # pub.pub("openWB/set/counter/1/module", {"selected": "openwb", "config": {
+        #         "version": 2, "ip_address": "192.168.1.169", "id": 1}})
 
     # # bat
     # if simulator == True:

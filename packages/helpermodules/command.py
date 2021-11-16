@@ -23,8 +23,12 @@ class Command:
         try:
             self.__get_max_id("autolock_plan", "chargepoint/template/+/autolock")
             self.__get_max_id("charge_template", "vehicle/template/charge_template")
-            self.__get_max_id("charge_template_scheduled_plan", "vehicle/template/charge_template/+/chargemode/scheduled_charging/plans/")
-            self.__get_max_id("charge_template_time_charging_plan", "vehicle/template/charge_template/+/chargemode/time_charging/plans/")
+            self.__get_max_id(
+                "charge_template_scheduled_plan",
+                "vehicle/template/charge_template/+/chargemode/scheduled_charging/plans/")
+            self.__get_max_id(
+                "charge_template_time_charging_plan",
+                "vehicle/template/charge_template/+/chargemode/time_charging/plans/")
             self.__get_max_id("chargepoint", "chargepoint")
             self.__get_max_id("chargepoint_template", "chargepoint/template")
             self.__get_max_id("component", "system/device/+/component")
@@ -130,9 +134,10 @@ class Command:
         """
         try:
             new_id = self.max_id_device + 1
-            log.MainLogger().info("Neues Device vom Typ"+str(payload["data"]["type"])+" mit ID "+str(new_id)+" hinzugefuegt.")
+            log.MainLogger().info(
+                "Neues Device vom Typ"+str(payload["data"]["type"])+" mit ID "+str(new_id)+" hinzugefuegt.")
             dev = importlib.import_module(".modules."+payload["data"]["type"]+".device", "packages")
-            device_default = dev.get_default()
+            device_default = dev.get_default_config()
             device_default["id"] = new_id
             pub.pub("openWB/set/system/device/"+str(new_id)+"/config", device_default)
             self.max_id_device = self.max_id_device + 1
@@ -159,10 +164,12 @@ class Command:
         """
         try:
             new_id = self.max_id_chargepoint + 1
-            log.MainLogger().info("Neuer Ladepunkt vom Typ"+str(payload["data"]["type"])+" mit ID "+str(new_id)+" hinzugefuegt.")
+            log.MainLogger().info(
+                "Neuer Ladepunkt vom Typ"+str(payload["data"]["type"])+" mit ID "+str(new_id)+" hinzugefuegt.")
             chargepoint_default = chargepoint.get_chargepoint_default()
             chargepoint_default["id"] = new_id
-            data.data.counter_data["all"].hierarchy_add_item_below("cp"+str(new_id), data.data.counter_data["all"].data["get"]["hierarchy"][0]["id"])
+            data.data.counter_data["all"].hierarchy_add_item_below(
+                "cp"+str(new_id), data.data.counter_data["all"].data["get"]["hierarchy"][0]["id"])
             pub.pub("openWB/set/chargepoint/"+str(new_id)+"/config", chargepoint_default)
             self.max_id_chargepoint = self.max_id_chargepoint + 1
             pub.pub("openWB/set/command/max_id/chargepoint", self.max_id_chargepoint)
@@ -219,9 +226,11 @@ class Command:
         """
         try:
             new_id = self.max_id_autolock_plan + 1
-            log.MainLogger().info("Neuer Autolock-Plan mit ID "+str(new_id)+" zu Template "+str(payload["data"]["template"])+" hinzugefuegt.")
+            log.MainLogger().info("Neuer Autolock-Plan mit ID " + str(new_id) + " zu Template " +
+                                  str(payload["data"]["template"]) + " hinzugefuegt.")
             default = chargepoint.get_autolock_plan_default()
-            pub.pub("openWB/set/chargepoint/template/"+str(payload["data"]["template"])+"/autolock/"+str(new_id), default)
+            pub.pub("openWB/set/chargepoint/template/"+str(payload["data"]
+                                                           ["template"])+"/autolock/"+str(new_id), default)
             self.max_id_autolock_plan = new_id
             pub.pub("openWB/set/command/max_id/autolock_plan", new_id)
         except Exception as e:
@@ -233,8 +242,13 @@ class Command:
         """
         try:
             if self.max_id_autolock_plan >= payload["data"]["plan"]:
-                log.MainLogger().info("Autolock-Plan mit ID "+str(payload["data"]["plan"])+" zu Template "+str(payload["data"]["template"])+" geloescht.")
-                pub.pub("openWB/chargepoint/template/"+str(payload["data"]["template"])+"/autolock/"+str(payload["data"]["plan"]), "")
+                log.MainLogger().info(
+                    "Autolock-Plan mit ID " + str(payload["data"]["plan"]) + " zu Template " +
+                    str(payload["data"]["template"]) + " geloescht.")
+                pub.pub(
+                    "openWB/chargepoint/template/" + str(payload["data"]["template"]) + "/autolock/" +
+                    str(payload["data"]["plan"]),
+                    "")
             else:
                 self.__pub_error(payload, connection_id, "Die ID ist groesser als die maximal vergebene ID.")
         except Exception as e:
@@ -273,9 +287,13 @@ class Command:
         """
         try:
             new_id = self.max_id_charge_template_scheduled_plan + 1
-            log.MainLogger().info("Neues Zielladen-Template mit ID "+str(new_id)+" zu Template "+str(payload["data"]["template"])+" hinzugefuegt.")
+            log.MainLogger().info("Neues Zielladen-Template mit ID " + str(new_id) + " zu Template " +
+                                  str(payload["data"]["template"]) + " hinzugefuegt.")
             charge_template_default = ev.get_charge_template_scheduled_plan_default()
-            pub.pub("openWB/set/vehicle/template/charge_template/"+str(payload["data"]["template"])+"/chargemode/scheduled_charging/plans/"+str(new_id), charge_template_default)
+            pub.pub(
+                "openWB/set/vehicle/template/charge_template/" + str(payload["data"]["template"]) +
+                "/chargemode/scheduled_charging/plans/" + str(new_id),
+                charge_template_default)
             self.max_id_charge_template_scheduled_plan = new_id
             pub.pub("openWB/set/command/max_id/charge_template_scheduled_plan", new_id)
         except Exception as e:
@@ -287,8 +305,13 @@ class Command:
         """
         try:
             if self.max_id_charge_template_scheduled_plan >= payload["data"]["plan"]:
-                log.MainLogger().info("Zielladen-Template mit ID "+str(payload["data"]["plan"])+" zu Template "+str(payload["data"]["template"])+" geloescht.")
-                pub.pub("openWB/vehicle/template/charge_template/"+str(payload["data"]["template"])+"/chargemode/scheduled_charging/plans/"+str(payload["data"]["plan"]), "")
+                log.MainLogger().info(
+                    "Zielladen-Template mit ID " + str(payload["data"]["plan"]) + " zu Template " +
+                    str(payload["data"]["template"]) + " geloescht.")
+                pub.pub(
+                    "openWB/vehicle/template/charge_template/" + str(payload["data"]["template"]) +
+                    "/chargemode/scheduled_charging/plans/" + str(payload["data"]["plan"]),
+                    "")
             else:
                 self.__pub_error(payload, connection_id, "Die ID ist groesser als die maximal vergebene ID.")
         except Exception as e:
@@ -300,9 +323,13 @@ class Command:
         """
         try:
             new_id = self.max_id_charge_template_time_charging_plan + 1
-            log.MainLogger().info("Neues Zeitladen-Template mit ID "+str(new_id)+" zu Template "+str(payload["data"]["template"])+" hinzugefuegt.")
+            log.MainLogger().info("Neues Zeitladen-Template mit ID " + str(new_id) + " zu Template " +
+                                  str(payload["data"]["template"]) + " hinzugefuegt.")
             time_charging_plan_default = ev.get_charge_template_time_charging_plan_default()
-            pub.pub("openWB/set/vehicle/template/charge_template/"+str(payload["data"]["template"])+"/time_charging/plans/"+str(new_id), time_charging_plan_default)
+            pub.pub(
+                "openWB/set/vehicle/template/charge_template/" + str(payload["data"]["template"]) +
+                "/time_charging/plans/" + str(new_id),
+                time_charging_plan_default)
             self.max_id_charge_template_time_charging_plan = new_id
             pub.pub("openWB/set/command/max_id/charge_template_time_charging_plan", new_id)
         except Exception as e:
@@ -314,8 +341,13 @@ class Command:
         """
         try:
             if self.max_id_charge_template_time_charging_plan >= payload["data"]["plan"]:
-                log.MainLogger().info("Zeitladen-Template mit ID "+str(payload["data"]["plan"])+" zu Template "+str(payload["data"]["template"])+" geloescht.")
-                pub.pub("openWB/vehicle/template/charge_template/"+str(payload["data"]["template"])+"/time_charging/plans/"+str(payload["data"]["plan"]), "")
+                log.MainLogger().info(
+                    "Zeitladen-Template mit ID " + str(payload["data"]["plan"]) + " zu Template " +
+                    str(payload["data"]["template"]) + " geloescht.")
+                pub.pub(
+                    "openWB/vehicle/template/charge_template/" + str(payload["data"]["template"]) +
+                    "/time_charging/plans/" + str(payload["data"]["plan"]),
+                    "")
             else:
                 self.__pub_error(payload, connection_id, "Die ID ist groesser als die maximal vergebene ID.")
         except Exception as e:
@@ -327,13 +359,17 @@ class Command:
         """
         try:
             new_id = self.max_id_component + 1
-            log.MainLogger().info("Neue Komponente vom Typ"+str(payload["data"]["type"])+" mit ID "+str(new_id)+" hinzugefuegt.")
-            component = importlib.import_module(".modules."+payload["data"]["deviceType"]+"."+payload["data"]["type"], "packages")
-            component_default = component.get_default()
+            log.MainLogger().info(
+                "Neue Komponente vom Typ"+str(payload["data"]["type"])+" mit ID "+str(new_id)+" hinzugefuegt.")
+            component = importlib.import_module(
+                ".modules."+payload["data"]["deviceType"]+"."+payload["data"]["type"], "packages")
+            component_default = component.get_default_config()
             component_default["id"] = new_id
             if payload["data"]["type"] == "counter":
-                data.data.counter_data["all"].hierarchy_add_item_below("counter"+str(new_id), data.data.counter_data["all"].data["get"]["hierarchy"][0]["id"])
-            pub.pub("openWB/set/system/device/"+str(payload["data"]["deviceId"])+"/component/"+str(new_id)+"/config", component_default)
+                data.data.counter_data["all"].hierarchy_add_item_below(
+                    "counter"+str(new_id), data.data.counter_data["all"].data["get"]["hierarchy"][0]["id"])
+            pub.pub("openWB/set/system/device/"+str(payload["data"]["deviceId"]
+                                                    )+"/component/"+str(new_id)+"/config", component_default)
             self.max_id_component = self.max_id_component + 1
             pub.pub("openWB/set/command/max_id/component", self.max_id_component)
         except Exception as e:
@@ -348,7 +384,8 @@ class Command:
                 if payload["data"]["type"] == "counter":
                     data.data.counter_data["all"].hierarchy_remove_item("counter"+str(payload["data"]["id"]))
                 log.MainLogger().info("Komponente mit ID "+str(payload["data"]["id"])+" geloescht.")
-                ProcessBrokerBranch("system/device/"+str(payload["data"]["deviceId"])+"/component/"+str(payload["data"]["id"])).remove_topics()
+                ProcessBrokerBranch(
+                    "system/device/"+str(payload["data"]["deviceId"])+"/component/"+str(payload["data"]["id"])).remove_topics()
             else:
                 self.__pub_error(payload, connection_id, "Die ID ist groesser als die maximal vergebene ID.")
         except Exception as e:
@@ -476,7 +513,7 @@ class ProcessBrokerBranch:
 
     def __on_message_max_id(self, client, userdata, msg):
         try:
-            topic_found= re.search('^('+self.search_str+'/*).*$', msg.topic).group(1)
+            topic_found = re.search('^('+self.search_str+'/*).*$', msg.topic).group(1)
             topic_rest = msg.topic.replace(topic_found, "")
             current_id_regex = re.search('^([0-9]+)/*.*$', topic_rest)
             if current_id_regex is not None:
