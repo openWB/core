@@ -1256,7 +1256,7 @@ def allocate_power(chargepoint, required_power, required_current, phases):
     phases: int
         Phasen, mit denen geladen werden soll
 
-    Return 
+    Return
     ------
     required_current: float
         Stromstärke, mit der geladen werden kann

@@ -147,7 +147,7 @@ class ev:
             return False, "ein interner Fehler aufgetreten ist: "+traceback.format_exc(), "stop", 0
 
     def check_state(self, required_current, set_current, charge_state):
-        """ prüft, ob sich etwas an den Parametern für die Regelung geändert hat, 
+        """ prüft, ob sich etwas an den Parametern für die Regelung geändert hat,
         sodass der LP neu in die Priorisierung eingeordnet werden muss und publsihed die Regelparameter.
 
         Parameter

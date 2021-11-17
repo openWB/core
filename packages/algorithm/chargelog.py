@@ -3,7 +3,7 @@
 
 Lena:haus_mit_garten:  14:19 Uhr
 Das json-Objekt (=Zeile im Ladelog) enthält diese Daten:
-{"chargepoint": {"id": 1, "name": "Hof", "rfid": 1234}, 
+{"chargepoint": {"id": 1, "name": "Hof", "rfid": 1234},
 "vehicle": { "id": 1, "name":"Model 3", "chargemode": "pv_charging", "prio": True },
 "time": { "begin":<timestamp>, "end":<timestamp>, "time_charged": "1 H, 34 Min",
 "data": {"range_charged": 34, "charged_since_mode_switch_counter": 3400, "charged_since_plugged_counter": 5000,
@@ -17,7 +17,7 @@ Lutz:haus_mit_garten:  14:22 Uhr
 Kannst du "time_charged" noch anders formatieren? In Deinem Beispiel "1:34"
 
 Lena:haus_mit_garten:  14:24 Uhr
-{"chargepoint": {"id": 1, "name": "Hof", "rfid": 1234}, 
+{"chargepoint": {"id": 1, "name": "Hof", "rfid": 1234},
 "vehicle": { "id": 1, "name":"Model 3", "chargemode": "pv_charging", "prio": True },
 "time": { "begin":"27.05.2021 07:43", "end": "27.05.2021 07:50", "time_charged": "1:34",
 "data": {"range_charged": 34, "charged_since_mode_switch_counter": 3400, "charged_since_plugged_counter": 5000,

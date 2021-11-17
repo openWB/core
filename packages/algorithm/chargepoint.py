@@ -115,7 +115,7 @@ class allChargepoints:
     def match_rfid_to_cp(self):
         """ ordnet einen gescannten Tag einem Ladepunkt zu. Allgemeine Funktion, da auch an einem zentralen Ladepunkt
         gescannt werden kann. Wenn der RFID-Modus 1 ist, wird die Funktion zur Zuordnung bei zentralem Scanner genutzt,
-        wenn es eine openWB Duo ist. 
+        wenn es eine openWB Duo ist.
         """
         try:
             if data.data.optional_data["optional"].data["rfid"]["active"]:
@@ -182,7 +182,7 @@ class allChargepoints:
             log.MainLogger().exception("Fehler in der allgemeinen Ladepunkt-Klasse")
 
     def _match_rfid_of_multiple_cp(self, chargepoints):
-        """ ordnet einen gescanntem Tag dem Ladepunkt zu, an dem vor / nach dem Scan angesteckt wurde. 
+        """ ordnet einen gescanntem Tag dem Ladepunkt zu, an dem vor / nach dem Scan angesteckt wurde.
         Parameter
         ---------
         chargepoints: list

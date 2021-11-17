@@ -45,7 +45,7 @@ class loadvars:
     # Überschuss unter Beachtung abschaltbarer SH-Devices
 
     def get_virtual_values(self):
-        """ Virtuelle Module ermitteln die Werte rechnerisch auf Bais der Messwerte anderer Module. 
+        """ Virtuelle Module ermitteln die Werte rechnerisch auf Bais der Messwerte anderer Module.
         Daher können sie erst die Werte ermitteln, wenn die physischen Module ihre Werte ermittelt haben.
         Würde man allle Module parallel abfragen, wären die virtuellen Module immer einen Zyklus hinterher.
         """
