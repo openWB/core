@@ -15,6 +15,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install flake8 pytest paho-mqtt
+          pip3 install pymodbus
       - name: Flake8 with annotations
         uses: TrueBrain/actions-flake8@v2.1
         with:
