@@ -392,7 +392,7 @@ class chargepoint:
                 self.data["set"]["autolock_state"],
                 self.data["get"]["charge_state"],
                 self.cp_num)
-            if stateis False:
+            if state is False:
                 state = True
             else:
                 # Darf Autolock durch Tag überschrieben werden?

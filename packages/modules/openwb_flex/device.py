@@ -93,7 +93,6 @@ def read_legacy(argv: List[str]):
     if component_type in COMPONENT_TYPE_TO_MODULE:
         component_config = COMPONENT_TYPE_TO_MODULE[
             component_type].get_default_config()
-        module = COMPONENT_TYPE_TO_MODULE[component_type]
     else:
         raise Exception("illegal component type " + component_type +
                         ". Allowed values: " +
