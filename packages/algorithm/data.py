@@ -1,5 +1,6 @@
 """ Verschachtelte Listen, die die Daten zur Berechnung des Alogrithmus enthalten.
-Dictionary: Zugriff erfolgt bei Dictionary über Keys, nicht über Indizes wie bei Listen. Das hat den Vorteil, dass Instanzen gelöscht werden können, der Zugriff aber nicht verändert werden musss.
+Dictionary: Zugriff erfolgt bei Dictionary über Keys, nicht über Indizes wie bei Listen. Das hat den Vorteil, dass
+Instanzen gelöscht werden können, der Zugriff aber nicht verändert werden musss.
 """
 
 import threading
@@ -281,7 +282,7 @@ class Data:
                     log.MainLogger().debug(key+"\n"+str(data[key].data))
                 else:
                     log.MainLogger().debug(key+"\n"+"Klasse fehlt")
-            except Exception as e:
+            except Exception:
                 log.MainLogger().exception("Fehler im Data-Modul")
 
 

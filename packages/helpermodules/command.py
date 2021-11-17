@@ -50,7 +50,8 @@ class Command:
         """ abonniert alle Topics.
         """
         try:
-            # kurze Pause, damit die ID vom Broker ermittelt werden können. Sonst werden noch vorher die retained Topics empfangen, was zu doppelten Logmeldungen führt.
+            # kurze Pause, damit die ID vom Broker ermittelt werden können. Sonst werden noch vorher die retained
+            # Topics empfangen, was zu doppelten Logmeldungen führt.
             time.sleep(1)
             mqtt_broker_ip = "localhost"
             client = mqtt.Client("openWB-command-" + str(self.getserial()))
@@ -61,7 +62,7 @@ class Command:
             client.connect(mqtt_broker_ip, 1886)
             client.loop_forever()
             client.disconnect()
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")
 
     def getserial(self):
@@ -73,7 +74,7 @@ class Command:
                     if line[0:6] == 'Serial':
                         return line[10:26]
                 return "0000000000000000"
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")
 
     def on_connect(self, client, userdata, flags, rc):
@@ -81,7 +82,7 @@ class Command:
         """
         try:
             client.subscribe("openWB/command/#", 2)
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")
 
     def on_message(self, client, userdata, msg):
@@ -103,17 +104,18 @@ class Command:
                     pub.pub(msg.topic, "")
                 elif "max_id" in msg.topic:
                     self.__process_max_id_topic(msg)
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")
 
     def __process_max_id_topic(self, msg, no_log: bool = False) -> None:
         try:
             payload = json.loads(str(msg.payload.decode("utf-8")))
             var = re.search("/([a-z,A-Z,0-9,_]+)(?!.*/)", msg.topic).group(1)
-            # Der Variablen-Name für die maximale ID setzt sich aus "max_id_" und dem Topic-Namen nach dem letzten / zusammen.
+            # Der Variablen-Name für die maximale ID setzt sich aus "max_id_" und dem Topic-Namen nach dem letzten /
+            # zusammen.
             setattr(self, "max_id_"+var, payload)
             log.MainLogger().debug("Max ID "+var+" "+str(payload))
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")
 
     def __pub_error(self, payload: dict, connection_id: str, error_str: str) -> None:
@@ -128,7 +130,7 @@ class Command:
             pub.pub("openWB/set/command/" +
                     str(connection_id)+"/error", error_payload)
             log.MainLogger().error("Befehl konnte nicht ausgefuehrt werden: "+str(error_payload))
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")
 
     def addDevice(self, connection_id: str, payload: dict) -> None:
@@ -145,7 +147,7 @@ class Command:
                     str(new_id)+"/config", device_default)
             self.max_id_device = self.max_id_device + 1
             pub.pub("openWB/set/command/max_id/device", self.max_id_device)
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")
             self.__pub_error(
                 payload, connection_id, "Es ist ein interner Fehler aufgetreten: "+traceback.format_exc())
@@ -162,7 +164,7 @@ class Command:
             else:
                 self.__pub_error(
                     payload, connection_id, "Die ID ist groesser als die maximal vergebene ID.")
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")
             self.__pub_error(
                 payload, connection_id, "Es ist ein interner Fehler aufgetreten: "+traceback.format_exc())
@@ -173,18 +175,21 @@ class Command:
         try:
             new_id = self.max_id_chargepoint + 1
             log.MainLogger().info(
-                "Neuer Ladepunkt vom Typ"+str(payload["data"]["type"])+" mit ID "+str(new_id)+" hinzugefuegt.")
+                "Neuer Ladepunkt mit ID "+str(new_id)+" hinzugefuegt.")
             chargepoint_default = chargepoint.get_chargepoint_default()
             chargepoint_default["id"] = new_id
             data.data.counter_data["all"].hierarchy_add_item_below(
-                "cp"+str(new_id), data.data.counter_data["all"].data["get"]["hierarchy"][0]["id"])
+                "cp"+str(new_id), data.data.counter_data["all"].get_evu_counter())
             pub.pub("openWB/set/chargepoint/"+str(new_id)+"/config", chargepoint_default)
+            pub.pub("openWB/set/chargepoint/"+str(new_id)+"/set/manual_lock", False)
             self.max_id_chargepoint = self.max_id_chargepoint + 1
             pub.pub("openWB/set/command/max_id/chargepoint",
                     self.max_id_chargepoint)
             if self.max_id_chargepoint_template == -1:
                 self.addChargepointTemplate("addChargepoint", {})
-        except Exception as e:
+            if self.max_id_vehicle == -1:
+                self.addVehicle("addChargepoint", {})
+        except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")
             self.__pub_error(
                 payload, connection_id, "Es ist ein interner Fehler aufgetreten: "+traceback.format_exc())
@@ -203,7 +208,7 @@ class Command:
             else:
                 self.__pub_error(
                     payload, connection_id, "Die ID ist groesser als die maximal vergebene ID.")
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")
             self.__pub_error(
                 payload, connection_id, "Es ist ein interner Fehler aufgetreten: "+traceback.format_exc())
@@ -220,7 +225,7 @@ class Command:
             self.max_id_chargepoint_template = self.max_id_chargepoint_template + 1
             pub.pub("openWB/set/command/max_id/chargepoint_template",
                     self.max_id_chargepoint_template)
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")
             self.__pub_error(
                 payload, connection_id, "Es ist ein interner Fehler aufgetreten: "+traceback.format_exc())
@@ -237,7 +242,7 @@ class Command:
             else:
                 self.__pub_error(
                     payload, connection_id, "Die ID ist groesser als die maximal vergebene ID.")
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")
             self.__pub_error(
                 payload, connection_id, "Es ist ein interner Fehler aufgetreten: "+traceback.format_exc())
@@ -254,7 +259,7 @@ class Command:
                                                            ["template"])+"/autolock/"+str(new_id), default)
             self.max_id_autolock_plan = new_id
             pub.pub("openWB/set/command/max_id/autolock_plan", new_id)
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")
             self.__pub_error(
                 payload, connection_id, "Es ist ein interner Fehler aufgetreten: "+traceback.format_exc())
@@ -274,7 +279,7 @@ class Command:
             else:
                 self.__pub_error(
                     payload, connection_id, "Die ID ist groesser als die maximal vergebene ID.")
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")
             self.__pub_error(
                 payload, connection_id, "Es ist ein interner Fehler aufgetreten: "+traceback.format_exc())
@@ -290,7 +295,7 @@ class Command:
                     str(new_id), charge_template_default)
             self.max_id_charge_template = new_id
             pub.pub("openWB/set/command/max_id/charge_template", new_id)
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")
             self.__pub_error(
                 payload, connection_id, "Es ist ein interner Fehler aufgetreten: "+traceback.format_exc())
@@ -307,7 +312,7 @@ class Command:
             else:
                 self.__pub_error(
                     payload, connection_id, "Die ID ist groesser als die maximal vergebene ID.")
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")
             self.__pub_error(
                 payload, connection_id, "Es ist ein interner Fehler aufgetreten: "+traceback.format_exc())
@@ -327,7 +332,7 @@ class Command:
             self.max_id_charge_template_scheduled_plan = new_id
             pub.pub(
                 "openWB/set/command/max_id/charge_template_scheduled_plan", new_id)
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")
             self.__pub_error(
                 payload, connection_id, "Es ist ein interner Fehler aufgetreten: "+traceback.format_exc())
@@ -347,7 +352,7 @@ class Command:
             else:
                 self.__pub_error(
                     payload, connection_id, "Die ID ist groesser als die maximal vergebene ID.")
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")
             self.__pub_error(
                 payload, connection_id, "Es ist ein interner Fehler aufgetreten: "+traceback.format_exc())
@@ -367,7 +372,7 @@ class Command:
             self.max_id_charge_template_time_charging_plan = new_id
             pub.pub(
                 "openWB/set/command/max_id/charge_template_time_charging_plan", new_id)
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")
             self.__pub_error(
                 payload, connection_id, "Es ist ein interner Fehler aufgetreten: "+traceback.format_exc())
@@ -387,7 +392,7 @@ class Command:
             else:
                 self.__pub_error(
                     payload, connection_id, "Die ID ist groesser als die maximal vergebene ID.")
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")
             self.__pub_error(
                 payload, connection_id, "Es ist ein interner Fehler aufgetreten: "+traceback.format_exc())
@@ -404,14 +409,18 @@ class Command:
             component_default = component.get_default_config()
             component_default["id"] = new_id
             if payload["data"]["type"] == "counter":
-                data.data.counter_data["all"].hierarchy_add_item_below(
-                    "counter"+str(new_id), data.data.counter_data["all"].data["get"]["hierarchy"][0]["id"])
+                try:
+                    data.data.counter_data["all"].hierarchy_add_item_below(
+                        "counter"+str(new_id), data.data.counter_data["all"].get_evu_counter())
+                except IndexError:
+                    # es gibt noch keinen EVU-Zähler
+                    pub.pub("openWB/set/counter/get/hierarchy", [{"id": "counter"+str(new_id), "children": []}])
             pub.pub("openWB/set/system/device/"+str(payload["data"]["deviceId"]
                                                     )+"/component/"+str(new_id)+"/config", component_default)
             self.max_id_component = self.max_id_component + 1
             pub.pub("openWB/set/command/max_id/component",
                     self.max_id_component)
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")
             self.__pub_error(
                 payload, connection_id, "Es ist ein interner Fehler aufgetreten: "+traceback.format_exc())
@@ -424,12 +433,12 @@ class Command:
                 if payload["data"]["type"] == "counter":
                     data.data.counter_data["all"].hierarchy_remove_item("counter"+str(payload["data"]["id"]))
                 log.MainLogger().info("Komponente mit ID "+str(payload["data"]["id"])+" geloescht.")
-                ProcessBrokerBranch(
-                    "system/device/"+str(payload["data"]["deviceId"])+"/component/"+str(payload["data"]["id"])).remove_topics()
+                branch = "system/device/"+str(payload["data"]["deviceId"])+"/component/"+str(payload["data"]["id"])
+                ProcessBrokerBranch(branch).remove_topics()
             else:
                 self.__pub_error(
                     payload, connection_id, "Die ID ist groesser als die maximal vergebene ID.")
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")
             self.__pub_error(
                 payload, connection_id, "Es ist ein interner Fehler aufgetreten: "+traceback.format_exc())
@@ -445,7 +454,7 @@ class Command:
                     str(new_id), ev_template_default)
             self.max_id_ev_template = new_id
             pub.pub("openWB/set/command/max_id/ev_template", new_id)
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")
             self.__pub_error(
                 payload, connection_id, "Es ist ein interner Fehler aufgetreten: "+traceback.format_exc())
@@ -462,7 +471,7 @@ class Command:
             else:
                 self.__pub_error(
                     payload, connection_id, "Die ID ist groesser als die maximal vergebene ID.")
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")
             self.__pub_error(
                 payload, connection_id, "Es ist ein interner Fehler aufgetreten: "+traceback.format_exc())
@@ -484,7 +493,7 @@ class Command:
                 self.addChargeTemplate("addVehicle", {})
             if self.max_id_ev_template == -1:
                 self.addEvTemplate("addVehicle", {})
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")
             self.__pub_error(
                 payload, connection_id, "Es ist ein interner Fehler aufgetreten: "+traceback.format_exc())
@@ -502,7 +511,7 @@ class Command:
             else:
                 self.__pub_error(
                     payload, connection_id, "Die ID ist groesser als die maximal vergebene ID.")
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")
             self.__pub_error(
                 payload, connection_id, "Es ist ein interner Fehler aufgetreten: "+traceback.format_exc())
@@ -517,7 +526,7 @@ class ProcessBrokerBranch:
         """
         try:
             self.__connect_to_broker(self.__on_message_rm)
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")
 
     def get_max_id(self):
@@ -526,7 +535,7 @@ class ProcessBrokerBranch:
             self.search_str = "openWB/" + self.topic_str.replace("+", "[0-9]+")
             self.__connect_to_broker(self.__on_message_max_id)
             return self.max_id
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")
 
     def __connect_to_broker(self, on_message):
@@ -545,7 +554,7 @@ class ProcessBrokerBranch:
             time.sleep(0.5)
             client.loop_stop()
 
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")
 
     def __on_connect(self, client, userdata, flags, rc):
@@ -553,7 +562,7 @@ class ProcessBrokerBranch:
         """
         try:
             client.subscribe("openWB/"+self.topic_str+"/#", 2)
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")
 
     def __on_message_rm(self, client, userdata, msg):
@@ -563,7 +572,7 @@ class ProcessBrokerBranch:
             if str(msg.payload.decode("utf-8")) != '':
                 log.MainLogger().debug("Geloeschtes Topic: "+str(msg.topic))
                 pub.pub(msg.topic, "")
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")
 
     def __on_message_max_id(self, client, userdata, msg):
@@ -574,7 +583,7 @@ class ProcessBrokerBranch:
             if current_id_regex is not None:
                 current_id = int(current_id_regex.group(1))
                 self.max_id = max(current_id, self.max_id)
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")
 
     def __getserial(self):
@@ -586,5 +595,5 @@ class ProcessBrokerBranch:
                     if line[0:6] == 'Serial':
                         return line[10:26]
                 return "0000000000000000"
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")

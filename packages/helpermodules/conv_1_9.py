@@ -1,5 +1,6 @@
 """ Konvertierungsmodul von 1.9x nach 2.x
-Konvertiert die Lade- und Tageslog-Dateien von csv nach json. Falls nötig, ohne Abhängigkeit zur sonstigen 2.x-Implementierung.
+Konvertiert die Lade- und Tageslog-Dateien von csv nach json.
+Falls nötig, ohne Abhängigkeit zur sonstigen 2.x-Implementierung.
 """
 
 import csv
@@ -72,7 +73,7 @@ def truncate(number, decimals=0):
 
         factor = 10.0 ** decimals
         return math.trunc(number * factor) / factor
-    except Exception as e:
+    except Exception:
         pass
 
 
@@ -207,8 +208,10 @@ def convert_csv_to_json_measurement_log(folder):
 
 def _dailylog_entry_generator_func(file):
     """ Generator-Funktion, die einen Eintrag aus dem Tageslog konvertiert.
-    alte Spaltenbelegung: date, $bezug,$einspeisung,$pv,$ll1,$ll2,$ll3,$llg,$speicheri,$speichere,$verbraucher1,$verbrauchere1,$verbraucher2,$verbrauchere2,$verbraucher3,
-                           $ll4,$ll5,$ll6,$ll7,$ll8,$speichersoc,$soc,$soc1,$temp1,$temp2,$temp3,$d1,$d2,$d3,$d4,$d5,$d6,$d7,$d8,$d9,$d10,$temp4,$temp5,$temp6
+    alte Spaltenbelegung:
+    date, $bezug,$einspeisung,$pv,$ll1,$ll2,$ll3,$llg,$speicheri,$speichere,$verbraucher1,$verbrauchere1,$verbraucher2,
+    $verbrauchere2,$verbraucher3,$ll4,$ll5,$ll6,$ll7,$ll8,$speichersoc,$soc,$soc1,$temp1,$temp2,$temp3,$d1,$d2,$d3,$d4,
+    $d5,$d6,$d7,$d8,$d9,$d10,$temp4,$temp5,$temp6
 
     Parameter
     ---------
@@ -336,8 +339,9 @@ def _dailylog_entry_generator_func(file):
 
 def _monthlylog_entry_generator_func(file):
     """ Generator-Funktion, die einen Eintrag aus dem Tageslog konvertiert.
-    alte Spaltenbelegung: date,$bezug,$einspeisung,$pv,$ll1,$ll2,$ll3,$llg,$verbraucher1iwh,$verbraucher1ewh,$verbraucher2iwh,$verbraucher2ewh,
-                            $ll4,$ll5,$ll6,$ll7,$ll8,$speicherikwh,$speicherekwh,$d1,$d2,$d3,$d4,$d5,$d6,$d7,$d8,$d9,$d10
+    alte Spaltenbelegung: date,$bezug,$einspeisung,$pv,$ll1,$ll2,$ll3,$llg,$verbraucher1iwh,$verbraucher1ewh,
+    $verbraucher2iwh,$verbraucher2ewh,$ll4,$ll5,$ll6,$ll7,$ll8,$speicherikwh,$speicherekwh,$d1,$d2,$d3,$d4,
+    $d5,$d6,$d7,$d8,$d9,$d10
 
     Parameter
     ---------

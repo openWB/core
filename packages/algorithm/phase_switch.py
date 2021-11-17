@@ -2,7 +2,6 @@
 """
 import threading
 import time
-import RPi.GPIO as GPIO
 
 from ..helpermodules import log
 from ..helpermodules import pub
@@ -12,7 +11,8 @@ phase_switch_threads = {}
 
 
 def thread_phase_switch(cp_num, selected, config, phases_to_use, duration, charge_state):
-    """ startet einen Thread pro Ladepunkt, an dem eine Phasenumschaltung durchgeführt werden soll. Die Phasenumschaltung erfolgt in Threads, da diese länger als ein Zyklus dauert.
+    """ startet einen Thread pro Ladepunkt, an dem eine Phasenumschaltung durchgeführt werden soll. Die
+    Phasenumschaltung erfolgt in Threads, da diese länger als ein Zyklus dauert.
 
     Parameter
     ---------
@@ -35,14 +35,15 @@ def thread_phase_switch(cp_num, selected, config, phases_to_use, duration, charg
         phase_switch_threads = {
             t: phase_switch_threads[t] for t in phase_switch_threads if phase_switch_threads[t].is_alive()}
 
-        # prüfen, ob Thread in der Liste ist. Dann ist noch eine Phasenumschaltung aktiv und es darf keine neue gestartet werden.
+        # prüfen, ob Thread in der Liste ist. Dann ist noch eine Phasenumschaltung aktiv und es darf keine neue
+        # gestartet werden.
         if "thread_cp"+str(cp_num) not in phase_switch_threads:
             # Thread zur Phasenumschaltung erstellen, starten und der Liste hinzufügen.
             phase_switch_threads["thread_cp"+str(cp_num)] = threading.Thread(
                 target=_perform_phase_switch, args=(selected, config, phases_to_use, duration, charge_state))
             phase_switch_threads["thread_cp"+str(cp_num)].start()
             log.MainLogger().debug("Thread zur Phasenumschaltung an LP"+str(cp_num)+" gestartet.")
-    except Exception as e:
+    except Exception:
         log.MainLogger().exception("Fehler im Phasenumschaltungs-Modul")
 
 
@@ -56,7 +57,6 @@ def _perform_phase_switch(selected, config, phases_to_use, duration, charge_stat
             time.sleep(5)
         # Phasenumschaltung entsprechend Modul
         if selected == "external_openwb":
-            num = config["chargepoint"]
             ip_address = config["ip_address"]
             pub.pub_single("openWB/set/isss/U1p3p", phases_to_use, ip_address)
             time.sleep(6+duration-1)
@@ -69,5 +69,5 @@ def _perform_phase_switch(selected, config, phases_to_use, duration, charge_stat
         # Die Ladung wird in start_charging wieder gestartet, wenn phase_switch_timestamp wieder auf "0" gesetzt wird.
         if charge_state:
             time.sleep(1)
-    except Exception as e:
+    except Exception:
         log.MainLogger().exception("Fehler im Phasenumschaltungs-Modul")

@@ -38,24 +38,26 @@ def read_ip_evse(cp):
 def write_ip_evse(ip_address, id, current):
     try:
         client = ModbusTcpClient(ip_address, port=8899)
-        rq = client.write_registers(1000, current, unit=id)
+        client.write_registers(1000, current, unit=id)
     except Exception as e:
         log.exception_logging(e)
 
+
 def perform_phase_switch(ip_address, id, duration, phases_to_use):
     client = ModbusTcpClient(ip_address, port=8899)
-    if ( phases_to_use == 1 ):
-        rq = client.write_register(0x0001, 256, unit=id)
+    if (phases_to_use == 1):
+        client.write_register(0x0001, 256, unit=id)
         time.sleep(duration)
-        rq = client.write_register(0x0001, 512, unit=id)
+        client.write_register(0x0001, 512, unit=id)
 
-    elif ( phases_to_use == 3 ):
-        rq = client.write_register(0x0002, 256, unit=id)
+    elif (phases_to_use == 3):
+        client.write_register(0x0002, 256, unit=id)
         time.sleep(duration)
-        rq = client.write_register(0x0002, 512, unit=id)
+        client.write_register(0x0002, 512, unit=id)
+
 
 def perform_cp_interruption(ip_address, id, duration):
     client = ModbusTcpClient(ip_address, port=8899)
-    rq = client.write_register(0x0001, 256, unit=id)
+    client.write_register(0x0001, 256, unit=id)
     time.sleep(duration)
-    rq = client.write_register(0x0001, 512, unit=id)
+    client.write_register(0x0001, 512, unit=id)

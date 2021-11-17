@@ -30,7 +30,7 @@ def pub_graph_data():
         dataline.update({"grid": _convert_to_kW(
             data.data.counter_data[evu_counter].data["get"]["power_all"])})
     for c in data.data.counter_data:
-        if "counter" in c and not evu_counter in c:
+        if "counter" in c and evu_counter not in c:
             counter = data.data.counter_data[c]
             dataline.update({"counter"+str(counter.counter_num) +
                              "-power": _convert_to_kW(counter.data["get"]["power_all"])})

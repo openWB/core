@@ -11,7 +11,6 @@ from packages.algorithm import process
 from packages.algorithm import data
 from packages.algorithm import prepare
 from packages.helpermodules import command
-from packages.helpermodules import defaults
 from packages.helpermodules import graph
 from packages.helpermodules import log
 from packages.helpermodules import measurement_log
@@ -20,10 +19,12 @@ from packages.helpermodules import publishvars2
 from packages.helpermodules import setdata
 from packages.helpermodules import subdata
 from packages.helpermodules import timecheck
+from packages.helpermodules import update_config
 from packages.modules import configuration
 from packages.modules import loadvars
 
-# Wenn debug True ist, wird der 10s Handler nicht durch den Timer-Thread gesteuert, sondern macht ein 10s Sleep am Ende, da sonst beim Pausieren immer mehr Threads im Hintergrund auflaufen.
+# Wenn debug True ist, wird der 10s Handler nicht durch den Timer-Thread gesteuert, sondern macht ein 10s Sleep am
+# Ende, da sonst beim Pausieren immer mehr Threads im Hintergrund auflaufen.
 debug = False
 
 
@@ -37,7 +38,8 @@ class HandlerAlgorithm:
         """ führt den Algorithmus durch.
         """
         try:
-            # Beim ersten Durchlauf wird in jedem Fall eine Exception geworfen, da die Daten erstmalig ins data-Modul kopiert werden müssen.
+            # Beim ersten Durchlauf wird in jedem Fall eine Exception geworfen, da die Daten erstmalig ins data-Modul
+            # kopiert werden müssen.
             try:
                 if (data.data.general_data["general"].data["control_interval"]
                         / 10) == self.interval_counter:
@@ -48,7 +50,8 @@ class HandlerAlgorithm:
                     vars.get_values()
                     # Virtuelle Module ermitteln die Werte rechnerisch auf Bais der Messwerte anderer Module.
                     # Daher können sie erst die Werte ermitteln, wenn die physischen Module ihre Werte ermittelt haben.
-                    # Würde man allle Module parallel abfragen, wären die virtuellen Module immer einen Zyklus hinterher.
+                    # Würde man allle Module parallel abfragen, wären die virtuellen Module immer einen Zyklus
+                    # hinterher.
                     log.MainLogger().info(" Start copy_data 2")
                     prep.copy_counter_data()
                     log.MainLogger().info(" Stop copy_data 2")
@@ -89,11 +92,12 @@ class HandlerAlgorithm:
                 control.calc_current()
                 proc.process_algorithm_results()
                 graph.pub_graph_data()
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im Main-Modul")
 
     def handler5Min(self):
-        """ Handler, der alle 5 Minuten aufgerufen wird und die Heartbeats der Threads überprüft und die Aufgaben ausführt, die nur alle 5 Minuten ausgeführt werden müssen.
+        """ Handler, der alle 5 Minuten aufgerufen wird und die Heartbeats der Threads überprüft und die Aufgaben
+        ausführt, die nur alle 5 Minuten ausgeführt werden müssen.
         """
         try:
             if self.heartbeat is False:
@@ -125,14 +129,16 @@ class HandlerAlgorithm:
             data.data.general_data["general"].grid_protection()
             data.data.optional_data["optional"].et_get_prices()
             data.data.counter_data["all"].calc_daily_yield_home_consumption()
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im Main-Modul")
 
 
 class RepeatedTimer(object):
-    """ führt alle x Sekunden einen Thread aus, unabhängig davon, ob sich der Thread bei der vorherigen Ausführung aufgehängt etc hat.
+    """ führt alle x Sekunden einen Thread aus, unabhängig davon, ob sich der Thread bei der vorherigen Ausführung
+    aufgehängt etc hat.
     https://stackoverflow.com/a/40965385
     """
+
     def __init__(self, interval, function, *args, **kwargs):
         self._timer = None
         self.interval = interval
@@ -164,6 +170,7 @@ class RepeatedTimer(object):
 try:
     data.data_init()
     pub.setup_connection()
+    update_config.UpdateConfig().update()
     proc = process.process()
     control = algorithm.control()
     handler = HandlerAlgorithm()
@@ -198,5 +205,5 @@ try:
         while True:
             time.sleep(10)
             handler.handler10Sec()
-except Exception as e:
+except Exception:
     log.MainLogger().exception("Fehler im Main-Modul")

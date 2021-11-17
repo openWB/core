@@ -1,12 +1,14 @@
 from ..helpermodules import log
 from ..helpermodules import pub
 
+
 def pub_configurable():
     """ published eine Liste mit allen konfigurierbaren SoC-Modulen sowie allen Devices mit den möglichen Komponenten.
     """
     _pub_configurable_soc_modules()
     _pub_configurable_devices_components()
     _pub_configurable_chargepoints()
+
 
 def _pub_configurable_soc_modules() -> None:
     try:
@@ -19,6 +21,7 @@ def _pub_configurable_soc_modules() -> None:
         pub.pub("openWB/set/system/configurable/soc_modules", soc_modules)
     except Exception:
         log.MainLogger().exception("Fehler im configuration-Modul")
+
 
 def _pub_configurable_devices_components() -> None:
     try:
@@ -81,6 +84,7 @@ def _pub_configurable_devices_components() -> None:
         pub.pub("openWB/set/system/configurable/devices_components", devices_components)
     except Exception:
         log.MainLogger().exception("Fehler im configuration-Modul")
+
 
 def _pub_configurable_chargepoints() -> None:
     try:

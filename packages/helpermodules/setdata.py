@@ -50,7 +50,8 @@ class setData:
         client.subscribe("openWB/set/#", 2)
 
     def on_message(self, client, userdata, msg):
-        """ ruft die Funktion auf, um das Topic zu verarbeiten. Wenn die Topics mit Locking verarbeitet werden, wird gewartet, bis das Locking aufgehoben wird.
+        """ ruft die Funktion auf, um das Topic zu verarbeiten. Wenn die Topics mit Locking verarbeitet werden,
+        wird gewartet, bis das Locking aufgehoben wird.
 
         Parameters
         ----------
@@ -106,7 +107,8 @@ class setData:
         collection = list/dict
             Angabe, ob und welche Kollektion erwartet wird
         pub_json : true/false
-            gibt an, ob das Topic von openWB/set/.. an openWB/.. gepublished werden soll oder ein json-Objekt, dass mehrere Daten enthält.
+            gibt an, ob das Topic von openWB/set/.. an openWB/.. gepublished werden soll oder ein json-Objekt,
+            dass mehrere Daten enthält.
         """
         valid = False
         try:
@@ -188,7 +190,7 @@ class setData:
         Parameter
         ---------
         next_level: dict
-            Beim ersten Aufruf: Dictionary, das aktualisiert werden soll. 
+            Beim ersten Aufruf: Dictionary, das aktualisiert werden soll.
             Danach: Dictionary aus den verschachtelten Dictionarys, das gerade betrachtet werden soll.
         key_list: list
             Liste der Keys aus den verschachtelten Dictionarys, unter denen der Eintrag zu finden ist.
@@ -263,7 +265,8 @@ class setData:
         """
         try:
             valid = True
-            # Wenn es ein Float erwartet wird, kann auch ein Int akzeptiert werden. Da dies automatisch umgewandelt wird, falls erfoderlich.
+            # Wenn es ein Float erwartet wird, kann auch ein Int akzeptiert werden. Da dies automatisch umgewandelt
+            # wird, falls erfoderlich.
             if isinstance(value, data_type) or (data_type == float and isinstance(value, int)):
                 if ranges:
                     for range in ranges:
@@ -867,7 +870,8 @@ class setData:
                     self.__unknown_topic(msg)
             else:
                 # hier kommen auch noch alte Topics ohne json-Format an.
-                #log.MainLogger().error("Unbekanntes set-Topic: "+str(msg.topic)+", "+ str(json.loads(str(msg.payload.decode("utf-8")))))
+                # log.MainLogger().error("Unbekanntes set-Topic: "+str(msg.topic)+", "+
+                # str(json.loads(str(msg.payload.decode("utf-8")))))
                 pub.pub(msg.topic, "")
         except Exception:
             log.MainLogger().exception("Fehler im setdata-Modul")

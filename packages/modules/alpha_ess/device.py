@@ -2,11 +2,11 @@
 """ Modul zum Auslesen von Alpha Ess Speichern, Zählern und Wechselrichtern.
 """
 from typing import List
+import sys
 
 if __name__ == "__main__":
     from pathlib import Path
     import os
-    import sys
     parentdir2 = str(Path(os.path.abspath(__file__)).parents[2])
     sys.path.insert(0, parentdir2)
     from helpermodules import log
@@ -51,7 +51,7 @@ class Device():
             factory = self.__component_factory(component_config["type"])
             self.data["components"]["component"+str(component_config["id"])
                                     ] = factory(self.data["config"]["id"], self.client, component_config)
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im Modul "+self.data["config"]["name"])
 
     def __component_factory(self, component_type: str):

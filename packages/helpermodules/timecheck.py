@@ -2,7 +2,6 @@
 """
 
 from datetime import datetime, timedelta
-from typing import Type, cast
 
 from . import log
 
@@ -132,7 +131,8 @@ def check_plans_timeframe(plans, hours=None):
     plans: dictionary
         Liste der Pläne, deren Zeitfenster geprüft werden sollen
     hours = None: int
-        Stunden, die der Beginn vorher liegen soll; Werden keine Stunden angegeben, wird der Beginn dem Dictionary entnommen.
+        Stunden, die der Beginn vorher liegen soll; Werden keine Stunden angegeben, wird der Beginn dem Dictionary
+        entnommen.
 
     Returns
     -------
@@ -162,7 +162,8 @@ def check_timeframe(plan, hours):
     plan: dictionary
         Plan dessen Zeitfenster geprüft werden soll
     hours = None: int
-        Stunden, die der Beginn vorher liegen soll; Werden keine Stunden angegeben, wird der Beginn dem Dictionary entnommen.
+        Stunden, die der Beginn vorher liegen soll; Werden keine Stunden angegeben, wird der Beginn dem Dictionary
+        entnommen.
 
     Returns
     -------
@@ -259,8 +260,9 @@ def _calc_begin(end, hours):
 
 
 def check_duration(plan, duration):
-    """ prüft, ob der in angegebene Zeitpunkt abzüglich der Dauer jetzt ist. 
-    Um etwas Puffer zu haben, werden bei Überschreiten des Zeitpunkts die nachfolgenden 20 Min auch noch als Ladezeit zurückgegeben.
+    """ prüft, ob der in angegebene Zeitpunkt abzüglich der Dauer jetzt ist.
+    Um etwas Puffer zu haben, werden bei Überschreiten des Zeitpunkts die nachfolgenden 20 Min auch noch als Ladezeit
+    zurückgegeben.
 
     Paramter
     --------
@@ -314,7 +316,8 @@ def check_duration(plan, duration):
                 elif -0.33 <= remaining_time < 0:
                     remaining_time = remaining_time * -1
                 else:
-                    # Wenn der Zeitpunkt an diesem Tag schon vorüber ist (verbleibende Zeit ist negativ), nächsten Tag prüfen.
+                    # Wenn der Zeitpunkt an diesem Tag schon vorüber ist (verbleibende Zeit ist negativ), nächsten Tag
+                    # prüfen.
                     delta = timedelta(days=1)
                     end += delta
                     state, remaining_time = _is_duration_valid(
@@ -334,14 +337,15 @@ def check_duration(plan, duration):
 
 
 def _is_duration_valid(now, duration, end):
-    """ prüft, ob der Endzeitpunkt der Ladung abzüglich der Ladedauer in den nächsten 5 Min liegt oder schon vorüber ist.
+    """ prüft, ob der Endzeitpunkt der Ladung abzüglich der Ladedauer in den nächsten 5 Min liegt oder schon vorüber
+    ist.
 
     Parameter
     ---------
     now: datetime
         aktuelles Datum und Uhrzeit
 
-    duration: float 
+    duration: float
         vorraussichtliche Ladedauer
 
     end: datetime

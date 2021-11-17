@@ -20,8 +20,8 @@ from ..modules.common.abstract_device import DeviceUpdater
 
 
 class SubData:
-    """ Klasse, die die benötigten Topics abonniert, die Instanzen ertstellt, wenn z.b. ein Modul neu konfiguriert wird, 
-    Instanzen löscht, wenn Module gelöscht werden, und die Werte in die Attribute der Instanzen schreibt.
+    """ Klasse, die die benötigten Topics abonniert, die Instanzen ertstellt, wenn z.b. ein Modul neu konfiguriert
+    wird, Instanzen löscht, wenn Module gelöscht werden, und die Werte in die Attribute der Instanzen schreibt.
     """
 
     # Instanzen
@@ -44,6 +44,11 @@ class SubData:
         self.event_charge_template = event_charge_template
         self.event_cp_config = event_cp_config
         self.heartbeat = False
+
+        self.bat_data["all"] = bat.batAll()
+        self.cp_data["all"] = chargepoint.allChargepoints()
+        self.counter_data["all"] = counter.counterAll()
+        self.pv_data["all"] = pv.pvAll()
 
     def sub_topics(self):
         """ abonniert alle Topics.
@@ -144,13 +149,14 @@ class SubData:
         return index.group(2)
 
     def set_json_payload(self, dict, msg):
-        """ dekodiert das JSON-Objekt und setzt diesen für den Value in das übergebene Dictionary, als Key wird der Name nach dem letzten / verwendet.
+        """ dekodiert das JSON-Objekt und setzt diesen für den Value in das übergebene Dictionary, als Key wird der
+        Name nach dem letzten / verwendet.
 
          Parameters
         ----------
         dict : dictionary
             Dictionary, in dem der Wert abgelegt wird
-        msg : 
+        msg :
             enthält den Payload als json-Objekt
         """
         try:
@@ -239,7 +245,8 @@ class SubData:
             else:
                 if "ct"+index not in var:
                     var["ct"+index] = ev.chargeTemplate(int(index))
-            if re.search("^.+/vehicle/template/charge_template/[0-9]+/chargemode/scheduled_charging/plans/[0-9]+$", msg.topic) is not None:
+            if re.search("^.+/vehicle/template/charge_template/[0-9]+/chargemode/scheduled_charging/plans/[0-9]+$",
+                         msg.topic) is not None:
                 index_second = self.get_second_index(msg.topic)
                 if str(msg.payload.decode("utf-8")) == "":
                     if "ct"+index in var["ct"+index].data["chargemode"]["scheduled_charging"]["plans"]:
@@ -250,7 +257,8 @@ class SubData:
                 else:
                     var["ct"+index].data["chargemode"]["scheduled_charging"]["plans"][str(
                         index)] = json.loads(str(msg.payload.decode("utf-8")))
-            elif re.search("^.+/vehicle/template/charge_template/[0-9]+/time_charging/plans/[0-9]+$", msg.topic) is not None:
+            elif re.search("^.+/vehicle/template/charge_template/[0-9]+/time_charging/plans/[0-9]+$",
+                           msg.topic) is not None:
                 index_second = self.get_second_index(msg.topic)
                 if str(msg.payload.decode("utf-8")) == "":
                     if "ct"+index in var["ct"+index].data["time_charging"]["plans"]:
@@ -338,8 +346,6 @@ class SubData:
                 index = self.get_index(msg.topic)
                 if "cp"+index not in var:
                     var["cp"+index] = chargepoint.chargepoint(int(index))
-                if "all" not in var:
-                    var["all"] = chargepoint.allChargepoints()
                 if re.search("^.+/chargepoint/[0-9]+/set/.+$", msg.topic) is not None:
                     if "set" not in var["cp"+index].data:
                         var["cp"+index].data["set"] = {}
@@ -364,8 +370,6 @@ class SubData:
                     self.set_json_payload(var["cp"+index].data, msg)
                     self.event_cp_config.set()
             elif re.search("^.+/chargepoint/get/.+$", msg.topic) is not None:
-                if "all" not in var:
-                    var["all"] = chargepoint.allChargepoints()
                 self.set_json_payload(var["all"].data["get"], msg)
         except Exception:
             log.MainLogger().exception("Fehler im subdata-Modul")
@@ -432,8 +436,6 @@ class SubData:
                         var.pop("all")
             elif re.search("^.+/pv/[0-9]+/.+$", msg.topic) is not None:
                 index = self.get_index(msg.topic)
-                if "all" not in var:
-                    var["all"] = pv.pvAll()
                 if "pv"+index not in var:
                     var["pv"+index] = pv.pv(int(index))
                 if re.search("^.+/pv/[0-9]+/config$", msg.topic) is not None:
@@ -443,8 +445,6 @@ class SubData:
                         var["pv"+index].data["get"] = {}
                     self.set_json_payload(var["pv"+index].data["get"], msg)
             elif re.search("^.+/pv/.+$", msg.topic) is not None:
-                if "all" not in var:
-                    var["all"] = pv.pvAll()
                 if re.search("^.+/pv/config/.+$", msg.topic) is not None:
                     if "config" not in var["all"].data:
                         var["all"].data["config"] = {}
@@ -479,8 +479,6 @@ class SubData:
                         var.pop("all")
             elif re.search("^.+/bat/[0-9]+/.+$", msg.topic) is not None:
                 index = self.get_index(msg.topic)
-                if "all" not in var:
-                    var["all"] = bat.batAll()
                 if "bat"+index not in var:
                     var["bat"+index] = bat.bat(int(index))
                 if re.search("^.+/bat/[0-9]+/config$", msg.topic) is not None:
@@ -494,8 +492,6 @@ class SubData:
                         var["bat"+index].data["set"] = {}
                     self.set_json_payload(var["bat"+index].data["set"], msg)
             elif re.search("^.+/bat/.+$", msg.topic) is not None:
-                if "all" not in var:
-                    var["all"] = bat.batAll()
                 if re.search("^.+/bat/get/.+$", msg.topic) is not None:
                     if "get" not in var["all"].data:
                         var["all"].data["get"] = {}
@@ -660,8 +656,6 @@ class SubData:
                     self.set_json_payload(
                         var["counter"+index].data["config"], msg)
             elif re.search("^.+/counter/.+$", msg.topic) is not None:
-                if "all" not in var:
-                    var["all"] = counter.counterAll()
                 if re.search("^.+/counter/get.+$", msg.topic) is not None:
                     if "get" not in var["all"].data:
                         var["all"].data["get"] = {}
@@ -759,7 +753,8 @@ class SubData:
                     if "component"+index_second in var["device"+index].device._components:
                         sim_data = var["device"+index].device._components["component" +
                                                                           index_second].component.simulation
-                    # Es darf nicht einfach data["config"] aktualisiert werden, da in der __init__ auch die TCP-Verbindung aufgebaut wird, deren IP dann nicht aktualisiert werden würde.
+                    # Es darf nicht einfach data["config"] aktualisiert werden, da in der __init__ auch die
+                    # TCP-Verbindung aufgebaut wird, deren IP dann nicht aktualisiert werden würde.
                     var["device"+index].device.add_component(
                         json.loads(str(msg.payload.decode("utf-8"))))
                     if sim_data:

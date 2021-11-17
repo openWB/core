@@ -1,29 +1,5 @@
-""" Defaults-Modul
-Lutz:haus_mit_garten:  14:30 Uhr
-Hast Du eine Idee, wie und wo wir Standardwerte hinterlegen können? Aktuell schreibe ich die in die Webseiten der Einstellungen rein, was aber nicht wirklich sauber ist. 
-Die sollten doch unabhängig im Backend vorhanden sein. Vielleicht unter openWB/defaults/ noch einen weiteren Zweig aufmachen?
-
-Lena:haus_mit_garten:  14:49 Uhr
-Irgendwie müssen die Werte in den Broker kommen, z.B. wenn es nach einem Update neue Einstellmöglichkeiten gibt, also brauchen wir noch ein Defaults-Modul. Das würde ich 
-aus der update.sh aufrufen.
-Gerhard hatte ja gewünscht, dass er sehen kann, ob die Einstellung vom Benutzer kommt oder default ist. Heißt, wenn der Benutzer keine Einstellung getätigt hat, wird der 
-Wert aus openWB/defaults genommen und sonst der Wert aus openWB/ . Bei jedem Zyklus werden die Daten aus subdata in eine Datei geloggt (also die von openWB/ kommen). Werte, 
-die da nicht drin sind, sind dann default Werte. Nach dem Loggen der Werte werden die Dictionaries mit den subdata-Werten mit default-Werten aufgefüllt, sodass der 
-Algorithmus arbeiten kann. (bearbeitet) 
-
-Für Module mit dynamischen Anzahlen, wie LP, gibt es dann ein openWB/defaults/chargepoint/0/config Zweig, der zum Gegenprüfen für alle definierten LP verwendet wird.
-"""
-
 from . import log
 from . import pub
-
-
-
-
-
-
-
-
 
 
 def pub_defaults():
@@ -34,8 +10,10 @@ def pub_defaults():
         pub.pub("openWB/defaults/counter/0/config", "")
         # Ladepunkt
         pub.pub("openWB/defaults/chargepoint/0/set/manual_lock", False)
-        config = {"name": "LP", "ev": 0, "template": 1, "connected_phases": 3, "phase_1": 0, "auto_phase_switch_hw": False,
-                "control_pilot_interruption_hw": True, "connection_module": {"selected": "mqtt"}, "power_module": {"selected": "mqtt"}}
+        config = {"name": "LP", "ev": 0, "template": 1, "connected_phases": 3, "phase_1": 0,
+                  "auto_phase_switch_hw": False, "control_pilot_interruption_hw": True,
+                  "connection_module": {"selected": "mqtt"},
+                  "power_module": {"selected": "mqtt"}}
         pub.pub("openWB/defaults/chargepoint/0/config", config)
         # Ladepunkt-Vorlage
         pub.pub("openWB/defaults/chargepoint/template/0/autolock/1/frequency/selected", "daily")
@@ -49,16 +27,20 @@ def pub_defaults():
         # Optionale Module
         pub.pub("openWB/defaults/optional/et/active", False)
         pub.pub("openWB/defaults/optional/et/config/max_price", 5.5)
-        #pub.pub("openWB/defaults/optional/et/config/provider", {"provider": "awattar", "country": "de"})
-        pub.pub("openWB/defaults/optional/et/config/provider", {"provider": "tibber", "token": "d1007ead2dc84a2b82f0de19451c5fb22112f7ae11d19bf2bedb224a003ff74a", "id": "c70dcbe5-4485-4821-933d-a8a86452737b"})
+        # pub.pub("openWB/defaults/optional/et/config/provider", {"provider": "awattar", "country": "de"})
+        pub.pub(
+            "openWB/defaults/optional/et/config/provider",
+            {"provider": "tibber", "token": "d1007ead2dc84a2b82f0de19451c5fb22112f7ae11d19bf2bedb224a003ff74a",
+             "id": "c70dcbe5-4485-4821-933d-a8a86452737b"})
         pub.pub("openWB/defaults/optional/rfid/active", False)
 
         # PV
         pub.pub("openWB/defaults/pv/0/config", {"selected": "mqtt"})
 
         # Zähler
-        hierarchy = [{"id": "counter0", "children": [{"id": "cp1", "children": []}, {"id": "cp2", "children": []}, {"id": "cp3", "children": []}]}]
-        #hierarchy = [{"id": "counter0", "children": [{"id": "cp1", "children": []}]}]
+        hierarchy = [{"id": "counter0", "children": [{"id": "cp1", "children": []},
+                                                     {"id": "cp2", "children": []}, {"id": "cp3", "children": []}]}]
+        # hierarchy = [{"id": "counter0", "children": [{"id": "cp1", "children": []}]}]
         pub.pub("openWB/defaults/counter/0/get/hierarchy", hierarchy)
         pub.pub("openWB/defaults/counter/0/config/max_current", [30, 30, 30])
         pub.pub("openWB/defaults/counter/0/config/max_consumption", 30000)
@@ -99,7 +81,7 @@ def pub_defaults():
         # graph
         pub.pub("openWB/graph/config/duration", 30)
 
-        #System
+        # System
         pub.pub("openWB/defaults/system/release_train", "stable17")
-    except Exception as e:
+    except Exception:
         log.MainLogger().exception("Fehler im defaults-Modul")

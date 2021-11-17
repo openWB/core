@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Tuple
+from typing import List
 
 import pytest as pytest
 
@@ -8,7 +8,9 @@ from testutils.mock import ignore_logging
 
 
 class Params:
-    def __init__(self, name: str, data: dict, autolock_state: int, charge_state: bool, time: list, expected_state: int, weekly: List = None, once: List = None):
+    def __init__(
+            self, name: str, data: dict, autolock_state: int, charge_state: bool, time: list, expected_state: int,
+            weekly: List = None, once: List = None):
         self.name = name
         self.data = data
         self.data["autolock"]["plans"]["0"]["time"] = time
@@ -25,9 +27,8 @@ class Params:
 
     def invert(self):
         return Params(
-            "inverse: " +
-            self.name, self.data, self.autolock_state, self.charge_state, self.time, self.expected_state, self.weekly, self.once
-        )
+            "inverse: " + self.name, self.data, self.autolock_state, self.charge_state, self.time, self.expected_state,
+            self.weekly, self.once)
 
 
 now = datetime.today()
