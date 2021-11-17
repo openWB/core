@@ -553,7 +553,7 @@ class chargepoint:
                     charging_ev.ev_template.data["control_pilot_interruption"]):
                 # Wird die Ladung gestartet?
                 if self.set_current_prev == 0 and self.data["set"]["current"] != 0:
-                    selected = self.data["config"]["connection_module"]["selected"]
+                    # selected = self.data["config"]["connection_module"]["selected"]
                     # config = self.data["config"]["connection_module"]["config"][selected]
                     # cp_interruption.thread_cp_interruption(self.cp_num, selected, config, charging_ev.ev_template.
                     # data["control_pilot_interruption_duration"])
