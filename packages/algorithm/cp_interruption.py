@@ -2,7 +2,6 @@
 """
 import threading
 import time
-import RPi.GPIO as GPIO
 
 from ..helpermodules import log
 from ..helpermodules import pub
@@ -12,7 +11,7 @@ cp_interruption_threads = {}
 
 
 def thread_cp_interruption(cp_num, selected, config, duration):
-    """ startet einen Thread pro Ladepunkt, an dem eine CP-Unterbrechung durchgeführt werden soll. 
+    """ startet einen Thread pro Ladepunkt, an dem eine CP-Unterbrechung durchgeführt werden soll.
     Die CP-Unterbrechung erfolgt in Threads, da diese länger als ein Zyklus dauert.
 
     Parameter

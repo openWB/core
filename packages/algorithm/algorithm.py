@@ -572,7 +572,7 @@ class control:
                     log.MainLogger().exception("Fehler im Algorithmus-Modul fuer Ladepunkt"+cp)
 
     def _check_auto_phase_switch_delay(self):
-        """ geht alle LP durch und prüft, ob eine Ladung aktiv ist, ob automatische Phasenumschaltung 
+        """ geht alle LP durch und prüft, ob eine Ladung aktiv ist, ob automatische Phasenumschaltung
         möglich ist und ob ob ein Timer gestartet oder gestoppt werden muss oder ob ein Timer abgelaufen ist.
         """
         for cp in data.data.cp_data:
@@ -660,7 +660,7 @@ class control:
             log.MainLogger().exception("Fehler im Algorithmus-Modul")
 
     def _distribute_power_to_cp(self, preferenced_chargepoints, current_mode):
-        """ Ladepunkte, die eingeschaltet werden sollen, durchgehen. 
+        """ Ladepunkte, die eingeschaltet werden sollen, durchgehen.
 
         Parameter
         ---------
@@ -959,7 +959,7 @@ class control:
         mode_tuple: tuple
             enthält den eingestellten Lademodus, den tatsächlichen Lademodus und die Priorität
         feed_in_limit: bool
-            Einspeisungsgrenze aktiv/inaktiv 
+            Einspeisungsgrenze aktiv/inaktiv
         """
         try:
             num_of_ev = 0
@@ -1038,7 +1038,8 @@ class control:
                                             else:
                                                 new_current = dif_per_ev_current + \
                                                     chargepoint.data["set"]["current"]
-                                            log.MainLogger().debug("new_current "+str(new_current)+"phases "+str(phases))
+                                            log.MainLogger().debug(
+                                                "new_current "+str(new_current)+"phases "+str(phases))
                                             # Um max. 5A pro Zyklus regeln
                                             if ((-5-charging_ev.ev_template.data["nominal_difference"])
                                                     < (new_current - max(chargepoint.data["get"]["current"]))
@@ -1166,10 +1167,10 @@ class control:
             return preferenced_chargepoints
 
     def _check_cp_without_feed_in_is_prioritised(self, chargepoint):
-        """ Wenn ein LP im Submodus PV-Laden nicht die Maximalstromstärke zugeteilt bekommen hat, 
+        """ Wenn ein LP im Submodus PV-Laden nicht die Maximalstromstärke zugeteilt bekommen hat,
         darf ein LP mit Einspeiungsgrenze nicht eingeschaltet werden.
-        Diese Funktion wird benötigt, da sie während der Verteilung des Überschusses aufgerufen 
-        wird. Der verbleibende Überschuss wird erst später verteilt, wenn bereits der LP mit 
+        Diese Funktion wird benötigt, da sie während der Verteilung des Überschusses aufgerufen
+        wird. Der verbleibende Überschuss wird erst später verteilt, wenn bereits der LP mit
         Einspeisungsgrenze eine Ladefreigabe erhalten hätte.
 
         Parameter
@@ -1208,7 +1209,7 @@ class control:
             return True
 
     def _process_data(self, chargepoint, required_current):
-        """ setzt die ermittelte Anzahl Phasen, Stromstärke und Leistung in den Dictionarys, 
+        """ setzt die ermittelte Anzahl Phasen, Stromstärke und Leistung in den Dictionarys,
         publsihed sie und schreibt sie ins Log.
 
         Parameter
@@ -1241,7 +1242,7 @@ class control:
 
 
 def allocate_power(chargepoint, required_power, required_current, phases):
-    """allokiert, wenn vorhanden erst Speicherladeleistung, dann EVU-Überschuss 
+    """allokiert, wenn vorhanden erst Speicherladeleistung, dann EVU-Überschuss
     und dann EVU-Bezug im Lastamanagement.
 
     Parameter

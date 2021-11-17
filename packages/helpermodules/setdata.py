@@ -50,7 +50,7 @@ class setData:
         client.subscribe("openWB/set/#", 2)
 
     def on_message(self, client, userdata, msg):
-        """ ruft die Funktion auf, um das Topic zu verarbeiten. Wenn die Topics mit Locking verarbeitet werden, 
+        """ ruft die Funktion auf, um das Topic zu verarbeiten. Wenn die Topics mit Locking verarbeitet werden,
         wird gewartet, bis das Locking aufgehoben wird.
 
         Parameters
@@ -107,7 +107,7 @@ class setData:
         collection = list/dict
             Angabe, ob und welche Kollektion erwartet wird
         pub_json : true/false
-            gibt an, ob das Topic von openWB/set/.. an openWB/.. gepublished werden soll oder ein json-Objekt, 
+            gibt an, ob das Topic von openWB/set/.. an openWB/.. gepublished werden soll oder ein json-Objekt,
             dass mehrere Daten enthält.
         """
         valid = False

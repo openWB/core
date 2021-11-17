@@ -22,7 +22,7 @@ class counterAll:
     def get_evu_counter(self):
         try:
             return self.data["get"]["hierarchy"][0]["id"]
-        except Exception as e:
+        except Exception:
             log.MainLogger().error("Ohne Konfiguration eines EVU-Zählers ist keine Regelung möglich.")
             raise
 
@@ -182,7 +182,7 @@ class counterAll:
                                 return child
                     if len(child["children"]) != 0:
                         found = self._look_for_object(child, object, num)
-                        if found != False:
+                        if found:
                             if object == "cp":
                                 self.connected_counters.append(parent)
                                 return True

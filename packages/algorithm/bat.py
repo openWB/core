@@ -1,8 +1,8 @@
 """Hausspeicher-Logik
 Der Hausspeicher ist immer bestrebt, den EVU-Überschuss auf 0 zu regeln.
-Wenn EVU_Überschuss vorhanden ist, lädt der Speicher. Wenn EVU-Bezug vorhanden wäre, 
-entlädt der Speicher, sodass kein Netzbezug stattfindet. Wenn das EV Vorrang hat, wird 
-eine Ladung gestartet und der Speicher hört automatisch auf zu laden, da sonst durch 
+Wenn EVU_Überschuss vorhanden ist, lädt der Speicher. Wenn EVU-Bezug vorhanden wäre,
+entlädt der Speicher, sodass kein Netzbezug stattfindet. Wenn das EV Vorrang hat, wird
+eine Ladung gestartet und der Speicher hört automatisch auf zu laden, da sonst durch
 das Laden des EV Bezug statt finden würde.
 
 Sonderfall Hybrid-Systeme:
@@ -11,13 +11,13 @@ Wenn wir ein Hybrid Wechselrichter Speicher system haben das besteht aus:
 15kW Wechselrichter
 Batterie DC
 Kann es derzeit passieren das die PV 20kW erzeugt, die Batterie mit 5kW geladen wird und 15kW ins Netz gehen.
-Zieht die openWB nun Überschuss (15kW Überschuss + 5kW Batterieladung = 20kW) kommt es zu 5kW Bezug weil der 
+Zieht die openWB nun Überschuss (15kW Überschuss + 5kW Batterieladung = 20kW) kommt es zu 5kW Bezug weil der
 Wechselrichter nur 15kW abgeben kann.
 
-aktuell wird halt bei ev vorrang die Batterieladeleistung hinzugerechnet. weil die openWB von ausgeht das die 
+aktuell wird halt bei ev vorrang die Batterieladeleistung hinzugerechnet. weil die openWB von ausgeht das die
 dann das laden aufhört und diese leistung eignetlich überschuss ist.
 Blöd halt wenn der WEchselrichter die nicht zur verfügung stellen kann.
-Heißt aktuell denkt die openWB "0 Watt überschuss" weil 5kW bezogen werden, aber eben auch 5kW in die Batterie 
+Heißt aktuell denkt die openWB "0 Watt überschuss" weil 5kW bezogen werden, aber eben auch 5kW in die Batterie
 gehen (die ihre ladung aber nicht drosselt)
 
 du musst halt zum "antesten" bezug generieren damit die Batterie entsprechend gegenregelt. erst wenn sie das nach
@@ -25,9 +25,9 @@ du musst halt zum "antesten" bezug generieren damit die Batterie entsprechend ge
 
 __Wie schnell regelt denn ein Speicher?
 Je nach Speicher 1-4 Sekunden.
-__Muss dann immer ein bisschen Überschuss über sein und wenn dieser im nächsten Zyklus noch da ist, kann der LP 
+__Muss dann immer ein bisschen Überschuss über sein und wenn dieser im nächsten Zyklus noch da ist, kann der LP
 hochgeregelt werden. Wenn nicht muss der LP runtergeregelt werden?
-Üblicherweise reicht es so zu regeln das rund 50 Watt Einspeisung da sind, dann "nimmt" der Speicher sich die von 
+Üblicherweise reicht es so zu regeln das rund 50 Watt Einspeisung da sind, dann "nimmt" der Speicher sich die von
 alleine
 """
 

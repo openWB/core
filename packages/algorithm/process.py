@@ -59,23 +59,24 @@ class process:
             charging_ev = chargepoint.data["set"]["charging_ev_data"]
 
             current = round(chargepoint.data["set"]["current"], 2)
-            # Zur Sicherheit - nach dem der Algorithmus abgeschlossen ist - nochmal die Einhaltung der Stromstärken prüfen.
+            # Zur Sicherheit - nach dem der Algorithmus abgeschlossen ist - nochmal die Einhaltung der Stromstärken
+            # prüfen.
             current = charging_ev.check_min_max_current(current, charging_ev.data["control_parameter"]["phases"])
 
             # Wenn bei einem EV, das keine Umschaltung verträgt, vor dem ersten Laden noch umgeschaltet wird, darf kein
             # Strom gesetzt werden.
-            if (charging_ev.ev_template.data["prevent_switch_stop"] == True and
+            if (charging_ev.ev_template.data["prevent_switch_stop"] and
                     chargepoint.data["set"]["log"]["charged_since_plugged_counter"] == 0 and
                     charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] != "0"):
                 current = 0
 
             # Unstimmige Werte loggen
             if (charging_ev.data["control_parameter"]["timestamp_switch_on_off"] != "0" and
-                    chargepoint.data["get"]["charge_state"] == False and
+                    chargepoint.data["get"]["charge_state"] is False and
                     data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] == 0):
                 log.MainLogger().error("Reservierte Leistung kann am Algorithmus-Ende nicht 0 sein.")
-            if (chargepoint.data["set"]["charging_ev_data"].ev_template.data["prevent_switch_stop"] == True and
-                    chargepoint.data["get"]["charge_state"] == True and
+            if (chargepoint.data["set"]["charging_ev_data"].ev_template.data["prevent_switch_stop"] and
+                    chargepoint.data["get"]["charge_state"] and
                     chargepoint.data["set"]["current"] == 0):
                 log.MainLogger().error(
                     "LP"+str(chargepoint.cp_num)+": Ladung wurde trotz verhinderter Unterbrechung gestoppt.")

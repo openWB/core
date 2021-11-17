@@ -70,13 +70,13 @@ class loadvars:
             virtual_threads = []
             for item in data.data.counter_data:
                 thread = None
-                if "counter" in item:
-                    counter = data.data.counter_data[item]
-                    # if counter.data["config"]["selected"] == "virtual":
-                    #     thread = threading.Thread(target=c_virtual.read_virtual_counter, args=(counter,))
+                # if "counter" in item:
+                #     counter = data.data.counter_data[item]
+                # if counter.data["config"]["selected"] == "virtual":
+                #     thread = threading.Thread(target=c_virtual.read_virtual_counter, args=(counter,))
 
-                    if thread is not None:
-                        virtual_threads.append(thread)
+                if thread is not None:
+                    virtual_threads.append(thread)
             return virtual_threads
         except Exception:
             log.MainLogger().exception("Fehler im loadvars-Modul")

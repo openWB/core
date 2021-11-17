@@ -1,11 +1,11 @@
 """ Lastmangement
 
-Das LM enthält ein Offset, das aktiv ist, wenn ein Ladepunkt eingeschaltet/hoch-/runtergeregelt werden soll, 
+Das LM enthält ein Offset, das aktiv ist, wenn ein Ladepunkt eingeschaltet/hoch-/runtergeregelt werden soll,
 aber nicht, wenn geprüft wird, ob in der gesamten Anlage ein Zähler die Maximalwerte überschreitet.
 So wird ein Schwingen vermieden, da die Ladepunkte auf Maximum-Offset geregelt werden, aber das Maximum geprüft wird.
 
-Die L1 Phase des Ladepunkts muss nicht zwingend an die L1 Phase der EVU angeschlossen sein. Aktuell gibt es die 
-Information, welche LP-Phase an welche EVU-Phase angeschlossen ist, nicht. Beim einphasigen Laden wird deshalb 
+Die L1 Phase des Ladepunkts muss nicht zwingend an die L1 Phase der EVU angeschlossen sein. Aktuell gibt es die
+Information, welche LP-Phase an welche EVU-Phase angeschlossen ist, nicht. Beim einphasigen Laden wird deshalb
 auf allen 3 Phasen geprüft, ob genug Leistung/Stromstärke verfügbar ist.
 """
 
@@ -72,7 +72,7 @@ def loadmanagement_for_cp(chargepoint, required_power, required_current, phases)
                 if loadmanagement:
                     loadmanagement_all_conditions = True
                     overloaded_counters[counter] = [overshoot, phase]
-            except Exception as e:
+            except Exception:
                 log.MainLogger().exception("Fehler im Lastmanagement-Modul "+str(counter))
         # Wenn das Lastamanagement bei den Zwischenzählern aktiv wurde, darf es nicht wieder zurück gesetzt werden.
         loadmanagement = _loadmanagement_for_evu(
@@ -82,7 +82,7 @@ def loadmanagement_for_cp(chargepoint, required_power, required_current, phases)
 
         data.data.counter_data["all"].data["set"]["loadmanagement_active"] = loadmanagement_all_conditions
         return loadmanagement_all_conditions, overloaded_counters
-    except Exception as e:
+    except Exception:
         log.MainLogger().exception("Fehler im Lastmanagement-Modul")
         return False, None
 
@@ -109,7 +109,7 @@ def loadmanagement_for_counters() -> Tuple[bool, dict]:
             loadmanagement_all_conditions = loadmanagement
         data.data.counter_data["all"].data["set"]["loadmanagement_active"] = loadmanagement_all_conditions
         return loadmanagement_all_conditions, overloaded_counters
-    except Exception as e:
+    except Exception:
         log.MainLogger().exception("Fehler im Lastmanagement-Modul")
         return False, {}
 
@@ -145,7 +145,7 @@ def _check_all_intermediate_counters(child):
                 loadmanagement = _check_all_intermediate_counters(child)
                 if loadmanagement:
                     return True
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im Lastmanagement-Modul fuer Zaehler "+str(child))
     # Wenn alle durchgegangen wurden und das Lastamangement nicht aktiv geworden ist.
     else:
@@ -196,8 +196,8 @@ def _loadmanagement_for_evu(required_power, required_current_phases, phases, off
             evu_counter, required_current_phases, phases, offset)
         if loadmanagement:
             loadmanagement_all_conditions = True
-            # Wenn max_overshoot_phase -1 ist, wurde die maximale Gesamtleistung überschrittten und max_current_overshoot
-            # muss, wenn weniger als 3 Phasen genutzt werden, entsprechend multipliziert werden.
+            # Wenn max_overshoot_phase -1 ist, wurde die maximale Gesamtleistung überschrittten und
+            # max_current_overshoot muss, wenn weniger als 3 Phasen genutzt werden, entsprechend multipliziert werden.
             if max_overshoot_phase == -1:
                 overshoot_one_phase = max_current_overshoot * (3 - phases + 1)
             else:
@@ -209,8 +209,8 @@ def _loadmanagement_for_evu(required_power, required_current_phases, phases, off
             data.data.counter_data[evu_counter].data["set"]["current_used"], offset)
         if loadmanagement:
             loadmanagement_all_conditions = True
-            # Wenn max_overshoot_phase -1 ist, wurde die maximale Gesamtleistung überschrittten und max_current_overshoot
-            # muss, wenn weniger als 3 Phasen genutzt werden, entsprechend multipliziert werden.
+            # Wenn max_overshoot_phase -1 ist, wurde die maximale Gesamtleistung überschrittten und
+            # max_current_overshoot muss, wenn weniger als 3 Phasen genutzt werden, entsprechend multipliziert werden.
             if max_overshoot_phase == -1:
                 overshoot_one_phase = max_current_overshoot * (3 - phases + 1)
             else:
@@ -222,7 +222,7 @@ def _loadmanagement_for_evu(required_power, required_current_phases, phases, off
             overloaded_counters[evu_counter] = [
                 max_current_overshoot, max_overshoot_phase]
         return loadmanagement_all_conditions
-    except Exception as e:
+    except Exception:
         log.MainLogger().exception("Fehler im Lastmanagement-Modul")
         return False
 
@@ -256,7 +256,7 @@ def _check_max_power(required_power, offset):
             return False, data.data.counter_data[evu_counter].data["set"]["consumption_left"] - 300
         else:
             return True, data.data.counter_data[evu_counter].data["set"]["consumption_left"] - 300
-    except Exception as e:
+    except Exception:
         log.MainLogger().exception("Fehler im Lastmanagement-Modul")
         return 0, False
 
@@ -321,7 +321,7 @@ def _check_max_current(counter, required_current_phases, phases, offset):
         # Wenn Zähler geprüft werden, wird ohne Offset geprüft. Beim Runterregeln soll aber das Offset berücksichtigt
         # werden, um Schwingen zu vermeiden.
         return loadmanagement, max_current_overshoot + (300 / 230 / phases), current_used.index(max(current_used))
-    except Exception as e:
+    except Exception:
         log.MainLogger().exception("Fehler im Lastmanagement-Modul")
         return False, 0, 0
 
@@ -363,7 +363,7 @@ def _check_unbalanced_load(current_used, offset):
                     data.data.general_data["general"].data["chargemode_config"]["unbalanced_load_limit"]
                 log.MainLogger().warning("Schieflast wurde ueberschritten.")
                 return True, max_current_overshoot + 1, current_used.index(max_current)+1
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im Lastmanagement-Modul")
             return False, 0, 0
     else:

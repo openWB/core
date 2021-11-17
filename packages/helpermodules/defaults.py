@@ -27,7 +27,7 @@ def pub_defaults():
         # Optionale Module
         pub.pub("openWB/defaults/optional/et/active", False)
         pub.pub("openWB/defaults/optional/et/config/max_price", 5.5)
-        #pub.pub("openWB/defaults/optional/et/config/provider", {"provider": "awattar", "country": "de"})
+        # pub.pub("openWB/defaults/optional/et/config/provider", {"provider": "awattar", "country": "de"})
         pub.pub(
             "openWB/defaults/optional/et/config/provider",
             {"provider": "tibber", "token": "d1007ead2dc84a2b82f0de19451c5fb22112f7ae11d19bf2bedb224a003ff74a",
@@ -40,7 +40,7 @@ def pub_defaults():
         # Zähler
         hierarchy = [{"id": "counter0", "children": [{"id": "cp1", "children": []},
                                                      {"id": "cp2", "children": []}, {"id": "cp3", "children": []}]}]
-        #hierarchy = [{"id": "counter0", "children": [{"id": "cp1", "children": []}]}]
+        # hierarchy = [{"id": "counter0", "children": [{"id": "cp1", "children": []}]}]
         pub.pub("openWB/defaults/counter/0/get/hierarchy", hierarchy)
         pub.pub("openWB/defaults/counter/0/config/max_current", [30, 30, 30])
         pub.pub("openWB/defaults/counter/0/config/max_consumption", 30000)
@@ -83,5 +83,5 @@ def pub_defaults():
 
         # System
         pub.pub("openWB/defaults/system/release_train", "stable17")
-    except Exception as e:
+    except Exception:
         log.MainLogger().exception("Fehler im defaults-Modul")

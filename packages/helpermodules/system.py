@@ -1,8 +1,5 @@
 """ Modul zum Updaten der Steuerung und Triggern der externen Wbs, zu updaten."""
 
-import threading
-import sys
-import _thread as thread
 import subprocess
 import time
 

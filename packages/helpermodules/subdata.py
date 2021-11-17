@@ -149,7 +149,7 @@ class SubData:
         return index.group(2)
 
     def set_json_payload(self, dict, msg):
-        """ dekodiert das JSON-Objekt und setzt diesen für den Value in das übergebene Dictionary, als Key wird der 
+        """ dekodiert das JSON-Objekt und setzt diesen für den Value in das übergebene Dictionary, als Key wird der
         Name nach dem letzten / verwendet.
 
          Parameters
@@ -753,8 +753,8 @@ class SubData:
                     if "component"+index_second in var["device"+index].device._components:
                         sim_data = var["device"+index].device._components["component" +
                                                                           index_second].component.simulation
-                    # Es darf nicht einfach data["config"] aktualisiert werden, da in der __init__ auch die TCP-Verbindung
-                    # aufgebaut wird, deren IP dann nicht aktualisiert werden würde.
+                    # Es darf nicht einfach data["config"] aktualisiert werden, da in der __init__ auch die
+                    # TCP-Verbindung aufgebaut wird, deren IP dann nicht aktualisiert werden würde.
                     var["device"+index].device.add_component(
                         json.loads(str(msg.payload.decode("utf-8"))))
                     if sim_data:

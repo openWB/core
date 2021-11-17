@@ -91,12 +91,12 @@ class pvAll:
             log.MainLogger().exception("Fehler im allgemeinen PV-Modul")
 
     def switch_on(self, chargepoint, required_power, required_current, phases, bat_overhang):
-        """ prüft, ob die Einschaltschwelle erreicht wurde, reserviert Leistung und gibt diese frei 
+        """ prüft, ob die Einschaltschwelle erreicht wurde, reserviert Leistung und gibt diese frei
         bzw. stoppt die Freigabe wenn die Ausschaltschwelle und -verzögerung erreicht wurde.
 
         Erst wenn für eine bestimmte Zeit eine bestimmte Grenze über/unter-
-        schritten wurde, wird die Ladung gestartet/gestoppt. So wird häufiges starten/stoppen 
-        vermieden. Die Grenzen aus den Einstellungen sind als Deltas zu verstehen, die absoluten 
+        schritten wurde, wird die Ladung gestartet/gestoppt. So wird häufiges starten/stoppen
+        vermieden. Die Grenzen aus den Einstellungen sind als Deltas zu verstehen, die absoluten
         Schaltpunkte ergeben sich ggf noch aus der Einspeisungsgrenze.
 
         Parameter
@@ -119,6 +119,9 @@ class pvAll:
         try:
             threshold_not_reached = False
             pv_config = data.data.general_data["general"].data["chargemode_config"]["pv_charging"]
+            feed_in_limit = chargepoint.data["set"]["charging_ev_data"].charge_template.data["chargemode"][
+                "pv_charging"]["feed_in_limit"]
+            feed_in_yield = pv_config["feed_in_yield"]
             control_parameter = chargepoint.data["set"]["charging_ev_data"].data["control_parameter"]
             # verbleibender EVU-Überschuss unter Berücksichtigung der Einspeisungsgrenze
             all_overhang = self.overhang_left()
@@ -129,10 +132,10 @@ class pvAll:
                 if control_parameter["timestamp_switch_on_off"] != "0":
                     # Wurde die Einschaltschwelle erreicht? Reservierte Leistung aus all_overhang rausrechnen,
                     # da diese Leistung ja schon reserviert wurde, als die Einschaltschwelle erreicht wurde.
-                    if ((chargepoint.data["set"]["charging_ev_data"].charge_template.data["chargemode"]["pv_charging"]["feed_in_limit"] is False and
+                    if ((feed_in_limit is False and
                             all_overhang + required_power > pv_config["switch_on_threshold"]*phases) or
-                            (chargepoint.data["set"]["charging_ev_data"].charge_template.data["chargemode"]["pv_charging"]["feed_in_limit"] and
-                             all_overhang + required_power >= data.data.general_data["general"].data["chargemode_config"]["pv_charging"]["feed_in_yield"])):
+                            (feed_in_limit and
+                             all_overhang + required_power >= feed_in_yield)):
                         # Timer ist noch nicht abglaufen
                         if timecheck.check_timestamp(
                                 control_parameter["timestamp_switch_on_off"],
@@ -166,10 +169,8 @@ class pvAll:
                         threshold_not_reached = True
                 else:
                     # Timer starten
-                    if ((chargepoint.data["set"]["charging_ev_data"].charge_template.data["chargemode"]["pv_charging"]["feed_in_limit"] is False and
-                            all_overhang > pv_config["switch_on_threshold"]*phases) or
-                            (chargepoint.data["set"]["charging_ev_data"].charge_template.data["chargemode"]["pv_charging"]["feed_in_limit"] and
-                             all_overhang >= data.data.general_data["general"].data["chargemode_config"]["pv_charging"]["feed_in_yield"] and
+                    if ((feed_in_limit is False and all_overhang > pv_config["switch_on_threshold"]*phases) or
+                            (feed_in_limit and all_overhang >= feed_in_yield and
                              self.data["set"]["reserved_evu_overhang"] == 0)):
                         control_parameter["timestamp_switch_on_off"] = timecheck.create_timestamp(
                         )

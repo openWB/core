@@ -1,6 +1,6 @@
 """Ladepunkt-Logik
 
-charging_ev: EV, das akutell laden darf 
+charging_ev: EV, das akutell laden darf
 charging_ev_prev: EV, das vorher geladen hat. Dies wird benötigt, da wenn das EV nicht mehr laden darf, z.B. weil
 Autolock aktiv ist, gewartet werden muss, bis die Ladeleistung 0 ist und dann erst der Logeintrag erstellt werden kann.
 charging_ev = -1 zeigt an, dass der LP im Algorithmus nicht berücksichtigt werden soll. Ist das Ev abgesteckt, wird
@@ -10,7 +10,7 @@ RFID:
 Mode 1: Der gescannte Tag  wird dem Ladepunkt zugeordnet, an dem gescannt wude. Falls es eine Duo ist, wird Mode 2 für
 die beiden Duo-Ladepunkte angewendet.
 
-Freischaltung durch Tag: Aktiviert RFID-Nutzung am Ladepunkt. 
+Freischaltung durch Tag: Aktiviert RFID-Nutzung am Ladepunkt.
 Achtung RFID+Autolock: Ist Autolock aktiviert und der Ladepunkt durch Autolock freigegeben, dient der Tag nur zur
 EV-Zuordnung.
 Ist der Ladepunkt durch Autolock gesperrt, kann er mit einem gültigen Tag freigeschaltet werden.
@@ -27,7 +27,6 @@ freigeschaltet werden.
 import traceback
 
 from . import chargelog
-from . import cp_interruption
 from . import data
 from . import ev
 from . import phase_switch
@@ -73,7 +72,7 @@ class allChargepoints:
                     if "cp" in cp:
                         chargepoint = data.data.cp_data[cp]
                         # Kein EV angesteckt
-                        if (chargepoint.data["get"]["plug_state"] == False or
+                        if (chargepoint.data["get"]["plug_state"] is False or
                                 # Kein EV, das Laden soll
                                 chargepoint.data["set"]["charging_ev"] == -1 or
                                 # Kein EV, das auf das Ablaufen der Einschalt- oder Phasenumschaltverzögerung wartet
@@ -119,7 +118,7 @@ class allChargepoints:
         wenn es eine openWB Duo ist. 
         """
         try:
-            if data.data.optional_data["optional"].data["rfid"]["active"] == True:
+            if data.data.optional_data["optional"].data["rfid"]["active"]:
                 # nicht .keys() verwenden, da diese eine dict_keys-Liste erzeugt und wenn man daraus einen Eintrag
                 # entfernt wird dieser auch im original-dict entfernt.
                 chargepoints = list(data.data.cp_data.keys())
@@ -129,7 +128,7 @@ class allChargepoints:
                 for cp in chargepoints:
                     try:
                         chargepoint = data.data.cp_data[cp]
-                        if chargepoint.template.data["rfid_enabling"] == True:
+                        if chargepoint.template.data["rfid_enabling"]:
                             # Wurde ein zweiter Ladepunkt an einer Duo konfiguriert?
                             if chargepoint.data["config"]["connection_module"]["selected"] == "external_openwb":
                                 if chargepoint.data["config"]["connection_module"]["config"]["external_openwb"][
@@ -152,7 +151,7 @@ class allChargepoints:
                     try:
                         if "cp" in cp:
                             chargepoint = data.data.cp_data[cp]
-                            if chargepoint.template.data["rfid_enabling"] == True:
+                            if chargepoint.template.data["rfid_enabling"]:
                                 if chargepoint.data["get"]["read_tag"]["tag"] != "0":
                                     # Darf mit diesem Tag der LP freigeschaltet werden?
                                     if chargepoint.data["get"]["read_tag"]["tag"] in chargepoint.template.data[
@@ -200,7 +199,7 @@ class allChargepoints:
                             # Scannen darf nicht länger als 5 Min zurück liegen
                             if timecheck.check_timestamp(
                                     chargepoint_read.data["get"]["read_tag"]["timestamp"],
-                                    300) == False:
+                                    300) is False:
                                 # abgelaufen
                                 chargepoint_read.data["get"]["read_tag"]["tag"] = "0"
                                 chargepoint_read.data["get"]["read_tag"]["timestamp"] = "0"
@@ -215,13 +214,13 @@ class allChargepoints:
                     try:
                         if "cp" in cp:
                             chargepoint_match = data.data.cp_data[cp]
-                            if chargepoint_match.template.data["rfid_enabling"] == True:
+                            if chargepoint_match.template.data["rfid_enabling"]:
                                 # Wenn man einen Tag hat, der nicht vor mehr als 5 Min gescannt wurde, ist es egal, ob
                                 # das Auto vor oder nach dem Scannen angesteckt wurde. Um den Tag zuzuordnen, muss
                                 # RFID-Zuordnung aktiviert sein, es darf kein Tag zugeordnet sein (wird beim Abstecken
                                 # zurückgesetzt) und es muss ein Auto angesteckt sein.
                                 if chargepoint_match.data["set"]["rfid"] == "0" and chargepoint_match.data["get"][
-                                        "plug_state"] == True:
+                                        "plug_state"]:
                                     if plug_time == 0 or timecheck.get_difference(
                                             plug_time, chargepoint_match.data["set"]["plug_time"]) < 0:
                                         plug_time = chargepoint_match.data["set"]["plug_time"]
@@ -311,13 +310,13 @@ class chargepoint:
         message = None
         try:
             general_data = data.data.general_data["general"].data
-            if general_data["grid_protection_configured"] == True:
-                if general_data["grid_protection_active"] == True:
+            if general_data["grid_protection_configured"]:
+                if general_data["grid_protection_active"]:
                     if general_data["grid_protection_timestamp"] != "0":
                         # Timer ist  abglaufen
                         if timecheck.check_timestamp(
                                 general_data["grid_protection_timestamp"],
-                                general_data["grid_protection_random_stop"]) == False:
+                                general_data["grid_protection_random_stop"]) is False:
                             state = False
                             message = "Ladepunkt gesperrt, da der Netzschutz aktiv ist."
                             pub.pub("openWB/set/general/grid_protection_timestamp", "0")
@@ -343,9 +342,9 @@ class chargepoint:
         message = None
         try:
             general_data = data.data.general_data["general"].data
-            if general_data["ripple_control_receiver"]["configured"] == True:
-                if (general_data["ripple_control_receiver"]["r1_active"] == True or
-                        general_data["ripple_control_receiver"]["r2_active"] == True):
+            if general_data["ripple_control_receiver"]["configured"]:
+                if (general_data["ripple_control_receiver"]["r1_active"] or
+                        general_data["ripple_control_receiver"]["r2_active"]):
                     state = False
                     message = "Ladepunkt gesperrt, da der Rundsteuerempfängerkontakt geschlossen ist."
             return state, message
@@ -364,7 +363,7 @@ class chargepoint:
             Text, dass geladen werden kann oder warum nicht geladen werden kann.
         """
         try:
-            if data.data.counter_data["all"].data["set"]["loadmanagement_available"] == True:
+            if data.data.counter_data["all"].data["set"]["loadmanagement_available"]:
                 state = True
                 message = None
             else:
@@ -393,12 +392,12 @@ class chargepoint:
                 self.data["set"]["autolock_state"],
                 self.data["get"]["charge_state"],
                 self.cp_num)
-            if state == False:
+            if stateis False:
                 state = True
             else:
                 # Darf Autolock durch Tag überschrieben werden?
-                if (data.data.optional_data["optional"].data["rfid"]["active"] == True and
-                        self.template.data["rfid_enabling"] == True):
+                if (data.data.optional_data["optional"].data["rfid"]["active"] and
+                        self.template.data["rfid_enabling"]):
                     if self.data["set"]["rfid"] == "0":
                         state = False
                         message = "Keine Ladung, da der Ladepunkt durch Autolock gesperrt ist und erst per RFID \
@@ -425,7 +424,7 @@ class chargepoint:
         """
         try:
             state = self.data["set"]["manual_lock"]
-            if state == True:
+            if state:
                 charging_possbile = False
                 message = "Keine Ladung, da der Ladepunkt manuell gesperrt wurde."
             else:
@@ -447,7 +446,7 @@ class chargepoint:
         """
         try:
             state = self.data["get"]["plug_state"]
-            if state == False:
+            if stateis False:
                 message = "Keine Ladung, da kein Auto angesteckt ist."
             else:
                 log.MainLogger().debug("ev"+str(self.cp_num)+" plugged"+str(self.data["set"]["plug_time"]))
@@ -478,17 +477,17 @@ class chargepoint:
             message = "Keine Ladung, da ein Fehler aufgetreten ist."
             charging_possbile = False
             state, message = self._is_ev_plugged()
-            if state == True:
+            if state:
                 state, message = self._is_grid_protection_inactive()
-                if state == True:
+                if state:
                     state, message = self._is_ripple_control_receiver_inactive()
-                    if state == True:
+                    if state:
                         state, message = self._is_loadmanagement_available()
-                        if state == True:
+                        if state:
                             state, message = self._is_manual_lock_inactive()
-                            if state == True:
+                            if state:
                                 charging_possbile, message = self._is_autolock_inactive()
-            if charging_possbile == True:
+            if charging_possbile:
                 ev_num, message = self.template.get_ev(self.data["set"]["rfid"], self.data["config"]["ev"])
                 log.MainLogger().debug("possible"+str(ev_num))
                 if ev_num != -1:
@@ -510,7 +509,7 @@ class chargepoint:
                 data.data.pv_data["all"].reset_switch_on_off(
                     self, data.data.ev_data["ev"+str(self.data["set"]["charging_ev_prev"])])
                 # Abstecken
-                if self.data["get"]["plug_state"] == False:
+                if self.data["get"]["plug_state"] is False:
                     # Standardprofil nach Abstecken laden
                     if data.data.ev_data["ev"+str(self.data["set"]["charging_ev_prev"])].charge_template.data[
                             "load_default"]:
@@ -550,12 +549,12 @@ class chargepoint:
         try:
             charging_ev = self.data["set"]["charging_ev_data"]
             # Unterstützt der Ladepunkt die CP-Unterbrechung und benötigt das Auto eine CP-Unterbrechung?
-            if (self.data["config"]["control_pilot_interruption_hw"] == True and
-                    charging_ev.ev_template.data["control_pilot_interruption"] == True):
+            if (self.data["config"]["control_pilot_interruption_hw"] and
+                    charging_ev.ev_template.data["control_pilot_interruption"]):
                 # Wird die Ladung gestartet?
                 if self.set_current_prev == 0 and self.data["set"]["current"] != 0:
                     selected = self.data["config"]["connection_module"]["selected"]
-                    config = self.data["config"]["connection_module"]["config"][selected]
+                    # config = self.data["config"]["connection_module"]["config"][selected]
                     # cp_interruption.thread_cp_interruption(self.cp_num, selected, config, charging_ev.ev_template.
                     # data["control_pilot_interruption_duration"])
                     message = "Control-Pilot-Unterbrechung fuer " + str(
@@ -576,7 +575,7 @@ class chargepoint:
                 # Umschaltung abgeschlossen
                 if timecheck.check_timestamp(
                         charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"],
-                        6 + phase_switch_pause - 1) == False:
+                        6 + phase_switch_pause - 1) is False:
                     log.MainLogger().debug("phase switch running")
                     charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] = "0"
                     pub.pub("openWB/set/vehicle/" + str(charging_ev.ev_num) +
@@ -600,7 +599,7 @@ class chargepoint:
                 return
             # Wenn noch kein Logeintrag erstellt wurde, wurde noch nicht geladen und die Phase kann noch umgeschaltet
             # werden.
-            if charging_ev.ev_template.data["prevent_switch_stop"] == False or self.data["set"]["log"][
+            if charging_ev.ev_template.data["prevent_switch_stop"] is False or self.data["set"]["log"][
                     "charged_since_plugged_counter"] == 0:
                 # Einmal muss die Anzahl der Phasen gesetzt werden.
                 if "phases_to_use" not in self.data["set"]:
@@ -615,7 +614,7 @@ class chargepoint:
                         self.data["set"]["log"]["charged_since_mode_switch"] == 0):
                     # Wenn die Umschaltverzögerung aktiv ist, darf nicht umgeschaltet werden.
                     if charging_ev.data["control_parameter"]["timestamp_auto_phase_switch"] == "0":
-                        if self.data["config"]["auto_phase_switch_hw"] == True:
+                        if self.data["config"]["auto_phase_switch_hw"]:
                             selected = self.data["config"]["connection_module"]["selected"]
                             config = self.data["config"]["connection_module"]["config"][selected]
                             charge_state = self.data["get"]["charge_state"]
@@ -651,12 +650,14 @@ class chargepoint:
                                         charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"])
                                 # Ladeleistung reservieren, da während der Umschaltung die Ladung pausiert wird.
                                 data.data.pv_data["all"].data["set"][
-                                    "reserved_evu_overhang"] += charging_ev.ev_template.data["max_current_one_phase"] * 230
+                                    "reserved_evu_overhang"] += charging_ev.ev_template.data[
+                                        "max_current_one_phase"] * 230
                                 log.MainLogger().info("LP "+str(self.cp_num)+": "+message)
                                 self.data["get"]["state_str"] = message
                         else:
-                            log.MainLogger().error("Phasenumschaltung an Ladepunkt" + str(self.cp_num) +
-                                                   " nicht möglich, da der Ladepunkt keine Phasenumschaltung unterstützt.")
+                            log.MainLogger().error(
+                                "Phasenumschaltung an Ladepunkt" + str(self.cp_num) +
+                                " nicht möglich, da der Ladepunkt keine Phasenumschaltung unterstützt.")
                     else:
                         log.MainLogger().error("Phasenumschaltung an Ladepunkt" + str(self.cp_num) +
                                                " nicht möglich, da gerade eine Umschaltung im Gange ist.")
@@ -708,7 +709,7 @@ class chargepoint:
             log.MainLogger().debug("phases "+str(phases))
             # Wenn noch kein Logeintrag erstellt wurde, wurde noch nicht geladen und die Phase kann noch umgeschaltet
             # werden.
-            if charging_ev.ev_template.data["prevent_switch_stop"] == True and self.data["set"]["log"][
+            if charging_ev.ev_template.data["prevent_switch_stop"] and self.data["set"]["log"][
                     "charged_since_plugged_counter"] != 0:
                 log.MainLogger().info("Phasenumschaltung an Ladepunkt" + str(self.cp_num) +
                                       " nicht möglich, da bei EV " +
@@ -755,7 +756,7 @@ class cpTemplate:
         self.data = {}
 
     def autolock(self, autolock_state, charge_state, cp_num):
-        """ ermittelt den Status des Autolock und published diesen. 
+        """ ermittelt den Status des Autolock und published diesen.
 
         Parameter
         ---------
