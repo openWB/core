@@ -72,15 +72,16 @@ class allChargepoints:
                 try:
                     if "cp" in cp:
                         chargepoint = data.data.cp_data[cp]
-                        charging_ev_data = chargepoint.data["set"]["charging_ev_data"].data
                         # Kein EV angesteckt
                         if (chargepoint.data["get"]["plug_state"] == False or
                                 # Kein EV, das Laden soll
                                 chargepoint.data["set"]["charging_ev"] == -1 or
                                 # Kein EV, das auf das Ablaufen der Einschalt- oder Phasenumschaltverzögerung wartet
                                 (chargepoint.data["set"]["charging_ev"] != -1 and
-                                 charging_ev_data["control_parameter"]["timestamp_perform_phase_switch"] == "0" and
-                                 charging_ev_data["control_parameter"]["timestamp_switch_on_off"] == "0")):
+                                 chargepoint.data["set"]["charging_ev_data"].data["control_parameter"][
+                                     "timestamp_perform_phase_switch"] == "0" and
+                                 chargepoint.data["set"]["charging_ev_data"].data["control_parameter"][
+                                     "timestamp_switch_on_off"] == "0")):
                             continue
                         else:
                             break

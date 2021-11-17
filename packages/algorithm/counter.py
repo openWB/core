@@ -22,8 +22,9 @@ class counterAll:
     def get_evu_counter(self):
         try:
             return self.data["get"]["hierarchy"][0]["id"]
-        except Exception:
-            log.MainLogger().exception("Fehler in der allgemeinen Zaehler-Klasse")
+        except Exception as e:
+            log.MainLogger().error("Ohne Konfiguration eines EVU-Zählers ist keine Regelung möglich.")
+            raise
 
     def put_stats(self):
         try:
@@ -322,7 +323,7 @@ class counter:
                 "daily_yield_import": 0}}
             self.counter_num = index
         except Exception:
-            log.MainLogger().exception("Fehler in der Zaehler-Klasse von "+self.counter_num)
+            log.MainLogger().exception("Fehler in der Zaehler-Klasse von "+str(self.counter_num))
 
     def setup_counter(self):
         # Zählvariablen vor dem Start der Regelung zurücksetzen
@@ -347,17 +348,17 @@ class counter:
             # Strom
             self.data["set"]["current_used"] = self.data["get"]["current"]
         except Exception:
-            log.MainLogger().exception("Fehler in der Zaehler-Klasse von "+self.counter_num)
+            log.MainLogger().exception("Fehler in der Zaehler-Klasse von "+str(self.counter_num))
 
     def put_stats(self):
         try:
             pub.pub("openWB/set/counter/0/set/consumption_left", self.data["set"]["consumption_left"])
             log.MainLogger().debug(str(self.data["set"]["consumption_left"])+"W verbleibende EVU-Bezugs-Leistung")
         except Exception:
-            log.MainLogger().exception("Fehler in der Zaehler-Klasse von "+self.counter_num)
+            log.MainLogger().exception("Fehler in der Zaehler-Klasse von "+str(self.counter_num))
 
     def print_stats(self):
         try:
             log.MainLogger().debug(str(self.data["set"]["consumption_left"])+"W verbleibende EVU-Bezugs-Leistung")
         except Exception:
-            log.MainLogger().exception("Fehler in der Zaehler-Klasse von "+self.counter_num)
+            log.MainLogger().exception("Fehler in der Zaehler-Klasse von "+str(self.counter_num))

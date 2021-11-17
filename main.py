@@ -19,6 +19,7 @@ from packages.helpermodules import publishvars2
 from packages.helpermodules import setdata
 from packages.helpermodules import subdata
 from packages.helpermodules import timecheck
+from packages.helpermodules import update_config
 from packages.modules import configuration
 from packages.modules import loadvars
 
@@ -169,6 +170,7 @@ class RepeatedTimer(object):
 try:
     data.data_init()
     pub.setup_connection()
+    update_config.UpdateConfig().update()
     proc = process.process()
     control = algorithm.control()
     handler = HandlerAlgorithm()

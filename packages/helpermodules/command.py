@@ -175,17 +175,20 @@ class Command:
         try:
             new_id = self.max_id_chargepoint + 1
             log.MainLogger().info(
-                "Neuer Ladepunkt vom Typ"+str(payload["data"]["type"])+" mit ID "+str(new_id)+" hinzugefuegt.")
+                "Neuer Ladepunkt mit ID "+str(new_id)+" hinzugefuegt.")
             chargepoint_default = chargepoint.get_chargepoint_default()
             chargepoint_default["id"] = new_id
             data.data.counter_data["all"].hierarchy_add_item_below(
-                "cp"+str(new_id), data.data.counter_data["all"].data["get"]["hierarchy"][0]["id"])
+                "cp"+str(new_id), data.data.counter_data["all"].get_evu_counter())
             pub.pub("openWB/set/chargepoint/"+str(new_id)+"/config", chargepoint_default)
+            pub.pub("openWB/set/chargepoint/"+str(new_id)+"/set/manual_lock", False)
             self.max_id_chargepoint = self.max_id_chargepoint + 1
             pub.pub("openWB/set/command/max_id/chargepoint",
                     self.max_id_chargepoint)
             if self.max_id_chargepoint_template == -1:
                 self.addChargepointTemplate("addChargepoint", {})
+            if self.max_id_vehicle == -1:
+                self.addVehicle("addChargepoint", {})
         except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")
             self.__pub_error(
@@ -406,8 +409,12 @@ class Command:
             component_default = component.get_default_config()
             component_default["id"] = new_id
             if payload["data"]["type"] == "counter":
-                data.data.counter_data["all"].hierarchy_add_item_below(
-                    "counter"+str(new_id), data.data.counter_data["all"].data["get"]["hierarchy"][0]["id"])
+                try:
+                    data.data.counter_data["all"].hierarchy_add_item_below(
+                        "counter"+str(new_id), data.data.counter_data["all"].get_evu_counter())
+                except IndexError:
+                    # es gibt noch keinen EVU-Zähler
+                    pub.pub("openWB/set/counter/get/hierarchy", [{"id": "counter"+str(new_id), "children": []}])
             pub.pub("openWB/set/system/device/"+str(payload["data"]["deviceId"]
                                                     )+"/component/"+str(new_id)+"/config", component_default)
             self.max_id_component = self.max_id_component + 1

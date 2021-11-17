@@ -4,7 +4,6 @@
 import copy
 
 from . import chargelog
-from . import chargepoint
 from . import data
 from ..helpermodules import log
 from ..helpermodules import pub
@@ -12,9 +11,6 @@ from ..helpermodules import subdata
 
 
 class prepare:
-    """ 
-    """
-
     def __init__(self):
         pass
 
@@ -173,8 +169,9 @@ class prepare:
 
                         if message_ev is not None:
                             message = message_ev
-                        log.MainLogger().debug("Ladepunkt "+str(cp.cp_num)+", EV: " +
-                                               cp.data["set"]["charging_ev_data"].data["name"]+" (EV-Nr."+str(vehicle)+")")
+                        log.MainLogger().debug(
+                            "Ladepunkt " + str(cp.cp_num) + ", EV: " + cp.data["set"]["charging_ev_data"].data
+                            ["name"] + " (EV-Nr." + str(vehicle) + ")")
 
                         # Die benötigte Stromstärke hat sich durch eine Änderung des Lademdous oder der Konfiguration
                         # geändert. Die Zuteilung entsprechend der Priorisierung muss neu geprüft werden. Daher muss
@@ -183,7 +180,7 @@ class prepare:
                         if current_changed:
                             log.MainLogger().debug("LP"+str(cp.cp_num) +
                                                    " : Da sich die Stromstärke geändert hat, muss der Ladepunkt im \
-                                                       Algorithmus neu priorisiert werden.")
+                                                    Algorithmus neu priorisiert werden.")
                             data.data.pv_data["all"].reset_switch_on_off(
                                 cp, charging_ev)
                             charging_ev.reset_phase_switch()
@@ -229,8 +226,8 @@ class prepare:
                                 str(required_current) + "A, Lademodus " +
                                 str(charging_ev.charge_template.data["chargemode"]["selected"]) + ", Submodus: " +
                                 str(charging_ev.data["control_parameter"]["submode"]) + ", Phasen: " + str(phases) +
-                                ", Prioritaet: " + str(charging_ev.charge_template.data["prio"]) + ", max. Ist-Strom: " +
-                                str(max(cp.data["get"]["current"])))
+                                ", Prioritaet: " + str(charging_ev.charge_template.data["prio"]) +
+                                ", max. Ist-Strom: " + str(max(cp.data["get"]["current"])))
                     else:
                         # Wenn kein EV zur Ladung zugeordnet wird, auf hinterlegtes EV zurückgreifen.
                         self._pub_connected_vehicle(
@@ -240,8 +237,6 @@ class prepare:
                         cp.data["get"]["state_str"] = message
             except Exception:
                 log.MainLogger().exception("Fehler im Prepare-Modul fuer Ladepunkt "+str(cp_item))
-        if "all" not in data.data.cp_data:
-            data.data.cp_data["all"] = chargepoint.allChargepoints()
         data.data.cp_data["all"].no_charge()
 
     def _pub_connected_vehicle(self, vehicle, chargepoint):
@@ -255,14 +250,18 @@ class prepare:
             LP-Nummer
         """
         try:
-            soc_config_obj = {"configured": vehicle.data["soc"]["config"]["configured"],
-                              "manual": vehicle.data["soc"]["config"]["manual"]}
-            soc_obj = {"soc": vehicle.data["get"]["soc"],
-                       "range": chargepoint.data["set"]["log"]["range_charged"],
-                       "range_unit": data.data.general_data["general"].data["range_unit"],
-                       "timestamp": vehicle.data["get"]["soc_timestamp"],
-                       "fault_stat": vehicle.data["soc"]["get"]["fault_state"],
-                       "fault_str": vehicle.data["soc"]["get"]["fault_str"]}
+            soc_config_obj = {
+                # "configured": vehicle.data["soc"]["config"]["configured"],
+                # "manual": vehicle.data["soc"]["config"]["manual"]
+            }
+            soc_obj = {
+                # "soc": vehicle.data["get"]["soc"],
+                "range": chargepoint.data["set"]["log"]["range_charged"],
+                "range_unit": data.data.general_data["general"].data["range_unit"],
+                #    "timestamp": vehicle.data["get"]["soc_timestamp"],
+                #    "fault_stat": vehicle.data["soc"]["get"]["fault_state"],
+                #    "fault_str": vehicle.data["soc"]["get"]["fault_str"]
+            }
             info_obj = {"id": vehicle.ev_num,
                         "name": vehicle.data["name"]}
             if vehicle.charge_template.data["chargemode"]["selected"] == "time_charging":
