@@ -446,7 +446,7 @@ class chargepoint:
         """
         try:
             state = self.data["get"]["plug_state"]
-            if stateis False:
+            if state is False:
                 message = "Keine Ladung, da kein Auto angesteckt ist."
             else:
                 log.MainLogger().debug("ev"+str(self.cp_num)+" plugged"+str(self.data["set"]["plug_time"]))
