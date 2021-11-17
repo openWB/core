@@ -35,7 +35,7 @@ class general:
                 return 0
             else:
                 return self.data["chargemode_config"][chargemode]["phases_to_use"]
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im General-Modul")
             return 1
 
@@ -87,5 +87,5 @@ class general:
                             "openWB/set/general/grid_protection_timestamp", "0")
                         pub.pub(
                             "openWB/set/general/grid_protection_random_stop", 0)
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im General-Modul")

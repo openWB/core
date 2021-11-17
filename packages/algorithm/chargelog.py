@@ -19,7 +19,8 @@ Lena:haus_mit_garten:  14:24 Uhr
 {"chargepoint": {"id": 1, "name": "Hof", "rfid": 1234}, 
 "vehicle": { "id": 1, "name":"Model 3", "chargemode": "pv_charging", "prio": True }, 
 "time": { "begin":"27.05.2021 07:43", "end": "27.05.2021 07:50", "time_charged": "1:34", 
-"data": {"range_charged": 34, "charged_since_mode_switch_counter": 3400, "charged_since_plugged_counter": 5000, "power": 110000, "price": 3,42} }}
+"data": {"range_charged": 34, "charged_since_mode_switch_counter": 3400, "charged_since_plugged_counter": 5000,
+"power": 110000, "price": 3,42} }}
 :+1:
 1
 
@@ -27,7 +28,8 @@ Kevin  14:35 Uhr
 mehrere einträge für eine ladung wären ggf. dann aber blöd
 
 Kevin  14:36 Uhr
-ebenso sollte bedacht werden das es ggf. nur um mehrere rfid tags geht, aber nicht zwingend fahrzeugprofile (hatten wir das bedacht?)
+ebenso sollte bedacht werden das es ggf. nur um mehrere rfid tags geht, aber nicht zwingend fahrzeugprofil
+ (hatten wir das bedacht?)
 oder wird zwingend für jeden rfid tag ein fahrzeug angelegt werden müssen?
 
 7 Antworten
@@ -81,7 +83,8 @@ Kevin  14:39 Uhr
 so die theorie @Lena :leichtes_lächeln:
 
 Lena:haus_mit_garten:  14:42 Uhr
-Ich sehe, dass so wie Lutz. Wenn im PV-Laden die Ladung unterbrochen wird, sollte nicht immer ein Eintrag erzeugt werden.
+Ich sehe, dass so wie Lutz. Wenn im PV-Laden die Ladung unterbrochen wird, sollte nicht immer ein Eintrag erzeugt
+werden.
 """
 
 
@@ -94,11 +97,13 @@ from ..helpermodules import log
 from ..helpermodules import pub
 from ..helpermodules import timecheck
 
-# alte Daten: Startzeitpunkt der Ladung, Endzeitpunkt, Geladene Reichweite, Energie, Leistung, Ladedauer, LP-Nummer, Lademodus, RFID-Tag
+# alte Daten: Startzeitpunkt der Ladung, Endzeitpunkt, Geladene Reichweite, Energie, Leistung, Ladedauer, LP-Nummer,
+# Lademodus, RFID-Tag
 # json-Objekt: {"chargepoint": {"id": 1, "name": "Hof", "rfid": 1234},
 # "vehicle": { "id": 1, "name":"Model 3", "chargemode": "pv_charging", "prio": True },
 # "time": { "begin":"27.05.2021 07:43", "end": "27.05.2021 07:50", "time_charged": "1:34",
-# "data": {"range_charged": 34, "charged_since_mode_switch": 3400, "charged_since_plugged_counter": 5000, "power": 110000, "costs": 3,42} }}
+# "data": {"range_charged": 34, "charged_since_mode_switch": 3400, "charged_since_plugged_counter": 5000,
+#          "power": 110000, "costs": 3,42} }}
 
 
 def collect_data(chargepoint):
@@ -142,33 +147,38 @@ def collect_data(chargepoint):
                 log_data["charged_since_mode_switch"] = chargepoint.data["get"]["counter"] - \
                     log_data["counter_at_mode_switch"]
                 log.MainLogger().debug("charged_since_mode_switch " +
-                                       str(log_data["charged_since_mode_switch"])+" counter "+str(chargepoint.data["get"]["counter"]))
+                                       str(log_data["charged_since_mode_switch"])+" counter " +
+                                       str(chargepoint.data["get"]["counter"]))
                 log_data["range_charged"] = log_data["charged_since_mode_switch"] / \
                     charging_ev.ev_template.data["average_consump"]*100
                 log_data["time_charged"] = timecheck.get_difference_to_now(
                     log_data["timestamp_start_charging"])
                 pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num) +
                         "/set/log/charged_since_mode_switch", log_data["charged_since_mode_switch"])
-                pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num) +
-                        "/set/log/range_charged", log_data["range_charged"])
+                pub.pub(
+                    "openWB/set/chargepoint/" + str(chargepoint.cp_num) + "/set/log/range_charged",
+                    log_data["range_charged"])
                 pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num) +
                         "/set/log/time_charged", log_data["time_charged"])
-    except Exception as e:
+    except Exception:
         log.MainLogger().exception("Fehler im Ladelog-Modul")
 
 
 def save_data(chargepoint, charging_ev, immediately=True, reset=False):
-    """ json-Objekt für den Log-Eintrag erstellen, an die Datei anhängen und die Daten, die sich auf den Ladevorgang beziehen, löschen.
+    """ json-Objekt für den Log-Eintrag erstellen, an die Datei anhängen und die Daten, die sich auf den Ladevorgang
+    beziehen, löschen.
 
     Parameter
     ---------
     chargepoint: class
         Ladepunkt
     charging_ev: class
-        EV, das an diesem Ladepunkt lädt. (Wird extra übergeben, da es u.U. noch nicht zugewiesen ist und nur die Nummer aus dem Broker in der LP-Klasse hinterlegt ist.)
+        EV, das an diesem Ladepunkt lädt. (Wird extra übergeben, da es u.U. noch nicht zugewiesen ist und nur die
+        Nummer aus dem Broker in der LP-Klasse hinterlegt ist.)
     reset: bool
-        Wenn die Daten komplett zurückgesetzt werden, wird nicht der Zwischenzählerstand für counter_at_mode_switch notiert. 
-        Sonst schon, damit zwiwchen save_data und dem nächsten collect_data keine Daten verloren gehen.
+        Wenn die Daten komplett zurückgesetzt werden, wird nicht der Zwischenzählerstand für
+        counter_at_mode_switch notiert. Sonst schon, damit zwiwchen save_data und dem nächsten collect_data keine
+        Daten verloren gehen.
     """
     try:
         log_data = chargepoint.data["set"]["log"]
@@ -201,7 +211,8 @@ def save_data(chargepoint, charging_ev, immediately=True, reset=False):
         time = log_data["time_charged"]
         time_charged = []
         if len(time) > 8:
-            # Wenn es mehrere Tage sind, enthält der String "92 days, 0:02:08" (unwahrscheinlich, aber um Fehler zu vermeiden)
+            # Wenn es mehrere Tage sind, enthält der String "92 days, 0:02:08" (unwahrscheinlich, aber um Fehler zu
+            # vermeiden)
             t = str(time).split(" ")
             time_charged.append(t[0])
             t_2 = str(t[2]).split(":")
@@ -289,7 +300,7 @@ def save_data(chargepoint, charging_ev, immediately=True, reset=False):
         log_data["time_charged"] = "00:00"
         pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num) +
                 "/set/log/time_charged", log_data["time_charged"])
-    except Exception as e:
+    except Exception:
         log.MainLogger().exception("Fehler im Ladelog-Modul")
 
 
@@ -410,7 +421,7 @@ def get_log_data(request):
             data.append(sum)
 
         pub.pub("openWB/set/log/data", data)
-    except Exception as e:
+    except Exception:
         log.MainLogger().exception("Fehler im Ladelog-Modul")
 
 
@@ -422,7 +433,8 @@ def reset_data(chargepoint, charging_ev, immediately=True):
     chargepoint: class
         Ladepunkt
     charging_ev: class
-        EV, das an diesem Ladepunkt lädt. (Wird extra übergeben, da es u.U. noch nicht zugewiesen ist und nur die Nummer aus dem Broker in der LP-Klasse hinterlegt ist.)
+        EV, das an diesem Ladepunkt lädt. (Wird extra übergeben, da es u.U. noch nicht zugewiesen ist und nur die
+        Nummer aus dem Broker in der LP-Klasse hinterlegt ist.)
     immediately: bool
         Soll sofort ein Eintrag erstellt werden oder gewartet werden, bis die Ladung beendet ist.
     """
@@ -443,7 +455,7 @@ def reset_data(chargepoint, charging_ev, immediately=True):
         pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num) +
                 "/set/log/charged_since_plugged_counter", log_data["charged_since_plugged_counter"])
 
-    except Exception as e:
+    except Exception:
         log.MainLogger().exception("Fehler im Ladelog-Modul")
 
 
@@ -461,5 +473,5 @@ def truncate(number, decimals=0):
 
         factor = 10.0 ** decimals
         return math.trunc(number * factor) / factor
-    except Exception as e:
+    except Exception:
         log.MainLogger().exception("Fehler im Ladelog-Modul")

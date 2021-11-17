@@ -60,25 +60,30 @@ def _check_duo_virtual_counter(cp):
                     counter)
                 if len(connected_cps) == 2:
                     # prüfen, ob das der erste Duo-Ladepunkt ist
-                    if (data.data.cp_data[connected_cps[0]].data["config"]["connection_module"]["config"]["external_openwb"]["ip_address"] ==
-                            data.data.cp_data[connected_cps[1]].data["config"]["connection_module"]["config"]["external_openwb"]["ip_address"]):
+                    config_first_cp = data.data.cp_data[connected_cps[0]].data["config"]
+                    config_second_cp = data.data.cp_data[connected_cps[1]].data["config"]
+                    if (config_first_cp["connection_module"]["config"]["external_openwb"]["ip_address"] ==
+                            config_second_cp["connection_module"]["config"]["external_openwb"]["ip_address"]):
                         break
         else:
             # Es wurde kein virtueller Zähler gefunden.
             # Anderen Ladepunkt finden
             for chargepoint in data.data.cp_data:
                 if "cp" in chargepoint:
-                    if data.data.cp_data[chargepoint].data["config"]["connection_module"]["selected"] == "external_openwb":
-                        if ((data.data.cp_data[chargepoint].data["config"]["connection_module"]["config"]["external_openwb"]["ip_address"] ==
-                                cp.data["config"]["connection_module"]["config"]["external_openwb"]["ip_address"]) and
-                                (data.data.cp_data[chargepoint].data["config"]["connection_module"]["config"]["external_openwb"]["chargepoint"] !=
-                                 cp.data["config"]["connection_module"]["config"]["external_openwb"]["chargepoint"])):
+                    config_current_cp = cp.data["config"]["connection_module"]["config"]
+                    config_cp_iterated = data.data.cp_data[chargepoint].data["config"]
+                    if config_cp_iterated["connection_module"]["selected"] == "external_openwb":
+                        if ((config_cp_iterated["connection_module"]["config"]["external_openwb"]["ip_address"] ==
+                                config_current_cp["external_openwb"]["ip_address"]) and
+                                (config_cp_iterated["connection_module"]["config"]["external_openwb"]["chargepoint"] !=
+                                 config_current_cp["external_openwb"]["chargepoint"])):
                             connected_cps = [
                                 "cp"+str(cp.cp_num), "cp"+str(data.data.cp_data[chargepoint].cp_num)]
                             break
             else:
                 log.message_debug_log(
-                    "error", "Es konnte kein zweiter Ladepunkt für die openWB-Duo an Ladepunkt "+str(cp.cp_num)+" gefunden werden.")
+                    "error", "Es konnte kein zweiter Ladepunkt für die openWB-Duo an Ladepunkt " + str(cp.cp_num) +
+                    " gefunden werden.")
             index = 1
             for index in range(0, 2000):
                 for counter in data.data.counter_data:
@@ -103,13 +108,15 @@ def _check_duo_virtual_counter(cp):
                 "cp"+str(data.data.cp_data[connected_cps[0]].cp_num), keep_children=False)
             if ret is False:
                 log.message_debug_log(
-                    "error", "cp"+str(data.data.cp_data[connected_cps[0]].cp_num)+" konnte nicht aus der Zaehlerhierarchie geloescht werden.")
+                    "error", "cp" + str(data.data.cp_data[connected_cps[0]].cp_num) +
+                    " konnte nicht aus der Zaehlerhierarchie geloescht werden.")
                 return
             ret = data.data.counter_data["all"].hierarchy_remove_item(
                 "cp"+str(data.data.cp_data[connected_cps[1]].cp_num), keep_children=False)
             if ret is False:
                 log.message_debug_log(
-                    "error", "cp"+str(data.data.cp_data[connected_cps[1]].cp_num)+" konnte nicht aus der Zaehlerhierarchie geloescht werden.")
+                    "error", "cp" + str(data.data.cp_data[connected_cps[1]].cp_num) +
+                    " konnte nicht aus der Zaehlerhierarchie geloescht werden.")
                 return
             ret = data.data.counter_data["all"].hierarchy_add_item_below(
                 "cp"+str(data.data.cp_data[connected_cps[0]].cp_num), "counter"+str(index))

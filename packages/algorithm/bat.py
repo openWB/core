@@ -11,18 +11,24 @@ Wenn wir ein Hybrid Wechselrichter Speicher system haben das besteht aus:
 15kW Wechselrichter
 Batterie DC
 Kann es derzeit passieren das die PV 20kW erzeugt, die Batterie mit 5kW geladen wird und 15kW ins Netz gehen.
-Zieht die openWB nun Überschuss (15kW Überschuss + 5kW Batterieladung = 20kW) kommt es zu 5kW Bezug weil der Wechselrichter nur 15kW abgeben kann.
+Zieht die openWB nun Überschuss (15kW Überschuss + 5kW Batterieladung = 20kW) kommt es zu 5kW Bezug weil der 
+Wechselrichter nur 15kW abgeben kann.
 
-aktuell wird halt bei ev vorrang die Batterieladeleistung hinzugerechnet. weil die openWB von ausgeht das die dann das laden aufhört und diese leistung eignetlich überschuss ist.
+aktuell wird halt bei ev vorrang die Batterieladeleistung hinzugerechnet. weil die openWB von ausgeht das die 
+dann das laden aufhört und diese leistung eignetlich überschuss ist.
 Blöd halt wenn der WEchselrichter die nicht zur verfügung stellen kann.
-Heißt aktuell denkt die openWB "0 Watt überschuss" weil 5kW bezogen werden, aber eben auch 5kW in die Batterie gehen (die ihre ladung aber nicht drosselt)
+Heißt aktuell denkt die openWB "0 Watt überschuss" weil 5kW bezogen werden, aber eben auch 5kW in die Batterie 
+gehen (die ihre ladung aber nicht drosselt)
 
-du musst halt zum "antesten" bezug generieren damit die Batterie entsprechend gegenregelt. erst wenn sie das nach x sekunden nicht tut kannst von ausgehen da gibt es eine Grenze
+du musst halt zum "antesten" bezug generieren damit die Batterie entsprechend gegenregelt. erst wenn sie das nach
+ x sekunden nicht tut kannst von ausgehen da gibt es eine Grenze
 
 __Wie schnell regelt denn ein Speicher?
 Je nach Speicher 1-4 Sekunden.
-__Muss dann immer ein bisschen Überschuss über sein und wenn dieser im nächsten Zyklus noch da ist, kann der LP hochgeregelt werden. Wenn nicht muss der LP runtergeregelt werden?
-Üblicherweise reicht es so zu regeln das rund 50 Watt Einspeisung da sind, dann "nimmt" der Speicher sich die von alleine
+__Muss dann immer ein bisschen Überschuss über sein und wenn dieser im nächsten Zyklus noch da ist, kann der LP 
+hochgeregelt werden. Wenn nicht muss der LP runtergeregelt werden?
+Üblicherweise reicht es so zu regeln das rund 50 Watt Einspeisung da sind, dann "nimmt" der Speicher sich die von 
+alleine
 """
 
 from . import data
@@ -59,14 +65,15 @@ class batAll:
                 for bat in data.data.bat_data:
                     try:
                         if "bat" in bat:
-                            self.data["get"]["power"] += data.data.bat_data[bat].data["get"]["power"]
-                            self.data["get"]["imported"] += data.data.bat_data[bat].data["get"]["imported"]
-                            self.data["get"]["exported"] += data.data.bat_data[bat].data["get"]["exported"]
-                            self.data["get"]["daily_yield_export"] += data.data.bat_data[bat].data["get"]["daily_yield_export"]
-                            self.data["get"]["daily_yield_import"] += data.data.bat_data[bat].data["get"]["daily_yield_import"]
-                            soc_sum += data.data.bat_data[bat].data["get"]["soc"]
+                            battery = data.data.bat_data[bat]
+                            self.data["get"]["power"] += battery.data["get"]["power"]
+                            self.data["get"]["imported"] += battery.data["get"]["imported"]
+                            self.data["get"]["exported"] += battery.data["get"]["exported"]
+                            self.data["get"]["daily_yield_export"] += battery.data["get"]["daily_yield_export"]
+                            self.data["get"]["daily_yield_import"] += battery.data["get"]["daily_yield_import"]
+                            soc_sum += battery.data["get"]["soc"]
                             soc_count += 1
-                    except Exception as e:
+                    except Exception:
                         log.MainLogger().exception("Fehler im Bat-Modul "+bat)
                 self.data["get"]["soc"] = int(soc_sum / soc_count)
                 # Alle Summentopics im Dict publishen
@@ -75,7 +82,8 @@ class batAll:
                 # Speicher lädt
                 if self.data["get"]["power"] > 0:
                     self._get_charging_power_left()
-                # Speicher wird entladen -> Wert wird ebenfalls benötigt, um zu prüfen, ob Abschaltschwelle erreicht wird.
+                # Speicher wird entladen -> Wert wird ebenfalls benötigt, um zu prüfen, ob Abschaltschwelle erreicht
+                # wird.
                 else:
                     self.data["set"]["charging_power_left"] = self.data["get"]["power"]
                 log.MainLogger().info(
@@ -92,7 +100,7 @@ class batAll:
                     self.data["set"]["switch_on_soc_reached"])
             pub.pub("openWB/set/bat/set/hybrid_system_detected",
                     self.data["set"]["hybrid_system_detected"])
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im Bat-Modul")
 
     def _get_charging_power_left(self):
@@ -102,14 +110,18 @@ class batAll:
             evu_counter = data.data.counter_data["all"].get_evu_counter()
             config = data.data.general_data["general"].data["chargemode_config"]["pv_charging"]
             if config["bat_prio"] is False:
-                # Wenn der Speicher lädt und gleichzeitg Bezug da ist, sind entweder die Werte sehr ungünstig abgefragt worden
+                # Wenn der Speicher lädt und gleichzeitg Bezug da ist, sind entweder die Werte sehr ungünstig abgefragt
+                # worden
                 # (deshalb wird noch ein Zyklus gewartet) oder es liegt ein Hybrid-System vor.
                 if data.data.counter_data[evu_counter].data["get"]["power_all"] > 0:
                     if self.data["set"]["hybrid_system_detected"]:
                         log.MainLogger().debug("".join(("verbleibende Speicher-Leistung fuer Hybrid-System: max(",
-                                                        self.data["set"]["charging_power_left"], " - ", data.data.counter_data[evu_counter].data["get"]["power_all"], ", 0)")))
+                                                        self.data["set"]["charging_power_left"], " - ",
+                                                        data.data.counter_data[evu_counter].data["get"]["power_all"],
+                                                        ", 0)")))
                         self.data["set"]["charging_power_left"] = max(
-                            self.data["set"]["charging_power_left"] - data.data.counter_data[evu_counter].data["get"]["power_all"], 0)
+                            self.data["set"]["charging_power_left"]
+                            - data.data.counter_data[evu_counter].data["get"]["power_all"], 0)
                     else:
                         self.data["set"]["hybrid_system_detected"] = True
                         log.MainLogger().debug("Erstmalig Hybrid-System detektiert.")
@@ -123,8 +135,13 @@ class batAll:
                             self.data["set"]["charging_power_left"] = self.data["get"]["power"]
                         else:
                             self.data["set"]["charging_power_left"] = 0
-                        log.MainLogger().debug("".join(("Laderegelung wurde ",
-                                                        "freigegeben." if self.data["set"]["switch_on_soc_reached"] else "nicht freigegeben, da Einschalt-SoC nicht erreicht.", " Verbleibene Speicher-Leistung: ", self.data["set"]["charging_power_left"], "W")))
+                        log.MainLogger().debug(
+                            "".join(
+                                ("Laderegelung wurde ", "freigegeben."
+                                 if self.data["set"]["switch_on_soc_reached"] else
+                                 "nicht freigegeben, da Einschalt-SoC nicht erreicht.",
+                                 " Verbleibene Speicher-Leistung: ", self.data["set"]["charging_power_left"],
+                                 "W")))
                     else:
                         # Kein Einschalt-Soc; Nutzung, wenn Soc über Ausschalt-Soc liegt.
                         if config["switch_off_soc"] != 0:
@@ -134,8 +151,13 @@ class batAll:
                             else:
                                 self.data["set"]["switch_on_soc_reached"] = False
                                 self.data["set"]["charging_power_left"] = 0
-                            log.MainLogger().debug("".join(("Laderegelung wurde ",
-                                                            "freigegeben." if self.data["set"]["switch_on_soc_reached"] else "nicht freigegeben, da Ausschalt-SoC erreicht.", " Verbleibene Speicher-Leistung: ", self.data["set"]["charging_power_left"], "W")))
+                            log.MainLogger().debug(
+                                "".join(
+                                    ("Laderegelung wurde ", "freigegeben."
+                                     if self.data["set"]["switch_on_soc_reached"] else
+                                     "nicht freigegeben, da Ausschalt-SoC erreicht.",
+                                     " Verbleibene Speicher-Leistung: ", self.data["set"]["charging_power_left"],
+                                     "W")))
                         # Weder Einschalt- noch Ausschalt-Soc sind konfiguriert.
                         else:
                             self.data["set"]["charging_power_left"] = self.data["get"]["power"]
@@ -148,8 +170,13 @@ class batAll:
                         else:
                             self.data["set"]["switch_on_soc_reached"] = False
                             self.data["set"]["charging_power_left"] = 0
-                        log.MainLogger().debug("".join(("Laderegelung wurde ",
-                                                        "freigegeben." if self.data["set"]["switch_on_soc_reached"] else "nicht freigegeben, da Ausschalt-SoC erreicht.", " Verbleibene Speicher-Leistung: ", self.data["set"]["charging_power_left"], "W")))
+                        log.MainLogger().debug(
+                            "".join(
+                                ("Laderegelung wurde ", "freigegeben."
+                                 if self.data["set"]["switch_on_soc_reached"] else
+                                 "nicht freigegeben, da Ausschalt-SoC erreicht.",
+                                 " Verbleibene Speicher-Leistung: ", self.data["set"]["charging_power_left"],
+                                 "W")))
                     # Wenn kein Ausschalt-Soc konfiguriert wurde, wird der Speicher komplett entladen.
                     else:
                         if 0 < self.data["get"]["soc"]:
@@ -157,14 +184,21 @@ class batAll:
                         else:
                             self.data["set"]["switch_on_soc_reached"] = False
                             self.data["set"]["charging_power_left"] = 0
-                        log.MainLogger().debug("".join(("Laderegelung wurde ", "freigegeben, da der Speicher komplett entladen werden darf." if self.data["set"][
-                            "switch_on_soc_reached"] else "nicht freigegeben.", " Verbleibene Speicher-Leistung: ", self.data["set"]["charging_power_left"], "W")))
+                        log.MainLogger().debug(
+                            "".join(
+                                ("Laderegelung wurde ", "freigegeben, da der Speicher komplett entladen werden darf."
+                                 if self.data["set"]["switch_on_soc_reached"] else "nicht freigegeben.",
+                                 " Verbleibene Speicher-Leistung: ", self.data["set"]["charging_power_left"],
+                                 "W")))
                 # Ladeleistungs-Reserve
                 self.data["set"]["charging_power_left"] = self.data["set"]["charging_power_left"] - \
                     config["charging_power_reserve"]
                 log.MainLogger().debug("".join(("Ladeleistungs-Reserve subtrahieren: ",
-                                                self.data["set"]["charging_power_left"], " = ", self.data["set"]["charging_power_left"], " - ", config["charging_power_reserve"])))
-            # Wenn der Speicher Vorrang hat, darf die erlaubte Entlade-Leistung zum Laden der EV genutzt werden, wenn der Soc über dem minimalen Entlade-Soc liegt.
+                                                self.data["set"]["charging_power_left"], " = ",
+                                                self.data["set"]["charging_power_left"], " - ",
+                                                config["charging_power_reserve"])))
+            # Wenn der Speicher Vorrang hat, darf die erlaubte Entlade-Leistung zum Laden der EV genutzt werden, wenn
+            # der Soc über dem minimalen Entlade-Soc liegt.
             else:
                 if config["rundown_soc"] != 100:
                     if self.data["get"]["soc"] > config["rundown_soc"]:
@@ -172,11 +206,12 @@ class batAll:
                         log.MainLogger().debug("".join(
                             ("Erlaubte Entlade-Leistung nutzen (", str(config["rundown_power"]), "W)")))
                     else:
-                        # 50 W Überschuss übrig lassen, die sich der Speicher dann nehmen kann. Wenn der Speicher schneller regelt, als die LP, würde sonst der Speicher reduziert werden.
+                        # 50 W Überschuss übrig lassen, die sich der Speicher dann nehmen kann. Wenn der Speicher
+                        # schneller regelt, als die LP, würde sonst der Speicher reduziert werden.
                         self.data["set"]["charging_power_left"] = -50
                 else:
                     self.data["set"]["charging_power_left"] = -50
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im Bat-Modul")
 
     def get_power(self):
@@ -191,7 +226,7 @@ class batAll:
                 return self.data["get"]["power"]
             else:
                 return 0
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im Bat-Modul")
             return 0
 
@@ -207,7 +242,7 @@ class batAll:
                 return self.data["set"]["charging_power_left"]
             else:
                 return 0
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im Bat-Modul")
             return 0
 
@@ -234,7 +269,7 @@ class batAll:
                     self.data["set"]["charging_power_left"] = 0
                     return too_much
             return 0
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im Bat-Modul")
             return required_power
 
@@ -249,7 +284,7 @@ class batAll:
                         self.data["set"]["charging_power_left"])
                 log.MainLogger().info(str(self.data["set"]["charging_power_left"]) +
                                       "W Speicher-Leistung , die fuer die folgenden Ladepunkte uebrig ist.")
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im Bat-Modul")
 
 

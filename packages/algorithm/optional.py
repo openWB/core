@@ -7,12 +7,10 @@ from ..helpermodules import log
 
 
 class optional:
-    """
-    """
     def __init__(self):
         try:
             self.data = {"et": {"get": {}}}
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im Optional-Modul")
 
     def et_price_lower_than_limit(self):
@@ -29,7 +27,7 @@ class optional:
                 return True
             else:
                 return False
-        except Exception as e:
+        except Exception:
             self.et_get_prices()
             log.MainLogger().exception("Fehler im Optional-Modul")
             return False
@@ -39,7 +37,7 @@ class optional:
 
         Parameter
         ---------
-        duration: float 
+        duration: float
             benötigte Ladezeit
 
         Return
@@ -52,14 +50,12 @@ class optional:
                 i[0] for i in sorted(price_list, key=lambda x: x[1])
                 [:ceil(duration)]
             ]
-        except Exception as e:
+        except Exception:
             self.et_get_prices()
             log.MainLogger().exception("Fehler im Optional-Modul")
             return []
 
     def et_get_prices(self):
-        """
-        """
         try:
             if self.data["et"]["active"]:
                 # if self.data["et"]["config"]["provider"]["provider"] == "awattar":
@@ -70,5 +66,5 @@ class optional:
                 #         self.data["et"]["config"]["provider"]["token"], self.data["et"]["config"]["provider"]["id"])
                 # else:
                 log.MainLogger().error("Unbekannter Et-Provider.")
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im Optional-Modul")

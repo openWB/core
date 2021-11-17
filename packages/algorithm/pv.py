@@ -1,7 +1,7 @@
 """PV-Logik
-Die Leistung, die die PV-Module liefern, kann nicht komplett für das Laden und Smarthome verwendet werden. 
-Davon ab geht z.B. noch der Hausverbrauch. Für das Laden mit PV kann deshalb nur der Strom verwendet werden, 
-der sonst in das Netz eingespeist werden würde. 
+Die Leistung, die die PV-Module liefern, kann nicht komplett für das Laden und Smarthome verwendet werden.
+Davon ab geht z.B. noch der Hausverbrauch. Für das Laden mit PV kann deshalb nur der Strom verwendet werden,
+der sonst in das Netz eingespeist werden würde.
 """
 
 from . import algorithm
@@ -25,8 +25,8 @@ class pvAll:
 
     def calc_power_for_control(self):
         """ berechnet den EVU-Überschuss, der in der Regelung genutzt werden kann.
-        Regelmodus: Wenn möglichst der ganze PV-Strom genutzt wird, sollte die EVU-Leistung irgendwo 
-            im Bereich um 0 leigen. Um ein Aufschwingen zu vermeiden, sollte die verfügbare Leistung nur 
+        Regelmodus: Wenn möglichst der ganze PV-Strom genutzt wird, sollte die EVU-Leistung irgendwo
+            im Bereich um 0 leigen. Um ein Aufschwingen zu vermeiden, sollte die verfügbare Leistung nur
             angepasst werden, wenn sie außerhalb des Regelbereichs liegt.
 
         Return
@@ -49,7 +49,7 @@ class pvAll:
                             self.data["get"]["monthly_yield"] += data.data.pv_data[module].data["get"]["monthly_yield"]
                             self.data["get"]["yearly_yield"] += data.data.pv_data[module].data["get"]["yearly_yield"]
                             self.data["get"]["power"] += data.data.pv_data[module].data["get"]["power"]
-                    except Exception as e:
+                    except Exception:
                         log.MainLogger().exception("Fehler im allgemeinen PV-Modul fuer "+str(module))
                 # Alle Summentopics im Dict publishen
                 {pub.pub("openWB/set/pv/get/"+k, v)
@@ -72,8 +72,11 @@ class pvAll:
                     available_power = evu_overhang - control_range_center
 
                 self.data["set"]["overhang_power_left"] = available_power
-                log.MainLogger().debug(str(self.data["set"]["overhang_power_left"])+"W EVU-Ueberschuss, der fuer die Regelung verfuegbar ist, davon " +
-                                       str(self.data["set"]["reserved_evu_overhang"])+"W fuer die Einschaltverzoegerung reservierte Leistung.")
+                log.MainLogger().debug(
+                    str(self.data["set"]["overhang_power_left"]) +
+                    "W EVU-Ueberschuss, der fuer die Regelung verfuegbar ist, davon " +
+                    str(self.data["set"]["reserved_evu_overhang"]) +
+                    "W fuer die Einschaltverzoegerung reservierte Leistung.")
             # nur allgemeiner PV-Key vorhanden, d.h. kein Modul konfiguriert
             else:
                 self.data["config"]["configured"] = False
@@ -84,7 +87,7 @@ class pvAll:
             pub.pub("openWB/set/pv/set/available_power", available_power)
             pub.pub("openWB/set/pv/config/configured",
                     self.data["config"]["configured"])
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im allgemeinen PV-Modul")
 
     def switch_on(self, chargepoint, required_power, required_current, phases, bat_overhang):
@@ -121,7 +124,8 @@ class pvAll:
             all_overhang = self.overhang_left()
             # Berücksichtigung der Speicherleistung
             all_overhang += bat_overhang
-            if chargepoint.data["set"]["charging_ev_data"].ev_template.data["prevent_switch_stop"] is False or max(chargepoint.data["get"]["current"]) == 0:
+            if chargepoint.data["set"]["charging_ev_data"].ev_template.data["prevent_switch_stop"] is False or max(
+                    chargepoint.data["get"]["current"]) == 0:
                 if control_parameter["timestamp_switch_on_off"] != "0":
                     # Wurde die Einschaltschwelle erreicht? Reservierte Leistung aus all_overhang rausrechnen,
                     # da diese Leistung ja schon reserviert wurde, als die Einschaltschwelle erreicht wurde.
@@ -130,7 +134,9 @@ class pvAll:
                             (chargepoint.data["set"]["charging_ev_data"].charge_template.data["chargemode"]["pv_charging"]["feed_in_limit"] and
                              all_overhang + required_power >= data.data.general_data["general"].data["chargemode_config"]["pv_charging"]["feed_in_yield"])):
                         # Timer ist noch nicht abglaufen
-                        if timecheck.check_timestamp(control_parameter["timestamp_switch_on_off"], pv_config["switch_on_delay"]):
+                        if timecheck.check_timestamp(
+                                control_parameter["timestamp_switch_on_off"],
+                                pv_config["switch_on_delay"]):
                             required_power = 0
                             chargepoint.data["get"]["state_str"] = "Die Ladung wird gestartet, sobald nach "+str(
                                 pv_config["switch_on_delay"]) + "s die Einschaltverzoegerung abgelaufen ist."
@@ -138,10 +144,12 @@ class pvAll:
                         else:
                             control_parameter["timestamp_switch_on_off"] = "0"
                             self.data["set"]["reserved_evu_overhang"] -= pv_config["switch_on_threshold"]*phases
-                            log.MainLogger().info("Einschaltschwelle von " +
-                                                  str(pv_config["switch_on_threshold"]) + "W fuer die Dauer der Einschaltverzoegerung ueberschritten.")
-                            pub.pub("openWB/set/vehicle/"+str(
-                                chargepoint.data["set"]["charging_ev_data"].ev_num)+"/control_parameter/timestamp_switch_on_off", "0")
+                            log.MainLogger().info(
+                                "Einschaltschwelle von " + str(pv_config["switch_on_threshold"]) +
+                                "W fuer die Dauer der Einschaltverzoegerung ueberschritten.")
+                            pub.pub(
+                                "openWB/set/vehicle/" + str(chargepoint.data["set"]["charging_ev_data"].ev_num) +
+                                "/control_parameter/timestamp_switch_on_off", "0")
                     # Einschaltschwelle wurde unterschritten, Timer zurücksetzen
                     else:
                         control_parameter["timestamp_switch_on_off"] = "0"
@@ -152,8 +160,9 @@ class pvAll:
                             "W waehrend der Einschaltverzoegerung unterschritten."
                         log.MainLogger().info("LP "+str(chargepoint.cp_num)+": "+message)
                         chargepoint.data["get"]["state_str"] = message
-                        pub.pub("openWB/set/vehicle/"+str(
-                            chargepoint.data["set"]["charging_ev_data"].ev_num)+"/control_parameter/timestamp_switch_on_off", "0")
+                        pub.pub(
+                            "openWB/set/vehicle/" + str(chargepoint.data["set"]["charging_ev_data"].ev_num) +
+                            "/control_parameter/timestamp_switch_on_off", "0")
                         threshold_not_reached = True
                 else:
                     # Timer starten
@@ -171,8 +180,10 @@ class pvAll:
                             "s die Einschaltverzoegerung abgelaufen ist."
                         log.MainLogger().info("LP "+str(chargepoint.cp_num)+": "+message)
                         chargepoint.data["get"]["state_str"] = message
-                        pub.pub("openWB/set/vehicle/"+str(chargepoint.data["set"]["charging_ev_data"].ev_num) +
-                                "/control_parameter/timestamp_switch_on_off", control_parameter["timestamp_switch_on_off"])
+                        pub.pub(
+                            "openWB/set/vehicle/" + str(chargepoint.data["set"]["charging_ev_data"].ev_num) +
+                            "/control_parameter/timestamp_switch_on_off", control_parameter
+                            ["timestamp_switch_on_off"])
                     else:
                         # Einschaltschwelle nicht erreicht
                         message = "Die Ladung kann nicht gestartet werden, da die Einschaltschwelle ("+str(
@@ -183,7 +194,8 @@ class pvAll:
                         required_power = 0
                         threshold_not_reached = True
             else:
-                chargepoint.data["get"]["state_str"] = "Die Ladung wurde aufgrund des EV-Profils ohne Einschaltverzögerung gestartet, um die Ladung nicht zu unterbrechen."
+                chargepoint.data["get"]["state_str"] = "Die Ladung wurde aufgrund des EV-Profils ohne \
+                    Einschaltverzögerung gestartet, um die Ladung nicht zu unterbrechen."
 
             if required_power != 0:
                 required_current, _ = algorithm.allocate_power(
@@ -191,7 +203,7 @@ class pvAll:
             else:
                 required_current = 0
             return required_current, threshold_not_reached
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im allgemeinen PV-Modul")
             return 0, phases
 
@@ -213,26 +225,29 @@ class pvAll:
             control_parameter = chargepoint.data["set"]["charging_ev_data"].data["control_parameter"]
 
             if control_parameter["timestamp_switch_on_off"] != "0":
-                if timecheck.check_timestamp(control_parameter["timestamp_switch_on_off"], pv_config["switch_off_delay"]) is False:
+                if timecheck.check_timestamp(
+                        control_parameter["timestamp_switch_on_off"],
+                        pv_config["switch_off_delay"]) is False:
                     control_parameter["timestamp_switch_on_off"] = "0"
                     self.data["set"]["released_evu_overhang"] -= chargepoint.data["set"]["required_power"]
                     message = "Ladevorgang nach Ablauf der Abschaltverzoegerung gestoppt."
                     log.MainLogger().info("LP "+str(chargepoint.cp_num)+": "+message)
                     chargepoint.data["get"]["state_str"] = message
-                    pub.pub("openWB/set/vehicle/"+str(
-                        chargepoint.data["set"]["charging_ev_data"].ev_num)+"/control_parameter/timestamp_switch_on_off", "0")
+                    pub.pub(
+                        "openWB/set/vehicle/" + str(chargepoint.data["set"]["charging_ev_data"].ev_num) +
+                        "/control_parameter/timestamp_switch_on_off", "0")
                     return True
                 else:
-                    chargepoint.data["get"]["state_str"] = "Ladevorgang wird nach Ablauf der Abschaltverzoegerung (" + str(
-                        pv_config["switch_off_delay"])+"s) gestoppt."
+                    chargepoint.data["get"]["state_str"] = "Ladevorgang wird nach Ablauf der Abschaltverzoegerung (" + \
+                        str(pv_config["switch_off_delay"])+"s) gestoppt."
             return False
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im allgemeinen PV-Modul")
             return False
 
     def switch_off_check_threshold(self, chargepoint, overhang):
-        """ prüft, ob die Abschaltschwelle erreicht wurde und startet die Abschaltverzögerung. 
-        Ist die Abschaltverzögerung bereits aktiv, wird geprüft, ob die Abschaltschwelle wieder 
+        """ prüft, ob die Abschaltschwelle erreicht wurde und startet die Abschaltverzögerung.
+        Ist die Abschaltverzögerung bereits aktiv, wird geprüft, ob die Abschaltschwelle wieder
         unterschritten wurde, sodass die Verzögerung wieder gestoppt wird.
 
         Parameter
@@ -245,7 +260,8 @@ class pvAll:
             control_parameter = chargepoint.data["set"]["charging_ev_data"].data["control_parameter"]
             pv_config = data.data.general_data["general"].data["chargemode_config"]["pv_charging"]
             # Der EVU-Überschuss muss ggf um die Einspeisungsgrenze bereinigt werden.
-            if chargepoint.data["set"]["charging_ev_data"].charge_template.data["chargemode"]["pv_charging"]["feed_in_limit"]:
+            if chargepoint.data["set"]["charging_ev_data"].charge_template.data["chargemode"]["pv_charging"][
+                    "feed_in_limit"]:
                 feed_in_yield = data.data.general_data["general"].data[
                     "chargemode_config"]["pv_charging"]["feed_in_yield"]
             else:
@@ -253,15 +269,18 @@ class pvAll:
             if control_parameter["timestamp_switch_on_off"] != "0":
                 # Wurde die Abschaltschwelle erreicht?
                 # Eigene Leistung aus der freigegebenen Leistung rausrechnen.
-                if (overhang + self.data["set"]["released_evu_overhang"] - chargepoint.data["set"]["required_power"]) > (pv_config["switch_off_threshold"]*-1 + feed_in_yield):
+                if ((overhang + self.data["set"]["released_evu_overhang"] - chargepoint.data["set"]["required_power"])
+                        > (pv_config["switch_off_threshold"]*-1 + feed_in_yield)):
                     control_parameter["timestamp_switch_on_off"] = "0"
                     self.data["set"]["released_evu_overhang"] -= chargepoint.data["set"]["required_power"]
                     log.MainLogger().info("Abschaltschwelle während der Verzögerung ueberschritten.")
-                    pub.pub("openWB/set/vehicle/"+str(
-                        chargepoint.data["set"]["charging_ev_data"].ev_num)+"/control_parameter/timestamp_switch_on_off", "0")
+                    pub.pub(
+                        "openWB/set/vehicle/" + str(chargepoint.data["set"]["charging_ev_data"].ev_num) +
+                        "/control_parameter/timestamp_switch_on_off", "0")
             else:
                 # Wurde die Abschaltschwelle ggf. durch die Verzögerung anderer LP erreicht?
-                if (overhang + self.data["set"]["released_evu_overhang"]) < (pv_config["switch_off_threshold"]*-1 + feed_in_yield):
+                if ((overhang + self.data["set"]["released_evu_overhang"]) <
+                        (pv_config["switch_off_threshold"]*-1 + feed_in_yield)):
                     if chargepoint.data["set"]["charging_ev_data"].ev_template.data["prevent_switch_stop"] is False:
                         control_parameter["timestamp_switch_on_off"] = timecheck.create_timestamp(
                         )
@@ -271,12 +290,16 @@ class pvAll:
                             pv_config["switch_off_delay"])+"s) gestoppt."
                         log.MainLogger().info("LP "+str(chargepoint.cp_num)+": "+message)
                         chargepoint.data["get"]["state_str"] = message
-                        pub.pub("openWB/set/vehicle/"+str(chargepoint.data["set"]["charging_ev_data"].ev_num) +
-                                "/control_parameter/timestamp_switch_on_off", control_parameter["timestamp_switch_on_off"])
-                        # Die Abschaltvschwelle wird immer noch überschritten und es sollten weitere LP abgeschaltet werden.
+                        pub.pub(
+                            "openWB/set/vehicle/" + str(chargepoint.data["set"]["charging_ev_data"].ev_num) +
+                            "/control_parameter/timestamp_switch_on_off", control_parameter
+                            ["timestamp_switch_on_off"])
+                        # Die Abschaltschwelle wird immer noch überschritten und es sollten weitere LP abgeschaltet
+                        # werden.
                     else:
-                        chargepoint.data["get"]["state_str"] = "Stoppen des Ladevorgangs aufgrund des EV-Profils verhindert."
-        except Exception as e:
+                        chargepoint.data["get"]["state_str"] = "Stoppen des Ladevorgangs aufgrund des EV-Profils \
+                            verhindert."
+        except Exception:
             log.MainLogger().exception("Fehler im allgemeinen PV-Modul")
 
     def reset_switch_on_off(self, chargepoint, charging_ev):
@@ -294,19 +317,20 @@ class pvAll:
                 charging_ev.data["control_parameter"]["timestamp_switch_on_off"] = "0"
                 pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num) +
                         "/control_parameter/timestamp_switch_on_off", "0")
-                # Wenn bereits geladen wird, freigegebene Leistung freigeben. Wenn nicht geladen wird, reservierte Leistung freigeben.
+                # Wenn bereits geladen wird, freigegebene Leistung freigeben. Wenn nicht geladen wird, reservierte
+                # Leistung freigeben.
                 pv_config = data.data.general_data["general"].data["chargemode_config"]["pv_charging"]
                 if chargepoint.data["get"]["charge_state"] is False:
-                    data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= pv_config["switch_on_threshold"] * \
-                        chargepoint.data["set"]["phases_to_use"]
+                    data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= pv_config[
+                        "switch_on_threshold"] * chargepoint.data["set"]["phases_to_use"]
                     log.MainLogger().debug("reserved_evu_overhang 10 " +
                                            str(data.data.pv_data["all"].data["set"]["reserved_evu_overhang"]))
                 else:
-                    data.data.pv_data["all"].data["set"]["released_evu_overhang"] -= pv_config["switch_on_threshold"] * \
-                        charging_ev.data["control_parameter"]["phases"]
+                    data.data.pv_data["all"].data["set"]["released_evu_overhang"] -= pv_config[
+                        "switch_on_threshold"] * charging_ev.data["control_parameter"]["phases"]
                     log.MainLogger().debug("reserved_evu_overhang 11 " +
                                            str(data.data.pv_data["all"].data["set"]["reserved_evu_overhang"]))
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im allgemeinen PV-Modul")
 
     def overhang_left(self):
@@ -323,7 +347,7 @@ class pvAll:
             else:
                 return 0
         # return available pv power with feed in yield
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im allgemeinen PV-Modul")
             return 0
 
@@ -343,12 +367,16 @@ class pvAll:
         try:
             if self.data["config"]["configured"]:
                 self.data["set"]["overhang_power_left"] -= required_power
-                log.MainLogger().debug(str(self.data["set"]["overhang_power_left"])+"W EVU-Ueberschuss, der fuer die folgenden Ladepunkte uebrig ist, davon " +
-                                       str(self.data["set"]["reserved_evu_overhang"])+"W fuer die Einschaltverzoegerung reservierte Leistung.")
+                log.MainLogger().debug(
+                    str(self.data["set"]["overhang_power_left"]) +
+                    "W EVU-Ueberschuss, der fuer die folgenden Ladepunkte uebrig ist, davon " +
+                    str(self.data["set"]["reserved_evu_overhang"]) +
+                    "W fuer die Einschaltverzoegerung reservierte Leistung.")
                 # Float-Ungenauigkeiten abfangen
                 if self.data["set"]["overhang_power_left"] < -0.01:
                     # Fehlermeldung nur ausgeben, wenn Leistung allokiert wird.
-                    # Es kann nicht immer mit einem LP so viel Leistung freigegeben werden, dass die verfügbare Leistung positiv ist.
+                    # Es kann nicht immer mit einem LP so viel Leistung freigegeben werden, dass die verfügbare
+                    # Leistung positiv ist.
                     if required_power > 0:
                         log.MainLogger().error(
                             "Es wurde versucht, mehr EVU-Überschuss zu allokieren, als vorhanden ist.")
@@ -356,7 +384,7 @@ class pvAll:
                     self.data["set"]["overhang_power_left"] = 0
                     return too_much
             return 0
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im allgemeinen PV-Modul")
             return required_power
 
@@ -373,7 +401,7 @@ class pvAll:
                         self.data["set"]["reserved_evu_overhang"])
                 pub.pub("openWB/set/pv/set/released_evu_overhang",
                         self.data["set"]["released_evu_overhang"])
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im allgemeinen PV-Modul")
 
     def reset_pv_data(self):
@@ -384,14 +412,17 @@ class pvAll:
             pub.pub("openWB/set/pv/set/released_evu_overhang", 0)
             self.data["set"]["reserved_evu_overhang"] = 0
             self.data["set"]["released_evu_overhang"] = 0
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im allgemeinen PV-Modul")
 
     def print_stats(self):
         try:
-            log.MainLogger().debug(str(self.data["set"]["overhang_power_left"])+"W EVU-Ueberschuss, der fuer die Regelung verfuegbar ist, davon " +
-                                   str(self.data["set"]["reserved_evu_overhang"])+"W fuer die Einschaltverzoegerung reservierte Leistung.")
-        except Exception as e:
+            log.MainLogger().debug(
+                str(self.data["set"]["overhang_power_left"]) +
+                "W EVU-Ueberschuss, der fuer die Regelung verfuegbar ist, davon " +
+                str(self.data["set"]["reserved_evu_overhang"]) +
+                "W fuer die Einschaltverzoegerung reservierte Leistung.")
+        except Exception:
             log.MainLogger().exception("Fehler im allgemeinen PV-Modul")
 
 

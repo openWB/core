@@ -8,7 +8,6 @@ from ..algorithm import data
 from ..helpermodules import log
 
 from .cp import external_openwb as cp_external_openwb
-from .cp import ip_evse as cp_ip_evse
 
 
 class loadvars:
@@ -33,11 +32,12 @@ class loadvars:
                     thread.join(timeout=3)
 
                 for thread in kits_threads:
-                    if thread.is_alive() == True:
+                    if thread.is_alive():
                         log.MainLogger().error(
                             thread.name +
-                            " konnte nicht innerhalb des Timeouts die Werte abfragen, die abgefragten Werte werden nicht in der Regelung verwendet.")
-        except Exception as e:
+                            " konnte nicht innerhalb des Timeouts die Werte abfragen, die abgefragten Werte werden" +
+                            " nicht in der Regelung verwendet.")
+        except Exception:
             log.MainLogger().exception("Fehler im loadvars-Modul")
 
     # eher zu prepare
@@ -60,7 +60,7 @@ class loadvars:
                 # Wait for all to complete
                 for thread in all_threads:
                     thread.join(timeout=3)
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im loadvars-Modul")
 
     def _get_virtual_counters(self):
@@ -78,7 +78,7 @@ class loadvars:
                     if thread is not None:
                         virtual_threads.append(thread)
             return virtual_threads
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im loadvars-Modul")
 
     def _get_cp(self):
@@ -95,16 +95,17 @@ class loadvars:
 
                     # elif cp.data["config"]["power_module"]["selected"] == "":
                     #     (cp)
-            except Exception as e:
+            except Exception:
                 log.MainLogger().exception("Fehler im loadvars-Modul")
 
     def _get_general(self):
         try:
-            # Beim ersten Durchlauf wird in jedem Fall eine Exception geworfen, da die Daten erstmalig ins data-Modul kopiert werden müssen.
+            # Beim ersten Durchlauf wird in jedem Fall eine Exception geworfen,
+            # da die Daten erstmalig ins data-Modul kopiert werden müssen.
             if data.data.general_data["general"].data[
                     "ripple_control_receiver"]["configured"]:
                 ripple_control_receiver.read_ripple_control_receiver()
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im loadvars-Modul")
 
     def _get_modules(self):
@@ -118,8 +119,8 @@ class loadvars:
                         thread = threading.Thread(target=module.get_values, args=())
                         if thread is not None:
                             modules_threads.append(thread)
-                except Exception as e:
+                except Exception:
                     log.MainLogger().exception("Fehler im loadvars-Modul")
             return modules_threads
-        except Exception as e:
+        except Exception:
             log.MainLogger().exception("Fehler im loadvars-Modul")
