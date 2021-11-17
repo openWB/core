@@ -53,7 +53,7 @@ def is_timeframe_valid(now, begin, end):
     False : nicht aktuell
     """
     try:
-        if ((now < begin) is False) and ((now < end)):
+        if (not (now < begin)) and ((now < end)):
             return True
         else:
             return False

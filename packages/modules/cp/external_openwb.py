@@ -100,33 +100,33 @@ def _check_duo_virtual_counter(cp):
             # Hierarchie erweitern
             ret = data.data.counter_data["all"].hierarchy_add_item_aside(
                 "counter"+str(index), "cp"+str(cp.cp_num))
-            if ret is False:
+            if not ret:
                 log.message_debug_log("error", "counter"+str(index)+" konnte nicht auf der Ebene von cp"+str(
                     cp.cp_num)+" in die Zaehlerhierarchie eingefuegt werden.")
                 return
             ret = data.data.counter_data["all"].hierarchy_remove_item(
                 "cp"+str(data.data.cp_data[connected_cps[0]].cp_num), keep_children=False)
-            if ret is False:
+            if not ret:
                 log.message_debug_log(
                     "error", "cp" + str(data.data.cp_data[connected_cps[0]].cp_num) +
                     " konnte nicht aus der Zaehlerhierarchie geloescht werden.")
                 return
             ret = data.data.counter_data["all"].hierarchy_remove_item(
                 "cp"+str(data.data.cp_data[connected_cps[1]].cp_num), keep_children=False)
-            if ret is False:
+            if not ret:
                 log.message_debug_log(
                     "error", "cp" + str(data.data.cp_data[connected_cps[1]].cp_num) +
                     " konnte nicht aus der Zaehlerhierarchie geloescht werden.")
                 return
             ret = data.data.counter_data["all"].hierarchy_add_item_below(
                 "cp"+str(data.data.cp_data[connected_cps[0]].cp_num), "counter"+str(index))
-            if ret is False:
+            if not ret:
                 log.message_debug_log("error", "cp"+str(cp.cp_num)+" konnte nicht unter der Ebene von counter"+str(
                     index)+" in die Zaehlerhierarchie eingefuegt werden.")
                 return
             ret = data.data.counter_data["all"].hierarchy_add_item_below(
                 "cp"+str(data.data.cp_data[connected_cps[1]].cp_num), "counter"+str(index))
-            if ret is False:
+            if not ret:
                 log.message_debug_log("error", "cp"+str(cp.cp_num)+" konnte nicht unter der Ebene von counter"+str(
                     index)+" in die Zaehlerhierarchie eingefuegt werden.")
                 return

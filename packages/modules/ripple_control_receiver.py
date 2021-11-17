@@ -17,13 +17,13 @@ def read_ripple_control_receiver():
 
         time.sleep(10.2)
 
-        if button1_state is False:
+        if not button1_state:
             pub.pub("openWB/set/general/ripple_control_receiver/r1_active", True)
             time.sleep(0.2)
         else:
             pub.pub("openWB/set/general/ripple_control_receiver/r1_active", False)
             time.sleep(0.2)
-        if button2_state is False:
+        if not button2_state:
             pub.pub("openWB/set/general/ripple_control_receiver/r2_active", True)
             time.sleep(0.2)
         else:
