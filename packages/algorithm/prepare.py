@@ -88,8 +88,7 @@ class prepare:
             data.data.counter_data = copy.deepcopy(
                 subdata.SubData.counter_data)
             data.data.bat_data = copy.deepcopy(subdata.SubData.bat_data)
-            data.data.bat_module_data = copy.deepcopy(
-                subdata.SubData.bat_module_data)
+            data.data.graph_data = copy.deepcopy(subdata.SubData.graph_data)
         except Exception:
             log.MainLogger().exception("Fehler im Prepare-Modul")
 

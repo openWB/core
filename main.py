@@ -74,7 +74,7 @@ class HandlerAlgorithm:
                     prep.setup_algorithm()
                     control.calc_current()
                     proc.process_algorithm_results()
-                    graph.pub_graph_data()
+                    data.data.graph_data["graph"].pub_graph_data()
                     self.interval_counter = 1
                 else:
                     self.interval_counter = self.interval_counter + 1
@@ -91,7 +91,7 @@ class HandlerAlgorithm:
                 prep.setup_algorithm()
                 control.calc_current()
                 proc.process_algorithm_results()
-                graph.pub_graph_data()
+                data.data.graph_data["graph"].pub_graph_data()
         except Exception:
             log.MainLogger().exception("Fehler im Main-Modul")
 

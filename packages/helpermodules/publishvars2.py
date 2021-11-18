@@ -7,59 +7,59 @@ def pub_settings():
     pass
     # simulator = True
     # if simulator:
-    #     # cp1
-    #     pub.pub(
-    #         "openWB/set/chargepoint/1/config", {
-    #             "name": "LP1",
-    #             "ev": 0,
-    #             "template": 0,
-    #             "connected_phases": 3,
-    #             "phase_1": 1,
-    #             "auto_phase_switch_hw": False,
-    #             "control_pilot_interruption_hw": True,
-    #             "connection_module": {
-    #                 "selected": "mqtt"
-    #             },
-    #             "power_module": {
-    #                 "selected": None
-    #             }
-    #         })
+    # cp1
+    # pub.pub(
+    #     "openWB/set/chargepoint/0/config", {
+    #         "name": "LP0",
+    #         "ev": 0,
+    #         "template": 0,
+    #         "connected_phases": 3,
+    #         "phase_1": 1,
+    #         "auto_phase_switch_hw": False,
+    #         "control_pilot_interruption_hw": True,
+    #         "connection_module": {
+    #             "selected": "mqtt"
+    #         },
+    #         "power_module": {
+    #             "selected": None
+    #         }
+    #     })
 
-    #     # cp2
-    #     pub.pub(
-    #         "openWB/set/chargepoint/2/config", {
-    #             "name": "LP2",
-    #             "ev": 0,
-    #             "template": 0,
-    #             "connected_phases": 3,
-    #             "phase_1": 2,
-    #             "auto_phase_switch_hw": False,
-    #             "control_pilot_interruption_hw": True,
-    #             "connection_module": {
-    #                 "selected": "mqtt"
-    #             },
-    #             "power_module": {
-    #                 "selected": None
-    #             }
-    #         })
+    # # cp2
+    # pub.pub(
+    #     "openWB/set/chargepoint/1/config", {
+    #         "name": "LP1",
+    #         "ev": 0,
+    #         "template": 0,
+    #         "connected_phases": 3,
+    #         "phase_1": 2,
+    #         "auto_phase_switch_hw": False,
+    #         "control_pilot_interruption_hw": True,
+    #         "connection_module": {
+    #             "selected": "mqtt"
+    #         },
+    #         "power_module": {
+    #             "selected": None
+    #         }
+    #     })
 
-    #     # cp3
-    #     pub.pub(
-    #         "openWB/set/chargepoint/3/config", {
-    #             "name": "LP3",
-    #             "ev": 0,
-    #             "template": 0,
-    #             "connected_phases": 3,
-    #             "phase_1": 3,
-    #             "auto_phase_switch_hw": False,
-    #             "control_pilot_interruption_hw": True,
-    #             "connection_module": {
-    #                 "selected": "mqtt"
-    #             },
-    #             "power_module": {
-    #                 "selected": None
-    #             }
-    #         })
+    # # cp3
+    # pub.pub(
+    #     "openWB/set/chargepoint/2/config", {
+    #         "name": "LP2",
+    #         "ev": 0,
+    #         "template": 0,
+    #         "connected_phases": 3,
+    #         "phase_1": 3,
+    #         "auto_phase_switch_hw": False,
+    #         "control_pilot_interruption_hw": True,
+    #         "connection_module": {
+    #             "selected": "mqtt"
+    #         },
+    #         "power_module": {
+    #             "selected": None
+    #         }
+    #     })
 
     # else:
     #     pass
@@ -335,13 +335,15 @@ def pub_settings():
 
     # # counter
     # if simulator:
-    #     # hierarchy=[{"id": "counter0", "children": [{"id": "cp1", "children": []},
-    #     # {"id": "cp2", "children": []}, {"id": "cp3", "children": []}]}]
-    #     # pub.pub("openWB/set/counter/get/hierarchy", hierarchy)
-    #     pub.pub("openWB/set/counter/0/get/frequency", 50.2)
-    #     pub.pub("openWB/set/counter/0/config/max_current", [30, 30, 30])
-    #     pub.pub("openWB/set/counter/0/config/max_consumption", 30000)
-    #     pub.pub("openWB/set/counter/0/module", {"selected": "mqtt_read"})
+    # hierarchy = [{"id": "counter0", "children": [{"id": "cp0", "children": []},
+    #                                              {"id": "cp1", "children": []}, {"id": "cp2", "children": []}]}]
+    # pub.pub("openWB/set/counter/get/hierarchy", hierarchy)
+    # pub.pub("openWB/set/counter/0/get/frequency", 50.2)
+    # pub.pub("openWB/set/counter/0/config/max_current", [30, 30, 30])
+    # pub.pub("openWB/set/counter/0/config/max_consumption", 30000)
+    # pub.pub("openWB/system/device/0/config", {"type": "mqtt", "name": "MQTT", "id": 0, "configuration": {}})
+    # pub.pub("openWB/system/device/0/component/0/config", 
+    #   {"type": "counter", "name": "MQTT-Z\u00e4hler", "id": 0, "configuration": {}})
     # else:
     #     # Firma
     #     hierarchy = [{

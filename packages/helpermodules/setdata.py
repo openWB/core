@@ -827,6 +827,9 @@ class setData:
             if ("alllivevaluesJson" in msg.topic or
                     "openWB/set/graph/lastlivevaluesJson" in msg.topic):
                 self._validate_value(msg, "json")
+            elif "config" in msg.topic:
+                if "duration" in msg.topic:
+                    self._validate_value(msg, int, [(10, 120)])
             else:
                 self.__unknown_topic(msg)
         except Exception:
