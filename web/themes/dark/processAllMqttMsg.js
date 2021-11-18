@@ -267,13 +267,15 @@ function processGlobalCounterMessages(mqttmsg, mqttpayload) {
 		$('.chargepoint-card[data-cp]').not('.chargepoint-template').remove();
 		// now create any other chargepoint
 		var hierarchy = JSON.parse(mqttpayload);
-		createChargepoint(hierarchy[0]);
-		// subscribe to other topics relevant for chargepoints
-		topicsToSubscribe.forEach((topic) => {
-			if (topic[0].match(/^openwb\/(chargepoint|vehicle)\//i)) {
-				client.subscribe(topic[0], { qos: 0 });
-			}
-		});
+		if (hierarchy.length) {
+			createChargepoint(hierarchy[0]);
+			// subscribe to other topics relevant for chargepoints
+			topicsToSubscribe.forEach((topic) => {
+				if (topic[0].match(/^openwb\/(chargepoint|vehicle)\//i)) {
+					client.subscribe(topic[0], { qos: 0 });
+				}
+			});
+		}
 	} else if (mqttmsg.match(/^openwb\/counter\/set\/home_consumption$/i)) {
 		var unit = 'W';
 		var powerHome = parseInt(mqttpayload, 10);

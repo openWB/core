@@ -1,48 +1,45 @@
 import re
-import paho.mqtt.client as mqtt
 import time
 
-from . import log
-from . import pub
+import paho.mqtt.client as mqtt
+
+from . import log, pub
 
 
 class UpdateConfig:
-    valid_topic = ["^openWB/vehicle/template/ev_template/[0-9]+$",
-                   "^openWB/vehicle/template/charge_template/[0-9]+/time_charging/plans/[0-9]+$",
-                   "^openWB/vehicle/template/charge_template/[0-9]+/chargemode/scheduled_charging/plans/[0-9]+$",
-                   "^openWB/vehicle/template/charge_template/[0-9]+",
-                   "^openWB/vehicle/[0-9]+/charge_template$",
-                   "^openWB/vehicle/[0-9]+/ev_template$",
-                   "^openWB/vehicle/[0-9]+/name$",
-                   "^openWB/vehicle/[0-9]+/get/soc$",
-                   "^openWB/vehicle/[0-9]+/get/soc_timetamp$",
-                   "^openWB/vehicle/[0-9]+/match_ev/selected$",
-                   "^openWB/vehicle/[0-9]+/match_ev/tag_id$",
-                   "^openWB/vehicle/[0-9]+/control_parameter/submode$",
-                   "^openWB/vehicle/[0-9]+/control_parameter/chargemode$",
-                   "^openWB/vehicle/[0-9]+/control_parameter/prio$",
-                   "^openWB/vehicle/[0-9]+/control_parameter/required_current$",
-                   "^openWB/vehicle/[0-9]+/control_parameter/timestamp_auto_phase_switch$",
-                   "^openWB/vehicle/[0-9]+/control_parameter/timestamp_perform_phase_switch$",
-                   "^openWB/vehicle/[0-9]+/control_parameter/phases$",
-                   "^openWB/vehicle/[0-9]+/set/ev_template$",
-                   "^openWB/pv/.+",
-                   "^openWB/chargepoint/.+",
-                   "^openWB/bat/.+",
-                   "^openWB/general/.+",
-                   "^openWB/optional/.+",
-                   "^openWB/counter/.+",
-                   "^openWB/log/.+",
-                   "^openWB/system/.+",
-                   "^openWB/command/.+"
-                   ]
+    valid_topic = [
+        "^openWB/vehicle/template/ev_template/[0-9]+$",
+        "^openWB/vehicle/template/charge_template/[0-9]+/time_charging/plans/[0-9]+$",
+        "^openWB/vehicle/template/charge_template/[0-9]+/chargemode/scheduled_charging/plans/[0-9]+$",
+        "^openWB/vehicle/template/charge_template/[0-9]+",
+        "^openWB/vehicle/[0-9]+/charge_template$",
+        "^openWB/vehicle/[0-9]+/ev_template$",
+        "^openWB/vehicle/[0-9]+/name$",
+        "^openWB/vehicle/[0-9]+/get/soc$",
+        "^openWB/vehicle/[0-9]+/get/soc_timetamp$",
+        "^openWB/vehicle/[0-9]+/match_ev/selected$",
+        "^openWB/vehicle/[0-9]+/match_ev/tag_id$",
+        "^openWB/vehicle/[0-9]+/control_parameter/submode$",
+        "^openWB/vehicle/[0-9]+/control_parameter/chargemode$",
+        "^openWB/vehicle/[0-9]+/control_parameter/prio$",
+        "^openWB/vehicle/[0-9]+/control_parameter/required_current$",
+        "^openWB/vehicle/[0-9]+/control_parameter/timestamp_auto_phase_switch$",
+        "^openWB/vehicle/[0-9]+/control_parameter/timestamp_perform_phase_switch$",
+        "^openWB/vehicle/[0-9]+/control_parameter/phases$",
+        "^openWB/vehicle/[0-9]+/set/ev_template$",
+        "^openWB/pv/.+",
+        "^openWB/chargepoint/.+",
+        "^openWB/bat/.+",
+        "^openWB/general/.+",
+        "^openWB/optional/.+",
+        "^openWB/counter/.+",
+        "^openWB/log/.+",
+        "^openWB/system/.+",
+        "^openWB/command/.+",
+        "^openWB/graph/.+"
+    ]
     default_topic = (
-        ("openWB/optional/et/active", False),
-        ("openWB/optional/rfid/active", False),
         ("openWB/counter/get/hierarchy", []),
-        ("openWB/general/chargemode_config/individual_mode", True),
-        ("openWB/general/chargemode_config/unbalanced_load", False),
-        ("openWB/general/chargemode_config/unbalanced_load_limit", 18),
         ("openWB/general/chargemode_config/instant_charging/phases_to_use", 1),
         ("openWB/general/chargemode_config/pv_charging/bat_prio", 1),
         ("openWB/general/chargemode_config/pv_charging/switch_on_soc", 60),
@@ -59,15 +56,40 @@ class UpdateConfig:
         ("openWB/general/chargemode_config/pv_charging/phase_switch_delay", 7),
         ("openWB/general/chargemode_config/pv_charging/phases_to_use", 1),
         ("openWB/general/chargemode_config/scheduled_charging/phases_to_use", 0),
-        ("openWB/general/chargemode_config/time_charging/phases_to_use", 1),
         ("openWB/general/chargemode_config/standby/phases_to_use", 1),
         ("openWB/general/chargemode_config/stop/phases_to_use", 1),
-        ("openWB/general/range_unit", "km"),
-        ("openWB/general/price_kwh", 0.4),
-        ("openWB/general/grid_protection_configured", True),
+        ("openWB/general/chargemode_config/time_charging/phases_to_use", 1),
+        ("openWB/general/chargemode_config/individual_mode", True),
+        ("openWB/general/chargemode_config/unbalanced_load", False),
+        ("openWB/general/chargemode_config/unbalanced_load_limit", 18),
         ("openWB/general/control_interval", 10),
+        ("openWB/general/extern", False),
+        ("openWB/general/extern_display_mode", "local"),
+        ("openWB/general/external_buttons_hw", False),
+        ("openWB/general/grid_protection_configured", True),
+        ("openWB/general/notifications/selected", "none"),
+        ("openWB/general/notifications/plug", False),
+        ("openWB/general/notifications/start_charging", False),
+        ("openWB/general/notifications/stop_charging", False),
+        ("openWB/general/notifications/smart_home", False),
+        ("openWB/general/notifications/configuration", {}),
+        ("openWB/general/price_kwh", 0.3),
+        ("openWB/general/range_unit", "km"),
         ("openWB/general/ripple_control_receiver/configured", True),
-        ("openWB/graph/config/duration", 60)
+        ("openWB/graph/config/duration", 60),
+        ("openWB/optional/et/active", False),
+        ("openWB/optional/et/config/max_price", 0),
+        ("openWB/optional/et/config/provider", {}),
+        ("openWB/optional/int_display/active", False),
+        ("openWB/optional/int_display/on_if_plugged_in", True),
+        ("openWB/optional/int_display/pin_active", False),
+        ("openWB/optional/int_display/pin_code", "0000"),
+        ("openWB/optional/int_display/standby", 60),
+        ("openWB/optional/int_display/theme", "cards"),
+        ("openWB/optional/led/active", False),
+        ("openWB/optional/load_sharing/active", False),
+        ("openWB/optional/load_sharing/max_current", 16),
+        ("openWB/optional/rfid/active", False)
     )
 
     def __init__(self) -> None:
@@ -118,4 +140,5 @@ class UpdateConfig:
         # zwingend erforderliche Standardwerte setzen
         for topic in self.default_topic:
             if topic[0] not in self.all_received_topics:
+                log.MainLogger().debug("Setzte Topic '%s' auf Standardwert '%s'" % (topic[0], str(topic[1])))
                 pub.pub(topic[0], topic[1])
