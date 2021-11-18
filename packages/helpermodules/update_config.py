@@ -140,5 +140,5 @@ class UpdateConfig:
         # zwingend erforderliche Standardwerte setzen
         for topic in self.default_topic:
             if topic[0] not in self.all_received_topics:
-                log.MainLogger().debug("Setzte Topic '%s' auf Standardwert '%s'" % (topic[0], topic[1]))
+                log.MainLogger().debug("Setzte Topic '%s' auf Standardwert '%s'" % (topic[0], str(topic[1])))
                 pub.pub(topic[0], topic[1])
