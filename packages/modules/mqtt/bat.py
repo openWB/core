@@ -16,7 +16,7 @@ except (ImportError, ValueError, SystemError):
 def get_default_config() -> dict:
     return {
         "name": "MQTT-Speicher",
-        "type": "counter",
+        "type": "bat",
         "id": None,
         "configuration": {
         }
