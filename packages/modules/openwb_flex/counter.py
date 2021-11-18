@@ -56,8 +56,8 @@ class EvuKitFlex(AbstractComponent[CounterState]):
 
     def get_component_info(self) -> ComponentInfo:
         return ComponentInfo(self.component_config["id"],
-                             self.component_config["type"],
-                             self.component_config["name"])
+                             self.component_config["name"],
+                             self.component_config["type"])
 
     def get_values(self) -> CounterState:
         """ liest die Werte des Moduls aus.

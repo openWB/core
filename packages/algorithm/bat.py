@@ -109,7 +109,7 @@ class batAll:
         try:
             evu_counter = data.data.counter_data["all"].get_evu_counter()
             config = data.data.general_data["general"].data["chargemode_config"]["pv_charging"]
-            if config["bat_prio"] is False:
+            if not config["bat_prio"]:
                 # Wenn der Speicher lädt und gleichzeitg Bezug da ist, sind entweder die Werte sehr ungünstig abgefragt
                 # worden
                 # (deshalb wird noch ein Zyklus gewartet) oder es liegt ein Hybrid-System vor.
@@ -128,7 +128,7 @@ class batAll:
                 elif self.data["set"]["hybrid_system_detected"]:
                     self.data["set"]["hybrid_system_detected"] = False
                 # Laderegelung wurde noch nicht freigegeben
-                if self.data["set"]["switch_on_soc_reached"] is False:
+                if not self.data["set"]["switch_on_soc_reached"]:
                     if config["switch_on_soc"] != 0:
                         if config["switch_on_soc"] < self.data["get"]["soc"]:
                             self.data["set"]["switch_on_soc_reached"] = True

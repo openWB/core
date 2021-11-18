@@ -47,9 +47,7 @@ class Device(AbstractDevice):
     def __init__(self, device_config: dict) -> None:
         try:
             self.device_config = device_config
-            ip_address = device_config["configuration"]["ip_address"]
-            port = device_config["configuration"]["port"]
-            self.client = modbus.ModbusClient(ip_address, port)
+            self.client = None
         except Exception:
             log.MainLogger().exception("Fehler im Modul " +
                                        device_config["name"])

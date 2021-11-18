@@ -278,7 +278,7 @@ class Data:
         """
         for key in data:
             try:
-                if isinstance(data[key], dict) is False:
+                if not isinstance(data[key], dict):
                     log.MainLogger().debug(key+"\n"+str(data[key].data))
                 else:
                     log.MainLogger().debug(key+"\n"+"Klasse fehlt")

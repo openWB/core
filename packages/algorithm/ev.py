@@ -253,7 +253,7 @@ class ev:
             if phases != 0:
                 # EV soll/darf nicht laden
                 if required_current != 0:
-                    if pv is False:
+                    if not pv:
                         min_current = self.ev_template.data["min_current"]
                     else:
                         min_current = self.data["control_parameter"]["required_current"]
@@ -298,7 +298,7 @@ class ev:
         phases_to_use = phases_in_use
         try:
             # Wenn gerade umgeschaltet wird, darf kein Timer gestartet werden.
-            if self.ev_template.data["prevent_switch_stop"] is False and self.data["control_parameter"][
+            if not self.ev_template.data["prevent_switch_stop"] and self.data["control_parameter"][
                     "timestamp_perform_phase_switch"] == "0":
                 pv_config = data.data.general_data["general"].data["chargemode_config"]["pv_charging"]
                 # 1 -> 3
@@ -308,9 +308,9 @@ class ev:
                     if (self.data["control_parameter"]["timestamp_auto_phase_switch"] != "0" and
                             max(current_get) >= (self.ev_template.data["max_current_one_phase"]
                                                  - self.ev_template.data["nominal_difference"])):
-                        if timecheck.check_timestamp(
+                        if not timecheck.check_timestamp(
                                 self.data["control_parameter"]["timestamp_auto_phase_switch"],
-                                pv_config["phase_switch_delay"] * 60) is False:
+                                pv_config["phase_switch_delay"] * 60):
                             phases_to_use = 3
                             # Nach dem Umschalten erstmal mit Mindeststromstärke laden.
                             current = self.data["control_parameter"]["required_current"]
@@ -351,9 +351,9 @@ class ev:
                             all((current <= (self.data["control_parameter"]["required_current"]
                                              + self.ev_template.data["nominal_difference"]) or
                                  current <= self.ev_template.data["nominal_difference"]) for current in current_get)):
-                        if timecheck.check_timestamp(
+                        if not timecheck.check_timestamp(
                                 self.data["control_parameter"]["timestamp_auto_phase_switch"],
-                                (16 - pv_config["phase_switch_delay"]) * 60) is False:
+                                (16 - pv_config["phase_switch_delay"]) * 60):
                             phases_to_use = 1
                             # Nach dem Umschalten wieder mit Maximalstromstärke laden.
                             current = self.ev_template.data["max_current_one_phase"]
@@ -573,7 +573,7 @@ class chargeTemplate:
         try:
             instant_charging = self.data["chargemode"]["instant_charging"]
             if data.data.optional_data["optional"].data["et"]["active"]:
-                if data.data.optional_data["optional"].et_price_lower_than_limit() is False:
+                if not data.data.optional_data["optional"].et_price_lower_than_limit():
                     message = "Keine Ladung, da der aktuelle Strompreis über dem maximalen Strompreis liegt."
                     return 0, "stop", message
             if instant_charging["limit"]["selected"] == "none":

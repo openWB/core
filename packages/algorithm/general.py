@@ -49,7 +49,7 @@ class general:
             if self.data["grid_protection_configured"]:
                 frequency = data.data.counter_data[evu_counter].data["get"]["frequency"] * 100
                 grid_protection_active = self.data["grid_protection_active"]
-                if grid_protection_active is False:
+                if not grid_protection_active:
                     if 4500 < frequency < 4920:
                         self.data["grid_protection_random_stop"] = random.randint(
                             1, 90)
