@@ -3,7 +3,6 @@ import sys
 
 try:
     from ...helpermodules import log
-    from ..common import modbus
     from ..common.abstract_device import AbstractDevice, DeviceUpdater
     from ..common.abstract_component import ComponentUpdater
     from . import bat
@@ -11,7 +10,6 @@ try:
     from . import inverter
 except (ImportError, ValueError, SystemError):
     from helpermodules import log
-    from modules.common import modbus
     from modules.common.abstract_device import AbstractDevice, DeviceUpdater
     from modules.common.abstract_component import ComponentUpdater
     import bat
