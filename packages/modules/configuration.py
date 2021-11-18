@@ -79,6 +79,24 @@ def _pub_configurable_devices_components() -> None:
                         "text": "PV-Kit flex"
                     }
                 ]
+            },
+            {
+                "value": "mqtt",
+                "text": "MQTT-Device",
+                "component": [
+                    {
+                        "value": "bat",
+                        "text": "MQTT-Speicher"
+                    },
+                    {
+                        "value": "counter",
+                        "text": "MQTT-Zähler"
+                    },
+                    {
+                        "value": "inverter",
+                        "text": "MQTT-Wechselrichter"
+                    }
+                ]
             }
         ]
         pub.pub("openWB/set/system/configurable/devices_components", devices_components)

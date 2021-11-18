@@ -40,8 +40,8 @@ class MqttBat(AbstractComponent[BatState]):
 
     def get_component_info(self) -> ComponentInfo:
         return ComponentInfo(self.component_config["id"],
-                             self.component_config["type"],
-                             self.component_config["name"])
+                             self.component_config["name"],
+                             self.component_config["type"])
 
     def get_values(self) -> BatState:
         """ liest die Werte des Moduls aus.
