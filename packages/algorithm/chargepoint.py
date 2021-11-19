@@ -731,7 +731,7 @@ def get_chargepoint_template_default():
             "active": False
         },
         "rfid_enabling": False,
-        "valid_tags": ["1234"]
+        "valid_tags": []
     }
 
 
