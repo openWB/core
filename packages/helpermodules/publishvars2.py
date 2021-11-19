@@ -342,7 +342,7 @@ def pub_settings():
     # pub.pub("openWB/set/counter/0/config/max_current", [30, 30, 30])
     # pub.pub("openWB/set/counter/0/config/max_consumption", 30000)
     # pub.pub("openWB/system/device/0/config", {"type": "mqtt", "name": "MQTT", "id": 0, "configuration": {}})
-    # pub.pub("openWB/system/device/0/component/0/config", 
+    # pub.pub("openWB/system/device/0/component/0/config",
     #   {"type": "counter", "name": "MQTT-Z\u00e4hler", "id": 0, "configuration": {}})
     # else:
     #     # Firma

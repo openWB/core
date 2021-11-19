@@ -177,7 +177,7 @@ class UpdateConfig:
                    "^openWB/vehicle/[0-9]+/control_parameter/timestamp_perform_phase_switch$",
                    "^openWB/vehicle/[0-9]+/control_parameter/phases$",
                    "^openWB/vehicle/[0-9]+/set/ev_template$",
-                   
+
                    "^openWB/system/lastlivevaluesJson$",
                    "^openWB/system/update_in_progress$",
                    "^openWB/system/device/0/config$",
