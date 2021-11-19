@@ -35,7 +35,7 @@ def _pub_configurable_devices_components() -> None:
                         "text": "Alpha Ess-Speicher"
                     },
                     {
-                        "value": "cointer",
+                        "value": "counter",
                         "text": "Alpha Ess-Zähler"
                     },
                     {

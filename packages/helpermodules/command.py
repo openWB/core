@@ -139,7 +139,7 @@ class Command:
         try:
             new_id = self.max_id_device + 1
             log.MainLogger().info(
-                "Neues Device vom Typ"+str(payload["data"]["type"])+" mit ID "+str(new_id)+" hinzugefuegt.")
+                "Neues Device vom Typ "+str(payload["data"]["type"])+" mit ID "+str(new_id)+" hinzugefuegt.")
             dev = importlib.import_module(".modules."+payload["data"]["type"]+".device", "packages")
             device_default = dev.get_default_config()
             device_default["id"] = new_id

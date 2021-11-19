@@ -265,7 +265,7 @@ class setData:
         """
         try:
             valid = True
-            # Wenn es ein Float erwartet wird, kann auch ein Int akzeptiert werden. Da dies automatisch umgewandelt
+            # Wenn ein Float erwartet wird, kann auch ein Int akzeptiert werden, da dies automatisch umgewandelt
             # wird, falls erfoderlich.
             if isinstance(value, data_type) or (data_type == float and isinstance(value, int)):
                 if ranges:

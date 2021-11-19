@@ -686,24 +686,9 @@ function checkgraphload() {
 		return;
 	}
 	if (typeof boolDisplayHouseConsumption === "boolean" &&
-		typeof boolDisplayLoad1 === "boolean" &&
-		typeof boolDisplayLp1Soc === "boolean" &&
-		typeof boolDisplayLp2Soc === "boolean" &&
-		typeof boolDisplayLoad2 === "boolean" &&
-		typeof boolDisplayLp1 === "boolean" &&
-		typeof boolDisplayLp2 === "boolean" &&
-		typeof boolDisplayLp3 === "boolean" &&
-		typeof boolDisplayLp4 === "boolean" &&
-		typeof boolDisplayLp5 === "boolean" &&
-		typeof boolDisplayLp6 === "boolean" &&
-		typeof boolDisplayLp7 === "boolean" &&
-		typeof boolDisplayLp8 === "boolean" &&
 		typeof boolDisplayLpAll === "boolean" &&
-		typeof boolDisplaySpeicherSoc === "boolean" &&
-		typeof boolDisplaySpeicher === "boolean" &&
-		typeof boolDisplayEvu === "boolean" &&
-		typeof boolDisplayPv === "boolean" &&
-		typeof boolDisplayLegend === "boolean") {
+		typeof boolDisplayEvu === "boolean"
+	) {
 		if (initialread != 0) {
 			if (graphloaded == 0) {
 				graphloaded = 1;
@@ -720,57 +705,12 @@ function forcegraphload() {
 		if (!(typeof boolDisplayHouseConsumption === "boolean")) {
 			showhidedataset('boolDisplayHouseConsumption');
 		}
-		// if (!(typeof boolDisplayLoad1 === "boolean")) {
-		// 	showhidedataset('boolDisplayLoad1');
-		// }
-		// if (!(typeof boolDisplayLoad2 === "boolean")) {
-		// 	showhidedataset('boolDisplayLoad2');
-		// }
-		// if (!(typeof boolDisplayLp1Soc === "boolean")) {
-		// 	showhidedataset('boolDisplayLp1Soc');
-		// }
-		// if (!(typeof boolDisplayLp2Soc === "boolean")) {
-		// 	showhidedataset('boolDisplayLp2Soc');
-		// }
-		// if (!(typeof boolDisplayLp1 === "boolean")) {
-		// 	showhidedataset('boolDisplayLp1');
-		// }
-		// if (!(typeof boolDisplayLp2 === "boolean")) {
-		// 	showhidedataset('boolDisplayLp2');
-		// }
-		// if (!(typeof boolDisplayLp3 === "boolean")) {
-		// 	showhidedataset('boolDisplayLp3');
-		// }
-		// if (!(typeof boolDisplayLp4 === "boolean")) {
-		// 	showhidedataset('boolDisplayLp4');
-		// }
-		// if (!(typeof boolDisplayLp5 === "boolean")) {
-		// 	showhidedataset('boolDisplayLp5');
-		// }
-		// if (!(typeof boolDisplayLp6 === "boolean")) {
-		// 	showhidedataset('boolDisplayLp6');
-		// }
-		// if (!(typeof boolDisplayLp7 === "boolean")) {
-		// 	showhidedataset('boolDisplayLp7');
-		// }
-		// if (!(typeof boolDisplayLp8 === "boolean")) {
-		// 	showhidedataset('boolDisplayLp8');
-		// }
 		if (!(typeof boolDisplayLpAll === "boolean")) {
 			showhidedataset('boolDisplayLpAll');
 		}
-		// if (!(typeof boolDisplaySpeicherSoc === "boolean")) {
-		// 	showhidedataset('boolDisplaySpeicherSoc');
-		// }
-		// if (!(typeof boolDisplaySpeicher === "boolean")) {
-		// 	showhidedataset('boolDisplaySpeicher');
-		// }
 		if (!(typeof boolDisplayEvu === "boolean")) {
 			showhidedataset('boolDisplayEvu');
 		}
-		// if (!(typeof boolDisplayPv === "boolean")) {
-		// 	showhidedataset('boolDisplayPv');
-		// }
 		if (!(typeof boolDisplayLegend === "boolean")) {
 			showhidedataset('boolDisplayLegend');
 		}
