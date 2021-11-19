@@ -496,12 +496,12 @@ def get_charge_template_scheduled_plan_default() -> dict:
     charge_template_scheduled_plan_default = {
         "name": "Zielladen-Standard",
         "active": True,
-        "time": "07:00", # ToDo: aktuelle Zeit verwenden
+        "time": "07:00",  # ToDo: aktuelle Zeit verwenden
         "soc": 85,
         "frequency":
             {
                 "selected": "daily",
-                "once": ["2021-11-01"], # ToDo: aktuelles Datum verwenden
+                "once": ["2021-11-01"],  # ToDo: aktuelles Datum verwenden
                 "weekly": [False, False, False, False, False, False, False]
             }
     }
@@ -512,12 +512,12 @@ def get_charge_template_time_charging_plan_default():
     charge_template_time_charging_plan_default = {
         "name": "Zeitladen-Standard",
         "active": False,
-        "time": ["06:00", "07:00"], # ToDo: aktuelle Zeit verwenden + 1 Stunde
+        "time": ["06:00", "07:00"],  # ToDo: aktuelle Zeit verwenden + 1 Stunde
         "current": 16,
         "frequency":
         {
             "selected": "daily",
-            "once": ["2021-11-01", "2021-11-05"], # ToDo: aktuelles Datum verwenden
+            "once": ["2021-11-01", "2021-11-05"],  # ToDo: aktuelles Datum verwenden
             "weekly": [False, False, False, False, False, False, False]
         }
     }
