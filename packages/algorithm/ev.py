@@ -434,6 +434,7 @@ def get_ev_template_default() -> dict:
         "name": "Standard-EV-Vorlage",
         "max_current_multi_phases": 16,
         "max_phases": 3,
+        "phase_switch_pause": 2,
         "prevent_switch_stop": False,
         "control_pilot_interruption": False,
         "average_consump": 17,
@@ -455,7 +456,7 @@ class evTemplate:
 
 def get_charge_template_default() -> dict:
     return {
-        "name": "Standard-Ladevorlage",
+        "name": "Standard-Ladeprofil-Vorlage",
         "disable_after_unplug": False,
         "prio": False,
         "load_default": False,
@@ -495,12 +496,12 @@ def get_charge_template_scheduled_plan_default() -> dict:
     charge_template_scheduled_plan_default = {
         "name": "Zielladen-Standard",
         "active": True,
-        "time": "07:00",
+        "time": "07:00", # ToDo: aktuelle Zeit verwenden
         "soc": 85,
         "frequency":
             {
                 "selected": "daily",
-                "once": ["2021-11-01"],
+                "once": ["2021-11-01"], # ToDo: aktuelles Datum verwenden
                 "weekly": [False, False, False, False, False, False, False]
             }
     }
@@ -510,13 +511,13 @@ def get_charge_template_scheduled_plan_default() -> dict:
 def get_charge_template_time_charging_plan_default():
     charge_template_time_charging_plan_default = {
         "name": "Zeitladen-Standard",
-        "active": True,
-        "time": ["06:00", "07:00"],
+        "active": False,
+        "time": ["06:00", "07:00"], # ToDo: aktuelle Zeit verwenden + 1 Stunde
         "current": 16,
         "frequency":
         {
             "selected": "daily",
-            "once": ["2021-11-01", "2021-11-05"],
+            "once": ["2021-11-01", "2021-11-05"], # ToDo: aktuelles Datum verwenden
             "weekly": [False, False, False, False, False, False, False]
         }
     }
