@@ -771,11 +771,11 @@ class setData:
             elif "/get/power_all" in msg.topic:
                 self._validate_value(
                     msg, float, [(float("-inf"), float("inf")), (None, None)])
-            elif "/get/current" in msg.topic:
+            elif ("/get/power_phase" in msg.topic or
+                    "/get/current" in msg.topic):
                 self._validate_value(
                     msg, float, [(float("-inf"), float("inf")), (None, None)], collection=list)
             elif ("/get/voltage" in msg.topic or
-                    "/get/power_phase" in msg.topic or
                     "/get/power_factor" in msg.topic):
                 self._validate_value(
                     msg, float, [(0, float("inf")), (None, None)], collection=list)
