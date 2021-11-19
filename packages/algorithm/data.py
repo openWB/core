@@ -24,6 +24,7 @@ class Data:
         self._ev_data = {}
         self._ev_template_data = {}
         self._general_data = {}
+        self._graph_data = {}
         self._optional_data = {}
         self._pv_data = {}
         self._pv_module_data = {}
@@ -58,18 +59,18 @@ class Data:
         self.event.set()
 
     @property
-    def bat_module_data(self):
+    def graph_data(self):
         self.event.wait()
         self.event.clear()
-        temp = self._bat_module_data
+        temp = self._graph_data
         self.event.set()
         return temp
 
-    @bat_module_data.setter
-    def bat_module_data(self, value):
+    @graph_data.setter
+    def graph_data(self, value):
         self.event.wait()
         self.event.clear()
-        self._bat_module_data = value
+        self._graph_data = value
         self.event.set()
 
     @property
@@ -263,6 +264,7 @@ class Data:
         self._print_dictionaries(self._ev_data)
         self._print_dictionaries(self._ev_template_data)
         self._print_dictionaries(self._general_data)
+        self._print_dictionaries(self._graph_data)
         self._print_dictionaries(self._optional_data)
         self._print_dictionaries(self._pv_data)
         self._print_dictionaries(self._pv_module_data)

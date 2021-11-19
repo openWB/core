@@ -11,6 +11,7 @@ from ..algorithm import chargepoint
 from ..algorithm import counter
 from ..algorithm import ev
 from ..algorithm import general
+from . import graph
 from . import log
 from ..algorithm import optional
 from . import pub
@@ -34,10 +35,10 @@ class SubData:
     ev_charge_template_data = {}
     counter_data = {}
     bat_data = {}
-    bat_module_data = {}
     general_data = {}
     optional_data = {}
     system_data = {}
+    graph_data = {}
 
     def __init__(self, event_ev_template, event_charge_template, event_cp_config):
         self.event_ev_template = event_ev_template
@@ -49,6 +50,7 @@ class SubData:
         self.cp_data["all"] = chargepoint.allChargepoints()
         self.counter_data["all"] = counter.counterAll()
         self.pv_data["all"] = pv.pvAll()
+        self.graph_data["graph"] = graph.Graph()
 
     def sub_topics(self):
         """ abonniert alle Topics.
@@ -86,6 +88,7 @@ class SubData:
         client.subscribe("openWB/pv/#", 2)
         client.subscribe("openWB/bat/#", 2)
         client.subscribe("openWB/general/#", 2)
+        client.subscribe("openWB/graph/#", 2)
         client.subscribe("openWB/optional/#", 2)
         client.subscribe("openWB/counter/#", 2)
         client.subscribe("openWB/log/#", 2)
@@ -115,6 +118,8 @@ class SubData:
             self.process_bat_topic(self.bat_data, msg)
         elif "openWB/general/" in msg.topic:
             self.process_general_topic(self.general_data, msg)
+        elif "openWB/graph/" in msg.topic:
+            self.process_graph_topic(self.graph_data, msg)
         elif "openWB/optional/" in msg.topic:
             self.process_optional_topic(self.optional_data, msg)
         elif "openWB/counter/" in msg.topic:
@@ -762,5 +767,26 @@ class SubData:
                                                                index_second].component.simulation = sim_data
             else:
                 self.set_json_payload(var["system"].data, msg)
+        except Exception:
+            log.MainLogger().exception("Fehler im subdata-Modul")
+
+    def process_graph_topic(self, var, msg):
+        """ Handler für die Graph-Topics
+
+         Parameters
+        ----------
+        client : (unused)
+            vorgegebener Parameter
+        userdata : (unused)
+            vorgegebener Parameter
+        msg:
+            enthält Topic und Payload
+        """
+        try:
+            if re.search("^.+/graph/.+$", msg.topic) is not None:
+                if re.search("^.+/graph/config/.+$", msg.topic) is not None:
+                    if "config" not in var["graph"].data:
+                        var["graph"].data["config"] = {}
+                    self.set_json_payload(var["graph"].data["config"], msg)
         except Exception:
             log.MainLogger().exception("Fehler im subdata-Modul")
