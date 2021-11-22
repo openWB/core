@@ -203,7 +203,6 @@ class UpdateConfig:
         ("openWB/set/vehicle/0/tag_id", ev.get_vehicle_default()["tag_id"]),
         ("openWB/set/vehicle/template/ev_template/0", ev.get_ev_template_default()),
         ("openWB/set/vehicle/template/charge_template/0", ev.get_charge_template_default()),
-        ("openWB/set/vehicle/template/charge_template/0", ev.get_charge_template_default()),
         ("openWB/set/vehicle/template/charge_template/0/chargemode/scheduled_charging/plans/0",
          ev.get_charge_template_scheduled_plan_default()),
         ("openWB/set/vehicle/template/charge_template/0/time_charging/plans/0",

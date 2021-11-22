@@ -199,12 +199,16 @@ class Command:
         """
         try:
             if self.max_id_chargepoint >= payload["data"]["id"]:
-                data.data.counter_data["all"].hierarchy_remove_item(
-                    "cp"+str(payload["data"]["id"]))
-                log.MainLogger().info("Ladepunkt mit ID " +
-                                      str(payload["data"]["id"])+" geloescht.")
-                ProcessBrokerBranch(
-                    "chargepoint/"+str(payload["data"]["id"])).remove_topics()
+                if payload["data"]["id"] > 0:
+                    data.data.counter_data["all"].hierarchy_remove_item(
+                        "cp"+str(payload["data"]["id"]))
+                    log.MainLogger().info("Ladepunkt mit ID " +
+                                          str(payload["data"]["id"])+" geloescht.")
+                    ProcessBrokerBranch(
+                        "chargepoint/"+str(payload["data"]["id"])).remove_topics()
+                else:
+                    self.__pub_error(
+                        payload, connection_id, "Ladepunkt mit ID 0 darf nicht geloescht werden.")
             else:
                 self.__pub_error(
                     payload, connection_id, "Die ID ist groesser als die maximal vergebene ID.")
@@ -235,10 +239,14 @@ class Command:
         """
         try:
             if self.max_id_chargepoint_template >= payload["data"]["id"]:
-                log.MainLogger().info("Ladepunkt-Vorlage mit ID " +
-                                      str(payload["data"]["id"])+" geloescht.")
-                ProcessBrokerBranch("chargepoint/template/" +
-                                    str(payload["data"]["id"])).remove_topics()
+                if payload["data"]["id"] > 0:
+                    log.MainLogger().info("Ladepunkt-Vorlage mit ID " +
+                                          str(payload["data"]["id"])+" geloescht.")
+                    ProcessBrokerBranch("chargepoint/template/" +
+                                        str(payload["data"]["id"])).remove_topics()
+                else:
+                    self.__pub_error(
+                        payload, connection_id, "Ladepunkt-Vorlage mit ID 0 darf nicht geloescht werden.")
             else:
                 self.__pub_error(
                     payload, connection_id, "Die ID ist groesser als die maximal vergebene ID.")
@@ -269,13 +277,17 @@ class Command:
         """
         try:
             if self.max_id_autolock_plan >= payload["data"]["plan"]:
-                log.MainLogger().info(
-                    "Autolock-Plan mit ID " + str(payload["data"]["plan"]) + " zu Template " +
-                    str(payload["data"]["template"]) + " geloescht.")
-                pub.pub(
-                    "openWB/chargepoint/template/" + str(payload["data"]["template"]) + "/autolock/" +
-                    str(payload["data"]["plan"]),
-                    "")
+                if payload["data"]["plan"] > 0:
+                    log.MainLogger().info(
+                        "Autolock-Plan mit ID " + str(payload["data"]["plan"]) + " zu Template " +
+                        str(payload["data"]["template"]) + " geloescht.")
+                    pub.pub(
+                        "openWB/chargepoint/template/" + str(payload["data"]["template"]) + "/autolock/" +
+                        str(payload["data"]["plan"]),
+                        "")
+                else:
+                    self.__pub_error(
+                        payload, connection_id, "Autolock-Plan mit ID 0 darf nicht geloescht werden.")
             else:
                 self.__pub_error(
                     payload, connection_id, "Die ID ist groesser als die maximal vergebene ID.")
@@ -305,10 +317,14 @@ class Command:
         """
         try:
             if self.max_id_charge_template >= payload["data"]["id"]:
-                log.MainLogger().info("Lade-Template mit ID " +
-                                      str(payload["data"]["id"])+" geloescht.")
-                pub.pub("openWB/vehicle/template/charge_template/" +
-                        str(payload["data"]["id"]), "")
+                if payload["data"]["id"] > 0:
+                    log.MainLogger().info("Lade-Template mit ID " +
+                                          str(payload["data"]["id"])+" geloescht.")
+                    pub.pub("openWB/vehicle/template/charge_template/" +
+                            str(payload["data"]["id"]), "")
+                else:
+                    self.__pub_error(
+                        payload, connection_id, "Ladevorlage mit ID 0 darf nicht geloescht werden.")
             else:
                 self.__pub_error(
                     payload, connection_id, "Die ID ist groesser als die maximal vergebene ID.")
@@ -342,13 +358,17 @@ class Command:
         """
         try:
             if self.max_id_charge_template_scheduled_plan >= payload["data"]["plan"]:
-                log.MainLogger().info(
-                    "Zielladen-Template mit ID " + str(payload["data"]["plan"]) + " zu Template " +
-                    str(payload["data"]["template"]) + " geloescht.")
-                pub.pub(
-                    "openWB/vehicle/template/charge_template/" + str(payload["data"]["template"]) +
-                    "/chargemode/scheduled_charging/plans/" + str(payload["data"]["plan"]),
-                    "")
+                if payload["data"]["plan"] > 0:
+                    log.MainLogger().info(
+                        "Zielladen-Template mit ID " + str(payload["data"]["plan"]) + " zu Template " +
+                        str(payload["data"]["template"]) + " geloescht.")
+                    pub.pub(
+                        "openWB/vehicle/template/charge_template/" + str(payload["data"]["template"]) +
+                        "/chargemode/scheduled_charging/plans/" + str(payload["data"]["plan"]),
+                        "")
+                else:
+                    self.__pub_error(
+                        payload, connection_id, "Zielladen-Plan mit ID 0 darf nicht geloescht werden.")
             else:
                 self.__pub_error(
                     payload, connection_id, "Die ID ist groesser als die maximal vergebene ID.")
@@ -382,13 +402,17 @@ class Command:
         """
         try:
             if self.max_id_charge_template_time_charging_plan >= payload["data"]["plan"]:
-                log.MainLogger().info(
-                    "Zeitladen-Template mit ID " + str(payload["data"]["plan"]) + " zu Template " +
-                    str(payload["data"]["template"]) + " geloescht.")
-                pub.pub(
-                    "openWB/vehicle/template/charge_template/" + str(payload["data"]["template"]) +
-                    "/time_charging/plans/" + str(payload["data"]["plan"]),
-                    "")
+                if payload["data"]["plan"] > 0:
+                    log.MainLogger().info(
+                        "Zeitladen-Template mit ID " + str(payload["data"]["plan"]) + " zu Template " +
+                        str(payload["data"]["template"]) + " geloescht.")
+                    pub.pub(
+                        "openWB/vehicle/template/charge_template/" + str(payload["data"]["template"]) +
+                        "/time_charging/plans/" + str(payload["data"]["plan"]),
+                        "")
+                else:
+                    self.__pub_error(
+                        payload, connection_id, "Zeitladen-Plan mit ID 0 darf nicht geloescht werden.")
             else:
                 self.__pub_error(
                     payload, connection_id, "Die ID ist groesser als die maximal vergebene ID.")
@@ -464,10 +488,14 @@ class Command:
         """
         try:
             if self.max_id_ev_template >= payload["data"]["id"]:
-                log.MainLogger().info("EV-Template mit ID " +
-                                      str(payload["data"]["id"])+" geloescht.")
-                pub.pub("openWB/vehicle/template/ev_template/" +
-                        str(payload["data"]["id"]), "")
+                if payload["data"]["id"] > 0:
+                    log.MainLogger().info("EV-Template mit ID " +
+                                          str(payload["data"]["id"])+" geloescht.")
+                    pub.pub("openWB/vehicle/template/ev_template/" +
+                            str(payload["data"]["id"]), "")
+                else:
+                    self.__pub_error(
+                        payload, connection_id, "EV-Vorlage mit ID 0 darf nicht geloescht werden.")
             else:
                 self.__pub_error(
                     payload, connection_id, "Die ID ist groesser als die maximal vergebene ID.")
@@ -503,11 +531,15 @@ class Command:
         """
         try:
             if self.max_id_vehicle >= payload["data"]["id"]:
-                log.MainLogger().info(
-                    "EV mit ID "+str(payload["data"]["id"])+" geloescht.")
-                pub.pub("openWB/vehicle/"+str(payload["data"]["id"]), "")
-                ProcessBrokerBranch(
-                    "vehicle"+str(payload["data"]["id"])).remove_topics()
+                if payload["data"]["id"] > 0:
+                    log.MainLogger().info(
+                        "EV mit ID "+str(payload["data"]["id"])+" geloescht.")
+                    pub.pub("openWB/vehicle/"+str(payload["data"]["id"]), "")
+                    ProcessBrokerBranch(
+                        "vehicle"+str(payload["data"]["id"])).remove_topics()
+                else:
+                    self.__pub_error(
+                        payload, connection_id, "Vehicle mit ID 0 darf nicht geloescht werden.")
             else:
                 self.__pub_error(
                     payload, connection_id, "Die ID ist groesser als die maximal vergebene ID.")
