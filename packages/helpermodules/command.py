@@ -9,7 +9,7 @@ import time
 import traceback
 
 from . import log
-from . import pub
+from .pub import Pub
 from ..algorithm import chargepoint
 from ..algorithm import data
 from ..algorithm import ev
@@ -42,7 +42,7 @@ class Command:
         """ ermittelt die maximale ID vom Broker """
         try:
             max_id = ProcessBrokerBranch(topic).get_max_id()
-            pub.pub("openWB/set/command/max_id/"+id_topic, max_id)
+            Pub().pub("openWB/set/command/max_id/"+id_topic, max_id)
         except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")
 
@@ -101,7 +101,7 @@ class Command:
                         log.MainLogger().error("Zu dem Befehl wurde keine Methode gefunden.")
                         self.__pub_error(
                             payload, connection_id, "Zu dem Befehl wurde keine Methode gefunden.")
-                    pub.pub(msg.topic, "")
+                    Pub().pub(msg.topic, "")
                 elif "max_id" in msg.topic:
                     self.__process_max_id_topic(msg)
         except Exception:
@@ -127,8 +127,8 @@ class Command:
                 "data": payload["data"],
                 "error": error_str
             }
-            pub.pub("openWB/set/command/" +
-                    str(connection_id)+"/error", error_payload)
+            Pub().pub("openWB/set/command/" +
+                      str(connection_id)+"/error", error_payload)
             log.MainLogger().error("Befehl konnte nicht ausgefuehrt werden: "+str(error_payload))
         except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")
@@ -143,10 +143,10 @@ class Command:
             dev = importlib.import_module(".modules."+payload["data"]["type"]+".device", "packages")
             device_default = dev.get_default_config()
             device_default["id"] = new_id
-            pub.pub("openWB/set/system/device/" +
-                    str(new_id)+"/config", device_default)
+            Pub().pub("openWB/set/system/device/" +
+                      str(new_id)+"/config", device_default)
             self.max_id_device = self.max_id_device + 1
-            pub.pub("openWB/set/command/max_id/device", self.max_id_device)
+            Pub().pub("openWB/set/command/max_id/device", self.max_id_device)
         except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")
             self.__pub_error(
@@ -180,11 +180,11 @@ class Command:
             chargepoint_default["id"] = new_id
             data.data.counter_data["all"].hierarchy_add_item_below(
                 "cp"+str(new_id), data.data.counter_data["all"].get_evu_counter())
-            pub.pub("openWB/set/chargepoint/"+str(new_id)+"/config", chargepoint_default)
-            pub.pub("openWB/set/chargepoint/"+str(new_id)+"/set/manual_lock", False)
+            Pub().pub("openWB/set/chargepoint/"+str(new_id)+"/config", chargepoint_default)
+            Pub().pub("openWB/set/chargepoint/"+str(new_id)+"/set/manual_lock", False)
             self.max_id_chargepoint = self.max_id_chargepoint + 1
-            pub.pub("openWB/set/command/max_id/chargepoint",
-                    self.max_id_chargepoint)
+            Pub().pub("openWB/set/command/max_id/chargepoint",
+                      self.max_id_chargepoint)
             if self.max_id_chargepoint_template == -1:
                 self.addChargepointTemplate("addChargepoint", {})
             if self.max_id_vehicle == -1:
@@ -225,10 +225,10 @@ class Command:
             log.MainLogger().info("Neue Ladepunkt-Vorlage mit ID "+str(new_id)+" hinzugefuegt.")
             default = chargepoint.get_chargepoint_template_default()
             default["id"] = new_id
-            pub.pub("openWB/set/chargepoint/template/"+str(new_id), default)
+            Pub().pub("openWB/set/chargepoint/template/"+str(new_id), default)
             self.max_id_chargepoint_template = self.max_id_chargepoint_template + 1
-            pub.pub("openWB/set/command/max_id/chargepoint_template",
-                    self.max_id_chargepoint_template)
+            Pub().pub("openWB/set/command/max_id/chargepoint_template",
+                      self.max_id_chargepoint_template)
         except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")
             self.__pub_error(
@@ -263,10 +263,10 @@ class Command:
             log.MainLogger().info("Neuer Autolock-Plan mit ID " + str(new_id) + " zu Template " +
                                   str(payload["data"]["template"]) + " hinzugefuegt.")
             default = chargepoint.get_autolock_plan_default()
-            pub.pub("openWB/set/chargepoint/template/"+str(payload["data"]
-                                                           ["template"])+"/autolock/"+str(new_id), default)
+            Pub().pub("openWB/set/chargepoint/template/"+str(payload["data"]
+                                                             ["template"])+"/autolock/"+str(new_id), default)
             self.max_id_autolock_plan = new_id
-            pub.pub("openWB/set/command/max_id/autolock_plan", new_id)
+            Pub().pub("openWB/set/command/max_id/autolock_plan", new_id)
         except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")
             self.__pub_error(
@@ -281,7 +281,7 @@ class Command:
                     log.MainLogger().info(
                         "Autolock-Plan mit ID " + str(payload["data"]["plan"]) + " zu Template " +
                         str(payload["data"]["template"]) + " geloescht.")
-                    pub.pub(
+                    Pub().pub(
                         "openWB/chargepoint/template/" + str(payload["data"]["template"]) + "/autolock/" +
                         str(payload["data"]["plan"]),
                         "")
@@ -303,10 +303,10 @@ class Command:
             new_id = self.max_id_charge_template + 1
             log.MainLogger().info("Neues Lade-Template mit ID "+str(new_id)+" hinzugefuegt.")
             charge_template_default = ev.get_charge_template_default()
-            pub.pub("openWB/set/vehicle/template/charge_template/" +
-                    str(new_id), charge_template_default)
+            Pub().pub("openWB/set/vehicle/template/charge_template/" +
+                      str(new_id), charge_template_default)
             self.max_id_charge_template = new_id
-            pub.pub("openWB/set/command/max_id/charge_template", new_id)
+            Pub().pub("openWB/set/command/max_id/charge_template", new_id)
         except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")
             self.__pub_error(
@@ -320,8 +320,8 @@ class Command:
                 if payload["data"]["id"] > 0:
                     log.MainLogger().info("Lade-Template mit ID " +
                                           str(payload["data"]["id"])+" geloescht.")
-                    pub.pub("openWB/vehicle/template/charge_template/" +
-                            str(payload["data"]["id"]), "")
+                    Pub().pub("openWB/vehicle/template/charge_template/" +
+                              str(payload["data"]["id"]), "")
                 else:
                     self.__pub_error(
                         payload, connection_id, "Ladevorlage mit ID 0 darf nicht geloescht werden.")
@@ -341,12 +341,12 @@ class Command:
             log.MainLogger().info("Neues Zielladen-Template mit ID " + str(new_id) + " zu Template " +
                                   str(payload["data"]["template"]) + " hinzugefuegt.")
             charge_template_default = ev.get_charge_template_scheduled_plan_default()
-            pub.pub(
+            Pub().pub(
                 "openWB/set/vehicle/template/charge_template/" + str(payload["data"]["template"]) +
                 "/chargemode/scheduled_charging/plans/" + str(new_id),
                 charge_template_default)
             self.max_id_charge_template_scheduled_plan = new_id
-            pub.pub(
+            Pub().pub(
                 "openWB/set/command/max_id/charge_template_scheduled_plan", new_id)
         except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")
@@ -362,7 +362,7 @@ class Command:
                     log.MainLogger().info(
                         "Zielladen-Template mit ID " + str(payload["data"]["plan"]) + " zu Template " +
                         str(payload["data"]["template"]) + " geloescht.")
-                    pub.pub(
+                    Pub().pub(
                         "openWB/vehicle/template/charge_template/" + str(payload["data"]["template"]) +
                         "/chargemode/scheduled_charging/plans/" + str(payload["data"]["plan"]),
                         "")
@@ -385,12 +385,12 @@ class Command:
             log.MainLogger().info("Neues Zeitladen-Template mit ID " + str(new_id) + " zu Template " +
                                   str(payload["data"]["template"]) + " hinzugefuegt.")
             time_charging_plan_default = ev.get_charge_template_time_charging_plan_default()
-            pub.pub(
+            Pub().pub(
                 "openWB/set/vehicle/template/charge_template/" + str(payload["data"]["template"]) +
                 "/time_charging/plans/" + str(new_id),
                 time_charging_plan_default)
             self.max_id_charge_template_time_charging_plan = new_id
-            pub.pub(
+            Pub().pub(
                 "openWB/set/command/max_id/charge_template_time_charging_plan", new_id)
         except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")
@@ -406,7 +406,7 @@ class Command:
                     log.MainLogger().info(
                         "Zeitladen-Template mit ID " + str(payload["data"]["plan"]) + " zu Template " +
                         str(payload["data"]["template"]) + " geloescht.")
-                    pub.pub(
+                    Pub().pub(
                         "openWB/vehicle/template/charge_template/" + str(payload["data"]["template"]) +
                         "/time_charging/plans/" + str(payload["data"]["plan"]),
                         "")
@@ -438,12 +438,12 @@ class Command:
                         "counter"+str(new_id), data.data.counter_data["all"].get_evu_counter())
                 except IndexError:
                     # es gibt noch keinen EVU-Zähler
-                    pub.pub("openWB/set/counter/get/hierarchy", [{"id": "counter"+str(new_id), "children": []}])
-            pub.pub("openWB/set/system/device/"+str(payload["data"]["deviceId"]
-                                                    )+"/component/"+str(new_id)+"/config", component_default)
+                    Pub().pub("openWB/set/counter/get/hierarchy", [{"id": "counter"+str(new_id), "children": []}])
+            Pub().pub("openWB/set/system/device/"+str(payload["data"]["deviceId"]
+                                                      )+"/component/"+str(new_id)+"/config", component_default)
             self.max_id_component = self.max_id_component + 1
-            pub.pub("openWB/set/command/max_id/component",
-                    self.max_id_component)
+            Pub().pub("openWB/set/command/max_id/component",
+                      self.max_id_component)
         except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")
             self.__pub_error(
@@ -474,10 +474,10 @@ class Command:
             new_id = self.max_id_ev_template + 1
             log.MainLogger().info("Neues EV-Template mit ID "+str(new_id)+" hinzugefuegt.")
             ev_template_default = ev.get_ev_template_default()
-            pub.pub("openWB/set/vehicle/template/ev_template/" +
-                    str(new_id), ev_template_default)
+            Pub().pub("openWB/set/vehicle/template/ev_template/" +
+                      str(new_id), ev_template_default)
             self.max_id_ev_template = new_id
-            pub.pub("openWB/set/command/max_id/ev_template", new_id)
+            Pub().pub("openWB/set/command/max_id/ev_template", new_id)
         except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")
             self.__pub_error(
@@ -491,8 +491,8 @@ class Command:
                 if payload["data"]["id"] > 0:
                     log.MainLogger().info("EV-Template mit ID " +
                                           str(payload["data"]["id"])+" geloescht.")
-                    pub.pub("openWB/vehicle/template/ev_template/" +
-                            str(payload["data"]["id"]), "")
+                    Pub().pub("openWB/vehicle/template/ev_template/" +
+                              str(payload["data"]["id"]), "")
                 else:
                     self.__pub_error(
                         payload, connection_id, "EV-Vorlage mit ID 0 darf nicht geloescht werden.")
@@ -512,10 +512,10 @@ class Command:
             log.MainLogger().info("Neues EV mit ID "+str(new_id)+" hinzugefuegt.")
             vehicle_default = ev.get_vehicle_default()
             for default in vehicle_default:
-                pub.pub("openWB/set/vehicle/"+str(new_id)+"/" +
-                        str(default), vehicle_default[default])
+                Pub().pub("openWB/set/vehicle/"+str(new_id)+"/" +
+                          str(default), vehicle_default[default])
             self.max_id_vehicle = self.max_id_vehicle + 1
-            pub.pub("openWB/set/command/max_id/vehicle", self.max_id_vehicle)
+            Pub().pub("openWB/set/command/max_id/vehicle", self.max_id_vehicle)
             # Default-Mäßig werden die Templates 0 zugewiesen, wenn diese noch nicht existieren -> anlegen
             if self.max_id_charge_template == -1:
                 self.addChargeTemplate("addVehicle", {})
@@ -534,7 +534,7 @@ class Command:
                 if payload["data"]["id"] > 0:
                     log.MainLogger().info(
                         "EV mit ID "+str(payload["data"]["id"])+" geloescht.")
-                    pub.pub("openWB/vehicle/"+str(payload["data"]["id"]), "")
+                    Pub().pub("openWB/vehicle/"+str(payload["data"]["id"]), "")
                     ProcessBrokerBranch(
                         "vehicle"+str(payload["data"]["id"])).remove_topics()
                 else:
@@ -603,7 +603,7 @@ class ProcessBrokerBranch:
         try:
             if str(msg.payload.decode("utf-8")) != '':
                 log.MainLogger().debug("Geloeschtes Topic: "+str(msg.topic))
-                pub.pub(msg.topic, "")
+                Pub().pub(msg.topic, "")
         except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")
 

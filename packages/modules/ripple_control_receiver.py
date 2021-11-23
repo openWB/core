@@ -2,7 +2,7 @@ import RPi.GPIO as GPIO
 import time
 
 from ..helpermodules import log
-from ..helpermodules import pub
+from ..helpermodules.pub import Pub
 
 
 def read_ripple_control_receiver():
@@ -18,16 +18,16 @@ def read_ripple_control_receiver():
         time.sleep(10.2)
 
         if not button1_state:
-            pub.pub("openWB/set/general/ripple_control_receiver/r1_active", True)
+            Pub().pub("openWB/set/general/ripple_control_receiver/r1_active", True)
             time.sleep(0.2)
         else:
-            pub.pub("openWB/set/general/ripple_control_receiver/r1_active", False)
+            Pub().pub("openWB/set/general/ripple_control_receiver/r1_active", False)
             time.sleep(0.2)
         if not button2_state:
-            pub.pub("openWB/set/general/ripple_control_receiver/r2_active", True)
+            Pub().pub("openWB/set/general/ripple_control_receiver/r2_active", True)
             time.sleep(0.2)
         else:
-            pub.pub("openWB/set/general/ripple_control_receiver/r2_active", False)
+            Pub().pub("openWB/set/general/ripple_control_receiver/r2_active", False)
             time.sleep(0.2)
     except Exception as e:
         GPIO.cleanup()

@@ -4,7 +4,7 @@ import datetime
 
 from ..algorithm import data
 from . import log
-from . import pub
+from .pub import Pub
 
 
 class Graph:
@@ -58,8 +58,8 @@ class Graph:
             #     dataline="$dataline,\"load2-power\":$(convertTokW $verbraucher2_watt)"
             # fi
 
-            pub.pub("openWB/set/graph/lastlivevaluesJson", dataline)
-            pub.pub("openWB/set/system/lastlivevaluesJson", dataline)
+            Pub().pub("openWB/set/graph/lastlivevaluesJson", dataline)
+            Pub().pub("openWB/set/system/lastlivevaluesJson", dataline)
             with open("./ramdisk/graph_live.json", "a") as f:
                 f.write(str(dataline).replace("'", '"'))
                 f.write("\n")

@@ -6,7 +6,7 @@ import copy
 from . import chargelog
 from . import data
 from ..helpermodules import log
-from ..helpermodules import pub
+from ..helpermodules.pub import Pub
 from ..helpermodules import subdata
 
 
@@ -110,25 +110,25 @@ class prepare:
                                 cp.data["set"]["charging_ev_prev"] == vehicle):
                             # Das EV entspricht dem bisherigen EV.
                             cp.data["set"]["charging_ev"] = vehicle
-                            pub.pub("openWB/set/chargepoint/" +
-                                    str(cp.cp_num)+"/set/charging_ev", vehicle)
+                            Pub().pub("openWB/set/chargepoint/" +
+                                      str(cp.cp_num)+"/set/charging_ev", vehicle)
                             charging_ev.ev_template.data = charging_ev.data["set"]["ev_template"]
                             cp.data["set"]["charging_ev_data"] = charging_ev
-                            pub.pub("openWB/set/chargepoint/"+str(cp.cp_num) +
-                                    "/set/change_ev_permitted", [True, ""])
+                            Pub().pub("openWB/set/chargepoint/"+str(cp.cp_num) +
+                                      "/set/change_ev_permitted", [True, ""])
                         else:
                             # Darf das EV geändert werden?
                             if (cp.data["set"]["log"]["counter_at_plugtime"] == 0 or
                                     cp.data["set"]["log"]["counter_at_plugtime"] == cp.data["get"]["counter"]):
                                 cp.data["set"]["charging_ev"] = vehicle
-                                pub.pub("openWB/set/chargepoint/" +
-                                        str(cp.cp_num)+"/set/charging_ev", vehicle)
+                                Pub().pub("openWB/set/chargepoint/" +
+                                          str(cp.cp_num)+"/set/charging_ev", vehicle)
                                 cp.data["set"]["charging_ev_data"] = charging_ev
-                                pub.pub("openWB/set/chargepoint/"+str(cp.cp_num) +
-                                        "/set/change_ev_permitted", [True, ""])
+                                Pub().pub("openWB/set/chargepoint/"+str(cp.cp_num) +
+                                          "/set/change_ev_permitted", [True, ""])
                                 charging_ev.data["set"]["ev_template"] = charging_ev.ev_template.data
-                                pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num) +
-                                        "/set/ev_template", charging_ev.data["set"]["ev_template"])
+                                Pub().pub("openWB/set/vehicle/"+str(charging_ev.ev_num) +
+                                          "/set/ev_template", charging_ev.data["set"]["ev_template"])
                             else:
                                 # Altes EV beibehalten.
                                 if cp.data["set"]["charging_ev"] != -1:
@@ -136,10 +136,10 @@ class prepare:
                                 elif cp.data["set"]["charging_ev_prev"] != -1:
                                     vehicle = cp.data["set"]["charging_ev_prev"]
                                     cp.data["set"]["charging_ev"] = vehicle
-                                    pub.pub(
+                                    Pub().pub(
                                         "openWB/set/chargepoint/"+str(cp.cp_num)+"/set/charging_ev", vehicle)
                                     cp.data["set"]["charging_ev_prev"] = -1
-                                    pub.pub(
+                                    Pub().pub(
                                         "openWB/set/chargepoint/"+str(cp.cp_num)+"/set/charging_ev_prev", -1)
                                 else:
                                     raise ValueError(
@@ -149,8 +149,8 @@ class prepare:
                                                                 str(vehicle)]
                                 charging_ev.ev_template.data = charging_ev.data["set"]["ev_template"]
                                 cp.data["set"]["charging_ev_data"] = charging_ev
-                                pub.pub("openWB/set/chargepoint/"+str(cp.cp_num)+"/set/change_ev_permitted", [
-                                        False, "Das Fahrzeug darf nur geändert werden, wenn noch nicht geladen wurde. \
+                                Pub().pub("openWB/set/chargepoint/"+str(cp.cp_num)+"/set/change_ev_permitted", [
+                                    False, "Das Fahrzeug darf nur geändert werden, wenn noch nicht geladen wurde. \
                                             Bitte abstecken, dann wird das gewählte Fahrzeug verwendet."])
                                 log.MainLogger().warning(
                                     "Das Fahrzeug darf nur geändert werden, wenn noch nicht geladen wurde.")
@@ -205,11 +205,11 @@ class prepare:
                             if cp.data["set"]["charging_ev"] != -1:
                                 # Altes EV merken
                                 cp.data["set"]["charging_ev_prev"] = cp.data["set"]["charging_ev"]
-                                pub.pub("openWB/set/chargepoint/"+str(cp.cp_num) +
-                                        "/set/charging_ev_prev", cp.data["set"]["charging_ev_prev"])
+                                Pub().pub("openWB/set/chargepoint/"+str(cp.cp_num) +
+                                          "/set/charging_ev_prev", cp.data["set"]["charging_ev_prev"])
                             cp.data["set"]["charging_ev"] = -1
-                            pub.pub("openWB/set/chargepoint/" +
-                                    str(cp.cp_num)+"/set/charging_ev", -1)
+                            Pub().pub("openWB/set/chargepoint/" +
+                                      str(cp.cp_num)+"/set/charging_ev", -1)
                             log.MainLogger().debug("EV"+str(charging_ev.ev_num)+": Lademodus " +
                                                    str(charging_ev.charge_template.data["chargemode"]["selected"]) +
                                                    ", Submodus: " +
@@ -276,17 +276,17 @@ class prepare:
                           "current_plan": current_plan,
                           "average_consumption": vehicle.ev_template.data["average_consump"]}
             if soc_config_obj != chargepoint.data["get"]["connected_vehicle"]["soc_config"]:
-                pub.pub("openWB/chargepoint/"+str(chargepoint.cp_num) +
-                        "/get/connected_vehicle/soc_config", soc_config_obj)
+                Pub().pub("openWB/chargepoint/"+str(chargepoint.cp_num) +
+                          "/get/connected_vehicle/soc_config", soc_config_obj)
             if soc_obj != chargepoint.data["get"]["connected_vehicle"]["soc"]:
-                pub.pub("openWB/chargepoint/"+str(chargepoint.cp_num) +
-                        "/get/connected_vehicle/soc", soc_obj)
+                Pub().pub("openWB/chargepoint/"+str(chargepoint.cp_num) +
+                          "/get/connected_vehicle/soc", soc_obj)
             if info_obj != chargepoint.data["get"]["connected_vehicle"]["info"]:
-                pub.pub("openWB/chargepoint/"+str(chargepoint.cp_num) +
-                        "/get/connected_vehicle/info", info_obj)
+                Pub().pub("openWB/chargepoint/"+str(chargepoint.cp_num) +
+                          "/get/connected_vehicle/info", info_obj)
             if config_obj != chargepoint.data["get"]["connected_vehicle"]["config"]:
-                pub.pub("openWB/chargepoint/"+str(chargepoint.cp_num) +
-                        "/get/connected_vehicle/config", config_obj)
+                Pub().pub("openWB/chargepoint/"+str(chargepoint.cp_num) +
+                          "/get/connected_vehicle/config", config_obj)
         except Exception:
             log.MainLogger().exception("Fehler im Prepare-Modul")
 

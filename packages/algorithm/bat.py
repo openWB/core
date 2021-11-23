@@ -33,7 +33,7 @@ alleine
 
 from . import data
 from ..helpermodules import log
-from ..helpermodules import pub
+from ..helpermodules.pub import Pub
 
 
 class batAll:
@@ -77,7 +77,7 @@ class batAll:
                         log.MainLogger().exception("Fehler im Bat-Modul "+bat)
                 self.data["get"]["soc"] = int(soc_sum / soc_count)
                 # Alle Summentopics im Dict publishen
-                {pub.pub("openWB/set/bat/get/"+k, v)
+                {Pub().pub("openWB/set/bat/get/"+k, v)
                  for (k, v) in self.data["get"].items()}
                 # Speicher lädt
                 if self.data["get"]["power"] > 0:
@@ -92,14 +92,14 @@ class batAll:
                 self.data["config"]["configured"] = False
                 self.data["set"]["charging_power_left"] = 0
                 self.data["get"]["power"] = 0
-            pub.pub("openWB/set/bat/config/configured",
-                    self.data["config"]["configured"])
-            pub.pub("openWB/set/bat/set/charging_power_left",
-                    self.data["set"]["charging_power_left"])
-            pub.pub("openWB/set/bat/set/switch_on_soc_reached",
-                    self.data["set"]["switch_on_soc_reached"])
-            pub.pub("openWB/set/bat/set/hybrid_system_detected",
-                    self.data["set"]["hybrid_system_detected"])
+            Pub().pub("openWB/set/bat/config/configured",
+                      self.data["config"]["configured"])
+            Pub().pub("openWB/set/bat/set/charging_power_left",
+                      self.data["set"]["charging_power_left"])
+            Pub().pub("openWB/set/bat/set/switch_on_soc_reached",
+                      self.data["set"]["switch_on_soc_reached"])
+            Pub().pub("openWB/set/bat/set/hybrid_system_detected",
+                      self.data["set"]["hybrid_system_detected"])
         except Exception:
             log.MainLogger().exception("Fehler im Bat-Modul")
 
@@ -277,11 +277,11 @@ class batAll:
         """ Publishen und Loggen der verbleibnden PV-Leistung und reservierten Leistung
         """
         try:
-            pub.pub("openWB/set/bat/config/configured",
-                    self.data["config"]["configured"])
+            Pub().pub("openWB/set/bat/config/configured",
+                      self.data["config"]["configured"])
             if self.data["config"]["configured"]:
-                pub.pub("openWB/set/bat/set/charging_power_left",
-                        self.data["set"]["charging_power_left"])
+                Pub().pub("openWB/set/bat/set/charging_power_left",
+                          self.data["set"]["charging_power_left"])
                 log.MainLogger().info(str(self.data["set"]["charging_power_left"]) +
                                       "W Speicher-Leistung , die fuer die folgenden Ladepunkte uebrig ist.")
         except Exception:
