@@ -15,6 +15,7 @@ data/monthly_log
 modules/soc_tesla/tokens.*
 modules/soc_i3/token*
 modules/soc_eq/soc_eq_acc_*
+ramdisk/
 web/settings/.htaccess
 web/settings/.passwd
 web/lastcommit
