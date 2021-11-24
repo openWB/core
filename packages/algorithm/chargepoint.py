@@ -477,13 +477,13 @@ class chargepoint:
                 self.set_current_prev = self.data["set"]["current"]
             message = "Keine Ladung, da ein Fehler aufgetreten ist."
             charging_possbile = False
-            state, message = self._is_ev_plugged()
+            state, message = self._is_grid_protection_inactive()
             if state:
-                state, message = self._is_grid_protection_inactive()
+                state, message = self._is_ripple_control_receiver_inactive()
                 if state:
-                    state, message = self._is_ripple_control_receiver_inactive()
+                    state, message = self._is_loadmanagement_available()
                     if state:
-                        state, message = self._is_loadmanagement_available()
+                        state, message = self._is_ev_plugged()
                         if state:
                             state, message = self._is_manual_lock_inactive()
                             if state:

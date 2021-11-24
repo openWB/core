@@ -331,7 +331,7 @@ class counter:
             # Nur beim EVU-Zähler (counter0) wird auch die maximale Leistung geprüft.
             if self.counter_num == 0:
                 # Wenn der EVU-Zähler keine Werte liefert, darf nicht geladen werden.
-                if self.data["get"]["power_all"] is None or self.data["get"]["current"] is None:
+                if self.data["get"]["fault_state"] > 0:
                     data.data.counter_data["all"].data["set"]["loadmanagement_available"] = False
                     self.data["get"]["power_all"] = 0
                     return
