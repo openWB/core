@@ -23,8 +23,8 @@ def read_external_openwb(cp):
         else:
             pub.pub_single("openWB/set/isss/parentCPlp1",
                            str(cp_num), hostname=ip_address)
-    except Exception as e:
-        log.exception_logging(e)
+    except Exception:
+        log.MainLogger().exception("Fehler im Modul der externen openWB")
 
 
 def write_external_openwb(ip_address, num, current):
@@ -36,8 +36,8 @@ def write_external_openwb(ip_address, num, current):
         else:
             pub.pub_single("openWB/set/isss/Current",
                            current, hostname=ip_address)
-    except Exception as e:
-        log.exception_logging(e)
+    except Exception:
+        log.MainLogger().exception("Fehler im Modul der externen openWB")
 
 
 def _check_duo_virtual_counter(cp):
@@ -81,7 +81,7 @@ def _check_duo_virtual_counter(cp):
                                 "cp"+str(cp.cp_num), "cp"+str(data.data.cp_data[chargepoint].cp_num)]
                             break
             else:
-                log.message_debug_log(
+                log.MainLogger().debug(
                     "error", "Es konnte kein zweiter Ladepunkt für die openWB-Duo an Ladepunkt " + str(cp.cp_num) +
                     " gefunden werden.")
             index = 1
@@ -94,41 +94,41 @@ def _check_duo_virtual_counter(cp):
                     # Die Nummer gibts noch nicht.
                     break
                 index = index + 1
-            pub.pub("openWB/set/counter/"+str(index)+"/config",
-                    {"max_current": [16, 16, 16], "selected": "virtual"})
+            pub.Pub().pub("openWB/set/counter/"+str(index)+"/config",
+                          {"max_current": [16, 16, 16], "selected": "virtual"})
 
             # Hierarchie erweitern
             ret = data.data.counter_data["all"].hierarchy_add_item_aside(
                 "counter"+str(index), "cp"+str(cp.cp_num))
             if not ret:
-                log.message_debug_log("error", "counter"+str(index)+" konnte nicht auf der Ebene von cp"+str(
+                log.MainLogger().debug("error", "counter"+str(index)+" konnte nicht auf der Ebene von cp"+str(
                     cp.cp_num)+" in die Zaehlerhierarchie eingefuegt werden.")
                 return
             ret = data.data.counter_data["all"].hierarchy_remove_item(
                 "cp"+str(data.data.cp_data[connected_cps[0]].cp_num), keep_children=False)
             if not ret:
-                log.message_debug_log(
+                log.MainLogger().debug(
                     "error", "cp" + str(data.data.cp_data[connected_cps[0]].cp_num) +
                     " konnte nicht aus der Zaehlerhierarchie geloescht werden.")
                 return
             ret = data.data.counter_data["all"].hierarchy_remove_item(
                 "cp"+str(data.data.cp_data[connected_cps[1]].cp_num), keep_children=False)
             if not ret:
-                log.message_debug_log(
+                log.MainLogger().debug(
                     "error", "cp" + str(data.data.cp_data[connected_cps[1]].cp_num) +
                     " konnte nicht aus der Zaehlerhierarchie geloescht werden.")
                 return
             ret = data.data.counter_data["all"].hierarchy_add_item_below(
                 "cp"+str(data.data.cp_data[connected_cps[0]].cp_num), "counter"+str(index))
             if not ret:
-                log.message_debug_log("error", "cp"+str(cp.cp_num)+" konnte nicht unter der Ebene von counter"+str(
+                log.MainLogger().debug("error", "cp"+str(cp.cp_num)+" konnte nicht unter der Ebene von counter"+str(
                     index)+" in die Zaehlerhierarchie eingefuegt werden.")
                 return
             ret = data.data.counter_data["all"].hierarchy_add_item_below(
                 "cp"+str(data.data.cp_data[connected_cps[1]].cp_num), "counter"+str(index))
             if not ret:
-                log.message_debug_log("error", "cp"+str(cp.cp_num)+" konnte nicht unter der Ebene von counter"+str(
+                log.MainLogger().debug("error", "cp"+str(cp.cp_num)+" konnte nicht unter der Ebene von counter"+str(
                     index)+" in die Zaehlerhierarchie eingefuegt werden.")
                 return
-    except Exception as e:
-        log.exception_logging(e)
+    except Exception:
+        log.MainLogger().exception("Fehler im Modul der externen openWB")

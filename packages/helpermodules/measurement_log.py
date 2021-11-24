@@ -5,7 +5,7 @@ import pathlib
 
 from ..algorithm import data
 from . import log
-from . import pub
+from .pub import Pub
 from . import timecheck
 
 
@@ -182,11 +182,11 @@ def update_daily_yields():
             if counter in data.data.counter_data:
                 daily_yield_import = data.data.counter_data[counter].data["get"]["imported"] - \
                     daily_log[0]["counter"][counter]["imported"]
-                pub.pub("openWB/set/counter/"+str(
+                Pub().pub("openWB/set/counter/"+str(
                     data.data.counter_data[counter].counter_num)+"/get/daily_yield_import", daily_yield_import)
                 daily_yield_export = data.data.counter_data[counter].data["get"]["exported"] - \
                     daily_log[0]["counter"][counter]["exported"]
-                pub.pub("openWB/set/counter/"+str(
+                Pub().pub("openWB/set/counter/"+str(
                     data.data.counter_data[counter].counter_num)+"/get/daily_yield_export", daily_yield_export)
             else:
                 log.MainLogger().info("Zaehler "+str(counter) +
@@ -197,28 +197,28 @@ def update_daily_yields():
                 if cp in data.data.cp_data:
                     daily_yield = data.data.cp_data[cp].data["get"]["counter"] - \
                         daily_log[0]["cp"][cp]["counter"]
-                    pub.pub("openWB/set/chargepoint/" +
-                            str(data.data.cp_data[cp].cp_num)+"/get/daily_yield", daily_yield)
+                    Pub().pub("openWB/set/chargepoint/" +
+                              str(data.data.cp_data[cp].cp_num)+"/get/daily_yield", daily_yield)
                 else:
                     log.MainLogger().info("Ladepunkt "+str(cp) +
                                           " wurde zwischenzeitlich geloescht und wird daher nicht mehr aufgefuehrt.")
             else:
                 daily_yield = data.data.cp_data[cp].data["get"]["counter_all"] - \
                     daily_log[0]["cp"][cp]["counter"]
-                pub.pub("openWB/set/chargepoint/get/daily_yield", daily_yield)
+                Pub().pub("openWB/set/chargepoint/get/daily_yield", daily_yield)
         # Tagesertrag PV
         for pv in daily_log[0]["pv"]:
             daily_yield = data.data.pv_data[pv].data["get"]["counter"] - \
                 daily_log[0]["pv"][pv]["imported"]
             if "pv" in pv:
                 if pv in data.data.pv_data:
-                    pub.pub(
+                    Pub().pub(
                         "openWB/set/pv/"+str(data.data.pv_data[pv].pv_num)+"/get/daily_yield", daily_yield)
                 else:
                     log.MainLogger().info("Wechselrichter "+str(pv) +
                                           " wurde zwischenzeitlich geloescht und wird daher nicht mehr aufgefuehrt.")
             else:
-                pub.pub("openWB/set/pv/get/daily_yield", daily_yield)
+                Pub().pub("openWB/set/pv/get/daily_yield", daily_yield)
         # Tagesertrag Speicher
         for bat in daily_log[0]["bat"]:
             daily_yield_imported = data.data.bat_data[bat].data["get"]["imported"] - \
@@ -227,17 +227,17 @@ def update_daily_yields():
                 daily_log[0]["bat"][bat]["exported"]
             if "bat" in bat:
                 if bat in data.data.bat_data:
-                    pub.pub("openWB/set/bat/"+str(
+                    Pub().pub("openWB/set/bat/"+str(
                         data.data.bat_data[bat].bat_num)+"/get/daily_yield_import", daily_yield_imported)
-                    pub.pub("openWB/set/bat/"+str(
+                    Pub().pub("openWB/set/bat/"+str(
                         data.data.bat_data[bat].bat_num)+"/get/daily_yield_export", daily_yield_exported)
                 else:
                     log.MainLogger().info("Speicher "+str(bat) +
                                           " wurde zwischenzeitlich geloescht und wird daher nicht mehr aufgefuehrt.")
             else:
-                pub.pub("openWB/set/bat/get/daily_yield_import",
-                        daily_yield_imported)
-                pub.pub("openWB/set/bat/get/daily_yield_export",
-                        daily_yield_exported)
+                Pub().pub("openWB/set/bat/get/daily_yield_import",
+                          daily_yield_imported)
+                Pub().pub("openWB/set/bat/get/daily_yield_export",
+                          daily_yield_exported)
     except Exception:
         log.MainLogger().exception("Fehler im Werte-Loggingmodul")

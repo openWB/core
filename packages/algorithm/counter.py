@@ -2,7 +2,7 @@
 """
 from . import data
 from ..helpermodules import log
-from ..helpermodules import pub
+from ..helpermodules.pub import Pub
 
 
 class counterAll:
@@ -28,7 +28,7 @@ class counterAll:
 
     def put_stats(self):
         try:
-            pub.pub("openWB/set/counter/set/loadmanagement_active", self.data["set"]["loadmanagement_active"])
+            Pub().pub("openWB/set/counter/set/loadmanagement_active", self.data["set"]["loadmanagement_active"])
         except Exception:
             log.MainLogger().exception("Fehler in der allgemeinen Zaehler-Klasse")
 
@@ -51,8 +51,8 @@ class counterAll:
             else:
                 self.data["set"]["invalid_home_consumption"] = 0
                 self.data["set"]["home_consumption"] = home_consumption
-            pub.pub("openWB/set/counter/set/invalid_home_consumption",  self.data["set"]["invalid_home_consumption"])
-            pub.pub("openWB/set/counter/set/home_consumption", self.data["set"]["home_consumption"])
+            Pub().pub("openWB/set/counter/set/invalid_home_consumption",  self.data["set"]["invalid_home_consumption"])
+            Pub().pub("openWB/set/counter/set/home_consumption", self.data["set"]["home_consumption"])
 
         except Exception:
             log.MainLogger().exception("Fehler in der allgemeinen Zaehler-Klasse")
@@ -78,7 +78,7 @@ class counterAll:
             else:
                 cp = 0
             daily_yield_home_consumption = evu_imported + pv - cp + bat_exported - bat_imported - evu_exported
-            pub.pub("openWB/set/counter/set/daily_yield_home_consumption", daily_yield_home_consumption)
+            Pub().pub("openWB/set/counter/set/daily_yield_home_consumption", daily_yield_home_consumption)
             self.data["set"]["daily_yield_home_consumption"] = daily_yield_home_consumption
         except Exception:
             log.MainLogger().exception("Fehler in der allgemeinen Zaehler-Klasse")
@@ -215,7 +215,7 @@ class counterAll:
                 try:
                     if lower_level in child["id"]:
                         upper_level["children"].append({"id": id, "children": []})
-                        pub.pub(
+                        Pub().pub(
                             "openWB/set/counter/get/hierarchy",
                             data.data.counter_data["all"].data["get"]["hierarchy"])
                         return True
@@ -250,7 +250,7 @@ class counterAll:
                         if keep_children:
                             upper_level["children"].extend(child["children"])
                         upper_level["children"].remove(child)
-                        pub.pub(
+                        Pub().pub(
                             "openWB/set/counter/get/hierarchy",
                             data.data.counter_data["all"].data["get"]["hierarchy"])
                         return True
@@ -279,7 +279,7 @@ class counterAll:
         try:
             if below in self.data["get"]["hierarchy"][0]["id"]:
                 self.data["get"]["hierarchy"][0]["children"].append({"id": id, "children": []})
-                pub.pub("openWB/set/counter/get/hierarchy", data.data.counter_data["all"].data["get"]["hierarchy"])
+                Pub().pub("openWB/set/counter/get/hierarchy", data.data.counter_data["all"].data["get"]["hierarchy"])
                 return True
             else:
                 if len(self.data["get"]["hierarchy"][0]["children"]) != 0:
@@ -295,8 +295,8 @@ class counterAll:
                 try:
                     if below in child["id"]:
                         child["children"].append({"id": id, "children": []})
-                        pub.pub("openWB/set/counter/get/hierarchy",
-                                data.data.counter_data["all"].data["get"]["hierarchy"])
+                        Pub().pub("openWB/set/counter/get/hierarchy",
+                                  data.data.counter_data["all"].data["get"]["hierarchy"])
                         return True
                     else:
                         if len(child["children"]) != 0:
@@ -352,7 +352,7 @@ class counter:
 
     def put_stats(self):
         try:
-            pub.pub("openWB/set/counter/0/set/consumption_left", self.data["set"]["consumption_left"])
+            Pub().pub("openWB/set/counter/0/set/consumption_left", self.data["set"]["consumption_left"])
             log.MainLogger().debug(str(self.data["set"]["consumption_left"])+"W verbleibende EVU-Bezugs-Leistung")
         except Exception:
             log.MainLogger().exception("Fehler in der Zaehler-Klasse von "+str(self.counter_num))

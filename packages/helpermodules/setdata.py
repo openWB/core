@@ -7,7 +7,7 @@ import paho.mqtt.client as mqtt
 import re
 
 from . import log
-from . import pub
+from .pub import Pub
 from . import subdata
 
 
@@ -131,8 +131,8 @@ class setData:
 
             if valid:
                 if not pub_json:
-                    pub.pub(msg.topic.replace('set/', '', 1), value)
-                    pub.pub(msg.topic, "")
+                    Pub().pub(msg.topic.replace('set/', '', 1), value)
+                    Pub().pub(msg.topic, "")
                 else:
                     # aktuelles json-Objekt liegt in subdata
                     index = re.search(
@@ -175,14 +175,14 @@ class setData:
                     else:
                         topic = msg.topic[:index_pos]
                     topic = topic.replace('set/', '', 1)
-                    pub.pub(topic, template)
-                    pub.pub(msg.topic, "")
+                    Pub().pub(topic, template)
+                    Pub().pub(msg.topic, "")
                     event.clear()
             else:
-                pub.pub(msg.topic, "")
+                Pub().pub(msg.topic, "")
         except Exception:
             log.MainLogger().exception("Fehler im setdata-Modul")
-            pub.pub(msg.topic, "")
+            Pub().pub(msg.topic, "")
 
     def _change_key(self, next_level, key_list, value):
         """ rekursive Funktion, die den Eintrag im entsprechenden Dictionary aktualisiert oder anlegt.
@@ -308,11 +308,11 @@ class setData:
             if msg.payload:
                 log.MainLogger().error("Unbekanntes set-Topic: "+str(msg.topic) +
                                        ", " + str(json.loads(str(msg.payload.decode("utf-8")))))
-                pub.pub(msg.topic, "")
+                Pub().pub(msg.topic, "")
             else:
                 log.MainLogger().error("Unbekanntes set-Topic: " +
                                        str(msg.topic)+" mit leerem Payload")
-                pub.pub(msg.topic, "")
+                Pub().pub(msg.topic, "")
         except Exception:
             log.MainLogger().exception("Fehler im setdata-Modul")
 
@@ -529,7 +529,7 @@ class setData:
                 self._validate_value(msg, "json")
             elif "/get/rfid" in msg.topic:
                 # isss Anpassung muss noch in die nightly
-                pub.pub(msg.topic, "")
+                Pub().pub(msg.topic, "")
             else:
                 self.__unknown_topic(msg)
         except Exception:
@@ -875,7 +875,7 @@ class setData:
                 # hier kommen auch noch alte Topics ohne json-Format an.
                 # log.MainLogger().error("Unbekanntes set-Topic: "+str(msg.topic)+", "+
                 # str(json.loads(str(msg.payload.decode("utf-8")))))
-                pub.pub(msg.topic, "")
+                Pub().pub(msg.topic, "")
         except Exception:
             log.MainLogger().exception("Fehler im setdata-Modul")
 

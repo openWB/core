@@ -225,14 +225,14 @@ class SimCount:
                     str(counter_export_present) + "Ws"
                 )
                 start_new = False
-            pub.pub(topic+"simulation/timestamp_present",
-                    "%22.6f" % timestamp_present)
-            pub.pub(topic+"simulation/power_present", power_present)
+            pub.Pub().pub(topic+"simulation/timestamp_present",
+                          "%22.6f" % timestamp_present)
+            pub.Pub().pub(topic+"simulation/power_present", power_present)
 
             if start_new:
                 log.MainLogger().debug("Neue Simulation")
-                pub.pub(topic+"simulation/present_imported", 0)
-                pub.pub(topic+"simulation/present_exported", 0)
+                pub.Pub().pub(topic+"simulation/present_imported", 0)
+                pub.Pub().pub(topic+"simulation/present_exported", 0)
                 return 0, 0
             else:
                 timestamp_previous = timestamp_previous+1
@@ -254,8 +254,8 @@ class SimCount:
                     "simcount Zwischenergebnisse atkuelle Berechnung: Import: " + str(counter_import_present) +
                     " Export: " + str(counter_export_present) + " Power: " + str(power_present)
                 )
-                pub.pub(topic+"simulation/present_imported", counter_import_present)
-                pub.pub(topic+"simulation/present_exported", counter_export_present)
+                pub.Pub().pub(topic+"simulation/present_imported", counter_import_present)
+                pub.Pub().pub(topic+"simulation/present_exported", counter_export_present)
                 return wattposkh, wattnegkh
         except Exception as e:
             process_error(e)

@@ -50,10 +50,10 @@ class ModuleError(Exception):
                 pub.pub_single(prefix + "faultStr", self.fault_str)
                 pub.pub_single(prefix + "faultState", self.fault_state.value)
             else:
-                pub.pub(
+                pub.Pub().pub(
                     "openWB/set/" + component_info.type + "/" + str(component_info.id) +
                     "/get/fault_str", self.fault_str)
-                pub.pub(
+                pub.Pub().pub(
                     "openWB/set/" + component_info.type + "/" + str(component_info.id) +
                     "/get/fault_state", self.fault_state.value)
         except Exception:

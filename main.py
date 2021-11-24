@@ -11,10 +11,8 @@ from packages.algorithm import process
 from packages.algorithm import data
 from packages.algorithm import prepare
 from packages.helpermodules import command
-from packages.helpermodules import graph
 from packages.helpermodules import log
 from packages.helpermodules import measurement_log
-from packages.helpermodules import pub
 from packages.helpermodules import publishvars2
 from packages.helpermodules import setdata
 from packages.helpermodules import subdata
@@ -169,7 +167,6 @@ class RepeatedTimer(object):
 
 try:
     data.data_init()
-    pub.setup_connection()
     update_config.UpdateConfig().update()
     proc = process.process()
     control = algorithm.control()

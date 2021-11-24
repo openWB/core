@@ -4,7 +4,7 @@ import re
 import time
 
 from ...helpermodules import log
-from ...helpermodules import pub
+from ...helpermodules.pub import Pub
 
 
 def read_ip_evse(cp):
@@ -25,12 +25,12 @@ def read_ip_evse(cp):
             plug_state = True
         else:
             plug_state = False
-        pub.pub("openWB/set/chargepoint/"+str(cp_num)+"/get/plug_state", plug_state)
+        Pub().pub("openWB/set/chargepoint/"+str(cp_num)+"/get/plug_state", plug_state)
         if plug_state > 2:
             charge_state = True
         else:
             charge_state = False
-        pub.pub("openWB/set/chargepoint/"+str(cp_num)+"/get/charge_state", charge_state)
+        Pub().pub("openWB/set/chargepoint/"+str(cp_num)+"/get/charge_state", charge_state)
     except Exception as e:
         log.exception_logging(e)
 

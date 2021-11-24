@@ -4,7 +4,7 @@
 from . import chargelog
 from . import data
 from ..helpermodules import log
-from ..helpermodules import pub
+from ..helpermodules.pub import Pub
 from ..modules.cp import external_openwb
 from ..modules.cp import ip_evse
 
@@ -35,12 +35,12 @@ class process:
                                     ["ev" + str(chargepoint.data["set"]["charging_ev_prev"])],
                                     immediately=False)
                             chargepoint.data["set"]["current"] = 0
-                            pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/set/current", 0)
+                            Pub().pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/set/current", 0)
                         if chargepoint.data["get"]["state_str"] is not None:
-                            pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/get/state_str",
-                                    chargepoint.data["get"]["state_str"])
+                            Pub().pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/get/state_str",
+                                      chargepoint.data["get"]["state_str"])
                         else:
-                            pub.pub(
+                            Pub().pub(
                                 "openWB/set/chargepoint/" + str(chargepoint.cp_num) + "/get/state_str",
                                 "Ladevorgang läuft...")
                         self._start_charging(chargepoint)
@@ -82,7 +82,7 @@ class process:
                     "LP"+str(chargepoint.cp_num)+": Ladung wurde trotz verhinderter Unterbrechung gestoppt.")
 
             chargepoint.data["set"]["current"] = current
-            pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/set/current", current)
+            Pub().pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/set/current", current)
             log.MainLogger().debug("LP"+str(chargepoint.cp_num)+": set current "+str(current)+" A")
         except Exception:
             log.MainLogger().exception("Fehler im Process-Modul")

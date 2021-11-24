@@ -6,12 +6,12 @@ try:
     from ..common.module_error import ModuleError, ModuleErrorLevel
     from ...helpermodules import compatibility
     from ...helpermodules import log
-    from ...helpermodules import pub
+    from ...helpermodules.pub import Pub
     from .component_state import BatState, CounterState, InverterState
 except (ImportError, ValueError, SystemError):
     from helpermodules import compatibility
     from helpermodules import log
-    from helpermodules import pub
+    from helpermodules.pub import Pub
     from modules.common.module_error import ModuleError, ModuleErrorLevel
     from .component_state import BatState, CounterState, InverterState
 
@@ -49,9 +49,9 @@ def pub_to_broker(topic: str, value, digits: Union[int, None] = None) -> None:
     rounding = get_rounding_function_by_digits(digits)
     try:
         if isinstance(value, list):
-            pub.pub(topic, [rounding(v) for v in value])
+            Pub().pub(topic, [rounding(v) for v in value])
         else:
-            pub.pub(topic, rounding(value))
+            Pub().pub(topic, rounding(value))
     except Exception as e:
         process_error(e)
 
