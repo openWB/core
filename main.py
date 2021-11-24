@@ -2,6 +2,7 @@
 """Starten der benötigten Prozesse
 """
 
+import os
 from threading import Thread
 import threading
 import time
@@ -166,6 +167,11 @@ class RepeatedTimer(object):
 
 
 try:
+    # Regelung erst starten, wenn atreboot.sh fertig ist.
+    while os.path.isfile("/var/www/html/openWB/ramdisk/bootdone") == False:
+        time.sleep(1)
+    log.MainLogger().debug("Boot-Prozess abgeschlossen. Starten der Regelung")
+
     data.data_init()
     update_config.UpdateConfig().update()
     proc = process.process()
