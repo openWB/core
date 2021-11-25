@@ -1,8 +1,8 @@
 """Zähler-Logik
 """
-from . import data
-from ..helpermodules import log
-from ..helpermodules.pub import Pub
+from control import data
+from helpermodules import log
+from helpermodules.pub import Pub
 
 
 class counterAll:

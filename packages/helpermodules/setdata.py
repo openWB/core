@@ -6,9 +6,9 @@ import json
 import paho.mqtt.client as mqtt
 import re
 
-from . import log
-from .pub import Pub
-from . import subdata
+from helpermodules import log
+from helpermodules.pub import Pub
+from helpermodules import subdata
 
 
 class setData:

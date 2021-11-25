@@ -1,8 +1,8 @@
 import RPi.GPIO as GPIO
 import time
 
-from ..helpermodules import log
-from ..helpermodules.pub import Pub
+from helpermodules import log
+from helpermodules.pub import Pub
 
 
 def read_ripple_control_receiver():

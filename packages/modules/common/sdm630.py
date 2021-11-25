@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+from modules.common.module_error import ModuleError, ModuleErrorLevel
+from modules.common import modbus
 from typing import List, Tuple
 
 from modules.common import modbus

@@ -31,9 +31,9 @@ hochgeregelt werden. Wenn nicht muss der LP runtergeregelt werden?
 alleine
 """
 
-from . import data
-from ..helpermodules import log
-from ..helpermodules.pub import Pub
+from control import data
+from helpermodules import log
+from helpermodules.pub import Pub
 
 
 class batAll:

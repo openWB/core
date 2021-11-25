@@ -5,19 +5,19 @@ import json
 import paho.mqtt.client as mqtt
 import re
 
-from ..algorithm import bat
-from ..algorithm import chargelog
-from ..algorithm import chargepoint
-from ..algorithm import counter
-from ..algorithm import ev
-from ..algorithm import general
-from . import graph
-from . import log
-from ..algorithm import optional
-from .pub import Pub
-from . import system
-from ..algorithm import pv
-from ..modules.common.abstract_device import DeviceUpdater
+from control import bat
+from control import chargelog
+from control import chargepoint
+from control import counter
+from control import ev
+from control import general
+from helpermodules import graph
+from helpermodules import log
+from control import optional
+from helpermodules.pub import Pub
+from helpermodules import system
+from control import pv
+from modules.common.abstract_device import DeviceUpdater
 
 
 class SubData:
@@ -722,7 +722,7 @@ class SubData:
                     device_config = json.loads(
                         str(msg.payload.decode("utf-8")))
                     dev = importlib.import_module(
-                        ".modules."+device_config["type"]+".device", "packages")
+                        "."+device_config["type"]+".device", "modules")
                     var["device"+index] = DeviceUpdater(dev.Device((device_config)))
                     # Durch das erneute Subscriben werden die Komponenten mit dem aktualisierten TCP-Client angelegt.
                     client.subscribe("openWB/system/device/" +

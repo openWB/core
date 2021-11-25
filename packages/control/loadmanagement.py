@@ -10,8 +10,9 @@ auf allen 3 Phasen geprüft, ob genug Leistung/Stromstärke verfügbar ist.
 """
 
 from typing import Tuple
-from . import data
-from ..helpermodules import log
+
+from control import data
+from helpermodules import log
 
 # {counter: [max_overshoot, phase_with_max_overshoot]}
 overloaded_counters = {}
@@ -284,7 +285,6 @@ def _check_max_current(counter, required_current_phases, phases, offset):
         Phase, die den höchsten Strom verbraucht
     """
     current_used = [0, 0, 0]
-    loadmanagement = False
     max_current_overshoot = 0
     if offset:
         offset_current = 300 / 230 / phases
@@ -303,8 +303,8 @@ def _check_max_current(counter, required_current_phases, phases, offset):
                                           - offset_current)) > max_current_overshoot):
                     max_current_overshoot = current_used[phase] - \
                         data.data.counter_data[counter].data["config"]["max_current"][phase]
+                    loadmanagement = True
         if max_current_overshoot != 0:
-            loadmanagement = True
             if offset:
                 log.MainLogger().debug("Strom "+str(current_used))
                 log.MainLogger().warning(

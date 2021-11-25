@@ -2,9 +2,9 @@ import subprocess
 import time
 import datetime
 
-from ..algorithm import data
-from . import log
-from .pub import Pub
+from control import data
+from helpermodules import log
+from helpermodules.pub import Pub
 
 
 class Graph:

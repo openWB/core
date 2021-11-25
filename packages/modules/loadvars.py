@@ -3,11 +3,11 @@
 
 import threading
 
-from . import ripple_control_receiver
-from ..algorithm import data
-from ..helpermodules import log
+from modules import ripple_control_receiver
+from control import data
+from helpermodules import log
 
-from .cp import external_openwb as cp_external_openwb
+from modules.cp import external_openwb as cp_external_openwb
 
 
 class loadvars:

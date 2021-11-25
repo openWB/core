@@ -1,96 +1,90 @@
-from typing import Dict, List
+#!/usr/bin/env python3
+""" Modul zum Auslesen von Alpha Ess Speichern, Zählern und Wechselrichtern.
+"""
+from typing import List
 import sys
 
-try:
-    from ...helpermodules import log
-    from ..common.abstract_device import AbstractDevice, DeviceUpdater
-    from ..common.abstract_component import ComponentUpdater
-    from . import bat
-    from . import counter
-    from . import inverter
-except (ImportError, ValueError, SystemError):
-    from helpermodules import log
-    from modules.common.abstract_device import AbstractDevice, DeviceUpdater
-    from modules.common.abstract_component import ComponentUpdater
-    import bat
-    import counter
-    import inverter
+from helpermodules import log
+from modules.common import modbus
+from modules.mqtt import bat
+from modules.mqtt import counter
+from modules.mqtt import inverter
 
 
-def get_default_config() -> dict:
+def get_default() -> dict:
     return {
-        "name": "MQTT",
-        "type": "mqtt",
-        "id": 0,
-        "configuration": {
-        }
+        "name": "Alpha ESS",
+        "type": "alpha_ess",
+        "id": None,
+        "configuration": {}
     }
 
 
-COMPONENT_TYPE_TO_MODULE = {
-    "bat": bat,
-    "counter": counter,
-    "inverter": inverter
-}
-
-
-class Device(AbstractDevice):
-    COMPONENT_TYPE_TO_CLASS = {
-        "bat": bat.MqttBat,
-        "counter": counter.MqttCounter,
-        "inverter": inverter.MqttInverter
-    }
-    _components = {}  # type: Dict[str, ComponentUpdater]
-
+class Device():
     def __init__(self, device_config: dict) -> None:
         try:
-            self.device_config = device_config
+            super().__init__()
+            self.data = {}
+            self.data["config"] = device_config
             self.client = None
+            self.data["components"] = []
+            for c in self.data["config"]["components"]:
+                component = self.data["config"]["components"][c]
+                factory = self.__component_factory(component["type"])
+                self.data["components"].append(factory(self.client, component))
+        except Exception as e:
+            log.MainLogger().error("Fehler im Modul "+self.data["config"]["name"], e)
+
+    def add_component(self, component_config: dict) -> None:
+        try:
+            factory = self.__component_factory(component_config["type"])
+            self.data["components"]["component"+str(component_config["id"])
+                                    ] = factory(self.data["config"]["id"], self.client, component_config)
         except Exception:
-            log.MainLogger().exception("Fehler im Modul " +
-                                       device_config["name"])
+            log.MainLogger().exception("Fehler im Modul "+self.data["config"]["name"])
 
-    def add_component(self, component_config: dict):
-        factory = COMPONENT_TYPE_TO_MODULE[component_config["type"]].create_component
-        self._components["component"+str(component_config["id"])
-                         ] = factory(self.device_config, component_config, self.client)
+    def __component_factory(self, component_type: str):
+        try:
+            if component_type == "bat":
+                return bat.AlphaEssBat
+            elif component_type == "counter":
+                return counter.AlphaEssCounter
+            elif component_type == "inverter":
+                return inverter.AlphaEssInverter
+        except Exception as e:
+            log.MainLogger().error("Fehler im Modul "+self.data["config"]["name"], e)
 
-    def get_values(self):
-        log.MainLogger().debug("Mqtt-Module müssen nicht gelesen werden.")
+    def read(self):
+        try:
+            log.MainLogger().debug("Komponenten von "+self.data["config"]["name"]+" auslesen.")
+            for component in self.data["components"]:
+                component.read()
+        except Exception as e:
+            log.MainLogger().error("Fehler im Modul "+self.data["config"]["name"], e)
 
 
-def read_legacy(argv: List[str]):
-    """ Ausführung des Moduls als Python-Skript
-    """
-
-    log.MainLogger().debug('Start reading mqtt')
-    component_type = argv[1]
+def read_legacy(argv: List):
     try:
-        num = int(argv[2])
-    except IndexError:
-        num = None
+        component_type = str(argv[1])
+        version = int(argv[2])
 
-    device_config = get_default_config()
-    dev = DeviceUpdater(Device((device_config)))
-    if component_type in COMPONENT_TYPE_TO_MODULE:
-        component_config = COMPONENT_TYPE_TO_MODULE[
-            component_type].get_default_config()
-    else:
-        raise Exception("illegal component type " + component_type +
-                        ". Allowed values: " +
-                        ','.join(COMPONENT_TYPE_TO_MODULE.keys()))
+        default = get_default()
+        default["id"] = 0
+        dev = Device(default)
+        component_default = globals()[component_type].get_default()
+        component_default["id"] = 0
+        component_default["configuration"]["version"] = version
+        dev.add_component(component_default)
 
-    component_config["id"] = num
-    component_config["configuration"]["id"] = id
-    dev.device.add_component(component_config)
+        log.MainLogger().debug('alpha_ess Version: ' + str(version))
 
-    log.MainLogger().debug('mqtt Device')
-
-    dev.get_values()
+        dev.read()
+    except Exception as e:
+        log.MainLogger().error("Fehler im Modul Alpha Ess", e)
 
 
 if __name__ == "__main__":
     try:
         read_legacy(sys.argv)
-    except Exception:
-        log.MainLogger().exception("Fehler im Modul openwb_flex")
+    except Exception as e:
+        log.MainLogger().error("Fehler im Alpha Ess-Skript", e)

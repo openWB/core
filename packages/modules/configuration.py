@@ -1,5 +1,5 @@
-from ..helpermodules import log
-from ..helpermodules.pub import Pub
+from helpermodules import log
+from helpermodules.pub import Pub
 
 
 def pub_configurable():

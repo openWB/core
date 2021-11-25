@@ -3,10 +3,10 @@
 
 import random
 
-from . import data
-from ..helpermodules import log
-from ..helpermodules.pub import Pub
-from ..helpermodules import timecheck
+from control import data
+from helpermodules import log
+from helpermodules.pub import Pub
+from helpermodules import timecheck
 
 
 class general:

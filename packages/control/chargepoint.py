@@ -26,13 +26,13 @@ freigeschaltet werden.
 """
 import traceback
 
-from . import chargelog
-from . import data
-from . import ev
-from . import phase_switch
-from ..helpermodules import log
-from ..helpermodules.pub import Pub
-from ..helpermodules import timecheck
+from control import chargelog
+from control import data
+from control import ev
+from control import phase_switch
+from helpermodules import log
+from helpermodules.pub import Pub
+from helpermodules import timecheck
 
 
 def get_chargepoint_default() -> dict:
@@ -732,7 +732,7 @@ def get_chargepoint_template_default():
             "active": False
         },
         "rfid_enabling": False,
-        "valid_tags": []
+        "valid_tags": ["1234"]
     }
 
 

@@ -7,7 +7,7 @@ import os
 import paho.mqtt.client as mqtt
 import paho.mqtt.publish as publish
 
-from . import log
+from helpermodules import log
 
 
 class PubSingleton:

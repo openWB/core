@@ -3,9 +3,9 @@
 import subprocess
 import time
 
-from . import log
-from . import pub
-from ..algorithm import data
+from helpermodules import log
+from helpermodules import pub
+from control import data
 
 
 class system:

@@ -1,4 +1,4 @@
-# from .pub import Pub
+# from helpermodules.pub import Pub
 
 
 def pub_settings():

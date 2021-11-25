@@ -3,7 +3,7 @@
 
 from datetime import datetime, timedelta
 
-from . import log
+from helpermodules import log
 
 
 def set_date(now, begin, end):
