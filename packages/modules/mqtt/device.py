@@ -6,7 +6,7 @@ from modules.mqtt import counter
 from modules.mqtt import inverter
 
 
-def get_default_config() -> dict:
+def get_default() -> dict:
     return {
         "name": "MQTT",
         "type": "mqtt",

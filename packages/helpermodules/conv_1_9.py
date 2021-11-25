@@ -11,7 +11,7 @@ import os
 import pathlib
 
 try:
-    from . import data
+from helpermodules import data
 except Exception:
     pass
 
