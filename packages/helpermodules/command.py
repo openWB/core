@@ -13,6 +13,7 @@ from helpermodules.pub import Pub
 from control import chargepoint
 from control import data
 from control import ev
+from control import counter
 
 
 class Command:
@@ -436,6 +437,9 @@ class Command:
                 try:
                     data.data.counter_data["all"].hierarchy_add_item_below(
                         "counter"+str(new_id), data.data.counter_data["all"].get_evu_counter())
+                    default_config = counter.get_counter_default_config()
+                    for item in default_config:
+                        Pub().pub()("openWB/counter/"+str(new_id)+"/config/"+item, default_config[item])
                 except IndexError:
                     # es gibt noch keinen EVU-Zähler
                     Pub().pub("openWB/set/counter/get/hierarchy", [{"id": "counter"+str(new_id), "children": []}])

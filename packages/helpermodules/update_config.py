@@ -87,7 +87,7 @@ class UpdateConfig:
                    "^openWB/counter/0/get/exported$",
                    "^openWB/counter/0/set/consumption_left$",
                    "^openWB/counter/0/config/max_current$",
-                   "^openWB/counter/0/config/max_consumption$",
+                   "^openWB/counter/0/config/max_total_power$",
 
                    "^openWB/general/extern$",
                    "^openWB/general/control_interval$",

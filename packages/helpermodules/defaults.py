@@ -43,7 +43,7 @@ def pub_defaults():
         # hierarchy = [{"id": "counter0", "children": [{"id": "cp1", "children": []}]}]
         Pub().pub("openWB/defaults/counter/0/get/hierarchy", hierarchy)
         Pub().pub("openWB/defaults/counter/0/config/max_current", [30, 30, 30])
-        Pub().pub("openWB/defaults/counter/0/config/max_consumption", 30000)
+        Pub().pub("openWB/defaults/counter/0/config/max_total_power", 30000)
         Pub().pub("openWB/defaults/counter/0/module", {"selected": "mqtt_read"})
 
         # Speicher

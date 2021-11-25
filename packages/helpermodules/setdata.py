@@ -766,7 +766,7 @@ class setData:
                 self._validate_value(msg, "json")
             elif "/config/max_current" in msg.topic:
                 self._validate_value(msg, int, [(7, 1500)], collection=list)
-            elif "/config/max_consumption" in msg.topic:
+            elif "/config/max_total_power" in msg.topic:
                 self._validate_value(msg, int, [(2000, 1000000)])
             elif "/get/power_all" in msg.topic:
                 self._validate_value(

@@ -311,6 +311,11 @@ class counterAll:
             return False
 
 
+def get_counter_default_config():
+    return {"max_current": 16,
+            "max_total_power": 11000}
+
+
 class counter:
     """
     """
@@ -339,10 +344,10 @@ class counter:
                     data.data.counter_data["all"].data["set"]["loadmanagement_available"] = True
                 # max Leistung
                 if self.data["get"]["power_all"] > 0:
-                    self.data["set"]["consumption_left"] = self.data["config"]["max_consumption"]
+                    self.data["set"]["consumption_left"] = self.data["config"]["max_total_power"]
                     - self.data["get"]["power_all"]
                 else:
-                    self.data["set"]["consumption_left"] = self.data["config"]["max_consumption"]
+                    self.data["set"]["consumption_left"] = self.data["config"]["max_total_power"]
                 log.MainLogger().debug(str(self.data["set"]["consumption_left"]) +
                                        "W EVU-Leistung, die noch bezogen werden kann.")
             # Strom
