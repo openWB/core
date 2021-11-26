@@ -1,101 +1,96 @@
 #!/usr/bin/env python3
 """ Modul zum Auslesen von Alpha Ess Speichern, Zählern und Wechselrichtern.
 """
-from typing import List
 import sys
+from typing import List, Union
 
-if __name__ == "__main__":
-    from pathlib import Path
-    import os
-    parentdir2 = str(Path(os.path.abspath(__file__)).parents[2])
-    sys.path.insert(0, parentdir2)
-    from helpermodules import log
-    from modules.common import connect_tcp
-    from modules.alpha_ess import bat
-    from modules.alpha_ess import counter
-    from modules.alpha_ess import inverter
-else:
-    from ...helpermodules import log
-    from ..common import connect_tcp
-    from . import bat
-    from . import counter
-    from . import inverter
+from helpermodules import log
+from modules.common import modbus
+from modules.common.abstract_device import AbstractDevice
+from modules.common.component_state import SingleComponentUpdateContext
+from modules.alpha_ess import bat
+from modules.alpha_ess import counter
+from modules.alpha_ess import inverter
 
 
-def get_default() -> dict:
+def get_default_config() -> dict:
     return {
         "name": "Alpha ESS",
         "type": "alpha_ess",
-        "id": None,
-        "configuration": {}
+        "id": None
     }
 
 
-class Device():
+class Device(AbstractDevice):
+    COMPONENT_TYPE_TO_CLASS = {
+        "bat": bat.AlphaEssBat,
+        "counter": counter.AlphaEssCounter,
+        "inverter": inverter.AlphaEssInverter
+    }
+
+    _components = []  # type: List[Union[bat.AlphaEssBat, counter.AlphaEssCounter, inverter.AlphaEssInverter]]
+
     def __init__(self, device_config: dict) -> None:
         try:
-            super().__init__()
-            self.data = {}
-            self.data["config"] = device_config
-            self.client = connect_tcp.ConnectTcp(self.data["config"]["name"], "192.168.193.125", 8899)
-            self.data["components"] = []
-            for c in self.data["config"]["components"]:
-                component = self.data["config"]["components"][c]
-                factory = self.__component_factory(component["type"])
-                self.data["components"].append(factory(self.client, component))
-        except Exception as e:
-            log.MainLogger().error("Fehler im Modul "+self.data["config"]["name"], e)
+            self.client = modbus.ModbusClient("192.168.193.125", 8899)
+            self.device_config = device_config
+        except Exception:
+            log.MainLogger().exception("Fehler im Modul "+device_config["name"])
 
     def add_component(self, component_config: dict) -> None:
-        try:
-            factory = self.__component_factory(component_config["type"])
-            self.data["components"]["component"+str(component_config["id"])
-                                    ] = factory(self.data["config"]["id"], self.client, component_config)
-        except Exception:
-            log.MainLogger().exception("Fehler im Modul "+self.data["config"]["name"])
+        component_type = component_config["type"]
+        if component_type in self.COMPONENT_TYPE_TO_CLASS:
+            self._components.append(self.COMPONENT_TYPE_TO_CLASS[component_type](
+                self.device_config["id"], component_config, self.client))
 
-    def __component_factory(self, component_type: str):
-        try:
-            if component_type == "bat":
-                return bat.AlphaEssBat
-            elif component_type == "counter":
-                return counter.AlphaEssCounter
-            elif component_type == "inverter":
-                return inverter.AlphaEssInverter
-        except Exception as e:
-            log.MainLogger().error("Fehler im Modul "+self.data["config"]["name"], e)
-
-    def read(self):
-        try:
-            log.MainLogger().debug("Komponenten von "+self.data["config"]["name"]+" auslesen.")
-            for component in self.data["components"]:
-                component.read()
-        except Exception as e:
-            log.MainLogger().error("Fehler im Modul "+self.data["config"]["name"], e)
+    def get_values(self) -> None:
+        log.MainLogger().debug("Start device reading" + str(self._components))
+        if self._components:
+            for component in self._components:
+                # Auch wenn bei einer Komponente ein Fehler auftritt, sollen alle anderen noch ausgelesen werden.
+                with SingleComponentUpdateContext(component.component_info):
+                    component.update()
+        else:
+            log.MainLogger().warning(
+                self.device_config["name"] +
+                ": Es konnten keine Werte gelesen werden, da noch keine Komponenten konfiguriert wurden."
+            )
 
 
-def read_legacy(argv: List):
+def read_legacy(argv: List[str]) -> None:
+    COMPONENT_TYPE_TO_MODULE = {
+        "bat": bat,
+        "counter": counter,
+        "inverter": inverter
+    }
+    component_type = argv[1]
+    version = int(argv[2])
     try:
-        component_type = str(argv[1])
-        version = int(argv[2])
+        num = int(argv[3])
+    except IndexError:
+        num = None
 
-        default = get_default()
-        default["id"] = 0
-        dev = Device(default)
-        component_default = globals()[component_type].get_default()
-        component_default["id"] = 0
-        component_default["configuration"]["version"] = version
-        dev.add_component(component_default)
+    device_config = get_default_config()
+    device_config["id"] = 0
+    dev = Device(device_config)
+    if component_type in COMPONENT_TYPE_TO_MODULE:
+        component_config = COMPONENT_TYPE_TO_MODULE[component_type].get_default_config()
+    else:
+        raise Exception(
+            "illegal component type " + component_type + ". Allowed values: " +
+            ','.join(COMPONENT_TYPE_TO_MODULE.keys())
+        )
+    component_config["id"] = num
+    component_config["configuration"]["version"] = version
+    dev.add_component(component_config)
 
-        log.MainLogger().debug('alpha_ess Version: ' + str(version))
+    log.MainLogger().debug('alpha_ess Version: ' + str(version))
 
-        dev.read()
-    except Exception as e:
-        log.MainLogger().error("Fehler im Modul Alpha Ess", e)
+    dev.get_values()
 
 
 if __name__ == "__main__":
     try:
         read_legacy(sys.argv)
-    except Exception as e:
-        log.MainLogger().error("Fehler im Alpha Ess-Skript", e)
+    except Exception:
+        log.MainLogger().exception("Fehler im Alpha Ess Skript")

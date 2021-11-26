@@ -2,23 +2,15 @@ from abc import abstractmethod
 from collections.abc import Iterable
 from typing import Callable, Generic, TypeVar, Union
 
-try:
-    from ..common.module_error import ModuleError, ModuleErrorLevel
-    from ...helpermodules import compatibility
-    from ...helpermodules import log
-    from ...helpermodules import pub
-    from .component_state import BatState, CounterState, InverterState
-except (ImportError, ValueError, SystemError):
-    from helpermodules import compatibility
-    from helpermodules import log
-    from helpermodules import pub
-    from modules.common.module_error import ModuleError, ModuleErrorLevel
-    from .component_state import BatState, CounterState, InverterState
+from helpermodules import compatibility
+from helpermodules import log
+from helpermodules import pub
+from modules.common.component_state import BatState, CounterState, InverterState
+from modules.common.fault_state import FaultState
 
 
 def process_error(e):
-    raise ModuleError(__name__ + " " + str(type(e)) + " " + str(e),
-                      ModuleErrorLevel.ERROR) from e
+    raise FaultState.error(__name__+" "+str(type(e))+" "+str(e)) from e
 
 
 def write_array_to_files(prefix: str, values: Iterable, digits: int = None):
@@ -61,7 +53,7 @@ T = TypeVar("T")
 
 class ValueStore(Generic[T]):
     @abstractmethod
-    def set(self, *kwargs) -> None:
+    def set(self, state: T) -> None:
         pass
 
 
@@ -167,16 +159,11 @@ class InverterValueStoreRamdisk(ValueStore[InverterState]):
             elif self.num == 2:
                 filename_extension = "2"
             else:
-                raise ModuleError("Unbekannte PV-Nummer " + str(self.num),
-                                  ModuleErrorLevel.ERROR)
-            power = write_to_file("/pv" + filename_extension + "watt",
-                                  inverter_state.power, 0)
-            write_to_file("/pv" + filename_extension + "kwh",
-                          inverter_state.counter, 3)
-            write_to_file("/pv" + filename_extension + "kwhk",
-                          inverter_state.counter / 1000, 3)
-            write_array_to_files("/pv" + filename_extension + "a",
-                                 inverter_state.currents, 1)
+                raise FaultState.error("Unbekannte PV-Nummer "+str(self.num))
+            power = write_to_file("/pv"+filename_extension+"watt", inverter_state.power, 0)
+            write_to_file("/pv"+filename_extension+"kwh", inverter_state.counter, 3)
+            write_to_file("/pv"+filename_extension+"kwhk", inverter_state.counter/1000, 3)
+            write_array_to_files("/pv"+filename_extension+"a", inverter_state.currents, 1)
             log.MainLogger().info('PV Watt: ' + str(power))
         except Exception as e:
             process_error(e)

@@ -1,46 +1,34 @@
-from typing import Dict, List
+from typing import List, Union
 import sys
 
-try:
-    from ...helpermodules import log
-    from ..common import modbus
-    from ..common.abstract_device import AbstractDevice, DeviceUpdater
-    from ..common.abstract_component import ComponentUpdater
-    from . import counter
-except (ImportError, ValueError, SystemError):
-    from helpermodules import log
-    from modules.common import modbus
-    from modules.common.abstract_device import AbstractDevice, DeviceUpdater
-    from modules.common.abstract_component import ComponentUpdater
-    import counter
+from helpermodules import log
+from modules.common import modbus
+from modules.common.abstract_device import AbstractDevice
+from modules.common.component_state import SingleComponentUpdateContext
+import counter
+import inverter
 
 
 def get_default_config() -> dict:
     return {
-        "name": "OpenWB-Kit",
+        "name": "OpenWB-Kit flex",
         "type": "openwb_flex",
         "id": 0,
-        "configuration": {
+        "configuration":
+        {
             "ip_address": "192.168.193.15",
             "port": "8899"
         }
     }
 
 
-COMPONENT_TYPE_TO_MODULE = {
-    # "bat": ,
-    "counter": counter,
-    # "inverter": inverter
-}
-
-
 class Device(AbstractDevice):
     COMPONENT_TYPE_TO_CLASS = {
         # "bat": ,
         "counter": counter.EvuKitFlex,
-        # "inverter": inverter.PvKitFlex
+        "inverter": inverter.PvKitFlex
     }
-    _components = {}  # type: Dict[str, ComponentUpdater]
+    _components = []  # type: List[Union[counter.EvuKitFlex, inverter.PvKitFlex]]
 
     def __init__(self, device_config: dict) -> None:
         try:
@@ -49,21 +37,21 @@ class Device(AbstractDevice):
             port = device_config["configuration"]["port"]
             self.client = modbus.ModbusClient(ip_address, port)
         except Exception:
-            log.MainLogger().exception("Fehler im Modul " +
-                                       device_config["name"])
+            log.MainLogger().exception("Fehler im Modul " + device_config["name"])
 
-    def add_component(self, component_config: dict):
-        factory = COMPONENT_TYPE_TO_MODULE[component_config["type"]].create_component
-        self._components["component"+str(component_config["id"])
-                         ] = factory(self.device_config, component_config, self.client)
+    def add_component(self, component_config: dict) -> None:
+        component_type = component_config["type"]
+        if component_type in self.COMPONENT_TYPE_TO_CLASS:
+            self._components.append(self.COMPONENT_TYPE_TO_CLASS[component_type](
+                self.device_config["id"], component_config, self.client))
 
-    def get_values(self):
+    def get_values(self) -> None:
         log.MainLogger().debug("Start device reading" + str(self._components))
         if self._components:
-            for component in self._components.values():
-                state = component.get_values()
-                log.MainLogger().debug("state " + str(state))
-                component.set_values(state)
+            for component in self._components:
+                # Auch wenn bei einer Komponente ein Fehler auftritt, sollen alle anderen noch ausgelesen werden.
+                with SingleComponentUpdateContext(component.component_info):
+                    component.update()
         else:
             log.MainLogger().warning(
                 self.device_config["name"] +
@@ -74,7 +62,11 @@ class Device(AbstractDevice):
 def read_legacy(argv: List[str]):
     """ Ausführung des Moduls als Python-Skript
     """
-
+    COMPONENT_TYPE_TO_MODULE = {
+        # "bat": ,
+        "counter": counter,
+        "inverter": inverter
+    }
     log.MainLogger().debug('Start reading flex')
     component_type = argv[1]
     version = int(argv[2])
@@ -89,7 +81,7 @@ def read_legacy(argv: List[str]):
     device_config = get_default_config()
     device_config["configuration"]["ip_address"] = ip_address
     device_config["configuration"]["port"] = port
-    dev = DeviceUpdater(Device((device_config)))
+    dev = Device(device_config)
     if component_type in COMPONENT_TYPE_TO_MODULE:
         component_config = COMPONENT_TYPE_TO_MODULE[
             component_type].get_default_config()
@@ -101,12 +93,12 @@ def read_legacy(argv: List[str]):
     component_config["id"] = num
     component_config["configuration"]["version"] = version
     component_config["configuration"]["id"] = id
-    dev.device.add_component(component_config)
+    dev.add_component(component_config)
 
-    log.MainLogger().debug('openWB Version: ' + str(version))
-    log.MainLogger().debug('openWB-Kit IP-Adresse: ' + str(ip_address))
-    log.MainLogger().debug('openWB-Kit Port: ' + str(port))
-    log.MainLogger().debug('openWB-Kit ID: ' + str(id))
+    log.MainLogger().debug('openWB flex Version: ' + str(version))
+    log.MainLogger().debug('openWB flex-Kit IP-Adresse: ' + str(ip_address))
+    log.MainLogger().debug('openWB flex-Kit Port: ' + str(port))
+    log.MainLogger().debug('openWB flex-Kit ID: ' + str(id))
 
     dev.get_values()
 

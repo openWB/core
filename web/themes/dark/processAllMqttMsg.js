@@ -42,7 +42,7 @@ function createChargepoint(hierarchy) {
 		var chargepointIndex = hierarchy.id.replace('cp', '');
 		if ($('.chargepoint-card[data-cp=' + chargepointIndex + ']').length == 0) {
 			if (typeof chargepointIndex !== 'undefined') {
-				console.debug("creating chargepoint "+chargepointIndex);
+				console.debug("creating chargepoint " + chargepointIndex);
 				var sourceElement = $('.chargepoint-card.chargepoint-template');
 				// remove checkbox toggle button style as they will not function after cloning
 				sourceElement.find('input[type=checkbox][data-toggle^=toggle]').bootstrapToggle('destroy');
@@ -202,7 +202,7 @@ function refreshChargetemplate(templateIndex) {
 							case "weekly":
 								const days = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 								var daysText = '';
-								value.frequency.weekly.forEach(function(dayValue, index) {
+								value.frequency.weekly.forEach(function (dayValue, index) {
 									if (dayValue == true) {
 										if (daysText.length > 0) {
 											daysText += ',';
@@ -793,7 +793,7 @@ function processChargepointMessages(mqttmsg, mqttpayload) {
 		friendlyChargemode = chargemodeRadio.parent().text();
 		parent.find('.chargepoint-vehiclechargemode').text(friendlyChargemode); // set chargemode in card header
 		chargemodeRadio.parent().addClass('active'); // activate selected chargemode button
-		parent.find('.chargepoint-chargemode input[type=radio]').not('[data-option="' + configData.chargemode + '"]').each(function() {
+		parent.find('.chargepoint-chargemode input[type=radio]').not('[data-option="' + configData.chargemode + '"]').each(function () {
 			$(this).prop('checked', false); // uncheck all other radio buttons
 			$(this).parent().removeClass('active'); // deselect all other chargemode buttons
 		});
@@ -912,7 +912,7 @@ function processVehicleMessages(mqttmsg, mqttpayload) {
 	if (mqttmsg.match(/^openwb\/vehicle\/[1-9][0-9]*\/name$/i)) {
 		// this topic is used to populate the chargepoint list
 		var index = getIndex(mqttmsg); // extract number between two / /
-		$('.chargepoint-vehicleselect').each(function() {
+		$('.chargepoint-vehicleselect').each(function () {
 			myOption = $(this).find('option[value=' + index + ']');
 			if (myOption.length > 0) {
 				myOption.text(JSON.parse(mqttpayload)); // update vehicle name if option with index is present
@@ -1483,54 +1483,55 @@ function processETProviderMessages(mqttmsg, mqttpayload) {
 // 	}
 // }
 
-// function processSmartHomeDevicesConfigMessages(mqttmsg, mqttpayload) {
-// 	// processes mqttmsg for topic openWB/config/get/SmartHome/Devices - config variables (Name / configured only!), actual Variables in proccessSMartHomeDevices
-// 	// called by handlevar
-// 	if ( mqttmsg.match( /^openwb\/config\/get\/SmartHome\/Devices\/[1-9][0-9]*\/device_configured$/i ) ) {
-// 		// respective SH Device configured
-// 		var index = getIndex(mqttmsg);  // extract number between two / /
-// 		var infoElement = $('[data-dev="' + index + '"]');  // get row of SH Device
-// 		if (mqttpayload == 1) {
-// 			infoElement.removeClass('hide');
-// 		} else {
-// 			infoElement.addClass('hide');
-// 		}
-// 		var visibleRows = $('[data-dev]:visible');  // show/hide complete block depending on visible rows within
-// 		if ( visibleRows.length > 0 ) {
-// 			$('.smartHome').removeClass('hide');
-// 		} else {
-// 			$('.smartHome').addClass('hide');
-// 		}
-// 	}
-// 	else if ( mqttmsg.match( /^openwb\/config\/get\/SmartHome\/Devices\/[1-9][0-9]*\/mode$/i ) ) {
-// 		var index = getIndex(mqttmsg);  // extract number between two / /
-// 		var parent = $('[data-dev="' + index + '"]');  // get parent row element for SH Device
-// 		var element = parent.find('.actualModeDevice');  // now get parents respective child element
-// 		if ( mqttpayload == 0 ) {
-// 			actualMode = "Automatik"
-// 		} else {
-// 			actualMode = "Manuell"
-// 		}
-// 		element.text(actualMode);
-// 		$('.nameDevice').each(function() {  // check all elements of class '.nameDevice'
-// 			var dev = $(this).closest('[data-dev]').data('dev');  // get attribute Device from parent
-// 			if ( dev == index ) {
-// 				if ( $(this).hasClass('enableDevice') ) {
-// 					// but only apply styles to element in chargepoint info data block
-// 					if ( mqttpayload == 1 ) {
-// 						$(this).addClass('cursor-pointer').addClass('locked');
-// 					} else {
-// 						$(this).removeClass('cursor-pointer').removeClass('locked');
-// 					}
-// 				}
-// 			}
-// 		});
-// 	}
-// 	else if ( mqttmsg.match( /^openWB\/config\/get\/SmartHome\/Devices\/[1-9][0-9]*\/device_name$/i ) ) {
-// 		var index = getIndex(mqttmsg);  // extract number between two / /
-// 		var parent = $('[data-dev="' + index + '"]');  // get parent row element for SH Device
-// 		var element = parent.find('.nameDevice');  // now get parents respective child element
-// 		element.text(mqttpayload);
-// 		window['d'+index+'name']=mqttpayload;
-// 	}
-// }
+function processSmartHomeDevicesConfigMessages(mqttmsg, mqttpayload) {
+	// processes mqttmsg for topic openWB/config/get/SmartHome/Devices - config variables (Name / configured only!), actual Variables in proccessSMartHomeDevices
+	// called by handlevar
+	processPreloader(mqttmsg);
+	if (mqttmsg.match(/^openwb\/config\/get\/SmartHome\/Devices\/[1-9][0-9]*\/device_configured$/i)) {
+		// respective SH Device configured
+		var index = getIndex(mqttmsg);  // extract number between two / /
+		var infoElement = $('[data-dev="' + index + '"]');  // get row of SH Device
+		if (mqttpayload == 1) {
+			infoElement.removeClass('hide');
+		} else {
+			infoElement.addClass('hide');
+		}
+		var visibleRows = $('.smartHome [data-dev]').not('.hide');  // show/hide complete block depending on visible rows within
+		if (visibleRows.length > 0) {
+			$('.smartHome').removeClass('hide');
+		} else {
+			$('.smartHome').addClass('hide');
+		}
+	}
+	else if (mqttmsg.match(/^openwb\/config\/get\/SmartHome\/Devices\/[1-9][0-9]*\/mode$/i)) {
+		var index = getIndex(mqttmsg);  // extract number between two / /
+		var parent = $('[data-dev="' + index + '"]');  // get parent row element for SH Device
+		var element = parent.find('.actualModeDevice');  // now get parents respective child element
+		if (mqttpayload == 0) {
+			actualMode = "Automatik"
+		} else {
+			actualMode = "Manuell"
+		}
+		element.text(actualMode);
+		$('.nameDevice').each(function () {  // check all elements of class '.nameDevice'
+			var dev = $(this).closest('[data-dev]').data('dev');  // get attribute Device from parent
+			if (dev == index) {
+				if ($(this).hasClass('enableDevice')) {
+					// but only apply styles to element in chargepoint info data block
+					if (mqttpayload == 1) {
+						$(this).addClass('cursor-pointer').addClass('locked');
+					} else {
+						$(this).removeClass('cursor-pointer').removeClass('locked');
+					}
+				}
+			}
+		});
+	}
+	else if (mqttmsg.match(/^openWB\/config\/get\/SmartHome\/Devices\/[1-9][0-9]*\/device_name$/i)) {
+		var index = getIndex(mqttmsg);  // extract number between two / /
+		var parent = $('[data-dev="' + index + '"]');  // get parent row element for SH Device
+		var element = parent.find('.nameDevice');  // now get parents respective child element
+		element.text(mqttpayload);
+		window['d' + index + 'name'] = mqttpayload;
+	}
+}
