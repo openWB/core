@@ -3,7 +3,7 @@ from typing import Tuple
 import pytest as pytest
 
 from packages.modules.common.simcount import Number, calculate_import_export
-from modules..testutils.mock import ignore_logging
+from testutils.mock import ignore_logging
 
 
 class Params:

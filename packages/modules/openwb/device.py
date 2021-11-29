@@ -1,16 +1,11 @@
-import inverter
-import counter
-from modules.common import abstract_device
-from modules.common import modbus
-from helpermodules import log
 from typing import List, Union
 import sys
 
 from helpermodules import log
 from modules.common.abstract_device import AbstractDevice
 from modules.common.component_state import SingleComponentUpdateContext
-import counter
-import inverter
+from modules.openwb import counter
+from modules.openwb import inverter
 
 
 def get_default_config() -> dict:

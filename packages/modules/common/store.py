@@ -4,7 +4,7 @@ from typing import Callable, Generic, TypeVar, Union
 
 from helpermodules import compatibility
 from helpermodules import log
-from helpermodules import pub
+from helpermodules.pub import Pub
 from modules.common.component_state import BatState, CounterState, InverterState
 from modules.common.fault_state import FaultState
 

@@ -141,7 +141,7 @@ class Command:
             new_id = self.max_id_device + 1
             log.MainLogger().info(
                 "Neues Device vom Typ "+str(payload["data"]["type"])+" mit ID "+str(new_id)+" hinzugefuegt.")
-            dev = importlib.import_module(".modules."+payload["data"]["type"]+".device", "packages")
+            dev = importlib.import_module("."+payload["data"]["type"]+".device", "modules")
             device_default = dev.get_default_config()
             device_default["id"] = new_id
             Pub().pub("openWB/set/system/device/" +
@@ -430,7 +430,7 @@ class Command:
             log.MainLogger().info(
                 "Neue Komponente vom Typ"+str(payload["data"]["type"])+" mit ID "+str(new_id)+" hinzugefuegt.")
             component = importlib.import_module(
-                ".modules."+payload["data"]["deviceType"]+"."+payload["data"]["type"], "packages")
+                "."+payload["data"]["deviceType"]+"."+payload["data"]["type"], "modules")
             component_default = component.get_default_config()
             component_default["id"] = new_id
             if payload["data"]["type"] == "counter":
@@ -608,6 +608,10 @@ class ProcessBrokerBranch:
             if str(msg.payload.decode("utf-8")) != '':
                 log.MainLogger().debug("Geloeschtes Topic: "+str(msg.topic))
                 Pub().pub(msg.topic, "")
+                if "openWB/system/device/" in msg.topic and "component" in msg.topic and "config" in msg.topic:
+                    payload = json.loads(str(msg.payload.decode("utf-8")))
+                    if payload["type"] == "counter":
+                        data.data.counter_data["all"].hierarchy_remove_item("counter"+str(payload["id"]))
         except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")
 

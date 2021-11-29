@@ -17,7 +17,6 @@ from control import optional
 from helpermodules.pub import Pub
 from helpermodules import system
 from control import pv
-from modules.common.abstract_device import DeviceUpdater
 
 
 class SubData:
@@ -723,7 +722,7 @@ class SubData:
                         str(msg.payload.decode("utf-8")))
                     dev = importlib.import_module(
                         "."+device_config["type"]+".device", "modules")
-                    var["device"+index] = DeviceUpdater(dev.Device((device_config)))
+                    var["device"+index] = dev.Device(device_config)
                     # Durch das erneute Subscriben werden die Komponenten mit dem aktualisierten TCP-Client angelegt.
                     client.subscribe("openWB/system/device/" +
                                      index+"/component/#", 2)
@@ -755,16 +754,16 @@ class SubData:
                                                str(index)+" gefunden werden.")
                 else:
                     sim_data = None
-                    if "component"+index_second in var["device"+index].device._components:
-                        sim_data = var["device"+index].device._components["component" +
-                                                                          index_second].component.simulation
+                    if "component"+index_second in var["device"+index]._components:
+                        sim_data = var["device"+index]._components["component" +
+                                                                   index_second].simulation
                     # Es darf nicht einfach data["config"] aktualisiert werden, da in der __init__ auch die
                     # TCP-Verbindung aufgebaut wird, deren IP dann nicht aktualisiert werden würde.
-                    var["device"+index].device.add_component(
+                    var["device"+index].add_component(
                         json.loads(str(msg.payload.decode("utf-8"))))
                     if sim_data:
-                        var["device"+index].device._components["component" +
-                                                               index_second].component.simulation = sim_data
+                        var["device"+index]._components["component" +
+                                                        index_second].simulation = sim_data
             else:
                 self.set_json_payload(var["system"].data, msg)
         except Exception:
