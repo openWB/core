@@ -439,7 +439,7 @@ class Command:
                         "counter"+str(new_id), data.data.counter_data["all"].get_evu_counter())
                     default_config = counter.get_counter_default_config()
                     for item in default_config:
-                        Pub().pub()("openWB/counter/"+str(new_id)+"/config/"+item, default_config[item])
+                        Pub().pub("openWB/counter/"+str(new_id)+"/config/"+item, default_config[item])
                 except IndexError:
                     # es gibt noch keinen EVU-Zähler
                     Pub().pub("openWB/set/counter/get/hierarchy", [{"id": "counter"+str(new_id), "children": []}])

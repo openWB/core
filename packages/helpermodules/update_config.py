@@ -310,10 +310,4 @@ class UpdateConfig:
         for topic in self.default_topic:
             if topic[0] not in self.all_received_topics:
                 log.MainLogger().debug("Setzte Topic '%s' auf Standardwert '%s'" % (topic[0], str(topic[1])))
-
-
-<< << << < HEAD
-Pub().pub(topic[0].replace("openWB/", "openWB/set/"), topic[1])
-== == == =
-Pub().pub(topic[0], topic[1])
->>>>>> > singleton for pub
+                Pub().pub(topic[0].replace("openWB/", "openWB/set/"), topic[1])
