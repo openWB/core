@@ -732,7 +732,7 @@ def get_chargepoint_template_default():
             "active": False
         },
         "rfid_enabling": False,
-        "valid_tags": ["1234"]
+        "valid_tags": []
     }
 
 
@@ -745,7 +745,7 @@ def get_autolock_plan_default():
             "weekly": [False, False, False, False, False, False, False]
         },
         "time": ["07:00", "16:00"],
-        "active": True
+        "active": False
     }
 
 

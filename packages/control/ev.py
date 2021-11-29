@@ -24,7 +24,7 @@ def get_vehicle_default() -> dict:
         "soc/config/request_interval_charging": 10,
         "soc/config/reques_interval_not_charging": 60,
         "soc/config/request_only_plugged": False,
-        "tag_id": ["1234"],
+        "tag_id": [],
         "get/soc": 0
     }
 
