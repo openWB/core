@@ -4,7 +4,7 @@ from typing import List
 import pytest as pytest
 
 from .chargepoint import cpTemplate
-from testutils.mock import ignore_logging
+from modules.testutils.mock import ignore_logging
 
 
 class Params:
@@ -14,36 +14,28 @@ class Params:
         self.name = name
         self.data = data
         self.data["autolock"]["plans"]["0"]["time"] = time
-        self.time = time
         if weekly is not None:
             self.data["autolock"]["plans"]["0"]["frequency"]["weekly"] = weekly
-            self.weekly = weekly
         if once is not None:
             self.data["autolock"]["plans"]["0"]["frequency"]["once"] = once
-            self.once = once
         self.autolock_state = autolock_state
         self.charge_state = charge_state
         self.expected_state = expected_state
-
-    def invert(self):
-        return Params(
-            "inverse: " + self.name, self.data, self.autolock_state, self.charge_state, self.time, self.expected_state,
-            self.weekly, self.once)
 
 
 now = datetime.today()
 if now.hour + 1 > 24 or now.hour - 1 < 0:
     assert "Test funktioniert nur tagsüber"
-time_before = [now.hour+1, now.hour+2]
-time_during = [now.hour-1, now.hour+1]
-time_after = [now.hour-2, now.hour-1]
+time_before = [str(now.hour+1)+":"+str(now.minute), str(now.hour+2)+":"+str(now.minute)]
+time_during = [str(now.hour-1)+":"+str(now.minute), str(now.hour+1)+":"+str(now.minute)]
+time_after = [str(now.hour-2)+":"+str(now.minute), str(now.hour-1)+":"+str(now.minute)]
 
 weekly_none = [False]*7
 weekly_all = [True]*7
 
-once_before = [now.day+1, now.day+2]
-once_during = [now.day-1, now.day+1]
-once_after = [now.day-2, now.day-1]
+once_before = [str(now.day+1), str(now.day+2)]
+once_during = [str(now.day-1), str(now.day+1)]
+once_after = [str(now.day-2), str(now.day-1)]
 
 data_daily_not_wait_for_end = {"autolock": {
     "wait_for_charging_end": False,
@@ -152,11 +144,10 @@ cases = [
            autolock_state=0, charge_state=True, time=time_after, expected_state=False),
 
 ]
-cases.extend(map(lambda case: case.invert(), cases[:]))
 
 
 @pytest.mark.parametrize("params", cases, ids=[c.name for c in cases])
-def test_energy_calculation(params: Params, monkeypatch):
+def test_autolock_state(params: Params, monkeypatch):
     # setup
     ignore_logging(monkeypatch)
 

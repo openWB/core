@@ -1,8 +1,8 @@
 """Zähler-Logik
 """
-from . import data
-from ..helpermodules import log
-from ..helpermodules.pub import Pub
+from control import data
+from helpermodules import log
+from helpermodules.pub import Pub
 
 
 class counterAll:
@@ -311,6 +311,11 @@ class counterAll:
             return False
 
 
+def get_counter_default_config():
+    return {"max_current": 16,
+            "max_total_power": 11000}
+
+
 class counter:
     """
     """
@@ -331,7 +336,7 @@ class counter:
             # Nur beim EVU-Zähler (counter0) wird auch die maximale Leistung geprüft.
             if self.counter_num == 0:
                 # Wenn der EVU-Zähler keine Werte liefert, darf nicht geladen werden.
-                if self.data["get"]["power_all"] is None or self.data["get"]["current"] is None:
+                if self.data["get"]["fault_state"] > 0:
                     data.data.counter_data["all"].data["set"]["loadmanagement_available"] = False
                     self.data["get"]["power_all"] = 0
                     return
@@ -339,10 +344,10 @@ class counter:
                     data.data.counter_data["all"].data["set"]["loadmanagement_available"] = True
                 # max Leistung
                 if self.data["get"]["power_all"] > 0:
-                    self.data["set"]["consumption_left"] = self.data["config"]["max_consumption"]
+                    self.data["set"]["consumption_left"] = self.data["config"]["max_total_power"]
                     - self.data["get"]["power_all"]
                 else:
-                    self.data["set"]["consumption_left"] = self.data["config"]["max_consumption"]
+                    self.data["set"]["consumption_left"] = self.data["config"]["max_total_power"]
                 log.MainLogger().debug(str(self.data["set"]["consumption_left"]) +
                                        "W EVU-Leistung, die noch bezogen werden kann.")
             # Strom

@@ -3,9 +3,9 @@
 import threading
 import time
 
-from ..helpermodules import log
-from ..helpermodules import pub
-from ..modules.cp import ip_evse
+from helpermodules import log
+from helpermodules import pub
+from modules.cp import ip_evse
 
 cp_interruption_threads = {}
 

@@ -4,8 +4,8 @@ import sys
 from helpermodules import log
 from modules.common.abstract_device import AbstractDevice
 from modules.common.component_state import SingleComponentUpdateContext
-import counter
-import inverter
+from modules.openwb import counter
+from modules.openwb import inverter
 
 
 def get_default_config() -> dict:

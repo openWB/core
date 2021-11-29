@@ -3,9 +3,9 @@
 import subprocess
 import time
 
-from . import log
-from . import pub
-from ..algorithm import data
+from helpermodules import log
+from helpermodules import pub
+from control import data
 
 
 class system:
@@ -31,8 +31,8 @@ class system:
             self._trigger_ext_update(train)
             time.sleep(15)
             # aktuell soll kein Update für den Master durchgeführt werden.
-            # subprocess.run(["/var/www/html/openWB/packages/helpermodules/update_self.sh", train])
-            subprocess.run("/var/www/html/openWB/runs/atreboot.sh")
+            # subprocess.run(["./runs/update_self.sh", train])
+            subprocess.run("./runs/atreboot.sh")
         except Exception:
             log.MainLogger().exception("Fehler im System-Modul")
 

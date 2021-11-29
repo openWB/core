@@ -8,10 +8,10 @@ in der Regelung neu priorisiert werden und eine neue Zuteilung des Stroms erhalt
 """
 import traceback
 
-from . import data
-from ..helpermodules import log
-from ..helpermodules.pub import Pub
-from ..helpermodules import timecheck
+from control import data
+from helpermodules import log
+from helpermodules.pub import Pub
+from helpermodules import timecheck
 
 
 def get_vehicle_default() -> dict:

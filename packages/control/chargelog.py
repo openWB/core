@@ -93,10 +93,10 @@ import json
 import math
 import pathlib
 
-from . import data
-from ..helpermodules import log
-from ..helpermodules.pub import Pub
-from ..helpermodules import timecheck
+from control import data
+from helpermodules import log
+from helpermodules.pub import Pub
+from helpermodules import timecheck
 
 # alte Daten: Startzeitpunkt der Ladung, Endzeitpunkt, Geladene Reichweite, Energie, Leistung, Ladedauer, LP-Nummer,
 # Lademodus, RFID-Tag

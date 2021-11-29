@@ -6,9 +6,9 @@ import json
 import paho.mqtt.client as mqtt
 import re
 
-from . import log
-from .pub import Pub
-from . import subdata
+from helpermodules import log
+from helpermodules.pub import Pub
+from helpermodules import subdata
 
 
 class setData:
@@ -766,7 +766,7 @@ class setData:
                 self._validate_value(msg, "json")
             elif "/config/max_current" in msg.topic:
                 self._validate_value(msg, int, [(7, 1500)], collection=list)
-            elif "/config/max_consumption" in msg.topic:
+            elif "/config/max_total_power" in msg.topic:
                 self._validate_value(msg, int, [(2000, 1000000)])
             elif "/get/power_all" in msg.topic:
                 self._validate_value(

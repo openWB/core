@@ -8,11 +8,12 @@ import re
 import time
 import traceback
 
-from . import log
-from .pub import Pub
-from ..algorithm import chargepoint
-from ..algorithm import data
-from ..algorithm import ev
+from helpermodules import log
+from helpermodules.pub import Pub
+from control import chargepoint
+from control import data
+from control import ev
+from control import counter
 
 
 class Command:
@@ -140,7 +141,7 @@ class Command:
             new_id = self.max_id_device + 1
             log.MainLogger().info(
                 "Neues Device vom Typ "+str(payload["data"]["type"])+" mit ID "+str(new_id)+" hinzugefuegt.")
-            dev = importlib.import_module(".modules."+payload["data"]["type"]+".device", "packages")
+            dev = importlib.import_module("."+payload["data"]["type"]+".device", "modules")
             device_default = dev.get_default_config()
             device_default["id"] = new_id
             Pub().pub("openWB/set/system/device/" +
@@ -429,13 +430,16 @@ class Command:
             log.MainLogger().info(
                 "Neue Komponente vom Typ"+str(payload["data"]["type"])+" mit ID "+str(new_id)+" hinzugefuegt.")
             component = importlib.import_module(
-                ".modules."+payload["data"]["deviceType"]+"."+payload["data"]["type"], "packages")
+                "."+payload["data"]["deviceType"]+"."+payload["data"]["type"], "modules")
             component_default = component.get_default_config()
             component_default["id"] = new_id
             if payload["data"]["type"] == "counter":
                 try:
                     data.data.counter_data["all"].hierarchy_add_item_below(
                         "counter"+str(new_id), data.data.counter_data["all"].get_evu_counter())
+                    default_config = counter.get_counter_default_config()
+                    for item in default_config:
+                        Pub().pub("openWB/counter/"+str(new_id)+"/config/"+item, default_config[item])
                 except IndexError:
                     # es gibt noch keinen EVU-Zähler
                     Pub().pub("openWB/set/counter/get/hierarchy", [{"id": "counter"+str(new_id), "children": []}])
@@ -604,6 +608,10 @@ class ProcessBrokerBranch:
             if str(msg.payload.decode("utf-8")) != '':
                 log.MainLogger().debug("Geloeschtes Topic: "+str(msg.topic))
                 Pub().pub(msg.topic, "")
+                if "openWB/system/device/" in msg.topic and "component" in msg.topic and "config" in msg.topic:
+                    payload = json.loads(str(msg.payload.decode("utf-8")))
+                    if payload["type"] == "counter":
+                        data.data.counter_data["all"].hierarchy_remove_item("counter"+str(payload["id"]))
         except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")
 

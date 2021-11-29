@@ -2,9 +2,9 @@ import subprocess
 import time
 import datetime
 
-from ..algorithm import data
-from . import log
-from .pub import Pub
+from control import data
+from helpermodules import log
+from helpermodules.pub import Pub
 
 
 class Graph:
@@ -63,7 +63,7 @@ class Graph:
             with open("./ramdisk/graph_live.json", "a") as f:
                 f.write(str(dataline).replace("'", '"'))
                 f.write("\n")
-            subprocess.run(["/var/www/html/openWB/packages/helpermodules/graphing.sh",
+            subprocess.run(["./runs/graphing.sh",
                             str(self.data["config"]["duration"]*6)])
         except Exception:
             log.MainLogger().exception("Fehler im Graph-Modul")

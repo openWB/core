@@ -5,8 +5,8 @@ from helpermodules import log
 from modules.common import modbus
 from modules.common.abstract_device import AbstractDevice
 from modules.common.component_state import SingleComponentUpdateContext
-import counter
-import inverter
+from modules.openwb_flex import counter
+from modules.openwb_flex import inverter
 
 
 def get_default_config() -> dict:

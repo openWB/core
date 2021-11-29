@@ -1,4 +1,4 @@
-# from .pub import Pub
+# from helpermodules.pub import Pub
 
 
 def pub_settings():
@@ -340,7 +340,7 @@ def pub_settings():
     # Pub().pub("openWB/set/counter/get/hierarchy", hierarchy)
     # Pub().pub("openWB/set/counter/0/get/frequency", 50.2)
     # Pub().pub("openWB/set/counter/0/config/max_current", [30, 30, 30])
-    # Pub().pub("openWB/set/counter/0/config/max_consumption", 30000)
+    # Pub().pub("openWB/set/counter/0/config/max_total_power", 30000)
     # Pub().pub("openWB/system/device/0/config", {"type": "mqtt", "name": "MQTT", "id": 0, "configuration": {}})
     # Pub().pub("openWB/system/device/0/component/0/config",
     #   {"type": "counter", "name": "MQTT-Z\u00e4hler", "id": 0, "configuration": {}})
@@ -430,7 +430,7 @@ def pub_settings():
     #     Pub().pub("openWB/set/counter/get/hierarchy", hierarchy)
     #     Pub().pub("openWB/set/counter/0/get/frequency", 50.2)
     #     Pub().pub("openWB/set/counter/0/config/max_current", [60, 60, 60])
-    #     Pub().pub("openWB/set/counter/0/config/max_consumption", 30000)
+    #     Pub().pub("openWB/set/counter/0/config/max_total_power", 30000)
     #     Pub().pub(
     #         "openWB/set/counter/0/module", {
     #             "selected": "openwb",

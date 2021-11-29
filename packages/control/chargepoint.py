@@ -26,13 +26,13 @@ freigeschaltet werden.
 """
 import traceback
 
-from . import chargelog
-from . import data
-from . import ev
-from . import phase_switch
-from ..helpermodules import log
-from ..helpermodules.pub import Pub
-from ..helpermodules import timecheck
+from control import chargelog
+from control import data
+from control import ev
+from control import phase_switch
+from helpermodules import log
+from helpermodules.pub import Pub
+from helpermodules import timecheck
 
 
 def get_chargepoint_default() -> dict:
@@ -477,13 +477,13 @@ class chargepoint:
                 self.set_current_prev = self.data["set"]["current"]
             message = "Keine Ladung, da ein Fehler aufgetreten ist."
             charging_possbile = False
-            state, message = self._is_ev_plugged()
+            state, message = self._is_grid_protection_inactive()
             if state:
-                state, message = self._is_grid_protection_inactive()
+                state, message = self._is_ripple_control_receiver_inactive()
                 if state:
-                    state, message = self._is_ripple_control_receiver_inactive()
+                    state, message = self._is_loadmanagement_available()
                     if state:
-                        state, message = self._is_loadmanagement_available()
+                        state, message = self._is_ev_plugged()
                         if state:
                             state, message = self._is_manual_lock_inactive()
                             if state:
@@ -732,7 +732,7 @@ def get_chargepoint_template_default():
             "active": False
         },
         "rfid_enabling": False,
-        "valid_tags": []
+        "valid_tags": ["1234"]
     }
 
 

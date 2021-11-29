@@ -3,11 +3,11 @@
 
 import copy
 
-from . import chargelog
-from . import data
-from ..helpermodules import log
-from ..helpermodules.pub import Pub
-from ..helpermodules import subdata
+from control import chargelog
+from control import data
+from helpermodules import log
+from helpermodules.pub import Pub
+from helpermodules import subdata
 
 
 class prepare:

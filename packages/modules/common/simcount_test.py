@@ -2,7 +2,7 @@ from typing import Tuple
 
 import pytest as pytest
 
-from modules.common.simcount import Number, calculate_import_export
+from packages.modules.common.simcount import Number, calculate_import_export
 from testutils.mock import ignore_logging
 
 

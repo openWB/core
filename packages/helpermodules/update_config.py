@@ -4,10 +4,10 @@ import time
 import paho.mqtt.client as mqtt
 
 
-from . import log
-from .pub import Pub
-from ..algorithm import chargepoint
-from ..algorithm import ev
+from helpermodules import log
+from helpermodules.pub import Pub
+from control import chargepoint
+from control import ev
 
 
 class UpdateConfig:
@@ -87,7 +87,7 @@ class UpdateConfig:
                    "^openWB/counter/0/get/exported$",
                    "^openWB/counter/0/set/consumption_left$",
                    "^openWB/counter/0/config/max_current$",
-                   "^openWB/counter/0/config/max_consumption$",
+                   "^openWB/counter/0/config/max_total_power$",
 
                    "^openWB/general/extern$",
                    "^openWB/general/control_interval$",

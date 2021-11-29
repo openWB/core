@@ -1,5 +1,6 @@
 #!/bin/bash
 echo "atreboot.sh started"
+rm "/var/www/html/openWB/ramdisk/bootdone"
 (sleep 600; sudo kill $(ps aux |grep '[a]treboot.sh' | awk '{print $2}')) &
 
 if [ -f /var/www/html/openWB/ramdisk/bootinprogress ]; then
@@ -448,3 +449,4 @@ sudo /usr/sbin/apachectl -k graceful
 echo $(date +"%Y-%m-%d %H:%M:%S:") "boot done :-)"
 mosquitto_pub -p 1886 -t openWB/set/system/update_in_progress -r -m 'false'
 mosquitto_pub -t openWB/system/reloadDisplay -m "1"
+touch /var/www/html/openWB/ramdisk/bootdone

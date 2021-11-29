@@ -1,25 +1,26 @@
 #!/usr/bin/env python3
 """Starten der benötigten Prozesse
 """
-
-from threading import Thread
-import threading
+import os
 import time
+import threading
+from threading import Thread
 
-from packages.algorithm import algorithm
-from packages.algorithm import process
-from packages.algorithm import data
-from packages.algorithm import prepare
-from packages.helpermodules import command
-from packages.helpermodules import log
-from packages.helpermodules import measurement_log
-from packages.helpermodules import publishvars2
-from packages.helpermodules import setdata
-from packages.helpermodules import subdata
-from packages.helpermodules import timecheck
-from packages.helpermodules import update_config
-from packages.modules import configuration
-from packages.modules import loadvars
+from modules import loadvars
+from modules import configuration
+from helpermodules import update_config
+from helpermodules import timecheck
+from helpermodules import subdata
+from helpermodules import setdata
+from helpermodules import publishvars2
+from helpermodules import measurement_log
+from helpermodules import log
+from helpermodules import command
+from control import prepare
+from control import data
+from control import process
+from control import algorithm
+
 
 # Wenn debug True ist, wird der 10s Handler nicht durch den Timer-Thread gesteuert, sondern macht ein 10s Sleep am
 # Ende, da sonst beim Pausieren immer mehr Threads im Hintergrund auflaufen.
@@ -166,6 +167,12 @@ class RepeatedTimer(object):
 
 
 try:
+    # Regelung erst starten, wenn atreboot.sh fertig ist.
+    log.MainLogger().debug("Warten auf das Ende des Boot-Prozesses")
+    while os.path.isfile("./ramdisk/bootdone") is False:
+        time.sleep(1)
+    log.MainLogger().debug("Boot-Prozess abgeschlossen. Starten der Regelung")
+
     data.data_init()
     update_config.UpdateConfig().update()
     proc = process.process()

@@ -3,10 +3,10 @@
 import json
 import pathlib
 
-from ..algorithm import data
-from . import log
-from .pub import Pub
-from . import timecheck
+from control import data
+from helpermodules import log
+from helpermodules.pub import Pub
+from helpermodules import timecheck
 
 
 def save_log(folder):

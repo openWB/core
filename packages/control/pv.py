@@ -4,11 +4,11 @@ Davon ab geht z.B. noch der Hausverbrauch. Für das Laden mit PV kann deshalb nu
 der sonst in das Netz eingespeist werden würde.
 """
 
-from . import algorithm
-from . import data
-from ..helpermodules import log
-from ..helpermodules.pub import Pub
-from ..helpermodules import timecheck
+from control import algorithm
+from control import data
+from helpermodules import log
+from helpermodules.pub import Pub
+from helpermodules import timecheck
 
 
 class pvAll:

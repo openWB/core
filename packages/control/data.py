@@ -5,7 +5,7 @@ Instanzen gelöscht werden können, der Zugriff aber nicht verändert werden mus
 
 import threading
 
-from ..helpermodules import log
+from helpermodules import log
 
 data = None
 

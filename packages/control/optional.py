@@ -3,7 +3,7 @@
 
 from math import ceil  # Aufrunden
 
-from ..helpermodules import log
+from helpermodules import log
 
 
 class optional:
