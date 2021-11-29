@@ -416,7 +416,7 @@
 			</div>
 
 			<div class="accordion" id="chargepointaccordion">
-				<div class="chargepoint-card card border-dark text-grey chargepoint-template hide" data-cp="0" data-chargepointtemplate="0" data-chargetemplate="0" data-evtemplate="0">
+				<div class="chargepoint-card card border-dark text-grey chargepoint-template hide" data-cp="T" data-chargepointtemplate="T" data-chargetemplate="T" data-evtemplate="T">
 					<div class="card-header bg-lightgrey collapsed" data-toggle="collapse" data-target="#collapseChargepoint0">
 						<div class="form-row">
 							<div class="col-3">
