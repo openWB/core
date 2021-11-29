@@ -245,7 +245,7 @@ class UpdateConfig:
         ("openWB/general/notifications/configuration", {}),
         ("openWB/general/price_kwh", 0.3),
         ("openWB/general/range_unit", "km"),
-        ("openWB/general/ripple_control_receiver/configured", True),
+        ("openWB/general/ripple_control_receiver/configured", False),
         ("openWB/graph/config/duration", 60),
         ("openWB/optional/et/active", False),
         ("openWB/optional/et/config/max_price", 0),
