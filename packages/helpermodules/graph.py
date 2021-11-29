@@ -60,10 +60,10 @@ class Graph:
 
             Pub().pub("openWB/set/graph/lastlivevaluesJson", dataline)
             Pub().pub("openWB/set/system/lastlivevaluesJson", dataline)
-            with open("./ramdisk/graph_live.json", "a") as f:
+            with open("../ramdisk/graph_live.json", "a") as f:
                 f.write(str(dataline).replace("'", '"'))
                 f.write("\n")
-            subprocess.run(["./runs/graphing.sh",
+            subprocess.run(["../runs/graphing.sh",
                             str(self.data["config"]["duration"]*6)])
         except Exception:
             log.MainLogger().exception("Fehler im Graph-Modul")

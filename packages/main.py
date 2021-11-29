@@ -169,7 +169,7 @@ class RepeatedTimer(object):
 try:
     # Regelung erst starten, wenn atreboot.sh fertig ist.
     log.MainLogger().debug("Warten auf das Ende des Boot-Prozesses")
-    while os.path.isfile("./ramdisk/bootdone") is False:
+    while os.path.isfile("../ramdisk/bootdone") is False:
         time.sleep(1)
     log.MainLogger().debug("Boot-Prozess abgeschlossen. Starten der Regelung")
 

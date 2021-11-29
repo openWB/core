@@ -55,5 +55,5 @@ class MqttLogger:
 def cleanup_logfiles():
     """ ruft das Skript zum Kürzen der Logfiles auf.
     """
-    subprocess.run(["./runs/cleanup_log.sh", "./runs/main.log"])
-    subprocess.run(["./runs/cleanup_log.sh", "./runs/mqtt.log"])
+    subprocess.run(["./runs/cleanup_log.sh", "../runs/main.log"])
+    subprocess.run(["./runs/cleanup_log.sh", "../runs/mqtt.log"])
