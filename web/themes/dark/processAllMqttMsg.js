@@ -289,7 +289,7 @@ function processGlobalCounterMessages(mqttmsg, mqttpayload) {
 			powerHome = powerHome.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 		}
 		$('.houseconsumption-power').text(powerHome + ' ' + unit);
-	} else if (mqttmsg.match(/^openwb\/counter\/set\/daily_energy_home_consumption$/i)) {
+	} else if (mqttmsg.match(/^openwb\/counter\/set\/daily_yield_home_consumption$/i)) {
 		var unit = "Wh";
 		var unitPrefix = "k";
 		var houseDailyYield = parseFloat(mqttpayload);
@@ -538,7 +538,7 @@ function processChargepointMessages(mqttmsg, mqttpayload) {
 			powerAllLp = powerAllLp.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 		}
 		$('.chargepoint-sum-power').text(powerAllLp + ' ' + unitPrefix + unit);
-	} else if (mqttmsg == 'openWB/chargepoint/get/daily_imported_all') {
+	} else if (mqttmsg == 'openWB/chargepoint/get/daily_yield') {
 		var unit = "Wh";
 		var unitPrefix = "k";
 		var dailyYield = parseFloat(mqttpayload);
