@@ -735,14 +735,14 @@ class SubData:
                 index = self.get_index(msg.topic)
                 index_second = self.get_second_index(msg.topic)
                 self.set_json_payload(
-                    var["device"+index].device._components["component"+index_second].component.simulation, msg)
+                    var["device"+index]._components["component"+index_second].simulation, msg)
             elif re.search("^.+/device/[0-9]+/component/[0-9]+/config$", msg.topic) is not None:
                 index = self.get_index(msg.topic)
                 index_second = self.get_second_index(msg.topic)
                 if str(msg.payload.decode("utf-8")) == "":
                     if "device"+index in var:
-                        if "component"+str(index_second) in var["device"+index].device._components:
-                            var["device"+index].device._components.remove(
+                        if "component"+str(index_second) in var["device"+index]._components:
+                            var["device"+index]._components.remove(
                                 "component"+str(index_second))
                             Pub().pub("openWB/system/device/"+str(index) +
                                       "/component/"+str(index_second), "")
