@@ -2,6 +2,7 @@
 """
 
 import logging
+from pathlib import Path
 import subprocess
 
 debug_logger = None
@@ -55,5 +56,7 @@ class MqttLogger:
 def cleanup_logfiles():
     """ ruft das Skript zum Kürzen der Logfiles auf.
     """
-    subprocess.run(["./runs/cleanup_log.sh", "./ramdisk/main.log"])
-    subprocess.run(["./runs/cleanup_log.sh", "./ramdisk/mqtt.log"])
+    MainLogger().debug("Logdateien kuerzen")
+    parent_file = Path(__file__).resolve().parents[2]
+    subprocess.run([str(parent_file / "runs" / "cleanup_log.sh"), str(parent_file / "ramdisk" / "main.log")])
+    subprocess.run([str(parent_file / "runs" / "cleanup_log.sh"), str(parent_file / "ramdisk" / "mqtt.log")])

@@ -22,27 +22,27 @@ class Command:
 
     def __init__(self):
         try:
-            self.__get_max_id("autolock_plan", "chargepoint/template/+/autolock")
-            self.__get_max_id("charge_template", "vehicle/template/charge_template")
+            self.__get_max_id("autolock_plan", "chargepoint/template/+/autolock", 0)
+            self.__get_max_id("charge_template", "vehicle/template/charge_template", 0)
             self.__get_max_id(
                 "charge_template_scheduled_plan",
-                "vehicle/template/charge_template/+/chargemode/scheduled_charging/plans/")
+                "vehicle/template/charge_template/+/chargemode/scheduled_charging/plans/", 0)
             self.__get_max_id(
                 "charge_template_time_charging_plan",
-                "vehicle/template/charge_template/+/chargemode/time_charging/plans/")
-            self.__get_max_id("chargepoint", "chargepoint")
-            self.__get_max_id("chargepoint_template", "chargepoint/template")
-            self.__get_max_id("component", "system/device/+/component")
-            self.__get_max_id("device", "system/device")
-            self.__get_max_id("ev_template", "vehicle/template/ev_template")
-            self.__get_max_id("vehicle", "vehicle")
+                "vehicle/template/charge_template/+/chargemode/time_charging/plans/", 0)
+            self.__get_max_id("chargepoint", "chargepoint", 0)
+            self.__get_max_id("chargepoint_template", "chargepoint/template", 0)
+            self.__get_max_id("component", "system/device/+/component", -1)
+            self.__get_max_id("device", "system/device", -1)
+            self.__get_max_id("ev_template", "vehicle/template/ev_template", 0)
+            self.__get_max_id("vehicle", "vehicle", 0)
         except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")
 
-    def __get_max_id(self, id_topic: str, topic: str) -> None:
+    def __get_max_id(self, id_topic: str, topic: str, default: int) -> None:
         """ ermittelt die maximale ID vom Broker """
         try:
-            max_id = ProcessBrokerBranch(topic).get_max_id()
+            max_id = ProcessBrokerBranch(topic).get_max_id(default)
             Pub().pub("openWB/set/command/max_id/"+id_topic, max_id)
         except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")
@@ -437,12 +437,12 @@ class Command:
                 try:
                     data.data.counter_data["all"].hierarchy_add_item_below(
                         "counter"+str(new_id), data.data.counter_data["all"].get_evu_counter())
-                    default_config = counter.get_counter_default_config()
-                    for item in default_config:
-                        Pub().pub("openWB/counter/"+str(new_id)+"/config/"+item, default_config[item])
                 except IndexError:
                     # es gibt noch keinen EVU-Zähler
                     Pub().pub("openWB/set/counter/get/hierarchy", [{"id": "counter"+str(new_id), "children": []}])
+                default_config = counter.get_counter_default_config()
+                for item in default_config:
+                    Pub().pub("openWB/set/counter/"+str(new_id)+"/config/"+item, default_config[item])
             Pub().pub("openWB/set/system/device/"+str(payload["data"]["deviceId"]
                                                       )+"/component/"+str(new_id)+"/config", component_default)
             self.max_id_component = self.max_id_component + 1
@@ -565,9 +565,9 @@ class ProcessBrokerBranch:
         except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")
 
-    def get_max_id(self):
+    def get_max_id(self, default: int):
         try:
-            self.max_id = -1
+            self.max_id = default
             self.search_str = "openWB/" + self.topic_str.replace("+", "[0-9]+")
             self.__connect_to_broker(self.__on_message_max_id)
             return self.max_id

@@ -1,5 +1,6 @@
 """ Modul zum Updaten der Steuerung und Triggern der externen Wbs, zu updaten."""
 
+from pathlib import Path
 import subprocess
 import time
 
@@ -31,8 +32,8 @@ class system:
             self._trigger_ext_update(train)
             time.sleep(15)
             # aktuell soll kein Update für den Master durchgeführt werden.
-            # subprocess.run(["./runs/update_self.sh", train])
-            subprocess.run("./runs/atreboot.sh")
+            # subprocess.run([str(Path(__file__).resolve().parents[2]/"runs"/"update_self.sh"), train])
+            subprocess.run(str(Path(__file__).resolve().parents[2]/"runs"/"atreboot.sh"))
         except Exception:
             log.MainLogger().exception("Fehler im System-Modul")
 

@@ -312,7 +312,7 @@ class counterAll:
 
 
 def get_counter_default_config():
-    return {"max_current": 16,
+    return {"max_current": [16, 16, 16],
             "max_total_power": 11000}
 
 
