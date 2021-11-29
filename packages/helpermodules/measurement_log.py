@@ -143,13 +143,13 @@ def save_log(folder):
 
         # json-Objekt in Datei einfügen
         if folder == "daily":
-            pathlib.Path('./data/daily_log').mkdir(mode=0o755,
-                                                   parents=True, exist_ok=True)
-            filepath = "./data/daily_log/"+timecheck.create_timestamp_YYYYMMDD()+".json"
+            pathlib.Path('../data/daily_log').mkdir(mode=0o755,
+                                                    parents=True, exist_ok=True)
+            filepath = "../data/daily_log/"+timecheck.create_timestamp_YYYYMMDD()+".json"
         else:
-            pathlib.Path('./data/monthly_log').mkdir(mode=0o755,
-                                                     parents=True, exist_ok=True)
-            filepath = "./data/monthly_log/"+timecheck.create_timestamp_YYYYMM()+".json"
+            pathlib.Path('../data/monthly_log').mkdir(mode=0o755,
+                                                      parents=True, exist_ok=True)
+            filepath = "../data/monthly_log/"+timecheck.create_timestamp_YYYYMM()+".json"
         try:
             with open(filepath, "r") as jsonFile:
                 content = json.load(jsonFile)
@@ -170,7 +170,7 @@ def update_daily_yields():
     (Mitternacht) vom aktuellen Zählerstand subtrahiert.
     """
     try:
-        filepath = "./data/daily_log/"+timecheck.create_timestamp_YYYYMMDD()+".json"
+        filepath = "../data/daily_log/"+timecheck.create_timestamp_YYYYMMDD()+".json"
         try:
             with open(filepath, "r") as jsonFile:
                 daily_log = json.load(jsonFile)

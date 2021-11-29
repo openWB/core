@@ -99,6 +99,7 @@ class HandlerAlgorithm:
         ausführt, die nur alle 5 Minuten ausgeführt werden müssen.
         """
         try:
+            log.MainLogger().debug("5 Minuten Handler ausführen.")
             if not self.heartbeat:
                 log.MainLogger().error(
                     "Heartbeat fuer Algorithmus nicht zurueckgesetzt.")

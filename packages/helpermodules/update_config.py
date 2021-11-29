@@ -169,6 +169,7 @@ class UpdateConfig:
                    "^openWB/vehicle/[0-9]+/charge_template$",
                    "^openWB/vehicle/[0-9]+/ev_template$",
                    "^openWB/vehicle/[0-9]+/name$",
+                   "^openWB/vehicle/[0-9]+/tag_id$",
                    "^openWB/vehicle/[0-9]+/get/soc$",
                    "^openWB/vehicle/[0-9]+/get/soc_timetamp$",
                    "^openWB/vehicle/[0-9]+/match_ev/selected$",

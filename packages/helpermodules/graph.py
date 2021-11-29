@@ -1,3 +1,4 @@
+from pathlib import Path
 import subprocess
 import time
 import datetime
@@ -63,7 +64,7 @@ class Graph:
             with open("../ramdisk/graph_live.json", "a") as f:
                 f.write(str(dataline).replace("'", '"'))
                 f.write("\n")
-            subprocess.run(["../runs/graphing.sh",
+            subprocess.run([str(Path(__file__).resolve().parents[2] / "runs"/"graphing.sh"),
                             str(self.data["config"]["duration"]*6)])
         except Exception:
             log.MainLogger().exception("Fehler im Graph-Modul")
