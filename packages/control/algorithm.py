@@ -1140,7 +1140,7 @@ class control:
                             (cp, cp.data["set"]["plug_time"]) for cp, val in valid_chargepoints.items())
                     elif condition_types[condition] == "charged_since_plugged":
                         valid_chargepoints.update(
-                            (cp, cp.data["get"]["log"]["charged_since_plugged_counter"]) for cp,
+                            (cp, cp.data["set"]["log"]["charged_since_plugged_counter"]) for cp,
                             val in valid_chargepoints.items())
                     else:
                         valid_chargepoints.update(
