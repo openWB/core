@@ -20,9 +20,9 @@ class system:
         """ markiert ein aktives Update, triggert das Update auf dem Master und den externen WBs.
         """
         try:
-            pub.pub("openWB/set/system/perform_update", False)
+            pub.Pub().pub("openWB/set/system/perform_update", False)
             self.data["update_in_progress"] = True
-            pub.pub("openWB/set/system/update_in_progress", True)
+            pub.Pub().pub("openWB/set/system/update_in_progress", True)
             if self.data["release_train"] == "stable":
                 train = "stable17"
             else:

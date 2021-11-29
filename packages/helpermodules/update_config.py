@@ -3,7 +3,11 @@ import time
 
 import paho.mqtt.client as mqtt
 
-from . import log, pub
+
+from . import log
+from .pub import Pub
+from ..algorithm import chargepoint
+from ..algorithm import ev
 
 
 class UpdateConfig:
@@ -191,6 +195,19 @@ class UpdateConfig:
                    "^openWB/system/configurable/chargepoints$"
                    ]
     default_topic = (
+        ("openWB/chargepoint/0/config", chargepoint.get_chargepoint_default()),
+        ("openWB/chargepoint/template/0/autolock/0", chargepoint.get_autolock_plan_default()),
+        ("openWB/chargepoint/template/0", chargepoint.get_chargepoint_template_default()),
+        ("openWB/vehicle/0/name", ev.get_vehicle_default()["name"]),
+        ("openWB/vehicle/0/charge_template", ev.get_vehicle_default()["charge_template"]),
+        ("openWB/vehicle/0/ev_template", ev.get_vehicle_default()["ev_template"]),
+        ("openWB/vehicle/0/tag_id", ev.get_vehicle_default()["tag_id"]),
+        ("openWB/vehicle/template/ev_template/0", ev.get_ev_template_default()),
+        ("openWB/vehicle/template/charge_template/0", ev.get_charge_template_default()),
+        ("openWB/vehicle/template/charge_template/0/chargemode/scheduled_charging/plans/0",
+         ev.get_charge_template_scheduled_plan_default()),
+        ("openWB/vehicle/template/charge_template/0/time_charging/plans/0",
+         ev.get_charge_template_time_charging_plan_default()),
         ("openWB/counter/get/hierarchy", []),
         ("openWB/general/chargemode_config/instant_charging/phases_to_use", 1),
         ("openWB/general/chargemode_config/pv_charging/bat_prio", 1),
@@ -285,7 +302,7 @@ class UpdateConfig:
                 if re.search(valid_topic, topic) is not None:
                     break
             else:
-                pub.pub(topic, "")
+                Pub().pub(topic, "")
                 log.MainLogger().debug("Ungültiges Topic: "+str(topic))
 
     def __pub_missing_defaults(self):
@@ -293,4 +310,4 @@ class UpdateConfig:
         for topic in self.default_topic:
             if topic[0] not in self.all_received_topics:
                 log.MainLogger().debug("Setzte Topic '%s' auf Standardwert '%s'" % (topic[0], str(topic[1])))
-                pub.pub(topic[0], topic[1])
+                Pub().pub(topic[0].replace("openWB/", "openWB/set/"), topic[1])

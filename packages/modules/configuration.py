@@ -1,5 +1,5 @@
 from ..helpermodules import log
-from ..helpermodules import pub
+from ..helpermodules.pub import Pub
 
 
 def pub_configurable():
@@ -18,7 +18,7 @@ def _pub_configurable_soc_modules() -> None:
                 "text": "Tesla"
             }
         ]
-        pub.pub("openWB/set/system/configurable/soc_modules", soc_modules)
+        Pub().pub("openWB/set/system/configurable/soc_modules", soc_modules)
     except Exception:
         log.MainLogger().exception("Fehler im configuration-Modul")
 
@@ -35,7 +35,7 @@ def _pub_configurable_devices_components() -> None:
                         "text": "Alpha Ess-Speicher"
                     },
                     {
-                        "value": "cointer",
+                        "value": "counter",
                         "text": "Alpha Ess-Zähler"
                     },
                     {
@@ -99,7 +99,7 @@ def _pub_configurable_devices_components() -> None:
                 ]
             }
         ]
-        pub.pub("openWB/set/system/configurable/devices_components", devices_components)
+        Pub().pub("openWB/set/system/configurable/devices_components", devices_components)
     except Exception:
         log.MainLogger().exception("Fehler im configuration-Modul")
 
@@ -116,6 +116,6 @@ def _pub_configurable_chargepoints() -> None:
                 "text": "openWB IP-EVSE"
             }
         ]
-        pub.pub("openWB/set/system/configurable/chargepoints", chargepoints)
+        Pub().pub("openWB/set/system/configurable/chargepoints", chargepoints)
     except Exception:
         log.MainLogger().exception("Fehler im configuration-Modul")

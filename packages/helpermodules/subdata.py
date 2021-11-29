@@ -14,7 +14,7 @@ from ..algorithm import general
 from . import graph
 from . import log
 from ..algorithm import optional
-from . import pub
+from .pub import Pub
 from . import system
 from ..algorithm import pv
 from ..modules.common.abstract_device import DeviceUpdater
@@ -745,8 +745,8 @@ class SubData:
                         if "component"+str(index_second) in var["device"+index].device._components:
                             var["device"+index].device._components.remove(
                                 "component"+str(index_second))
-                            pub.pub("openWB/system/device/"+str(index) +
-                                    "/component/"+str(index_second), "")
+                            Pub().pub("openWB/system/device/"+str(index) +
+                                      "/component/"+str(index_second), "")
                         else:
                             log.MainLogger().error("Es konnte keine Komponente mit der ID " +
                                                    str(index_second)+" gefunden werden.")

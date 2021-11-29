@@ -41,9 +41,9 @@ def pub_to_broker(topic: str, value, digits: Union[int, None] = None) -> None:
     rounding = get_rounding_function_by_digits(digits)
     try:
         if isinstance(value, list):
-            pub.pub(topic, [rounding(v) for v in value])
+            Pub().pub(topic, [rounding(v) for v in value])
         else:
-            pub.pub(topic, rounding(value))
+            Pub().pub(topic, rounding(value))
     except Exception as e:
         process_error(e)
 

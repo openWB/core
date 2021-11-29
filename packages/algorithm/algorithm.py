@@ -6,7 +6,7 @@ import copy
 from . import data
 from . import loadmanagement
 from ..helpermodules import log
-from ..helpermodules import pub
+from ..helpermodules.pub import Pub
 
 
 class control:
@@ -602,11 +602,11 @@ class control:
                             required_current = charging_ev.check_min_max_current(
                                 current, charging_ev.data["control_parameter"]["phases"])
                             charging_ev.data["control_parameter"]["required_current"] = required_current
-                            pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num) +
-                                    "/control_parameter/required_current", required_current)
+                            Pub().pub("openWB/set/vehicle/"+str(charging_ev.ev_num) +
+                                      "/control_parameter/required_current", required_current)
                             charging_ev.data["control_parameter"]["phases"] = phases
-                            pub.pub("openWB/set/vehicle/"+str(charging_ev.ev_num) +
-                                    "/control_parameter/phases", phases)
+                            Pub().pub("openWB/set/vehicle/"+str(charging_ev.ev_num) +
+                                      "/control_parameter/phases", phases)
                             self._process_data(chargepoint, current)
             except Exception:
                 log.MainLogger().exception("Fehler im Algorithmus-Modul fuer Ladepunkt"+cp)
@@ -676,8 +676,8 @@ class control:
                 required_current = charging_ev.data["control_parameter"]["required_current"]
                 required_power = phases * 230 * \
                     charging_ev.data["control_parameter"]["required_current"]
-                pub.pub("openWB/set/chargepoint/"+str(chargepoint.cp_num) +
-                        "/set/required_power", required_power)
+                Pub().pub("openWB/set/chargepoint/"+str(chargepoint.cp_num) +
+                          "/set/required_power", required_power)
                 chargepoint.data["set"]["required_power"] = required_power
                 if charging_ev.data["control_parameter"]["submode"] == "pv_charging":
                     self._calc_pv_charging(
