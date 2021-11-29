@@ -31,8 +31,8 @@ class system:
             self._trigger_ext_update(train)
             time.sleep(15)
             # aktuell soll kein Update für den Master durchgeführt werden.
-            # subprocess.run(["./runs/update_self.sh", train])
-            subprocess.run("./runs/atreboot.sh")
+            # subprocess.run(["../runs/update_self.sh", train])
+            subprocess.run("../runs/atreboot.sh")
         except Exception:
             log.MainLogger().exception("Fehler im System-Modul")
 
