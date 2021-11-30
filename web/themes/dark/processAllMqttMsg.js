@@ -27,7 +27,7 @@ function convertToKw(dataColum) {
 }
 
 function getIndex(topic) {
-	// get occurence of numbers between / / in topic
+	// get occurrence of numbers between / / in topic
 	// since this is supposed to be the index like in openwb/lp/4/w
 	// no lookbehind supported by safari, so workaround with replace needed
 	var index = topic.match(/(?:\/)([0-9]+)(?=\/)/g)[0].replace(/[^0-9]+/g, '');
@@ -1053,7 +1053,7 @@ function processGraphMessages(mqttmsg, mqttpayload) {
 			updateGraph(mqttpayload);
 		}
 		if (graphrefreshcounter > 60) {
-			// reload graph completety
+			// reload graph completely
 			initialread = 0;
 			all1 = 0;
 			all2 = 0;

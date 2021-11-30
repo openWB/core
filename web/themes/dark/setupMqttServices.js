@@ -6,7 +6,7 @@
  */
 
 // these topics will be subscribed
-// index 1 represents flag if value was received, needed for preloaderbar progress
+// index 1 represents flag if value was received, needed for preloader progress bar
 // if flags are preset with 1 they are not counted on reload and page will show even if topic was not received
 
 // add topics here which should be subscribed bevore any other topics
@@ -259,8 +259,8 @@ var isSSL = location.protocol == 'https:'
 var options = {
 	timeout: 5,
 	useSSL: isSSL,
-	//Gets Called if the connection has sucessfully been established
-	onSuccess: function() {
+	//Gets Called if the connection has been established
+	onSuccess: function () {
 		retries = 0;
 		topicsToSubscribeFirst.forEach((topic) => {
 			client.subscribe(topic[0], { qos: 0 });
