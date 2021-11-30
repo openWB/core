@@ -21,9 +21,9 @@ class Device(AbstractDevice):
         "counter": counter.MqttCounter,
         "inverter": inverter.MqttInverter
     }
-    _components = {}
 
     def __init__(self, device_config: dict) -> None:
+        self._components = {}
         try:
             self.device_config = device_config
         except Exception:

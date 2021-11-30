@@ -28,9 +28,8 @@ class Device(AbstractDevice):
         "inverter": inverter.AlphaEssInverter
     }
 
-    _components = []  # type: List[Union[bat.AlphaEssBat, counter.AlphaEssCounter, inverter.AlphaEssInverter]]
-
     def __init__(self, device_config: dict) -> None:
+        self._components = []  # type: List[Union[bat.AlphaEssBat, counter.AlphaEssCounter, inverter.AlphaEssInverter]]
         try:
             self.client = modbus.ModbusClient("192.168.193.125", 8899)
             self.device_config = device_config
