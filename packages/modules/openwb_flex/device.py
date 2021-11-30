@@ -29,9 +29,9 @@ class Device(AbstractDevice):
         "counter": counter.EvuKitFlex,
         "inverter": inverter.PvKitFlex
     }
-    _components = {}  # type: Dict[str, Union[counter.EvuKitFlex, inverter.PvKitFlex]]
 
     def __init__(self, device_config: dict) -> None:
+        self._components = {}  # type: Dict[str, Union[counter.EvuKitFlex, inverter.PvKitFlex]]
         try:
             self.device_config = device_config
             ip_address = device_config["configuration"]["ip_address"]

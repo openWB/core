@@ -23,10 +23,10 @@ class Device(AbstractDevice):
         "counter": counter.EvuKit,
         "inverter": inverter.PvKit
     }
-    _components = []  # type: List[Union[counter.EvuKit, inverter.PvKit]]
 
     def __init__(self, device_config: dict) -> None:
         self.device_config = device_config
+        self._components = []  # type: List[Union[counter.EvuKit, inverter.PvKit]]
 
     def add_component(self, component_config: dict) -> None:
         component_type = component_config["type"]
