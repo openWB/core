@@ -823,8 +823,11 @@ class setData:
         """
         try:
             if ("openWB/set/log/request" in msg.topic or
-                    "openWB/set/log/data" in msg.topic):
+                    "openWB/set/log/data" in msg.topic or
+                    "openWB/set/log/daily" in msg.topic or
+                    "openWB/set/log/monthly" in msg.topic):
                 self._validate_value(msg, "json")
+
             else:
                 self.__unknown_topic(msg)
         except Exception:

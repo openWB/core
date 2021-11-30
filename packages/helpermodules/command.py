@@ -3,12 +3,15 @@
 
 import importlib
 import json
+import subprocess
 import paho.mqtt.client as mqtt
 import re
 import time
 import traceback
+from pathlib import Path
 
 from helpermodules import log
+from helpermodules import measurement_log
 from helpermodules.pub import Pub
 from control import chargepoint
 from control import data
@@ -535,6 +538,33 @@ class Command:
             else:
                 self.__pub_error(
                     payload, connection_id, "Die ID ist groesser als die maximal vergebene ID.")
+        except Exception:
+            log.MainLogger().exception("Fehler im Command-Modul")
+            self.__pub_error(
+                payload, connection_id, "Es ist ein interner Fehler aufgetreten: "+traceback.format_exc())
+
+    def sendDebug(self, connection_id: str, payload: dict) -> None:
+        try:
+            parent_file = Path(__file__).resolve().parents[2]
+            subprocess.run([str(parent_file / "runs" / "send_debug.sh"),
+                            str(payload["data"]["message"]),
+                            str(payload["data"]["mail"])])
+        except Exception:
+            log.MainLogger().exception("Fehler im Command-Modul")
+            self.__pub_error(
+                payload, connection_id, "Es ist ein interner Fehler aufgetreten: "+traceback.format_exc())
+
+    def getDailyLog(self, connection_id: str, payload: dict) -> None:
+        try:
+            measurement_log.pub_daily_log(payload["data"]["day"])
+        except Exception:
+            log.MainLogger().exception("Fehler im Command-Modul")
+            self.__pub_error(
+                payload, connection_id, "Es ist ein interner Fehler aufgetreten: "+traceback.format_exc())
+
+    def getMonthlyLog(self, connection_id: str, payload: dict) -> None:
+        try:
+            measurement_log.pub_monthly_log(payload["data"]["month"])
         except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")
             self.__pub_error(
