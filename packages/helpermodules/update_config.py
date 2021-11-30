@@ -216,7 +216,6 @@ class UpdateConfig:
                    ]
     default_topic = (
         ("openWB/chargepoint/0/config", chargepoint.get_chargepoint_default()),
-        ("openWB/chargepoint/template/0/autolock/0", chargepoint.get_autolock_plan_default()),
         ("openWB/chargepoint/template/0", chargepoint.get_chargepoint_template_default()),
 
         ("openWB/counter/get/hierarchy", []),
@@ -228,11 +227,7 @@ class UpdateConfig:
 
         ("openWB/vehicle/template/ev_template/0", ev.get_ev_template_default()),
         ("openWB/vehicle/template/charge_template/0", ev.get_charge_template_default()),
-        ("openWB/vehicle/template/charge_template/0/chargemode/scheduled_charging/plans/0",
-            ev.get_charge_template_scheduled_plan_default()),
-        ("openWB/vehicle/template/charge_template/0/time_charging/plans/0",
-            ev.get_charge_template_time_charging_plan_default()),
-
+        ("openWB/counter/get/hierarchy", []),
         ("openWB/general/chargemode_config/instant_charging/phases_to_use", 1),
         ("openWB/general/chargemode_config/pv_charging/bat_prio", 1),
         ("openWB/general/chargemode_config/pv_charging/switch_on_soc", 60),
