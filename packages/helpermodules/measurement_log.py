@@ -2,6 +2,7 @@
 
 import json
 import pathlib
+from pathlib import Path
 
 from control import data
 from helpermodules import log
@@ -143,13 +144,17 @@ def save_log(folder):
 
         # json-Objekt in Datei einfügen
         if folder == "daily":
-            pathlib.Path('../data/daily_log').mkdir(mode=0o755,
-                                                    parents=True, exist_ok=True)
-            filepath = "../data/daily_log/"+timecheck.create_timestamp_YYYYMMDD()+".json"
+            pathlib.Path('../../data/daily_log').mkdir(mode=0o755,
+                                                       parents=True, exist_ok=True)
+            filepath = str(
+                Path(__file__).resolve().parents[2] / "data" / "daily_log" /
+                (timecheck.create_timestamp_YYYYMMDD() + ".json"))
         else:
-            pathlib.Path('../data/monthly_log').mkdir(mode=0o755,
-                                                      parents=True, exist_ok=True)
-            filepath = "../data/monthly_log/"+timecheck.create_timestamp_YYYYMM()+".json"
+            pathlib.Path('../../data/monthly_log').mkdir(mode=0o755,
+                                                         parents=True, exist_ok=True)
+            filepath = str(
+                Path(__file__).resolve().parents[2] / "data" / "monthly_log" /
+                (timecheck.create_timestamp_YYYYMM() + ".json"))
         try:
             with open(filepath, "r") as jsonFile:
                 content = json.load(jsonFile)
@@ -163,6 +168,16 @@ def save_log(folder):
             json.dump(content, jsonFile)
     except Exception:
         log.MainLogger().exception("Fehler im Werte-Loggingmodul")
+
+
+def pub_daily_log(date: str) -> None:
+    with open(str(Path(__file__).resolve().parents[2] / "data"/"daily_log"/(date+".json")), "r") as jsonFile:
+        Pub().pub("openWB/set/log/daily/"+date, json.load(jsonFile))
+
+
+def pub_monthly_log(date: str) -> None:
+    with open(str(Path(__file__).resolve().parents[2] / "data"/"monthly_log"/(date+".json")), "r") as jsonFile:
+        Pub().pub("openWB/set/log/monthly/"+date, json.load(jsonFile))
 
 
 def update_daily_yields():

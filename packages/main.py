@@ -172,7 +172,7 @@ try:
     log.MainLogger().debug("Warten auf das Ende des Boot-Prozesses")
     while os.path.isfile(os.path.dirname(os.path.abspath(__file__)) + "/../ramdisk/bootdone") is False:
         time.sleep(1)
-    log.MainLogger().debug("Boot-Prozess abgeschlossen. Starten der Regelung")
+    log.MainLogger().debug("Boot-Prozess abgeschlossen")
 
     data.data_init()
     update_config.UpdateConfig().update()
