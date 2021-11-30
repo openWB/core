@@ -511,8 +511,7 @@ class setData:
                     msg, float, [(0, float("inf"))], collection=list)
             elif ("/get/daily_yield" in msg.topic or
                     "/get/power_all" in msg.topic or
-                    "/get/counter" in msg.topic or
-                    "/get/charged_since_plugged_counter" in msg.topic):
+                    "/get/counter" in msg.topic):
                 self._validate_value(msg, float, [(0, float("inf"))])
             elif "/get/phases_in_use" in msg.topic:
                 self._validate_value(msg, int, [(0, 3)])
