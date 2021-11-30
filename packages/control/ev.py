@@ -18,7 +18,7 @@ def get_vehicle_default() -> dict:
     return {
         "charge_template": 0,
         "ev_template": 0,
-        "name": "Standard-EV",
+        "name": "Standard-Fahrzeug",
         "soc/config/configured": False,
         "soc/config/manual": False,
         "soc/config/request_interval_charging": 10,
@@ -431,7 +431,7 @@ class ev:
 
 def get_ev_template_default() -> dict:
     return {
-        "name": "Standard-EV-Vorlage",
+        "name": "Standard-Fahrzeug-Vorlage",
         "max_current_multi_phases": 16,
         "max_phases": 3,
         "phase_switch_pause": 2,
@@ -495,7 +495,7 @@ def get_charge_template_default() -> dict:
 def get_charge_template_scheduled_plan_default() -> dict:
     charge_template_scheduled_plan_default = {
         "name": "Zielladen-Standard",
-        "active": True,
+        "active": False,
         "time": "07:00",  # ToDo: aktuelle Zeit verwenden
         "soc": 85,
         "frequency":
