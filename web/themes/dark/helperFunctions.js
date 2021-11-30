@@ -99,7 +99,7 @@ function setToggleBtnGroup(groupId, option) {
     /** @function setInputValue
      * sets the value-label (if exists) attached to the element to the element value
      * @param {string} groupId - the id of the button group
-     * @param {string} option - the option the group btns will be set to
+     * @param {string} option - the option the group buttons will be set to
      * @requires data-attribute 'option' (unique for group) assigned to every radio-btn
      */
     var btnGroup = $('#' + $.escapeSelector(groupId));

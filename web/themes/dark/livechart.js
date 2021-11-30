@@ -545,7 +545,7 @@ function loadgraph(animationDuration = 1000) {
 
 	initialread = 1;
 	$('#waitforgraphloadingdiv').hide();
-} // end loadgraph
+}  // end loadgraph
 
 // Sichtbarkeit für SmartHome Devices im Graph
 function setvisibility(datarr, hidevar, hidevalue, booldisplay) {
