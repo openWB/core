@@ -713,8 +713,8 @@ class chargepoint:
                 phases = chargemode_phases
                 log.MainLogger().debug("Lademodus-Phasen beschränkt die nutzbaren Phasen auf "+str(phases))
             if phases != self.data["get"]["phases_in_use"]:
-                # Wenn noch kein Logeintrag erstellt wurde, wurde noch nicht geladen und die Phase kann noch umgeschaltet
-                # werden.
+                # Wenn noch kein Logeintrag erstellt wurde, wurde noch nicht geladen und die Phase kann noch
+                # umgeschaltet werden.
                 if charging_ev.ev_template.data["prevent_switch_stop"] and self.data["set"]["log"][
                         "charged_since_plugged_counter"] != 0:
                     log.MainLogger().info("Phasenumschaltung an Ladepunkt" + str(self.cp_num) +
@@ -764,7 +764,7 @@ class cpTemplate:
     """
 
     def __init__(self):
-        self.data = {}
+        self.data = {"autolock": {"plans": {}}}
 
     def autolock(self, autolock_state, charge_state, cp_num):
         """ ermittelt den Status des Autolock und published diesen.
@@ -792,27 +792,31 @@ class cpTemplate:
         """
         try:
             if (self.data["autolock"]["active"]):
-                if autolock_state != 4:
-                    if timecheck.check_plans_timeframe(
-                            self.data["autolock"]["plans"]) is not None:
-                        if self.data["autolock"]["wait_for_charging_end"]:
-                            if charge_state:
-                                state = 1
+                if self.data["autolock"]["plans"]:
+                    if autolock_state != 4:
+                        if timecheck.check_plans_timeframe(
+                                self.data["autolock"]["plans"]) is not None:
+                            if self.data["autolock"]["wait_for_charging_end"]:
+                                if charge_state:
+                                    state = 1
+                                else:
+                                    state = 2
                             else:
                                 state = 2
                         else:
-                            state = 2
-                    else:
-                        state = 3
+                            state = 3
 
-                    Pub().pub(
-                        "openWB/set/chargepoint/" + str(cp_num) +
-                        "/set/autolock_state", state)
-                    if (state == 1) or (state == 3):
+                        Pub().pub(
+                            "openWB/set/chargepoint/" + str(cp_num) +
+                            "/set/autolock_state", state)
+                        if (state == 1) or (state == 3):
+                            return False
+                        elif state == 2:
+                            return True
+                    else:
                         return False
-                    elif state == 2:
-                        return True
                 else:
+                    log.MainLogger().info("Keine Sperrung durch Autolock, weil keine Zeitpläne konfiguriert sind.")
                     return False
             else:
                 return False

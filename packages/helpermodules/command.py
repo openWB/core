@@ -3,12 +3,15 @@
 
 import importlib
 import json
+import subprocess
 import paho.mqtt.client as mqtt
 import re
 import time
 import traceback
+from pathlib import Path
 
 from helpermodules import log
+from helpermodules import measurement_log
 from helpermodules.pub import Pub
 from control import chargepoint
 from control import data
@@ -22,14 +25,14 @@ class Command:
 
     def __init__(self):
         try:
-            self.__get_max_id("autolock_plan", "chargepoint/template/+/autolock", 0)
+            self.__get_max_id("autolock_plan", "chargepoint/template/+/autolock", -1)
             self.__get_max_id("charge_template", "vehicle/template/charge_template", 0)
             self.__get_max_id(
                 "charge_template_scheduled_plan",
-                "vehicle/template/charge_template/+/chargemode/scheduled_charging/plans/", 0)
+                "vehicle/template/charge_template/+/chargemode/scheduled_charging/plans", -1)
             self.__get_max_id(
                 "charge_template_time_charging_plan",
-                "vehicle/template/charge_template/+/chargemode/time_charging/plans/", 0)
+                "vehicle/template/charge_template/+/time_charging/plans", -1)
             self.__get_max_id("chargepoint", "chargepoint", 0)
             self.__get_max_id("chargepoint_template", "chargepoint/template", 0)
             self.__get_max_id("component", "system/device/+/component", -1)
@@ -278,17 +281,13 @@ class Command:
         """
         try:
             if self.max_id_autolock_plan >= payload["data"]["plan"]:
-                if payload["data"]["plan"] > 0:
-                    log.MainLogger().info(
-                        "Autolock-Plan mit ID " + str(payload["data"]["plan"]) + " zu Template " +
-                        str(payload["data"]["template"]) + " geloescht.")
-                    Pub().pub(
-                        "openWB/chargepoint/template/" + str(payload["data"]["template"]) + "/autolock/" +
-                        str(payload["data"]["plan"]),
-                        "")
-                else:
-                    self.__pub_error(
-                        payload, connection_id, "Autolock-Plan mit ID 0 darf nicht geloescht werden.")
+                log.MainLogger().info(
+                    "Autolock-Plan mit ID " + str(payload["data"]["plan"]) + " zu Template " +
+                    str(payload["data"]["template"]) + " geloescht.")
+                Pub().pub(
+                    "openWB/chargepoint/template/" + str(payload["data"]["template"]) + "/autolock/" +
+                    str(payload["data"]["plan"]),
+                    "")
             else:
                 self.__pub_error(
                     payload, connection_id, "Die ID ist groesser als die maximal vergebene ID.")
@@ -359,17 +358,13 @@ class Command:
         """
         try:
             if self.max_id_charge_template_scheduled_plan >= payload["data"]["plan"]:
-                if payload["data"]["plan"] > 0:
-                    log.MainLogger().info(
-                        "Zielladen-Template mit ID " + str(payload["data"]["plan"]) + " zu Template " +
-                        str(payload["data"]["template"]) + " geloescht.")
-                    Pub().pub(
-                        "openWB/vehicle/template/charge_template/" + str(payload["data"]["template"]) +
-                        "/chargemode/scheduled_charging/plans/" + str(payload["data"]["plan"]),
-                        "")
-                else:
-                    self.__pub_error(
-                        payload, connection_id, "Zielladen-Plan mit ID 0 darf nicht geloescht werden.")
+                log.MainLogger().info(
+                    "Zielladen-Template mit ID " + str(payload["data"]["plan"]) + " zu Template " +
+                    str(payload["data"]["template"]) + " geloescht.")
+                Pub().pub(
+                    "openWB/vehicle/template/charge_template/" + str(payload["data"]["template"]) +
+                    "/chargemode/scheduled_charging/plans/" + str(payload["data"]["plan"]),
+                    "")
             else:
                 self.__pub_error(
                     payload, connection_id, "Die ID ist groesser als die maximal vergebene ID.")
@@ -403,17 +398,13 @@ class Command:
         """
         try:
             if self.max_id_charge_template_time_charging_plan >= payload["data"]["plan"]:
-                if payload["data"]["plan"] > 0:
-                    log.MainLogger().info(
-                        "Zeitladen-Template mit ID " + str(payload["data"]["plan"]) + " zu Template " +
-                        str(payload["data"]["template"]) + " geloescht.")
-                    Pub().pub(
-                        "openWB/vehicle/template/charge_template/" + str(payload["data"]["template"]) +
-                        "/time_charging/plans/" + str(payload["data"]["plan"]),
-                        "")
-                else:
-                    self.__pub_error(
-                        payload, connection_id, "Zeitladen-Plan mit ID 0 darf nicht geloescht werden.")
+                log.MainLogger().info(
+                    "Zeitladen-Template mit ID " + str(payload["data"]["plan"]) + " zu Template " +
+                    str(payload["data"]["template"]) + " geloescht.")
+                Pub().pub(
+                    "openWB/vehicle/template/charge_template/" + str(payload["data"]["template"]) +
+                    "/time_charging/plans/" + str(payload["data"]["plan"]),
+                    "")
             else:
                 self.__pub_error(
                     payload, connection_id, "Die ID ist groesser als die maximal vergebene ID.")
@@ -547,6 +538,33 @@ class Command:
             else:
                 self.__pub_error(
                     payload, connection_id, "Die ID ist groesser als die maximal vergebene ID.")
+        except Exception:
+            log.MainLogger().exception("Fehler im Command-Modul")
+            self.__pub_error(
+                payload, connection_id, "Es ist ein interner Fehler aufgetreten: "+traceback.format_exc())
+
+    def sendDebug(self, connection_id: str, payload: dict) -> None:
+        try:
+            parent_file = Path(__file__).resolve().parents[2]
+            subprocess.run([str(parent_file / "runs" / "send_debug.sh"),
+                            str(payload["data"]["message"]),
+                            str(payload["data"]["mail"])])
+        except Exception:
+            log.MainLogger().exception("Fehler im Command-Modul")
+            self.__pub_error(
+                payload, connection_id, "Es ist ein interner Fehler aufgetreten: "+traceback.format_exc())
+
+    def getDailyLog(self, connection_id: str, payload: dict) -> None:
+        try:
+            measurement_log.pub_daily_log(payload["data"]["day"])
+        except Exception:
+            log.MainLogger().exception("Fehler im Command-Modul")
+            self.__pub_error(
+                payload, connection_id, "Es ist ein interner Fehler aufgetreten: "+traceback.format_exc())
+
+    def getMonthlyLog(self, connection_id: str, payload: dict) -> None:
+        try:
+            measurement_log.pub_monthly_log(payload["data"]["month"])
         except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")
             self.__pub_error(

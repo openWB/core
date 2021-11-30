@@ -98,6 +98,7 @@ class UpdateConfig:
                    "^openWB/counter/[0-9]+/config/max_total_power$",
 
                    "^openWB/general/extern$",
+                   "^openWB/general/extern_display_mode$",
                    "^openWB/general/control_interval$",
                    "^openWB/general/external_buttons_hw$",
                    "^openWB/general/grid_protection_configured$",
@@ -107,7 +108,7 @@ class UpdateConfig:
                    "^openWB/general/grid_protection_random_stop$",
                    "^openWB/general/price_kwh$",
                    "^openWB/general/range_unit$",
-                   "^openWB/general/notifications/selected$",
+                   "^openWB/general/notifications/configuration$",
                    "^openWB/general/notifications/start_charging$",
                    "^openWB/general/notifications/stop_charging$",
                    "^openWB/general/notifications/plug$",
@@ -216,10 +217,9 @@ class UpdateConfig:
                    ]
     default_topic = (
         ("openWB/chargepoint/0/config", chargepoint.get_chargepoint_default()),
-        ("openWB/chargepoint/template/0/autolock/0", chargepoint.get_autolock_plan_default()),
         ("openWB/chargepoint/template/0", chargepoint.get_chargepoint_template_default()),
 
-        ("openWB/counter/get/hierarchy", []),
+        ("openWB/counter/get/hierarchy", [{"id": "cp0", "children": []}]),
 
         ("openWB/vehicle/0/name", ev.get_vehicle_default()["name"]),
         ("openWB/vehicle/0/charge_template", ev.get_vehicle_default()["charge_template"]),
@@ -228,11 +228,7 @@ class UpdateConfig:
 
         ("openWB/vehicle/template/ev_template/0", ev.get_ev_template_default()),
         ("openWB/vehicle/template/charge_template/0", ev.get_charge_template_default()),
-        ("openWB/vehicle/template/charge_template/0/chargemode/scheduled_charging/plans/0",
-            ev.get_charge_template_scheduled_plan_default()),
-        ("openWB/vehicle/template/charge_template/0/time_charging/plans/0",
-            ev.get_charge_template_time_charging_plan_default()),
-
+        ("openWB/counter/get/hierarchy", []),
         ("openWB/general/chargemode_config/instant_charging/phases_to_use", 1),
         ("openWB/general/chargemode_config/pv_charging/bat_prio", 1),
         ("openWB/general/chargemode_config/pv_charging/switch_on_soc", 60),
@@ -260,7 +256,6 @@ class UpdateConfig:
         ("openWB/general/extern_display_mode", "local"),
         ("openWB/general/external_buttons_hw", False),
         ("openWB/general/grid_protection_configured", True),
-        ("openWB/general/notifications/selected", "none"),
         ("openWB/general/notifications/plug", False),
         ("openWB/general/notifications/start_charging", False),
         ("openWB/general/notifications/stop_charging", False),
@@ -291,6 +286,7 @@ class UpdateConfig:
         self.all_received_topics = []
 
     def update(self):
+        log.MainLogger().debug("Broker-Konfiguration aktualisieren")
         mqtt_broker_ip = "localhost"
         client = mqtt.Client("openWB-updateconfig-" + self.getserial())
         client.on_connect = self.on_connect

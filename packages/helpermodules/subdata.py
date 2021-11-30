@@ -275,28 +275,11 @@ class SubData:
                         index)] = json.loads(str(msg.payload.decode("utf-8")))
             else:
                 # Pläne unverändert übernehmen
-                try:
-                    scheduled_charging_plans = var["ct" +
-                                                   index].data["chargemode"]["scheduled_charging"]["plans"][str(index)]
-                except Exception:
-                    pass
-                try:
-                    time_charging_plans = var["ct" +
-                                              index].data["time_charging"]["plans"][str(index)]
-                except Exception:
-                    pass
-                var["ct" +
-                    index].data = json.loads(str(msg.payload.decode("utf-8")))
-                try:
-                    var["ct"+index].data["time_charging"]["plans"][str(
-                        index)] = time_charging_plans
-                except Exception:
-                    pass
-                try:
-                    var["ct"+index].data["chargemode"]["scheduled_charging"]["plans"][str(
-                        index)] = scheduled_charging_plans
-                except Exception:
-                    pass
+                scheduled_charging_plans = var["ct" + index].data["chargemode"]["scheduled_charging"]["plans"]
+                time_charging_plans = var["ct" + index].data["time_charging"]["plans"]
+                var["ct" + index].data = json.loads(str(msg.payload.decode("utf-8")))
+                var["ct"+index].data["time_charging"]["plans"] = time_charging_plans
+                var["ct"+index].data["chargemode"]["scheduled_charging"]["plans"] = scheduled_charging_plans
                 self.event_charge_template.set()
         except Exception:
             log.MainLogger().exception("Fehler im subdata-Modul")
@@ -408,16 +391,10 @@ class SubData:
                     self.set_json_payload(
                         var["cpt"+index].data["autolock"]["plans"], msg)
             else:
-                try:
-                    autolock_plans = var["cpt"+index].data["autolock"]["plans"]
-                except Exception:
-                    pass
-                var["cpt" +
-                    index].data = json.loads(str(msg.payload.decode("utf-8")))
-                try:
-                    var["cpt"+index].data["autolock"]["plans"] = autolock_plans
-                except Exception:
-                    pass
+                autolock_plans = var["cpt"+index].data["autolock"]["plans"]
+                var["cpt" + index].data = json.loads(str(msg.payload.decode("utf-8")))
+                var["cpt"+index].data["autolock"]["plans"] = autolock_plans
+
         except Exception:
             log.MainLogger().exception("Fehler im subdata-Modul")
 
