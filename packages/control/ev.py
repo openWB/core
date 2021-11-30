@@ -135,7 +135,11 @@ class ev:
                     required_current, submode, message = self.charge_template.pv_charging(
                         self.data["get"]["soc"])
                 elif self.charge_template.data["chargemode"]["selected"] == "standby":
-                    required_current, submode, message = self.charge_template.standby()
+                    # Text von Zeit-und Zielladen nicht überschreiben.
+                    if message is None:
+                        required_current, submode, message = self.charge_template.standby()
+                    else:
+                        required_current, submode, _ = self.charge_template.standby()
                 elif self.charge_template.data["chargemode"]["selected"] == "stop":
                     required_current, submode, message = self.charge_template.stop()
             if submode == "stop" or (self.charge_template.data["chargemode"]["selected"] == "stop"):
@@ -529,10 +533,7 @@ class chargeTemplate:
     """
 
     def __init__(self, index):
-        self.data = {}
-        self.data["chargemode"] = {}
-        self.data["chargemode"]["scheduled_charging"] = {}
-        self.data["chargemode"]["scheduled_charging"]["plans"] = {}
+        self.data = {"chargemode": {"scheduled_charging": {"plans": {}}}, "time_charging": {"plans": {}}}
         self.ct_num = index
 
     def time_charging(self):
@@ -540,8 +541,7 @@ class chargeTemplate:
         """
         message = None
         try:
-            # Ein Eintrag gibt an, ob aktiv/inaktiv, alle weiteren sind Zeitpläne.
-            if len(self.data["time_charging"]) > 1:
+            if self.data["time_charging"]["plans"]:
                 plan = timecheck.check_plans_timeframe(
                     self.data["time_charging"]["plans"])
                 if plan is not None:
@@ -553,7 +553,7 @@ class chargeTemplate:
                     return 0, "stop", message
             else:
                 self.data["chargemode"]["current_plan"] = ""
-                message = "Keine Ladung, da keine Zeitfenster konfiguriert sind."
+                message = "Keine Ladung, da keine Zeitfenster für Zeitladen konfiguriert sind."
                 return 0, "stop", message
         except Exception:
             log.MainLogger().exception("Fehler im ev-Modul "+str(self.ct_num))
