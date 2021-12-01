@@ -546,9 +546,11 @@ class Command:
     def sendDebug(self, connection_id: str, payload: dict) -> None:
         try:
             parent_file = Path(__file__).resolve().parents[2]
+            log.MainLogger().set_log_level(2)
             subprocess.run([str(parent_file / "runs" / "send_debug.sh"),
                             str(payload["data"]["message"]),
-                            str(payload["data"]["mail"])])
+                            str(payload["data"]["email"])])
+            log.MainLogger().set_log_level(0)
         except Exception:
             log.MainLogger().exception("Fehler im Command-Modul")
             self.__pub_error(
