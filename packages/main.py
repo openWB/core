@@ -20,6 +20,7 @@ from control import prepare
 from control import data
 from control import process
 from control import algorithm
+from helpermodules.system import ExitAfterContextManager, exit_after
 
 
 # Wenn debug True ist, wird der 10s Handler nicht durch den Timer-Thread gesteuert, sondern macht ein 10s Sleep am
@@ -40,58 +41,69 @@ class HandlerAlgorithm:
             # Beim ersten Durchlauf wird in jedem Fall eine Exception geworfen, da die Daten erstmalig ins data-Modul
             # kopiert werden müssen.
             try:
-                if (data.data.general_data["general"].data["control_interval"]
-                        / 10) == self.interval_counter:
-                    # Mit aktuellen Einstellungen arbeiten.
-                    log.MainLogger().debug(" Start copy_data 1")
-                    prep.copy_system_data()
-                    log.MainLogger().set_log_level(data.data.system_data["system"].data["debug_level"])
-                    log.MainLogger().debug(" Stop copy_data 1")
-                    vars.get_values()
-                    # Virtuelle Module ermitteln die Werte rechnerisch auf Bais der Messwerte anderer Module.
-                    # Daher können sie erst die Werte ermitteln, wenn die physischen Module ihre Werte ermittelt haben.
-                    # Würde man allle Module parallel abfragen, wären die virtuellen Module immer einen Zyklus
-                    # hinterher.
-                    log.MainLogger().debug(" Start copy_data 2")
-                    prep.copy_counter_data()
-                    log.MainLogger().debug(" Stop copy_data 2")
-                    vars.get_virtual_values()
-                    # Kurz warten, damit alle Topics von setdata und subdata verarbeitet werden könnnen.
-                    time.sleep(0.5)
-                    log.MainLogger().debug(" Start copy_data 3")
-                    prep.copy_data()
-                    log.MainLogger().debug(" Stop copy_data 3")
-                    self.heartbeat = True
-                    if data.data.system_data["system"].data["perform_update"]:
-                        data.data.system_data["system"].perform_update()
-                        return
-                    elif data.data.system_data["system"].data[
-                            "update_in_progress"]:
-                        log.MainLogger().info(
-                            "Regelung pausiert, da ein Update durchgefuehrt wird."
-                        )
-                        return
-                    prep.setup_algorithm()
-                    control.calc_current()
-                    proc.process_algorithm_results()
-                    data.data.graph_data["graph"].pub_graph_data()
-                    self.interval_counter = 1
-                else:
-                    self.interval_counter = self.interval_counter + 1
+                with ExitAfterContextManager():
+                    exit_time = data.data.general_data["general"].data["control_interval"]
+
+                    @exit_after(exit_time)
+                    def handler_with_control_interval():
+                        if (data.data.general_data["general"].data["control_interval"]
+                                / 10) == self.interval_counter:
+                            # Mit aktuellen Einstellungen arbeiten.
+                            log.MainLogger().debug(" Start copy_data 1")
+                            prep.copy_system_data()
+                            log.MainLogger().set_log_level(data.data.system_data["system"].data["debug_level"])
+                            log.MainLogger().debug(" Stop copy_data 1")
+                            vars.get_values()
+                            # Virtuelle Module ermitteln die Werte rechnerisch auf Bais der Messwerte anderer Module.
+                            # Daher können sie erst die Werte ermitteln, wenn die physischen Module ihre Werte ermittelt haben.
+                            # Würde man allle Module parallel abfragen, wären die virtuellen Module immer einen Zyklus
+                            # hinterher.
+                            log.MainLogger().debug(" Start copy_data 2")
+                            prep.copy_counter_data()
+                            log.MainLogger().debug(" Stop copy_data 2")
+                            vars.get_virtual_values()
+                            # Kurz warten, damit alle Topics von setdata und subdata verarbeitet werden könnnen.
+                            time.sleep(0.5)
+                            log.MainLogger().debug(" Start copy_data 3")
+                            prep.copy_data()
+                            log.MainLogger().debug(" Stop copy_data 3")
+                            self.heartbeat = True
+                            if data.data.system_data["system"].data["perform_update"]:
+                                data.data.system_data["system"].perform_update()
+                                return
+                            elif data.data.system_data["system"].data[
+                                    "update_in_progress"]:
+                                log.MainLogger().info(
+                                    "Regelung pausiert, da ein Update durchgefuehrt wird."
+                                )
+                                return
+                            prep.setup_algorithm()
+                            control.calc_current()
+                            proc.process_algorithm_results()
+                            data.data.graph_data["graph"].pub_graph_data()
+                            time.sleep(2)
+                            self.interval_counter = 1
+                        else:
+                            self.interval_counter = self.interval_counter + 1
+                    handler_with_control_interval()
             except Exception:
-                # Wenn kein Regelintervall bekannt ist, alle 10s regeln.
-                prep.copy_system_data()
-                vars.get_values()
-                prep.copy_counter_data()
-                vars.get_virtual_values()
-                self.heartbeat = True
-                # Kurz warten, damit alle Topics von setdata und subdata verarbeitet werden könnnen.
-                time.sleep(0.3)
-                prep.copy_data()
-                prep.setup_algorithm()
-                control.calc_current()
-                proc.process_algorithm_results()
-                data.data.graph_data["graph"].pub_graph_data()
+                with ExitAfterContextManager():
+                    @exit_after(10)
+                    def handler_without_contronl_interval():
+                        # Wenn kein Regelintervall bekannt ist, alle 10s regeln.
+                        prep.copy_system_data()
+                        vars.get_values()
+                        prep.copy_counter_data()
+                        vars.get_virtual_values()
+                        self.heartbeat = True
+                        # Kurz warten, damit alle Topics von setdata und subdata verarbeitet werden könnnen.
+                        time.sleep(0.3)
+                        prep.copy_data()
+                        prep.setup_algorithm()
+                        control.calc_current()
+                        proc.process_algorithm_results()
+                        data.data.graph_data["graph"].pub_graph_data()
+                    handler_without_contronl_interval()
         except Exception:
             log.MainLogger().exception("Fehler im Main-Modul")
 
