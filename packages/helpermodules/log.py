@@ -17,7 +17,7 @@ mqtt_lock = None
 
 
 class MainLogger:
-    instance = None
+    instance = None  # type: logging.Logger
 
     def __init__(self):
         if not MainLogger.instance:
@@ -30,6 +30,10 @@ class MainLogger:
             fh.setLevel(logging.DEBUG)
             fh.setFormatter(formatter)
             MainLogger.instance.addHandler(fh)
+
+    def set_log_level(self, level):
+        level_conversion = {0: logging.WARNING, 1: logging.INFO, 2: logging.DEBUG}
+        MainLogger.instance.setLevel(level_conversion[level])
 
     def __getattr__(self, name):
         return getattr(self.instance, name)
