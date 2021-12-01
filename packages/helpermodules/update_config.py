@@ -203,7 +203,10 @@ class UpdateConfig:
                    "^openWB/vehicle/[0-9]+/control_parameter/phases$",
                    "^openWB/vehicle/[0-9]+/set/ev_template$",
 
+                   "^openWB/system/dataprotection_acknowledged$",
+                   "^openWB/system/debug_level$",
                    "^openWB/system/lastlivevaluesJson$",
+                   "^openWB/system/ip_address$",
                    "^openWB/system/update_in_progress$",
                    "^openWB/system/device/[0-9]+/config$",
                    "^openWB/system/device/[0-9]+/component/[0-9]+/config$",
@@ -279,7 +282,11 @@ class UpdateConfig:
         ("openWB/optional/led/active", False),
         ("openWB/optional/load_sharing/active", False),
         ("openWB/optional/load_sharing/max_current", 16),
-        ("openWB/optional/rfid/active", False)
+        ("openWB/optional/rfid/active", False),
+
+        ("openWB/system/dataprotection_acknowledged", False),
+        ("openWB/system/debug_level", 0),
+        ("openWB/system/ip_address", "192.168.193.5")
     )
 
     def __init__(self) -> None:
