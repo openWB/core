@@ -3,9 +3,10 @@ import time
 
 from helpermodules import log
 from helpermodules.pub import Pub
+from helpermodules.system import exit_after
 
 
-def read_ripple_control_receiver():
+def read():
 
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(8, GPIO.IN, pull_up_down=GPIO.PUD_UP)
@@ -29,6 +30,6 @@ def read_ripple_control_receiver():
         else:
             Pub().pub("openWB/set/general/ripple_control_receiver/r2_active", False)
             time.sleep(0.2)
-    except Exception as e:
+    except Exception:
         GPIO.cleanup()
-        log.exception_logging(e)
+        log.MainLogger().exception()

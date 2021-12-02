@@ -76,7 +76,6 @@ class HandlerAlgorithm:
                         control.calc_current()
                         proc.process_algorithm_results()
                         data.data.graph_data["graph"].pub_graph_data()
-                        time.sleep(2)
                         self.interval_counter = 1
                     else:
                         self.interval_counter = self.interval_counter + 1

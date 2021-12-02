@@ -2,6 +2,7 @@
 """
 
 import threading
+from typing import List, Union
 
 from modules import ripple_control_receiver
 from control import data
@@ -19,19 +20,20 @@ class loadvars:
 
     def get_values(self):
         try:
+            threads = []
             self._get_cp()
-            self._get_general()
-            kits_threads = self._get_modules()
+            threads.extend(self._get_general())
+            threads.extend(self._get_modules())
             # Start them all
-            if kits_threads:
-                for thread in kits_threads:
+            if threads:
+                for thread in threads:
                     thread.start()
 
                 # Wait for all to complete
-                for thread in kits_threads:
+                for thread in threads:
                     thread.join(timeout=3)
 
-                for thread in kits_threads:
+                for thread in threads:
                     if thread.is_alive():
                         log.MainLogger().error(
                             thread.name +
@@ -98,19 +100,22 @@ class loadvars:
             except Exception:
                 log.MainLogger().exception("Fehler im loadvars-Modul")
 
-    def _get_general(self):
+    def _get_general(self) -> List[threading.Thread]:
+        threads = []  # type: List[threading.Thread]
         try:
             # Beim ersten Durchlauf wird in jedem Fall eine Exception geworfen,
             # da die Daten erstmalig ins data-Modul kopiert werden müssen.
             if data.data.general_data["general"].data[
                     "ripple_control_receiver"]["configured"]:
-                ripple_control_receiver.read_ripple_control_receiver()
+                threads.append(threading.Thread(target=ripple_control_receiver.read, args=()))
         except Exception:
             log.MainLogger().exception("Fehler im loadvars-Modul")
+        finally:
+            return threads
 
-    def _get_modules(self):
+    def _get_modules(self) -> List[threading.Thread]:
+        modules_threads = []  # type: List[threading.Thread]
         try:
-            modules_threads = []
             for item in data.data.system_data:
                 try:
                     if "device" in item:
@@ -124,3 +129,5 @@ class loadvars:
             return modules_threads
         except Exception:
             log.MainLogger().exception("Fehler im loadvars-Modul")
+        finally:
+            return modules_threads
