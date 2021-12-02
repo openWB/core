@@ -89,18 +89,3 @@ def exit_after(s):
             return result
         return inner
     return outer
-
-
-class ExitAfterContextManager:
-    def __init__(self):
-        pass
-
-    def __enter__(self):
-        return None
-
-    def __exit__(self, exception_type, exception, exception_traceback) -> bool:
-        if isinstance(exception, KeyboardInterrupt):
-            log.MainLogger().critical("Asuführung durch exit_after gestoppt: "+str(exception)+traceback.format_exc())
-            return True
-        else:
-            return False
