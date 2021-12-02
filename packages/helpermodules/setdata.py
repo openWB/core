@@ -23,17 +23,19 @@ class setData:
         """ abonniert alle set-Topics.
         """
         mqtt_broker_ip = "localhost"
-        client = mqtt.Client("openWB-mqttset-" + self.getserial())
+        self.client = mqtt.Client("openWB-mqttset-" + self.getserial())
         # ipallowed='^[0-9.]+$'
         # nameallowed='^[a-zA-Z ]+$'
         # namenumballowed='^[0-9a-zA-Z ]+$'
 
-        client.on_connect = self.on_connect
-        client.on_message = self.on_message
+        self.client.on_connect = self.on_connect
+        self.client.on_message = self.on_message
+        self.client.connect(mqtt_broker_ip, 1886)
+        self.client.loop_forever()
 
-        client.connect(mqtt_broker_ip, 1886)
-        client.loop_forever()
-        client.disconnect()
+    def disconnect(self) -> None:
+        self.client.disconnect()
+        log.MainLogger().info("Verbindung von Client openWB-mqttset-" + self.getserial()+" geschlossen.")
 
     def getserial(self):
         """ Extract serial from cpuinfo file
@@ -873,6 +875,8 @@ class setData:
                 self._validate_value(msg, int, [(0, 2)])
             elif "openWB/set/system/ip_address" in msg.topic:
                 self._validate_value(msg, str)
+            elif "openWB/set/system/mqtt/bridge/" in msg.topic:
+                self._validate_value(msg, "json")
             elif "configurable" in msg.topic:
                 self._validate_value(msg, None)
             elif "device" in msg.topic:

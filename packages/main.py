@@ -4,6 +4,7 @@
 import os
 import time
 import threading
+import traceback
 from threading import Thread
 
 from modules import loadvars
@@ -20,11 +21,7 @@ from control import prepare
 from control import data
 from control import process
 from control import algorithm
-
-
-# Wenn debug True ist, wird der 10s Handler nicht durch den Timer-Thread gesteuert, sondern macht ein 10s Sleep am
-# Ende, da sonst beim Pausieren immer mehr Threads im Hintergrund auflaufen.
-debug = False
+from helpermodules.system import exit_after
 
 
 class HandlerAlgorithm:
@@ -40,84 +37,89 @@ class HandlerAlgorithm:
             # Beim ersten Durchlauf wird in jedem Fall eine Exception geworfen, da die Daten erstmalig ins data-Modul
             # kopiert werden müssen.
             try:
-                if (data.data.general_data["general"].data["control_interval"]
-                        / 10) == self.interval_counter:
-                    # Mit aktuellen Einstellungen arbeiten.
-                    log.MainLogger().debug(" Start copy_data 1")
+                exit_time = data.data.general_data["general"].data["control_interval"]
+
+                @exit_after(exit_time)
+                def handler_with_control_interval():
+                    if (data.data.general_data["general"].data["control_interval"]
+                            / 10) == self.interval_counter:
+                        # Mit aktuellen Einstellungen arbeiten.
+                        log.MainLogger().debug(" Start copy_data 1")
+                        prep.copy_system_data()
+                        log.MainLogger().set_log_level(data.data.system_data["system"].data["debug_level"])
+                        log.MainLogger().debug(" Stop copy_data 1")
+                        vars.get_values()
+                        # Virtuelle Module ermitteln die Werte rechnerisch auf Bais der Messwerte anderer Module.
+                        # Daher können sie erst die Werte ermitteln, wenn die physischen Module ihre Werte ermittelt
+                        # haben. Würde man allle Module parallel abfragen, wären die virtuellen Module immer einen
+                        # Zyklus hinterher.
+                        log.MainLogger().debug(" Start copy_data 2")
+                        prep.copy_counter_data()
+                        log.MainLogger().debug(" Stop copy_data 2")
+                        vars.get_virtual_values()
+                        # Kurz warten, damit alle Topics von setdata und subdata verarbeitet werden könnnen.
+                        time.sleep(0.5)
+                        log.MainLogger().debug(" Start copy_data 3")
+                        prep.copy_data()
+                        log.MainLogger().debug(" Stop copy_data 3")
+                        self.heartbeat = True
+                        if data.data.system_data["system"].data["perform_update"]:
+                            data.data.system_data["system"].perform_update()
+                            return
+                        elif data.data.system_data["system"].data[
+                                "update_in_progress"]:
+                            log.MainLogger().info(
+                                "Regelung pausiert, da ein Update durchgefuehrt wird."
+                            )
+                            return
+                        prep.setup_algorithm()
+                        control.calc_current()
+                        proc.process_algorithm_results()
+                        data.data.graph_data["graph"].pub_graph_data()
+                        self.interval_counter = 1
+                    else:
+                        self.interval_counter = self.interval_counter + 1
+                handler_with_control_interval()
+            except Exception:
+                @exit_after(10)
+                def handler_without_contronl_interval():
+                    # Wenn kein Regelintervall bekannt ist, alle 10s regeln.
                     prep.copy_system_data()
-                    log.MainLogger().set_log_level(data.data.system_data["system"].data["debug_level"])
-                    log.MainLogger().debug(" Stop copy_data 1")
                     vars.get_values()
-                    # Virtuelle Module ermitteln die Werte rechnerisch auf Bais der Messwerte anderer Module.
-                    # Daher können sie erst die Werte ermitteln, wenn die physischen Module ihre Werte ermittelt haben.
-                    # Würde man allle Module parallel abfragen, wären die virtuellen Module immer einen Zyklus
-                    # hinterher.
-                    log.MainLogger().debug(" Start copy_data 2")
                     prep.copy_counter_data()
-                    log.MainLogger().debug(" Stop copy_data 2")
                     vars.get_virtual_values()
-                    # Kurz warten, damit alle Topics von setdata und subdata verarbeitet werden könnnen.
-                    time.sleep(0.5)
-                    log.MainLogger().debug(" Start copy_data 3")
-                    prep.copy_data()
-                    log.MainLogger().debug(" Stop copy_data 3")
                     self.heartbeat = True
-                    if data.data.system_data["system"].data["perform_update"]:
-                        data.data.system_data["system"].perform_update()
-                        return
-                    elif data.data.system_data["system"].data[
-                            "update_in_progress"]:
-                        log.MainLogger().info(
-                            "Regelung pausiert, da ein Update durchgefuehrt wird."
-                        )
-                        return
+                    # Kurz warten, damit alle Topics von setdata und subdata verarbeitet werden könnnen.
+                    time.sleep(0.3)
+                    prep.copy_data()
                     prep.setup_algorithm()
                     control.calc_current()
                     proc.process_algorithm_results()
                     data.data.graph_data["graph"].pub_graph_data()
-                    self.interval_counter = 1
-                else:
-                    self.interval_counter = self.interval_counter + 1
-            except Exception:
-                # Wenn kein Regelintervall bekannt ist, alle 10s regeln.
-                prep.copy_system_data()
-                vars.get_values()
-                prep.copy_counter_data()
-                vars.get_virtual_values()
-                self.heartbeat = True
-                # Kurz warten, damit alle Topics von setdata und subdata verarbeitet werden könnnen.
-                time.sleep(0.3)
-                prep.copy_data()
-                prep.setup_algorithm()
-                control.calc_current()
-                proc.process_algorithm_results()
-                data.data.graph_data["graph"].pub_graph_data()
+                handler_without_contronl_interval()
         except Exception:
             log.MainLogger().exception("Fehler im Main-Modul")
 
+    @exit_after(10)
     def handler5Min(self):
         """ Handler, der alle 5 Minuten aufgerufen wird und die Heartbeats der Threads überprüft und die Aufgaben
         ausführt, die nur alle 5 Minuten ausgeführt werden müssen.
         """
         try:
             log.MainLogger().debug("5 Minuten Handler ausführen.")
-            if not self.heartbeat:
-                log.MainLogger().error(
-                    "Heartbeat fuer Algorithmus nicht zurueckgesetzt.")
-            else:
-                self.hartbeat = False
-
             if not sub.heartbeat:
-                log.MainLogger().error(
-                    "Heartbeat fuer Subdata nicht zurueckgesetzt.")
+                log.MainLogger().error("Heartbeat fuer Subdata nicht zurueckgesetzt.")
+                sub.disconnect()
+                Thread(target=sub.sub_topics, args=()).start()
             else:
-                sub.hartbeat = False
+                sub.heartbeat = False
 
             if not set.heartbeat:
-                log.MainLogger().error(
-                    "Heartbeat fuer Setdata nicht zurueckgesetzt.")
+                log.MainLogger().error("Heartbeat fuer Setdata nicht zurueckgesetzt.")
+                set.disconnect()
+                Thread(target=set.set_data, args=()).start()
             else:
-                set.hartbeat = False
+                set.heartbeat = False
 
             log.cleanup_logfiles()
             measurement_log.save_log("daily")
@@ -134,38 +136,28 @@ class HandlerAlgorithm:
             log.MainLogger().exception("Fehler im Main-Modul")
 
 
-class RepeatedTimer(object):
-    """ führt alle x Sekunden einen Thread aus, unabhängig davon, ob sich der Thread bei der vorherigen Ausführung
-    aufgehängt etc hat.
-    https://stackoverflow.com/a/40965385
+def repeated_handler_call():
+    """https://stackoverflow.com/questions/474528/
+    what-is-the-best-way-to-repeatedly-execute-a-function-every-x-seconds/25251804#25251804
     """
-
-    def __init__(self, interval, function, *args, **kwargs):
-        self._timer = None
-        self.interval = interval
-        self.function = function
-        self.args = args
-        self.kwargs = kwargs
-        self.is_running = False
-        self.next_call = time.time()
-        self.start()
-
-    def _run(self):
-        self.is_running = False
-        self.start()
-        self.function(*self.args, **self.kwargs)
-
-    def start(self):
-        if not self.is_running:
-            self.next_call += self.interval
-            self._timer = threading.Timer(self.next_call - time.time(),
-                                          self._run)
-            self._timer.start()
-            self.is_running = True
-
-    def stop(self):
-        self._timer.cancel()
-        self.is_running = False
+    delay = 10
+    timer_5min = 0
+    next_time = time.time() + delay
+    while True:
+        time.sleep(max(0, next_time - time.time()))
+        try:
+            if timer_5min == 300:
+                handler.handler5Min()
+                timer_5min = 0
+            else:
+                timer_5min += 10
+            handler.handler10Sec()
+        except KeyboardInterrupt:
+            log.MainLogger().critical("Asuführung durch exit_after gestoppt: "+traceback.format_exc())
+        except Exception:
+            log.MainLogger().exception("Fehler im Main-Modul")
+        # skip tasks if we are behind schedule:
+        next_time += (time.time() - next_time) // delay * delay + delay
 
 
 try:
@@ -204,12 +196,7 @@ try:
     publishvars2.pub_settings()
     configuration.pub_configurable()
 
-    rt = RepeatedTimer(300, handler.handler5Min)
-    if not debug:
-        rt2 = RepeatedTimer(10, handler.handler10Sec)
-    else:
-        while True:
-            time.sleep(10)
-            handler.handler10Sec()
+    # blocking
+    repeated_handler_call()
 except Exception:
     log.MainLogger().exception("Fehler im Main-Modul")
