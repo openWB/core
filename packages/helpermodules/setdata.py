@@ -875,6 +875,8 @@ class setData:
                 self._validate_value(msg, int, [(0, 2)])
             elif "openWB/set/system/ip_address" in msg.topic:
                 self._validate_value(msg, str)
+            elif "openWB/set/system/mqtt/bridge/" in msg.topic:
+                self._validate_value(msg, "json")
             elif "configurable" in msg.topic:
                 self._validate_value(msg, None)
             elif "device" in msg.topic:
