@@ -56,19 +56,21 @@ class SubData:
         """
         try:
             mqtt_broker_ip = "localhost"
-            client = mqtt.Client("openWB-mqttsub-" + self.getserial())
+            self.client = mqtt.Client("openWB-mqttsub-" + self.getserial())
             # ipallowed='^[0-9.]+$'
             # nameallowed='^[a-zA-Z ]+$'
             # namenumballowed='^[0-9a-zA-Z ]+$'
 
-            client.on_connect = self.on_connect
-            client.on_message = self.on_message
-
-            client.connect(mqtt_broker_ip, 1886)
-            client.loop_forever()
-            client.disconnect()
+            self.client.on_connect = self.on_connect
+            self.client.on_message = self.on_message
+            self.client.connect(mqtt_broker_ip, 1886)
+            self.client.loop_forever()
         except Exception:
             log.MainLogger().exception("Fehler im subdata-Modul")
+
+    def disconnect(self) -> None:
+        self.client.disconnect()
+        log.MainLogger().info("Verbindung von Client openWB-mqttsub-" + self.getserial()+" geschlossen.")
 
     def getserial(self):
         """ Extract serial from cpuinfo file

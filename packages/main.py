@@ -4,6 +4,7 @@
 import os
 import time
 import threading
+import traceback
 from threading import Thread
 
 from modules import loadvars
@@ -21,11 +22,6 @@ from control import data
 from control import process
 from control import algorithm
 from helpermodules.system import exit_after
-
-
-# Wenn debug True ist, wird der 10s Handler nicht durch den Timer-Thread gesteuert, sondern macht ein 10s Sleep am
-# Ende, da sonst beim Pausieren immer mehr Threads im Hintergrund auflaufen.
-debug = False
 
 
 class HandlerAlgorithm:
@@ -105,29 +101,26 @@ class HandlerAlgorithm:
         except Exception:
             log.MainLogger().exception("Fehler im Main-Modul")
 
+    @exit_after(10)
     def handler5Min(self):
         """ Handler, der alle 5 Minuten aufgerufen wird und die Heartbeats der Threads überprüft und die Aufgaben
         ausführt, die nur alle 5 Minuten ausgeführt werden müssen.
         """
         try:
             log.MainLogger().debug("5 Minuten Handler ausführen.")
-            if not self.heartbeat:
-                log.MainLogger().error(
-                    "Heartbeat fuer Algorithmus nicht zurueckgesetzt.")
-            else:
-                self.hartbeat = False
-
             if not sub.heartbeat:
-                log.MainLogger().error(
-                    "Heartbeat fuer Subdata nicht zurueckgesetzt.")
+                log.MainLogger().error("Heartbeat fuer Subdata nicht zurueckgesetzt.")
+                sub.disconnect()
+                Thread(target=sub.sub_topics, args=()).start()
             else:
-                sub.hartbeat = False
+                sub.heartbeat = False
 
             if not set.heartbeat:
-                log.MainLogger().error(
-                    "Heartbeat fuer Setdata nicht zurueckgesetzt.")
+                log.MainLogger().error("Heartbeat fuer Setdata nicht zurueckgesetzt.")
+                set.disconnect()
+                Thread(target=set.set_data, args=()).start()
             else:
-                set.hartbeat = False
+                set.heartbeat = False
 
             log.cleanup_logfiles()
             measurement_log.save_log("daily")
@@ -145,7 +138,8 @@ class HandlerAlgorithm:
 
 
 def repeated_handler_call():
-    """https://stackoverflow.com/questions/474528/what-is-the-best-way-to-repeatedly-execute-a-function-every-x-seconds/25251804#25251804
+    """https://stackoverflow.com/questions/474528/
+    what-is-the-best-way-to-repeatedly-execute-a-function-every-x-seconds/25251804#25251804
     """
     delay = 10
     timer_5min = 0
@@ -153,14 +147,14 @@ def repeated_handler_call():
     while True:
         time.sleep(max(0, next_time - time.time()))
         try:
-            handler.handler10Sec()
             if timer_5min == 300:
                 handler.handler5Min()
                 timer_5min = 0
             else:
                 timer_5min += 10
+            handler.handler10Sec()
         except KeyboardInterrupt:
-            log.MainLogger().critical("Stop")
+            log.MainLogger().critical("Asuführung durch exit_after gestoppt: "+traceback.format_exc())
         except Exception:
             log.MainLogger().exception("Fehler im Main-Modul")
         # skip tasks if we are behind schedule:
