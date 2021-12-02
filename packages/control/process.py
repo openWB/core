@@ -1,12 +1,12 @@
 """ Starten des Lade-Vorgangs
 """
+import threading
+from typing import List
 
 from control import chargelog
 from control import data
 from helpermodules import log
 from helpermodules.pub import Pub
-from modules.cp import external_openwb
-from modules.cp import ip_evse
 
 
 class process:
@@ -105,13 +105,30 @@ class process:
                     current = chargepoint.data["set"]["current"]
             else:
                 current = chargepoint.data["set"]["current"]
-            if chargepoint.data["config"]["connection_module"]["selected"] == "external_openwb":
-                num = chargepoint.data["config"]["connection_module"]["config"]["external_openwb"]["chargepoint"]
-                ip_address = chargepoint.data["config"]["connection_module"]["config"]["external_openwb"]["ip_address"]
-                external_openwb.write_external_openwb(ip_address, num, current)
-            elif chargepoint.data["config"]["connection_module"]["selected"] == "ip_evse":
-                ip_address = chargepoint.data["config"]["connection_module"]["config"]["ip_evse"]["ip_address"]
-                id = chargepoint.data["config"]["connection_module"]["config"]["ip_evse"]["id"]
-                ip_evse.write_ip_evse(ip_address, id, current)
+
+            modules_threads = []  # type: List[threading.Thread]
+            for item in data.data.cp_data:
+                try:
+                    if "cp" in item:
+                        thread = None
+                        chargepoint_module = data.data.cp_data[item].chargepoint_module
+                        thread = threading.Thread(target=chargepoint_module.set_current, args=(current,))
+                        if thread is not None:
+                            modules_threads.append(thread)
+                except Exception:
+                    log.MainLogger().exception("Fehler im loadvars-Modul")
+            if modules_threads:
+                for thread in modules_threads:
+                    thread.start()
+
+                # Wait for all to complete
+                for thread in modules_threads:
+                    thread.join(timeout=3)
+
+                for thread in modules_threads:
+                    if thread.is_alive():
+                        log.MainLogger().error(
+                            thread.name +
+                            " konnte nicht innerhalb des Timeouts die Werte senden.")
         except Exception:
             log.MainLogger().exception("Fehler im Process-Modul")

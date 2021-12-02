@@ -21,7 +21,10 @@ class counterAll:
 
     def get_evu_counter(self):
         try:
-            return self.data["get"]["hierarchy"][0]["id"]
+            if "counter" in self.data["get"]["hierarchy"][0]["id"]:
+                return self.data["get"]["hierarchy"][0]["id"]
+            else:
+                raise TypeError
         except Exception:
             log.MainLogger().error("Ohne Konfiguration eines EVU-Zählers ist keine Regelung möglich.")
             raise
@@ -129,13 +132,8 @@ class counterAll:
             except Exception:
                 log.MainLogger().exception("Fehler in der allgemeinen Zaehler-Klasse")
 
-    def get_counters_to_check(self, chargepoint):
+    def get_counters_to_check(self, cp_num: int):
         """ ermittelt alle Zähler im Zweig des Ladepunkts.
-
-        Parameter
-        ---------
-        chargepoint: class
-            Ladepunkt
 
         Return
         ------
@@ -144,7 +142,7 @@ class counterAll:
         """
         try:
             self.connected_counters.clear()
-            self._look_for_object(self.data["get"]["hierarchy"][0], "cp", chargepoint.cp_num)
+            self._look_for_object(self.data["get"]["hierarchy"][0], "cp", cp_num)
             return self.connected_counters
         except Exception:
             log.MainLogger().exception("Fehler in der allgemeinen Zaehler-Klasse")

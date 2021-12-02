@@ -356,6 +356,15 @@ class SubData:
                     elif re.search("^.+/chargepoint/[0-9]+/get/.+$", msg.topic) is not None:
                         self.set_json_payload(var["cp"+index].data["get"], msg)
                 elif re.search("^.+/chargepoint/[0-9]+/config$", msg.topic) is not None:
+                    config = json.loads(
+                        str(msg.payload.decode("utf-8")))
+                    if (var["cp"+index].chargepoint_module is None or
+                            config["connection_module"] != var["cp"+index].chargepoint_module.connection_module or
+                            config["power_module"] != var["cp"+index].chargepoint_module.power_module):
+                        mod = importlib.import_module(
+                            "."+config["connection_module"]["type"]+".chargepoint_module", "modules")
+                        var["cp"+index].chargepoint_module = mod.ChargepointModule(
+                            config["connection_module"], config["power_module"])
                     self.set_json_payload(var["cp"+index].data, msg)
                     self.event_cp_config.set()
             elif re.search("^.+/chargepoint/get/.+$", msg.topic) is not None:

@@ -8,6 +8,7 @@ from helpermodules import log
 from helpermodules.pub import Pub
 from control import chargepoint
 from control import ev
+from modules.external_openwb import chargepoint_module
 
 
 class UpdateConfig:
@@ -219,19 +220,18 @@ class UpdateConfig:
                    "^openWB/system/configurable/chargepoints$"
                    ]
     default_topic = (
-        ("openWB/chargepoint/0/config", chargepoint.get_chargepoint_default()),
+        ("openWB/chargepoint/0/config",
+         {**chargepoint.get_chargepoint_default(),
+          **chargepoint_module.get_default_config()}),
         ("openWB/chargepoint/template/0", chargepoint.get_chargepoint_template_default()),
-
         ("openWB/counter/get/hierarchy", [{"id": "cp0", "children": []}]),
-
         ("openWB/vehicle/0/name", ev.get_vehicle_default()["name"]),
         ("openWB/vehicle/0/charge_template", ev.get_vehicle_default()["charge_template"]),
         ("openWB/vehicle/0/ev_template", ev.get_vehicle_default()["ev_template"]),
         ("openWB/vehicle/0/tag_id", ev.get_vehicle_default()["tag_id"]),
-
         ("openWB/vehicle/template/ev_template/0", ev.get_ev_template_default()),
         ("openWB/vehicle/template/charge_template/0", ev.get_charge_template_default()),
-        ("openWB/counter/get/hierarchy", []),
+        ("openWB/counter/get/hierarchy", [{"id": "cp0", "children": []}]),
         ("openWB/general/chargemode_config/instant_charging/phases_to_use", 1),
         ("openWB/general/chargemode_config/pv_charging/bat_prio", 1),
         ("openWB/general/chargemode_config/pv_charging/switch_on_soc", 60),
@@ -267,9 +267,7 @@ class UpdateConfig:
         ("openWB/general/price_kwh", 0.3),
         ("openWB/general/range_unit", "km"),
         ("openWB/general/ripple_control_receiver/configured", False),
-
         ("openWB/graph/config/duration", 60),
-
         ("openWB/optional/et/active", False),
         ("openWB/optional/et/config/max_price", 0),
         ("openWB/optional/et/config/provider", {}),
@@ -283,11 +281,9 @@ class UpdateConfig:
         ("openWB/optional/load_sharing/active", False),
         ("openWB/optional/load_sharing/max_current", 16),
         ("openWB/optional/rfid/active", False),
-
         ("openWB/system/dataprotection_acknowledged", False),
-        ("openWB/system/debug_level", 0),
-        ("openWB/system/ip_address", "192.168.193.5")
-    )
+        ("openWB/system/debug_level", 2),
+        ("openWB/system/ip_address", "192.168.193.5"))
 
     def __init__(self) -> None:
         self.all_received_topics = []
