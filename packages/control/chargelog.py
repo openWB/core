@@ -265,7 +265,9 @@ def save_data(chargepoint, charging_ev, immediately=True, reset=False):
         # json-Objekt in Datei einfügen
         pathlib.Path('../data/charge_log').mkdir(mode=0o755,
                                                  parents=True, exist_ok=True)
-        filepath = "../data/charge_log/"+timecheck.create_timestamp_YYYYMM()+".json"
+        filepath = str(
+            pathlib.Path(__file__).resolve().parents[2] / "data" / "charge_log" /
+            (timecheck.create_timestamp_YYYYMM() + ".json"))
         try:
             with open(filepath, "r") as jsonFile:
                 content = json.load(jsonFile)
@@ -315,8 +317,9 @@ def get_log_data(request):
     """
     try:
         # Datei einlesen
-        filepath = "../data/charge_log/" + \
-            str(request["year"])+str(request["month"])+".json"
+        filepath = str(
+            pathlib.Path(__file__).resolve().parents[2] / "data" / "charge_log" /
+            (str(request["year"]) + str(request["month"]) + ".json"))
         data = []
         try:
             with open(filepath, "r") as jsonFile:

@@ -23,17 +23,19 @@ class setData:
         """ abonniert alle set-Topics.
         """
         mqtt_broker_ip = "localhost"
-        client = mqtt.Client("openWB-mqttset-" + self.getserial())
+        self.client = mqtt.Client("openWB-mqttset-" + self.getserial())
         # ipallowed='^[0-9.]+$'
         # nameallowed='^[a-zA-Z ]+$'
         # namenumballowed='^[0-9a-zA-Z ]+$'
 
-        client.on_connect = self.on_connect
-        client.on_message = self.on_message
+        self.client.on_connect = self.on_connect
+        self.client.on_message = self.on_message
+        self.client.connect(mqtt_broker_ip, 1886)
+        self.client.loop_forever()
 
-        client.connect(mqtt_broker_ip, 1886)
-        client.loop_forever()
-        client.disconnect()
+    def disconnect(self) -> None:
+        self.client.disconnect()
+        log.MainLogger().info("Verbindung von Client openWB-mqttset-" + self.getserial()+" geschlossen.")
 
     def getserial(self):
         """ Extract serial from cpuinfo file
@@ -638,7 +640,9 @@ class setData:
             enthält Topic und Payload
         """
         try:
-            if "openWB/set/general/extern" in msg.topic:
+            if "openWB/set/general/extern_display_mode" in msg.topic:
+                self._validate_value(msg, str)
+            elif "openWB/set/general/extern" in msg.topic:
                 self._validate_value(msg, int, [(0, 1)])
             elif "openWB/set/general/control_interval" in msg.topic:
                 self._validate_value(msg, int, [(10, 10), (20, 20), (60, 60)])
@@ -682,8 +686,8 @@ class setData:
                 self._validate_value(msg, str)
             elif "openWB/set/general/grid_protection_random_stop" in msg.topic:
                 self._validate_value(msg, int, [(0, 90)])
-            elif "openWB/set/general/notifications/selected" in msg.topic:
-                self._validate_value(msg, str)
+            elif "openWB/set/general/notifications/configuration" in msg.topic:
+                self._validate_value(msg, "json")
             elif ("openWB/set/general/notifications/start_charging" in msg.topic or
                     "openWB/set/general/notifications/stop_charging" in msg.topic or
                     "openWB/set/general/notifications/plug" in msg.topic or
@@ -729,6 +733,20 @@ class setData:
             elif "openWB/set/optional/et/config/provider" in msg.topic:
                 self._validate_value(msg, "json")
             elif "openWB/set/optional/rfid/active" in msg.topic:
+                self._validate_value(msg, int, [(0, 1)])
+            elif "openWB/set/optional/int_display/active" in msg.topic:
+                self._validate_value(msg, int, [(0, 1)])
+            elif "openWB/set/optional/int_display/on_if_plugged_in" in msg.topic:
+                self._validate_value(msg, int, [(0, 1)])
+            elif "openWB/set/optional/int_display/pin_active" in msg.topic:
+                self._validate_value(msg, int, [(0, 1)])
+            elif "openWB/set/optional/int_display/pin_code" in msg.topic:
+                self._validate_value(msg, str)
+            elif "openWB/set/optional/int_display/standby" in msg.topic:
+                self._validate_value(msg, int, [(0, 300)])
+            elif "openWB/set/optional/int_display/theme" in msg.topic:
+                self._validate_value(msg, str)
+            elif "openWB/set/optional/led/active" in msg.topic:
                 self._validate_value(msg, int, [(0, 1)])
             else:
                 self.__unknown_topic(msg)
@@ -807,8 +825,11 @@ class setData:
         """
         try:
             if ("openWB/set/log/request" in msg.topic or
-                    "openWB/set/log/data" in msg.topic):
+                    "openWB/set/log/data" in msg.topic or
+                    "openWB/set/log/daily" in msg.topic or
+                    "openWB/set/log/monthly" in msg.topic):
                 self._validate_value(msg, "json")
+
             else:
                 self.__unknown_topic(msg)
         except Exception:
@@ -848,6 +869,12 @@ class setData:
             elif ("openWB/set/system/perform_update" in msg.topic or
                     "openWB/set/system/update_in_progress" in msg.topic):
                 self._validate_value(msg, int, [(0, 1)])
+            elif "openWB/set/system/dataprotection_acknowledged" in msg.topic:
+                self._validate_value(msg, int, [(0, 1)])
+            elif "openWB/set/system/debug_level" in msg.topic:
+                self._validate_value(msg, int, [(0, 2)])
+            elif "openWB/set/system/ip_address" in msg.topic:
+                self._validate_value(msg, str)
             elif "configurable" in msg.topic:
                 self._validate_value(msg, None)
             elif "device" in msg.topic:

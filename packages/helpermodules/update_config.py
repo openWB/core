@@ -98,6 +98,7 @@ class UpdateConfig:
                    "^openWB/counter/[0-9]+/config/max_total_power$",
 
                    "^openWB/general/extern$",
+                   "^openWB/general/extern_display_mode$",
                    "^openWB/general/control_interval$",
                    "^openWB/general/external_buttons_hw$",
                    "^openWB/general/grid_protection_configured$",
@@ -107,7 +108,7 @@ class UpdateConfig:
                    "^openWB/general/grid_protection_random_stop$",
                    "^openWB/general/price_kwh$",
                    "^openWB/general/range_unit$",
-                   "^openWB/general/notifications/selected$",
+                   "^openWB/general/notifications/configuration$",
                    "^openWB/general/notifications/start_charging$",
                    "^openWB/general/notifications/stop_charging$",
                    "^openWB/general/notifications/plug$",
@@ -202,7 +203,10 @@ class UpdateConfig:
                    "^openWB/vehicle/[0-9]+/control_parameter/phases$",
                    "^openWB/vehicle/[0-9]+/set/ev_template$",
 
+                   "^openWB/system/dataprotection_acknowledged$",
+                   "^openWB/system/debug_level$",
                    "^openWB/system/lastlivevaluesJson$",
+                   "^openWB/system/ip_address$",
                    "^openWB/system/update_in_progress$",
                    "^openWB/system/device/[0-9]+/config$",
                    "^openWB/system/device/[0-9]+/component/[0-9]+/config$",
@@ -218,7 +222,7 @@ class UpdateConfig:
         ("openWB/chargepoint/0/config", chargepoint.get_chargepoint_default()),
         ("openWB/chargepoint/template/0", chargepoint.get_chargepoint_template_default()),
 
-        ("openWB/counter/get/hierarchy", []),
+        ("openWB/counter/get/hierarchy", [{"id": "cp0", "children": []}]),
 
         ("openWB/vehicle/0/name", ev.get_vehicle_default()["name"]),
         ("openWB/vehicle/0/charge_template", ev.get_vehicle_default()["charge_template"]),
@@ -255,7 +259,6 @@ class UpdateConfig:
         ("openWB/general/extern_display_mode", "local"),
         ("openWB/general/external_buttons_hw", False),
         ("openWB/general/grid_protection_configured", True),
-        ("openWB/general/notifications/selected", "none"),
         ("openWB/general/notifications/plug", False),
         ("openWB/general/notifications/start_charging", False),
         ("openWB/general/notifications/stop_charging", False),
@@ -279,13 +282,18 @@ class UpdateConfig:
         ("openWB/optional/led/active", False),
         ("openWB/optional/load_sharing/active", False),
         ("openWB/optional/load_sharing/max_current", 16),
-        ("openWB/optional/rfid/active", False)
+        ("openWB/optional/rfid/active", False),
+
+        ("openWB/system/dataprotection_acknowledged", False),
+        ("openWB/system/debug_level", 0),
+        ("openWB/system/ip_address", "192.168.193.5")
     )
 
     def __init__(self) -> None:
         self.all_received_topics = []
 
     def update(self):
+        log.MainLogger().debug("Broker-Konfiguration aktualisieren")
         mqtt_broker_ip = "localhost"
         client = mqtt.Client("openWB-updateconfig-" + self.getserial())
         client.on_connect = self.on_connect

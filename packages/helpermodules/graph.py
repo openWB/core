@@ -61,7 +61,7 @@ class Graph:
 
             Pub().pub("openWB/set/graph/lastlivevaluesJson", dataline)
             Pub().pub("openWB/set/system/lastlivevaluesJson", dataline)
-            with open("../ramdisk/graph_live.json", "a") as f:
+            with open(str(Path(__file__).resolve().parents[2] / "ramdisk"/"graph_live.json"), "a") as f:
                 f.write(str(dataline).replace("'", '"'))
                 f.write("\n")
             subprocess.run([str(Path(__file__).resolve().parents[2] / "runs"/"graphing.sh"),
