@@ -2,7 +2,7 @@
 """
 
 import threading
-from typing import List, Union
+from typing import List
 
 from modules import ripple_control_receiver
 from control import data

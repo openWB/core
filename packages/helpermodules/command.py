@@ -428,8 +428,9 @@ class Command:
         measurement_log.pub_monthly_log(payload["data"]["month"])
 
     def initCloud(self, connection_id: str, payload: dict) -> None:
-        email = payload["data"]["email"]
-        username = payload["data"]["username"]
+        pass
+        # email = payload["data"]["email"]
+        # username = payload["data"]["username"]
 
 
 class ErrorHandlingContext:
@@ -442,7 +443,8 @@ class ErrorHandlingContext:
 
     def __exit__(self, exception_type, exception, exception_traceback) -> bool:
         if isinstance(exception, Exception):
-            pub_error(self.payload, self.connection_id, "Es ist ein interner Fehler aufgetreten: "+traceback.format_exc())
+            pub_error(self.payload, self.connection_id, "Es ist ein interner Fehler aufgetreten: " +
+                      traceback.format_exc())
             return True
         else:
             return False

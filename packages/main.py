@@ -50,9 +50,9 @@ class HandlerAlgorithm:
                         log.MainLogger().debug(" Stop copy_data 1")
                         vars.get_values()
                         # Virtuelle Module ermitteln die Werte rechnerisch auf Bais der Messwerte anderer Module.
-                        # Daher können sie erst die Werte ermitteln, wenn die physischen Module ihre Werte ermittelt haben.
-                        # Würde man allle Module parallel abfragen, wären die virtuellen Module immer einen Zyklus
-                        # hinterher.
+                        # Daher können sie erst die Werte ermitteln, wenn die physischen Module ihre Werte ermittelt
+                        # haben. Würde man allle Module parallel abfragen, wären die virtuellen Module immer einen
+                        # Zyklus hinterher.
                         log.MainLogger().debug(" Start copy_data 2")
                         prep.copy_counter_data()
                         log.MainLogger().debug(" Stop copy_data 2")

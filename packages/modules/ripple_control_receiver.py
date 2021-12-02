@@ -3,7 +3,6 @@ import time
 
 from helpermodules import log
 from helpermodules.pub import Pub
-from helpermodules.system import exit_after
 
 
 def read():
