@@ -155,17 +155,22 @@ class Command:
             "Neuer Ladepunkt mit ID "+str(new_id)+" hinzugefuegt.")
         chargepoint_default = chargepoint.get_chargepoint_default()
         chargepoint_default["id"] = new_id
-        data.data.counter_data["all"].hierarchy_add_item_below(
-            "cp"+str(new_id), data.data.counter_data["all"].get_evu_counter())
-        Pub().pub("openWB/set/chargepoint/"+str(new_id)+"/config", chargepoint_default)
-        Pub().pub("openWB/set/chargepoint/"+str(new_id)+"/set/manual_lock", False)
-        self.max_id_chargepoint = self.max_id_chargepoint + 1
-        Pub().pub("openWB/set/command/max_id/chargepoint",
-                  self.max_id_chargepoint)
-        if self.max_id_chargepoint_template == -1:
-            self.addChargepointTemplate("addChargepoint", {})
-        if self.max_id_vehicle == -1:
-            self.addVehicle("addChargepoint", {})
+        module = importlib.import_module("."+payload["data"]["type"]+".chargepoint_module", "modules")
+        chargepoint_default = {**chargepoint_default, **module.get_default_config()}
+        try:
+            evu_counter = data.data.counter_data["all"].get_evu_counter()
+            data.data.counter_data["all"].hierarchy_add_item_below(
+                "cp"+str(new_id), evu_counter)
+            Pub().pub("openWB/set/chargepoint/"+str(new_id)+"/config", chargepoint_default)
+            Pub().pub("openWB/set/chargepoint/"+str(new_id)+"/set/manual_lock", False)
+            self.max_id_chargepoint = self.max_id_chargepoint + 1
+            Pub().pub("openWB/set/command/max_id/chargepoint", self.max_id_chargepoint)
+            if self.max_id_chargepoint_template == -1:
+                self.addChargepointTemplate("addChargepoint", {})
+            if self.max_id_vehicle == -1:
+                self.addVehicle("addChargepoint", {})
+        except TypeError:
+            pub_error(payload, connection_id, "Bitte erst einen EVU-Zähler konfigurieren!")
 
     def removeChargepoint(self, connection_id: str, payload: dict) -> None:
         """ löscht ein Chargepoint.
@@ -332,9 +337,11 @@ class Command:
             try:
                 data.data.counter_data["all"].hierarchy_add_item_below(
                     "counter"+str(new_id), data.data.counter_data["all"].get_evu_counter())
-            except IndexError:
+            except TypeError:
                 # es gibt noch keinen EVU-Zähler
-                Pub().pub("openWB/set/counter/get/hierarchy", [{"id": "counter"+str(new_id), "children": []}])
+                Pub().pub("openWB/set/counter/get/hierarchy",
+                          [{"id": "counter"+str(new_id), "children": []}] +
+                          data.data.counter_data["all"].data["get"]["hierarchy"])
             default_config = counter.get_counter_default_config()
             for item in default_config:
                 Pub().pub("openWB/set/counter/"+str(new_id)+"/config/"+item, default_config[item])

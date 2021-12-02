@@ -21,7 +21,7 @@ def pub_settings():
     #             "selected": "mqtt"
     #         },
     #         "power_module": {
-    #             "selected": None
+    #
     #         }
     #     })
 
@@ -39,7 +39,7 @@ def pub_settings():
     #             "selected": "mqtt"
     #         },
     #         "power_module": {
-    #             "selected": None
+    #
     #         }
     #     })
 
@@ -57,21 +57,21 @@ def pub_settings():
     #             "selected": "mqtt"
     #         },
     #         "power_module": {
-    #             "selected": None
+    #
     #         }
     #     })
 
     # else:
     #     pass
-    # # cp0
+    # cp0
     # Pub().pub(
     #     "openWB/set/chargepoint/0/config",
     #     {"name": "LP0", "ev": 0, "template": 0, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False,
     #      "control_pilot_interruption_hw": True,
     #      "connection_module":
-    #      {"selected": "external_openwb",
-    #       "config": {"external_openwb": {"ip_address": "192.168.90.163", "chargepoint": 1}}},
-    #      "power_module": {"selected": None}})
+    #      {"type": "external_openwb",
+    #       "configuration": {"ip_address": "192.168.90.163", "duo_num": 1, "id": 0}},
+    #      "power_module": {}})
 
     # # cp1
     # Pub().pub(
@@ -79,9 +79,9 @@ def pub_settings():
     #     {"name": "LP1", "ev": 0, "template": 0, "connected_phases": 3, "phase_1": 2, "auto_phase_switch_hw": False,
     #      "control_pilot_interruption_hw": True,
     #      "connection_module":
-    #      {"selected": "external_openwb",
-    #       "config": {"external_openwb": {"ip_address": "192.168.90.194", "chargepoint": 1}}},
-    #      "power_module": {"selected": None}})
+    #      {"type": "external_openwb",
+    #       "configuration": {"ip_address": "192.168.90.194", "duo_num": 1, "id": 1}},
+    #      "power_module": {}})
 
     # # cp2
     # Pub().pub(
@@ -89,9 +89,9 @@ def pub_settings():
     #     {"name": "LP2", "ev": 0, "template": 0, "connected_phases": 3, "phase_1": 3, "auto_phase_switch_hw": False,
     #      "control_pilot_interruption_hw": True,
     #      "connection_module":
-    #      {"selected": "external_openwb",
-    #       "config": {"external_openwb": {"ip_address": "192.168.90.176", "chargepoint": 1}}},
-    #      "power_module": {"selected": None}})
+    #      {"type": "external_openwb",
+    #       "configuration": {"ip_address": "192.168.90.176", "duo_num": 1, "id": 2}},
+    #      "power_module": {}})
 
     # # cp3
     # Pub().pub(
@@ -99,9 +99,9 @@ def pub_settings():
     #     {"name": "LP3", "ev": 0, "template": 0, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False,
     #      "control_pilot_interruption_hw": True,
     #      "connection_module":
-    #      {"selected": "external_openwb",
-    #       "config": {"external_openwb": {"ip_address": "192.168.90.187", "chargepoint": 1}}},
-    #      "power_module": {"selected": None}})
+    #      {"type": "external_openwb",
+    #       "configuration": {"ip_address": "192.168.90.187", "duo_num": 1, "id": 3}},
+    #      "power_module": {}})
 
     # # cp4
     # Pub().pub(
@@ -109,9 +109,9 @@ def pub_settings():
     #     {"name": "LP4", "ev": 0, "template": 0, "connected_phases": 3, "phase_1": 2, "auto_phase_switch_hw": False,
     #      "control_pilot_interruption_hw": True,
     #      "connection_module":
-    #      {"selected": "external_openwb",
-    #       "config": {"external_openwb": {"ip_address": "192.168.90.107", "chargepoint": 1}}},
-    #      "power_module": {"selected": None}})
+    #      {"type": "external_openwb",
+    #       "configuration": {"ip_address": "192.168.90.107", "duo_num": 1, "id": 4}},
+    #      "power_module": {}})
 
     # # cp5
     # Pub().pub(
@@ -119,9 +119,9 @@ def pub_settings():
     #     {"name": "LP5", "ev": 0, "template": 0, "connected_phases": 3, "phase_1": 3, "auto_phase_switch_hw": False,
     #      "control_pilot_interruption_hw": True,
     #      "connection_module":
-    #      {"selected": "external_openwb",
-    #       "config": {"external_openwb": {"ip_address": "192.168.90.214", "chargepoint": 1}}},
-    #      "power_module": {"selected": None}})
+    #      {"type": "external_openwb",
+    #       "configuration": {"ip_address": "192.168.90.214", "duo_num": 1, "id": 5}},
+    #      "power_module": {}})
 
     # # cp6
     # Pub().pub(
@@ -129,9 +129,9 @@ def pub_settings():
     #     {"name": "LP6", "ev": 0, "template": 0, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False,
     #      "control_pilot_interruption_hw": True,
     #      "connection_module":
-    #      {"selected": "external_openwb",
-    #       "config": {"external_openwb": {"ip_address": "192.168.90.37", "chargepoint": 1}}},
-    #      "power_module": {"selected": None}})
+    #      {"type": "external_openwb",
+    #       "configuration": {"ip_address": "192.168.90.37", "duo_num": 1, "id": 6}},
+    #      "power_module": {}})
 
     # # cp7
     # Pub().pub(
@@ -139,9 +139,9 @@ def pub_settings():
     #     {"name": "LP7", "ev": 0, "template": 0, "connected_phases": 3, "phase_1": 2, "auto_phase_switch_hw": False,
     #      "control_pilot_interruption_hw": True,
     #      "connection_module":
-    #      {"selected": "external_openwb",
-    #       "config": {"external_openwb": {"ip_address": "192.168.90.19", "chargepoint": 1}}},
-    #      "power_module": {"selected": None}})
+    #      {"type": "external_openwb",
+    #       "configuration": {"ip_address": "192.168.90.19", "duo_num": 1, "id": 7}},
+    #      "power_module": {}})
 
     # # cp8
     # Pub().pub(
@@ -149,9 +149,9 @@ def pub_settings():
     #     {"name": "LP8", "ev": 0, "template": 0, "connected_phases": 3, "phase_1": 3, "auto_phase_switch_hw": False,
     #      "control_pilot_interruption_hw": True,
     #      "connection_module":
-    #      {"selected": "external_openwb",
-    #       "config": {"external_openwb": {"ip_address": "192.168.90.249", "chargepoint": 1}}},
-    #      "power_module": {"selected": None}})
+    #      {"type": "external_openwb",
+    #       "configuration": {"ip_address": "192.168.90.249", "duo_num": 1, "id": 8}},
+    #      "power_module": {}})
 
     # # cp9
     # Pub().pub(
@@ -159,9 +159,9 @@ def pub_settings():
     #     {"name": "LP9", "ev": 0, "template": 0, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False,
     #      "control_pilot_interruption_hw": True,
     #      "connection_module":
-    #      {"selected": "external_openwb",
-    #       "config": {"external_openwb": {"ip_address": "192.168.90.34", "chargepoint": 1}}},
-    #      "power_module": {"selected": None}})
+    #      {"type": "external_openwb",
+    #       "configuration": {"ip_address": "192.168.90.34", "duo_num": 1, "id": 9}},
+    #      "power_module": {}})
 
     # # cp10
     # Pub().pub(
@@ -169,9 +169,9 @@ def pub_settings():
     #     {"name": "LP10", "ev": 0, "template": 0, "connected_phases": 3, "phase_1": 2, "auto_phase_switch_hw": False,
     #      "control_pilot_interruption_hw": True,
     #      "connection_module":
-    #      {"selected": "external_openwb",
-    #       "config": {"external_openwb": {"ip_address": "192.168.90.55", "chargepoint": 1}}},
-    #      "power_module": {"selected": None}})
+    #      {"type": "external_openwb",
+    #       "configuration": {"ip_address": "192.168.90.55", "duo_num": 1, "id": 10}},
+    #      "power_module": {}})
 
     # # cp11
     # Pub().pub(
@@ -179,9 +179,9 @@ def pub_settings():
     #     {"name": "LP11", "ev": 0, "template": 0, "connected_phases": 3, "phase_1": 3, "auto_phase_switch_hw": False,
     #      "control_pilot_interruption_hw": True,
     #      "connection_module":
-    #      {"selected": "external_openwb",
-    #       "config": {"external_openwb": {"ip_address": "192.168.90.22", "chargepoint": 1}}},
-    #      "power_module": {"selected": None}})
+    #      {"type": "external_openwb",
+    #       "configuration": {"ip_address": "192.168.90.22", "duo_num": 1, "id": 11}},
+    #      "power_module": {}})
 
     # # cp12
     # Pub().pub(
@@ -189,9 +189,9 @@ def pub_settings():
     #     {"name": "LP12", "ev": 2, "template": 0, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False,
     #      "control_pilot_interruption_hw": True,
     #      "connection_module":
-    #      {"selected": "external_openwb",
-    #       "config": {"external_openwb": {"ip_address": "192.168.90.225", "chargepoint": 1}}},
-    #      "power_module": {"selected": None}})
+    #      {"type": "external_openwb",
+    #       "configuration": {"ip_address": "192.168.90.225", "duo_num": 1, "id": 12}},
+    #      "power_module": {}})
 
     # # cp13
     # Pub().pub(
@@ -199,9 +199,9 @@ def pub_settings():
     #     {"name": "LP13", "ev": 1, "template": 0, "connected_phases": 3, "phase_1": 2, "auto_phase_switch_hw": True,
     #      "control_pilot_interruption_hw": True,
     #      "connection_module":
-    #      {"selected": "external_openwb",
-    #       "config": {"external_openwb": {"ip_address": "192.168.90.109", "chargepoint": 1}}},
-    #      "power_module": {"selected": None}})
+    #      {"type": "external_openwb",
+    #       "configuration": {"ip_address": "192.168.90.109", "duo_num": 1, "id": 13}},
+    #      "power_module": {}})
 
     # # cp14
     # Pub().pub(
@@ -209,9 +209,9 @@ def pub_settings():
     #     {"name": "LP14", "ev": 0, "template": 0, "connected_phases": 3, "phase_1": 3, "auto_phase_switch_hw": False,
     #      "control_pilot_interruption_hw": True,
     #      "connection_module":
-    #      {"selected": "external_openwb",
-    #       "config": {"external_openwb": {"ip_address": "192.168.90.212", "chargepoint": 1}}},
-    #      "power_module": {"selected": None}})
+    #      {"type": "external_openwb",
+    #       "configuration": {"ip_address": "192.168.90.212", "duo_num": 1, "id": 14}},
+    #      "power_module": {}})
 
     # # cp15
     # Pub().pub(
@@ -219,9 +219,9 @@ def pub_settings():
     #     {"name": "LP15", "ev": 0, "template": 0, "connected_phases": 3, "phase_1": 1, "auto_phase_switch_hw": False,
     #      "control_pilot_interruption_hw": True,
     #      "connection_module":
-    #      {"selected": "external_openwb",
-    #       "config": {"external_openwb": {"ip_address": "192.168.90.111", "chargepoint": 1}}},
-    #         "power_module": {"selected": None}})
+    #      {"type": "external_openwb",
+    #       "configuration": {"ip_address": "192.168.90.111", "duo_num": 1, "id": 15}},
+    #         "power_module": {}})
 
     # # cpt0
     # Pub().pub(

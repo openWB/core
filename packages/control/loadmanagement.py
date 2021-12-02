@@ -63,7 +63,7 @@ def loadmanagement_for_cp(chargepoint, required_power, required_current, phases)
                 raise ValueError(
                     chargepoint.data["config"]["phase_1"]+"ist keine gueltige Zahl für die angeschlossene Phase (0-3")
         counters = data.data.counter_data["all"].get_counters_to_check(
-            chargepoint)
+            chargepoint.cp_num)
         # Stromstärke merken, wenn das Lastmanagement nicht aktiv wird, wird nach der Prüfung die neue verwendete
         # Stromstärke gesetzt.
         for counter in counters[:-1]:

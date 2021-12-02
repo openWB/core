@@ -43,13 +43,7 @@ def get_chargepoint_default() -> dict:
         "connected_phases": 3,
         "phase_1": 0,
         "auto_phase_switch_hw": False,
-        "control_pilot_interruption_hw": False,
-        "connection_module": {
-            "selected": "mqtt"
-        },
-        "power_module": {
-            "selected": "mqtt"
-        }
+        "control_pilot_interruption_hw": False
     }
 
 
@@ -130,16 +124,16 @@ class allChargepoints:
                         chargepoint = data.data.cp_data[cp]
                         if chargepoint.template.data["rfid_enabling"]:
                             # Wurde ein zweiter Ladepunkt an einer Duo konfiguriert?
-                            if chargepoint.data["config"]["connection_module"]["selected"] == "external_openwb":
-                                if chargepoint.data["config"]["connection_module"]["config"]["external_openwb"][
-                                        "chargepoint"] == 2:
+                            if chargepoint.data["config"]["connection_module"]["type"] == "external_openwb":
+                                if chargepoint.data["config"]["connection_module"]["configuration"][
+                                        "duo_num"] == 2:
                                     # Ersten Ladepunkt der Duo finden (gleiche IP)
                                     for cp2 in chargepoints:
                                         if cp2 != cp:
-                                            if (chargepoint.data["config"]["connection_module"]["config"][
-                                                "external_openwb"]["ip_adress"] ==
+                                            if (chargepoint.data["config"]["connection_module"]["configuration"]
+                                                    ["ip_adress"] ==
                                                     data.data.cp_data[cp2].data["config"]["connection_module"][
-                                                        "config"]["external_openwb"]["ip_adress"]):
+                                                    "configuration"]["ip_adress"]):
                                                 self._match_rfid_of_multiple_cp([cp, cp2])
                                                 chargepoints.remove(cp)
                                                 chargepoints.remove(cp2)
@@ -262,6 +256,7 @@ class chargepoint:
     def __init__(self, index):
         try:
             self.template = None  # Instanz des zugeordneten CP-Templates
+            self.chargepoint_module = None
             self.cp_num = index
             # set current aus dem vorherigen Zyklus, um zu wissen, ob am Ende des Zyklus die Ladung freigegeben wird
             # (für Control-Pilot-Unterbrechung)
