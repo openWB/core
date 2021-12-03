@@ -446,6 +446,7 @@ sudo /usr/sbin/apachectl -k graceful
 
 # all done, remove boot and update status
 echo $(date +"%Y-%m-%d %H:%M:%S:") "boot done :-)"
-mosquitto_pub -p 1886 -t openWB/set/system/update_in_progress -r -m 'false'
+mosquitto_pub -p 1886 -t openWB/system/update_in_progress -r -m 'false'
+mosquitto_pub -p 1886 -t openWB/system/bootdone -r -m 'true'
 mosquitto_pub -t openWB/system/reloadDisplay -m "1"
 touch /var/www/html/openWB/ramdisk/bootdone
