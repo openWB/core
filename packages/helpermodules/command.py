@@ -13,6 +13,7 @@ from pathlib import Path
 from helpermodules.log import MainLogger
 from helpermodules import measurement_log
 from helpermodules.pub import Pub
+from control import bridge
 from control import chargepoint
 from control import data
 from control import ev
@@ -26,6 +27,7 @@ class Command:
     def __init__(self):
         try:
             self.__get_max_id("autolock_plan", "chargepoint/template/+/autolock", -1)
+            self.__get_max_id("mqtt_bridge", "system/mqtt/bridge", -1)
             self.__get_max_id("charge_template", "vehicle/template/charge_template", 0)
             self.__get_max_id(
                 "charge_template_scheduled_plan",
@@ -438,6 +440,21 @@ class Command:
         pass
         # email = payload["data"]["email"]
         # username = payload["data"]["username"]
+
+    def addMqttBridge(self, connection_id: str, payload: dict) -> None:
+        new_id = self.max_id_mqtt_bridge + 1
+        MainLogger().info("Neue Bridge mit ID "+str(new_id)+" hinzugefuegt.")
+        bridge_default = bridge.get_default_config()
+        Pub().pub("openWB/set/system/mqtt/bridge/"+str(new_id), bridge_default)
+        self.max_id_mqtt_bridge = self.max_id_mqtt_bridge + 1
+        Pub().pub("openWB/set/command/max_id/mqtt_bridge", self.max_id_mqtt_bridge)
+
+    def removeMqttBridge(self, connection_id: str, payload: dict) -> None:
+        if self.max_id_mqtt_bridge >= payload["data"]["bridge"]:
+            MainLogger().info("Bridge mit ID "+str(payload["data"]["bridge"])+" geloescht.")
+            Pub().pub("openWB/system/mqtt/bridge/"+str(payload["data"]["bridge"]), "")
+        else:
+            pub_error(payload, connection_id, "Die ID ist groesser als die maximal vergebene ID.")
 
 
 class ErrorHandlingContext:
