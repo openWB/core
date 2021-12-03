@@ -4,7 +4,7 @@ cd /var/www/html/openWB
 
 # set mode to stop and flags in ramdisk and broker to indicate current update state
 mosquitto_pub -t openWB/set/ChargeMode -r -m "3"
-mosquitto_pub -t openWB/system/updateInProgress -r -m "1"
+mosquitto_pub -t openWB/system/update_in_progress -r -m "1"
 echo 1 > /var/www/html/openWB/ramdisk/updateinprogress
 echo 1 > /var/www/html/openWB/ramdisk/bootinprogress
 echo "Update im Gange, bitte warten bis die Meldung nicht mehr sichtbar ist" > /var/www/html/openWB/ramdisk/lastregelungaktiv
