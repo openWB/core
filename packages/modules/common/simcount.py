@@ -240,8 +240,7 @@ class SimCount:
                     str(counter_export_present) + "Ws"
                 )
                 start_new = False
-            pub.Pub().pub(topic+"simulation/timestamp_present",
-                          "%22.6f" % timestamp_present)
+            pub.Pub().pub(topic+"simulation/timestamp_present", "%22.6f" % timestamp_present)
             pub.Pub().pub(topic+"simulation/power_present", power_present)
 
             if start_new:

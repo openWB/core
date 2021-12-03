@@ -77,10 +77,6 @@
 		#thegraph>div {
 			height: 350px;
 		}
-
-		#electricityPriceChartCanvasDiv {
-			height: 150px;
-		}
 	</style>
 	<!-- important scripts to be loaded -->
 	<script src="js/jquery-3.6.0.min.js"></script>
@@ -114,6 +110,8 @@
 	<script src="themes/colors/chargePointList.js"></script>
 	<script src="themes/colors/smartHomeList.js"></script>
 	<script src="themes/colors/batteryList.js"></script>
+	<script src="themes/colors/pricechart.js"></script>
+
 
 </head>
 
@@ -135,8 +133,8 @@
 			<div class="row justify-content-center mt-2">
 				<div class="col-10 col-sm-6">
 					<div class="progress active">
-						<div class="progress-bar progress-bar-success progress-bar-striped progress-bar-animated" id="preloaderbar"
-							role="progressbar">
+						<div class="progress-bar progress-bar-success progress-bar-striped progress-bar-animated"
+							id="preloaderbar" role="progressbar">
 						</div>
 					</div>
 				</div>
@@ -153,7 +151,8 @@
 				&nbsp;
 			</div>
 			<div class="col-5 text-center">
-				<button type="button" class="btn btn-sm btn-secondary cursor-pointer regularTextSize" id="chargeModeSelectBtn">
+				<button type="button" class="btn btn-sm btn-secondary cursor-pointer regularTextSize"
+					id="chargeModeSelectBtn">
 					<span id="chargeModeSelectBtnText">Lademodus</span>
 					<span id="priorityEvBattery">
 						<span class="fas fa-car" id="priorityEvBatteryIcon">&nbsp;</span>
@@ -174,19 +173,25 @@
 						</div>
 						<div class="col-4 px-0" style="text-align: right;">
 							<div class="dropdown">
-								<button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-toggle="dropdown">
-									<span	class="fa fa-bars fa-sm"></span>
+								<button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button"
+									data-toggle="dropdown">
+									<span class="fa fa-bars fa-sm"></span>
 								</button>
 								<div class="dropdown-menu dropdown-menu-right colormenu">
-									<a class="dropdown-item" href="#" onclick="switchTheme()"><span class="fa fa-adjust px-0"></span> Hintergrund ändern</a>
+									<a class="dropdown-item" href="#" onclick="switchTheme()"><span
+											class="fa fa-adjust px-0"></span>
+										Hintergrund ändern</a>
 									<a class="dropdown-item" href="#" onclick="toggleGrid()"><span
-										class="fa fa-th px-0"></span> Graph: Raster an/aus</a>
+											class="fa fa-th px-0"></span> Graph:
+										Raster an/aus</a>
 									<a class="dropdown-item" href="#" onclick="switchDisplay()"><span
-										class="fa fa-chart-area px-0"></span> Fixe Bögen an/aus</a>
-									<a class="dropdown-item hide" id="meterResetButton" href="#" onclick="resetButtonClicked()"><span
-										class="fa fa-undo"></span> Bögen reset</a>
-									<a class="dropdown-item" href="#" onclick="switchDecimalPlaces()"><span class="fa fa-sliders-h px-0"></span> Dezimalstellen kW & kWh ändern</a>
-									<a class="dropdown-item" href="#" onclick="switchSmartHomeColors()"><span class="fa fa-palette px-0"></span> Farbschema Smart-Home-Geräte ändern</a>
+											class="fa fa-chart-area px-0"></span> Fixe Bögen an/aus</a>
+									<a class="dropdown-item hide" id="meterResetButton" href="#"
+										onclick="resetButtonClicked()"><span class="fa fa-undo"></span> Bögen reset</a>
+									<a class="dropdown-item" href="#" onclick="switchDecimalPlaces()"><span
+											class="fa fa-sliders-h px-0"></span> Dezimalstellen kW & kWh ändern</a>
+									<a class="dropdown-item" href="#" onclick="switchSmartHomeColors()"><span
+											class="fa fa-palette px-0"></span> Farbschema Smart-Home-Geräte ändern</a>
 								</div>
 							</div>
 
@@ -223,7 +228,7 @@
 						</div>
 						<div class="col-4 px-0" style="text-align: right;">
 							<button class="btn btn-outline-secondary btn-sm " id="calendarButton"><span
-								class="fa fa-calendar-alt px-0"></span></button>
+									class="fa fa-calendar-alt px-0"></span></button>
 							<button class="btn btn-outline-secondary btn-sm " id="energyLeftButton"><span
 									class="fa fa-chevron-circle-left px-0"></span></button>
 							<button class="btn btn-outline-secondary btn-sm " id="energyRightButton"><span
@@ -253,41 +258,50 @@
 						<div class="form-row form-group mb-1 vaRow regularTextSize" data-lp="1">
 							<label for="minCurrentMinPv" class="col-3 col-form-label text-right"></label>
 							<div class="col">
-								<input type="range" class="form-control-range rangeInput" id="minCurrentMinPv" min="6" max="16" step="1"
-									value="6" data-initialized="0" data-topicprefix="openWB/config/get/pv/">
+								<input type="range" class="form-control-range rangeInput" id="minCurrentMinPv" min="6"
+									max="16" step="1" value="6" data-initialized="0"
+									data-topicprefix="openWB/config/get/pv/">
 							</div>
 							<label for="minCurrentMinPv" class="col-3 col-form-label valueLabel" suffix="A"></label>
 						</div>
 					</form>
 
 					<form id="sofortladenEinstellungen" class="hide">
-						<div class="hide" id="priceBasedCharging">
+
+						<!-- price based charging -->
+						<div class="priceConfiguration">
 							<hr class="border-secondary">
 							<div class="row justify-content-center">
-								<h4 class=" text-center">Preisbasiertes Laden</h4>
+								<h4 class="text-center">Preisbasiertes Laden</h4>
 							</div>
-							<div class="row justify-content-center my-2">
-								<div id="electricityPriceChartCanvasDiv" class="col text-center">
-									<canvas id="electricityPriceChartCanvas"></canvas>
+							<div class="row p-0 m-0 ">
+								<div class="col-12 pricechartColumn p-0 m-0">
+									<figure id="priceChart"></figure>
 								</div>
 							</div>
-							<div class="form-row form-group mb-1 vaRow regularTextSize">
-								<label for="MaxPriceForCharging" class="col-3 col-form-label text-right">max. Preis:</label>
-								<div class="col">
-									<input type="range" class="form-control-range rangeInput" id="MaxPriceForCharging" min="-25" max="95"
-										step="0.1" value="0" data-topicprefix="openWB/global/awattar/">
+							<div class="form-row vaRow p-0 m-0">
+								<div class="col m-0 p-0 tablecell maxPrice">
+									<label for="maxPrice" class=" col-form-label p-0 m-0 ">Max. Preis: </label>
+									<label for="maxPrice" class=" labelMaxPrice col-form-label p-0 m-0"
+										data-suffix="ct"></label>
 								</div>
-								<label for="MaxPriceForCharging" class="col-3 col-form-label valueLabel" suffix="ct/kWh"></label>
+
 							</div>
-							<div class="row justify-content-center regularTextSize vaRow">
-								<button type="button" class="btn btn-secondary mr-3 priceLess"><i
-										class="far fa-minus-square"></i></button>
-								Preis
-								<button type="button" class="btn btn-secondary ml-3 priceMore"><i
-										class="far fa-plus-square"></i></button>
+							<div class="row justify-content-center regularTextSize vaRow m-2">
+								<div class="col-2">
+									<button type="button" class="btn btn-secondary mr-3 priceLess"><i
+											class="far fa-minus-square"></i></button>
+								</div>
+								<div class="col-8">
+									<input type="range" class="form-control-range maxPriceInput" id="maxPrice" min="-25"
+										max="95" step="0.1" value="0" data-initialized="0">
+								</div>
+								<div class="col-2">
+									<button type="button" class="btn btn-secondary ml-3 priceMore"><i
+											class="far fa-plus-square"></i></button>
+								</div>
 							</div>
 						</div>
-						<!--/ priceBasedCharging -->
 
 						<hr class="border-secondary">
 						<div class="row justify-content-center">
@@ -295,66 +309,82 @@
 						</div>
 
 						<div class="form-row form-group mb-1 vaRow regularTextSize" data-lp="1">
-							<label for="lp/1/current" class="col-3 col-form-label text-right"><span class="nameLp">LP1</span>:</label>
+							<label for="lp/1/current" class="col-3 col-form-label text-right"><span
+									class="nameLp">LP1</span>:</label>
 							<div class="col">
-								<input type="range" class="form-control-range rangeInput" id="lp/1/current" min="6" max="32" step="1"
-									value="6" data-initialized="0" data-topicprefix="openWB/config/get/sofort/">
+								<input type="range" class="form-control-range rangeInput" id="lp/1/current" min="6"
+									max="32" step="1" value="6" data-initialized="0"
+									data-topicprefix="openWB/config/get/sofort/">
 							</div>
 							<label for="lp/1/current" class="col-3 col-form-label valueLabel" suffix="A"></label>
 						</div>
 						<div class="form-row form-group mb-1 vaRow regularTextSize" data-lp="2">
-							<label for="lp/2/current" class="col-3 col-form-label text-right"><span class="nameLp">LP2</span>:</label>
+							<label for="lp/2/current" class="col-3 col-form-label text-right"><span
+									class="nameLp">LP2</span>:</label>
 							<div class="col">
-								<input type="range" class="form-control-range rangeInput" id="lp/2/current" min="6" max="32" step="1"
-									value="6" data-initialized="0" data-topicprefix="openWB/config/get/sofort/">
+								<input type="range" class="form-control-range rangeInput" id="lp/2/current" min="6"
+									max="32" step="1" value="6" data-initialized="0"
+									data-topicprefix="openWB/config/get/sofort/">
 							</div>
 							<label for="lp/2/current" class="col-3 col-form-label valueLabel" suffix="A"></label>
 						</div>
 						<div class="form-row form-group mb-1 vaRow regularTextSize" data-lp="3">
-							<label for="lp/3/current" class="col-3 col-form-label text-right"><span class="nameLp">LP3</span>:</label>
+							<label for="lp/3/current" class="col-3 col-form-label text-right"><span
+									class="nameLp">LP3</span>:</label>
 							<div class="col">
-								<input type="range" class="form-control-range rangeInput" id="lp/3/current" min="6" max="32" step="1"
-									value="6" data-initialized="0" data-topicprefix="openWB/config/get/sofort/">
+								<input type="range" class="form-control-range rangeInput" id="lp/3/current" min="6"
+									max="32" step="1" value="6" data-initialized="0"
+									data-topicprefix="openWB/config/get/sofort/">
 							</div>
 							<label for="lp/3/current" class="col-3 col-form-label valueLabel" suffix="A"></label>
 						</div>
 						<div class="form-row form-group mb-1 vaRow regularTextSize" data-lp="4">
-							<label for="lp/4/current" class="col-3 col-form-label text-right"><span class="nameLp">LP4</span>:</label>
+							<label for="lp/4/current" class="col-3 col-form-label text-right"><span
+									class="nameLp">LP4</span>:</label>
 							<div class="col">
-								<input type="range" class="form-control-range rangeInput" id="lp/4/current" min="6" max="32" step="1"
-									value="6" data-initialized="0" data-topicprefix="openWB/config/get/sofort/">
+								<input type="range" class="form-control-range rangeInput" id="lp/4/current" min="6"
+									max="32" step="1" value="6" data-initialized="0"
+									data-topicprefix="openWB/config/get/sofort/">
 							</div>
 							<label for="lp/4/current" class="col-3 col-form-label valueLabel" suffix="A"></label>
 						</div>
 						<div class="form-row form-group mb-1 vaRow regularTextSize" data-lp="5">
-							<label for="lp/5/current" class="col-3 col-form-label text-right"><span class="nameLp">LP5</span>:</label>
+							<label for="lp/5/current" class="col-3 col-form-label text-right"><span
+									class="nameLp">LP5</span>:</label>
 							<div class="col">
-								<input type="range" class="form-control-range rangeInput" id="lp/5/current" min="6" max="32" step="1"
-									value="6" data-initialized="0" data-topicprefix="openWB/config/get/sofort/">
+								<input type="range" class="form-control-range rangeInput" id="lp/5/current" min="6"
+									max="32" step="1" value="6" data-initialized="0"
+									data-topicprefix="openWB/config/get/sofort/">
 							</div>
 							<label for="lp/5/current" class="col-3 col-form-label valueLabel" suffix="A"></label>
 						</div>
 						<div class="form-row form-group mb-1 vaRow regularTextSize" data-lp="6">
-							<label for="lp/6/current" class="col-3 col-form-label text-right"><span class="nameLp">LP6</span>:</label>
+							<label for="lp/6/current" class="col-3 col-form-label text-right"><span
+									class="nameLp">LP6</span>:</label>
 							<div class="col">
-								<input type="range" class="form-control-range rangeInput" id="lp/6/current" min="6" max="32" step="1"
-									value="6" data-initialized="0" data-topicprefix="openWB/config/get/sofort/">
+								<input type="range" class="form-control-range rangeInput" id="lp/6/current" min="6"
+									max="32" step="1" value="6" data-initialized="0"
+									data-topicprefix="openWB/config/get/sofort/">
 							</div>
 							<label for="lp/6/current" class="col-3 col-form-label valueLabel" suffix="A"></label>
 						</div>
 						<div class="form-row form-group mb-1 vaRow regularTextSize" data-lp="7">
-							<label for="lp/7/current" class="col-3 col-form-label text-right"><span class="nameLp">LP7</span>:</label>
+							<label for="lp/7/current" class="col-3 col-form-label text-right"><span
+									class="nameLp">LP7</span>:</label>
 							<div class="col">
-								<input type="range" class="form-control-range rangeInput" id="lp/7/current" min="6" max="32" step="1"
-									value="6" data-initialized="0" data-topicprefix="openWB/config/get/sofort/">
+								<input type="range" class="form-control-range rangeInput" id="lp/7/current" min="6"
+									max="32" step="1" value="6" data-initialized="0"
+									data-topicprefix="openWB/config/get/sofort/">
 							</div>
 							<label for="lp/7/current" class="col-3 col-form-label valueLabel" suffix="A"></label>
 						</div>
 						<div class="form-row form-group mb-1 vaRow regularTextSize" data-lp="8">
-							<label for="lp/8/current" class="col-3 col-form-label text-right"><span class="nameLp">LP8</span>:</label>
+							<label for="lp/8/current" class="col-3 col-form-label text-right"><span
+									class="nameLp">LP8</span>:</label>
 							<div class="col">
-								<input type="range" class="form-control-range rangeInput" id="lp/8/current" min="6" max="32" step="1"
-									value="6" data-initialized="0" data-topicprefix="openWB/config/get/sofort/">
+								<input type="range" class="form-control-range rangeInput" id="lp/8/current" min="6"
+									max="32" step="1" value="6" data-initialized="0"
+									data-topicprefix="openWB/config/get/sofort/">
 							</div>
 							<label for="lp/8/current" class="col-3 col-form-label valueLabel" suffix="A"></label>
 						</div>
@@ -365,8 +395,8 @@
 								<h4 class="text-center">Lademengenbegrenzung <span class="nameLp"></span></h4>
 							</div>
 							<div class="form-row vaRow form-group mt-1 justify-content-center" data-lp="1">
-								<div class="col btn-group btn-group-toggle" id="lp/1/chargeLimitation" data-toggle="buttons"
-									data-topicprefix="openWB/config/get/sofort/">
+								<div class="col btn-group btn-group-toggle" id="lp/1/chargeLimitation"
+									data-toggle="buttons" data-topicprefix="openWB/config/get/sofort/">
 									<label class="btn btn-sm btn-outline-info btn-toggle regularTextSize">
 										<input type="radio" name="lp/1/chargeLimitation" data-option="0"> keine
 									</label>
@@ -379,33 +409,39 @@
 								</div>
 							</div>
 							<div class="form-row form-group mb-1 vaRow regularTextSize" data-option="1">
-								<label for="lp/1/energyToCharge" class="col-3 col-form-label text-right">Energie:</label>
+								<label for="lp/1/energyToCharge"
+									class="col-3 col-form-label text-right">Energie:</label>
 								<div class="col">
-									<input type="range" class="form-control-range rangeInput" id="lp/1/energyToCharge" min="2" max="100"
-										step="2" value="2" data-topicprefix="openWB/config/get/sofort/">
+									<input type="range" class="form-control-range rangeInput" id="lp/1/energyToCharge"
+										min="2" max="100" step="2" value="2"
+										data-topicprefix="openWB/config/get/sofort/">
 								</div>
-								<label for="lp/1/energyToCharge" class="col-3 col-form-label valueLabel" suffix="kWh"></label>
+								<label for="lp/1/energyToCharge" class="col-3 col-form-label valueLabel"
+									suffix="kWh"></label>
 							</div>
 							<div class="form-row form-group mb-1 vaRow regularTextSize" data-option="2">
 								<label for="lp/1/socToChargeTo" class="col-3 col-form-label text-right">SoC:</label>
 								<div class="col">
-									<input type="range" class="form-control-range rangeInput" id="lp/1/socToChargeTo" min="5" max="100"
-										step="5" value="5" data-topicprefix="openWB/config/get/sofort/">
+									<input type="range" class="form-control-range rangeInput" id="lp/1/socToChargeTo"
+										min="5" max="100" step="5" value="5"
+										data-topicprefix="openWB/config/get/sofort/">
 								</div>
-								<label for="lp/1/socToChargeTo" class="col-3 col-form-label valueLabel" suffix="%"></label>
+								<label for="lp/1/socToChargeTo" class="col-3 col-form-label valueLabel"
+									suffix="%"></label>
 							</div>
 							<div class="form-row mt-2 justify-content-center regularTextSize" data-option="1">
 								<div class="col col-sm-6">
 									<span class="progress-label">Fortschritt: </span>
 									<span class="restzeitLp pull-right"></span>
 									<div class="progress active limitation-progress">
-										<div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar"
-											data-actualCharged="0">
+										<div class="progress-bar progress-bar-success progress-bar-striped"
+											role="progressbar" data-actualCharged="0">
 										</div>
 									</div>
 								</div>
-								<input class="btn btn-sm btn-primary regularTextSize ml-2" type="button" id="lp/1/resetEnergyToCharge"
-									value="Reset" data-topicprefix="openWB/config/get/sofort/">
+								<input class="btn btn-sm btn-primary regularTextSize ml-2" type="button"
+									id="lp/1/resetEnergyToCharge" value="Reset"
+									data-topicprefix="openWB/config/get/sofort/">
 							</div>
 						</div>
 
@@ -415,8 +451,8 @@
 								<h4 class="text-center">Lademengenbegrenzung <span class="nameLp"></span></h4>
 							</div>
 							<div class="form-row vaRow form-group mt-1 justify-content-center" data-lp="2">
-								<div class="col btn-group btn-group-toggle" id="lp/2/chargeLimitation" data-toggle="buttons"
-									data-topicprefix="openWB/config/get/sofort/">
+								<div class="col btn-group btn-group-toggle" id="lp/2/chargeLimitation"
+									data-toggle="buttons" data-topicprefix="openWB/config/get/sofort/">
 									<label class="btn btn-sm btn-outline-info btn-toggle regularTextSize">
 										<input type="radio" name="lp/2/chargeLimitation" data-option="0"> keine
 									</label>
@@ -429,33 +465,39 @@
 								</div>
 							</div>
 							<div class="form-row form-group mb-1 vaRow regularTextSize" data-option="1">
-								<label for="lp/2/energyToCharge" class="col-3 col-form-label text-right">Energie:</label>
+								<label for="lp/2/energyToCharge"
+									class="col-3 col-form-label text-right">Energie:</label>
 								<div class="col">
-									<input type="range" class="form-control-range rangeInput" id="lp/2/energyToCharge" min="2" max="100"
-										step="2" value="2" data-topicprefix="openWB/config/get/sofort/">
+									<input type="range" class="form-control-range rangeInput" id="lp/2/energyToCharge"
+										min="2" max="100" step="2" value="2"
+										data-topicprefix="openWB/config/get/sofort/">
 								</div>
-								<label for="lp/2/energyToCharge" class="col-3 col-form-label valueLabel" suffix="kWh"></label>
+								<label for="lp/2/energyToCharge" class="col-3 col-form-label valueLabel"
+									suffix="kWh"></label>
 							</div>
 							<div class="form-row form-group mb-1 vaRow regularTextSize" data-option="2">
 								<label for="lp/2/socToChargeTo" class="col-3 col-form-label text-right">SoC:</label>
 								<div class="col">
-									<input type="range" class="form-control-range rangeInput" id="lp/2/socToChargeTo" min="5" max="100"
-										step="5" value="5" data-topicprefix="openWB/config/get/sofort/">
+									<input type="range" class="form-control-range rangeInput" id="lp/2/socToChargeTo"
+										min="5" max="100" step="5" value="5"
+										data-topicprefix="openWB/config/get/sofort/">
 								</div>
-								<label for="lp/2/socToChargeTo" class="col-3 col-form-label valueLabel" suffix="%"></label>
+								<label for="lp/2/socToChargeTo" class="col-3 col-form-label valueLabel"
+									suffix="%"></label>
 							</div>
 							<div class="form-row mt-2 justify-content-center regularTextSize" data-option="1">
 								<div class="col col-sm-6">
 									<span class="progress-label">Fortschritt: </span>
 									<span class="restzeitLp pull-right"></span>
 									<div class="progress active limitation-progress">
-										<div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar"
-											data-actualCharged="0">
+										<div class="progress-bar progress-bar-success progress-bar-striped"
+											role="progressbar" data-actualCharged="0">
 										</div>
 									</div>
 								</div>
-								<input class="btn btn-sm btn-primary regularTextSize ml-2" type="button" id="lp/2/resetEnergyToCharge"
-									value="Reset" data-topicprefix="openWB/config/get/sofort/">
+								<input class="btn btn-sm btn-primary regularTextSize ml-2" type="button"
+									id="lp/2/resetEnergyToCharge" value="Reset"
+									data-topicprefix="openWB/config/get/sofort/">
 							</div>
 						</div>
 
@@ -465,8 +507,8 @@
 								<h4 class="text-center">Lademengenbegrenzung <span class="nameLp"></span></h4>
 							</div>
 							<div class="form-row vaRow form-group mt-1 justify-content-center" data-lp="3">
-								<div class="col btn-group btn-group-toggle" id="lp/3/chargeLimitation" data-toggle="buttons"
-									data-topicprefix="openWB/config/get/sofort/">
+								<div class="col btn-group btn-group-toggle" id="lp/3/chargeLimitation"
+									data-toggle="buttons" data-topicprefix="openWB/config/get/sofort/">
 									<label class="btn btn-sm btn-outline-info btn-toggle regularTextSize">
 										<input type="radio" name="lp/3/chargeLimitation" data-option="0"> keine
 									</label>
@@ -476,25 +518,29 @@
 								</div>
 							</div>
 							<div class="form-row form-group mb-1 vaRow regularTextSize" data-option="1">
-								<label for="lp/3/energyToCharge" class="col-3 col-form-label text-right">Energie:</label>
+								<label for="lp/3/energyToCharge"
+									class="col-3 col-form-label text-right">Energie:</label>
 								<div class="col">
-									<input type="range" class="form-control-range rangeInput" id="lp/3/energyToCharge" min="2" max="100"
-										step="2" value="2" data-topicprefix="openWB/config/get/sofort/">
+									<input type="range" class="form-control-range rangeInput" id="lp/3/energyToCharge"
+										min="2" max="100" step="2" value="2"
+										data-topicprefix="openWB/config/get/sofort/">
 								</div>
-								<label for="lp/3/energyToCharge" class="col-3 col-form-label valueLabel" suffix="kWh"></label>
+								<label for="lp/3/energyToCharge" class="col-3 col-form-label valueLabel"
+									suffix="kWh"></label>
 							</div>
 							<div class="form-row mt-2 justify-content-center regularTextSize" data-option="1">
 								<div class="col col-sm-6">
 									<span class="progress-label">Fortschritt: </span>
 									<span class="restzeitLp pull-right"></span>
 									<div class="progress active limitation-progress">
-										<div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar"
-											data-actualCharged="0">
+										<div class="progress-bar progress-bar-success progress-bar-striped"
+											role="progressbar" data-actualCharged="0">
 										</div>
 									</div>
 								</div>
-								<input class="btn btn-sm btn-primary regularTextSize ml-2" type="button" id="lp/3/resetEnergyToCharge"
-									value="Reset" data-topicprefix="openWB/config/get/sofort/">
+								<input class="btn btn-sm btn-primary regularTextSize ml-2" type="button"
+									id="lp/3/resetEnergyToCharge" value="Reset"
+									data-topicprefix="openWB/config/get/sofort/">
 							</div>
 						</div>
 
@@ -504,8 +550,8 @@
 								<h4 class="text-center">Lademengenbegrenzung <span class="nameLp"></span></h4>
 							</div>
 							<div class="form-row vaRow form-group mt-1 justify-content-center" data-lp="4">
-								<div class="col btn-group btn-group-toggle" id="lp/4/chargeLimitation" data-toggle="buttons"
-									data-topicprefix="openWB/config/get/sofort/">
+								<div class="col btn-group btn-group-toggle" id="lp/4/chargeLimitation"
+									data-toggle="buttons" data-topicprefix="openWB/config/get/sofort/">
 									<label class="btn btn-sm btn-outline-info btn-toggle regularTextSize">
 										<input type="radio" name="lp/4/chargeLimitation" data-option="0"> keine
 									</label>
@@ -515,25 +561,29 @@
 								</div>
 							</div>
 							<div class="form-row form-group mb-1 vaRow regularTextSize" data-option="1">
-								<label for="lp/4/energyToCharge" class="col-3 col-form-label text-right">Energie:</label>
+								<label for="lp/4/energyToCharge"
+									class="col-3 col-form-label text-right">Energie:</label>
 								<div class="col">
-									<input type="range" class="form-control-range rangeInput" id="lp/4/energyToCharge" min="2" max="100"
-										step="2" value="2" data-topicprefix="openWB/config/get/sofort/">
+									<input type="range" class="form-control-range rangeInput" id="lp/4/energyToCharge"
+										min="2" max="100" step="2" value="2"
+										data-topicprefix="openWB/config/get/sofort/">
 								</div>
-								<label for="lp/4/energyToCharge" class="col-3 col-form-label valueLabel" suffix="kWh"></label>
+								<label for="lp/4/energyToCharge" class="col-3 col-form-label valueLabel"
+									suffix="kWh"></label>
 							</div>
 							<div class="form-row mt-2 justify-content-center regularTextSize" data-option="1">
 								<div class="col col-sm-6">
 									<span class="progress-label">Fortschritt: </span>
 									<span class="restzeitLp pull-right"></span>
 									<div class="progress active limitation-progress">
-										<div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar"
-											data-actualCharged="0">
+										<div class="progress-bar progress-bar-success progress-bar-striped"
+											role="progressbar" data-actualCharged="0">
 										</div>
 									</div>
 								</div>
-								<input class="btn btn-sm btn-primary regularTextSize ml-2" type="button" id="lp/4/resetEnergyToCharge"
-									value="Reset" data-topicprefix="openWB/config/get/sofort/">
+								<input class="btn btn-sm btn-primary regularTextSize ml-2" type="button"
+									id="lp/4/resetEnergyToCharge" value="Reset"
+									data-topicprefix="openWB/config/get/sofort/">
 							</div>
 						</div>
 
@@ -543,8 +593,8 @@
 								<h4 class="text-center">Lademengenbegrenzung <span class="nameLp"></span></h4>
 							</div>
 							<div class="form-row vaRow form-group mt-1 justify-content-center" data-lp="5">
-								<div class="col btn-group btn-group-toggle" id="lp/5/chargeLimitation" data-toggle="buttons"
-									data-topicprefix="openWB/config/get/sofort/">
+								<div class="col btn-group btn-group-toggle" id="lp/5/chargeLimitation"
+									data-toggle="buttons" data-topicprefix="openWB/config/get/sofort/">
 									<label class="btn btn-sm btn-outline-info btn-toggle regularTextSize">
 										<input type="radio" name="lp/5/chargeLimitation" data-option="0"> keine
 									</label>
@@ -554,25 +604,29 @@
 								</div>
 							</div>
 							<div class="form-row form-group mb-1 vaRow regularTextSize" data-option="1">
-								<label for="lp/5/energyToCharge" class="col-3 col-form-label text-right">Energie:</label>
+								<label for="lp/5/energyToCharge"
+									class="col-3 col-form-label text-right">Energie:</label>
 								<div class="col">
-									<input type="range" class="form-control-range rangeInput" id="lp/5/energyToCharge" min="2" max="100"
-										step="2" value="2" data-topicprefix="openWB/config/get/sofort/">
+									<input type="range" class="form-control-range rangeInput" id="lp/5/energyToCharge"
+										min="2" max="100" step="2" value="2"
+										data-topicprefix="openWB/config/get/sofort/">
 								</div>
-								<label for="lp/5/energyToCharge" class="col-3 col-form-label valueLabel" suffix="kWh"></label>
+								<label for="lp/5/energyToCharge" class="col-3 col-form-label valueLabel"
+									suffix="kWh"></label>
 							</div>
 							<div class="form-row mt-2 justify-content-center regularTextSize" data-option="1">
 								<div class="col col-sm-6">
 									<span class="progress-label">Fortschritt: </span>
 									<span class="restzeitLp pull-right"></span>
 									<div class="progress active limitation-progress">
-										<div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar"
-											data-actualCharged="0">
+										<div class="progress-bar progress-bar-success progress-bar-striped"
+											role="progressbar" data-actualCharged="0">
 										</div>
 									</div>
 								</div>
-								<input class="btn btn-sm btn-primary regularTextSize ml-2" type="button" id="lp/5/resetEnergyToCharge"
-									value="Reset" data-topicprefix="openWB/config/get/sofort/">
+								<input class="btn btn-sm btn-primary regularTextSize ml-2" type="button"
+									id="lp/5/resetEnergyToCharge" value="Reset"
+									data-topicprefix="openWB/config/get/sofort/">
 							</div>
 						</div>
 
@@ -582,8 +636,8 @@
 								<h4 class="text-center">Lademengenbegrenzung <span class="nameLp"></span></h4>
 							</div>
 							<div class="form-row vaRow form-group mt-1 justify-content-center" data-lp="6">
-								<div class="col btn-group btn-group-toggle" id="lp/6/chargeLimitation" data-toggle="buttons"
-									data-topicprefix="openWB/config/get/sofort/">
+								<div class="col btn-group btn-group-toggle" id="lp/6/chargeLimitation"
+									data-toggle="buttons" data-topicprefix="openWB/config/get/sofort/">
 									<label class="btn btn-sm btn-outline-info btn-toggle regularTextSize">
 										<input type="radio" name="lp/6/chargeLimitation" data-option="0"> keine
 									</label>
@@ -593,25 +647,29 @@
 								</div>
 							</div>
 							<div class="form-row form-group mb-1 vaRow regularTextSize" data-option="1">
-								<label for="lp/6/energyToCharge" class="col-3 col-form-label text-right">Energie:</label>
+								<label for="lp/6/energyToCharge"
+									class="col-3 col-form-label text-right">Energie:</label>
 								<div class="col">
-									<input type="range" class="form-control-range rangeInput" id="lp/6/energyToCharge" min="2" max="100"
-										step="2" value="2" data-topicprefix="openWB/config/get/sofort/">
+									<input type="range" class="form-control-range rangeInput" id="lp/6/energyToCharge"
+										min="2" max="100" step="2" value="2"
+										data-topicprefix="openWB/config/get/sofort/">
 								</div>
-								<label for="lp/6/energyToCharge" class="col-3 col-form-label valueLabel" suffix="kWh"></label>
+								<label for="lp/6/energyToCharge" class="col-3 col-form-label valueLabel"
+									suffix="kWh"></label>
 							</div>
 							<div class="form-row mt-2 justify-content-center regularTextSize" data-option="1">
 								<div class="col col-sm-6">
 									<span class="progress-label">Fortschritt: </span>
 									<span class="restzeitLp pull-right"></span>
 									<div class="progress active limitation-progress">
-										<div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar"
-											data-actualCharged="0">
+										<div class="progress-bar progress-bar-success progress-bar-striped"
+											role="progressbar" data-actualCharged="0">
 										</div>
 									</div>
 								</div>
-								<input class="btn btn-sm btn-primary regularTextSize ml-2" type="button" id="lp/6/resetEnergyToCharge"
-									value="Reset" data-topicprefix="openWB/config/get/sofort/">
+								<input class="btn btn-sm btn-primary regularTextSize ml-2" type="button"
+									id="lp/6/resetEnergyToCharge" value="Reset"
+									data-topicprefix="openWB/config/get/sofort/">
 							</div>
 						</div>
 
@@ -621,8 +679,8 @@
 								<h4 class="text-center">Lademengenbegrenzung <span class="nameLp"></span></h4>
 							</div>
 							<div class="form-row vaRow form-group mt-1 justify-content-center" data-lp="7">
-								<div class="col btn-group btn-group-toggle" id="lp/7/chargeLimitation" data-toggle="buttons"
-									data-topicprefix="openWB/config/get/sofort/">
+								<div class="col btn-group btn-group-toggle" id="lp/7/chargeLimitation"
+									data-toggle="buttons" data-topicprefix="openWB/config/get/sofort/">
 									<label class="btn btn-sm btn-outline-info btn-toggle regularTextSize">
 										<input type="radio" name="lp/7/chargeLimitation" data-option="0"> keine
 									</label>
@@ -632,25 +690,29 @@
 								</div>
 							</div>
 							<div class="form-row form-group mb-1 vaRow regularTextSize" data-option="1">
-								<label for="lp/7/energyToCharge" class="col-3 col-form-label text-right">Energie:</label>
+								<label for="lp/7/energyToCharge"
+									class="col-3 col-form-label text-right">Energie:</label>
 								<div class="col">
-									<input type="range" class="form-control-range rangeInput" id="lp/7/energyToCharge" min="2" max="100"
-										step="2" value="2" data-topicprefix="openWB/config/get/sofort/">
+									<input type="range" class="form-control-range rangeInput" id="lp/7/energyToCharge"
+										min="2" max="100" step="2" value="2"
+										data-topicprefix="openWB/config/get/sofort/">
 								</div>
-								<label for="lp/7/energyToCharge" class="col-3 col-form-label valueLabel" suffix="kWh"></label>
+								<label for="lp/7/energyToCharge" class="col-3 col-form-label valueLabel"
+									suffix="kWh"></label>
 							</div>
 							<div class="form-row mt-2 justify-content-center regularTextSize" data-option="1">
 								<div class="col col-sm-6">
 									<span class="progress-label">Fortschritt: </span>
 									<span class="restzeitLp pull-right"></span>
 									<div class="progress active limitation-progress">
-										<div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar"
-											data-actualCharged="0">
+										<div class="progress-bar progress-bar-success progress-bar-striped"
+											role="progressbar" data-actualCharged="0">
 										</div>
 									</div>
 								</div>
-								<input class="btn btn-sm btn-primary regularTextSize ml-2" type="button" id="lp/7/resetEnergyToCharge"
-									value="Reset" data-topicprefix="openWB/config/get/sofort/">
+								<input class="btn btn-sm btn-primary regularTextSize ml-2" type="button"
+									id="lp/7/resetEnergyToCharge" value="Reset"
+									data-topicprefix="openWB/config/get/sofort/">
 							</div>
 						</div>
 
@@ -660,8 +722,8 @@
 								<h4 class="text-center">Lademengenbegrenzung <span class="nameLp"></span></h4>
 							</div>
 							<div class="form-row vaRow form-group mt-1 justify-content-center" data-lp="8">
-								<div class="col btn-group btn-group-toggle" id="lp/8/chargeLimitation" data-toggle="buttons"
-									data-topicprefix="openWB/config/get/sofort/">
+								<div class="col btn-group btn-group-toggle" id="lp/8/chargeLimitation"
+									data-toggle="buttons" data-topicprefix="openWB/config/get/sofort/">
 									<label class="btn btn-sm btn-outline-info btn-toggle regularTextSize">
 										<input type="radio" name="lp/8/chargeLimitation" data-option="0"> keine
 									</label>
@@ -671,25 +733,29 @@
 								</div>
 							</div>
 							<div class="form-row form-group mb-1 vaRow regularTextSize" data-option="1">
-								<label for="lp/8/energyToCharge" class="col-3 col-form-label text-right">Energie:</label>
+								<label for="lp/8/energyToCharge"
+									class="col-3 col-form-label text-right">Energie:</label>
 								<div class="col">
-									<input type="range" class="form-control-range rangeInput" id="lp/8/energyToCharge" min="2" max="100"
-										step="2" value="2" data-topicprefix="openWB/config/get/sofort/">
+									<input type="range" class="form-control-range rangeInput" id="lp/8/energyToCharge"
+										min="2" max="100" step="2" value="2"
+										data-topicprefix="openWB/config/get/sofort/">
 								</div>
-								<label for="lp/8/energyToCharge" class="col-3 col-form-label valueLabel" suffix="kWh"></label>
+								<label for="lp/8/energyToCharge" class="col-3 col-form-label valueLabel"
+									suffix="kWh"></label>
 							</div>
 							<div class="form-row mt-2 justify-content-center regularTextSize" data-option="1">
 								<div class="col col-sm-6">
 									<span class="progress-label">Fortschritt: </span>
 									<span class="restzeitLp pull-right"></span>
 									<div class="progress active limitation-progress">
-										<div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar"
-											data-actualCharged="0">
+										<div class="progress-bar progress-bar-success progress-bar-striped"
+											role="progressbar" data-actualCharged="0">
 										</div>
 									</div>
 								</div>
-								<input class="btn btn-sm btn-primary regularTextSize ml-2" type="button" id="lp/8/resetEnergyToCharge"
-									value="Reset" data-topicprefix="openWB/config/get/sofort/">
+								<input class="btn btn-sm btn-primary regularTextSize ml-2" type="button"
+									id="lp/8/resetEnergyToCharge" value="Reset"
+									data-topicprefix="openWB/config/get/sofort/">
 							</div>
 						</div>
 
@@ -697,6 +763,9 @@
 					<br>
 				</div>
 			</div>
+
+
+
 			<!-- Speicher (batteryList) -->
 			<div class="wb-widget col-md p-2 m-1" id="batteryWidget">
 				<h3>Speicher</h3>
@@ -711,6 +780,8 @@
 					<div id="smartHomeTable"></div>
 				</div>
 			</div>
+
+
 		</div>
 	</div>
 	<!-- ENDE COLOR THEME -->
@@ -733,32 +804,37 @@
 					<div class="modal-body">
 						<div class="row justify-content-center">
 							<div class="col-sm-5 py-1">
-								<button id="chargeModeSofortBtn" type="button" class="chargeModeBtn btn btn-lg btn-block btn-secondary"
-									data-dismiss="modal" chargeMode="0">Sofort</button>
+								<button id="chargeModeSofortBtn" type="button"
+									class="chargeModeBtn btn btn-lg btn-block btn-secondary" data-dismiss="modal"
+									chargeMode="0">Sofort</button>
 							</div>
 						</div>
 						<div class="row justify-content-center">
 							<div class="col-sm-5 order-first order-sm-last py-1">
-								<button id="chargeModePVBtn" type="button" class="chargeModeBtn btn btn-lg btn-block btn-secondary"
-									data-dismiss="modal" chargeMode="2">PV</button>
+								<button id="chargeModePVBtn" type="button"
+									class="chargeModeBtn btn btn-lg btn-block btn-secondary" data-dismiss="modal"
+									chargeMode="2">PV</button>
 							</div>
 						</div>
 						<div class="row justify-content-center">
 							<div class="col-sm-5 py-1">
-								<button id="chargeModeMinPVBtn" type="button" class="chargeModeBtn btn btn-lg btn-block btn-secondary"
-									data-dismiss="modal" chargeMode="1">Min + PV</button>
+								<button id="chargeModeMinPVBtn" type="button"
+									class="chargeModeBtn btn btn-lg btn-block btn-secondary" data-dismiss="modal"
+									chargeMode="1">Min + PV</button>
 							</div>
 						</div>
 						<div class="row justify-content-center">
 							<div class="col-sm-5 py-1">
-								<button id="chargeModeStdbyBtn" type="button" class="chargeModeBtn btn btn-lg btn-block btn-secondary"
-									data-dismiss="modal" chargeMode="4">Standby</button>
+								<button id="chargeModeStdbyBtn" type="button"
+									class="chargeModeBtn btn btn-lg btn-block btn-secondary" data-dismiss="modal"
+									chargeMode="4">Standby</button>
 							</div>
 						</div>
 						<div class="row justify-content-center">
 							<div class="col-sm-5 py-1">
-								<button id="chargeModeStopBtn" type="button" class="chargeModeBtn btn btn-lg btn-block btn-secondary"
-									data-dismiss="modal" chargeMode="3">Stop</button>
+								<button id="chargeModeStopBtn" type="button"
+									class="chargeModeBtn btn btn-lg btn-block btn-secondary" data-dismiss="modal"
+									chargeMode="3">Stop</button>
 							</div>
 						</div>
 						<span id='priorityModeBtns'>
@@ -770,8 +846,9 @@
 							</div>
 							<div class="row justify-content-center">
 								<div class="col-sm-5 py-1">
-									<button id="evPriorityBtn" type="button" class="priorityModeBtn btn btn-lg btn-block btn-secondary"
-										data-dismiss="modal" priority="1">
+									<button id="evPriorityBtn" type="button"
+										class="priorityModeBtn btn btn-lg btn-block btn-secondary" data-dismiss="modal"
+										priority="1">
 										EV <span class="fas fa-car">&nbsp;</span>
 									</button>
 								</div>
@@ -779,7 +856,8 @@
 							<div class="row justify-content-center">
 								<div class="col-sm-5 py-1">
 									<button id="batteryPriorityBtn" type="button"
-										class="priorityModeBtn btn btn-lg btn-block btn-secondary" data-dismiss="modal" priority="0">
+										class="priorityModeBtn btn btn-lg btn-block btn-secondary" data-dismiss="modal"
+										priority="0">
 										Speicher <span class="fas fa-car-battery">&nbsp;</span>
 									</button>
 								</div>
@@ -795,8 +873,8 @@
 							</div>
 							<div class="row justify-content-center">
 								<div class="col-sm-5 py-1">
-									<button id="70PvBtn" type="button" class=" 70PvBtn btn btn-lg btn-block btn-secondary"
-										data-dismiss="modal">
+									<button id="70PvBtn" type="button"
+										class=" 70PvBtn btn btn-lg btn-block btn-secondary" data-dismiss="modal">
 										70 % beachten
 									</button>
 								</div>
@@ -901,10 +979,6 @@
 				'themes/colors/helperFunctions.js?ver=20200526-c',
 				// functions for processing messages
 				'themes/colors/processAllMqttMsg.js?ver=20210213',
-				// respective Chart.js definition live
-				// 'themes/dark/livechart.js?ver=20200530-b',
-				// respective Chart.js definition
-				'themes/dark/electricityPriceChart.js?ver=20210210',
 				// functions performing mqtt and start mqtt-service
 				'themes/colors/setupMqttServices.js?ver=20210129',
 			];
@@ -922,6 +996,7 @@
 			chargePointList.init();
 			smartHomeList.init();
 			batteryList.init();
+			priceChart.init();
 
 			$('.enableLp').click(function (event) {
 				// send mqtt set to enable/disable charge point after click
@@ -1046,28 +1121,6 @@
 				chargeLimitationOptionsShowHide(this, option);
 			});
 
-			$('.priceMore, .priceLess').click(function (event) {
-				// change Slider upon click on buttons
-				event.preventDefault();
-				var currentMaxPrice = parseFloat($('#MaxPriceForCharging').val());
-				var rangeMin = parseFloat($('#MaxPriceForCharging').attr('min'));
-				var rangeMax = parseFloat($('#MaxPriceForCharging').attr('max'));
-				var step = parseFloat($('#MaxPriceForCharging').attr('step'));
-				if ($(this).hasClass('priceLess')) {
-					currentMaxPrice -= step;
-				} else {
-					currentMaxPrice += step;
-				}
-				// prevent timeout of delayUserInput when clicking "beyond" range
-				if (currentMaxPrice < rangeMin) {
-					currentMaxPrice = rangeMin;
-				} else if (currentMaxPrice > rangeMax) {
-					currentMaxPrice = rangeMax;
-				}
-				$('#MaxPriceForCharging').val(currentMaxPrice);
-				$('#MaxPriceForCharging').trigger('input');
-			});
-
 			$('.rangeInput').on('input', function () {
 				// show slider value in label of class valueLabel
 				var elementId = $(this).attr('id');
@@ -1075,12 +1128,7 @@
 				var element = $('#' + $.escapeSelector(elementId));
 				var label = $('label[for="' + elementId + '"].valueLabel');
 				label.addClass('text-danger');
-				if ($.escapeSelector(elementId) == 'MaxPriceForCharging') {
-					// marks times in the price chart where the price is low enough so charging would be allowed
-					var priceAnnotations = createPriceAnnotations();
-					electricityPricechart.options.annotation.annotations = priceAnnotations;
-					electricityPricechart.update();
-				}
+
 				delayUserInput(elementId, function (id) {
 					// gets executed on callback, 2000ms after last input-change
 					// changes label color back to normal and sends input-value by mqtt
@@ -1122,7 +1170,7 @@
 					// once page is unhidden... reload graph completely
 					if (wbdata.graphMode == 'live') {
 						powerGraph.deactivateDay();
-							powerGraph.activateLive();
+						powerGraph.activateLive();
 					} else {
 						powerGraph.deactivateLive();
 						powerGraph.activateDay();
