@@ -1,6 +1,6 @@
 from typing import Dict
 
-from helpermodules import log
+from helpermodules.log import MainLogger
 from modules.common.abstract_chargepoint import AbstractChargepoint
 
 
@@ -19,7 +19,7 @@ class ChargepointModule(AbstractChargepoint):
         self.power_module = power_module
 
     def set_current(self, current: float) -> None:
-        log.MainLogger().debug("MQTT-Ladepunkte subscriben die Daten direkt vom Broker.")
+        MainLogger().debug("MQTT-Ladepunkte subscriben die Daten direkt vom Broker.")
 
     def get_values(self) -> None:
-        log.MainLogger().debug("MQTT-Ladepunkte müssen nicht ausgelesen werden.")
+        MainLogger().debug("MQTT-Ladepunkte müssen nicht ausgelesen werden.")

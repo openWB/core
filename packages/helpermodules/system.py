@@ -7,7 +7,7 @@ import _thread as thread
 import threading
 import sys
 
-from helpermodules import log
+from helpermodules.log import MainLogger
 from helpermodules import pub
 from control import data
 
@@ -38,7 +38,7 @@ class System:
             # subprocess.run([str(Path(__file__).resolve().parents[2]/"runs"/"update_self.sh"), train])
             subprocess.run(str(Path(__file__).resolve().parents[2]/"runs"/"atreboot.sh"))
         except Exception:
-            log.MainLogger().exception("Fehler im System-Modul")
+            MainLogger().exception("Fehler im System-Modul")
 
     def _trigger_ext_update(self, train):
         """ triggert das Update auf den externen WBs.
@@ -54,15 +54,15 @@ class System:
                     if "cp" in cp:
                         chargepoint = data.data.cp_data[cp]
                         if chargepoint.data["config"]["connection_module"]["selected"] == "external_openwb":
-                            log.MainLogger().info("Update an LP "+str(chargepoint.cp_num)+" angestossen.")
+                            MainLogger().info("Update an LP "+str(chargepoint.cp_num)+" angestossen.")
                             ip_address = chargepoint.data["config"]["connection_module"]["config"]["external_openwb"][
                                 "ip_address"]
                             pub.pub_single("openWB/set/system/releaseTrain", train, ip_address, no_json=True)
                             pub.pub_single("openWB/set/system/PerformUpdate", "1", ip_address, no_json=True)
                 except Exception:
-                    log.MainLogger().exception("Fehler im System-Modul")
+                    MainLogger().exception("Fehler im System-Modul")
         except Exception:
-            log.MainLogger().exception("Fehler im System-Modul")
+            MainLogger().exception("Fehler im System-Modul")
 
 
 def quit_function(fn_name):

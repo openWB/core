@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from helpermodules import log
+from helpermodules.log import MainLogger
 from modules.common import modbus
 from modules.common import simcount
 from modules.common.component_state import CounterState
@@ -39,7 +39,7 @@ class EvuKitFlex:
                                             self.component_config["type"])
 
     def update(self):
-        log.MainLogger().debug("Start kit reading")
+        MainLogger().debug("Start kit reading")
         # TCP-Verbindung schließen möglichst bevor etwas anderes gemacht wird, um im Fehlerfall zu verhindern,
         # dass ungeschlossene Verbindungen den Modbus-Adapter blockieren.
         try:
@@ -81,5 +81,5 @@ class EvuKitFlex:
             power_all=power_all,
             frequency=frequency
         )
-        log.MainLogger().debug("EVU-Kit Leistung[W]: " + str(counter_state.power_all))
+        MainLogger().debug("EVU-Kit Leistung[W]: " + str(counter_state.power_all))
         self.__store.set(counter_state)

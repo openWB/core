@@ -5,7 +5,7 @@ import pathlib
 from pathlib import Path
 
 from control import data
-from helpermodules import log
+from helpermodules.log import MainLogger
 from helpermodules.pub import Pub
 from helpermodules import timecheck
 
@@ -88,12 +88,12 @@ def save_log(folder):
                     cp_dict.update(
                         {cp: {"counter": data.data.cp_data[cp].data["get"]["counter"]}})
             except Exception:
-                log.MainLogger().exception("Fehler im Werte-Loggingmodul fuer Ladepunkt "+str(cp))
+                MainLogger().exception("Fehler im Werte-Loggingmodul fuer Ladepunkt "+str(cp))
         try:
             cp_dict.update(
                 {"all": {"counter": data.data.cp_data["all"].data["get"]["counter_all"]}})
         except Exception:
-            log.MainLogger().exception("Fehler im Werte-Loggingmodul")
+            MainLogger().exception("Fehler im Werte-Loggingmodul")
 
         ev_dict = {}
         for ev in data.data.ev_data:
@@ -102,7 +102,7 @@ def save_log(folder):
                     ev_dict.update(
                         {ev: {"soc": data.data.ev_data[ev].data["get"]["soc"]}})
             except Exception:
-                log.MainLogger().exception("Fehler im Werte-Loggingmodul fuer EV "+str(ev))
+                MainLogger().exception("Fehler im Werte-Loggingmodul fuer EV "+str(ev))
 
         counter_dict = {}
         for counter in data.data.counter_data:
@@ -112,7 +112,7 @@ def save_log(folder):
                                          {"imported": data.data.counter_data[counter].data["get"]["imported"],
                                           "exported": data.data.counter_data[counter].data["get"]["exported"]}})
             except Exception:
-                log.MainLogger().exception("Fehler im Werte-Loggingmodul fuer Zaehler "+str(counter))
+                MainLogger().exception("Fehler im Werte-Loggingmodul fuer Zaehler "+str(counter))
 
         pv_dict = {}
         if data.data.pv_data["all"].data["config"]["configured"]:
@@ -121,7 +121,7 @@ def save_log(folder):
                     pv_dict.update(
                         {pv: {"imported": data.data.pv_data[pv].data["get"]["counter"]}})
                 except Exception:
-                    log.MainLogger().exception("Fehler im Werte-Loggingmodul fuer Wechselrichter "+str(pv))
+                    MainLogger().exception("Fehler im Werte-Loggingmodul fuer Wechselrichter "+str(pv))
 
         bat_dict = {}
         if data.data.bat_data["all"].data["config"]["configured"]:
@@ -131,7 +131,7 @@ def save_log(folder):
                                            "exported": data.data.bat_data[bat].data["get"]["exported"],
                                            "soc": data.data.bat_data[bat].data["get"]["soc"]}})
                 except Exception:
-                    log.MainLogger().exception("Fehler im Werte-Loggingmodul fuer Speicher "+str(bat))
+                    MainLogger().exception("Fehler im Werte-Loggingmodul fuer Speicher "+str(bat))
 
         new_entry = {
             "date": date,
@@ -167,7 +167,7 @@ def save_log(folder):
         with open(filepath, "w") as jsonFile:
             json.dump(content, jsonFile)
     except Exception:
-        log.MainLogger().exception("Fehler im Werte-Loggingmodul")
+        MainLogger().exception("Fehler im Werte-Loggingmodul")
 
 
 def pub_daily_log(date: str) -> None:
@@ -204,8 +204,8 @@ def update_daily_yields():
                 Pub().pub("openWB/set/counter/"+str(
                     data.data.counter_data[counter].counter_num)+"/get/daily_yield_export", daily_yield_export)
             else:
-                log.MainLogger().info("Zaehler "+str(counter) +
-                                      " wurde zwischenzeitlich geloescht und wird daher nicht mehr aufgefuehrt.")
+                MainLogger().info("Zaehler "+str(counter) +
+                                  " wurde zwischenzeitlich geloescht und wird daher nicht mehr aufgefuehrt.")
         # Tagesertrag Ladepunkte
         for cp in daily_log[0]["cp"]:
             if "cp" in cp:
@@ -215,8 +215,8 @@ def update_daily_yields():
                     Pub().pub("openWB/set/chargepoint/" +
                               str(data.data.cp_data[cp].cp_num)+"/get/daily_yield", daily_yield)
                 else:
-                    log.MainLogger().info("Ladepunkt "+str(cp) +
-                                          " wurde zwischenzeitlich geloescht und wird daher nicht mehr aufgefuehrt.")
+                    MainLogger().info("Ladepunkt "+str(cp) +
+                                      " wurde zwischenzeitlich geloescht und wird daher nicht mehr aufgefuehrt.")
             else:
                 daily_yield = data.data.cp_data[cp].data["get"]["counter_all"] - \
                     daily_log[0]["cp"][cp]["counter"]
@@ -230,8 +230,8 @@ def update_daily_yields():
                     Pub().pub(
                         "openWB/set/pv/"+str(data.data.pv_data[pv].pv_num)+"/get/daily_yield", daily_yield)
                 else:
-                    log.MainLogger().info("Wechselrichter "+str(pv) +
-                                          " wurde zwischenzeitlich geloescht und wird daher nicht mehr aufgefuehrt.")
+                    MainLogger().info("Wechselrichter "+str(pv) +
+                                      " wurde zwischenzeitlich geloescht und wird daher nicht mehr aufgefuehrt.")
             else:
                 Pub().pub("openWB/set/pv/get/daily_yield", daily_yield)
         # Tagesertrag Speicher
@@ -247,12 +247,12 @@ def update_daily_yields():
                     Pub().pub("openWB/set/bat/"+str(
                         data.data.bat_data[bat].bat_num)+"/get/daily_yield_export", daily_yield_exported)
                 else:
-                    log.MainLogger().info("Speicher "+str(bat) +
-                                          " wurde zwischenzeitlich geloescht und wird daher nicht mehr aufgefuehrt.")
+                    MainLogger().info("Speicher "+str(bat) +
+                                      " wurde zwischenzeitlich geloescht und wird daher nicht mehr aufgefuehrt.")
             else:
                 Pub().pub("openWB/set/bat/get/daily_yield_import",
                           daily_yield_imported)
                 Pub().pub("openWB/set/bat/get/daily_yield_export",
                           daily_yield_exported)
     except Exception:
-        log.MainLogger().exception("Fehler im Werte-Loggingmodul")
+        MainLogger().exception("Fehler im Werte-Loggingmodul")

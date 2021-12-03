@@ -6,7 +6,7 @@ from typing import List
 from control import chargelog
 from control import chargepoint
 from control import data
-from helpermodules import log
+from helpermodules.log import MainLogger
 from helpermodules.pub import Pub
 
 
@@ -17,7 +17,7 @@ class Process:
     def process_algorithm_results(self) -> None:
         try:
             modules_threads = []  # type: List[threading.Thread]
-            log.MainLogger().debug("# Ladung starten.")
+            MainLogger().debug("# Ladung starten.")
             for cp in data.data.cp_data:
                 try:
                     if "cp" in cp:
@@ -47,7 +47,7 @@ class Process:
                                 "Ladevorgang läuft...")
                         modules_threads.append(self._start_charging(chargepoint))
                 except Exception:
-                    log.MainLogger().exception("Fehler im Process-Modul fuer Ladepunkt "+str(cp))
+                    MainLogger().exception("Fehler im Process-Modul fuer Ladepunkt "+str(cp))
 
             if modules_threads:
                 for thread in modules_threads:
@@ -59,7 +59,7 @@ class Process:
 
                 for thread in modules_threads:
                     if thread.is_alive():
-                        log.MainLogger().error(
+                        MainLogger().error(
                             thread.name +
                             " konnte nicht innerhalb des Timeouts die Werte senden.")
 
@@ -67,7 +67,7 @@ class Process:
             data.data.pv_data["all"].print_stats()
             data.data.counter_data[data.data.counter_data["all"].get_evu_counter()].put_stats()
         except Exception:
-            log.MainLogger().exception("Fehler im Process-Modul")
+            MainLogger().exception("Fehler im Process-Modul")
 
     def _update_state(self, chargepoint) -> None:
         """aktualisiert den Zustand des Ladepunkts.
@@ -90,16 +90,16 @@ class Process:
         if (charging_ev.data["control_parameter"]["timestamp_switch_on_off"] != "0" and
                 not chargepoint.data["get"]["charge_state"] and
                 data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] == 0):
-            log.MainLogger().error("Reservierte Leistung kann am Algorithmus-Ende nicht 0 sein.")
+            MainLogger().error("Reservierte Leistung kann am Algorithmus-Ende nicht 0 sein.")
         if (chargepoint.data["set"]["charging_ev_data"].ev_template.data["prevent_switch_stop"] and
                 chargepoint.data["get"]["charge_state"] and
                 chargepoint.data["set"]["current"] == 0):
-            log.MainLogger().error(
+            MainLogger().error(
                 "LP"+str(chargepoint.cp_num)+": Ladung wurde trotz verhinderter Unterbrechung gestoppt.")
 
         chargepoint.data["set"]["current"] = current
         Pub().pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/set/current", current)
-        log.MainLogger().debug("LP"+str(chargepoint.cp_num)+": set current "+str(current)+" A")
+        MainLogger().debug("LP"+str(chargepoint.cp_num)+": set current "+str(current)+" A")
 
     def _start_charging(self, chargepoint: chargepoint.Chargepoint) -> threading.Thread:
         if "charging_ev_data" in chargepoint.data["set"]:

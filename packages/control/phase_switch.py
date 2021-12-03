@@ -3,7 +3,7 @@
 import threading
 import time
 
-from helpermodules import log
+from helpermodules.log import MainLogger
 from helpermodules import pub
 from modules.cp import ip_evse
 
@@ -42,9 +42,9 @@ def thread_phase_switch(cp_num, selected, config, phases_to_use, duration, charg
             phase_switch_threads["thread_cp"+str(cp_num)] = threading.Thread(
                 target=_perform_phase_switch, args=(selected, config, phases_to_use, duration, charge_state))
             phase_switch_threads["thread_cp"+str(cp_num)].start()
-            log.MainLogger().debug("Thread zur Phasenumschaltung an LP"+str(cp_num)+" gestartet.")
+            MainLogger().debug("Thread zur Phasenumschaltung an LP"+str(cp_num)+" gestartet.")
     except Exception:
-        log.MainLogger().exception("Fehler im Phasenumschaltungs-Modul")
+        MainLogger().exception("Fehler im Phasenumschaltungs-Modul")
 
 
 def _perform_phase_switch(selected, config, phases_to_use, duration, charge_state):
@@ -70,4 +70,4 @@ def _perform_phase_switch(selected, config, phases_to_use, duration, charge_stat
         if charge_state:
             time.sleep(1)
     except Exception:
-        log.MainLogger().exception("Fehler im Phasenumschaltungs-Modul")
+        MainLogger().exception("Fehler im Phasenumschaltungs-Modul")

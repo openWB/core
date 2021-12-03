@@ -7,7 +7,7 @@ import os
 import paho.mqtt.client as mqtt
 import paho.mqtt.publish as publish
 
-from helpermodules import log
+from helpermodules.log import MainLogger
 
 
 class PubSingleton:
@@ -23,7 +23,7 @@ class PubSingleton:
             else:
                 self.client.publish(topic, payload=json.dumps(payload), qos=0, retain=True)
         except Exception:
-            log.MainLogger().exception("Fehler im pub-Modul")
+            MainLogger().exception("Fehler im pub-Modul")
 
 
 class Pub:
@@ -57,4 +57,4 @@ def pub_single(topic, payload, hostname="localhost", no_json=False):
         else:
             publish.single(topic, json.dumps(payload), hostname=hostname, retain=True)
     except Exception:
-        log.MainLogger().exception("Fehler im pub-Modul")
+        MainLogger().exception("Fehler im pub-Modul")

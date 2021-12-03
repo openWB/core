@@ -4,7 +4,7 @@
 import random
 
 from control import data
-from helpermodules import log
+from helpermodules.log import MainLogger
 from helpermodules.pub import Pub
 from helpermodules import timecheck
 
@@ -36,7 +36,7 @@ class General:
             else:
                 return self.data["chargemode_config"][chargemode]["phases_to_use"]
         except Exception:
-            log.MainLogger().exception("Fehler im General-Modul")
+            MainLogger().exception("Fehler im General-Modul")
             return 1
 
     def grid_protection(self):
@@ -62,8 +62,8 @@ class General:
                                   self.data["grid_protection_random_stop"])
                         Pub().pub("openWB/set/general/grid_protection_active",
                                   self.data["grid_protection_active"])
-                        log.MainLogger().info("Netzschutz aktiv! Frequenz: " +
-                                              str(data.data.counter_data[evu_counter].data["get"]["frequency"])+"Hz")
+                        MainLogger().info("Netzschutz aktiv! Frequenz: " +
+                                          str(data.data.counter_data[evu_counter].data["get"]["frequency"])+"Hz")
                     if 5180 < frequency < 5300:
                         self.data["grid_protection_random_stop"] = 0
                         self.data["grid_protection_timestamp"] = "0"
@@ -74,18 +74,18 @@ class General:
                                   self.data["grid_protection_random_stop"])
                         Pub().pub("openWB/set/general/grid_protection_active",
                                   self.data["grid_protection_active"])
-                        log.MainLogger().info("Netzschutz aktiv! Frequenz: " +
-                                              str(data.data.counter_data[evu_counter].data["get"]["frequency"])+"Hz")
+                        MainLogger().info("Netzschutz aktiv! Frequenz: " +
+                                          str(data.data.counter_data[evu_counter].data["get"]["frequency"])+"Hz")
                 else:
                     if 4962 < frequency < 5100:
                         self.data["grid_protection_active"] = False
                         Pub().pub("openWB/set/general/grid_protection_active",
                                   self.data["grid_protection_active"])
-                        log.MainLogger().info("Netzfrequenz wieder im normalen Bereich. Frequenz: " +
-                                              str(data.data.counter_data[evu_counter].data["get"]["frequency"])+"Hz")
+                        MainLogger().info("Netzfrequenz wieder im normalen Bereich. Frequenz: " +
+                                          str(data.data.counter_data[evu_counter].data["get"]["frequency"])+"Hz")
                         Pub().pub(
                             "openWB/set/general/grid_protection_timestamp", "0")
                         Pub().pub(
                             "openWB/set/general/grid_protection_random_stop", 0)
         except Exception:
-            log.MainLogger().exception("Fehler im General-Modul")
+            MainLogger().exception("Fehler im General-Modul")

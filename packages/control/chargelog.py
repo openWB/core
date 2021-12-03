@@ -94,7 +94,7 @@ import math
 import pathlib
 
 from control import data
-from helpermodules import log
+from helpermodules.log import MainLogger
 from helpermodules.pub import Pub
 from helpermodules import timecheck
 
@@ -123,8 +123,8 @@ def collect_data(chargepoint):
                 log_data["counter_at_plugtime"] = chargepoint.data["get"]["counter"]
                 Pub().pub("openWB/set/chargepoint/"+str(chargepoint.cp_num) +
                           "/set/log/counter_at_plugtime", log_data["counter_at_plugtime"])
-                log.MainLogger().debug("counter_at_plugtime " +
-                                       str(chargepoint.data["get"]["counter"]))
+                MainLogger().debug("counter_at_plugtime " +
+                                   str(chargepoint.data["get"]["counter"]))
             # Bisher geladende Energie ermitteln
             log_data["charged_since_plugged_counter"] = chargepoint.data["get"]["counter"] - \
                 log_data["counter_at_plugtime"]
@@ -137,8 +137,8 @@ def collect_data(chargepoint):
                 log_data["counter_at_mode_switch"] = chargepoint.data["get"]["counter"]
                 Pub().pub("openWB/set/chargepoint/"+str(chargepoint.cp_num) +
                           "/set/log/counter_at_mode_switch", log_data["counter_at_mode_switch"])
-                log.MainLogger().debug("counter_at_mode_switch " +
-                                       str(chargepoint.data["get"]["counter"]))
+                MainLogger().debug("counter_at_mode_switch " +
+                                   str(chargepoint.data["get"]["counter"]))
             # Bei einem Wechsel das Lademodus wird ein neuer Logeintrag erstellt.
             if chargepoint.data["get"]["charge_state"]:
                 if log_data["timestamp_start_charging"] == "0":
@@ -147,9 +147,9 @@ def collect_data(chargepoint):
                               "/set/log/timestamp_start_charging", log_data["timestamp_start_charging"])
                 log_data["charged_since_mode_switch"] = chargepoint.data["get"]["counter"] - \
                     log_data["counter_at_mode_switch"]
-                log.MainLogger().debug("charged_since_mode_switch " +
-                                       str(log_data["charged_since_mode_switch"])+" counter " +
-                                       str(chargepoint.data["get"]["counter"]))
+                MainLogger().debug("charged_since_mode_switch " +
+                                   str(log_data["charged_since_mode_switch"])+" counter " +
+                                   str(chargepoint.data["get"]["counter"]))
                 log_data["range_charged"] = log_data["charged_since_mode_switch"] / \
                     charging_ev.ev_template.data["average_consump"]*100
                 log_data["time_charged"] = timecheck.get_difference_to_now(
@@ -162,7 +162,7 @@ def collect_data(chargepoint):
                 Pub().pub("openWB/set/chargepoint/"+str(chargepoint.cp_num) +
                           "/set/log/time_charged", log_data["time_charged"])
     except Exception:
-        log.MainLogger().exception("Fehler im Ladelog-Modul")
+        MainLogger().exception("Fehler im Ladelog-Modul")
 
 
 def save_data(chargepoint, charging_ev, immediately=True, reset=False):
@@ -304,7 +304,7 @@ def save_data(chargepoint, charging_ev, immediately=True, reset=False):
         Pub().pub("openWB/set/chargepoint/"+str(chargepoint.cp_num) +
                   "/set/log/time_charged", log_data["time_charged"])
     except Exception:
-        log.MainLogger().exception("Fehler im Ladelog-Modul")
+        MainLogger().exception("Fehler im Ladelog-Modul")
 
 
 def get_log_data(request):
@@ -426,7 +426,7 @@ def get_log_data(request):
 
         Pub().pub("openWB/set/log/data", data)
     except Exception:
-        log.MainLogger().exception("Fehler im Ladelog-Modul")
+        MainLogger().exception("Fehler im Ladelog-Modul")
 
 
 def reset_data(chargepoint, charging_ev, immediately=True):
@@ -460,7 +460,7 @@ def reset_data(chargepoint, charging_ev, immediately=True):
                   "/set/log/charged_since_plugged_counter", log_data["charged_since_plugged_counter"])
 
     except Exception:
-        log.MainLogger().exception("Fehler im Ladelog-Modul")
+        MainLogger().exception("Fehler im Ladelog-Modul")
 
 
 def truncate(number, decimals=0):
@@ -478,4 +478,4 @@ def truncate(number, decimals=0):
         factor = 10.0 ** decimals
         return math.trunc(number * factor) / factor
     except Exception:
-        log.MainLogger().exception("Fehler im Ladelog-Modul")
+        MainLogger().exception("Fehler im Ladelog-Modul")

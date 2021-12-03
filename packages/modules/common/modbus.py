@@ -12,7 +12,7 @@ from pymodbus.client.sync import ModbusTcpClient
 from pymodbus.constants import Endian
 from pymodbus.payload import BinaryPayloadDecoder
 
-from helpermodules import log
+from helpermodules.log import MainLogger
 from modules.common.fault_state import FaultState
 
 
@@ -52,7 +52,7 @@ class ModbusClient:
 
     def close_connection(self) -> None:
         try:
-            log.MainLogger().debug("Close Modbus TCP connection")
+            MainLogger().debug("Close Modbus TCP connection")
             self.delegate.close()
         except Exception as e:
             raise FaultState.error(__name__+" "+str(type(e))+" " +

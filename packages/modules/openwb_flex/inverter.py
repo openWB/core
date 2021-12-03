@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from helpermodules import log
+from helpermodules.log import MainLogger
 from modules.common import modbus
 from modules.common.component_state import InverterState
 from modules.common.fault_state import ComponentInfo
@@ -50,7 +50,7 @@ class PvKitFlex:
         finally:
             self.__tcp_client.close_connection()
 
-        log.MainLogger().debug("PV-Kit Leistung[W]: "+str(power_all))
+        MainLogger().debug("PV-Kit Leistung[W]: "+str(power_all))
         inverter_state = InverterState(
             power=power_all,
             counter=counter,

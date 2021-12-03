@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import time
 
-from helpermodules import log
+from helpermodules.log import MainLogger
 from modules.common import modbus
 from modules.common import simcount
 from modules.common.component_state import BatState
@@ -35,7 +35,7 @@ class AlphaEssBat:
                                             self.component_config["type"])
 
     def update(self) -> None:
-        log.MainLogger().debug("Komponente "+self.component_config["name"]+" auslesen.")
+        MainLogger().debug("Komponente "+self.component_config["name"]+" auslesen.")
         # keine Unterschiede zwischen den Versionen
         sdmid = 85
 
@@ -45,7 +45,7 @@ class AlphaEssBat:
         current = self.__tcp_client.read_holding_registers(0x0101, ModbusDataType.INT_16, unit=sdmid)
 
         power = voltage * current * -1 / 100
-        log.MainLogger().debug(
+        MainLogger().debug(
             "Alpha Ess Leistung[W]: %f, Speicher-Register: Spannung[V]: %f, Strom[A]: %f" % (power, voltage, current)
         )
         time.sleep(0.1)

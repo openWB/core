@@ -4,7 +4,7 @@
 import sys
 from typing import List, Union
 
-from helpermodules import log
+from helpermodules.log import MainLogger
 from modules.common import modbus
 from modules.common.abstract_device import AbstractDevice
 from modules.common.component_state import SingleComponentUpdateContext
@@ -34,7 +34,7 @@ class Device(AbstractDevice):
             self.client = modbus.ModbusClient("192.168.193.125", 8899)
             self.device_config = device_config
         except Exception:
-            log.MainLogger().exception("Fehler im Modul "+device_config["name"])
+            MainLogger().exception("Fehler im Modul "+device_config["name"])
 
     def add_component(self, component_config: dict) -> None:
         component_type = component_config["type"]
@@ -43,14 +43,14 @@ class Device(AbstractDevice):
                 self.device_config["id"], component_config, self.client))
 
     def get_values(self) -> None:
-        log.MainLogger().debug("Start device reading" + str(self._components))
+        MainLogger().debug("Start device reading" + str(self._components))
         if self._components:
             for component in self._components:
                 # Auch wenn bei einer Komponente ein Fehler auftritt, sollen alle anderen noch ausgelesen werden.
                 with SingleComponentUpdateContext(component.component_info):
                     component.update()
         else:
-            log.MainLogger().warning(
+            MainLogger().warning(
                 self.device_config["name"] +
                 ": Es konnten keine Werte gelesen werden, da noch keine Komponenten konfiguriert wurden."
             )
@@ -83,7 +83,7 @@ def read_legacy(argv: List[str]) -> None:
     component_config["configuration"]["version"] = version
     dev.add_component(component_config)
 
-    log.MainLogger().debug('alpha_ess Version: ' + str(version))
+    MainLogger().debug('alpha_ess Version: ' + str(version))
 
     dev.get_values()
 
@@ -92,4 +92,4 @@ if __name__ == "__main__":
     try:
         read_legacy(sys.argv)
     except Exception:
-        log.MainLogger().exception("Fehler im Alpha Ess Skript")
+        MainLogger().exception("Fehler im Alpha Ess Skript")

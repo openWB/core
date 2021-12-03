@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from helpermodules import log
+from helpermodules.log import MainLogger
 from modules.common import modbus
 from modules.common.fault_state import FaultState
 from modules.openwb_flex.inverter import PvKitFlex
@@ -34,5 +34,5 @@ class PvKit(PvKitFlex):
 
             super().__init__(device_id, self.data["config"], modbus.ModbusClient("192.168.193.13", 8899))
         except Exception:
-            log.MainLogger().exception("Fehler im Modul " +
-                                       self.data["config"]["components"]["component0"]["name"])
+            MainLogger().exception("Fehler im Modul " +
+                                   self.data["config"]["components"]["component0"]["name"])
