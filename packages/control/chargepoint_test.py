@@ -3,7 +3,7 @@ from typing import List
 
 import pytest as pytest
 
-from .chargepoint import cpTemplate
+from .chargepoint import CpTemplate
 from modules.testutils.mock import ignore_logging
 
 
@@ -152,7 +152,7 @@ def test_autolock_state(params: Params, monkeypatch):
     ignore_logging(monkeypatch)
 
     # execution
-    cpt = cpTemplate()
+    cpt = CpTemplate()
     cpt.data = params.data
     actual = cpt.autolock(
         params.autolock_state, params.charge_state, 0)

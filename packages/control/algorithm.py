@@ -9,7 +9,7 @@ from helpermodules import log
 from helpermodules.pub import Pub
 
 
-class control:
+class Algorithm:
     """Verteilung des Stroms auf die Ladepunkte
     """
 

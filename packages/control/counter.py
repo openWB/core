@@ -5,7 +5,7 @@ from helpermodules import log
 from helpermodules.pub import Pub
 
 
-class counterAll:
+class CounterAll:
     """
     """
 
@@ -314,7 +314,7 @@ def get_counter_default_config():
             "max_total_power": 11000}
 
 
-class counter:
+class Counter:
     """
     """
 

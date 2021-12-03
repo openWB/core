@@ -45,10 +45,10 @@ class SubData:
         self.event_cp_config = event_cp_config
         self.heartbeat = False
 
-        self.bat_data["all"] = bat.batAll()
-        self.cp_data["all"] = chargepoint.allChargepoints()
-        self.counter_data["all"] = counter.counterAll()
-        self.pv_data["all"] = pv.pvAll()
+        self.bat_data["all"] = bat.BatAll()
+        self.cp_data["all"] = chargepoint.AllChargepoints()
+        self.counter_data["all"] = counter.CounterAll()
+        self.pv_data["all"] = pv.PvAll()
         self.graph_data["graph"] = graph.Graph()
 
     def sub_topics(self):
@@ -198,7 +198,7 @@ class SubData:
                                                str(index)+" gefunden werden.")
             elif re.search("^.+/vehicle/[0-9]+/.+$", msg.topic) is not None:
                 if "ev"+index not in var:
-                    var["ev"+index] = ev.ev(int(index))
+                    var["ev"+index] = ev.Ev(int(index))
                 if re.search("^.+/vehicle/[0-9]+/get.+$", msg.topic) is not None:
                     if "get" not in var["ev"+index].data:
                         var["ev"+index].data["get"] = {}
@@ -250,7 +250,7 @@ class SubData:
                     var.pop("ct"+index)
             else:
                 if "ct"+index not in var:
-                    var["ct"+index] = ev.chargeTemplate(int(index))
+                    var["ct"+index] = ev.ChargeTemplate(int(index))
             if re.search("^.+/vehicle/template/charge_template/[0-9]+/chargemode/scheduled_charging/plans/[0-9]+$",
                          msg.topic) is not None:
                 index_second = self.get_second_index(msg.topic)
@@ -306,7 +306,7 @@ class SubData:
                         var.pop("et"+index)
                 else:
                     if "et"+index not in var:
-                        var["et"+index] = ev.evTemplate(int(index))
+                        var["et"+index] = ev.EvTemplate(int(index))
                     var["et" +
                         index].data = json.loads(str(msg.payload.decode("utf-8")))
                     self.event_ev_template.set()
@@ -334,7 +334,7 @@ class SubData:
             elif re.search("^.+/chargepoint/[0-9]+/.+$", msg.topic) is not None:
                 index = self.get_index(msg.topic)
                 if "cp"+index not in var:
-                    var["cp"+index] = chargepoint.chargepoint(int(index))
+                    var["cp"+index] = chargepoint.Chargepoint(int(index))
                 if re.search("^.+/chargepoint/[0-9]+/set/.+$", msg.topic) is not None:
                     if "set" not in var["cp"+index].data:
                         var["cp"+index].data["set"] = {}
@@ -388,7 +388,7 @@ class SubData:
             index = self.get_index(msg.topic)
             if json.loads(str(msg.payload.decode("utf-8"))):
                 if "cpt"+index not in var:
-                    var["cpt"+index] = chargepoint.cpTemplate()
+                    var["cpt"+index] = chargepoint.CpTemplate()
             else:
                 if "cpt"+index in var:
                     var.pop("cpt"+index)
@@ -429,7 +429,7 @@ class SubData:
             elif re.search("^.+/pv/[0-9]+/.+$", msg.topic) is not None:
                 index = self.get_index(msg.topic)
                 if "pv"+index not in var:
-                    var["pv"+index] = pv.pv(int(index))
+                    var["pv"+index] = pv.Pv(int(index))
                 if re.search("^.+/pv/[0-9]+/config$", msg.topic) is not None:
                     self.set_json_payload(var["pv"+index].data, msg)
                 elif re.search("^.+/pv/[0-9]+/get/.+$", msg.topic) is not None:
@@ -472,7 +472,7 @@ class SubData:
             elif re.search("^.+/bat/[0-9]+/.+$", msg.topic) is not None:
                 index = self.get_index(msg.topic)
                 if "bat"+index not in var:
-                    var["bat"+index] = bat.bat(int(index))
+                    var["bat"+index] = bat.Bat(int(index))
                 if re.search("^.+/bat/[0-9]+/config$", msg.topic) is not None:
                     self.set_json_payload(var["bat"+index].data, msg)
                 elif re.search("^.+/bat/[0-9]+/get/.+$", msg.topic) is not None:
@@ -514,7 +514,7 @@ class SubData:
         try:
             if re.search("^.+/general/.+$", msg.topic) is not None:
                 if "general" not in var:
-                    var["general"] = general.general()
+                    var["general"] = general.General()
                 if re.search("^.+/general/notifications/.+$", msg.topic) is not None:
                     if "notifications" not in var["general"].data:
                         var["general"].data["notifications"] = {}
@@ -576,7 +576,7 @@ class SubData:
         try:
             if re.search("^.+/optional/.+$", msg.topic) is not None:
                 if "optional" not in var:
-                    var["optional"] = optional.optional()
+                    var["optional"] = optional.Optional()
                 if re.search("^.+/optional/led/.+$", msg.topic) is not None:
                     if "led" not in var["optional"].data:
                         var["optional"].data["led"] = {}
@@ -631,7 +631,7 @@ class SubData:
             elif re.search("^.+/counter/[0-9]+/.+$", msg.topic) is not None:
                 index = self.get_index(msg.topic)
                 if "counter"+index not in var:
-                    var["counter"+index] = counter.counter(int(index))
+                    var["counter"+index] = counter.Counter(int(index))
                 if re.search("^.+/counter/[0-9]+/get.+$", msg.topic) is not None:
                     if "get" not in var["counter"+index].data:
                         var["counter"+index].data["get"] = {}
@@ -696,7 +696,7 @@ class SubData:
                     if "system" in var:
                         var.pop("system")
                 else:
-                    var["system"] = system.system()
+                    var["system"] = system.System()
             if re.search("^.+/device/[0-9]+/config$", msg.topic) is not None:
                 index = self.get_index(msg.topic)
                 if str(msg.payload.decode("utf-8")) == "":

@@ -11,7 +11,7 @@ from helpermodules.pub import Pub
 from helpermodules import subdata
 
 
-class setData:
+class SetData:
 
     def __init__(self, event_ev_template, event_charge_template, event_cp_config):
         self.event_ev_template = event_ev_template

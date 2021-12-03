@@ -9,14 +9,14 @@ from helpermodules.pub import Pub
 from helpermodules import timecheck
 
 
-class general:
+class General:
     """
     """
 
     def __init__(self):
         self.data = {"grid_protection_active": False}
 
-    def get_phases_chargemode(self, chargemode):
+    def get_phases_chargemode(self, chargemode: str) -> int:
         """ gibt die Anazhl Phasen zurück, mit denen im jeweiligen Lademodus geladen wird.
         Wenn der Lademodus Stop oder Standby ist, wird 0 zurückgegeben, da in diesem Fall
         die bisher genutzte Phasenzahl weiter genutzt wird, bis der Algorithmus eine Umschaltung vorgibt.

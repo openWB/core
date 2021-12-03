@@ -36,7 +36,7 @@ from helpermodules import log
 from helpermodules.pub import Pub
 
 
-class batAll:
+class BatAll:
     def __init__(self):
         self.data = {
             "get": {"power":  0},
@@ -288,7 +288,7 @@ class batAll:
             log.MainLogger().exception("Fehler im Bat-Modul")
 
 
-class bat:
+class Bat:
 
     def __init__(self, index):
         self.data = {}

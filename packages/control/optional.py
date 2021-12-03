@@ -6,7 +6,7 @@ from math import ceil  # Aufrunden
 from helpermodules import log
 
 
-class optional:
+class Optional:
     def __init__(self):
         try:
             self.data = {"et": {"get": {}}}

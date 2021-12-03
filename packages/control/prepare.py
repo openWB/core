@@ -10,7 +10,7 @@ from helpermodules.pub import Pub
 from helpermodules import subdata
 
 
-class prepare:
+class Prepare:
     def __init__(self):
         pass
 

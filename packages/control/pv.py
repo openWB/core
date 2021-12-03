@@ -11,7 +11,7 @@ from helpermodules.pub import Pub
 from helpermodules import timecheck
 
 
-class pvAll:
+class PvAll:
     """
     """
 
@@ -427,7 +427,7 @@ class pvAll:
             log.MainLogger().exception("Fehler im allgemeinen PV-Modul")
 
 
-class pv:
+class Pv:
 
     def __init__(self, index):
         self.data = {}

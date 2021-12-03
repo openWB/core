@@ -11,7 +11,7 @@ from helpermodules import log
 from modules import ripple_control_receiver
 
 
-class loadvars:
+class Loadvars:
     """ fragt die Werte der konfigurierten Module ab
     """
 

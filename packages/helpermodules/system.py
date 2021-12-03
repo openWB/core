@@ -12,7 +12,7 @@ from helpermodules import pub
 from control import data
 
 
-class system:
+class System:
     def __init__(self):
         """
         """

@@ -47,7 +47,7 @@ def get_chargepoint_default() -> dict:
     }
 
 
-class allChargepoints:
+class AllChargepoints:
     """
     """
 
@@ -249,13 +249,13 @@ class allChargepoints:
             log.MainLogger().exception("Fehler in der allgemeinen Ladepunkt-Klasse")
 
 
-class chargepoint:
+class Chargepoint:
     """ geht alle Ladepunkte durch, prüft, ob geladen werden darf und ruft die Funktion des angesteckten Autos auf.
     """
 
     def __init__(self, index):
         try:
-            self.template = None  # Instanz des zugeordneten CP-Templates
+            self.template = None  # type: CpTemplate
             self.chargepoint_module = None
             self.cp_num = index
             # set current aus dem vorherigen Zyklus, um zu wissen, ob am Ende des Zyklus die Ladung freigegeben wird
@@ -754,7 +754,7 @@ def get_autolock_plan_default():
     }
 
 
-class cpTemplate:
+class CpTemplate:
     """ Vorlage für einen Ladepunkt.
     """
 

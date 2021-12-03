@@ -54,14 +54,14 @@ def get_ev_to_rfid(rfid):
         return None
 
 
-class ev:
+class Ev:
     """Logik des EV
     """
 
     def __init__(self, index):
         try:
-            self.ev_template = None
-            self.charge_template = None
+            self.ev_template = None  # type: EvTemplate
+            self.charge_template = None  # type: ChargeTemplate
             self.ev_num = index
             self.data = {"set": {},
                          "get": {"range_charged": 0},
@@ -449,7 +449,7 @@ def get_ev_template_default() -> dict:
     }
 
 
-class evTemplate:
+class EvTemplate:
     """ Klasse mit den EV-Daten
     """
 
@@ -528,7 +528,7 @@ def get_charge_template_time_charging_plan_default():
     return charge_template_time_charging_plan_default
 
 
-class chargeTemplate:
+class ChargeTemplate:
     """ Klasse der Lademodus-Vorlage
     """
 

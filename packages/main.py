@@ -169,18 +169,18 @@ try:
 
     data.data_init()
     update_config.UpdateConfig().update()
-    proc = process.process()
-    control = algorithm.control()
+    proc = process.Process()
+    control = algorithm.Algorithm()
     handler = HandlerAlgorithm()
-    vars = loadvars.loadvars()
-    prep = prepare.prepare()
+    vars = loadvars.Loadvars()
+    prep = prepare.Prepare()
     event_ev_template = threading.Event()
     event_ev_template.set()
     event_charge_template = threading.Event()
     event_charge_template.set()
     event_cp_config = threading.Event()
     event_cp_config.set()
-    set = setdata.setData(event_ev_template, event_charge_template,
+    set = setdata.SetData(event_ev_template, event_charge_template,
                           event_cp_config)
     sub = subdata.SubData(event_ev_template, event_charge_template,
                           event_cp_config)

@@ -10,7 +10,7 @@ from helpermodules import log
 from helpermodules.pub import Pub
 
 
-class process:
+class Process:
     def __init__(self) -> None:
         pass
 
@@ -101,7 +101,7 @@ class process:
         Pub().pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/set/current", current)
         log.MainLogger().debug("LP"+str(chargepoint.cp_num)+": set current "+str(current)+" A")
 
-    def _start_charging(self, chargepoint: chargepoint.chargepoint) -> threading.Thread:
+    def _start_charging(self, chargepoint: chargepoint.Chargepoint) -> threading.Thread:
         if "charging_ev_data" in chargepoint.data["set"]:
             charging_ev = chargepoint.data["set"]["charging_ev_data"]
             # Wenn ein EV zugeordnet ist und die Phasenumschaltung aktiv ist, darf kein Strom gesetzt werden.
