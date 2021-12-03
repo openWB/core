@@ -1,7 +1,7 @@
 from typing import Dict
 
 from control import data
-from helpermodules import log
+from helpermodules.log import MainLogger
 from helpermodules import pub
 from modules.common.abstract_chargepoint import AbstractChargepoint
 
@@ -31,7 +31,7 @@ class ChargepointModule(AbstractChargepoint):
                 pub.pub_single("openWB/set/isss/Lp2Current", current,
                                hostname=self.connection_module["configuration"]["ip_address"])
         except Exception:
-            log.MainLogger().exception("Fehler im Modul der externen openWB")
+            MainLogger().exception("Fehler im Modul der externen openWB")
 
     def get_values(self) -> None:
         try:
@@ -46,4 +46,4 @@ class ChargepointModule(AbstractChargepoint):
             else:
                 pub.pub_single("openWB/set/isss/parentCPlp1", str(cp_num), hostname=ip_address)
         except Exception:
-            log.MainLogger().exception("Fehler im Modul der externen openWB")
+            MainLogger().exception("Fehler im Modul der externen openWB")

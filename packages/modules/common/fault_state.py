@@ -3,7 +3,7 @@ import traceback
 from typing import Optional
 
 from helpermodules import compatibility
-from helpermodules import log
+from helpermodules.log import MainLogger
 from helpermodules import pub
 
 
@@ -30,10 +30,10 @@ class FaultState(Exception):
     def store_error(self, component_info: ComponentInfo) -> None:
         try:
             if self.fault_state is not FaultStateLevel.NO_ERROR:
-                log.MainLogger().error(component_info.name + ": FaultState " +
-                                       str(self.fault_state) + ", FaultStr " +
-                                       self.fault_str + ", Traceback: \n" +
-                                       traceback.format_exc())
+                MainLogger().error(component_info.name + ": FaultState " +
+                                   str(self.fault_state) + ", FaultStr " +
+                                   self.fault_str + ", Traceback: \n" +
+                                   traceback.format_exc())
             ramdisk = compatibility.is_ramdisk_in_use()
             if ramdisk:
                 type = self.type_name_mapping.get(component_info.type, component_info.type)
@@ -50,7 +50,7 @@ class FaultState(Exception):
                     "openWB/set/" + component_info.type + "/" + str(component_info.id) +
                     "/get/fault_state", self.fault_state.value)
         except Exception:
-            log.MainLogger().exception("Fehler im Modul fault_state")
+            MainLogger().exception("Fehler im Modul fault_state")
 
     @staticmethod
     def error(message: str) -> "FaultState":

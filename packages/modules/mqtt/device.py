@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from helpermodules import log
+from helpermodules.log import MainLogger
 from modules.common.abstract_device import AbstractDevice
 from modules.mqtt import bat
 from modules.mqtt import counter
@@ -27,7 +27,7 @@ class Device(AbstractDevice):
         try:
             self.device_config = device_config
         except Exception:
-            log.MainLogger().exception("Fehler im Modul " + device_config["name"])
+            MainLogger().exception("Fehler im Modul " + device_config["name"])
 
     def add_component(self, component_config: dict) -> None:
         component_type = component_config["type"]
@@ -35,4 +35,4 @@ class Device(AbstractDevice):
             self._components["component"+str(component_config["id"])] = (self.COMPONENT_TYPE_TO_CLASS[component_type]())
 
     def get_values(self) -> None:
-        log.MainLogger().debug("MQTT-Module müssen nicht ausgelesen werden.")
+        MainLogger().debug("MQTT-Module müssen nicht ausgelesen werden.")

@@ -3,7 +3,7 @@ from pymodbus.client.sync import ModbusTcpClient
 import re
 import time
 
-from helpermodules import log
+from helpermodules.log import MainLogger
 from helpermodules.pub import Pub
 
 

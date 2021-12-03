@@ -1,4 +1,4 @@
-from helpermodules import log
+from helpermodules.log import MainLogger
 from helpermodules.pub import Pub
 
 
@@ -20,7 +20,7 @@ def _pub_configurable_soc_modules() -> None:
         ]
         Pub().pub("openWB/set/system/configurable/soc_modules", soc_modules)
     except Exception:
-        log.MainLogger().exception("Fehler im configuration-Modul")
+        MainLogger().exception("Fehler im configuration-Modul")
 
 
 def _pub_configurable_devices_components() -> None:
@@ -101,7 +101,7 @@ def _pub_configurable_devices_components() -> None:
         ]
         Pub().pub("openWB/set/system/configurable/devices_components", devices_components)
     except Exception:
-        log.MainLogger().exception("Fehler im configuration-Modul")
+        MainLogger().exception("Fehler im configuration-Modul")
 
 
 def _pub_configurable_chargepoints() -> None:
@@ -118,4 +118,4 @@ def _pub_configurable_chargepoints() -> None:
         ]
         Pub().pub("openWB/set/system/configurable/chargepoints", chargepoints)
     except Exception:
-        log.MainLogger().exception("Fehler im configuration-Modul")
+        MainLogger().exception("Fehler im configuration-Modul")

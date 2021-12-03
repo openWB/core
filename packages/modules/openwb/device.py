@@ -1,7 +1,7 @@
 from typing import List, Union
 import sys
 
-from helpermodules import log
+from helpermodules.log import MainLogger
 from modules.common.abstract_device import AbstractDevice
 from modules.common.component_state import SingleComponentUpdateContext
 from modules.openwb import bat
@@ -35,14 +35,14 @@ class Device(AbstractDevice):
                 self.device_config["id"], component_config))
 
     def get_values(self) -> None:
-        log.MainLogger().debug("Start device reading" + str(self._components))
+        MainLogger().debug("Start device reading" + str(self._components))
         if self._components:
             for component in self._components:
                 # Auch wenn bei einer Komponente ein Fehler auftritt, sollen alle anderen noch ausgelesen werden.
                 with SingleComponentUpdateContext(component.component_info):
                     component.update()
         else:
-            log.MainLogger().warning(
+            MainLogger().warning(
                 self.device_config["name"] +
                 ": Es konnten keine Werte gelesen werden, da noch keine Komponenten konfiguriert wurden."
             )
@@ -76,7 +76,7 @@ def read_legacy(argv: List[str]):
     component_config["configuration"]["version"] = version
     dev.add_component(component_config)
 
-    log.MainLogger().debug('openWB Version: ' + str(version))
+    MainLogger().debug('openWB Version: ' + str(version))
 
     dev.get_values()
 
@@ -85,4 +85,4 @@ if __name__ == "__main__":
     try:
         read_legacy(sys.argv)
     except Exception:
-        log.MainLogger().exception("Fehler im Modul openwb")
+        MainLogger().exception("Fehler im Modul openwb")

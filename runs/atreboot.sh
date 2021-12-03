@@ -379,8 +379,7 @@ then
 fi
 
 # get local ip
-mosquitto_pub -t openWB/set/system/ip_address -p 1886 -r -m "$(ip route get 1 | awk '{print $7;exit}')"
-
+mosquitto_pub -t openWB/system/ip_address -p 1886 -r -m "\"$(ip route get 1 | awk '{print $7;exit}')\""
 # update current published versions
 echo "load versions..."
 curl -s https://raw.githubusercontent.com/snaptec/openWB/master/web/version > /var/www/html/openWB/ramdisk/vnightly
@@ -447,6 +446,7 @@ sudo /usr/sbin/apachectl -k graceful
 
 # all done, remove boot and update status
 echo $(date +"%Y-%m-%d %H:%M:%S:") "boot done :-)"
-mosquitto_pub -p 1886 -t openWB/set/system/update_in_progress -r -m 'false'
+mosquitto_pub -p 1886 -t openWB/system/update_in_progress -r -m 'false'
+mosquitto_pub -p 1886 -t openWB/system/bootdone -r -m 'true'
 mosquitto_pub -t openWB/system/reloadDisplay -m "1"
 touch /var/www/html/openWB/ramdisk/bootdone

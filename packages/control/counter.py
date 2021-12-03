@@ -1,11 +1,11 @@
 """Zähler-Logik
 """
 from control import data
-from helpermodules import log
+from helpermodules.log import MainLogger
 from helpermodules.pub import Pub
 
 
-class counterAll:
+class CounterAll:
     """
     """
 
@@ -26,14 +26,14 @@ class counterAll:
             else:
                 raise TypeError
         except Exception:
-            log.MainLogger().error("Ohne Konfiguration eines EVU-Zählers ist keine Regelung möglich.")
+            MainLogger().error("Ohne Konfiguration eines EVU-Zählers ist keine Regelung möglich.")
             raise
 
     def put_stats(self):
         try:
             Pub().pub("openWB/set/counter/set/loadmanagement_active", self.data["set"]["loadmanagement_active"])
         except Exception:
-            log.MainLogger().exception("Fehler in der allgemeinen Zaehler-Klasse")
+            MainLogger().exception("Fehler in der allgemeinen Zaehler-Klasse")
 
     def calc_home_consumption(self):
         """ berechnet den Hausverbrauch.
@@ -58,7 +58,7 @@ class counterAll:
             Pub().pub("openWB/set/counter/set/home_consumption", self.data["set"]["home_consumption"])
 
         except Exception:
-            log.MainLogger().exception("Fehler in der allgemeinen Zaehler-Klasse")
+            MainLogger().exception("Fehler in der allgemeinen Zaehler-Klasse")
 
     def calc_daily_yield_home_consumption(self):
         """ berechnet die heute im Haus verbrauchte Energie.
@@ -84,7 +84,7 @@ class counterAll:
             Pub().pub("openWB/set/counter/set/daily_yield_home_consumption", daily_yield_home_consumption)
             self.data["set"]["daily_yield_home_consumption"] = daily_yield_home_consumption
         except Exception:
-            log.MainLogger().exception("Fehler in der allgemeinen Zaehler-Klasse")
+            MainLogger().exception("Fehler in der allgemeinen Zaehler-Klasse")
 
     # Hierarchie analysieren
 
@@ -110,7 +110,7 @@ class counterAll:
             self._get_all_cp_connected_to_counter(counter_object)
             return self.connected_chargepoints
         except Exception:
-            log.MainLogger().exception("Fehler in der allgemeinen Zaehler-Klasse")
+            MainLogger().exception("Fehler in der allgemeinen Zaehler-Klasse")
             return None
 
     def _get_all_cp_connected_to_counter(self, child):
@@ -130,7 +130,7 @@ class counterAll:
                 elif len(child["children"]) != 0:
                     self._get_all_cp_connected_to_counter(child)
             except Exception:
-                log.MainLogger().exception("Fehler in der allgemeinen Zaehler-Klasse")
+                MainLogger().exception("Fehler in der allgemeinen Zaehler-Klasse")
 
     def get_counters_to_check(self, cp_num: int):
         """ ermittelt alle Zähler im Zweig des Ladepunkts.
@@ -145,7 +145,7 @@ class counterAll:
             self._look_for_object(self.data["get"]["hierarchy"][0], "cp", cp_num)
             return self.connected_counters
         except Exception:
-            log.MainLogger().exception("Fehler in der allgemeinen Zaehler-Klasse")
+            MainLogger().exception("Fehler in der allgemeinen Zaehler-Klasse")
             return None
 
     def _look_for_object(self, child, object, num):
@@ -187,11 +187,11 @@ class counterAll:
                         elif object == "counter":
                             return found
                 except Exception:
-                    log.MainLogger().exception("Fehler in der allgemeinen Zaehler-Klasse für "+child)
+                    MainLogger().exception("Fehler in der allgemeinen Zaehler-Klasse für "+child)
             else:
                 return False
         except Exception:
-            log.MainLogger().exception("Fehler in der allgemeinen Zaehler-Klasse")
+            MainLogger().exception("Fehler in der allgemeinen Zaehler-Klasse")
             return False
 
     def hierarchy_add_item_aside(self, id, lower_level):
@@ -222,11 +222,11 @@ class counterAll:
                             added = self._add_item_aside(child, id, lower_level)
                             return added
                 except Exception:
-                    log.MainLogger().exception("Fehler in der allgemeinen Zaehler-Klasse für "+child)
+                    MainLogger().exception("Fehler in der allgemeinen Zaehler-Klasse für "+child)
             else:
                 return False
         except Exception:
-            log.MainLogger().exception("Fehler in der allgemeinen Zaehler-Klasse")
+            MainLogger().exception("Fehler in der allgemeinen Zaehler-Klasse")
             return False
 
     def hierarchy_remove_item(self, id, keep_children=True):
@@ -257,11 +257,11 @@ class counterAll:
                             removed = self._remove_item(child, id, keep_children)
                             return removed
                 except Exception:
-                    log.MainLogger().exception("Fehler in der allgemeinen Zaehler-Klasse für "+child)
+                    MainLogger().exception("Fehler in der allgemeinen Zaehler-Klasse für "+child)
             else:
                 return False
         except Exception:
-            log.MainLogger().exception("Fehler in der allgemeinen Zaehler-Klasse")
+            MainLogger().exception("Fehler in der allgemeinen Zaehler-Klasse")
             return False
 
     def hierarchy_add_item_below(self, id, below):
@@ -284,7 +284,7 @@ class counterAll:
                     added = self._add_item_below(self.data["get"]["hierarchy"][0], id, below)
                     return added
         except Exception:
-            log.MainLogger().exception("Fehler in der allgemeinen Zaehler-Klasse")
+            MainLogger().exception("Fehler in der allgemeinen Zaehler-Klasse")
             return False
 
     def _add_item_below(self, upper_level, id, below):
@@ -301,11 +301,11 @@ class counterAll:
                             added = self._add_item_below(child, id, below)
                             return added
                 except Exception:
-                    log.MainLogger().exception("Fehler in der allgemeinen Zaehler-Klasse für "+child)
+                    MainLogger().exception("Fehler in der allgemeinen Zaehler-Klasse für "+child)
             else:
                 return False
         except Exception:
-            log.MainLogger().exception("Fehler in der allgemeinen Zaehler-Klasse")
+            MainLogger().exception("Fehler in der allgemeinen Zaehler-Klasse")
             return False
 
 
@@ -314,7 +314,7 @@ def get_counter_default_config():
             "max_total_power": 11000}
 
 
-class counter:
+class Counter:
     """
     """
 
@@ -326,7 +326,7 @@ class counter:
                 "daily_yield_import": 0}}
             self.counter_num = index
         except Exception:
-            log.MainLogger().exception("Fehler in der Zaehler-Klasse von "+str(self.counter_num))
+            MainLogger().exception("Fehler in der Zaehler-Klasse von "+str(self.counter_num))
 
     def setup_counter(self):
         # Zählvariablen vor dem Start der Regelung zurücksetzen
@@ -346,22 +346,22 @@ class counter:
                     - self.data["get"]["power_all"]
                 else:
                     self.data["set"]["consumption_left"] = self.data["config"]["max_total_power"]
-                log.MainLogger().debug(str(self.data["set"]["consumption_left"]) +
-                                       "W EVU-Leistung, die noch bezogen werden kann.")
+                MainLogger().debug(str(self.data["set"]["consumption_left"]) +
+                                   "W EVU-Leistung, die noch bezogen werden kann.")
             # Strom
             self.data["set"]["current_used"] = self.data["get"]["current"]
         except Exception:
-            log.MainLogger().exception("Fehler in der Zaehler-Klasse von "+str(self.counter_num))
+            MainLogger().exception("Fehler in der Zaehler-Klasse von "+str(self.counter_num))
 
     def put_stats(self):
         try:
             Pub().pub("openWB/set/counter/0/set/consumption_left", self.data["set"]["consumption_left"])
-            log.MainLogger().debug(str(self.data["set"]["consumption_left"])+"W verbleibende EVU-Bezugs-Leistung")
+            MainLogger().debug(str(self.data["set"]["consumption_left"])+"W verbleibende EVU-Bezugs-Leistung")
         except Exception:
-            log.MainLogger().exception("Fehler in der Zaehler-Klasse von "+str(self.counter_num))
+            MainLogger().exception("Fehler in der Zaehler-Klasse von "+str(self.counter_num))
 
     def print_stats(self):
         try:
-            log.MainLogger().debug(str(self.data["set"]["consumption_left"])+"W verbleibende EVU-Bezugs-Leistung")
+            MainLogger().debug(str(self.data["set"]["consumption_left"])+"W verbleibende EVU-Bezugs-Leistung")
         except Exception:
-            log.MainLogger().exception("Fehler in der Zaehler-Klasse von "+str(self.counter_num))
+            MainLogger().exception("Fehler in der Zaehler-Klasse von "+str(self.counter_num))

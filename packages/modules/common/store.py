@@ -3,7 +3,7 @@ from collections.abc import Iterable
 from typing import Callable, Generic, TypeVar, Union
 
 from helpermodules import compatibility
-from helpermodules import log
+from helpermodules.log import MainLogger
 from helpermodules.pub import Pub
 from modules.common.component_state import BatState, CounterState, InverterState
 from modules.common.fault_state import FaultState
@@ -67,10 +67,10 @@ class BatteryValueStoreRamdisk(ValueStore[BatState]):
             write_to_file("/speichersoc", bat_state.soc, 0)
             write_to_file("/speicherikwh", bat_state.imported, 2)
             write_to_file("/speicherekwh", bat_state.exported, 2)
-            log.MainLogger().info('BAT Watt: ' + str(power))
-            log.MainLogger().info('BAT Einspeisung: ' +
-                                  str(bat_state.exported))
-            log.MainLogger().info('BAT Bezug: ' + str(bat_state.imported))
+            MainLogger().info('BAT Watt: ' + str(power))
+            MainLogger().info('BAT Einspeisung: ' +
+                              str(bat_state.exported))
+            MainLogger().info('BAT Bezug: ' + str(bat_state.imported))
         except Exception as e:
             process_error(e)
 
@@ -107,9 +107,9 @@ class CounterValueStoreRamdisk(ValueStore[CounterState]):
             exported = write_to_file("/einspeisungkwh", counter_state.exported)
             power_all = write_to_file("/wattbezug", counter_state.power_all, 0)
             write_to_file("/evuhz", counter_state.frequency, 2)
-            log.MainLogger().info('EVU Watt: ' + str(power_all))
-            log.MainLogger().info('EVU Bezug: ' + str(imported))
-            log.MainLogger().info('EVU Einspeisung: ' + str(exported))
+            MainLogger().info('EVU Watt: ' + str(power_all))
+            MainLogger().info('EVU Bezug: ' + str(imported))
+            MainLogger().info('EVU Einspeisung: ' + str(exported))
         except Exception as e:
             process_error(e)
 
@@ -164,7 +164,7 @@ class InverterValueStoreRamdisk(ValueStore[InverterState]):
             write_to_file("/pv"+filename_extension+"kwh", inverter_state.counter, 3)
             write_to_file("/pv"+filename_extension+"kwhk", inverter_state.counter/1000, 3)
             write_array_to_files("/pv"+filename_extension+"a", inverter_state.currents, 1)
-            log.MainLogger().info('PV Watt: ' + str(power))
+            MainLogger().info('PV Watt: ' + str(power))
         except Exception as e:
             process_error(e)
 

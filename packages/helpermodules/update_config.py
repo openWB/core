@@ -4,7 +4,7 @@ import time
 import paho.mqtt.client as mqtt
 
 
-from helpermodules import log
+from helpermodules.log import MainLogger
 from helpermodules.pub import Pub
 from control import chargepoint
 from control import ev
@@ -289,7 +289,7 @@ class UpdateConfig:
         self.all_received_topics = []
 
     def update(self):
-        log.MainLogger().debug("Broker-Konfiguration aktualisieren")
+        MainLogger().debug("Broker-Konfiguration aktualisieren")
         mqtt_broker_ip = "localhost"
         client = mqtt.Client("openWB-updateconfig-" + self.getserial())
         client.on_connect = self.on_connect
@@ -328,11 +328,11 @@ class UpdateConfig:
                     break
             else:
                 Pub().pub(topic, "")
-                log.MainLogger().debug("Ungültiges Topic: "+str(topic))
+                MainLogger().debug("Ungültiges Topic: "+str(topic))
 
     def __pub_missing_defaults(self):
         # zwingend erforderliche Standardwerte setzen
         for topic in self.default_topic:
             if topic[0] not in self.all_received_topics:
-                log.MainLogger().debug("Setzte Topic '%s' auf Standardwert '%s'" % (topic[0], str(topic[1])))
+                MainLogger().debug("Setzte Topic '%s' auf Standardwert '%s'" % (topic[0], str(topic[1])))
                 Pub().pub(topic[0].replace("openWB/", "openWB/set/"), topic[1])

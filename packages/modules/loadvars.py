@@ -6,12 +6,12 @@ from typing import List
 
 
 from control import data
-from helpermodules import log
+from helpermodules.log import MainLogger
 
 from modules import ripple_control_receiver
 
 
-class loadvars:
+class Loadvars:
     """ fragt die Werte der konfigurierten Module ab
     """
 
@@ -35,12 +35,12 @@ class loadvars:
 
                 for thread in threads:
                     if thread.is_alive():
-                        log.MainLogger().error(
+                        MainLogger().error(
                             thread.name +
                             " konnte nicht innerhalb des Timeouts die Werte abfragen, die abgefragten Werte werden" +
                             " nicht in der Regelung verwendet.")
         except Exception:
-            log.MainLogger().exception("Fehler im loadvars-Modul")
+            MainLogger().exception("Fehler im loadvars-Modul")
 
     # eher zu prepare
     # Hausverbrauch
@@ -63,7 +63,7 @@ class loadvars:
                 for thread in all_threads:
                     thread.join(timeout=3)
         except Exception:
-            log.MainLogger().exception("Fehler im loadvars-Modul")
+            MainLogger().exception("Fehler im loadvars-Modul")
 
     def _get_virtual_counters(self):
         """ vorhandene Zähler durchgehen und je nach Konfiguration Module zur Abfrage der Werte aufrufen
@@ -80,10 +80,10 @@ class loadvars:
                             if thread is not None:
                                 modules_threads.append(thread)
                 except Exception:
-                    log.MainLogger().exception("Fehler im loadvars-Modul")
+                    MainLogger().exception("Fehler im loadvars-Modul")
             return modules_threads
         except Exception:
-            log.MainLogger().exception("Fehler im loadvars-Modul")
+            MainLogger().exception("Fehler im loadvars-Modul")
         finally:
             return modules_threads
 
@@ -99,10 +99,10 @@ class loadvars:
                         if thread is not None:
                             modules_threads.append(thread)
                 except Exception:
-                    log.MainLogger().exception("Fehler im loadvars-Modul")
+                    MainLogger().exception("Fehler im loadvars-Modul")
             return modules_threads
         except Exception:
-            log.MainLogger().exception("Fehler im loadvars-Modul")
+            MainLogger().exception("Fehler im loadvars-Modul")
         finally:
             return modules_threads
 
@@ -115,7 +115,7 @@ class loadvars:
                     "ripple_control_receiver"]["configured"]:
                 threads.append(threading.Thread(target=ripple_control_receiver.read, args=()))
         except Exception:
-            log.MainLogger().exception("Fehler im loadvars-Modul")
+            MainLogger().exception("Fehler im loadvars-Modul")
         finally:
             return threads
 
@@ -132,9 +132,9 @@ class loadvars:
                             if thread is not None:
                                 modules_threads.append(thread)
                 except Exception:
-                    log.MainLogger().exception("Fehler im loadvars-Modul")
+                    MainLogger().exception("Fehler im loadvars-Modul")
             return modules_threads
         except Exception:
-            log.MainLogger().exception("Fehler im loadvars-Modul")
+            MainLogger().exception("Fehler im loadvars-Modul")
         finally:
             return modules_threads

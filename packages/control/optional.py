@@ -3,15 +3,15 @@
 
 from math import ceil  # Aufrunden
 
-from helpermodules import log
+from helpermodules.log import MainLogger
 
 
-class optional:
+class Optional:
     def __init__(self):
         try:
             self.data = {"et": {"get": {}}}
         except Exception:
-            log.MainLogger().exception("Fehler im Optional-Modul")
+            MainLogger().exception("Fehler im Optional-Modul")
 
     def et_price_lower_than_limit(self):
         """ prüft, ob der aktuelle Strompreis unter der festgelegten Preisgrenze liegt.
@@ -29,7 +29,7 @@ class optional:
                 return False
         except Exception:
             self.et_get_prices()
-            log.MainLogger().exception("Fehler im Optional-Modul")
+            MainLogger().exception("Fehler im Optional-Modul")
             return False
 
     def et_get_loading_hours(self, duration):
@@ -52,7 +52,7 @@ class optional:
             ]
         except Exception:
             self.et_get_prices()
-            log.MainLogger().exception("Fehler im Optional-Modul")
+            MainLogger().exception("Fehler im Optional-Modul")
             return []
 
     def et_get_prices(self):
@@ -65,6 +65,6 @@ class optional:
                 #     tibbergetprices.update_pricedata(
                 #         self.data["et"]["config"]["provider"]["token"], self.data["et"]["config"]["provider"]["id"])
                 # else:
-                log.MainLogger().error("Unbekannter Et-Provider.")
+                MainLogger().error("Unbekannter Et-Provider.")
         except Exception:
-            log.MainLogger().exception("Fehler im Optional-Modul")
+            MainLogger().exception("Fehler im Optional-Modul")

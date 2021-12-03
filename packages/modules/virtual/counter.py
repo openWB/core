@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from control import data
-from helpermodules import log
+from helpermodules.log import MainLogger
 from modules.common import simcount
 from modules.common.component_state import CounterState
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -73,5 +73,5 @@ class VirtualCounter:
             exported=exported,
             power_all=power_all
         )
-        log.MainLogger().debug("Virtual Leistung[W]: " + str(counter_state.power_all))
+        MainLogger().debug("Virtual Leistung[W]: " + str(counter_state.power_all))
         self.__store.set(counter_state)

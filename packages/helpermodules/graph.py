@@ -4,7 +4,7 @@ import time
 import datetime
 
 from control import data
-from helpermodules import log
+from helpermodules.log import MainLogger
 from helpermodules.pub import Pub
 
 
@@ -67,4 +67,4 @@ class Graph:
             subprocess.run([str(Path(__file__).resolve().parents[2] / "runs"/"graphing.sh"),
                             str(self.data["config"]["duration"]*6)])
         except Exception:
-            log.MainLogger().exception("Fehler im Graph-Modul")
+            MainLogger().exception("Fehler im Graph-Modul")

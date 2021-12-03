@@ -15,7 +15,7 @@ from helpermodules import subdata
 from helpermodules import setdata
 from helpermodules import publishvars2
 from helpermodules import measurement_log
-from helpermodules import log
+from helpermodules.log import MainLogger, cleanup_logfiles
 from helpermodules import command
 from control import prepare
 from control import data
@@ -44,31 +44,31 @@ class HandlerAlgorithm:
                     if (data.data.general_data["general"].data["control_interval"]
                             / 10) == self.interval_counter:
                         # Mit aktuellen Einstellungen arbeiten.
-                        log.MainLogger().debug(" Start copy_data 1")
+                        MainLogger().debug(" Start copy_data 1")
                         prep.copy_system_data()
-                        log.MainLogger().set_log_level(data.data.system_data["system"].data["debug_level"])
-                        log.MainLogger().debug(" Stop copy_data 1")
+                        MainLogger().set_log_level(data.data.system_data["system"].data["debug_level"])
+                        MainLogger().debug(" Stop copy_data 1")
                         vars.get_values()
                         # Virtuelle Module ermitteln die Werte rechnerisch auf Bais der Messwerte anderer Module.
                         # Daher können sie erst die Werte ermitteln, wenn die physischen Module ihre Werte ermittelt
                         # haben. Würde man allle Module parallel abfragen, wären die virtuellen Module immer einen
                         # Zyklus hinterher.
-                        log.MainLogger().debug(" Start copy_data 2")
+                        MainLogger().debug(" Start copy_data 2")
                         prep.copy_counter_data()
-                        log.MainLogger().debug(" Stop copy_data 2")
+                        MainLogger().debug(" Stop copy_data 2")
                         vars.get_virtual_values()
                         # Kurz warten, damit alle Topics von setdata und subdata verarbeitet werden könnnen.
                         time.sleep(0.5)
-                        log.MainLogger().debug(" Start copy_data 3")
+                        MainLogger().debug(" Start copy_data 3")
                         prep.copy_data()
-                        log.MainLogger().debug(" Stop copy_data 3")
+                        MainLogger().debug(" Stop copy_data 3")
                         self.heartbeat = True
                         if data.data.system_data["system"].data["perform_update"]:
                             data.data.system_data["system"].perform_update()
                             return
                         elif data.data.system_data["system"].data[
                                 "update_in_progress"]:
-                            log.MainLogger().info(
+                            MainLogger().info(
                                 "Regelung pausiert, da ein Update durchgefuehrt wird."
                             )
                             return
@@ -98,7 +98,7 @@ class HandlerAlgorithm:
                     data.data.graph_data["graph"].pub_graph_data()
                 handler_without_contronl_interval()
         except Exception:
-            log.MainLogger().exception("Fehler im Main-Modul")
+            MainLogger().exception("Fehler im Main-Modul")
 
     @exit_after(10)
     def handler5Min(self):
@@ -106,22 +106,22 @@ class HandlerAlgorithm:
         ausführt, die nur alle 5 Minuten ausgeführt werden müssen.
         """
         try:
-            log.MainLogger().debug("5 Minuten Handler ausführen.")
+            MainLogger().debug("5 Minuten Handler ausführen.")
             if not sub.heartbeat:
-                log.MainLogger().error("Heartbeat fuer Subdata nicht zurueckgesetzt.")
+                MainLogger().error("Heartbeat fuer Subdata nicht zurueckgesetzt.")
                 sub.disconnect()
                 Thread(target=sub.sub_topics, args=()).start()
             else:
                 sub.heartbeat = False
 
             if not set.heartbeat:
-                log.MainLogger().error("Heartbeat fuer Setdata nicht zurueckgesetzt.")
+                MainLogger().error("Heartbeat fuer Setdata nicht zurueckgesetzt.")
                 set.disconnect()
                 Thread(target=set.set_data, args=()).start()
             else:
                 set.heartbeat = False
 
-            log.cleanup_logfiles()
+            cleanup_logfiles()
             measurement_log.save_log("daily")
             measurement_log.update_daily_yields()
             # Wenn ein neuer Tag ist, Monatswerte schreiben.
@@ -133,7 +133,7 @@ class HandlerAlgorithm:
             data.data.optional_data["optional"].et_get_prices()
             data.data.counter_data["all"].calc_daily_yield_home_consumption()
         except Exception:
-            log.MainLogger().exception("Fehler im Main-Modul")
+            MainLogger().exception("Fehler im Main-Modul")
 
 
 def repeated_handler_call():
@@ -153,34 +153,34 @@ def repeated_handler_call():
                 timer_5min += 10
             handler.handler10Sec()
         except KeyboardInterrupt:
-            log.MainLogger().critical("Asuführung durch exit_after gestoppt: "+traceback.format_exc())
+            MainLogger().critical("Asuführung durch exit_after gestoppt: "+traceback.format_exc())
         except Exception:
-            log.MainLogger().exception("Fehler im Main-Modul")
+            MainLogger().exception("Fehler im Main-Modul")
         # skip tasks if we are behind schedule:
         next_time += (time.time() - next_time) // delay * delay + delay
 
 
 try:
     # Regelung erst starten, wenn atreboot.sh fertig ist.
-    log.MainLogger().debug("Warten auf das Ende des Boot-Prozesses")
+    MainLogger().debug("Warten auf das Ende des Boot-Prozesses")
     while os.path.isfile(os.path.dirname(os.path.abspath(__file__)) + "/../ramdisk/bootdone") is False:
         time.sleep(1)
-    log.MainLogger().debug("Boot-Prozess abgeschlossen")
+    MainLogger().debug("Boot-Prozess abgeschlossen")
 
     data.data_init()
     update_config.UpdateConfig().update()
-    proc = process.process()
-    control = algorithm.control()
+    proc = process.Process()
+    control = algorithm.Algorithm()
     handler = HandlerAlgorithm()
-    vars = loadvars.loadvars()
-    prep = prepare.prepare()
+    vars = loadvars.Loadvars()
+    prep = prepare.Prepare()
     event_ev_template = threading.Event()
     event_ev_template.set()
     event_charge_template = threading.Event()
     event_charge_template.set()
     event_cp_config = threading.Event()
     event_cp_config.set()
-    set = setdata.setData(event_ev_template, event_charge_template,
+    set = setdata.SetData(event_ev_template, event_charge_template,
                           event_cp_config)
     sub = subdata.SubData(event_ev_template, event_charge_template,
                           event_cp_config)
@@ -199,4 +199,4 @@ try:
     # blocking
     repeated_handler_call()
 except Exception:
-    log.MainLogger().exception("Fehler im Main-Modul")
+    MainLogger().exception("Fehler im Main-Modul")

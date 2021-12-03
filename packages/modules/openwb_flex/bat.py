@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from helpermodules import log
+from helpermodules.log import MainLogger
 from modules.common import modbus
 from modules.common.component_state import BatState
 from modules.common.fault_state import ComponentInfo
@@ -36,7 +36,7 @@ class BatKitFlex:
                                             self.component_config["type"])
 
     def update(self):
-        log.MainLogger().debug("Start kit reading")
+        MainLogger().debug("Start kit reading")
         # TCP-Verbindung schließen möglichst bevor etwas anderes gemacht wird, um im Fehlerfall zu verhindern,
         # dass ungeschlossene Verbindungen den Modbus-Adapter blockieren.
         try:
@@ -53,5 +53,5 @@ class BatKitFlex:
             exported=exported,
             power=power
         )
-        log.MainLogger().debug("Speicher-Kit Leistung[W]: " + str(bat_state.power))
+        MainLogger().debug("Speicher-Kit Leistung[W]: " + str(bat_state.power))
         self.__store.set(bat_state)
