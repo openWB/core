@@ -74,6 +74,7 @@ class UpdateConfig:
                    "^openWB/command/max_id/component$",
                    "^openWB/command/max_id/device$",
                    "^openWB/command/max_id/ev_template$",
+                   "^openWB/command/max_id/mqtt_bridge$",
                    "^openWB/command/max_id/vehicle$",
                    "^openWB/command/[A-Za-z0-9_]+/error$",
                    "^openWB/command/todo$",
@@ -204,6 +205,7 @@ class UpdateConfig:
                    "^openWB/vehicle/[0-9]+/control_parameter/phases$",
                    "^openWB/vehicle/[0-9]+/set/ev_template$",
 
+                   "^openWB/system/boot_done$",
                    "^openWB/system/dataprotection_acknowledged$",
                    "^openWB/system/debug_level$",
                    "^openWB/system/lastlivevaluesJson$",
