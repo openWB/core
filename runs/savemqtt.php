@@ -144,42 +144,44 @@ if ($configuration == "" || $configuration->active != true) {
 
 	if ($configuration->data_transfer->status) {
 		fwrite($configFile, <<<EOS
-	# export global data to remote
-	topic openWB/global/# out 2 "" {$configuration->remote->prefix}
+	# export general data to remote
+	topic openWB/general/# out 2 "" {$configuration->remote->prefix}
 
-	# export global data to remote
+	# export system data to remote
 	topic openWB/system/# out 2 "" {$configuration->remote->prefix}
 
-	# export all EVU data to remote
-	topic openWB/evu/# out 2 "" {$configuration->remote->prefix}
+	# export all counter data to remote
+	topic openWB/counter/# out 2 "" {$configuration->remote->prefix}
 
 	# export all charge point data to remote
-	topic openWB/lp/# out 2 "" {$configuration->remote->prefix}
+	topic openWB/chargepoint/# out 2 "" {$configuration->remote->prefix}
 
-	# export all charge point data to remote
-	topic openWB/housebattery/# out 2 "" {$configuration->remote->prefix}
+	# export all battery data to remote
+	topic openWB/bat/# out 2 "" {$configuration->remote->prefix}
 
-	# export all charge point data to remote
+	# export all pv data to remote
 	topic openWB/pv/# out 2 "" {$configuration->remote->prefix}
+
+	# export all vehicle data to remote
+	topic openWB/vehicle/# out 2 "" {$configuration->remote->prefix}
+
+	# export all optional data to remote
+	topic openWB/optional/# out 2 "" {$configuration->remote->prefix}
+
 	EOS
 		);
 	}
 
 	if ($configuration->data_transfer->graph) {
 		fwrite($configFile, <<<EOS
-
-	# export global data to remote
-	topic openWB/config/get/# out 2 "" {$configuration->remote->prefix}
-	topic openWB/SmartHome/# out 2 "" {$configuration->remote->prefix}
-
+	# export graph data to remote
+	topic openWB/graph/# out 2 "" {$configuration->remote->prefix}
 
 	EOS
 		);
 	}
 
 	fwrite($configFile, <<<EOS
-
-
 
 	##################################################################################################
 	## Below choose what to subscribe on  the remote MQTT server in order to receive setting data   ##
@@ -192,15 +194,12 @@ if ($configuration == "" || $configuration->active != true) {
 	if ($configuration->data_transfer->configuration) {
 		fwrite($configFile, <<<EOS
 	topic openWB/set/# both 2 "" {$configuration->remote->prefix}
-	topic openWB/config/set/# both 2 "" {$configuration->remote->prefix}
-
 
 	EOS
 		);
 	}
 
 	fwrite($configFile, <<<EOS
-
 
 	##############################
 	## Remote server settings   ##
