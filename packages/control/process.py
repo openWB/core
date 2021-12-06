@@ -112,5 +112,4 @@ class Process:
         else:
             current = chargepoint.data["set"]["current"]
 
-        chargepoint_module = data.data.cp_data[chargepoint].chargepoint_module
-        return threading.Thread(target=chargepoint_module.set_current, args=(current,))
+        return threading.Thread(target=chargepoint.chargepoint_module.set_current, args=(current,))

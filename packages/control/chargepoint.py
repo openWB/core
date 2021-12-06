@@ -33,6 +33,7 @@ from control import phase_switch
 from helpermodules.log import MainLogger
 from helpermodules.pub import Pub
 from helpermodules import timecheck
+from modules.common.abstract_chargepoint import AbstractChargepoint
 
 
 def get_chargepoint_default() -> dict:
@@ -256,7 +257,7 @@ class Chargepoint:
     def __init__(self, index):
         try:
             self.template = None  # type: CpTemplate
-            self.chargepoint_module = None
+            self.chargepoint_module = None  # type: AbstractChargepoint
             self.cp_num = index
             # set current aus dem vorherigen Zyklus, um zu wissen, ob am Ende des Zyklus die Ladung freigegeben wird
             # (für Control-Pilot-Unterbrechung)
