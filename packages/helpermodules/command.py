@@ -99,6 +99,7 @@ class Command:
                 if "todo" in msg.topic:
                     payload = json.loads(str(msg.payload.decode("utf-8")))
                     connection_id = msg.topic.split("/")[2]
+                    MainLogger().debug("Befehl: "+str(payload)+", Connection-ID: "+str(connection_id))
                     # Methoden-Name = Befehl
                     try:
                         func = getattr(self, payload["command"])

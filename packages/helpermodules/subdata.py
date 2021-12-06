@@ -24,32 +24,26 @@ class SubData:
     wird, Instanzen löscht, wenn Module gelöscht werden, und die Werte in die Attribute der Instanzen schreibt.
     """
 
-    # Instanzen
-    cp_data = {}
-    cp_template_data = {}
-    pv_data = {}
-    pv_module_data = {}
-    ev_data = {}
-    ev_template_data = {}
-    ev_charge_template_data = {}
-    counter_data = {}
-    bat_data = {}
-    general_data = {}
-    optional_data = {}
-    system_data = {}
-    graph_data = {}
-
     def __init__(self, event_ev_template, event_charge_template, event_cp_config):
         self.event_ev_template = event_ev_template
         self.event_charge_template = event_charge_template
         self.event_cp_config = event_cp_config
         self.heartbeat = False
 
-        self.bat_data["all"] = bat.BatAll()
-        self.cp_data["all"] = chargepoint.AllChargepoints()
-        self.counter_data["all"] = counter.CounterAll()
-        self.pv_data["all"] = pv.PvAll()
-        self.graph_data["graph"] = graph.Graph()
+        # Instanzen
+        self.cp_template_data = {}
+        self.pv_module_data = {}
+        self.ev_data = {}
+        self.ev_template_data = {}
+        self.ev_charge_template_data = {}
+        self.general_data = {}
+        self.optional_data = {}
+        self.system_data = {}
+        self.bat_data = {"all": bat.BatAll()}
+        self.cp_data = {"all": chargepoint.AllChargepoints()}
+        self.counter_data = {"all": counter.CounterAll()}
+        self.pv_data = {"all": pv.PvAll()}
+        self.graph_data = {"graph": graph.Graph()}
 
     def sub_topics(self):
         """ abonniert alle Topics.
