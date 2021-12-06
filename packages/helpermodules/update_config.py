@@ -219,7 +219,8 @@ class UpdateConfig:
                    "^openWB/system/device/[0-9]+/component/[0-9]+/simulation/present_exported$",
                    "^openWB/system/configurable/soc_modules$",
                    "^openWB/system/configurable/devices_components$",
-                   "^openWB/system/configurable/chargepoints$"
+                   "^openWB/system/configurable/chargepoints$",
+                   "^openWB/system/mqtt/bridge/[0-9]+$"
                    ]
     default_topic = (
         ("openWB/chargepoint/0/config",
