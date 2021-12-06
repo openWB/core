@@ -81,6 +81,16 @@ def _pub_configurable_devices_components() -> None:
                 ]
             },
             {
+                "value": "virtual",
+                "text": "Virtuelles Modul",
+                "component": [
+                    {
+                        "value": "counter",
+                        "text": "Virtueller Zähler"
+                    }
+                ]
+            },
+            {
                 "value": "mqtt",
                 "text": "MQTT-Device",
                 "component": [

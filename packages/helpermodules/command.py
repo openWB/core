@@ -357,8 +357,6 @@ class Command:
         """ löscht eine Komponente.
         """
         if self.max_id_component >= payload["data"]["id"]:
-            if payload["data"]["type"] == "counter":
-                data.data.counter_data["all"].hierarchy_remove_item("counter"+str(payload["data"]["id"]))
             MainLogger().info("Komponente mit ID "+str(payload["data"]["id"])+" geloescht.")
             branch = "system/device/"+str(payload["data"]["deviceId"])+"/component/"+str(payload["data"]["id"])
             ProcessBrokerBranch(branch).remove_topics()
@@ -549,6 +547,11 @@ class ProcessBrokerBranch:
                     payload = json.loads(str(msg.payload.decode("utf-8")))
                     if payload["type"] == "counter":
                         data.data.counter_data["all"].hierarchy_remove_item("counter"+str(payload["id"]))
+                    if payload["type"] == "inverter":
+                        module_branch = "openWB/pv/"+str(payload["id"])
+                    else:
+                        module_branch = "openWB/"+payload["type"]+"/"+str(payload["id"])
+                    client.subscribe(module_branch+"/#", 2)
         except Exception:
             MainLogger().exception("Fehler im Command-Modul")
 
