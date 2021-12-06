@@ -23,6 +23,7 @@ def get_default_config() -> Dict:
         }
     }
 
+
 def get_cloud_config() -> Dict:
     return {
         "name": "openWBCloud",
