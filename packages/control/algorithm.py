@@ -276,7 +276,7 @@ class Algorithm:
         preferenced_chargepoints = self._get_preferenced_chargepoint(
             valid_chargepoints, False)
         if len(preferenced_chargepoints) != 0:
-            MainLogger().debug("Zu reduzierende Ladepunkte "+str(preferenced_chargepoints) +
+            MainLogger().debug("Zu reduzierende Ladepunkte "+str([cp.cp_num for cp in preferenced_chargepoints]) +
                                " in Lademodus "+str(mode)+" Submodus "+str(submode)+" Prio "+str(prio))
         return self._perform_down_regulation(
             preferenced_chargepoints, max_current_overshoot, max_overshoot_phase, prevent_stop)
@@ -432,7 +432,7 @@ class Algorithm:
             if len(preferenced_chargepoints) != 0:
                 MainLogger().info(
                     "## Ladepunkte, die nicht mit Maximalstromstaerke laden, wieder hochregeln.")
-                MainLogger().debug("Hochzuregelnde Ladepunkte "+str(preferenced_chargepoints) +
+                MainLogger().debug("Hochzuregelnde Ladepunkte "+str([cp.cp_num for cp in preferenced_chargepoints]) +
                                    " in Lademodus "+str(mode)+" Submodus "+str(submode)+" Prio "+str(prio))
                 for cp in preferenced_chargepoints:
                     try:
@@ -454,7 +454,7 @@ class Algorithm:
                             phases = cp.data["get"]["phases_in_use"]
                         required_power = 230 * phases * missing_current
                         # Lastmanagement für den fehlenden Ladestrom durchführen
-                        MainLogger().debug("Fehldenden Ladestrom anpassen: "+str(missing_current) +
+                        MainLogger().debug("Fehlenden Ladestrom anpassen: "+str(missing_current) +
                                            ", fehlende Ladeleistung: "+str(required_power))
                         loadmanagement_state, overloaded_counters = loadmanagement.loadmanagement_for_cp(
                             cp, required_power, missing_current, phases)
@@ -479,7 +479,7 @@ class Algorithm:
                                 data.data.pv_data = pv_data_old
                                 data.data.bat_data = bat_data
                                 data.data.cp_data = cp_data_old
-                                MainLogger().debug("Keine Hochregelung fuer Ladepunkt "+str(cp) +
+                                MainLogger().debug("Keine Hochregelung fuer Ladepunkt "+str(cp.cp_num) +
                                                    ", da nur noch das Offset zum Maximalstrom verfuegbar ist.")
                                 message = "Das Lastmanagement hat den Ladestrom um 0A angepasst."
                                 # Beim Wiederherstellen der Kopie wird die Adresse der Kopie zugewiesen, sodass die
@@ -559,7 +559,8 @@ class Algorithm:
             # Es gibt keine Ladepunkte in diesem Lademodus, die noch nicht laden oder die noch gestoppt werden können.
             return
         else:
-            MainLogger().debug("Switch-Off-Threshold fuer Ladepunkte "+str(preferenced_chargepoints) +
+            MainLogger().debug("Switch-Off-Threshold fuer Ladepunkte " +
+                               str([cp.cp_num for cp in preferenced_chargepoints]) +
                                " in Lademodus "+str(mode)+" Submodus "+str(submode)+" Prio "+str(prio)+" pruefen.")
 
             # Solange die Liste durchgehen, bis die Abschaltschwelle nicht mehr erreicht wird.
@@ -646,7 +647,8 @@ class Algorithm:
                         valid_chargepoints, True)
 
                     if len(preferenced_chargepoints) != 0:
-                        MainLogger().debug("Zuteilung fuer Ladepunkte "+str(preferenced_chargepoints) +
+                        MainLogger().debug("Zuteilung fuer Ladepunkte " +
+                                           str([cp.cp_num for cp in preferenced_chargepoints]) +
                                            " in Lademodus "+str(mode)+" Submodus "+str(submode)+" Prio "+str(prio))
                         current_mode = self.chargemodes.index(mode_tuple)
                         self._distribute_power_to_cp(
