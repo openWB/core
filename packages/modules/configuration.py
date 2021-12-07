@@ -45,6 +45,16 @@ def _pub_configurable_devices_components() -> None:
                 ]
             },
             {
+                "value": "carlo_gavazzi",
+                "text": "Carlo Gavazzi",
+                "component": [
+                    {
+                        "value": "counter",
+                        "text": "Carlo Gavazzi-Zähler"
+                    }
+                ]
+            },
+            {
                 "value": "openwb",
                 "text": "openWB Kit",
                 "component": [
