@@ -4,7 +4,7 @@ import sys
 from helpermodules.log import MainLogger
 from modules.common import modbus
 from modules.common.abstract_device import AbstractDevice
-from modules.common.component_state import SingleComponentUpdateContext
+from modules.common.component_context import SingleComponentUpdateContext
 from modules.openwb_flex import bat
 from modules.openwb_flex import counter
 from modules.openwb_flex import inverter
@@ -45,9 +45,13 @@ class Device(AbstractDevice):
         if component_type in self.COMPONENT_TYPE_TO_CLASS:
             self._components["component"+str(component_config["id"])] = (self.COMPONENT_TYPE_TO_CLASS[component_type](
                 self.device_config["id"], component_config, self.client))
+        else:
+            raise Exception("illegal component type " + component_type +
+                            ". Allowed values: " +
+                            ','.join(self.COMPONENT_TYPE_TO_CLASS.keys()))
 
-    def get_values(self) -> None:
-        MainLogger().debug("Start device reading" + str(self._components))
+    def update(self) -> None:
+        MainLogger().debug("Start device reading " + str(self._components))
         if self._components:
             for component in self._components:
                 # Auch wenn bei einer Komponente ein Fehler auftritt, sollen alle anderen noch ausgelesen werden.
@@ -101,7 +105,7 @@ def read_legacy(argv: List[str]):
     MainLogger().debug('openWB flex-Kit Port: ' + str(port))
     MainLogger().debug('openWB flex-Kit ID: ' + str(id))
 
-    dev.get_values()
+    dev.update()
 
 
 if __name__ == "__main__":
