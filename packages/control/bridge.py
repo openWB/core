@@ -3,15 +3,15 @@ from typing import Dict
 
 def get_default_config() -> Dict:
     return {
-        "name": "",
+        "name": "NeueBruecke",
         "active": False,
         "remote": {
             "user": "",
             "passwort": "",
-            "client_id": "",
+            "client_id": "openWB",
             "host": "",
             "port": 1886,
-            "prefix": "openWB",
+            "prefix": "openWB/",
             "protocol": "mqttv311",
             "tls_version": "tlsv1.3",
             "try_private": False

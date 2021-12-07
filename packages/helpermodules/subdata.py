@@ -2,8 +2,10 @@
 """
 import importlib
 import json
+from pathlib import Path
 import paho.mqtt.client as mqtt
 import re
+import subprocess
 
 from control import bat
 from control import chargelog
@@ -93,7 +95,9 @@ class SubData:
         client.subscribe("openWB/optional/#", 2)
         client.subscribe("openWB/counter/#", 2)
         client.subscribe("openWB/log/#", 2)
+        # Nicht mit wildcard abonnieren, damit nicht die Komponenten vor den Devices empfangen werden.
         client.subscribe("openWB/system/+", 2)
+        client.subscribe("openWB/system/mqtt/bridge/+", 2)
         client.subscribe("openWB/system/device/+/config", 2)
 
     def on_message(self, client, userdata, msg):
@@ -752,6 +756,10 @@ class SubData:
                     if sim_data:
                         var["device"+index]._components["component" +
                                                         index_second].simulation = sim_data
+            elif "mqtt" and "bridge" in msg.topic:
+                index = self.get_index(msg.topic)
+                parent_file = Path(__file__).resolve().parents[2]
+                subprocess.call(["php", "-f", str(parent_file / "runs" / "savemqtt.php"), index, msg.payload])
             else:
                 self.set_json_payload(var["system"].data, msg)
         except Exception:
