@@ -2,9 +2,7 @@ from enum import Enum
 import traceback
 from typing import Optional
 
-from helpermodules import compatibility
-from helpermodules import log
-from helpermodules import pub
+from helpermodules import compatibility, exceptions, log, pub
 
 
 class FaultStateLevel(Enum):
@@ -18,6 +16,10 @@ class ComponentInfo:
         self.id = id
         self.name = name
         self.type = type
+
+    @staticmethod
+    def from_component_config(component_config: dict):
+        return ComponentInfo(component_config["id"], component_config["name"], component_config["type"])
 
 
 class FaultState(Exception):
@@ -65,9 +67,9 @@ class FaultState(Exception):
         return FaultState("Kein Fehler.", FaultStateLevel.NO_ERROR)
 
     @staticmethod
-    def from_exception(exception: Optional[Exception], level: FaultStateLevel = FaultStateLevel.ERROR) -> "FaultState":
+    def from_exception(exception: Optional[Exception]) -> "FaultState":
         if exception is None:
             return FaultState.no_error()
         if isinstance(exception, FaultState):
             return exception
-        return FaultState(str(type(exception)) + " " + str(exception), level)
+        return exceptions.get_default_exception_registry().translate_exception(exception)
