@@ -13,3 +13,7 @@ class AbstractChargepoint:
     @abstractmethod
     def get_values(self) -> None:
         pass
+
+    @abstractmethod
+    def switch_phases(self, phases_to_use: int, duration: int) -> None:
+        pass

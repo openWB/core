@@ -134,6 +134,10 @@ def _pub_configurable_chargepoints() -> None:
             {
                 "value": "ip_evse",
                 "text": "openWB IP-EVSE"
+            },
+            {
+                "value": "openwb_pro",
+                "text": "openWB Pro"
             }
         ]
         Pub().pub("openWB/set/system/configurable/chargepoints", chargepoints)

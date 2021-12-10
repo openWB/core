@@ -1,9 +1,11 @@
+import time
 from typing import Dict
 
 from control import data
-from helpermodules.log import MainLogger
 from helpermodules import pub
 from modules.common.abstract_chargepoint import AbstractChargepoint
+from modules.common.component_context import SingleComponentUpdateContext
+from modules.common.fault_state import ComponentInfo
 
 
 def get_default_config() -> Dict:
@@ -21,20 +23,21 @@ class ChargepointModule(AbstractChargepoint):
     def __init__(self, connection_module: dict, power_module: dict) -> None:
         self.connection_module = connection_module
         self.power_module = power_module
+        self.component_info = ComponentInfo(
+            self.connection_module["configuration"]["id"],
+            "Ladepunkt", "chargepoint")
 
     def set_current(self, current: float) -> None:
-        try:
+        with SingleComponentUpdateContext(self.component_info):
             if self.connection_module["configuration"]["duo_num"] == 1:
                 pub.pub_single("openWB/set/isss/Current", current,
                                hostname=self.connection_module["configuration"]["ip_address"])
             else:
                 pub.pub_single("openWB/set/isss/Lp2Current", current,
                                hostname=self.connection_module["configuration"]["ip_address"])
-        except Exception:
-            MainLogger().exception("Fehler im Modul der externen openWB")
 
     def get_values(self) -> None:
-        try:
+        with SingleComponentUpdateContext(self.component_info):
             ip_address = self.connection_module["configuration"]["ip_address"]
             cp_num = self.connection_module["configuration"]["id"]
             my_ip_address = data.data.system_data["system"].data["ip_address"]
@@ -45,5 +48,9 @@ class ChargepointModule(AbstractChargepoint):
                 pub.pub_single("openWB/set/isss/parentCPlp2", str(cp_num), hostname=ip_address)
             else:
                 pub.pub_single("openWB/set/isss/parentCPlp1", str(cp_num), hostname=ip_address)
-        except Exception:
-            MainLogger().exception("Fehler im Modul der externen openWB")
+
+    def switch_phases(self, phases_to_use: int, duration: int) -> None:
+        with SingleComponentUpdateContext(self.component_info):
+            pub.pub_single("openWB/set/isss/U1p3p", phases_to_use,
+                           self.connection_module["configuration"]["ip_address"])
+            time.sleep(6+duration-1)
