@@ -3,6 +3,7 @@
 
 import importlib
 import json
+from os import defpath
 import subprocess
 import paho.mqtt.client as mqtt
 import re
@@ -436,14 +437,33 @@ class Command:
         measurement_log.pub_monthly_log(payload["data"]["month"])
 
     def initCloud(self, connection_id: str, payload: dict) -> None:
-        pass
-        # email = payload["data"]["email"]
-        # username = payload["data"]["username"]
+        parent_file = Path(__file__).resolve().parents[2]
+        try:
+            result = subprocess.check_output(["php", "-f", str(parent_file / "runs" / "cloudRegister.php"), payload["data"]])
+            # exitstatus = 0 is success, std_out contains json: {"username", "password"}
+            result_dict = json.loads(result)
+            connect_payload = {
+                "data": result_dict
+            }
+            self.connectCloud(connection_id, connect_payload)
+        except subprocess.CalledProcessError as error:
+            # exitstatus = 1 is failure, std_out contains error message
+            pub_error(payload, connection_id, error.output)
 
-    def addMqttBridge(self, connection_id: str, payload: dict) -> None:
+    def connectCloud(self, connection_id: str, payload: dict) -> None:
+        cloud_config = bridge.get_cloud_config()
+        cloud_config["remote"]["user"] = payload["data"]["username"]
+        cloud_config["remote"]["passwort"] = payload["data"]["password"]
+        cloud_config["remote"]["prefix"] = payload["data"]["username"] + "/"
+        self.addMqttBridge(self, connection_id, payload, cloud_config)
+
+    def removeCloud(self, connection_id: str, payload: dict) -> None:
+        # self.removeMqttBridge(connection_id, ???)
+        pass
+
+    def addMqttBridge(self, connection_id: str, payload: dict, bridge_default: dict = bridge.get_default_config()) -> None:
         new_id = self.max_id_mqtt_bridge + 1
         MainLogger().info("Neue Bridge mit ID "+str(new_id)+" hinzugefuegt.")
-        bridge_default = bridge.get_default_config()
         Pub().pub("openWB/set/system/mqtt/bridge/"+str(new_id), bridge_default)
         self.max_id_mqtt_bridge = self.max_id_mqtt_bridge + 1
         Pub().pub("openWB/set/command/max_id/mqtt_bridge", self.max_id_mqtt_bridge)

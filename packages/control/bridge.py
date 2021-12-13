@@ -7,7 +7,7 @@ def get_default_config() -> Dict:
         "active": False,
         "remote": {
             "user": "",
-            "passwort": "",
+            "password": "",
             "client_id": "openWB",
             "host": "",
             "port": 1886,
@@ -30,10 +30,10 @@ def get_cloud_config() -> Dict:
         "active": True,
         "remote": {
             "user": "",
-            "passwort": "",
+            "password": "",
             "client_id": "openWB",
             "host": "web.openwb.de",
-            "port": 1886,
+            "port": 1883,
             "prefix": "",
             "protocol": "mqttv311",
             "tls_version": "tlsv1.3",
