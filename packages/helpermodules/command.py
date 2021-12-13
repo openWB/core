@@ -3,7 +3,6 @@
 
 import importlib
 import json
-from os import defpath
 import subprocess
 import paho.mqtt.client as mqtt
 import re
@@ -439,7 +438,9 @@ class Command:
     def initCloud(self, connection_id: str, payload: dict) -> None:
         parent_file = Path(__file__).resolve().parents[2]
         try:
-            result = subprocess.check_output(["php", "-f", str(parent_file / "runs" / "cloudRegister.php"), payload["data"]])
+            result = subprocess.check_output(
+                ["php", "-f", str(parent_file / "runs" / "cloudRegister.php"), payload["data"]]
+            )
             # exitstatus = 0 is success, std_out contains json: {"username", "password"}
             result_dict = json.loads(result)
             connect_payload = {
@@ -461,7 +462,8 @@ class Command:
         # self.removeMqttBridge(connection_id, ???)
         pass
 
-    def addMqttBridge(self, connection_id: str, payload: dict, bridge_default: dict = bridge.get_default_config()) -> None:
+    def addMqttBridge(self, connection_id: str, payload: dict,
+                      bridge_default: dict = bridge.get_default_config()) -> None:
         new_id = self.max_id_mqtt_bridge + 1
         MainLogger().info("Neue Bridge mit ID "+str(new_id)+" hinzugefuegt.")
         Pub().pub("openWB/set/system/mqtt/bridge/"+str(new_id), bridge_default)
