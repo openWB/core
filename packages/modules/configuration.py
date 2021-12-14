@@ -118,11 +118,11 @@ def _pub_configurable_chargepoints() -> None:
     try:
         chargepoints = [
             {
-                "value": "openwb_daemon",
-                "text": "openWB Daemon"
+                "value": "external_openwb",
+                "text": "Externe openWB"
             },
             {
-                "value": "openwb_ip_evse",
+                "value": "ip_evse",
                 "text": "openWB IP-EVSE"
             }
         ]
