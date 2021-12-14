@@ -613,8 +613,8 @@ class Chargepoint:
                     # Wenn die Umschaltverzögerung aktiv ist, darf nicht umgeschaltet werden.
                     if charging_ev.data["control_parameter"]["timestamp_auto_phase_switch"] == "0":
                         if self.data["config"]["auto_phase_switch_hw"]:
-                            selected = self.data["config"]["connection_module"]["selected"]
-                            config = self.data["config"]["connection_module"]["config"][selected]
+                            selected = self.data["config"]["connection_module"]["type"]
+                            config = self.data["config"]["connection_module"]["configuration"]
                             charge_state = self.data["get"]["charge_state"]
                             phase_switch.thread_phase_switch(
                                 self.cp_num, selected, config, charging_ev.data["control_parameter"]["phases"],
