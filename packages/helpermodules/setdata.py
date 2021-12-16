@@ -685,6 +685,8 @@ class SetData:
                 self._validate_value(msg, str)
             elif "openWB/set/general/grid_protection_random_stop" in msg.topic:
                 self._validate_value(msg, int, [(0, 90)])
+            elif "openWB/set/general/notifications/selected" in msg.topic:
+                self._validate_value(msg, str)
             elif "openWB/set/general/notifications/configuration" in msg.topic:
                 self._validate_value(msg, "json")
             elif ("openWB/set/general/notifications/start_charging" in msg.topic or

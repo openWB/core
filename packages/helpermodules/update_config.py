@@ -110,6 +110,7 @@ class UpdateConfig:
                    "^openWB/general/grid_protection_random_stop$",
                    "^openWB/general/price_kwh$",
                    "^openWB/general/range_unit$",
+                   "^openWB/general/notifications/selected$",
                    "^openWB/general/notifications/configuration$",
                    "^openWB/general/notifications/start_charging$",
                    "^openWB/general/notifications/stop_charging$",
@@ -142,6 +143,8 @@ class UpdateConfig:
                    "^openWB/general/chargemode_config/time_charging/phases_to_use$",
 
                    "^openWB/graph/config/duration$",
+                   "^openWB/graph/alllivevaluesJson",
+                   "^openWB/graph/lastlivevaluesJson$",
 
                    "^openWB/set/log/request",
                    "^openWB/set/log/data",
@@ -234,7 +237,6 @@ class UpdateConfig:
         ("openWB/vehicle/0/tag_id", ev.get_vehicle_default()["tag_id"]),
         ("openWB/vehicle/template/ev_template/0", ev.get_ev_template_default()),
         ("openWB/vehicle/template/charge_template/0", ev.get_charge_template_default()),
-        ("openWB/counter/get/hierarchy", [{"id": "cp0", "children": []}]),
         ("openWB/general/chargemode_config/instant_charging/phases_to_use", 1),
         ("openWB/general/chargemode_config/pv_charging/bat_prio", 1),
         ("openWB/general/chargemode_config/pv_charging/switch_on_soc", 60),
@@ -262,6 +264,7 @@ class UpdateConfig:
         ("openWB/general/extern_display_mode", "local"),
         ("openWB/general/external_buttons_hw", False),
         ("openWB/general/grid_protection_configured", True),
+        ("openWB/general/notifications/selected", "none"),
         ("openWB/general/notifications/plug", False),
         ("openWB/general/notifications/start_charging", False),
         ("openWB/general/notifications/stop_charging", False),
@@ -285,8 +288,8 @@ class UpdateConfig:
         ("openWB/optional/load_sharing/max_current", 16),
         ("openWB/optional/rfid/active", False),
         ("openWB/system/dataprotection_acknowledged", False),
-        ("openWB/system/debug_level", 2),
-        ("openWB/system/ip_address", "192.168.193.5"))
+        ("openWB/system/debug_level", 0),
+        ("openWB/system/ip_address", "unknown"))
 
     def __init__(self) -> None:
         self.all_received_topics = []

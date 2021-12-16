@@ -2,6 +2,8 @@
 $debug = false;
 
 $bridgePrefix = "99-bridge-openwb";
+// generate a random integer for our clientID
+$randomnr = rand();
 $mosquittoConfDir = "/etc/mosquitto/conf.d/";
 
 if ($argc > 2) {
@@ -62,13 +64,13 @@ if ($configuration == "" || $configuration->active != true) {
 	}
 	debugPrint("Port {$configuration->remote->port}");
 
-	if ($configuration->remote->user == "") {
+	if ($configuration->remote->username == "") {
 		cleanAndExit("Bitte einen Benutzernamen für den entfernten MQTT-Servers setzen.");
 	}
-	if (!preg_match('/^([a-zA-Z0-9_\-+.]+)$/', $configuration->remote->user)) {
-		cleanAndExit("Der Bezeichner für den Benutzer auf dem entfernten MQTT-Servers ('" . htmlentities($configuration->remote->user) . "') enthält ungültige Zeichen. Nur a-z, A-Z, 0-9, Punkt, Unterstrich, Minus und Plus sind erlaubt.");
+	if (!preg_match('/^([a-zA-Z0-9_\-+.]+)$/', $configuration->remote->username)) {
+		cleanAndExit("Der Bezeichner für den Benutzer auf dem entfernten MQTT-Servers ('" . htmlentities($configuration->remote->username) . "') enthält ungültige Zeichen. Nur a-z, A-Z, 0-9, Punkt, Unterstrich, Minus und Plus sind erlaubt.");
 	}
-	debugPrint("RemoteUser: {$configuration->remote->user}");
+	debugPrint("RemoteUser: {$configuration->remote->username}");
 
 	if (!isset($configuration->remote->password) || empty($configuration->remote->password)) {
 		cleanAndExit("Ungültiges Passwort: Nicht vorhanden oder leer.");
@@ -85,10 +87,15 @@ if ($configuration == "" || $configuration->active != true) {
 	}
 	debugPrint("MQTT protocol: {$configuration->remote->protocol}");
 
-	if (!preg_match('/^(tlsv1.2|tlsv1.3)$/', $configuration->remote->tls_version)) {
+	if (!preg_match('/^(auto|tlsv1.2|tlsv1.1|tlsv1.0)$/', $configuration->remote->tls_version)) {
 		cleanAndExit("Interner Fehler: Ungültiges TLS Protokoll '" . htmlentities($configuration->remote->tls_version) . "'");
 	}
 	debugPrint("TLS version: {$configuration->remote->tls_version}");
+	$tls_version_string = "bridge_tls_version " . $configuration->remote->tls_version;
+	if ($configuration->remote->tls_version == "auto") {
+		// do not force a tls version
+		$tls_version_string = "# " . $tls_version_string;
+	}
 
 	if (!isset($configuration->remote->client_id) || ($configuration->remote->client_id !== "")){
 		$configuration->remote->client_id = "openWB-$bridgeId";
@@ -139,6 +146,7 @@ if ($configuration == "" || $configuration->active != true) {
 	###################################################################
 	## Below choose what to share (bridge to) the remote MQTT server ##
 	###################################################################
+
 	EOS
 	);
 
@@ -210,7 +218,7 @@ if ($configuration == "" || $configuration->active != true) {
 	local_clientid bridgeClient-{$configuration->name}
 
 	# User name to for logging in to the remote MQTT server.
-	remote_username {$configuration->remote->user}
+	remote_username {$configuration->remote->username}
 
 	# Password for logging in to the remote MQTT server.
 	remote_password {$configuration->remote->password}
@@ -218,15 +226,15 @@ if ($configuration == "" || $configuration->active != true) {
 	# Client ID that appears in remote MQTT server's log data.
 	# Setting it might simplify debugging.
 	# Commenting uses a random ID and thus gives more privacy.
-	remote_clientid {$configuration->remote->client_id}
+	remote_clientid {$configuration->remote->client_id}-{$randomnr}
 
 	# MQTT protocol to use - ideally leave at latest version (mqttv311).
 	# Only change if remote doesn't support mqtt protocol version 3.11.
 	bridge_protocol_version {$configuration->remote->protocol}
 
 	# TLS version to use for transport encryption to the remote MQTT server.
-	# Use at least tlsv1.2. Comment to disable encryption (NOT RECOMMENDED).
-	bridge_tls_version {$configuration->remote->tls_version}
+	# Use at least tlsv1.2. Comment to not force a specific encryption.
+	{$tls_version_string}
 
 	# Verify TLS remote host name (false).
 	# Only change if you know what you're doing!
@@ -268,7 +276,8 @@ if ($configuration == "" || $configuration->active != true) {
 }
 
 if (!$debug) {
-	echo "Rekonfiguration des MQTT-Servers wird durchgeführt, bitte nicht vom Strom trennen.\n";
-	exec("sudo service mosquitto reload");	
+	echo "Bitte die OpenWB neu starten, damit die Änderungen übernommen werden.\n";
+	// restart or reload of broker in normal operation has several side effects and should be avoided!
+	// exec("sudo service mosquitto restart");
 }
 ?>
