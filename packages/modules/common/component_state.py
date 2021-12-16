@@ -52,8 +52,9 @@ class InverterState:
 
 
 class CarState:
-    def __init__(self, soc: float):
+    def __init__(self, soc: float, timestamp: str):
         self.soc = soc
+        self.timestamp = timestamp
 
 
 class ChargepointState:
