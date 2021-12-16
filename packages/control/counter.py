@@ -238,7 +238,15 @@ class CounterAll:
         id: str (counterX/cpX)
             Id des zu löschenden Elements
         """
-        return self._remove_item(self.data["get"]["hierarchy"][0], id, keep_children)
+        if self.data["get"]["hierarchy"][0]["id"] == id:
+            if keep_children:
+                self.data["get"]["hierarchy"].extend(self.data["get"]["hierarchy"][0]["children"])
+            self.data["get"]["hierarchy"].remove(self.data["get"]["hierarchy"][0])
+            Pub().pub("openWB/set/counter/get/hierarchy",
+                      data.data.counter_data["all"].data["get"]["hierarchy"])
+            return True
+        else:
+            return self._remove_item(self.data["get"]["hierarchy"][0], id, keep_children)
 
     def _remove_item(self, upper_level, id, keep_children):
         try:

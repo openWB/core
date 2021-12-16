@@ -2,7 +2,7 @@ from typing import Dict
 
 from helpermodules.log import MainLogger
 from modules.common.abstract_device import AbstractDevice
-from modules.common.component_state import SingleComponentUpdateContext
+from modules.common.component_context import SingleComponentUpdateContext
 from modules.virtual import counter
 
 
