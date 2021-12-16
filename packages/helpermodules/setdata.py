@@ -330,13 +330,8 @@ class SetData:
                 self._validate_value(msg, str)
             elif "openWB/set/vehicle/template" in msg.topic:
                 self._subprocess_vehicle_chargemode_topic(msg)
-            elif ("/soc/config/request_interval_charging" in msg.topic or
-                    "/soc/config/reques_interval_not_charging" in msg.topic):
-                self._validate_value(msg, int, [(0, float("inf"))])
-            elif ("/soc/config/request_only_plugged" in msg.topic or
-                    "/soc/config/configured" in msg.topic or
-                    "/soc/config/manual" in msg.topic):
-                self._validate_value(msg, int, [(0, 1)])
+            elif "/soc_module/config" in msg.topic:
+                self._validate_value(msg, "json")
             elif "/soc/get/fault_state" in msg.topic:
                 self._validate_value(msg, int, [(0, 2)])
             elif "/soc/get/fault_str" in msg.topic:
@@ -351,7 +346,9 @@ class SetData:
             elif "/get/soc_timestamp" in msg.topic:
                 self._validate_value(msg, int, [(0, float("inf"))])
             elif "/get/soc" in msg.topic:
-                self._validate_value(msg, int, [(0, 100)])
+                self._validate_value(msg, float, [(0, 100)])
+            elif "/get/timestamp_last_request" in msg.topic:
+                self._validate_value(msg, str)
             elif "/control_parameter/required_current" in msg.topic:
                 self._validate_value(msg, float, [(6, 32), (0, 0)])
             elif "/control_parameter/phases" in msg.topic:

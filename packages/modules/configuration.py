@@ -136,6 +136,10 @@ def _pub_configurable_chargepoints() -> None:
                 "text": "openWB IP-EVSE"
             },
             {
+                "value": "mqtt",
+                "text": "MQTT-Ladepunkt"
+            },
+            {
                 "value": "openwb_pro",
                 "text": "openWB Pro"
             }

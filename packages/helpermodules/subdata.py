@@ -211,13 +211,11 @@ class SubData:
                     if "set" not in var["ev"+index].data:
                         var["ev"+index].data["set"] = {}
                     self.set_json_payload(var["ev"+index].data["set"], msg)
-                elif re.search("^.+/vehicle/[0-9]+/soc/config/.+$", msg.topic) is not None:
-                    if "soc" not in var["ev"+index].data:
-                        var["ev"+index].data["soc"] = {}
-                    if "config" not in var["ev"+index].data["soc"]:
-                        var["ev"+index].data["soc"]["config"] = {}
-                    self.set_json_payload(
-                        var["ev"+index].data["soc"]["config"], msg)
+                elif re.search("^.+/vehicle/[0-9]+/soc_module/config$", msg.topic) is not None:
+                    config = json.loads(str(msg.payload.decode("utf-8")))
+                    mod = importlib.import_module("."+config["type"]+".soc", "modules")
+                    var["ev"+index].soc_module = mod.Soc(config)
+                    self.set_json_payload(var["ev"+index].data, msg)
                 elif re.search("^.+/vehicle/[0-9]+/soc/get/.+$", msg.topic) is not None:
                     if "soc" not in var["ev"+index].data:
                         var["ev"+index].data["soc"] = {}

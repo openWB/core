@@ -48,7 +48,7 @@ class HandlerAlgorithm:
                         prep.copy_system_data()
                         MainLogger().set_log_level(data.data.system_data["system"].data["debug_level"])
                         MainLogger().debug(" Stop copy_data 1")
-                        vars.get_values()
+                        loadvars.get_hardware_values()
                         # Virtuelle Module ermitteln die Werte rechnerisch auf Bais der Messwerte anderer Module.
                         # Daher können sie erst die Werte ermitteln, wenn die physischen Module ihre Werte ermittelt
                         # haben. Würde man allle Module parallel abfragen, wären die virtuellen Module immer einen
@@ -56,7 +56,7 @@ class HandlerAlgorithm:
                         MainLogger().debug(" Start copy_data 2")
                         prep.copy_counter_data()
                         MainLogger().debug(" Stop copy_data 2")
-                        vars.get_virtual_values()
+                        loadvars.get_virtual_values()
                         # Kurz warten, damit alle Topics von setdata und subdata verarbeitet werden könnnen.
                         time.sleep(0.5)
                         MainLogger().debug(" Start copy_data 3")
@@ -85,9 +85,9 @@ class HandlerAlgorithm:
                 def handler_without_contronl_interval():
                     # Wenn kein Regelintervall bekannt ist, alle 10s regeln.
                     prep.copy_system_data()
-                    vars.get_values()
+                    loadvars.get_hardware_values()
                     prep.copy_counter_data()
-                    vars.get_virtual_values()
+                    loadvars.get_virtual_values()
                     self.heartbeat = True
                     # Kurz warten, damit alle Topics von setdata und subdata verarbeitet werden könnnen.
                     time.sleep(0.3)
@@ -172,7 +172,6 @@ try:
     proc = process.Process()
     control = algorithm.Algorithm()
     handler = HandlerAlgorithm()
-    vars = loadvars.Loadvars()
     prep = prepare.Prepare()
     event_ev_template = threading.Event()
     event_ev_template.set()

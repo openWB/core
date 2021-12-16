@@ -15,10 +15,11 @@ class CarValueStoreRamdisk(ValueStore[CarState]):
 
 class CarValueStoreBroker(ValueStore[CarState]):
     def __init__(self, vehicle_id: int):
-        self.topic = "openWB/set/ev/{}/get/counter".format(vehicle_id)
+        self.vehicle_id = vehicle_id
 
     def set(self, state: CarState) -> None:
-        pub_to_broker(self.topic, state.soc)
+        pub_to_broker("openWB/set/vehicle/"+str(self.vehicle_id)+"/get/soc", state.soc)
+        pub_to_broker("openWB/set/vehicle/"+str(self.vehicle_id)+"/get/timestamp_last_request", state.timestamp)
 
 
 def get_car_value_store(id: int) -> ValueStore[CarState]:
