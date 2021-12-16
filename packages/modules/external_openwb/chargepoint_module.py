@@ -9,22 +9,24 @@ from modules.common.fault_state import ComponentInfo
 
 
 def get_default_config() -> Dict:
-    return {"connection_module": {
-        "type": "external_openwb",
-        "configuration":
-        {"ip_address": "192.168.193.5",
-         "duo_num": 1,
-         "id": 0}
-    },
-        "power_module": {}}
+    return {"id": 0,
+            "connection_module": {
+                "type": "external_openwb",
+                "configuration":
+                {"ip_address": "192.168.193.5",
+                 "duo_num": 1
+                 }
+            },
+            "power_module": {}}
 
 
 class ChargepointModule(AbstractChargepoint):
-    def __init__(self, connection_module: dict, power_module: dict) -> None:
+    def __init__(self, id: int, connection_module: dict, power_module: dict) -> None:
+        self.id = id
         self.connection_module = connection_module
         self.power_module = power_module
         self.component_info = ComponentInfo(
-            self.connection_module["configuration"]["id"],
+            self.id,
             "Ladepunkt", "chargepoint")
 
     def set_current(self, current: float) -> None:
@@ -39,7 +41,7 @@ class ChargepointModule(AbstractChargepoint):
     def get_values(self) -> None:
         with SingleComponentUpdateContext(self.component_info):
             ip_address = self.connection_module["configuration"]["ip_address"]
-            cp_num = self.connection_module["configuration"]["id"]
+            cp_num = self.id
             my_ip_address = data.data.system_data["system"].data["ip_address"]
             pub.pub_single("openWB/set/isss/heartbeat", 0, hostname=ip_address)
             pub.pub_single("openWB/set/isss/parentWB", my_ip_address,

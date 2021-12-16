@@ -11,25 +11,27 @@ from packages.modules.common.component_state import ChargepointState
 
 
 def get_default_config() -> Dict:
-    return {"connection_module": {
-        "type": "ip_evse",
-        "configuration":
-        {"ip_address": "192.168.193.5",
-         "modbus_id": 1,
-         "id": 0}
-    },
-        "power_module": {}}
+    return {"id": 0,
+            "connection_module": {
+                "type": "ip_evse",
+                "configuration":
+                {"ip_address": "192.168.193.5",
+                 "modbus_id": 1
+                 }
+            },
+            "power_module": {}}
 
 
 class ChargepointModule(AbstractChargepoint):
-    def __init__(self, connection_module: dict, power_module: dict) -> None:
+    def __init__(self, id: int, connection_module: dict, power_module: dict) -> None:
+        self.id = id
         self.connection_module = connection_module
         self.power_module = power_module
         ip_address = self.connection_module["configuration"]["ip_address"]
         self.__client = modbus.ModbusClient(ip_address, 8899)
-        self.__store = get_chargepoint_value_store(self.connection_module["configuration"]["id"])
+        self.__store = get_chargepoint_value_store(self.id)
         self.component_info = ComponentInfo(
-            self.connection_module["configuration"]["id"],
+            self.id,
             "Ladepunkt", "chargepoint")
 
     def get_values(self) -> None:
