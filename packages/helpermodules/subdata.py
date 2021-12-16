@@ -368,7 +368,7 @@ class SubData:
                         mod = importlib.import_module(
                             "."+config["connection_module"]["type"]+".chargepoint_module", "modules")
                         var["cp"+index].chargepoint_module = mod.ChargepointModule(
-                            config["connection_module"], config["power_module"])
+                            config["id"], config["connection_module"], config["power_module"])
                     self.set_json_payload(var["cp"+index].data, msg)
                     self.event_cp_config.set()
             elif re.search("^.+/chargepoint/get/.+$", msg.topic) is not None:

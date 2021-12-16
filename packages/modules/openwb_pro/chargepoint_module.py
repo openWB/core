@@ -3,30 +3,33 @@ import time
 import requests
 from typing import Dict
 
+from helpermodules.log import MainLogger
 from modules.common.abstract_chargepoint import AbstractChargepoint
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.fault_state import ComponentInfo
 from modules.common.store import get_chargepoint_value_store
-from packages.modules.common.component_state import ChargepointState
+from modules.common.component_state import ChargepointState
 
 
 def get_default_config() -> Dict:
-    return {"connection_module": {
-        "type": "openwb_pro",
-        "configuration":
-        {"ip_address": "192.168.1.100",
-         "id": 0}
-    },
-        "power_module": {}}
+    return {"id": 0,
+            "connection_module": {
+                "type": "openwb_pro",
+                "configuration":
+                {"ip_address": "192.168.1.85"
+                 }
+            },
+            "power_module": {}}
 
 
 class ChargepointModule(AbstractChargepoint):
-    def __init__(self, connection_module: dict, power_module: dict) -> None:
+    def __init__(self, id: int, connection_module: dict, power_module: dict) -> None:
+        self.id = id
         self.connection_module = connection_module
         self.power_module = power_module
-        self.__store = get_chargepoint_value_store(self.connection_module["configuration"]["id"])
+        self.__store = get_chargepoint_value_store(self.id)
         self.component_info = ComponentInfo(
-            self.connection_module["configuration"]["id"],
+            self.id,
             "Ladepunkt", "chargepoint")
 
     def set_current(self, current: float) -> None:
@@ -43,6 +46,7 @@ class ChargepointModule(AbstractChargepoint):
             response = requests.get('http://'+ip_address+'/api2.php')
             response.raise_for_status()
             json_rsp = response.json()
+            MainLogger().debug("openWB Pro "+str(self.id)+": "+str(json_rsp))
 
             chargepoint_state = ChargepointState(
                 power_all=json_rsp["power_all"],

@@ -74,4 +74,4 @@ class FaultState(Exception):
             return FaultState.no_error()
         if isinstance(exception, FaultState):
             return exception
-        return exceptions.get_default_exception_registry().translate_exception(exception)
+        return exception.get_default_exception_registry().translate_exception(exception)
