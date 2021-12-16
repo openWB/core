@@ -291,14 +291,14 @@ function processGlobalCounterMessages(mqttmsg, mqttpayload) {
 		$('.houseconsumption-power').text(powerHome + ' ' + unit);
 	} else if (mqttmsg.match(/^openwb\/counter\/set\/daily_yield_home_consumption$/i)) {
 		var unit = "Wh";
-		var unitPrefix = "k";
+		var unitPrefix = "";
 		var houseDailyYield = parseFloat(mqttpayload);
 		if (isNaN(houseDailyYield)) {
 			houseDailyYield = 0;
 		}
 		if (houseDailyYield > 999) {
 			houseDailyYield = (houseDailyYield / 1000).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-			unitPrefix = "M";
+			unitPrefix = "k";
 		} else {
 			houseDailyYield = houseDailyYield.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 		}
