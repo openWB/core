@@ -6,14 +6,15 @@ def get_default_config() -> Dict:
         "name": "NeueBruecke",
         "active": False,
         "remote": {
-            "user": "",
+            "is_openwb_cloud": False,
+            "username": "",
             "password": "",
             "client_id": "openWB",
             "host": "",
             "port": 1886,
             "prefix": "openWB/",
             "protocol": "mqttv311",
-            "tls_version": "tlsv1.3",
+            "tls_version": "auto",
             "try_private": False
         },
         "data_transfer": {
@@ -29,14 +30,15 @@ def get_cloud_config() -> Dict:
         "name": "openWBCloud",
         "active": True,
         "remote": {
-            "user": "",
+            "is_openwb_cloud": True,
+            "username": "",
             "password": "",
             "client_id": "openWB",
             "host": "web.openwb.de",
             "port": 1883,
             "prefix": "",
             "protocol": "mqttv311",
-            "tls_version": "tlsv1.3",
+            "tls_version": "auto",
             "try_private": True
         },
         "data_transfer": {

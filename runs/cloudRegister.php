@@ -25,7 +25,9 @@ function abort($message){
 $url = 'https://web.openwb.de/php/localregistrate.php';
 $ch = curl_init($url);
 # Form data string
-$postString = http_build_query($data)."\n";
+$postData = [ "username" => $data["username"], "email" => $data["email"] ];
+$postString = http_build_query($postData)."\n";
+debugPrint($postString);
 # Setting our options
 curl_setopt($ch, CURLOPT_POST, 1);
 curl_setopt($ch, CURLOPT_POSTFIELDS, $postString);
