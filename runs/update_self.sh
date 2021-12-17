@@ -5,7 +5,7 @@ cp modules/soc_eq/soc_eq_acc_lp2 /tmp/soc_eq_acc_lp2
 
 # fetch new release from GitHub
 sudo git fetch origin
-sudo git reset --hard origin/$0
+sudo git reset --hard origin/$1
 
 # set permissions
 cd /var/www/html/
