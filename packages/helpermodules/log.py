@@ -4,17 +4,7 @@
 import logging
 from pathlib import Path
 import subprocess
-
-debug_logger = None
-debug_fhandler = None
-debug_lock = None
-data_logger = None
-data_fhandler = None
-data_lock = None
-mqtt_logger = None
-mqtt_fhandler = None
-mqtt_lock = None
-
+import logging
 
 class MainLogger:
     instance = None  # type: logging.Logger
