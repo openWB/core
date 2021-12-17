@@ -876,7 +876,8 @@ class SetData:
                 self._validate_value(msg, int, [(0, 1)])
             elif "openWB/set/system/debug_level" in msg.topic:
                 self._validate_value(msg, int, [(0, 2)])
-            elif "openWB/set/system/ip_address" in msg.topic:
+            elif ("openWB/set/system/ip_address" in msg.topic or
+                    "openWB/set/system/release_train" in msg.topic):
                 self._validate_value(msg, str)
             elif "openWB/set/system/mqtt/bridge/" in msg.topic:
                 self._validate_value(msg, "json")

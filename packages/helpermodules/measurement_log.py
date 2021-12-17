@@ -86,7 +86,7 @@ def save_log(folder):
             try:
                 if "cp" in cp:
                     cp_dict.update(
-                        {cp: {"counter": data.data.cp_data[cp].data["get"]["counter"]}})
+                        {cp: {"counter_all": data.data.cp_data[cp].data["get"]["counter_all"]}})
             except Exception:
                 MainLogger().exception("Fehler im Werte-Loggingmodul fuer Ladepunkt "+str(cp))
         try:
@@ -210,8 +210,8 @@ def update_daily_yields():
         for cp in daily_log[0]["cp"]:
             if "cp" in cp:
                 if cp in data.data.cp_data:
-                    daily_yield = data.data.cp_data[cp].data["get"]["counter"] - \
-                        daily_log[0]["cp"][cp]["counter"]
+                    daily_yield = data.data.cp_data[cp].data["get"]["counter_all"] - \
+                        daily_log[0]["cp"][cp]["counter_all"]
                     Pub().pub("openWB/set/chargepoint/" +
                               str(data.data.cp_data[cp].cp_num)+"/get/daily_yield", daily_yield)
                 else:
