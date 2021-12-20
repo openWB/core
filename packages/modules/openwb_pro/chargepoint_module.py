@@ -52,7 +52,7 @@ class ChargepointModule(AbstractChargepoint):
                 power_all=json_rsp["power_all"],
                 currents=json_rsp["currents"],
                 imported=json_rsp["imported"],
-                counter=json_rsp["exported"],
+                exported=json_rsp["exported"],
                 plug_state=json_rsp["plug_state"],
                 charge_state=json_rsp["charge_state"],
                 phases_in_use=json_rsp["phases_in_use"]

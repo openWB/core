@@ -84,7 +84,6 @@ def _get_cp() -> List[threading.Thread]:
                         modules_threads.append(thread)
             except Exception:
                 MainLogger().exception("Fehler im loadvars-Modul")
-        return modules_threads
     except Exception:
         MainLogger().exception("Fehler im loadvars-Modul")
     finally:
@@ -128,18 +127,22 @@ def _get_modules() -> List[threading.Thread]:
 
 def _get_soc() -> List[threading.Thread]:
     modules_threads = []  # type: List[threading.Thread]
-    for ev in data.data.ev_data.values():
-        # Ist das Auto einem LP zugeordnet?
-        for cp in data.data.cp_data.values():
-            if isinstance(cp, chargepoint.Chargepoint):
-                if cp.data["set"]["charging_ev"] == ev.ev_num:
-                    cp_state = cp.data
-                    charge_state = cp.data["get"]["charge_state"]
-                    plug_state = cp.data["get"]["plug_state"]
-                    break
-        else:
-            cp_state, plug_state, charge_state = None,  None, None
-        if ev.ev_template.soc_interval_expired(plug_state, charge_state, ev.data["get"].get(
-                "timestamp_last_request")):
-            modules_threads.append(threading.Thread(target=ev.soc_module.update, args=(cp_state,)))
-    return modules_threads
+    try:
+        for ev in data.data.ev_data.values():
+            # Ist das Auto einem LP zugeordnet?
+            for cp in data.data.cp_data.values():
+                if isinstance(cp, chargepoint.Chargepoint):
+                    if cp.data["set"]["charging_ev"] == ev.ev_num:
+                        cp_state = cp.data
+                        charge_state = cp.data["get"]["charge_state"]
+                        plug_state = cp.data["get"]["plug_state"]
+                        break
+            else:
+                cp_state, plug_state, charge_state = None,  None, None
+            if ev.ev_template.soc_interval_expired(plug_state, charge_state, ev.data["get"].get(
+                    "timestamp_last_request")):
+                modules_threads.append(threading.Thread(target=ev.soc_module.update, args=(cp_state,)))
+    except Exception:
+        MainLogger().exception("Fehler im loadvars-Modul")
+    finally:
+        return modules_threads

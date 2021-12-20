@@ -60,7 +60,7 @@ class CarState:
 class ChargepointState:
     def __init__(self,
                  imported: float = 0,
-                 counter: float = 0,
+                 exported: float = 0,
                  power_all: float = 0,
                  voltages: List[float] = None,
                  currents: List[float] = None,
@@ -78,7 +78,7 @@ class ChargepointState:
             power_factors = [0]*3
         self.power_factors = power_factors
         self.imported = imported
-        self.counter = counter
+        self.exported = exported
         self.power_all = power_all
         self.phases_in_use = phases_in_use
         self.charge_state = charge_state

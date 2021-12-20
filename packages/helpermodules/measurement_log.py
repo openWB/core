@@ -86,7 +86,7 @@ def save_log(folder):
             try:
                 if "cp" in cp:
                     cp_dict.update(
-                        {cp: {"counter_all": data.data.cp_data[cp].data["get"]["counter_all"]}})
+                        {cp: {"counter": data.data.cp_data[cp].data["get"]["counter"]}})
             except Exception:
                 MainLogger().exception("Fehler im Werte-Loggingmodul fuer Ladepunkt "+str(cp))
         try:
