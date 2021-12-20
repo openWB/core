@@ -32,6 +32,11 @@ class ChargepointModule(AbstractChargepoint):
             self.id,
             "Ladepunkt", "chargepoint")
 
+        response = requests.post(
+            'http://' + self.connection_module["configuration"]["ip_address"] + '/connect.php',
+            data={'heartbeatenabled': '1'})
+        response.raise_for_status()
+
     def set_current(self, current: float) -> None:
         with SingleComponentUpdateContext(self.component_info):
             ip_address = self.connection_module["configuration"]["ip_address"]
