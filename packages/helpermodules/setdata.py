@@ -330,13 +330,8 @@ class SetData:
                 self._validate_value(msg, str)
             elif "openWB/set/vehicle/template" in msg.topic:
                 self._subprocess_vehicle_chargemode_topic(msg)
-            elif ("/soc/config/request_interval_charging" in msg.topic or
-                    "/soc/config/reques_interval_not_charging" in msg.topic):
-                self._validate_value(msg, int, [(0, float("inf"))])
-            elif ("/soc/config/request_only_plugged" in msg.topic or
-                    "/soc/config/configured" in msg.topic or
-                    "/soc/config/manual" in msg.topic):
-                self._validate_value(msg, int, [(0, 1)])
+            elif "/soc_module/config" in msg.topic:
+                self._validate_value(msg, "json")
             elif "/soc/get/fault_state" in msg.topic:
                 self._validate_value(msg, int, [(0, 2)])
             elif "/soc/get/fault_str" in msg.topic:
@@ -351,7 +346,9 @@ class SetData:
             elif "/get/soc_timestamp" in msg.topic:
                 self._validate_value(msg, int, [(0, float("inf"))])
             elif "/get/soc" in msg.topic:
-                self._validate_value(msg, int, [(0, 100)])
+                self._validate_value(msg, float, [(0, 100)])
+            elif "/get/timestamp_last_request" in msg.topic:
+                self._validate_value(msg, str)
             elif "/control_parameter/required_current" in msg.topic:
                 self._validate_value(msg, float, [(6, 32), (0, 0)])
             elif "/control_parameter/phases" in msg.topic:
@@ -512,7 +509,8 @@ class SetData:
                     msg, float, [(0, float("inf"))], collection=list)
             elif ("/get/daily_yield" in msg.topic or
                     "/get/power_all" in msg.topic or
-                    "/get/counter" in msg.topic):
+                    "/get/counter" in msg.topic or
+                    "/get/exported" in msg.topic):
                 self._validate_value(msg, float, [(0, float("inf"))])
             elif "/get/phases_in_use" in msg.topic:
                 self._validate_value(msg, int, [(0, 3)])
@@ -869,13 +867,15 @@ class SetData:
                 self._validate_value(msg, "json")
             elif ("openWB/set/system/perform_update" in msg.topic or
                     "openWB/set/system/wizzard_done" in msg.topic or
-                    "openWB/set/system/update_in_progress" in msg.topic):
+                    "openWB/set/system/update_in_progress" in msg.topic or
+                    "openWB/set/system/dataprotection_acknowledged" in msg.topic):
                 self._validate_value(msg, int, [(0, 1)])
-            elif "openWB/set/system/dataprotection_acknowledged" in msg.topic:
-                self._validate_value(msg, int, [(0, 1)])
+            elif "openWB/set/system/remote_support" in msg.topic:
+                self._validate_value(msg, str)
             elif "openWB/set/system/debug_level" in msg.topic:
                 self._validate_value(msg, int, [(0, 2)])
-            elif "openWB/set/system/ip_address" in msg.topic:
+            elif ("openWB/set/system/ip_address" in msg.topic or
+                    "openWB/set/system/release_train" in msg.topic):
                 self._validate_value(msg, str)
             elif "openWB/set/system/mqtt/bridge/" in msg.topic:
                 self._validate_value(msg, "json")

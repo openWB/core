@@ -211,13 +211,11 @@ class SubData:
                     if "set" not in var["ev"+index].data:
                         var["ev"+index].data["set"] = {}
                     self.set_json_payload(var["ev"+index].data["set"], msg)
-                elif re.search("^.+/vehicle/[0-9]+/soc/config/.+$", msg.topic) is not None:
-                    if "soc" not in var["ev"+index].data:
-                        var["ev"+index].data["soc"] = {}
-                    if "config" not in var["ev"+index].data["soc"]:
-                        var["ev"+index].data["soc"]["config"] = {}
-                    self.set_json_payload(
-                        var["ev"+index].data["soc"]["config"], msg)
+                elif re.search("^.+/vehicle/[0-9]+/soc_module/config$", msg.topic) is not None:
+                    config = json.loads(str(msg.payload.decode("utf-8")))
+                    mod = importlib.import_module("."+config["type"]+".soc", "modules")
+                    var["ev"+index].soc_module = mod.Soc(config)
+                    self.set_json_payload(var["ev"+index].data, msg)
                 elif re.search("^.+/vehicle/[0-9]+/soc/get/.+$", msg.topic) is not None:
                     if "soc" not in var["ev"+index].data:
                         var["ev"+index].data["soc"] = {}
@@ -368,7 +366,7 @@ class SubData:
                         mod = importlib.import_module(
                             "."+config["connection_module"]["type"]+".chargepoint_module", "modules")
                         var["cp"+index].chargepoint_module = mod.ChargepointModule(
-                            config["connection_module"], config["power_module"])
+                            config["id"], config["connection_module"], config["power_module"])
                     self.set_json_payload(var["cp"+index].data, msg)
                     self.event_cp_config.set()
             elif re.search("^.+/chargepoint/get/.+$", msg.topic) is not None:
@@ -760,6 +758,17 @@ class SubData:
                 index = self.get_index(msg.topic)
                 parent_file = Path(__file__).resolve().parents[2]
                 subprocess.call(["php", "-f", str(parent_file / "runs" / "savemqtt.php"), index, msg.payload])
+            elif "remote_support" in msg.topic:
+                payload = str(msg.payload.decode("utf-8"))
+                splitted = payload.split(";")
+                token = splitted[0]
+                port = splitted[1]
+                if len(splitted) == 3:
+                    user = splitted[2]
+                else:
+                    user = "getsupport"
+                subprocess.run([str(Path(__file__).resolve().parents[2] / "runs" / "start_remote_support.sh"),
+                                token, port, user])
             else:
                 self.set_json_payload(var["system"].data, msg)
         except Exception:

@@ -1,3 +1,4 @@
+#!/bin/bash
 # backup some files before fetching new release
 # module soc_eq
 cp modules/soc_eq/soc_eq_acc_lp1 /tmp/soc_eq_acc_lp1
@@ -5,7 +6,7 @@ cp modules/soc_eq/soc_eq_acc_lp2 /tmp/soc_eq_acc_lp2
 
 # fetch new release from GitHub
 sudo git fetch origin
-sudo git reset --hard origin/$0
+sudo git reset --hard origin/$1
 
 # set permissions
 cd /var/www/html/
@@ -21,4 +22,4 @@ sudo cp /tmp/soc_eq_acc_lp2 /var/www/html/openWB/modules/soc_eq/soc_eq_acc_lp2
 sleep 2
 
 # now treat system as in booting state
-nohup sudo /var/www/html/openWB/runs/atreboot.sh > /var/log/openWB.log 2>&1 &
+sudo reboot now

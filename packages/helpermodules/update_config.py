@@ -194,6 +194,7 @@ class UpdateConfig:
                    "^openWB/vehicle/[0-9]+/charge_template$",
                    "^openWB/vehicle/[0-9]+/ev_template$",
                    "^openWB/vehicle/[0-9]+/name$",
+                   "^openWB/vehicle/[0-9]+/soc_module/config$",
                    "^openWB/vehicle/[0-9]+/tag_id$",
                    "^openWB/vehicle/[0-9]+/get/soc$",
                    "^openWB/vehicle/[0-9]+/get/soc_timetamp$",
@@ -213,6 +214,7 @@ class UpdateConfig:
                    "^openWB/system/debug_level$",
                    "^openWB/system/lastlivevaluesJson$",
                    "^openWB/system/ip_address$",
+                   "^openWB/system/release_train$",
                    "^openWB/system/update_in_progress$",
                    "^openWB/system/device/[0-9]+/config$",
                    "^openWB/system/device/[0-9]+/component/[0-9]+/config$",
@@ -289,7 +291,8 @@ class UpdateConfig:
         ("openWB/optional/rfid/active", False),
         ("openWB/system/dataprotection_acknowledged", False),
         ("openWB/system/debug_level", 0),
-        ("openWB/system/ip_address", "unknown"))
+        ("openWB/system/ip_address", "unknown"),
+        ("openWB/system/release_train", "master"))
 
     def __init__(self) -> None:
         self.all_received_topics = []

@@ -7,11 +7,13 @@ stärke wird auch geprüft, ob sich an diesen Parametern etwas geändert hat. Fa
 in der Regelung neu priorisiert werden und eine neue Zuteilung des Stroms erhalten.
 """
 import traceback
+from typing import Union
 
 from control import data
 from helpermodules.log import MainLogger
 from helpermodules.pub import Pub
 from helpermodules import timecheck
+from modules.common.abstract_soc import AbstractSoc
 
 
 def get_vehicle_default() -> dict:
@@ -62,6 +64,7 @@ class Ev:
         try:
             self.ev_template = None  # type: EvTemplate
             self.charge_template = None  # type: ChargeTemplate
+            self.soc_module = None  # type: AbstractSoc
             self.ev_num = index
             self.data = {"set": {},
                          "get": {"range_charged": 0},
@@ -224,11 +227,6 @@ class Ev:
                       "/control_parameter/required_current", required_current)
         except Exception:
             MainLogger().exception("Fehler im ev-Modul "+str(self.ev_num))
-
-    def get_soc(self):
-        """ermittelt den SoC, wenn die Zugangsdaten konfiguriert sind.
-        """
-        pass
 
     def check_min_max_current(self, required_current, phases, pv=False):
         """ prüft, ob der gesetzte Ladestrom über dem Mindest-Ladestrom und unter dem Maximal-Ladestrom des EVs liegt.
@@ -445,7 +443,10 @@ def get_ev_template_default() -> dict:
         "min_current": 6,
         "max_current_one_phase": 32,
         "battery_capacity": 82,
-        "nominal_difference": 2
+        "nominal_difference": 2,
+        "request_interval_charging": 5,
+        "request_interval_not_charging": 720,
+        "request_only_plugged": False
     }
 
 
@@ -456,6 +457,25 @@ class EvTemplate:
     def __init__(self, index):
         self.data = {}
         self.et_num = index
+
+    def soc_interval_expired(
+            self, plug_state: bool, charge_state: bool, timestamp_last_request: Union[str, None]) -> bool:
+        request_soc = False
+        if (self.data["request_only_plugged"] is False or
+                (self.data["request_only_plugged"] is True and plug_state is True)):
+            if charge_state is True:
+                interval = self.data["request_interval_charging"]
+            else:
+                interval = self.data["request_interval_not_charging"]
+            # Zeitstempel prüfen, ob wieder abgefragt werden muss.
+            if timestamp_last_request is not None:
+                if timecheck.check_timestamp(timestamp_last_request, interval*60) is False:
+                    # Zeit ist abgelaufen
+                    request_soc = True
+            else:
+                # Initiale Abfrage
+                request_soc = True
+        return request_soc
 
 
 def get_charge_template_default() -> dict:

@@ -52,5 +52,34 @@ class InverterState:
 
 
 class CarState:
-    def __init__(self, soc: float):
+    def __init__(self, soc: float, timestamp: str):
         self.soc = soc
+        self.timestamp = timestamp
+
+
+class ChargepointState:
+    def __init__(self,
+                 imported: float = 0,
+                 exported: float = 0,
+                 power_all: float = 0,
+                 voltages: List[float] = None,
+                 currents: List[float] = None,
+                 power_factors: List[float] = None,
+                 phases_in_use: int = 1,
+                 charge_state: bool = False,
+                 plug_state: bool = False):
+        if voltages is None:
+            voltages = [0]*3
+        self.voltages = voltages
+        if currents is None:
+            currents = [0]*3
+        self.currents = currents
+        if power_factors is None:
+            power_factors = [0]*3
+        self.power_factors = power_factors
+        self.imported = imported
+        self.exported = exported
+        self.power_all = power_all
+        self.phases_in_use = phases_in_use
+        self.charge_state = charge_state
+        self.plug_state = plug_state

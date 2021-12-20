@@ -53,11 +53,11 @@ class System:
                 try:
                     if "cp" in cp:
                         chargepoint = data.data.cp_data[cp]
-                        if chargepoint.data["config"]["connection_module"]["selected"] == "external_openwb":
+                        if chargepoint.chargepoint_module.connection_module["type"] == "external_openwb":
                             MainLogger().info("Update an LP "+str(chargepoint.cp_num)+" angestossen.")
-                            ip_address = chargepoint.data["config"]["connection_module"]["config"]["external_openwb"][
+                            ip_address = chargepoint.chargepoint_module.connection_module["configuration"][
                                 "ip_address"]
-                            pub.pub_single("openWB/set/system/releaseTrain", train, ip_address, no_json=True)
+                            pub.pub_single("openWB/config/set/releaseTrain", train, ip_address, no_json=True)
                             pub.pub_single("openWB/set/system/PerformUpdate", "1", ip_address, no_json=True)
                 except Exception:
                     MainLogger().exception("Fehler im System-Modul")
