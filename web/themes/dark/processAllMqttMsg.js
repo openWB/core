@@ -335,28 +335,28 @@ function processEvuMessages(mqttmsg, mqttpayload) {
 		$('.grid-power').text(powerEvu + ' ' + unit);
 	} else if (mqttmsg == 'openWB/counter/0/get/daily_yield_import') {
 		var unit = "Wh";
-		var unitPrefix = "k";
+		var unitPrefix = "";
 		var gridDailyYield = parseFloat(mqttpayload);
 		if (isNaN(gridDailyYield)) {
 			gridDailyYield = 0;
 		}
 		if (gridDailyYield > 999) {
 			gridDailyYield = (gridDailyYield / 1000).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-			unitPrefix = "M";
+			unitPrefix = "k";
 		} else {
 			gridDailyYield = gridDailyYield.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 		}
 		$('.grid-import').text(gridDailyYield + ' ' + unitPrefix + unit);
 	} else if (mqttmsg == 'openWB/counter/0/get/daily_yield_export') {
 		var unit = "Wh";
-		var unitPrefix = "k";
+		var unitPrefix = "";
 		var gridDailyYield = parseFloat(mqttpayload);
 		if (isNaN(gridDailyYield)) {
 			gridDailyYield = 0;
 		}
 		if (gridDailyYield > 999) {
 			gridDailyYield = (gridDailyYield / 1000).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-			unitPrefix = "M";
+			unitPrefix = "k";
 		} else {
 			gridDailyYield = gridDailyYield.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 		}
@@ -540,28 +540,28 @@ function processChargepointMessages(mqttmsg, mqttpayload) {
 		$('.chargepoint-sum-power').text(powerAllLp + ' ' + unitPrefix + unit);
 	} else if (mqttmsg == 'openWB/chargepoint/get/daily_yield') {
 		var unit = "Wh";
-		var unitPrefix = "k";
+		var unitPrefix = "";
 		var dailyYield = parseFloat(mqttpayload);
 		if (isNaN(dailyYield)) {
 			dailyYield = 0;
 		}
 		if (dailyYield > 999) {
 			dailyYield = (dailyYield / 1000).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-			unitPrefix = "M";
+			unitPrefix = "k";
 		} else {
 			dailyYield = dailyYield.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 		}
 		$('.chargepoint-sum-importdaily').text(dailyYield + ' ' + unitPrefix + unit);
 	} else if (mqttmsg == 'openWB/chargepoint/get/daily_exported_all') {
 		var unit = "Wh";
-		var unitPrefix = "k";
+		var unitPrefix = "";
 		var dailyYield = parseFloat(mqttpayload);
 		if (isNaN(dailyYield)) {
 			dailyYield = 0;
 		}
 		if (dailyYield > 999) {
 			dailyYield = (dailyYield / 1000).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-			unitPrefix = "M";
+			unitPrefix = "k";
 		} else {
 			dailyYield = dailyYield.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 		}

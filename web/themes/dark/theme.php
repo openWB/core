@@ -145,7 +145,7 @@
 									SoC
 								</div>
 								<div class="housebattery-sum-soc col pl-0 text-right">
-									XX %
+									-- %
 								</div>
 							</div>
 							<div class="row">
@@ -158,7 +158,7 @@
 									Geladen
 								</div>
 								<div class="housebattery-sum-import col pl-0 text-right">
-									XX kWh
+									-- Wh
 								</div>
 							</div>
 							<div class="row">
@@ -166,7 +166,7 @@
 									Entladen
 								</div>
 								<div class="housebattery-sum-export col pl-0 text-right">
-									XX kWh
+									-- Wh
 								</div>
 							</div>
 							<div class="pv-configured">
@@ -208,7 +208,7 @@
 									Ertrag 
 								</div>
 								<div class="pv-sum-production col pl-0 text-right">
-									-- kWh
+									-- Wh
 								</div>
 							</div>
 						</div>
@@ -241,7 +241,7 @@
 									Bezug
 								</div>
 								<div class="grid-import col pl-0 text-right">
-									XX kWh
+									-- Wh
 								</div>
 							</div>
 							<div class="row">
@@ -249,7 +249,7 @@
 									Einspeisung
 								</div>
 								<div class="grid-export col pl-0 text-right">
-									XX kWh
+									-- Wh
 								</div>
 							</div>
 							<div class="et-configured hide">
@@ -272,7 +272,7 @@
 										aktuell
 									</div>
 									<div class="et-current-price col pl-0 text-right">
-										XX ct/kWh
+										-- ct/kWh
 									</div>
 								</div>
 								<div class="row">
@@ -280,7 +280,7 @@
 										Preisgrenze
 									</div>
 									<div class="et-price-limit col pl-0 text-right">
-										XX ct/kWh
+										-- ct/kWh
 									</div>
 								</div>
 							</div>
@@ -307,7 +307,7 @@
 									Energie 
 								</div>
 								<div class="houseconsumption-daily col pl-0 text-right">
-									XX kWh
+									-- Wh
 								</div>
 							</div>
 						</div>
@@ -319,7 +319,7 @@
 					<div class="card border-primary">
 						<div class="card-header bg-primary collapsed" data-toggle="collapse" data-target="#cardChargepointSum">
 							<i class="fas fa-charging-station"></i>
-							<span class="chargepoint-sum-power">XX W</span>
+							<span class="chargepoint-sum-power">-- W</span>
 							<span class="collPlus"></span>
 						</div>
 						<div id="cardChargepointSum" class="card-body collapse">
@@ -333,7 +333,7 @@
 									Geladen
 								</div>
 								<div class="chargepoint-sum-importdaily col pl-0 text-right">
-									XX kWh
+									-- Wh
 								</div>
 							</div>
 							<!-- Preparation for bidirectional charging V2H/V2G
@@ -342,7 +342,7 @@
 									Entladen
 								</div>
 								<div class="chargepoint-sum-exportdaily col pl-0 text-right">
-									XX kWh
+									-- Wh
 								</div>
 							</div>
 							-->
@@ -912,7 +912,7 @@
 					// some helper functions
 					'themes/dark/helperFunctions.js?ver=20210504',
 					// functions for processing messages
-					'themes/dark/processAllMqttMsg.js?ver=20210504',
+					'themes/dark/processAllMqttMsg.js?ver=20211220',
 					// respective Chart.js definition live
 					'themes/dark/livechart.js?ver=20201218',
 					// respective Chart.js definition
