@@ -97,19 +97,16 @@ class Process:
             MainLogger().error(
                 "LP"+str(chargepoint.cp_num)+": Ladung wurde trotz verhinderter Unterbrechung gestoppt.")
 
+        # Wenn ein EV zugeordnet ist und die Phasenumschaltung aktiv ist, darf kein Strom gesetzt werden.
+        if charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] != "0":
+            current = 0
+        else:
+            current = chargepoint.data["set"]["current"]
+
         chargepoint.data["set"]["current"] = current
         Pub().pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/set/current", current)
         MainLogger().debug("LP"+str(chargepoint.cp_num)+": set current "+str(current)+" A")
 
     def _start_charging(self, chargepoint: chargepoint.Chargepoint) -> threading.Thread:
-        if "charging_ev_data" in chargepoint.data["set"]:
-            charging_ev = chargepoint.data["set"]["charging_ev_data"]
-            # Wenn ein EV zugeordnet ist und die Phasenumschaltung aktiv ist, darf kein Strom gesetzt werden.
-            if charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] != "0":
-                current = 0
-            else:
-                current = chargepoint.data["set"]["current"]
-        else:
-            current = chargepoint.data["set"]["current"]
-
-        return threading.Thread(target=chargepoint.chargepoint_module.set_current, args=(current,))
+        return threading.Thread(target=chargepoint.chargepoint_module.set_current,
+                                args=(chargepoint.data["set"]["current"],))
