@@ -13,7 +13,8 @@ from helpermodules.log import MainLogger
 
 MAX_ATTEMPTS = 7
 CLIENT_ID = "81527cff06843c8634fdc09e8ac0abefb46ac849f38fe1e431c2ef2106796384"
-# UA = "Mozilla/5.0 (Linux; Android 10; Pixel 3 Build/QQ2A.200305.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/85.0.4183.81 Mobile Safari/537.36"
+# UA = "Mozilla/5.0 (Linux; Android 10; Pixel 3 Build/QQ2A.200305.002; wv) AppleWebKit/537.36 (KHTML, like Gecko)
+# Version/4.0 Chrome/85.0.4183.81 Mobile Safari/537.36"
 # X_TESLA_USER_AGENT = "TeslaApp/3.10.9-433/adff2e065/android/10"
 
 # The documentation here:
@@ -59,7 +60,7 @@ def loadTokens(tokensFilename):
         return False
 
 
-def saveTokens():
+def saveTokens(tokensFilename):
     try:
         with open(tokensFilename, "w") as W:
             W.write(json.dumps(tokens))
@@ -69,7 +70,7 @@ def saveTokens():
         return False
 
 
-def login(email, password, mfaPasscode):
+def login(email, password, mfaPasscode, tokensFilename):
     headers = {
         # "User-Agent": UA,
         # "x-tesla-user-agent": X_TESLA_USER_AGENT,
@@ -127,7 +128,8 @@ def login(email, password, mfaPasscode):
         raise ValueError("Didn't post auth form in %d attempts." % (MAX_ATTEMPTS))
 
     # Determine if user has MFA enabled
-    # In that case there is no redirect to `https://auth.tesla.com/void/callback` and app shows new form with Passcode / Backup Passcode field
+    # In that case there is no redirect to `https://auth.tesla.com/void/callback` and app shows new form with Passcode
+    # / Backup Passcode field
     is_mfa = True if resp.status_code == 200 and "/mfa/verify" in resp.text else False
 
     if is_mfa:
@@ -252,10 +254,10 @@ def login(email, password, mfaPasscode):
     tokens["access_token"] = resp_json["access_token"]
     tokens["created_at"] = resp_json["created_at"]
     tokens["expires_in"] = resp_json["expires_in"]
-    return saveTokens()
+    return saveTokens(tokensFilename)
 
 
-def refreshToken(email):
+def refreshToken(email, tokensFilename):
     global tokens
 
     headers = {"user-agent": UA, "x-tesla-user-agent": X_TESLA_USER_AGENT}
@@ -289,7 +291,7 @@ def refreshToken(email):
     tokens["access_token"] = resp_json["access_token"]
     tokens["created_at"] = resp_json["created_at"]
     tokens["expires_in"] = resp_json["expires_in"]
-    return saveTokens()
+    return saveTokens(tokensFilename)
 
 
 def listCars():
@@ -375,13 +377,20 @@ def lib(
         verbose=False):
     #     parser = argparse.ArgumentParser()
     #     parser.add_argument("-e", "--email", type=str, required=True, help="Tesla account email")
-    #     parser.add_argument("-f", "--tokensfile", type=str, required=False, default="tesla.token", help="Filename to save tokens")
-    #     parser.add_argument("-d", "--data", type=str, required=False, default=None, help="data part to request, use \"#\" as placeholder for \"vehicle_id\" if required")
-    #     parser.add_argument("-c", "--command", type=str, required=False, default=None, help="command to send, use \"#\" as placeholder for \"vehicle_id\" if required")
-    #     parser.add_argument("-v", "--vehicle", type=int, required=False, default=0, help="vehicle number to use, defaults to \"0\"")
-    #     parser.add_argument("-V", "--vin", type=str, required=False, default=None, help="vin to use, optional instead of \"--vehicle\"")
-    #     parser.add_argument("-l", "--logprefix", type=str, required=False, default=None, help="identifier used for logging to stderr")
-    #     parser.add_argument("--listcars", required=False, default=False, action="store_true", help="list avilable cars by index and vin")
+    #     parser.add_argument("-f", "--tokensfile", type=str, required=False, default="tesla.token", help="Filename
+    # to save tokens")
+    #     parser.add_argument("-d", "--data", type=str, required=False, default=None, help="data part to request,
+    # use \"#\" as placeholder for \"vehicle_id\" if required")
+    #     parser.add_argument("-c", "--command", type=str, required=False, default=None, help="command to send, use
+    # \"#\" as placeholder for \"vehicle_id\" if required")
+    #     parser.add_argument("-v", "--vehicle", type=int, required=False, default=0, help="vehicle number to use,
+    # defaults to \"0\"")
+    #     parser.add_argument("-V", "--vin", type=str, required=False, default=None, help="vin to use, optional instead
+    # of \"--vehicle\"")
+    #     parser.add_argument("-l", "--logprefix", type=str, required=False, default=None, help="identifier used for
+    # logging to stderr")
+    #     parser.add_argument("--listcars", required=False, default=False, action="store_true", help="list avilable
+    # cars by index and vin")
     #     parser.add_argument("--verbose", required=False, default=False, action="store_true", help="be verbose")
     #     args = parser.parse_args()
 
@@ -394,24 +403,24 @@ def lib(
             if(verbose):
                 MainLogger().debug("Access token expired. Refreshing token.")
             try:
-                if(refreshToken(email)):
+                if(refreshToken(email, tokensfile)):
                     if(verbose):
                         MainLogger().debug("Token Refresh succeeded")
-            except ValueError as err:
+            except ValueError:
                 raise Exception("Token Refresh failed")
 
     if(listcars):
         listCars()
         return
-    if(vin != None):
+    if(vin is not None):
         vehicleID = getVehicleIdByVin(vin)
     else:
         vehicleID = getVehicleIdByIndex(vehicle)
-    if(vehicleID != None):
-        if(data != None):
+    if(vehicleID is not None):
+        if(data is not None):
             response = requestData(data.replace("#", str(vehicleID)))
             MainLogger().debug(json.dumps(json.loads(response)["response"]))
-        if(command != None):
+        if(command is not None):
             response = postCommand(command.replace("#", str(vehicleID)))
             MainLogger().debug(json.dumps(json.loads(response)["response"]))
         return response

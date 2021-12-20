@@ -11,24 +11,13 @@ phase_switch_threads = {}
 
 
 def thread_phase_switch(
-        cp_num: int, chargepoint_module: AbstractChargepoint, phases_to_use: int, duration: int, charge_state: bool) -> None:
+        cp_num: int,
+        chargepoint_module: AbstractChargepoint,
+        phases_to_use: int,
+        duration: int,
+        charge_state: bool) -> None:
     """ startet einen Thread pro Ladepunkt, an dem eine Phasenumschaltung durchgeführt werden soll. Die
     Phasenumschaltung erfolgt in Threads, da diese länger als ein Zyklus dauert.
-
-    Parameter
-    ---------
-    cp_num: int
-        Ladepunkt-Nummer
-    selected: str
-        Anbindungsmodul
-    config: dict
-        Konfiguration des Anbindungsmoduls
-    phases_to_use: int
-        Anzahl Phasen, die nach der Umschaltung verwendet werden sollen
-    duration: int
-        Pause vor und nach der Umschaltung
-    charge_state: int
-        Ladung aktiv/inaktiv
     """
     try:
         global phase_switch_threads

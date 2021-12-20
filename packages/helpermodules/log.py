@@ -4,7 +4,7 @@
 import logging
 from pathlib import Path
 import subprocess
-import logging
+
 
 class MainLogger:
     instance = None  # type: logging.Logger

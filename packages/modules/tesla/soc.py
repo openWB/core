@@ -13,7 +13,7 @@ from modules.tesla import tesla_lib
 
 
 from helpermodules import log
-#from helpermodules.cli import run_using_positional_cli_args
+from helpermodules.cli import run_using_positional_cli_args
 from helpermodules import timecheck
 
 
@@ -63,7 +63,7 @@ class Soc(AbstractSoc):
             charge_state = chargepoint_state["get"]["charge_state"]
         with SingleComponentUpdateContext(self.component_info):
             if Path(self.config.token_file).is_file():
-                if charge_state == False:
+                if charge_state is False:
                     self.__wake_up_car()
                 soc = self.__get_soc()
                 timestamp = timecheck.create_timestamp()
@@ -102,26 +102,26 @@ class Soc(AbstractSoc):
         return float(soc)
 
 
-# def read_legacy(id: int,
-#                 username: str,
-#                 tokenfile: str,
-#                 tesla_ev_num: int,
-#                 charge_state: int):
+def read_legacy(id: int,
+                username: str,
+                tokenfile: str,
+                tesla_ev_num: int,
+                charge_state: int):
 
-#     log.MainLogger().debug('SoC-Module tesla num: ' + str(id))
-#     log.MainLogger().debug('SoC-Module tesla username: ' + str(username))
-#     log.MainLogger().debug('SoC-Module tesla tokenfile: ' + str(tokenfile))
-#     log.MainLogger().debug('SoC-Module tesla tesla_ev_num: ' + str(tesla_ev_num))
-#     log.MainLogger().debug('SoC-Module tesla charge_state: ' + str(charge_state))
+    log.MainLogger().debug('SoC-Module tesla num: ' + str(id))
+    log.MainLogger().debug('SoC-Module tesla username: ' + str(username))
+    log.MainLogger().debug('SoC-Module tesla tokenfile: ' + str(tokenfile))
+    log.MainLogger().debug('SoC-Module tesla tesla_ev_num: ' + str(tesla_ev_num))
+    log.MainLogger().debug('SoC-Module tesla charge_state: ' + str(charge_state))
 
-#     config = TeslaConfiguration(id, username, tokenfile, tesla_ev_num)
-#     soc = Soc(config)
-#     chargepoint_state = {"get": {"chargestate": charge_state}}
-#     soc.update(chargepoint_state)
+    config = TeslaConfiguration(id, username, tokenfile, tesla_ev_num)
+    soc = Soc(config)
+    chargepoint_state = {"get": {"chargestate": charge_state}}
+    soc.update(chargepoint_state)
 
 
-# if __name__ == "__main__":
-#     try:
-#         run_using_positional_cli_args(read_legacy)
-#     except Exception:
-#         log.MainLogger().exception("Fehler im Fronius Skript")
+if __name__ == "__main__":
+    try:
+        run_using_positional_cli_args(read_legacy)
+    except Exception:
+        log.MainLogger().exception("Fehler im Fronius Skript")
