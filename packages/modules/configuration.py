@@ -16,7 +16,8 @@ def _pub_configurable_soc_modules() -> None:
             {
                 "value": "evnotify",
                 "text": "EVNotify"
-            },{
+            },
+            {
                 "value": "tesla",
                 "text": "Tesla"
             }
@@ -336,8 +337,7 @@ def _pub_configurable_devices_components() -> None:
                         "text": "Virtueller Zähler"
                     }
                 ]
-            },
-            
+            }
         ]
         Pub().pub("openWB/set/system/configurable/devices_components", devices_components)
     except Exception:

@@ -461,15 +461,15 @@ class EvTemplate:
     def soc_interval_expired(
             self, plug_state: bool, charge_state: bool, timestamp_last_request: Union[str, None]) -> bool:
         request_soc = False
-        if (self.data["request_only_plugged"] == False or
-                (self.data["request_only_plugged"] == True and plug_state == True)):
-            if charge_state == True:
+        if (self.data["request_only_plugged"] is False or
+                (self.data["request_only_plugged"] is True and plug_state is True)):
+            if charge_state is True:
                 interval = self.data["request_interval_charging"]
             else:
                 interval = self.data["request_interval_not_charging"]
             # Zeitstempel prüfen, ob wieder abgefragt werden muss.
             if timestamp_last_request is not None:
-                if timecheck.check_timestamp(timestamp_last_request, interval*60) == False:
+                if timecheck.check_timestamp(timestamp_last_request, interval*60) is False:
                     # Zeit ist abgelaufen
                     request_soc = True
             else:
