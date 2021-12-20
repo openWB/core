@@ -758,6 +758,17 @@ class SubData:
                 index = self.get_index(msg.topic)
                 parent_file = Path(__file__).resolve().parents[2]
                 subprocess.call(["php", "-f", str(parent_file / "runs" / "savemqtt.php"), index, msg.payload])
+            elif "remote_support" in msg.topic:
+                payload = str(msg.payload.decode("utf-8"))
+                splitted = payload.split(";")
+                token = splitted[0]
+                port = splitted[1]
+                if len(splitted) == 3:
+                    user = splitted[2]
+                else:
+                    user = "getsupport"
+                subprocess.run([str(Path(__file__).resolve().parents[2] / "runs" / "start_remote_support.sh"),
+                                token, port, user])
             else:
                 self.set_json_payload(var["system"].data, msg)
         except Exception:
