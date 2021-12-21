@@ -168,9 +168,6 @@ class Prepare:
 
                         if message_ev is not None:
                             message = message_ev
-                        MainLogger().debug(
-                            "Ladepunkt " + str(cp.cp_num) + ", EV: " + cp.data["set"]["charging_ev_data"].data
-                            ["name"] + " (EV-Nr." + str(vehicle) + ")")
 
                         # Die benötigte Stromstärke hat sich durch eine Änderung des Lademdous oder der Konfiguration
                         # geändert. Die Zuteilung entsprechend der Priorisierung muss neu geprüft werden. Daher muss
@@ -210,10 +207,11 @@ class Prepare:
                             cp.data["set"]["charging_ev"] = -1
                             Pub().pub("openWB/set/chargepoint/" +
                                       str(cp.cp_num)+"/set/charging_ev", -1)
-                            MainLogger().debug("EV"+str(charging_ev.ev_num)+": Lademodus " +
-                                               str(charging_ev.charge_template.data["chargemode"]["selected"]) +
-                                               ", Submodus: " +
-                                               str(charging_ev.data["control_parameter"]["submode"]))
+                            MainLogger().debug(
+                                "LP " + str(cp.cp_num) + ", EV: " + cp.data["set"]["charging_ev_data"].data["name"] +
+                                " (EV-Nr." + str(vehicle) + "): Lademodus " +
+                                str(charging_ev.charge_template.data["chargemode"]["selected"]) + ", Submodus: " +
+                                str(charging_ev.data["control_parameter"]["submode"]))
                         else:
                             if (charging_ev.data["control_parameter"]["timestamp_switch_on_off"] != "0" and
                                     not cp.data["get"]["charge_state"] and
@@ -221,7 +219,8 @@ class Prepare:
                                 MainLogger().error("Reservierte Leistung kann nicht 0 sein.")
 
                             MainLogger().debug(
-                                "EV" + str(charging_ev.ev_num) + ": Theroretisch benötigter Strom " +
+                                "LP " + str(cp.cp_num) + ", EV: " + cp.data["set"]["charging_ev_data"].data
+                                ["name"] + " (EV-Nr." + str(vehicle) + "): Theroretisch benötigter Strom " +
                                 str(required_current) + "A, Lademodus " +
                                 str(charging_ev.charge_template.data["chargemode"]["selected"]) + ", Submodus: " +
                                 str(charging_ev.data["control_parameter"]["submode"]) + ", Phasen: " + str(phases) +
