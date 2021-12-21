@@ -281,7 +281,11 @@ class Data:
         for key in data:
             try:
                 if not isinstance(data[key], dict):
-                    MainLogger().debug(key+"\n"+str(data[key].data))
+                    try:
+                        MainLogger().debug(key+"\n"+str(data[key].data))
+                    except AttributeError:
+                        # Devices haben kein data-Dict
+                        pass
                 else:
                     MainLogger().debug(key+"\n"+"Klasse fehlt")
             except Exception:
