@@ -641,7 +641,7 @@ function processChargepointMessages(mqttmsg, mqttpayload) {
 		var index = getIndex(mqttmsg); // extract number between two / /
 		var parent = $('.chargepoint-card[data-cp="' + index + '"]'); // get parent row element for charge point
 		var element = parent.find('.chargepoint-energysinceplugged'); // now get parents respective child element
-		var energyCharged = parseFloat(mqttpayload, 10);
+		var energyCharged = parseFloat(mqttpayload) / 1000;
 		if (isNaN(energyCharged)) {
 			energyCharged = 0;
 		}

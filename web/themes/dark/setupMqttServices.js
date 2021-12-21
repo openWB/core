@@ -3,20 +3,21 @@
  *
  * @author Kevin Wieland
  * @author Michael Ortenstein
+ * @author Lutz Bender
  */
 
 // these topics will be subscribed
 // index 1 represents flag if value was received, needed for preloader progress bar
 // if flags are preset with 1 they are not counted on reload and page will show even if topic was not received
 
-// add topics here which should be subscribed bevore any other topics
+// add topics here which should be subscribed before any other topics
 var topicsToSubscribeFirst = [
-	["openWB/counter/get/hierarchy", 0] // hierarchy of all counters and chargepoints
+	["openWB/counter/get/hierarchy", 0] // hierarchy of all counters and charge points
 ];
 
 // add any other topics here
 var topicsToSubscribe = [
-	// data for all chargepoints
+	// data for all charge points
 	["openWB/chargepoint/get/power_all", 1], // total actual charging power; int, unit: Wh
 	["openWB/chargepoint/get/daily_yield", 1], // total counted energy for charging; float, unit: kWh
 	["openWB/chargepoint/get/daily_exported_all", 1], // total counted energy for discharging (V2G/V2H); float, unit: kWh
@@ -26,7 +27,7 @@ var topicsToSubscribe = [
 	["openWB/pv/get/power", 1], // total actual power; negative int, unit: W
 	["openWB/pv/get/daily_yield", 1], // total daily yield; float, unit: kWh
 
-	// // housebattery
+	// // house battery
 	["openWB/bat/config/configured", 1], // is a battery module configured? bool
 	["openWB/bat/get/power", 1], // total actual power; int, unit: W
 	["openWB/bat/get/soc", 1], // total actual soc; int, unit: %, 0-100
@@ -40,13 +41,13 @@ var topicsToSubscribe = [
 	["openWB/counter/0/get/daily_yield_import", 1], // daily imported energy; float, unit: kWh
 	["openWB/counter/0/get/daily_yield_export", 1], // daily exported energy; float, unit: kWh
 
-	// chargepoint topics
+	// charge point topics
 	["openWB/chargepoint/+/config", 1], // chargepoint configuration; JSON { name: str, template: int, connected_phases: int, phase_1: int, auto_phase_switch_hardware: bool, control_pilot_interruption_hw: bool, connection_module: JSON { selected: str, config: JSON } }
 	["openWB/chargepoint/+/get/state_str", 1], // information about actual state; str
 	["openWB/chargepoint/+/get/fault_str", 1], // any error messages; str
 	["openWB/chargepoint/+/get/fault_state", 1], // error state; int, 0 = ok, 1 = warning, 2 = error
-	["openWB/chargepoint/+/get/charged_since_plugged_counter", 1], // energy charged since the vehicle was plugged in; float, unit: kWh
-	["openWB/chargepoint/+/get/power_all", 1], // actuel charging power
+	["openWB/chargepoint/+/set/log/charged_since_plugged_counter", 1], // energy charged since the vehicle was plugged in; float, unit: kWh
+	["openWB/chargepoint/+/get/power_all", 1], // actual charging power
 	["openWB/chargepoint/+/get/phases_in_use", 1], // actual number of phases used while charging; int, 0-3
 	["openWB/chargepoint/+/get/plug_state", 1], // state of plug; int, 0 = disconnected, 1 = connected
 	["openWB/chargepoint/+/get/charge_state", 1], // state of charge; int, 0 = not charging, 1 = charging
@@ -64,16 +65,16 @@ var topicsToSubscribe = [
 	["openWB/vehicle/+/name", 1], // populate a list of vehicle id/name info
 	["openWB/vehicle/template/charge_template/+", 1], // populate a list of charge templates
 
-	// chargemode config
+	// charge mode config
 	["openWB/general/chargemode_config/pv_charging/bat_prio", 0],
 
 	// electricity tariff
 	["openWB/optional/et/active", 1], // et provider is configured
-	["openWB/optional/et/provider", 1], // et privider name
+	["openWB/optional/et/provider", 1], // et provider name
 	["openWB/optional/et/get/price", 1], // current price
 	["openWB/optional/et/config/max_price", 1], // configured max price
 
-	// graph topcis
+	// graph topics
 	["openWB/graph/config/duration", 1], // maximum duration to display in landing page
 	["openWB/graph/boolDisplayLp1", 1],
 	["openWB/graph/boolDisplayLp2", 1],
@@ -95,23 +96,6 @@ var topicsToSubscribe = [
 	["openWB/graph/boolDisplayLegend", 1],
 	["openWB/graph/boolDisplayLiveGraph", 1],
 	["openWB/graph/boolDisplayPv", 1],
-	// ["openWB/graph/1alllivevalues", 1],
-	// ["openWB/graph/2alllivevalues", 1],
-	// ["openWB/graph/3alllivevalues", 1],
-	// ["openWB/graph/4alllivevalues", 1],
-	// ["openWB/graph/5alllivevalues", 1],
-	// ["openWB/graph/6alllivevalues", 1],
-	// ["openWB/graph/7alllivevalues", 1],
-	// ["openWB/graph/8alllivevalues", 1],
-	// ["openWB/graph/9alllivevalues", 1],
-	// ["openWB/graph/10alllivevalues", 1],
-	// ["openWB/graph/11alllivevalues", 1],
-	// ["openWB/graph/12alllivevalues", 1],
-	// ["openWB/graph/13alllivevalues", 1],
-	// ["openWB/graph/14alllivevalues", 1],
-	// ["openWB/graph/15alllivevalues", 1],
-	// ["openWB/graph/16alllivevalues", 1],
-	// ["openWB/graph/lastlivevalues", 1],
 	["openWB/graph/alllivevaluesJson1", 1],
 	["openWB/graph/alllivevaluesJson2", 1],
 	["openWB/graph/alllivevaluesJson3", 1],

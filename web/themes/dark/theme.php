@@ -264,7 +264,7 @@
 										Anbieter
 									</div>
 									<div class="et-name col pl-0 text-right">
-										?
+										--
 									</div>
 								</div>
 								<div class="row">
@@ -293,7 +293,7 @@
 					<div class="card border-secondary">
 						<div class="card-header bg-secondary collapsed" data-toggle="collapse" data-target="#cardHouseconsumption">
 							<i class="fas fa-home"></i>
-							<span class="houseconsumption-power">? W</span>
+							<span class="houseconsumption-power">-- W</span>
 							<span class="collPlus"></span>
 						</div>
 						<div id="cardHouseconsumption" class="card-body collapse">
@@ -421,19 +421,19 @@
 						<div class="form-row">
 							<div class="col-3">
 								<span class="fas fa-xs hide autolockConfiguredCp"></span>
-								<span class="font-weight-bold chargepoint-name chargepoint-stateenabled">?</span>
+								<span class="font-weight-bold chargepoint-name chargepoint-stateenabled">--</span>
 								<span class="fa fa-xs fa-plug text-orange hide chargepoint-plugstate chargepoint-chargestate"></span>
 								<span class="fa fa-xs fa-flag-checkered hide targetChargingCp"></span>
 								<span class="fa fa-xs fa-moon hide nightChargingCp"></span>
 							</div>
 							<div class="col-3">
-								<span class="chargepoint-vehiclechargemode">?</span>
+								<span class="chargepoint-vehiclechargemode">--</span>
 							</div>
 							<div class="col-3">
-								<span class="chargepoint-power">?</span> <span class="chargepoint-phasesinuse">?</span> <span class="chargepoint-setcurrent">?</span>
+								<span class="chargepoint-power">--</span> <span class="chargepoint-phasesinuse">-</span> <span class="chargepoint-setcurrent">--</span>
 							</div>
 							<div class="col-3 collPlus">
-								<span class="chargepoint-energysinceplugged">?</span><span class="chargepoint-rangesinceplugged" data-consumption="0">?</span> 
+								<span class="chargepoint-energysinceplugged">--</span><span class="chargepoint-rangesinceplugged" data-consumption="0"></span> 
 							</div>
 						</div>
 						<div class="form-row">
@@ -445,10 +445,10 @@
 									<span class="chargepoint-faultstr"></span>
 								</div>
 							</div>
-							<div class="col-3 chargepoint-vehiclename">?</div>
+							<div class="col-3 chargepoint-vehiclename">--</div>
 							<div class="col-3">
 								<div class="chargepoint-socconfigured hide">
-									<span class="chargepoint-soc">?</span> %
+									<span class="chargepoint-soc">--</span> %
 									<i class="small chargepoint-reloadsocsymbol fas fa-redo-alt"></i>
 									<i class="chargepoint-manualsocsymbol fas fa-edit hide"></i>
 								</div>
@@ -538,7 +538,7 @@
 													<div class="col">
 														<input type="range" class="chargepoint-instantchargecurrent form-control-range rangeInput" id="currentInstantChargeCp0" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/instant_charging/current" min="6" max="32" step="1">
 													</div>
-													<label for="currentInstantChargeCp0" class="col-form-label valueLabel" data-suffix="A">? A</label>
+													<label for="currentInstantChargeCp0" class="col-form-label valueLabel" data-suffix="A">-- A</label>
 												</div>
 											</div>
 										</div>
@@ -568,7 +568,7 @@
 														<div class="col">
 															<input type="range" class="chargepoint-instantchargelimitsoc form-control-range rangeInput" id="soclimitCp0" min="5" max="100" step="5" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/instant_charging/limit/soc">
 														</div>
-														<label for="soclimitCp0" class="col-form-label valueLabel" data-suffix="%">? %</label>
+														<label for="soclimitCp0" class="col-form-label valueLabel" data-suffix="%">-- %</label>
 													</div>
 												</div>
 											</div>
@@ -581,7 +581,7 @@
 														<div class="col">
 															<input type="range" class="chargepoint-instantchargelimitamount form-control-range rangeInput" id="amountlimitCp0" min="1" max="50" step="1" data-transformation='{"out":"<v>*1000","in":"<v>/1000"}' data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/instant_charging/limit/amount">
 														</div>
-														<label for="amountlimitCp0" class="col-form-label valueLabel" data-suffix="kWh">? kWh</label>
+														<label for="amountlimitCp0" class="col-form-label valueLabel" data-suffix="kWh">-- kWh</label>
 													</div>
 												</div>
 											</div>
@@ -606,7 +606,7 @@
 													<div class="col">
 														<input type="range" class="chargepoint-pvchargemincurrent form-control-range rangeInput" id="minCurrentPvCp0" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/min_current" min="0" max="11" step="1" data-list="0,6,7,8,9,10,11,12,13,14,15,16">
 													</div>
-													<label for="minCurrentPvCp0" class="col-form-label valueLabel" data-suffix="A">? A</label>
+													<label for="minCurrentPvCp0" class="col-form-label valueLabel" data-suffix="A">-- A</label>
 												</div>
 											</div>
 										</div>
@@ -619,7 +619,7 @@
 													<div class="col">
 														<input type="range" class="chargepoint-pvchargeminsoc form-control-range rangeInput" id="minSocPvCp0" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/min_soc" min="0" max="99" step="1">
 													</div>
-													<label for="minSocPvCp0" class="col-form-label valueLabel" data-suffix="%">? %</label>
+													<label for="minSocPvCp0" class="col-form-label valueLabel" data-suffix="%">-- %</label>
 												</div>
 											</div>
 										</div>
@@ -632,7 +632,7 @@
 													<div class="col">
 														<input type="range" class="chargepoint-pvchargeminsoccurrent form-control-range rangeInput" id="minSocCurrentPvCp0" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/min_soc_current" min="6" max="16" step="1">
 													</div>
-													<label for="minSocCurrentPvCp0" class="col-form-label valueLabel" data-suffix="A">? A</label>
+													<label for="minSocCurrentPvCp0" class="col-form-label valueLabel" data-suffix="A">-- A</label>
 												</div>
 											</div>
 										</div>
@@ -645,7 +645,7 @@
 													<div class="col">
 														<input type="range" class="chargepoint-pvchargemaxsoc form-control-range rangeInput" id="maxSocPvCp0" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/max_soc" min="1" max="100" step="1">
 													</div>
-													<label for="maxSocPvCp0" class="col-form-label valueLabel" data-suffix="%">? %</label>
+													<label for="maxSocPvCp0" class="col-form-label valueLabel" data-suffix="%">-- %</label>
 												</div>
 											</div>
 										</div>
@@ -655,30 +655,30 @@
 											<div class="col">
 												<h3 class="mb-0">Einstellungen für "Zielladen"</h3>
 											</div>
-											<div class="col-2 text-right">
+											<!-- <div class="col-2 text-right">
 												<button type="button" class="btn btn-sm btn-secondary">
 													<i class="fas fa-cogs"></i>
 												</button>
-											</div>
+											</div> -->
 										</div>
 										<div class="form-row mb-1 chargepoint-scheduleplan chargepoint-scheduleplan-template hide" data-plan="0">
 											<div class="col">
 												<div class="form-row">
 													<div class="col">
-														<span class="chargepoint-schedulename">?</span>
+														<span class="chargepoint-schedulename">--</span>
 														<span class="chargepoint-scheduleedit"><i class="fas fa-edit"></i></span>
 													</div>
 													<div class="col-lg-6">
 														<span class="chargepoint-schedulefrequency">
 															<i class="fas fa-calendar-alt"></i>
-															<span class="chargepoint-schedulefrequencyvalue">?</span>
+															<span class="chargepoint-schedulefrequencyvalue">--</span>
 														</span>
 														<span class="chargepoint-scheduledate">
 															<i class="fas fa-calendar-day"></i>
-															<span class="chargepoint-scheduledatevalue">?</span>
+															<span class="chargepoint-scheduledatevalue">--</span>
 														</span>
-														<i class="fas fa-clock"></i> <span class="chargepoint-scheduletime">?</span>
-														<i class="fas fa-car-battery"></i> <span class="chargepoint-schedulesoc">?</span>%
+														<i class="fas fa-clock"></i> <span class="chargepoint-scheduletime">--</span>
+														<i class="fas fa-car-battery"></i> <span class="chargepoint-schedulesoc">--</span>%
 													</div>
 												</div>
 											</div>
