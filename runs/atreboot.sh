@@ -38,7 +38,7 @@ if (( displayaktiv == 1 )); then
 		echo "@xscreensaver -no-splash" > /home/pi/.config/lxsession/LXDE-pi/autostart
 		echo "@point-rpi" >> /home/pi/.config/lxsession/LXDE-pi/autostart
 		echo "@xset s 600" >> /home/pi/.config/lxsession/LXDE-pi/autostart
-		echo "@chromium-browser --incognito --disable-pinch --kiosk http://localhost/openWB/web/display.php" >> /home/pi/.config/lxsession/LXDE-pi/autostart
+		echo "@chromium-browser --incognito --disable-pinch --kiosk http://localhost/openWB/web/display/" >> /home/pi/.config/lxsession/LXDE-pi/autostart
 	fi
 	echo "deleting browser cache"
 	rm -rf /home/pi/.cache/chromium
