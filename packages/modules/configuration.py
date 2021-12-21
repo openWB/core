@@ -13,14 +13,6 @@ def pub_configurable():
 def _pub_configurable_soc_modules() -> None:
     try:
         soc_modules = [
-            {
-                "value": "evnotify",
-                "text": "EVNotify"
-            },
-            {
-                "value": "tesla",
-                "text": "Tesla"
-            }
         ]
         Pub().pub("openWB/set/system/configurable/soc_modules", soc_modules)
     except Exception:
