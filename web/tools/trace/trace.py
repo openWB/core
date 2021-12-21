@@ -1,12 +1,6 @@
 #!/usr/bin/python
 import sys
-import os
 import time
-import getopt
-import socket
-import ConfigParser
-import struct
-import binascii
 from pymodbus.client.sync import ModbusTcpClient
 
 ipaddress = str(sys.argv[1])
