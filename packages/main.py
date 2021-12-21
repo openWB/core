@@ -13,7 +13,6 @@ from helpermodules import update_config
 from helpermodules import timecheck
 from helpermodules import subdata
 from helpermodules import setdata
-from helpermodules import publishvars2
 from helpermodules import measurement_log
 from helpermodules.log import MainLogger, cleanup_logfiles
 from helpermodules import command
@@ -186,7 +185,6 @@ try:
     t_set.start()
     t_comm.start()
 
-    publishvars2.pub_settings()
     configuration.pub_configurable()
 
     # blocking
