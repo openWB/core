@@ -159,7 +159,7 @@ function refreshChargetemplate(templateIndex) {
 				// remove checkbox toggle button style as they will not function after cloning
 				sourceElement.find('input[type=checkbox][data-toggle^=toggle]').bootstrapToggle('destroy');
 				// now create any other schedule plan
-				for (const [key, value] of Object.entries(chargemodeTemplate[templateIndex].chargemode.scheduled_charging)) {
+				for (const [key, value] of Object.entries(chargemodeTemplate[templateIndex].chargemode.scheduled_charging.plans)) {
 					// console.log("schedule id: "+key);
 					// console.log(value);
 					if (parent.find('.chargepoint-scheduleplan[data-plan=' + key + ']').length == 0) {
