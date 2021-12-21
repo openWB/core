@@ -44,24 +44,18 @@ class HandlerAlgorithm:
                     if (data.data.general_data["general"].data["control_interval"]
                             / 10) == self.interval_counter:
                         # Mit aktuellen Einstellungen arbeiten.
-                        MainLogger().debug(" Start copy_data 1")
                         prep.copy_system_data()
-                        MainLogger().set_log_level(data.data.system_data["system"].data["debug_level"])
-                        MainLogger().debug(" Stop copy_data 1")
+                        MainLogger().setLevel(data.data.system_data["system"].data["debug_level"])
                         loadvars.get_hardware_values()
                         # Virtuelle Module ermitteln die Werte rechnerisch auf Bais der Messwerte anderer Module.
                         # Daher können sie erst die Werte ermitteln, wenn die physischen Module ihre Werte ermittelt
                         # haben. Würde man allle Module parallel abfragen, wären die virtuellen Module immer einen
                         # Zyklus hinterher.
-                        MainLogger().debug(" Start copy_data 2")
                         prep.copy_counter_data()
-                        MainLogger().debug(" Stop copy_data 2")
                         loadvars.get_virtual_values()
                         # Kurz warten, damit alle Topics von setdata und subdata verarbeitet werden könnnen.
                         time.sleep(0.5)
-                        MainLogger().debug(" Start copy_data 3")
                         prep.copy_data()
-                        MainLogger().debug(" Stop copy_data 3")
                         self.heartbeat = True
                         if data.data.system_data["system"].data["perform_update"]:
                             data.data.system_data["system"].perform_update()

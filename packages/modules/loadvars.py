@@ -129,7 +129,7 @@ def _get_soc() -> List[threading.Thread]:
     modules_threads = []  # type: List[threading.Thread]
     try:
         for ev in data.data.ev_data.values():
-            if ev.soc_module != None:
+            if ev.soc_module is not None:
                 # Ist das Auto einem LP zugeordnet?
                 for cp in data.data.cp_data.values():
                     if isinstance(cp, chargepoint.Chargepoint):
