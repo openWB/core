@@ -105,7 +105,7 @@ class Process:
 
         chargepoint.data["set"]["current"] = current
         Pub().pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/set/current", current)
-        MainLogger().debug("LP"+str(chargepoint.cp_num)+": set current "+str(current)+" A")
+        MainLogger().info("LP"+str(chargepoint.cp_num)+": set current "+str(current)+" A")
 
     def _start_charging(self, chargepoint: chargepoint.Chargepoint) -> threading.Thread:
         return threading.Thread(target=chargepoint.chargepoint_module.set_current,

@@ -38,7 +38,7 @@ class Algorithm:
         try:
             MainLogger().debug("# Algorithmus-Start")
             evu_counter = data.data.counter_data["all"].get_evu_counter()
-            MainLogger().debug(
+            MainLogger().info(
                 "EVU-Punkt: Leistung[W] " + str(data.data.counter_data[evu_counter].data["get"]["power_all"]) +
                 ", Stroeme[A] " + str(data.data.counter_data[evu_counter].data["get"]["current"]))
             if not data.data.counter_data["all"].data["set"]["loadmanagement_available"]:

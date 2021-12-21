@@ -426,11 +426,11 @@ class Command:
 
     def sendDebug(self, connection_id: str, payload: dict) -> None:
         parent_file = Path(__file__).resolve().parents[2]
-        MainLogger().set_log_level(2)
+        Pub().pub("openWB/set/system/debug_level", 2)
         subprocess.run([str(parent_file / "runs" / "send_debug.sh"),
                         str(payload["data"]["message"]),
                         str(payload["data"]["email"])])
-        MainLogger().set_log_level(0)
+        Pub().pub("openWB/set/system/debug_level", 0)
 
     def getDailyLog(self, connection_id: str, payload: dict) -> None:
         measurement_log.pub_daily_log(payload["data"]["day"])

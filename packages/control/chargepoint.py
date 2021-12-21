@@ -446,7 +446,6 @@ class Chargepoint:
             if not state:
                 message = "Keine Ladung, da kein Auto angesteckt ist."
             else:
-                MainLogger().debug("ev"+str(self.cp_num)+" plugged"+str(self.data["set"]["plug_time"]))
                 if self.data["set"]["plug_time"] == "0":
                     self.data["set"]["plug_time"] = timecheck.create_timestamp()
                     Pub().pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/plug_time",
@@ -487,7 +486,6 @@ class Chargepoint:
                                 charging_possbile, message = self._is_autolock_inactive()
             if charging_possbile:
                 ev_num, message = self.template.get_ev(self.data["set"]["rfid"], self.data["config"]["ev"])
-                MainLogger().debug("possible"+str(ev_num))
                 if ev_num != -1:
                     return ev_num, message
                 # Tag zurücksetzen, wenn kein EV zugeordnet werden kann
