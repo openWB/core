@@ -1,11 +1,14 @@
 #!/bin/bash
+OPENWBBASEDIR=$(cd `dirname $0`/../../ && pwd)
+RAMDISKDIR="${OPENWBBASEDIR}/ramdisk"
+
 echo "atreboot.sh started"
-rm "/var/www/html/openWB/ramdisk/bootdone"
+rm "${RAMDISKDIR}/ramdisk/bootdone"
 mosquitto_pub -p 1886 -t openWB/system/boot_done -r -m 'false'
 (sleep 600; sudo kill $(ps aux |grep '[a]treboot.sh' | awk '{print $2}')) &
 
-if [ -f /var/www/html/openWB/ramdisk/bootinprogress ]; then
-	rm /var/www/html/openWB/ramdisk/bootinprogress
+if [ -f ${RAMDISKDIR}/ramdisk/bootinprogress ]; then
+	rm ${RAMDISKDIR}/ramdisk/bootinprogress
 fi
 
 # initialize automatic phase switching
@@ -13,7 +16,7 @@ fi
 # if (( u1p3paktiv == 1 )); then
 # 	echo "triginit..."
 # 	# quick init of phase switching with default pause duration (2s)
-# 	sudo python /var/www/html/openWB/runs/triginit.py
+# 	sudo python ${RAMDISKDIR}/runs/triginit.py
 # fi
 
 # check if tesla wall connector is configured and start daemon
@@ -50,13 +53,13 @@ if grep -Fxq "AllowOverride" /etc/apache2/sites-available/000-default.conf
 then
 	echo "...ok"
 else
-	sudo cp /var/www/html/openWB/web/tools/000-default.conf /etc/apache2/sites-available/
+	sudo cp ${RAMDISKDIR}/web/tools/000-default.conf /etc/apache2/sites-available/
 	echo "...changed"
 fi
 
 # if ! sudo grep -Fq "atreboot.sh" /var/spool/cron/crontabs/pi
 # then
-# 	(crontab -l -u pi ; echo "@reboot /var/www/html/openWB/runs/atreboot.sh >> /var/log/openWB.log 2>&1")| crontab -u pi -
+# 	(crontab -l -u pi ; echo "@reboot ${RAMDISKDIR}/runs/atreboot.sh >> /var/log/openWB.log 2>&1")| crontab -u pi -
 # fi
 
 # check for needed packages
@@ -66,7 +69,7 @@ echo "apt packages..."
 # check for mosquitto configuration
 if [ ! -f /etc/mosquitto/conf.d/openwb.conf ] || ! sudo grep -Fq "persistent_client_expiration" /etc/mosquitto/mosquitto.conf; then
 	echo "updating mosquitto config file"
-	sudo cp /var/www/html/openWB/data/config/openwb.conf /etc/mosquitto/conf.d/openwb.conf
+	sudo cp ${RAMDISKDIR}/data/config/openwb.conf /etc/mosquitto/conf.d/openwb.conf
 	sudo service mosquitto reload
 fi
 
@@ -75,14 +78,14 @@ if [ ! -f /etc/mosquitto/mosquitto_local.conf ]; then
 	echo "setting up mosquitto local instance"
 	sudo install -d -m 0755 -o root -g root /etc/mosquitto/conf_local.d/
 	sudo install -d -m 0755 -o mosquitto -g root /var/lib/mosquitto_local
-	sudo cp -a /var/www/html/openWB/data/config/mosquitto_local.conf /etc/mosquitto/mosquitto_local.conf
-	sudo cp -a /var/www/html/openWB/data/config/openwb_local.conf /etc/mosquitto/conf_local.d/
+	sudo cp -a ${RAMDISKDIR}/data/config/mosquitto_local.conf /etc/mosquitto/mosquitto_local.conf
+	sudo cp -a ${RAMDISKDIR}/data/config/openwb_local.conf /etc/mosquitto/conf_local.d/
 
-	sudo cp /var/www/html/openWB/data/config/mosquitto_local_init /etc/init.d/mosquitto_local
+	sudo cp ${RAMDISKDIR}/data/config/mosquitto_local_init /etc/init.d/mosquitto_local
 	sudo chown root.root /etc/init.d/mosquitto_local
 	sudo chmod 755 /etc/init.d/mosquitto_local
 else
-	sudo cp -a /var/www/html/openWB/data/config/openwb_local.conf /etc/mosquitto/conf_local.d/
+	sudo cp -a ${RAMDISKDIR}/data/config/openwb_local.conf /etc/mosquitto/conf_local.d/
 fi
 sudo systemctl daemon-reload
 sudo service mosquitto_local start
@@ -94,19 +97,19 @@ sudo pip3 install -r /var/www/openWB/requirements.txt
 # update version
 echo "version..."
 uuid=$(</sys/class/net/eth0/address)
-owbv=$(</var/www/html/openWB/web/version)
+owbv=$(<${RAMDISKDIR}/web/version)
 # curl --connect-timeout 10 -d "update="$releasetrain$uuid"vers"$owbv"" -H "Content-Type: application/x-www-form-urlencoded" -X POST https://openwb.de/tools/update.php
 
 # check for slave config and start handler
 # alpha image restricted to standalone installation!
 # if (( isss == 1 )); then
 # 	echo "isss..."
-# 	echo $lastmanagement > /var/www/html/openWB/ramdisk/issslp2act
-# 	if ps ax |grep -v grep |grep "python3 /var/www/html/openWB/runs/isss.py" > /dev/null
+# 	echo $lastmanagement > ${RAMDISKDIR}/ramdisk/issslp2act
+# 	if ps ax |grep -v grep |grep "python3 ${RAMDISKDIR}/runs/isss.py" > /dev/null
 # 	then
 # 		sudo kill $(ps aux |grep '[i]sss.py' | awk '{print $2}')
 # 	fi
-# 	python3 /var/www/html/openWB/runs/isss.py &
+# 	python3 ${RAMDISKDIR}/runs/isss.py &
 # 	# second IP already set up !
 # 	# ethstate=$(</sys/class/net/eth0/carrier)
 # 	# if (( ethstate == 1 )); then
@@ -124,11 +127,11 @@ owbv=$(</var/www/html/openWB/web/version)
 # 	if [ ! -f /home/pi/ppbuchse ]; then
 # 		echo "32" > /home/pi/ppbuchse
 # 	fi
-# 	if ps ax |grep -v grep |grep "python3 /var/www/html/openWB/runs/buchse.py" > /dev/null
+# 	if ps ax |grep -v grep |grep "python3 ${RAMDISKDIR}/runs/buchse.py" > /dev/null
 # 	then
 # 		sudo kill $(ps aux |grep '[b]uchse.py' | awk '{print $2}')
 # 	fi
-# 	python3 /var/www/html/openWB/runs/buchse.py &
+# 	python3 ${RAMDISKDIR}/runs/buchse.py &
 # fi
 
 # update display configuration
@@ -143,16 +146,16 @@ mosquitto_pub -t openWB/system/ip_address -p 1886 -r -m "\"$(ip route get 1 | aw
 # update current published versions
 echo "load versions..."
 # change needed after repo is public!
-# curl --connect-timeout 10 -s https://raw.githubusercontent.com/snaptec/openWB/master/web/version > /var/www/html/openWB/ramdisk/vnightly
-# curl --connect-timeout 10 -s https://raw.githubusercontent.com/snaptec/openWB/beta/web/version > /var/www/html/openWB/ramdisk/vbeta
-# curl --connect-timeout 10 -s https://raw.githubusercontent.com/snaptec/openWB/stable/web/version > /var/www/html/openWB/ramdisk/vstable
+# curl --connect-timeout 10 -s https://raw.githubusercontent.com/snaptec/openWB/master/web/version > ${RAMDISKDIR}/ramdisk/vnightly
+# curl --connect-timeout 10 -s https://raw.githubusercontent.com/snaptec/openWB/beta/web/version > ${RAMDISKDIR}/ramdisk/vbeta
+# curl --connect-timeout 10 -s https://raw.githubusercontent.com/snaptec/openWB/stable/web/version > ${RAMDISKDIR}/ramdisk/vstable
 
 # update our local version
-sudo git -C /var/www/html/openWB show --pretty='format:%ci [%h]' | head -n1 > /var/www/html/openWB/web/lastcommit
+sudo git -C /var/www/html/openWB show --pretty='format:%ci [%h]' | head -n1 > ${RAMDISKDIR}/web/lastcommit
 # and record the current commit details
 commitId=`git -C /var/www/html/openWB log --format="%h" -n 1`
-echo $commitId > /var/www/html/openWB/ramdisk/currentCommitHash
-echo `git -C /var/www/html/openWB branch -a --contains $commitId | perl -nle 'm|.*origin/(.+).*|; print $1' | uniq | xargs` > /var/www/html/openWB/ramdisk/currentCommitBranches
+echo $commitId > ${RAMDISKDIR}/ramdisk/currentCommitHash
+echo `git -C /var/www/html/openWB branch -a --contains $commitId | perl -nle 'm|.*origin/(.+).*|; print $1' | uniq | xargs` > ${RAMDISKDIR}/ramdisk/currentCommitBranches
 
 # set upload limit in php
 # echo -n "fix upload limit..."
@@ -170,4 +173,4 @@ mosquitto_pub -p 1883 -t openWB/system/update_in_progress -r -m 'false'
 mosquitto_pub -p 1886 -t openWB/system/boot_done -r -m 'true'
 mosquitto_pub -p 1883 -t openWB/system/boot_done -r -m 'true'
 mosquitto_pub -t openWB/system/reloadDisplay -m "1"
-touch /var/www/html/openWB/ramdisk/bootdone
+touch ${RAMDISKDIR}/ramdisk/bootdone
