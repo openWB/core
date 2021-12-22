@@ -1,10 +1,8 @@
 #!/bin/bash
 OPENWBBASEDIR=$(cd `dirname $0`/../ && pwd)
-RAMDISKDIR="${OPENWBBASEDIR}/ramdisk"
-
 sleep 60
 
-debugFile=${RAMDISKDIR}/debug.log
+debugFile=${OPENWBBASEDIR}/ramdisk/debug.log
 echo $1 > $debugFile
 debugemail=$2
 echo "############################ system ###############" >> $debugFile
@@ -15,12 +13,12 @@ df -h >> $debugFile
 echo "############################ network ##############" >> $debugFile
 ifconfig >> $debugFile
 echo "############################ version ##############" >> $debugFile
-cat ${RAMDISKDIR}/web/version >> $debugFile
-cat ${RAMDISKDIR}/web/lastcommit >> $debugFile
+cat ${OPENWBBASEDIR}/web/version >> $debugFile
+cat ${OPENWBBASEDIR}/web/lastcommit >> $debugFile
 echo "############################ main.log ##############" >> $debugFile
-echo "$(tail -1000 ${RAMDISKDIR}/main.log)" >> $debugFile
+echo "$(tail -1000 ${OPENWBBASEDIR}/ramdisk/main.log)" >> $debugFile
 echo "############################ mqtt ##############" >> $debugFile
-echo "$(tail -500 ${RAMDISKDIR}/mqtt.log)" >> $debugFile
+echo "$(tail -500 ${OPENWBBASEDIR}/ramdisk/mqtt.log)" >> $debugFile
 
 for currentConfig in /etc/mosquitto/conf.d/99-bridge-*; do
 	if [ -f "$currentConfig" ]; then
@@ -33,7 +31,7 @@ echo "############################ mqtt topics ##############" >> $debugFile
 timeout 1 mosquitto_sub -v -t 'openWB/#' >> $debugFile
 
 #echo "############################ smarthome.log ##############" >> $debugFile
-#echo "$(tail -200 ${RAMDISKDIR}/smarthome.log)" >> $debugFile
+#echo "$(tail -200 ${OPENWBBASEDIR}/ramdisk/smarthome.log)" >> $debugFile
 
 curl --upload $debugFile "https://openwb.de/tools/debug2.php?debugemail=$debugemail"
 

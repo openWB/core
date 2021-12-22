@@ -1,19 +1,17 @@
 #!/bin/bash
 OPENWBBASEDIR=$(cd `dirname $0`/../ && pwd)
-RAMDISKDIR="${OPENWBBASEDIR}/ramdisk"
-
-cd /var/www/html/openWB
-. ${RAMDISKDIR}/loadconfig.sh
+cd ${OPENWBBASEDIR}/
+. ${OPENWBBASEDIR}/loadconfig.sh
 
 # set mode to stop and flags in ramdisk and broker to indicate current update state
 mosquitto_pub -t openWB/set/ChargeMode -r -m "3"
 mosquitto_pub -t openWB/system/update_in_progress -r -m "1"
-echo 1 > ${RAMDISKDIR}/updateinprogress
-echo 1 > ${RAMDISKDIR}/bootinprogress
-echo "Update im Gange, bitte warten bis die Meldung nicht mehr sichtbar ist" > ${RAMDISKDIR}/lastregelungaktiv
+echo 1 > ${OPENWBBASEDIR}/ramdisk/updateinprogress
+echo 1 > ${OPENWBBASEDIR}/ramdisk/bootinprogress
+echo "Update im Gange, bitte warten bis die Meldung nicht mehr sichtbar ist" > ${OPENWBBASEDIR}/ramdisk/lastregelungaktiv
 mosquitto_pub -t "openWB/global/strLastmanagementActive" -r -m "Update im Gange, bitte warten bis die Meldung nicht mehr sichtbar ist"
-echo "Update im Gange, bitte warten bis die Meldung nicht mehr sichtbar ist" > ${RAMDISKDIR}/mqttlastregelungaktiv
-chmod 777 ${RAMDISKDIR}/mqttlastregelungaktiv
+echo "Update im Gange, bitte warten bis die Meldung nicht mehr sichtbar ist" > ${OPENWBBASEDIR}/ramdisk/mqttlastregelungaktiv
+chmod 777 ${OPENWBBASEDIR}/ramdisk/mqttlastregelungaktiv
 
 if [[ "$releasetrain" == "stable" ]]; then
 	train=stable17
@@ -69,23 +67,23 @@ sudo git reset --hard origin/$train
 # set permissions
 cd /var/www/html/
 sudo chown -R pi:pi openWB 
-sudo chown -R www-data:www-data ${RAMDISKDIR}/web/backup
-sudo chown -R www-data:www-data ${RAMDISKDIR}/web/tools/upload
-sudo cp /tmp/openwb.conf ${RAMDISKDIR}/openwb.conf
+sudo chown -R www-data:www-data ${OPENWBBASEDIR}/web/backup
+sudo chown -R www-data:www-data ${OPENWBBASEDIR}/web/tools/upload
+sudo cp /tmp/openwb.conf ${OPENWBBASEDIR}/openwb.conf
 
 # restore saved files after fetching new release
 # module soc_eq
-sudo cp /tmp/soc_eq_acc_lp1 ${RAMDISKDIR}/modules/soc_eq/soc_eq_acc_lp1
-sudo cp /tmp/soc_eq_acc_lp2 ${RAMDISKDIR}/modules/soc_eq/soc_eq_acc_lp2
+sudo cp /tmp/soc_eq_acc_lp1 ${OPENWBBASEDIR}/modules/soc_eq/soc_eq_acc_lp1
+sudo cp /tmp/soc_eq_acc_lp2 ${OPENWBBASEDIR}/modules/soc_eq/soc_eq_acc_lp2
 
 # set permissions
-sudo chmod 777 ${RAMDISKDIR}/openwb.conf
-sudo chmod +x ${RAMDISKDIR}/modules/*
-sudo chmod +x ${RAMDISKDIR}/runs/*
-sudo chmod +x ${RAMDISKDIR}/*.sh
-sudo chmod 777 ${RAMDISKDIR}/*
-sudo chmod 777 ${RAMDISKDIR}/web/lade.log
+sudo chmod 777 ${OPENWBBASEDIR}/openwb.conf
+sudo chmod +x ${OPENWBBASEDIR}/modules/*
+sudo chmod +x ${OPENWBBASEDIR}/runs/*
+sudo chmod +x ${OPENWBBASEDIR}/*.sh
+sudo chmod 777 ${OPENWBBASEDIR}/ramdisk/*
+sudo chmod 777 ${OPENWBBASEDIR}/web/lade.log
 sleep 2
 
 # now treat system as in booting state
-nohup sudo ${RAMDISKDIR}/runs/atreboot.sh > /var/log/openWB.log 2>&1 &
+nohup sudo ${OPENWBBASEDIR}/runs/atreboot.sh > /var/log/openWB.log 2>&1 &
