@@ -14,6 +14,7 @@ from helpermodules.log import MainLogger
 from helpermodules import measurement_log
 from helpermodules.pub import Pub
 from control import bridge
+from control import chargelog
 from control import chargepoint
 from control import data
 from control import ev
@@ -431,6 +432,9 @@ class Command:
                         str(payload["data"]["message"]),
                         str(payload["data"]["email"])])
         Pub().pub("openWB/set/system/debug_level", 0)
+
+    def getChargeLog(self, connection_id: str, payload: dict) -> None:
+        chargelog.get_log_data(payload["data"])
 
     def getDailyLog(self, connection_id: str, payload: dict) -> None:
         measurement_log.pub_daily_log(payload["data"]["day"])

@@ -8,7 +8,6 @@ import re
 import subprocess
 
 from control import bat
-from control import chargelog
 from control import chargepoint
 from control import counter
 from control import ev
@@ -94,7 +93,6 @@ class SubData:
         client.subscribe("openWB/graph/#", 2)
         client.subscribe("openWB/optional/#", 2)
         client.subscribe("openWB/counter/#", 2)
-        client.subscribe("openWB/log/#", 2)
         # Nicht mit wildcard abonnieren, damit nicht die Komponenten vor den Devices empfangen werden.
         client.subscribe("openWB/system/+", 2)
         client.subscribe("openWB/system/mqtt/bridge/+", 2)
@@ -129,8 +127,6 @@ class SubData:
             self.process_optional_topic(self.optional_data, msg)
         elif "openWB/counter/" in msg.topic:
             self.process_counter_topic(self.counter_data, msg)
-        elif "openWB/log/" in msg.topic:
-            self.process_log_topic(msg)
         elif "openWB/system/" in msg.topic:
             self.process_system_topic(client, self.system_data, msg)
         else:
@@ -658,25 +654,6 @@ class SubData:
                     if "set" not in var["all"].data:
                         var["all"].data["set"] = {}
                     self.set_json_payload(var["all"].data["set"], msg)
-        except Exception:
-            MainLogger().exception("Fehler im subdata-Modul")
-
-    def process_log_topic(self, msg):
-        """Handler für die Log-Topics
-
-         Parameters
-        ----------
-        client : (unused)
-            vorgegebener Parameter
-        userdata : (unused)
-            vorgegebener Parameter
-        msg:
-            enthält Topic und Payload
-        """
-        try:
-            if "openWB/log/request" in msg.topic:
-                chargelog.get_log_data(json.loads(
-                    str(msg.payload.decode("utf-8"))))
         except Exception:
             MainLogger().exception("Fehler im subdata-Modul")
 

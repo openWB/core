@@ -823,8 +823,7 @@ class SetData:
             enthält Topic und Payload
         """
         try:
-            if ("openWB/set/log/request" in msg.topic or
-                    "openWB/set/log/data" in msg.topic or
+            if ("openWB/set/log/data" in msg.topic or
                     "openWB/set/log/daily" in msg.topic or
                     "openWB/set/log/monthly" in msg.topic):
                 self._validate_value(msg, "json")
@@ -873,7 +872,7 @@ class SetData:
             elif "openWB/set/system/remote_support" in msg.topic:
                 self._validate_value(msg, str)
             elif "openWB/set/system/debug_level" in msg.topic:
-                self._validate_value(msg, int, [(0, 2)])
+                self._validate_value(msg, int, [(10, 10), (20, 20), (30, 30)])
             elif ("openWB/set/system/ip_address" in msg.topic or
                     "openWB/set/system/release_train" in msg.topic):
                 self._validate_value(msg, str)

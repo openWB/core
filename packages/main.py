@@ -13,7 +13,6 @@ from helpermodules import update_config
 from helpermodules import timecheck
 from helpermodules import subdata
 from helpermodules import setdata
-from helpermodules import publishvars2
 from helpermodules import measurement_log
 from helpermodules.log import MainLogger, cleanup_logfiles
 from helpermodules import command
@@ -125,7 +124,6 @@ class HandlerAlgorithm:
                 measurement_log.save_log("monthly")
             data.data.general_data["general"].grid_protection()
             data.data.optional_data["optional"].et_get_prices()
-            data.data.counter_data["all"].calc_daily_yield_home_consumption()
         except Exception:
             MainLogger().exception("Fehler im Main-Modul")
 
@@ -186,7 +184,6 @@ try:
     t_set.start()
     t_comm.start()
 
-    publishvars2.pub_settings()
     configuration.pub_configurable()
 
     # blocking
