@@ -1,5 +1,5 @@
 #!/bin/bash
-OPENWBBASEDIR=$(cd `dirname $0`/../../ && pwd)
+OPENWBBASEDIR=$(cd `dirname $0`/../ && pwd)
 RAMDISKDIR="${OPENWBBASEDIR}/ramdisk"
 
 echo "atreboot.sh started"
@@ -53,7 +53,7 @@ if grep -Fxq "AllowOverride" /etc/apache2/sites-available/000-default.conf
 then
 	echo "...ok"
 else
-	sudo cp ${RAMDISKDIR}/web/tools/000-default.conf /etc/apache2/sites-available/
+	sudo cp ${RAMDISKDIR}/data/config/000-default.conf /etc/apache2/sites-available/
 	echo "...changed"
 fi
 
@@ -92,7 +92,7 @@ sudo service mosquitto_local start
 
 # check for other dependencies
 echo "python packages..."
-sudo pip3 install -r /var/www/openWB/requirements.txt
+sudo pip3 install -r ${RAMDISKDIR}/requirements.txt
 
 # update version
 echo "version..."

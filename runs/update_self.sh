@@ -1,5 +1,5 @@
 #!/bin/bash
-OPENWBBASEDIR=$(cd `dirname $0`/../../ && pwd)
+OPENWBBASEDIR=$(cd `dirname $0`/../ && pwd)
 RAMDISKDIR="${OPENWBBASEDIR}/ramdisk"
 
 # backup some files before fetching new release

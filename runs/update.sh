@@ -1,5 +1,5 @@
 #!/bin/bash
-OPENWBBASEDIR=$(cd `dirname $0`/../../ && pwd)
+OPENWBBASEDIR=$(cd `dirname $0`/../ && pwd)
 RAMDISKDIR="${OPENWBBASEDIR}/ramdisk"
 
 cd /var/www/html/openWB
