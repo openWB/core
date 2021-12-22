@@ -8,7 +8,7 @@ echo "...done"
 echo "check for initial git clone"
 if [ ! -d /var/www/html/openWB/web ]; then
 	cd /var/www/html/
-	git clone https://github.com/openWB/core.git -o openWB --branch master
+	git clone https://github.com/openWB/core.git --branch master /var/www/html/openWB
 	chown -R pi:pi openWB
 	echo "... git cloned"
 else
