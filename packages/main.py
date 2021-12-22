@@ -44,7 +44,7 @@ class HandlerAlgorithm:
                             / 10) == self.interval_counter:
                         # Mit aktuellen Einstellungen arbeiten.
                         prep.copy_system_data()
-                        MainLogger().set_log_level(data.data.system_data["system"].data["debug_level"])
+                        MainLogger().setLevel(data.data.system_data["system"].data["debug_level"])
                         loadvars.get_hardware_values()
                         # Virtuelle Module ermitteln die Werte rechnerisch auf Bais der Messwerte anderer Module.
                         # Daher können sie erst die Werte ermitteln, wenn die physischen Module ihre Werte ermittelt
@@ -124,7 +124,6 @@ class HandlerAlgorithm:
                 measurement_log.save_log("monthly")
             data.data.general_data["general"].grid_protection()
             data.data.optional_data["optional"].et_get_prices()
-            data.data.counter_data["all"].calc_daily_yield_home_consumption()
         except Exception:
             MainLogger().exception("Fehler im Main-Modul")
 
