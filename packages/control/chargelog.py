@@ -315,12 +315,12 @@ def get_log_data(request):
     request: dict
         Infos zum Request: Monat, Jahr, Filter
     """
+    data = []
     try:
         # Datei einlesen
         filepath = str(
             pathlib.Path(__file__).resolve().parents[2] / "data" / "charge_log" /
             (str(request["year"]) + str(request["month"]) + ".json"))
-        data = []
         try:
             with open(filepath, "r") as jsonFile:
                 chargelog = json.load(jsonFile)
@@ -423,10 +423,10 @@ def get_log_data(request):
                     }
             }
             data.append(sum)
-
-        Pub().pub("openWB/set/log/data", data)
     except Exception:
         MainLogger().exception("Fehler im Ladelog-Modul")
+    finally:
+        return data
 
 
 def reset_data(chargepoint, charging_ev, immediately=True):
