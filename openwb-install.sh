@@ -61,6 +61,10 @@ if [ -d "/etc/php/7.3/" ]; then
 	echo "OS Buster"
 	sudo /bin/su -c "echo 'upload_max_filesize = 300M' > /etc/php/7.3/apache2/conf.d/20-uploadlimit.ini"
 	sudo /bin/su -c "echo 'post_max_size = 300M' >> /etc/php/7.3/apache2/conf.d/20-uploadlimit.ini"
+elif [ -d "/etc/php/7.4/" ]; then
+	echo "OS Bullseye"
+	sudo /bin/su -c "echo 'upload_max_filesize = 300M' > /etc/php/7.4/apache2/conf.d/20-uploadlimit.ini"
+	sudo /bin/su -c "echo 'post_max_size = 300M' >> /etc/php/7.4/apache2/conf.d/20-uploadlimit.ini"
 fi
 
 echo "installing python requirements..."
