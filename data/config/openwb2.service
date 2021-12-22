@@ -1,0 +1,11 @@
+[Unit]
+Description="Regelung openWB 2.0"
+
+[Service]
+User=pi
+WorkingDirectory=/var/www/html/openWB
+ExecStart=/var/www/html/openWB/packages/main.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
