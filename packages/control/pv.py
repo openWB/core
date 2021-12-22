@@ -23,16 +23,7 @@ class PvAll:
             "config": {"configured": False}}
         self.reset_pv_data()
 
-    def calc_power_for_control(self):
-        """ berechnet den EVU-Überschuss, der in der Regelung genutzt werden kann.
-        Regelmodus: Wenn möglichst der ganze PV-Strom genutzt wird, sollte die EVU-Leistung irgendwo
-            im Bereich um 0 leigen. Um ein Aufschwingen zu vermeiden, sollte die verfügbare Leistung nur
-            angepasst werden, wenn sie außerhalb des Regelbereichs liegt.
-
-        Return
-        ------
-        int: PV-Leistung, die genutzt werden darf (auf allen Phasen/je Phase unterschiedlich?)
-        """
+    def calc_power_for_all_components(self) -> None:
         try:
             if len(data.data.pv_data) > 1:
                 # Summe von allen konfigurierten Modulen
@@ -44,17 +35,32 @@ class PvAll:
                 for module in data.data.pv_data:
                     try:
                         if "pv" in module:
+                            self.data["get"]["power"] += data.data.pv_data[module].data["get"]["power"]
                             self.data["get"]["counter"] += data.data.pv_data[module].data["get"]["counter"]
                             self.data["get"]["daily_yield"] += data.data.pv_data[module].data["get"]["daily_yield"]
                             self.data["get"]["monthly_yield"] += data.data.pv_data[module].data["get"]["monthly_yield"]
                             self.data["get"]["yearly_yield"] += data.data.pv_data[module].data["get"]["yearly_yield"]
-                            self.data["get"]["power"] += data.data.pv_data[module].data["get"]["power"]
                     except Exception:
                         MainLogger().exception("Fehler im allgemeinen PV-Modul fuer "+str(module))
                 # Alle Summentopics im Dict publishen
                 {Pub().pub("openWB/set/pv/get/"+k, v)
                  for (k, v) in self.data["get"].items()}
                 self.data["config"]["configured"] = True
+        except Exception:
+            MainLogger().exception("Fehler im allgemeinen PV-Modul")
+
+    def calc_power_for_control(self):
+        """ berechnet den EVU-Überschuss, der in der Regelung genutzt werden kann.
+        Regelmodus: Wenn möglichst der ganze PV-Strom genutzt wird, sollte die EVU-Leistung irgendwo
+            im Bereich um 0 leigen. Um ein Aufschwingen zu vermeiden, sollte die verfügbare Leistung nur
+            angepasst werden, wenn sie außerhalb des Regelbereichs liegt.
+
+        Return
+        ------
+        int: PV-Leistung, die genutzt werden darf (auf allen Phasen/je Phase unterschiedlich?)
+        """
+        try:
+            if self.data["config"]["configured"] is True:
                 # aktuelle Leistung an der EVU, enthält die Leistung der Einspeisungsgrenze
                 evu_overhang = data.data.counter_data[data.data.counter_data["all"].get_evu_counter(
                 )].data["get"]["power_all"] * (-1)

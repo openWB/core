@@ -50,10 +50,11 @@ class HandlerAlgorithm:
                         # Daher können sie erst die Werte ermitteln, wenn die physischen Module ihre Werte ermittelt
                         # haben. Würde man allle Module parallel abfragen, wären die virtuellen Module immer einen
                         # Zyklus hinterher.
-                        prep.copy_counter_data()
+                        prep.copy_module_data()
                         loadvars.get_virtual_values()
                         # Kurz warten, damit alle Topics von setdata und subdata verarbeitet werden könnnen.
                         time.sleep(0.5)
+                        prep.copy_module_data()
                         prep.copy_data()
                         self.heartbeat = True
                         if data.data.system_data["system"].data["perform_update"]:
@@ -79,11 +80,12 @@ class HandlerAlgorithm:
                     # Wenn kein Regelintervall bekannt ist, alle 10s regeln.
                     prep.copy_system_data()
                     loadvars.get_hardware_values()
-                    prep.copy_counter_data()
+                    prep.copy_module_data()
                     loadvars.get_virtual_values()
                     self.heartbeat = True
                     # Kurz warten, damit alle Topics von setdata und subdata verarbeitet werden könnnen.
                     time.sleep(0.3)
+                    prep.copy_module_data()
                     prep.copy_data()
                     prep.setup_algorithm()
                     control.calc_current()

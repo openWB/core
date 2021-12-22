@@ -33,12 +33,14 @@ class Prepare:
         except Exception:
             MainLogger().exception("Fehler im Prepare-Modul")
 
-    def copy_counter_data(self):
+    def copy_module_data(self):
         """ kopiert die Daten, die per MQTT empfangen wurden.
         """
         try:
-            data.data.counter_data = copy.deepcopy(
-                subdata.SubData.counter_data)
+            data.data.counter_data = copy.deepcopy(subdata.SubData.counter_data)
+            data.data.pv_data = copy.deepcopy(subdata.SubData.pv_data)
+            data.data.pv_module_data = copy.deepcopy(subdata.SubData.pv_module_data)
+            data.data.bat_data = copy.deepcopy(subdata.SubData.bat_data)
         except Exception:
             MainLogger().exception("Fehler im Prepare-Modul")
 
@@ -46,13 +48,10 @@ class Prepare:
         """ kopiert die Daten, die per MQTT empfangen wurden.
         """
         try:
-            data.data.general_data = copy.deepcopy(
-                subdata.SubData.general_data)
-            data.data.optional_data = copy.deepcopy(
-                subdata.SubData.optional_data)
+            data.data.general_data = copy.deepcopy(subdata.SubData.general_data)
+            data.data.optional_data = copy.deepcopy(subdata.SubData.optional_data)
             data.data.cp_data = copy.deepcopy(subdata.SubData.cp_data)
-            data.data.cp_template_data = copy.deepcopy(
-                subdata.SubData.cp_template_data)
+            data.data.cp_template_data = copy.deepcopy(subdata.SubData.cp_template_data)
             for chargepoint in data.data.cp_data:
                 try:
                     if "cp" in chargepoint:
@@ -62,15 +61,9 @@ class Prepare:
                         data.data.cp_data[chargepoint].data["get"]["state_str"] = None
                 except Exception:
                     MainLogger().exception("Fehler im Prepare-Modul fuer Ladepunkt "+str(chargepoint))
-
-            data.data.pv_data = copy.deepcopy(subdata.SubData.pv_data)
-            data.data.pv_module_data = copy.deepcopy(
-                subdata.SubData.pv_module_data)
             data.data.ev_data = copy.deepcopy(subdata.SubData.ev_data)
-            data.data.ev_template_data = copy.deepcopy(
-                subdata.SubData.ev_template_data)
-            data.data.ev_charge_template_data = copy.deepcopy(
-                subdata.SubData.ev_charge_template_data)
+            data.data.ev_template_data = copy.deepcopy(subdata.SubData.ev_template_data)
+            data.data.ev_charge_template_data = copy.deepcopy(subdata.SubData.ev_charge_template_data)
             for vehicle in data.data.ev_data:
                 try:
                     # Globaler oder individueller Lademodus?
@@ -85,9 +78,7 @@ class Prepare:
                 except Exception:
                     MainLogger().exception("Fehler im Prepare-Modul fuer EV "+str(vehicle))
 
-            data.data.counter_data = copy.deepcopy(
-                subdata.SubData.counter_data)
-            data.data.bat_data = copy.deepcopy(subdata.SubData.bat_data)
+            data.data.counter_data = copy.deepcopy(subdata.SubData.counter_data)
             data.data.graph_data = copy.deepcopy(subdata.SubData.graph_data)
         except Exception:
             MainLogger().exception("Fehler im Prepare-Modul")

@@ -21,6 +21,8 @@ def get_virtual_values():
     Daher können sie erst die Werte ermitteln, wenn die physischen Module ihre Werte ermittelt haben.
     Würde man allle Module parallel abfragen, wären die virtuellen Module immer einen Zyklus hinterher.
     """
+    data.data.pv_data["all"].calc_power_for_all_components()
+    data.data.bat_data["all"].calc_power_for_all_components()
     __get_values([_get_virtual_counters])
 
 
