@@ -78,4 +78,12 @@ chmod +x /var/www/html/openWB/runs/*
 chmod +x /var/www/html/openWB/*.sh
 touch /var/log/openWB.log
 chmod 777 /var/log/openWB.log
+
+echo "installing openwb2 system service..."
+sudo ln -s /var/www/html/openWB/data/config/openwb2.service /etc/systemd/system/openwb2.service
+sudo systemctl daemon-reload
+sudo systemctl enable openwb2.service
+sudo systemctl start openwb2.service
+
+echo "installation finished, now running atreboot.sh..."
 /var/www/html/openWB/runs/atreboot.sh
