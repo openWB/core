@@ -46,13 +46,9 @@ class BatAll:
                     "hybrid_system_detected": False}
         }
 
-    def setup_bat(self):
-        """ prüft, ob mind ein Speicher vorhanden ist und berechnet die Summentopics.
-        """
+    def calc_power_for_all_components(self):
         try:
             if len(data.data.bat_data) > 1:
-                if "all" not in data.data.bat_data:
-                    data.data.bat_data["all"] = {}
                 self.data["config"]["configured"] = True
                 # Summe für alle konfigurierten Speicher bilden
                 soc_sum = 0
@@ -79,6 +75,14 @@ class BatAll:
                 # Alle Summentopics im Dict publishen
                 {Pub().pub("openWB/set/bat/get/"+k, v)
                  for (k, v) in self.data["get"].items()}
+        except Exception:
+            MainLogger().exception("Fehler im Bat-Modul")
+
+    def setup_bat(self):
+        """ prüft, ob mind ein Speicher vorhanden ist und berechnet die Summentopics.
+        """
+        try:
+            if self.data["config"]["configured"] is True:
                 # Speicher lädt
                 if self.data["get"]["power"] > 0:
                     self._get_charging_power_left()

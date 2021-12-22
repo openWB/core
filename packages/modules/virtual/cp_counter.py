@@ -9,15 +9,15 @@ from modules.common.store import get_counter_value_store
 
 def get_default_config() -> dict:
     return {
-        "name": "Virtueller Zähler",
-        "type": "counter",
+        "name": "Virtueller Ladepunkt-Zähler",
+        "type": "cp_counter",
         "id": None,
         "configuration": {
         }
     }
 
 
-class VirtualCounter:
+class VirtualCpCounter:
     def __init__(self, device_id: int, component_config: dict) -> None:
         self.__device_id = device_id
         self.component_config = component_config
