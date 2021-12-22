@@ -8,12 +8,12 @@ cd /var/www/html/openWB
 # set mode to stop and flags in ramdisk and broker to indicate current update state
 mosquitto_pub -t openWB/set/ChargeMode -r -m "3"
 mosquitto_pub -t openWB/system/update_in_progress -r -m "1"
-echo 1 > ${RAMDISKDIR}/ramdisk/updateinprogress
-echo 1 > ${RAMDISKDIR}/ramdisk/bootinprogress
-echo "Update im Gange, bitte warten bis die Meldung nicht mehr sichtbar ist" > ${RAMDISKDIR}/ramdisk/lastregelungaktiv
+echo 1 > ${RAMDISKDIR}/updateinprogress
+echo 1 > ${RAMDISKDIR}/bootinprogress
+echo "Update im Gange, bitte warten bis die Meldung nicht mehr sichtbar ist" > ${RAMDISKDIR}/lastregelungaktiv
 mosquitto_pub -t "openWB/global/strLastmanagementActive" -r -m "Update im Gange, bitte warten bis die Meldung nicht mehr sichtbar ist"
-echo "Update im Gange, bitte warten bis die Meldung nicht mehr sichtbar ist" > ${RAMDISKDIR}/ramdisk/mqttlastregelungaktiv
-chmod 777 ${RAMDISKDIR}/ramdisk/mqttlastregelungaktiv
+echo "Update im Gange, bitte warten bis die Meldung nicht mehr sichtbar ist" > ${RAMDISKDIR}/mqttlastregelungaktiv
+chmod 777 ${RAMDISKDIR}/mqttlastregelungaktiv
 
 if [[ "$releasetrain" == "stable" ]]; then
 	train=stable17
@@ -83,7 +83,7 @@ sudo chmod 777 ${RAMDISKDIR}/openwb.conf
 sudo chmod +x ${RAMDISKDIR}/modules/*
 sudo chmod +x ${RAMDISKDIR}/runs/*
 sudo chmod +x ${RAMDISKDIR}/*.sh
-sudo chmod 777 ${RAMDISKDIR}/ramdisk/*
+sudo chmod 777 ${RAMDISKDIR}/*
 sudo chmod 777 ${RAMDISKDIR}/web/lade.log
 sleep 2
 

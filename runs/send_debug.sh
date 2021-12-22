@@ -4,7 +4,7 @@ RAMDISKDIR="${OPENWBBASEDIR}/ramdisk"
 
 sleep 60
 
-debugFile=${RAMDISKDIR}/ramdisk/debug.log
+debugFile=${RAMDISKDIR}/debug.log
 echo $1 > $debugFile
 debugemail=$2
 echo "############################ system ###############" >> $debugFile
@@ -18,9 +18,9 @@ echo "############################ version ##############" >> $debugFile
 cat ${RAMDISKDIR}/web/version >> $debugFile
 cat ${RAMDISKDIR}/web/lastcommit >> $debugFile
 echo "############################ main.log ##############" >> $debugFile
-echo "$(tail -1000 ${RAMDISKDIR}/ramdisk/main.log)" >> $debugFile
+echo "$(tail -1000 ${RAMDISKDIR}/main.log)" >> $debugFile
 echo "############################ mqtt ##############" >> $debugFile
-echo "$(tail -500 ${RAMDISKDIR}/ramdisk/mqtt.log)" >> $debugFile
+echo "$(tail -500 ${RAMDISKDIR}/mqtt.log)" >> $debugFile
 
 for currentConfig in /etc/mosquitto/conf.d/99-bridge-*; do
 	if [ -f "$currentConfig" ]; then
@@ -33,7 +33,7 @@ echo "############################ mqtt topics ##############" >> $debugFile
 timeout 1 mosquitto_sub -v -t 'openWB/#' >> $debugFile
 
 #echo "############################ smarthome.log ##############" >> $debugFile
-#echo "$(tail -200 ${RAMDISKDIR}/ramdisk/smarthome.log)" >> $debugFile
+#echo "$(tail -200 ${RAMDISKDIR}/smarthome.log)" >> $debugFile
 
 curl --upload $debugFile "https://openwb.de/tools/debug2.php?debugemail=$debugemail"
 

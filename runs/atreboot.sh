@@ -3,12 +3,12 @@ OPENWBBASEDIR=$(cd `dirname $0`/../ && pwd)
 RAMDISKDIR="${OPENWBBASEDIR}/ramdisk"
 
 echo "atreboot.sh started"
-rm "${RAMDISKDIR}/ramdisk/bootdone"
+rm "${RAMDISKDIR}/bootdone"
 mosquitto_pub -p 1886 -t openWB/system/boot_done -r -m 'false'
 (sleep 600; sudo kill $(ps aux |grep '[a]treboot.sh' | awk '{print $2}')) &
 
-if [ -f ${RAMDISKDIR}/ramdisk/bootinprogress ]; then
-	rm ${RAMDISKDIR}/ramdisk/bootinprogress
+if [ -f ${RAMDISKDIR}/bootinprogress ]; then
+	rm ${RAMDISKDIR}/bootinprogress
 fi
 
 # initialize automatic phase switching
@@ -104,7 +104,7 @@ owbv=$(<${RAMDISKDIR}/web/version)
 # alpha image restricted to standalone installation!
 # if (( isss == 1 )); then
 # 	echo "isss..."
-# 	echo $lastmanagement > ${RAMDISKDIR}/ramdisk/issslp2act
+# 	echo $lastmanagement > ${RAMDISKDIR}/issslp2act
 # 	if ps ax |grep -v grep |grep "python3 ${RAMDISKDIR}/runs/isss.py" > /dev/null
 # 	then
 # 		sudo kill $(ps aux |grep '[i]sss.py' | awk '{print $2}')
@@ -146,16 +146,16 @@ mosquitto_pub -t openWB/system/ip_address -p 1886 -r -m "\"$(ip route get 1 | aw
 # update current published versions
 echo "load versions..."
 # change needed after repo is public!
-# curl --connect-timeout 10 -s https://raw.githubusercontent.com/snaptec/openWB/master/web/version > ${RAMDISKDIR}/ramdisk/vnightly
-# curl --connect-timeout 10 -s https://raw.githubusercontent.com/snaptec/openWB/beta/web/version > ${RAMDISKDIR}/ramdisk/vbeta
-# curl --connect-timeout 10 -s https://raw.githubusercontent.com/snaptec/openWB/stable/web/version > ${RAMDISKDIR}/ramdisk/vstable
+# curl --connect-timeout 10 -s https://raw.githubusercontent.com/snaptec/openWB/master/web/version > ${RAMDISKDIR}/vnightly
+# curl --connect-timeout 10 -s https://raw.githubusercontent.com/snaptec/openWB/beta/web/version > ${RAMDISKDIR}/vbeta
+# curl --connect-timeout 10 -s https://raw.githubusercontent.com/snaptec/openWB/stable/web/version > ${RAMDISKDIR}/vstable
 
 # update our local version
 sudo git -C /var/www/html/openWB show --pretty='format:%ci [%h]' | head -n1 > ${RAMDISKDIR}/web/lastcommit
 # and record the current commit details
 commitId=`git -C /var/www/html/openWB log --format="%h" -n 1`
-echo $commitId > ${RAMDISKDIR}/ramdisk/currentCommitHash
-echo `git -C /var/www/html/openWB branch -a --contains $commitId | perl -nle 'm|.*origin/(.+).*|; print $1' | uniq | xargs` > ${RAMDISKDIR}/ramdisk/currentCommitBranches
+echo $commitId > ${RAMDISKDIR}/currentCommitHash
+echo `git -C /var/www/html/openWB branch -a --contains $commitId | perl -nle 'm|.*origin/(.+).*|; print $1' | uniq | xargs` > ${RAMDISKDIR}/currentCommitBranches
 
 # set upload limit in php
 # echo -n "fix upload limit..."
@@ -173,4 +173,4 @@ mosquitto_pub -p 1883 -t openWB/system/update_in_progress -r -m 'false'
 mosquitto_pub -p 1886 -t openWB/system/boot_done -r -m 'true'
 mosquitto_pub -p 1883 -t openWB/system/boot_done -r -m 'true'
 mosquitto_pub -t openWB/system/reloadDisplay -m "1"
-touch ${RAMDISKDIR}/ramdisk/bootdone
+touch ${RAMDISKDIR}/bootdone
