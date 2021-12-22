@@ -50,7 +50,7 @@ if grep -Fxq "AllowOverride" /etc/apache2/sites-available/000-default.conf
 then
 	echo "...ok"
 else
-	sudo cp /var/www/html/openWB/web/tools/000-default.conf /etc/apache2/sites-available/
+	sudo cp /var/www/html/openWB/data/config/000-default.conf /etc/apache2/sites-available/
 	echo "...changed"
 fi
 
@@ -89,7 +89,7 @@ sudo service mosquitto_local start
 
 # check for other dependencies
 echo "python packages..."
-sudo pip3 install -r /var/www/openWB/requirements.txt
+sudo pip3 install -r /var/www/html/openWB/requirements.txt
 
 # update version
 echo "version..."
