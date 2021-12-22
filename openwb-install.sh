@@ -7,16 +7,16 @@ echo "...done"
 
 echo "check for initial git clone"
 if [ ! -d /var/www/html/openWB/web ]; then
-	# cd /var/www/html/
-	# git clone https://github.com/snaptec/openWB.git --branch master
-	# chown -R pi:pi openWB 
+	cd /var/www/html/
+	git clone https://github.com/openWB/core.git -o openWB --branch master
+	chown -R pi:pi openWB
 	echo "... git cloned"
 else
 	echo "...ok"
 fi
 
-echo "check for ramdisk" 
-if grep -Fxq "tmpfs /var/www/html/openWB/ramdisk tmpfs nodev,nosuid,size=32M 0 0" /etc/fstab 
+echo "check for ramdisk"
+if grep -Fxq "tmpfs /var/www/html/openWB/ramdisk tmpfs nodev,nosuid,size=32M 0 0" /etc/fstab
 then
 	echo "...ok"
 else
