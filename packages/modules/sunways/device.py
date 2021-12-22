@@ -1,40 +1,33 @@
 #!/usr/bin/env python3
-from typing import Dict, Optional, Union
+from typing import Dict, Optional
 
 from helpermodules import log
 from helpermodules.cli import run_using_positional_cli_args
-from modules.common import modbus
 from modules.common.abstract_device import AbstractDevice
 from modules.common.component_context import SingleComponentUpdateContext
-from modules.victron import bat
-from modules.victron import counter
-from modules.victron import inverter
+from modules.sunways import inverter
 
 
 def get_default_config() -> dict:
     return {
-        "name": "Victron",
-        "type": "victron",
+        "name": "Sunways",
+        "type": "sunways",
         "id": 0,
-        "configuration":
-        {
-            "ip_address": "192.168.193.15"
+        "configuration": {
+            "ip_address": "192.168.193.15",
+            "password": "abc"
         }
     }
 
 
 class Device(AbstractDevice):
     COMPONENT_TYPE_TO_CLASS = {
-        "bat": bat.VictronBat,
-        "counter": counter.VictronCounter,
-        "inverter": inverter.VictronInverter
+        "inverter": inverter.SunwaysInverter
     }
 
     def __init__(self, device_config: dict) -> None:
-        self._components = {}  # type: Dict[str, Union[bat.VictronBat, counter.VictronCounter]]
+        self._components = {}  # type: Dict[str, inverter.SunwaysInverter]
         try:
-            ip_address = device_config["configuration"]["ip_address"]
-            self.client = modbus.ModbusClient(ip_address, 502)
             self.device_config = device_config
         except Exception:
             log.MainLogger().exception("Fehler im Modul "+device_config["name"])
@@ -42,8 +35,10 @@ class Device(AbstractDevice):
     def add_component(self, component_config: dict) -> None:
         component_type = component_config["type"]
         if component_type in self.COMPONENT_TYPE_TO_CLASS:
-            self._components["component"+str(component_config["id"])] = (
-                self.COMPONENT_TYPE_TO_CLASS[component_type](self.device_config["id"], component_config, self.client))
+            self._components["component"+str(component_config["id"])] = self.COMPONENT_TYPE_TO_CLASS[component_type](
+                component_config,
+                self.device_config["configuration"]["ip_address"],
+                self.device_config["configuration"]["password"])
         else:
             raise Exception(
                 "illegal component type " + component_type + ". Allowed values: " +
@@ -60,26 +55,17 @@ class Device(AbstractDevice):
         else:
             log.MainLogger().warning(
                 self.device_config["name"] +
-                ": Es konnten keine Werte gelesen werden, da noch keine Komponenten konfiguriert wurden."
+                ": Es konnten keine Werte gelesen werden, da noch keine oder zu viele Komponenten konfiguriert wurden."
             )
 
 
-def read_legacy(
-        component_type: str,
-        ip_address: str,
-        modbus_id: Optional[int] = 100,
-        mppt: Optional[bool] = False,
-        num: Optional[int] = None) -> None:
+def read_legacy(component_type: str, ip_address: str, password: str, num: Optional[int] = None) -> None:
     COMPONENT_TYPE_TO_MODULE = {
-        "bat": bat,
-        "counter": counter,
         "inverter": inverter
     }
 
     device_config = get_default_config()
-    device_config["configuration"]["ip_address"] = ip_address
     dev = Device(device_config)
-
     if component_type in COMPONENT_TYPE_TO_MODULE:
         component_config = COMPONENT_TYPE_TO_MODULE[component_type].get_default_config()
     else:
@@ -87,14 +73,14 @@ def read_legacy(
             "illegal component type " + component_type + ". Allowed values: " +
             ','.join(COMPONENT_TYPE_TO_MODULE.keys())
         )
+    component_config["configuration"]["ip_address"] = ip_address
+    component_config["configuration"]["password"] = password
     component_config["id"] = num
-    component_config["configuration"]["modbus_id"] = modbus_id
-    component_config["configuration"]["mppt"] = mppt
     dev.add_component(component_config)
 
-    log.MainLogger().debug('Victron IP-Adresse: ' + str(ip_address))
-    log.MainLogger().debug('Victron Modbus-ID: ' + str(modbus_id))
-    log.MainLogger().debug('Victron MPPT: ' + str(mppt))
+    log.MainLogger().debug('Sunways IP-Adresse: ' + str(ip_address))
+    log.MainLogger().debug('Sunways Passwort: ' + str(password))
+
     dev.update()
 
 
@@ -102,4 +88,4 @@ if __name__ == "__main__":
     try:
         run_using_positional_cli_args(read_legacy)
     except Exception:
-        log.MainLogger().exception("Fehler im Victron Skript")
+        log.MainLogger().exception("Fehler im Sunways Skript")

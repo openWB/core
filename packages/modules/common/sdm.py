@@ -10,7 +10,7 @@ class Sdm:
         self.client = client
         self.id = modbus_id
 
-    def __process_error(self, e):
+    def process_error(self, e):
         if isinstance(e, FaultState):
             raise
         else:
@@ -20,13 +20,13 @@ class Sdm:
         try:
             return self.client.read_input_registers(0x0048, ModbusDataType.FLOAT_32, unit=self.id) * 1000
         except Exception as e:
-            self.__process_error(e)
+            self.process_error(e)
 
     def get_exported(self) -> float:
         try:
             return self.client.read_input_registers(0x004a, ModbusDataType.FLOAT_32, unit=self.id) * 1000
         except Exception as e:
-            self.__process_error(e)
+            self.process_error(e)
 
     def get_frequency(self) -> float:
         try:
@@ -35,13 +35,13 @@ class Sdm:
                 frequency = frequency / 10
             return frequency
         except Exception as e:
-            self.__process_error(e)
+            self.process_error(e)
 
     def get_counter(self) -> float:
         try:
             return self.client.read_input_registers(0x0156, ModbusDataType.FLOAT_32, unit=self.id) * 1000
         except Exception as e:
-            self.__process_error(e)
+            self.process_error(e)
 
 
 class Sdm630(Sdm):
@@ -52,13 +52,13 @@ class Sdm630(Sdm):
         try:
             return self.client.read_input_registers(0x06, [ModbusDataType.FLOAT_32]*3, unit=self.id)
         except Exception as e:
-            self.__process_error(e)
+            self.process_error(e)
 
     def get_power_factor(self) -> List[float]:
         try:
             return self.client.read_input_registers(0x1E, [ModbusDataType.FLOAT_32]*3, unit=self.id)
         except Exception as e:
-            self.__process_error(e)
+            self.process_error(e)
 
     def get_power(self) -> Tuple[List[float], float]:
         try:
@@ -66,13 +66,13 @@ class Sdm630(Sdm):
             power_all = sum(power_per_phase)
             return power_per_phase, power_all
         except Exception as e:
-            self.__process_error(e)
+            self.process_error(e)
 
     def get_voltage(self) -> List[float]:
         try:
             return self.client.read_input_registers(0x00, [ModbusDataType.FLOAT_32]*3, unit=self.id)
         except Exception as e:
-            self.__process_error(e)
+            self.process_error(e)
 
 
 class Sdm120(Sdm):
@@ -83,4 +83,4 @@ class Sdm120(Sdm):
         try:
             return self.client.read_input_registers(0x0C, ModbusDataType.FLOAT_32, unit=self.id)
         except Exception as e:
-            self.__process_error(e)
+            self.process_error(e)
