@@ -197,10 +197,12 @@ def update_daily_yields():
             if counter in data.data.counter_data:
                 daily_yield_import = data.data.counter_data[counter].data["get"]["imported"] - \
                     daily_log[0]["counter"][counter]["imported"]
+                data.data.counter_data[counter].data["get"]["daily_yield_import"] = daily_yield_import
                 Pub().pub("openWB/set/counter/"+str(
                     data.data.counter_data[counter].counter_num)+"/get/daily_yield_import", daily_yield_import)
                 daily_yield_export = data.data.counter_data[counter].data["get"]["exported"] - \
                     daily_log[0]["counter"][counter]["exported"]
+                data.data.counter_data[counter].data["get"]["daily_yield_export"] = daily_yield_export
                 Pub().pub("openWB/set/counter/"+str(
                     data.data.counter_data[counter].counter_num)+"/get/daily_yield_export", daily_yield_export)
             else:
@@ -212,6 +214,7 @@ def update_daily_yields():
                 if cp in data.data.cp_data:
                     daily_yield = data.data.cp_data[cp].data["get"]["counter"] - \
                         daily_log[0]["cp"][cp]["counter"]
+                    data.data.cp_data[cp].data["get"]["daily_yield"] = daily_yield
                     Pub().pub("openWB/set/chargepoint/" +
                               str(data.data.cp_data[cp].cp_num)+"/get/daily_yield", daily_yield)
                 else:
@@ -220,11 +223,13 @@ def update_daily_yields():
             else:
                 daily_yield = data.data.cp_data[cp].data["get"]["counter_all"] - \
                     daily_log[0]["cp"][cp]["counter"]
+                data.data.cp_data[cp].data["get"]["daily_yield"] = daily_yield
                 Pub().pub("openWB/set/chargepoint/get/daily_yield", daily_yield)
         # Tagesertrag PV
         for pv in daily_log[0]["pv"]:
             daily_yield = data.data.pv_data[pv].data["get"]["counter"] - \
                 daily_log[0]["pv"][pv]["imported"]
+            data.data.pv_data[pv].data["get"]["daily_yield"] = daily_yield
             if "pv" in pv:
                 if pv in data.data.pv_data:
                     Pub().pub(
@@ -240,6 +245,8 @@ def update_daily_yields():
                 daily_log[0]["bat"][bat]["imported"]
             daily_yield_exported = data.data.bat_data[bat].data["get"]["exported"] - \
                 daily_log[0]["bat"][bat]["exported"]
+            data.data.bat_data[bat].data["get"]["daily_yield_import"] = daily_yield_imported
+            data.data.bat_data[bat].data["get"]["daily_yield_export"] = daily_yield_exported
             if "bat" in bat:
                 if bat in data.data.bat_data:
                     Pub().pub("openWB/set/bat/"+str(
@@ -254,5 +261,6 @@ def update_daily_yields():
                           daily_yield_imported)
                 Pub().pub("openWB/set/bat/get/daily_yield_export",
                           daily_yield_exported)
+        data.data.counter_data["all"].calc_daily_yield_home_consumption()
     except Exception:
         MainLogger().exception("Fehler im Werte-Loggingmodul")
