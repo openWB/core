@@ -531,7 +531,7 @@ def get_difference(timestamp_begin, timestamp_end):
         return 0
 
 
-def duration_sum(first, second):
+def duration_sum(first: str, second: str) -> str:
     """ addiert zwei Zeitstrings und gibt das Ergebnis als String zurück.
 
     Parameter
@@ -544,15 +544,14 @@ def duration_sum(first, second):
         Summe der Zeitstrings
     """
     try:
-        first = __get_timedelta_obj(first)
-        second = __get_timedelta_obj(second)
-        sum = first + second
-        return str(sum)
+        sum = __get_timedelta_obj(first) + __get_timedelta_obj(second)
+        return datetime.strptime(str(sum), "%H:%M:%S").strftime("%H:%M")
     except Exception:
         MainLogger().exception("Fehler im System-Modul")
+        return "00:00"
 
 
-def __get_timedelta_obj(time):
+def __get_timedelta_obj(time: str) -> timedelta:
     """ erstellt aus einem String ein timedelta-Objekt.
 
     Parameter
@@ -563,15 +562,14 @@ def __get_timedelta_obj(time):
     ------
     time: timedelta
     """
-    try:
-        time_charged = time.split(":")
-        if len(time_charged) == 2:
-            time = timedelta(hours=int(time_charged[0]),
-                             minutes=int(time_charged[1]))
-        elif len(time_charged) == 3:
-            time = timedelta(days=int(time_charged[0]),
-                             hours=int(time_charged[1]),
-                             minutes=int(time_charged[2]))
-        return time
-    except Exception:
-        MainLogger().exception("Fehler im System-Modul")
+    time_charged = time.split(":")
+    if len(time_charged) == 2:
+        delta = timedelta(hours=int(time_charged[0]),
+                          minutes=int(time_charged[1]))
+    elif len(time_charged) == 3:
+        delta = timedelta(days=int(time_charged[0]),
+                          hours=int(time_charged[1]),
+                          minutes=int(time_charged[2]))
+    else:
+        raise Exception("Unknown charge duration: "+time)
+    return delta
