@@ -823,11 +823,10 @@ class SetData:
             enthält Topic und Payload
         """
         try:
-            if ("openWB/set/log/data" in msg.topic or
+            if ("openWB/set/log/" and "data" in msg.topic or
                     "openWB/set/log/daily" in msg.topic or
                     "openWB/set/log/monthly" in msg.topic):
                 self._validate_value(msg, "json")
-
             else:
                 self.__unknown_topic(msg)
         except Exception:
