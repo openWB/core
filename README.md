@@ -23,9 +23,7 @@ Steuerung einer EVSE DIN oder anderer Ladepunkte für sofortiges laden, Überwac
 Unterstützt wird jedes EV das den AC Ladestandard unterstützt.
 
 # Bezug
-openWB gibt es unter 
-
-	https://openwb.de/shop/
+openWB gibt es unter https://openwb.de/shop/
 
 # Installation
 
@@ -34,8 +32,7 @@ Bei fertigen openWB bereits vorinstalliert.
 Software:
 Installiertes Raspberry Pi OS auf einem Raspberry Pi 3b+ oder besser.
 Raspberry Pi OS Lite installieren. Aktuell werden in der Version 1.99 nur Bullseye (bevorzugt) und Buster unterstützt.
-
-	http://downloads.raspberrypi.org/raspios_lite_armhf/images/
+http://downloads.raspberrypi.org/raspios_lite_armhf/images/
 
 In der Shell folgendes eingeben:
 
