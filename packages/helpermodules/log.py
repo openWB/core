@@ -47,7 +47,7 @@ class MainLogger:
             self.logger.exception(message)
 
         def setLevel(self, level):
-            level_conversion = {0: logging.WARNING, 1: logging.INFO, 2: logging.DEBUG}
+            level_conversion = {30: logging.WARNING, 20: logging.INFO, 10: logging.DEBUG}
             self.logger.setLevel(level_conversion[level])
 
     instance = None
