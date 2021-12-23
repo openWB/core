@@ -141,10 +141,10 @@ def check_plans_timeframe(plans, hours=None):
     """
     state = False
     try:
-        for plan in plans:
+        for plan in plans.values():
             # Nur Keys mit Plannummer berücksichtigen
-            if isinstance(plans[plan], dict):
-                state = check_timeframe(plans[plan], hours)
+            if isinstance(plan, dict):
+                state = check_timeframe(plan, hours)
                 if state:
                     return plan
         else:
