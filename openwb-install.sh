@@ -1,4 +1,7 @@
 #!/bin/bash
+OPENWBBASEDIR=/var/www/html/openWB
+
+echo "installing openWB 2 into \"${OPENWBBASEDIR}\""
 
 echo "install required packages..."
 apt-get update
@@ -6,9 +9,9 @@ apt-get -q -y install vim bc apache2 php php-gd php-curl php-xml php-json libapa
 echo "done"
 
 echo "check for initial git clone..."
-if [ ! -d /var/www/html/openWB/web ]; then
+if [ ! -d ${OPENWBBASEDIR}/web ]; then
 	cd /var/www/html/
-	git clone https://github.com/openWB/core.git --branch master /var/www/html/openWB
+	git clone https://github.com/openWB/core.git --branch master ${OPENWBBASEDIR}
 	chown -R pi:pi openWB
 	echo "git cloned"
 else
@@ -16,19 +19,17 @@ else
 fi
 
 echo -n "check for ramdisk... "
-if grep -Fxq "tmpfs /var/www/html/openWB/ramdisk tmpfs nodev,nosuid,size=32M 0 0" /etc/fstab
-then
+if grep -Fxq "tmpfs ${OPENWBBASEDIR}/ramdisk tmpfs nodev,nosuid,size=32M 0 0" /etc/fstab; then
 	echo "ok"
 else
-	mkdir -p /var/www/html/openWB/ramdisk
-	echo "tmpfs /var/www/html/openWB/ramdisk tmpfs nodev,nosuid,size=32M 0 0" >> /etc/fstab
+	mkdir -p ${OPENWBBASEDIR}/ramdisk
+	echo "tmpfs ${OPENWBBASEDIR}/ramdisk tmpfs nodev,nosuid,size=32M 0 0" >> /etc/fstab
 	mount -a
 	echo "created"
 fi
 
 echo -n "check for crontab... "
 if [ ! -f /etc/cron.d/openwb ]; then
-then
 	sudo cp ${OPENWBBASEDIR}/data/config/openwb.cron /etc/cron.d/openwb
 	echo "installed"
 else
@@ -71,7 +72,7 @@ echo "mosquitto done"
 
 # apache
 echo -n "replacing apache default page..."
-sudo cp /var/www/html/openWB/index.html /var/www/html/index.html
+sudo cp ${OPENWBBASEDIR}/index.html /var/www/html/index.html
 echo "done"
 echo -n "fix upload limit..."
 if [ -d "/etc/php/7.3/" ]; then
@@ -85,22 +86,22 @@ elif [ -d "/etc/php/7.4/" ]; then
 fi
 
 echo "installing python requirements..."
-sudo pip install -r /var/www/html/openWB/requirements.txt
+sudo pip install -r ${OPENWBBASEDIR}/requirements.txt
 
 # echo "www-data ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/010_pi-nopasswd
 
-# chmod 777 /var/www/html/openWB/openwb.conf
-# chmod +x /var/www/html/openWB/modules/*
-chmod +x /var/www/html/openWB/runs/*
-chmod +x /var/www/html/openWB/*.sh
+# chmod 777 ${OPENWBBASEDIR}/openwb.conf
+# chmod +x ${OPENWBBASEDIR}/modules/*
+chmod +x ${OPENWBBASEDIR}/runs/*
+chmod +x ${OPENWBBASEDIR}/*.sh
 touch /var/log/openWB.log
 chmod 777 /var/log/openWB.log
 
 echo "installing openwb2 system service..."
-sudo ln -s /var/www/html/openWB/data/config/openwb2.service /etc/systemd/system/openwb2.service
+sudo ln -s ${OPENWBBASEDIR}/data/config/openwb2.service /etc/systemd/system/openwb2.service
 sudo systemctl daemon-reload
 sudo systemctl enable openwb2.service
 sudo systemctl start openwb2.service
 
 echo "installation finished, now running atreboot.sh..."
-/var/www/html/openWB/runs/atreboot.sh
+${OPENWBBASEDIR}/runs/atreboot.sh
