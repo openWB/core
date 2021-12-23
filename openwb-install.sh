@@ -59,7 +59,8 @@ else
 	sudo cp -a ${OPENWBBASEDIR}/data/config/openwb_local.conf /etc/mosquitto/conf_local.d/
 fi
 sudo systemctl daemon-reload
-sudo service mosquitto_local start
+sudo systemctl enable mosquitto_local
+sudo service mosquitto_local restart
 echo "mosquitto done"
 
 # echo "disable cronjob logging"

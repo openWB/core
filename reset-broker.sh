@@ -9,7 +9,6 @@ case "$1" in
 		sudo service mosquitto_local stop
 		sudo rm /var/lib/mosquitto_local/mosquitto.db
 		sudo service mosquitto_local start
-		sudo rm /etc/mosquitto/mosquitto_local.conf
 		echo "reset done, now running atreboot.sh..."
 		./runs/atreboot.sh
 		echo "all done";;
