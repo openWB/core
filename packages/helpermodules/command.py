@@ -427,11 +427,11 @@ class Command:
 
     def sendDebug(self, connection_id: str, payload: dict) -> None:
         parent_file = Path(__file__).resolve().parents[2]
-        Pub().pub("openWB/set/system/debug_level", 2)
+        Pub().pub("openWB/set/system/debug_level", 10)
         subprocess.run([str(parent_file / "runs" / "send_debug.sh"),
                         str(payload["data"]["message"]),
                         str(payload["data"]["email"])])
-        Pub().pub("openWB/set/system/debug_level", 0)
+        Pub().pub("openWB/set/system/debug_level", 30)
 
     def getChargeLog(self, connection_id: str, payload: dict) -> None:
         filtered_data = chargelog.get_log_data(payload["data"])

@@ -290,7 +290,7 @@ class UpdateConfig:
         ("openWB/optional/load_sharing/max_current", 16),
         ("openWB/optional/rfid/active", False),
         ("openWB/system/dataprotection_acknowledged", False),
-        ("openWB/system/debug_level", 0),
+        ("openWB/system/debug_level", 30),
         ("openWB/system/ip_address", "unknown"),
         ("openWB/system/release_train", "master"))
 
