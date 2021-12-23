@@ -55,7 +55,9 @@ fi
 # 	echo "EXTRA_OPTS=\"-L 0\"" >> /etc/default/cron
 # fi
 
-# apache upload limit
+# apache
+echo "replacing apache default page..."
+sudo cp /var/www/html/openWB/index.html /var/www/html/index.html
 echo -n "fix upload limit..."
 if [ -d "/etc/php/7.3/" ]; then
 	echo "OS Buster"
