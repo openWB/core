@@ -37,15 +37,29 @@ else
 	echo "...added"
 fi
 
-# start mosquitto
-sudo service mosquitto start
-
 # check for mosquitto configuration
-if [ ! -f /etc/mosquitto/conf.d/openwb.conf ]; then
+if [ ! -f /etc/mosquitto/conf.d/openwb.conf ] || ! sudo grep -Fq "persistent_client_expiration" /etc/mosquitto/mosquitto.conf; then
 	echo "updating mosquitto config file"
-	sudo cp /var/www/html/openWB/web/files/mosquitto.conf /etc/mosquitto/conf.d/openwb.conf
-	sudo service mosquitto reload
+	sudo cp ${OPENWBBASEDIR}/data/config/openwb.conf /etc/mosquitto/conf.d/openwb.conf
+	sudo service mosquitto restart
 fi
+
+#check for mosquitto_local instance
+if [ ! -f /etc/mosquitto/mosquitto_local.conf ]; then
+	echo "setting up mosquitto local instance"
+	sudo install -d -m 0755 -o root -g root /etc/mosquitto/conf_local.d/
+	sudo install -d -m 0755 -o mosquitto -g root /var/lib/mosquitto_local
+	sudo cp -a ${OPENWBBASEDIR}/data/config/mosquitto_local.conf /etc/mosquitto/mosquitto_local.conf
+	sudo cp -a ${OPENWBBASEDIR}/data/config/openwb_local.conf /etc/mosquitto/conf_local.d/
+
+	sudo cp ${OPENWBBASEDIR}/data/config/mosquitto_local_init /etc/init.d/mosquitto_local
+	sudo chown root.root /etc/init.d/mosquitto_local
+	sudo chmod 755 /etc/init.d/mosquitto_local
+else
+	sudo cp -a ${OPENWBBASEDIR}/data/config/openwb_local.conf /etc/mosquitto/conf_local.d/
+fi
+sudo systemctl daemon-reload
+sudo service mosquitto_local start
 
 # echo "disable cronjob logging"
 # if grep -Fxq "EXTRA_OPTS=\"-L 0\"" /etc/default/cron
