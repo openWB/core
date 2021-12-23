@@ -565,7 +565,7 @@ class ChargeTemplate:
                 plan = timecheck.check_plans_timeframe(
                     self.data["time_charging"]["plans"])
                 if plan is not None:
-                    self.data["chargemode"]["current_plan"] = plan["id"]
+                    self.data["chargemode"]["current_plan"] = plan["name"]
                     return plan["current"], "time_charging", message
                 else:
                     self.data["chargemode"]["current_plan"] = ""
