@@ -55,11 +55,6 @@ else
 	echo "...changed"
 fi
 
-# if ! sudo grep -Fq "atreboot.sh" /var/spool/cron/crontabs/pi
-# then
-# 	(crontab -l -u pi ; echo "@reboot ${OPENWBBASEDIR}/runs/atreboot.sh >> /var/log/openWB.log 2>&1")| crontab -u pi -
-# fi
-
 # check for needed packages
 echo "apt packages..."
 # nothing here yet, all in install.sh

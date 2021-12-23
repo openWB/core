@@ -3,41 +3,40 @@
 echo "install required packages..."
 apt-get update
 apt-get -q -y install vim bc apache2 php php-gd php-curl php-xml php-json libapache2-mod-php jq git mosquitto mosquitto-clients socat python3-pip sshpass
-echo "...done"
+echo "done"
 
-echo "check for initial git clone"
+echo "check for initial git clone..."
 if [ ! -d /var/www/html/openWB/web ]; then
 	cd /var/www/html/
 	git clone https://github.com/openWB/core.git --branch master /var/www/html/openWB
 	chown -R pi:pi openWB
-	echo "... git cloned"
+	echo "git cloned"
 else
-	echo "...ok"
+	echo "ok"
 fi
 
-echo "check for ramdisk"
+echo -n "check for ramdisk... "
 if grep -Fxq "tmpfs /var/www/html/openWB/ramdisk tmpfs nodev,nosuid,size=32M 0 0" /etc/fstab
 then
-	echo "...ok"
+	echo "ok"
 else
 	mkdir -p /var/www/html/openWB/ramdisk
 	echo "tmpfs /var/www/html/openWB/ramdisk tmpfs nodev,nosuid,size=32M 0 0" >> /etc/fstab
 	mount -a
-	echo "...created"
+	echo "created"
 fi
 
-echo "check for crontab"
-if grep -Fxq "@reboot /var/www/html/openWB/runs/atreboot.sh &" /var/spool/cron/crontabs/root
+echo -n "check for crontab... "
+if [ ! -f /etc/cron.d/openwb ]; then
 then
-	echo "...ok"
+	sudo cp ${OPENWBBASEDIR}/data/config/openwb.cron /etc/cron.d/openwb
+	echo "installed"
 else
-	echo "@reboot /var/www/html/openWB/runs/atreboot.sh &" >> /tmp/tocrontab
-	crontab -l -u root | cat - /tmp/tocrontab | crontab -u root -
-	rm /tmp/tocrontab
-	echo "...added"
+	echo "ok"
 fi
 
 # check for mosquitto configuration
+echo "check mosquitto installation..."
 if [ ! -f /etc/mosquitto/conf.d/openwb.conf ] || ! sudo grep -Fq "persistent_client_expiration" /etc/mosquitto/mosquitto.conf; then
 	echo "updating mosquitto config file"
 	sudo cp ${OPENWBBASEDIR}/data/config/openwb.conf /etc/mosquitto/conf.d/openwb.conf
@@ -60,6 +59,7 @@ else
 fi
 sudo systemctl daemon-reload
 sudo service mosquitto_local start
+echo "mosquitto done"
 
 # echo "disable cronjob logging"
 # if grep -Fxq "EXTRA_OPTS=\"-L 0\"" /etc/default/cron
@@ -70,17 +70,18 @@ sudo service mosquitto_local start
 # fi
 
 # apache
-echo "replacing apache default page..."
+echo -n "replacing apache default page..."
 sudo cp /var/www/html/openWB/index.html /var/www/html/index.html
+echo "done"
 echo -n "fix upload limit..."
 if [ -d "/etc/php/7.3/" ]; then
-	echo "OS Buster"
 	sudo /bin/su -c "echo 'upload_max_filesize = 300M' > /etc/php/7.3/apache2/conf.d/20-uploadlimit.ini"
 	sudo /bin/su -c "echo 'post_max_size = 300M' >> /etc/php/7.3/apache2/conf.d/20-uploadlimit.ini"
+	echo "done (OS Buster)"
 elif [ -d "/etc/php/7.4/" ]; then
-	echo "OS Bullseye"
 	sudo /bin/su -c "echo 'upload_max_filesize = 300M' > /etc/php/7.4/apache2/conf.d/20-uploadlimit.ini"
 	sudo /bin/su -c "echo 'post_max_size = 300M' >> /etc/php/7.4/apache2/conf.d/20-uploadlimit.ini"
+	echo "done (OS Bullseye)"
 fi
 
 echo "installing python requirements..."
