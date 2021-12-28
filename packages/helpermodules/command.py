@@ -419,7 +419,7 @@ class Command:
                     "EV mit ID "+str(payload["data"]["id"])+" gelöscht.")
                 Pub().pub("openWB/vehicle/"+str(payload["data"]["id"]), "")
                 ProcessBrokerBranch(
-                    "vehicle"+str(payload["data"]["id"])).remove_topics()
+                    "vehicle/"+str(payload["data"]["id"])).remove_topics()
             else:
                 pub_error(payload, connection_id, "Vehicle mit ID 0 darf nicht gelöscht werden.")
         else:
@@ -560,6 +560,7 @@ class ProcessBrokerBranch:
         """
         try:
             client.subscribe("openWB/"+self.topic_str+"/#", 2)
+            client.subscribe("openWB/set/"+self.topic_str+"/#", 2)
         except Exception:
             MainLogger().exception("Fehler im Command-Modul")
 

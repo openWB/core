@@ -29,7 +29,13 @@ class Prepare:
         """ kopiert die Daten, die per MQTT empfangen wurden.
         """
         try:
-            data.data.system_data = copy.deepcopy(subdata.SubData.system_data)
+            # Workaround, da mit Python3.9/pymodbus2.5 eine pymodbus-Instanz nicht mehr kopiert werden kann.
+            # Bei einer Neukonfiguration eines Device/Komponente wird dieses Neuinitialisiert. Nur bei Komponenten
+            # mit simcount werden Werte aktualisiert, diese sollten jedoch nur einmal nach dem Auslesen aktualisiert
+            # werden, sodass die Nutzung einer Referenz erstmal funktioniert.
+            data.data.system_data = {
+                "system": copy.deepcopy(subdata.SubData.system_data["system"])} | {
+                k: subdata.SubData.system_data[k] for k in subdata.SubData.system_data if "device" in k}
         except Exception:
             MainLogger().exception("Fehler im Prepare-Modul")
 
