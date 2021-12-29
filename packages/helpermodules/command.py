@@ -183,15 +183,9 @@ class Command:
         """ löscht ein Chargepoint.
         """
         if self.max_id_chargepoint >= payload["data"]["id"]:
-            if payload["data"]["id"] > 0:
-                data.data.counter_data["all"].hierarchy_remove_item(
-                    "cp"+str(payload["data"]["id"]))
-                MainLogger().info("Ladepunkt mit ID " +
-                                  str(payload["data"]["id"])+" gelöscht.")
-                ProcessBrokerBranch(
-                    "chargepoint/"+str(payload["data"]["id"])).remove_topics()
-            else:
-                pub_error(payload, connection_id, "Ladepunkt mit ID 0 darf nicht gelöscht werden.")
+            data.data.counter_data["all"].hierarchy_remove_item("cp"+str(payload["data"]["id"]))
+            MainLogger().info("Ladepunkt mit ID " + str(payload["data"]["id"])+" gelöscht.")
+            ProcessBrokerBranch("chargepoint/"+str(payload["data"]["id"])).remove_topics()
         else:
             pub_error(payload, connection_id, "Die ID ist größer als die maximal vergebene ID.")
 
