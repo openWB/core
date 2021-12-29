@@ -1,4 +1,11 @@
 #!/bin/bash
+
+if [ $(id -u -n) != "openwb" ]
+then
+	echo "Re-running script ${BASH_SOURCE[0]} as user openwb"
+	exec sudo -u openwb bash "${BASH_SOURCE[0]}"
+fi
+
 OPENWBBASEDIR=$(cd `dirname $0`/../ && pwd)
 echo "atreboot.sh started"
 rm "${OPENWBBASEDIR}/ramdisk/bootdone"
@@ -64,7 +71,7 @@ echo "apt packages..."
 
 # check for other dependencies
 echo "python packages..."
-sudo pip3 install -r ${OPENWBBASEDIR}/requirements.txt
+pip3 install -r "$OPENWBBASEDIR/requirements.txt"
 
 # update version
 echo "version..."
@@ -123,11 +130,11 @@ echo "load versions..."
 # curl --connect-timeout 10 -s https://raw.githubusercontent.com/snaptec/openWB/stable/web/version > ${OPENWBBASEDIR}/ramdisk/vstable
 
 # update our local version
-sudo git -C ${OPENWBBASEDIR}/ show --pretty='format:%ci [%h]' | head -n1 > ${OPENWBBASEDIR}/web/lastcommit
+git -C "$OPENWBBASEDIR/" show --pretty='format:%ci [%h]' | head -n1 > "$OPENWBBASEDIR/web/lastcommit"
 # and record the current commit details
 commitId=`git -C ${OPENWBBASEDIR}/ log --format="%h" -n 1`
-echo $commitId > ${OPENWBBASEDIR}/ramdisk/currentCommitHash
-echo `git -C ${OPENWBBASEDIR}/ branch -a --contains $commitId | perl -nle 'm|.*origin/(.+).*|; print $1' | uniq | xargs` > ${OPENWBBASEDIR}/ramdisk/currentCommitBranches
+echo "$commitId" > ${OPENWBBASEDIR}/ramdisk/currentCommitHash
+git -C "$OPENWBBASEDIR/" branch -a --contains "$commitId" | perl -nle 'm|.*origin/(.+).*|; print $1' | uniq | xargs > "$OPENWBBASEDIR/ramdisk/currentCommitBranches"
 
 # set upload limit in php
 # echo -n "fix upload limit..."
