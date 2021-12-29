@@ -36,6 +36,7 @@ class HandlerAlgorithm:
             # Beim ersten Durchlauf wird in jedem Fall eine Exception geworfen, da die Daten erstmalig ins data-Modul
             # kopiert werden müssen.
             try:
+                MainLogger().info("# ***Start*** ")
                 exit_time = data.data.general_data["general"].data["control_interval"]
 
                 @exit_after(exit_time)

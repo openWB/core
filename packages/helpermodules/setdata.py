@@ -552,7 +552,7 @@ class SetData:
             elif "openWB/set/pv/get/counter" in msg.topic:
                 self._validate_value(msg, int, [(0, float("inf"))])
             elif "openWB/set/pv/get/power" in msg.topic:
-                self._validate_value(msg, int, [(float("-inf"), 0)])
+                self._validate_value(msg, float, [(float("-inf"), 0)])
             elif ("openWB/set/pv/set/overhang_power_left" in msg.topic or
                     "openWB/set/pv/set/reserved_evu_overhang" in msg.topic or
                     "openWB/set/pv/set/released_evu_overhang" in msg.topic):
@@ -573,7 +573,7 @@ class SetData:
             elif "/get/counter" in msg.topic:
                 self._validate_value(msg, int, [(0, float("inf"))])
             elif "/get/power" in msg.topic:
-                self._validate_value(msg, int, [(float("-inf"), 0)])
+                self._validate_value(msg, float, [(float("-inf"), 0)])
             elif "/get/actual_power_phase" in msg.topic:
                 self._validate_value(
                     msg, float, [(0, float("inf"))], collection=list)
@@ -597,11 +597,11 @@ class SetData:
                     "openWB/set/bat/set/hybrid_system_detected" in msg.topic):
                 self._validate_value(msg, int, [(0, 1)])
             elif "openWB/set/bat/set/charging_power_left" in msg.topic:
-                self._validate_value(msg, int)
+                self._validate_value(msg, float)
             elif "openWB/set/bat/get/soc" in msg.topic:
                 self._validate_value(msg, int, [(0, 100)])
             elif "openWB/set/bat/get/power" in msg.topic:
-                self._validate_value(msg, int)
+                self._validate_value(msg, float)
             elif ("openWB/set/bat/get/imported" in msg.topic or
                     "openWB/set/bat/get/exported" in msg.topic or
                     "openWB/set/bat/get/daily_yield_export" in msg.topic or
@@ -672,7 +672,7 @@ class SetData:
                 self._validate_value(msg, int, [(0, 100)])
             elif ("openWB/set/general/chargemode_config/pv_charging/rundown_power" in msg.topic or
                     "openWB/set/general/chargemode_config/pv_charging/charging_power_reserve" in msg.topic):
-                self._validate_value(msg, int, [(0, float("inf"))])
+                self._validate_value(msg, float, [(0, float("inf"))])
             elif "openWB/set/general/chargemode_config/" in msg.topic and "/phases_to_use" in msg.topic:
                 self._validate_value(msg, int, [(1, 1), (3, 3)])
             elif ("openWB/set/general/grid_protection_configured" in msg.topic or
