@@ -36,7 +36,7 @@ class Command:
             self.__get_max_id(
                 "charge_template_time_charging_plan",
                 "vehicle/template/charge_template/+/time_charging/plans", -1)
-            self.__get_max_id("chargepoint", "chargepoint", 0)
+            self.__get_max_id("chargepoint", "chargepoint", -1)
             self.__get_max_id("chargepoint_template", "chargepoint/template", 0)
             self.__get_max_id("component", "system/device/+/component", -1)
             self.__get_max_id("device", "system/device", -1)
@@ -176,7 +176,7 @@ class Command:
                 self.addChargepointTemplate("addChargepoint", {})
             if self.max_id_vehicle == -1:
                 self.addVehicle("addChargepoint", {})
-        except TypeError:
+        except (TypeError, IndexError):
             pub_error(payload, connection_id, "Bitte erst einen EVU-Zähler konfigurieren!")
 
     def removeChargepoint(self, connection_id: str, payload: dict) -> None:
@@ -338,7 +338,7 @@ class Command:
             try:
                 data.data.counter_data["all"].hierarchy_add_item_below(
                     "counter"+str(new_id), data.data.counter_data["all"].get_evu_counter())
-            except TypeError:
+            except (TypeError, IndexError):
                 # es gibt noch keinen EVU-Zähler
                 Pub().pub("openWB/set/counter/get/hierarchy",
                           [{"id": "counter"+str(new_id), "children": []}] +

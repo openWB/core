@@ -228,11 +228,12 @@ class UpdateConfig:
                    ]
     default_topic = (
         ("openWB/chargepoint/template/0", chargepoint.get_chargepoint_template_default()),
-        ("openWB/counter/get/hierarchy", [{"id": "cp0", "children": []}]),
+        ("openWB/counter/get/hierarchy", []),
         ("openWB/vehicle/0/name", ev.get_vehicle_default()["name"]),
         ("openWB/vehicle/0/charge_template", ev.get_vehicle_default()["charge_template"]),
         ("openWB/vehicle/0/ev_template", ev.get_vehicle_default()["ev_template"]),
         ("openWB/vehicle/0/tag_id", ev.get_vehicle_default()["tag_id"]),
+        ("openWB/vehicle/0/get/soc", ev.get_vehicle_default()["get/soc"]),
         ("openWB/vehicle/template/ev_template/0", ev.get_ev_template_default()),
         ("openWB/vehicle/template/charge_template/0", ev.get_charge_template_default()),
         ("openWB/general/chargemode_config/instant_charging/phases_to_use", 1),
