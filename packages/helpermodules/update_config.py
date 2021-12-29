@@ -8,7 +8,6 @@ from helpermodules.log import MainLogger
 from helpermodules.pub import Pub
 from control import chargepoint
 from control import ev
-from modules.external_openwb import chargepoint_module
 
 
 class UpdateConfig:
@@ -228,9 +227,6 @@ class UpdateConfig:
                    "^openWB/system/mqtt/bridge/[0-9]+$"
                    ]
     default_topic = (
-        ("openWB/chargepoint/0/config",
-         {**chargepoint.get_chargepoint_default(),
-          **chargepoint_module.get_default_config()}),
         ("openWB/chargepoint/template/0", chargepoint.get_chargepoint_template_default()),
         ("openWB/counter/get/hierarchy", [{"id": "cp0", "children": []}]),
         ("openWB/vehicle/0/name", ev.get_vehicle_default()["name"]),

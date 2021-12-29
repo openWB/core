@@ -46,8 +46,6 @@ class ChargepointModule(AbstractChargepoint):
     def get_values(self) -> None:
         with SingleComponentUpdateContext(self.component_info):
             ip_address = self.connection_module["configuration"]["ip_address"]
-            response = requests.post('http://'+ip_address+'/connect.php', data={'heartbeatenabled': '1'})
-            response.raise_for_status()
             response = requests.get('http://'+ip_address+'/api2.php')
             response.raise_for_status()
             json_rsp = response.json()
@@ -68,6 +66,10 @@ class ChargepointModule(AbstractChargepoint):
     def switch_phases(self, phases_to_use: int, duration: int) -> None:
         with SingleComponentUpdateContext(self.component_info):
             ip_address = self.connection_module["configuration"]["ip_address"]
-            response = requests.post('http://'+ip_address+'/connect.php', data={'phasetarget': str(phases_to_use)})
+            response = requests.get('http://'+ip_address+'/api2.php')
             response.raise_for_status()
-            time.sleep(6+duration-1)
+            if response.json()["phases_target"] != phases_to_use:
+                ip_address = self.connection_module["configuration"]["ip_address"]
+                response = requests.post('http://'+ip_address+'/connect.php', data={'phasetarget': str(phases_to_use)})
+                response.raise_for_status()
+                time.sleep(duration)

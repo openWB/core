@@ -17,7 +17,6 @@ class Prepare:
     def setup_algorithm(self):
         """ bereitet die Daten für den Algorithmus vor und startet diesen.
         """
-        MainLogger().info("# ***Start*** ")
         self._counter()
         self._check_chargepoints()
         self._use_pv()
