@@ -26,7 +26,8 @@ class CounterAll:
             else:
                 raise TypeError
         except Exception:
-            MainLogger().error("Ohne Konfiguration eines EVU-Zählers an der Spitze der Hierarchie ist keine Regelung möglich.")
+            MainLogger().error(
+                "Ohne Konfiguration eines EVU-Zählers an der Spitze der Hierarchie ist keine Regelungmöglich.")
             raise
 
     def put_stats(self):
