@@ -367,7 +367,7 @@ class Chargepoint:
                 state = False
                 message = "Ladepunkt gesperrt, da keine Werte vom EVU-Zähler empfangen wurden und deshalb kein \
                 Lastmanagement durchgeführt werden kann. Falls Sie dennoch laden möchten, können Sie als EVU-Zähler \
-                    'nicht vorhanden' auswählen und einen konstanten Hausverbrauch angeben."
+                    'Virtuell' auswählen und einen konstanten Hausverbrauch angeben."
             return state, message
         except Exception:
             MainLogger().exception("Fehler in der Ladepunkt-Klasse von "+str(self.cp_num))

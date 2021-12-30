@@ -189,43 +189,41 @@ class SubData:
         """
         try:
             index = self.get_index(msg.topic)
-            if re.search("^.+/vehicle/[0-9]+$", msg.topic) is not None:
+            if re.search("^.+/vehicle/[0-9]+/.+$", msg.topic) is not None:
                 if str(msg.payload.decode("utf-8")) == "":
                     if "ev"+index in var:
                         var.pop("ev"+index)
-                    else:
-                        MainLogger().error("Es konnte kein Vehicle mit der ID " +
-                                           str(index)+" gefunden werden.")
-            elif re.search("^.+/vehicle/[0-9]+/.+$", msg.topic) is not None:
-                if "ev"+index not in var:
-                    var["ev"+index] = ev.Ev(int(index))
-                if re.search("^.+/vehicle/[0-9]+/get.+$", msg.topic) is not None:
-                    if "get" not in var["ev"+index].data:
-                        var["ev"+index].data["get"] = {}
-                    self.set_json_payload(var["ev"+index].data["get"], msg)
-                elif re.search("^.+/vehicle/[0-9]+/set.+$", msg.topic) is not None:
-                    if "set" not in var["ev"+index].data:
-                        var["ev"+index].data["set"] = {}
-                    self.set_json_payload(var["ev"+index].data["set"], msg)
-                elif re.search("^.+/vehicle/[0-9]+/soc_module/config$", msg.topic) is not None:
-                    config = json.loads(str(msg.payload.decode("utf-8")))
-                    mod = importlib.import_module("."+config["type"]+".soc", "modules")
-                    var["ev"+index].soc_module = mod.Soc(config)
-                    self.set_json_payload(var["ev"+index].data, msg)
-                elif re.search("^.+/vehicle/[0-9]+/soc/get/.+$", msg.topic) is not None:
-                    if "soc" not in var["ev"+index].data:
-                        var["ev"+index].data["soc"] = {}
-                    if "get" not in var["ev"+index].data["soc"]:
-                        var["ev"+index].data["soc"]["get"] = {}
-                    self.set_json_payload(
-                        var["ev"+index].data["soc"]["get"], msg)
-                elif re.search("^.+/vehicle/[0-9]+/control_parameter/.+$", msg.topic) is not None:
-                    if "control_parameter" not in var["ev"+index].data:
-                        var["ev"+index].data["control_parameter"] = {}
-                    self.set_json_payload(
-                        var["ev"+index].data["control_parameter"], msg)
                 else:
-                    self.set_json_payload(var["ev"+index].data, msg)
+                    if "ev"+index not in var:
+                        var["ev"+index] = ev.Ev(int(index))
+
+                    if re.search("^.+/vehicle/[0-9]+/get.+$", msg.topic) is not None:
+                        if "get" not in var["ev"+index].data:
+                            var["ev"+index].data["get"] = {}
+                        self.set_json_payload(var["ev"+index].data["get"], msg)
+                    elif re.search("^.+/vehicle/[0-9]+/set.+$", msg.topic) is not None:
+                        if "set" not in var["ev"+index].data:
+                            var["ev"+index].data["set"] = {}
+                        self.set_json_payload(var["ev"+index].data["set"], msg)
+                    elif re.search("^.+/vehicle/[0-9]+/soc_module/config$", msg.topic) is not None:
+                        config = json.loads(str(msg.payload.decode("utf-8")))
+                        mod = importlib.import_module("."+config["type"]+".soc", "modules")
+                        var["ev"+index].soc_module = mod.Soc(config)
+                        self.set_json_payload(var["ev"+index].data, msg)
+                    elif re.search("^.+/vehicle/[0-9]+/soc/get/.+$", msg.topic) is not None:
+                        if "soc" not in var["ev"+index].data:
+                            var["ev"+index].data["soc"] = {}
+                        if "get" not in var["ev"+index].data["soc"]:
+                            var["ev"+index].data["soc"]["get"] = {}
+                        self.set_json_payload(
+                            var["ev"+index].data["soc"]["get"], msg)
+                    elif re.search("^.+/vehicle/[0-9]+/control_parameter/.+$", msg.topic) is not None:
+                        if "control_parameter" not in var["ev"+index].data:
+                            var["ev"+index].data["control_parameter"] = {}
+                        self.set_json_payload(
+                            var["ev"+index].data["control_parameter"], msg)
+                    else:
+                        self.set_json_payload(var["ev"+index].data, msg)
         except Exception:
             MainLogger().exception("Fehler im subdata-Modul")
 
@@ -249,38 +247,38 @@ class SubData:
             else:
                 if "ct"+index not in var:
                     var["ct"+index] = ev.ChargeTemplate(int(index))
-            if re.search("^.+/vehicle/template/charge_template/[0-9]+/chargemode/scheduled_charging/plans/[0-9]+$",
-                         msg.topic) is not None:
-                index_second = self.get_second_index(msg.topic)
-                if str(msg.payload.decode("utf-8")) == "":
-                    if "ct"+index in var["ct"+index].data["chargemode"]["scheduled_charging"]["plans"]:
-                        var.pop("ct"+index)
+                if re.search("^.+/vehicle/template/charge_template/[0-9]+/chargemode/scheduled_charging/plans/[0-9]+$",
+                             msg.topic) is not None:
+                    index_second = self.get_second_index(msg.topic)
+                    if str(msg.payload.decode("utf-8")) == "":
+                        if "ct"+index in var["ct"+index].data["chargemode"]["scheduled_charging"]["plans"]:
+                            var.pop("ct"+index)
+                        else:
+                            MainLogger().error("Es konnte kein Zielladen-Plan mit der ID " +
+                                               str(index_second)+" in der Ladevorlage "+str(index)+" gefunden werden.")
                     else:
-                        MainLogger().error("Es konnte kein Zielladen-Plan mit der ID " +
-                                           str(index_second)+" in der Ladevorlage "+str(index)+" gefunden werden.")
-                else:
-                    var["ct"+index].data["chargemode"]["scheduled_charging"]["plans"][str(
-                        index)] = json.loads(str(msg.payload.decode("utf-8")))
-            elif re.search("^.+/vehicle/template/charge_template/[0-9]+/time_charging/plans/[0-9]+$",
-                           msg.topic) is not None:
-                index_second = self.get_second_index(msg.topic)
-                if str(msg.payload.decode("utf-8")) == "":
-                    if "ct"+index in var["ct"+index].data["time_charging"]["plans"]:
-                        var.pop("ct"+index)
+                        var["ct"+index].data["chargemode"]["scheduled_charging"]["plans"][str(
+                            index)] = json.loads(str(msg.payload.decode("utf-8")))
+                elif re.search("^.+/vehicle/template/charge_template/[0-9]+/time_charging/plans/[0-9]+$",
+                               msg.topic) is not None:
+                    index_second = self.get_second_index(msg.topic)
+                    if str(msg.payload.decode("utf-8")) == "":
+                        if "ct"+index in var["ct"+index].data["time_charging"]["plans"]:
+                            var.pop("ct"+index)
+                        else:
+                            MainLogger().error("Es konnte kein Zeitladen-Plan mit der ID " +
+                                               str(index_second)+" in der Ladevorlage "+str(index)+" gefunden werden.")
                     else:
-                        MainLogger().error("Es konnte kein Zeitladen-Plan mit der ID " +
-                                           str(index_second)+" in der Ladevorlage "+str(index)+" gefunden werden.")
+                        var["ct"+index].data["time_charging"]["plans"][str(
+                            index)] = json.loads(str(msg.payload.decode("utf-8")))
                 else:
-                    var["ct"+index].data["time_charging"]["plans"][str(
-                        index)] = json.loads(str(msg.payload.decode("utf-8")))
-            else:
-                # Pläne unverändert übernehmen
-                scheduled_charging_plans = var["ct" + index].data["chargemode"]["scheduled_charging"]["plans"]
-                time_charging_plans = var["ct" + index].data["time_charging"]["plans"]
-                var["ct" + index].data = json.loads(str(msg.payload.decode("utf-8")))
-                var["ct"+index].data["time_charging"]["plans"] = time_charging_plans
-                var["ct"+index].data["chargemode"]["scheduled_charging"]["plans"] = scheduled_charging_plans
-                self.event_charge_template.set()
+                    # Pläne unverändert übernehmen
+                    scheduled_charging_plans = var["ct" + index].data["chargemode"]["scheduled_charging"]["plans"]
+                    time_charging_plans = var["ct" + index].data["time_charging"]["plans"]
+                    var["ct" + index].data = json.loads(str(msg.payload.decode("utf-8")))
+                    var["ct"+index].data["time_charging"]["plans"] = time_charging_plans
+                    var["ct"+index].data["chargemode"]["scheduled_charging"]["plans"] = scheduled_charging_plans
+                    self.event_charge_template.set()
         except Exception:
             MainLogger().exception("Fehler im subdata-Modul")
 
@@ -324,47 +322,46 @@ class SubData:
             enthält Topic und Payload
         """
         try:
-            if re.search("^.+/chargepoint/[0-9]+$", msg.topic) is not None:
+            if re.search("^.+/chargepoint/[0-9]+/.+$", msg.topic) is not None:
                 index = self.get_index(msg.topic)
                 if str(msg.payload.decode("utf-8")) == "":
                     if "cp"+index in var:
                         var.pop("cp"+index)
-            elif re.search("^.+/chargepoint/[0-9]+/.+$", msg.topic) is not None:
-                index = self.get_index(msg.topic)
-                if "cp"+index not in var:
-                    var["cp"+index] = chargepoint.Chargepoint(int(index))
-                if re.search("^.+/chargepoint/[0-9]+/set/.+$", msg.topic) is not None:
-                    if "set" not in var["cp"+index].data:
-                        var["cp"+index].data["set"] = {}
-                    if re.search("^.+/chargepoint/[0-9]+/set/log/.+$", msg.topic) is not None:
-                        if "log" not in var["cp"+index].data["set"]:
-                            var["cp"+index].data["set"]["log"] = {}
-                        self.set_json_payload(
-                            var["cp"+index].data["set"]["log"], msg)
-                    else:
-                        self.set_json_payload(var["cp"+index].data["set"], msg)
-                elif re.search("^.+/chargepoint/[0-9]+/get/.+$", msg.topic) is not None:
-                    if "get" not in var["cp"+index].data:
-                        var["cp"+index].data["get"] = {}
-                    if re.search("^.+/chargepoint/[0-9]+/get/connected_vehicle/.+$", msg.topic) is not None:
-                        if "connected_vehicle" not in var["cp"+index].data["get"]:
-                            var["cp"+index].data["get"]["connected_vehicle"] = {}
-                        self.set_json_payload(
-                            var["cp"+index].data["get"]["connected_vehicle"], msg)
+                else:
+                    if "cp"+index not in var:
+                        var["cp"+index] = chargepoint.Chargepoint(int(index))
+                    if re.search("^.+/chargepoint/[0-9]+/set/.+$", msg.topic) is not None:
+                        if "set" not in var["cp"+index].data:
+                            var["cp"+index].data["set"] = {}
+                        if re.search("^.+/chargepoint/[0-9]+/set/log/.+$", msg.topic) is not None:
+                            if "log" not in var["cp"+index].data["set"]:
+                                var["cp"+index].data["set"]["log"] = {}
+                            self.set_json_payload(
+                                var["cp"+index].data["set"]["log"], msg)
+                        else:
+                            self.set_json_payload(var["cp"+index].data["set"], msg)
                     elif re.search("^.+/chargepoint/[0-9]+/get/.+$", msg.topic) is not None:
-                        self.set_json_payload(var["cp"+index].data["get"], msg)
-                elif re.search("^.+/chargepoint/[0-9]+/config$", msg.topic) is not None:
-                    config = json.loads(
-                        str(msg.payload.decode("utf-8")))
-                    if (var["cp"+index].chargepoint_module is None or
-                            config["connection_module"] != var["cp"+index].chargepoint_module.connection_module or
-                            config["power_module"] != var["cp"+index].chargepoint_module.power_module):
-                        mod = importlib.import_module(
-                            "."+config["connection_module"]["type"]+".chargepoint_module", "modules")
-                        var["cp"+index].chargepoint_module = mod.ChargepointModule(
-                            config["id"], config["connection_module"], config["power_module"])
-                    self.set_json_payload(var["cp"+index].data, msg)
-                    self.event_cp_config.set()
+                        if "get" not in var["cp"+index].data:
+                            var["cp"+index].data["get"] = {}
+                        if re.search("^.+/chargepoint/[0-9]+/get/connected_vehicle/.+$", msg.topic) is not None:
+                            if "connected_vehicle" not in var["cp"+index].data["get"]:
+                                var["cp"+index].data["get"]["connected_vehicle"] = {}
+                            self.set_json_payload(
+                                var["cp"+index].data["get"]["connected_vehicle"], msg)
+                        elif re.search("^.+/chargepoint/[0-9]+/get/.+$", msg.topic) is not None:
+                            self.set_json_payload(var["cp"+index].data["get"], msg)
+                    elif re.search("^.+/chargepoint/[0-9]+/config$", msg.topic) is not None:
+                        config = json.loads(
+                            str(msg.payload.decode("utf-8")))
+                        if (var["cp"+index].chargepoint_module is None or
+                                config["connection_module"] != var["cp"+index].chargepoint_module.connection_module or
+                                config["power_module"] != var["cp"+index].chargepoint_module.power_module):
+                            mod = importlib.import_module(
+                                "."+config["connection_module"]["type"]+".chargepoint_module", "modules")
+                            var["cp"+index].chargepoint_module = mod.ChargepointModule(
+                                config["id"], config["connection_module"], config["power_module"])
+                        self.set_json_payload(var["cp"+index].data, msg)
+                        self.event_cp_config.set()
             elif re.search("^.+/chargepoint/get/.+$", msg.topic) is not None:
                 self.set_json_payload(var["all"].data["get"], msg)
         except Exception:
