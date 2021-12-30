@@ -176,7 +176,7 @@ class Prepare:
                             data.data.pv_data["all"].reset_switch_on_off(
                                 cp, charging_ev)
                             charging_ev.reset_phase_switch()
-                            if max(cp.data["get"]["current"]) > charging_ev.ev_template.data["nominal_difference"]:
+                            if max(cp.data["get"]["currents"]) > charging_ev.ev_template.data["nominal_difference"]:
                                 cp.data["set"]["current"] = 0
                             else:
                                 # Wenn nicht geladen wird, obwohl geladen werde kann, soll das EV im Algorithmus nicht
@@ -221,7 +221,7 @@ class Prepare:
                                 str(charging_ev.charge_template.data["chargemode"]["selected"]) + ", Submodus: " +
                                 str(charging_ev.data["control_parameter"]["submode"]) + ", Phasen: " + str(phases) +
                                 ", Prioritaet: " + str(charging_ev.charge_template.data["prio"]) +
-                                ", max. Ist-Strom: " + str(max(cp.data["get"]["current"])))
+                                ", max. Ist-Strom: " + str(max(cp.data["get"]["currents"])))
                     else:
                         # Wenn kein EV zur Ladung zugeordnet wird, auf hinterlegtes EV zurückgreifen.
                         self._pub_connected_vehicle(

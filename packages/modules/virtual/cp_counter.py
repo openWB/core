@@ -50,9 +50,9 @@ class VirtualCpCounter:
             else:
                 raise FaultState.error("Fuer den virtuellen Zaehler muss der Anschluss der Phasen vom Ladepunkt " +
                                        str(chargepoint.cp_num) + " an die Phasen der EVU angegeben werden.")
-            currents[0] = currents[0] + chargepoint.data["get"]["current"][evu_phases[0]]
-            currents[1] = currents[1] + chargepoint.data["get"]["current"][evu_phases[1]]
-            currents[2] = currents[2] + chargepoint.data["get"]["current"][evu_phases[2]]
+            currents[0] = currents[0] + chargepoint.data["get"]["currents"][evu_phases[0]]
+            currents[1] = currents[1] + chargepoint.data["get"]["currents"][evu_phases[1]]
+            currents[2] = currents[2] + chargepoint.data["get"]["currents"][evu_phases[2]]
 
             power_all = power_all + chargepoint.data["get"]["power_all"]
         power_phase = [230*c for c in currents]

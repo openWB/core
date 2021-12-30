@@ -503,7 +503,7 @@ class SetData:
             elif "/config" in msg.topic:
                 self._validate_value(msg, "json")
             elif ("/get/voltage" in msg.topic or
-                    "/get/current" in msg.topic or
+                    "/get/currents" in msg.topic or
                     "/get/power_factor" in msg.topic):
                 self._validate_value(
                     msg, float, [(0, float("inf"))], collection=list)
@@ -773,14 +773,11 @@ class SetData:
                 self._validate_value(msg, None)
             elif "/set/consumption_left" in msg.topic:
                 self._validate_value(msg, float)
-            elif "/set/current_left" in msg.topic:
-                self._validate_value(
-                    msg, float, [(0, float("inf"))], collection=list)
             elif "/config/selected" in msg.topic:
                 self._validate_value(msg, str)
             elif "/module" in msg.topic:
                 self._validate_value(msg, "json")
-            elif "/config/max_current" in msg.topic:
+            elif "/config/max_currents" in msg.topic:
                 self._validate_value(msg, int, [(7, 1500)], collection=list)
             elif "/config/max_total_power" in msg.topic:
                 self._validate_value(msg, int, [(2000, 1000000)])
@@ -788,7 +785,7 @@ class SetData:
                 self._validate_value(
                     msg, float, [(float("-inf"), float("inf")), (None, None)])
             elif ("/get/power_phase" in msg.topic or
-                    "/get/current" in msg.topic):
+                    "/get/currents" in msg.topic):
                 self._validate_value(
                     msg, float, [(float("-inf"), float("inf")), (None, None)], collection=list)
             elif ("/get/voltage" in msg.topic or
