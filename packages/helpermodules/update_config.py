@@ -31,7 +31,7 @@ class UpdateConfig:
                    "^openWB/bat/[0-9]+/get/fault_str$",
 
                    "^openWB/chargepoint/get/power_all$",
-                   "^openWB/chargepoint/get/counter_all$",
+                   "^openWB/chargepoint/get/counter$",
                    "^openWB/chargepoint/get/daily_yield$",
                    "^openWB/chargepoint/template/0$",
                    "^openWB/chargepoint/template/0/autolock/0$",

@@ -458,7 +458,7 @@ class SetData:
             enthält Topic und Payload
         """
         try:
-            if ("openWB/set/chargepoint/get/counter_all" in msg.topic or
+            if ("openWB/set/chargepoint/get/counter" in msg.topic or
                     "openWB/set/chargepoint/get/power_all" in msg.topic or
                     "openWB/set/chargepoint/get/daily_yield" in msg.topic):
                 self._validate_value(msg, float, [(0, float("inf"))])
