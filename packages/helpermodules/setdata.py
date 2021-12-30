@@ -502,7 +502,7 @@ class SetData:
                     msg, int, [(0, float("inf"))], pub_json=True)
             elif "/config" in msg.topic:
                 self._validate_value(msg, "json")
-            elif ("/get/voltage" in msg.topic or
+            elif ("/get/voltages" in msg.topic or
                     "/get/currents" in msg.topic or
                     "/get/power_factor" in msg.topic):
                 self._validate_value(
@@ -788,7 +788,7 @@ class SetData:
                     "/get/currents" in msg.topic):
                 self._validate_value(
                     msg, float, [(float("-inf"), float("inf")), (None, None)], collection=list)
-            elif ("/get/voltage" in msg.topic or
+            elif ("/get/voltages" in msg.topic or
                     "/get/power_factor" in msg.topic):
                 self._validate_value(
                     msg, float, [(0, float("inf")), (None, None)], collection=list)
