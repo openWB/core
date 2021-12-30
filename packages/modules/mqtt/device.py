@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from helpermodules.log import MainLogger
 from modules.common.abstract_device import AbstractDevice
+from modules.common.component_context import MultiComponentUpdateContext
 from modules.mqtt import bat
 from modules.mqtt import counter
 from modules.mqtt import inverter
@@ -32,7 +33,15 @@ class Device(AbstractDevice):
     def add_component(self, component_config: dict) -> None:
         component_type = component_config["type"]
         if component_type in self.COMPONENT_TYPE_TO_CLASS:
-            self._components["component"+str(component_config["id"])] = (self.COMPONENT_TYPE_TO_CLASS[component_type]())
+            self._components["component"+str(component_config["id"])
+                             ] = (self.COMPONENT_TYPE_TO_CLASS[component_type](component_config))
 
-    def get_values(self) -> None:
-        MainLogger().debug("MQTT-Module müssen nicht ausgelesen werden.")
+    def update(self) -> None:
+        if self._components:
+            with MultiComponentUpdateContext(self._components):
+                MainLogger().debug("MQTT-Module müssen nicht ausgelesen werden.")
+        else:
+            MainLogger().warning(
+                self.device_config["name"] +
+                ": Es konnten keine Werte gelesen werden, da noch keine Komponenten konfiguriert wurden."
+            )
