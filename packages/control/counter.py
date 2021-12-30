@@ -319,7 +319,7 @@ class CounterAll:
 
 
 def get_counter_default_config():
-    return {"max_current": [16, 16, 16],
+    return {"max_currents": [16, 16, 16],
             "max_total_power": 11000}
 
 
@@ -358,7 +358,7 @@ class Counter:
                 MainLogger().debug(str(self.data["set"]["consumption_left"]) +
                                    "W EVU-Leistung, die noch bezogen werden kann.")
             # Strom
-            self.data["set"]["current_used"] = self.data["get"]["current"]
+            self.data["set"]["currents_used"] = self.data["get"]["currents"]
         except Exception:
             MainLogger().exception("Fehler in der Zaehler-Klasse von "+str(self.counter_num))
 

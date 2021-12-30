@@ -136,7 +136,7 @@ class PvAll:
             # Berücksichtigung der Speicherleistung
             all_overhang += bat_overhang
             if not chargepoint.data["set"]["charging_ev_data"].ev_template.data["prevent_switch_stop"] or max(
-                    chargepoint.data["get"]["current"]) == 0:
+                    chargepoint.data["get"]["currents"]) == 0:
                 if control_parameter["timestamp_switch_on_off"] != "0":
                     # Wurde die Einschaltschwelle erreicht? Reservierte Leistung aus all_overhang rausrechnen,
                     # da diese Leistung ja schon reserviert wurde, als die Einschaltschwelle erreicht wurde.

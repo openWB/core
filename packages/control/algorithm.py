@@ -40,7 +40,7 @@ class Algorithm:
             evu_counter = data.data.counter_data["all"].get_evu_counter()
             MainLogger().info(
                 "EVU-Punkt: Leistung[W] " + str(data.data.counter_data[evu_counter].data["get"]["power_all"]) +
-                ", Stroeme[A] " + str(data.data.counter_data[evu_counter].data["get"]["current"]))
+                ", Stroeme[A] " + str(data.data.counter_data[evu_counter].data["get"]["currents"]))
             if not data.data.counter_data["all"].data["set"]["loadmanagement_available"]:
                 return
 
@@ -109,11 +109,11 @@ class Algorithm:
                             if((charging_ev.charge_template.data["chargemode"]["selected"] == "pv_charging" or
                                     charging_ev.data["control_parameter"]["submode"] == "pv_charging") and
                                     chargepoint.data["set"]["current"] != 0):
-                                if max(chargepoint.data["get"]["current"]) != 0:
+                                if max(chargepoint.data["get"]["currents"]) != 0:
                                     # Strom, mit dem tatsächlich geladen wird, verwenden, da man sonst mehr Strom
                                     # freigibt, als zur Verfügung steht.
                                     released_current = charging_ev.data["control_parameter"]["required_current"] - max(
-                                        chargepoint.data["get"]["current"])
+                                        chargepoint.data["get"]["currents"])
                                     # Nur wenn mit mehr als der benötigten Stromstärke geladen wird, kann der
                                     # Überschuss ggf anderweitig in der Regelung verwendet werden.
                                     if released_current < 0:
@@ -158,10 +158,10 @@ class Algorithm:
                     try:
                         if "cp" in cp:
                             if data.data.cp_data[cp].data["set"]["current"] > max(
-                                    data.data.cp_data[cp].data["get"]["current"]) > data.data.cp_data[cp].data["set"][
+                                    data.data.cp_data[cp].data["get"]["currents"]) > data.data.cp_data[cp].data["set"][
                                     "charging_ev_data"].ev_template.data["nominal_difference"]:
                                 data.data.cp_data[cp].data["set"]["current"] = max(
-                                    data.data.cp_data[cp].data["get"]["current"])
+                                    data.data.cp_data[cp].data["get"]["currents"])
                     except Exception:
                         MainLogger().exception("Fehler im Algorithmus-Modul fuer Ladepunkt"+cp)
                 # Begrenzung der Schleifendurchläufe: Im ersten Durchlauf wird versucht, die Überlast durch Reduktion
@@ -421,7 +421,7 @@ class Algorithm:
                                         (chargepoint.data["set"]["charging_ev_data"].data["control_parameter"][
                                             "required_current"] > chargepoint.data["set"]["current"]) and
                                         # nur die hochregeln, die auch mit der Sollstromstärke laden
-                                        (max(chargepoint.data["get"]["current"]) > chargepoint.data["set"]["current"]
+                                        (max(chargepoint.data["get"]["currents"]) > chargepoint.data["set"]["current"]
                                          - charging_ev.ev_template.data["nominal_difference"])):
                                     valid_chargepoints[chargepoint] = None
                 except Exception:
@@ -595,7 +595,7 @@ class Algorithm:
                             phases, current, message = charging_ev.auto_phase_switch(
                                 chargepoint.cp_num, charging_ev.data["control_parameter"]["required_current"],
                                 charging_ev.data["control_parameter"]["phases"],
-                                chargepoint.data["get"]["current"])
+                                chargepoint.data["get"]["currents"])
                             if message is not None:
                                 chargepoint.data["get"]["state_str"] = message
                             # Nachdem im Automatikmodus die Anzahl Phasen bekannt ist, Einhaltung des Maximalstroms
@@ -723,7 +723,7 @@ class Algorithm:
             # Wenn bereits geladen wird, nur die Änderung allokieren
             current_to_allocate = required_current
             power_to_allocate = required_power
-            max_used_current = max(chargepoint.data["get"]["current"])
+            max_used_current = max(chargepoint.data["get"]["currents"])
             if max_used_current != 0:
                 current_to_allocate -= max_used_current
                 power_to_allocate -= phases * 230 * max_used_current
@@ -737,7 +737,7 @@ class Algorithm:
             if data.data.counter_data["all"].data["set"]["loadmanagement_active"] and len(overloaded_counters) != 0:
                 # Lastmanagement hat eingegriffen
                 MainLogger().debug("Aktuell kalkulierte Stroeme am EVU-Punkt[A]: "+str(
-                    data.data.counter_data[evu_counter].data["set"]["current_used"]))
+                    data.data.counter_data[evu_counter].data["set"]["currents_used"]))
                 MainLogger().warning(
                     "Für die Ladung an LP"+str(chargepoint.cp_num) +
                     " muss erst ein Ladepunkt mit gleicher/niedrigerer Prioritaet reduziert/gestoppt werden.")
@@ -982,7 +982,7 @@ class Algorithm:
                                 # Erst hochregeln, wenn geladen wird.
                                 if ((data.data.cp_data[chargepoint].data["set"]["current"]
                                         - charging_ev.ev_template.data["nominal_difference"])
-                                        < max(data.data.cp_data[chargepoint].data["get"]["current"]) and
+                                        < max(data.data.cp_data[chargepoint].data["get"]["currents"]) and
                                         charging_ev.charge_template.data["chargemode"]["pv_charging"][
                                             "feed_in_limit"] == feed_in_limit):
                                     # Ev dieser Prioritätsstufe zählen
@@ -1025,7 +1025,7 @@ class Algorithm:
                                             chargepoint.data["set"]["current"] != 0):
                                         if ((chargepoint.data["set"]["current"]
                                                 - charging_ev.ev_template.data["nominal_difference"])
-                                                < max(chargepoint.data["get"]["current"]) and
+                                                < max(chargepoint.data["get"]["currents"]) and
                                                 charging_ev.charge_template.data["chargemode"]["pv_charging"][
                                                     "feed_in_limit"] == feed_in_limit):
                                             if chargepoint.data["get"]["charge_state"]:
@@ -1044,18 +1044,18 @@ class Algorithm:
                                                 "new_current "+str(new_current)+"phases "+str(phases))
                                             # Um max. 5A pro Zyklus regeln
                                             if ((-5-charging_ev.ev_template.data["nominal_difference"])
-                                                    < (new_current - max(chargepoint.data["get"]["current"]))
+                                                    < (new_current - max(chargepoint.data["get"]["currents"]))
                                                     < (5+charging_ev.ev_template.data["nominal_difference"])):
                                                 current = new_current
                                                 MainLogger().debug("current 1 "+str(current))
                                             else:
-                                                if new_current < max(chargepoint.data["get"]["current"]):
+                                                if new_current < max(chargepoint.data["get"]["currents"]):
                                                     current = max(
-                                                        chargepoint.data["get"]["current"]) - 5
+                                                        chargepoint.data["get"]["currents"]) - 5
                                                     MainLogger().debug("current 2 "+str(current))
                                                 else:
                                                     current = max(
-                                                        chargepoint.data["get"]["current"]) + 5
+                                                        chargepoint.data["get"]["currents"]) + 5
                                                     MainLogger().debug("current 3 "+str(current))
                                             # Einhalten des Mindeststroms des Lademodus und Maximalstroms des EV
                                             current = charging_ev.check_min_max_current(
@@ -1066,7 +1066,7 @@ class Algorithm:
                                             MainLogger().debug("power_diff "+str(power_diff)+"current " +
                                                                str(current))
                                             MainLogger().debug("max get current " +
-                                                               str(max(chargepoint.data["get"]["current"])))
+                                                               str(max(chargepoint.data["get"]["currents"])))
 
                                             if power_diff != 0:
                                                 # Laden nur mit der Leistung, die vorher der Speicher bezogen hat
