@@ -550,7 +550,7 @@ class SetData:
                     "openWB/set/pv/get/yearly_yield" in msg.topic):
                 self._validate_value(msg, float, [(0, float("inf"))])
             elif "openWB/set/pv/get/counter" in msg.topic:
-                self._validate_value(msg, int, [(0, float("inf"))])
+                self._validate_value(msg, float, [(0, float("inf"))])
             elif "openWB/set/pv/get/power" in msg.topic:
                 self._validate_value(msg, float, [(float("-inf"), 0)])
             elif ("openWB/set/pv/set/overhang_power_left" in msg.topic or
@@ -571,12 +571,12 @@ class SetData:
                     "/get/energy" in msg.topic):
                 self._validate_value(msg, float, [(0, float("inf"))])
             elif "/get/counter" in msg.topic:
-                self._validate_value(msg, int, [(0, float("inf"))])
+                self._validate_value(msg, float, [(0, float("inf"))])
             elif "/get/power" in msg.topic:
                 self._validate_value(msg, float, [(float("-inf"), 0)])
-            elif "/get/actual_power_phase" in msg.topic:
+            elif "/get/currents" in msg.topic:
                 self._validate_value(
-                    msg, float, [(0, float("inf"))], collection=list)
+                    msg, float, [(float("-inf"), 0)], collection=list)
             else:
                 self.__unknown_topic(msg)
         except Exception:
@@ -599,7 +599,7 @@ class SetData:
             elif "openWB/set/bat/set/charging_power_left" in msg.topic:
                 self._validate_value(msg, float)
             elif "openWB/set/bat/get/soc" in msg.topic:
-                self._validate_value(msg, int, [(0, 100)])
+                self._validate_value(msg, float, [(0, 100)])
             elif "openWB/set/bat/get/power" in msg.topic:
                 self._validate_value(msg, float)
             elif ("openWB/set/bat/get/imported" in msg.topic or
@@ -617,7 +617,7 @@ class SetData:
                     "/get/daily_yield_import" in msg.topic):
                 self._validate_value(msg, float, [(0, float("inf"))])
             elif "/get/soc" in msg.topic:
-                self._validate_value(msg, int, [(0, 100)])
+                self._validate_value(msg, float, [(0, 100)])
             elif "/get/fault_state" in msg.topic:
                 self._validate_value(msg, int, [(0, 2)])
             elif "/get/fault_str" in msg.topic:
