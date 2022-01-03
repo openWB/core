@@ -55,7 +55,7 @@ class VirtualCpCounter:
             currents[2] = currents[2] + chargepoint.data["get"]["currents"][evu_phases[2]]
 
             power_all = power_all + chargepoint.data["get"]["power_all"]
-        power_phase = [230*c for c in currents]
+        powers = [230*c for c in currents]
 
         topic_str = "openWB/set/system/device/{}/component/{}/".format(
             self.__device_id, self.component_config["id"]
@@ -68,7 +68,7 @@ class VirtualCpCounter:
         )
         counter_state = CounterState(
             currents=currents,
-            powers=power_phase,
+            powers=powers,
             imported=imported,
             exported=exported,
             power_all=power_all

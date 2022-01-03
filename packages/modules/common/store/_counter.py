@@ -32,7 +32,7 @@ class CounterValueStoreBroker(ValueStore[CounterState]):
         try:
             pub_to_broker("openWB/set/counter/" + str(self.num) + "/get/voltage", counter_state.voltages, 2)
             pub_to_broker("openWB/set/counter/" + str(self.num) + "/get/current", counter_state.currents, 2)
-            pub_to_broker("openWB/set/counter/" + str(self.num) + "/get/power_phase", counter_state.powers, 2)
+            pub_to_broker("openWB/set/counter/" + str(self.num) + "/get/powers", counter_state.powers, 2)
             pub_to_broker("openWB/set/counter/" + str(self.num) + "/get/power_factors", counter_state.power_factors, 2)
             pub_to_broker("openWB/set/counter/" + str(self.num) + "/get/imported", counter_state.imported)
             pub_to_broker("openWB/set/counter/" + str(self.num) + "/get/exported", counter_state.exported)

@@ -89,7 +89,7 @@ class UpdateConfig:
                    "^openWB/counter/[0-9]+/get/voltages$",
                    "^openWB/counter/[0-9]+/get/power_all$",
                    "^openWB/counter/[0-9]+/get/currents$",
-                   "^openWB/counter/[0-9]+/get/power_phase$",
+                   "^openWB/counter/[0-9]+/get/powers$",
                    "^openWB/counter/[0-9]+/get/power_factors$",
                    "^openWB/counter/[0-9]+/get/fault_state$",
                    "^openWB/counter/[0-9]+/get/fault_str$",
