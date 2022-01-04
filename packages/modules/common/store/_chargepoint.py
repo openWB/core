@@ -8,9 +8,9 @@ class ChargepointValueStoreBroker(ValueStore[ChargepointState]):
         self.num = cp_id
 
     def set(self, state: ChargepointState) -> None:
-        pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/voltage", state.voltages, 2)
-        pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/current", state.currents, 2)
-        pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/power_factor", state.power_factors, 2)
+        pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/voltages", state.voltages, 2)
+        pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/currents", state.currents, 2)
+        pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/power_factors", state.power_factors, 2)
         pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/counter", state.imported, 2)
         pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/exported", state.exported, 2)
         pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/power_all", state.power_all, 2)
