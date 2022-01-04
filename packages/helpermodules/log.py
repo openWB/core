@@ -6,6 +6,13 @@ from pathlib import Path
 import subprocess
 
 
+class PathTruncatingFormatter(logging.Formatter):
+    def format(self, record):
+        if 'pathname' in record.__dict__.keys():
+            record.pathname = '{}'.format(record.pathname[20:])
+        return super(PathTruncatingFormatter, self).format(record)
+
+
 def setup_logging(name):
     root_logger = logging.getLogger(name)
     # Only do something if logging is not yet initialized.
@@ -13,7 +20,7 @@ def setup_logging(name):
     if not root_logger.hasHandlers():
         handler = logging.FileHandler(str(Path(__file__).resolve().parents[2] / 'ramdisk' / (name+'.log')))
         handler.setFormatter(
-            logging.Formatter(
+            PathTruncatingFormatter(
                 '%(asctime)s - {%(pathname)s:%(lineno)s} - %(levelname)s - %(message)s')
         )
         root_logger.addHandler(handler)
@@ -22,77 +29,28 @@ def setup_logging(name):
 
 
 class MainLogger:
-    class __Logger:
-        logger = setup_logging("main")
 
-        def __init__(self):
-            pass
-
-        def info(self, message: str, exception=None):
-            self.logger.info(message, exc_info=exception)
-
-        def debug(self, message: str, exception=None):
-            self.logger.debug(message, exc_info=exception)
-
-        def error(self, message: str, exception=None):
-            self.logger.error(message, exc_info=exception)
-
-        def warning(self, message: str, exception=None):
-            self.logger.warning(message, exc_info=exception)
-
-        def critical(self, message: str, exception=None):
-            self.logger.critical(message, exc_info=exception)
-
-        def exception(self, message: str):
-            self.logger.exception(message)
-
-        def setLevel(self, level):
-            level_conversion = {30: logging.WARNING, 20: logging.INFO, 10: logging.DEBUG}
-            self.logger.setLevel(level_conversion[level])
-
-    instance = None
+    instance: logging.Logger = None
 
     def __new__(cls):
         if not MainLogger.instance:
-            MainLogger.instance = MainLogger.__Logger()
+            MainLogger.instance = setup_logging("main")
         return MainLogger.instance
+
+    def setLevel(self, level):
+        MainLogger.instance.setLevel(level)
 
 
 class MqttLogger:
-    class __Logger:
-        logger = setup_logging("mqtt")
-
-        def __init__(self):
-            pass
-
-        def info(self, message: str, exception=None):
-            self.logger.info(message, exc_info=exception)
-
-        def debug(self, message: str, exception=None):
-            self.logger.debug(message, exc_info=exception)
-
-        def error(self, message: str, exception=None):
-            self.logger.error(message, exc_info=exception)
-
-        def warning(self, message: str, exception=None):
-            self.logger.warning(message, exc_info=exception)
-
-        def critical(self, message: str, exception=None):
-            self.logger.critical(message, exc_info=exception)
-
-        def exception(self, message: str):
-            self.logger.exception(message)
-
-        def setLevel(self, level):
-            level_conversion = {0: logging.WARNING, 1: logging.INFO, 2: logging.DEBUG}
-            self.logger.setLevel(level_conversion[level])
-
-    instance = None
+    instance: logging.Logger = None
 
     def __new__(cls):
         if not MqttLogger.instance:
-            MqttLogger.instance = MqttLogger.__Logger()
+            MqttLogger.instance = setup_logging("mqtt")
         return MqttLogger.instance
+
+    def setLevel(self, level):
+        MainLogger.instance.setLevel(level)
 
 
 def cleanup_logfiles():
