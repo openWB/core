@@ -417,20 +417,20 @@ class SubData:
             enthält Topic und Payload
         """
         try:
-            if re.search("^.+/pv$", msg.topic) is not None:
-                if str(msg.payload.decode("utf-8")) == "":
-                    if "all" in var:
-                        var.pop("all")
-            elif re.search("^.+/pv/[0-9]+/.+$", msg.topic) is not None:
+            if re.search("^.+/pv/[0-9]+/.+$", msg.topic) is not None:
                 index = self.get_index(msg.topic)
-                if "pv"+index not in var:
-                    var["pv"+index] = pv.Pv(int(index))
-                if re.search("^.+/pv/[0-9]+/config$", msg.topic) is not None:
-                    self.set_json_payload(var["pv"+index].data, msg)
-                elif re.search("^.+/pv/[0-9]+/get/.+$", msg.topic) is not None:
-                    if "get" not in var["pv"+index].data:
-                        var["pv"+index].data["get"] = {}
-                    self.set_json_payload(var["pv"+index].data["get"], msg)
+                if str(msg.payload.decode("utf-8")) == "":
+                    if "pv"+index in var:
+                        var.pop("pv"+index)
+                else:
+                    if "pv"+index not in var:
+                        var["pv"+index] = pv.Pv(int(index))
+                    if re.search("^.+/pv/[0-9]+/config$", msg.topic) is not None:
+                        self.set_json_payload(var["pv"+index].data, msg)
+                    elif re.search("^.+/pv/[0-9]+/get/.+$", msg.topic) is not None:
+                        if "get" not in var["pv"+index].data:
+                            var["pv"+index].data["get"] = {}
+                        self.set_json_payload(var["pv"+index].data["get"], msg)
             elif re.search("^.+/pv/.+$", msg.topic) is not None:
                 if re.search("^.+/pv/config/.+$", msg.topic) is not None:
                     if "config" not in var["all"].data:
@@ -460,24 +460,24 @@ class SubData:
             enthält Topic und Payload
         """
         try:
-            if re.search("^.+/bat$", msg.topic) is not None:
-                if str(msg.payload.decode("utf-8")) == "":
-                    if "all" in var:
-                        var.pop("all")
-            elif re.search("^.+/bat/[0-9]+/.+$", msg.topic) is not None:
+            if re.search("^.+/bat/[0-9]+/.+$", msg.topic) is not None:
                 index = self.get_index(msg.topic)
-                if "bat"+index not in var:
-                    var["bat"+index] = bat.Bat(int(index))
-                if re.search("^.+/bat/[0-9]+/config$", msg.topic) is not None:
-                    self.set_json_payload(var["bat"+index].data, msg)
-                elif re.search("^.+/bat/[0-9]+/get/.+$", msg.topic) is not None:
-                    if "get" not in var["bat"+index].data:
-                        var["bat"+index].data["get"] = {}
-                    self.set_json_payload(var["bat"+index].data["get"], msg)
-                elif re.search("^.+/bat/[0-9]+/set/.+$", msg.topic) is not None:
-                    if "set" not in var["bat"+index].data:
-                        var["bat"+index].data["set"] = {}
-                    self.set_json_payload(var["bat"+index].data["set"], msg)
+                if str(msg.payload.decode("utf-8")) == "":
+                    if "bat"+index in var:
+                        var.pop("bat"+index)
+                else:
+                    if "bat"+index not in var:
+                        var["bat"+index] = bat.Bat(int(index))
+                    if re.search("^.+/bat/[0-9]+/config$", msg.topic) is not None:
+                        self.set_json_payload(var["bat"+index].data, msg)
+                    elif re.search("^.+/bat/[0-9]+/get/.+$", msg.topic) is not None:
+                        if "get" not in var["bat"+index].data:
+                            var["bat"+index].data["get"] = {}
+                        self.set_json_payload(var["bat"+index].data["get"], msg)
+                    elif re.search("^.+/bat/[0-9]+/set/.+$", msg.topic) is not None:
+                        if "set" not in var["bat"+index].data:
+                            var["bat"+index].data["set"] = {}
+                        self.set_json_payload(var["bat"+index].data["set"], msg)
             elif re.search("^.+/bat/.+$", msg.topic) is not None:
                 if re.search("^.+/bat/get/.+$", msg.topic) is not None:
                     if "get" not in var["all"].data:
@@ -706,7 +706,7 @@ class SubData:
                 if str(msg.payload.decode("utf-8")) == "":
                     if "device"+index in var:
                         if "component"+str(index_second) in var["device"+index]._components:
-                            var["device"+index]._components.remove(
+                            var["device"+index]._components.pop(
                                 "component"+str(index_second))
                             Pub().pub("openWB/system/device/"+str(index) +
                                       "/component/"+str(index_second), "")
