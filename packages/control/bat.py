@@ -50,6 +50,7 @@ class BatAll:
         try:
             if len(data.data.bat_data) > 1:
                 self.data["config"]["configured"] = True
+                Pub().pub("openWB/set/bat/config/configured", self.data["config"]["configured"])
                 # Summe für alle konfigurierten Speicher bilden
                 soc_sum = 0
                 soc_count = 0
@@ -93,17 +94,11 @@ class BatAll:
                 MainLogger().info(
                     str(self.data["set"]["charging_power_left"])+"W verbliebende Speicher-Leistung")
             else:
-                self.data["config"]["configured"] = False
                 self.data["set"]["charging_power_left"] = 0
                 self.data["get"]["power"] = 0
-            Pub().pub("openWB/set/bat/config/configured",
-                      self.data["config"]["configured"])
-            Pub().pub("openWB/set/bat/set/charging_power_left",
-                      self.data["set"]["charging_power_left"])
-            Pub().pub("openWB/set/bat/set/switch_on_soc_reached",
-                      self.data["set"]["switch_on_soc_reached"])
-            Pub().pub("openWB/set/bat/set/hybrid_system_detected",
-                      self.data["set"]["hybrid_system_detected"])
+            Pub().pub("openWB/set/bat/set/charging_power_left", self.data["set"]["charging_power_left"])
+            Pub().pub("openWB/set/bat/set/switch_on_soc_reached", self.data["set"]["switch_on_soc_reached"])
+            Pub().pub("openWB/set/bat/set/hybrid_system_detected", self.data["set"]["hybrid_system_detected"])
         except Exception:
             MainLogger().exception("Fehler im Bat-Modul")
 
