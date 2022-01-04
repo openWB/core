@@ -46,6 +46,7 @@ class PvAll:
                 {Pub().pub("openWB/set/pv/get/"+k, v)
                  for (k, v) in self.data["get"].items()}
                 self.data["config"]["configured"] = True
+                Pub().pub("openWB/set/pv/config/configured", self.data["config"]["configured"])
         except Exception:
             MainLogger().exception("Fehler im allgemeinen PV-Modul")
 
@@ -91,8 +92,6 @@ class PvAll:
                 self.data["set"]["overhang_power_left"] = 0
             self.data["set"]["available_power"] = available_power
             Pub().pub("openWB/set/pv/set/available_power", available_power)
-            Pub().pub("openWB/set/pv/config/configured",
-                      self.data["config"]["configured"])
         except Exception:
             MainLogger().exception("Fehler im allgemeinen PV-Modul")
 
