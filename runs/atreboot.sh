@@ -1,5 +1,5 @@
 #!/bin/bash
-OPENWBBASEDIR=$(cd `dirname $0`/../ && pwd)
+OPENWBBASEDIR=$(cd $(dirname "${BASH_SOURCE[0]}")/.. && pwd)
 echo "atreboot.sh started"
 rm "${OPENWBBASEDIR}/ramdisk/bootdone"
 mosquitto_pub -p 1886 -t openWB/system/boot_done -r -m 'false'

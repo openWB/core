@@ -3,6 +3,7 @@
 *.pyc
 *.bak
 *.log.lock
+/ramdisk/
 .DS_Store
 .ftp*
 .vscode/settings.json
