@@ -7,7 +7,7 @@ from modules.common.abstract_chargepoint import AbstractChargepoint
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.fault_state import ComponentInfo
 from modules.common.store import get_chargepoint_value_store
-from packages.modules.common.component_state import ChargepointState
+from modules.common.component_state import ChargepointState
 
 
 def get_default_config() -> Dict:
