@@ -15,13 +15,13 @@ Zieht die openWB nun Überschuss (15kW Überschuss + 5kW Batterieladung = 20kW) 
 Wechselrichter nur 15kW abgeben kann.
 
 aktuell wird halt bei ev vorrang die Batterieladeleistung hinzugerechnet. weil die openWB von ausgeht das die
-dann das laden aufhört und diese leistung eignetlich überschuss ist.
-Blöd halt wenn der WEchselrichter die nicht zur verfügung stellen kann.
-Heißt aktuell denkt die openWB "0 Watt überschuss" weil 5kW bezogen werden, aber eben auch 5kW in die Batterie
-gehen (die ihre ladung aber nicht drosselt)
+dann das laden aufhört und diese leistung eigentlich Überschuss ist.
+Blöd halt wenn der Wechselrichter die nicht zur Verfügung stellen kann.
+Heißt aktuell denkt die openWB "0 Watt Überschuss" weil 5kW bezogen werden, aber eben auch 5kW in die Batterie
+gehen (die ihre Ladung aber nicht drosselt)
 
 du musst halt zum "antesten" bezug generieren damit die Batterie entsprechend gegenregelt. erst wenn sie das nach
- x sekunden nicht tut kannst von ausgehen da gibt es eine Grenze
+ x Sekunden nicht tut kannst von ausgehen da gibt es eine Grenze
 
 __Wie schnell regelt denn ein Speicher?
 Je nach Speicher 1-4 Sekunden.
@@ -112,18 +112,18 @@ class BatAll:
             evu_counter = data.data.counter_data["all"].get_evu_counter()
             config = data.data.general_data["general"].data["chargemode_config"]["pv_charging"]
             if not config["bat_prio"]:
-                # Wenn der Speicher lädt und gleichzeitg Bezug da ist, sind entweder die Werte sehr ungünstig abgefragt
+                # Wenn der Speicher lädt und gleichzeitig Bezug da ist, sind entweder die Werte sehr ungünstig abgefragt
                 # worden
                 # (deshalb wird noch ein Zyklus gewartet) oder es liegt ein Hybrid-System vor.
-                if data.data.counter_data[evu_counter].data["get"]["power_all"] > 0:
+                if data.data.counter_data[evu_counter].data["get"]["power"] > 0:
                     if self.data["set"]["hybrid_system_detected"]:
-                        MainLogger().debug("".join(("verbleibende Speicher-Leistung fuer Hybrid-System: max(",
+                        MainLogger().debug("".join(("verbleibende Speicher-Leistung für Hybrid-System: max(",
                                                     self.data["set"]["charging_power_left"], " - ",
-                                                    data.data.counter_data[evu_counter].data["get"]["power_all"],
+                                                    data.data.counter_data[evu_counter].data["get"]["power"],
                                                     ", 0)")))
                         self.data["set"]["charging_power_left"] = max(
                             self.data["set"]["charging_power_left"]
-                            - data.data.counter_data[evu_counter].data["get"]["power_all"], 0)
+                            - data.data.counter_data[evu_counter].data["get"]["power"], 0)
                     else:
                         self.data["set"]["hybrid_system_detected"] = True
                         MainLogger().debug("Erstmalig Hybrid-System detektiert.")
@@ -258,15 +258,15 @@ class BatAll:
 
         Return
         ------
-        True: Leistung konnte allokiert werden.
-        False: Leistung konnte nicht allokiert werden.
+        True: Leistung konnte zugeteilt werden.
+        False: Leistung konnte nicht zugeteilt werden.
         """
         try:
             if self.data["config"]["configured"]:
                 self.data["set"]["charging_power_left"] -= required_power
                 if self.data["set"]["charging_power_left"] < 0:
                     MainLogger().error(
-                        "Es wurde versucht, mehr Speicher-Leistung zu allokieren, als geladen wird.")
+                        "Es wurde versucht, mehr Speicher-Leistung zuzuteilen, als geladen wird.")
                     too_much = self.data["set"]["charging_power_left"]
                     self.data["set"]["charging_power_left"] = 0
                     return too_much
@@ -276,7 +276,7 @@ class BatAll:
             return required_power
 
     def put_stats(self):
-        """ Publishen und Loggen der verbleibnden PV-Leistung und reservierten Leistung
+        """ Publishen und Loggen der verbleibenden PV-Leistung und reservierten Leistung
         """
         try:
             Pub().pub("openWB/set/bat/config/configured",
@@ -285,7 +285,7 @@ class BatAll:
                 Pub().pub("openWB/set/bat/set/charging_power_left",
                           self.data["set"]["charging_power_left"])
                 MainLogger().info(str(self.data["set"]["charging_power_left"]) +
-                                  "W Speicher-Leistung , die fuer die folgenden Ladepunkte uebrig ist.")
+                                  "W Speicher-Leistung , die für die folgenden Ladepunkte übrig ist.")
         except Exception:
             MainLogger().exception("Fehler im Bat-Modul")
 

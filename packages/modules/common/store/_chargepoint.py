@@ -13,7 +13,7 @@ class ChargepointValueStoreBroker(ValueStore[ChargepointState]):
         pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/power_factors", state.power_factors, 2)
         pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/counter", state.imported, 2)
         pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/exported", state.exported, 2)
-        pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/power_all", state.power_all, 2)
+        pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/power", state.power, 2)
         pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/phases_in_use", state.phases_in_use, 2)
         pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/charge_state", state.charge_state, 2)
         pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/plug_state", state.plug_state, 2)

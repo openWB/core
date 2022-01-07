@@ -18,9 +18,9 @@ var topicsToSubscribeFirst = [
 // add any other topics here
 var topicsToSubscribe = [
 	// data for all charge points
-	["openWB/chargepoint/get/power_all", 1], // total actual charging power; int, unit: Wh
+	["openWB/chargepoint/get/power", 1], // total actual charging power; int, unit: Wh
 	["openWB/chargepoint/get/daily_yield", 1], // total counted energy for charging; float, unit: kWh
-	["openWB/chargepoint/get/daily_exported_all", 1], // total counted energy for discharging (V2G/V2H); float, unit: kWh
+	["openWB/chargepoint/get/daily_exported", 1], // total counted energy for discharging (V2G/V2H); float, unit: kWh
 
 	// // pv topics
 	["openWB/pv/config/configured", 1], // is a pv module configured? bool
@@ -37,7 +37,7 @@ var topicsToSubscribe = [
 	// counter topics, counter with index 0 is always main grid counter
 	["openWB/counter/set/home_consumption", 1], // actual home power
 	["openWB/counter/set/daily_yield_home_consumption", 1], // daily home energy
-	["openWB/counter/0/get/power_all", 1], // actual power; int, unit: W
+	["openWB/counter/0/get/power", 1], // actual power; int, unit: W
 	["openWB/counter/0/get/daily_yield_import", 1], // daily imported energy; float, unit: kWh
 	["openWB/counter/0/get/daily_yield_export", 1], // daily exported energy; float, unit: kWh
 
@@ -47,7 +47,7 @@ var topicsToSubscribe = [
 	["openWB/chargepoint/+/get/fault_str", 1], // any error messages; str
 	["openWB/chargepoint/+/get/fault_state", 1], // error state; int, 0 = ok, 1 = warning, 2 = error
 	["openWB/chargepoint/+/set/log/charged_since_plugged_counter", 1], // energy charged since the vehicle was plugged in; float, unit: kWh
-	["openWB/chargepoint/+/get/power_all", 1], // actual charging power
+	["openWB/chargepoint/+/get/power", 1], // actual charging power
 	["openWB/chargepoint/+/get/phases_in_use", 1], // actual number of phases used while charging; int, 0-3
 	["openWB/chargepoint/+/get/plug_state", 1], // state of plug; int, 0 = disconnected, 1 = connected
 	["openWB/chargepoint/+/get/charge_state", 1], // state of charge; int, 0 = not charging, 1 = charging
@@ -118,7 +118,7 @@ var topicsToSubscribe = [
 	// ["openWB/hook/1/boolHookConfigured", 0],
 	// ["openWB/hook/2/boolHookConfigured", 0],
 	// ["openWB/hook/3/boolHookConfigured", 0],
-	// // verbraucher Konfiguration
+	// // Verbraucher Konfiguration
 	// ["openWB/Verbraucher/1/Configured", 0],
 	// ["openWB/Verbraucher/1/Name", 1],
 	// ["openWB/Verbraucher/1/Watt", 1],
@@ -261,8 +261,8 @@ var options = {
 	}
 };
 
-var clientuid = Math.random().toString(36).replace(/[^a-z]+/g, "").substr(0, 5);
-var client = new Messaging.Client(location.hostname, 9001, clientuid);
+var clientUid = Math.random().toString(36).replace(/[^a-z]+/g, "").substr(0, 5);
+var client = new Messaging.Client(location.hostname, 9001, clientUid);
 
 $(document).ready(function() {
 	client.connect(options);
@@ -276,7 +276,7 @@ client.onConnectionLost = function(responseObject) {
 
 //Gets called whenever you receive a message
 client.onMessageArrived = function(message) {
-	handlevar(message.destinationName, message.payloadString);
+	handleMessage(message.destinationName, message.payloadString);
 };
 
 //Creates a new Messaging.Message Object and sends it
@@ -288,7 +288,7 @@ function publish(payload, topic) {
 		message.qos = 2;
 		message.retained = true;
 		client.send(message);
-		var message = new Messaging.Message("local client uid: " + clientuid + " sent: " + topic);
+		var message = new Messaging.Message("local client uid: " + clientUid + " sent: " + topic);
 		message.destinationName = "openWB/set/system/topicSender";
 		message.qos = 2;
 		message.retained = true;

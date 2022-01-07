@@ -31,7 +31,7 @@ class Prepare:
             # Workaround, da mit Python3.9/pymodbus2.5 eine pymodbus-Instanz nicht mehr kopiert werden kann.
             # Bei einer Neukonfiguration eines Device/Komponente wird dieses Neuinitialisiert. Nur bei Komponenten
             # mit simcount werden Werte aktualisiert, diese sollten jedoch nur einmal nach dem Auslesen aktualisiert
-            # werden, sodass die Nutzung einer Referenz erstmal funktioniert.
+            # werden, sodass die Nutzung einer Referenz vorerst funktioniert.
             data.data.system_data = {
                 "system": copy.deepcopy(subdata.SubData.system_data["system"])} | {
                 k: subdata.SubData.system_data[k] for k in subdata.SubData.system_data if "device" in k}
@@ -65,7 +65,7 @@ class Prepare:
                         # Status zurücksetzen (wird jeden Zyklus neu ermittelt)
                         data.data.cp_data[chargepoint].data["get"]["state_str"] = None
                 except Exception:
-                    MainLogger().exception("Fehler im Prepare-Modul fuer Ladepunkt "+str(chargepoint))
+                    MainLogger().exception("Fehler im Prepare-Modul für Ladepunkt "+str(chargepoint))
             data.data.ev_data = copy.deepcopy(subdata.SubData.ev_data)
             data.data.ev_template_data = copy.deepcopy(subdata.SubData.ev_template_data)
             data.data.ev_charge_template_data = copy.deepcopy(subdata.SubData.ev_charge_template_data)
@@ -77,11 +77,11 @@ class Prepare:
                             data.data.ev_data[vehicle].data["charge_template"])]
                     else:
                         data.data.ev_data[vehicle].charge_template = data.data.ev_charge_template_data["ct0"]
-                    # erstmal das aktuelle Template laden
+                    # zuerst das aktuelle Template laden
                     data.data.ev_data[vehicle].ev_template = data.data.ev_template_data["et" + str(
                         data.data.ev_data[vehicle].data["ev_template"])]
                 except Exception:
-                    MainLogger().exception("Fehler im Prepare-Modul fuer EV "+str(vehicle))
+                    MainLogger().exception("Fehler im Prepare-Modul für EV "+str(vehicle))
 
             data.data.counter_data = copy.deepcopy(subdata.SubData.counter_data)
             data.data.graph_data = copy.deepcopy(subdata.SubData.graph_data)
@@ -91,7 +91,7 @@ class Prepare:
     def _check_chargepoints(self):
         """ ermittelt die gewünschte Stromstärke für jeden LP.
         """
-        data.data.cp_data["all"].get_power_counter_all()
+        data.data.cp_data["all"].get_power_counter()
         data.data.cp_data["all"].match_rfid_to_cp()
         for cp_item in data.data.cp_data:
             state = True
@@ -165,7 +165,7 @@ class Prepare:
                         if message_ev is not None:
                             message = message_ev
 
-                        # Die benötigte Stromstärke hat sich durch eine Änderung des Lademdous oder der Konfiguration
+                        # Die benötigte Stromstärke hat sich durch eine Änderung des Lademodus oder der Konfiguration
                         # geändert. Die Zuteilung entsprechend der Priorisierung muss neu geprüft werden. Daher muss
                         # der LP zurückgesetzt werden, wenn er gerade lädt, um in der Regelung wieder berücksichtigt
                         # zu werden.
@@ -216,11 +216,11 @@ class Prepare:
 
                             MainLogger().debug(
                                 "LP " + str(cp.cp_num) + ", EV: " + cp.data["set"]["charging_ev_data"].data
-                                ["name"] + " (EV-Nr." + str(vehicle) + "): Theroretisch benötigter Strom " +
+                                ["name"] + " (EV-Nr." + str(vehicle) + "): Theoretisch benötigter Strom " +
                                 str(required_current) + "A, Lademodus " +
                                 str(charging_ev.charge_template.data["chargemode"]["selected"]) + ", Submodus: " +
                                 str(charging_ev.data["control_parameter"]["submode"]) + ", Phasen: " + str(phases) +
-                                ", Prioritaet: " + str(charging_ev.charge_template.data["prio"]) +
+                                ", Priorität: " + str(charging_ev.charge_template.data["prio"]) +
                                 ", max. Ist-Strom: " + str(max(cp.data["get"]["currents"])))
                     else:
                         # Wenn kein EV zur Ladung zugeordnet wird, auf hinterlegtes EV zurückgreifen.
@@ -230,11 +230,11 @@ class Prepare:
                         MainLogger().info("LP "+str(cp.cp_num)+": "+message)
                         cp.data["get"]["state_str"] = message
             except Exception:
-                MainLogger().exception("Fehler im Prepare-Modul fuer Ladepunkt "+str(cp_item))
+                MainLogger().exception("Fehler im Prepare-Modul für Ladepunkt "+str(cp_item))
         data.data.cp_data["all"].no_charge()
 
     def _pub_connected_vehicle(self, vehicle, chargepoint):
-        """ published die Daten, die zur Anzeige auf der Haupseite benötigt werden.
+        """ published die Daten, die zur Anzeige auf der Hauptseite benötigt werden.
 
         Parameter
         ---------

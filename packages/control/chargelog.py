@@ -26,10 +26,10 @@ Lena:haus_mit_garten:  14:24 Uhr
 1
 
 Kevin  14:35 Uhr
-mehrere einträge für eine ladung wären ggf. dann aber blöd
+mehrere einträge für eine Ladung wären ggf. dann aber blöd
 
 Kevin  14:36 Uhr
-ebenso sollte bedacht werden das es ggf. nur um mehrere rfid tags geht, aber nicht zwingend fahrzeugprofil
+ebenso sollte bedacht werden das es ggf. nur um mehrere rfid tags geht, aber nicht zwingend Fahrzeugprofil
  (hatten wir das bedacht?)
 oder wird zwingend für jeden rfid tag ein fahrzeug angelegt werden müssen?
 
@@ -48,7 +48,7 @@ Lena:haus_mit_garten:  vor 14 Tagen
 Dann verstehe ich nicht, worauf du hinaus willst.
 
 Kevin  vor 14 Tagen
-ich glaub das ist gehirn wirr warr ... für jeden rfid tag wird schlicht ein fahrzeug angelegt werden müssen, richtig?
+ich glaub das ist Gehirn wirr warr ... für jeden rfid tag wird schlicht ein fahrzeug angelegt werden müssen, richtig?
 
 Lena:haus_mit_garten:  vor 14 Tagen
 Man sollte auch mehrere Tags für ein Auto zulassen. Es können  sich ja auch mehrere Personen ein Auto teilen.
@@ -66,13 +66,13 @@ Dafür fallen die ganzen Mini-Ladevorgänge weg, die jetzt im PV-Modus protokoll
 Kevin  14:36 Uhr
 ist ein ladevorgang nicht bis abstecken ?
 14:37 Uhr
-auch in bezug auf das lastmanagement, das ggf. die ladung mal unterbricht halte ich das für sinniger
+auch in bezug auf das lastmanagement, das ggf. die Ladung mal unterbricht halte ich das für sinniger
 
 Lena:haus_mit_garten:  14:37 Uhr
 Wenn das Lastmanagement die Ladung unterbricht, wird kein Eintrag erzeugt.
 
 Kevin  14:38 Uhr
-wenn der nutzer aber bissl von sofort / pv umherklickt gibt es mehrere einträge?
+wenn der Nutzer aber bisschen von sofort / pv umherklickt gibt es mehrere einträge?
 
 Lutz:haus_mit_garten:  14:38 Uhr
 Aktuell nur bis die Leistung < 100W ist. Bei PV habe ich gerade in der Übergangszeit gerne 40-50 Einträge pro Tag.
@@ -81,7 +81,7 @@ Lena:haus_mit_garten:  14:38 Uhr
 Ja, im Normalbetrieb schaltet man da ja nicht dauernd um.
 
 Kevin  14:39 Uhr
-so die theorie @Lena :leichtes_lächeln:
+so die Theorie @Lena :leichtes_lächeln:
 
 Lena:haus_mit_garten:  14:42 Uhr
 Ich sehe, dass so wie Lutz. Wenn im PV-Laden die Ladung unterbrochen wird, sollte nicht immer ein Eintrag erzeugt
@@ -125,7 +125,7 @@ def collect_data(chargepoint):
                           "/set/log/counter_at_plugtime", log_data["counter_at_plugtime"])
                 MainLogger().debug("counter_at_plugtime " +
                                    str(chargepoint.data["get"]["counter"]))
-            # Bisher geladende Energie ermitteln
+            # Bisher geladene Energie ermitteln
             log_data["charged_since_plugged_counter"] = chargepoint.data["get"]["counter"] - \
                 log_data["counter_at_plugtime"]
             Pub().pub("openWB/set/chargepoint/"+str(chargepoint.cp_num) +
@@ -178,7 +178,7 @@ def save_data(chargepoint, charging_ev, immediately=True, reset=False):
         Nummer aus dem Broker in der LP-Klasse hinterlegt ist.)
     reset: bool
         Wenn die Daten komplett zurückgesetzt werden, wird nicht der Zwischenzählerstand für
-        counter_at_mode_switch notiert. Sonst schon, damit zwiwchen save_data und dem nächsten collect_data keine
+        counter_at_mode_switch notiert. Sonst schon, damit zwischen save_data und dem nächsten collect_data keine
         Daten verloren gehen.
     """
     try:
@@ -190,7 +190,7 @@ def save_data(chargepoint, charging_ev, immediately=True, reset=False):
             # Die Daten wurden schon erfasst.
             return
         if not immediately:
-            if chargepoint.data["get"]["power_all"] != 0:
+            if chargepoint.data["get"]["power"] != 0:
                 return
         # Daten vor dem Speichern nochmal aktualisieren, auch wenn nicht mehr geladen wird.
         log_data["charged_since_plugged_counter"] = chargepoint.data["get"]["counter"] - \
@@ -430,7 +430,7 @@ def get_log_data(request):
 
 
 def reset_data(chargepoint, charging_ev, immediately=True):
-    """nach dem Abstecken Log-Eintrag erstelen und alle Log-Daten zurücksetzen.
+    """nach dem Abstecken Log-Eintrag erstellen und alle Log-Daten zurücksetzen.
 
     Parameter
     ---------
@@ -448,7 +448,7 @@ def reset_data(chargepoint, charging_ev, immediately=True):
             # Es wurde noch nie ein Auto zugeordnet.
             return
         if not immediately:
-            if chargepoint.data["get"]["power_all"] != 0:
+            if chargepoint.data["get"]["power"] != 0:
                 return
         save_data(chargepoint, charging_ev, immediately, reset=True)
 

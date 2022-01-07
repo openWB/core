@@ -108,7 +108,7 @@ class SetData:
         collection = list/dict
             Angabe, ob und welche Kollektion erwartet wird
         pub_json : true/false
-            gibt an, ob das Topic von openWB/set/.. an openWB/.. gepublished werden soll oder ein json-Objekt,
+            gibt an, ob das Topic von openWB/set/.. an openWB/.. veröffentlicht werden soll oder ein json-Objekt,
             dass mehrere Daten enthält.
         """
         valid = False
@@ -124,7 +124,7 @@ class SetData:
                 if isinstance(value, str):
                     valid = True
                 else:
-                    MainLogger().error("Payload ungueltig: Topic "+str(msg.topic) +
+                    MainLogger().error("Payload ungültig: Topic "+str(msg.topic) +
                                        ", Payload "+str(value)+" sollte ein String sein.")
             elif data_type == int or data_type == float:
                 if self._validate_min_max_value(value, msg, data_type, ranges):
@@ -192,9 +192,9 @@ class SetData:
         ---------
         next_level: dict
             Beim ersten Aufruf: Dictionary, das aktualisiert werden soll.
-            Danach: Dictionary aus den verschachtelten Dictionarys, das gerade betrachtet werden soll.
+            Danach: Dictionary aus den verschachtelten Dictionaries, das gerade betrachtet werden soll.
         key_list: list
-            Liste der Keys aus den verschachtelten Dictionarys, unter denen der Eintrag zu finden ist.
+            Liste der Keys aus den verschachtelten Dictionaries, unter denen der Eintrag zu finden ist.
         value:
             Wert, der geschrieben werden soll.
         """
@@ -242,7 +242,7 @@ class SetData:
                 else:
                     valid = True
             else:
-                MainLogger().error("Payload ungueltig: Topic "+str(msg.topic)+", Payload " +
+                MainLogger().error("Payload ungültig: Topic "+str(msg.topic)+", Payload " +
                                    str(value)+" sollte eine Kollektion vom Typ "+str(collection)+" sein.")
             return valid
         except Exception:
@@ -267,7 +267,7 @@ class SetData:
         try:
             valid = True
             # Wenn ein Float erwartet wird, kann auch ein Int akzeptiert werden, da dies automatisch umgewandelt
-            # wird, falls erfoderlich.
+            # wird, falls erforderlich.
             if isinstance(value, data_type) or (data_type == float and isinstance(value, int)):
                 if ranges:
                     for range in ranges:
@@ -281,7 +281,7 @@ class SetData:
                             if value <= range[1]:
                                 break
                     else:
-                        MainLogger().error("Payload ungueltig: Topic "+str(msg.topic)+", Payload " +
+                        MainLogger().error("Payload ungültig: Topic "+str(msg.topic)+", Payload " +
                                            str(value)+" liegt in keinem der angegebenen Wertebereiche.")
                         valid = False
             elif value is None:
@@ -289,15 +289,15 @@ class SetData:
                     if range[0] is None and range[1] is None:
                         break
                 else:
-                    MainLogger().error("Payload ungueltig: Topic "+str(msg.topic) +
+                    MainLogger().error("Payload ungültig: Topic "+str(msg.topic) +
                                        ", Payload "+str(value)+" darf nicht 'None' sein.")
                     valid = False
             else:
                 if data_type == int:
-                    MainLogger().error("Payload ungueltig: Topic "+str(msg.topic) +
+                    MainLogger().error("Payload ungültig: Topic "+str(msg.topic) +
                                        ", Payload "+str(value)+" sollte ein Int sein.")
                 elif data_type == float:
-                    MainLogger().error("Payload ungueltig: Topic "+str(msg.topic) +
+                    MainLogger().error("Payload ungültig: Topic "+str(msg.topic) +
                                        ", Payload "+str(value)+" sollte ein Float sein.")
                 valid = False
             return valid
@@ -459,7 +459,6 @@ class SetData:
         """
         try:
             if ("openWB/set/chargepoint/get/counter" in msg.topic or
-                    "openWB/set/chargepoint/get/power_all" in msg.topic or
                     "openWB/set/chargepoint/get/daily_yield" in msg.topic):
                 self._validate_value(msg, float, [(0, float("inf"))])
             elif "template" in msg.topic:
@@ -508,7 +507,7 @@ class SetData:
                 self._validate_value(
                     msg, float, [(0, float("inf"))], collection=list)
             elif ("/get/daily_yield" in msg.topic or
-                    "/get/power_all" in msg.topic or
+                    "/get/power" in msg.topic or
                     "/get/counter" in msg.topic or
                     "/get/exported" in msg.topic):
                 self._validate_value(msg, float, [(0, float("inf"))])
@@ -792,9 +791,6 @@ class SetData:
                 self._validate_value(msg, int, [(7, 1500)], collection=list)
             elif "/config/max_total_power" in msg.topic:
                 self._validate_value(msg, int, [(2000, 1000000)])
-            elif "/get/power_all" in msg.topic:
-                self._validate_value(
-                    msg, float, [(float("-inf"), float("inf")), (None, None)])
             elif ("/get/powers" in msg.topic or
                     "/get/currents" in msg.topic):
                 self._validate_value(
@@ -821,6 +817,9 @@ class SetData:
             elif ("/get/fault_str" in msg.topic or
                     "/get/simulation/timestamp_present" in msg.topic):
                 self._validate_value(msg, str)
+            elif "/get/power" in msg.topic:
+                self._validate_value(
+                    msg, float, [(float("-inf"), float("inf")), (None, None)])
             else:
                 self.__unknown_topic(msg)
         except Exception:

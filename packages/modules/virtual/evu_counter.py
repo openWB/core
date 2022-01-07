@@ -33,14 +33,14 @@ class VirtualEvuCounter:
         try:
             pv = data.data.pv_data["all"].data["get"]["power"]
             bat = data.data.bat_data["all"].data["get"]["power"]
-            cp = data.data.cp_data["all"].data["get"]["power_all"]
-            power_all = pv + bat + cp + self.component_config["configuration"]["home_consumption"]
+            cp = data.data.cp_data["all"].data["get"]["power"]
+            power = pv + bat + cp + self.component_config["configuration"]["home_consumption"]
 
             topic_str = "openWB/set/system/device/{}/component/{}/".format(
                 self.__device_id, self.component_config["id"]
             )
             imported, exported = self.__sim_count.sim_count(
-                power_all,
+                power,
                 topic=topic_str,
                 data=self.simulation,
                 prefix="bezug"
@@ -48,9 +48,9 @@ class VirtualEvuCounter:
             counter_state = CounterState(
                 imported=imported,
                 exported=exported,
-                power_all=power_all
+                power=power
             )
-            MainLogger().debug("Virtual Leistung[W]: " + str(counter_state.power_all))
+            MainLogger().debug("Virtual Leistung[W]: " + str(counter_state.power))
             self.__store.set(counter_state)
         except Exception as e:
             MainLogger().exception(str(e))

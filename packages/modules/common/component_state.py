@@ -13,7 +13,7 @@ class CounterState:
     def __init__(self,
                  imported: float = 0,
                  exported: float = 0,
-                 power_all: float = 0,
+                 power: float = 0,
                  voltages: List[float] = None,
                  currents: List[float] = None,
                  powers: List[float] = None,
@@ -33,7 +33,7 @@ class CounterState:
         self.power_factors = power_factors
         self.imported = imported
         self.exported = exported
-        self.power_all = power_all
+        self.power = power
         self.frequency = frequency
 
 
@@ -60,7 +60,7 @@ class ChargepointState:
     def __init__(self,
                  imported: float = 0,
                  exported: float = 0,
-                 power_all: float = 0,
+                 power: float = 0,
                  voltages: List[float] = None,
                  currents: List[float] = None,
                  power_factors: List[float] = None,
@@ -78,7 +78,7 @@ class ChargepointState:
         self.power_factors = power_factors
         self.imported = imported
         self.exported = exported
-        self.power_all = power_all
+        self.power = power
         self.phases_in_use = phases_in_use
         self.charge_state = charge_state
         self.plug_state = plug_state
