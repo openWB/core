@@ -43,10 +43,13 @@ class PvAll:
                     except Exception:
                         MainLogger().exception("Fehler im allgemeinen PV-Modul fuer "+str(module))
                 # Alle Summentopics im Dict publishen
-                {Pub().pub("openWB/set/pv/get/"+k, v)
-                 for (k, v) in self.data["get"].items()}
+                {Pub().pub("openWB/set/pv/get/"+k, v) for (k, v) in self.data["get"].items()}
                 self.data["config"]["configured"] = True
                 Pub().pub("openWB/set/pv/config/configured", self.data["config"]["configured"])
+            else:
+                self.data["config"]["configured"] = False
+                Pub().pub("openWB/set/pv/config/configured", self.data["config"]["configured"])
+                {Pub().pub("openWB/pv/get/"+k, "") for (k, _) in self.data["get"].items()}
         except Exception:
             MainLogger().exception("Fehler im allgemeinen PV-Modul")
 

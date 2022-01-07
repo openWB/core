@@ -74,8 +74,11 @@ class BatAll:
                         MainLogger().exception("Fehler im Bat-Modul "+bat)
                 self.data["get"]["soc"] = int(soc_sum / soc_count)
                 # Alle Summentopics im Dict publishen
-                {Pub().pub("openWB/set/bat/get/"+k, v)
-                 for (k, v) in self.data["get"].items()}
+                {Pub().pub("openWB/set/bat/get/"+k, v) for (k, v) in self.data["get"].items()}
+            else:
+                self.data["config"]["configured"] = False
+                Pub().pub("openWB/set/bat/config/configured", self.data["config"]["configured"])
+                {Pub().pub("openWB/bat/get/"+k, "") for (k, _) in self.data["get"].items()}
         except Exception:
             MainLogger().exception("Fehler im Bat-Modul")
 
