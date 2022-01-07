@@ -2,9 +2,7 @@ from enum import Enum
 import traceback
 from typing import Optional
 
-from helpermodules import compatibility
-from helpermodules.log import MainLogger
-from helpermodules import pub
+from helpermodules import compatibility, exceptions, log, pub
 
 
 class FaultStateLevel(Enum):
@@ -26,7 +24,6 @@ class ComponentInfo:
 
 class FaultState(Exception):
     type_topic_mapping_comp = {"bat": "houseBattery", "counter": "evu", "inverter": "pv", "vehicle": "lp"}
-    type_topic_mapping = {"bat": "bat", "counter": "counter", "inverter": "pv", "vehicle": "vehicle"}
 
     def __init__(self, fault_str: str, fault_state: FaultStateLevel) -> None:
         self.fault_str = fault_str
@@ -35,10 +32,10 @@ class FaultState(Exception):
     def store_error(self, component_info: ComponentInfo) -> None:
         try:
             if self.fault_state is not FaultStateLevel.NO_ERROR:
-                MainLogger().error(component_info.name + ": FaultState " +
-                                   str(self.fault_state) + ", FaultStr " +
-                                   self.fault_str + ", Traceback: \n" +
-                                   traceback.format_exc())
+                log.MainLogger().error(component_info.name + ": FaultState " +
+                                       str(self.fault_state) + ", FaultStr " +
+                                       self.fault_str + ", Traceback: \n" +
+                                       traceback.format_exc())
             ramdisk = compatibility.is_ramdisk_in_use()
             if ramdisk:
                 topic = self.type_topic_mapping_comp.get(component_info.type, component_info.type)
@@ -53,13 +50,21 @@ class FaultState(Exception):
                 pub.pub_single(prefix + "aultStr", self.fault_str)
                 pub.pub_single(prefix + "aultState", self.fault_state.value)
             else:
-                topic = self.type_topic_mapping.get(component_info.type, component_info.type)
+                topic = self.__type_topic_mapping(component_info.type)
                 pub.Pub().pub(
                     "openWB/set/" + topic + "/" + str(component_info.id) + "/get/fault_str", self.fault_str)
                 pub.Pub().pub(
                     "openWB/set/" + topic + "/" + str(component_info.id) + "/get/fault_state", self.fault_state.value)
         except Exception:
-            MainLogger().exception("Fehler im Modul fault_state")
+            log.MainLogger().exception("Fehler im Modul fault_state")
+
+    def __type_topic_mapping(self, component_type: str):
+        if "counter" in component_type:
+            return "counter"
+        elif "inverter" in component_type:
+            return "pv"
+        else:
+            return component_type
 
     @staticmethod
     def error(message: str) -> "FaultState":
@@ -79,4 +84,4 @@ class FaultState(Exception):
             return FaultState.no_error()
         if isinstance(exception, FaultState):
             return exception
-        return exception.get_default_exception_registry().translate_exception(exception)
+        return exceptions.get_default_exception_registry().translate_exception(exception)
