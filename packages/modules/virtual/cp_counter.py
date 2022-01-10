@@ -34,7 +34,7 @@ class VirtualCpCounter:
         chargepoints = data.data.counter_data["all"].get_chargepoints_of_counter(counter_name)
         # Ladeleistungen, Ströme addieren
         currents = [0.0]*3
-        power_all = 0
+        power = 0
         for cp in chargepoints:
             chargepoint = data.data.cp_data[cp]
             # Gedrehter Anschluss der Ladepunkte:
@@ -48,30 +48,30 @@ class VirtualCpCounter:
             elif chargepoint.data["config"]["phase_1"] == 3:
                 evu_phases = [2, 0, 1]
             else:
-                raise FaultState.error("Fuer den virtuellen Zaehler muss der Anschluss der Phasen vom Ladepunkt " +
+                raise FaultState.error("Für den virtuellen Zähler muss der Anschluss der Phasen vom Ladepunkt " +
                                        str(chargepoint.cp_num) + " an die Phasen der EVU angegeben werden.")
-            currents[0] = currents[0] + chargepoint.data["get"]["current"][evu_phases[0]]
-            currents[1] = currents[1] + chargepoint.data["get"]["current"][evu_phases[1]]
-            currents[2] = currents[2] + chargepoint.data["get"]["current"][evu_phases[2]]
+            currents[0] = currents[0] + chargepoint.data["get"]["currents"][evu_phases[0]]
+            currents[1] = currents[1] + chargepoint.data["get"]["currents"][evu_phases[1]]
+            currents[2] = currents[2] + chargepoint.data["get"]["currents"][evu_phases[2]]
 
-            power_all = power_all + chargepoint.data["get"]["power_all"]
-        power_phase = [230*c for c in currents]
+            power = power + chargepoint.data["get"]["power"]
+        powers = [230*c for c in currents]
 
         topic_str = "openWB/set/system/device/{}/component/{}/".format(
             self.__device_id, self.component_config["id"]
         )
         imported, exported = self.__sim_count.sim_count(
-            power_all,
+            power,
             topic=topic_str,
             data=self.simulation,
             prefix="bezug"
         )
         counter_state = CounterState(
             currents=currents,
-            powers=power_phase,
+            powers=powers,
             imported=imported,
             exported=exported,
-            power_all=power_all
+            power=power
         )
-        MainLogger().debug("Virtual Leistung[W]: " + str(counter_state.power_all))
+        MainLogger().debug("Virtual Leistung[W]: " + str(counter_state.power))
         self.__store.set(counter_state)

@@ -17,19 +17,19 @@ def get_hardware_values():
 
 
 def get_virtual_values():
-    """ Virtuelle Module ermitteln die Werte rechnerisch auf Bais der Messwerte anderer Module.
+    """ Virtuelle Module ermitteln die Werte rechnerisch auf Basis der Messwerte anderer Module.
     Daher können sie erst die Werte ermitteln, wenn die physischen Module ihre Werte ermittelt haben.
-    Würde man allle Module parallel abfragen, wären die virtuellen Module immer einen Zyklus hinterher.
+    Würde man alle Module parallel abfragen, wären die virtuellen Module immer einen Zyklus hinterher.
     """
     data.data.pv_data["all"].calc_power_for_all_components()
     data.data.bat_data["all"].calc_power_for_all_components()
     __get_values([_get_virtual_counters])
 
 
-def __get_values(value_funcs: List[Callable]):
+def __get_values(value_functions: List[Callable]):
     try:
         threads = []
-        for func in value_funcs:
+        for func in value_functions:
             threads.extend(func())
         # Start them all
         if threads:

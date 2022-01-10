@@ -91,7 +91,7 @@ def save_log(folder):
                 MainLogger().exception("Fehler im Werte-Loggingmodul fuer Ladepunkt "+str(cp))
         try:
             cp_dict.update(
-                {"all": {"counter": data.data.cp_data["all"].data["get"]["counter_all"]}})
+                {"all": {"counter": data.data.cp_data["all"].data["get"]["counter"]}})
         except Exception:
             MainLogger().exception("Fehler im Werte-Loggingmodul")
 
@@ -223,7 +223,7 @@ def update_daily_yields():
                     MainLogger().info("Ladepunkt "+str(cp) +
                                       " wurde zwischenzeitlich geloescht und wird daher nicht mehr aufgefuehrt.")
             else:
-                daily_yield = data.data.cp_data[cp].data["get"]["counter_all"] - \
+                daily_yield = data.data.cp_data[cp].data["get"]["counter"] - \
                     daily_log[0]["cp"][cp]["counter"]
                 data.data.cp_data[cp].data["get"]["daily_yield"] = daily_yield
                 Pub().pub("openWB/set/chargepoint/get/daily_yield", daily_yield)

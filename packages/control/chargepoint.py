@@ -1,13 +1,13 @@
 """Ladepunkt-Logik
 
-charging_ev: EV, das akutell laden darf
+charging_ev: EV, das aktuell laden darf
 charging_ev_prev: EV, das vorher geladen hat. Dies wird benötigt, da wenn das EV nicht mehr laden darf, z.B. weil
 Autolock aktiv ist, gewartet werden muss, bis die Ladeleistung 0 ist und dann erst der Logeintrag erstellt werden kann.
 charging_ev = -1 zeigt an, dass der LP im Algorithmus nicht berücksichtigt werden soll. Ist das Ev abgesteckt, wird
 auch charging_ev_prev -1 und im nächsten Zyklus kann ein neues Profil geladen werden.
 
 RFID:
-Mode 1: Der gescannte Tag  wird dem Ladepunkt zugeordnet, an dem gescannt wude. Falls es eine Duo ist, wird Mode 2 für
+Mode 1: Der gescannte Tag  wird dem Ladepunkt zugeordnet, an dem gescannt wurde. Falls es eine Duo ist, wird Mode 2 für
 die beiden Duo-Ladepunkte angewendet.
 
 Freischaltung durch Tag: Aktiviert RFID-Nutzung am Ladepunkt.
@@ -54,7 +54,7 @@ class AllChargepoints:
 
     def __init__(self):
         self.data = {"get": {"daily_yield": 0}}
-        Pub().pub("openWB/set/chargepoint/get/power_all", 0)
+        Pub().pub("openWB/set/chargepoint/get/power", 0)
 
     def no_charge(self):
         """ Wenn keine EV angesteckt sind oder keine EV laden/laden möchten, werden die Algorithmus-Werte
@@ -80,30 +80,30 @@ class AllChargepoints:
                         else:
                             break
                 except Exception:
-                    MainLogger().exception("Fehler in der allgemeinen Ladepunkt-Klasse fuer Ladepunkt "+cp)
+                    MainLogger().exception("Fehler in der allgemeinen Ladepunkt-Klasse für Ladepunkt "+cp)
             else:
                 data.data.pv_data["all"].reset_pv_data()
         except Exception:
             MainLogger().exception("Fehler in der allgemeinen Ladepunkt-Klasse")
 
-    def get_power_counter_all(self):
+    def get_power_counter(self):
         """ ermittelt die aktuelle Leistung und Zählerstand von allen Ladepunkten.
         """
-        counter_all = 0
-        power_all = 0
+        counter = 0
+        power = 0
         try:
             for cp in data.data.cp_data:
                 try:
                     if "cp" in cp:
                         chargepoint = data.data.cp_data[cp]
-                        power_all = power_all + chargepoint.data["get"]["power_all"]
-                        counter_all = counter_all + chargepoint.data["get"]["counter"]
+                        power = power + chargepoint.data["get"]["power"]
+                        counter = counter + chargepoint.data["get"]["counter"]
                 except Exception:
-                    MainLogger().exception("Fehler in der allgemeinen Ladepunkt-Klasse fuer Ladepunkt "+cp)
-            self.data["get"]["power_all"] = power_all
-            Pub().pub("openWB/set/chargepoint/get/power_all", power_all)
-            self.data["get"]["counter_all"] = counter_all
-            Pub().pub("openWB/set/chargepoint/get/counter_all", counter_all)
+                    MainLogger().exception("Fehler in der allgemeinen Ladepunkt-Klasse für Ladepunkt "+cp)
+            self.data["get"]["power"] = power
+            Pub().pub("openWB/set/chargepoint/get/power", power)
+            self.data["get"]["counter"] = counter
+            Pub().pub("openWB/set/chargepoint/get/counter", counter)
         except Exception:
             MainLogger().exception("Fehler in der allgemeinen Ladepunkt-Klasse")
 
@@ -140,7 +140,7 @@ class AllChargepoints:
                                                 chargepoints.remove(cp2)
                                                 break
                     except Exception:
-                        MainLogger().exception("Fehler in der allgemeinen Ladepunkt-Klasse fuer Ladepunkt "+cp)
+                        MainLogger().exception("Fehler in der allgemeinen Ladepunkt-Klasse für Ladepunkt "+cp)
                 # Einzel-Ladepunkte
                 for cp in chargepoints:
                     try:
@@ -160,11 +160,11 @@ class AllChargepoints:
                                     else:
                                         chargepoint.data["get"]["state_str"] = "Tag "+str(
                                             chargepoint.data["get"]["read_tag"]["tag"]) + \
-                                            " ist an diesem Ladepunkt nicht gueltig."
+                                            " ist an diesem Ladepunkt nicht gültig."
                                         MainLogger().info(
                                             "LP " + str(chargepoint.cp_num) + ": Tag " +
                                             str(chargepoint.data["get"]["read_tag"]["tag"]) +
-                                            " ist an diesem Ladepunkt nicht gueltig.")
+                                            " ist an diesem Ladepunkt nicht gültig.")
 
                                     # Verarbeiteten Tag löschen
                                     chargepoint.data["get"]["read_tag"]["tag"] = "0"
@@ -172,7 +172,7 @@ class AllChargepoints:
                                     Pub().pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/get/read_tag",
                                               chargepoint.data["get"]["read_tag"])
                     except Exception:
-                        MainLogger().exception("Fehler in der allgemeinen Ladepunkt-Klasse fuer Ladepunkt "+cp)
+                        MainLogger().exception("Fehler in der allgemeinen Ladepunkt-Klasse für Ladepunkt "+cp)
         except Exception:
             MainLogger().exception("Fehler in der allgemeinen Ladepunkt-Klasse")
 
@@ -201,7 +201,7 @@ class AllChargepoints:
                                 Pub().pub("openWB/set/chargepoint/"+str(chargepoint_read.cp_num)+"/get/read_tag",
                                           chargepoint_read.data["get"]["read_tag"])
                 except Exception:
-                    MainLogger().exception("Fehler in der allgemeinen Ladepunkt-Klasse fuer Ladepunkt "+cp)
+                    MainLogger().exception("Fehler in der allgemeinen Ladepunkt-Klasse für Ladepunkt "+cp)
             if read_tag is not None:
                 last_plugged_cp = None
                 plug_time = 0
@@ -221,7 +221,7 @@ class AllChargepoints:
                                         plug_time = chargepoint_match.data["set"]["plug_time"]
                                         last_plugged_cp = chargepoint_match
                     except Exception:
-                        MainLogger().exception("Fehler in der allgemeinen Ladepunkt-Klasse fuer Ladepunkt "+cp)
+                        MainLogger().exception("Fehler in der allgemeinen Ladepunkt-Klasse für Ladepunkt "+cp)
                 if last_plugged_cp is None:
                     MainLogger().info("Es wurde kein EV angesteckt, dessen Ladepunkt auf eine Zuweisung per RFID \
                         wartet. Gescannter Tag: "+str(read_tag))
@@ -241,7 +241,7 @@ class AllChargepoints:
                     else:
                         MainLogger().info(
                             "Der Tag "+str(read_tag)+" ist an Ladepunkt "+str(last_plugged_cp.cp_num) +
-                            " nicht gueltig.")
+                            " nicht gültig.")
                         chargepoint_read.data["get"]["read_tag"]["tag"] = "0"
                         chargepoint_read.data["get"]["read_tag"]["timestamp"] = "0"
                         Pub().pub("openWB/set/chargepoint/"+str(chargepoint_read.cp_num)+"/get/read_tag",
@@ -286,7 +286,7 @@ class Chargepoint:
                     "daily_yield": 0,
                     "plug_state": False,
                     "charge_state": False,
-                    "power_all": 0,
+                    "power": 0,
                     "connected_vehicle": {"soc_config": {},
                                           "soc": {},
                                           "info": {},
@@ -310,7 +310,7 @@ class Chargepoint:
             if general_data["grid_protection_configured"]:
                 if general_data["grid_protection_active"]:
                     if general_data["grid_protection_timestamp"] != "0":
-                        # Timer ist  abglaufen
+                        # Timer ist  abgelaufen
                         if not timecheck.check_timestamp(
                                 general_data["grid_protection_timestamp"],
                                 general_data["grid_protection_random_stop"]):
@@ -553,7 +553,7 @@ class Chargepoint:
                     # config = self.data["config"]["connection_module"]["config"][selected]
                     # cp_interruption.thread_cp_interruption(self.cp_num, selected, config, charging_ev.ev_template.
                     # data["control_pilot_interruption_duration"])
-                    message = "Control-Pilot-Unterbrechung fuer " + str(
+                    message = "Control-Pilot-Unterbrechung für " + str(
                         charging_ev.ev_template.data["control_pilot_interruption_duration"]) + "s."
                     MainLogger().info("LP "+str(self.cp_num)+": "+message)
                     self.data["get"]["state_str"] = message
@@ -700,7 +700,7 @@ class Chargepoint:
                         bis der Algorithmus eine Umschaltung vorgibt. Phasenzahl: "+str(phases))
                 else:
                     phases = charging_ev.data["control_parameter"]["phases"]
-                    MainLogger().debug("Umschaltung wird durchgefuehrt, Phasenzahl nicht ändern "+str(phases))
+                    MainLogger().debug("Umschaltung wird durchgeführt, Phasenzahl nicht ändern "+str(phases))
             elif chargemode_phases < phases:
                 phases = chargemode_phases
                 MainLogger().debug("Lademodus-Phasen beschränkt die nutzbaren Phasen auf "+str(phases))

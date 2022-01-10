@@ -52,7 +52,7 @@ class ChargepointModule(AbstractChargepoint):
             MainLogger().debug("openWB Pro "+str(self.id)+": "+str(json_rsp))
 
             chargepoint_state = ChargepointState(
-                power_all=json_rsp["power_all"],
+                power=json_rsp["power_all"],
                 currents=json_rsp["currents"],
                 imported=json_rsp["imported"],
                 exported=json_rsp["exported"],
