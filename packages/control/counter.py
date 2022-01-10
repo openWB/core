@@ -351,8 +351,8 @@ class Counter:
                     data.data.counter_data["all"].data["set"]["loadmanagement_available"] = True
                 # max Leistung
                 if self.data["get"]["power"] > 0:
-                    self.data["set"]["consumption_left"] = self.data["config"]["max_total_power"]
-                    - self.data["get"]["power"]
+                    self.data["set"]["consumption_left"] = self.data["config"]["max_total_power"] \
+                        - self.data["get"]["power"]
                 else:
                     self.data["set"]["consumption_left"] = self.data["config"]["max_total_power"]
                 MainLogger().debug(str(self.data["set"]["consumption_left"]) +
