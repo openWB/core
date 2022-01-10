@@ -141,8 +141,7 @@ class Prepare:
                                     raise ValueError(
                                         "Wenn kein aktuelles und kein vorheriges Ev zugeordnet waren, \
                                             sollte noch nicht geladen worden sein.")
-                                charging_ev = data.data.ev_data["ev" +
-                                                                str(vehicle)]
+                                charging_ev = data.data.ev_data["ev" + str(vehicle)]
                                 charging_ev.ev_template.data = charging_ev.data["set"]["ev_template"]
                                 cp.data["set"]["charging_ev_data"] = charging_ev
                                 Pub().pub("openWB/set/chargepoint/"+str(cp.cp_num)+"/set/change_ev_permitted", [

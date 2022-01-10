@@ -303,8 +303,7 @@ class SubData:
                 else:
                     if "et"+index not in var:
                         var["et"+index] = ev.EvTemplate(int(index))
-                    var["et" +
-                        index].data = json.loads(str(msg.payload.decode("utf-8")))
+                    var["et" + index].data = json.loads(str(msg.payload.decode("utf-8")))
                     self.event_ev_template.set()
         except Exception:
             MainLogger().exception("Fehler im subdata-Modul")
@@ -719,15 +718,13 @@ class SubData:
                 else:
                     sim_data = None
                     if "component"+index_second in var["device"+index]._components:
-                        sim_data = var["device"+index]._components["component" +
-                                                                   index_second].simulation
+                        sim_data = var["device"+index]._components["component" + index_second].simulation
                     # Es darf nicht einfach data["config"] aktualisiert werden, da in der __init__ auch die
                     # TCP-Verbindung aufgebaut wird, deren IP dann nicht aktualisiert werden würde.
                     var["device"+index].add_component(
                         json.loads(str(msg.payload.decode("utf-8"))))
                     if sim_data:
-                        var["device"+index]._components["component" +
-                                                        index_second].simulation = sim_data
+                        var["device"+index]._components["component" + index_second].simulation = sim_data
             elif "mqtt" and "bridge" in msg.topic:
                 index = self.get_index(msg.topic)
                 parent_file = Path(__file__).resolve().parents[2]

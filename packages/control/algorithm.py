@@ -805,8 +805,7 @@ class Algorithm:
                         # Beim Wiederherstellen der Kopie wird die Adresse der Kopie zugewiesen, sodass die Adresse des
                         # LP aktualisiert werden muss,
                         # um Änderungen in der Klasse vorzunehmen, die das data-Modul referenziert.
-                        chargepoint = data.data.cp_data["cp" +
-                                                        str(chargepoint.cp_num)]
+                        chargepoint = data.data.cp_data["cp" + str(chargepoint.cp_num)]
                         # keine weitere Zuteilung
                         message = "Keine Ladung, da das Reduzieren/Abschalten der anderen Ladepunkte nicht ausreicht."
                         MainLogger().info("LP "+str(chargepoint.cp_num)+": "+message)
