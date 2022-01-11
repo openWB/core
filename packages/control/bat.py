@@ -78,7 +78,7 @@ class BatAll:
             else:
                 self.data["config"]["configured"] = False
                 Pub().pub("openWB/set/bat/config/configured", self.data["config"]["configured"])
-                {Pub().pub("openWB/bat/get/"+k, "") for (k, _) in self.data["get"].items()}
+                {Pub().pub("openWB/bat/get/"+k, 0) for (k, _) in self.data["get"].items()}
         except Exception:
             MainLogger().exception("Fehler im Bat-Modul")
 
