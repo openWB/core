@@ -333,7 +333,7 @@ class UpdateConfig:
                     break
             else:
                 Pub().pub(topic, "")
-                MainLogger().debug("Ungültiges Topic: "+str(topic))
+                MainLogger().debug("Ungültiges Topic zum Startzeitpunkt: "+str(topic))
 
     def __pub_missing_defaults(self):
         # zwingend erforderliche Standardwerte setzen

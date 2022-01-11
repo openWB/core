@@ -604,10 +604,7 @@ class Chargepoint:
                     self.data["set"]["phases_to_use"] = charging_ev.data["control_parameter"]["phases"]
                 # Manche EVs brauchen nach der Umschaltung mehrere Zyklen, bis sie mit den drei Phasen laden. Dann darf
                 # nicht zwischendurch eine neue Umschaltung getriggert werden.
-                if (self.data["set"]["phases_to_use"] != charging_ev.data["control_parameter"]["phases"] and
-                        self.data["set"]["log"]["charged_since_mode_switch"] > 0 or
-                        self.data["get"]["phases_in_use"] != charging_ev.data["control_parameter"]["phases"] and
-                        self.data["set"]["log"]["charged_since_mode_switch"] == 0):
+                if self.data["set"]["phases_to_use"] != charging_ev.data["control_parameter"]["phases"]:
                     # Wenn die Umschaltverzögerung aktiv ist, darf nicht umgeschaltet werden.
                     if charging_ev.data["control_parameter"]["timestamp_auto_phase_switch"] == "0":
                         if self.data["config"]["auto_phase_switch_hw"]:

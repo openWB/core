@@ -49,7 +49,7 @@ class PvAll:
             else:
                 self.data["config"]["configured"] = False
                 Pub().pub("openWB/set/pv/config/configured", self.data["config"]["configured"])
-                {Pub().pub("openWB/pv/get/"+k, "") for (k, _) in self.data["get"].items()}
+                {Pub().pub("openWB/pv/get/"+k, 0) for (k, _) in self.data["get"].items()}
         except Exception:
             MainLogger().exception("Fehler im allgemeinen PV-Modul")
 
