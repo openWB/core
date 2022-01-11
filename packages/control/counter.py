@@ -340,8 +340,8 @@ class Counter:
     def setup_counter(self):
         # Zählvariablen vor dem Start der Regelung zurücksetzen
         try:
-            # Nur beim EVU-Zähler (counter0) wird auch die maximale Leistung geprüft.
-            if self.counter_num == 0:
+            # Nur beim EVU-Zähler wird auch die maximale Leistung geprüft.
+            if f'counter{self.counter_num}' == data.data.counter_data["all"].get_evu_counter():
                 # Wenn der EVU-Zähler keine Werte liefert, darf nicht geladen werden.
                 if self.data["get"]["fault_state"] > 0:
                     data.data.counter_data["all"].data["set"]["loadmanagement_available"] = False
@@ -364,8 +364,10 @@ class Counter:
 
     def put_stats(self):
         try:
-            Pub().pub("openWB/set/counter/0/set/consumption_left", self.data["set"]["consumption_left"])
-            MainLogger().debug(str(self.data["set"]["consumption_left"])+"W verbleibende EVU-Bezugs-Leistung")
+            if f'counter{self.counter_num}' == data.data.counter_data["all"].get_evu_counter():
+                Pub().pub("openWB/set/counter/"+str(self.counter_num)+"/set/consumption_left",
+                          self.data["set"]["consumption_left"])
+                MainLogger().debug(str(self.data["set"]["consumption_left"])+"W verbleibende EVU-Bezugs-Leistung")
         except Exception:
             MainLogger().exception("Fehler in der Zähler-Klasse von "+str(self.counter_num))
 
