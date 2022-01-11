@@ -562,8 +562,7 @@ class SetData:
                 self._validate_value(msg, "json")
             elif "/get/fault_state" in msg.topic:
                 self._validate_value(msg, int, [(0, 2)])
-            elif ("/get/fault_str" in msg.topic or
-                    "/get/simulation/timestamp_present" in msg.topic):
+            elif "/get/fault_str" in msg.topic:
                 self._validate_value(msg, str)
             elif ("/get/daily_yield" in msg.topic or
                     "/get/monthly_yield" in msg.topic or
@@ -572,12 +571,6 @@ class SetData:
                 self._validate_value(msg, float, [(0, float("inf"))])
             elif "/get/counter" in msg.topic:
                 self._validate_value(msg, float, [(0, float("inf"))])
-            elif ("/get/counter_offset" in msg.topic or
-                    "/get/counter_start" in msg.topic or
-                    "/get/simulation/power_present" in msg.topic or
-                    "/get/simulation/present_imported" in msg.topic or
-                    "/get/simulation/present_exported" in msg.topic):
-                self._validate_value(msg, float)
             elif "/get/power" in msg.topic:
                 self._validate_value(msg, float, [(float("-inf"), 0)])
             elif "/get/currents" in msg.topic:
@@ -615,10 +608,7 @@ class SetData:
                 self._validate_value(msg, float, [(0, float("inf"))])
             elif "/config" in msg.topic:
                 self._validate_value(msg, "json")
-            elif ("/get/power" in msg.topic or
-                    "/get/simulation/power_present" in msg.topic or
-                    "/get/simulation/present_imported" in msg.topic or
-                    "/get/simulation/present_exported" in msg.topic):
+            elif "/get/power" in msg.topic:
                 self._validate_value(msg, float)
             elif ("/get/imported" in msg.topic or
                     "/get/exported" in msg.topic or
@@ -629,8 +619,7 @@ class SetData:
                 self._validate_value(msg, float, [(0, 100)])
             elif "/get/fault_state" in msg.topic:
                 self._validate_value(msg, int, [(0, 2)])
-            elif ("/get/fault_str" in msg.topic or
-                    "/get/simulation/timestamp_present" in msg.topic):
+            elif "/get/fault_str" in msg.topic:
                 self._validate_value(msg, str)
             else:
                 self.__unknown_topic(msg)
@@ -808,14 +797,9 @@ class SetData:
                     or "/get/exported" in msg.topic):
                 self._validate_value(
                     msg, float, [(0, float("inf")), (None, None)])
-            elif ("/get/simulation/power_present" in msg.topic or
-                    "/get/simulation/present_imported" in msg.topic or
-                    "/get/simulation/present_exported" in msg.topic):
-                self._validate_value(msg, float)
             elif "/get/fault_state" in msg.topic:
                 self._validate_value(msg, int, [(0, 2)])
-            elif ("/get/fault_str" in msg.topic or
-                    "/get/simulation/timestamp_present" in msg.topic):
+            elif "/get/fault_str" in msg.topic:
                 self._validate_value(msg, str)
             elif "/get/power" in msg.topic:
                 self._validate_value(
@@ -893,7 +877,13 @@ class SetData:
                 self._validate_value(msg, None)
             elif "device" in msg.topic:
                 if "component" in msg.topic:
-                    if "/config" in msg.topic:
+                    if ("/simulation/power_present" in msg.topic or
+                            "/simulation/present_imported" in msg.topic or
+                            "/simulation/present_exported" in msg.topic):
+                        self._validate_value(msg, float)
+                    elif "/simulation/timestamp_present" in msg.topic:
+                        self._validate_value(msg, str)
+                    elif "/config" in msg.topic:
                         self._validate_value(msg, "json")
                     else:
                         self.__unknown_topic(msg)
