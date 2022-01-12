@@ -269,7 +269,9 @@ class Algorithm:
                                (charging_ev.charge_template.data["chargemode"]["selected"] == mode or
                                 mode is None) and
                                     (charging_ev.data["control_parameter"]["submode"] == submode) and
-                                    (phases >= max_overshoot_phase)):
+                                    # LP muss auf der Phase laden, die überlastet ist.
+                                    (phases == 3 or max_overshoot_phase == chargepoint.data["config"]["phase_1"] or
+                                        chargepoint.data["config"]["phase_1"] == 0)):
                                 valid_chargepoints[chargepoint] = None
             except Exception:
                 MainLogger().exception("Fehler im Algorithmus-Modul für Ladepunkt"+cp)
@@ -481,12 +483,12 @@ class Algorithm:
                                 data.data.cp_data = cp_data_old
                                 MainLogger().debug("Keine Hochregelung für Ladepunkt "+str(cp.cp_num) +
                                                    ", da nur noch das Offset zum Maximalstrom verfügbar ist.")
-                                message = "Das Lastmanagement hat den Ladestrom um 0A angepasst."
+                                message = "Das Lastmanagement konnte den Ladepunkt nicht auf die gewünschte \
+                                    Stromstärke hochregeln."
                                 # Beim Wiederherstellen der Kopie wird die Adresse der Kopie zugewiesen, sodass die
                                 # Adresse des LP aktualisiert werden muss,
                                 # um Änderungen in der Klasse vorzunehmen, die das data-Modul referenziert.
-                                chargepoint = data.data.cp_data["cp" +
-                                                                str(chargepoint.cp_num)]
+                                cp = data.data.cp_data["cp" + str(cp.cp_num)]
                             # Es kann nur ein Teil des fehlenden Ladestroms hochgeregelt werden.
                             else:
                                 required_power = 230 * phases * undo_missing_current
@@ -654,7 +656,7 @@ class Algorithm:
                         self._distribute_power_to_cp(
                             preferenced_chargepoints, current_mode)
                 except Exception:
-                    MainLogger().exception("Fehler im Algorithmus-Modul für Ladepunkt"+cp)
+                    MainLogger().exception(f"Fehler im Algorithmus-Modul für Modus {mode_tuple}")
             else:
                 # kein Ladepunkt, der noch auf Zuteilung wartet
                 MainLogger().info("## Zuteilung beendet, da kein Ladepunkt mehr auf Zuteilung wartet.")

@@ -175,11 +175,14 @@ class Prepare:
                             data.data.pv_data["all"].reset_switch_on_off(
                                 cp, charging_ev)
                             charging_ev.reset_phase_switch()
-                            if max(cp.data["get"]["currents"]) > charging_ev.ev_template.data["nominal_difference"]:
+                            min_charge_current = cp.data["set"]["current"] - \
+                                charging_ev.ev_template.data["nominal_difference"]
+                            if max(cp.data["get"]["currents"]) > min_charge_current:
                                 cp.data["set"]["current"] = 0
                             else:
                                 # Wenn nicht geladen wird, obwohl geladen werde kann, soll das EV im Algorithmus nicht
-                                # berücksichtigt werden.
+                                # berücksichtigt werden. Wenn der Sollstrom gesetzt ist, wird das EV nur im LM
+                                # berücksichtigt.
                                 cp.data["set"]["current"] = required_current
                             # Da nicht bekannt ist, ob mit Bezug, Überschuss oder aus dem Speicher geladen wird, wird
                             # die freiwerdende Leistung erst im nächsten Durchlauf berücksichtigt. Ggf. entsteht so
