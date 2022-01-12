@@ -69,6 +69,7 @@ body > .container {
 
 .gradient {
 	background: -webkit-linear-gradient(black, #f2f2f2, black);
+	background-clip:initial;
 	-webkit-background-clip: text;
 	-webkit-text-fill-color: transparent;
 	text-shadow: 0px 0px 10px rgba(0, 0, 0, 0.15);
@@ -347,7 +348,7 @@ h3 {
 	}
 }
 
-/* Livechart colors */
+/* live chart colors */
 :root {
 	--fontCol: rgba(153, 153, 153, 1);
 	--xgridCol: rgba(204, 204, 204, 1);
@@ -418,7 +419,7 @@ h3 {
 	background-color: rgb(150 150 0);
 }
 
-#thegraph > div {
+#theGraph > div {
 	max-height: 350px;
 	height: 45vh;
 }
@@ -439,11 +440,11 @@ h3 {
 	content: "\f0fe"; 
 }
 
-#infoheader .card {
+#infoHeader .card {
 	min-width: 13em;
 }
 
-#infoheader .card-body {
+#infoHeader .card-body {
 	padding: 0.75rem;
 }
 

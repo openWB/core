@@ -112,7 +112,7 @@
 				<div class="row justify-content-center mt-2">
 					<div class="col-10 col-sm-6">
 						<div class="progress active">
-							<div class="progress-bar progress-bar-success progress-bar-striped progress-bar-animated" id="preloaderbar" role="progressbar">
+							<div class="progress-bar progress-bar-success progress-bar-striped progress-bar-animated" id="preloader-bar" role="progressbar">
 							</div>
 						</div>
 					</div>
@@ -126,17 +126,17 @@
 		<div class="container regularTextSize">
 
 			<!-- Header Section -->
-			<div id="infoheader" class="row no-gutters">
+			<div id="info-header" class="row no-gutters">
 
 				<!-- Battery Card -->
-				<div class="housebattery-configured col-sm hide">
+				<div class="house-battery-configured col-sm hide">
 					<div class="card border-warning">
 						<div class="card-header bg-warning collapsed" data-toggle="collapse" data-target="#cardBat">
 							<i class="fas fa-car-battery"></i>
-							<span class="housebattery-sum-soc">XX %</span>
-							<i class="housebattery-sum-charging fas fa-angle-double-left hide"></i>
-							<i class="housebattery-sum-discharging fas fa-angle-double-right hide"></i>
-							<span class="housebattery-sum-power">XX W</span>
+							<span class="house-battery-sum-soc">XX %</span>
+							<i class="house-battery-sum-charging fas fa-angle-double-left hide"></i>
+							<i class="house-battery-sum-discharging fas fa-angle-double-right hide"></i>
+							<span class="house-battery-sum-power">XX W</span>
 							<span class="collPlus"></span>
 						</div>
 						<div id="cardBat" class="card-body collapse">
@@ -144,7 +144,7 @@
 								<div class="col pr-0">
 									SoC
 								</div>
-								<div class="housebattery-sum-soc col pl-0 text-right">
+								<div class="house-battery-sum-soc col pl-0 text-right">
 									-- %
 								</div>
 							</div>
@@ -157,7 +157,7 @@
 								<div class="col pr-0">
 									Geladen
 								</div>
-								<div class="housebattery-sum-import col pl-0 text-right">
+								<div class="house-battery-sum-import col pl-0 text-right">
 									-- Wh
 								</div>
 							</div>
@@ -165,7 +165,7 @@
 								<div class="col pr-0">
 									Entladen
 								</div>
-								<div class="housebattery-sum-export col pl-0 text-right">
+								<div class="house-battery-sum-export col pl-0 text-right">
 									-- Wh
 								</div>
 							</div>
@@ -181,7 +181,7 @@
 										Vorrang PV
 									</div>
 									<div class="col text-right">
-										<input class="housebattery-priority" type="checkbox" data-toggle="toggle" data-topic="openWB/set/general/chargemode_config/pv_charging/bat_prio" data-on='<i class="fas fa-car-battery"></i>' data-off='<i class="fas fa-car-side"></i>' data-onstyle="warning" data-offstyle="primary" data-size="sm" data-style="w-100">
+										<input class="house-battery-priority" type="checkbox" data-toggle="toggle" data-topic="openWB/set/general/chargemode_config/pv_charging/bat_prio" data-on='<i class="fas fa-car-battery"></i>' data-off='<i class="fas fa-car-side"></i>' data-onstyle="warning" data-offstyle="primary" data-size="sm" data-style="w-100">
 									</div>
 								</div>
 							</div>
@@ -289,14 +289,14 @@
 				</div>
 
 				<!-- House Card -->
-				<div class="houseconsumption-configured col-sm">
+				<div class="house-consumption-configured col-sm">
 					<div class="card border-secondary">
-						<div class="card-header bg-secondary collapsed" data-toggle="collapse" data-target="#cardHouseconsumption">
+						<div class="card-header bg-secondary collapsed" data-toggle="collapse" data-target="#cardHouseConsumption">
 							<i class="fas fa-home"></i>
-							<span class="houseconsumption-power">-- W</span>
+							<span class="house-consumption-power">-- W</span>
 							<span class="collPlus"></span>
 						</div>
-						<div id="cardHouseconsumption" class="card-body collapse">
+						<div id="cardHouseConsumption" class="card-body collapse">
 							<div class="row">
 								<div class="col font-italic font-weight-bold">
 									Heute:
@@ -306,7 +306,7 @@
 								<div class="col pr-0">
 									Energie 
 								</div>
-								<div class="houseconsumption-daily col pl-0 text-right">
+								<div class="house-consumption-daily col pl-0 text-right">
 									-- Wh
 								</div>
 							</div>
@@ -314,15 +314,15 @@
 					</div>
 				</div>
 
-				<!-- Chargepoint Sum Card -->
-				<div class="chargepoint-sum-configured col-sm">
+				<!-- charge point sum card -->
+				<div class="charge-point-sum-configured col-sm">
 					<div class="card border-primary">
-						<div class="card-header bg-primary collapsed" data-toggle="collapse" data-target="#cardChargepointSum">
+						<div class="card-header bg-primary collapsed" data-toggle="collapse" data-target="#cardChargePointSum">
 							<i class="fas fa-charging-station"></i>
-							<span class="chargepoint-sum-power">-- W</span>
+							<span class="charge-point-sum-power">-- W</span>
 							<span class="collPlus"></span>
 						</div>
-						<div id="cardChargepointSum" class="card-body collapse">
+						<div id="cardChargePointSum" class="card-body collapse">
 							<div class="row">
 								<div class="col font-italic font-weight-bold">
 									Heute:
@@ -332,7 +332,7 @@
 								<div class="col pr-0">
 									Geladen
 								</div>
-								<div class="chargepoint-sum-importdaily col pl-0 text-right">
+								<div class="charge-point-sum-import-daily col pl-0 text-right">
 									-- Wh
 								</div>
 							</div>
@@ -341,7 +341,7 @@
 								<div class="col pr-0">
 									Entladen
 								</div>
-								<div class="chargepoint-sum-exportdaily col pl-0 text-right">
+								<div class="charge-point-sum-export-daily col pl-0 text-right">
 									-- Wh
 								</div>
 							</div>
@@ -362,10 +362,10 @@
 							<span class="collPlus"></span>
 						</div>
 						<div id="cardGraph" class="card-body collapse show">
-							<div class="row justify-content-center my-2" id="thegraph">
+							<div class="row justify-content-center my-2" id="theGraph">
 								<!-- will be refreshed using MQTT (in livechart.js)-->
 								<div class="col-sm-12 text-center smallTextSize">
-									<div id="waitforgraphloadingdiv">
+									<div id="waitForGraphLoadingDiv">
 										Graph lädt, bitte warten...
 									</div>
 									<canvas id="canvas"></canvas>
@@ -383,12 +383,12 @@
 				</div>
 			</div>
 
-			<!-- chargepoint info header -->
+			<!-- charge point info header -->
 			<div class="card text-grey">
 				<div class="card-header bg-darkgrey font-weight-bold">
 					<div class="form-row">
 						<div class="col-3">
-							Ladepunkt <span id="etproviderEnabledIcon" class="fa fa-chart-line hide"></span>
+							Ladepunkt <span id="etProviderEnabledIcon" class="fa fa-chart-line hide"></span>
 						</div>
 						<div class="col-3">
 							Lademodus
@@ -415,52 +415,52 @@
 				</div>
 			</div>
 
-			<div class="accordion" id="chargepointaccordion">
-				<div class="chargepoint-card card border-dark text-grey chargepoint-template hide" data-cp="T" data-chargepointtemplate="T" data-chargetemplate="T" data-evtemplate="T">
-					<div class="card-header bg-lightgrey collapsed" data-toggle="collapse" data-target="#collapseChargepoint0">
+			<div class="accordion" id="chargePointAccordion">
+				<div class="charge-point-card card border-dark text-grey charge-point-template hide" data-cp="T" data-charge-point-template="T" data-charge-template="T" data-ev-template="T">
+					<div class="card-header bg-lightgrey collapsed" data-toggle="collapse" data-target="#collapseChargePoint0">
 						<div class="form-row">
 							<div class="col-3">
-								<span class="fas fa-xs hide autolockConfiguredCp"></span>
-								<span class="font-weight-bold chargepoint-name chargepoint-stateenabled">--</span>
-								<span class="fa fa-xs fa-plug text-orange hide chargepoint-plugstate chargepoint-chargestate"></span>
+								<span class="fas fa-xs hide auto-lock-configured-cp"></span>
+								<span class="font-weight-bold charge-point-name charge-point-state-enabled">--</span>
+								<span class="fa fa-xs fa-plug text-orange hide charge-point-plug-state charge-point-charge-state"></span>
 								<span class="fa fa-xs fa-flag-checkered hide targetChargingCp"></span>
 								<span class="fa fa-xs fa-moon hide nightChargingCp"></span>
 							</div>
 							<div class="col-3">
-								<span class="chargepoint-vehiclechargemode">--</span>
+								<span class="charge-point-vehicle-charge-mode">--</span>
 							</div>
 							<div class="col-3">
-								<span class="chargepoint-power">--</span> <span class="chargepoint-phasesinuse">-</span> <span class="chargepoint-setcurrent">--</span>
+								<span class="charge-point-power">--</span> <span class="charge-point-phases-in-use">-</span> <span class="charge-point-set-current">--</span>
 							</div>
 							<div class="col-3 collPlus">
-								<span class="chargepoint-energysinceplugged">--</span><span class="chargepoint-rangesinceplugged" data-consumption="0"></span> 
+								<span class="charge-point-energy-since-plugged">--</span><span class="charge-point-range-since-plugged" data-consumption="0"></span> 
 							</div>
 						</div>
 						<div class="form-row">
 							<div class="col-3">
-								<div class="chargepoint-alert alert m-0 px-1 py-0">
-									<!-- <i class="chargepoint-faultstate fas fa-check-circle text-success hide" data-option="0"></i> -->
-									<i class="chargepoint-faultstate fas fa-exclamation-triangle text-warning hide" data-option="1"></i>
-									<i class="chargepoint-faultstate fas fa-times-circle text-danger hide" data-option="2"></i>
-									<span class="chargepoint-faultstr"></span>
+								<div class="charge-point-alert alert m-0 px-1 py-0">
+									<!-- <i class="charge-point-fault-state fas fa-check-circle text-success hide" data-option="0"></i> -->
+									<i class="charge-point-fault-state fas fa-exclamation-triangle text-warning hide" data-option="1"></i>
+									<i class="charge-point-fault-state fas fa-times-circle text-danger hide" data-option="2"></i>
+									<span class="charge-point-fault-str"></span>
 								</div>
 							</div>
-							<div class="col-3 chargepoint-vehiclename">--</div>
+							<div class="col-3 charge-point-vehicle-name">--</div>
 							<div class="col-3">
-								<div class="chargepoint-socconfigured hide">
-									<span class="chargepoint-soc">--</span> %
-									<i class="small chargepoint-reloadsocsymbol fas fa-redo-alt"></i>
-									<i class="chargepoint-manualsocsymbol fas fa-edit hide"></i>
+								<div class="charge-point-soc-configured hide">
+									<span class="charge-point-soc">--</span> %
+									<i class="small charge-point-reload-soc-symbol fas fa-redo-alt"></i>
+									<i class="charge-point-manual-soc-symbol fas fa-edit hide"></i>
 								</div>
 							</div>
 						</div>
 					</div>
-					<div id="collapseChargepoint0" data-parent="#chargepointaccordion" class="card-body collapse">
+					<div id="collapseChargePoint0" data-parent="#chargePointAccordion" class="card-body collapse">
 						<div class="form-group">
 							<div class="form-row my-1 alert alert-info">
 								<div class="col">
 									<i class="fas fa-info-circle"></i>
-									<span class="chargepoint-statestr">--</span>
+									<span class="charge-point-state-str">--</span>
 								</div>
 							</div>
 							<div class="form-row mb-1">
@@ -469,18 +469,18 @@
 									Ladepunkt sperren
 								</div>
 								<div class="col-md-8 text-right">
-									<input class="chargepoint-manuallock" type="checkbox" data-toggle="toggle" data-topic="openWB/set/chargepoint/<cp>/set/manual_lock" data-on="Ja" data-off="Nein" data-onstyle="danger" data-offstyle="success" data-size="sm" data-style="w-100">
+									<input class="charge-point-manual-lock" type="checkbox" data-toggle="toggle" data-topic="openWB/set/chargepoint/<cp>/set/manual_lock" data-on="Ja" data-off="Nein" data-onstyle="danger" data-offstyle="success" data-size="sm" data-style="w-100">
 								</div>
 							</div>
 							<hr>
-							<div class="chargepoint-vehicledata" data-ev="">
+							<div class="charge-point-vehicle-data" data-ev="">
 								<div class="form-row mb-1">
 									<label class="col col-form-label">
 										<i class="fas fa-car-side"></i>
 										Fahrzeug
 									</label>
 									<div class="col-md-8">
-										<select name="chargepoint-vehicleselect" class="form-control chargepoint-vehicleselect" data-topic="openWB/set/chargepoint/<cp>/config/ev">
+										<select name="charge-point-vehicle-select" class="form-control charge-point-vehicle-select" data-topic="openWB/set/chargepoint/<cp>/config/ev">
 											<option value="0">-- Nicht ausgewählt --</option>
 										</select>
 									</div>
@@ -489,7 +489,7 @@
 									<div class="col">
 										<label class="col-form-label">Lademodus</label>
 									</div>
-									<div class="col-md-8 btn-group btn-group-toggle chargepoint-chargemode" data-toggle="buttons" data-name="chargemode" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/selected">
+									<div class="col-md-8 btn-group btn-group-toggle charge-point-charge-mode" data-toggle="buttons" data-name="chargemode" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/selected">
 										<label class="btn btn-outline-danger btn-toggle">
 											<input type="radio" name="chargemode" data-option="instant_charging">Sofortladen
 										</label>
@@ -513,7 +513,7 @@
 										Priorität
 									</div>
 									<div class="col-md-8 text-right">
-										<input class="chargepoint-vehiclepriority" type="checkbox" data-toggle="toggle" data-topic="openWB/set/vehicle/template/charge_template/<ct>/prio" data-on="Ja" data-off="Nein" data-onstyle="success" data-offstyle="danger" data-size="sm" data-style="w-100">
+										<input class="charge-point-vehicle-priority" type="checkbox" data-toggle="toggle" data-topic="openWB/set/vehicle/template/charge_template/<ct>/prio" data-on="Ja" data-off="Nein" data-onstyle="success" data-offstyle="danger" data-size="sm" data-style="w-100">
 									</div>
 								</div>
 								<div class="form-row mb-1">
@@ -522,10 +522,10 @@
 										Zeitladen
 									</div>
 									<div class="col-md-8 text-right">
-										<input class="chargepoint-timechargingactive" type="checkbox" data-toggle="toggle" data-topic="openWB/set/vehicle/template/charge_template/<ct>/time_charging/active" data-on="Ja" data-off="Nein" data-onstyle="success" data-offstyle="danger" data-size="sm" data-style="w-100">
+										<input class="charge-point-time-charging-active" type="checkbox" data-toggle="toggle" data-topic="openWB/set/vehicle/template/charge_template/<ct>/time_charging/active" data-on="Ja" data-off="Nein" data-onstyle="success" data-offstyle="danger" data-size="sm" data-style="w-100">
 									</div>
 								</div>
-								<div class="chargepoint-chargemodeoptions mb-0 hide">
+								<div class="charge-point-charge-mode-options mb-0 hide">
 									<hr>
 									<div class="chargemode-options chargemode-option-instant_charging">
 										<h3>Einstellungen für "Sofortladen"</h3>
@@ -536,7 +536,7 @@
 											<div class="col-md-8">
 												<div class="form-row form-group mb-1 vaRow">
 													<div class="col">
-														<input type="range" class="chargepoint-instantchargecurrent form-control-range rangeInput" id="currentInstantChargeCp0" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/instant_charging/current" min="6" max="32" step="1">
+														<input type="range" class="charge-point-instant-charge-current form-control-range rangeInput" id="currentInstantChargeCp0" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/instant_charging/current" min="6" max="32" step="1">
 													</div>
 													<label for="currentInstantChargeCp0" class="col-form-label valueLabel" data-suffix="A">-- A</label>
 												</div>
@@ -546,7 +546,7 @@
 											<div class="col">
 												<label class="col-form-label">Begrenzung</label>
 											</div>
-											<div class="col-md-8 btn-group btn-group-toggle chargepoint-instantchargelimitselected" id="limitInstantChargeCp0" data-name="limitCp" data-toggle="buttons" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/instant_charging/limit/selected">
+											<div class="col-md-8 btn-group btn-group-toggle charge-point-instant-charge-limit-selected" id="limitInstantChargeCp0" data-name="limitCp" data-toggle="buttons" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/instant_charging/limit/selected">
 												<label class="btn btn-outline-info btn-toggle">
 													<input type="radio" name="limitCp" data-option="none"> keine
 												</label>
@@ -566,7 +566,7 @@
 												<div class="col-md-8">
 													<div class="form-row form-group mb-1 vaRow">
 														<div class="col">
-															<input type="range" class="chargepoint-instantchargelimitsoc form-control-range rangeInput" id="soclimitCp0" min="5" max="100" step="5" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/instant_charging/limit/soc">
+															<input type="range" class="charge-point-instant-charge-limit-soc form-control-range rangeInput" id="soclimitCp0" min="5" max="100" step="5" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/instant_charging/limit/soc">
 														</div>
 														<label for="soclimitCp0" class="col-form-label valueLabel" data-suffix="%">-- %</label>
 													</div>
@@ -579,7 +579,7 @@
 												<div class="col-md-8">
 													<div class="form-row form-group mb-1 vaRow">
 														<div class="col">
-															<input type="range" class="chargepoint-instantchargelimitamount form-control-range rangeInput" id="amountlimitCp0" min="1" max="50" step="1" data-transformation='{"out":"<v>*1000","in":"<v>/1000"}' data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/instant_charging/limit/amount">
+															<input type="range" class="charge-point-instant-charge-limit-amount form-control-range rangeInput" id="amountlimitCp0" min="1" max="50" step="1" data-transformation='{"out":"<v>*1000","in":"<v>/1000"}' data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/instant_charging/limit/amount">
 														</div>
 														<label for="amountlimitCp0" class="col-form-label valueLabel" data-suffix="kWh">-- kWh</label>
 													</div>
@@ -594,7 +594,7 @@
 												Einspeisegrenze beachten
 											</div>
 											<div class="col-md-8 text-right">
-												<input class="chargepoint-pvchargefeedinlimit" type="checkbox" data-toggle="toggle" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/feed_in_limit" data-on="Ja" data-off="Nein" data-onstyle="success" data-offstyle="danger" data-size="sm" data-style="w-100">
+												<input class="charge-point-pv-charge-feed-in-limit" type="checkbox" data-toggle="toggle" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/feed_in_limit" data-on="Ja" data-off="Nein" data-onstyle="success" data-offstyle="danger" data-size="sm" data-style="w-100">
 											</div>
 										</div>
 										<div class="form-row vaRow mb-0">
@@ -604,7 +604,7 @@
 											<div class="col-md-8">
 												<div class="form-row form-group mb-1 vaRow">
 													<div class="col">
-														<input type="range" class="chargepoint-pvchargemincurrent form-control-range rangeInput" id="minCurrentPvCp0" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/min_current" min="0" max="11" step="1" data-list="0,6,7,8,9,10,11,12,13,14,15,16">
+														<input type="range" class="charge-point-pv-charge-min-current form-control-range rangeInput" id="minCurrentPvCp0" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/min_current" min="0" max="11" step="1" data-list="0,6,7,8,9,10,11,12,13,14,15,16">
 													</div>
 													<label for="minCurrentPvCp0" class="col-form-label valueLabel" data-suffix="A">-- A</label>
 												</div>
@@ -617,7 +617,7 @@
 											<div class="col-md-8">
 												<div class="form-row form-group mb-1 vaRow">
 													<div class="col">
-														<input type="range" class="chargepoint-pvchargeminsoc form-control-range rangeInput" id="minSocPvCp0" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/min_soc" min="0" max="99" step="1">
+														<input type="range" class="charge-point-pv-charge-min-soc form-control-range rangeInput" id="minSocPvCp0" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/min_soc" min="0" max="99" step="1">
 													</div>
 													<label for="minSocPvCp0" class="col-form-label valueLabel" data-suffix="%">-- %</label>
 												</div>
@@ -630,7 +630,7 @@
 											<div class="col-md-8">
 												<div class="form-row form-group mb-1 vaRow">
 													<div class="col">
-														<input type="range" class="chargepoint-pvchargeminsoccurrent form-control-range rangeInput" id="minSocCurrentPvCp0" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/min_soc_current" min="6" max="16" step="1">
+														<input type="range" class="charge-point-pv-charge-min-soc-current form-control-range rangeInput" id="minSocCurrentPvCp0" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/min_soc_current" min="6" max="16" step="1">
 													</div>
 													<label for="minSocCurrentPvCp0" class="col-form-label valueLabel" data-suffix="A">-- A</label>
 												</div>
@@ -643,7 +643,7 @@
 											<div class="col-md-8">
 												<div class="form-row form-group mb-1 vaRow">
 													<div class="col">
-														<input type="range" class="chargepoint-pvchargemaxsoc form-control-range rangeInput" id="maxSocPvCp0" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/max_soc" min="1" max="100" step="1">
+														<input type="range" class="charge-point-pv-charge-max-soc form-control-range rangeInput" id="maxSocPvCp0" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/pv_charging/max_soc" min="1" max="100" step="1">
 													</div>
 													<label for="maxSocPvCp0" class="col-form-label valueLabel" data-suffix="%">-- %</label>
 												</div>
@@ -661,29 +661,29 @@
 												</button>
 											</div> -->
 										</div>
-										<div class="form-row mb-1 chargepoint-scheduleplan chargepoint-scheduleplan-template hide" data-plan="0">
+										<div class="form-row mb-1 charge-point-schedule-plan charge-point-schedule-plan-template hide" data-plan="">
 											<div class="col">
 												<div class="form-row">
 													<div class="col">
-														<span class="chargepoint-schedulename">--</span>
-														<span class="chargepoint-scheduleedit"><i class="fas fa-edit"></i></span>
+														<span class="charge-point-schedule-name">--</span>
+														<span class="charge-point-schedule-edit"><i class="fas fa-edit"></i></span>
 													</div>
 													<div class="col-lg-6">
-														<span class="chargepoint-schedulefrequency">
+														<span class="charge-point-schedule-frequency">
 															<i class="fas fa-calendar-alt"></i>
-															<span class="chargepoint-schedulefrequencyvalue">--</span>
+															<span class="charge-point-schedule-frequency-value">--</span>
 														</span>
-														<span class="chargepoint-scheduledate">
+														<span class="charge-point-schedule-date">
 															<i class="fas fa-calendar-day"></i>
-															<span class="chargepoint-scheduledatevalue">--</span>
+															<span class="charge-point-schedule-date-value">--</span>
 														</span>
-														<i class="fas fa-clock"></i> <span class="chargepoint-scheduletime">--</span>
-														<i class="fas fa-car-battery"></i> <span class="chargepoint-schedulesoc">--</span>%
+														<i class="fas fa-clock"></i> <span class="charge-point-schedule-time">--</span>
+														<i class="fas fa-car-battery"></i> <span class="charge-point-schedule-soc">--</span>%
 													</div>
 												</div>
 											</div>
 											<div class="col-4 text-right">
-												<input class="chargepoint-scheduleactive" type="checkbox" data-toggle="toggle" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/scheduled_charging/<sched>/active" data-on="An" data-off="Aus" data-onstyle="success" data-offstyle="danger" data-size="sm" data-style="w-100">
+												<input class="charge-point-schedule-active" type="checkbox" data-toggle="toggle" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/scheduled_charging/plans/<sched>/active" data-on="An" data-off="Aus" data-onstyle="success" data-offstyle="danger" data-size="sm" data-style="w-100">
 											</div>
 										</div>
 									</div>
@@ -700,7 +700,7 @@
 					<div class="modal-content">
 						<!-- modal header -->
 						<div class="modal-header bg-warning">
-							<h4 class="modal-title text-dark">Manuelle SoC-Eingabe - Ladepunkt <span class="chargepoint-soc"></span></h4>
+							<h4 class="modal-title text-dark">Manuelle SoC-Eingabe - Ladepunkt <span class="charge-point-soc"></span></h4>
 						</div>
 						<!-- modal body -->
 						<div class="modal-body">
@@ -741,7 +741,7 @@
 					}
 
 					function submitSocForm() {
-						var currentCp = $('#socModal').find('.chargepoint-soc').text();
+						var currentCp = $('#socModal').find('.charge-point-soc').text();
 						var manualSoc = $("#manualSocBox").val();
 						// console.log("SoC for CP"+currentCp+": "+manualSoc);
 						publish(manualSoc, "openWB/set/lp/"+currentCp+"/manualSoc");
@@ -785,7 +785,7 @@
 
 		<script>
 
-			// load navbar, be carefull: it loads asynchonously
+			// load navbar, be careful: it loads asynchronous
 			$.get(
 				{ url: "themes/navbar.html", cache: false },
 				function(data){
@@ -794,12 +794,12 @@
 			);
 
 			var timeOfLastMqttMessage = 0;  // holds timestamp of last received message
-			var landingpageShown = false;  // holds flag for landing page being shown
+			var landingPageShown = false;  // holds flag for landing page being shown
 
 			function chargemodeOptionsShowHide(btnGrp, option) {
 				// show/hide all option-parameters in form-rows for selected option
-				var parent = btnGrp.closest('.chargepoint-card[data-cp]');  // get parent div element for charge limitation options
-				var chargemodeOptionsElement = $(parent).find('.chargepoint-chargemodeoptions');
+				var parent = btnGrp.closest('.charge-point-card[data-cp]');  // get parent div element for charge limitation options
+				var chargemodeOptionsElement = $(parent).find('.charge-point-charge-mode-options');
 				if( option == "stop" || option == "standby" ) {
 					chargemodeOptionsElement.addClass('hide');
 				} else {
@@ -811,7 +811,7 @@
 
 			function chargemodeLimitOptionsShowHide(btnGrp, option) {
 				// show/hide all option-parameters in form-rows for selected option
-				var parent = btnGrp.closest('.chargepoint-card[data-cp]');  // get parent div element for charge limitation options
+				var parent = btnGrp.closest('.charge-point-card[data-cp]');  // get parent div element for charge limitation options
 				var chargemodeLimitOptionsElement = $(parent).find('.chargemode-limit-options');
 				// console.log('option: '+option);
 				// console.log(chargemodeLimitOptionsElement);
@@ -828,7 +828,7 @@
 				// sets flag for topic received in topic-array
 				// and updates the preloader progress bar
 				// console.log("preloader handling message: "+mqttTopic);
-				if ( !landingpageShown ) {
+				if ( !landingPageShown ) {
 					var countTopicsReceived = 0;
 					for ( var index = 0; index < topicsToSubscribeFirst.length; index ++) {
 						if ( topicsToSubscribeFirst[index][0] == mqttTopic && topicsToSubscribeFirst[index][1] == 0 ) {
@@ -852,8 +852,8 @@
 					countTopicsReceived = countTopicsReceived - countTopicsNotForPreloader;
 					var countTopicsToBeReceived = topicsToSubscribeFirst.length + topicsToSubscribe.length - countTopicsNotForPreloader;
 					var percentageReceived = (countTopicsReceived / countTopicsToBeReceived * 100).toFixed(0);
-					var timeBetweenTwoMesagges = Date.now() - timeOfLastMqttMessage;
-					if ( timeBetweenTwoMesagges > 3000 ) {
+					var timeBetweenTwoMessages = Date.now() - timeOfLastMqttMessage;
+					if ( timeBetweenTwoMessages > 3000 ) {
 						// latest after 3 sec without new messages
 						percentageReceived = 100;
 						// debug output
@@ -870,10 +870,10 @@
 
 					}
 					timeOfLastMqttMessage = Date.now();
-					$("#preloaderbar").width(percentageReceived+"%");
-					$("#preloaderbar").text(percentageReceived+" %");
+					$("#preloader-bar").width(percentageReceived+"%");
+					$("#preloader-bar").text(percentageReceived+" %");
 					if ( percentageReceived == 100 ) {
-						landingpageShown = true;
+						landingPageShown = true;
 						setTimeout(function (){
 							// delay a little bit
 							$("#preloader").fadeOut(1000);
@@ -883,7 +883,7 @@
 			}
 
 			var delayUserInput = (function () {
-				// sets a timeout on call and resets timout if called again for same id before timeout fires
+				// sets a timeout on call and resets timeout if called again for same id before timeout fires
 				var timeoutHandles = {};
 				return function (id, callback, ms) {
 					if ( timeoutHandles[id] ) {
@@ -934,9 +934,9 @@
 					if( topic != undefined ) {
 						var cp = parseInt($(this).closest('[data-cp]').data('cp'));  // get attribute cp-# of parent element
 						var ev = parseInt($(this).closest('[data-ev]').data('ev'));  // get attribute ev-# of parent element
-						var ct = parseInt($(this).closest('[data-chargetemplate]').data('chargetemplate'));  // get attribute chargetemplate-# of parent element
-						var cpt = parseInt($(this).closest('[data-chargepointtemplate]').data('chargepointtemplate'));  // get attribute chargepointtemplate-# of parent element
-						var et = parseInt($(this).closest('[data-evtemplate]').data('evtemplate'));  // get attribute evtemplate-# of parent element
+						var ct = parseInt($(this).closest('[data-charge-template]').data('charge-template'));  // get attribute charge-template-# of parent element
+						var cpt = parseInt($(this).closest('[data-charge-point-template]').data('charge-point-template'));  // get attribute charge-point-template-# of parent element
+						var et = parseInt($(this).closest('[data-ev-template]').data('ev-template'));  // get attribute ev-template-# of parent element
 						var schedule = parseInt($(this).closest('[data-plan]').data('plan'));  // get attribute plan-# of parent element
 						topic = topic.replace( '<cp>', cp );
 						topic = topic.replace( '<ev>', ev );
@@ -958,7 +958,7 @@
 					}
 				});
 
-				$('.container').on('change', '.chargepoint-vehicleselect', function(event){
+				$('.container').on('change', '.charge-point-vehicle-select', function(event){
 					// update data in parent element
 					$(this).closest('[data-ev]').attr('data-ev', $(this).val()).data('ev', $(this).val());
 					// send update to broker
@@ -966,9 +966,9 @@
 					if( topic != undefined ) {
 						var cp = parseInt($(this).closest('[data-cp]').data('cp'));  // get attribute cp-# of parent element
 						var ev = parseInt($(this).closest('[data-ev]').data('ev'));  // get attribute ev-# of parent element
-						var ct = parseInt($(this).closest('[data-chargetemplate]').data('chargetemplate'));  // get attribute chargetemplate-# of parent element
-						var cpt = parseInt($(this).closest('[data-chargepointtemplate]').data('chargepointtemplate'));  // get attribute chargepointtemplate-# of parent element
-						var et = parseInt($(this).closest('[data-evtemplate]').data('evtemplate'));  // get attribute evtemplate-# of parent element
+						var ct = parseInt($(this).closest('[data-charge-template]').data('charge-template'));  // get attribute charge-template-# of parent element
+						var cpt = parseInt($(this).closest('[data-charge-point-template]').data('charge-point-template'));  // get attribute charge-point-template-# of parent element
+						var et = parseInt($(this).closest('[data-ev-template]').data('ev-template'));  // get attribute ev-template-# of parent element
 						topic = topic.replace( '<cp>', cp );
 						topic = topic.replace( '<ev>', ev );
 						topic = topic.replace( '<ct>', ct );
@@ -982,21 +982,21 @@
 					}
 				});
 
-				$('.container').on('click', '.chargepoint-socconfigured', function(event){
+				$('.container').on('click', '.charge-point-soc-configured', function(event){
 					event.stopPropagation();
 					// send mqtt set to force reload of charge point SoC after click
 					var cp = parseInt($(this).closest('[data-cp]').data('cp'));  // get attribute cp-# of parent element
 					if ( !isNaN(cp) && cp > 0 ) {
 						if ( $(this).hasClass('manualSoC') ) {
-							var currentSoc = parseInt($(this).find('.chargepoint-soc').text());
+							var currentSoc = parseInt($(this).find('.charge-point-soc').text());
 							if( isNaN(currentSoc) ){
 								currentSoc = 0;
 							}
-							$('#socModal').find('.chargepoint-soc').text(cp);
+							$('#socModal').find('.charge-point-soc').text(cp);
 							$("#manualSocBox").val(currentSoc);
 							$('#socModal').modal("show");
 						} else {
-							var spinner = $(this).find('.chargepoint-reloadsocsymbol');
+							var spinner = $(this).find('.charge-point-reload-soc-symbol');
 							var isRunning = spinner.hasClass("fa-spin");
 							if ( !isRunning ) {
 								spinner.addClass("fa-spin");
@@ -1012,7 +1012,7 @@
 				// });
 
 				$('.container').on('change', '.btn-group-toggle', function(event){
-					var ct = parseInt($(this).closest('[data-chargetemplate]').data('chargetemplate'));  // get attribute chargetemplate-# of parent element
+					var ct = parseInt($(this).closest('[data-charge-template]').data('charge-template'));  // get attribute charge-template-# of parent element
 					var option = $(this).find('input[type="radio"]:checked').data('option').toString();
 					var topic = $(this).data('topic').replace('/<ct>/', '/'+ct+'/');
 					if( topic.includes('/NaN/') ) {
@@ -1020,11 +1020,11 @@
 					} else {
 						publish(option, topic);
 						// show/hide respective option-values and progress
-						if ($(this).hasClass('chargepoint-chargemode')){
+						if ($(this).hasClass('charge-point-charge-mode')){
 							chargemodeOptionsShowHide(this, option);
 						}
-						if ($(this).hasClass('chargepoint-instantchargelimitselected')){
-							// console.log('btnGroup chargepoint-instantchargelimitselected');
+						if ($(this).hasClass('charge-point-instant-charge-limit-selected')){
+							// console.log('btnGroup charge-point-instant-charge-limit-selected');
 							chargemodeLimitOptionsShowHide(this, option);
 						}
 					}
@@ -1060,10 +1060,10 @@
 					var label = $('label[for="' + elementId + '"].valueLabel');
 					label.addClass('text-danger');
 					// if ( $.escapeSelector(elementId) == 'MaxPriceForCharging') {
-					// 	// marks times in the pricechart where the price is low enough so charging would be allowed
+					// 	// marks times in the price chart where the price is low enough so charging would be allowed
 					// 	var priceAnnotations = createPriceAnnotations();
-					// 	electricityPricechart.options.annotation.annotations = priceAnnotations;
-					// 	electricityPricechart.update();
+					// 	electricityPriceChart.options.annotation.annotations = priceAnnotations;
+					// 	electricityPriceChart.update();
 					// }
 
 					delayUserInput(elementId, function (id) {
@@ -1082,7 +1082,7 @@
 						var topic = getTopicToSendTo(id);
 						publish(value, topic);
 						label.removeClass('text-danger');
-						// if rangeInput is for chargeLimitation, recalc progress
+						// if rangeInput is for chargeLimitation, recalculate progress
 						// if ( id.includes('/energyToCharge') ) {
 						// 	var parent = elem.closest('.chargeLimitation')  // get parent div element for charge limitation
 						// 	var element = parent.find('.progress-bar');  // now get parents progressbar
@@ -1111,8 +1111,8 @@
 				}
 				window.document.addEventListener(visibilityChange, () => {
 					if (!document[hidden]) {
-						// once page is unhidden... reload graph completety
-						initialread = 0;
+						// once page is unhidden... reload graph completely
+						initialRead = 0;
 						all1 = 0;
 						all2 = 0;
 						all3 = 0;

@@ -26,7 +26,7 @@ var loadBgColor = style.getPropertyValue('--verbraucher1bgCol');
 var smartHomeColor = style.getPropertyValue('--d1Col');
 var smartHomeBgColor = style.getPropertyValue('--d1bgCol');
 
-var initialread = 0;
+var initialRead = 0;
 var graphloaded = 0;
 var maxDisplayLength;
 var boolDisplayHouseConsumption;
@@ -543,8 +543,8 @@ function loadgraph(animationDuration = 1000) {
 		}
 	});
 
-	initialread = 1;
-	$('#waitforgraphloadingdiv').hide();
+	initialRead = 1;
+	$('#waitForGraphLoadingDiv').hide();
 }  // end loadgraph
 
 // Sichtbarkeit für SmartHome Devices im Graph
@@ -631,8 +631,8 @@ function putgraphtogether() {
 			// after receipt of all data segments, unsubscribe from these topics to save bandwidth
 			unsubscribeMqttGraphSegments();
 
-			initialread = 1;
-			$('#waitforgraphloadingdiv').text('Graph lädt...');
+			initialRead = 1;
+			$('#waitForGraphLoadingDiv').text('Graph lädt...');
 			checkgraphload();
 			// now we are ready to receive small updates for graph data
 		} else {
@@ -654,14 +654,14 @@ function putgraphtogether() {
 			all16 = 0;
 
 			var percent = (allChartData.length / 30 * 100).toFixed();
-			$('#waitforgraphloadingdiv').text('Erst ca. ' + percent + '% der mindestens benötigten Datenpunkte für den Graph seit Neustart vorhanden.');
+			$('#waitForGraphLoadingDiv').text('Erst ca. ' + percent + '% der mindestens benötigten Datenpunkte für den Graph seit Neustart vorhanden.');
 		}
 	}
 } // end putgraphtogether
 
 function updateGraph(dataset) {
 	chartUpdateBuffer = chartUpdateBuffer.concat(parseData(dataset));
-	if (initialread == 1 && myLine != undefined) {
+	if (initialRead == 1 && myLine != undefined) {
 		chartUpdateBuffer.forEach(function(row, index) {
 			if (row.timestamp > allChartData[allChartData.length-1].timestamp) {
 				allChartData.push(row);
@@ -689,7 +689,7 @@ function checkgraphload() {
 		typeof boolDisplayLpAll === "boolean" &&
 		typeof boolDisplayEvu === "boolean"
 	) {
-		if (initialread != 0) {
+		if (initialRead != 0) {
 			if (graphloaded == 0) {
 				graphloaded = 1;
 			} else {
