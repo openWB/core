@@ -37,9 +37,9 @@ var topicsToSubscribe = [
 	// counter topics, counter with index 0 is always main grid counter
 	["openWB/counter/set/home_consumption", 1], // actual home power
 	["openWB/counter/set/daily_yield_home_consumption", 1], // daily home energy
-	["openWB/counter/0/get/power", 1], // actual power; int, unit: W
-	["openWB/counter/0/get/daily_yield_import", 1], // daily imported energy; float, unit: kWh
-	["openWB/counter/0/get/daily_yield_export", 1], // daily exported energy; float, unit: kWh
+	["openWB/counter/+/get/power", 1], // actual power; int, unit: W
+	["openWB/counter/+/get/daily_yield_import", 1], // daily imported energy; float, unit: kWh
+	["openWB/counter/+/get/daily_yield_export", 1], // daily exported energy; float, unit: kWh
 
 	// charge point topics
 	["openWB/chargepoint/+/config", 1], // chargepoint configuration; JSON { name: str, template: int, connected_phases: int, phase_1: int, auto_phase_switch_hardware: bool, control_pilot_interruption_hw: bool, connection_module: JSON { selected: str, config: JSON } }

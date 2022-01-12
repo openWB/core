@@ -7,8 +7,8 @@
  */
 
 var graphRefreshCounter = 0;
-
 var chargeModeTemplate = {};
+var evuCounterIndex = undefined;
 
 // function getCol(matrix, col){
 // 	var column = [];
@@ -235,9 +235,8 @@ function handleMessage(mqttTopic, mqttPayload) {
 	// receives all messages and calls respective function to process them
 	// console.log("new message: "+mqttTopic+": "+mqttPayload);
 	processPreloader(mqttTopic);
-	if (mqttTopic.match(/^openwb\/counter\/0\//i)) { processEvuMessages(mqttTopic, mqttPayload); } // counter/0 is always EVU
-	else if (mqttTopic.match(/^openwb\/counter\/[1-9][0-9]*\//i)) { /* nothing here yet */ }
-	else if (mqttTopic.match(/^openwb\/counter\//i)) { processGlobalCounterMessages(mqttTopic, mqttPayload); } // counter/0 is always EVU
+	if (mqttTopic.match(/^openwb\/counter\/[0-9]+\//i)) { processCounterMessages(mqttTopic, mqttPayload) }
+	else if (mqttTopic.match(/^openwb\/counter\//i)) { processGlobalCounterMessages(mqttTopic, mqttPayload); }
 	else if (mqttTopic.match(/^openwb\/bat\//i)) { processBatteryMessages(mqttTopic, mqttPayload); }
 	else if (mqttTopic.match(/^openwb\/pv\//i)) { processPvMessages(mqttTopic, mqttPayload); }
 	else if (mqttTopic.match(/^openwb\/chargepoint\//i)) { processChargePointMessages(mqttTopic, mqttPayload); }
@@ -268,6 +267,8 @@ function processGlobalCounterMessages(mqttTopic, mqttPayload) {
 		// now create any other chargepoint
 		var hierarchy = JSON.parse(mqttPayload);
 		if (hierarchy.length) {
+			evuCounterIndex = hierarchy[0].id.match(/[\d]+$/)[0];
+			console.debug("EVU counter index: " + evuCounterIndex);
 			createChargePoint(hierarchy[0]);
 			// subscribe to other topics relevant for charge points
 			topicsToSubscribe.forEach((topic) => {
@@ -309,7 +310,7 @@ function processGlobalCounterMessages(mqttTopic, mqttPayload) {
 function processEvuMessages(mqttTopic, mqttPayload) {
 	// processes mqttTopic for topic openWB/counter/0
 	// called by handleMessage
-	if (mqttTopic == 'openWB/counter/0/get/power') {
+	if (mqttTopic == 'openWB/counter/' + evuCounterIndex + '/get/power') {
 		var unit = 'W';
 		var powerEvu = parseInt(mqttPayload, 10);
 		if (isNaN(powerEvu)) {
@@ -333,7 +334,7 @@ function processEvuMessages(mqttTopic, mqttPayload) {
 			$('.grid-importing').addClass('hide');
 		}
 		$('.grid-power').text(powerEvu + ' ' + unit);
-	} else if (mqttTopic == 'openWB/counter/0/get/daily_yield_import') {
+	} else if (mqttTopic == 'openWB/counter/' + evuCounterIndex + '/get/daily_yield_import') {
 		var unit = "Wh";
 		var unitPrefix = "";
 		var gridDailyYield = parseFloat(mqttPayload);
@@ -347,7 +348,7 @@ function processEvuMessages(mqttTopic, mqttPayload) {
 			gridDailyYield = gridDailyYield.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 		}
 		$('.grid-import').text(gridDailyYield + ' ' + unitPrefix + unit);
-	} else if (mqttTopic == 'openWB/counter/0/get/daily_yield_export') {
+	} else if (mqttTopic == 'openWB/counter/' + evuCounterIndex + '/get/daily_yield_export') {
 		var unit = "Wh";
 		var unitPrefix = "";
 		var gridDailyYield = parseFloat(mqttPayload);
@@ -361,6 +362,16 @@ function processEvuMessages(mqttTopic, mqttPayload) {
 			gridDailyYield = gridDailyYield.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 		}
 		$('.grid-export').text(gridDailyYield + ' ' + unitPrefix + unit);
+	}
+}
+
+function processCounterMessages(mqttTopic, mqttPayload) {
+	let counterIndex = getIndex(mqttTopic);
+	if (counterIndex == evuCounterIndex) {
+		console.debug("evu counter message received");
+		processEvuMessages(mqttTopic, mqttPayload);
+	} else {
+		/* nothing here yet */
 	}
 }
 
