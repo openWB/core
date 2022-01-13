@@ -799,28 +799,28 @@
 			function chargemodeOptionsShowHide(btnGrp, option) {
 				// show/hide all option-parameters in form-rows for selected option
 				var parent = btnGrp.closest('.charge-point-card[data-cp]');  // get parent div element for charge limitation options
-				var chargemodeOptionsElement = $(parent).find('.charge-point-charge-mode-options');
+				var chargeModeOptionsElement = $(parent).find('.charge-point-charge-mode-options');
 				if( option == "stop" || option == "standby" ) {
-					chargemodeOptionsElement.addClass('hide');
+					chargeModeOptionsElement.addClass('hide');
 				} else {
-					chargemodeOptionsElement.removeClass('hide');
-					$(chargemodeOptionsElement).find('.chargemode-options.chargemode-option-'+option).removeClass('hide');  // now show option elements for selected option
-					$(chargemodeOptionsElement).find('.chargemode-options').not('.chargemode-option-'+option).addClass('hide');  // hide all other option elements
+					chargeModeOptionsElement.removeClass('hide');
+					$(chargeModeOptionsElement).find('.chargemode-options.chargemode-option-'+option).removeClass('hide');  // now show option elements for selected option
+					$(chargeModeOptionsElement).find('.chargemode-options').not('.chargemode-option-'+option).addClass('hide');  // hide all other option elements
 				}
 			}
 
 			function chargemodeLimitOptionsShowHide(btnGrp, option) {
 				// show/hide all option-parameters in form-rows for selected option
 				var parent = btnGrp.closest('.charge-point-card[data-cp]');  // get parent div element for charge limitation options
-				var chargemodeLimitOptionsElement = $(parent).find('.chargemode-limit-options');
+				var chargeModeLimitOptionsElement = $(parent).find('.chargemode-limit-options');
 				// console.log('option: '+option);
-				// console.log(chargemodeLimitOptionsElement);
+				// console.log(chargeModeLimitOptionsElement);
 				if( option == "none" ) {
-					chargemodeLimitOptionsElement.addClass('hide');
+					chargeModeLimitOptionsElement.addClass('hide');
 				} else {
-					chargemodeLimitOptionsElement.removeClass('hide');
-					$(chargemodeLimitOptionsElement).find('.chargemode-limit-option.chargemode-limit-option-'+option).removeClass('hide');  // now show option elements for selected option
-					$(chargemodeLimitOptionsElement).find('.chargemode-limit-option').not('.chargemode-limit-option-'+option).addClass('hide');  // hide all other option elements
+					chargeModeLimitOptionsElement.removeClass('hide');
+					$(chargeModeLimitOptionsElement).find('.chargemode-limit-option.chargemode-limit-option-'+option).removeClass('hide');  // now show option elements for selected option
+					$(chargeModeLimitOptionsElement).find('.chargemode-limit-option').not('.chargemode-limit-option-'+option).addClass('hide');  // hide all other option elements
 				}
 			}
 
