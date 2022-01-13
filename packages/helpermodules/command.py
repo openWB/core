@@ -4,6 +4,7 @@
 import importlib
 import json
 import subprocess
+from typing import Dict
 import paho.mqtt.client as mqtt
 import re
 import time
@@ -273,27 +274,39 @@ class Command:
         MainLogger().info("Neues Zielladen-Template mit ID " + str(new_id) + " zu Template " +
                           str(payload["data"]["template"]) + " hinzugefügt.")
         charge_template_default = ev.get_charge_template_scheduled_plan_default()
-        Pub().pub(
-            "openWB/set/vehicle/template/charge_template/" + str(payload["data"]["template"]) +
-            "/chargemode/scheduled_charging/plans/" + str(new_id),
-            charge_template_default)
-        self.max_id_charge_template_scheduled_plan = new_id
-        Pub().pub(
-            "openWB/set/command/max_id/charge_template_scheduled_plan", new_id)
+        charge_template = ProcessBrokerBranch(
+            "vehicle/template/charge_template").get_template_payload(payload["data"]["template"])
+        if charge_template:
+            charge_template["chargemode"]["scheduled_charging"]["plans"][new_id] = charge_template_default
+            Pub().pub(
+                "openWB/set/vehicle/template/charge_template/" + str(payload["data"]["template"]),
+                charge_template)
+            self.max_id_charge_template_scheduled_plan = new_id
+            Pub().pub(
+                "openWB/set/command/max_id/charge_template_scheduled_plan", new_id)
+        else:
+            pub_error(payload, connection_id, "Das Template mit ID "+str(payload["data"]["template"])+" ist unbekannt.")
 
     def removeChargeTemplateSchedulePlan(self, connection_id: str, payload: dict) -> None:
         """ löscht einen Zielladen-Plan.
         """
-        if self.max_id_charge_template_scheduled_plan >= payload["data"]["plan"]:
-            MainLogger().info(
-                "Zielladen-Template mit ID " + str(payload["data"]["plan"]) + " zu Template " +
-                str(payload["data"]["template"]) + " gelöscht.")
+        MainLogger().info(
+            "Zielladen-Template mit ID " + str(payload["data"]["plan"]) + " zu Template " +
+            str(payload["data"]["template"]) + " gelöscht.")
+        charge_template = ProcessBrokerBranch(
+            "vehicle/template/charge_template").get_template_payload(payload["data"]["template"])
+        if charge_template:
+            try:
+                charge_template["chargemode"]["scheduled_charging"]["plans"].pop(str(payload["data"]["plan"]))
+            except KeyError:
+                pub_error(payload, connection_id, "Kein Plan mit ID "+str(payload["data"]["plan"])+" vorhanden.")
             Pub().pub(
-                "openWB/vehicle/template/charge_template/" + str(payload["data"]["template"]) +
-                "/chargemode/scheduled_charging/plans/" + str(payload["data"]["plan"]),
-                "")
+                "openWB/set/vehicle/template/charge_template/" + str(payload["data"]["template"]),
+                charge_template)
         else:
-            pub_error(payload, connection_id, "Die ID ist größer als die maximal vergebene ID.")
+            pub_error(
+                payload, connection_id, "Das Template mit ID " + str(payload["data"]["template"]) +
+                " ist unbekannt.")
 
     def addChargeTemplateTimeChargingPlan(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem ein neuer Zeitladen-Plan erstellt werden soll.
@@ -530,6 +543,12 @@ class ProcessBrokerBranch:
         except Exception:
             MainLogger().exception("Fehler im Command-Modul")
 
+    def get_template_payload(self, template_id: int) -> dict:
+        self.template_payload = {}
+        self.search_str = f"openWB/vehicle/template/charge_template/{template_id}"
+        self.__connect_to_broker(self.__on_message_template_payload)
+        return self.template_payload
+
     def __connect_to_broker(self, on_message):
         """ abonniert alle Topics.
         """
@@ -587,6 +606,12 @@ class ProcessBrokerBranch:
                 if current_id_regex is not None:
                     current_id = int(current_id_regex.group(1))
                     self.max_id = max(current_id, self.max_id)
+        except Exception:
+            MainLogger().exception("Fehler im Command-Modul")
+
+    def __on_message_template_payload(self, client, userdata, msg):
+        try:
+            self.template_payload = json.loads(str(msg.payload.decode("utf-8")))
         except Exception:
             MainLogger().exception("Fehler im Command-Modul")
 

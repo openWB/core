@@ -247,38 +247,8 @@ class SubData:
             else:
                 if "ct"+index not in var:
                     var["ct"+index] = ev.ChargeTemplate(int(index))
-                if re.search("^.+/vehicle/template/charge_template/[0-9]+/chargemode/scheduled_charging/plans/[0-9]+$",
-                             msg.topic) is not None:
-                    index_second = self.get_second_index(msg.topic)
-                    if str(msg.payload.decode("utf-8")) == "":
-                        if "ct"+index in var["ct"+index].data["chargemode"]["scheduled_charging"]["plans"]:
-                            var.pop("ct"+index)
-                        else:
-                            MainLogger().error("Es konnte kein Zielladen-Plan mit der ID " +
-                                               str(index_second)+" in der Ladevorlage "+str(index)+" gefunden werden.")
-                    else:
-                        var["ct"+index].data["chargemode"]["scheduled_charging"]["plans"][str(
-                            index)] = json.loads(str(msg.payload.decode("utf-8")))
-                elif re.search("^.+/vehicle/template/charge_template/[0-9]+/time_charging/plans/[0-9]+$",
-                               msg.topic) is not None:
-                    index_second = self.get_second_index(msg.topic)
-                    if str(msg.payload.decode("utf-8")) == "":
-                        if "ct"+index in var["ct"+index].data["time_charging"]["plans"]:
-                            var.pop("ct"+index)
-                        else:
-                            MainLogger().error("Es konnte kein Zeitladen-Plan mit der ID " +
-                                               str(index_second)+" in der Ladevorlage "+str(index)+" gefunden werden.")
-                    else:
-                        var["ct"+index].data["time_charging"]["plans"][str(
-                            index)] = json.loads(str(msg.payload.decode("utf-8")))
-                else:
-                    # Pläne unverändert übernehmen
-                    scheduled_charging_plans = var["ct" + index].data["chargemode"]["scheduled_charging"]["plans"]
-                    time_charging_plans = var["ct" + index].data["time_charging"]["plans"]
-                    var["ct" + index].data = json.loads(str(msg.payload.decode("utf-8")))
-                    var["ct"+index].data["time_charging"]["plans"] = time_charging_plans
-                    var["ct"+index].data["chargemode"]["scheduled_charging"]["plans"] = scheduled_charging_plans
-                    self.event_charge_template.set()
+                var["ct" + index].data = json.loads(str(msg.payload.decode("utf-8")))
+                self.event_charge_template.set()
         except Exception:
             MainLogger().exception("Fehler im subdata-Modul")
 

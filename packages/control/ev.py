@@ -482,6 +482,7 @@ def get_charge_template_default() -> dict:
         "time_charging":
             {
                 "active": False,
+                "plans": {}
             },
         "chargemode":
             {
@@ -496,6 +497,7 @@ def get_charge_template_default() -> dict:
                 },
                 "scheduled_charging":
                 {
+                    "plans": {}
                 },
                 "instant_charging":
                 {
