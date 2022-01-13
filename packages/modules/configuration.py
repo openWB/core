@@ -325,12 +325,8 @@ def _pub_configurable_devices_components() -> None:
                 "text": "Virtuelles Gerät",
                 "component": [
                     {
-                        "value": "cp_counter",
-                        "text": "Virtueller Ladepunkt-Zähler"
-                    },
-                    {
-                        "value": "evu_counter",
-                        "text": "Virtueller EVU-Zähler"
+                        "value": "counter",
+                        "text": "Virtueller Zähler"
                     }
                 ]
             }

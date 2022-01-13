@@ -1,10 +1,9 @@
-from typing import Dict, Union
+from typing import Dict
 
 from helpermodules.log import MainLogger
 from modules.common.abstract_device import AbstractDevice
 from modules.common.component_context import SingleComponentUpdateContext
-from modules.virtual import cp_counter
-from modules.virtual import evu_counter
+from modules.virtual import counter
 
 
 def get_default_config() -> dict:
@@ -20,12 +19,11 @@ def get_default_config() -> dict:
 
 class Device(AbstractDevice):
     COMPONENT_TYPE_TO_CLASS = {
-        "cp_counter": cp_counter.VirtualCpCounter,
-        "evu_counter": evu_counter.VirtualEvuCounter
+        "cp_counter": counter.VirtualCounter
     }
 
     def __init__(self, device_config: dict) -> None:
-        self._components = {}  # type: Dict[str, Union[cp_counter.VirtualCpCounter, evu_counter.VirtualEvuCounter]]
+        self._components = {}  # type: Dict[str, counter.VirtualCounter]
         try:
             self.device_config = device_config
         except Exception:

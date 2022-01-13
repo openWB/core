@@ -9,15 +9,16 @@ from modules.common.store import get_counter_value_store
 
 def get_default_config() -> dict:
     return {
-        "name": "Virtueller Ladepunkt-Zähler",
+        "name": "Virtueller Zähler",
         "type": "cp_counter",
         "id": None,
         "configuration": {
+            "home_consumption": 400
         }
     }
 
 
-class VirtualCpCounter:
+class VirtualCounter:
     def __init__(self, device_id: int, component_config: dict) -> None:
         self.__device_id = device_id
         self.component_config = component_config
@@ -57,6 +58,11 @@ class VirtualCpCounter:
             power = power + chargepoint.data["get"]["power"]
         powers = [230*c for c in currents]
 
+        if self.component_config["configuration"]["home_consumption"]:
+            pv_power = data.data.pv_data["all"].data["get"]["power"]
+            bat_power = data.data.bat_data["all"].data["get"]["power"]
+            power = pv_power + bat_power + power + self.component_config["configuration"]["home_consumption"]
+
         topic_str = "openWB/set/system/device/{}/component/{}/".format(
             self.__device_id, self.component_config["id"]
         )
@@ -66,12 +72,21 @@ class VirtualCpCounter:
             data=self.simulation,
             prefix="bezug"
         )
-        counter_state = CounterState(
-            currents=currents,
-            powers=powers,
-            imported=imported,
-            exported=exported,
-            power=power
-        )
-        MainLogger().debug("Virtual Leistung[W]: " + str(counter_state.power))
+
+        if self.component_config["configuration"]["home_consumption"]:
+            # für WR und Batterie ist nicht bekannt, auf welchen Phasen eingespeist bzw bezogen wird.
+            counter_state = CounterState(
+                imported=imported,
+                exported=exported,
+                power=power
+            )
+        else:
+            counter_state = CounterState(
+                currents=currents,
+                powers=powers,
+                imported=imported,
+                exported=exported,
+                power=power
+            )
+            MainLogger().debug("Virtual Leistung[W]: " + str(counter_state.power))
         self.__store.set(counter_state)
