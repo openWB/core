@@ -72,6 +72,7 @@ function setInputValue(elementId, value) {
 
 function getTopicToSendTo (elementId) {
     var element = $('#' + $.escapeSelector(elementId));
+    console.log("getTopicToSend: " + elementId, element);
     // var topic = element.data('topicprefix') + elementId;
     // topic = topic.replace('/get/', '/set/');
     // if (topic.includes('MaxPriceForCharging')) {
@@ -81,12 +82,12 @@ function getTopicToSendTo (elementId) {
     if( topic != undefined ) {
         var cp = parseInt($(element).closest('[data-cp]').data('cp'));  // get attribute cp-# of parent element
         var ev = parseInt($(element).closest('[data-ev]').data('ev'));  // get attribute ev-# of parent element
-        var ct = parseInt($(element).closest('[data-chargetemplate]').data('chargetemplate'));  // get attribute chargetemplate-# of parent element
+        var ct = parseInt($(element).closest('[data-charge-template]').data('charge-template'));  // get attribute charge-template-# of parent element
         topic = topic.replace( '<cp>', cp );
         topic = topic.replace( '<ev>', ev );
         topic = topic.replace( '<ct>', ct );
         if( topic.includes('/NaN/') ) {
-            console.error( 'missing cp, ev or ct data' );
+            console.error('missing cp, ev or ct data', topic);
             topic = undefined;
         }
     } else {
