@@ -72,7 +72,6 @@ function setInputValue(elementId, value) {
 
 function getTopicToSendTo (elementId) {
     var element = $('#' + $.escapeSelector(elementId));
-    console.log("getTopicToSend: " + elementId, element);
     // var topic = element.data('topicprefix') + elementId;
     // topic = topic.replace('/get/', '/set/');
     // if (topic.includes('MaxPriceForCharging')) {
