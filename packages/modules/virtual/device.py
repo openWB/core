@@ -19,7 +19,7 @@ def get_default_config() -> dict:
 
 class Device(AbstractDevice):
     COMPONENT_TYPE_TO_CLASS = {
-        "cp_counter": counter.VirtualCounter
+        "counter": counter.VirtualCounter
     }
 
     def __init__(self, device_config: dict) -> None:
