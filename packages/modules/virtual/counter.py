@@ -9,15 +9,16 @@ from modules.common.store import get_counter_value_store
 
 def get_default_config() -> dict:
     return {
-        "name": "Virtueller Ladepunkt-Zähler",
-        "type": "cp_counter",
+        "name": "Virtueller Zähler",
+        "type": "counter",
         "id": None,
         "configuration": {
+            "home_consumption": 400
         }
     }
 
 
-class VirtualCpCounter:
+class VirtualCounter:
     def __init__(self, device_id: int, component_config: dict) -> None:
         self.__device_id = device_id
         self.component_config = component_config
@@ -55,8 +56,16 @@ class VirtualCpCounter:
             currents[2] = currents[2] + chargepoint.data["get"]["currents"][evu_phases[2]]
 
             power = power + chargepoint.data["get"]["power"]
-        powers = [230*c for c in currents]
 
+        if self.component_config["configuration"]["home_consumption"]:
+            pv_power = data.data.pv_data["all"].data["get"]["power"]
+            bat_power = data.data.bat_data["all"].data["get"]["power"]
+            power = pv_power + bat_power + power + self.component_config["configuration"]["home_consumption"]
+            power_modules_phase = (
+                pv_power + bat_power + self.component_config["configuration"]["home_consumption"])/3/230
+            currents = [currents[i] + power_modules_phase for i in range(0, 3)]
+
+        powers = [230*c for c in currents]
         topic_str = "openWB/set/system/device/{}/component/{}/".format(
             self.__device_id, self.component_config["id"]
         )
@@ -66,6 +75,7 @@ class VirtualCpCounter:
             data=self.simulation,
             prefix="bezug"
         )
+
         counter_state = CounterState(
             currents=currents,
             powers=powers,
