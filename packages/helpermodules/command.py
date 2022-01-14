@@ -1,10 +1,12 @@
 """verarbeitet Befehl vom Broker
 """
 
+from functools import reduce
 import importlib
 import json
+import operator
 import subprocess
-from typing import Dict
+from typing import Union
 import paho.mqtt.client as mqtt
 import re
 import time
@@ -31,12 +33,6 @@ class Command:
             self.__get_max_id("autolock_plan", "chargepoint/template/+/autolock", -1)
             self.__get_max_id("mqtt_bridge", "system/mqtt/bridge", -1)
             self.__get_max_id("charge_template", "vehicle/template/charge_template", 0)
-            self.__get_max_id(
-                "charge_template_scheduled_plan",
-                "vehicle/template/charge_template/+/chargemode/scheduled_charging/plans", -1)
-            self.__get_max_id(
-                "charge_template_time_charging_plan",
-                "vehicle/template/charge_template/+/time_charging/plans", -1)
             self.__get_max_id("chargepoint", "chargepoint", -1)
             self.__get_max_id("chargepoint_template", "chargepoint/template", 0)
             self.__get_max_id("component", "system/device/+/component", -1)
@@ -270,22 +266,13 @@ class Command:
     def addChargeTemplateSchedulePlan(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem ein neuer Zielladen-Plan erstellt werden soll.
         """
-        new_id = self.max_id_charge_template_scheduled_plan + 1
-        MainLogger().info("Neues Zielladen-Template mit ID " + str(new_id) + " zu Template " +
-                          str(payload["data"]["template"]) + " hinzugefügt.")
+
         charge_template_default = ev.get_charge_template_scheduled_plan_default()
-        charge_template = ProcessBrokerBranch(
-            "vehicle/template/charge_template").get_template_payload(payload["data"]["template"])
-        if charge_template:
-            charge_template["chargemode"]["scheduled_charging"]["plans"][new_id] = charge_template_default
-            Pub().pub(
-                "openWB/set/vehicle/template/charge_template/" + str(payload["data"]["template"]),
-                charge_template)
-            self.max_id_charge_template_scheduled_plan = new_id
-            Pub().pub(
-                "openWB/set/command/max_id/charge_template_scheduled_plan", new_id)
-        else:
-            pub_error(payload, connection_id, "Das Template mit ID "+str(payload["data"]["template"])+" ist unbekannt.")
+        new_id = self.__add_plan(connection_id, payload,
+                                 charge_template_default, ["chargemode", "scheduled_charging", "plans"])
+        if new_id:
+            MainLogger().info("Neues Zielladen-Template mit ID " + str(new_id) + " zu Template " +
+                              str(payload["data"]["template"]) + " hinzugefügt.")
 
     def removeChargeTemplateSchedulePlan(self, connection_id: str, payload: dict) -> None:
         """ löscht einen Zielladen-Plan.
@@ -293,11 +280,58 @@ class Command:
         MainLogger().info(
             "Zielladen-Template mit ID " + str(payload["data"]["plan"]) + " zu Template " +
             str(payload["data"]["template"]) + " gelöscht.")
+        self.__remove_plan(connection_id, payload, ["chargemode",
+                           "scheduled_charging", "plans", str(payload["data"]["plan"])])
+
+    def addChargeTemplateTimeChargingPlan(self, connection_id: str, payload: dict) -> None:
+        """ sendet das Topic, zu dem ein neuer Zeitladen-Plan erstellt werden soll.
+        """
+        time_charging_plan_default = ev.get_charge_template_time_charging_plan_default()
+        new_id = self.__add_plan(connection_id, payload,
+                                 time_charging_plan_default, ["time_charging", "plans"])
+        if new_id:
+            MainLogger().info("Neues Zeitladen-Template mit ID " + str(new_id) + " zu Template " +
+                              str(payload["data"]["template"]) + " hinzugefügt.")
+
+    def removeChargeTemplateTimeChargingPlan(self, connection_id: str, payload: dict) -> None:
+        """ löscht einen Zeitladen-Plan.
+        """
+        MainLogger().info(
+            "Zeitladen-Template mit ID " + str(payload["data"]["plan"]) + " zu Template " +
+            str(payload["data"]["template"]) + " gelöscht.")
+        self.__remove_plan(connection_id, payload, ["time_charging", "plans", str(payload["data"]["plan"])])
+
+    def __add_plan(self, connection_id: str, payload: dict, default: dict, keys: list) -> Union[int, None]:
+        def set_new_key(dictionary: dict, keys: list, key: str, value: dict):
+            for k in keys:
+                dictionary = dictionary[k]
+            dictionary.setdefault(key, value)
+        charge_template = ProcessBrokerBranch(
+            "vehicle/template/charge_template").get_template_payload(payload["data"]["template"])
+        plans = reduce(operator.getitem, keys, charge_template)
+        try:
+            new_id = int(max(plans, key=plans.get)) + 1
+        except ValueError:
+            new_id = 0
+        if charge_template:
+            set_new_key(charge_template, keys, str(new_id), default)
+            Pub().pub(
+                "openWB/set/vehicle/template/charge_template/" + str(payload["data"]["template"]),
+                charge_template)
+            return new_id
+        else:
+            pub_error(payload, connection_id, "Das Template mit ID "+str(payload["data"]["template"])+" ist unbekannt.")
+            return None
+
+    def __remove_plan(self, connection_id: str, payload: dict, keys: list) -> None:
+        def del_item_in_nested_dict(dictionary, key_list):
+            *path, key = key_list
+            del reduce(operator.getitem, path, dictionary)[key]
         charge_template = ProcessBrokerBranch(
             "vehicle/template/charge_template").get_template_payload(payload["data"]["template"])
         if charge_template:
             try:
-                charge_template["chargemode"]["scheduled_charging"]["plans"].pop(str(payload["data"]["plan"]))
+                del_item_in_nested_dict(charge_template, keys)
             except KeyError:
                 pub_error(payload, connection_id, "Kein Plan mit ID "+str(payload["data"]["plan"])+" vorhanden.")
             Pub().pub(
@@ -307,35 +341,6 @@ class Command:
             pub_error(
                 payload, connection_id, "Das Template mit ID " + str(payload["data"]["template"]) +
                 " ist unbekannt.")
-
-    def addChargeTemplateTimeChargingPlan(self, connection_id: str, payload: dict) -> None:
-        """ sendet das Topic, zu dem ein neuer Zeitladen-Plan erstellt werden soll.
-        """
-        new_id = self.max_id_charge_template_time_charging_plan + 1
-        MainLogger().info("Neues Zeitladen-Template mit ID " + str(new_id) + " zu Template " +
-                          str(payload["data"]["template"]) + " hinzugefügt.")
-        time_charging_plan_default = ev.get_charge_template_time_charging_plan_default()
-        Pub().pub(
-            "openWB/set/vehicle/template/charge_template/" + str(payload["data"]["template"]) +
-            "/time_charging/plans/" + str(new_id),
-            time_charging_plan_default)
-        self.max_id_charge_template_time_charging_plan = new_id
-        Pub().pub(
-            "openWB/set/command/max_id/charge_template_time_charging_plan", new_id)
-
-    def removeChargeTemplateTimeChargingPlan(self, connection_id: str, payload: dict) -> None:
-        """ löscht einen Zeitladen-Plan.
-        """
-        if self.max_id_charge_template_time_charging_plan >= payload["data"]["plan"]:
-            MainLogger().info(
-                "Zeitladen-Template mit ID " + str(payload["data"]["plan"]) + " zu Template " +
-                str(payload["data"]["template"]) + " gelöscht.")
-            Pub().pub(
-                "openWB/vehicle/template/charge_template/" + str(payload["data"]["template"]) +
-                "/time_charging/plans/" + str(payload["data"]["plan"]),
-                "")
-        else:
-            pub_error(payload, connection_id, "Die ID ist größer als die maximal vergebene ID.")
 
     def addComponent(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem eine neue Komponente erstellt werden soll.
