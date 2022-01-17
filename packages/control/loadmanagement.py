@@ -289,7 +289,7 @@ def _check_max_currents(counter, required_current_phases, phases, offset):
     try:
         loadmanagement = False
         counter_currents_used = data.data.counter_data[counter].data["set"].get("currents_used")
-        if counter_currents_used is None or counter_currents_used.len < 3:
+        if counter_currents_used is None or len(counter_currents_used) < 3:
             MainLogger().warning("Einzelwerte für Zähler-Phasenströme unbekannt")
             return False, 0, 0
         for phase in range(3):
