@@ -358,7 +358,7 @@ class Counter:
                 MainLogger().debug(str(self.data["set"]["consumption_left"]) +
                                    "W EVU-Leistung, die noch bezogen werden kann.")
             # Strom
-            self.data["set"]["currents_used"] = self.data["get"]["currents"]
+            self.data["set"]["currents_used"] = self.data["get"].get("currents")
         except Exception:
             MainLogger().exception("Fehler in der Zähler-Klasse von "+str(self.counter_num))
 

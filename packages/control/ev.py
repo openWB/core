@@ -174,7 +174,7 @@ class Ev:
             if self.data["control_parameter"]["chargemode"] != self.charge_template.data["chargemode"]["selected"]:
                 mode_changed = True
 
-            # Die benötigte Stromstärke hat sich durch eine Änderung des Lademdous oder der Konfiguration geändert.
+            # Die benötigte Stromstärke hat sich durch eine Änderung des Lademodus oder der Konfiguration geändert.
             # Der Ladepunkt muss in der Regelung neu priorisiert werden.
             if self.data["control_parameter"]["required_current"] != required_current:
                 # Wenn im PV-Laden mit übrigem Überschuss geladen wird und dadurch die aktuelle Soll-Stromstärke über
@@ -774,5 +774,5 @@ class ChargeTemplate:
             Required Current, Chargemode: int, str
                 Therotisch benötigter Strom, Ladmodus
         """
-        message = "Keine Ladung, da der Lademdus Stop aktiv ist."
+        message = "Keine Ladung, da der Lademodus Stop aktiv ist."
         return 0, "stop", message
