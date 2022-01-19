@@ -1,7 +1,7 @@
 """ EV-Logik
 ermittelt, den Ladestrom, den das EV gerne zur Verfügung hätte.
 
-In den control parametern wird sich der Lademodus, Submodus, Priorität, Phasen und Stromstärke gemerkt,
+In den control Parametern wird sich der Lademodus, Submodus, Priorität, Phasen und Stromstärke gemerkt,
 mit denen das EV aktuell in der Regelung berücksichtigt wird. Bei der Ermittlung der benötigten Strom-
 stärke wird auch geprüft, ob sich an diesen Parametern etwas geändert hat. Falls ja, muss das EV
 in der Regelung neu priorisiert werden und eine neue Zuteilung des Stroms erhalten.
@@ -78,7 +78,7 @@ class Ev:
         """ setzt alle Werte zurück, die während des Algorithmus gesetzt werden.
         """
         try:
-            MainLogger().debug("EV "+str(self.ev_num)+" zurueckgesetzt.")
+            MainLogger().debug("EV "+str(self.ev_num)+" zurückgesetzt.")
             Pub().pub("openWB/set/vehicle/"+str(self.ev_num) +
                       "/control_parameter/required_current", 0)
             Pub().pub("openWB/set/vehicle/"+str(self.ev_num) +
@@ -150,7 +150,7 @@ class Ev:
 
     def check_state(self, required_current, set_current, charge_state):
         """ prüft, ob sich etwas an den Parametern für die Regelung geändert hat,
-        sodass der LP neu in die Priorisierung eingeordnet werden muss und publsihed die Regelparameter.
+        sodass der LP neu in die Priorisierung eingeordnet werden muss und veröffentlicht die Regelparameter.
 
         Parameter
         ---------
@@ -174,13 +174,13 @@ class Ev:
             if self.data["control_parameter"]["chargemode"] != self.charge_template.data["chargemode"]["selected"]:
                 mode_changed = True
 
-            # Die benötigte Stromstärke hat sich durch eine Änderung des Lademdous oder der Konfiguration geändert.
+            # Die benötigte Stromstärke hat sich durch eine Änderung des Lademodus oder der Konfiguration geändert.
             # Der Ladepunkt muss in der Regelung neu priorisiert werden.
             if self.data["control_parameter"]["required_current"] != required_current:
                 # Wenn im PV-Laden mit übrigem Überschuss geladen wird und dadurch die aktuelle Soll-Stromstärke über
                 # der neuen benötigten Stromstärke liegt, muss der LP im Algorithmus nicht neu eingeordnet werden, da
                 # der LP mit der bisherigen Stormstärke weiter laden kann und sich die benötigte Stromstärke nur auf
-                # die Reihenfolge innerhalb des Prioritätstupels bezieht und auf dieser Ebene kein LP, der bereits
+                # die Reihenfolge innerhalb des Prioritäten-Tupels bezieht und auf dieser Ebene kein LP, der bereits
                 # lädt, für einen neu hinzugekommenen abgeschaltet werden darf. Wenn sich auch der Lademodus geändert
                 # hat, muss die neue Stromstärke in jedem Fall berücksichtigt werden.
                 if ((self.charge_template.data["chargemode"]["selected"] == "pv_charging" or
@@ -192,8 +192,8 @@ class Ev:
                 else:
                     current_changed = True
 
-            MainLogger().debug("Aenderung der Sollstromstaerke :" +
-                               str(current_changed)+", Aenderung des Lademodus :"+str(mode_changed))
+            MainLogger().debug("Änderung der Sollstromstärke :" +
+                               str(current_changed)+", Änderung des Lademodus :"+str(mode_changed))
             return current_changed, mode_changed
         except Exception:
             MainLogger().exception("Fehler im ev-Modul "+str(self.ev_num))
@@ -231,7 +231,7 @@ class Ev:
         Parameter
         ---------
         required_current: float
-            Strom, der vom Lademodus benötgt wird
+            Strom, der vom Lademodus benötigt wird
 
         phases: int
             Anzahl Phasen, mit denen geladen werden soll
@@ -264,8 +264,8 @@ class Ev:
                         if required_current > max_current:
                             required_current = max_current
             if required_current != required_current_prev:
-                MainLogger().debug("Anpassen der Sollstromstaerke an EV-Vorgaben. Sollstromstarke: " +
-                                   str(required_current_prev)+" neue Sollstromstarke: "+str(required_current))
+                MainLogger().debug("Anpassen der Sollstromstärke an EV-Vorgaben. Sollstromstärke: " +
+                                   str(required_current_prev)+" neue Sollstromstärke: "+str(required_current))
             return required_current
         except Exception:
             MainLogger().exception("Fehler im ev-Modul "+str(self.ev_num))
@@ -309,13 +309,13 @@ class Ev:
                                 self.data["control_parameter"]["timestamp_auto_phase_switch"],
                                 pv_config["phase_switch_delay"] * 60):
                             phases_to_use = 3
-                            # Nach dem Umschalten erstmal mit Mindeststromstärke laden.
+                            # Nach dem Umschalten vorerst mit Mindeststromstärke laden.
                             current = self.data["control_parameter"]["required_current"]
                             self.data["control_parameter"]["timestamp_auto_phase_switch"] = "0"
                             Pub().pub("openWB/set/vehicle/"+str(self.ev_num) +
                                       "/control_parameter/timestamp_auto_phase_switch", "0")
                         else:
-                            message = "Umschaltverzoegerung von 1 auf 3 Phasen für " + \
+                            message = "Umschaltverzögerung von 1 auf 3 Phasen für " + \
                                 str(pv_config["phase_switch_delay"]
                                     ) + " Min aktiv."
                     # Wenn im einphasigen Laden die Maximalstromstärke erreicht wird und der Timer noch nicht läuft,
@@ -329,7 +329,7 @@ class Ev:
                             "openWB/set/vehicle/" + str(self.ev_num) +
                             "/control_parameter/timestamp_auto_phase_switch",
                             self.data["control_parameter"]["timestamp_auto_phase_switch"])
-                        message = "Umschaltverzoegerung von 1 auf 3 Phasen für " + \
+                        message = "Umschaltverzögerung von 1 auf 3 Phasen für " + \
                             str(pv_config["phase_switch_delay"]
                                 ) + " Min aktiv."
                         MainLogger().info("LP "+str(cp_num)+": "+message)
@@ -340,7 +340,7 @@ class Ev:
                         self.data["control_parameter"]["timestamp_auto_phase_switch"] = "0"
                         Pub().pub("openWB/set/vehicle/"+str(self.ev_num) +
                                   "/control_parameter/timestamp_auto_phase_switch", "0")
-                        message = "Umschaltverzoegerung von 1 auf 3 Phasen abgebrochen."
+                        message = "Umschaltverzögerung von 1 auf 3 Phasen abgebrochen."
                         MainLogger().info("LP "+str(cp_num)+": "+message)
                 # 3 -> 1
                 else:
@@ -358,7 +358,7 @@ class Ev:
                             Pub().pub("openWB/set/vehicle/"+str(self.ev_num) +
                                       "/control_parameter/timestamp_auto_phase_switch", "0")
                         else:
-                            message = "Umschaltverzoegerung von 3 auf 1 Phase für " + \
+                            message = "Umschaltverzögerung von 3 auf 1 Phase für " + \
                                 str(16-pv_config["phase_switch_delay"]
                                     ) + " Min aktiv."
                     # Wenn im dreiphasigen Laden die Minimalstromstärke erreicht wird und der Timer noch nicht läuft,
@@ -374,7 +374,7 @@ class Ev:
                             "openWB/set/vehicle/" + str(self.ev_num) +
                             "/control_parameter/timestamp_auto_phase_switch",
                             self.data["control_parameter"]["timestamp_auto_phase_switch"])
-                        message = "Umschaltverzoegerung von 3 auf 1 Phase für " + \
+                        message = "Umschaltverzögerung von 3 auf 1 Phase für " + \
                             str(16-pv_config["phase_switch_delay"]
                                 ) + " Min aktiv."
                         MainLogger().info("LP "+str(cp_num)+": "+message)
@@ -385,7 +385,7 @@ class Ev:
                         self.data["control_parameter"]["timestamp_auto_phase_switch"] = "0"
                         Pub().pub("openWB/set/vehicle/"+str(self.ev_num) +
                                   "/control_parameter/timestamp_auto_phase_switch", "0")
-                        message = "Umschaltverzoegerung von 3 auf 1 Phase abgebrochen."
+                        message = "Umschaltverzögerung von 3 auf 1 Phase abgebrochen."
                         MainLogger().info("LP "+str(cp_num)+": "+message)
             return phases_to_use, current, message
         except Exception:
@@ -406,13 +406,13 @@ class Ev:
                 data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= self.ev_template.data[
                     "max_current_one_phase"] * 230 - self.data["control_parameter"]["required_current"] * 3 * 230
                 MainLogger().debug(
-                    "Zuruecksetzen der reservierten Leistung fuer die Phasenumschaltung. reservierte Leistung: " +
+                    "Zurücksetzen der reservierten Leistung für die Phasenumschaltung. reservierte Leistung: " +
                     str(data.data.pv_data["all"].data["set"]["reserved_evu_overhang"]))
             else:
                 data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= self.data["control_parameter"][
                     "required_current"] * 3 * 230 - self.ev_template.data["max_current_one_phase"] * 230
                 MainLogger().debug(
-                    "Zuruecksetzen der reservierten Leistung fuer die Phasenumschaltung. reservierte Leistung: " +
+                    "Zurücksetzen der reservierten Leistung für die Phasenumschaltung. reservierte Leistung: " +
                     str(data.data.pv_data["all"].data["set"]["reserved_evu_overhang"]))
 
     def load_default_profile(self):
@@ -583,7 +583,7 @@ class ChargeTemplate:
             SoC des EV
 
         amount: int
-            geladende Energiemenge seit das EV angesteckt wurde
+            geladene Energiemenge seit das EV angesteckt wurde
         """
         message = None
         try:
@@ -621,7 +621,7 @@ class ChargeTemplate:
         Return
         ------
         Required Current, Chargemode: int, str
-            Therotisch benötigter Strom, Ladmodus(soll geladen werden, auch wenn kein PV-Strom zur Verfügung steht)
+            Theoretisch benötigter Strom, Ladmodus(soll geladen werden, auch wenn kein PV-Strom zur Verfügung steht)
         """
         message = None
         try:
@@ -662,7 +662,7 @@ class ChargeTemplate:
         Return
         ------
             Required Current, Chargemode: int, str
-                Therotisch benötigter Strom, Ladmodus(soll geladen werden, auch wenn kein PV-Strom zur Verfügung steht)
+                Theoretisch benötigter Strom, Ladmodus(soll geladen werden, auch wenn kein PV-Strom zur Verfügung steht)
         """
         try:
             smallest_remaining_time = 0
@@ -745,11 +745,11 @@ class ChargeTemplate:
                                         ist. Falls vorhanden, wird mit EVU-Überschuss geladen."
                                     return 1, "pv_charging", message
                             else:
-                                message = "Kein Sofortladen, da noch Zeit bis zum Zieltermmin ist. Falls vorhanden, \
+                                message = "Kein Sofortladen, da noch Zeit bis zum Zieltermin ist. Falls vorhanden, \
                                     wird mit EVU-Überschuss geladen."
                                 return 1, "pv_charging", message
                         else:
-                            message = "Keine Ladung, da noch mehr als ein Tag bis zum Zieltermmin ist. "
+                            message = "Keine Ladung, da noch mehr als ein Tag bis zum Zieltermin ist. "
                             return 0, "stop", message
         except Exception:
             MainLogger().exception("Fehler im ev-Modul "+str(self.ct_num))
@@ -761,7 +761,7 @@ class ChargeTemplate:
         Return
         ------
             Required Current, Chargemode: int, str
-                Therotisch benötigter Strom, Ladmodus
+                Theoretisch benötigter Strom, Ladmodus
         """
         message = "Keine Ladung, da der Lademodus Standby aktiv ist."
         return 0, "standby", message
@@ -772,7 +772,7 @@ class ChargeTemplate:
         Return
         ------
             Required Current, Chargemode: int, str
-                Therotisch benötigter Strom, Ladmodus
+                Theoretisch benötigter Strom, Ladmodus
         """
-        message = "Keine Ladung, da der Lademdus Stop aktiv ist."
+        message = "Keine Ladung, da der Lademodus Stop aktiv ist."
         return 0, "stop", message
