@@ -478,14 +478,14 @@ function processPvMessages(mqttTopic, mqttPayload) {
 		$('.pv-sum-power').text(pvWatt + ' ' + unitPrefix + unit);
 	} else if (mqttTopic == 'openWB/pv/get/daily_yield') {
 		var unit = "Wh";
-		var unitPrefix = "k";
+		var unitPrefix = "";
 		var pvDailyYield = parseFloat(mqttPayload);
 		if (isNaN(pvDailyYield)) {
 			pvDailyYield = 0;
 		}
 		if (pvDailyYield > 999) {
 			pvDailyYield = (pvDailyYield / 1000).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-			unitPrefix = "M";
+			unitPrefix = "k";
 		} else {
 			pvDailyYield = pvDailyYield.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 		}
