@@ -45,16 +45,6 @@ echo "LAN/WLAN..."
 # alpha image restricted to LAN only
 sudo ifconfig eth0:0 192.168.193.5 netmask 255.255.255.0 up
 
-# check for apache configuration
-echo "apache..."
-if grep -Fxq "AllowOverride" /etc/apache2/sites-available/000-default.conf
-then
-	echo "...ok"
-else
-	sudo cp ${OPENWBBASEDIR}/data/config/000-default.conf /etc/apache2/sites-available/
-	echo "...changed"
-fi
-
 # check for needed packages
 echo "apt packages..."
 # nothing here yet, all in install.sh

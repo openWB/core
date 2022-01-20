@@ -5,7 +5,7 @@ echo "installing openWB 2 into \"${OPENWBBASEDIR}\""
 
 echo "install required packages..."
 apt-get update
-apt-get -q -y install vim bc apache2 php php-gd php-curl php-xml php-json libapache2-mod-php jq git mosquitto mosquitto-clients socat python3-pip sshpass
+apt-get -q -y install vim bc jq git mosquitto mosquitto-clients socat python3-pip sshpass
 echo "done"
 
 echo "check for initial git clone..."
@@ -70,21 +70,6 @@ echo "mosquitto done"
 # else
 # 	echo "EXTRA_OPTS=\"-L 0\"" >> /etc/default/cron
 # fi
-
-# apache
-echo -n "replacing apache default page..."
-sudo cp ${OPENWBBASEDIR}/index.html /var/www/html/index.html
-echo "done"
-echo -n "fix upload limit..."
-if [ -d "/etc/php/7.3/" ]; then
-	sudo /bin/su -c "echo 'upload_max_filesize = 300M' > /etc/php/7.3/apache2/conf.d/20-uploadlimit.ini"
-	sudo /bin/su -c "echo 'post_max_size = 300M' >> /etc/php/7.3/apache2/conf.d/20-uploadlimit.ini"
-	echo "done (OS Buster)"
-elif [ -d "/etc/php/7.4/" ]; then
-	sudo /bin/su -c "echo 'upload_max_filesize = 300M' > /etc/php/7.4/apache2/conf.d/20-uploadlimit.ini"
-	sudo /bin/su -c "echo 'post_max_size = 300M' >> /etc/php/7.4/apache2/conf.d/20-uploadlimit.ini"
-	echo "done (OS Bullseye)"
-fi
 
 echo "installing python requirements..."
 sudo pip install -r ${OPENWBBASEDIR}/requirements.txt

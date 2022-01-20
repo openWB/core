@@ -7,6 +7,7 @@ import threading
 import traceback
 from threading import Thread
 
+import web
 from modules import loadvars
 from modules import configuration
 from helpermodules import update_config
@@ -156,6 +157,7 @@ def repeated_handler_call():
 
 
 try:
+    Thread(target=web.run_webserver).start()
     # Regelung erst starten, wenn atreboot.sh fertig ist.
     MainLogger().debug("Warten auf das Ende des Boot-Prozesses")
     while os.path.isfile(os.path.dirname(os.path.abspath(__file__)) + "/../ramdisk/bootdone") is False:
