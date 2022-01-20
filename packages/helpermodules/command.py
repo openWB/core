@@ -158,12 +158,13 @@ class Command:
         """
         new_id = self.max_id_chargepoint + 1
         MainLogger().info(
-            "Neuer Ladepunkt mit ID "+str(new_id)+" hinzugefügt.")
+            "Neuer Ladepunkt mit ID "+str(new_id)+" wird hinzugefügt.")
         chargepoint_default = chargepoint.get_chargepoint_default()
-        chargepoint_default["id"] = new_id
-        module = importlib.import_module("."+payload["data"]["type"]+".chargepoint_module", "modules")
+        # chargepoint_default["id"] = new_id
+        module = importlib.import_module("." + payload["data"]["type"] + ".chargepoint_module", "modules")
         chargepoint_default = {**chargepoint_default, **module.get_default_config()}
         chargepoint_default["id"] = new_id
+        chargepoint_default["type"] = payload["data"]["type"]
         try:
             evu_counter = data.data.counter_data["all"].get_evu_counter()
             data.data.counter_data["all"].hierarchy_add_item_below(
