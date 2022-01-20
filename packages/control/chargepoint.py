@@ -39,6 +39,7 @@ from modules.common.abstract_chargepoint import AbstractChargepoint
 def get_chargepoint_default() -> dict:
     return {
         "name": "Standard-Ladepunkt",
+        "type": None,
         "ev": 0,
         "template": 0,
         "connected_phases": 3,
