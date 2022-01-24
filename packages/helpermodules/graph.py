@@ -50,7 +50,7 @@ class Graph:
                 dataline.update(
                     {"bat-all-power": _convert_to_kW(data.data.bat_data["all"].data["get"]["power"])})
                 dataline.update(
-                    {"bat-all-soc": _convert_to_kW(data.data.bat_data["all"].data["get"]["soc"])})
+                    {"bat-all-soc": data.data.bat_data["all"].data["get"]["soc"]})
             # # smarthome 1
             # if (( verbraucher1_aktiv == 1 )); then
             #     dataline="$dataline,\"load1-power\":$(convertTokW $verbraucher1_watt)"
