@@ -40,7 +40,7 @@ class Algorithm:
             evu_counter = data.data.counter_data["all"].get_evu_counter()
             MainLogger().info(
                 "EVU-Punkt: Leistung[W] " + str(data.data.counter_data[evu_counter].data["get"]["power"]) +
-                ", Ströme[A] " + str(data.data.counter_data[evu_counter].data["get"]["currents"]))
+                ", Ströme[A] " + str(data.data.counter_data[evu_counter].data["get"].get("currents")))
             if not data.data.counter_data["all"].data["set"]["loadmanagement_available"]:
                 return
 

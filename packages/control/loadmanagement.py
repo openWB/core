@@ -205,7 +205,7 @@ def _loadmanagement_for_evu(required_power, required_current_phases, phases, off
                 max_current_overshoot = overshoot_one_phase
                 max_overshoot_phase = phase
         loadmanagement, overshoot_one_phase, phase = _check_unbalanced_load(
-            data.data.counter_data[evu_counter].data["set"]["currents_used"], offset)
+            data.data.counter_data[evu_counter].data["set"].get("currents_used"), offset)
         if loadmanagement:
             loadmanagement_all_conditions = True
             # Wenn phase -1 ist, wurde die maximale Gesamtleistung überschrittten und
@@ -288,10 +288,13 @@ def _check_max_currents(counter, required_current_phases, phases, offset):
         offset_current = 0
     try:
         loadmanagement = False
+        counter_currents_used = data.data.counter_data[counter].data["set"].get("currents_used")
+        if counter_currents_used is None or len(counter_currents_used) < 3:
+            MainLogger().warning("Einzelwerte für Zähler-Phasenströme unbekannt")
+            return False, 0, 0
         for phase in range(3):
-            currents_used[phase] = data.data.counter_data[counter].data["set"]["currents_used"][phase] + \
-                required_current_phases[phase]
-            # Wird die maximal zulässige Stromstärke inklusive des Offsets eingehlaten?
+            currents_used[phase] = counter_currents_used[phase] + required_current_phases[phase]
+            # Wird die maximal zulässige Stromstärke inklusive des Offsets eingehalten?
             max_current_of_phase = data.data.counter_data[counter].data["config"]["max_currents"][phase]
             if (currents_used[phase] > max_current_of_phase - offset_current):
                 if ((currents_used[phase]-(max_current_of_phase - offset_current)) > max_current_overshoot):
