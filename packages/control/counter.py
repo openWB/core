@@ -358,7 +358,18 @@ class Counter:
                 MainLogger().debug(str(self.data["set"]["consumption_left"]) +
                                    "W EVU-Leistung, die noch bezogen werden kann.")
             # Strom
-            self.data["set"]["currents_used"] = self.data["get"]["currents"]
+            try:
+                self.data["set"]["currents_used"] = self.data["get"]["currents"]
+            except KeyError:
+                MainLogger().warning(f"Zähler {self.counter_num}: Einzelwerte für Zähler-Phasenströme unbekannt")
+                # Fehlermeldung nicht überschreiben
+                if self.data["get"]["fault_state"] < 2:
+                    self.data["get"]["fault_str"] = "Das Lastmanagement regelt nur anhand der Gesamtleistung, da keine Phasenströme ermittelt werden konnten."
+                    Pub().pub("openWB/set/counter/"+str(self.counter_num) + "/get/fault_str",
+                              self.data["get"]["fault_str"])
+                    self.data["get"]["fault_state"] = 1
+                    Pub().pub("openWB/set/counter/"+str(self.counter_num) + "/get/fault_state",
+                              self.data["get"]["fault_state"])
         except Exception:
             MainLogger().exception("Fehler in der Zähler-Klasse von "+str(self.counter_num))
 

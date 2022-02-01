@@ -20,16 +20,14 @@ class CounterState:
                  power_factors: List[float] = None,
                  frequency: float = 50):
         if voltages is None:
-            voltages = [0]*3
+            voltages = [0.0]*3
         self.voltages = voltages
-        if currents is None:
-            currents = [0]*3
         self.currents = currents
         if powers is None:
-            powers = [0]*3
+            powers = [0.0]*3
         self.powers = powers
         if power_factors is None:
-            power_factors = [0]*3
+            power_factors = [0.0]*3
         self.power_factors = power_factors
         self.imported = imported
         self.exported = exported
@@ -45,7 +43,7 @@ class InverterState:
         currents: List[float] = None,
     ):
         if currents is None:
-            currents = [0]*3
+            currents = [0.0]*3
         self.currents = currents
         self.power = power
         self.counter = counter
@@ -68,13 +66,13 @@ class ChargepointState:
                  charge_state: bool = False,
                  plug_state: bool = False):
         if voltages is None:
-            voltages = [0]*3
+            voltages = [0.0]*3
         self.voltages = voltages
         if currents is None:
-            currents = [0]*3
+            currents = [0.0]*3
         self.currents = currents
         if power_factors is None:
-            power_factors = [0]*3
+            power_factors = [0.0]*3
         self.power_factors = power_factors
         self.imported = imported
         self.exported = exported

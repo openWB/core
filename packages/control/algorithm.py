@@ -40,7 +40,7 @@ class Algorithm:
             evu_counter = data.data.counter_data["all"].get_evu_counter()
             MainLogger().info(
                 "EVU-Punkt: Leistung[W] " + str(data.data.counter_data[evu_counter].data["get"]["power"]) +
-                ", Ströme[A] " + str(data.data.counter_data[evu_counter].data["get"]["currents"]))
+                ", Ströme[A] " + str(data.data.counter_data[evu_counter].data["get"].get("currents")))
             if not data.data.counter_data["all"].data["set"]["loadmanagement_available"]:
                 return
 
@@ -739,7 +739,7 @@ class Algorithm:
             if data.data.counter_data["all"].data["set"]["loadmanagement_active"] and len(overloaded_counters) != 0:
                 # Lastmanagement hat eingegriffen
                 MainLogger().debug("Aktuell kalkulierte Ströme am EVU-Punkt[A]: "+str(
-                    data.data.counter_data[evu_counter].data["set"]["currents_used"]))
+                    data.data.counter_data[evu_counter].data["set"].get("currents_used")))
                 MainLogger().warning(
                     "Für die Ladung an LP"+str(chargepoint.cp_num) +
                     " muss erst ein Ladepunkt mit gleicher/niedrigerer Priorität reduziert/gestoppt werden.")
