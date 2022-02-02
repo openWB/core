@@ -21,14 +21,15 @@ class Graph:
             dataline = {"timestamp": int(
                 time.time()), "time": datetime.datetime.today().strftime("%H:%M:%S")}
             evu_counter = data.data.counter_data["all"].get_evu_counter()
-            if data.data.counter_data["all"].data["set"]["loadmanagement_available"]:
+            if data.data.counter_data[evu_counter].data["get"]["fault_state"] == 0:
                 dataline.update({"grid": _convert_to_kW(
                     data.data.counter_data[evu_counter].data["get"]["power"])})
             for c in data.data.counter_data:
                 if "counter" in c and evu_counter not in c:
                     counter = data.data.counter_data[c]
-                    dataline.update({"counter"+str(counter.counter_num) +
-                                     "-power": _convert_to_kW(counter.data["get"]["power"])})
+                    if counter.data["get"]["fault_state"] == 0:
+                        dataline.update({"counter"+str(counter.counter_num) +
+                                         "-power": _convert_to_kW(counter.data["get"]["power"])})
             dataline.update(
                 {"house-power": _convert_to_kW(data.data.counter_data["all"].data["set"]["home_consumption"])})
             dataline.update(
@@ -40,9 +41,10 @@ class Graph:
                 for cp in data.data.cp_data:
                     if "cp" in cp:
                         chargepoint = data.data.cp_data[cp]
-                        dataline.update(
-                            {"cp" + str(chargepoint.cp_num) +
-                             "-power": _convert_to_kW(chargepoint.data["get"]["power"])})
+                        if chargepoint.data["get"]["fault_state"] == 0:
+                            dataline.update(
+                                {"cp" + str(chargepoint.cp_num) +
+                                 "-power": _convert_to_kW(chargepoint.data["get"]["power"])})
                         # if chargepoint.data["get"]["connected_vehicle"]["soc_config"]["configured"]:
                         #     dataline.update({"cp"+str(chargepoint.cp_num)+"-soc": _convert_to_kW(
                         #         chargepoint.data["get"]["connected_vehicle"]["soc"]["soc"])})

@@ -41,8 +41,6 @@ class Algorithm:
             MainLogger().info(
                 "EVU-Punkt: Leistung[W] " + str(data.data.counter_data[evu_counter].data["get"]["power"]) +
                 ", Ströme[A] " + str(data.data.counter_data[evu_counter].data["get"].get("currents")))
-            if not data.data.counter_data["all"].data["set"]["loadmanagement_available"]:
-                return
 
             # zuerst die PV-Überschuss-Ladung zurück nehmen
             MainLogger().info(

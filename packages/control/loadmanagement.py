@@ -308,7 +308,7 @@ def _check_max_currents(counter, required_current_phases, phases, offset):
                 else:
                     MainLogger().debug("Strom "+str(currents_used))
                     MainLogger().warning(
-                        "'Benoetigte Stromstaerke {required_current_phases} ueberschreitet ohne Beachtung des Offsets die"
+                        f"Benoetigte Stromstaerke {required_current_phases} ueberschreitet ohne Beachtung des Offsets die"
                         f" zulaessige Stromstaerke an Phase {(currents_used.index(max(currents_used))+1)} um"
                         f" {max_current_overshoot}A.")
             data.data.counter_data[counter].data["set"]["currents_used"] = currents_used

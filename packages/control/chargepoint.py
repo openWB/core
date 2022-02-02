@@ -273,6 +273,7 @@ class Chargepoint:
                         "plug_time": "0",
                         "rfid": 0,
                         "manual_lock": False,
+                        "loadmanagement_available": True,
                         "log": {"counter_at_plugtime": 0,
                                 "timestamp_start_charging": "0",
                                 "counter_at_mode_switch": 0,
@@ -361,7 +362,7 @@ class Chargepoint:
             Text, dass geladen werden kann oder warum nicht geladen werden kann.
         """
         try:
-            if data.data.counter_data["all"].data["set"]["loadmanagement_available"]:
+            if self.data["set"]["loadmanagement_available"]:
                 state = True
                 message = None
             else:
