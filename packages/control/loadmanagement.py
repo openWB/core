@@ -302,19 +302,21 @@ def _check_max_currents(counter, required_current_phases, phases, offset):
                 if offset:
                     MainLogger().debug("Strom "+str(currents_used))
                     MainLogger().warning(
-                        f"Benoetigte Stromstaerke {required_current_phases} ueberschreitet unter Beachtung des Offsets die"
-                        f" zulaessige Stromstaerke an Phase {(currents_used.index(max(currents_used))+1)} um"
+                        f"Benoetigte Stromstaerke {required_current_phases} ueberschreitet unter Beachtung des Offsets"
+                        f" die zulaessige Stromstaerke an Phase {(currents_used.index(max(currents_used))+1)} um"
                         f" {max_current_overshoot}A.")
                 else:
                     MainLogger().debug("Strom "+str(currents_used))
                     MainLogger().warning(
-                        f"Benoetigte Stromstaerke {required_current_phases} ueberschreitet ohne Beachtung des Offsets die"
-                        f" zulaessige Stromstaerke an Phase {(currents_used.index(max(currents_used))+1)} um"
+                        f"Benoetigte Stromstaerke {required_current_phases} ueberschreitet ohne Beachtung des Offsets"
+                        f" die zulaessige Stromstaerke an Phase {(currents_used.index(max(currents_used))+1)} um"
                         f" {max_current_overshoot}A.")
             data.data.counter_data[counter].data["set"]["currents_used"] = currents_used
-            # Wenn Zähler geprüft werden, wird ohne Offset geprüft. Beim Runterregeln soll aber das Offset berücksichtigt
-            # werden, um Schwingen zu vermeiden.
-            return loadmanagement, max_current_overshoot + (300 / 230 / phases), currents_used.index(max(currents_used))+1
+            # Wenn Zähler geprüft werden, wird ohne Offset geprüft. Beim Runterregeln soll aber das Offset
+            # berücksichtigt werden, um Schwingen zu vermeiden.
+            return (loadmanagement,
+                    max_current_overshoot + (300 / 230 / phases),
+                    currents_used.index(max(currents_used))+1)
         except Exception:
             MainLogger().exception("Fehler im Lastmanagement-Modul")
             return False, 0, 0
