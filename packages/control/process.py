@@ -100,8 +100,6 @@ class Process:
         # Wenn ein EV zugeordnet ist und die Phasenumschaltung aktiv ist, darf kein Strom gesetzt werden.
         if charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] != "0":
             current = 0
-        else:
-            current = chargepoint.data["set"]["current"]
 
         chargepoint.data["set"]["current"] = current
         Pub().pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/set/current", current)
