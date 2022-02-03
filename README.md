@@ -3,7 +3,7 @@
 # Lizenz
 Die Software steht unter der GPLv3 Lizenz. Weiterhin ist eine kommerzielle Nutzung nur nach Rücksprache und durch schriftlicher Zustimmung der openWB GmbH & Co. KG erlaubt.
 
-	Unterstüztung ist gerne gesehen!
+	Unterstützung ist gerne gesehen!
 	Sei es in Form von Code oder durch Spenden
 	Spenden bitte an spenden@openwb.de
 
@@ -11,7 +11,7 @@ Anfragen für Supportverträge an info@openwb.de
 Weitere Infos unter https://openwb.de
 
 # Haftungsausschluss
-Es wird mit Kleinspannung aber auch 220V beim Anschluss der EVSE gearbeitet. 
+Es wird mit Kleinspannung aber auch 230V beim Anschluss der EVSE gearbeitet. 
 Dies darf nur geschultes Personal. Die Anleitung ist ohne Gewähr und jegliches Handeln basiert auf eigene Gefahr.
 Eine Fehlkonfiguration der Software kann höchstens ein nicht geladenes Auto bedeuten.
 Falsch zusammengebaute Hardware kann lebensgefährlich sein. Im Zweifel diesen Part von einem Elektriker durchführen lassen.
@@ -42,8 +42,8 @@ In der Shell folgendes eingeben:
 
 ## Taster am Raspberry zur Einstellung des Lademodi
 
-Der Lademodi kann nicht nur über die Weboberfläche sondern auch an der Wallbox direkt eingestellt werden.
-Hierzu müssen schließer Taster von GND (Pin 34) nach Gpio X  angeschlossen werden.
+Der Lademodi kann nicht nur über die Weboberfläche sondern auch an der openWB direkt eingestellt werden.
+Hierzu müssen schließende Taster von GND (Pin 34) nach Gpio X  angeschlossen werden.
 
 	SofortLaden GPIO 12, PIN 32
 	Min+PV GPIO 16, PIN 36
