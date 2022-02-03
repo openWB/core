@@ -24,7 +24,7 @@ class CounterState:
                  power_factors: List[float] = None,
                  frequency: float = 50):
         if voltages is None:
-            voltages = [230]*3
+            voltages = [230.0]*3
         self.voltages = voltages
         if powers is None:
             if currents is None:
@@ -32,6 +32,8 @@ class CounterState:
             else:
                 powers = [currents[i]*voltages[i] for i in range(0, 3)]
         self.powers = powers
+        if currents is None and powers:
+            currents = [powers[i]/voltages[i] for i in range(0, 3)]
         self.currents = currents
         if power_factors is None:
             power_factors = [0.0]*3
