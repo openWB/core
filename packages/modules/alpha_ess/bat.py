@@ -37,10 +37,11 @@ class AlphaEssBat:
         # keine Unterschiede zwischen den Versionen
         sdmid = 85
 
-        time.sleep(0.1)
-        voltage = self.__tcp_client.read_holding_registers(0x0100, ModbusDataType.INT_16, unit=sdmid)
-        time.sleep(0.1)
-        current = self.__tcp_client.read_holding_registers(0x0101, ModbusDataType.INT_16, unit=sdmid)
+        with self.__tcp_client:
+            time.sleep(0.1)
+            voltage = self.__tcp_client.read_holding_registers(0x0100, ModbusDataType.INT_16, unit=sdmid)
+            time.sleep(0.1)
+            current = self.__tcp_client.read_holding_registers(0x0101, ModbusDataType.INT_16, unit=sdmid)
 
         power = voltage * current * -1 / 100
         MainLogger().debug(
