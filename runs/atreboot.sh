@@ -1,12 +1,12 @@
 #!/bin/bash
-OPENWBBASEDIR=$(cd $(dirname "${BASH_SOURCE[0]}")/.. && pwd)
+OPENWBBASEDIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 echo "atreboot.sh started"
 rm "${OPENWBBASEDIR}/ramdisk/bootdone"
 mosquitto_pub -p 1886 -t openWB/system/boot_done -r -m 'false'
-(sleep 600; sudo kill $(ps aux |grep '[a]treboot.sh' | awk '{print $2}')) &
+(sleep 600; sudo kill "$(pgrep '[a]treboot.sh')") &
 
-if [ -f ${OPENWBBASEDIR}/ramdisk/bootinprogress ]; then
-	rm ${OPENWBBASEDIR}/ramdisk/bootinprogress
+if [ -f "${OPENWBBASEDIR}/ramdisk/bootinprogress" ]; then
+	"rm ${OPENWBBASEDIR}/ramdisk/bootinprogress"
 fi
 
 # initialize automatic phase switching
@@ -43,7 +43,7 @@ fi
 # check for LAN/WLAN connection
 echo "LAN/WLAN..."
 # alpha image restricted to LAN only
-sudo ifconfig eth0:0 192.168.193.5 netmask 255.255.255.0 up
+sudo ifconfig eth0:0 192.168.193.250 netmask 255.255.255.0 up
 
 # check for apache configuration
 echo "apache..."
@@ -51,7 +51,7 @@ if grep -Fxq "AllowOverride" /etc/apache2/sites-available/000-default.conf
 then
 	echo "...ok"
 else
-	sudo cp ${OPENWBBASEDIR}/data/config/000-default.conf /etc/apache2/sites-available/
+	sudo cp "${OPENWBBASEDIR}/data/config/000-default.conf" /etc/apache2/sites-available/
 	echo "...changed"
 fi
 
@@ -64,12 +64,12 @@ echo "apt packages..."
 
 # check for other dependencies
 echo "python packages..."
-sudo pip3 install -r ${OPENWBBASEDIR}/requirements.txt
+sudo pip3 install -r "${OPENWBBASEDIR}/requirements.txt"
 
 # update version
 echo "version..."
-uuid=$(</sys/class/net/eth0/address)
-owbv=$(<${OPENWBBASEDIR}/web/version)
+# uuid=$(</sys/class/net/eth0/address)
+# owbv=$(<"${OPENWBBASEDIR}/web/version")
 # curl --connect-timeout 10 -d "update="$releasetrain$uuid"vers"$owbv"" -H "Content-Type: application/x-www-form-urlencoded" -X POST https://openwb.de/tools/update.php
 
 # check for slave config and start handler
@@ -123,11 +123,11 @@ echo "load versions..."
 # curl --connect-timeout 10 -s https://raw.githubusercontent.com/snaptec/openWB/stable/web/version > ${OPENWBBASEDIR}/ramdisk/vstable
 
 # update our local version
-sudo git -C ${OPENWBBASEDIR}/ show --pretty='format:%ci [%h]' | head -n1 > ${OPENWBBASEDIR}/web/lastcommit
+sudo git -C "${OPENWBBASEDIR}/" show --pretty='format:%ci [%h]' | head -n1 > "${OPENWBBASEDIR}/web/lastcommit"
 # and record the current commit details
-commitId=`git -C ${OPENWBBASEDIR}/ log --format="%h" -n 1`
-echo $commitId > ${OPENWBBASEDIR}/ramdisk/currentCommitHash
-echo `git -C ${OPENWBBASEDIR}/ branch -a --contains $commitId | perl -nle 'm|.*origin/(.+).*|; print $1' | uniq | xargs` > ${OPENWBBASEDIR}/ramdisk/currentCommitBranches
+commitId=$(git -C "${OPENWBBASEDIR}/" log --format="%h" -n 1)
+echo "$commitId" > "${OPENWBBASEDIR}/ramdisk/currentCommitHash"
+git -C "${OPENWBBASEDIR}/" branch -a --contains "$commitId" | perl -nle 'm|.*origin/(.+).*|; print $1' | uniq | xargs > "${OPENWBBASEDIR}/ramdisk/currentCommitBranches"
 
 # set upload limit in php
 # echo -n "fix upload limit..."
@@ -139,10 +139,10 @@ echo `git -C ${OPENWBBASEDIR}/ branch -a --contains $commitId | perl -nle 'm|.*o
 # sudo /usr/sbin/apachectl -k graceful
 
 # all done, remove boot and update status
-echo $(date +"%Y-%m-%d %H:%M:%S:") "boot done :-)"
+echo "$(date +"%Y-%m-%d %H:%M:%S:")" "boot done :-)"
 mosquitto_pub -p 1886 -t openWB/system/update_in_progress -r -m 'false'
 mosquitto_pub -p 1883 -t openWB/system/update_in_progress -r -m 'false'
 mosquitto_pub -p 1886 -t openWB/system/boot_done -r -m 'true'
 mosquitto_pub -p 1883 -t openWB/system/boot_done -r -m 'true'
 mosquitto_pub -t openWB/system/reloadDisplay -m "1"
-touch ${OPENWBBASEDIR}/ramdisk/bootdone
+touch "${OPENWBBASEDIR}/ramdisk/bootdone"
