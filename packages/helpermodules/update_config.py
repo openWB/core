@@ -95,6 +95,7 @@ class UpdateConfig:
                    "^openWB/counter/[0-9]+/get/imported$",
                    "^openWB/counter/[0-9]+/get/exported$",
                    "^openWB/counter/[0-9]+/set/consumption_left$",
+                   "^openWB/counter/[0-9]+/set/state_str$",
                    "^openWB/counter/[0-9]+/config/max_currents$",
                    "^openWB/counter/[0-9]+/config/max_total_power$",
 

@@ -11,7 +11,6 @@ class CounterAll:
 
     def __init__(self):
         self.data = {"set": {"loadmanagement_active": False,
-                             "loadmanagement_available": True,
                              "home_consumption": 0,
                              "invalid_home_consumption": 0,
                              "daily_yield_home_consumption": 0}}
@@ -340,15 +339,19 @@ class Counter:
     def setup_counter(self):
         # Zählvariablen vor dem Start der Regelung zurücksetzen
         try:
+            # Wenn der Zähler keine Werte liefert, darf nicht geladen werden.
+            connected_cps = data.data.counter_data["all"].get_chargepoints_of_counter(f'counter{self.counter_num}')
+            for cp in connected_cps:
+                if self.data["get"]["fault_state"] > 0:
+                    data.data.cp_data[cp].data["set"]["loadmanagement_available"] = False
+                else:
+                    data.data.cp_data[cp].data["set"]["loadmanagement_available"] = True
+            if self.data["get"]["fault_state"] > 0:
+                self.data["get"]["power"] = 0
+                return
+
             # Nur beim EVU-Zähler wird auch die maximale Leistung geprüft.
             if f'counter{self.counter_num}' == data.data.counter_data["all"].get_evu_counter():
-                # Wenn der EVU-Zähler keine Werte liefert, darf nicht geladen werden.
-                if self.data["get"]["fault_state"] > 0:
-                    data.data.counter_data["all"].data["set"]["loadmanagement_available"] = False
-                    self.data["get"]["power"] = 0
-                    return
-                else:
-                    data.data.counter_data["all"].data["set"]["loadmanagement_available"] = True
                 # max Leistung
                 if self.data["get"]["power"] > 0:
                     self.data["set"]["consumption_left"] = self.data["config"]["max_total_power"] \
@@ -358,7 +361,14 @@ class Counter:
                 MainLogger().debug(str(self.data["set"]["consumption_left"]) +
                                    "W EVU-Leistung, die noch bezogen werden kann.")
             # Strom
-            self.data["set"]["currents_used"] = self.data["get"]["currents"]
+            try:
+                self.data["set"]["currents_used"] = self.data["get"]["currents"]
+            except KeyError:
+                MainLogger().warning(f"Zähler {self.counter_num}: Einzelwerte für Zähler-Phasenströme unbekannt")
+                self.data["set"]["state_str"] = "Das Lastmanagement regelt nur anhand der Gesamtleistung, da keine \
+                    Phasenströme ermittelt werden konnten."
+                Pub().pub("openWB/set/counter/"+str(self.counter_num) + "/set/state_str",
+                          self.data["set"]["state_str"])
         except Exception:
             MainLogger().exception("Fehler in der Zähler-Klasse von "+str(self.counter_num))
 
