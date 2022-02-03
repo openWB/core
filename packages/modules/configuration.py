@@ -51,6 +51,20 @@ def _pub_configurable_devices_components() -> None:
                 ]
             },
             {
+                "value": "discovergy",
+                "text": "Discovergy",
+                "component": [
+                    {
+                        "value": "counter",
+                        "text": "Discovergy-Zähler"
+                    },
+                    {
+                        "value": "inverter",
+                        "text": "Discovergy-Wechselrichter"
+                    }
+                ]
+            },
+            {
                 "value": "fronius",
                 "text": "Fronius",
                 "component": [
@@ -261,6 +275,24 @@ def _pub_configurable_devices_components() -> None:
                 ]
             },
             {
+                "value": "sonnenbatterie",
+                "text": "Sonnenbatterie-Device",
+                "component": [
+                    {
+                        "value": "bat",
+                        "text": "Sonnenbatterie-Speicher"
+                    },
+                    {
+                        "value": "counter",
+                        "text": "Sonnenbatterie-Zähler"
+                    },
+                    {
+                        "value": "inverter",
+                        "text": "Sonnenbatterie-Wechselrichter"
+                    }
+                ]
+            },
+            {
                 "value": "studer",
                 "text": "Studer-Device",
                 "component": [
@@ -299,6 +331,16 @@ def _pub_configurable_devices_components() -> None:
                     {
                         "value": "bat",
                         "text": "Sunny Island-Speicher"
+                    }
+                ]
+            },
+            {
+                "value": "sunways",
+                "text": "Sunways-Device",
+                "component": [
+                    {
+                        "value": "inverter",
+                        "text": "Sunways-Wechselrichter"
                     }
                 ]
             },

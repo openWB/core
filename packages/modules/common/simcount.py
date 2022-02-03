@@ -143,6 +143,7 @@ class SimCountLegacy:
 
 class Restore():
     def restore_value(self, value: str, prefix: str) -> float:
+        result = 0
         try:
             self.temp = ""
             self.value = value
@@ -161,7 +162,6 @@ class Restore():
             except ValueError:
                 MainLogger().info("Keine Werte auf dem Broker gefunden. neue Simulation gestartet.")
                 self.temp = "0"
-                result = 0
             write_ramdisk_file(prefix+value, self.temp)
             if value == "watt0pos":
                 MainLogger().info(

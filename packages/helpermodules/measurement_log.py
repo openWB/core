@@ -209,60 +209,57 @@ def update_daily_yields():
                     data.data.counter_data[counter].counter_num)+"/get/daily_yield_export", daily_yield_export)
             else:
                 MainLogger().info("Zaehler "+str(counter) +
-                                  " wurde zwischenzeitlich geloescht und wird daher nicht mehr aufgefuehrt.")
+                                  " wurde zwischenzeitlich gelöscht und wird daher nicht mehr aufgeführt.")
         # Tagesertrag Ladepunkte
         for cp in daily_log[0]["cp"]:
-            if "cp" in cp:
-                if cp in data.data.cp_data:
-                    daily_yield = data.data.cp_data[cp].data["get"]["counter"] - \
-                        daily_log[0]["cp"][cp]["counter"]
-                    data.data.cp_data[cp].data["get"]["daily_yield"] = daily_yield
-                    Pub().pub("openWB/set/chargepoint/" +
-                              str(data.data.cp_data[cp].cp_num)+"/get/daily_yield", daily_yield)
-                else:
-                    MainLogger().info("Ladepunkt "+str(cp) +
-                                      " wurde zwischenzeitlich geloescht und wird daher nicht mehr aufgefuehrt.")
-            else:
+            if cp in data.data.cp_data:
                 daily_yield = data.data.cp_data[cp].data["get"]["counter"] - \
                     daily_log[0]["cp"][cp]["counter"]
                 data.data.cp_data[cp].data["get"]["daily_yield"] = daily_yield
-                Pub().pub("openWB/set/chargepoint/get/daily_yield", daily_yield)
+                if "cp" in cp:
+                    Pub().pub("openWB/set/chargepoint/" +
+                              str(data.data.cp_data[cp].cp_num)+"/get/daily_yield", daily_yield)
+                else:
+                    Pub().pub("openWB/set/chargepoint/get/daily_yield", daily_yield)
+            else:
+                MainLogger().info("Ladepunkt "+str(cp) +
+                                  " wurde zwischenzeitlich gelöscht und wird daher nicht mehr aufgeführt.")
         # Tagesertrag PV
         for pv in daily_log[0]["pv"]:
-            daily_yield = data.data.pv_data[pv].data["get"]["counter"] - \
-                daily_log[0]["pv"][pv]["imported"]
-            data.data.pv_data[pv].data["get"]["daily_yield"] = daily_yield
-            if "pv" in pv:
-                if pv in data.data.pv_data:
+            if pv in data.data.pv_data:
+                daily_yield = data.data.pv_data[pv].data["get"]["counter"] - \
+                    daily_log[0]["pv"][pv]["imported"]
+                data.data.pv_data[pv].data["get"]["daily_yield"] = daily_yield
+                if "pv" in pv:
                     Pub().pub(
                         "openWB/set/pv/"+str(data.data.pv_data[pv].pv_num)+"/get/daily_yield", daily_yield)
                 else:
-                    MainLogger().info("Wechselrichter "+str(pv) +
-                                      " wurde zwischenzeitlich geloescht und wird daher nicht mehr aufgefuehrt.")
+                    Pub().pub("openWB/set/pv/get/daily_yield", daily_yield)
             else:
-                Pub().pub("openWB/set/pv/get/daily_yield", daily_yield)
+                MainLogger().info("Wechselrichter "+str(pv) +
+                                  " wurde zwischenzeitlich gelöscht und wird daher nicht mehr aufgeführt.")
         # Tagesertrag Speicher
         for bat in daily_log[0]["bat"]:
-            daily_yield_imported = data.data.bat_data[bat].data["get"]["imported"] - \
-                daily_log[0]["bat"][bat]["imported"]
-            daily_yield_exported = data.data.bat_data[bat].data["get"]["exported"] - \
-                daily_log[0]["bat"][bat]["exported"]
-            data.data.bat_data[bat].data["get"]["daily_yield_import"] = daily_yield_imported
-            data.data.bat_data[bat].data["get"]["daily_yield_export"] = daily_yield_exported
-            if "bat" in bat:
-                if bat in data.data.bat_data:
+            if bat in data.data.bat_data:
+                daily_yield_imported = data.data.bat_data[bat].data["get"]["imported"] - \
+                    daily_log[0]["bat"][bat]["imported"]
+                daily_yield_exported = data.data.bat_data[bat].data["get"]["exported"] - \
+                    daily_log[0]["bat"][bat]["exported"]
+                data.data.bat_data[bat].data["get"]["daily_yield_import"] = daily_yield_imported
+                data.data.bat_data[bat].data["get"]["daily_yield_export"] = daily_yield_exported
+                if "bat" in bat:
                     Pub().pub("openWB/set/bat/"+str(
                         data.data.bat_data[bat].bat_num)+"/get/daily_yield_import", daily_yield_imported)
                     Pub().pub("openWB/set/bat/"+str(
                         data.data.bat_data[bat].bat_num)+"/get/daily_yield_export", daily_yield_exported)
                 else:
-                    MainLogger().info("Speicher "+str(bat) +
-                                      " wurde zwischenzeitlich geloescht und wird daher nicht mehr aufgefuehrt.")
+                    Pub().pub("openWB/set/bat/get/daily_yield_import",
+                              daily_yield_imported)
+                    Pub().pub("openWB/set/bat/get/daily_yield_export",
+                              daily_yield_exported)
             else:
-                Pub().pub("openWB/set/bat/get/daily_yield_import",
-                          daily_yield_imported)
-                Pub().pub("openWB/set/bat/get/daily_yield_export",
-                          daily_yield_exported)
+                MainLogger().info("Speicher "+str(bat) +
+                                  " wurde zwischenzeitlich gelöscht und wird daher nicht mehr aufgeführt.")
         data.data.counter_data["all"].calc_daily_yield_home_consumption()
     except Exception:
         MainLogger().exception("Fehler im Werte-Loggingmodul")
