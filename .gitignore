@@ -21,3 +21,5 @@ web/settings/.htaccess
 web/settings/.passwd
 web/lastcommit
 smarthome.ini
+.vscode/settings.json
+.pytest_cache
