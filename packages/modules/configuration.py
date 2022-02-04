@@ -396,6 +396,10 @@ def _pub_configurable_chargepoints() -> None:
             {
                 "value": "openwb_pro",
                 "text": "openWB Pro"
+            },
+            {
+                "value": "smartwb",
+                "text": "smartWB / EVSE-Wifi (>= v1.x.x/v2.x.x)"
             }
         ]
         Pub().pub("openWB/set/system/configurable/chargepoints", chargepoints)

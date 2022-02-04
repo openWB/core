@@ -1,4 +1,4 @@
-from typing import List
+from typing import Dict, List
 
 from helpermodules.auto_str import auto_str
 
@@ -75,7 +75,8 @@ class ChargepointState:
                  power_factors: List[float] = None,
                  phases_in_use: int = 1,
                  charge_state: bool = False,
-                 plug_state: bool = False):
+                 plug_state: bool = False,
+                 read_tag: Dict[str, str] = None):
         if voltages is None:
             voltages = [0.0]*3
         self.voltages = voltages
@@ -91,3 +92,4 @@ class ChargepointState:
         self.phases_in_use = phases_in_use
         self.charge_state = charge_state
         self.plug_state = plug_state
+        self.read_tag = read_tag
