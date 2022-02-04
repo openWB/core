@@ -155,11 +155,17 @@ class Algorithm:
                 for cp in data.data.cp_data:
                     try:
                         if "cp" in cp:
-                            if data.data.cp_data[cp].data["set"]["current"] > max(
-                                    data.data.cp_data[cp].data["get"]["currents"]) > data.data.cp_data[cp].data["set"][
-                                    "charging_ev_data"].ev_template.data["nominal_difference"]:
-                                data.data.cp_data[cp].data["set"]["current"] = max(
-                                    data.data.cp_data[cp].data["get"]["currents"])
+                            max_get_current = max(data.data.cp_data[cp].data["get"]["currents"])
+                            if (data.data.cp_data[cp].data["set"]["current"] > max_get_current
+                                > data.data.cp_data[cp].data["set"][
+                                    "charging_ev_data"].ev_template.data["nominal_difference"]):
+                                # Manche EVs laden mit weniger Strom als der Min-Strom.
+                                if (max_get_current > data.data.cp_data[cp].data["set"][
+                                        "charging_ev_data"].ev_template.data["min_current"]):
+                                    data.data.cp_data[cp].data["set"]["current"] = max_get_current
+                                else:
+                                    data.data.cp_data[cp].data["set"]["current"] = data.data.cp_data[cp].data["set"][
+                                        "charging_ev_data"].ev_template.data["min_current"]
                     except Exception:
                         MainLogger().exception("Fehler im Algorithmus-Modul für Ladepunkt"+cp)
                 # Begrenzung der Schleifendurchläufe: Im ersten Durchlauf wird versucht, die Überlast durch Reduktion
@@ -315,8 +321,9 @@ class Algorithm:
                     try:
                         # Wenn der LP erst in diesem Zyklus eingeschaltet wird, sind noch keine phases_in_use
                         # hinterlegt.
+                        ev_data = cp.data["set"]["charging_ev_data"]
                         if not cp.data["get"]["charge_state"]:
-                            phases = cp.data["set"]["charging_ev_data"].data["control_parameter"]["phases"]
+                            phases = ev_data.data["control_parameter"]["phases"]
                         else:
                             phases = cp.data["get"]["phases_in_use"]
                         # Wenn max_overshoot_phase -1 ist, wurde die maximale Gesamtleistung überschritten und
@@ -331,10 +338,10 @@ class Algorithm:
                             considered_current = cp.data["set"]["current"]
                         else:
                             # Dies ist der aktuell betrachtete Ladepunkt. Es wurde noch kein Strom gesetzt.
-                            considered_current = cp.data["set"]["charging_ev_data"].data["control_parameter"][
+                            considered_current = ev_data.data["control_parameter"][
                                 "required_current"]
                         adaptable_current = considered_current - \
-                            cp.data["set"]["charging_ev_data"].ev_template.data["min_current"]
+                            ev_data.ev_template.data["min_current"]
                         # Der Strom kann nicht weiter reduziert werden.
                         if adaptable_current <= 0:
                             # Ladung darf gestoppt werden.
@@ -342,7 +349,7 @@ class Algorithm:
                                 taken_current = cp.data["set"]["current"]*-1
                                 remaining_current_overshoot += taken_current
                                 # In diesem Zyklus darf nicht mehr geladen werden.
-                                cp.data["set"]["charging_ev_data"].data["control_parameter"]["required_current"] = 0
+                                ev_data.data["control_parameter"]["required_current"] = 0
                                 self._process_data(cp, 0)
                                 message = "Das Lastmanagement hat den Ladevorgang gestoppt."
                             else:
@@ -356,9 +363,13 @@ class Algorithm:
                                 remaining_current_overshoot = 0
                             required_current = considered_current+taken_current
                             self._process_data(cp, required_current)
-                            message = "Das Lastmanagement hat den Ladestrom um " + \
-                                str(round(taken_current, 2))+"A auf " + \
-                                str(round(required_current, 2))+"A angepasst."
+                            MainLogger().debug("LP "+str(cp.cp_num)+": Das Lastmanagement hat den Ladestrom um " +
+                                               str(round(taken_current, 2))+"A auf " +
+                                               str(round(required_current, 2))+"A angepasst.")
+                            current_diff = round(
+                                ev_data.data["control_parameter"]["required_current"] - required_current,
+                                2)
+                            message = f"Das Lastmanagement hat die Sollstromstärke um {current_diff}A runtergeregelt."
                         adapted_power = taken_current * 230 * phases
                         # Werte aktualisieren
                         loadmanagement.loadmanagement_for_cp(
@@ -372,12 +383,13 @@ class Algorithm:
                             remaining_current_overshoot = remaining_current_overshoot / \
                                 (3 - phases + 1)
                         if remaining_current_overshoot < 0.01:
+                            if message is not None:
+                                cp.data["get"]["state_str"] = message
                             break
                         else:
                             max_current_overshoot = remaining_current_overshoot
                         if message is not None:
                             cp.data["get"]["state_str"] = message
-                            MainLogger().debug("LP "+str(cp.cp_num)+": "+message)
                     except Exception:
                         MainLogger().exception("Fehler im Algorithmus-Modul für Ladepunkt"+cp)
                 return remaining_current_overshoot
@@ -454,8 +466,9 @@ class Algorithm:
                             phases = cp.data["get"]["phases_in_use"]
                         required_power = 230 * phases * missing_current
                         # Lastmanagement für den fehlenden Ladestrom durchführen
-                        MainLogger().debug("Fehlenden Ladestrom anpassen: "+str(missing_current) +
-                                           ", fehlende Ladeleistung: "+str(required_power))
+                        MainLogger().debug(
+                            (f"LP {cp.cp_num}: Fehlenden Ladestrom anpassen: {missing_current}, "
+                             f"fehlende Ladeleistung: {required_power}"))
                         loadmanagement_state, overloaded_counters = loadmanagement.loadmanagement_for_cp(
                             cp, required_power, missing_current, phases)
                         MainLogger().debug("Lastmanagement aktiv: "+str(loadmanagement_state))
@@ -506,10 +519,14 @@ class Algorithm:
                             message = "Das Lastmanagement hat den Ladestrom um " + \
                                 str(round(missing_current, 2))+"A angepasst."
                             MainLogger().debug(message)
-                        if message is not None:
-                            cp.data["get"]["state_str"] = message
+                        ev_data = cp.data["set"]["charging_ev_data"]
+                        current_diff = round(ev_data.data[
+                            "control_parameter"]["required_current"] - cp.data["set"]["current"], 2)
+                        if current_diff > ev_data.ev_template.data["nominal_difference"]:
+                            cp.data["get"]["state_str"] = (f"Das Lastmanagement hat die Sollstromstärke um "
+                                                           f"{current_diff}A runtergeregelt.")
                     except Exception:
-                        MainLogger().exception("Fehler im Algorithmus-Modul für Ladepunkt"+cp)
+                        MainLogger().exception(f"Fehler im Algorithmus-Modul für Ladepunkt {cp.cp_num}")
                 data.data.counter_data[data.data.counter_data["all"].get_evu_counter(
                 )].print_stats()
         except Exception:
