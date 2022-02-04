@@ -14,7 +14,7 @@ def get_default_config() -> Dict:
     return {
         "id": 0,
         "connection_module": {
-            "type": "simple_evse",
+            "type": "smartwb",
             "configuration":
                 {
                     "ip_address": "192.168.1.85",
