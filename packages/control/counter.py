@@ -229,7 +229,7 @@ class CounterAll:
             MainLogger().exception("Fehler in der allgemeinen Zähler-Klasse")
             return False
 
-    def hierarchy_remove_item(self, id, keep_children=True):
+    def hierarchy_remove_item(self, id: str, keep_children: bool = True):
         """ruft die rekursive Funktion zum Löschen eines Elements. Je nach Flag werden die Kinder gelöscht oder auf die
         Ebene des gelöschten Elements gehoben.
 
@@ -244,11 +244,11 @@ class CounterAll:
             self.data["get"]["hierarchy"].remove(self.data["get"]["hierarchy"][0])
             Pub().pub("openWB/set/counter/get/hierarchy",
                       data.data.counter_data["all"].data["get"]["hierarchy"])
-            return True
         else:
-            return self._remove_item(self.data["get"]["hierarchy"][0], id, keep_children)
+            if not self._remove_item(self.data["get"]["hierarchy"][0], id, keep_children):
+                MainLogger().error(f"Löschen von Item {id} aus der Hierarchie fehlgeschlagen.")
 
-    def _remove_item(self, upper_level, id, keep_children):
+    def _remove_item(self, upper_level: dict, id: str, keep_children: bool) -> bool:
         try:
             for child in upper_level["children"]:
                 try:
@@ -262,8 +262,8 @@ class CounterAll:
                         return True
                     else:
                         if len(child["children"]) != 0:
-                            removed = self._remove_item(child, id, keep_children)
-                            return removed
+                            if self._remove_item(child, id, keep_children):
+                                return True
                 except Exception:
                     MainLogger().exception("Fehler in der allgemeinen Zähler-Klasse für "+child)
             else:
