@@ -8,6 +8,11 @@ from control import data
 from helpermodules.log import MainLogger
 from helpermodules.pub import Pub
 from helpermodules import subdata
+from control.bat import Bat
+from control.counter import Counter
+
+from control.chargepoint import Chargepoint
+from control.pv import Pv
 
 
 class Prepare:
@@ -38,13 +43,55 @@ class Prepare:
         except Exception:
             MainLogger().exception("Fehler im Prepare-Modul")
 
+    def __copy_counter_data(self):
+        for counter in subdata.SubData.counter_data:
+            stop = False
+            if isinstance(subdata.SubData.counter_data[counter], Counter):
+                for dev in subdata.SubData.system_data:
+                    if "device" in dev:
+                        for component in subdata.SubData.system_data[dev]._components:
+                            if component[9:] == counter[7:]:
+                                data.data.counter_data[counter] = copy.deepcopy(subdata.SubData.counter_data[counter])
+                                stop = True
+                                break
+                    if stop:
+                        break
+            else:
+                data.data.counter_data[counter] = copy.deepcopy(subdata.SubData.counter_data[counter])
+
     def copy_module_data(self):
         """ kopiert die Daten, die per MQTT empfangen wurden.
         """
         try:
-            data.data.counter_data = copy.deepcopy(subdata.SubData.counter_data)
-            data.data.pv_data = copy.deepcopy(subdata.SubData.pv_data)
-            data.data.bat_data = copy.deepcopy(subdata.SubData.bat_data)
+            self.__copy_counter_data()
+            for pv in subdata.SubData.pv_data:
+                stop = False
+                if isinstance(subdata.SubData.pv_data[pv], Pv):
+                    for dev in subdata.SubData.system_data:
+                        if "device" in dev:
+                            for component in subdata.SubData.system_data[dev]._components:
+                                if component[9:] == pv[2:]:
+                                    data.data.pv_data[pv] = copy.deepcopy(subdata.SubData.pv_data[pv])
+                                    stop = True
+                                    break
+                        if stop:
+                            break
+                else:
+                    data.data.pv_data[pv] = copy.deepcopy(subdata.SubData.pv_data[pv])
+            for bat in subdata.SubData.bat_data:
+                stop = False
+                if isinstance(subdata.SubData.bat_data[bat], Bat):
+                    for dev in subdata.SubData.system_data:
+                        if "device" in dev:
+                            for component in subdata.SubData.system_data[dev]._components:
+                                if component[9:] == bat[3:]:
+                                    data.data.bat_data[bat] = copy.deepcopy(subdata.SubData.bat_data[bat])
+                                    stop = True
+                                    break
+                        if stop:
+                            break
+                else:
+                    data.data.bat_data[bat] = copy.deepcopy(subdata.SubData.bat_data[bat])
         except Exception:
             MainLogger().exception("Fehler im Prepare-Modul")
 
@@ -54,7 +101,12 @@ class Prepare:
         try:
             data.data.general_data = copy.deepcopy(subdata.SubData.general_data)
             data.data.optional_data = copy.deepcopy(subdata.SubData.optional_data)
-            data.data.cp_data = copy.deepcopy(subdata.SubData.cp_data)
+            for cp in subdata.SubData.cp_data:
+                if isinstance(subdata.SubData.cp_data[cp], Chargepoint):
+                    if "config" in subdata.SubData.cp_data[cp].data:
+                        data.data.cp_data[cp] = copy.deepcopy(subdata.SubData.cp_data[cp])
+                else:
+                    data.data.cp_data[cp] = copy.deepcopy(subdata.SubData.cp_data[cp])
             data.data.cp_template_data = copy.deepcopy(subdata.SubData.cp_template_data)
             for chargepoint in data.data.cp_data:
                 try:
@@ -65,7 +117,9 @@ class Prepare:
                         data.data.cp_data[chargepoint].data["get"]["state_str"] = None
                 except Exception:
                     MainLogger().exception("Fehler im Prepare-Modul für Ladepunkt "+str(chargepoint))
-            data.data.ev_data = copy.deepcopy(subdata.SubData.ev_data)
+            for ev in subdata.SubData.ev_data:
+                if "name" in subdata.SubData.ev_data[ev].data:
+                    data.data.ev_data[ev] = copy.deepcopy(subdata.SubData.ev_data[ev])
             data.data.ev_template_data = copy.deepcopy(subdata.SubData.ev_template_data)
             data.data.ev_charge_template_data = copy.deepcopy(subdata.SubData.ev_charge_template_data)
             for vehicle in data.data.ev_data:
@@ -82,7 +136,7 @@ class Prepare:
                 except Exception:
                     MainLogger().exception("Fehler im Prepare-Modul für EV "+str(vehicle))
 
-            data.data.counter_data = copy.deepcopy(subdata.SubData.counter_data)
+            self.__copy_counter_data()
             data.data.graph_data = copy.deepcopy(subdata.SubData.graph_data)
         except Exception:
             MainLogger().exception("Fehler im Prepare-Modul")
