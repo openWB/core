@@ -29,7 +29,6 @@ class SubData:
     cp_data = {}
     cp_template_data = {}
     pv_data = {}
-    pv_module_data = {}
     ev_data = {}
     ev_template_data = {}
     ev_charge_template_data = {}

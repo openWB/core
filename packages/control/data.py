@@ -27,7 +27,6 @@ class Data:
         self._graph_data = {}
         self._optional_data = {}
         self._pv_data = {}
-        self._pv_module_data = {}
         self._system_data = {}
 
     # getter-Funktion, der Zugriff erfolgt wie bei einem Zugriff auf eine öffentliche Variable.
@@ -224,21 +223,6 @@ class Data:
         self.event.set()
 
     @property
-    def pv_module_data(self):
-        self.event.wait()
-        self.event.clear()
-        temp = self._pv_module_data
-        self.event.set()
-        return temp
-
-    @pv_module_data.setter
-    def pv_module_data(self, value):
-        self.event.wait()
-        self.event.clear()
-        self._pv_module_data = value
-        self.event.set()
-
-    @property
     def system_data(self):
         self.event.wait()
         self.event.clear()
@@ -267,7 +251,6 @@ class Data:
         self._print_dictionaries(self._graph_data)
         self._print_dictionaries(self._optional_data)
         self._print_dictionaries(self._pv_data)
-        self._print_dictionaries(self._pv_module_data)
         self._print_dictionaries(self._system_data)
         MainLogger().debug("\n")
 
