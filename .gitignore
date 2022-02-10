@@ -23,3 +23,4 @@ web/lastcommit
 smarthome.ini
 .vscode/settings.json
 .pytest_cache
+__pycache__
