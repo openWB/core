@@ -257,6 +257,24 @@ def _pub_configurable_devices_components() -> None:
                 ]
             },
             {
+                "value": "sma_shm",
+                "text": "SMA SmartHome Manager",
+                "component": [
+                    {
+                        "value": "bat",
+                        "text": "SMA SHM-Speicher"
+                    },
+                    {
+                        "value": "counter",
+                        "text": "SMA SHM-Zähler"
+                    },
+                    {
+                        "value": "inverter",
+                        "text": "SMA SHM-Wechselrichter"
+                    }
+                ]
+            },
+            {
                 "value": "solax",
                 "text": "Solax-Device",
                 "component": [

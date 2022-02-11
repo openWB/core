@@ -14,8 +14,7 @@ def get_default_config() -> dict:
         "name": "Alpha ESS Wechselrichter",
         "id": 0,
         "type": "inverter",
-        "configuration":
-        {
+        "configuration": {
             "version": 1
         }
     }
@@ -31,12 +30,12 @@ class AlphaEssInverter:
         self.__store = get_inverter_value_store(component_config["id"])
         self.component_info = ComponentInfo.from_component_config(component_config)
 
-    def update(self) -> None:
+    def update(self, unit_id: int) -> None:
         MainLogger().debug(
             "Komponente "+self.component_config["name"]+" auslesen.")
         reg_p = self.__version_factory(
             self.component_config["configuration"]["version"])
-        power = self.__get_power(85, reg_p)
+        power = self.__get_power(unit_id, reg_p)
 
         topic_str = "openWB/set/system/device/" + \
             str(self.__device_id)+"/component/" + \
@@ -52,7 +51,7 @@ class AlphaEssInverter:
     def __version_factory(self, version: int) -> int:
         return 0x0012 if version == 0 else 0x00A1
 
-    def __get_power(self, unit: int, reg_p: int) -> int:
+    def __get_power(self, unit: int, reg_p: int) -> float:
         with self.__tcp_client:
             powers = [
                 self.__tcp_client.read_holding_registers(address, ModbusDataType.INT_32, unit=unit)
