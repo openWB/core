@@ -105,7 +105,7 @@ class SimCountLegacy:
             write_ramdisk_file(prefix+'wh0', int(power_present))
 
             if start_new:
-                log.MainLogger().debug("Neue Simulation starten.")
+                MainLogger().debug("Neue Simulation starten.")
                 if prefix == "bezug":
                     imported = get_existing_imports_exports('bezugkwh')
                     exported = get_existing_imports_exports('einspeisungkwh')
@@ -154,7 +154,7 @@ class SimCountLegacy:
 def get_existing_imports_exports(file: str) -> float:
     if os.path.isfile('/var/www/html/openWB/ramdisk/'+file):
         value = float(read_ramdisk_file(file))
-        log.MainLogger().info("Es wurde ein vorhandener Zählerstand in "+file+" gefunden: "+str(value)+"Wh")
+        MainLogger().info("Es wurde ein vorhandener Zählerstand in "+file+" gefunden: "+str(value)+"Wh")
     else:
         value = 0
     return value
@@ -179,13 +179,13 @@ class Restore():
             try:
                 result = float(self.temp)
                 if value == "watt0pos":
-                    log.MainLogger().info(
+                    MainLogger().info(
                         "loadvars read openWB/"+get_topic(self.prefix)+"/WHImported_temp from mosquito "+str(self.temp))
                 else:
-                    log.MainLogger().info(
+                    MainLogger().info(
                         "loadvars read openWB/"+get_topic(self.prefix)+"/WHExport_temp from mosquito "+str(self.temp))
             except ValueError:
-                log.MainLogger().info("Keine Werte auf dem Broker gefunden.")
+                MainLogger().info("Keine Werte auf dem Broker gefunden.")
                 if prefix == "bezug":
                     file = "bezugkwh" if value == "watt0pos" else "einspeisungkwh"
                 elif prefix == "pv":

@@ -51,7 +51,7 @@ class AlphaEssInverter:
     def __version_factory(self, version: int) -> int:
         return 0x0012 if version == 0 else 0x00A1
 
-    def __get_power(self, unit: int, reg_p: int) -> int:
+    def __get_power(self, unit: int, reg_p: int) -> float:
         with self.__tcp_client:
             powers = [
                 self.__tcp_client.read_holding_registers(address, ModbusDataType.INT_32, unit=unit)

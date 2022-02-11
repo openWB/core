@@ -44,7 +44,6 @@ class Prepare:
         try:
             data.data.counter_data = copy.deepcopy(subdata.SubData.counter_data)
             data.data.pv_data = copy.deepcopy(subdata.SubData.pv_data)
-            data.data.pv_module_data = copy.deepcopy(subdata.SubData.pv_module_data)
             data.data.bat_data = copy.deepcopy(subdata.SubData.bat_data)
         except Exception:
             MainLogger().exception("Fehler im Prepare-Modul")

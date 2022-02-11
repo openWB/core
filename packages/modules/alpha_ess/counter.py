@@ -34,7 +34,7 @@ class AlphaEssCounter:
         time.sleep(0.1)
         factory_method = self.__get_values_factory(
             self.component_config["configuration"]["version"])
-        counter_state = factory_method(unit=unit_id)
+        counter_state = factory_method(unit_id)
         self.__store.set(counter_state)
 
     def __get_values_factory(self, version: int) -> Callable[[int], CounterState]:
