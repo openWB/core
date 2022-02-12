@@ -49,6 +49,8 @@ class FaultState(Exception):
                 pub.pub_single(prefix + "aultState", self.fault_state.value)
             else:
                 topic = self.__type_topic_mapping(component_info.type)
+                if topic.startswith("counter"):
+                    topic = "counter"
                 pub.Pub().pub(
                     "openWB/set/" + topic + "/" + str(component_info.id) + "/get/fault_str", self.fault_str)
                 pub.Pub().pub(

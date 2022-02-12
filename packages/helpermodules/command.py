@@ -335,7 +335,7 @@ class Command:
             "."+payload["data"]["deviceType"]+"."+payload["data"]["type"], "modules")
         component_default = component.get_default_config()
         component_default["id"] = new_id
-        if payload["data"]["type"] == "counter":
+        if "counter" in payload["data"]["type"]:
             try:
                 data.data.counter_data["all"].hierarchy_add_item_below(
                     "counter"+str(new_id), data.data.counter_data["all"].get_evu_counter())
