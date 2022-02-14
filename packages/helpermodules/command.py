@@ -568,15 +568,22 @@ class ProcessBrokerBranch:
                 Pub().pub(msg.topic, "")
                 if "openWB/system/device/" in msg.topic and "component" in msg.topic and "config" in msg.topic:
                     payload = json.loads(str(msg.payload.decode("utf-8")))
-                    if payload["type"] == "counter":
-                        data.data.counter_data["all"].hierarchy_remove_item("counter"+str(payload["id"]))
-                    if payload["type"] == "inverter":
-                        module_branch = "openWB/pv/"+str(payload["id"])
-                    else:
-                        module_branch = "openWB/"+payload["type"]+"/"+str(payload["id"])
-                    client.subscribe(module_branch+"/#", 2)
+                    topic = self.__type_topic_mapping(payload["type"])
+                    if topic == "counter":
+                        data.data.counter_data["all"].hierarchy_remove_item(topic+str(payload["id"]))
+                    client.subscribe("openWB/"+topic+"/"+str(payload["id"])+"/#", 2)
         except Exception:
             MainLogger().exception("Fehler im Command-Modul")
+
+    def __type_topic_mapping(self, component_type: str) -> str:
+        if "bat" in component_type:
+            return "bat"
+        elif "counter" in component_type:
+            return "counter"
+        elif "inverter" in component_type:
+            return "pv"
+        else:
+            return component_type
 
     def __on_message_max_id(self, client, userdata, msg):
         try:
