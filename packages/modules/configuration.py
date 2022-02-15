@@ -261,10 +261,6 @@ def _pub_configurable_devices_components() -> None:
                 "text": "SMA SmartHome Manager",
                 "component": [
                     {
-                        "value": "bat",
-                        "text": "SMA SHM-Speicher"
-                    },
-                    {
                         "value": "counter",
                         "text": "SMA SHM-Zähler"
                     },
