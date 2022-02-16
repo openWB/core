@@ -16,12 +16,13 @@ class PubSingleton:
         self.client.connect("localhost", 1886)
         self.client.loop_start()
 
-    def pub(self, topic: str, payload) -> None:
+    def pub(self, topic: str, payload, qos: int = 0, retain: bool = True) -> None:
+        MainLogger().debug("publish: '%s'->'%s' qos:%d retain:%s" % (json.dumps(payload), topic, qos, retain))
         try:
             if payload == "":
-                self.client.publish(topic, payload, qos=0, retain=True)
+                self.client.publish(topic, payload, qos=qos, retain=retain)
             else:
-                self.client.publish(topic, payload=json.dumps(payload), qos=0, retain=True)
+                self.client.publish(topic, payload=json.dumps(payload), qos=qos, retain=retain)
         except Exception:
             MainLogger().exception("Fehler im pub-Modul")
 
