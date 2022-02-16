@@ -94,7 +94,7 @@ class SetData:
             elif "openWB/set/command/" in msg.topic:
                 self.process_command_topic(msg)
 
-    def _validate_value(self, msg, data_type, ranges=[], collection=None, pub_json=False):
+    def _validate_value(self, msg, data_type, ranges=[], collection=None, pub_json=False, retain: bool = True):
         """ prüft, ob der Wert vom angegebenen Typ ist.
 
         Parameter
@@ -132,7 +132,7 @@ class SetData:
 
             if valid:
                 if not pub_json:
-                    Pub().pub(msg.topic.replace('set/', '', 1), value)
+                    Pub().pub(msg.topic.replace('set/', '', 1), value, retain=retain)
                     Pub().pub(msg.topic, "")
                 else:
                     # aktuelles json-Objekt liegt in subdata
@@ -176,7 +176,7 @@ class SetData:
                     else:
                         topic = msg.topic[:index_pos]
                     topic = topic.replace('set/', '', 1)
-                    Pub().pub(topic, template)
+                    Pub().pub(topic, template, retain=retain)
                     Pub().pub(msg.topic, "")
                     event.clear()
             else:
@@ -823,7 +823,7 @@ class SetData:
             if ("openWB/set/log/" and "data" in msg.topic or
                     "openWB/set/log/daily" in msg.topic or
                     "openWB/set/log/monthly" in msg.topic):
-                self._validate_value(msg, "json")
+                self._validate_value(msg, "json", retain=False)
             else:
                 self.__unknown_topic(msg)
         except Exception:

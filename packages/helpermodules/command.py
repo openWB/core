@@ -429,14 +429,22 @@ class Command:
         Pub().pub("openWB/set/system/debug_level", 30)
 
     def getChargeLog(self, connection_id: str, payload: dict) -> None:
-        filtered_data = chargelog.get_log_data(payload["data"])
-        Pub().pub("openWB/set/log/"+connection_id+"/data", filtered_data)
+        Pub().pub(
+            "openWB/set/log/"+connection_id+"/data",
+            chargelog.get_log_data(payload["data"])
+        )
 
     def getDailyLog(self, connection_id: str, payload: dict) -> None:
-        measurement_log.pub_daily_log(payload["data"]["day"])
+        Pub().pub(
+            "openWB/set/log/daily/"+payload["data"]["day"],
+            measurement_log.get_daily_log(payload["data"]["day"])
+        )
 
     def getMonthlyLog(self, connection_id: str, payload: dict) -> None:
-        measurement_log.pub_monthly_log(payload["data"]["month"])
+        Pub().pub(
+            "openWB/set/log/monthly/"+payload["data"]["month"],
+            measurement_log.get_monthly_log(payload["data"]["month"])
+        )
 
     def initCloud(self, connection_id: str, payload: dict) -> None:
         parent_file = Path(__file__).resolve().parents[2]
