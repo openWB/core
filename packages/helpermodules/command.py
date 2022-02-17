@@ -4,6 +4,7 @@
 import importlib
 import json
 import subprocess
+from typing import Dict
 import paho.mqtt.client as mqtt
 import re
 import time
@@ -19,6 +20,7 @@ from control import chargepoint
 from control import data
 from control import ev
 from control import counter
+from modules.common.component_type import ComponentType
 
 
 class Command:
@@ -27,28 +29,36 @@ class Command:
 
     def __init__(self):
         try:
-            self.__get_max_id("autolock_plan", "chargepoint/template/+/autolock", -1)
-            self.__get_max_id("mqtt_bridge", "system/mqtt/bridge", -1)
-            self.__get_max_id("charge_template", "vehicle/template/charge_template", 0)
-            self.__get_max_id(
+            self.__get_max_id_by_topic_id("autolock_plan", "chargepoint/template/+/autolock", -1)
+            self.__get_max_id_by_topic_id("mqtt_bridge", "system/mqtt/bridge", -1)
+            self.__get_max_id_by_topic_id("charge_template", "vehicle/template/charge_template", 0)
+            self.__get_max_id_by_topic_id(
                 "charge_template_scheduled_plan",
                 "vehicle/template/charge_template/+/chargemode/scheduled_charging/plans", -1)
-            self.__get_max_id(
+            self.__get_max_id_by_topic_id(
                 "charge_template_time_charging_plan",
                 "vehicle/template/charge_template/+/time_charging/plans", -1)
-            self.__get_max_id("chargepoint", "chargepoint", -1)
-            self.__get_max_id("chargepoint_template", "chargepoint/template", 0)
-            self.__get_max_id("component", "system/device/+/component", -1)
-            self.__get_max_id("device", "system/device", -1)
-            self.__get_max_id("ev_template", "vehicle/template/ev_template", 0)
-            self.__get_max_id("vehicle", "vehicle", 0)
+            self.__get_max_id_by_topic_id("chargepoint_template", "chargepoint/template", 0)
+            self.__get_max_id_by_json_object("hierarchy", "counter/get/hierarchy", -1)
+            self.__get_max_id_by_topic_id("device", "system/device", -1)
+            self.__get_max_id_by_topic_id("ev_template", "vehicle/template/ev_template", 0)
+            self.__get_max_id_by_topic_id("vehicle", "vehicle", 0)
         except Exception:
             MainLogger().exception("Fehler im Command-Modul")
 
-    def __get_max_id(self, id_topic: str, topic: str, default: int) -> None:
+    def __get_max_id_by_topic_id(self, id_topic: str, topic: str, default: int) -> None:
         """ ermittelt die maximale ID vom Broker """
         try:
             max_id = ProcessBrokerBranch(topic).get_max_id(default)
+            Pub().pub("openWB/set/command/max_id/"+id_topic, max_id)
+        except Exception:
+            MainLogger().exception("Fehler im Command-Modul")
+
+    def __get_max_id_by_json_object(self, id_topic: str, topic: str, default: int) -> None:
+        """ ermittelt die maximale ID vom Broker """
+        try:
+            hierarchy = ProcessBrokerBranch(topic).get_payload()
+            max_id = counter.get_max_id_in_hierarchy(hierarchy, default)
             Pub().pub("openWB/set/command/max_id/"+id_topic, max_id)
         except Exception:
             MainLogger().exception("Fehler im Command-Modul")
@@ -156,7 +166,7 @@ class Command:
     def addChargepoint(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem ein neuer Chargepoint erstellt werden soll.
         """
-        new_id = self.max_id_chargepoint + 1
+        new_id = self.max_id_hierarchy + 1
         MainLogger().info(
             "Neuer Ladepunkt mit ID "+str(new_id)+" wird hinzugefügt.")
         chargepoint_default = chargepoint.get_chargepoint_default()
@@ -166,13 +176,13 @@ class Command:
         chargepoint_default["id"] = new_id
         chargepoint_default["type"] = payload["data"]["type"]
         try:
-            evu_counter = data.data.counter_data["all"].get_evu_counter()
+            evu_counter = data.data.counter_data["all"].get_id_evu_counter()
             data.data.counter_data["all"].hierarchy_add_item_below(
-                "cp"+str(new_id), evu_counter)
+                new_id, ComponentType.CHARGEPOINT, evu_counter)
             Pub().pub("openWB/set/chargepoint/"+str(new_id)+"/config", chargepoint_default)
             Pub().pub("openWB/set/chargepoint/"+str(new_id)+"/set/manual_lock", False)
-            self.max_id_chargepoint = self.max_id_chargepoint + 1
-            Pub().pub("openWB/set/command/max_id/chargepoint", self.max_id_chargepoint)
+            self.max_id_hierarchy = self.max_id_hierarchy + 1
+            Pub().pub("openWB/set/command/max_id/hierarchy", self.max_id_hierarchy)
             if self.max_id_chargepoint_template == -1:
                 self.addChargepointTemplate("addChargepoint", {})
             if self.max_id_vehicle == -1:
@@ -183,8 +193,8 @@ class Command:
     def removeChargepoint(self, connection_id: str, payload: dict) -> None:
         """ löscht ein Chargepoint.
         """
-        if self.max_id_chargepoint >= payload["data"]["id"]:
-            data.data.counter_data["all"].hierarchy_remove_item("cp"+str(payload["data"]["id"]))
+        if self.max_id_hierarchy >= payload["data"]["id"]:
+            data.data.counter_data["all"].hierarchy_remove_item(payload["data"]["id"])
             MainLogger().info("Ladepunkt mit ID " + str(payload["data"]["id"])+" gelöscht.")
             ProcessBrokerBranch("chargepoint/"+str(payload["data"]["id"])).remove_topics()
         else:
@@ -328,7 +338,7 @@ class Command:
     def addComponent(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem eine neue Komponente erstellt werden soll.
         """
-        new_id = self.max_id_component + 1
+        new_id = self.max_id_hierarchy + 1
         MainLogger().info(
             "Neue Komponente vom Typ"+str(payload["data"]["type"])+" mit ID "+str(new_id)+" hinzugefügt.")
         component = importlib.import_module(
@@ -338,25 +348,25 @@ class Command:
         if "counter" in payload["data"]["type"]:
             try:
                 data.data.counter_data["all"].hierarchy_add_item_below(
-                    "counter"+str(new_id), data.data.counter_data["all"].get_evu_counter())
+                    new_id, ComponentType.COUNTER, data.data.counter_data["all"].get_id_evu_counter())
             except (TypeError, IndexError):
                 # es gibt noch keinen EVU-Zähler
                 Pub().pub("openWB/set/counter/get/hierarchy",
-                          [{"id": "counter"+str(new_id), "children": []}] +
+                          [{"id": new_id, "type": ComponentType.COUNTER.value, "children": []}] +
                           data.data.counter_data["all"].data["get"]["hierarchy"])
             default_config = counter.get_counter_default_config()
             for item in default_config:
                 Pub().pub("openWB/set/counter/"+str(new_id)+"/config/"+item, default_config[item])
         Pub().pub("openWB/set/system/device/"+str(payload["data"]["deviceId"]
                                                   )+"/component/"+str(new_id)+"/config", component_default)
-        self.max_id_component = self.max_id_component + 1
+        self.max_id_hierarchy = self.max_id_hierarchy + 1
         Pub().pub("openWB/set/command/max_id/component",
-                  self.max_id_component)
+                  self.max_id_hierarchy)
 
     def removeComponent(self, connection_id: str, payload: dict) -> None:
         """ löscht eine Komponente.
         """
-        if self.max_id_component >= payload["data"]["id"]:
+        if self.max_id_hierarchy >= payload["data"]["id"]:
             MainLogger().info("Komponente mit ID "+str(payload["data"]["id"])+" gelöscht.")
             branch = "system/device/"+str(payload["data"]["deviceId"])+"/component/"+str(payload["data"]["id"])
             ProcessBrokerBranch(branch).remove_topics()
@@ -522,6 +532,11 @@ class ProcessBrokerBranch:
     def __init__(self, topic_str: str) -> None:
         self.topic_str = topic_str
 
+    def get_payload(self):
+        self.payload: Dict
+        self.__connect_to_broker(self.__get_payload)
+        return json.loads(self.payload)
+
     def remove_topics(self):
         """ löscht einen Topic-Zweig auf dem Broker. Payload "" löscht nur ein einzelnes Topic.
         """
@@ -603,6 +618,12 @@ class ProcessBrokerBranch:
                 if current_id_regex is not None:
                     current_id = int(current_id_regex.group(1))
                     self.max_id = max(current_id, self.max_id)
+        except Exception:
+            MainLogger().exception("Fehler im Command-Modul")
+
+    def __get_payload(self, client, userdata, msg):
+        try:
+            self.payload = msg.payload
         except Exception:
             MainLogger().exception("Fehler im Command-Modul")
 

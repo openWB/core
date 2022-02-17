@@ -1,8 +1,10 @@
 """Zähler-Logik
 """
+from typing import Callable, Dict, List
 from control import data
 from helpermodules.log import MainLogger
 from helpermodules.pub import Pub
+from modules.common.component_type import ComponentType
 
 
 class CounterAll:
@@ -18,10 +20,14 @@ class CounterAll:
         self.connected_counters = []
         self.connected_chargepoints = []
 
-    def get_evu_counter(self):
+    def get_evu_counter(self) -> str:
+        return f"counter{self.get_id_evu_counter()}"
+
+    def get_id_evu_counter(self) -> int:
         try:
-            if "counter" in self.data["get"]["hierarchy"][0]["id"]:
-                return self.data["get"]["hierarchy"][0]["id"]
+            for item in self.data["get"]["hierarchy"]:
+                if ComponentType.COUNTER.value == item["type"]:
+                    return item['id']
             else:
                 raise TypeError
         except Exception:
@@ -106,7 +112,9 @@ class CounterAll:
             if counter == self.get_evu_counter():
                 counter_object = self.data["get"]["hierarchy"][0]
             else:
-                counter_object = self._look_for_object(self.data["get"]["hierarchy"][0], "counter", counter[7:])
+                counter_object = self._look_for_object(
+                    self.data["get"]["hierarchy"][0],
+                    ComponentType.COUNTER, int(counter[7:]))
             self._get_all_cp_connected_to_counter(counter_object)
             return self.connected_chargepoints
         except Exception:
@@ -124,8 +132,8 @@ class CounterAll:
         # Alle Objekte der Ebene durchgehen
         for child in child["children"]:
             try:
-                if "cp" in child["id"]:
-                    self.connected_chargepoints.append(child["id"])
+                if child["type"] == ComponentType.CHARGEPOINT.value:
+                    self.connected_chargepoints.append(f"cp{child['id']}")
                 # Wenn das Objekt noch Kinder hat, diese ebenfalls untersuchen.
                 elif len(child["children"]) != 0:
                     self._get_all_cp_connected_to_counter(child)
@@ -142,13 +150,13 @@ class CounterAll:
         """
         try:
             self.connected_counters.clear()
-            self._look_for_object(self.data["get"]["hierarchy"][0], "cp", cp_num)
+            self._look_for_object(self.data["get"]["hierarchy"][0], ComponentType.CHARGEPOINT, cp_num)
             return self.connected_counters
         except Exception:
             MainLogger().exception("Fehler in der allgemeinen Zähler-Klasse")
             return None
 
-    def _look_for_object(self, child, object, num):
+    def _look_for_object(self, child: Dict, object: ComponentType, id_to_find: int):
         """ Rekursive Funktion, die alle Zweige durchgeht, bis der entsprechende Ladepunkt gefunden wird und dann alle
         Zähler in diesem Pfad der Liste anhängt.
 
@@ -166,155 +174,120 @@ class CounterAll:
         True/False: Ladepunkt wurde gefunden.
         """
         try:
-            parent = child["id"]
+            parent_id = child["id"]
             for child in child["children"]:
                 try:
-                    if object == "cp":
-                        if "cp" in child["id"]:
-                            if child["id"][2:] == str(num):
-                                self.connected_counters.append(parent)
+                    if object == ComponentType.CHARGEPOINT:
+                        if child["type"] == ComponentType.CHARGEPOINT.value:
+                            if child["id"] == id_to_find:
+                                self.connected_counters.append(f"counter{parent_id}")
                                 return True
-                    elif object == "counter":
-                        if "counter" in child["id"]:
-                            if child["id"][7:] == str(num):
+                    elif object == ComponentType.COUNTER:
+                        if child["type"] == ComponentType.COUNTER.value:
+                            if child["id"] == id_to_find:
                                 return child
                     if len(child["children"]) != 0:
-                        found = self._look_for_object(child, object, num)
+                        found = self._look_for_object(child, object, id_to_find)
                         if found:
-                            if object == "cp":
-                                self.connected_counters.append(parent)
+                            if object == ComponentType.CHARGEPOINT:
+                                self.connected_counters.append(f"counter{parent_id}")
                                 return True
-                        elif object == "counter":
+                        elif object == ComponentType.COUNTER:
                             return found
                 except Exception:
-                    MainLogger().exception("Fehler in der allgemeinen Zähler-Klasse für "+child)
+                    MainLogger().exception("Fehler in der allgemeinen Zähler-Klasse für "+str(child))
             else:
                 return False
         except Exception:
             MainLogger().exception("Fehler in der allgemeinen Zähler-Klasse")
             return False
 
-    def hierarchy_add_item_aside(self, id, lower_level):
+    def hierarchy_add_item_aside(self, new_id: int, new_type: ComponentType, id_to_find: int) -> bool:
         """ ruft die rekursive Funktion zum Hinzufügen eines Zählers oder Ladepunkts in die Zählerhierarchie auf
         derselben Ebene wie das angegebene Element.
-
-        Parameter
-        ---------
-        id: str (counterX/cpX)
-            Id des neuen Elements
-        lower_level: str
-            Id des Elements, auf dessen Ebene das neue Element eingefügt werden soll.
         """
-        return self._add_item_aside(self.data["get"]["hierarchy"][0], id, lower_level)
+        if id_to_find == self.data["get"]["hierarchy"][0]["id"]:
+            self.data["get"]["hierarchy"].append({"id": new_id, "type": new_type.value, "children": []})
+            Pub().pub("openWB/set/counter/get/hierarchy", self.data["get"]["hierarchy"])
+            return True
+        else:
+            return self.__find_element_in_hierarchy(
+                self.data["get"]["hierarchy"][0],
+                id_to_find, self._add_item_aside, new_id, new_type)
 
-    def _add_item_aside(self, upper_level, id, lower_level):
-        try:
-            for child in upper_level["children"]:
-                try:
-                    if lower_level in child["id"]:
-                        upper_level["children"].append({"id": id, "children": []})
-                        Pub().pub(
-                            "openWB/set/counter/get/hierarchy",
-                            data.data.counter_data["all"].data["get"]["hierarchy"])
-                        return True
-                    else:
-                        if len(child["children"]) != 0:
-                            added = self._add_item_aside(child, id, lower_level)
-                            return added
-                except Exception:
-                    MainLogger().exception("Fehler in der allgemeinen Zähler-Klasse für "+child)
-            else:
-                return False
-        except Exception:
-            MainLogger().exception("Fehler in der allgemeinen Zähler-Klasse")
+    def _add_item_aside(
+            self, child: Dict, current_entry: Dict, id_to_find: int, new_id: int, new_type: ComponentType) -> bool:
+        if id_to_find == child["id"]:
+            current_entry["children"].append({"id": new_id, "type": new_type.value, "children": []})
+            Pub().pub("openWB/set/counter/get/hierarchy", self.data["get"]["hierarchy"])
+            return True
+        else:
             return False
 
-    def hierarchy_remove_item(self, id: str, keep_children: bool = True):
+    def hierarchy_remove_item(self, id_to_find: int, keep_children: bool = True) -> bool:
         """ruft die rekursive Funktion zum Löschen eines Elements. Je nach Flag werden die Kinder gelöscht oder auf die
         Ebene des gelöschten Elements gehoben.
-
-        Parameter
-        ---------
-        id: str (counterX/cpX)
-            Id des zu löschenden Elements
         """
-        if self.data["get"]["hierarchy"][0]["id"] == id:
+        if self.data["get"]["hierarchy"][0]["id"] == id_to_find:
             if keep_children:
                 self.data["get"]["hierarchy"].extend(self.data["get"]["hierarchy"][0]["children"])
             self.data["get"]["hierarchy"].remove(self.data["get"]["hierarchy"][0])
-            Pub().pub("openWB/set/counter/get/hierarchy",
-                      data.data.counter_data["all"].data["get"]["hierarchy"])
+            Pub().pub("openWB/set/counter/get/hierarchy", self.data["get"]["hierarchy"])
+            return True
         else:
-            if not self._remove_item(self.data["get"]["hierarchy"][0], id, keep_children):
-                MainLogger().error(f"Löschen von Item {id} aus der Hierarchie fehlgeschlagen.")
+            return self.__find_element_in_hierarchy(
+                self.data["get"]["hierarchy"][0],
+                id_to_find, self._remove_item, keep_children)
 
-    def _remove_item(self, upper_level: dict, id: str, keep_children: bool) -> bool:
-        try:
-            for child in upper_level["children"]:
-                try:
-                    if id in child["id"]:
-                        if keep_children:
-                            upper_level["children"].extend(child["children"])
-                        upper_level["children"].remove(child)
-                        Pub().pub(
-                            "openWB/set/counter/get/hierarchy",
-                            data.data.counter_data["all"].data["get"]["hierarchy"])
-                        return True
-                    else:
-                        if len(child["children"]) != 0:
-                            if self._remove_item(child, id, keep_children):
-                                return True
-                except Exception:
-                    MainLogger().exception("Fehler in der allgemeinen Zähler-Klasse für "+child)
-            else:
-                return False
-        except Exception:
-            MainLogger().exception("Fehler in der allgemeinen Zähler-Klasse")
+    def _remove_item(self, child: Dict, current_entry: Dict, id: str, keep_children: bool) -> bool:
+        if id == child["id"]:
+            if keep_children:
+                current_entry["children"].extend(child["children"])
+            current_entry["children"].remove(child)
+            Pub().pub("openWB/set/counter/get/hierarchy", self.data["get"]["hierarchy"])
+            return True
+        else:
             return False
 
-    def hierarchy_add_item_below(self, id, below):
+    def hierarchy_add_item_below(self, new_id: int, new_type: ComponentType, id_to_find: int):
         """ruft die rekursive Funktion zum Hinzufügen eines Elements als Kind des angegebenen Elements.
-
-        Parameter
-        ---------
-        id: str (counterX/cpX)
-            Id des neuen Elements
-        lower_level: str
-            Id des Elements, als dessen Kind das neue Element eingefügt werden soll.
         """
-        try:
-            if below in self.data["get"]["hierarchy"][0]["id"]:
-                self.data["get"]["hierarchy"][0]["children"].append({"id": id, "children": []})
-                Pub().pub("openWB/set/counter/get/hierarchy", data.data.counter_data["all"].data["get"]["hierarchy"])
+        if id_to_find == self.data["get"]["hierarchy"][0]["id"]:
+            self.data["get"]["hierarchy"][0]["children"].append({"id": new_id, "type": new_type.value, "children": []})
+            Pub().pub("openWB/set/counter/get/hierarchy", self.data["get"]["hierarchy"])
+            return True
+        else:
+            return self.__find_element_in_hierarchy(
+                self.data["get"]["hierarchy"][0],
+                id_to_find, self._add_item_below, new_id, new_type)
+
+    def _add_item_below(self, child: Dict, current_entry: Dict, id_to_find: int, new_id: int, new_type: ComponentType):
+        if id_to_find == child["id"]:
+            child["children"].append({"id": new_id, "type": new_type.value, "children": []})
+            Pub().pub("openWB/set/counter/get/hierarchy", self.data["get"]["hierarchy"])
+            return True
+        else:
+            return False
+
+    def __find_element_in_hierarchy(self, current_entry: Dict, id_to_find: int, func: Callable, *args) -> bool:
+        for child in current_entry["children"]:
+            if func(child, current_entry, id_to_find, *args):
                 return True
             else:
-                if len(self.data["get"]["hierarchy"][0]["children"]) != 0:
-                    added = self._add_item_below(self.data["get"]["hierarchy"][0], id, below)
-                    return added
-        except Exception:
-            MainLogger().exception("Fehler in der allgemeinen Zähler-Klasse")
-            return False
+                if len(child["children"]) != 0:
+                    return self.__find_element_in_hierarchy(child, id_to_find, func, *args)
+        else:
+            raise ValueError(f"Element {id_to_find} konnte nicht in der Hierarchie gefunden werden.")
 
-    def _add_item_below(self, upper_level, id, below):
-        try:
-            for child in upper_level["children"]:
-                try:
-                    if below in child["id"]:
-                        child["children"].append({"id": id, "children": []})
-                        Pub().pub("openWB/set/counter/get/hierarchy",
-                                  data.data.counter_data["all"].data["get"]["hierarchy"])
-                        return True
-                    else:
-                        if len(child["children"]) != 0:
-                            added = self._add_item_below(child, id, below)
-                            return added
-                except Exception:
-                    MainLogger().exception("Fehler in der allgemeinen Zähler-Klasse für "+child)
-            else:
-                return False
-        except Exception:
-            MainLogger().exception("Fehler in der allgemeinen Zähler-Klasse")
-            return False
+
+def get_max_id_in_hierarchy(current_entry: List, max_id: int) -> int:
+    for item in current_entry:
+        if item["id"] > max_id:
+            max_id = item["id"]
+        if len(item["children"]) != 0:
+            max_id = get_max_id_in_hierarchy(item["children"], max_id)
+    else:
+        return max_id
 
 
 def get_counter_default_config():
