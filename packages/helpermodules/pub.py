@@ -17,7 +17,6 @@ class PubSingleton:
         self.client.loop_start()
 
     def pub(self, topic: str, payload, qos: int = 0, retain: bool = True) -> None:
-        MainLogger().debug("publish: '%s'->'%s' qos:%d retain:%s" % (json.dumps(payload), topic, qos, retain))
         try:
             if payload == "":
                 self.client.publish(topic, payload, qos=qos, retain=retain)
