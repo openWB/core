@@ -171,13 +171,21 @@ def save_log(folder):
 
 
 def get_daily_log(date: str):
-    with open(str(Path(__file__).resolve().parents[2] / "data"/"daily_log"/(date+".json")), "r") as jsonFile:
-        return json.load(jsonFile)
+    try:
+        with open(str(Path(__file__).resolve().parents[2] / "data"/"daily_log"/(date+".json")), "r") as jsonFile:
+            return json.load(jsonFile)
+    except FileNotFoundError:
+        pass
+    return []
 
 
 def get_monthly_log(date: str):
-    with open(str(Path(__file__).resolve().parents[2] / "data"/"monthly_log"/(date+".json")), "r") as jsonFile:
-        return json.load(jsonFile)
+    try:
+        with open(str(Path(__file__).resolve().parents[2] / "data"/"monthly_log"/(date+".json")), "r") as jsonFile:
+            return json.load(jsonFile)
+    except FileNotFoundError:
+        pass
+    return []
 
 
 def update_daily_yields():
