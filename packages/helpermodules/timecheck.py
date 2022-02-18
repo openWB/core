@@ -483,7 +483,7 @@ def create_timestamp_time():
         raise
 
 
-def get_difference_to_now(timestamp_begin):
+def get_difference_to_now(timestamp_begin: str) -> str:
     """ ermittelt den Abstand zwischen zwei Zeitstempeln.
 
     Parameter
@@ -500,14 +500,14 @@ def get_difference_to_now(timestamp_begin):
         begin = datetime.strptime(timestamp_begin[:-3], "%m/%d/%Y, %H:%M")
         now = datetime.today()
         diff = (now - begin)
-        return str(diff)[:-10]
+        return __convert_timedelta_to_HHMM(diff)
     except Exception:
         MainLogger().exception("Fehler im System-Modul")
-        return 0
+        return "00:00"
 
 
-def get_difference(timestamp_begin, timestamp_end):
-    """ ermittelt den Abstand zwischen zwei Zeitstempeln in Sekunden.
+def get_difference(timestamp_begin: str, timestamp_end: str) -> str:
+    """ ermittelt den Abstand zwischen zwei Zeitstempeln in absoluten Sekunden.
 
     Parameter
     ---------
@@ -525,10 +525,10 @@ def get_difference(timestamp_begin, timestamp_end):
         begin = datetime.strptime(timestamp_begin, "%m/%d/%Y, %H:%M:%S")
         end = datetime.strptime(timestamp_end, "%m/%d/%Y, %H:%M:%S")
         diff = (begin - end)
-        return diff.total_seconds()
+        return f"{int(diff.total_seconds())}"
     except Exception:
         MainLogger().exception("Fehler im System-Modul")
-        return 0
+        return "0"
 
 
 def duration_sum(first: str, second: str) -> str:
@@ -545,7 +545,7 @@ def duration_sum(first: str, second: str) -> str:
     """
     try:
         sum = __get_timedelta_obj(first) + __get_timedelta_obj(second)
-        return datetime.strptime(str(sum), "%H:%M:%S").strftime("%H:%M")
+        return __convert_timedelta_to_HHMM(sum)
     except Exception:
         MainLogger().exception("Fehler im System-Modul")
         return "00:00"
@@ -573,3 +573,9 @@ def __get_timedelta_obj(time: str) -> timedelta:
     else:
         raise Exception("Unknown charge duration: "+time)
     return delta
+
+
+def __convert_timedelta_to_HHMM(timedelta_obj: timedelta) -> str:
+    diff_hours = int(timedelta_obj.total_seconds() / 3600)
+    diff_minutes = int((timedelta_obj.total_seconds() % 3600) / 60)
+    return f"{diff_hours}:{diff_minutes}"
