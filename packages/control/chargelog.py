@@ -315,7 +315,7 @@ def get_log_data(request):
     request: dict
         Infos zum Request: Monat, Jahr, Filter
     """
-    data = []
+    data = {"entries": [], "sum": {}}
     try:
         # Datei einlesen
         filepath = str(
@@ -325,19 +325,30 @@ def get_log_data(request):
             with open(filepath, "r") as jsonFile:
                 chargelog = json.load(jsonFile)
         except FileNotFoundError:
-            Pub().pub("openWB/set/log/data", [])
-            return
+            MainLogger().debug("Kein Ladelog für %s gefunden!" % (str(request)))
+            return []
         filter = request["filter"]
         # Liste mit gefilterten Einträgen erstellen
         for entry in chargelog:
             if len(entry) > 0:
+                # Jeden Eintrag anfügen, falls kein Filterkriterium gesetzt ist.
+                if (
+                    len(filter["chargepoint"]["id"]) == 0 and
+                    len(filter["vehicle"]["id"]) == 0 and
+                    len(filter["vehicle"]["rfid"]) == 0 and
+                    len(filter["vehicle"]["chargemode"]) == 0 and
+                    len(filter["vehicle"]["prio"]) == 0 and
+                    len(filter["vehicle"]["prio"]) == 0
+                ):
+                    data["entries"].append(entry)
+                    continue
                 # Jeden Eintrag nur einmal anfügen, auch wenn mehrere Kriterien zutreffen
                 appended = False
                 if "chargepoint" in filter:
                     if "id" in filter["chargepoint"]:
                         for id in filter["chargepoint"]["id"]:
                             if id == entry["chargepoint"]["id"]:
-                                data.append(entry)
+                                data["entries"].append(entry)
                                 appended = True
                                 break
                         if appended:
@@ -346,7 +357,7 @@ def get_log_data(request):
                     if "id" in filter["vehicle"]:
                         for id in filter["vehicle"]["id"]:
                             if id == entry["vehicle"]["id"]:
-                                data.append(entry)
+                                data["entries"].append(entry)
                                 appended = True
                                 break
                         if appended:
@@ -354,7 +365,7 @@ def get_log_data(request):
                     if "rfid" in filter["vehicle"]:
                         for rfid in filter["vehicle"]["rfid"]:
                             if rfid == entry["vehicle"]["rfid"]:
-                                data.append(entry)
+                                data["entries"].append(entry)
                                 appended = True
                                 break
                         if appended:
@@ -362,7 +373,7 @@ def get_log_data(request):
                     if "chargemode" in filter["vehicle"]:
                         for chargemode in filter["vehicle"]["chargemode"]:
                             if chargemode == entry["vehicle"]["chargemode"]:
-                                data.append(entry)
+                                data["entries"].append(entry)
                                 appended = True
                                 break
                         if appended:
@@ -370,13 +381,13 @@ def get_log_data(request):
                     if "prio" in filter["vehicle"]:
                         for prio in filter["vehicle"]["prio"]:
                             if prio == entry["vehicle"]["prio"]:
-                                data.append(entry)
+                                data["entries"].append(entry)
                                 appended = True
                                 break
                         if appended:
                             continue
 
-        if len(data) > 0:
+        if len(data["entries"]) > 0:
             # Summen bilden
             duration = "00:00"
             range = 0
@@ -384,7 +395,7 @@ def get_log_data(request):
             plugged = 0
             power = 0
             costs = 0
-            for entry in data:
+            for entry in data["entries"]:
                 duration = timecheck.duration_sum(
                     duration, entry["time"]["time_charged"])
                 range += entry["data"]["range_charged"]
@@ -392,7 +403,7 @@ def get_log_data(request):
                 plugged += entry["data"]["charged_since_plugged_counter"]
                 power += entry["data"]["power"]
                 costs += entry["data"]["costs"]
-            power = power / len(data)
+            power = power / len(data["entries"])
             sum = {
                 "chargepoint":
                     {
@@ -422,7 +433,7 @@ def get_log_data(request):
                         "costs": costs
                     }
             }
-            data.append(sum)
+            data["sum"] = sum
     except Exception:
         MainLogger().exception("Fehler im Ladelog-Modul")
     finally:
