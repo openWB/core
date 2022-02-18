@@ -20,7 +20,7 @@ from control import chargepoint
 from control import data
 from control import ev
 from control import counter
-from modules.common.component_type import ComponentType, special_to_general_type_mapping
+from modules.common.component_type import ComponentType, special_to_general_type_mapping, type_to_topic_mapping
 
 
 class Command:
@@ -345,15 +345,21 @@ class Command:
             "."+payload["data"]["deviceType"]+"."+payload["data"]["type"], "modules")
         component_default = component.get_default_config()
         component_default["id"] = new_id
-        if "counter" in payload["data"]["type"]:
-            try:
-                data.data.counter_data["all"].hierarchy_add_item_below(
-                    new_id, ComponentType.COUNTER, data.data.counter_data["all"].get_id_evu_counter())
-            except (TypeError, IndexError):
+        general_type = special_to_general_type_mapping(payload["data"]["type"])
+        try:
+            data.data.counter_data["all"].hierarchy_add_item_below(
+                new_id, general_type, data.data.counter_data["all"].get_id_evu_counter())
+        except (TypeError, IndexError):
+            if general_type == ComponentType.COUNTER:
                 # es gibt noch keinen EVU-Zähler
                 Pub().pub("openWB/set/counter/get/hierarchy",
                           [{"id": new_id, "type": ComponentType.COUNTER.value, "children": []}] +
                           data.data.counter_data["all"].data["get"]["hierarchy"])
+            else:
+                pub_error(payload, connection_id, "Bitte erst einen EVU-Zähler konfigurieren!")
+                return
+        # Bei Zählern müssen noch Standardwerte gepublished werden.
+        if general_type == ComponentType.COUNTER:
             default_config = counter.get_counter_default_config()
             for item in default_config:
                 Pub().pub("openWB/set/counter/"+str(new_id)+"/config/"+item, default_config[item])
@@ -591,9 +597,8 @@ class ProcessBrokerBranch:
                 Pub().pub(msg.topic, "")
                 if "openWB/system/device/" in msg.topic and "component" in msg.topic and "config" in msg.topic:
                     payload = json.loads(str(msg.payload.decode("utf-8")))
-                    topic = special_to_general_type_mapping(payload["type"])
-                    if topic == "counter":
-                        data.data.counter_data["all"].hierarchy_remove_item(topic+str(payload["id"]))
+                    topic = type_to_topic_mapping(payload["type"])
+                    data.data.counter_data["all"].hierarchy_remove_item(payload["id"])
                     client.subscribe("openWB/"+topic+"/"+str(payload["id"])+"/#", 2)
         except Exception:
             MainLogger().exception("Fehler im Command-Modul")

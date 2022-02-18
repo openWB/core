@@ -37,7 +37,7 @@ class FaultState(Exception):
                                        traceback.format_exc())
             ramdisk = compatibility.is_ramdisk_in_use()
             if ramdisk:
-                topic = component_type.special_to_general_type_mapping(component_info.type)
+                topic = component_type.type_to_topic_mapping(component_info.type)
                 prefix = "openWB/set/" + topic + "/"
                 if component_info.id is not None:
                     if topic == "lp":
@@ -49,7 +49,7 @@ class FaultState(Exception):
                 pub.pub_single(prefix + "aultStr", self.fault_str)
                 pub.pub_single(prefix + "aultState", self.fault_state.value)
             else:
-                topic = component_type.special_to_general_type_mapping(component_info.type)
+                topic = component_type.type_to_topic_mapping(component_info.type)
                 pub.Pub().pub(
                     "openWB/set/" + topic + "/" + str(component_info.id) + "/get/fault_str", self.fault_str)
                 pub.Pub().pub(
