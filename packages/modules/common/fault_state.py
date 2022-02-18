@@ -57,7 +57,9 @@ class FaultState(Exception):
             log.MainLogger().exception("Fehler im Modul fault_state")
 
     def __type_topic_mapping(self, component_type: str) -> str:
-        if "counter" in component_type:
+        if "bat" in component_type:
+            return "bat"
+        elif "counter" in component_type:
             return "counter"
         elif "inverter" in component_type:
             return "pv"
