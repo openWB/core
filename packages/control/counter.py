@@ -41,15 +41,23 @@ class CounterAll:
         except Exception:
             MainLogger().exception("Fehler in der allgemeinen Zähler-Klasse")
 
-    def calc_home_consumption(self):
-        """ berechnet den Hausverbrauch.
-        """
+    def calc_home_consumption(self) -> None:
         try:
+            power = 0
+            counter_all = data.data.counter_data["all"]
+            elements = counter_all.get_entry_of_element(counter_all.get_id_evu_counter())["children"]
+            for element in elements:
+                if element["type"] == ComponentType.CHARGEPOINT.value:
+                    power += data.data.cp_data[f"cp{element['id']}"].data["get"]["power"]
+                elif element["type"] == ComponentType.BAT.value:
+                    power += data.data.bat_data[f"bat{element['id']}"].data["get"]["power"]
+                elif element["type"] == ComponentType.COUNTER.value:
+                    power += data.data.counter_data[f"counter{element['id']}"].data["get"]["power"]
+                elif element["type"] == ComponentType.INVERTER.value:
+                    power += data.data.pv_data[f"pv{element['id']}"].data["get"]["power"]
             evu = data.data.counter_data[self.get_evu_counter()].data["get"]["power"]
-            pv = data.data.pv_data["all"].data["get"]["power"]
-            bat = data.data.bat_data["all"].data["get"]["power"]
-            cp = data.data.cp_data["all"].data["get"]["power"]
-            home_consumption = int(evu - pv - bat - cp)
+
+            home_consumption = int(evu - power)
             if home_consumption < 0:
                 if self.data["set"]["invalid_home_consumption"] < 3:
                     self.data["set"]["invalid_home_consumption"] += 1
@@ -62,7 +70,6 @@ class CounterAll:
                 self.data["set"]["home_consumption"] = home_consumption
             Pub().pub("openWB/set/counter/set/invalid_home_consumption",  self.data["set"]["invalid_home_consumption"])
             Pub().pub("openWB/set/counter/set/home_consumption", self.data["set"]["home_consumption"])
-
         except Exception:
             MainLogger().exception("Fehler in der allgemeinen Zähler-Klasse")
 
