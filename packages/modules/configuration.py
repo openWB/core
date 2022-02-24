@@ -255,6 +255,19 @@ def _pub_configurable_devices_components() -> None:
                         "text": "Siemens-Wechselrichter"
                     }
                 ]
+            }, {
+                "value": "sma_modbus_tcp",
+                "text": "SMA ModbusTCP",
+                "component": [
+                    {
+                        "value": "inverter_webbox",
+                        "text": "SMA Wechselrichter Webbox"
+                    },
+                    {
+                        "value": "inverter_modbus_tcp",
+                        "text": "SMA ModbusTCP Wechselrichter"
+                    }
+                ]
             },
             {
                 "value": "sma_shm",
