@@ -9,6 +9,8 @@ if [ -f "${OPENWBBASEDIR}/ramdisk/bootinprogress" ]; then
 	"rm ${OPENWBBASEDIR}/ramdisk/bootinprogress"
 fi
 
+sudo chmod +x /var/www/html/openWB/reset-broker.sh
+
 # initialize automatic phase switching
 # alpha image restricted to standalone installation!
 # if (( u1p3paktiv == 1 )); then
