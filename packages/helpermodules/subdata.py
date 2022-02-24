@@ -697,14 +697,14 @@ class SubData:
                 index = self.get_index(msg.topic)
                 index_second = self.get_second_index(msg.topic)
                 self.set_json_payload(
-                    var["device"+index]._components["component"+index_second].simulation, msg)
+                    var["device"+index].components["component"+index_second].simulation, msg)
             elif re.search("^.+/device/[0-9]+/component/[0-9]+/config$", msg.topic) is not None:
                 index = self.get_index(msg.topic)
                 index_second = self.get_second_index(msg.topic)
                 if str(msg.payload.decode("utf-8")) == "":
                     if "device"+index in var:
-                        if "component"+str(index_second) in var["device"+index]._components:
-                            var["device"+index]._components.pop(
+                        if "component"+str(index_second) in var["device"+index].components:
+                            var["device"+index].components.pop(
                                 "component"+str(index_second))
                             Pub().pub("openWB/system/device/"+str(index) +
                                       "/component/"+str(index_second), "")
@@ -716,7 +716,7 @@ class SubData:
                                            str(index)+" gefunden werden.")
                 else:
                     try:
-                        sim_data = var["device"+index]._components["component" + index_second].simulation
+                        sim_data = var["device"+index].components["component" + index_second].simulation
                     except (KeyError, AttributeError):
                         sim_data = None
                     # Es darf nicht einfach data["config"] aktualisiert werden, da in der __init__ auch die
@@ -724,7 +724,7 @@ class SubData:
                     var["device"+index].add_component(
                         json.loads(str(msg.payload.decode("utf-8"))))
                     if sim_data:
-                        var["device"+index]._components["component" + index_second].simulation = sim_data
+                        var["device"+index].components["component" + index_second].simulation = sim_data
             elif "mqtt" and "bridge" in msg.topic:
                 index = self.get_index(msg.topic)
                 parent_file = Path(__file__).resolve().parents[2]

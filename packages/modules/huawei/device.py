@@ -35,7 +35,7 @@ class Device(AbstractDevice):
     }
 
     def __init__(self, device_config: dict) -> None:
-        self._components = {}  # type: Dict[str, huawei_component_classes]
+        self.components = {}  # type: Dict[str, huawei_component_classes]
         try:
             ip_address = device_config["configuration"]["ip_address"]
             self.client = modbus.ModbusClient(ip_address, 502)
@@ -48,7 +48,7 @@ class Device(AbstractDevice):
     def add_component(self, component_config: dict) -> None:
         component_type = component_config["type"]
         if component_type in self.COMPONENT_TYPE_TO_CLASS:
-            self._components["component"+component_type] = (self.COMPONENT_TYPE_TO_CLASS[component_type](
+            self.components["component"+component_type] = (self.COMPONENT_TYPE_TO_CLASS[component_type](
                 self.device_config["id"],
                 component_config, self.client,
                 self.device_config["configuration"]["modbus_id"]))
@@ -59,12 +59,12 @@ class Device(AbstractDevice):
             )
 
     def update(self) -> None:
-        log.MainLogger().debug("Start device reading " + str(self._components))
-        if self._components:
-            for component in self._components:
+        log.MainLogger().debug("Start device reading " + str(self.components))
+        if self.components:
+            for component in self.components:
                 # Auch wenn bei einer Komponente ein Fehler auftritt, sollen alle anderen noch ausgelesen werden.
-                with SingleComponentUpdateContext(self._components[component].component_info):
-                    self._components[component].update()
+                with SingleComponentUpdateContext(self.components[component].component_info):
+                    self.components[component].update()
         else:
             log.MainLogger().warning(
                 self.device_config["name"] +

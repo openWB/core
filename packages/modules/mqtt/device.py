@@ -24,7 +24,7 @@ class Device(AbstractDevice):
     }
 
     def __init__(self, device_config: dict) -> None:
-        self._components = {}
+        self.components = {}
         try:
             self.device_config = device_config
         except Exception:
@@ -33,12 +33,12 @@ class Device(AbstractDevice):
     def add_component(self, component_config: dict) -> None:
         component_type = component_config["type"]
         if component_type in self.COMPONENT_TYPE_TO_CLASS:
-            self._components["component"+str(component_config["id"])
-                             ] = (self.COMPONENT_TYPE_TO_CLASS[component_type](component_config))
+            self.components["component"+str(component_config["id"])
+                            ] = (self.COMPONENT_TYPE_TO_CLASS[component_type](component_config))
 
     def update(self) -> None:
-        if self._components:
-            with MultiComponentUpdateContext(self._components):
+        if self.components:
+            with MultiComponentUpdateContext(self.components):
                 MainLogger().debug("MQTT-Module müssen nicht ausgelesen werden.")
         else:
             MainLogger().warning(
