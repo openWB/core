@@ -1,14 +1,12 @@
 #!/bin/bash
 case "$1" in
 	"clearall")
+		sudo systemctl stop openwb2.service
 		echo "deleting retained message store of external mosquitto..."
-		sudo service mosquitto stop
-		sudo rm /var/lib/mosquitto/mosquitto.db
-		sudo service mosquitto start
+		timeout 3 mosquitto_sub -t '#' --remove-retained --retained-only
 		echo "deleting retained message store of internal mosquitto..."
-		sudo service mosquitto_local stop
-		sudo rm /var/lib/mosquitto_local/mosquitto.db
-		sudo service mosquitto_local start
+		timeout 3 mosquitto_sub -t '#' --remove-retained --retained-only -p 1886
+		sudo systemctl start openwb2.service
 		echo "reset done, now running atreboot.sh..."
 		./runs/atreboot.sh
 		echo "all done";;
