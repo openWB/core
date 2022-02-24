@@ -3,6 +3,7 @@ import traceback
 from typing import Optional
 
 from helpermodules import compatibility, exceptions, log, pub
+from modules.common import component_type
 
 
 class FaultStateLevel(Enum):
@@ -36,7 +37,7 @@ class FaultState(Exception):
                                        traceback.format_exc())
             ramdisk = compatibility.is_ramdisk_in_use()
             if ramdisk:
-                topic = self.__type_topic_mapping_comp(component_info.type)
+                topic = component_type.type_to_topic_mapping(component_info.type)
                 prefix = "openWB/set/" + topic + "/"
                 if component_info.id is not None:
                     if topic == "lp":
@@ -48,23 +49,13 @@ class FaultState(Exception):
                 pub.pub_single(prefix + "aultStr", self.fault_str)
                 pub.pub_single(prefix + "aultState", self.fault_state.value)
             else:
-                topic = self.__type_topic_mapping(component_info.type)
+                topic = component_type.type_to_topic_mapping(component_info.type)
                 pub.Pub().pub(
                     "openWB/set/" + topic + "/" + str(component_info.id) + "/get/fault_str", self.fault_str)
                 pub.Pub().pub(
                     "openWB/set/" + topic + "/" + str(component_info.id) + "/get/fault_state", self.fault_state.value)
         except Exception:
             log.MainLogger().exception("Fehler im Modul fault_state")
-
-    def __type_topic_mapping(self, component_type: str) -> str:
-        if "bat" in component_type:
-            return "bat"
-        elif "counter" in component_type:
-            return "counter"
-        elif "inverter" in component_type:
-            return "pv"
-        else:
-            return component_type
 
     def __type_topic_mapping_comp(self, component_type: str) -> str:
         if "bat" in component_type:

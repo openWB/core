@@ -1,4 +1,4 @@
-""" Lastmangement
+""" Lastmanagement
 
 Das LM enthält ein Offset, das aktiv ist, wenn ein Ladepunkt eingeschaltet/hoch-/runtergeregelt werden soll,
 aber nicht, wenn geprüft wird, ob in der gesamten Anlage ein Zähler die Maximalwerte überschreitet.
@@ -13,10 +13,11 @@ from typing import Tuple
 
 from control import data
 from helpermodules.log import MainLogger
+from modules.common.component_type import ComponentType
 
 # {counter: [max_overshoot, phase_with_max_overshoot]}
 overloaded_counters = {}
-# phase_with_max_overshoot = -1 -> max. Lesistung wurde überschritten, es ist egal, auf welcher Phase reduziert wird.
+# phase_with_max_overshoot = -1 -> max. Leistung wurde überschritten, es ist egal, auf welcher Phase reduziert wird.
 # phase_with_max_overshoot = 0  -> Es ist nicht bekannt, auf welcher EVU/LP-Phase die Überlastung stattfindet, deshalb
 #                                  müssen alle Phasen reduziert werden.
 # phase_with_max_overshoot = 1-3 -> Phase, auf der die Überlastung auftritt
@@ -134,12 +135,12 @@ def _check_all_intermediate_counters(child):
     # Alle Objekte der Ebene durchgehen
     for child in child["children"]:
         try:
-            if "counter" in child["id"]:
+            if child["type"] == ComponentType.COUNTER.value:
                 # Wenn Objekt ein Zähler ist, Stromstärke prüfen.
                 loadmanagement, overshoot, phase = _check_max_currents(
-                    child["id"], [0, 0, 0], 3, False)
+                    f"counter{child['id']}", [0, 0, 0], 3, False)
                 if loadmanagement:
-                    overloaded_counters[child["id"]] = [overshoot, phase]
+                    overloaded_counters[f"counter{child['id']}"] = [overshoot, phase]
                     return True
             # Wenn das Objekt noch Kinder hat, diese ebenfalls untersuchen.
             if len(child["children"]) != 0:
