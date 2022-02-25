@@ -34,7 +34,7 @@ class Device(AbstractDevice):
     }
 
     def __init__(self, device_config: dict) -> None:
-        self._components = {}  # type: Dict[str, SpeedwireComponent]
+        self.components = {}  # type: Dict[str, SpeedwireComponent]
         self.device_config = device_config
 
     def add_component(self, component_config: dict) -> None:
@@ -44,12 +44,12 @@ class Device(AbstractDevice):
             raise Exception(
                 "Unknown component type <%s>, known types are: <%s>", e, ','.join(self.COMPONENT_FACTORIES.keys())
             )
-        self._components["component"+str(component_config["id"])] = factory(component_config)
+        self.components["component"+str(component_config["id"])] = factory(component_config)
 
     def update(self) -> None:
         log.debug("Beginning update")
-        with MultiComponentUpdateContext(self._components):
-            if not self._components:
+        with MultiComponentUpdateContext(self.components):
+            if not self.components:
                 raise FaultState.warning("Keine Komponenten konfiguriert")
 
             with SpeedwireListener(timeout_seconds) as speedwire:
@@ -59,7 +59,7 @@ class Device(AbstractDevice):
 
     def __read_speedwire(self, speedwire: Iterator[dict]):
         stop_time = time.time() + timeout_seconds
-        components_todo = self._components.values()
+        components_todo = self.components.values()
         try:
             for sma_data in speedwire:
                 components_todo = [component for component in components_todo if not component.read_datagram(sma_data)]

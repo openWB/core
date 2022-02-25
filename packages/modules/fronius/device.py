@@ -37,7 +37,7 @@ class Device(AbstractDevice):
     }
 
     def __init__(self, device_config: dict) -> None:
-        self._components = {}  # type: Dict[str, fronius_component_classes]
+        self.components = {}  # type: Dict[str, fronius_component_classes]
         try:
             self.device_config = device_config
         except Exception:
@@ -46,7 +46,7 @@ class Device(AbstractDevice):
     def add_component(self, component_config: dict) -> None:
         component_type = component_config["type"]
         if component_type in self.COMPONENT_TYPE_TO_CLASS:
-            self._components["component"+str(component_config["id"])] = self.COMPONENT_TYPE_TO_CLASS[component_type](
+            self.components["component"+str(component_config["id"])] = self.COMPONENT_TYPE_TO_CLASS[component_type](
                 self.device_config["id"], component_config, self.device_config["configuration"])
         else:
             raise Exception(
@@ -55,20 +55,20 @@ class Device(AbstractDevice):
             )
 
     def update(self) -> None:
-        log.MainLogger().debug("Start device reading " + str(self._components))
-        if self._components:
-            with MultiComponentUpdateContext(self._components):
+        log.MainLogger().debug("Start device reading " + str(self.components))
+        if self.components:
+            with MultiComponentUpdateContext(self.components):
                 # zuerst den WR auslesen
-                for component in self._components:
-                    if isinstance(self._components[component], inverter.FroniusInverter):
-                        power_inverter = self._components[component].update()
+                for component in self.components:
+                    if isinstance(self.components[component], inverter.FroniusInverter):
+                        power_inverter = self.components[component].update()
                         break
                 else:
                     power_inverter = 0
                 # dann Zähler auslesen und Werte verrechnen
-                for component in self._components:
-                    if isinstance(self._components[component], counter_sm.FroniusSmCounter):
-                        counter_state, meter_location = self._components[component].update()
+                for component in self.components:
+                    if isinstance(self.components[component], counter_sm.FroniusSmCounter):
+                        counter_state, meter_location = self.components[component].update()
                         if meter_location == meter.MeterLocation.load:
                             # wenn SmartMeter im Verbrauchszweig sitzt sind folgende Annahmen getroffen:
                             # PV Leistung wird gleichmäßig auf alle Phasen verteilt
@@ -80,16 +80,16 @@ class Device(AbstractDevice):
                             currents = [powers[i] / counter_state.voltages[i] for i in range(0, 3)]
                             counter_state.powers = powers
                             counter_state.currents = currents
-                        self._components[component].set_counter_state(counter_state)
+                        self.components[component].set_counter_state(counter_state)
                         break
-                    elif isinstance(self._components[component], counter_s0.FroniusS0Counter):
-                        counter_state = self._components[component].update()
+                    elif isinstance(self.components[component], counter_s0.FroniusS0Counter):
+                        counter_state = self.components[component].update()
                         counter_state.power += power_inverter
-                        self._components[component].set_counter_state(counter_state)
+                        self.components[component].set_counter_state(counter_state)
                         break
-                for component in self._components:
-                    if isinstance(self._components[component], bat.FroniusBat):
-                        self._components[component].update()
+                for component in self.components:
+                    if isinstance(self.components[component], bat.FroniusBat):
+                        self.components[component].update()
         else:
             log.MainLogger().warning(
                 self.device_config["name"] +

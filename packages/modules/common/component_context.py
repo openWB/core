@@ -8,7 +8,7 @@ class SingleComponentUpdateContext:
     """ Wenn die Werte der Komponenten nicht miteinander verrechnet werden, sollen, auch wenn bei einer Komponente ein
     Fehler auftritt, alle anderen dennnoch ausgelesen werden. WR-Werte dienen nur statistischen Zwecken, ohne
     EVU-Werte ist aber keine Regelung möglich. Ein nicht antwortender WR soll dann nicht die Regelung verhindern.
-        for component in self._components:
+        for component in self.components:
             with SingleComponentUpdateContext(component):
                 component.update()
     """
@@ -28,8 +28,8 @@ class MultiComponentUpdateContext:
     """ Wenn die Werte der Komponenten miteinander verrechnet werden, muss, wenn bei einer Komponente ein Fehler
     auftritt, für alle Komponenten der Fehlerzustand gesetzt werden, da aufgrund der Abhängigkeiten für alle Module
     keine Werte ermittelt werden können.
-        with MultiComponentUpdateContext(self._components):
-            for component in self._components:
+        with MultiComponentUpdateContext(self.components):
+            for component in self.components:
                 component.update()
     """
     __thread_local = threading.local()

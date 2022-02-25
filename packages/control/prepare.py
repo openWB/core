@@ -49,7 +49,7 @@ class Prepare:
             if isinstance(subdata.SubData.counter_data[counter], Counter):
                 for dev in subdata.SubData.system_data:
                     if "device" in dev:
-                        for component in subdata.SubData.system_data[dev]._components:
+                        for component in subdata.SubData.system_data[dev].components:
                             if component[9:] == counter[7:]:
                                 data.data.counter_data[counter] = copy.deepcopy(subdata.SubData.counter_data[counter])
                                 stop = True
@@ -69,7 +69,7 @@ class Prepare:
                 if isinstance(subdata.SubData.pv_data[pv], Pv):
                     for dev in subdata.SubData.system_data:
                         if "device" in dev:
-                            for component in subdata.SubData.system_data[dev]._components:
+                            for component in subdata.SubData.system_data[dev].components:
                                 if component[9:] == pv[2:]:
                                     data.data.pv_data[pv] = copy.deepcopy(subdata.SubData.pv_data[pv])
                                     stop = True
@@ -83,7 +83,7 @@ class Prepare:
                 if isinstance(subdata.SubData.bat_data[bat], Bat):
                     for dev in subdata.SubData.system_data:
                         if "device" in dev:
-                            for component in subdata.SubData.system_data[dev]._components:
+                            for component in subdata.SubData.system_data[dev].components:
                                 if component[9:] == bat[3:]:
                                     data.data.bat_data[bat] = copy.deepcopy(subdata.SubData.bat_data[bat])
                                     stop = True
