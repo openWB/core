@@ -2,10 +2,10 @@
 Dictionary: Zugriff erfolgt bei Dictionary über Keys, nicht über Indizes wie bei Listen. Das hat den Vorteil, dass
 Instanzen gelöscht werden können, der Zugriff aber nicht verändert werden musss.
 """
-
+import logging
 import threading
 
-from helpermodules.log import MainLogger
+log = logging.getLogger(__name__)
 
 data = None
 
@@ -252,7 +252,7 @@ class Data:
         self._print_dictionaries(self._optional_data)
         self._print_dictionaries(self._pv_data)
         self._print_dictionaries(self._system_data)
-        MainLogger().debug("\n")
+        log.debug("\n")
 
     def _print_dictionaries(self, data):
         """ gibt zu Debug-Zwecken für jeden Key im übergebenen Dictionary das Dictionary aus.
@@ -265,14 +265,14 @@ class Data:
             try:
                 if not isinstance(data[key], dict):
                     try:
-                        MainLogger().debug(key+"\n"+str(data[key].data))
+                        log.debug(key+"\n"+str(data[key].data))
                     except AttributeError:
                         # Devices haben kein data-Dict
                         pass
                 else:
-                    MainLogger().debug(key+"\n"+"Klasse fehlt")
+                    log.debug(key+"\n"+"Klasse fehlt")
             except Exception:
-                MainLogger().exception("Fehler im Data-Modul")
+                log.exception("Fehler im Data-Modul")
 
 
 def data_init():

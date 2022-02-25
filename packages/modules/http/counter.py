@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-from helpermodules import log
 from modules.common.component_state import CounterState
 from modules.common.fault_state import ComponentInfo
 from modules.common.store import get_counter_value_store
@@ -38,7 +37,6 @@ class HttpCounter:
         self.component_info = ComponentInfo.from_component_config(component_config)
 
     def update(self):
-
         counter_state = CounterState(
             currents=[getter() for getter in self.__get_currents],
             imported=self.__get_imported(),

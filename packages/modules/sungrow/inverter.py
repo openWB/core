@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-from helpermodules import log
 from modules.common import modbus
 from modules.common import simcount
 from modules.common.component_state import InverterState

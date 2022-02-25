@@ -1,15 +1,17 @@
 """ Fragt die Werte der Module ab. Nur die openWB Kits können mit mehreren Threads gleichzeitig abgefragt werden.
 """
 
+import logging
 import threading
 from typing import Callable, List
 
 
 from control import data
 from control import chargepoint
-from helpermodules.log import MainLogger
 
 from modules import ripple_control_receiver
+
+log = logging.getLogger(__name__)
 
 
 def get_hardware_values():
@@ -42,12 +44,12 @@ def __get_values(value_functions: List[Callable]):
 
             for thread in threads:
                 if thread.is_alive():
-                    MainLogger().error(
+                    log.error(
                         thread.name +
                         " konnte nicht innerhalb des Timeouts die Werte abfragen, die abgefragten Werte werden" +
                         " nicht in der Regelung verwendet.")
     except Exception:
-        MainLogger().exception("Fehler im loadvars-Modul")
+        log.exception("Fehler im loadvars-Modul")
 
 
 def _get_virtual_counters():
@@ -65,10 +67,10 @@ def _get_virtual_counters():
                         if thread is not None:
                             modules_threads.append(thread)
             except Exception:
-                MainLogger().exception("Fehler im loadvars-Modul")
+                log.exception("Fehler im loadvars-Modul")
         return modules_threads
     except Exception:
-        MainLogger().exception("Fehler im loadvars-Modul")
+        log.exception("Fehler im loadvars-Modul")
     finally:
         return modules_threads
 
@@ -85,9 +87,9 @@ def _get_cp() -> List[threading.Thread]:
                     if thread is not None:
                         modules_threads.append(thread)
             except Exception:
-                MainLogger().exception("Fehler im loadvars-Modul")
+                log.exception("Fehler im loadvars-Modul")
     except Exception:
-        MainLogger().exception("Fehler im loadvars-Modul")
+        log.exception("Fehler im loadvars-Modul")
     finally:
         return modules_threads
 
@@ -101,7 +103,7 @@ def _get_general() -> List[threading.Thread]:
                 "ripple_control_receiver"]["configured"]:
             threads.append(threading.Thread(target=ripple_control_receiver.read, args=()))
     except Exception:
-        MainLogger().exception("Fehler im loadvars-Modul")
+        log.exception("Fehler im loadvars-Modul")
     finally:
         return threads
 
@@ -119,10 +121,10 @@ def _get_modules() -> List[threading.Thread]:
                         if thread is not None:
                             modules_threads.append(thread)
             except Exception:
-                MainLogger().exception("Fehler im loadvars-Modul")
+                log.exception("Fehler im loadvars-Modul")
         return modules_threads
     except Exception:
-        MainLogger().exception("Fehler im loadvars-Modul")
+        log.exception("Fehler im loadvars-Modul")
     finally:
         return modules_threads
 
@@ -146,6 +148,6 @@ def _get_soc() -> List[threading.Thread]:
                         "timestamp_last_request")):
                     modules_threads.append(threading.Thread(target=ev.soc_module.update, args=(cp_state,)))
     except Exception:
-        MainLogger().exception("Fehler im loadvars-Modul")
+        log.exception("Fehler im loadvars-Modul")
     finally:
         return modules_threads

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
+import logging
 from typing import Dict, Optional, Union, List
 
-from helpermodules import log
 from helpermodules.cli import run_using_positional_cli_args
 from modules.common.abstract_device import AbstractDevice
 from modules.common.component_context import MultiComponentUpdateContext
@@ -10,6 +10,8 @@ from modules.fronius import counter_s0
 from modules.fronius import counter_sm
 from modules.fronius import inverter
 from modules.fronius import meter
+
+log = logging.getLogger(__name__)
 
 
 def get_default_config() -> dict:
@@ -41,7 +43,7 @@ class Device(AbstractDevice):
         try:
             self.device_config = device_config
         except Exception:
-            log.MainLogger().exception("Fehler im Modul "+device_config["name"])
+            log.exception("Fehler im Modul "+device_config["name"])
 
     def add_component(self, component_config: dict) -> None:
         component_type = component_config["type"]
@@ -55,7 +57,7 @@ class Device(AbstractDevice):
             )
 
     def update(self) -> None:
-        log.MainLogger().debug("Start device reading " + str(self.components))
+        log.debug("Start device reading " + str(self.components))
         if self.components:
             with MultiComponentUpdateContext(self.components):
                 # zuerst den WR auslesen
@@ -91,7 +93,7 @@ class Device(AbstractDevice):
                     if isinstance(self.components[component], bat.FroniusBat):
                         self.components[component].update()
         else:
-            log.MainLogger().warning(
+            log.warning(
                 self.device_config["name"] +
                 ": Es konnten keine Werte gelesen werden, da noch keine Komponenten konfiguriert wurden."
             )
@@ -132,7 +134,7 @@ def read_legacy(
     component_config["id"] = num
     dev.add_component(component_config)
 
-    log.MainLogger().debug('Fronius IP-Adresse: ' + str(ip_address))
+    log.debug('Fronius IP-Adresse: ' + str(ip_address))
 
     dev.update()
 

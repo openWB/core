@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-from helpermodules import log
 from modules.common import modbus
 from modules.common import simcount
 from modules.common.component_state import CounterState
@@ -50,5 +49,4 @@ class SiemensCounter:
             exported=exported,
             power=power
         )
-        log.MainLogger().debug("Siemens Zähler Leistung[W]: " + str(counter_state.power))
         self.__store.set(counter_state)

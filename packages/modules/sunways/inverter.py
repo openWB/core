@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
-
-import requests
 from requests.auth import HTTPDigestAuth
 
-from helpermodules import log
+from modules.common import req
 from modules.common.component_state import InverterState
 from modules.common.fault_state import ComponentInfo
 from modules.common.store import get_inverter_value_store
@@ -38,10 +36,8 @@ class SunwaysInverter:
             ('HASH', '00200403'),
             ('TYPE', '1'),
         )
-        response = requests.get("http://" + self.ip_address + "/data/ajax.txt", params=params,
-                                auth=HTTPDigestAuth("customer", self.password))
-        log.MainLogger().debug("API Response: %s" % (str(response.text)))
-        response.raise_for_status()
+        response = req.get_http_session().get("http://" + self.ip_address + "/data/ajax.txt", params=params,
+                                              auth=HTTPDigestAuth("customer", self.password))
         values = response.text.split(';')
 
         inverter_state = InverterState(

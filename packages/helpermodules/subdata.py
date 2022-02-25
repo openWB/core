@@ -2,6 +2,7 @@
 """
 import importlib
 import json
+import logging
 from pathlib import Path
 import paho.mqtt.client as mqtt
 import re
@@ -13,11 +14,13 @@ from control import counter
 from control import ev
 from control import general
 from helpermodules import graph
-from helpermodules.log import MainLogger, MqttLogger
 from control import optional
 from helpermodules.pub import Pub
 from helpermodules import system
 from control import pv
+
+log = logging.getLogger(__name__)
+mqqt_log = logging.getLogger("mqtt")
 
 
 class SubData:
@@ -66,11 +69,11 @@ class SubData:
             self.client.connect(mqtt_broker_ip, 1886)
             self.client.loop_forever()
         except Exception:
-            MainLogger().exception("Fehler im subdata-Modul")
+            log.exception("Fehler im subdata-Modul")
 
     def disconnect(self) -> None:
         self.client.disconnect()
-        MainLogger().info("Verbindung von Client openWB-mqttsub-" + self.getserial()+" geschlossen.")
+        log.info("Verbindung von Client openWB-mqttsub-" + self.getserial()+" geschlossen.")
 
     def getserial(self):
         """ Extract serial from cpuinfo file
@@ -100,8 +103,8 @@ class SubData:
     def on_message(self, client, userdata, msg):
         """ wartet auf eingehende Topics.
         """
-        MqttLogger().debug("Topic: "+str(msg.topic) +
-                           ", Payload: "+str(msg.payload.decode("utf-8")))
+        mqqt_log.debug("Topic: "+str(msg.topic) +
+                       ", Payload: "+str(msg.payload.decode("utf-8")))
         self.heartbeat = True
         if "openWB/vehicle/template/charge_template/" in msg.topic:
             self.process_vehicle_charge_template_topic(
@@ -129,7 +132,7 @@ class SubData:
         elif "openWB/system/" in msg.topic:
             self.process_system_topic(client, self.system_data, msg)
         else:
-            MainLogger().warning("unknown subdata-topic: "+str(msg.topic))
+            log.warning("unknown subdata-topic: "+str(msg.topic))
 
     def get_index(self, topic):
         """extrahiert den Index aus einem Topic (Zahl zwischen zwei // oder am Stringende)
@@ -172,7 +175,7 @@ class SubData:
                 if key in dict:
                     dict.pop(key)
         except Exception:
-            MainLogger().exception("Fehler im subdata-Modul")
+            log.exception("Fehler im subdata-Modul")
 
     def process_vehicle_topic(self, var, msg):
         """ Handler für die EV-Topics
@@ -224,7 +227,7 @@ class SubData:
                     else:
                         self.set_json_payload(var["ev"+index].data, msg)
         except Exception:
-            MainLogger().exception("Fehler im subdata-Modul")
+            log.exception("Fehler im subdata-Modul")
 
     def process_vehicle_charge_template_topic(self, var, msg):
         """ Handler für die EV-Topics
@@ -253,8 +256,8 @@ class SubData:
                         if "ct"+index in var["ct"+index].data["chargemode"]["scheduled_charging"]["plans"]:
                             var.pop("ct"+index)
                         else:
-                            MainLogger().error("Es konnte kein Zielladen-Plan mit der ID " +
-                                               str(index_second)+" in der Ladevorlage "+str(index)+" gefunden werden.")
+                            log.error("Es konnte kein Zielladen-Plan mit der ID " +
+                                      str(index_second)+" in der Ladevorlage "+str(index)+" gefunden werden.")
                     else:
                         var["ct"+index].data["chargemode"]["scheduled_charging"]["plans"][str(
                             index)] = json.loads(str(msg.payload.decode("utf-8")))
@@ -265,8 +268,8 @@ class SubData:
                         if "ct"+index in var["ct"+index].data["time_charging"]["plans"]:
                             var.pop("ct"+index)
                         else:
-                            MainLogger().error("Es konnte kein Zeitladen-Plan mit der ID " +
-                                               str(index_second)+" in der Ladevorlage "+str(index)+" gefunden werden.")
+                            log.error("Es konnte kein Zeitladen-Plan mit der ID " +
+                                      str(index_second)+" in der Ladevorlage "+str(index)+" gefunden werden.")
                     else:
                         var["ct"+index].data["time_charging"]["plans"][str(
                             index)] = json.loads(str(msg.payload.decode("utf-8")))
@@ -279,7 +282,7 @@ class SubData:
                     var["ct"+index].data["chargemode"]["scheduled_charging"]["plans"] = scheduled_charging_plans
                     self.event_charge_template.set()
         except Exception:
-            MainLogger().exception("Fehler im subdata-Modul")
+            log.exception("Fehler im subdata-Modul")
 
     def process_vehicle_ev_template_topic(self, var, msg):
         """ Handler für die EV-Topics
@@ -305,7 +308,7 @@ class SubData:
                     var["et" + index].data = json.loads(str(msg.payload.decode("utf-8")))
                     self.event_ev_template.set()
         except Exception:
-            MainLogger().exception("Fehler im subdata-Modul")
+            log.exception("Fehler im subdata-Modul")
 
     def process_chargepoint_topic(self, var, msg):
         """ Handler für die Ladepunkt-Topics
@@ -363,7 +366,7 @@ class SubData:
             elif re.search("^.+/chargepoint/get/.+$", msg.topic) is not None:
                 self.set_json_payload(var["all"].data["get"], msg)
         except Exception:
-            MainLogger().exception("Fehler im subdata-Modul")
+            log.exception("Fehler im subdata-Modul")
 
     def process_chargepoint_template_topic(self, var, msg):
         """ Handler für die Ladepunkt-Topics
@@ -400,7 +403,7 @@ class SubData:
                 var["cpt"+index].data["autolock"]["plans"] = autolock_plans
 
         except Exception:
-            MainLogger().exception("Fehler im subdata-Modul")
+            log.exception("Fehler im subdata-Modul")
 
     def process_pv_topic(self, var, msg):
         """ Handler für die PV-Topics
@@ -443,7 +446,7 @@ class SubData:
                         var["all"].data["set"] = {}
                     self.set_json_payload(var["all"].data["set"], msg)
         except Exception:
-            MainLogger().exception("Fehler im subdata-Modul")
+            log.exception("Fehler im subdata-Modul")
 
     def process_bat_topic(self, var, msg):
         """ Handler für die Hausspeicher-Hardware_Topics
@@ -490,7 +493,7 @@ class SubData:
                         var["all"].data["config"] = {}
                     self.set_json_payload(var["all"].data["config"], msg)
         except Exception:
-            MainLogger().exception("Fehler im subdata-Modul")
+            log.exception("Fehler im subdata-Modul")
 
     def process_general_topic(self, var, msg):
         """ Handler für die Allgemeinen-Topics
@@ -552,7 +555,7 @@ class SubData:
                 else:
                     self.set_json_payload(var["general"].data, msg)
         except Exception:
-            MainLogger().exception("Fehler im subdata-Modul")
+            log.exception("Fehler im subdata-Modul")
 
     def process_optional_topic(self, var, msg):
         """ Handler für die Optionalen-Topics
@@ -601,7 +604,7 @@ class SubData:
                 else:
                     self.set_json_payload(var["optional"].data, msg)
         except Exception:
-            MainLogger().exception("Fehler im subdata-Modul")
+            log.exception("Fehler im subdata-Modul")
 
     def process_counter_topic(self, var, msg):
         """ Handler für die Zähler-Topics
@@ -649,7 +652,7 @@ class SubData:
                         var["all"].data["set"] = {}
                     self.set_json_payload(var["all"].data["set"], msg)
         except Exception:
-            MainLogger().exception("Fehler im subdata-Modul")
+            log.exception("Fehler im subdata-Modul")
 
     def process_system_topic(self, client, var, msg):
         """Handler für die System-Topics
@@ -676,8 +679,8 @@ class SubData:
                     if "device"+index in var:
                         var.pop("device"+index)
                     else:
-                        MainLogger().error("Es konnte kein Device mit der ID " +
-                                           str(index)+" gefunden werden.")
+                        log.error("Es konnte kein Device mit der ID " +
+                                  str(index)+" gefunden werden.")
                 else:
                     device_config = json.loads(
                         str(msg.payload.decode("utf-8")))
@@ -708,11 +711,11 @@ class SubData:
                             Pub().pub("openWB/system/device/"+str(index) +
                                       "/component/"+str(index_second), "")
                         else:
-                            MainLogger().error("Es konnte keine Komponente mit der ID " +
-                                               str(index_second)+" gefunden werden.")
+                            log.error("Es konnte keine Komponente mit der ID " +
+                                      str(index_second)+" gefunden werden.")
                     else:
-                        MainLogger().error("Es konnte kein Device mit der ID " +
-                                           str(index)+" gefunden werden.")
+                        log.error("Es konnte kein Device mit der ID " +
+                                  str(index)+" gefunden werden.")
                 else:
                     try:
                         sim_data = var["device"+index].components["component" + index_second].simulation
@@ -742,7 +745,7 @@ class SubData:
             else:
                 self.set_json_payload(var["system"].data, msg)
         except Exception:
-            MainLogger().exception("Fehler im subdata-Modul")
+            log.exception("Fehler im subdata-Modul")
 
     def process_graph_topic(self, var, msg):
         """ Handler für die Graph-Topics
@@ -763,4 +766,4 @@ class SubData:
                         var["graph"].data["config"] = {}
                     self.set_json_payload(var["graph"].data["config"], msg)
         except Exception:
-            MainLogger().exception("Fehler im subdata-Modul")
+            log.exception("Fehler im subdata-Modul")

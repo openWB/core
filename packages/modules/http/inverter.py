@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from helpermodules import log, compatibility
+from helpermodules import compatibility
 from modules.common.component_state import InverterState
 from modules.common.fault_state import ComponentInfo
 from modules.common.store import get_inverter_value_store

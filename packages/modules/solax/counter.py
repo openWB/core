@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-from helpermodules import log
 from modules.common import modbus
 from modules.common.component_state import CounterState
 from modules.common.fault_state import ComponentInfo
@@ -45,5 +44,4 @@ class SolaxCounter:
             powers=powers,
             frequency=frequency
         )
-        log.MainLogger().debug("Solax Leistung[W]: " + str(counter_state.power))
         self.__store.set(counter_state)

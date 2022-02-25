@@ -23,7 +23,7 @@ component_registry = {
     "inverter": inverter.create_component
 }
 
-log = logging.getLogger("Discovergy")
+log = logging.getLogger(__name__)
 
 
 class Device(AbstractDevice):

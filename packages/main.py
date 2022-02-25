@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Starten der benötigten Prozesse
 """
+import logging
 import os
+from pathlib import Path
 import time
 import threading
 import traceback
@@ -14,7 +16,7 @@ from helpermodules import timecheck
 from helpermodules import subdata
 from helpermodules import setdata
 from helpermodules import measurement_log
-from helpermodules.log import MainLogger, cleanup_logfiles
+from helpermodules.log import cleanup_logfiles
 from helpermodules import command
 from control import prepare
 from control import data
@@ -36,7 +38,7 @@ class HandlerAlgorithm:
             # Beim ersten Durchlauf wird in jedem Fall eine Exception geworfen, da die Daten erstmalig ins data-Modul
             # kopiert werden müssen.
             try:
-                MainLogger().info("# ***Start*** ")
+                log.info("# ***Start*** ")
                 exit_time = data.data.general_data["general"].data["control_interval"]
 
                 @exit_after(exit_time)
@@ -45,7 +47,7 @@ class HandlerAlgorithm:
                             / 10) == self.interval_counter:
                         # Mit aktuellen Einstellungen arbeiten.
                         prep.copy_system_data()
-                        MainLogger().setLevel(data.data.system_data["system"].data["debug_level"])
+                        log.setLevel(data.data.system_data["system"].data["debug_level"])
                         loadvars.get_hardware_values()
                         # Virtuelle Module ermitteln die Werte rechnerisch auf Bais der Messwerte anderer Module.
                         # Daher können sie erst die Werte ermitteln, wenn die physischen Module ihre Werte ermittelt
@@ -63,7 +65,7 @@ class HandlerAlgorithm:
                             return
                         elif data.data.system_data["system"].data[
                                 "update_in_progress"]:
-                            MainLogger().info(
+                            log.info(
                                 "Regelung pausiert, da ein Update durchgefuehrt wird."
                             )
                             return
@@ -94,7 +96,7 @@ class HandlerAlgorithm:
                     data.data.graph_data["graph"].pub_graph_data()
                 handler_without_contronl_interval()
         except Exception:
-            MainLogger().exception("Fehler im Main-Modul")
+            log.exception("Fehler im Main-Modul")
 
     @exit_after(10)
     def handler5Min(self):
@@ -102,16 +104,16 @@ class HandlerAlgorithm:
         ausführt, die nur alle 5 Minuten ausgeführt werden müssen.
         """
         try:
-            MainLogger().debug("5 Minuten Handler ausführen.")
+            log.debug("5 Minuten Handler ausführen.")
             if not sub.heartbeat:
-                MainLogger().error("Heartbeat fuer Subdata nicht zurueckgesetzt.")
+                log.error("Heartbeat fuer Subdata nicht zurueckgesetzt.")
                 sub.disconnect()
                 Thread(target=sub.sub_topics, args=()).start()
             else:
                 sub.heartbeat = False
 
             if not set.heartbeat:
-                MainLogger().error("Heartbeat fuer Setdata nicht zurueckgesetzt.")
+                log.error("Heartbeat fuer Setdata nicht zurueckgesetzt.")
                 set.disconnect()
                 Thread(target=set.set_data, args=()).start()
             else:
@@ -128,7 +130,7 @@ class HandlerAlgorithm:
             data.data.general_data["general"].grid_protection()
             data.data.optional_data["optional"].et_get_prices()
         except Exception:
-            MainLogger().exception("Fehler im Main-Modul")
+            log.exception("Fehler im Main-Modul")
 
 
 def repeated_handler_call():
@@ -148,19 +150,29 @@ def repeated_handler_call():
                 timer_5min += 10
             handler.handler10Sec()
         except KeyboardInterrupt:
-            MainLogger().critical("Asuführung durch exit_after gestoppt: "+traceback.format_exc())
+            log.critical("Asuführung durch exit_after gestoppt: "+traceback.format_exc())
         except Exception:
-            MainLogger().exception("Fehler im Main-Modul")
+            log.exception("Fehler im Main-Modul")
         # skip tasks if we are behind schedule:
         next_time += (time.time() - next_time) // delay * delay + delay
 
 
+logging.basicConfig(filename=str(Path(__file__).resolve().parents[1] / 'ramdisk' / ('main.log')),
+                    format='%(asctime)s - {%(name)s:%(lineno)s} - %(levelname)s - %(message)s',
+                    level=logging.DEBUG)
+log = logging.getLogger()
+mqtt_log = logging.getLogger("mqtt")
+mqtt_log.propagate = False
+mqtt_file_handler = logging.FileHandler(str(Path(__file__).resolve().parents[1] / 'ramdisk' / ('mqtt.log')))
+mqtt_file_handler.setFormatter(logging.Formatter('%(asctime)s - %(message)s'))
+mqtt_log.addHandler(mqtt_file_handler)
+
 try:
     # Regelung erst starten, wenn atreboot.sh fertig ist.
-    MainLogger().debug("Warten auf das Ende des Boot-Prozesses")
+    log.debug("Warten auf das Ende des Boot-Prozesses")
     while os.path.isfile(os.path.dirname(os.path.abspath(__file__)) + "/../ramdisk/bootdone") is False:
         time.sleep(1)
-    MainLogger().debug("Boot-Prozess abgeschlossen")
+    log.debug("Boot-Prozess abgeschlossen")
 
     data.data_init()
     update_config.UpdateConfig().update()
@@ -192,4 +204,4 @@ try:
     # blocking
     repeated_handler_call()
 except Exception:
-    MainLogger().exception("Fehler im Main-Modul")
+    log.exception("Fehler im Main-Modul")

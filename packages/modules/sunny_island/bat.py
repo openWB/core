@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-from helpermodules import log
 from modules.common import modbus
 from modules.common.component_state import BatState
 from modules.common.modbus import ModbusDataType

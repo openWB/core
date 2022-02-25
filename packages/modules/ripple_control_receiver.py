@@ -1,8 +1,10 @@
+import logging
 import RPi.GPIO as GPIO
 import time
 
-from helpermodules.log import MainLogger
 from helpermodules.pub import Pub
+
+log = logging.getLogger(__name__)
 
 
 def read():
@@ -31,4 +33,4 @@ def read():
             time.sleep(0.2)
     except Exception:
         GPIO.cleanup()
-        MainLogger().exception()
+        log.exception()

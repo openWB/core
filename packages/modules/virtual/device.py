@@ -1,9 +1,11 @@
+import logging
 from typing import Dict
 
-from helpermodules.log import MainLogger
 from modules.common.abstract_device import AbstractDevice
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.virtual import counter
+
+log = logging.getLogger(__name__)
 
 
 def get_default_config() -> dict:
@@ -27,7 +29,7 @@ class Device(AbstractDevice):
         try:
             self.device_config = device_config
         except Exception:
-            MainLogger().exception("Fehler im Modul " + device_config["name"])
+            log.exception("Fehler im Modul " + device_config["name"])
 
     def add_component(self, component_config: dict) -> None:
         component_type = component_config["type"]
@@ -36,14 +38,14 @@ class Device(AbstractDevice):
                 self.device_config["id"], component_config))
 
     def get_values(self) -> None:
-        MainLogger().debug("Start device reading" + str(self.components))
+        log.debug("Start device reading" + str(self.components))
         if self.components:
             for component in self.components:
                 # Auch wenn bei einer Komponente ein Fehler auftritt, sollen alle anderen noch ausgelesen werden.
                 with SingleComponentUpdateContext(self.components[component].component_info):
                     self.components[component].update()
         else:
-            MainLogger().warning(
+            log.warning(
                 self.device_config["name"] +
                 ": Es konnten keine Werte gelesen werden, da noch keine Komponenten konfiguriert wurden."
             )

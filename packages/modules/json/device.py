@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
+import logging
 from typing import Dict, List, Union, Optional
 
-from helpermodules import log
 from helpermodules.cli import run_using_positional_cli_args
 from modules.common import req
 from modules.common.abstract_device import AbstractDevice
@@ -9,6 +9,8 @@ from modules.common.component_context import MultiComponentUpdateContext
 from modules.json import bat
 from modules.json import counter
 from modules.json import inverter
+
+log = logging.getLogger(__name__)
 
 
 def get_default_config() -> dict:
@@ -39,7 +41,7 @@ class Device(AbstractDevice):
         try:
             self.device_config = device_config
         except Exception:
-            log.MainLogger().exception("Fehler im Modul "+device_config["name"])
+            log.exception("Fehler im Modul "+device_config["name"])
 
     def add_component(self, component_config: dict) -> None:
         component_type = component_config["type"]
@@ -53,14 +55,14 @@ class Device(AbstractDevice):
             )
 
     def update(self) -> None:
-        log.MainLogger().debug("Start device reading " + str(self.components))
+        log.debug("Start device reading " + str(self.components))
         if self.components:
             with MultiComponentUpdateContext(self.components):
                 response = req.get_http_session().get(self.device_config["configuration"]["ip_address"], timeout=5)
                 for component in self.components:
                     self.components[component].update(response.json())
         else:
-            log.MainLogger().warning(
+            log.warning(
                 self.device_config["name"] +
                 ": Es konnten keine Werte gelesen werden, da noch keine Komponenten konfiguriert wurden."
             )

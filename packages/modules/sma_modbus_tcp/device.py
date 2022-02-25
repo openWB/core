@@ -12,7 +12,7 @@ from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.store import get_inverter_value_store
 
 
-log = logging.getLogger("SMA Inverter")
+log = logging.getLogger(__name__)
 
 
 def get_default_config() -> dict:

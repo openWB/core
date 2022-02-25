@@ -1,9 +1,12 @@
 from enum import Enum
+import logging
 import traceback
 from typing import Optional
 
-from helpermodules import compatibility, exceptions, log, pub
+from helpermodules import compatibility, exceptions, pub
 from modules.common import component_type
+
+log = logging.getLogger(__name__)
 
 
 class FaultStateLevel(Enum):
@@ -31,10 +34,10 @@ class FaultState(Exception):
     def store_error(self, component_info: ComponentInfo) -> None:
         try:
             if self.fault_state is not FaultStateLevel.NO_ERROR:
-                log.MainLogger().error(component_info.name + ": FaultState " +
-                                       str(self.fault_state) + ", FaultStr " +
-                                       self.fault_str + ", Traceback: \n" +
-                                       traceback.format_exc())
+                log.error(component_info.name + ": FaultState " +
+                          str(self.fault_state) + ", FaultStr " +
+                          self.fault_str + ", Traceback: \n" +
+                          traceback.format_exc())
             ramdisk = compatibility.is_ramdisk_in_use()
             if ramdisk:
                 topic = component_type.type_to_topic_mapping(component_info.type)
@@ -55,7 +58,7 @@ class FaultState(Exception):
                 pub.Pub().pub(
                     "openWB/set/" + topic + "/" + str(component_info.id) + "/get/fault_state", self.fault_state.value)
         except Exception:
-            log.MainLogger().exception("Fehler im Modul fault_state")
+            log.exception("Fehler im Modul fault_state")
 
     def __type_topic_mapping_comp(self, component_type: str) -> str:
         if "bat" in component_type:

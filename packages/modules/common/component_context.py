@@ -3,7 +3,8 @@ import threading
 from typing import Optional, List, Union, Any, Dict
 
 from modules.common.fault_state import ComponentInfo, FaultState
-from helpermodules import log
+
+log = logging.getLogger(__name__)
 
 
 class SingleComponentUpdateContext:
@@ -19,7 +20,7 @@ class SingleComponentUpdateContext:
         self.__component_info = component_info
 
     def __enter__(self):
-        log.MainLogger().debug("Update Komponente ['"+self.__component_info.name+"']")
+        log.debug("Update Komponente ['"+self.__component_info.name+"']")
         return None
 
     def __exit__(self, exception_type, exception, exception_traceback) -> bool:
@@ -46,8 +47,8 @@ class MultiComponentUpdateContext:
         if hasattr(self.__thread_local, "active_context"):
             raise Exception("Nesting MultiComponentUpdateContext is not supported")
         MultiComponentUpdateContext.__thread_local.active_context = self
-        log.MainLogger().debug("Update Komponenten " +
-                               str([component.component_info.name for component in self.__device_components]))
+        log.debug("Update Komponenten " +
+                  str([component.component_info.name for component in self.__device_components]))
         return None
 
     def __exit__(self, exception_type, exception, exception_traceback) -> bool:

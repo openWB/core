@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
-
 import requests
 
-from helpermodules import log
 from modules.common import req
 from modules.common import simcount
 from modules.common.component_state import InverterState

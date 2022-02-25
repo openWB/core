@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-from helpermodules.log import MainLogger
+import logging
 from modules.common.abstract_device import AbstractDevice
 from modules.common.component_context import MultiComponentUpdateContext
 from modules.mqtt import bat
 from modules.mqtt import counter
 from modules.mqtt import inverter
+
+log = logging.getLogger(__name__)
 
 
 def get_default_config() -> dict:
@@ -28,7 +30,7 @@ class Device(AbstractDevice):
         try:
             self.device_config = device_config
         except Exception:
-            MainLogger().exception("Fehler im Modul " + device_config["name"])
+            log.exception("Fehler im Modul " + device_config["name"])
 
     def add_component(self, component_config: dict) -> None:
         component_type = component_config["type"]
@@ -39,9 +41,9 @@ class Device(AbstractDevice):
     def update(self) -> None:
         if self.components:
             with MultiComponentUpdateContext(self.components):
-                MainLogger().debug("MQTT-Module müssen nicht ausgelesen werden.")
+                log.debug("MQTT-Module müssen nicht ausgelesen werden.")
         else:
-            MainLogger().warning(
+            log.warning(
                 self.device_config["name"] +
                 ": Es konnten keine Werte gelesen werden, da noch keine Komponenten konfiguriert wurden."
             )

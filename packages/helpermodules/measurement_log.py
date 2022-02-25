@@ -1,13 +1,15 @@
 
 
 import json
+import logging
 import pathlib
 from pathlib import Path
 
 from control import data
-from helpermodules.log import MainLogger
 from helpermodules.pub import Pub
 from helpermodules import timecheck
+
+log = logging.getLogger(__name__)
 
 
 def save_log(folder):
@@ -88,12 +90,12 @@ def save_log(folder):
                     cp_dict.update(
                         {cp: {"counter": data.data.cp_data[cp].data["get"]["counter"]}})
             except Exception:
-                MainLogger().exception("Fehler im Werte-Logging-Modul für Ladepunkt "+str(cp))
+                log.exception("Fehler im Werte-Logging-Modul für Ladepunkt "+str(cp))
         try:
             cp_dict.update(
                 {"all": {"counter": data.data.cp_data["all"].data["get"]["counter"]}})
         except Exception:
-            MainLogger().exception("Fehler im Werte-Logging-Modul")
+            log.exception("Fehler im Werte-Logging-Modul")
 
         ev_dict = {}
         for ev in data.data.ev_data:
@@ -102,7 +104,7 @@ def save_log(folder):
                     ev_dict.update(
                         {ev: {"soc": data.data.ev_data[ev].data["get"]["soc"]}})
             except Exception:
-                MainLogger().exception("Fehler im Werte-Logging-Modul für EV "+str(ev))
+                log.exception("Fehler im Werte-Logging-Modul für EV "+str(ev))
 
         counter_dict = {}
         for counter in data.data.counter_data:
@@ -112,7 +114,7 @@ def save_log(folder):
                                          {"imported": data.data.counter_data[counter].data["get"]["imported"],
                                           "exported": data.data.counter_data[counter].data["get"]["exported"]}})
             except Exception:
-                MainLogger().exception("Fehler im Werte-Logging-Modul für Zähler "+str(counter))
+                log.exception("Fehler im Werte-Logging-Modul für Zähler "+str(counter))
 
         pv_dict = {}
         if data.data.pv_data["all"].data["config"]["configured"]:
@@ -121,7 +123,7 @@ def save_log(folder):
                     pv_dict.update(
                         {pv: {"imported": data.data.pv_data[pv].data["get"]["counter"]}})
                 except Exception:
-                    MainLogger().exception("Fehler im Werte-Logging-Modul für Wechselrichter "+str(pv))
+                    log.exception("Fehler im Werte-Logging-Modul für Wechselrichter "+str(pv))
 
         bat_dict = {}
         if data.data.bat_data["all"].data["config"]["configured"]:
@@ -131,7 +133,7 @@ def save_log(folder):
                                            "exported": data.data.bat_data[bat].data["get"]["exported"],
                                            "soc": data.data.bat_data[bat].data["get"]["soc"]}})
                 except Exception:
-                    MainLogger().exception("Fehler im Werte-Logging-Modul für Speicher "+str(bat))
+                    log.exception("Fehler im Werte-Logging-Modul für Speicher "+str(bat))
 
         new_entry = {
             "date": date,
@@ -167,7 +169,7 @@ def save_log(folder):
         with open(filepath, "w") as jsonFile:
             json.dump(content, jsonFile)
     except Exception:
-        MainLogger().exception("Fehler im Werte-Logging-Modul")
+        log.exception("Fehler im Werte-Logging-Modul")
 
 
 def get_daily_log(date: str):
@@ -216,8 +218,8 @@ def update_daily_yields():
                 Pub().pub("openWB/set/counter/"+str(
                     data.data.counter_data[counter].counter_num)+"/get/daily_yield_export", daily_yield_export)
             else:
-                MainLogger().info("Zähler "+str(counter) +
-                                  " wurde zwischenzeitlich gelöscht und wird daher nicht mehr aufgeführt.")
+                log.info("Zähler "+str(counter) +
+                         " wurde zwischenzeitlich gelöscht und wird daher nicht mehr aufgeführt.")
         # Tagesertrag Ladepunkte
         for cp in daily_log[0]["cp"]:
             if cp in data.data.cp_data:
@@ -230,8 +232,8 @@ def update_daily_yields():
                 else:
                     Pub().pub("openWB/set/chargepoint/get/daily_yield", daily_yield)
             else:
-                MainLogger().info("Ladepunkt "+str(cp) +
-                                  " wurde zwischenzeitlich gelöscht und wird daher nicht mehr aufgeführt.")
+                log.info("Ladepunkt "+str(cp) +
+                         " wurde zwischenzeitlich gelöscht und wird daher nicht mehr aufgeführt.")
         # Tagesertrag PV
         for pv in daily_log[0]["pv"]:
             if pv in data.data.pv_data:
@@ -244,8 +246,8 @@ def update_daily_yields():
                 else:
                     Pub().pub("openWB/set/pv/get/daily_yield", daily_yield)
             else:
-                MainLogger().info("Wechselrichter "+str(pv) +
-                                  " wurde zwischenzeitlich gelöscht und wird daher nicht mehr aufgeführt.")
+                log.info("Wechselrichter "+str(pv) +
+                         " wurde zwischenzeitlich gelöscht und wird daher nicht mehr aufgeführt.")
         # Tagesertrag Speicher
         for bat in daily_log[0]["bat"]:
             if bat in data.data.bat_data:
@@ -266,8 +268,8 @@ def update_daily_yields():
                     Pub().pub("openWB/set/bat/get/daily_yield_export",
                               daily_yield_exported)
             else:
-                MainLogger().info("Speicher "+str(bat) +
-                                  " wurde zwischenzeitlich gelöscht und wird daher nicht mehr aufgeführt.")
+                log.info("Speicher "+str(bat) +
+                         " wurde zwischenzeitlich gelöscht und wird daher nicht mehr aufgeführt.")
         data.data.counter_data["all"].calc_daily_yield_home_consumption()
     except Exception:
-        MainLogger().exception("Fehler im Werte-Logging-Modul")
+        log.exception("Fehler im Werte-Logging-Modul")

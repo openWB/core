@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-from helpermodules import log
 from modules.common.component_state import BatState
 from modules.common.fault_state import ComponentInfo
 from modules.common.store import get_bat_value_store

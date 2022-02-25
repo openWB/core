@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import jq
 
-from helpermodules import log
 from modules.common import simcount
 from modules.common.component_state import InverterState
 from modules.common.fault_state import ComponentInfo

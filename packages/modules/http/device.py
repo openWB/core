@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
+import logging
 import re
 from typing import Dict, Union, List
 
 from urllib3.util import parse_url
 
-from helpermodules import log
 from helpermodules.cli import run_using_positional_cli_args
 from modules.common.abstract_device import AbstractDevice
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.http import bat
 from modules.http import counter
 from modules.http import inverter
+
+log = logging.getLogger(__name__)
 
 
 def get_default_config() -> dict:
@@ -41,7 +43,7 @@ class Device(AbstractDevice):
         try:
             self.device_config = device_config
         except Exception:
-            log.MainLogger().exception("Fehler im Modul "+device_config["name"])
+            log.exception("Fehler im Modul "+device_config["name"])
 
     def add_component(self, component_config: dict) -> None:
         component_type = component_config["type"]
@@ -57,14 +59,14 @@ class Device(AbstractDevice):
             )
 
     def update(self) -> None:
-        log.MainLogger().debug("Start device reading " + str(self.components))
+        log.debug("Start device reading " + str(self.components))
         if self.components:
             for component in self.components:
                 # Auch wenn bei einer Komponente ein Fehler auftritt, sollen alle anderen noch ausgelesen werden.
                 with SingleComponentUpdateContext(self.components[component].component_info):
                     self.components[component].update()
         else:
-            log.MainLogger().warning(
+            log.warning(
                 self.device_config["name"] +
                 ": Es konnten keine Werte gelesen werden, da noch keine Komponenten konfiguriert wurden."
             )
@@ -92,7 +94,7 @@ def create_paths_dict(**kwargs):
 def run_device_legacy(device_config: dict, component_config: dict):
     device = Device(device_config)
     device.add_component(component_config)
-    log.MainLogger().debug(
+    log.debug(
         'Http Konfiguration: ' + str(device_config["configuration"]) + str(component_config["configuration"])
     )
     device.update()

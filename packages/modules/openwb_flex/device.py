@@ -1,6 +1,6 @@
+import logging
 from typing import Dict, Union, Optional, List
 
-from helpermodules.log import MainLogger
 from helpermodules.cli import run_using_positional_cli_args
 from modules.common import modbus
 from modules.common.abstract_device import AbstractDevice
@@ -8,6 +8,8 @@ from modules.common.component_context import SingleComponentUpdateContext
 from modules.openwb_flex import bat
 from modules.openwb_flex import counter
 from modules.openwb_flex import inverter
+
+log = logging.getLogger(__name__)
 
 
 def get_default_config() -> dict:
@@ -37,7 +39,7 @@ class Device(AbstractDevice):
             port = device_config["configuration"]["port"]
             self.client = modbus.ModbusClient(ip_address, port)
         except Exception:
-            MainLogger().exception("Fehler im Modul " + device_config["name"])
+            log.exception("Fehler im Modul " + device_config["name"])
 
     def add_component(self, component_config: dict) -> None:
         component_type = component_config["type"]
@@ -50,14 +52,14 @@ class Device(AbstractDevice):
                             ','.join(self.COMPONENT_TYPE_TO_CLASS.keys()))
 
     def update(self) -> None:
-        MainLogger().debug("Start device reading " + str(self.components))
+        log.debug("Start device reading " + str(self.components))
         if self.components:
             for component in self.components:
                 # Auch wenn bei einer Komponente ein Fehler auftritt, sollen alle anderen noch ausgelesen werden.
                 with SingleComponentUpdateContext(self.components[component].component_info):
                     self.components[component].update()
         else:
-            MainLogger().warning(
+            log.warning(
                 self.device_config["name"] +
                 ": Es konnten keine Werte gelesen werden, da noch keine Komponenten konfiguriert wurden."
             )
@@ -71,7 +73,7 @@ def read_legacy(component_type: str, version: int, ip_address: str, port: int, i
         "counter": counter,
         "inverter": inverter
     }
-    MainLogger().debug('Start reading flex')
+    log.debug('Start reading flex')
     device_config = get_default_config()
     device_config["configuration"]["ip_address"] = ip_address
     device_config["configuration"]["port"] = port
@@ -89,10 +91,10 @@ def read_legacy(component_type: str, version: int, ip_address: str, port: int, i
     component_config["configuration"]["id"] = id
     dev.add_component(component_config)
 
-    MainLogger().debug('openWB flex Version: ' + str(version))
-    MainLogger().debug('openWB flex-Kit IP-Adresse: ' + str(ip_address))
-    MainLogger().debug('openWB flex-Kit Port: ' + str(port))
-    MainLogger().debug('openWB flex-Kit ID: ' + str(id))
+    log.debug('openWB flex Version: ' + str(version))
+    log.debug('openWB flex-Kit IP-Adresse: ' + str(ip_address))
+    log.debug('openWB flex-Kit Port: ' + str(port))
+    log.debug('openWB flex-Kit ID: ' + str(id))
 
     dev.update()
 

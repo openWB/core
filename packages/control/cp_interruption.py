@@ -1,11 +1,13 @@
 """ Modul, das die CP-Unterbrechung durchführt.
 """
+import logging
 import threading
 import time
 
-from helpermodules.log import MainLogger
 from helpermodules import pub
 from modules.cp import ip_evse
+
+log = logging.getLogger(__name__)
 
 cp_interruption_threads = {}
 
@@ -38,9 +40,9 @@ def thread_cp_interruption(cp_num, selected, config, duration):
             cp_interruption_threads["thread_cp"+str(cp_num)] = threading.Thread(
                 target=_perform_cp_interruption, args=(selected, config, duration))
             cp_interruption_threads["thread_cp"+str(cp_num)].start()
-            MainLogger().debug("Thread zur CP-Unterbrechung an LP"+str(cp_num)+" gestartet.")
+            log.debug("Thread zur CP-Unterbrechung an LP"+str(cp_num)+" gestartet.")
     except Exception:
-        MainLogger().exception("Fehler im Modul fuer die CP-Unterbrechung")
+        log.exception("Fehler im Modul fuer die CP-Unterbrechung")
 
 
 def _perform_cp_interruption(selected, config, duration):
@@ -57,4 +59,4 @@ def _perform_cp_interruption(selected, config, duration):
             id = config["id"]
             ip_evse.perform_cp_interruption(ip_address, id, duration)
     except Exception:
-        MainLogger().exception("Fehler im Modul fuer die CP-Unterbrechung")
+        log.exception("Fehler im Modul fuer die CP-Unterbrechung")

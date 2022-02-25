@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
+import logging
 from requests import Session
 from typing import Tuple
 
-from helpermodules import log
 from modules.common import req
 from modules.common import simcount
 from modules.common.component_state import CounterState
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.store import get_counter_value_store
 from modules.fronius.meter import MeterLocation
+
+log = logging.getLogger(__name__)
 
 
 def get_default_config() -> dict:
@@ -60,7 +62,6 @@ class FroniusSmCounter:
         return counter_state, meter_location
 
     def set_counter_state(self, counter_state: CounterState) -> None:
-        log.MainLogger().debug("Fronius SM Leistung[W]: " + str(counter_state.power))
         self.__store.set(counter_state)
 
     def __update_variant_0_1(self, session: Session) -> Tuple[CounterState, MeterLocation]:
@@ -86,7 +87,7 @@ class FroniusSmCounter:
         response_json_id = response.json()["Body"]["Data"]
 
         meter_location = MeterLocation(response_json_id["Meter_Location_Current"])
-        log.MainLogger().debug("Einbauort: "+str(meter_location))
+        log.debug("Einbauort: "+str(meter_location))
 
         if meter_location == MeterLocation.grid:
             power = response_json_id["PowerReal_P_Sum"]

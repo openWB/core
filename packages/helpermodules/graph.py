@@ -2,10 +2,12 @@ from pathlib import Path
 import subprocess
 import time
 import datetime
+import logging
 
 from control import data
-from helpermodules.log import MainLogger
 from helpermodules.pub import Pub
+
+log = logging.getLogger(__name__)
 
 
 class Graph:
@@ -69,4 +71,4 @@ class Graph:
             subprocess.run([str(Path(__file__).resolve().parents[2] / "runs"/"graphing.sh"),
                             str(self.data["config"]["duration"]*6)])
         except Exception:
-            MainLogger().exception("Fehler im Graph-Modul")
+            log.exception("Fehler im Graph-Modul")

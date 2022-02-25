@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-from helpermodules import log
 from modules.common import modbus
 from modules.common import simcount
 from modules.common.component_state import CounterState
@@ -46,5 +45,4 @@ class JanitzaCounter:
             exported=exported,
             power=power
         )
-        log.MainLogger().debug("Janitza Leistung[W]: " + str(counter_state.power))
         self.__store.set(counter_state)

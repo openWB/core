@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
+import logging
 from typing import Dict, Optional, Union, List
 
-from helpermodules import log
 from helpermodules.cli import run_using_positional_cli_args
 from modules.common import modbus
 from modules.common.abstract_device import AbstractDevice
@@ -9,6 +9,8 @@ from modules.common.component_context import SingleComponentUpdateContext
 from modules.victron import bat
 from modules.victron import counter
 from modules.victron import inverter
+
+log = logging.getLogger(__name__)
 
 
 def get_default_config() -> dict:
@@ -36,7 +38,7 @@ class Device(AbstractDevice):
             self.client = modbus.ModbusClient(ip_address, 502)
             self.device_config = device_config
         except Exception:
-            log.MainLogger().exception("Fehler im Modul "+device_config["name"])
+            log.exception("Fehler im Modul "+device_config["name"])
 
     def add_component(self, component_config: dict) -> None:
         component_type = component_config["type"]
@@ -50,14 +52,14 @@ class Device(AbstractDevice):
             )
 
     def update(self) -> None:
-        log.MainLogger().debug("Start device reading " + str(self.components))
+        log.debug("Start device reading " + str(self.components))
         if self.components:
             for component in self.components:
                 # Auch wenn bei einer Komponente ein Fehler auftritt, sollen alle anderen noch ausgelesen werden.
                 with SingleComponentUpdateContext(self.components[component].component_info):
                     self.components[component].update()
         else:
-            log.MainLogger().warning(
+            log.warning(
                 self.device_config["name"] +
                 ": Es konnten keine Werte gelesen werden, da noch keine Komponenten konfiguriert wurden."
             )
@@ -95,10 +97,10 @@ def read_legacy(
     component_config["configuration"]["modbus_id"] = modbus_id
     dev.add_component(component_config)
 
-    log.MainLogger().debug('Victron IP-Adresse: ' + str(ip_address))
-    log.MainLogger().debug('Victron Energy Meter: ' + str(bool(energy_meter)))
-    log.MainLogger().debug('Victron Modbus-ID: ' + str(modbus_id))
-    log.MainLogger().debug('Victron MPPT: ' + str(mppt))
+    log.debug('Victron IP-Adresse: ' + str(ip_address))
+    log.debug('Victron Energy Meter: ' + str(bool(energy_meter)))
+    log.debug('Victron Modbus-ID: ' + str(modbus_id))
+    log.debug('Victron MPPT: ' + str(mppt))
     dev.update()
 
 
