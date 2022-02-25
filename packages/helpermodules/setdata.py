@@ -783,11 +783,11 @@ class SetData:
             elif ("/get/powers" in msg.topic or
                     "/get/currents" in msg.topic):
                 self._validate_value(
-                    msg, float, [(float("-inf"), float("inf")), (None, None)], collection=list)
+                    msg, float, [(float("-inf"), float("inf"))], collection=list)
             elif ("/get/voltages" in msg.topic or
                     "/get/power_factors" in msg.topic):
                 self._validate_value(
-                    msg, float, [(0, float("inf")), (None, None)], collection=list)
+                    msg, float, [(0, float("inf"))], collection=list)
             elif ("/get/power_average" in msg.topic
                     or "/get/unbalanced_load" in msg.topic
                     or "/get/frequency" in msg.topic
@@ -796,7 +796,7 @@ class SetData:
                     or "/get/imported" in msg.topic
                     or "/get/exported" in msg.topic):
                 self._validate_value(
-                    msg, float, [(0, float("inf")), (None, None)])
+                    msg, float, [(0, float("inf"))])
             elif "/get/fault_state" in msg.topic:
                 self._validate_value(msg, int, [(0, 2)])
             elif ("/get/fault_str" in msg.topic or
@@ -804,7 +804,7 @@ class SetData:
                 self._validate_value(msg, str)
             elif "/get/power" in msg.topic:
                 self._validate_value(
-                    msg, float, [(float("-inf"), float("inf")), (None, None)])
+                    msg, float, [(float("-inf"), float("inf"))])
             else:
                 self.__unknown_topic(msg)
         except Exception:
