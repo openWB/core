@@ -715,9 +715,10 @@ class SubData:
                         MainLogger().error("Es konnte kein Device mit der ID " +
                                            str(index)+" gefunden werden.")
                 else:
-                    sim_data = None
-                    if "component"+index_second in var["device"+index]._components:
+                    try:
                         sim_data = var["device"+index]._components["component" + index_second].simulation
+                    except (KeyError, AttributeError):
+                        sim_data = None
                     # Es darf nicht einfach data["config"] aktualisiert werden, da in der __init__ auch die
                     # TCP-Verbindung aufgebaut wird, deren IP dann nicht aktualisiert werden würde.
                     var["device"+index].add_component(
