@@ -37,7 +37,6 @@ class FroniusSmCounter:
 
     def update(self) -> Tuple[CounterState, MeterLocation]:
         variant = self.component_config["configuration"]["variant"]
-        log.MainLogger().debug("Komponente "+self.component_config["name"]+" auslesen.")
 
         session = req.get_http_session()
 

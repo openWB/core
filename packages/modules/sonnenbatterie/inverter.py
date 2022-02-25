@@ -106,8 +106,6 @@ class SonnenbatterieInverter:
         )
 
     def update(self) -> None:
-        log.MainLogger().debug("Komponente '" + str(self.component_config["id"]) + "' "
-                               + self.component_config["name"] + " wird auslesen.")
         log.MainLogger().debug("Variante: " + str(self.__device_variant))
         if self.__device_variant == 0:
             log.MainLogger().debug("Die Variante '0' bietet keine PV Daten!")

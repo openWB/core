@@ -30,7 +30,6 @@ class SungrowCounter:
         self.component_info = ComponentInfo.from_component_config(component_config)
 
     def update(self):
-        log.MainLogger().debug("Komponente "+self.component_config["name"]+" auslesen.")
         unit = 1
         with self.__tcp_client:
             if self.component_config["configuration"]["version"] == 1:

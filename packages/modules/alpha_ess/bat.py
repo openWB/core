@@ -32,7 +32,6 @@ class AlphaEssBat:
         self.component_info = ComponentInfo.from_component_config(component_config)
 
     def update(self, unit_id: int) -> None:
-        MainLogger().debug("Komponente "+self.component_config["name"]+" auslesen.")
         # keine Unterschiede zwischen den Versionen
 
         with self.__tcp_client:

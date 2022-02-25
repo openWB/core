@@ -28,7 +28,6 @@ class HttpInverter:
         self.component_info = ComponentInfo.from_component_config(component_config)
 
     def update(self) -> None:
-        log.MainLogger().debug("Komponente "+self.component_config["name"]+" auslesen.")
         inverter_state = InverterState(
             # for compatibility: in 1.x power URL values are positive!
             power=(-self.__get_power() if compatibility.is_ramdisk_in_use() else self.__get_power()),

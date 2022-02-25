@@ -27,7 +27,6 @@ class FroniusS0Counter:
         self.component_info = ComponentInfo.from_component_config(component_config)
 
     def update(self) -> CounterState:
-        log.MainLogger().debug("Komponente "+self.component_config["name"]+" auslesen.")
 
         session = req.get_http_session()
         response = session.get(

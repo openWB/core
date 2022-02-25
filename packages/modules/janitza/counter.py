@@ -28,7 +28,6 @@ class JanitzaCounter:
         self.component_info = ComponentInfo.from_component_config(component_config)
 
     def update(self):
-        log.MainLogger().debug("Komponente "+self.component_config["name"]+" auslesen.")
         with self.__tcp_client:
             power = self.__tcp_client.read_holding_registers(19026, ModbusDataType.FLOAT_32, unit=1)
 

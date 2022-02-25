@@ -24,7 +24,6 @@ class SolaxCounter:
         self.component_info = ComponentInfo.from_component_config(component_config)
 
     def update(self):
-        log.MainLogger().debug("Komponente "+self.component_config["name"]+" auslesen.")
         with self.__tcp_client:
             power = self.__tcp_client.read_input_registers(70, ModbusDataType.INT_32, wordorder=Endian.Little) * -1
             frequency = self.__tcp_client.read_input_registers(7, ModbusDataType.UINT_16) / 100

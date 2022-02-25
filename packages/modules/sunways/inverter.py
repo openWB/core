@@ -33,7 +33,6 @@ class SunwaysInverter:
         self.component_info = ComponentInfo.from_component_config(component_config)
 
     def update(self) -> None:
-        log.MainLogger().debug("Komponente "+self.component_config["name"]+" auslesen.")
         params = (
             ('CAN', '1'),
             ('HASH', '00200403'),

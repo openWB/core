@@ -32,7 +32,6 @@ class HttpBat:
         self.component_info = ComponentInfo.from_component_config(component_config)
 
     def update(self) -> None:
-        log.MainLogger().debug("Komponente "+self.component_config["name"]+" auslesen.")
         bat_state = BatState(
             power=self.__get_power(),
             soc=self.__get_soc(),

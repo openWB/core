@@ -28,7 +28,6 @@ class VictronBat:
         self.component_info = ComponentInfo.from_component_config(component_config)
 
     def update(self) -> None:
-        log.MainLogger().debug("Komponente "+self.component_config["name"]+" auslesen.")
         with self.__tcp_client:
             power = self.__tcp_client.read_holding_registers(842, ModbusDataType.INT_16, unit=100)
             soc = self.__tcp_client.read_holding_registers(843, ModbusDataType.UINT_16, unit=100)

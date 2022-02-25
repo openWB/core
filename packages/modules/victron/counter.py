@@ -32,7 +32,6 @@ class VictronCounter:
         self.component_info = ComponentInfo.from_component_config(component_config)
 
     def update(self):
-        log.MainLogger().debug("Komponente "+self.component_config["name"]+" auslesen.")
         unit = self.component_config["configuration"]["modbus_id"]
         energy_meter = self.component_config["configuration"]["energy_meter"]
         with self.__tcp_client:

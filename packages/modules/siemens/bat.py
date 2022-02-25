@@ -31,7 +31,6 @@ class SiemensBat:
         self.component_info = ComponentInfo.from_component_config(component_config)
 
     def update(self) -> None:
-        log.MainLogger().debug("Komponente "+self.component_config["name"]+" auslesen.")
         with self.__tcp_client:
             power = self.__tcp_client.read_holding_registers(6, ModbusDataType.INT_32, unit=1) * -1
             soc = int(self.__tcp_client.read_holding_registers(8, ModbusDataType.INT_32, unit=1))

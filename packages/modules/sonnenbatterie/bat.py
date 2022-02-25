@@ -124,8 +124,6 @@ class SonnenbatterieBat:
         )
 
     def update(self) -> None:
-        log.MainLogger().debug("Komponente '" + str(self.component_config["id"]) + "' "
-                               + self.component_config["name"] + " wird auslesen.")
         log.MainLogger().debug("Variante: " + str(self.__device_variant))
         if self.__device_variant == 0:
             state = self.__update_variant_0()

@@ -32,7 +32,6 @@ class VictronInverter:
         self.component_info = ComponentInfo.from_component_config(component_config)
 
     def update(self) -> None:
-        log.MainLogger().debug("Komponente "+self.component_config["name"]+" auslesen.")
         modbus_id = self.component_config["configuration"]["modbus_id"]
         with self.__tcp_client:
             if self.component_config["configuration"]["mppt"]:

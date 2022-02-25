@@ -28,7 +28,6 @@ class PowerdogCounter:
         self.component_info = ComponentInfo.from_component_config(component_config)
 
     def update(self):
-        log.MainLogger().debug("Komponente "+self.component_config["name"]+" auslesen.")
         with self.__tcp_client:
             home_consumption = self.__tcp_client.read_input_registers(40026, ModbusDataType.INT_32, unit=1)
         log.MainLogger().debug("Powerdog Hausverbrauch[W]: " + str(home_consumption))

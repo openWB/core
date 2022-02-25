@@ -24,7 +24,6 @@ class SunnyIslandBat:
         self.component_info = ComponentInfo.from_component_config(component_config)
 
     def update(self) -> None:
-        log.MainLogger().debug("Komponente "+self.component_config["name"]+" auslesen.")
         unit = 3
         with self.__tcp_client:
             soc = self.__tcp_client.read_holding_registers(30845, ModbusDataType.INT_32, unit=unit)

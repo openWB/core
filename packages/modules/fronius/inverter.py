@@ -32,7 +32,6 @@ class FroniusInverter:
         self.component_info = ComponentInfo.from_component_config(component_config)
 
     def update(self) -> float:
-        log.MainLogger().debug("Komponente "+self.component_config["name"]+" auslesen.")
 
         # Rückgabewert ist die aktuelle Wirkleistung in [W].
         params = (

@@ -38,7 +38,6 @@ class HttpCounter:
         self.component_info = ComponentInfo.from_component_config(component_config)
 
     def update(self):
-        log.MainLogger().debug("Komponente "+self.component_config["name"]+" auslesen.")
 
         counter_state = CounterState(
             currents=[getter() for getter in self.__get_currents],
