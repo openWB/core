@@ -38,8 +38,8 @@ function getIndex(topic) {
 }
 
 function createChargePoint(hierarchy) {
-	if (hierarchy.id.match(/cp[0-9]+/g)) {
-		var chargePointIndex = hierarchy.id.replace('cp', '');
+	if (hierarchy.type == "cp") {
+		var chargePointIndex = hierarchy.id;
 		if ($('.charge-point-card[data-cp=' + chargePointIndex + ']').length == 0) {
 			if (typeof chargePointIndex !== 'undefined') {
 				console.debug("creating charge-point " + chargePointIndex);
@@ -269,7 +269,13 @@ function processGlobalCounterMessages(mqttTopic, mqttPayload) {
 		// now create any other charge point
 		var hierarchy = JSON.parse(mqttPayload);
 		if (hierarchy.length) {
-			evuCounterIndex = hierarchy[0].id.match(/[\d]+$/)[0];
+			for (const element of hierarchy) {
+				if (element.type == "counter") {
+					evuCounterIndex = element.id
+					break
+				}
+			}
+			//evuCounterIndex = hierarchy[0].id.match(/[\d]+$/)[0];
 			console.debug("EVU counter index: " + evuCounterIndex);
 			createChargePoint(hierarchy[0]);
 			// subscribe to other topics relevant for charge points
@@ -426,7 +432,7 @@ function processBatteryMessages(mqttTopic, mqttPayload) {
 		}
 		if (batDailyYield > 999) {
 			batDailyYield = (batDailyYield / 1000).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-			unitPrefix = "M";
+			unitPrefix = "k";
 		} else {
 			batDailyYield = batDailyYield.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 		}
@@ -440,7 +446,7 @@ function processBatteryMessages(mqttTopic, mqttPayload) {
 		}
 		if (batDailyYield > 999) {
 			batDailyYield = (batDailyYield / 1000).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-			unitPrefix = "M";
+			unitPrefix = "k";
 		} else {
 			batDailyYield = batDailyYield.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 		}
@@ -1083,7 +1089,7 @@ function processGraphMessages(mqttTopic, mqttPayload) {
 			all15 = 0;
 			all16 = 0;
 			graphCefreshCounter = 0;
-		subscribeMqttGraphSegments();
+			subscribeMqttGraphSegments();
 		}
 		graphRefreshCounter += 1;
 	} else if (mqttTopic == 'openWB/graph/config/duration') {
