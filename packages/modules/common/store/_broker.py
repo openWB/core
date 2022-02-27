@@ -7,7 +7,7 @@ from modules.common.store._util import get_rounding_function_by_digits, process_
 def pub_to_broker(topic: str, value, digits: Union[int, None] = None) -> None:
     rounding = get_rounding_function_by_digits(digits)
     try:
-        if value:
+        if value is not None:
             if isinstance(value, list):
                 Pub().pub(topic, [rounding(v) for v in value])
             else:
