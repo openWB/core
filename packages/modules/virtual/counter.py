@@ -73,7 +73,7 @@ class VirtualCounter:
             elif element["type"] == ComponentType.INVERTER.value:
                 add_current_power(data.data.pv_data[f"pv{element['id']}"])
 
-        self.power = + self.component_config["configuration"]["external_consumption"]
+        self.power += self.component_config["configuration"]["external_consumption"]
         self.currents = [c + self.power/3 for c in self.currents]
         topic_str = "openWB/set/system/device/{}/component/{}/".format(self.__device_id, self.component_config["id"])
         imported, exported = self.__sim_count.sim_count(
