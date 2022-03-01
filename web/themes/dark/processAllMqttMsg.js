@@ -18,13 +18,13 @@ var evuCounterIndex = undefined;
 // 	return column;
 // }
 
-function convertToKw(dataColum) {
-	var convertedDataColumn = [];
-	dataColum.forEach((value) => {
-		convertedDataColumn.push(value / 1000);
-	});
-	return convertedDataColumn;
-}
+// function convertToKw(dataColum) {
+// 	var convertedDataColumn = [];
+// 	dataColum.forEach((value) => {
+// 		convertedDataColumn.push(value / 1000);
+// 	});
+// 	return convertedDataColumn;
+// }
 
 function getIndex(topic) {
 	// get occurrence of numbers between / / in topic
@@ -275,7 +275,6 @@ function processGlobalCounterMessages(mqttTopic, mqttPayload) {
 					break
 				}
 			}
-			//evuCounterIndex = hierarchy[0].id.match(/[\d]+$/)[0];
 			console.debug("EVU counter index: " + evuCounterIndex);
 			createChargePoint(hierarchy[0]);
 			// subscribe to other topics relevant for charge points
@@ -425,21 +424,7 @@ function processBatteryMessages(mqttTopic, mqttPayload) {
 		$('.house-battery-sum-soc').text(speicherSoc + ' ' + unit);
 	} else if (mqttTopic == 'openWB/bat/get/daily_yield_export') {
 		var unit = "Wh";
-		var unitPrefix = "k";
-		var batDailyYield = parseFloat(mqttPayload);
-		if (isNaN(batDailyYield)) {
-			batDailyYield = 0;
-		}
-		if (batDailyYield > 999) {
-			batDailyYield = (batDailyYield / 1000).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-			unitPrefix = "k";
-		} else {
-			batDailyYield = batDailyYield.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-		}
-		$('.house-battery-sum-import').text(batDailyYield + ' ' + unitPrefix + unit);
-	} else if (mqttTopic == 'openWB/bat/get/daily_yield_import') {
-		var unit = "Wh";
-		var unitPrefix = "k";
+		var unitPrefix = "";
 		var batDailyYield = parseFloat(mqttPayload);
 		if (isNaN(batDailyYield)) {
 			batDailyYield = 0;
@@ -451,6 +436,20 @@ function processBatteryMessages(mqttTopic, mqttPayload) {
 			batDailyYield = batDailyYield.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 		}
 		$('.house-battery-sum-export').text(batDailyYield + ' ' + unitPrefix + unit);
+	} else if (mqttTopic == 'openWB/bat/get/daily_yield_import') {
+		var unit = "Wh";
+		var unitPrefix = "";
+		var batDailyYield = parseFloat(mqttPayload);
+		if (isNaN(batDailyYield)) {
+			batDailyYield = 0;
+		}
+		if (batDailyYield > 999) {
+			batDailyYield = (batDailyYield / 1000).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+			unitPrefix = "k";
+		} else {
+			batDailyYield = batDailyYield.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+		}
+		$('.house-battery-sum-import').text(batDailyYield + ' ' + unitPrefix + unit);
 	}
 }
 
