@@ -1,94 +1,3 @@
-""" Ladelog
-
-
-Lena:haus_mit_garten:  14:19 Uhr
-Das json-Objekt (=Zeile im Ladelog) enthält diese Daten:
-{"chargepoint": {"id": 1, "name": "Hof", "rfid": 1234},
-"vehicle": { "id": 1, "name":"Model 3", "chargemode": "pv_charging", "prio": True },
-"time": { "begin":<timestamp>, "end":<timestamp>, "time_charged": "1 H, 34 Min",
-"data": {"range_charged": 34, "charged_since_mode_switch_counter": 3400, "charged_since_plugged_counter": 5000,
-        "power": 110000, "costs": 3,42} }}
-Eine neue Zeile wird bei Abstecken oder Wechsel des Lademodus/Priorität erzeugt. (bearbeitet)
-weißes_häkchen
-augen
-erhobene_hände
-
-Lutz:haus_mit_garten:  14:22 Uhr
-Kannst du "time_charged" noch anders formatieren? In Deinem Beispiel "1:34"
-
-Lena:haus_mit_garten:  14:24 Uhr
-{"chargepoint": {"id": 1, "name": "Hof", "rfid": 1234},
-"vehicle": { "id": 1, "name":"Model 3", "chargemode": "pv_charging", "prio": True },
-"time": { "begin":"27.05.2021 07:43", "end": "27.05.2021 07:50", "time_charged": "1:34",
-"data": {"range_charged": 34, "charged_since_mode_switch_counter": 3400, "charged_since_plugged_counter": 5000,
-"power": 110000, "price": 3,42} }}
-:+1:
-1
-
-Kevin  14:35 Uhr
-mehrere einträge für eine Ladung wären ggf. dann aber blöd
-
-Kevin  14:36 Uhr
-ebenso sollte bedacht werden das es ggf. nur um mehrere rfid tags geht, aber nicht zwingend Fahrzeugprofil
- (hatten wir das bedacht?)
-oder wird zwingend für jeden rfid tag ein fahrzeug angelegt werden müssen?
-
-7 Antworten
-
-Lena:haus_mit_garten:  vor 14 Tagen
-Wenn man mit einem Tag die Ladung freischaltet, kann man diesen während der Ladung ändern?
-weißes_häkchen
-augen
-erhobene_hände
-
-Kevin  vor 14 Tagen
-nein, der müsste eigentlich fix sein
-
-Lena:haus_mit_garten:  vor 14 Tagen
-Dann verstehe ich nicht, worauf du hinaus willst.
-
-Kevin  vor 14 Tagen
-ich glaub das ist Gehirn wirr warr ... für jeden rfid tag wird schlicht ein fahrzeug angelegt werden müssen, richtig?
-
-Lena:haus_mit_garten:  vor 14 Tagen
-Man sollte auch mehrere Tags für ein Auto zulassen. Es können  sich ja auch mehrere Personen ein Auto teilen.
-
-Kevin  vor 14 Tagen
-kann man im Ladelog dann nach auto und auch nach Tag filtern?
-
-Lena:haus_mit_garten:  vor 14 Tagen
-Ich würde sagen ja. Sollte auch kein allzu großer Aufwand sein.
-Letzte Antwort vor 14 TagenThread ansehen
-
-Lutz:haus_mit_garten:  14:36 Uhr
-Dafür fallen die ganzen Mini-Ladevorgänge weg, die jetzt im PV-Modus protokolliert werden. Finde ich besser gelöst.
-
-Kevin  14:36 Uhr
-ist ein ladevorgang nicht bis abstecken ?
-14:37 Uhr
-auch in bezug auf das lastmanagement, das ggf. die Ladung mal unterbricht halte ich das für sinniger
-
-Lena:haus_mit_garten:  14:37 Uhr
-Wenn das Lastmanagement die Ladung unterbricht, wird kein Eintrag erzeugt.
-
-Kevin  14:38 Uhr
-wenn der Nutzer aber bisschen von sofort / pv umherklickt gibt es mehrere einträge?
-
-Lutz:haus_mit_garten:  14:38 Uhr
-Aktuell nur bis die Leistung < 100W ist. Bei PV habe ich gerade in der Übergangszeit gerne 40-50 Einträge pro Tag.
-
-Lena:haus_mit_garten:  14:38 Uhr
-Ja, im Normalbetrieb schaltet man da ja nicht dauernd um.
-
-Kevin  14:39 Uhr
-so die Theorie @Lena :leichtes_lächeln:
-
-Lena:haus_mit_garten:  14:42 Uhr
-Ich sehe, dass so wie Lutz. Wenn im PV-Laden die Ladung unterbrochen wird, sollte nicht immer ein Eintrag erzeugt
-werden.
-"""
-
-
 import json
 import math
 import pathlib
@@ -269,16 +178,17 @@ def save_data(chargepoint, charging_ev, immediately=True, reset=False):
             pathlib.Path(__file__).resolve().parents[2] / "data" / "charge_log" /
             (timecheck.create_timestamp_YYYYMM() + ".json"))
         try:
-            with open(filepath, "r") as jsonFile:
-                content = json.load(jsonFile)
+            with open(filepath, "r", encoding="utf-8") as json_file:
+                content = json.load(json_file)
         except FileNotFoundError:
-            with open(filepath, "w") as jsonFile:
-                json.dump([], jsonFile)
-            with open(filepath, "r") as jsonFile:
-                content = json.load(jsonFile)
+            # with open(filepath, "w", encoding="utf-8") as jsonFile:
+            #     json.dump([], jsonFile)
+            # with open(filepath, "r", encoding="utf-8") as jsonFile:
+            #     content = json.load(jsonFile)
+            content = []
         content.append(new_entry)
-        with open(filepath, "w") as jsonFile:
-            json.dump(content, jsonFile)
+        with open(filepath, "w", encoding="utf-8") as json_file:
+            json.dump(content, json_file)
 
         # Werte zurücksetzen
         log_data["timestamp_start_charging"] = "0"
@@ -315,129 +225,102 @@ def get_log_data(request):
     request: dict
         Infos zum Request: Monat, Jahr, Filter
     """
-    data = {"entries": [], "sum": {}}
+    log_data = {"entries": [], "totals": {}}
     try:
         # Datei einlesen
         filepath = str(
             pathlib.Path(__file__).resolve().parents[2] / "data" / "charge_log" /
             (str(request["year"]) + str(request["month"]) + ".json"))
         try:
-            with open(filepath, "r") as jsonFile:
-                chargelog = json.load(jsonFile)
+            with open(filepath, "r", encoding="utf-8") as json_file:
+                chargelog = json.load(json_file)
         except FileNotFoundError:
             MainLogger().debug("Kein Ladelog für %s gefunden!" % (str(request)))
-            return []
-        filter = request["filter"]
+            return log_data
         # Liste mit gefilterten Einträgen erstellen
         for entry in chargelog:
             if len(entry) > 0:
-                # Jeden Eintrag anfügen, falls kein Filterkriterium gesetzt ist.
-                if (
-                    len(filter["chargepoint"]["id"]) == 0 and
-                    len(filter["vehicle"]["id"]) == 0 and
-                    len(filter["vehicle"]["rfid"]) == 0 and
-                    len(filter["vehicle"]["chargemode"]) == 0 and
-                    len(filter["vehicle"]["prio"]) == 0 and
-                    len(filter["vehicle"]["prio"]) == 0
+                if(
+                    "id" in request["filter"]["chargepoint"] and
+                    len(request["filter"]["chargepoint"]["id"]) > 0 and
+                    entry["chargepoint"]["id"] not in request["filter"]["chargepoint"]["id"]
                 ):
-                    data["entries"].append(entry)
+                    MainLogger().debug(
+                        "Verwerfe Eintrag wegen Ladepunkt ID: %s != %s" %
+                        (str(entry["chargepoint"]["id"]), str(request["filter"]["chargepoint"]["id"]))
+                    )
                     continue
-                # Jeden Eintrag nur einmal anfügen, auch wenn mehrere Kriterien zutreffen
-                appended = False
-                if "chargepoint" in filter:
-                    if "id" in filter["chargepoint"]:
-                        for id in filter["chargepoint"]["id"]:
-                            if id == entry["chargepoint"]["id"]:
-                                data["entries"].append(entry)
-                                appended = True
-                                break
-                        if appended:
-                            continue
-                if "vehicle" in filter:
-                    if "id" in filter["vehicle"]:
-                        for id in filter["vehicle"]["id"]:
-                            if id == entry["vehicle"]["id"]:
-                                data["entries"].append(entry)
-                                appended = True
-                                break
-                        if appended:
-                            continue
-                    if "rfid" in filter["vehicle"]:
-                        for rfid in filter["vehicle"]["rfid"]:
-                            if rfid == entry["vehicle"]["rfid"]:
-                                data["entries"].append(entry)
-                                appended = True
-                                break
-                        if appended:
-                            continue
-                    if "chargemode" in filter["vehicle"]:
-                        for chargemode in filter["vehicle"]["chargemode"]:
-                            if chargemode == entry["vehicle"]["chargemode"]:
-                                data["entries"].append(entry)
-                                appended = True
-                                break
-                        if appended:
-                            continue
-                    if "prio" in filter["vehicle"]:
-                        for prio in filter["vehicle"]["prio"]:
-                            if prio == entry["vehicle"]["prio"]:
-                                data["entries"].append(entry)
-                                appended = True
-                                break
-                        if appended:
-                            continue
+                if(
+                    "id" in request["filter"]["vehicle"] and
+                    len(request["filter"]["vehicle"]["id"]) > 0 and
+                    entry["vehicle"]["id"] not in request["filter"]["vehicle"]["id"]
+                ):
+                    MainLogger().debug(
+                        "Verwerfe Eintrag wegen Fahrzeug ID: %s != %s" %
+                        (str(entry["vehicle"]["id"]), str(request["filter"]["vehicle"]["id"]))
+                    )
+                    continue
+                if(
+                    "rfid" in request["filter"]["vehicle"] and
+                    len(request["filter"]["vehicle"]["rfid"]) > 0 and
+                    entry["vehicle"]["rfid"] not in request["filter"]["vehicle"]["rfid"]
+                ):
+                    MainLogger().debug(
+                        "Verwerfe Eintrag wegen RFID Tag: %s != %s" %
+                        (str(entry["vehicle"]["rfid"]), str(request["filter"]["vehicle"]["rfid"]))
+                    )
+                    continue
+                if(
+                    "chargemode" in request["filter"]["vehicle"] and
+                    len(request["filter"]["vehicle"]["chargemode"]) > 0 and
+                    entry["vehicle"]["chargemode"] not in request["filter"]["vehicle"]["chargemode"]
+                ):
+                    MainLogger().debug(
+                        "Verwerfe Eintrag wegen Lademodus: %s != %s" %
+                        (str(entry["vehicle"]["chargemode"]), str(request["filter"]["vehicle"]["chargemode"]))
+                    )
+                    continue
+                if(
+                    "prio" in request["filter"]["vehicle"] and
+                    request["filter"]["vehicle"]["prio"] is not entry["vehicle"]["prio"]
+                ):
+                    MainLogger().debug(
+                        "Verwerfe Eintrag wegen Priorität: %s != %s" %
+                        (str(entry["vehicle"]["prio"]), str(request["filter"]["vehicle"]["prio"]))
+                    )
+                    continue
 
-        if len(data["entries"]) > 0:
+                # wenn wir hier ankommen, passt der Eintrag zum Filter
+                log_data["entries"].append(entry)
+
+        if len(log_data["entries"]) > 0:
             # Summen bilden
             duration = "00:00"
-            range = 0
+            range_charged = 0
             mode = 0
             plugged = 0
             power = 0
             costs = 0
-            for entry in data["entries"]:
+            for entry in log_data["entries"]:
                 duration = timecheck.duration_sum(
                     duration, entry["time"]["time_charged"])
-                range += entry["data"]["range_charged"]
+                range_charged += entry["data"]["range_charged"]
                 mode += entry["data"]["charged_since_mode_switch"]
                 plugged += entry["data"]["charged_since_plugged_counter"]
                 power += entry["data"]["power"]
                 costs += entry["data"]["costs"]
-            power = power / len(data["entries"])
-            sum = {
-                "chargepoint":
-                    {
-                        "id": "ID",
-                        "name": "Name",
-                    },
-                    "vehicle":
-                    {
-                        "id": "ID",
-                        "name": "Name",
-                        "chargemode": "Lademodus",
-                        "prio": "Priorität",
-                        "rfid": "RFID"
-                    },
-                    "time":
-                    {
-                        "begin": "Startzeit",
-                        "end": "Endzeit",
-                        "time_charged": duration
-                    },
-                    "data":
-                    {
-                        "range_charged": range,
-                        "charged_since_mode_switch": mode,
-                        "charged_since_plugged_counter": plugged,
-                        "power": power,
-                        "costs": costs
-                    }
+            power = power / len(log_data["entries"])
+            log_data["totals"] = {
+                "time_charged": duration,
+                "range_charged": range_charged,
+                "charged_since_mode_switch": mode,
+                "charged_since_plugged_counter": plugged,
+                "power": power,
+                "costs": costs,
             }
-            data["sum"] = sum
     except Exception:
         MainLogger().exception("Fehler im Ladelog-Modul")
-    finally:
-        return data
+    return log_data
 
 
 def reset_data(chargepoint, charging_ev, immediately=True):
