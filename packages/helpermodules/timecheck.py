@@ -578,4 +578,4 @@ def __get_timedelta_obj(time: str) -> timedelta:
 def __convert_timedelta_to_HHMM(timedelta_obj: timedelta) -> str:
     diff_hours = int(timedelta_obj.total_seconds() / 3600)
     diff_minutes = int((timedelta_obj.total_seconds() % 3600) / 60)
-    return f"{diff_hours:02d}:{diff_minutes:02d}"
+    return f"{diff_hours}:{diff_minutes:02d}"
