@@ -1,26 +1,24 @@
 #!/bin/bash
-OPENWBBASEDIR=$(cd `dirname $0`/../ && pwd)
-# backup some files before fetching new release
-# module soc_eq
-cp modules/soc_eq/soc_eq_acc_lp1 /tmp/soc_eq_acc_lp1
-cp modules/soc_eq/soc_eq_acc_lp2 /tmp/soc_eq_acc_lp2
+OPENWBBASEDIR=$(cd "$(dirname "$0")/../" && pwd)
+LOGFILE="${OPENWBBASEDIR}/ramdisk/update.log"
 
-# fetch new release from GitHub
-sudo git fetch origin
-sudo git reset --hard origin/$1
+echo "#### running update ####" > "$LOGFILE"
 
-# set permissions
-cd /var/www/html/
-sudo chown -R pi:pi openWB 
-sudo chown -R www-data:www-data ${OPENWBBASEDIR}/web/backup
-sudo chown -R www-data:www-data ${OPENWBBASEDIR}/web/tools/upload
+{
+	# fetch new release from GitHub
+	cd "$OPENWBBASEDIR" || exit
+	echo "#### 1. fetching latest data from origin ####"
+	git fetch -v origin && echo "#### done"
 
-# restore saved files after fetching new release
-# module soc_eq
-sudo cp /tmp/soc_eq_acc_lp1 ${OPENWBBASEDIR}/modules/soc_eq/soc_eq_acc_lp1
-sudo cp /tmp/soc_eq_acc_lp2 ${OPENWBBASEDIR}/modules/soc_eq/soc_eq_acc_lp2
+	# stop openwb2 service
+	echo "#### 2. stopping openwb2 service ####"
+	sudo service openwb2 stop && echo "#### done"
 
-sleep 2
+	# only master branch yet
+	echo "#### 3. applying latest changes ####"
+	git reset --hard "origin/master" && echo "#### done"
 
-# now treat system as in booting state
-sudo reboot now
+	# now reboot system
+	echo "#### 4. rebooting system ####"
+	sudo reboot now
+} >> "$LOGFILE" 2>&1
