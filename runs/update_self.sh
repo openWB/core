@@ -6,7 +6,7 @@ echo "#### running update ####" > "$LOGFILE"
 
 {
 	# fetch new release from GitHub
-	cd "$OPENWBBASEDIR"
+	cd "$OPENWBBASEDIR" || exit
 	echo "#### 1. fetching latest data from origin ####"
 	git fetch -v origin && echo "#### done"
 
@@ -16,9 +16,9 @@ echo "#### running update ####" > "$LOGFILE"
 
 	# only master branch yet
 	echo "#### 3. applying latest changes ####"
-	# git reset -v --hard "origin/master" && echo "#### done"
+	git reset --hard "origin/master" && echo "#### done"
 
 	# now reboot system
 	echo "#### 4. rebooting system ####"
-	# sudo reboot now
+	sudo reboot now
 } >> "$LOGFILE" 2>&1
