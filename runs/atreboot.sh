@@ -3,13 +3,7 @@ OPENWBBASEDIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 echo "atreboot.sh started"
 rm "${OPENWBBASEDIR}/ramdisk/bootdone"
 mosquitto_pub -p 1886 -t openWB/system/boot_done -r -m 'false'
-(sleep 600; sudo kill "$(pgrep '[a]treboot.sh')") &
-
-if [ -f "${OPENWBBASEDIR}/ramdisk/bootinprogress" ]; then
-	"rm ${OPENWBBASEDIR}/ramdisk/bootinprogress"
-fi
-
-sudo chmod +x /var/www/html/openWB/reset-broker.sh
+(sleep 600; sudo kill "$$") &
 
 # initialize automatic phase switching
 # alpha image restricted to standalone installation!
