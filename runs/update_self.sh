@@ -1,13 +1,24 @@
 #!/bin/bash
+OPENWBBASEDIR=$(cd "$(dirname "$0")/../" && pwd)
+LOGFILE="${OPENWBBASEDIR}/ramdisk/update.log"
 
-# fetch new release from GitHub
-sudo git fetch origin
+echo "#### running update ####" > "$LOGFILE"
 
-# stop openwb2 service
-sudo service openwb2 stop
+{
+	# fetch new release from GitHub
+	cd "$OPENWBBASEDIR"
+	echo "#### 1. fetching latest data from origin ####"
+	git fetch -v origin && echo "#### done"
 
-# only master branch yet
-sudo git reset --hard "origin/master"
+	# stop openwb2 service
+	echo "#### 2. stopping openwb2 service ####"
+	sudo service openwb2 stop && echo "#### done"
 
-# now reboot system
-sudo reboot now
+	# only master branch yet
+	echo "#### 3. applying latest changes ####"
+	# git reset -v --hard "origin/master" && echo "#### done"
+
+	# now reboot system
+	echo "#### 4. rebooting system ####"
+	# sudo reboot now
+} >> "$LOGFILE" 2>&1
