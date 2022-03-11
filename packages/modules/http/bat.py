@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-from helpermodules import log
 from modules.common.component_state import BatState
 from modules.common.fault_state import ComponentInfo
 from modules.common.store import get_bat_value_store
@@ -32,7 +31,6 @@ class HttpBat:
         self.component_info = ComponentInfo.from_component_config(component_config)
 
     def update(self) -> None:
-        log.MainLogger().debug("Komponente "+self.component_config["name"]+" auslesen.")
         bat_state = BatState(
             power=self.__get_power(),
             soc=self.__get_soc(),

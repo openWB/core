@@ -2,7 +2,6 @@
 import time
 from typing import Callable
 
-from helpermodules.log import MainLogger
 from modules.common import modbus
 from modules.common.component_state import CounterState
 from modules.common.fault_state import ComponentInfo
@@ -29,8 +28,6 @@ class AlphaEssCounter:
         self.component_info = ComponentInfo.from_component_config(component_config)
 
     def update(self, unit_id: int):
-        MainLogger().debug(
-            "Komponente "+self.component_config["name"]+" auslesen.")
         time.sleep(0.1)
         factory_method = self.__get_values_factory(
             self.component_config["configuration"]["version"])

@@ -2,7 +2,6 @@
 from operator import add
 
 from control import data
-from helpermodules.log import MainLogger
 from modules.common import simcount
 from modules.common.component_state import CounterState
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -89,6 +88,4 @@ class VirtualCounter:
         )
         if self.incomplete_currents is False:
             counter_state.currents = self.currents
-
-        MainLogger().debug("Virtual Leistung[W]: " + str(counter_state.power))
         self.__store.set(counter_state)

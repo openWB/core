@@ -1,12 +1,12 @@
 """ Modul, das die Phasenumschaltung durchführt.
 """
+import logging
 import threading
 import time
 
-from helpermodules.log import MainLogger
 from modules.common.abstract_chargepoint import AbstractChargepoint
 
-
+log = logging.getLogger(__name__)
 phase_switch_threads = {}
 
 
@@ -32,9 +32,9 @@ def thread_phase_switch(
             phase_switch_threads["thread_cp"+str(cp_num)] = threading.Thread(
                 target=_perform_phase_switch, args=(chargepoint_module, phases_to_use, duration, charge_state))
             phase_switch_threads["thread_cp"+str(cp_num)].start()
-            MainLogger().debug("Thread zur Phasenumschaltung an LP"+str(cp_num)+" gestartet.")
+            log.debug("Thread zur Phasenumschaltung an LP"+str(cp_num)+" gestartet.")
     except Exception:
-        MainLogger().exception("Fehler im Phasenumschaltungs-Modul")
+        log.exception("Fehler im Phasenumschaltungs-Modul")
 
 
 def _perform_phase_switch(
@@ -53,4 +53,4 @@ def _perform_phase_switch(
         if charge_state:
             time.sleep(1)
     except Exception:
-        MainLogger().exception("Fehler im Phasenumschaltungs-Modul")
+        log.exception("Fehler im Phasenumschaltungs-Modul")

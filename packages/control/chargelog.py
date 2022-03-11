@@ -1,9 +1,9 @@
 import json
+import logging
 import math
 import pathlib
 
 from control import data
-from helpermodules.log import MainLogger
 from helpermodules.pub import Pub
 from helpermodules import timecheck
 
@@ -14,6 +14,8 @@ from helpermodules import timecheck
 # "time": { "begin":"27.05.2021 07:43", "end": "27.05.2021 07:50", "time_charged": "1:34",
 # "data": {"range_charged": 34, "charged_since_mode_switch": 3400, "charged_since_plugged_counter": 5000,
 #          "power": 110000, "costs": 3,42} }}
+
+log = logging.getLogger(__name__)
 
 
 def collect_data(chargepoint):
@@ -32,8 +34,8 @@ def collect_data(chargepoint):
                 log_data["counter_at_plugtime"] = chargepoint.data["get"]["counter"]
                 Pub().pub("openWB/set/chargepoint/"+str(chargepoint.cp_num) +
                           "/set/log/counter_at_plugtime", log_data["counter_at_plugtime"])
-                MainLogger().debug("counter_at_plugtime " +
-                                   str(chargepoint.data["get"]["counter"]))
+                log.debug("counter_at_plugtime " +
+                          str(chargepoint.data["get"]["counter"]))
             # Bisher geladene Energie ermitteln
             log_data["charged_since_plugged_counter"] = chargepoint.data["get"]["counter"] - \
                 log_data["counter_at_plugtime"]
@@ -46,8 +48,8 @@ def collect_data(chargepoint):
                 log_data["counter_at_mode_switch"] = chargepoint.data["get"]["counter"]
                 Pub().pub("openWB/set/chargepoint/"+str(chargepoint.cp_num) +
                           "/set/log/counter_at_mode_switch", log_data["counter_at_mode_switch"])
-                MainLogger().debug("counter_at_mode_switch " +
-                                   str(chargepoint.data["get"]["counter"]))
+                log.debug("counter_at_mode_switch " +
+                          str(chargepoint.data["get"]["counter"]))
             # Bei einem Wechsel das Lademodus wird ein neuer Logeintrag erstellt.
             if chargepoint.data["get"]["charge_state"]:
                 if log_data["timestamp_start_charging"] == "0":
@@ -56,9 +58,9 @@ def collect_data(chargepoint):
                               "/set/log/timestamp_start_charging", log_data["timestamp_start_charging"])
                 log_data["charged_since_mode_switch"] = chargepoint.data["get"]["counter"] - \
                     log_data["counter_at_mode_switch"]
-                MainLogger().debug("charged_since_mode_switch " +
-                                   str(log_data["charged_since_mode_switch"])+" counter " +
-                                   str(chargepoint.data["get"]["counter"]))
+                log.debug("charged_since_mode_switch " +
+                          str(log_data["charged_since_mode_switch"])+" counter " +
+                          str(chargepoint.data["get"]["counter"]))
                 log_data["range_charged"] = log_data["charged_since_mode_switch"] / \
                     charging_ev.ev_template.data["average_consump"]*100
                 log_data["time_charged"] = timecheck.get_difference_to_now(
@@ -71,7 +73,7 @@ def collect_data(chargepoint):
                 Pub().pub("openWB/set/chargepoint/"+str(chargepoint.cp_num) +
                           "/set/log/time_charged", log_data["time_charged"])
     except Exception:
-        MainLogger().exception("Fehler im Ladelog-Modul")
+        log.exception("Fehler im Ladelog-Modul")
 
 
 def save_data(chargepoint, charging_ev, immediately=True, reset=False):
@@ -173,7 +175,7 @@ def save_data(chargepoint, charging_ev, immediately=True, reset=False):
 
         # json-Objekt in Datei einfügen
         (pathlib.Path(__file__).resolve(
-            ).parents[2] / "data"/"charge_log").mkdir(mode=0o755, parents=True, exist_ok=True)
+        ).parents[2] / "data"/"charge_log").mkdir(mode=0o755, parents=True, exist_ok=True)
         filepath = str(
             pathlib.Path(__file__).resolve().parents[2] / "data" / "charge_log" /
             (timecheck.create_timestamp_YYYYMM() + ".json"))
@@ -214,7 +216,7 @@ def save_data(chargepoint, charging_ev, immediately=True, reset=False):
         Pub().pub("openWB/set/chargepoint/"+str(chargepoint.cp_num) +
                   "/set/log/time_charged", log_data["time_charged"])
     except Exception:
-        MainLogger().exception("Fehler im Ladelog-Modul")
+        log.exception("Fehler im Ladelog-Modul")
 
 
 def get_log_data(request):
@@ -235,7 +237,7 @@ def get_log_data(request):
             with open(filepath, "r", encoding="utf-8") as json_file:
                 chargelog = json.load(json_file)
         except FileNotFoundError:
-            MainLogger().debug("Kein Ladelog für %s gefunden!" % (str(request)))
+            log.debug("Kein Ladelog für %s gefunden!" % (str(request)))
             return log_data
         # Liste mit gefilterten Einträgen erstellen
         for entry in chargelog:
@@ -245,7 +247,7 @@ def get_log_data(request):
                     len(request["filter"]["chargepoint"]["id"]) > 0 and
                     entry["chargepoint"]["id"] not in request["filter"]["chargepoint"]["id"]
                 ):
-                    MainLogger().debug(
+                    log.debug(
                         "Verwerfe Eintrag wegen Ladepunkt ID: %s != %s" %
                         (str(entry["chargepoint"]["id"]), str(request["filter"]["chargepoint"]["id"]))
                     )
@@ -255,7 +257,7 @@ def get_log_data(request):
                     len(request["filter"]["vehicle"]["id"]) > 0 and
                     entry["vehicle"]["id"] not in request["filter"]["vehicle"]["id"]
                 ):
-                    MainLogger().debug(
+                    log.debug(
                         "Verwerfe Eintrag wegen Fahrzeug ID: %s != %s" %
                         (str(entry["vehicle"]["id"]), str(request["filter"]["vehicle"]["id"]))
                     )
@@ -265,7 +267,7 @@ def get_log_data(request):
                     len(request["filter"]["vehicle"]["rfid"]) > 0 and
                     entry["vehicle"]["rfid"] not in request["filter"]["vehicle"]["rfid"]
                 ):
-                    MainLogger().debug(
+                    log.debug(
                         "Verwerfe Eintrag wegen RFID Tag: %s != %s" %
                         (str(entry["vehicle"]["rfid"]), str(request["filter"]["vehicle"]["rfid"]))
                     )
@@ -275,7 +277,7 @@ def get_log_data(request):
                     len(request["filter"]["vehicle"]["chargemode"]) > 0 and
                     entry["vehicle"]["chargemode"] not in request["filter"]["vehicle"]["chargemode"]
                 ):
-                    MainLogger().debug(
+                    log.debug(
                         "Verwerfe Eintrag wegen Lademodus: %s != %s" %
                         (str(entry["vehicle"]["chargemode"]), str(request["filter"]["vehicle"]["chargemode"]))
                     )
@@ -284,7 +286,7 @@ def get_log_data(request):
                     "prio" in request["filter"]["vehicle"] and
                     request["filter"]["vehicle"]["prio"] is not entry["vehicle"]["prio"]
                 ):
-                    MainLogger().debug(
+                    log.debug(
                         "Verwerfe Eintrag wegen Priorität: %s != %s" %
                         (str(entry["vehicle"]["prio"]), str(request["filter"]["vehicle"]["prio"]))
                     )
@@ -319,7 +321,7 @@ def get_log_data(request):
                 "costs": costs,
             }
     except Exception:
-        MainLogger().exception("Fehler im Ladelog-Modul")
+        log.exception("Fehler im Ladelog-Modul")
     return log_data
 
 
@@ -354,7 +356,7 @@ def reset_data(chargepoint, charging_ev, immediately=True):
                   "/set/log/charged_since_plugged_counter", log_data["charged_since_plugged_counter"])
 
     except Exception:
-        MainLogger().exception("Fehler im Ladelog-Modul")
+        log.exception("Fehler im Ladelog-Modul")
 
 
 def truncate(number, decimals=0):
@@ -372,4 +374,4 @@ def truncate(number, decimals=0):
         factor = 10.0 ** decimals
         return math.trunc(number * factor) / factor
     except Exception:
-        MainLogger().exception("Fehler im Ladelog-Modul")
+        log.exception("Fehler im Ladelog-Modul")

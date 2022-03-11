@@ -16,7 +16,7 @@ def get_default_config() -> dict:
     }
 
 
-log = logging.getLogger("SMA Webbox")
+log = logging.getLogger(__name__)
 
 
 class SmaWebboxInverter:

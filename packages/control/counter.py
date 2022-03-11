@@ -1,10 +1,13 @@
 """Zähler-Logik
 """
+import logging
 from typing import Callable, Dict, List
+
 from control import data
-from helpermodules.log import MainLogger
 from helpermodules.pub import Pub
 from modules.common.component_type import ComponentType
+
+log = logging.getLogger(__name__)
 
 
 class CounterAll:
@@ -31,7 +34,7 @@ class CounterAll:
             else:
                 raise TypeError
         except Exception:
-            MainLogger().error(
+            log.error(
                 "Ohne Konfiguration eines EVU-Zählers an der Spitze der Hierarchie ist keine Regelung möglich.")
             raise
 
@@ -39,7 +42,7 @@ class CounterAll:
         try:
             Pub().pub("openWB/set/counter/set/loadmanagement_active", self.data["set"]["loadmanagement_active"])
         except Exception:
-            MainLogger().exception("Fehler in der allgemeinen Zähler-Klasse")
+            log.exception("Fehler in der allgemeinen Zähler-Klasse")
 
     def calc_home_consumption(self) -> None:
         try:
@@ -71,7 +74,7 @@ class CounterAll:
             Pub().pub("openWB/set/counter/set/invalid_home_consumption",  self.data["set"]["invalid_home_consumption"])
             Pub().pub("openWB/set/counter/set/home_consumption", self.data["set"]["home_consumption"])
         except Exception:
-            MainLogger().exception("Fehler in der allgemeinen Zähler-Klasse")
+            log.exception("Fehler in der allgemeinen Zähler-Klasse")
 
     def calc_daily_yield_home_consumption(self):
         """ berechnet die heute im Haus verbrauchte Energie.
@@ -97,7 +100,7 @@ class CounterAll:
             Pub().pub("openWB/set/counter/set/daily_yield_home_consumption", daily_yield_home_consumption)
             self.data["set"]["daily_yield_home_consumption"] = daily_yield_home_consumption
         except Exception:
-            MainLogger().exception("Fehler in der allgemeinen Zähler-Klasse")
+            log.exception("Fehler in der allgemeinen Zähler-Klasse")
 
     # Hierarchie analysieren
 
@@ -125,7 +128,7 @@ class CounterAll:
             self._get_all_cp_connected_to_counter(counter_object)
             return self.connected_chargepoints
         except Exception:
-            MainLogger().exception("Fehler in der allgemeinen Zähler-Klasse")
+            log.exception("Fehler in der allgemeinen Zähler-Klasse")
             return None
 
     def _get_all_cp_connected_to_counter(self, child):
@@ -145,7 +148,7 @@ class CounterAll:
                 elif len(child["children"]) != 0:
                     self._get_all_cp_connected_to_counter(child)
             except Exception:
-                MainLogger().exception("Fehler in der allgemeinen Zähler-Klasse")
+                log.exception("Fehler in der allgemeinen Zähler-Klasse")
 
     def get_counters_to_check(self, cp_num: int):
         """ ermittelt alle Zähler im Zweig des Ladepunkts.
@@ -160,7 +163,7 @@ class CounterAll:
             self.__get_all_counter_in_branch(self.data["get"]["hierarchy"][0], cp_num)
             return self.connected_counters
         except Exception:
-            MainLogger().exception("Fehler in der allgemeinen Zähler-Klasse")
+            log.exception("Fehler in der allgemeinen Zähler-Klasse")
             return None
 
     def get_entry_of_element(self, id_to_find: int) -> Dict:
@@ -321,7 +324,7 @@ class Counter:
                 "daily_yield_import": 0}}
             self.counter_num = index
         except Exception:
-            MainLogger().exception("Fehler in der Zähler-Klasse von "+str(self.counter_num))
+            log.exception("Fehler in der Zähler-Klasse von "+str(self.counter_num))
 
     def setup_counter(self):
         # Zählvariablen vor dem Start der Regelung zurücksetzen
@@ -345,31 +348,31 @@ class Counter:
                         - self.data["get"]["power"]
                 else:
                     self.data["set"]["consumption_left"] = self.data["config"]["max_total_power"]
-                MainLogger().debug(str(self.data["set"]["consumption_left"]) +
-                                   "W EVU-Leistung, die noch bezogen werden kann.")
+                log.debug(str(self.data["set"]["consumption_left"]) +
+                          "W EVU-Leistung, die noch bezogen werden kann.")
             # Strom
             try:
                 self.data["set"]["currents_used"] = self.data["get"]["currents"]
             except KeyError:
-                MainLogger().warning(f"Zähler {self.counter_num}: Einzelwerte für Zähler-Phasenströme unbekannt")
+                log.warning(f"Zähler {self.counter_num}: Einzelwerte für Zähler-Phasenströme unbekannt")
                 self.data["set"]["state_str"] = "Das Lastmanagement regelt nur anhand der Gesamtleistung, da keine \
                     Phasenströme ermittelt werden konnten."
                 Pub().pub("openWB/set/counter/"+str(self.counter_num) + "/set/state_str",
                           self.data["set"]["state_str"])
         except Exception:
-            MainLogger().exception("Fehler in der Zähler-Klasse von "+str(self.counter_num))
+            log.exception("Fehler in der Zähler-Klasse von "+str(self.counter_num))
 
     def put_stats(self):
         try:
             if f'counter{self.counter_num}' == data.data.counter_data["all"].get_evu_counter():
                 Pub().pub("openWB/set/counter/"+str(self.counter_num)+"/set/consumption_left",
                           self.data["set"]["consumption_left"])
-                MainLogger().debug(str(self.data["set"]["consumption_left"])+"W verbleibende EVU-Bezugs-Leistung")
+                log.debug(str(self.data["set"]["consumption_left"])+"W verbleibende EVU-Bezugs-Leistung")
         except Exception:
-            MainLogger().exception("Fehler in der Zähler-Klasse von "+str(self.counter_num))
+            log.exception("Fehler in der Zähler-Klasse von "+str(self.counter_num))
 
     def print_stats(self):
         try:
-            MainLogger().debug(str(self.data["set"]["consumption_left"])+"W verbleibende EVU-Bezugs-Leistung")
+            log.debug(str(self.data["set"]["consumption_left"])+"W verbleibende EVU-Bezugs-Leistung")
         except Exception:
-            MainLogger().exception("Fehler in der Zähler-Klasse von "+str(self.counter_num))
+            log.exception("Fehler in der Zähler-Klasse von "+str(self.counter_num))

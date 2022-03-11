@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 from pymodbus.constants import Endian
 
-from helpermodules import log
 from modules.common import modbus
 from modules.common import simcount
 from modules.common.component_state import CounterState
@@ -31,8 +30,6 @@ class CarloGavazziCounter:
 
     def update(self):
         unit = 1
-        log.MainLogger().debug(
-            "Komponente "+self.component_config["name"]+" auslesen.")
         with self.__tcp_client:
             voltages = [val / 10 for val in self.__tcp_client.read_input_registers(
                 0x00, [ModbusDataType.INT_32] * 3, wordorder=Endian.Little, unit=unit)]
@@ -62,5 +59,4 @@ class CarloGavazziCounter:
             power=power,
             frequency=frequency
         )
-        log.MainLogger().debug("Carlo Gavazzi Leistung[W]: " + str(counter_state.power))
         self.__store.set(counter_state)

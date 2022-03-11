@@ -1,10 +1,12 @@
+import logging
 from typing import Dict, List, Optional
 
-from helpermodules import log
 from helpermodules.cli import run_using_positional_cli_args
 from modules.common.abstract_device import AbstractDevice
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.openwb_pv_evu import inverter
+
+log = logging.getLogger(__name__)
 
 
 def get_default_config() -> dict:
@@ -37,14 +39,14 @@ class Device(AbstractDevice):
             )
 
     def update(self) -> None:
-        log.MainLogger().debug("Start device reading " + str(self.components))
+        log.debug("Start device reading " + str(self.components))
         if self.components:
             for component in self.components:
                 # Auch wenn bei einer Komponente ein Fehler auftritt, sollen alle anderen noch ausgelesen werden.
                 with SingleComponentUpdateContext(self.components[component].component_info):
                     self.components[component].update()
         else:
-            log.MainLogger().warning(
+            log.warning(
                 self.device_config["name"] +
                 ": Es konnten keine Werte gelesen werden, da noch keine Komponenten konfiguriert wurden."
             )
@@ -58,7 +60,7 @@ def read_legacy(version: int, num: Optional[int] = None):
     dev = Device(get_default_config())
     dev.add_component(component_config)
 
-    log.MainLogger().debug('Zähler an EVU-Kit Version: ' + str(version))
+    log.debug('Zähler an EVU-Kit Version: ' + str(version))
     dev.update()
 
 

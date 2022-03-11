@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-from helpermodules import log
 from modules.common import modbus
 from modules.common.component_state import CounterState
 from modules.common.fault_state import ComponentInfo
@@ -24,7 +23,6 @@ class SolaxCounter:
         self.component_info = ComponentInfo.from_component_config(component_config)
 
     def update(self):
-        log.MainLogger().debug("Komponente "+self.component_config["name"]+" auslesen.")
         with self.__tcp_client:
             power = self.__tcp_client.read_input_registers(70, ModbusDataType.INT_32, wordorder=Endian.Little) * -1
             frequency = self.__tcp_client.read_input_registers(7, ModbusDataType.UINT_16) / 100
@@ -46,5 +44,4 @@ class SolaxCounter:
             powers=powers,
             frequency=frequency
         )
-        log.MainLogger().debug("Solax Leistung[W]: " + str(counter_state.power))
         self.__store.set(counter_state)

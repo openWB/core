@@ -1,14 +1,16 @@
 
+import logging
 import time
 import requests
 from typing import Dict
 
-from helpermodules.log import MainLogger
 from modules.common.abstract_chargepoint import AbstractChargepoint
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.fault_state import ComponentInfo
 from modules.common.store import get_chargepoint_value_store
 from modules.common.component_state import ChargepointState
+
+log = logging.getLogger(__name__)
 
 
 def get_default_config() -> Dict:
@@ -50,7 +52,7 @@ class ChargepointModule(AbstractChargepoint):
             response = requests.get('http://'+ip_address+'/api2.php')
             response.raise_for_status()
             json_rsp = response.json()
-            MainLogger().debug("openWB Pro "+str(self.id)+": "+str(json_rsp))
+            log.debug("openWB Pro "+str(self.id)+": "+str(json_rsp))
 
             chargepoint_state = ChargepointState(
                 power=json_rsp["power_all"],

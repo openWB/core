@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-from helpermodules import log
 from modules.common import req
 from modules.common import simcount
 from modules.common.component_state import BatState
@@ -27,7 +26,6 @@ class FroniusBat:
         self.component_info = ComponentInfo.from_component_config(component_config)
 
     def update(self) -> None:
-        log.MainLogger().debug("Komponente "+self.component_config["name"]+" auslesen.")
         meter_id = str(self.device_config["meter_id"])
 
         resp_json = req.get_http_session().get(

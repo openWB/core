@@ -23,7 +23,7 @@ def get_default_config() -> dict:
     }
 
 
-log = logging.getLogger("SMA Speedwire")
+log = logging.getLogger(__name__)
 timeout_seconds = 5
 
 

@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-from helpermodules import log
 from modules.common import modbus
 from modules.common.component_state import InverterState
 from modules.common.fault_state import ComponentInfo
@@ -25,7 +24,6 @@ class SolaxInverter:
         self.component_info = ComponentInfo.from_component_config(component_config)
 
     def update(self) -> None:
-        log.MainLogger().debug("Komponente "+self.component_config["name"]+" auslesen.")
         with self.__tcp_client:
             power_temp = self.__tcp_client.read_input_registers(10, [ModbusDataType.UINT_16] * 2)
             power = sum(power_temp) * -1

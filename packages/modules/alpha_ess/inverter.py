@@ -1,6 +1,4 @@
 #!/usr/bin/env python3
-
-from helpermodules.log import MainLogger
 from modules.common import modbus
 from modules.common import simcount
 from modules.common.component_state import InverterState
@@ -31,8 +29,6 @@ class AlphaEssInverter:
         self.component_info = ComponentInfo.from_component_config(component_config)
 
     def update(self, unit_id: int) -> None:
-        MainLogger().debug(
-            "Komponente "+self.component_config["name"]+" auslesen.")
         reg_p = self.__version_factory(
             self.component_config["configuration"]["version"])
         power = self.__get_power(unit_id, reg_p)
@@ -59,5 +55,4 @@ class AlphaEssInverter:
             ]
         powers[0] = abs(powers[0])
         power = sum(powers) * -1
-        MainLogger().debug("Alpha Ess Leistung: "+str(power)+", WR-Register: " + str(powers))
         return power

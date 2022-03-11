@@ -3,6 +3,7 @@
 
 import importlib
 import json
+import logging
 import subprocess
 from typing import Dict
 import paho.mqtt.client as mqtt
@@ -11,7 +12,6 @@ import time
 import traceback
 from pathlib import Path
 
-from helpermodules.log import MainLogger
 from helpermodules import measurement_log
 from helpermodules.pub import Pub
 from control import bridge
@@ -21,6 +21,8 @@ from control import data
 from control import ev
 from control import counter
 from modules.common.component_type import ComponentType, special_to_general_type_mapping, type_to_topic_mapping
+
+log = logging.getLogger(__name__)
 
 
 class Command:
@@ -44,7 +46,7 @@ class Command:
             self.__get_max_id_by_topic_id("ev_template", "vehicle/template/ev_template", 0)
             self.__get_max_id_by_topic_id("vehicle", "vehicle", 0)
         except Exception:
-            MainLogger().exception("Fehler im Command-Modul")
+            log.exception("Fehler im Command-Modul")
 
     def __get_max_id_by_topic_id(self, id_topic: str, topic: str, default: int) -> None:
         """ ermittelt die maximale ID vom Broker """
@@ -52,7 +54,7 @@ class Command:
             max_id = ProcessBrokerBranch(topic).get_max_id(default)
             Pub().pub("openWB/set/command/max_id/"+id_topic, max_id)
         except Exception:
-            MainLogger().exception("Fehler im Command-Modul")
+            log.exception("Fehler im Command-Modul")
 
     def __get_max_id_by_json_object(self, id_topic: str, topic: str, default: int) -> None:
         """ ermittelt die maximale ID vom Broker """
@@ -61,7 +63,7 @@ class Command:
             max_id = counter.get_max_id_in_hierarchy(hierarchy, default)
             Pub().pub("openWB/set/command/max_id/"+id_topic, max_id)
         except Exception:
-            MainLogger().exception("Fehler im Command-Modul")
+            log.exception("Fehler im Command-Modul")
 
     def sub_commands(self):
         """ abonniert alle Topics.
@@ -80,7 +82,7 @@ class Command:
             client.loop_forever()
             client.disconnect()
         except Exception:
-            MainLogger().exception("Fehler im Command-Modul")
+            log.exception("Fehler im Command-Modul")
 
     def getserial(self):
         """ Extract serial from cpuinfo file
@@ -92,7 +94,7 @@ class Command:
                         return line[10:26]
                 return "0000000000000000"
         except Exception:
-            MainLogger().exception("Fehler im Command-Modul")
+            log.exception("Fehler im Command-Modul")
 
     def on_connect(self, client, userdata, flags, rc):
         """ connect to broker and subscribe to set topics
@@ -100,7 +102,7 @@ class Command:
         try:
             client.subscribe("openWB/command/#", 2)
         except Exception:
-            MainLogger().exception("Fehler im Command-Modul")
+            log.exception("Fehler im Command-Modul")
 
     def on_message(self, client, userdata, msg):
         """ wartet auf eingehende Topics.
@@ -110,20 +112,20 @@ class Command:
                 if "todo" in msg.topic:
                     payload = json.loads(str(msg.payload.decode("utf-8")))
                     connection_id = msg.topic.split("/")[2]
-                    MainLogger().debug("Befehl: "+str(payload)+", Connection-ID: "+str(connection_id))
+                    log.debug("Befehl: "+str(payload)+", Connection-ID: "+str(connection_id))
                     # Methoden-Name = Befehl
                     try:
                         func = getattr(self, payload["command"])
                         with ErrorHandlingContext(payload, connection_id):
                             func(connection_id, payload)
                     except Exception:
-                        MainLogger().error("Zu dem Befehl wurde keine Methode gefunden.")
+                        log.error("Zu dem Befehl wurde keine Methode gefunden.")
                         pub_error(payload, connection_id, "Zu dem Befehl wurde keine Methode gefunden.")
                     Pub().pub(msg.topic, "")
                 elif "max_id" in msg.topic:
                     self.__process_max_id_topic(msg)
         except Exception:
-            MainLogger().exception("Fehler im Command-Modul")
+            log.exception("Fehler im Command-Modul")
 
     def __process_max_id_topic(self, msg, no_log: bool = False) -> None:
         try:
@@ -134,15 +136,15 @@ class Command:
                 # Der Variablen-Name für die maximale ID setzt sich aus "max_id_" und dem Topic-Namen nach dem letzten /
                 # zusammen.
                 setattr(self, "max_id_"+var, payload)
-                MainLogger().debug("Max ID "+var+" "+str(payload))
+                log.debug("Max ID "+var+" "+str(payload))
         except Exception:
-            MainLogger().exception("Fehler im Command-Modul")
+            log.exception("Fehler im Command-Modul")
 
     def addDevice(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem ein neues Device erstellt werden soll.
         """
         new_id = self.max_id_device + 1
-        MainLogger().info(
+        log.info(
             "Neues Device vom Typ "+str(payload["data"]["type"])+" mit ID "+str(new_id)+" hinzugefügt.")
         dev = importlib.import_module("."+payload["data"]["type"]+".device", "modules")
         device_default = dev.get_default_config()
@@ -156,8 +158,8 @@ class Command:
         """ löscht ein Device.
         """
         if self.max_id_device >= payload["data"]["id"]:
-            MainLogger().info("Device mit ID " +
-                              str(payload["data"]["id"])+" gelöscht.")
+            log.info("Device mit ID " +
+                     str(payload["data"]["id"])+" gelöscht.")
             ProcessBrokerBranch(
                 "system/device/"+str(payload["data"]["id"])).remove_topics()
         else:
@@ -167,7 +169,7 @@ class Command:
         """ sendet das Topic, zu dem ein neuer Chargepoint erstellt werden soll.
         """
         new_id = self.max_id_hierarchy + 1
-        MainLogger().info(
+        log.info(
             "Neuer Ladepunkt mit ID "+str(new_id)+" wird hinzugefügt.")
         chargepoint_default = chargepoint.get_chargepoint_default()
         # chargepoint_default["id"] = new_id
@@ -195,7 +197,7 @@ class Command:
         """
         if self.max_id_hierarchy >= payload["data"]["id"]:
             data.data.counter_data["all"].hierarchy_remove_item(payload["data"]["id"])
-            MainLogger().info("Ladepunkt mit ID " + str(payload["data"]["id"])+" gelöscht.")
+            log.info("Ladepunkt mit ID " + str(payload["data"]["id"])+" gelöscht.")
             ProcessBrokerBranch("chargepoint/"+str(payload["data"]["id"])).remove_topics()
         else:
             pub_error(payload, connection_id, "Die ID ist größer als die maximal vergebene ID.")
@@ -204,7 +206,7 @@ class Command:
         """ sendet das Topic, zu dem eine neue Ladepunkt-Vorlage erstellt werden soll.
         """
         new_id = self.max_id_chargepoint_template + 1
-        MainLogger().info("Neue Ladepunkt-Vorlage mit ID "+str(new_id)+" hinzugefügt.")
+        log.info("Neue Ladepunkt-Vorlage mit ID "+str(new_id)+" hinzugefügt.")
         default = chargepoint.get_chargepoint_template_default()
         default["id"] = new_id
         Pub().pub("openWB/set/chargepoint/template/"+str(new_id), default)
@@ -217,8 +219,8 @@ class Command:
         """
         if self.max_id_chargepoint_template >= payload["data"]["id"]:
             if payload["data"]["id"] > 0:
-                MainLogger().info("Ladepunkt-Vorlage mit ID " +
-                                  str(payload["data"]["id"])+" gelöscht.")
+                log.info("Ladepunkt-Vorlage mit ID " +
+                         str(payload["data"]["id"])+" gelöscht.")
                 ProcessBrokerBranch("chargepoint/template/" +
                                     str(payload["data"]["id"])).remove_topics()
             else:
@@ -230,8 +232,8 @@ class Command:
         """ sendet das Topic, zu dem ein neuer Zielladen-Plan erstellt werden soll.
         """
         new_id = self.max_id_autolock_plan + 1
-        MainLogger().info("Neuer Autolock-Plan mit ID " + str(new_id) + " zu Template " +
-                          str(payload["data"]["template"]) + " hinzugefügt.")
+        log.info("Neuer Autolock-Plan mit ID " + str(new_id) + " zu Template " +
+                 str(payload["data"]["template"]) + " hinzugefügt.")
         default = chargepoint.get_autolock_plan_default()
         Pub().pub("openWB/set/chargepoint/template/"+str(payload["data"]
                                                          ["template"])+"/autolock/"+str(new_id), default)
@@ -242,7 +244,7 @@ class Command:
         """ löscht einen Zielladen-Plan.
         """
         if self.max_id_autolock_plan >= payload["data"]["plan"]:
-            MainLogger().info(
+            log.info(
                 "Autolock-Plan mit ID " + str(payload["data"]["plan"]) + " zu Template " +
                 str(payload["data"]["template"]) + " gelöscht.")
             Pub().pub(
@@ -256,7 +258,7 @@ class Command:
         """ sendet das Topic, zu dem eine neue Lade-Vorlage erstellt werden soll.
         """
         new_id = self.max_id_charge_template + 1
-        MainLogger().info("Neues Lade-Template mit ID "+str(new_id)+" hinzugefügt.")
+        log.info("Neues Lade-Template mit ID "+str(new_id)+" hinzugefügt.")
         charge_template_default = ev.get_charge_template_default()
         Pub().pub("openWB/set/vehicle/template/charge_template/" +
                   str(new_id), charge_template_default)
@@ -268,8 +270,8 @@ class Command:
         """
         if self.max_id_charge_template >= payload["data"]["id"]:
             if payload["data"]["id"] > 0:
-                MainLogger().info("Lade-Template mit ID " +
-                                  str(payload["data"]["id"])+" gelöscht.")
+                log.info("Lade-Template mit ID " +
+                         str(payload["data"]["id"])+" gelöscht.")
                 Pub().pub("openWB/vehicle/template/charge_template/" +
                           str(payload["data"]["id"]), "")
             else:
@@ -281,8 +283,8 @@ class Command:
         """ sendet das Topic, zu dem ein neuer Zielladen-Plan erstellt werden soll.
         """
         new_id = self.max_id_charge_template_scheduled_plan + 1
-        MainLogger().info("Neues Zielladen-Template mit ID " + str(new_id) + " zu Template " +
-                          str(payload["data"]["template"]) + " hinzugefügt.")
+        log.info("Neues Zielladen-Template mit ID " + str(new_id) + " zu Template " +
+                 str(payload["data"]["template"]) + " hinzugefügt.")
         charge_template_default = ev.get_charge_template_scheduled_plan_default()
         Pub().pub(
             "openWB/set/vehicle/template/charge_template/" + str(payload["data"]["template"]) +
@@ -296,7 +298,7 @@ class Command:
         """ löscht einen Zielladen-Plan.
         """
         if self.max_id_charge_template_scheduled_plan >= payload["data"]["plan"]:
-            MainLogger().info(
+            log.info(
                 "Zielladen-Template mit ID " + str(payload["data"]["plan"]) + " zu Template " +
                 str(payload["data"]["template"]) + " gelöscht.")
             Pub().pub(
@@ -310,8 +312,8 @@ class Command:
         """ sendet das Topic, zu dem ein neuer Zeitladen-Plan erstellt werden soll.
         """
         new_id = self.max_id_charge_template_time_charging_plan + 1
-        MainLogger().info("Neues Zeitladen-Template mit ID " + str(new_id) + " zu Template " +
-                          str(payload["data"]["template"]) + " hinzugefügt.")
+        log.info("Neues Zeitladen-Template mit ID " + str(new_id) + " zu Template " +
+                 str(payload["data"]["template"]) + " hinzugefügt.")
         time_charging_plan_default = ev.get_charge_template_time_charging_plan_default()
         Pub().pub(
             "openWB/set/vehicle/template/charge_template/" + str(payload["data"]["template"]) +
@@ -325,7 +327,7 @@ class Command:
         """ löscht einen Zeitladen-Plan.
         """
         if self.max_id_charge_template_time_charging_plan >= payload["data"]["plan"]:
-            MainLogger().info(
+            log.info(
                 "Zeitladen-Template mit ID " + str(payload["data"]["plan"]) + " zu Template " +
                 str(payload["data"]["template"]) + " gelöscht.")
             Pub().pub(
@@ -339,7 +341,7 @@ class Command:
         """ sendet das Topic, zu dem eine neue Komponente erstellt werden soll.
         """
         new_id = self.max_id_hierarchy + 1
-        MainLogger().info(
+        log.info(
             "Neue Komponente vom Typ"+str(payload["data"]["type"])+" mit ID "+str(new_id)+" hinzugefügt.")
         component = importlib.import_module(
             "."+payload["data"]["deviceType"]+"."+payload["data"]["type"], "modules")
@@ -373,7 +375,7 @@ class Command:
         """ löscht eine Komponente.
         """
         if self.max_id_hierarchy >= payload["data"]["id"]:
-            MainLogger().info("Komponente mit ID "+str(payload["data"]["id"])+" gelöscht.")
+            log.info("Komponente mit ID "+str(payload["data"]["id"])+" gelöscht.")
             branch = "system/device/"+str(payload["data"]["deviceId"])+"/component/"+str(payload["data"]["id"])
             ProcessBrokerBranch(branch).remove_topics()
         else:
@@ -383,7 +385,7 @@ class Command:
         """ sendet das Topic, zu dem ein neues EV-Template erstellt werden soll.
         """
         new_id = self.max_id_ev_template + 1
-        MainLogger().info("Neues EV-Template mit ID "+str(new_id)+" hinzugefügt.")
+        log.info("Neues EV-Template mit ID "+str(new_id)+" hinzugefügt.")
         ev_template_default = ev.get_ev_template_default()
         Pub().pub("openWB/set/vehicle/template/ev_template/" +
                   str(new_id), ev_template_default)
@@ -395,8 +397,8 @@ class Command:
         """
         if self.max_id_ev_template >= payload["data"]["id"]:
             if payload["data"]["id"] > 0:
-                MainLogger().info("EV-Template mit ID " +
-                                  str(payload["data"]["id"])+" gelöscht.")
+                log.info("EV-Template mit ID " +
+                         str(payload["data"]["id"])+" gelöscht.")
                 Pub().pub("openWB/vehicle/template/ev_template/" +
                           str(payload["data"]["id"]), "")
             else:
@@ -408,7 +410,7 @@ class Command:
         """ sendet das Topic, zu dem ein neues Vehicle erstellt werden soll.
         """
         new_id = self.max_id_vehicle + 1
-        MainLogger().info("Neues EV mit ID "+str(new_id)+" hinzugefügt.")
+        log.info("Neues EV mit ID "+str(new_id)+" hinzugefügt.")
         vehicle_default = ev.get_vehicle_default()
         for default in vehicle_default:
             Pub().pub("openWB/set/vehicle/"+str(new_id)+"/" +
@@ -426,7 +428,7 @@ class Command:
         """
         if self.max_id_vehicle >= payload["data"]["id"]:
             if payload["data"]["id"] > 0:
-                MainLogger().info(
+                log.info(
                     "EV mit ID "+str(payload["data"]["id"])+" gelöscht.")
                 Pub().pub("openWB/vehicle/"+str(payload["data"]["id"]), "")
                 ProcessBrokerBranch(
@@ -488,30 +490,30 @@ class Command:
     def addMqttBridge(self, connection_id: str, payload: dict,
                       bridge_default: dict = bridge.get_default_config()) -> None:
         new_id = self.max_id_mqtt_bridge + 1
-        MainLogger().info("Neue Bridge mit ID "+str(new_id)+" hinzugefügt.")
+        log.info("Neue Bridge mit ID "+str(new_id)+" hinzugefügt.")
         Pub().pub("openWB/set/system/mqtt/bridge/"+str(new_id), bridge_default)
         self.max_id_mqtt_bridge = self.max_id_mqtt_bridge + 1
         Pub().pub("openWB/set/command/max_id/mqtt_bridge", self.max_id_mqtt_bridge)
 
     def removeMqttBridge(self, connection_id: str, payload: dict) -> None:
         if self.max_id_mqtt_bridge >= payload["data"]["bridge"]:
-            MainLogger().info("Bridge mit ID "+str(payload["data"]["bridge"])+" gelöscht.")
+            log.info("Bridge mit ID "+str(payload["data"]["bridge"])+" gelöscht.")
             Pub().pub("openWB/system/mqtt/bridge/"+str(payload["data"]["bridge"]), "")
         else:
             pub_error(payload, connection_id, "Die ID ist größer als die maximal vergebene ID.")
 
     def systemReboot(self, connection_id: str, payload: dict) -> None:
-        MainLogger().info("Reboot requested")
+        log.info("Reboot requested")
         parent_file = Path(__file__).resolve().parents[2]
         subprocess.run([str(parent_file / "runs" / "reboot.sh")])
 
     def systemShutdown(self, connection_id: str, payload: dict) -> None:
-        MainLogger().info("Shutdown requested")
+        log.info("Shutdown requested")
         parent_file = Path(__file__).resolve().parents[2]
         subprocess.run([str(parent_file / "runs" / "shutdown.sh")])
 
     def systemUpdate(self, connection_id: str, payload: dict) -> None:
-        MainLogger().info("Shutdown requested")
+        log.info("Shutdown requested")
         parent_file = Path(__file__).resolve().parents[2]
         subprocess.run([str(parent_file / "runs" / "update_self.sh")])
 
@@ -544,9 +546,9 @@ def pub_error(payload: dict, connection_id: str, error_str: str) -> None:
         }
         Pub().pub("openWB/set/command/" +
                   str(connection_id)+"/error", error_payload)
-        MainLogger().error("Befehl konnte nicht ausgeführt werden: "+str(error_payload))
+        log.error("Befehl konnte nicht ausgeführt werden: "+str(error_payload))
     except Exception:
-        MainLogger().exception("Fehler im Command-Modul")
+        log.exception("Fehler im Command-Modul")
 
 
 class ProcessBrokerBranch:
@@ -564,7 +566,7 @@ class ProcessBrokerBranch:
         try:
             self.__connect_to_broker(self.__on_message_rm)
         except Exception:
-            MainLogger().exception("Fehler im Command-Modul")
+            log.exception("Fehler im Command-Modul")
 
     def get_max_id(self, default: int):
         try:
@@ -573,7 +575,7 @@ class ProcessBrokerBranch:
             self.__connect_to_broker(self.__on_message_max_id)
             return self.max_id
         except Exception:
-            MainLogger().exception("Fehler im Command-Modul")
+            log.exception("Fehler im Command-Modul")
 
     def __connect_to_broker(self, on_message):
         """ abonniert alle Topics.
@@ -592,7 +594,7 @@ class ProcessBrokerBranch:
             client.loop_stop()
 
         except Exception:
-            MainLogger().exception("Fehler im Command-Modul")
+            log.exception("Fehler im Command-Modul")
 
     def __on_connect(self, client, userdata, flags, rc):
         """ connect to broker and subscribe to set topics
@@ -601,14 +603,14 @@ class ProcessBrokerBranch:
             client.subscribe("openWB/"+self.topic_str+"/#", 2)
             client.subscribe("openWB/set/"+self.topic_str+"/#", 2)
         except Exception:
-            MainLogger().exception("Fehler im Command-Modul")
+            log.exception("Fehler im Command-Modul")
 
     def __on_message_rm(self, client, userdata, msg):
         """ wartet auf eingehende Topics.
         """
         try:
             if str(msg.payload.decode("utf-8")) != '':
-                MainLogger().debug("Gelöschtes Topic: "+str(msg.topic))
+                log.debug("Gelöschtes Topic: "+str(msg.topic))
                 Pub().pub(msg.topic, "")
                 if "openWB/system/device/" in msg.topic and "component" in msg.topic and "config" in msg.topic:
                     payload = json.loads(str(msg.payload.decode("utf-8")))
@@ -616,7 +618,7 @@ class ProcessBrokerBranch:
                     data.data.counter_data["all"].hierarchy_remove_item(payload["id"])
                     client.subscribe("openWB/"+topic+"/"+str(payload["id"])+"/#", 2)
         except Exception:
-            MainLogger().exception("Fehler im Command-Modul")
+            log.exception("Fehler im Command-Modul")
 
     def __on_message_max_id(self, client, userdata, msg):
         try:
@@ -629,13 +631,13 @@ class ProcessBrokerBranch:
                     current_id = int(current_id_regex.group(1))
                     self.max_id = max(current_id, self.max_id)
         except Exception:
-            MainLogger().exception("Fehler im Command-Modul")
+            log.exception("Fehler im Command-Modul")
 
     def __get_payload(self, client, userdata, msg):
         try:
             self.payload = msg.payload
         except Exception:
-            MainLogger().exception("Fehler im Command-Modul")
+            log.exception("Fehler im Command-Modul")
 
     def __getserial(self):
         """ Extract serial from cpuinfo file
@@ -647,4 +649,4 @@ class ProcessBrokerBranch:
                         return line[10:26]
                 return "0000000000000000"
         except Exception:
-            MainLogger().exception("Fehler im Command-Modul")
+            log.exception("Fehler im Command-Modul")
