@@ -3,7 +3,6 @@
 """
 import logging
 import os
-from pathlib import Path
 import time
 import threading
 import traceback
@@ -16,7 +15,8 @@ from helpermodules import timecheck
 from helpermodules import subdata
 from helpermodules import setdata
 from helpermodules import measurement_log
-from helpermodules.log import cleanup_logfiles
+from helpermodules import logger
+from helpermodules.logger import cleanup_logfiles
 from helpermodules import command
 from control import prepare
 from control import data
@@ -157,16 +157,8 @@ def repeated_handler_call():
         next_time += (time.time() - next_time) // delay * delay + delay
 
 
-logging.basicConfig(filename=str(Path(__file__).resolve().parents[1] / 'ramdisk' / ('main.log')),
-                    format='%(asctime)s - {%(name)s:%(lineno)s} - %(levelname)s - %(message)s',
-                    level=logging.DEBUG)
+logger.setup_logging()
 log = logging.getLogger()
-mqtt_log = logging.getLogger("mqtt")
-mqtt_log.propagate = False
-mqtt_file_handler = logging.FileHandler(str(Path(__file__).resolve().parents[1] / 'ramdisk' / ('mqtt.log')))
-mqtt_file_handler.setFormatter(logging.Formatter('%(asctime)s - %(message)s'))
-mqtt_log.addHandler(mqtt_file_handler)
-
 try:
     # Regelung erst starten, wenn atreboot.sh fertig ist.
     log.debug("Warten auf das Ende des Boot-Prozesses")
