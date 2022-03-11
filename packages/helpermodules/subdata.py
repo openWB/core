@@ -616,30 +616,29 @@ class SubData:
             enthält Topic und Payload
         """
         try:
-            if re.search("^.+/counter/[0-9]+$", msg.topic) is not None:
+            if re.search("^.+/counter/[0-9]+/.+$", msg.topic) is not None:
                 index = self.get_index(msg.topic)
                 if str(msg.payload.decode("utf-8")) == "":
                     if "counter"+index in var:
                         var.pop("counter"+index)
-            elif re.search("^.+/counter/[0-9]+/.+$", msg.topic) is not None:
-                index = self.get_index(msg.topic)
-                if "counter"+index not in var:
-                    var["counter"+index] = counter.Counter(int(index))
-                if re.search("^.+/counter/[0-9]+/get.+$", msg.topic) is not None:
-                    if "get" not in var["counter"+index].data:
-                        var["counter"+index].data["get"] = {}
-                    self.set_json_payload(
-                        var["counter"+index].data["get"], msg)
-                elif re.search("^.+/counter/[0-9]+/set.+$", msg.topic) is not None:
-                    if "set" not in var["counter"+index].data:
-                        var["counter"+index].data["set"] = {}
-                    self.set_json_payload(
-                        var["counter"+index].data["set"], msg)
-                elif re.search("^.+/counter/[0-9]+/config/.+$", msg.topic) is not None:
-                    if "config" not in var["counter"+index].data:
-                        var["counter"+index].data["config"] = {}
-                    self.set_json_payload(
-                        var["counter"+index].data["config"], msg)
+                else:
+                    if "counter"+index not in var:
+                        var["counter"+index] = counter.Counter(int(index))
+                    if re.search("^.+/counter/[0-9]+/get.+$", msg.topic) is not None:
+                        if "get" not in var["counter"+index].data:
+                            var["counter"+index].data["get"] = {}
+                        self.set_json_payload(
+                            var["counter"+index].data["get"], msg)
+                    elif re.search("^.+/counter/[0-9]+/set.+$", msg.topic) is not None:
+                        if "set" not in var["counter"+index].data:
+                            var["counter"+index].data["set"] = {}
+                        self.set_json_payload(
+                            var["counter"+index].data["set"], msg)
+                    elif re.search("^.+/counter/[0-9]+/config/.+$", msg.topic) is not None:
+                        if "config" not in var["counter"+index].data:
+                            var["counter"+index].data["config"] = {}
+                        self.set_json_payload(
+                            var["counter"+index].data["config"], msg)
             elif re.search("^.+/counter/.+$", msg.topic) is not None:
                 if re.search("^.+/counter/get.+$", msg.topic) is not None:
                     if "get" not in var["all"].data:

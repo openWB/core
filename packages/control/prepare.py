@@ -44,6 +44,7 @@ class Prepare:
             MainLogger().exception("Fehler im Prepare-Modul")
 
     def __copy_counter_data(self):
+        data.data.counter_data.clear()
         for counter in subdata.SubData.counter_data:
             stop = False
             if isinstance(subdata.SubData.counter_data[counter], Counter):
@@ -64,6 +65,7 @@ class Prepare:
         """
         try:
             self.__copy_counter_data()
+            data.data.pv_data.clear()
             for pv in subdata.SubData.pv_data:
                 stop = False
                 if isinstance(subdata.SubData.pv_data[pv], Pv):
@@ -78,6 +80,7 @@ class Prepare:
                             break
                 else:
                     data.data.pv_data[pv] = copy.deepcopy(subdata.SubData.pv_data[pv])
+            data.data.bat_data.clear()
             for bat in subdata.SubData.bat_data:
                 stop = False
                 if isinstance(subdata.SubData.bat_data[bat], Bat):
@@ -101,6 +104,7 @@ class Prepare:
         try:
             data.data.general_data = copy.deepcopy(subdata.SubData.general_data)
             data.data.optional_data = copy.deepcopy(subdata.SubData.optional_data)
+            data.data.cp_data.clear()
             for cp in subdata.SubData.cp_data:
                 if isinstance(subdata.SubData.cp_data[cp], Chargepoint):
                     if "config" in subdata.SubData.cp_data[cp].data:
@@ -117,6 +121,7 @@ class Prepare:
                         data.data.cp_data[chargepoint].data["get"]["state_str"] = None
                 except Exception:
                     MainLogger().exception("Fehler im Prepare-Modul für Ladepunkt "+str(chargepoint))
+            data.data.ev_data.clear()
             for ev in subdata.SubData.ev_data:
                 if "name" in subdata.SubData.ev_data[ev].data:
                     data.data.ev_data[ev] = copy.deepcopy(subdata.SubData.ev_data[ev])
