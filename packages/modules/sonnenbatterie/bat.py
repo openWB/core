@@ -126,7 +126,7 @@ class SonnenbatterieBat:
         )
 
     def update(self) -> None:
-        log.MainLogger().debug("Variante: " + str(self.__device_variant))
+        log.debug("Variante: " + str(self.__device_variant))
         if self.__device_variant == 0:
             state = self.__update_variant_0()
         elif self.__device_variant == 1:

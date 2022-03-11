@@ -247,7 +247,7 @@ def get_log_data(request):
                     len(request["filter"]["chargepoint"]["id"]) > 0 and
                     entry["chargepoint"]["id"] not in request["filter"]["chargepoint"]["id"]
                 ):
-                    MainLogger().debug(
+                    log.debug(
                         "Verwerfe Eintrag wegen Ladepunkt ID: %s != %s" %
                         (str(entry["chargepoint"]["id"]), str(request["filter"]["chargepoint"]["id"]))
                     )
@@ -257,7 +257,7 @@ def get_log_data(request):
                     len(request["filter"]["vehicle"]["id"]) > 0 and
                     entry["vehicle"]["id"] not in request["filter"]["vehicle"]["id"]
                 ):
-                    MainLogger().debug(
+                    log.debug(
                         "Verwerfe Eintrag wegen Fahrzeug ID: %s != %s" %
                         (str(entry["vehicle"]["id"]), str(request["filter"]["vehicle"]["id"]))
                     )
@@ -267,7 +267,7 @@ def get_log_data(request):
                     len(request["filter"]["vehicle"]["rfid"]) > 0 and
                     entry["vehicle"]["rfid"] not in request["filter"]["vehicle"]["rfid"]
                 ):
-                    MainLogger().debug(
+                    log.debug(
                         "Verwerfe Eintrag wegen RFID Tag: %s != %s" %
                         (str(entry["vehicle"]["rfid"]), str(request["filter"]["vehicle"]["rfid"]))
                     )
@@ -277,7 +277,7 @@ def get_log_data(request):
                     len(request["filter"]["vehicle"]["chargemode"]) > 0 and
                     entry["vehicle"]["chargemode"] not in request["filter"]["vehicle"]["chargemode"]
                 ):
-                    MainLogger().debug(
+                    log.debug(
                         "Verwerfe Eintrag wegen Lademodus: %s != %s" %
                         (str(entry["vehicle"]["chargemode"]), str(request["filter"]["vehicle"]["chargemode"]))
                     )
@@ -286,7 +286,7 @@ def get_log_data(request):
                     "prio" in request["filter"]["vehicle"] and
                     request["filter"]["vehicle"]["prio"] is not entry["vehicle"]["prio"]
                 ):
-                    MainLogger().debug(
+                    log.debug(
                         "Verwerfe Eintrag wegen Priorität: %s != %s" %
                         (str(entry["vehicle"]["prio"]), str(request["filter"]["vehicle"]["prio"]))
                     )

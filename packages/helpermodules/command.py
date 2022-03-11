@@ -503,17 +503,17 @@ class Command:
             pub_error(payload, connection_id, "Die ID ist größer als die maximal vergebene ID.")
 
     def systemReboot(self, connection_id: str, payload: dict) -> None:
-        MainLogger().info("Reboot requested")
+        log.info("Reboot requested")
         parent_file = Path(__file__).resolve().parents[2]
         subprocess.run([str(parent_file / "runs" / "reboot.sh")])
 
     def systemShutdown(self, connection_id: str, payload: dict) -> None:
-        MainLogger().info("Shutdown requested")
+        log.info("Shutdown requested")
         parent_file = Path(__file__).resolve().parents[2]
         subprocess.run([str(parent_file / "runs" / "shutdown.sh")])
 
     def systemUpdate(self, connection_id: str, payload: dict) -> None:
-        MainLogger().info("Shutdown requested")
+        log.info("Shutdown requested")
         parent_file = Path(__file__).resolve().parents[2]
         subprocess.run([str(parent_file / "runs" / "update_self.sh")])
 
