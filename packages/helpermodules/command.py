@@ -360,7 +360,7 @@ class Command:
             else:
                 pub_error(payload, connection_id, "Bitte erst einen EVU-Zähler konfigurieren!")
                 return
-        # Bei Zählern müssen noch Standardwerte gepublished werden.
+        # Bei Zählern müssen noch Standardwerte veröffentlicht werden.
         if general_type == ComponentType.COUNTER:
             default_config = counter.get_counter_default_config()
             for item in default_config:
@@ -513,7 +513,7 @@ class Command:
         subprocess.run([str(parent_file / "runs" / "shutdown.sh")])
 
     def systemUpdate(self, connection_id: str, payload: dict) -> None:
-        log.info("Shutdown requested")
+        log.info("Update requested")
         parent_file = Path(__file__).resolve().parents[2]
         subprocess.run([str(parent_file / "runs" / "update_self.sh")])
 

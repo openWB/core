@@ -10,15 +10,11 @@ echo "#### running update ####" > "$LOGFILE"
 	echo "#### 1. fetching latest data from origin ####"
 	git fetch -v origin && echo "#### done"
 
-	# stop openwb2 service
-	echo "#### 2. stopping openwb2 service ####"
-	sudo service openwb2 stop && echo "#### done"
-
-	# only master branch yet
-	echo "#### 3. applying latest changes ####"
+	# only master branch without tags yet
+	echo "#### 2. applying latest changes ####"
 	git reset --hard "origin/master" && echo "#### done"
 
 	# now reboot system
-	echo "#### 4. rebooting system ####"
-	sudo reboot now
+	echo "#### 3. rebooting system ####"
+	sudo reboot now &
 } >> "$LOGFILE" 2>&1
