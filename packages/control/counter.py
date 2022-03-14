@@ -47,8 +47,7 @@ class CounterAll:
     def calc_home_consumption(self) -> None:
         try:
             power = 0
-            counter_all = data.data.counter_data["all"]
-            elements = counter_all.get_entry_of_element(counter_all.get_id_evu_counter())["children"]
+            elements = self.get_entry_of_element(self.get_id_evu_counter())["children"]
             for element in elements:
                 if element["type"] == ComponentType.CHARGEPOINT.value:
                     power += data.data.cp_data[f"cp{element['id']}"].data["get"]["power"]
@@ -58,20 +57,35 @@ class CounterAll:
                     power += data.data.counter_data[f"counter{element['id']}"].data["get"]["power"]
                 elif element["type"] == ComponentType.INVERTER.value:
                     power += data.data.pv_data[f"pv{element['id']}"].data["get"]["power"]
-            evu = data.data.counter_data[self.get_evu_counter()].data["get"]["power"]
+            evu_counter_data = data.data.counter_data[self.get_evu_counter()].data
+            evu = evu_counter_data["get"]["power"]
 
             home_consumption = int(evu - power)
             if home_consumption < 0:
+                log.error(
+                    f"Ungültiger Hausverbrauch: Leistung der Elemente {power}W, "
+                    f"EVU-Leistung {evu}W, Berücksichtigte Komponenten neben EVU {elements}")
+                if evu_counter_data["get"]["fault_state"] == 0:
+                    evu_counter_data["get"]["fault_state"] = 1
+                    evu_counter_data["get"][
+                        "fault_str"] = "Der Wert für den Hausverbrauch ist nicht plausibel (negativ). Bitte "\
+                        "die Leistungen der Komponenten und die Anordnung in der Hierachie prüfen."
+                    evu_counter = self.get_id_evu_counter()
+                    Pub().pub(f"openWB/set/counter/{evu_counter}/get/fault_state",
+                              evu_counter_data["get"]["fault_state"])
+                    Pub().pub(f"openWB/set/counter/{evu_counter}/get/fault_str", evu_counter_data["get"]["fault_str"])
                 if self.data["set"]["invalid_home_consumption"] < 3:
                     self.data["set"]["invalid_home_consumption"] += 1
+                    Pub().pub("openWB/set/counter/set/invalid_home_consumption",
+                              self.data["set"]["invalid_home_consumption"])
                     return
                 else:
-                    self.data["set"]["invalid_home_consumption"] += 1
                     home_consumption = 0
             else:
                 self.data["set"]["invalid_home_consumption"] = 0
-                self.data["set"]["home_consumption"] = home_consumption
-            Pub().pub("openWB/set/counter/set/invalid_home_consumption",  self.data["set"]["invalid_home_consumption"])
+                Pub().pub("openWB/set/counter/set/invalid_home_consumption",
+                          self.data["set"]["invalid_home_consumption"])
+            self.data["set"]["home_consumption"] = home_consumption
             Pub().pub("openWB/set/counter/set/home_consumption", self.data["set"]["home_consumption"])
         except Exception:
             log.exception("Fehler in der allgemeinen Zähler-Klasse")
