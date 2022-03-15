@@ -23,6 +23,10 @@ from control import data
 from control import process
 from control import algorithm
 from helpermodules.system import exit_after
+from control import update_soc
+
+logger.setup_logging()
+log = logging.getLogger()
 
 
 class HandlerAlgorithm:
@@ -119,6 +123,11 @@ class HandlerAlgorithm:
             else:
                 set.heartbeat = False
 
+            if not soc.heartbeat:
+                log.error("Heartbeat fuer SoC-Abfrage nicht zurueckgesetzt.")
+            else:
+                soc.heartbeat = False
+
             cleanup_logfiles()
             measurement_log.save_log("daily")
             measurement_log.update_daily_yields()
@@ -157,8 +166,6 @@ def repeated_handler_call():
         next_time += (time.time() - next_time) // delay * delay + delay
 
 
-logger.setup_logging()
-log = logging.getLogger()
 try:
     # Regelung erst starten, wenn atreboot.sh fertig ist.
     log.debug("Warten auf das Ende des Boot-Prozesses")
@@ -183,13 +190,16 @@ try:
     sub = subdata.SubData(event_ev_template, event_charge_template,
                           event_cp_config)
     comm = command.Command()
+    soc = update_soc.UpdateSoc()
     t_sub = Thread(target=sub.sub_topics, args=())
     t_set = Thread(target=set.set_data, args=())
     t_comm = Thread(target=comm.sub_commands, args=())
+    t_soc = Thread(target=soc.update, args=())
 
     t_sub.start()
     t_set.start()
     t_comm.start()
+    t_soc.start()
 
     configuration.pub_configurable()
 
