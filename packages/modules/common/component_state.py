@@ -90,14 +90,13 @@ class InverterState:
 
 @auto_str
 class CarState:
-    def __init__(
-        self,
-        soc: float,
-    ):
+    def __init__(self, soc: float, soc_timestamp: str = ""):
         """Args:
             soc: actual state of charge in percent
+            soc_timestamp: timestamp of last request in %m/%d/%Y, %H:%M:%S
         """
         self.soc = soc
+        self.soc_timestamp = soc_timestamp
 
 
 class ChargepointState:

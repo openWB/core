@@ -59,12 +59,13 @@ class Ev:
 
     def __init__(self, index):
         try:
-            self.ev_template = None  # type: EvTemplate
-            self.charge_template = None  # type: ChargeTemplate
-            self.soc_module = None  # type: AbstractSoc
+            self.ev_template: EvTemplate
+            self.charge_template: ChargeTemplate
+            self.soc_module: AbstractSoc
             self.ev_num = index
             self.data = {"set": {},
-                         "get": {"range_charged": 0},
+                         "get": {"range_charged": 0,
+                                 "soc_timestamp": "01/01/2000, 00:00:00"},
                          "control_parameter": {"required_current": 0,
                                                "phases": 0,
                                                "prio": False,
@@ -456,7 +457,7 @@ class EvTemplate:
         self.et_num = index
 
     def soc_interval_expired(
-            self, plug_state: bool, charge_state: bool, timestamp_last_request: Union[str, None]) -> bool:
+            self, plug_state: bool, charge_state: bool, soc_timestamp: Union[str, None]) -> bool:
         request_soc = False
         if (self.data["request_only_plugged"] is False or
                 (self.data["request_only_plugged"] is True and plug_state is True)):
@@ -465,8 +466,8 @@ class EvTemplate:
             else:
                 interval = self.data["request_interval_not_charging"]
             # Zeitstempel prüfen, ob wieder abgefragt werden muss.
-            if timestamp_last_request is not None:
-                if timecheck.check_timestamp(timestamp_last_request, interval*60) is False:
+            if soc_timestamp is not None:
+                if timecheck.check_timestamp(soc_timestamp, interval*60-5) is False:
                     # Zeit ist abgelaufen
                     request_soc = True
             else:

@@ -1,21 +1,15 @@
-""" Fragt die Werte der Module ab. Nur die openWB Kits können mit mehreren Threads gleichzeitig abgefragt werden.
-"""
-
 import logging
 import threading
 from typing import Callable, List
 
-
 from control import data
-from control import chargepoint
-
 from modules import ripple_control_receiver
 
 log = logging.getLogger(__name__)
 
 
 def get_hardware_values():
-    __get_values([_get_cp, _get_general, _get_modules, _get_soc])
+    __get_values([_get_cp, _get_general, _get_modules])
 
 
 def get_virtual_values():
@@ -123,30 +117,6 @@ def _get_modules() -> List[threading.Thread]:
             except Exception:
                 log.exception("Fehler im loadvars-Modul")
         return modules_threads
-    except Exception:
-        log.exception("Fehler im loadvars-Modul")
-    finally:
-        return modules_threads
-
-
-def _get_soc() -> List[threading.Thread]:
-    modules_threads = []  # type: List[threading.Thread]
-    try:
-        for ev in data.data.ev_data.values():
-            if ev.soc_module is not None:
-                # Ist das Auto einem LP zugeordnet?
-                for cp in data.data.cp_data.values():
-                    if isinstance(cp, chargepoint.Chargepoint):
-                        if cp.data["set"]["charging_ev"] == ev.ev_num:
-                            cp_state = cp.data
-                            charge_state = cp.data["get"]["charge_state"]
-                            plug_state = cp.data["get"]["plug_state"]
-                            break
-                else:
-                    cp_state, plug_state, charge_state = None,  None, None
-                if ev.ev_template.soc_interval_expired(plug_state, charge_state, ev.data["get"].get(
-                        "timestamp_last_request")):
-                    modules_threads.append(threading.Thread(target=ev.soc_module.update, args=(cp_state,)))
     except Exception:
         log.exception("Fehler im loadvars-Modul")
     finally:

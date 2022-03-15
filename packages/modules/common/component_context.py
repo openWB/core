@@ -4,7 +4,7 @@ from typing import Optional, List, Union, Any, Dict
 
 from modules.common.fault_state import ComponentInfo, FaultState
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("soc."+__name__)
 
 
 class SingleComponentUpdateContext:
