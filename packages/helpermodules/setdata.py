@@ -352,10 +352,10 @@ class SetData:
                     "/ev_template" in msg.topic):
                 self._validate_value(msg, int, [(0, float("inf"))])
             elif "/get/soc_timestamp" in msg.topic:
-                self._validate_value(msg, int, [(0, float("inf"))])
+                self._validate_value(msg, str)
             elif "/get/soc" in msg.topic:
                 self._validate_value(msg, float, [(0, 100)])
-            elif "/get/timestamp_last_request" in msg.topic:
+            elif "/get/soc_timestamp" in msg.topic:
                 self._validate_value(msg, str)
             elif "/control_parameter/required_current" in msg.topic:
                 self._validate_value(msg, float, [(6, 32), (0, 0)])

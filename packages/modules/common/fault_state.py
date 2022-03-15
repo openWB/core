@@ -6,7 +6,7 @@ from typing import Optional
 from helpermodules import compatibility, exceptions, pub
 from modules.common import component_type
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("soc."+__name__)
 
 
 class FaultStateLevel(Enum):

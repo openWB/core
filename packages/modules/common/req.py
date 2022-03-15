@@ -2,7 +2,7 @@
 import logging
 from requests import Session
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("soc."+__name__)
 
 
 def get_http_session() -> Session:
