@@ -56,3 +56,12 @@ class ChargepointModule(AbstractChargepoint):
             pub.pub_single("openWB/set/isss/U1p3p", phases_to_use,
                            self.connection_module["configuration"]["ip_address"])
             time.sleep(6+duration-1)
+
+    def interrupt_cp(self, duration: int) -> None:
+        with SingleComponentUpdateContext(self.component_info):
+            ip_address = self.connection_module["configuration"]["ip_address"]
+            if (self.connection_module["configuration"]["duo_num"] == 2):
+                pub.pub_single("openWB/set/isss/Cpulp2", "1", hostname=ip_address)
+            else:
+                pub.pub_single("openWB/set/isss/Cpulp1", "1", hostname=ip_address)
+            time.sleep(duration)

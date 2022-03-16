@@ -17,3 +17,7 @@ class AbstractChargepoint:
     @abstractmethod
     def switch_phases(self, phases_to_use: int, duration: int) -> None:
         pass
+
+    @abstractmethod
+    def interrupt_cp(self, duration: int) -> None:
+        pass
