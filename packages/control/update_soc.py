@@ -15,7 +15,7 @@ class UpdateSoc:
         self.heartbeat = False
 
     def update(self) -> None:
-        delay = 20
+        delay = 10
         next_time = time.time() + delay
         while True:
             self.heartbeat = True
