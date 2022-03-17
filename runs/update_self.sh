@@ -1,6 +1,6 @@
 #!/bin/bash
 OPENWBBASEDIR=$(cd "$(dirname "$0")/../" && pwd)
-LOGFILE="${OPENWBBASEDIR}/ramdisk/update.log"
+LOGFILE="${OPENWBBASEDIR}/data/log/update.log"
 
 echo "#### running update ####" > "$LOGFILE"
 
