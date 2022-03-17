@@ -28,6 +28,7 @@ import logging
 import traceback
 
 from control import chargelog
+from control import cp_interruption
 from control import data
 from control import ev
 from control import phase_switch
@@ -550,16 +551,20 @@ class Chargepoint:
         try:
             charging_ev = self.data["set"]["charging_ev_data"]
             # Unterstützt der Ladepunkt die CP-Unterbrechung und benötigt das Auto eine CP-Unterbrechung?
-            if (self.data["config"]["control_pilot_interruption_hw"] and
-                    charging_ev.ev_template.data["control_pilot_interruption"]):
-                # Wird die Ladung gestartet?
-                if self.set_current_prev == 0 and self.data["set"]["current"] != 0:
-                    # selected = self.data["config"]["connection_module"]["selected"]
-                    # config = self.data["config"]["connection_module"]["config"][selected]
-                    # cp_interruption.thread_cp_interruption(self.cp_num, selected, config, charging_ev.ev_template.
-                    # data["control_pilot_interruption_duration"])
-                    message = "Control-Pilot-Unterbrechung für " + str(
-                        charging_ev.ev_template.data["control_pilot_interruption_duration"]) + "s."
+            if charging_ev.ev_template.data["control_pilot_interruption"]:
+                if self.data["config"]["control_pilot_interruption_hw"]:
+                    # Wird die Ladung gestartet?
+                    if self.set_current_prev == 0 and self.data["set"]["current"] != 0:
+                        cp_interruption.thread_cp_interruption(self.cp_num,
+                                                               self.chargepoint_module,
+                                                               charging_ev.ev_template.data[
+                                                                   "control_pilot_interruption_duration"])
+                        message = "Control-Pilot-Unterbrechung für " + str(
+                            charging_ev.ev_template.data["control_pilot_interruption_duration"]) + "s."
+                        log.info("LP "+str(self.cp_num)+": "+message)
+                        self.data["get"]["state_str"] = message
+                else:
+                    message = "CP-Unterbrechung nicht möglich, da der Ladepunkt keine CP-Unterbrechung unterstützt."
                     log.info("LP "+str(self.cp_num)+": "+message)
                     self.data["get"]["state_str"] = message
         except Exception:

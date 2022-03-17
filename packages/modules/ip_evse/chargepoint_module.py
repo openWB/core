@@ -73,9 +73,9 @@ class ChargepointModule(AbstractChargepoint):
                 time.sleep(duration)
                 self.__client.delegate.write_register(0x0002, 512, unit=modbus_id)
 
-
-# def perform_cp_interruption(ip_address, id, duration):
-#     client = ModbusTcpClient(ip_address, port=8899)
-#     client.write_register(0x0001, 256, unit=id)
-#     time.sleep(duration)
-#     client.write_register(0x0001, 512, unit=id)
+    def perform_cp_interruption(self, duration: int) -> None:
+        with SingleComponentUpdateContext(self.component_info):
+            modbus_id = self.connection_module["configuration"]["modbus_id"]
+            self.__client.delegate.write_register(0x0001, 256, unit=modbus_id)
+            time.sleep(duration)
+            self.__client.delegate.write_register(0x0001, 512, unit=modbus_id)
