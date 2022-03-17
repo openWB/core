@@ -15,7 +15,6 @@ class UpdateConfig:
     valid_topic = ["^openWB/bat/config/configured$",
                    "^openWB/bat/set/charging_power_left$",
                    "^openWB/bat/set/switch_on_soc_reached$",
-                   "^openWB/bat/set/hybrid_system_detected$",
                    "^openWB/bat/get/soc$",
                    "^openWB/bat/get/power$",
                    "^openWB/bat/get/imported$",

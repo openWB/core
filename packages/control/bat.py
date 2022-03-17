@@ -14,21 +14,8 @@ Kann es derzeit passieren das die PV 20kW erzeugt, die Batterie mit 5kW geladen 
 Zieht die openWB nun Überschuss (15kW Überschuss + 5kW Batterieladung = 20kW) kommt es zu 5kW Bezug weil der
 Wechselrichter nur 15kW abgeben kann.
 
-aktuell wird halt bei ev vorrang die Batterieladeleistung hinzugerechnet. weil die openWB von ausgeht das die
-dann das laden aufhört und diese leistung eigentlich Überschuss ist.
-Blöd halt wenn der Wechselrichter die nicht zur Verfügung stellen kann.
-Heißt aktuell denkt die openWB "0 Watt Überschuss" weil 5kW bezogen werden, aber eben auch 5kW in die Batterie
-gehen (die ihre Ladung aber nicht drosselt)
-
-du musst halt zum "antesten" bezug generieren damit die Batterie entsprechend gegenregelt. erst wenn sie das nach
- x Sekunden nicht tut kannst von ausgehen da gibt es eine Grenze
-
-__Wie schnell regelt denn ein Speicher?
+__Wie schnell regelt ein Speicher?
 Je nach Speicher 1-4 Sekunden.
-__Muss dann immer ein bisschen Überschuss über sein und wenn dieser im nächsten Zyklus noch da ist, kann der LP
-hochgeregelt werden. Wenn nicht muss der LP runtergeregelt werden?
-Üblicherweise reicht es so zu regeln das rund 50 Watt Einspeisung da sind, dann "nimmt" der Speicher sich die von
-alleine
 """
 import logging
 
@@ -44,8 +31,7 @@ class BatAll:
             "get": {"power":  0},
             "config": {"configured": False},
             "set": {"charging_power_left": 0,
-                    "switch_on_soc_reached": 0,
-                    "hybrid_system_detected": False}
+                    "switch_on_soc_reached": 0}
         }
 
     def calc_power_for_all_components(self):
@@ -103,7 +89,6 @@ class BatAll:
                 self.data["get"]["power"] = 0
             Pub().pub("openWB/set/bat/set/charging_power_left", self.data["set"]["charging_power_left"])
             Pub().pub("openWB/set/bat/set/switch_on_soc_reached", self.data["set"]["switch_on_soc_reached"])
-            Pub().pub("openWB/set/bat/set/hybrid_system_detected", self.data["set"]["hybrid_system_detected"])
         except Exception:
             log.exception("Fehler im Bat-Modul")
 
@@ -114,23 +99,6 @@ class BatAll:
             evu_counter = data.data.counter_data["all"].get_evu_counter()
             config = data.data.general_data["general"].data["chargemode_config"]["pv_charging"]
             if not config["bat_prio"]:
-                # Wenn der Speicher lädt und gleichzeitig Bezug da ist, sind entweder die Werte sehr ungünstig abgefragt
-                # worden
-                # (deshalb wird noch ein Zyklus gewartet) oder es liegt ein Hybrid-System vor.
-                if data.data.counter_data[evu_counter].data["get"]["power"] > 0:
-                    if self.data["set"]["hybrid_system_detected"]:
-                        log.debug("".join(("verbleibende Speicher-Leistung für Hybrid-System: max(",
-                                           self.data["set"]["charging_power_left"], " - ",
-                                           data.data.counter_data[evu_counter].data["get"]["power"],
-                                           ", 0)")))
-                        self.data["set"]["charging_power_left"] = max(
-                            self.data["set"]["charging_power_left"]
-                            - data.data.counter_data[evu_counter].data["get"]["power"], 0)
-                    else:
-                        self.data["set"]["hybrid_system_detected"] = True
-                        log.debug("Erstmalig Hybrid-System detektiert.")
-                elif self.data["set"]["hybrid_system_detected"]:
-                    self.data["set"]["hybrid_system_detected"] = False
                 # Laderegelung wurde noch nicht freigegeben
                 if not self.data["set"]["switch_on_soc_reached"]:
                     if config["switch_on_soc"] != 0:

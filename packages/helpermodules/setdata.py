@@ -591,8 +591,7 @@ class SetData:
         """
         try:
             if ("openWB/set/bat/config/configured" in msg.topic or
-                    "openWB/set/bat/set/switch_on_soc_reached" in msg.topic or
-                    "openWB/set/bat/set/hybrid_system_detected" in msg.topic):
+                    "openWB/set/bat/set/switch_on_soc_reached" in msg.topic):
                 self._validate_value(msg, bool)
             elif "openWB/set/bat/set/charging_power_left" in msg.topic:
                 self._validate_value(msg, float)
