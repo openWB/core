@@ -29,7 +29,7 @@ class ChargepointModule(AbstractChargepoint):
 
     def set_current(self, current: float) -> None:
         with SingleComponentUpdateContext(self.component_info):
-            log.debug("MQTT-Ladepunkte subscriben die Daten direkt vom Broker.")
+            log.debug("MQTT-Ladepunkte subscriben die Sollstromstärke direkt vom Broker.")
 
     def get_values(self) -> None:
         with SingleComponentUpdateContext(self.component_info):

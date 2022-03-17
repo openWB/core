@@ -21,6 +21,8 @@ class CarValueStoreBroker(ValueStore[CarState]):
 
     def set(self, state: CarState) -> None:
         pub_to_broker("openWB/set/vehicle/"+str(self.vehicle_id)+"/get/soc", state.soc)
+        if state.range:
+            pub_to_broker("openWB/set/vehicle/"+str(self.vehicle_id)+"/get/range", state.range)
         pub_to_broker("openWB/set/vehicle/"+str(self.vehicle_id)+"/get/soc_timestamp", timecheck.create_timestamp())
 
 
