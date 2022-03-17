@@ -334,9 +334,9 @@ class SetData:
                 self._subprocess_vehicle_chargemode_topic(msg)
             elif "/soc_module/config" in msg.topic:
                 self._validate_value(msg, "json")
-            elif "/soc/get/fault_state" in msg.topic:
+            elif "/get/fault_state" in msg.topic:
                 self._validate_value(msg, int, [(0, 2)])
-            elif "/soc/get/fault_str" in msg.topic:
+            elif "/get/fault_str" in msg.topic:
                 self._validate_value(msg, str)
             elif "/tag_id" in msg.topic:
                 self._validate_value(msg, str, collection=list)
@@ -349,6 +349,8 @@ class SetData:
                 self._validate_value(msg, str)
             elif "/get/soc" in msg.topic:
                 self._validate_value(msg, float, [(0, 100)])
+            elif "/get/range" in msg.topic:
+                self._validate_value(msg, float, [(0, 1000)])
             elif "/get/soc_timestamp" in msg.topic:
                 self._validate_value(msg, str)
             elif "/control_parameter/required_current" in msg.topic:

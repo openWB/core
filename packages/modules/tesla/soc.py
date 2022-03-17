@@ -62,8 +62,8 @@ class Soc(AbstractSoc):
         with SingleComponentUpdateContext(self.component_info):
             if charge_state is False:
                 self.__wake_up_car()
-            soc = api.request_soc(vehicle=self.config.tesla_ev_num, token_file=self.token_file)
-            self.value_store.set(CarState(soc))
+            soc, range = api.request_soc_range(vehicle=self.config.tesla_ev_num, token_file=self.token_file)
+            self.value_store.set(CarState(soc, range))
 
     def __wake_up_car(self):
         log.debug("Tesla"+str(self.config.id)+": Waking up car.")

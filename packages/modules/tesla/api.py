@@ -41,14 +41,16 @@ def post_wake_up_command(vehicle: int, token_file: str) -> str:
     return response["response"]["state"]
 
 
-def request_soc(vehicle: int, token_file: str) -> float:
+def request_soc_range(vehicle: int, token_file: str) -> Tuple[float, float]:
     token = __fetch_token(token_file)
     vehicle_id = __get_vehicle_id(vehicle, token)
     data_part = "vehicles/"+str(vehicle_id)+"/vehicle_data"
     response = __request_data(data_part, token)
     response = json.loads(response)
     soc = response["response"]["charge_state"]["battery_level"]
-    return float(soc)
+    # convert miles to km
+    range = float(response["response"]["charge_state"]["battery_range"]) * 1.60934
+    return float(soc), range
 
 
 def __fetch_token(token_file):
@@ -113,10 +115,11 @@ def __refresh_token(token_file: str, token: Dict) -> Dict:
 
 def __get_vehicle_id(index: int, token: Dict) -> str:
     vehicles = __request_data('vehicles', token)
-    vehicle_id = str(json.loads(vehicles)["response"][index]["id"])
-    log.debug("vehicle_id for entry %d: %s" % (index, vehicle_id))
-    if not vehicle_id:
-        raise FaultState.error("Zu EV"+str(index)+" konnte keine ID ermittelt werden.")
+    try:
+        vehicle_id = str(json.loads(vehicles)["response"][index]["id"])
+        log.debug("vehicle_id for entry %d: %s" % (index, vehicle_id))
+    except IndexError:
+        raise FaultState.error("Zur Tesla-ID "+str(index)+" konnte kein Fahrzeug im Account gefunden werden.")
     return vehicle_id
 
 

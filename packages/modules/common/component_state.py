@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from helpermodules.auto_str import auto_str
 
@@ -90,12 +90,14 @@ class InverterState:
 
 @auto_str
 class CarState:
-    def __init__(self, soc: float, soc_timestamp: str = ""):
+    def __init__(self, soc: float, range: Optional[float] = None, soc_timestamp: str = ""):
         """Args:
             soc: actual state of charge in percent
+            range: actual range in km
             soc_timestamp: timestamp of last request in %m/%d/%Y, %H:%M:%S
         """
         self.soc = soc
+        self.range = range
         self.soc_timestamp = soc_timestamp
 
 
