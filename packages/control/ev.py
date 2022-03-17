@@ -436,6 +436,7 @@ def get_ev_template_default() -> dict:
         "phase_switch_pause": 2,
         "prevent_switch_stop": False,
         "control_pilot_interruption": False,
+        "control_pilot_interruption_duration": 4,
         "average_consump": 17,
         "min_current": 6,
         "max_current_one_phase": 32,
