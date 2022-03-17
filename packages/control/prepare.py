@@ -311,13 +311,16 @@ class Prepare:
                 # "manual": vehicle.data["soc"]["config"]["manual"]
             }
             soc_obj = {
-                # "soc": vehicle.data["get"]["soc"],
-                "range": chargepoint.data["set"]["log"]["range_charged"],
+                "range_charged": chargepoint.data["set"]["log"]["range_charged"],
                 "range_unit": data.data.general_data["general"].data["range_unit"],
-                #    "timestamp": vehicle.data["get"]["soc_timestamp"],
-                #    "fault_stat": vehicle.data["soc"]["get"]["fault_state"],
-                #    "fault_str": vehicle.data["soc"]["get"]["fault_str"]
             }
+            if vehicle.data["get"].get("soc_timestamp"):
+                soc_obj.update({"timestamp": vehicle.data["get"]["soc_timestamp"],
+                                "soc": vehicle.data["get"]["soc"],
+                                "fault_state": vehicle.data["get"]["fault_state"],
+                                "fault_str": vehicle.data["get"]["fault_str"]})
+            if vehicle.data["get"].get("range"):
+                soc_obj.update({"range": vehicle.data["get"]["range"]})
             info_obj = {"id": vehicle.ev_num,
                         "name": vehicle.data["name"]}
             if vehicle.charge_template.data["chargemode"]["selected"] == "time_charging":
