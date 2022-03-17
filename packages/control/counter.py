@@ -138,9 +138,10 @@ class CounterAll:
             if counter == self.get_evu_counter():
                 counter_object = self.data["get"]["hierarchy"][0]
             else:
-                counter_object = self.__get_entry_of_element(
+                counter_object = self.__get_entry(
                     self.data["get"]["hierarchy"][0],
-                    int(counter[7:]))
+                    int(counter[7:]),
+                    self.__get_entry_of_element)
             self._get_all_cp_connected_to_counter(counter_object)
             return self.connected_chargepoints
         except Exception:
@@ -187,7 +188,16 @@ class CounterAll:
         if item:
             return item
         else:
-            return self.__get_entry_of_element(self.data["get"]["hierarchy"][0], id_to_find)
+            return self.__get_entry(self.data["get"]["hierarchy"][0], id_to_find, self.__get_entry_of_element)
+
+    def get_entry_of_parent(self, id_to_find: int) -> Dict:
+        if self.__is_id_in_top_level(id_to_find):
+            return {}
+        for child in self.data["get"]["hierarchy"][0]["children"]:
+            if child["id"] == id_to_find:
+                return self.data["get"]["hierarchy"][0]
+        else:
+            return self.__get_entry(self.data["get"]["hierarchy"][0], id_to_find, self.__get_entry_of_parent)
 
     def __is_id_in_top_level(self, id_to_find: int) -> Dict:
         for item in self.data["get"]["hierarchy"]:
@@ -224,16 +234,30 @@ class CounterAll:
         else:
             return False
 
-    def __get_entry_of_element(self, child: Dict, id_to_find: int) -> Dict:
+    def __get_entry(self, child: Dict, id_to_find: int, func: Callable[[Dict, int], bool]) -> Dict:
         for child in child["children"]:
-            if child["id"] == id_to_find:
+            found = func(child, id_to_find)
+            if found:
                 return child
             if len(child["children"]) != 0:
-                entry = self.__get_entry_of_element(child, id_to_find)
+                entry = self.__get_entry(child, id_to_find, func)
                 if entry:
                     return entry
         else:
             return {}
+
+    def __get_entry_of_element(self, child: Dict, id_to_find: int) -> bool:
+        if child["id"] == id_to_find:
+            return True
+        else:
+            return False
+
+    def __get_entry_of_parent(self, child: Dict, id_to_find: int) -> bool:
+        for child2 in child["children"]:
+            if child2["id"] == id_to_find:
+                return True
+        else:
+            return False
 
     def hierarchy_add_item_aside(self, new_id: int, new_type: ComponentType, id_to_find: int) -> bool:
         """ ruft die rekursive Funktion zum Hinzufügen eines Zählers oder Ladepunkts in die Zählerhierarchie auf

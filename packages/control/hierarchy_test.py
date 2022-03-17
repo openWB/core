@@ -188,6 +188,28 @@ def test_get_entry_of_element(params: ParamsItem):
     assert actual == params.expected_return
 
 
+cases_get_entry_of_parent = [
+    ParamsItem("get_entry_of_parent_cp", hierarchy_cp(), 5, {"id": 4, "type": "counter", "children": [
+        {"id": 5, "type": "cp", "children": []},
+        {"id": 6, "type": "cp", "children": []}]}),
+    ParamsItem("get_entry_of_parent_two_level", hierarchy_two_level(), 2, {"id": 0, "type": "counter",
+                                                                           "children": [
+                                                                               {"id": 2,
+                                                                                "type": "cp",
+                                                                                "children": []}]}),
+    ParamsItem("get_entry_of_parent_one_level", hierarchy_one_level(), 0, {})
+]
+
+
+@pytest.mark.parametrize("params", cases_get_entry_of_parent, ids=[c.name for c in cases_get_entry_of_parent])
+def test_get_entry_of_parent(params: ParamsItem):
+    # execution
+    actual = params.counter_all.get_entry_of_parent(params.id)
+
+    # evaluation
+    assert actual == params.expected_return
+
+
 def test_empty_hierarchy():
     # execution
     c = hierarchy_empty()

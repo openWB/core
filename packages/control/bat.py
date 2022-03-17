@@ -25,6 +25,16 @@ from helpermodules.pub import Pub
 log = logging.getLogger(__name__)
 
 
+class Bat:
+
+    def __init__(self, index):
+        self.data = {}
+        self.bat_num = index
+        self.data["get"] = {}
+        self.data["get"]["daily_yield_import"] = 0
+        self.data["get"]["daily_yield_export"] = 0
+
+
 class BatAll:
     def __init__(self):
         self.data = {
@@ -47,19 +57,18 @@ class BatAll:
                 self.data["get"]["exported"] = 0
                 self.data["get"]["daily_exported"] = 0
                 self.data["get"]["daily_imported"] = 0
-                for bat in data.data.bat_data:
-                    try:
-                        if "bat" in bat:
-                            battery = data.data.bat_data[bat]
-                            self.data["get"]["power"] += battery.data["get"]["power"]
+                for battery in data.data.bat_data.values():
+                    if isinstance(battery, Bat):
+                        try:
+                            self.data["get"]["power"] += self.__max_bat_power_hybrid_system(battery)
                             self.data["get"]["imported"] += battery.data["get"]["imported"]
                             self.data["get"]["exported"] += battery.data["get"]["exported"]
                             self.data["get"]["daily_exported"] += battery.data["get"]["daily_exported"]
                             self.data["get"]["daily_imported"] += battery.data["get"]["daily_imported"]
                             soc_sum += battery.data["get"]["soc"]
                             soc_count += 1
-                    except Exception:
-                        log.exception("Fehler im Bat-Modul "+bat)
+                        except Exception:
+                            log.exception(f"Fehler im Bat-Modul {battery.bat_num}")
                 self.data["get"]["soc"] = int(soc_sum / soc_count)
                 # Alle Summentopics im Dict publishen
                 {Pub().pub("openWB/set/bat/get/"+k, v) for (k, v) in self.data["get"].items()}
@@ -69,6 +78,25 @@ class BatAll:
                 {Pub().pub("openWB/bat/get/"+k, 0) for (k, _) in self.data["get"].items()}
         except Exception:
             log.exception("Fehler im Bat-Modul")
+
+    def __max_bat_power_hybrid_system(self, battery: Bat) -> float:
+        if battery.data["get"]["power"] < 0:
+            parent = data.data.counter_data["all"].get_entry_of_parent(battery)
+            if parent.get("type") == "inverter":
+                parent_data = data.data.pv_data[f"pv{parent['id']}"].data
+                # Bei einem Hybrid-System darf die Summe aus Batterie-Ladeleistung, die für den Algorithmus verwendet
+                # werden soll und PV-Leistung nicht größer als die max Ausgangsleistung des WR sein.
+                if parent_data["config"]["max_ac_out"] > 0:
+                    max_bat_power = parent_data["config"]["max_ac_out"] - parent_data["get"]["power"]
+                    if battery.data["get"]["fault_state"] == 0:
+                        battery.data["get"]["fault_state"] = 1
+                        battery.data["get"]["fault_str"] = ("Die maximale Entladeleistung des Wechselrichters ist" +
+                                                            " erreicht.")
+                        Pub().pub(f"openWB/set/bat/{battery.bat_num}/get/fault_state",
+                                  battery.data["get"]["fault_state"])
+                        Pub().pub(f"openWB/set/bat/{battery.bat_num}/get/fault_str", battery.data["get"]["fault_str"])
+                    return max(battery.data["get"]["power"], max_bat_power)
+        return battery.data["get"]["power"]
 
     def setup_bat(self):
         """ prüft, ob mind ein Speicher vorhanden ist und berechnet die Summentopics.
@@ -96,7 +124,6 @@ class BatAll:
         """ ermittelt die Lade-Leistung des Speichers, die zum Laden der EV verwendet werden darf.
         """
         try:
-            evu_counter = data.data.counter_data["all"].get_evu_counter()
             config = data.data.general_data["general"].data["chargemode_config"]["pv_charging"]
             if not config["bat_prio"]:
                 # Laderegelung wurde noch nicht freigegeben
@@ -260,6 +287,9 @@ class BatAll:
             log.exception("Fehler im Bat-Modul")
 
 
+<< << << < HEAD
+
+
 class Bat:
 
     def __init__(self, index):
@@ -268,3 +298,7 @@ class Bat:
         self.data["get"] = {}
         self.data["get"]["daily_imported"] = 0
         self.data["get"]["daily_exported"] = 0
+
+
+== == == =
+>>>>>> > 7e3f5164(max_bat_power_hybrid_system)
