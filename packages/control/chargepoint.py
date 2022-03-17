@@ -221,8 +221,8 @@ class AllChargepoints:
                                 # zurückgesetzt) und es muss ein Auto angesteckt sein.
                                 if chargepoint_match.data["set"]["rfid"] == "0" and chargepoint_match.data["get"][
                                         "plug_state"]:
-                                    if plug_time == 0 or timecheck.get_difference(
-                                            plug_time, chargepoint_match.data["set"]["plug_time"]) < 0:
+                                    if plug_time == 0 or int(timecheck.get_difference(
+                                            plug_time, chargepoint_match.data["set"]["plug_time"])) < 0:
                                         plug_time = chargepoint_match.data["set"]["plug_time"]
                                         last_plugged_cp = chargepoint_match
                     except Exception:
@@ -261,8 +261,8 @@ class Chargepoint:
 
     def __init__(self, index):
         try:
-            self.template = None  # type: CpTemplate
-            self.chargepoint_module = None  # type: AbstractChargepoint
+            self.template: CpTemplate
+            self.chargepoint_module: AbstractChargepoint
             self.cp_num = index
             # set current aus dem vorherigen Zyklus, um zu wissen, ob am Ende des Zyklus die Ladung freigegeben wird
             # (für Control-Pilot-Unterbrechung)

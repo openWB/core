@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from helpermodules.auto_str import auto_str
 
@@ -31,10 +31,10 @@ class CounterState:
         imported: float = 0,
         exported: float = 0,
         power: float = 0,
-        voltages: List[float] = None,
-        currents: List[float] = None,
-        powers: List[float] = None,
-        power_factors: List[float] = None,
+        voltages: Optional[List[float]] = None,
+        currents: Optional[List[float]] = None,
+        powers: Optional[List[float]] = None,
+        power_factors: Optional[List[float]] = None,
         frequency: float = 50,
     ):
         """Args:
@@ -74,7 +74,7 @@ class InverterState:
         self,
         counter: float,
         power: float,
-        currents: List[float] = None,
+        currents: Optional[List[float]] = None,
     ):
         """Args:
             counter: total energy in Wh
@@ -105,13 +105,13 @@ class ChargepointState:
                  imported: float = 0,
                  exported: float = 0,
                  power: float = 0,
-                 voltages: List[float] = None,
-                 currents: List[float] = None,
-                 power_factors: List[float] = None,
+                 voltages: Optional[List[float]] = None,
+                 currents: Optional[List[float]] = None,
+                 power_factors: Optional[List[float]] = None,
                  phases_in_use: int = 1,
                  charge_state: bool = False,
                  plug_state: bool = False,
-                 read_tag: Dict[str, str] = None):
+                 read_tag: Optional[Dict[str, str]] = None):
         if voltages is None:
             voltages = [0.0]*3
         self.voltages = voltages
