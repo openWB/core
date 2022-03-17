@@ -3,6 +3,7 @@
 
 import copy
 import json
+from typing import List, Optional, Tuple
 import paho.mqtt.client as mqtt
 import re
 
@@ -250,7 +251,7 @@ class SetData:
         except Exception:
             log.exception("Fehler im setdata-Modul")
 
-    def _validate_min_max_value(self, value, msg, data_type, ranges=None):
+    def _validate_min_max_value(self, value, msg, data_type, ranges: Optional[List[Tuple[int, float]]] = None):
         """ prüft, ob der Payload Minimal- und Maximalwert einhält.
 
         Parameter
@@ -287,9 +288,14 @@ class SetData:
                                   str(value)+" liegt in keinem der angegebenen Wertebereiche.")
                         valid = False
             elif value is None:
-                for range in ranges:
-                    if range[0] is None and range[1] is None:
-                        break
+                if ranges:
+                    for range in ranges:
+                        if range[0] is None and range[1] is None:
+                            break
+                    else:
+                        log.error("Payload ungültig: Topic "+str(msg.topic) +
+                                  ", Payload "+str(value)+" darf nicht 'None' sein.")
+                        valid = False
                 else:
                     log.error("Payload ungültig: Topic "+str(msg.topic) +
                               ", Payload "+str(value)+" darf nicht 'None' sein.")

@@ -2,11 +2,12 @@
 """
 import logging
 from datetime import datetime, timedelta
+from typing import Optional, Tuple
 
 log = logging.getLogger(__name__)
 
 
-def set_date(now, begin, end):
+def set_date(now: datetime, begin: datetime, end: datetime) -> Tuple[Optional[datetime], Optional[datetime]]:
     """ setzt das Datum auf das heutige Datum, bzw. falls der Endzeitpunkt am nächsten Tag ist, auf morgen
 
     Parameters
@@ -73,8 +74,8 @@ def is_autolock_plan_active(plans: dict) -> bool:
 def is_autolock_of_plan_active(plan: dict) -> bool:
     if plan["active"]:
         now = datetime.today()
-        lock = None  # type:datetime
-        unlock = None  # type:datetime
+        lock: datetime
+        unlock: datetime
         if plan["frequency"]["selected"] == "once":
             lock = datetime.strptime(
                 plan["frequency"]["once"][0] + plan["time"][0],

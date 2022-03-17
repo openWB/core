@@ -2,6 +2,7 @@
 """
 import logging
 import random
+from typing import Dict
 
 from control import data
 from helpermodules.pub import Pub
@@ -15,7 +16,8 @@ class General:
     """
 
     def __init__(self):
-        self.data = {"grid_protection_active": False}
+        self.data: Dict
+        self.data.update({"grid_protection_active": False})
 
     def get_phases_chargemode(self, chargemode: str) -> int:
         """ gibt die Anazhl Phasen zurück, mit denen im jeweiligen Lademodus geladen wird.
