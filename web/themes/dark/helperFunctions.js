@@ -64,7 +64,7 @@ function setInputValue(elementId, value) {
             }
         }
         element.val(value);
-        if ( element.attr('type') == 'range' ) {
+        if ( element.attr('type') == 'range_charged' ) {
             updateLabel(elementId);
         }
     }
