@@ -61,11 +61,9 @@ class Ev:
         try:
             self.ev_template: EvTemplate
             self.charge_template: ChargeTemplate
-            self.soc_module: AbstractSoc
+            self.soc_module: AbstractSoc = None
             self.ev_num = index
             self.data = {"set": {},
-                         "get": {"range_charged": 0,
-                                 "soc_timestamp": "01/01/2000, 00:00:00"},
                          "control_parameter": {"required_current": 0,
                                                "phases": 0,
                                                "prio": False,
@@ -462,20 +460,20 @@ class EvTemplate:
     def soc_interval_expired(
             self, plug_state: bool, charge_state: bool, soc_timestamp: Union[str, None]) -> bool:
         request_soc = False
-        if (self.data["soc"]["request_only_plugged"] is False or
-                (self.data["soc"]["request_only_plugged"] is True and plug_state is True)):
-            if charge_state is True:
-                interval = self.data["soc"]["request_interval_charging"]
-            else:
-                interval = self.data["soc"]["request_interval_not_charging"]
-            # Zeitstempel prüfen, ob wieder abgefragt werden muss.
-            if soc_timestamp is not None:
+        if soc_timestamp is None:
+            # Initiale Abfrage
+            request_soc = True
+        else:
+            if (self.data["soc"]["request_only_plugged"] is False or
+                    (self.data["soc"]["request_only_plugged"] is True and plug_state is True)):
+                if charge_state is True:
+                    interval = self.data["soc"]["request_interval_charging"]
+                else:
+                    interval = self.data["soc"]["request_interval_not_charging"]
+                # Zeitstempel prüfen, ob wieder abgefragt werden muss.
                 if timecheck.check_timestamp(soc_timestamp, interval*60-5) is False:
                     # Zeit ist abgelaufen
                     request_soc = True
-            else:
-                # Initiale Abfrage
-                request_soc = True
         return request_soc
 
 

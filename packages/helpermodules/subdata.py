@@ -193,8 +193,13 @@ class SubData:
             index = self.get_index(msg.topic)
             if re.search("^.+/vehicle/[0-9]+/.+$", msg.topic) is not None:
                 if str(msg.payload.decode("utf-8")) == "":
-                    if "ev"+index in var:
-                        var.pop("ev"+index)
+                    if re.search("^.+/vehicle/[0-9]+/soc_module/config$", msg.topic) is not None:
+                        var["ev"+index].soc_module = None
+                    elif re.search("^.+/vehicle/[0-9]+/get.+$", msg.topic) is not None:
+                        self.set_json_payload(var["ev"+index].data["get"], msg)
+                    else:
+                        if "ev"+index in var:
+                            var.pop("ev"+index)
                 else:
                     if "ev"+index not in var:
                         var["ev"+index] = ev.Ev(int(index))
@@ -211,14 +216,6 @@ class SubData:
                         config = json.loads(str(msg.payload.decode("utf-8")))
                         mod = importlib.import_module("."+config["type"]+".soc", "modules")
                         var["ev"+index].soc_module = mod.Soc(config)
-                        self.set_json_payload(var["ev"+index].data, msg)
-                    elif re.search("^.+/vehicle/[0-9]+/soc/get/.+$", msg.topic) is not None:
-                        if "soc" not in var["ev"+index].data:
-                            var["ev"+index].data["soc"] = {}
-                        if "get" not in var["ev"+index].data["soc"]:
-                            var["ev"+index].data["soc"]["get"] = {}
-                        self.set_json_payload(
-                            var["ev"+index].data["soc"]["get"], msg)
                     elif re.search("^.+/vehicle/[0-9]+/control_parameter/.+$", msg.topic) is not None:
                         if "control_parameter" not in var["ev"+index].data:
                             var["ev"+index].data["control_parameter"] = {}

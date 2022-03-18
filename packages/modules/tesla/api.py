@@ -37,7 +37,7 @@ def post_wake_up_command(vehicle: int, token_file: str) -> str:
         "authorization": "bearer " + token["access_token"]
     }
     session = req.get_http_session()
-    response = session.post("https://owner-api.teslamotors.com/api/1/" + command, headers=headers, timeout=120).json()
+    response = session.post("https://owner-api.teslamotors.com/api/1/" + command, headers=headers, timeout=50).json()
     return response["response"]["state"]
 
 
@@ -87,7 +87,7 @@ def __refresh_token(token_file: str, token: Dict) -> Dict:
     }
     session = req.get_http_session()
 
-    resp = session.post("https://auth.tesla.com/oauth2/v3/token", headers=headers, json=payload, timeout=120)
+    resp = session.post("https://auth.tesla.com/oauth2/v3/token", headers=headers, json=payload, timeout=50)
     resp_json = resp.json()
     refresh_token = resp_json["refresh_token"]
     access_token = resp_json["access_token"]
@@ -131,5 +131,5 @@ def __request_data(data_part: str, token: Dict) -> str:
         "authorization": "bearer " + token["access_token"]
     }
     session = req.get_http_session()
-    response = session.get("https://owner-api.teslamotors.com/api/1/" + data_part, headers=headers, timeout=120)
+    response = session.get("https://owner-api.teslamotors.com/api/1/" + data_part, headers=headers, timeout=50)
     return response.text
