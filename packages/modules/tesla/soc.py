@@ -22,7 +22,9 @@ def get_default_config():
         "name": "Tesla SoC-Modul",
         "type": "tesla",
         "id": 0,
-        "tesla_ev_num": 0
+        "configuration": {
+            "tesla_ev_num": 0
+        }
     }
 
 
@@ -33,12 +35,12 @@ class TeslaConfiguration:
 
     @staticmethod
     def from_dict(device_config: dict):
-        keys = ["id", "tesla_ev_num"]
         try:
-            values = [device_config[key] for key in keys]
+            values = [device_config["id"], device_config["configuration"]["tesla_ev_num"]]
         except KeyError as e:
             raise Exception(
-                "Illegal configuration <{}>: Expected object with properties: {}".format(device_config, keys)
+                "Illegal configuration <{}>: Expected object with properties: {}".format(
+                    device_config, get_default_config())
             ) from e
         return TeslaConfiguration(*values)
 

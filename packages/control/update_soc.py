@@ -51,6 +51,7 @@ class UpdateSoc:
                     if cp.data["set"]["charging_ev"] == ev.ev_num:
                         charge_state = cp.data["get"]["charge_state"]
                         plug_state = cp.data["get"]["plug_state"]
+                        break
             else:
                 charge_state = False
                 plug_state = False

@@ -175,6 +175,7 @@ try:
 
     data.data_init()
     update_config.UpdateConfig().update()
+    configuration.pub_configurable()
     proc = process.Process()
     control = algorithm.Algorithm()
     handler = HandlerAlgorithm()
@@ -200,9 +201,7 @@ try:
     t_set.start()
     t_comm.start()
     t_soc.start()
-
-    configuration.pub_configurable()
-
+    time.sleep(5)
     # blocking
     repeated_handler_call()
 except Exception:
