@@ -261,8 +261,8 @@ class Chargepoint:
 
     def __init__(self, index):
         try:
-            self.template: CpTemplate
-            self.chargepoint_module: AbstractChargepoint
+            self.template: CpTemplate = None
+            self.chargepoint_module: AbstractChargepoint = None
             self.cp_num = index
             # set current aus dem vorherigen Zyklus, um zu wissen, ob am Ende des Zyklus die Ladung freigegeben wird
             # (für Control-Pilot-Unterbrechung)

@@ -16,8 +16,7 @@ class General:
     """
 
     def __init__(self):
-        self.data: Dict
-        self.data.update({"grid_protection_active": False})
+        self.data: Dict = {"grid_protection_active": False}
 
     def get_phases_chargemode(self, chargemode: str) -> int:
         """ gibt die Anazhl Phasen zurück, mit denen im jeweiligen Lademodus geladen wird.
