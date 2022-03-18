@@ -1,168 +1,176 @@
 #!/bin/bash
 OPENWBBASEDIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
-echo "atreboot.sh started"
-rm "${OPENWBBASEDIR}/ramdisk/bootdone"
-mosquitto_pub -p 1886 -t openWB/system/boot_done -r -m 'false'
-(sleep 600; sudo kill "$$") &
 
-# initialize automatic phase switching
-# alpha image restricted to standalone installation!
-# if (( u1p3paktiv == 1 )); then
-# 	echo "triginit..."
-# 	# quick init of phase switching with default pause duration (2s)
-# 	sudo python ${OPENWBBASEDIR}/runs/triginit.py
-# fi
+# setup logfile
+LOGFILE="${OPENWBBASEDIR}/ramdisk/main.log"
+touch "${LOGFILE}"
+chmod 666 "${LOGFILE}"
 
-# check if tesla wall connector is configured and start daemon
-# if [[ $evsecon == twcmanager ]]; then
-# 	echo "twcmanager..."
-# 	if [[ $twcmanagerlp1ip == "localhost/TWC" ]]; then
-# 		screen -dm -S TWCManager /var/www/html/TWC/TWCManager.py &
-# 	fi
-# fi
+{
+	echo "atreboot.sh started"
+	rm "${OPENWBBASEDIR}/ramdisk/bootdone"
+	mosquitto_pub -p 1886 -t openWB/system/boot_done -r -m 'false'
+	(sleep 600; sudo kill "$$") &
 
-# check if display is configured and setup timeout
-# if (( displayaktiv == 1 )); then
-# 	echo "display..."
-# 	if ! grep -Fq "pinch" /home/pi/.config/lxsession/LXDE-pi/autostart
-# 	then
-# 		echo "not found"
-# 		echo "@xscreensaver -no-splash" > /home/pi/.config/lxsession/LXDE-pi/autostart
-# 		echo "@point-rpi" >> /home/pi/.config/lxsession/LXDE-pi/autostart
-# 		echo "@xset s 600" >> /home/pi/.config/lxsession/LXDE-pi/autostart
-# 		echo "@chromium-browser --incognito --disable-pinch --kiosk http://localhost/openWB/web/display/" >> /home/pi/.config/lxsession/LXDE-pi/autostart
-# 	fi
-# 	echo "deleting browser cache"
-# 	rm -rf /home/pi/.cache/chromium
-# fi
+	# initialize automatic phase switching
+	# alpha image restricted to standalone installation!
+	# if (( u1p3paktiv == 1 )); then
+	# 	echo "triginit..."
+	# 	# quick init of phase switching with default pause duration (2s)
+	# 	sudo python ${OPENWBBASEDIR}/runs/triginit.py
+	# fi
 
-# check for LAN/WLAN connection
-echo "LAN/WLAN..."
-# alpha image restricted to LAN only
-sudo ifconfig eth0:0 192.168.193.250 netmask 255.255.255.0 up
+	# check if tesla wall connector is configured and start daemon
+	# if [[ $evsecon == twcmanager ]]; then
+	# 	echo "twcmanager..."
+	# 	if [[ $twcmanagerlp1ip == "localhost/TWC" ]]; then
+	# 		screen -dm -S TWCManager /var/www/html/TWC/TWCManager.py &
+	# 	fi
+	# fi
 
-# check for apache configuration
-echo "apache..."
-if grep -Fxq "AllowOverride" /etc/apache2/sites-available/000-default.conf
-then
-	echo "...ok"
-else
-	sudo cp "${OPENWBBASEDIR}/data/config/000-default.conf" /etc/apache2/sites-available/
-	echo "...changed"
-fi
+	# check if display is configured and setup timeout
+	# if (( displayaktiv == 1 )); then
+	# 	echo "display..."
+	# 	if ! grep -Fq "pinch" /home/pi/.config/lxsession/LXDE-pi/autostart
+	# 	then
+	# 		echo "not found"
+	# 		echo "@xscreensaver -no-splash" > /home/pi/.config/lxsession/LXDE-pi/autostart
+	# 		echo "@point-rpi" >> /home/pi/.config/lxsession/LXDE-pi/autostart
+	# 		echo "@xset s 600" >> /home/pi/.config/lxsession/LXDE-pi/autostart
+	# 		echo "@chromium-browser --incognito --disable-pinch --kiosk http://localhost/openWB/web/display/" >> /home/pi/.config/lxsession/LXDE-pi/autostart
+	# 	fi
+	# 	echo "deleting browser cache"
+	# 	rm -rf /home/pi/.cache/chromium
+	# fi
 
-# check for needed packages
-echo "apt packages..."
-# nothing here yet, all in install.sh
+	# check for LAN/WLAN connection
+	echo "LAN/WLAN..."
+	# alpha image restricted to LAN only
+	sudo ifconfig eth0:0 192.168.193.250 netmask 255.255.255.0 up
 
-# check for mosquitto configuration
-echo "check mosquitto installation..."
-# check for mosquitto configuration
-if [ ! -f /etc/mosquitto/conf.d/openwb.conf ] || ! sudo grep -Fq "persistent_client_expiration" /etc/mosquitto/mosquitto.conf; then
-	echo "updating mosquitto config file"
-	sudo cp ${OPENWBBASEDIR}/data/config/openwb.conf /etc/mosquitto/conf.d/openwb.conf
-	sudo service mosquitto restart
-fi
+	# check for apache configuration
+	echo "apache..."
+	if grep -Fxq "AllowOverride" /etc/apache2/sites-available/000-default.conf
+	then
+		echo "...ok"
+	else
+		sudo cp "${OPENWBBASEDIR}/data/config/000-default.conf" /etc/apache2/sites-available/
+		echo "...changed"
+	fi
 
-#check for mosquitto_local instance
-if [ ! -f /etc/mosquitto/mosquitto_local.conf ]; then
-	echo "setting up mosquitto local instance"
-	sudo install -d -m 0755 -o root -g root /etc/mosquitto/conf_local.d/
-	sudo install -d -m 0755 -o mosquitto -g root /var/lib/mosquitto_local
-	sudo cp -a ${OPENWBBASEDIR}/data/config/mosquitto_local.conf /etc/mosquitto/mosquitto_local.conf
-	sudo cp -a ${OPENWBBASEDIR}/data/config/openwb_local.conf /etc/mosquitto/conf_local.d/
+	# check for needed packages
+	echo "apt packages..."
+	# nothing here yet, all in install.sh
 
-	sudo cp ${OPENWBBASEDIR}/data/config/mosquitto_local_init /etc/init.d/mosquitto_local
-	sudo chown root.root /etc/init.d/mosquitto_local
-	sudo chmod 755 /etc/init.d/mosquitto_local
-else
-	sudo cp -a ${OPENWBBASEDIR}/data/config/openwb_local.conf /etc/mosquitto/conf_local.d/
-fi
-sudo systemctl daemon-reload
-sudo service mosquitto_local start
-echo "mosquitto done"
+	# check for mosquitto configuration
+	echo "check mosquitto installation..."
+	# check for mosquitto configuration
+	if [ ! -f /etc/mosquitto/conf.d/openwb.conf ] || ! sudo grep -Fq "persistent_client_expiration" /etc/mosquitto/mosquitto.conf; then
+		echo "updating mosquitto config file"
+		sudo cp "${OPENWBBASEDIR}/data/config/openwb.conf" /etc/mosquitto/conf.d/openwb.conf
+		sudo service mosquitto restart
+	fi
 
-# check for other dependencies
-echo "python packages..."
-sudo pip3 install -r "${OPENWBBASEDIR}/requirements.txt"
+	#check for mosquitto_local instance
+	if [ ! -f /etc/mosquitto/mosquitto_local.conf ]; then
+		echo "setting up mosquitto local instance"
+		sudo install -d -m 0755 -o root -g root /etc/mosquitto/conf_local.d/
+		sudo install -d -m 0755 -o mosquitto -g root /var/lib/mosquitto_local
+		sudo cp -a "${OPENWBBASEDIR}/data/config/mosquitto_local.conf" /etc/mosquitto/mosquitto_local.conf
+		sudo cp -a "${OPENWBBASEDIR}/data/config/openwb_local.conf" /etc/mosquitto/conf_local.d/
 
-# update version
-echo "version..."
-# uuid=$(</sys/class/net/eth0/address)
-# owbv=$(<"${OPENWBBASEDIR}/web/version")
-# curl --connect-timeout 10 -d "update="$releasetrain$uuid"vers"$owbv"" -H "Content-Type: application/x-www-form-urlencoded" -X POST https://openwb.de/tools/update.php
+		sudo cp "${OPENWBBASEDIR}/data/config/mosquitto_local_init" /etc/init.d/mosquitto_local
+		sudo chown root.root /etc/init.d/mosquitto_local
+		sudo chmod 755 /etc/init.d/mosquitto_local
+	else
+		sudo cp -a "${OPENWBBASEDIR}/data/config/openwb_local.conf" /etc/mosquitto/conf_local.d/
+	fi
+	sudo systemctl daemon-reload
+	sudo service mosquitto_local start
+	echo "mosquitto done"
 
-# check for slave config and start handler
-# alpha image restricted to standalone installation!
-# if (( isss == 1 )); then
-# 	echo "isss..."
-# 	echo $lastmanagement > ${OPENWBBASEDIR}/ramdisk/issslp2act
-# 	if ps ax |grep -v grep |grep "python3 ${OPENWBBASEDIR}/runs/isss.py" > /dev/null
-# 	then
-# 		sudo kill $(ps aux |grep '[i]sss.py' | awk '{print $2}')
-# 	fi
-# 	python3 ${OPENWBBASEDIR}/runs/isss.py &
-# 	# second IP already set up !
-# 	# ethstate=$(</sys/class/net/eth0/carrier)
-# 	# if (( ethstate == 1 )); then
-# 	# 	sudo ifconfig eth0:0 $virtual_ip_eth0 netmask 255.255.255.0 down
-# 	# else
-# 	# 	sudo ifconfig wlan0:0 $virtual_ip_wlan0 netmask 255.255.255.0 down
-# 	# fi
-# fi
+	# check for other dependencies
+	echo "python packages..."
+	sudo pip3 install -r "${OPENWBBASEDIR}/requirements.txt"
 
-# check for socket system and start handler
-# alpha image restricted to standalone installation!
-# if [[ "$evsecon" == "buchse" ]] && [[ "$isss" == "0" ]]; then
-# 	echo "socket..."
-# 	# ppbuchse is used in issss.py to detect "openWB Buchse"
-# 	if [ ! -f /home/pi/ppbuchse ]; then
-# 		echo "32" > /home/pi/ppbuchse
-# 	fi
-# 	if ps ax |grep -v grep |grep "python3 ${OPENWBBASEDIR}/runs/buchse.py" > /dev/null
-# 	then
-# 		sudo kill $(ps aux |grep '[b]uchse.py' | awk '{print $2}')
-# 	fi
-# 	python3 ${OPENWBBASEDIR}/runs/buchse.py &
-# fi
+	# update version
+	echo "version..."
+	# uuid=$(</sys/class/net/eth0/address)
+	# owbv=$(<"${OPENWBBASEDIR}/web/version")
+	# curl --connect-timeout 10 -d "update="$releasetrain$uuid"vers"$owbv"" -H "Content-Type: application/x-www-form-urlencoded" -X POST https://openwb.de/tools/update.php
 
-# update display configuration
-# echo "display update..."
-# if grep -Fq "@chromium-browser --incognito --disable-pinch --kiosk http://localhost/openWB/web/display/" /home/pi/.config/lxsession/LXDE-pi/autostart
-# then
-# 	sed -i "s,@chromium-browser --incognito --disable-pinch --kiosk http://localhost/openWB/web/display/,@chromium-browser --incognito --disable-pinch --overscroll-history-navigation=0 --kiosk http://localhost/openWB/web/display/,g" /home/pi/.config/lxsession/LXDE-pi/autostart
-# fi
+	# check for slave config and start handler
+	# alpha image restricted to standalone installation!
+	# if (( isss == 1 )); then
+	# 	echo "isss..."
+	# 	echo $lastmanagement > ${OPENWBBASEDIR}/ramdisk/issslp2act
+	# 	if ps ax |grep -v grep |grep "python3 ${OPENWBBASEDIR}/runs/isss.py" > /dev/null
+	# 	then
+	# 		sudo kill $(ps aux |grep '[i]sss.py' | awk '{print $2}')
+	# 	fi
+	# 	python3 ${OPENWBBASEDIR}/runs/isss.py &
+	# 	# second IP already set up !
+	# 	# ethstate=$(</sys/class/net/eth0/carrier)
+	# 	# if (( ethstate == 1 )); then
+	# 	# 	sudo ifconfig eth0:0 $virtual_ip_eth0 netmask 255.255.255.0 down
+	# 	# else
+	# 	# 	sudo ifconfig wlan0:0 $virtual_ip_wlan0 netmask 255.255.255.0 down
+	# 	# fi
+	# fi
 
-# get local ip
-mosquitto_pub -t openWB/system/ip_address -p 1886 -r -m "\"$(ip route get 1 | awk '{print $7;exit}')\""
-# update current published versions
-echo "load versions..."
-# change needed after repo is public!
-# curl --connect-timeout 10 -s https://raw.githubusercontent.com/snaptec/openWB/master/web/version > ${OPENWBBASEDIR}/ramdisk/vnightly
-# curl --connect-timeout 10 -s https://raw.githubusercontent.com/snaptec/openWB/beta/web/version > ${OPENWBBASEDIR}/ramdisk/vbeta
-# curl --connect-timeout 10 -s https://raw.githubusercontent.com/snaptec/openWB/stable/web/version > ${OPENWBBASEDIR}/ramdisk/vstable
+	# check for socket system and start handler
+	# alpha image restricted to standalone installation!
+	# if [[ "$evsecon" == "buchse" ]] && [[ "$isss" == "0" ]]; then
+	# 	echo "socket..."
+	# 	# ppbuchse is used in issss.py to detect "openWB Buchse"
+	# 	if [ ! -f /home/pi/ppbuchse ]; then
+	# 		echo "32" > /home/pi/ppbuchse
+	# 	fi
+	# 	if ps ax |grep -v grep |grep "python3 ${OPENWBBASEDIR}/runs/buchse.py" > /dev/null
+	# 	then
+	# 		sudo kill $(ps aux |grep '[b]uchse.py' | awk '{print $2}')
+	# 	fi
+	# 	python3 ${OPENWBBASEDIR}/runs/buchse.py &
+	# fi
 
-# update our local version
-sudo git -C "${OPENWBBASEDIR}/" show --pretty='format:%ci [%h]' | head -n1 > "${OPENWBBASEDIR}/web/lastcommit"
-# and record the current commit details
-commitId=$(git -C "${OPENWBBASEDIR}/" log --format="%h" -n 1)
-echo "$commitId" > "${OPENWBBASEDIR}/ramdisk/currentCommitHash"
-git -C "${OPENWBBASEDIR}/" branch -a --contains "$commitId" | perl -nle 'm|.*origin/(.+).*|; print $1' | uniq | xargs > "${OPENWBBASEDIR}/ramdisk/currentCommitBranches"
+	# update display configuration
+	# echo "display update..."
+	# if grep -Fq "@chromium-browser --incognito --disable-pinch --kiosk http://localhost/openWB/web/display/" /home/pi/.config/lxsession/LXDE-pi/autostart
+	# then
+	# 	sed -i "s,@chromium-browser --incognito --disable-pinch --kiosk http://localhost/openWB/web/display/,@chromium-browser --incognito --disable-pinch --overscroll-history-navigation=0 --kiosk http://localhost/openWB/web/display/,g" /home/pi/.config/lxsession/LXDE-pi/autostart
+	# fi
 
-# set upload limit in php
-# echo -n "fix upload limit..."
-# if [ -d "/etc/php/7.3/" ]; then
-# 	echo "OS Buster"
-# 	sudo /bin/su -c "echo 'upload_max_filesize = 300M' > /etc/php/7.3/apache2/conf.d/20-uploadlimit.ini"
-# 	sudo /bin/su -c "echo 'post_max_size = 300M' >> /etc/php/7.3/apache2/conf.d/20-uploadlimit.ini"
-# fi
-# sudo /usr/sbin/apachectl -k graceful
+	# get local ip
+	mosquitto_pub -t openWB/system/ip_address -p 1886 -r -m "\"$(ip route get 1 | awk '{print $7;exit}')\""
+	# update current published versions
+	echo "load versions..."
+	# change needed after repo is public!
+	# curl --connect-timeout 10 -s https://raw.githubusercontent.com/snaptec/openWB/master/web/version > ${OPENWBBASEDIR}/ramdisk/vnightly
+	# curl --connect-timeout 10 -s https://raw.githubusercontent.com/snaptec/openWB/beta/web/version > ${OPENWBBASEDIR}/ramdisk/vbeta
+	# curl --connect-timeout 10 -s https://raw.githubusercontent.com/snaptec/openWB/stable/web/version > ${OPENWBBASEDIR}/ramdisk/vstable
 
-# all done, remove boot and update status
-echo "$(date +"%Y-%m-%d %H:%M:%S:")" "boot done :-)"
-mosquitto_pub -p 1886 -t openWB/system/update_in_progress -r -m 'false'
-mosquitto_pub -p 1883 -t openWB/system/update_in_progress -r -m 'false'
-mosquitto_pub -p 1886 -t openWB/system/boot_done -r -m 'true'
-mosquitto_pub -p 1883 -t openWB/system/boot_done -r -m 'true'
-mosquitto_pub -t openWB/system/reloadDisplay -m "1"
-touch "${OPENWBBASEDIR}/ramdisk/bootdone"
+	# update our local version
+	sudo git -C "${OPENWBBASEDIR}/" show --pretty='format:%ci [%h]' | head -n1 > "${OPENWBBASEDIR}/web/lastcommit"
+	# and record the current commit details
+	commitId=$(git -C "${OPENWBBASEDIR}/" log --format="%h" -n 1)
+	echo "$commitId" > "${OPENWBBASEDIR}/ramdisk/currentCommitHash"
+	git -C "${OPENWBBASEDIR}/" branch -a --contains "$commitId" | perl -nle 'm|.*origin/(.+).*|; print $1' | uniq | xargs > "${OPENWBBASEDIR}/ramdisk/currentCommitBranches"
+
+	# set upload limit in php
+	# echo -n "fix upload limit..."
+	# if [ -d "/etc/php/7.3/" ]; then
+	# 	echo "OS Buster"
+	# 	sudo /bin/su -c "echo 'upload_max_filesize = 300M' > /etc/php/7.3/apache2/conf.d/20-uploadlimit.ini"
+	# 	sudo /bin/su -c "echo 'post_max_size = 300M' >> /etc/php/7.3/apache2/conf.d/20-uploadlimit.ini"
+	# fi
+	# sudo /usr/sbin/apachectl -k graceful
+
+	# all done, remove boot and update status
+	echo "$(date +"%Y-%m-%d %H:%M:%S:")" "boot done :-)"
+	mosquitto_pub -p 1886 -t openWB/system/update_in_progress -r -m 'false'
+	mosquitto_pub -p 1883 -t openWB/system/update_in_progress -r -m 'false'
+	mosquitto_pub -p 1886 -t openWB/system/boot_done -r -m 'true'
+	mosquitto_pub -p 1883 -t openWB/system/boot_done -r -m 'true'
+	mosquitto_pub -t openWB/system/reloadDisplay -m "1"
+	touch "${OPENWBBASEDIR}/ramdisk/bootdone"
+} >> "${LOGFILE}" 2>&1
