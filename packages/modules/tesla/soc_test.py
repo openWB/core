@@ -41,12 +41,12 @@ class TestTesla:
             name="get_token_file", return_value="/var/www/html/openWB/packages/modules/tesla/tokens.ev0")
         self.mock_is_ramdisk_in_use = Mock(name="is_ramdisk_in_use", return_value=False)
         self.mock_post_wake_up_command = Mock(name="post_wake_up_command", return_value="online")
-        self.mock_request_soc = Mock(name="request_soc", return_value=42.5)
+        self.mock_request_soc_range = Mock(name="request_soc_range", return_value=42.5)
         self.mock_value_store = Mock(name="value_store")
         monkeypatch.setattr(Soc, "get_token_file", self.mock_get_token_file)
         monkeypatch.setattr(compatibility, "is_ramdisk_in_use", self.mock_is_ramdisk_in_use)
         monkeypatch.setattr(api, "post_wake_up_command", self.mock_post_wake_up_command)
-        monkeypatch.setattr(api, "request_soc", self.mock_request_soc)
+        monkeypatch.setattr(api, "request_soc_range", self.mock_request_soc_range)
         monkeypatch.setattr(store, "get_car_value_store", Mock(return_value=self.mock_value_store))
         monkeypatch.setattr(SingleComponentUpdateContext, '__exit__', self.mock_context_exit)
 
@@ -56,7 +56,7 @@ class TestTesla:
 
         # evaluation
         self.assert_context_manager_called_with(None)
-        self.mock_request_soc.assert_called_once_with(
+        self.mock_request_soc_range.assert_called_once_with(
             vehicle=0, token_file="/var/www/html/openWB/packages/modules/tesla/tokens.ev0")
         assert self.mock_value_store.set.call_count == 1
         assert self.mock_value_store.set.call_args[0][0].soc == 42.5
@@ -67,7 +67,7 @@ class TestTesla:
 
         # evaluation
         self.assert_context_manager_called_with(None)
-        self.mock_request_soc.assert_called_once_with(
+        self.mock_request_soc_range.assert_called_once_with(
             vehicle=0, token_file="/var/www/html/openWB/packages/modules/tesla/tokens.ev0")
         assert self.mock_value_store.set.call_count == 1
         assert self.mock_value_store.set.call_args[0][0].soc == 42.5
@@ -75,7 +75,7 @@ class TestTesla:
     def test_update_passes_errors_to_context(self, monkeypatch):
         # setup
         dummy_error = Exception()
-        self.mock_request_soc.side_effect = dummy_error
+        self.mock_request_soc_range.side_effect = dummy_error
 
         # execution
         Soc(TeslaConfiguration(0, 0)).update(False)
