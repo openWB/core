@@ -96,7 +96,5 @@ systemctl daemon-reload
 systemctl enable openwb2.service
 systemctl start openwb2.service
 
-touch "${OPENWBBASEDIR}/ramdisk/main.log"
-chmod 666 "${OPENWBBASEDIR}/ramdisk/main.log"
 echo "installation finished, now running atreboot.sh..."
-"${OPENWBBASEDIR}/runs/atreboot.sh" >> "${OPENWBBASEDIR}/ramdisk/main.log" 2>&1
+"${OPENWBBASEDIR}/runs/atreboot.sh"
