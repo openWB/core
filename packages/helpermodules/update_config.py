@@ -187,6 +187,7 @@ class UpdateConfig:
                    "^openWB/pv/get/daily_yield$",
                    "^openWB/pv/get/monthly_yield$",
                    "^openWB/pv/get/yearly_yield$",
+                   "^openWB/pv/[0-9]+/config/max_ac_out$",
                    "^openWB/pv/[0-9]+/get/counter$",
                    "^openWB/pv/[0-9]+/get/power$",
                    "^openWB/pv/[0-9]+/get/currents$",

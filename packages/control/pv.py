@@ -428,6 +428,10 @@ class PvAll:
             log.exception("Fehler im allgemeinen PV-Modul")
 
 
+def get_inverter_default_config():
+    return {"max_ac_out": 0}
+
+
 class Pv:
 
     def __init__(self, index):
