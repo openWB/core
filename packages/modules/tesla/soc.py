@@ -17,17 +17,6 @@ from modules.tesla import api
 log = logging.getLogger("soc."+__name__)
 
 
-def get_default_config():
-    return {
-        "name": "Tesla SoC-Modul",
-        "type": "tesla",
-        "id": 0,
-        "configuration": {
-            "tesla_ev_num": 0
-        }
-    }
-
-
 class TeslaConfiguration:
     def __init__(self, id: int, tesla_ev_num: int):
         self.id = id
@@ -39,8 +28,9 @@ class TeslaConfiguration:
             values = [device_config["id"], device_config["configuration"]["tesla_ev_num"]]
         except KeyError as e:
             raise Exception(
-                "Illegal configuration <{}>: Expected object with properties: {}".format(
-                    device_config, get_default_config())
+                'Illegal configuration <{}>: Expected object with properties: device_config["id"], '.format(
+                    device_config) +
+                'device_config["configuration"]["tesla_ev_num"]'
             ) from e
         return TeslaConfiguration(*values)
 

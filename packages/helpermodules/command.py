@@ -423,26 +423,6 @@ class Command:
         if self.max_id_ev_template == -1:
             self.addEvTemplate("addVehicle", {})
 
-    def addEvSocModule(self, connection_id: str, payload: dict) -> None:
-        """ published die Default-Config des SoC-Moduls. Keine max-ID: Wird bei bestehendem SoC-Modul dieser Befehl
-        aufgerufen, so wird der alte Eintrag überschrieben, da es nur ein SoC-Modul je Fahrzeug geben kann.
-        """
-        log.info(f'Neues SoC-Modul vom Typ {payload["data"]["type"]} für EV{payload["data"]["id"]} hinzugefügt.')
-        soc_module = importlib.import_module(f'.{payload["data"]["type"]}.soc', "modules")
-        soc_default = soc_module.get_default_config()
-        Pub().pub(f'openWB/set/vehicle/{payload["data"]["id"]}/soc_module/config', soc_default)
-
-    def removeEvSocModule(self, connection_id: str, payload: dict) -> None:
-        """ löscht das SoC-Modul und die SoC-Daten.
-        """
-        log.info(f'SoC-Modul von EV{payload["data"]["id"]} gelöscht.')
-        Pub().pub(f'openWB/vehicle/{payload["data"]["id"]}/soc_module/config', "")
-        Pub().pub(f'openWB/vehicle/{payload["data"]["id"]}/get/soc', 0)
-        Pub().pub(f'openWB/vehicle/{payload["data"]["id"]}/get/soc_timestamp', "")
-        Pub().pub(f'openWB/vehicle/{payload["data"]["id"]}/get/range', "")
-        Pub().pub(f'openWB/vehicle/{payload["data"]["id"]}/get/fault_state', "")
-        Pub().pub(f'openWB/vehicle/{payload["data"]["id"]}/get/fault_str', "")
-
     def removeVehicle(self, connection_id: str, payload: dict) -> None:
         """ löscht ein Vehicle.
         """
