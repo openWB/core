@@ -72,8 +72,7 @@ def __fetch_token(token_file):
 def __load_token(token_file: str) -> Tuple[Dict, int]:
     with open(token_file, "r") as f:
         token = json.load(f)
-        # do not trust teslas expiration date!
-        expiration = token["created_at"] + 2500000
+        expiration = token["created_at"] + token["expires_in"]
         return token, expiration
 
 
@@ -90,16 +89,7 @@ def __refresh_token(token_file: str, token: Dict) -> Dict:
     resp = session.post("https://auth.tesla.com/oauth2/v3/token", headers=headers, json=payload, timeout=50)
     resp_json = resp.json()
     refresh_token = resp_json["refresh_token"]
-    access_token = resp_json["access_token"]
     log.debug("received refresh token")
-
-    # Step 4: Exchange bearer token for access token
-    headers["authorization"] = "bearer " + access_token
-    payload = {
-        "grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer",
-        "client_id": CLIENT_ID,
-    }
-    resp = session.post("https://owner-api.teslamotors.com/oauth/token", headers=headers, json=payload)
 
     # save our token
     resp_json = resp.json()
