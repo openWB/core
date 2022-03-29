@@ -8,6 +8,7 @@ import logging
 
 from control import algorithm
 from control import data
+from control.chargepoint import Chargepoint
 from helpermodules.pub import Pub
 from helpermodules import timecheck
 
@@ -257,18 +258,12 @@ class PvAll:
             log.exception("Fehler im allgemeinen PV-Modul")
             return False
 
-    def switch_off_check_threshold(self, chargepoint, overhang):
+    def switch_off_check_threshold(self, chargepoint: Chargepoint, overhang: float) -> None:
         """ prüft, ob die Abschaltschwelle erreicht wurde und startet die Abschaltverzögerung.
         Ist die Abschaltverzögerung bereits aktiv, wird geprüft, ob die Abschaltschwelle wieder
         unterschritten wurde, sodass die Verzögerung wieder gestoppt wird.
-
-        Parameter
-        ---------
-        chargepoint: dict
-            Daten des Ladepunkts
         """
         try:
-
             control_parameter = chargepoint.data["set"]["charging_ev_data"].data["control_parameter"]
             pv_config = data.data.general_data["general"].data["chargemode_config"]["pv_charging"]
             # Der EVU-Überschuss muss ggf um die Einspeisegrenze bereinigt werden.
@@ -278,6 +273,8 @@ class PvAll:
                     "chargemode_config"]["pv_charging"]["feed_in_yield"]
             else:
                 feed_in_yield = 0
+            log.debug(f'LP{chargepoint.cp_num} Switch-Off-Threshold prüfen: Überschuss {overhang}W, freigegebener '
+                      f'Überschuss {self.data["set"]["released_evu_overhang"]}W, Einspeisungsgrenze {feed_in_yield}W')
             if control_parameter["timestamp_switch_on_off"] != "0":
                 # Wurde die Abschaltschwelle erreicht?
                 # Eigene Leistung aus der freigegebenen Leistung rausrechnen.
@@ -294,8 +291,7 @@ class PvAll:
                 if ((overhang + self.data["set"]["released_evu_overhang"]) <
                         (pv_config["switch_off_threshold"]*-1 + feed_in_yield)):
                     if not chargepoint.data["set"]["charging_ev_data"].ev_template.data["prevent_switch_stop"]:
-                        control_parameter["timestamp_switch_on_off"] = timecheck.create_timestamp(
-                        )
+                        control_parameter["timestamp_switch_on_off"] = timecheck.create_timestamp()
                         # merken, dass ein LP verzögert wird, damit nicht zu viele LP verzögert werden.
                         self.data["set"]["released_evu_overhang"] += chargepoint.data["set"]["required_power"]
                         message = "Ladevorgang wird nach Ablauf der Abschaltverzögerung (" + str(
@@ -309,8 +305,9 @@ class PvAll:
                         # Die Abschaltschwelle wird immer noch überschritten und es sollten weitere LP abgeschaltet
                         # werden.
                     else:
-                        chargepoint.data["get"]["state_str"] = "Stoppen des Ladevorgangs aufgrund des EV-Profils \
-                            verhindert."
+                        msg = "Stoppen des Ladevorgangs aufgrund des EV-Profils verhindert."
+                        chargepoint.data["get"]["state_str"] = msg
+                        log.info(f"LP {chargepoint.cp_num}: {msg}")
         except Exception:
             log.exception("Fehler im allgemeinen PV-Modul")
 

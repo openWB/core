@@ -577,10 +577,6 @@ class Algorithm:
         if len(preferenced_chargepoints) == 0:
             # Es gibt keine Ladepunkte in diesem Lademodus, die noch nicht laden oder die noch gestoppt werden können.
             return
-        else:
-            log.debug("Switch-Off-Threshold für Ladepunkte " +
-                      str([cp.cp_num for cp in preferenced_chargepoints]) +
-                      " in Lademodus "+str(mode)+" Submodus "+str(submode)+" Prio "+str(prio)+" prüfen.")
 
             # Solange die Liste durchgehen, bis die Abschaltschwelle nicht mehr erreicht wird.
             for cp in preferenced_chargepoints:
