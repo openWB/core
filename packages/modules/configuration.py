@@ -16,6 +16,23 @@ def pub_configurable():
 def _pub_configurable_soc_modules() -> None:
     try:
         soc_modules = [
+            {
+                "value": None,
+                "text": "kein Modul",
+                "defaults": {}
+            },
+            {
+                "value": "tesla",
+                "text": "Tesla",
+                "defaults": {
+                        "name": "Tesla SoC-Modul",
+                        "type": "tesla",
+                        "id": 0,
+                        "configuration": {
+                            "tesla_ev_num": 0
+                        }
+                }
+            }
         ]
         Pub().pub("openWB/set/system/configurable/soc_modules", soc_modules)
     except Exception:

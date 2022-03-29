@@ -59,12 +59,11 @@ class Ev:
 
     def __init__(self, index):
         try:
-            self.ev_template = None  # type: EvTemplate
-            self.charge_template = None  # type: ChargeTemplate
-            self.soc_module = None  # type: AbstractSoc
+            self.ev_template: EvTemplate
+            self.charge_template: ChargeTemplate
+            self.soc_module: AbstractSoc = None
             self.ev_num = index
             self.data = {"set": {},
-                         "get": {"range_charged": 0},
                          "control_parameter": {"required_current": 0,
                                                "phases": 0,
                                                "prio": False,
@@ -442,9 +441,11 @@ def get_ev_template_default() -> dict:
         "max_current_one_phase": 32,
         "battery_capacity": 82,
         "nominal_difference": 2,
-        "request_interval_charging": 5,
-        "request_interval_not_charging": 720,
-        "request_only_plugged": False
+        "soc": {
+            "request_interval_charging": 5,
+            "request_interval_not_charging": 720,
+            "request_only_plugged": False
+        }
     }
 
 
@@ -457,22 +458,22 @@ class EvTemplate:
         self.et_num = index
 
     def soc_interval_expired(
-            self, plug_state: bool, charge_state: bool, timestamp_last_request: Union[str, None]) -> bool:
+            self, plug_state: bool, charge_state: bool, soc_timestamp: Union[str, None]) -> bool:
         request_soc = False
-        if (self.data["request_only_plugged"] is False or
-                (self.data["request_only_plugged"] is True and plug_state is True)):
-            if charge_state is True:
-                interval = self.data["request_interval_charging"]
-            else:
-                interval = self.data["request_interval_not_charging"]
-            # Zeitstempel prüfen, ob wieder abgefragt werden muss.
-            if timestamp_last_request is not None:
-                if timecheck.check_timestamp(timestamp_last_request, interval*60) is False:
+        if soc_timestamp is None:
+            # Initiale Abfrage
+            request_soc = True
+        else:
+            if (self.data["soc"]["request_only_plugged"] is False or
+                    (self.data["soc"]["request_only_plugged"] is True and plug_state is True)):
+                if charge_state is True:
+                    interval = self.data["soc"]["request_interval_charging"]
+                else:
+                    interval = self.data["soc"]["request_interval_not_charging"]
+                # Zeitstempel prüfen, ob wieder abgefragt werden muss.
+                if timecheck.check_timestamp(soc_timestamp, interval*60-5) is False:
                     # Zeit ist abgelaufen
                     request_soc = True
-            else:
-                # Initiale Abfrage
-                request_soc = True
         return request_soc
 
 
