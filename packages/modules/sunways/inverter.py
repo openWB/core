@@ -4,7 +4,6 @@ from requests.auth import HTTPDigestAuth
 from modules.common import req
 from modules.common.component_state import InverterState
 from modules.common.fault_state import ComponentInfo
-from modules.common import req
 from modules.common.store import get_inverter_value_store
 
 """Example Output for ajax.txt
