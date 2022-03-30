@@ -143,7 +143,7 @@ function refreshChargeTemplate(templateIndex) {
 				setInputValue(element.attr('id'), chargeModeTemplate[templateIndex].chargemode.pv_charging.min_soc_current);
 				// chargemode.pv_charging.feed_in_limit
 				var element = parent.find('.charge-point-pv-charge-feed-in-limit'); // now get parents respective child element
-				if (chargeModeTemplate[templateIndex].chargemode.pv_charging.feed_in_limit == 1) {
+				if (chargeModeTemplate[templateIndex].chargemode.pv_charging.feed_in_limit == true) {
 					// element.prop('checked', true);
 					element.bootstrapToggle('on', true); // do not fire a changed-event to prevent a loop!
 				} else {
@@ -181,7 +181,7 @@ function refreshChargeTemplate(templateIndex) {
 							schedulePlanElement.find('.charge-point-schedule-name').text(value.name);
 							schedulePlanElement.find('.charge-point-schedule-soc').text(value.soc);
 							schedulePlanElement.find('.charge-point-schedule-time').text(value.time);
-							if (value.active == 1) {
+							if (value.active == true) {
 								schedulePlanElement.find('.charge-point-schedule-active').bootstrapToggle('on', true);
 							} else {
 								schedulePlanElement.find('.charge-point-schedule-active').bootstrapToggle('off', true);
@@ -676,7 +676,7 @@ function processChargePointMessages(mqttTopic, mqttPayload) {
 		var index = getIndex(mqttTopic); // extract number between two / /
 		var parent = $('.charge-point-card[data-cp="' + index + '"]'); // get parent row element for charge point
 		var element = parent.find('.charge-point-plug-state'); // now get parents respective child element
-		if (mqttPayload == 1) {
+		if (JSON.parse(mqttPayload) == true) {
 			element.removeClass('hide');
 		} else {
 			element.addClass('hide');
@@ -685,7 +685,7 @@ function processChargePointMessages(mqttTopic, mqttPayload) {
 		var index = getIndex(mqttTopic); // extract number between two / /
 		var parent = $('.charge-point-card[data-cp="' + index + '"]'); // get parent row element for charge point
 		var element = parent.find('.charge-point-charge-state'); // now get parents respective child element
-		if (mqttPayload == 1) {
+		if (JSON.parse(mqttPayload) == true) {
 			element.removeClass('text-orange').addClass('text-green');
 		} else {
 			element.removeClass('text-green').addClass('text-orange');
@@ -695,7 +695,7 @@ function processChargePointMessages(mqttTopic, mqttPayload) {
 		var index = getIndex(mqttTopic); // extract number between two / /
 		var parent = $('.charge-point-card[data-cp="' + index + '"]'); // get parent row element for charge point
 		var element = parent.find('.charge-point-manual-lock'); // now get parents respective child element
-		if (mqttPayload == 1) {
+		if (JSON.parse(mqttPayload) == true) {
 			// element.prop('checked', true);
 			element.bootstrapToggle('on', true); // do not fire a changed-event to prevent a loop!
 		} else {
@@ -707,7 +707,7 @@ function processChargePointMessages(mqttTopic, mqttPayload) {
 		var index = getIndex(mqttTopic); // extract number between two / /
 		var parent = $('.charge-point-card[data-cp="' + index + '"]'); // get parent row element for charge point
 		element = parent.find('.charge-point-state-enabled');
-		if (mqttPayload == 1) {
+		if (JSON.parse(mqttPayload) == true) {
 			$(element).addClass('charge-point-enabled');
 			$(element).removeClass('charge-point-disabled');
 		} else {
