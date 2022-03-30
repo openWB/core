@@ -41,7 +41,7 @@ class SunwaysInverter:
         values = response.text.split(';')
 
         inverter_state = InverterState(
-            power=float(values[1].split(' ')[0]),
+            power=float(values[1].split(' ')[0])*-1,
             counter=float(values[16])*1000
         )
         self.__store.set(inverter_state)
