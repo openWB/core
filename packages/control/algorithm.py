@@ -1311,7 +1311,7 @@ def allocate_power(chargepoint, required_power, required_current, phases):
                 to_allocate = required_power
                 remaining_required_power = 0
             missing_current = use_evu_bat_power(chargepoint, to_allocate,
-                                                required_current, phases, pv_mode=False)
+                                                to_allocate / (phases * 230), phases, pv_mode=False)
             if missing_current:
                 required_current += missing_current
         # Wenn vorhanden, EVU-Überschuss zuteilen.
@@ -1324,7 +1324,7 @@ def allocate_power(chargepoint, required_power, required_current, phases):
                     to_allocate = required_power
                     remaining_required_power = 0
                 missing_current = use_evu_bat_power(chargepoint, to_allocate,
-                                                    required_current, phases, pv_mode=True)
+                                                    to_allocate / (phases * 230), phases, pv_mode=True)
                 if missing_current:
                     required_current += missing_current
         # Rest ermitteln und zuteilen
