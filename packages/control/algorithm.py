@@ -583,7 +583,7 @@ class Algorithm:
         if len(preferenced_chargepoints) == 0:
             # Es gibt keine Ladepunkte in diesem Lademodus, die noch nicht laden oder die noch gestoppt werden können.
             return
-
+        else:
             # Solange die Liste durchgehen, bis die Abschaltschwelle nicht mehr erreicht wird.
             for cp in preferenced_chargepoints:
                 try:
