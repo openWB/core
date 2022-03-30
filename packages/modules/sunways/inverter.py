@@ -4,6 +4,7 @@ from requests.auth import HTTPDigestAuth
 from modules.common import req
 from modules.common.component_state import InverterState
 from modules.common.fault_state import ComponentInfo
+from modules.common import req
 from modules.common.store import get_inverter_value_store
 
 """Example Output for ajax.txt
@@ -41,7 +42,7 @@ class SunwaysInverter:
         values = response.text.split(';')
 
         inverter_state = InverterState(
-            power=float(values[1].split(' ')[0]),
+            power=float(values[1].split(' ')[0])*-1,
             counter=float(values[16])*1000
         )
         self.__store.set(inverter_state)
