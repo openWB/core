@@ -5,6 +5,7 @@ der sonst in das Netz eingespeist werden würde.
 """
 
 import logging
+from typing import Tuple
 
 from control import algorithm
 from control import data
@@ -102,7 +103,11 @@ class PvAll:
         except Exception:
             log.exception("Fehler im allgemeinen PV-Modul")
 
-    def switch_on(self, chargepoint, required_power, required_current, phases, bat_overhang):
+    def switch_on(self,
+                  chargepoint: Chargepoint,
+                  required_current: float,
+                  phases: int,
+                  bat_overhang: float) -> Tuple[float, bool]:
         """ prüft, ob die Einschaltschwelle erreicht wurde, reserviert Leistung und gibt diese frei
         bzw. stoppt die Freigabe wenn die Ausschaltschwelle und -verzögerung erreicht wurde.
 
@@ -110,25 +115,9 @@ class PvAll:
         schritten wurde, wird die Ladung gestartet/gestoppt. So wird häufiges starten/stoppen
         vermieden. Die Grenzen aus den Einstellungen sind als Deltas zu verstehen, die absoluten
         Schaltpunkte ergeben sich ggf noch aus der Einspeisegrenze.
-
-        Parameter
-        ---------
-        chargepoint: dict
-            Daten des Ladepunkts
-        required_power: float
-            Leistung, mit der geladen werden soll
-        required_current: float
-            Stromstärke, mit der geladen werden soll
-        phases: int
-            Phasen, mit denen geladen werden soll
-        Return
-        ------
-        required_current: float
-            Stromstärke, mit der geladen werden kann
-        threshold_not_reached: bool
-            True, wenn die Einschaltschwelle nicht erreicht wurde.
         """
         try:
+            required_power = required_current * phases * 230
             threshold_not_reached = False
             pv_config = data.data.general_data["general"].data["chargemode_config"]["pv_charging"]
             feed_in_limit = chargepoint.data["set"]["charging_ev_data"].charge_template.data["chargemode"][
