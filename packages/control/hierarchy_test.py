@@ -23,7 +23,8 @@ def hierarchy_one_level() -> CounterAll:
 def hierarchy_two_level() -> CounterAll:
     c = CounterAll()
     c.data["get"] = {"hierarchy": [{"id": 0, "type": "counter",
-                                   "children": [{"id": 2, "type": "cp", "children": []}]}]}
+                                   "children": [{"id": 2, "type": "cp", "children": []}]},
+                                   {"id": 7, "type": "inverter", "children": []}]}
     return c
 
 
@@ -31,6 +32,7 @@ def hierarchy_cp() -> CounterAll:
     c = CounterAll()
     c.data["get"] = {"hierarchy": [{"id": 0, "type": "counter",
                                    "children": [
+                                       {"id": 7, "type": "inverter", "children": []},
                                        {"id": 2, "type": "counter", "children": [
                                            {"id": 3, "type": "cp", "children": []},
                                            {"id": 4, "type": "counter", "children": [
@@ -86,7 +88,8 @@ cases_add_item_below = [
         1, ComponentType.INVERTER, 2, True,
         [{'id': 0, 'type': "counter", 'children': [
             {'id': 2, 'type': "cp", 'children': [
-                {'id': 1, 'type': "inverter", 'children': []}]}]}])
+                {'id': 1, 'type': "inverter", 'children': []}]}]},
+         {"id": 7, "type": "inverter", "children": []}])
 ]
 
 
@@ -104,7 +107,8 @@ cases_delete_keep_children = [
     ParamsItem("delete_keep_children_one_level", hierarchy_one_level(), 0, True, []),
     ParamsItem(
         "delete_keep_children_two_level", hierarchy_two_level(), 0, True,
-        [{'id': 2, 'type': "cp", 'children': []}])
+        [{"id": 7, "type": "inverter", "children": []},
+         {'id': 2, 'type': "cp", 'children': []}])
 ]
 
 
@@ -120,7 +124,8 @@ def test_delete_keep_children(params: ParamsItem):
 
 cases_delete_discard_children = [
     ParamsItem("delete_discard_children_one_level", hierarchy_one_level(),  0, True, []),
-    ParamsItem("delete_discard_children_two_level", hierarchy_two_level(), 0, True, [])
+    ParamsItem("delete_discard_children_two_level", hierarchy_two_level(),
+               0, True, [{"id": 7, "type": "inverter", "children": []}])
 ]
 
 

@@ -227,7 +227,9 @@ class CounterAll:
             if child["id"] == id_to_find:
                 return child
             if len(child["children"]) != 0:
-                return self.__get_entry_of_element(child, id_to_find)
+                entry = self.__get_entry_of_element(child, id_to_find)
+                if entry:
+                    return entry
         else:
             return {}
 
