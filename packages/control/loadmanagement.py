@@ -25,7 +25,9 @@ overloaded_counters = {}
 # phase_with_max_overshoot = 1-3 -> Phase, auf der die Überlastung auftritt
 
 
-def loadmanagement_for_cp(chargepoint: Chargepoint, required_current: float, phases: int) -> Tuple[bool, Dict]:
+def loadmanagement_for_cp(chargepoint: Chargepoint,
+                          required_current: float,
+                          phases: int) -> Tuple[bool, Dict[str, Tuple[float, int]]]:
     """ prüft für den angegebenen Ladepunkt, ob im Zweig des Ladepunkts die maximale Stromstärke oder Bezug
     überschritten wird.
     """
@@ -74,10 +76,10 @@ def loadmanagement_for_cp(chargepoint: Chargepoint, required_current: float, pha
         return loadmanagement_all_conditions, overloaded_counters
     except Exception:
         log.exception("Fehler im Lastmanagement-Modul")
-        return False, None
+        return False, {}
 
 
-def loadmanagement_for_counters() -> Tuple[bool, dict]:
+def loadmanagement_for_counters() -> Tuple[bool, Dict[str, Tuple[float, int]]]:
     """ überprüft bei allen Zählern, ob die Maximal-Werte eingehalten werden.
 
     Return
