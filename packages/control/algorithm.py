@@ -765,26 +765,26 @@ class Algorithm:
                           current_mode_index: int) -> None:
         """prüft, ob Speicher oder EV Vorrang hat und wie viel Strom/Leistung genutzt werden kann.
         """
-        threshold_not_reached = False
         try:
-            if (chargepoint.data["set"]["charging_ev_data"].charge_template.data["chargemode"][
-                "selected"] == "scheduled_charging" and
-                    "pv_charging" not in chargepoint.data["set"]["charging_ev_data"].charge_template.data[
-                        "chargemode"]):
-                set_current = 0
-                log.warning(
-                    "PV-Laden im Modus Zielladen aktiv und es wurden keine Einstellungen für PV-Laden konfiguriert.")
-            else:
-                if self._check_cp_without_feed_in_is_prioritised(chargepoint):
-                    set_current, threshold_not_reached = data.data.pv_data["all"].switch_on(
-                        chargepoint,
-                        required_current,
-                        phases,
-                        data.data.bat_data["all"].power_for_bat_charging())
-                else:
-                    set_current = 0
+            # Wenn bereits geladen wird, nur die Änderung zuteilen
+            current_to_allocate = required_current
+            max_used_current = max(chargepoint.data["get"]["currents"])
+            if max_used_current != 0:
+                current_to_allocate -= max_used_current
 
-            if threshold_not_reached:
+            if not self._check_cp_without_feed_in_is_prioritised(chargepoint):
+                self._process_data(chargepoint, 0)
+                return
+
+            allocated_current, threshold_reached = data.data.pv_data["all"].switch_on(
+                chargepoint,
+                current_to_allocate,
+                phases,
+                data.data.bat_data["all"].power_for_bat_charging())
+            if threshold_reached:
+                set_current = max_used_current + allocated_current
+            else:
+                set_current = 0
                 # Zustand merken
                 pv_data_old = copy.deepcopy(data.data.pv_data)
                 cp_data_old = copy.deepcopy(data.data.cp_data)
@@ -829,16 +829,17 @@ class Algorithm:
                                         "LP" + str(cp.cp_num) + " abgeschaltet, um die Einschaltverzögerung an LP" +
                                         str(chargepoint.cp_num) + " zu starten.")
                                     # switch_on erneut durchführen
-                                    set_current, threshold_not_reached = data.data.pv_data["all"].switch_on(
+                                    allocated_current, threshold_reached = data.data.pv_data["all"].switch_on(
                                         chargepoint,
                                         required_current,
                                         phases,
                                         data.data.bat_data["all"].power_for_bat_charging())
-                                    if not threshold_not_reached:
+                                    if threshold_reached:
+                                        set_current = max_used_current + allocated_current
                                         break
                             except Exception:
                                 log.exception(f"Fehler im Algorithmus-Modul für Ladepunkt{cp.cp_num}")
-                        if not threshold_not_reached:
+                        if threshold_reached:
                             break
                 else:
                     # Es konnte nicht genug Leistung freigegeben werden.
