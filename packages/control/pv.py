@@ -118,7 +118,7 @@ class PvAll:
         """
         try:
             required_power = required_current * phases * 230
-            threshold_not_reached = False
+            threshold_reached = True
             pv_config = data.data.general_data["general"].data["chargemode_config"]["pv_charging"]
             feed_in_limit = chargepoint.data["set"]["charging_ev_data"].charge_template.data["chargemode"][
                 "pv_charging"]["feed_in_limit"]
@@ -167,7 +167,7 @@ class PvAll:
                         Pub().pub(
                             "openWB/set/vehicle/" + str(chargepoint.data["set"]["charging_ev_data"].ev_num) +
                             "/control_parameter/timestamp_switch_on_off", "0")
-                        threshold_not_reached = True
+                        threshold_reached = False
                 else:
                     # Timer starten
                     if ((not feed_in_limit and all_overhang > pv_config["switch_on_threshold"]*phases) or
@@ -194,20 +194,20 @@ class PvAll:
                         if chargepoint.data["get"]["state_str"] is None:
                             chargepoint.data["get"]["state_str"] = message
                         required_power = 0
-                        threshold_not_reached = True
+                        threshold_reached = False
             else:
                 chargepoint.data["get"]["state_str"] = "Die Ladung wurde aufgrund des EV-Profils ohne \
                     Einschaltverzögerung gestartet, um die Ladung nicht zu unterbrechen."
 
             if required_power != 0:
-                required_current, _ = algorithm.allocate_power(
-                    chargepoint, required_power, required_current, phases)
+                allocated_current, _ = algorithm.allocate_power(
+                    chargepoint, required_current, phases)
             else:
-                required_current = 0
-            return required_current, threshold_not_reached
+                allocated_current = 0
+            return allocated_current, threshold_reached
         except Exception:
             log.exception("Fehler im allgemeinen PV-Modul")
-            return 0, phases
+            return 0, False
 
     def switch_off_check_timer(self, chargepoint):
         """ prüft, ob der Timer der Ausschaltverzögerung abgelaufen ist.
