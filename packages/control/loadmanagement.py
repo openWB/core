@@ -9,9 +9,10 @@ Information, welche LP-Phase an welche EVU-Phase angeschlossen ist, nicht. Beim 
 auf allen 3 Phasen geprüft, ob genug Leistung/Stromstärke verfügbar ist.
 """
 import logging
-from typing import Tuple
+from typing import Dict, List, Tuple
 
 from control import data
+from control.chargepoint import Chargepoint
 from modules.common.component_type import ComponentType
 
 log = logging.getLogger(__name__)
@@ -24,23 +25,9 @@ overloaded_counters = {}
 # phase_with_max_overshoot = 1-3 -> Phase, auf der die Überlastung auftritt
 
 
-def loadmanagement_for_cp(chargepoint, required_power, required_current, phases):
+def loadmanagement_for_cp(chargepoint: Chargepoint, required_current: float, phases: int) -> Tuple[bool, Dict]:
     """ prüft für den angegebenen Ladepunkt, ob im Zweig des Ladepunkts die maximale Stromstärke oder Bezug
     überschritten wird.
-
-    Parameter
-    ---------
-    chargepoint: class
-        Ladepunkt
-    required_power: float
-        Leistung, mit der geladen werden soll
-    required_current: list
-        Stromstärke, mit der geladen werden soll
-    phases: int
-        Phasen, mit denen geladen werden soll
-    Return
-    ------
-    bool: Lastmanagement aktiv?
     """
     loadmanagement = False
     loadmanagement_all_conditions = False
@@ -79,7 +66,7 @@ def loadmanagement_for_cp(chargepoint, required_power, required_current, phases)
                 log.exception("Fehler im Lastmanagement-Modul "+str(counter))
         # Wenn das Lastamanagement bei den Zwischenzählern aktiv wurde, darf es nicht wieder zurück gesetzt werden.
         loadmanagement = _loadmanagement_for_evu(
-            required_power, required_current_phases, phases, True)
+            required_current_phases, phases, True)
         if loadmanagement:
             loadmanagement_all_conditions = True
 
@@ -103,7 +90,7 @@ def loadmanagement_for_counters() -> Tuple[bool, dict]:
     try:
         # Für den EVU-Zähler max. Leistung, max. Stromstärke und Schieflast überprüfen.
         loadmanagement_all_conditions = _loadmanagement_for_evu(
-            0, [0, 0, 0], 3, False)
+            [0, 0, 0], 3, False)
         # Überprüfung der Zwischenzähler
         loadmanagement = _check_all_intermediate_counters(
             data.data.counter_data["all"].data["get"]["hierarchy"][0])
@@ -157,24 +144,9 @@ def _check_all_intermediate_counters(child):
 # Überprüfen der Werte
 
 
-def _loadmanagement_for_evu(required_power, required_current_phases, phases, offset):
+def _loadmanagement_for_evu(required_current_phases: List[float], phases: int, offset: bool) -> bool:
     """ führt die Überprüfung für das Lastmanagement der EVU durch und prüft dabei die maximale Stromstärke, maximalen
     Bezug und maximale Schieflast, falls aktiv.
-
-    Parameter
-    ---------
-    required_power: float
-        Leistung, mit der geladen werden soll
-    required_current_phases: list
-        Stromstärke, mit der geladen werden soll
-    phases: int
-        Phasen, mit denen geladen werden soll
-    offset: bool
-        Beachtung des Offsets
-    Return
-    ------
-    loadmanagement: bool
-        Lastmanagement aktiv/inaktiv, verbleibende verfügbare Leistung, genutzter Strom
     """
     evu_counter = data.data.counter_data["all"].get_evu_counter()
     max_current_overshoot = 0
@@ -185,7 +157,7 @@ def _loadmanagement_for_evu(required_power, required_current_phases, phases, off
         # Wenn das Lastmanagement einmal aktiv gesetzt wurde, darf es nicht mehr zurück gesetzt werden.
         loadmanagement_all_conditions = False
         loadmanagement, consumption_left = _check_max_power(
-            required_power, offset)
+            sum(required_current_phases) * 230, offset)
         if loadmanagement:
             loadmanagement_all_conditions = True
             if consumption_left >= 0:

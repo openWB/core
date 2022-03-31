@@ -3,6 +3,7 @@
 
 import copy
 import logging
+from typing import Dict, Tuple
 
 from control import data
 from control import loadmanagement
@@ -124,7 +125,6 @@ class Algorithm:
                                             chargepoint, charging_ev.data["control_parameter"]["required_current"])
                                         loadmanagement.loadmanagement_for_cp(
                                             chargepoint,
-                                            released_power,
                                             released_current,
                                             chargepoint.data["get"]["phases_in_use"])
                                         log.debug(
@@ -378,10 +378,8 @@ class Algorithm:
                                 ev_data.data["control_parameter"]["required_current"] - required_current,
                                 2)
                             message = f"Das Lastmanagement hat die Sollstromstärke um {current_diff}A runtergeregelt."
-                        adapted_power = taken_current * 230 * phases
                         # Werte aktualisieren
-                        loadmanagement.loadmanagement_for_cp(
-                            cp, adapted_power, taken_current, phases)
+                        loadmanagement.loadmanagement_for_cp(cp, taken_current, phases)
                         data.data.counter_data[data.data.counter_data["all"].get_evu_counter(
                         )].print_stats()
                         # Wenn max_overshoot_phase -1 ist, wurde die maximale Gesamtleistung überschritten und
@@ -472,13 +470,11 @@ class Algorithm:
                             phases = cp.data["set"]["charging_ev_data"].data["control_parameter"]["phases"]
                         else:
                             phases = cp.data["get"]["phases_in_use"]
-                        required_power = 230 * phases * missing_current
                         # Lastmanagement für den fehlenden Ladestrom durchführen
                         log.debug(
-                            (f"LP {cp.cp_num}: Fehlenden Ladestrom anpassen: {missing_current}, "
-                             f"fehlende Ladeleistung: {required_power}"))
+                            (f"LP {cp.cp_num}: Fehlenden Ladestrom anpassen: {missing_current}"))
                         loadmanagement_state, overloaded_counters = loadmanagement.loadmanagement_for_cp(
-                            cp, required_power, missing_current, phases)
+                            cp, missing_current, phases)
                         log.debug("Lastmanagement aktiv: "+str(loadmanagement_state))
                         if loadmanagement_state:
                             overloaded_counters = sorted(
@@ -510,10 +506,9 @@ class Algorithm:
                                 cp = data.data.cp_data["cp" + str(cp.cp_num)]
                             # Es kann nur ein Teil des fehlenden Ladestroms hochgeregelt werden.
                             else:
-                                required_power = 230 * phases * undo_missing_current
                                 # Werte aktualisieren
                                 loadmanagement.loadmanagement_for_cp(
-                                    cp, required_power, undo_missing_current, phases)
+                                    cp, undo_missing_current, phases)
                                 self._process_data(
                                     cp, cp.data["set"]["current"] + missing_current + undo_missing_current)
                                 message = "Das Lastmanagement hat den Ladestrom um " + \
@@ -704,34 +699,21 @@ class Algorithm:
                 chargepoint.data["set"]["required_power"] = required_power
                 if charging_ev.data["control_parameter"]["submode"] == "pv_charging":
                     self._calc_pv_charging(
-                        chargepoint, required_power, required_current, phases, current_mode)
+                        chargepoint, required_current, phases, current_mode)
                 elif (charging_ev.data["control_parameter"]["submode"] == "stop" or
                         (charging_ev.data["control_parameter"]["submode"] == "standby")):
                     required_current = 0
                     self._process_data(chargepoint, required_current)
                 else:
                     self._calc_normal_load(
-                        chargepoint, required_power, required_current, phases, current_mode)
+                        chargepoint, required_current, phases, current_mode)
             except Exception:
                 log.exception("Fehler im Algorithmus-Modul für Ladepunkt"+chargepoint)
 
-    def _calc_normal_load(self, chargepoint, required_power, required_current, phases, current_mode):
+    def _calc_normal_load(self, chargepoint: Chargepoint, required_current: float, phases: int, current_mode: Tuple):
         """ prüft, ob mit PV geladen werden kann oder bezogen werden muss. Falls erforderlich LP mit niedrigerer
         Ladepriorität reduzieren/abschalten, um LP laden. Ladepunkte mit gleichem Lademodus und gleicher Priorität
         dürfen nur reduziert, aber nicht abgeschaltet werden.
-
-        Parameter
-        ---------
-        chargepoint: dict
-            Daten des Ladepunkts
-        required_power: float
-            Leistung, mit der geladen werden soll
-        required_current: float
-            Stromstärke, mit der geladen werden soll
-        phases: int
-            Phasen, mit denen geladen werden soll
-        current_mode: Tupel
-            aktueller Lademodus, Submodus und Priorität
         """
         try:
             evu_counter = data.data.counter_data["all"].get_evu_counter()
@@ -743,16 +725,12 @@ class Algorithm:
 
             # Wenn bereits geladen wird, nur die Änderung zuteilen
             current_to_allocate = required_current
-            power_to_allocate = required_power
             max_used_current = max(chargepoint.data["get"]["currents"])
             if max_used_current != 0:
                 current_to_allocate -= max_used_current
-                power_to_allocate -= phases * 230 * max_used_current
 
-            log.debug("Benötigte neue/zusätzliche Ladeleistung "+str(power_to_allocate) +
-                      "W, benötigter neuer/zusätzlicher Strom "+str(current_to_allocate)+"A")
-            _, overloaded_counters = allocate_power(
-                chargepoint, power_to_allocate, current_to_allocate, phases)
+            log.debug("Benötigter neuer/zusätzlicher Strom "+str(current_to_allocate)+"A")
+            _, overloaded_counters = allocate_power(chargepoint, current_to_allocate, phases)
             self._process_data(chargepoint, required_current)
 
             if data.data.counter_data["all"].data["set"]["loadmanagement_active"] and len(overloaded_counters) != 0:
@@ -847,21 +825,8 @@ class Algorithm:
         except Exception:
             log.exception("Fehler im Algorithmus-Modul")
 
-    def _calc_pv_charging(self, chargepoint, required_power, required_current, phases, current_mode):
+    def _calc_pv_charging(self, chargepoint: Chargepoint, required_current: float, phases: int, current_mode: Tuple):
         """prüft, ob Speicher oder EV Vorrang hat und wie viel Strom/Leistung genutzt werden kann.
-
-        Parameter
-        ---------
-        chargepoint: dict
-            Daten des Ladepunkts
-        required_power: float
-            Leistung, mit der geladen werden soll
-        required_current: float
-            Stromstärke, mit der geladen werden soll
-        phases: int
-            Phasen, mit denen geladen werden soll
-        current_mode: Tupel
-            aktueller Lademodus, Submodus und Priorität
         """
         threshold_not_reached = False
         try:
@@ -876,7 +841,6 @@ class Algorithm:
                 if self._check_cp_without_feed_in_is_prioritised(chargepoint):
                     set_current, threshold_not_reached = data.data.pv_data["all"].switch_on(
                         chargepoint,
-                        required_power,
                         required_current,
                         phases,
                         data.data.bat_data["all"].power_for_bat_charging())
@@ -930,7 +894,6 @@ class Algorithm:
                                     # switch_on erneut durchführen
                                     set_current, threshold_not_reached = data.data.pv_data["all"].switch_on(
                                         chargepoint,
-                                        required_power,
                                         required_current,
                                         phases,
                                         data.data.bat_data["all"].power_for_bat_charging())
@@ -1095,26 +1058,24 @@ class Algorithm:
                                                     if (bat_overhang - power_diff) > 0:
                                                         missing_current = use_evu_bat_power(
                                                             chargepoint,
-                                                            power_diff,
                                                             current_diff,
                                                             phases,
                                                             pv_mode=False)
                                                     # Laden mit EVU-Überschuss und der Leistung, die vorher der
                                                     # Speicher bezogen hat
                                                     else:
-                                                        pv_power = power_diff - bat_overhang
+                                                        pv_current_diff = (power_diff - bat_overhang) / 230 / phases
                                                         missing_current = use_evu_bat_power(
-                                                            chargepoint, pv_power, current_diff, phases, pv_mode=True)
+                                                            chargepoint, pv_current_diff, phases, pv_mode=True)
                                                         missing_current = use_evu_bat_power(
                                                             chargepoint,
-                                                            bat_overhang,
-                                                            current_diff,
+                                                            bat_overhang / 230 / phases,
                                                             phases,
                                                             pv_mode=False)
                                                 # Laden nur mit EVU-Überschuss bzw. Reduktion des EVU-Bezugs
                                                 else:
                                                     missing_current = use_evu_bat_power(
-                                                        chargepoint, power_diff, current_diff, phases, pv_mode=True)
+                                                        chargepoint, current_diff, phases, pv_mode=True)
                                             else:
                                                 missing_current = 0
 
@@ -1275,32 +1236,15 @@ class Algorithm:
             return 0
 
 
-def allocate_power(chargepoint, required_power, required_current, phases):
+def allocate_power(chargepoint: Chargepoint, required_current: float, phases: int) -> Tuple[float, Dict]:
     """ zugeteilt, wenn vorhanden erst Speicherladeleistung, dann EVU-Überschuss
     und dann EVU-Bezug im Lastmanagement.
-
-    Parameter
-    ---------
-    chargepoint: dict
-        Daten des Ladepunkts
-    required_power: float
-        Leistung, mit der geladen werden soll
-    required_current: float
-        Stromstärke, mit der geladen werden soll
-    phases: int
-        Phasen, mit denen geladen werden soll
-
-    Return
-    ------
-    required_current: float
-        Stromstärke, mit der geladen werden kann
-    overloaded_counters: dict
-        Zähler, die überlastet würden
     """
     try:
         bat_overhang = data.data.bat_data["all"].power_for_bat_charging()
         evu_overhang = data.data.pv_data["all"].overhang_left()
-        remaining_required_power = required_power
+        remaining_required_power = required_current*phases*230
+        required_power = remaining_required_power
         overloaded_counters = {}
         # Wenn vorhanden, Speicherenergie zuteilen.
         if bat_overhang > 0:
@@ -1310,8 +1254,7 @@ def allocate_power(chargepoint, required_power, required_current, phases):
             else:
                 to_allocate = required_power
                 remaining_required_power = 0
-            missing_current = use_evu_bat_power(chargepoint, to_allocate,
-                                                to_allocate / (phases * 230), phases, pv_mode=False)
+            missing_current = use_evu_bat_power(chargepoint, to_allocate / (phases * 230), phases, pv_mode=False)
             if missing_current:
                 required_current += missing_current
         # Wenn vorhanden, EVU-Überschuss zuteilen.
@@ -1323,15 +1266,14 @@ def allocate_power(chargepoint, required_power, required_current, phases):
                 else:
                     to_allocate = required_power
                     remaining_required_power = 0
-                missing_current = use_evu_bat_power(chargepoint, to_allocate,
-                                                    to_allocate / (phases * 230), phases, pv_mode=True)
+                missing_current = use_evu_bat_power(chargepoint, to_allocate / (phases * 230), phases, pv_mode=True)
                 if missing_current:
                     required_current += missing_current
         # Rest ermitteln und zuteilen
         if remaining_required_power > 0:
             evu_current = remaining_required_power / (phases * 230)
             loadmanagement_state, overloaded_counters = loadmanagement.loadmanagement_for_cp(
-                chargepoint, remaining_required_power, evu_current, phases)
+                chargepoint, evu_current, phases)
             if loadmanagement_state:
                 required_current = 0
         return required_current, overloaded_counters
@@ -1341,7 +1283,6 @@ def allocate_power(chargepoint, required_power, required_current, phases):
 
 
 def use_evu_bat_power(chargepoint: Chargepoint,
-                      power_diff: float,
                       current_diff: float,
                       phases: int,
                       pv_mode: bool = True) -> float:
@@ -1351,6 +1292,7 @@ def use_evu_bat_power(chargepoint: Chargepoint,
     Phase.
     Wenn das Lastmanagement aktiv wird, wird der fehlende Strom dem Lastamanagement entnommen und zurückgegeben.
     """
+    power_diff = current_diff * phases * 230
     if pv_mode:
         return_power = data.data.pv_data["all"].allocate_evu_power(
             power_diff)
@@ -1360,7 +1302,7 @@ def use_evu_bat_power(chargepoint: Chargepoint,
     power_diff = power_diff-return_power
     current_diff = current_diff - return_power / phases / 230
     loadmanagement_state, overloaded_counters = loadmanagement.loadmanagement_for_cp(
-        chargepoint, power_diff, current_diff, phases)
+        chargepoint, current_diff, phases)
     if loadmanagement_state:
         overloaded_counters = sorted(
             overloaded_counters.items(), key=lambda e: e[1][1], reverse=True)
@@ -1372,8 +1314,7 @@ def use_evu_bat_power(chargepoint: Chargepoint,
                 overloaded_counters[0][1][0] * (3 - phases + 1)) * -1
         else:
             missing_current = overloaded_counters[0][1][0] * -1
-        missing_power = missing_current * phases * 230
         loadmanagement.loadmanagement_for_cp(
-            chargepoint, missing_power, missing_current, phases)
+            chargepoint, missing_current, phases)
         return missing_current
     return 0
