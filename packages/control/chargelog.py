@@ -42,9 +42,6 @@ def collect_data(chargepoint):
             Pub().pub("openWB/set/chargepoint/"+str(chargepoint.cp_num) +
                       "/set/log/charged_since_plugged_counter", log_data["charged_since_plugged_counter"])
             if log_data["counter_at_mode_switch"] == 0:
-                log_data["chargemode_log_entry"] = charging_ev.data["control_parameter"]["chargemode"]
-                Pub().pub("openWB/set/chargepoint/"+str(chargepoint.cp_num) +
-                          "/set/log/chargemode_log_entry", log_data["chargemode_log_entry"])
                 log_data["counter_at_mode_switch"] = chargepoint.data["get"]["counter"]
                 Pub().pub("openWB/set/chargepoint/"+str(chargepoint.cp_num) +
                           "/set/log/counter_at_mode_switch", log_data["counter_at_mode_switch"])
@@ -56,6 +53,9 @@ def collect_data(chargepoint):
                     log_data["timestamp_start_charging"] = timecheck.create_timestamp()
                     Pub().pub("openWB/set/chargepoint/"+str(chargepoint.cp_num) +
                               "/set/log/timestamp_start_charging", log_data["timestamp_start_charging"])
+                    log_data["chargemode_log_entry"] = charging_ev.data["control_parameter"]["chargemode"]
+                    Pub().pub("openWB/set/chargepoint/"+str(chargepoint.cp_num) +
+                              "/set/log/chargemode_log_entry", log_data["chargemode_log_entry"])
                 log_data["charged_since_mode_switch"] = chargepoint.data["get"]["counter"] - \
                     log_data["counter_at_mode_switch"]
                 log.debug("charged_since_mode_switch " +
@@ -198,14 +198,13 @@ def save_data(chargepoint, charging_ev, immediately=True, reset=False):
                   "/set/log/timestamp_start_charging", log_data["timestamp_start_charging"])
         if reset:
             log_data["counter_at_mode_switch"] = 0
-            log_data["chargemode_log_entry"] = "_"
         else:
             log_data["counter_at_mode_switch"] = chargepoint.data["get"]["counter"]
-            log_data["chargemode_log_entry"] = charging_ev.data["control_parameter"]["chargemode"]
-        Pub().pub("openWB/set/chargepoint/"+str(chargepoint.cp_num) +
-                  "/set/log/chargemode_log_entry", log_data["chargemode_log_entry"])
         Pub().pub("openWB/set/chargepoint/"+str(chargepoint.cp_num) +
                   "/set/log/counter_at_mode_switch", log_data["counter_at_mode_switch"])
+        log_data["chargemode_log_entry"] = "_"
+        Pub().pub("openWB/set/chargepoint/"+str(chargepoint.cp_num) +
+                  "/set/log/chargemode_log_entry", log_data["chargemode_log_entry"])
         log_data["charged_since_mode_switch"] = 0
         Pub().pub("openWB/set/chargepoint/"+str(chargepoint.cp_num) +
                   "/set/log/charged_since_mode_switch", log_data["charged_since_mode_switch"])

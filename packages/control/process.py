@@ -45,8 +45,7 @@ class Process:
                                       chargepoint.data["get"]["state_str"])
                         else:
                             Pub().pub(
-                                "openWB/set/chargepoint/" + str(chargepoint.cp_num) + "/get/state_str",
-                                "Ladevorgang läuft...")
+                                f"openWB/set/chargepoint/{chargepoint.cp_num}/get/state_str", "Ladevorgang läuft...")
                         modules_threads.append(self._start_charging(chargepoint))
                 except Exception:
                     log.exception("Fehler im Process-Modul fuer Ladepunkt "+str(cp))
