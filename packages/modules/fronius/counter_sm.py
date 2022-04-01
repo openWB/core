@@ -58,7 +58,7 @@ class FroniusSmCounter:
             data=self.simulation,
             prefix="bezug"
         )
-        log.MainLogger().debug("Fronius SM Leistung[W]: " + str(counter_state.power))
+        log.debug("Fronius SM Leistung[W]: " + str(counter_state.power))
         return counter_state, meter_location
 
     def set_counter_state(self, counter_state: CounterState) -> None:
