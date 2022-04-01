@@ -140,8 +140,7 @@ class SetData:
                     Pub().pub(msg.topic, "")
                 else:
                     # aktuelles json-Objekt liegt in subdata
-                    index = re.search(
-                        '(?!/)([0-9]*)(?=/|$)', msg.topic).group()
+                    index = subdata.get_index(msg.topic)
                     if "charge_template" in msg.topic:
                         event = self.event_charge_template
                         if "ct"+str(index) in subdata.SubData.ev_charge_template_data:
@@ -183,8 +182,10 @@ class SetData:
                         key_list = msg.topic.split("/")[6:]
                     self._change_key(template, key_list, value)
                     # publish
-                    index_pos = re.search(
-                        '(?!/)([0-9]*)(?=/|$)', msg.topic).end()
+                    regex = re.search('(?!/)([0-9]*)(?=/|$)', msg.topic)
+                    if regex is None:
+                        raise Exception(f"Couldn't find index in {msg.topic}")
+                    index_pos = regex.end()
                     if event == self.event_cp_config:
                         topic = msg.topic[:index_pos]+"/config"
                     else:

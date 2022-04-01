@@ -4,6 +4,7 @@ import importlib
 import json
 import logging
 from pathlib import Path
+from typing import Dict
 import paho.mqtt.client as mqtt
 import re
 import subprocess
@@ -21,6 +22,24 @@ from control import pv
 
 log = logging.getLogger(__name__)
 mqtt_log = logging.getLogger("mqtt")
+
+
+def get_index(topic: str) -> str:
+    """extrahiert den Index aus einem Topic (Zahl zwischen zwei // oder am Stringende)
+    """
+    regex = re.search('(?!/)([0-9]*)(?=/|$)', topic)
+    if regex is None:
+        raise Exception(f"Couldn't find index in {topic}")
+    return regex.group()
+
+
+def get_second_index(topic: str) -> str:
+    """extrahiert den zweiten Index aus einem Topic (Zahl zwischen zwei //)
+    """
+    regex = re.search('^.+/([0-9]*)/.+/([0-9]+)/*.*$', topic)
+    if regex is None:
+        raise Exception(f"Couldn't find index in {topic}")
+    return regex.group(2)
 
 
 class SubData:
@@ -136,29 +155,7 @@ class SubData:
         else:
             log.warning("unknown subdata-topic: "+str(msg.topic))
 
-    def get_index(self, topic):
-        """extrahiert den Index aus einem Topic (Zahl zwischen zwei // oder am Stringende)
-
-         Parameters
-        ----------
-        topic : str
-            Topic, aus dem der Index extrahiert wird
-        """
-        index = re.search('(?!/)([0-9]*)(?=/|$)', topic)
-        return index.group()
-
-    def get_second_index(self, topic):
-        """extrahiert den zweiten Index aus einem Topic (Zahl zwischen zwei //)
-
-            Parameters
-        ----------
-        topic : str
-            Topic, aus dem der Index extrahiert wird
-        """
-        index = re.search('^.+/([0-9]*)/.+/([0-9]+)/*.*$', topic)
-        return index.group(2)
-
-    def set_json_payload(self, dict, msg):
+    def set_json_payload(self, dict: Dict, msg) -> None:
         """ dekodiert das JSON-Objekt und setzt diesen für den Value in das übergebene Dictionary, als Key wird der
         Name nach dem letzten / verwendet.
 
@@ -170,7 +167,10 @@ class SubData:
             enthält den Payload als json-Objekt
         """
         try:
-            key = re.search("/([a-z,A-Z,0-9,_]+)(?!.*/)", msg.topic).group(1)
+            regex = re.search("/([a-z,A-Z,0-9,_]+)(?!.*/)", msg.topic)
+            if regex is None:
+                raise Exception(f"Couldn't find key-name in {msg.topic}")
+            key = regex.group(1)
             if msg.payload:
                 dict[key] = json.loads(str(msg.payload.decode("utf-8")))
             else:
@@ -192,7 +192,7 @@ class SubData:
             enthält Topic und Payload
         """
         try:
-            index = self.get_index(msg.topic)
+            index = get_index(msg.topic)
             if re.search("^.+/vehicle/[0-9]+/.+$", msg.topic) is not None:
                 if str(msg.payload.decode("utf-8")) == "":
                     if re.search("^.+/vehicle/[0-9]+/soc_module/config$", msg.topic) is not None:
@@ -244,7 +244,7 @@ class SubData:
             enthält Topic und Payload
         """
         try:
-            index = self.get_index(msg.topic)
+            index = get_index(msg.topic)
             if str(msg.payload.decode("utf-8")) == "" and re.search("^.+/vehicle/template/charge_template/[0-9]+$",
                                                                     msg.topic) is not None:
                 if "ct"+index in var:
@@ -254,7 +254,7 @@ class SubData:
                     var["ct"+index] = ev.ChargeTemplate(int(index))
                 if re.search("^.+/vehicle/template/charge_template/[0-9]+/chargemode/scheduled_charging/plans/[0-9]+$",
                              msg.topic) is not None:
-                    index_second = self.get_second_index(msg.topic)
+                    index_second = get_second_index(msg.topic)
                     if str(msg.payload.decode("utf-8")) == "":
                         try:
                             var["ct"+index].data["chargemode"]["scheduled_charging"]["plans"].pop(index_second)
@@ -266,7 +266,7 @@ class SubData:
                             index_second)] = json.loads(str(msg.payload.decode("utf-8")))
                 elif re.search("^.+/vehicle/template/charge_template/[0-9]+/time_charging/plans/[0-9]+$",
                                msg.topic) is not None:
-                    index_second = self.get_second_index(msg.topic)
+                    index_second = get_second_index(msg.topic)
                     if str(msg.payload.decode("utf-8")) == "":
                         try:
                             var["ct"+index].data["time_charging"]["plans"].pop(index_second)
@@ -300,7 +300,7 @@ class SubData:
             enthält Topic und Payload
         """
         try:
-            index = self.get_index(msg.topic)
+            index = get_index(msg.topic)
             if re.search("^.+/vehicle/template/ev_template/[0-9]+$", msg.topic) is not None:
                 if str(msg.payload.decode("utf-8")) == "":
                     if "et"+index in var:
@@ -327,7 +327,7 @@ class SubData:
         """
         try:
             if re.search("^.+/chargepoint/[0-9]+/.+$", msg.topic) is not None:
-                index = self.get_index(msg.topic)
+                index = get_index(msg.topic)
                 if str(msg.payload.decode("utf-8")) == "":
                     if "cp"+index in var:
                         var.pop("cp"+index)
@@ -384,7 +384,7 @@ class SubData:
             enthält Topic und Payload
         """
         try:
-            index = self.get_index(msg.topic)
+            index = get_index(msg.topic)
             if json.loads(str(msg.payload.decode("utf-8"))):
                 if "cpt"+index not in var:
                     var["cpt"+index] = chargepoint.CpTemplate()
@@ -394,7 +394,7 @@ class SubData:
             if re.search("^.+/chargepoint/template/[0-9]+/autolock/.+$", msg.topic) is not None:
                 if "autolock" not in var["cpt"+index].data:
                     var["cpt"+index].data["autolock"] = {}
-                index_second = self.get_second_index(msg.topic)
+                index_second = get_second_index(msg.topic)
                 if "plan"+index_second not in var["cpt"+index].data["autolock"]:
                     if "plans" not in var["cpt"+index].data["autolock"]:
                         var["cpt"+index].data["autolock"]["plans"] = {}
@@ -422,7 +422,7 @@ class SubData:
         """
         try:
             if re.search("^.+/pv/[0-9]+/.+$", msg.topic) is not None:
-                index = self.get_index(msg.topic)
+                index = get_index(msg.topic)
                 if str(msg.payload.decode("utf-8")) == "":
                     if "pv"+index in var:
                         var.pop("pv"+index)
@@ -463,7 +463,7 @@ class SubData:
         """
         try:
             if re.search("^.+/bat/[0-9]+/.+$", msg.topic) is not None:
-                index = self.get_index(msg.topic)
+                index = get_index(msg.topic)
                 if str(msg.payload.decode("utf-8")) == "":
                     if "bat"+index in var:
                         var.pop("bat"+index)
@@ -621,7 +621,7 @@ class SubData:
         """
         try:
             if re.search("^.+/counter/[0-9]+/.+$", msg.topic) is not None:
-                index = self.get_index(msg.topic)
+                index = get_index(msg.topic)
                 if str(msg.payload.decode("utf-8")) == "":
                     if "counter"+index in var:
                         var.pop("counter"+index)
@@ -675,7 +675,7 @@ class SubData:
                 else:
                     var["system"] = system.System()
             if re.search("^.+/device/[0-9]+/config$", msg.topic) is not None:
-                index = self.get_index(msg.topic)
+                index = get_index(msg.topic)
                 if str(msg.payload.decode("utf-8")) == "":
                     if "device"+index in var:
                         var.pop("device"+index)
@@ -692,18 +692,18 @@ class SubData:
                     client.subscribe("openWB/system/device/" +
                                      index+"/component/#", 2)
             elif re.search("^.+/device/[0-9]+/get$", msg.topic) is not None:
-                index = self.get_index(msg.topic)
+                index = get_index(msg.topic)
                 if "get" not in var["device"+index].data:
                     var["device"+index].data["get"] = {}
                 self.set_json_payload(var["device"+index].data["get"], msg)
             elif re.search("^.+/device/[0-9]+/component/[0-9]+/simulation/.+$", msg.topic) is not None:
-                index = self.get_index(msg.topic)
-                index_second = self.get_second_index(msg.topic)
+                index = get_index(msg.topic)
+                index_second = get_second_index(msg.topic)
                 self.set_json_payload(
                     var["device"+index].components["component"+index_second].simulation, msg)
             elif re.search("^.+/device/[0-9]+/component/[0-9]+/config$", msg.topic) is not None:
-                index = self.get_index(msg.topic)
-                index_second = self.get_second_index(msg.topic)
+                index = get_index(msg.topic)
+                index_second = get_second_index(msg.topic)
                 if str(msg.payload.decode("utf-8")) == "":
                     if "device"+index in var:
                         if "component"+str(index_second) in var["device"+index].components:
@@ -729,7 +729,7 @@ class SubData:
                     if sim_data:
                         var["device"+index].components["component" + index_second].simulation = sim_data
             elif "mqtt" and "bridge" in msg.topic:
-                index = self.get_index(msg.topic)
+                index = get_index(msg.topic)
                 parent_file = Path(__file__).resolve().parents[2]
                 subprocess.call(["php", "-f", str(parent_file / "runs" / "savemqtt.php"), index, msg.payload])
             elif "GetRemoteSupport" in msg.topic:
