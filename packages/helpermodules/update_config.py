@@ -311,6 +311,10 @@ class UpdateConfig:
         ("openWB/system/ip_address", "unknown"),
         ("openWB/system/release_train", "master"))
 
+    new_topics = (
+        ("(openWB/pv/[0-9]+)", "/config/max_ac_out", 0),
+    )
+
     def __init__(self) -> None:
         self.all_received_topics = {}
 
@@ -329,6 +333,7 @@ class UpdateConfig:
         self.__pub_missing_defaults()
         self.__update_version()
         self.__solve_breaking_changes()
+        self.__add_new_topics()
 
     def getserial(self):
         """ Extract serial from cpuinfo file
@@ -380,3 +385,12 @@ class UpdateConfig:
                     payload.pop("prevent_switch_stop")
                     payload.update({"prevent_charge_stop": combined_setting, "prevent_phase_switch": combined_setting})
                     Pub().pub(topic.replace("openWB/", "openWB/set/"), payload)
+
+    def __add_new_topics(self):
+        for topic in self.all_received_topics:
+            regex = re.search(f"{self.new_topics[0][0]}/get/fault_state", topic)
+            if regex is not None:
+                module = regex.group(1)
+                if f"{module}{self.new_topics[0][1]}" not in self.all_received_topics:
+                    Pub().pub(
+                        f'{module.replace("openWB/", "openWB/set/")}{self.new_topics[0][1]}', self.new_topics[0][2])

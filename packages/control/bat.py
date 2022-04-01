@@ -80,7 +80,7 @@ class BatAll:
             log.exception("Fehler im Bat-Modul")
 
     def __max_bat_power_hybrid_system(self, battery: Bat) -> float:
-        if battery.data["get"]["power"] < 0:
+        if battery.data["get"]["power"] > 0:
             parent = data.data.counter_data["all"].get_entry_of_parent(battery.bat_num)
             if parent.get("type") == "inverter":
                 parent_data = data.data.pv_data[f"pv{parent['id']}"].data

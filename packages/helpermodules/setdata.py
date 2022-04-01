@@ -557,8 +557,6 @@ class SetData:
                 self._validate_value(msg, float)
             elif "openWB/set/pv/set/available_power" in msg.topic:
                 self._validate_value(msg, float)
-            elif "/config" in msg.topic:
-                self._validate_value(msg, "json")
             elif "/get/fault_state" in msg.topic:
                 self._validate_value(msg, int, [(0, 2)])
             elif "/get/fault_str" in msg.topic:

@@ -426,11 +426,9 @@ class SubData:
                 else:
                     if "pv"+index not in var:
                         var["pv"+index] = pv.Pv(int(index))
-                    if re.search("^.+/pv/[0-9]+/config$", msg.topic) is not None:
-                        self.set_json_payload(var["pv"+index].data, msg)
+                    if re.search("^.+/pv/[0-9]+/config/.+$", msg.topic) is not None:
+                        self.set_json_payload(var["pv"+index].data["config"], msg)
                     elif re.search("^.+/pv/[0-9]+/get/.+$", msg.topic) is not None:
-                        if "get" not in var["pv"+index].data:
-                            var["pv"+index].data["get"] = {}
                         self.set_json_payload(var["pv"+index].data["get"], msg)
             elif re.search("^.+/pv/.+$", msg.topic) is not None:
                 if re.search("^.+/pv/config/.+$", msg.topic) is not None:
