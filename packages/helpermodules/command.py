@@ -413,10 +413,8 @@ class Command:
         log.info("Neues EV mit ID "+str(new_id)+" hinzugefügt.")
         vehicle_default = ev.get_vehicle_default()
         for default in vehicle_default:
-            Pub().pub("openWB/set/vehicle/"+str(new_id)+"/" +
-                      str(default), vehicle_default[default])
-        Pub().pub(f"openWB/set/vehicle/{new_id}/soc_module/config",
-                  {"value": None, "text": "kein Modul", "defaults": {}})
+            Pub().pub(f"openWB/set/vehicle/{new_id}/{default}", vehicle_default[default])
+        Pub().pub(f"openWB/set/vehicle/{new_id}/soc_module/config", {"type": None, "configuration": {}})
         self.max_id_vehicle = self.max_id_vehicle + 1
         Pub().pub("openWB/set/command/max_id/vehicle", self.max_id_vehicle)
         # Default-Mäßig werden die Templates 0 zugewiesen, wenn diese noch nicht existieren -> anlegen
