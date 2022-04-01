@@ -214,8 +214,11 @@ class SubData:
                         self.set_json_payload(var["ev"+index].data["set"], msg)
                     elif re.search("^.+/vehicle/[0-9]+/soc_module/config$", msg.topic) is not None:
                         config = json.loads(str(msg.payload.decode("utf-8")))
-                        mod = importlib.import_module("."+config["type"]+".soc", "modules")
-                        var["ev"+index].soc_module = mod.Soc(config)
+                        if config["type"] is None:
+                            var["ev"+index].soc_module = None
+                        else:
+                            mod = importlib.import_module("."+config["type"]+".soc", "modules")
+                            var["ev"+index].soc_module = mod.Soc(config)
                     elif re.search("^.+/vehicle/[0-9]+/control_parameter/.+$", msg.topic) is not None:
                         if "control_parameter" not in var["ev"+index].data:
                             var["ev"+index].data["control_parameter"] = {}

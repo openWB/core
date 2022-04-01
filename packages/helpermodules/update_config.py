@@ -239,6 +239,7 @@ class UpdateConfig:
         ("openWB/counter/get/hierarchy", []),
         ("openWB/vehicle/0/name", ev.get_vehicle_default()["name"]),
         ("openWB/vehicle/0/charge_template", ev.get_vehicle_default()["charge_template"]),
+        ("openWB/vehicle/0/soc_module/config", {"type": None, "configuration": {}}),
         ("openWB/vehicle/0/ev_template", ev.get_vehicle_default()["ev_template"]),
         ("openWB/vehicle/0/tag_id", ev.get_vehicle_default()["tag_id"]),
         ("openWB/vehicle/0/get/soc", ev.get_vehicle_default()["get/soc"]),

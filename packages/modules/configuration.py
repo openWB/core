@@ -19,7 +19,10 @@ def _pub_configurable_soc_modules() -> None:
             {
                 "value": None,
                 "text": "kein Modul",
-                "defaults": {}
+                "defaults": {
+                    "type": None,
+                    "configuration": {}
+                }
             },
             {
                 "value": "tesla",
