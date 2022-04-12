@@ -316,6 +316,7 @@ class UpdateConfig:
 
         self.__remove_outdated_topics()
         self.__pub_missing_defaults()
+        self.__update_version()
 
     def getserial(self):
         """ Extract serial from cpuinfo file
@@ -351,3 +352,8 @@ class UpdateConfig:
             if topic[0] not in self.all_received_topics:
                 log.debug("Setzte Topic '%s' auf Standardwert '%s'" % (topic[0], str(topic[1])))
                 Pub().pub(topic[0].replace("openWB/", "openWB/set/"), topic[1])
+
+    def __update_version(self):
+        with open("/var/www/html/openWB/web/version", "r") as f:
+            version = f.read().splitlines()[0]
+        Pub().pub("openWB/set/system/version", version)
