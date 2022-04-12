@@ -887,7 +887,8 @@ class SetData:
                     "openWB/set/system/update_in_progress" in msg.topic or
                     "openWB/set/system/dataprotection_acknowledged" in msg.topic):
                 self._validate_value(msg, bool)
-            elif "openWB/set/system/remote_support" in msg.topic:
+            elif ("openWB/set/system/remote_support" in msg.topic or
+                    "openWB/set/system/version" in msg.topic):
                 self._validate_value(msg, str)
             elif "openWB/set/system/debug_level" in msg.topic:
                 self._validate_value(msg, int, [(10, 10), (20, 20), (30, 30)])
