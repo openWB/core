@@ -887,9 +887,17 @@ class SetData:
                     "openWB/set/system/update_in_progress" in msg.topic or
                     "openWB/set/system/dataprotection_acknowledged" in msg.topic):
                 self._validate_value(msg, bool)
-            elif ("openWB/set/system/remote_support" in msg.topic or
-                    "openWB/set/system/version" in msg.topic):
+            elif "openWB/set/system/version" in msg.topic:
                 self._validate_value(msg, str)
+            elif "openWB/set/system/GetRemoteSupport" in msg.topic:
+                # Server-Topic enthält kein json-Payload.
+                payload = msg.payload.decode("utf-8")
+                if isinstance(payload, str):
+                    Pub().pub(msg.topic.replace('set/', '', 1), payload)
+                    Pub().pub(msg.topic, "")
+                else:
+                    log.error(f"Payload ungültig: Topic {msg.topic}, Payload {payload} sollte ein String sein.")
+                    Pub().pub(msg.topic, "")
             elif "openWB/set/system/debug_level" in msg.topic:
                 self._validate_value(msg, int, [(10, 10), (20, 20), (30, 30)])
             elif ("openWB/set/system/ip_address" in msg.topic or
