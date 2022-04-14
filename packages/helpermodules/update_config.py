@@ -52,6 +52,7 @@ class UpdateConfig:
                    "^openWB/chargepoint/[0-9]+/get/connected_vehicle/info$",
                    "^openWB/chargepoint/[0-9]+/get/connected_vehicle/config$",
                    "^openWB/chargepoint/[0-9]+/get/rfid$",
+                   "^openWB/chargepoint/[0-9]+/get/rfid_timestamp$",
                    "^openWB/chargepoint/[0-9]+/set/charging_ev$",
                    "^openWB/chargepoint/[0-9]+/set/current$",
                    "^openWB/chargepoint/[0-9]+/set/energy_to_charge$",
