@@ -53,13 +53,13 @@ class HandlerAlgorithm:
                         prep.copy_system_data()
                         log.setLevel(data.data.system_data["system"].data["debug_level"])
                         loadvars.get_hardware_values()
-                        # Virtuelle Module ermitteln die Werte rechnerisch auf Bais der Messwerte anderer Module.
+                        # Virtuelle Module ermitteln die Werte rechnerisch auf Basis der Messwerte anderer Module.
                         # Daher können sie erst die Werte ermitteln, wenn die physischen Module ihre Werte ermittelt
-                        # haben. Würde man allle Module parallel abfragen, wären die virtuellen Module immer einen
+                        # haben. Würde man alle Module parallel abfragen, wären die virtuellen Module immer einen
                         # Zyklus hinterher.
                         prep.copy_module_data()
                         loadvars.get_virtual_values()
-                        # Kurz warten, damit alle Topics von setdata und subdata verarbeitet werden könnnen.
+                        # Kurz warten, damit alle Topics von setdata und subdata verarbeitet werden können.
                         time.sleep(0.5)
                         prep.copy_module_data()
                         prep.copy_data()
@@ -70,7 +70,7 @@ class HandlerAlgorithm:
                         elif data.data.system_data["system"].data[
                                 "update_in_progress"]:
                             log.info(
-                                "Regelung pausiert, da ein Update durchgefuehrt wird."
+                                "Regelung pausiert, da ein Update durchgeführt wird."
                             )
                             return
                         prep.setup_algorithm()
@@ -83,14 +83,14 @@ class HandlerAlgorithm:
                 handler_with_control_interval()
             except Exception:
                 @exit_after(10)
-                def handler_without_contronl_interval():
+                def handler_without_control_interval():
                     # Wenn kein Regelintervall bekannt ist, alle 10s regeln.
                     prep.copy_system_data()
                     loadvars.get_hardware_values()
                     prep.copy_module_data()
                     loadvars.get_virtual_values()
                     self.heartbeat = True
-                    # Kurz warten, damit alle Topics von setdata und subdata verarbeitet werden könnnen.
+                    # Kurz warten, damit alle Topics von setdata und subdata verarbeitet werden können.
                     time.sleep(0.3)
                     prep.copy_module_data()
                     prep.copy_data()
@@ -98,7 +98,7 @@ class HandlerAlgorithm:
                     control.calc_current()
                     proc.process_algorithm_results()
                     data.data.graph_data["graph"].pub_graph_data()
-                handler_without_contronl_interval()
+                handler_without_control_interval()
         except Exception:
             log.exception("Fehler im Main-Modul")
 
@@ -110,21 +110,21 @@ class HandlerAlgorithm:
         try:
             log.debug("5 Minuten Handler ausführen.")
             if not sub.heartbeat:
-                log.error("Heartbeat fuer Subdata nicht zurueckgesetzt.")
+                log.error("Heartbeat für Subdata nicht zurückgesetzt.")
                 sub.disconnect()
                 Thread(target=sub.sub_topics, args=()).start()
             else:
                 sub.heartbeat = False
 
             if not set.heartbeat:
-                log.error("Heartbeat fuer Setdata nicht zurueckgesetzt.")
+                log.error("Heartbeat für Setdata nicht zurückgesetzt.")
                 set.disconnect()
                 Thread(target=set.set_data, args=()).start()
             else:
                 set.heartbeat = False
 
             if not soc.heartbeat:
-                log.error("Heartbeat fuer SoC-Abfrage nicht zurueckgesetzt.")
+                log.error("Heartbeat für SoC-Abfrage nicht zurückgesetzt.")
             else:
                 soc.heartbeat = False
 
@@ -152,14 +152,14 @@ def repeated_handler_call():
     while True:
         time.sleep(max(0, next_time - time.time()))
         try:
-            if timer_5min == 300:
+            if timer_5min >= 290:
                 handler.handler5Min()
                 timer_5min = 0
             else:
                 timer_5min += 10
             handler.handler10Sec()
         except KeyboardInterrupt:
-            log.critical("Asuführung durch exit_after gestoppt: "+traceback.format_exc())
+            log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())
         except Exception:
             log.exception("Fehler im Main-Modul")
         # skip tasks if we are behind schedule:
