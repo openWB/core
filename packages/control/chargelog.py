@@ -12,7 +12,7 @@ from helpermodules import timecheck
 # json-Objekt: {"chargepoint": {"id": 1, "name": "Hof", "rfid": 1234},
 # "vehicle": { "id": 1, "name":"Model 3", "chargemode": "pv_charging", "prio": True },
 # "time": { "begin":"27.05.2021 07:43", "end": "27.05.2021 07:50", "time_charged": "1:34",
-# "data": {"range_charged": 34, "charged_since_mode_switch": 3400, "imported_since_plugged": 5000,
+# "data": {"range_charged": 34, "imported_since_mode_switch": 3400, "imported_since_plugged": 5000,
 #          "power": 110000, "costs": 3,42} }}
 
 log = logging.getLogger(__name__)
@@ -56,17 +56,17 @@ def collect_data(chargepoint):
                     log_data["chargemode_log_entry"] = charging_ev.data["control_parameter"]["chargemode"]
                     Pub().pub("openWB/set/chargepoint/"+str(chargepoint.cp_num) +
                               "/set/log/chargemode_log_entry", log_data["chargemode_log_entry"])
-                log_data["charged_since_mode_switch"] = chargepoint.data["get"]["counter"] - \
+                log_data["imported_since_mode_switch"] = chargepoint.data["get"]["counter"] - \
                     log_data["counter_at_mode_switch"]
-                log.debug("charged_since_mode_switch " +
-                          str(log_data["charged_since_mode_switch"])+" counter " +
+                log.debug("imported_since_mode_switch " +
+                          str(log_data["imported_since_mode_switch"])+" counter " +
                           str(chargepoint.data["get"]["counter"]))
-                log_data["range_charged"] = log_data["charged_since_mode_switch"] / \
+                log_data["range_charged"] = log_data["imported_since_mode_switch"] / \
                     charging_ev.ev_template.data["average_consump"]*100
                 log_data["time_charged"] = timecheck.get_difference_to_now(
                     log_data["timestamp_start_charging"])
                 Pub().pub("openWB/set/chargepoint/"+str(chargepoint.cp_num) +
-                          "/set/log/charged_since_mode_switch", log_data["charged_since_mode_switch"])
+                          "/set/log/imported_since_mode_switch", log_data["imported_since_mode_switch"])
                 Pub().pub(
                     "openWB/set/chargepoint/" + str(chargepoint.cp_num) + "/set/log/range_charged",
                     log_data["range_charged"])
@@ -108,14 +108,14 @@ def save_data(chargepoint, charging_ev, immediately=True, reset=False):
             log_data["counter_at_plugtime"]
         Pub().pub("openWB/set/chargepoint/"+str(chargepoint.cp_num) +
                   "/set/log/imported_since_plugged", log_data["imported_since_plugged"])
-        log_data["charged_since_mode_switch"] = chargepoint.data["get"]["counter"] - \
+        log_data["imported_since_mode_switch"] = chargepoint.data["get"]["counter"] - \
             log_data["counter_at_mode_switch"]
-        log_data["range_charged"] = log_data["charged_since_mode_switch"] / \
+        log_data["range_charged"] = log_data["imported_since_mode_switch"] / \
             charging_ev.ev_template.data["average_consump"]*100
         log_data["time_charged"] = timecheck.get_difference_to_now(
             log_data["timestamp_start_charging"])
         Pub().pub("openWB/set/chargepoint/"+str(chargepoint.cp_num) +
-                  "/set/log/charged_since_mode_switch", log_data["charged_since_mode_switch"])
+                  "/set/log/imported_since_mode_switch", log_data["imported_since_mode_switch"])
         Pub().pub("openWB/set/chargepoint/"+str(chargepoint.cp_num) +
                   "/set/log/range_charged", log_data["range_charged"])
         Pub().pub("openWB/set/chargepoint/"+str(chargepoint.cp_num) +
@@ -140,9 +140,9 @@ def save_data(chargepoint, charging_ev, immediately=True, reset=False):
             duration = int(time_charged[0])*60*24 + \
                 int(time_charged[1])*60 + int(time_charged[2])
         if duration > 0:
-            power = log_data["charged_since_mode_switch"] / duration*60
+            power = log_data["imported_since_mode_switch"] / duration*60
         costs = data.data.general_data["general"].data["price_kwh"] * \
-            log_data["charged_since_mode_switch"]  # / 1000
+            log_data["imported_since_mode_switch"]  # / 1000
         new_entry = {
             "chargepoint":
             {
@@ -166,7 +166,7 @@ def save_data(chargepoint, charging_ev, immediately=True, reset=False):
             "data":
             {
                 "range_charged": truncate(log_data["range_charged"], 2),
-                "charged_since_mode_switch": truncate(log_data["charged_since_mode_switch"], 2),
+                "imported_since_mode_switch": truncate(log_data["imported_since_mode_switch"], 2),
                 "imported_since_plugged": truncate(log_data["imported_since_plugged"], 2),
                 "power": truncate(power, 2),
                 "costs": truncate(costs, 2)
@@ -205,9 +205,9 @@ def save_data(chargepoint, charging_ev, immediately=True, reset=False):
         log_data["chargemode_log_entry"] = "_"
         Pub().pub("openWB/set/chargepoint/"+str(chargepoint.cp_num) +
                   "/set/log/chargemode_log_entry", log_data["chargemode_log_entry"])
-        log_data["charged_since_mode_switch"] = 0
+        log_data["imported_since_mode_switch"] = 0
         Pub().pub("openWB/set/chargepoint/"+str(chargepoint.cp_num) +
-                  "/set/log/charged_since_mode_switch", log_data["charged_since_mode_switch"])
+                  "/set/log/imported_since_mode_switch", log_data["imported_since_mode_switch"])
         log_data["range_charged"] = 0
         Pub().pub("openWB/set/chargepoint/"+str(chargepoint.cp_num) +
                   "/set/log/range_charged", log_data["range_charged"])
@@ -306,7 +306,7 @@ def get_log_data(request):
                 duration = timecheck.duration_sum(
                     duration, entry["time"]["time_charged"])
                 range_charged += entry["data"]["range_charged"]
-                mode += entry["data"]["charged_since_mode_switch"]
+                mode += entry["data"]["imported_since_mode_switch"]
                 plugged += entry["data"]["imported_since_plugged"]
                 power += entry["data"]["power"]
                 costs += entry["data"]["costs"]
@@ -314,7 +314,7 @@ def get_log_data(request):
             log_data["totals"] = {
                 "time_charged": duration,
                 "range_charged": range_charged,
-                "charged_since_mode_switch": mode,
+                "imported_since_mode_switch": mode,
                 "imported_since_plugged": plugged,
                 "power": power,
                 "costs": costs,

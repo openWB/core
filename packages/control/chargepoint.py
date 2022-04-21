@@ -129,7 +129,7 @@ class Chargepoint:
                         "log": {"counter_at_plugtime": 0,
                                 "timestamp_start_charging": None,
                                 "counter_at_mode_switch": 0,
-                                "charged_since_mode_switch": 0,
+                                "imported_since_mode_switch": 0,
                                 "imported_since_plugged": 0,
                                 "range_charged": 0,
                                 "time_charged": "00:00",

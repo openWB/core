@@ -212,7 +212,7 @@ class Prepare:
                         phases = cp.get_phases(
                             charging_ev.charge_template.data["chargemode"]["selected"])
                         state, message_ev, submode, required_current = charging_ev.get_required_current(
-                            cp.data["set"]["log"]["charged_since_mode_switch"])
+                            cp.data["set"]["log"]["imported_since_mode_switch"])
                         self._pub_connected_vehicle(charging_ev, cp)
                         # Einhaltung des Minimal- und Maximalstroms prüfen
                         required_current = charging_ev.check_min_max_current(
