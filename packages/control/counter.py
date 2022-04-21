@@ -94,15 +94,15 @@ class CounterAll:
         """ berechnet die heute im Haus verbrauchte Energie.
         """
         try:
-            evu_imported = data.data.counter_data[self.get_evu_counter()].data["get"]["daily_yield_import"]
-            evu_exported = data.data.counter_data[self.get_evu_counter()].data["get"]["daily_yield_export"]
+            evu_imported = data.data.counter_data[self.get_evu_counter()].data["get"]["daily_yield_imported"]
+            evu_exported = data.data.counter_data[self.get_evu_counter()].data["get"]["daily_yield_exported"]
             if len(data.data.pv_data) > 1:
                 pv = data.data.pv_data["all"].data["get"]["daily_yield"]
             else:
                 pv = 0
             if len(data.data.bat_data) > 1:
-                bat_imported = data.data.bat_data["all"].data["get"]["daily_yield_import"]
-                bat_exported = data.data.bat_data["all"].data["get"]["daily_yield_export"]
+                bat_imported = data.data.bat_data["all"].data["get"]["daily_yield_imported"]
+                bat_exported = data.data.bat_data["all"].data["get"]["daily_yield_exported"]
             else:
                 bat_imported = 0
                 bat_exported = 0
@@ -336,8 +336,8 @@ class Counter:
         try:
             self.data = {"set": {},
                          "get": {
-                "daily_yield_export": 0,
-                "daily_yield_import": 0}}
+                "daily_yield_exported": 0,
+                "daily_yield_imported": 0}}
             self.counter_num = index
         except Exception:
             log.exception("Fehler in der Zähler-Klasse von "+str(self.counter_num))
