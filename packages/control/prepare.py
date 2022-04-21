@@ -174,7 +174,7 @@ class Prepare:
                         else:
                             # Darf das EV geändert werden?
                             if (cp.data["set"]["log"]["imported_at_plugtime"] == 0 or
-                                    cp.data["set"]["log"]["imported_at_plugtime"] == cp.data["get"]["counter"]):
+                                    cp.data["set"]["log"]["imported_at_plugtime"] == cp.data["get"]["imported"]):
                                 cp.data["set"]["charging_ev"] = vehicle
                                 Pub().pub("openWB/set/chargepoint/" +
                                           str(cp.cp_num)+"/set/charging_ev", vehicle)

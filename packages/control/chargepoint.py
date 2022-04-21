@@ -81,7 +81,7 @@ class AllChargepoints:
         except Exception:
             log.exception("Fehler in der allgemeinen Ladepunkt-Klasse")
 
-    def get_power_counter(self):
+    def get_cp_sum(self):
         """ ermittelt die aktuelle Leistung und Zählerstand von allen Ladepunkten.
         """
         counter = 0
@@ -92,13 +92,13 @@ class AllChargepoints:
                     if "cp" in cp:
                         chargepoint = data.data.cp_data[cp]
                         power = power + chargepoint.data["get"]["power"]
-                        counter = counter + chargepoint.data["get"]["counter"]
+                        counter = counter + chargepoint.data["get"]["imported"]
                 except Exception:
                     log.exception("Fehler in der allgemeinen Ladepunkt-Klasse für Ladepunkt "+cp)
             self.data["get"]["power"] = power
             Pub().pub("openWB/set/chargepoint/get/power", power)
-            self.data["get"]["counter"] = counter
-            Pub().pub("openWB/set/chargepoint/get/counter", counter)
+            self.data["get"]["imported"] = counter
+            Pub().pub("openWB/set/chargepoint/get/imported", counter)
         except Exception:
             log.exception("Fehler in der allgemeinen Ladepunkt-Klasse")
 

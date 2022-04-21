@@ -483,7 +483,7 @@ class SetData:
             enthält Topic und Payload
         """
         try:
-            if ("openWB/set/chargepoint/get/counter" in msg.topic or
+            if ("openWB/set/chargepoint/get/imported" in msg.topic or
                     "openWB/set/chargepoint/get/daily_yield" in msg.topic):
                 self._validate_value(msg, float, [(0, float("inf"))])
             elif "template" in msg.topic:
@@ -513,7 +513,7 @@ class SetData:
             elif "/set/change_ev_permitted" in msg.topic:
                 self._validate_value(msg, "json")
             elif ("/set/log/range_charged" in msg.topic or
-                    "/set/log/counter" in msg.topic or
+                    "/set/log/imported" in msg.topic or
                     "/set/log/imported_since_mode_switch" in msg.topic or
                     "/set/log/imported_since_plugged" in msg.topic or
                     "/set/log/imported_at_mode_switch" in msg.topic or
@@ -533,7 +533,7 @@ class SetData:
                     msg, float, [(0, float("inf"))], collection=list)
             elif ("/get/daily_yield" in msg.topic or
                     "/get/power" in msg.topic or
-                    "/get/counter" in msg.topic or
+                    "/get/imported" in msg.topic or
                     "/get/exported" in msg.topic):
                 self._validate_value(msg, float, [(0, float("inf"))])
             elif "/get/phases_in_use" in msg.topic:

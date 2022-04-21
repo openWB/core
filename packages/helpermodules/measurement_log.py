@@ -20,11 +20,11 @@ def save_log(folder):
         "date": str,
         "cp": {
             "cp1": {
-                "counter": Zählerstand in Wh,
+                "imported": Zählerstand in Wh,
                 }
             ... (dynamisch, je nach konfigurierter Anzahl)
             "all": {
-                "counter": Zählerstand in Wh,
+                "imported": Zählerstand in Wh,
                 }
         }
         "ev": {
@@ -90,12 +90,12 @@ def save_log(folder):
             try:
                 if "cp" in cp:
                     cp_dict.update(
-                        {cp: {"counter": data.data.cp_data[cp].data["get"]["counter"]}})
+                        {cp: {"imported": data.data.cp_data[cp].data["get"]["imported"]}})
             except Exception:
                 log.exception("Fehler im Werte-Logging-Modul für Ladepunkt "+str(cp))
         try:
             cp_dict.update(
-                {"all": {"counter": data.data.cp_data["all"].data["get"]["counter"]}})
+                {"all": {"imported": data.data.cp_data["all"].data["get"]["imported"]}})
         except Exception:
             log.exception("Fehler im Werte-Logging-Modul")
 
@@ -226,8 +226,8 @@ def update_daily_yields():
         # Tagesertrag Ladepunkte
         for cp in daily_log[0]["cp"]:
             if cp in data.data.cp_data:
-                daily_yield = data.data.cp_data[cp].data["get"]["counter"] - \
-                    daily_log[0]["cp"][cp]["counter"]
+                daily_yield = data.data.cp_data[cp].data["get"]["imported"] - \
+                    daily_log[0]["cp"][cp]["imported"]
                 data.data.cp_data[cp].data["get"]["daily_yield"] = daily_yield
                 if "cp" in cp:
                     Pub().pub("openWB/set/chargepoint/" +

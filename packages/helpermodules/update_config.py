@@ -31,7 +31,7 @@ class UpdateConfig:
                    "^openWB/bat/[0-9]+/get/fault_str$",
 
                    "^openWB/chargepoint/get/power$",
-                   "^openWB/chargepoint/get/counter$",
+                   "^openWB/chargepoint/get/imported$",
                    "^openWB/chargepoint/get/daily_yield$",
                    "^openWB/chargepoint/template/0$",
                    "^openWB/chargepoint/template/0/autolock/0$",
@@ -42,7 +42,7 @@ class UpdateConfig:
                    "^openWB/chargepoint/[0-9]+/get/fault_str$",
                    "^openWB/chargepoint/[0-9]+/get/plug_state$",
                    "^openWB/chargepoint/[0-9]+/get/phases_in_use$",
-                   "^openWB/chargepoint/[0-9]+/get/counter$",
+                   "^openWB/chargepoint/[0-9]+/get/imported$",
                    "^openWB/chargepoint/[0-9]+/get/power$",
                    "^openWB/chargepoint/[0-9]+/get/voltages$",
                    "^openWB/chargepoint/[0-9]+/get/state_str$",
