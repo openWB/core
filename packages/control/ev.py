@@ -338,7 +338,7 @@ class Ev:
         phases_to_use = phases_in_use
         try:
             # Wenn gerade umgeschaltet wird, darf kein Timer gestartet werden.
-            if not self.ev_template.data["prevent_switch_stop"] and self.data["control_parameter"][
+            if not self.ev_template.data["prevent_phase_switch"] and self.data["control_parameter"][
                     "timestamp_perform_phase_switch"] is None:
                 pv_config = data.data.general_data["general"].data["chargemode_config"]["pv_charging"]
                 # 1 -> 3
@@ -475,7 +475,8 @@ def get_ev_template_default() -> dict:
         "max_current_multi_phases": 16,
         "max_phases": 3,
         "phase_switch_pause": 2,
-        "prevent_switch_stop": False,
+        "prevent_phase_switch": False,
+        "prevent_charge_stop": False,
         "control_pilot_interruption": False,
         "control_pilot_interruption_duration": 4,
         "average_consump": 17,

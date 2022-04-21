@@ -541,8 +541,7 @@ class Algorithm:
                             # Gibt die Stromstärke und Phasen zurück, mit denen nach der Umschaltung geladen werden
                             # soll. Falls keine Umschaltung erforderlich ist, werden Strom und Phasen, die übergeben
                             # wurden, wieder zurückgegeben.
-                            log.debug("Ladepunkt "+str(cp) +
-                                      ": Prüfen, ob Phasenumschaltung durchgeführt werden soll.")
+                            log.debug(f"Ladepunkt {cp.cp_num}: Prüfen, ob Phasenumschaltung durchgeführt werden soll.")
                             phases, current, message = charging_ev.auto_phase_switch(
                                 cp.cp_num, charging_ev.data["control_parameter"]["required_current"],
                                 charging_ev.data["control_parameter"]["phases"],
@@ -701,8 +700,7 @@ class Algorithm:
                             break
                         else:
                             # Abschalten
-                            if not chargepoint.data["set"]["charging_ev_data"].ev_template.data[
-                                    "prevent_switch_stop"]:
+                            if not chargepoint.data["set"]["charging_ev_data"].ev_template.data["prevent_charge_stop"]:
                                 remaining_current_overshoot = self._down_regulation(
                                     mode, chargepoints,
                                     remaining_current_overshoot,
@@ -820,7 +818,7 @@ class Algorithm:
                         for cp in preferenced_chargepoints:
                             try:
                                 # abschalten
-                                if not cp.data["set"]["charging_ev_data"].ev_template.data["prevent_switch_stop"]:
+                                if not cp.data["set"]["charging_ev_data"].ev_template.data["prevent_charge_stop"]:
                                     data.data.pv_data["all"].allocate_evu_power(
                                         -1 * cp.data["set"]["charging_ev_data"].data["control_parameter"]
                                         ["required_current"] * 230 * chargepoint.data["get"]["phases_in_use"])

@@ -441,33 +441,7 @@ class SetData:
                 else:
                     self._validate_value(msg, "json")
             elif "ev_template" in msg.topic:
-                if "/name" in msg.topic:
-                    self._validate_value(msg, str, pub_json=True)
-                elif "/average_consump" in msg.topic:
-                    self._validate_value(
-                        msg, float, [(0, float("inf"))], pub_json=True)
-                elif "/battery_capacity" in msg.topic:
-                    self._validate_value(
-                        msg, int, [(0, float("inf"))], pub_json=True)
-                elif "/max_phases" in msg.topic:
-                    self._validate_value(msg, int, [(1, 3)], pub_json=True)
-                elif "/min_current" in msg.topic:
-                    self._validate_value(msg, int, [(6, 32)], pub_json=True)
-                elif ("/max_current_one_phase" in msg.topic or
-                        "/max_current_multi_phases" in msg.topic):
-                    self._validate_value(
-                        msg, int, [(0, 0), (6, 32)], pub_json=True)
-                elif ("/control_pilot_interruption" in msg.topic or
-                        "/prevent_switch_stop" in msg.topic):
-                    self._validate_value(msg, bool, pub_json=True)
-                elif "/control_pilot_interruption_duration" in msg.topic:
-                    self._validate_value(msg, int, [(4, 15)], pub_json=True)
-                elif "/nominal_difference" in msg.topic:
-                    self._validate_value(msg, float, [(0, 4)], pub_json=True)
-                elif "/phase_switch_pause" in msg.topic:
-                    self._validate_value(msg, int, [(2, 150)], pub_json=True)
-                else:
-                    self._validate_value(msg, "json")
+                self._validate_value(msg, "json")
             else:
                 self.__unknown_topic(msg)
         except Exception:

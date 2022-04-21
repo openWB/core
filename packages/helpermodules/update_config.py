@@ -1,3 +1,4 @@
+import json
 import logging
 import re
 import time
@@ -230,6 +231,7 @@ class UpdateConfig:
                    "^openWB/system/debug_level$",
                    "^openWB/system/lastlivevaluesJson$",
                    "^openWB/system/ip_address$",
+                   "^openWB/system/version$",
                    "^openWB/system/release_train$",
                    "^openWB/system/update_in_progress$",
                    "^openWB/system/device/[0-9]+/config$",
@@ -310,7 +312,7 @@ class UpdateConfig:
         ("openWB/system/release_train", "master"))
 
     def __init__(self) -> None:
-        self.all_received_topics = []
+        self.all_received_topics = {}
 
     def update(self):
         log.debug("Broker-Konfiguration aktualisieren")
@@ -326,6 +328,7 @@ class UpdateConfig:
         self.__remove_outdated_topics()
         self.__pub_missing_defaults()
         self.__update_version()
+        self.__solve_breaking_changes()
 
     def getserial(self):
         """ Extract serial from cpuinfo file
@@ -342,12 +345,12 @@ class UpdateConfig:
         client.subscribe("openWB/#", 2)
 
     def on_message(self, client, userdata, msg):
-        self.all_received_topics.append(msg.topic)
+        self.all_received_topics.update({msg.topic: msg.payload})
 
     def __remove_outdated_topics(self):
         # ungültige Topics entfernen
         # aufpassen mit dynamischen Zweigen! z.B. vehicle/x/...
-        for topic in self.all_received_topics:
+        for topic in self.all_received_topics.keys():
             for valid_topic in self.valid_topic:
                 if re.search(valid_topic, topic) is not None:
                     break
@@ -358,7 +361,7 @@ class UpdateConfig:
     def __pub_missing_defaults(self):
         # zwingend erforderliche Standardwerte setzen
         for topic in self.default_topic:
-            if topic[0] not in self.all_received_topics:
+            if topic[0] not in self.all_received_topics.keys():
                 log.debug("Setzte Topic '%s' auf Standardwert '%s'" % (topic[0], str(topic[1])))
                 Pub().pub(topic[0].replace("openWB/", "openWB/set/"), topic[1])
 
@@ -366,3 +369,14 @@ class UpdateConfig:
         with open("/var/www/html/openWB/web/version", "r") as f:
             version = f.read().splitlines()[0]
         Pub().pub("openWB/set/system/version", version)
+
+    def __solve_breaking_changes(self):
+        # prevent_switch_stop auf zwei Einstellungen prevent_phase_switch und prevent_charge_stop aufteilen
+        for topic, payload in self.all_received_topics.items():
+            if "openWB/vehicle/template/ev_template/" in topic:
+                payload = json.loads(str(payload.decode("utf-8")))
+                if "prevent_switch_stop" in payload:
+                    combined_setting = payload["prevent_switch_stop"]
+                    payload.pop("prevent_switch_stop")
+                    payload.update({"prevent_charge_stop": combined_setting, "prevent_phase_switch": combined_setting})
+                    Pub().pub(topic.replace("openWB/", "openWB/set/"), payload)
