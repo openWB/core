@@ -126,7 +126,7 @@ class Chargepoint:
                         "rfid": None,
                         "manual_lock": False,
                         "loadmanagement_available": True,
-                        "log": {"counter_at_plugtime": 0,
+                        "log": {"imported_at_plugtime": 0,
                                 "timestamp_start_charging": None,
                                 "imported_at_mode_switch": 0,
                                 "imported_since_mode_switch": 0,
