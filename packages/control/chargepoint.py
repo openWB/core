@@ -128,7 +128,7 @@ class Chargepoint:
                         "loadmanagement_available": True,
                         "log": {"counter_at_plugtime": 0,
                                 "timestamp_start_charging": None,
-                                "counter_at_mode_switch": 0,
+                                "imported_at_mode_switch": 0,
                                 "imported_since_mode_switch": 0,
                                 "imported_since_plugged": 0,
                                 "range_charged": 0,

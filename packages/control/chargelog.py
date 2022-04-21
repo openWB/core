@@ -41,11 +41,11 @@ def collect_data(chargepoint):
                 log_data["counter_at_plugtime"]
             Pub().pub("openWB/set/chargepoint/"+str(chargepoint.cp_num) +
                       "/set/log/imported_since_plugged", log_data["imported_since_plugged"])
-            if log_data["counter_at_mode_switch"] == 0:
-                log_data["counter_at_mode_switch"] = chargepoint.data["get"]["counter"]
+            if log_data["imported_at_mode_switch"] == 0:
+                log_data["imported_at_mode_switch"] = chargepoint.data["get"]["counter"]
                 Pub().pub("openWB/set/chargepoint/"+str(chargepoint.cp_num) +
-                          "/set/log/counter_at_mode_switch", log_data["counter_at_mode_switch"])
-                log.debug("counter_at_mode_switch " +
+                          "/set/log/imported_at_mode_switch", log_data["imported_at_mode_switch"])
+                log.debug("imported_at_mode_switch " +
                           str(chargepoint.data["get"]["counter"]))
             # Bei einem Wechsel das Lademodus wird ein neuer Logeintrag erstellt.
             if chargepoint.data["get"]["charge_state"]:
@@ -57,7 +57,7 @@ def collect_data(chargepoint):
                     Pub().pub("openWB/set/chargepoint/"+str(chargepoint.cp_num) +
                               "/set/log/chargemode_log_entry", log_data["chargemode_log_entry"])
                 log_data["imported_since_mode_switch"] = chargepoint.data["get"]["counter"] - \
-                    log_data["counter_at_mode_switch"]
+                    log_data["imported_at_mode_switch"]
                 log.debug("imported_since_mode_switch " +
                           str(log_data["imported_since_mode_switch"])+" counter " +
                           str(chargepoint.data["get"]["counter"]))
@@ -89,7 +89,7 @@ def save_data(chargepoint, charging_ev, immediately=True, reset=False):
         Nummer aus dem Broker in der LP-Klasse hinterlegt ist.)
     reset: bool
         Wenn die Daten komplett zurückgesetzt werden, wird nicht der Zwischenzählerstand für
-        counter_at_mode_switch notiert. Sonst schon, damit zwischen save_data und dem nächsten collect_data keine
+        imported_at_mode_switch notiert. Sonst schon, damit zwischen save_data und dem nächsten collect_data keine
         Daten verloren gehen.
     """
     try:
@@ -109,7 +109,7 @@ def save_data(chargepoint, charging_ev, immediately=True, reset=False):
         Pub().pub("openWB/set/chargepoint/"+str(chargepoint.cp_num) +
                   "/set/log/imported_since_plugged", log_data["imported_since_plugged"])
         log_data["imported_since_mode_switch"] = chargepoint.data["get"]["counter"] - \
-            log_data["counter_at_mode_switch"]
+            log_data["imported_at_mode_switch"]
         log_data["range_charged"] = log_data["imported_since_mode_switch"] / \
             charging_ev.ev_template.data["average_consump"]*100
         log_data["time_charged"] = timecheck.get_difference_to_now(
@@ -197,11 +197,11 @@ def save_data(chargepoint, charging_ev, immediately=True, reset=False):
         Pub().pub("openWB/set/chargepoint/"+str(chargepoint.cp_num) +
                   "/set/log/timestamp_start_charging", log_data["timestamp_start_charging"])
         if reset:
-            log_data["counter_at_mode_switch"] = 0
+            log_data["imported_at_mode_switch"] = 0
         else:
-            log_data["counter_at_mode_switch"] = chargepoint.data["get"]["counter"]
+            log_data["imported_at_mode_switch"] = chargepoint.data["get"]["counter"]
         Pub().pub("openWB/set/chargepoint/"+str(chargepoint.cp_num) +
-                  "/set/log/counter_at_mode_switch", log_data["counter_at_mode_switch"])
+                  "/set/log/imported_at_mode_switch", log_data["imported_at_mode_switch"])
         log_data["chargemode_log_entry"] = "_"
         Pub().pub("openWB/set/chargepoint/"+str(chargepoint.cp_num) +
                   "/set/log/chargemode_log_entry", log_data["chargemode_log_entry"])

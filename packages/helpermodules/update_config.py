@@ -63,7 +63,7 @@ class UpdateConfig:
                    "^openWB/chargepoint/[0-9]+/set/log/imported_since_mode_switch$",
                    "^openWB/chargepoint/[0-9]+/set/log/imported_since_plugged$",
                    "^openWB/chargepoint/[0-9]+/set/log/chargemode_log_entry$",
-                   "^openWB/chargepoint/[0-9]+/set/log/counter_at_mode_switch$",
+                   "^openWB/chargepoint/[0-9]+/set/log/imported_at_mode_switch$",
                    "^openWB/chargepoint/[0-9]+/set/log/counter_at_plugtime$",
                    "^openWB/chargepoint/[0-9]+/set/log/range_charged$",
                    "^openWB/chargepoint/[0-9]+/set/log/timestamp_start_charging$",
