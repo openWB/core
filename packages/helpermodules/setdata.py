@@ -626,8 +626,8 @@ class SetData:
                 self._validate_value(msg, float)
             elif ("openWB/set/bat/get/imported" in msg.topic or
                     "openWB/set/bat/get/exported" in msg.topic or
-                    "openWB/set/bat/get/daily_yield_exported" in msg.topic or
-                    "openWB/set/bat/get/daily_yield_imported" in msg.topic):
+                    "openWB/set/bat/get/daily_exported" in msg.topic or
+                    "openWB/set/bat/get/daily_imported" in msg.topic):
                 self._validate_value(msg, float, [(0, float("inf"))])
             elif "/config" in msg.topic:
                 self._validate_value(msg, "json")
@@ -635,8 +635,8 @@ class SetData:
                 self._validate_value(msg, float)
             elif ("/get/imported" in msg.topic or
                     "/get/exported" in msg.topic or
-                    "/get/daily_yield_exported" in msg.topic or
-                    "/get/daily_yield_imported" in msg.topic):
+                    "/get/daily_exported" in msg.topic or
+                    "/get/daily_imported" in msg.topic):
                 self._validate_value(msg, float, [(0, float("inf"))])
             elif "/get/soc" in msg.topic:
                 self._validate_value(msg, float, [(0, 100)])
@@ -814,8 +814,8 @@ class SetData:
             elif ("/get/power_average" in msg.topic
                     or "/get/unbalanced_load" in msg.topic
                     or "/get/frequency" in msg.topic
-                    or "/get/daily_yield_exported" in msg.topic
-                    or "/get/daily_yield_imported" in msg.topic
+                    or "/get/daily_exported" in msg.topic
+                    or "/get/daily_imported" in msg.topic
                     or "/get/imported" in msg.topic
                     or "/get/exported" in msg.topic):
                 self._validate_value(

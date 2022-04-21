@@ -59,8 +59,8 @@ class BatAll:
                 self.data["get"]["power"] = 0
                 self.data["get"]["imported"] = 0
                 self.data["get"]["exported"] = 0
-                self.data["get"]["daily_yield_exported"] = 0
-                self.data["get"]["daily_yield_imported"] = 0
+                self.data["get"]["daily_exported"] = 0
+                self.data["get"]["daily_imported"] = 0
                 for bat in data.data.bat_data:
                     try:
                         if "bat" in bat:
@@ -68,8 +68,8 @@ class BatAll:
                             self.data["get"]["power"] += battery.data["get"]["power"]
                             self.data["get"]["imported"] += battery.data["get"]["imported"]
                             self.data["get"]["exported"] += battery.data["get"]["exported"]
-                            self.data["get"]["daily_yield_exported"] += battery.data["get"]["daily_yield_exported"]
-                            self.data["get"]["daily_yield_imported"] += battery.data["get"]["daily_yield_imported"]
+                            self.data["get"]["daily_exported"] += battery.data["get"]["daily_exported"]
+                            self.data["get"]["daily_imported"] += battery.data["get"]["daily_imported"]
                             soc_sum += battery.data["get"]["soc"]
                             soc_count += 1
                     except Exception:
@@ -298,5 +298,5 @@ class Bat:
         self.data = {}
         self.bat_num = index
         self.data["get"] = {}
-        self.data["get"]["daily_yield_imported"] = 0
-        self.data["get"]["daily_yield_exported"] = 0
+        self.data["get"]["daily_imported"] = 0
+        self.data["get"]["daily_exported"] = 0

@@ -212,14 +212,14 @@ def update_daily_yields():
             if counter in data.data.counter_data:
                 daily_yield_imported = data.data.counter_data[counter].data["get"]["imported"] - \
                     daily_log[0]["counter"][counter]["imported"]
-                data.data.counter_data[counter].data["get"]["daily_yield_imported"] = daily_yield_imported
+                data.data.counter_data[counter].data["get"]["daily_imported"] = daily_yield_imported
                 Pub().pub("openWB/set/counter/"+str(
-                    data.data.counter_data[counter].counter_num)+"/get/daily_yield_imported", daily_yield_imported)
+                    data.data.counter_data[counter].counter_num)+"/get/daily_imported", daily_yield_imported)
                 daily_yield_exported = data.data.counter_data[counter].data["get"]["exported"] - \
                     daily_log[0]["counter"][counter]["exported"]
-                data.data.counter_data[counter].data["get"]["daily_yield_exported"] = daily_yield_exported
+                data.data.counter_data[counter].data["get"]["daily_exported"] = daily_yield_exported
                 Pub().pub("openWB/set/counter/"+str(
-                    data.data.counter_data[counter].counter_num)+"/get/daily_yield_exported", daily_yield_exported)
+                    data.data.counter_data[counter].counter_num)+"/get/daily_exported", daily_yield_exported)
             else:
                 log.info("Zähler "+str(counter) +
                          " wurde zwischenzeitlich gelöscht und wird daher nicht mehr aufgeführt.")
@@ -258,17 +258,17 @@ def update_daily_yields():
                     daily_log[0]["bat"][bat]["imported"]
                 daily_yield_exporteded = data.data.bat_data[bat].data["get"]["exported"] - \
                     daily_log[0]["bat"][bat]["exported"]
-                data.data.bat_data[bat].data["get"]["daily_yield_imported"] = daily_yield_importeded
-                data.data.bat_data[bat].data["get"]["daily_yield_exported"] = daily_yield_exporteded
+                data.data.bat_data[bat].data["get"]["daily_imported"] = daily_yield_importeded
+                data.data.bat_data[bat].data["get"]["daily_exported"] = daily_yield_exporteded
                 if "bat" in bat:
                     Pub().pub("openWB/set/bat/"+str(
-                        data.data.bat_data[bat].bat_num)+"/get/daily_yield_imported", daily_yield_importeded)
+                        data.data.bat_data[bat].bat_num)+"/get/daily_imported", daily_yield_importeded)
                     Pub().pub("openWB/set/bat/"+str(
-                        data.data.bat_data[bat].bat_num)+"/get/daily_yield_exported", daily_yield_exporteded)
+                        data.data.bat_data[bat].bat_num)+"/get/daily_exported", daily_yield_exporteded)
                 else:
-                    Pub().pub("openWB/set/bat/get/daily_yield_imported",
+                    Pub().pub("openWB/set/bat/get/daily_imported",
                               daily_yield_importeded)
-                    Pub().pub("openWB/set/bat/get/daily_yield_exported",
+                    Pub().pub("openWB/set/bat/get/daily_exported",
                               daily_yield_exporteded)
             else:
                 log.info("Speicher "+str(bat) +
