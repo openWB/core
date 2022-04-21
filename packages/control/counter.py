@@ -107,10 +107,12 @@ class CounterAll:
                 bat_imported = 0
                 bat_exported = 0
             if len(data.data.cp_data) > 1:
-                cp = data.data.cp_data["all"].data["get"]["daily_yield"]
+                cp_imported = data.data.cp_data["all"].data["get"]["daily_imported"]
+                cp_exported = data.data.cp_data["all"].data["get"]["daily_exported"]
             else:
-                cp = 0
-            daily_yield_home_consumption = evu_imported + pv - cp + bat_exported - bat_imported - evu_exported
+                cp_imported, cp_exported = 0, 0
+            daily_yield_home_consumption = (evu_imported + pv - cp_imported + cp_exported + bat_exported
+                                            - bat_imported - evu_exported)
             Pub().pub("openWB/set/counter/set/daily_yield_home_consumption", daily_yield_home_consumption)
             self.data["set"]["daily_yield_home_consumption"] = daily_yield_home_consumption
         except Exception:

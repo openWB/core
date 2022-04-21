@@ -341,7 +341,7 @@ function processEvuMessages(mqttTopic, mqttPayload) {
 			$('.grid-importing').addClass('hide');
 		}
 		$('.grid-power').text(powerEvu + ' ' + unit);
-	} else if (mqttTopic == 'openWB/counter/' + evuCounterIndex + '/get/daily_yield_import') {
+	} else if (mqttTopic == 'openWB/counter/' + evuCounterIndex + '/get/daily_imported') {
 		var unit = "Wh";
 		var unitPrefix = "";
 		var gridDailyYield = parseFloat(mqttPayload);
@@ -355,7 +355,7 @@ function processEvuMessages(mqttTopic, mqttPayload) {
 			gridDailyYield = gridDailyYield.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 		}
 		$('.grid-import').text(gridDailyYield + ' ' + unitPrefix + unit);
-	} else if (mqttTopic == 'openWB/counter/' + evuCounterIndex + '/get/daily_yield_export') {
+	} else if (mqttTopic == 'openWB/counter/' + evuCounterIndex + '/get/daily_exported') {
 		var unit = "Wh";
 		var unitPrefix = "";
 		var gridDailyYield = parseFloat(mqttPayload);
@@ -422,7 +422,7 @@ function processBatteryMessages(mqttTopic, mqttPayload) {
 			speicherSoc = '--';
 		}
 		$('.house-battery-sum-soc').text(speicherSoc + ' ' + unit);
-	} else if (mqttTopic == 'openWB/bat/get/daily_yield_export') {
+	} else if (mqttTopic == 'openWB/bat/get/daily_exported') {
 		var unit = "Wh";
 		var unitPrefix = "";
 		var batDailyYield = parseFloat(mqttPayload);
@@ -436,7 +436,7 @@ function processBatteryMessages(mqttTopic, mqttPayload) {
 			batDailyYield = batDailyYield.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 		}
 		$('.house-battery-sum-export').text(batDailyYield + ' ' + unitPrefix + unit);
-	} else if (mqttTopic == 'openWB/bat/get/daily_yield_import') {
+	} else if (mqttTopic == 'openWB/bat/get/daily_imported') {
 		var unit = "Wh";
 		var unitPrefix = "";
 		var batDailyYield = parseFloat(mqttPayload);
@@ -555,7 +555,7 @@ function processChargePointMessages(mqttTopic, mqttPayload) {
 			powerAllLp = powerAllLp.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 		}
 		$('.charge-point-sum-power').text(powerAllLp + ' ' + unitPrefix + unit);
-	} else if (mqttTopic == 'openWB/chargepoint/get/daily_yield') {
+	} else if (mqttTopic == 'openWB/chargepoint/get/daily_imported') {
 		var unit = "Wh";
 		var unitPrefix = "";
 		var dailyYield = parseFloat(mqttPayload);

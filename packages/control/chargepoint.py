@@ -48,7 +48,8 @@ class AllChargepoints:
     """
 
     def __init__(self):
-        self.data = {"get": {"daily_yield": 0}}
+        self.data = {"get": {"daily_imported": 0,
+                             "daily_exported": 0}}
         Pub().pub("openWB/set/chargepoint/get/power", 0)
 
     def no_charge(self):
@@ -84,21 +85,23 @@ class AllChargepoints:
     def get_cp_sum(self):
         """ ermittelt die aktuelle Leistung und Zählerstand von allen Ladepunkten.
         """
-        counter = 0
-        power = 0
+        imported, exported, power = 0, 0, 0
         try:
             for cp in data.data.cp_data:
                 try:
                     if "cp" in cp:
                         chargepoint = data.data.cp_data[cp]
                         power = power + chargepoint.data["get"]["power"]
-                        counter = counter + chargepoint.data["get"]["imported"]
+                        imported = imported + chargepoint.data["get"]["imported"]
+                        exported = exported + chargepoint.data["get"]["exported"]
                 except Exception:
                     log.exception("Fehler in der allgemeinen Ladepunkt-Klasse für Ladepunkt "+cp)
             self.data["get"]["power"] = power
             Pub().pub("openWB/set/chargepoint/get/power", power)
-            self.data["get"]["imported"] = counter
-            Pub().pub("openWB/set/chargepoint/get/imported", counter)
+            self.data["get"]["imported"] = imported
+            Pub().pub("openWB/set/chargepoint/get/imported", imported)
+            self.data["get"]["exported"] = exported
+            Pub().pub("openWB/set/chargepoint/get/exported", exported)
         except Exception:
             log.exception("Fehler in der allgemeinen Ladepunkt-Klasse")
 
@@ -137,10 +140,13 @@ class Chargepoint:
                 "get": {
                     "rfid_timestamp": None,
                     "rfid": None,
-                    "daily_yield": 0,
+                    "daily_imported": 0,
+                    "daily_exported": 0,
                     "plug_state": False,
                     "charge_state": False,
                     "power": 0,
+                    "imported": 0,
+                    "exported": 0,
                     "connected_vehicle": {"soc_config": {},
                                           "soc": {},
                                           "info": {},

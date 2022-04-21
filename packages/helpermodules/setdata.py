@@ -484,7 +484,8 @@ class SetData:
         """
         try:
             if ("openWB/set/chargepoint/get/imported" in msg.topic or
-                    "openWB/set/chargepoint/get/daily_yield" in msg.topic):
+                    "openWB/set/chargepoint/get/daily_imported" in msg.topic or
+                    "openWB/set/chargepoint/get/daily_exported" in msg.topic):
                 self._validate_value(msg, float, [(0, float("inf"))])
             elif "template" in msg.topic:
                 self._validate_value(msg, "json")
@@ -531,7 +532,8 @@ class SetData:
                     "/get/power_factors" in msg.topic):
                 self._validate_value(
                     msg, float, [(0, float("inf"))], collection=list)
-            elif ("/get/daily_yield" in msg.topic or
+            elif ("/get/daily_imported" in msg.topic or
+                    "/get/daily_exported" in msg.topic or
                     "/get/power" in msg.topic or
                     "/get/imported" in msg.topic or
                     "/get/exported" in msg.topic):
