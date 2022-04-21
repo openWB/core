@@ -166,7 +166,7 @@ def _chargelogfile_entry_generator_func(file):
                         {
                             "range_charged": float(row[2]),
                             "charged_since_mode_switch": 0,
-                            "charged_since_plugged_counter": float(row[3]),
+                            "imported_since_plugged": float(row[3]),
                             "power": float(row[4]),
                             "costs": truncate(costs, 2)
                         }

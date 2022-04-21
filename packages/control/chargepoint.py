@@ -130,7 +130,7 @@ class Chargepoint:
                                 "timestamp_start_charging": None,
                                 "counter_at_mode_switch": 0,
                                 "charged_since_mode_switch": 0,
-                                "charged_since_plugged_counter": 0,
+                                "imported_since_plugged": 0,
                                 "range_charged": 0,
                                 "time_charged": "00:00",
                                 "chargemode_log_entry": "_"}},
@@ -400,7 +400,7 @@ class Chargepoint:
             # Wenn noch kein Logeintrag erstellt wurde, wurde noch nicht geladen und die Phase kann noch umgeschaltet
             # werden.
             if not charging_ev.ev_template.data["prevent_switch_stop"] or self.data["set"]["log"][
-                    "charged_since_plugged_counter"] == 0:
+                    "imported_since_plugged"] == 0:
                 # Einmal muss die Anzahl der Phasen gesetzt werden.
                 if "phases_to_use" not in self.data["set"]:
                     Pub().pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/phases_to_use",
@@ -509,7 +509,7 @@ class Chargepoint:
                 # Wenn noch kein Logeintrag erstellt wurde, wurde noch nicht geladen und die Phase kann noch
                 # umgeschaltet werden.
                 if charging_ev.ev_template.data["prevent_switch_stop"] and self.data["set"]["log"][
-                        "charged_since_plugged_counter"] != 0:
+                        "imported_since_plugged"] != 0:
                     log.info("Phasenumschaltung an Ladepunkt" + str(self.cp_num) +
                              " nicht möglich, da bei EV " +
                              str(charging_ev.ev_num) +

@@ -515,7 +515,7 @@ class SetData:
             elif ("/set/log/range_charged" in msg.topic or
                     "/set/log/counter" in msg.topic or
                     "/set/log/charged_since_mode_switch" in msg.topic or
-                    "/set/log/charged_since_plugged_counter" in msg.topic or
+                    "/set/log/imported_since_plugged" in msg.topic or
                     "/set/log/counter_at_mode_switch" in msg.topic or
                     "/set/log/counter_at_plugtime" in msg.topic):
                 self._validate_value(msg, float, [(0, float("inf"))])

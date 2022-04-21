@@ -1055,8 +1055,7 @@ class Algorithm:
             if start_charging:
                 condition_types = ("min_current", "soc", "plug_in", "cp_num")
             else:
-                condition_types = ("min_current", "soc",
-                                   "charged_since_plugged", "cp_num")
+                condition_types = ("min_current", "soc", "imported_since_plugged", "cp_num")
             # Bedingung, die geprüft wird (entspricht Index von condition_types)
             condition = 0
             if valid_chargepoints:
@@ -1073,9 +1072,9 @@ class Algorithm:
                     elif condition_types[condition] == "plug_in":
                         valid_chargepoints.update(
                             (cp, cp.data["set"]["plug_time"]) for cp, val in valid_chargepoints.items())
-                    elif condition_types[condition] == "charged_since_plugged":
+                    elif condition_types[condition] == "imported_since_plugged":
                         valid_chargepoints.update(
-                            (cp, cp.data["set"]["log"]["charged_since_plugged_counter"]) for cp,
+                            (cp, cp.data["set"]["log"]["imported_since_plugged"]) for cp,
                             val in valid_chargepoints.items())
                     else:
                         valid_chargepoints.update(
