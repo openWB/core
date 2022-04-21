@@ -6,26 +6,16 @@ Autolock aktiv ist, gewartet werden muss, bis die Ladeleistung 0 ist und dann er
 charging_ev = -1 zeigt an, dass der LP im Algorithmus nicht berücksichtigt werden soll. Ist das Ev abgesteckt, wird
 auch charging_ev_prev -1 und im nächsten Zyklus kann ein neues Profil geladen werden.
 
-RFID:
-Mode 1: Der gescannte Tag  wird dem Ladepunkt zugeordnet, an dem gescannt wurde. Falls es eine Duo ist, wird Mode 2 für
-die beiden Duo-Ladepunkte angewendet.
-
-Freischaltung durch Tag: Aktiviert RFID-Nutzung am Ladepunkt.
-Achtung RFID+Autolock: Ist Autolock aktiviert und der Ladepunkt durch Autolock freigegeben, dient der Tag nur zur
-EV-Zuordnung.
-Ist der Ladepunkt durch Autolock gesperrt, kann er mit einem gültigen Tag freigeschaltet werden.
-
-Zuordnung nur per Tag:
-Ist diese Option aktiviert, wird der Tag verworfen, wenn nach 5 Min kein Auto angesteckt wird. Ist diese Option
-deaktiviert, wird auf das dem Ladepunkt zugeordnete Profil zurück gegriffen. Sonst müsste man auch bei Autolock immer
-einen Tag vorhalten, auch wenn der Ladepunkt durch Autolock freigegeben ist.
-
-RFID-Tags:
-Liste der Tags, mit denen der Ladepunkt freigeschaltet werden kann. Ist diese leer, kann mit jedem Tag der Ladepunkt
+RFID-Tags/Code-Eingabe:
+Mit einem Tag/Code kann optional der Ladepunkt freigeschaltet werden, es wird geleichzeitig immer ein EV damit
+zugeordnet, mit dem nach der Freischaltung geladen werden soll. Wenn max 5 Min nach dem Scannen kein Auto
+angesteckt wird, wird der Tag verworfen. Ebenso wenn kein EV gefunden wird.
+Tag-Liste: Tags, mit denen der Ladepunkt freigeschaltet werden kann. Ist diese leer, kann mit jedem Tag der Ladepunkt
 freigeschaltet werden.
 """
 import logging
 import traceback
+from typing import Optional, Tuple
 
 from control import chargelog
 from control import cp_interruption
@@ -112,148 +102,6 @@ class AllChargepoints:
         except Exception:
             log.exception("Fehler in der allgemeinen Ladepunkt-Klasse")
 
-    def match_rfid_to_cp(self):
-        """ ordnet einen gescannten Tag einem Ladepunkt zu. Allgemeine Funktion, da auch an einem zentralen Ladepunkt
-        gescannt werden kann. Wenn der RFID-Modus 1 ist, wird die Funktion zur Zuordnung bei zentralem Scanner genutzt,
-        wenn es eine openWB Duo ist.
-        """
-        try:
-            if data.data.optional_data["optional"].data["rfid"]["active"]:
-                # nicht .keys() verwenden, da diese eine dict_keys-Liste erzeugt und wenn man daraus einen Eintrag
-                # entfernt wird dieser auch im original-dict entfernt.
-                chargepoints = list(data.data.cp_data.keys())
-                if "all" in chargepoints:
-                    chargepoints.remove("all")
-                # Duos zuerst
-                for cp in chargepoints:
-                    try:
-                        chargepoint = data.data.cp_data[cp]
-                        if chargepoint.template.data["rfid_enabling"]:
-                            # Wurde ein zweiter Ladepunkt an einer Duo konfiguriert?
-                            if chargepoint.data["config"]["connection_module"]["type"] == "external_openwb":
-                                if chargepoint.data["config"]["connection_module"]["configuration"][
-                                        "duo_num"] == 2:
-                                    # Ersten Ladepunkt der Duo finden (gleiche IP)
-                                    for cp2 in chargepoints:
-                                        if cp2 != cp:
-                                            if (chargepoint.data["config"]["connection_module"]["configuration"]
-                                                    ["ip_adress"] ==
-                                                    data.data.cp_data[cp2].data["config"]["connection_module"][
-                                                    "configuration"]["ip_adress"]):
-                                                self._match_rfid_of_multiple_cp([cp, cp2])
-                                                chargepoints.remove(cp)
-                                                chargepoints.remove(cp2)
-                                                break
-                    except Exception:
-                        log.exception("Fehler in der allgemeinen Ladepunkt-Klasse für Ladepunkt "+cp)
-                # Einzel-Ladepunkte
-                for cp in chargepoints:
-                    try:
-                        if "cp" in cp:
-                            chargepoint = data.data.cp_data[cp]
-                            if chargepoint.template.data["rfid_enabling"]:
-                                if chargepoint.data["get"]["read_tag"]["tag"] != "0":
-                                    # Darf mit diesem Tag der LP freigeschaltet werden?
-                                    if chargepoint.data["get"]["read_tag"]["tag"] in chargepoint.template.data[
-                                            "valid_tags"] or len(chargepoint.template.data["valid_tags"]) == 0:
-                                        chargepoint.data["set"]["rfid"] = chargepoint.data["get"]["read_tag"]["tag"]
-                                        Pub().pub(
-                                            "openWB/set/chargepoint/" + str(chargepoint.cp_num) + "/set/rfid",
-                                            chargepoint.data["set"]["rfid"])
-                                        log.info("LP " + str(chargepoint.cp_num) + " wurde Tag " +
-                                                 str(chargepoint.data["set"]["rfid"]) + " zugeordnet.")
-                                    else:
-                                        chargepoint.data["get"]["state_str"] = "Tag "+str(
-                                            chargepoint.data["get"]["read_tag"]["tag"]) + \
-                                            " ist an diesem Ladepunkt nicht gültig."
-                                        log.info(
-                                            "LP " + str(chargepoint.cp_num) + ": Tag " +
-                                            str(chargepoint.data["get"]["read_tag"]["tag"]) +
-                                            " ist an diesem Ladepunkt nicht gültig.")
-
-                                    # Verarbeiteten Tag löschen
-                                    chargepoint.data["get"]["read_tag"]["tag"] = "0"
-                                    chargepoint.data["get"]["read_tag"]["timestamp"] = "0"
-                                    Pub().pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/get/read_tag",
-                                              chargepoint.data["get"]["read_tag"])
-                    except Exception:
-                        log.exception("Fehler in der allgemeinen Ladepunkt-Klasse für Ladepunkt "+cp)
-        except Exception:
-            log.exception("Fehler in der allgemeinen Ladepunkt-Klasse")
-
-    def _match_rfid_of_multiple_cp(self, chargepoints):
-        """ ordnet einen gescanntem Tag dem Ladepunkt zu, an dem vor / nach dem Scan angesteckt wurde.
-        Parameter
-        ---------
-        chargepoints: list
-            Ladepunkte, denen der Tag zugeordnet werden kann. (nötig für Duo)
-        """
-        try:
-            read_tag = None
-            for cp in chargepoints:
-                try:
-                    if "cp" in cp:
-                        chargepoint_read = data.data.cp_data[cp]
-                        if chargepoint_read.data["get"]["read_tag"]["tag"] != "0":
-                            read_tag = chargepoint_read.data["get"]["read_tag"]["tag"]
-                            # Scannen darf nicht länger als 5 Min zurück liegen
-                            if not timecheck.check_timestamp(
-                                    chargepoint_read.data["get"]["read_tag"]["timestamp"],
-                                    300):
-                                # abgelaufen
-                                chargepoint_read.data["get"]["read_tag"]["tag"] = "0"
-                                chargepoint_read.data["get"]["read_tag"]["timestamp"] = "0"
-                                Pub().pub("openWB/set/chargepoint/"+str(chargepoint_read.cp_num)+"/get/read_tag",
-                                          chargepoint_read.data["get"]["read_tag"])
-                except Exception:
-                    log.exception("Fehler in der allgemeinen Ladepunkt-Klasse für Ladepunkt "+cp)
-            if read_tag is not None:
-                last_plugged_cp = None
-                plug_time = 0
-                for cp in chargepoints:
-                    try:
-                        if "cp" in cp:
-                            chargepoint_match = data.data.cp_data[cp]
-                            if chargepoint_match.template.data["rfid_enabling"]:
-                                # Wenn man einen Tag hat, der nicht vor mehr als 5 Min gescannt wurde, ist es egal, ob
-                                # das Auto vor oder nach dem Scannen angesteckt wurde. Um den Tag zuzuordnen, muss
-                                # RFID-Zuordnung aktiviert sein, es darf kein Tag zugeordnet sein (wird beim Abstecken
-                                # zurückgesetzt) und es muss ein Auto angesteckt sein.
-                                if chargepoint_match.data["set"]["rfid"] == "0" and chargepoint_match.data["get"][
-                                        "plug_state"]:
-                                    if plug_time == 0 or int(timecheck.get_difference(
-                                            plug_time, chargepoint_match.data["set"]["plug_time"])) < 0:
-                                        plug_time = chargepoint_match.data["set"]["plug_time"]
-                                        last_plugged_cp = chargepoint_match
-                    except Exception:
-                        log.exception("Fehler in der allgemeinen Ladepunkt-Klasse für Ladepunkt "+cp)
-                if last_plugged_cp is None:
-                    log.info("Es wurde kein EV angesteckt, dessen Ladepunkt auf eine Zuweisung per RFID \
-                        wartet. Gescannter Tag: "+str(read_tag))
-                else:
-                    # Darf mit diesem Tag der LP freigeschaltet werden?
-                    if read_tag in last_plugged_cp.template.data["valid_tags"] or len(
-                            last_plugged_cp.template.data["valid_tags"]) == 0:
-                        last_plugged_cp.data["set"]["rfid"] = read_tag
-                        Pub().pub("openWB/set/chargepoint/"+str(last_plugged_cp.cp_num)+"/set/rfid",
-                                  last_plugged_cp.data["set"]["rfid"])
-                        log.info("LP " + str(last_plugged_cp.cp_num) + " wurde Tag " +
-                                 str(last_plugged_cp.data["set"]["rfid"]) + " zugeordnet.")
-                        chargepoint_read.data["get"]["read_tag"]["tag"] = "0"
-                        chargepoint_read.data["get"]["read_tag"]["timestamp"] = "0"
-                        Pub().pub("openWB/set/chargepoint/"+str(chargepoint_read.cp_num)+"/get/read_tag",
-                                  chargepoint_read.data["get"]["read_tag"])
-                    else:
-                        log.info(
-                            "Der Tag "+str(read_tag)+" ist an Ladepunkt "+str(last_plugged_cp.cp_num) +
-                            " nicht gültig.")
-                        chargepoint_read.data["get"]["read_tag"]["tag"] = "0"
-                        chargepoint_read.data["get"]["read_tag"]["timestamp"] = "0"
-                        Pub().pub("openWB/set/chargepoint/"+str(chargepoint_read.cp_num)+"/get/read_tag",
-                                  chargepoint_read.data["get"]["read_tag"])
-        except Exception:
-            log.exception("Fehler in der allgemeinen Ladepunkt-Klasse")
-
 
 class Chargepoint:
     """ geht alle Ladepunkte durch, prüft, ob geladen werden darf und ruft die Funktion des angesteckten Autos auf.
@@ -275,7 +123,7 @@ class Chargepoint:
                         "current": 0,
                         "energy_to_charge": 0,
                         "plug_time": "0",
-                        "rfid": 0,
+                        "rfid": "0",
                         "manual_lock": False,
                         "loadmanagement_available": True,
                         "log": {"counter_at_plugtime": 0,
@@ -287,8 +135,8 @@ class Chargepoint:
                                 "time_charged": "00:00",
                                 "chargemode_log_entry": "_"}},
                 "get": {
-                    "read_tag": {"tag": "0",
-                                 "timestamp": "0"},
+                    "rfid_timestamp": "0",
+                    "rfid": "0",
                     "daily_yield": 0,
                     "plug_state": False,
                     "charge_state": False,
@@ -300,167 +148,108 @@ class Chargepoint:
         except Exception:
             log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.cp_num))
 
-    def _is_grid_protection_inactive(self):
+    def _is_grid_protection_inactive(self) -> Tuple[bool, Optional[str]]:
         """ prüft, ob der Netzschutz inaktiv ist oder ob alle Ladepunkt gestoppt werden müssen.
-        Return
-        ------
-        state: bool
-            ist Netzschutz inaktiv
-        message: str
-            Text, dass geladen werden kann oder warum nicht geladen werden kann.
         """
         state = True
         message = None
-        try:
-            general_data = data.data.general_data["general"].data
-            if general_data["grid_protection_configured"]:
-                if general_data["grid_protection_active"]:
-                    if general_data["grid_protection_timestamp"] != "0":
-                        # Timer ist  abgelaufen
-                        if not timecheck.check_timestamp(
-                                general_data["grid_protection_timestamp"],
-                                general_data["grid_protection_random_stop"]):
-                            state = False
-                            message = "Ladepunkt gesperrt, da der Netzschutz aktiv ist."
-                            Pub().pub("openWB/set/general/grid_protection_timestamp", "0")
-                            Pub().pub("openWB/set/general/grid_protection_random_stop", 0)
-                    else:
+        general_data = data.data.general_data["general"].data
+        if general_data["grid_protection_configured"]:
+            if general_data["grid_protection_active"]:
+                if general_data["grid_protection_timestamp"] != "0":
+                    # Timer ist  abgelaufen
+                    if not timecheck.check_timestamp(
+                            general_data["grid_protection_timestamp"],
+                            general_data["grid_protection_random_stop"]):
                         state = False
                         message = "Ladepunkt gesperrt, da der Netzschutz aktiv ist."
-            return state, message
-        except Exception:
-            log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.cp_num))
-            return True, "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
+                        Pub().pub("openWB/set/general/grid_protection_timestamp", "0")
+                        Pub().pub("openWB/set/general/grid_protection_random_stop", 0)
+                else:
+                    state = False
+                    message = "Ladepunkt gesperrt, da der Netzschutz aktiv ist."
+        return state, message
 
-    def _is_ripple_control_receiver_inactive(self):
+    def _is_ripple_control_receiver_inactive(self) -> Tuple[bool, Optional[str]]:
         """ prüft, dass der Rundsteuerempfängerkontakt nicht geschlossen ist.
-        Return
-        ------
-        state: bool
-            ist Netzschutz inaktiv
-        message: str
-            Text, dass geladen werden kann oder warum nicht geladen werden kann.
         """
         state = True
         message = None
-        try:
-            general_data = data.data.general_data["general"].data
-            if general_data["ripple_control_receiver"]["configured"]:
-                if (general_data["ripple_control_receiver"]["r1_active"] or
-                        general_data["ripple_control_receiver"]["r2_active"]):
-                    state = False
-                    message = "Ladepunkt gesperrt, da der Rundsteuerempfängerkontakt geschlossen ist."
-            return state, message
-        except Exception:
-            log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.cp_num))
-            return True, "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
+        general_data = data.data.general_data["general"].data
+        if general_data["ripple_control_receiver"]["configured"]:
+            if (general_data["ripple_control_receiver"]["r1_active"] or
+                    general_data["ripple_control_receiver"]["r2_active"]):
+                state = False
+                message = "Ladepunkt gesperrt, da der Rundsteuerempfängerkontakt geschlossen ist."
+        return state, message
 
-    def _is_loadmanagement_available(self):
+    def _is_loadmanagement_available(self) -> Tuple[bool, Optional[str]]:
         """ prüft, ob Lastmanagement verfügbar ist. Wenn keine Werte vom EVU-Zähler empfangen werden, darf nicht geladen
         werden.
-        Return
-        ------
-        state: bool
-            kann geladen werden
-        message: str
-            Text, dass geladen werden kann oder warum nicht geladen werden kann.
         """
-        try:
-            if self.data["set"]["loadmanagement_available"]:
-                state = True
-                message = None
-            else:
-                state = False
-                message = "Ladepunkt gesperrt, da keine Werte vom EVU-Zähler empfangen wurden und deshalb kein \
-                Lastmanagement durchgeführt werden kann. Falls Sie dennoch laden möchten, können Sie als EVU-Zähler \
-                    'Virtuell' auswählen und einen konstanten Hausverbrauch angeben."
-            return state, message
-        except Exception:
-            log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.cp_num))
-            return False, "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
+        if self.data["set"]["loadmanagement_available"]:
+            state = True
+            message = None
+        else:
+            state = False
+            message = "Ladepunkt gesperrt, da keine Werte vom EVU-Zähler empfangen wurden und deshalb kein \
+            Lastmanagement durchgeführt werden kann. Falls Sie dennoch laden möchten, können Sie als EVU-Zähler \
+                'Virtuell' auswählen und einen konstanten Hausverbrauch angeben."
+        return state, message
 
-    def _is_autolock_inactive(self):
+    def _is_autolock_inactive(self) -> Tuple[bool, Optional[str]]:
         """ prüft, ob Autolock nicht aktiv ist oder ob die Sperrung durch einen dem LP zugeordneten RFID-Tag aufgehoben
         werden kann.
-        Return
-        ------
-        state: bool
-            ist Autolock aktiv
-        message: str
-            Text, dass geladen werden kann oder warum nicht geladen werden kann.
         """
-        try:
-            message = None
-            state = self.template.autolock(
-                self.data["set"]["autolock_state"],
-                self.data["get"]["charge_state"],
-                self.cp_num)
-            if not state:
-                state = True
-            else:
-                # Darf Autolock durch Tag überschrieben werden?
-                if (data.data.optional_data["optional"].data["rfid"]["active"] and
-                        self.template.data["rfid_enabling"]):
-                    if self.data["set"]["rfid"] == "0":
-                        state = False
-                        message = "Keine Ladung, da der Ladepunkt durch Autolock gesperrt ist und erst per RFID \
-                            freigeschaltet werden muss."
-                    else:
-                        state = True
-                        message = None
-                else:
+        message = None
+        state = self.template.autolock(
+            self.data["set"]["autolock_state"],
+            self.data["get"]["charge_state"],
+            self.cp_num)
+        if not state:
+            state = True
+        else:
+            # Darf Autolock durch Tag überschrieben werden?
+            if (data.data.optional_data["optional"].data["rfid"]["active"] and
+                    self.template.data["rfid_enabling"]):
+                if self.data["get"]["rfid"] == "0" and self.data["set"]["rfid"] == "0":
                     state = False
-                    message = "Keine Ladung, da Autolock aktiv ist."
-            return state, message
-        except Exception:
-            log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.cp_num))
-            return True, "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
-
-    def _is_manual_lock_inactive(self):
-        """ prüft, das der Ladepunkt nicht manuell gesperrt wurde.
-        Return
-        ------
-        charging_possbile: bool
-            wurde der Ladepunkt gesperrt
-        message: str
-            Text, dass geladen werden kann oder warum nicht geladen werden kann.
-        """
-        try:
-            state = self.data["set"]["manual_lock"]
-            if state:
-                charging_possbile = False
-                message = "Keine Ladung, da der Ladepunkt manuell gesperrt wurde."
+                    message = "Keine Ladung, da der Ladepunkt durch Autolock gesperrt ist und erst per RFID \
+                        freigeschaltet werden muss."
+                else:
+                    state = True
+                    message = None
             else:
-                charging_possbile = True
-                message = None
-            return charging_possbile, message
-        except Exception:
-            log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.cp_num))
-            return True, "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
+                state = False
+                message = "Keine Ladung, da Autolock aktiv ist."
+        return state, message
 
-    def _is_ev_plugged(self):
+    def _is_manual_lock_inactive(self) -> Tuple[bool, Optional[str]]:
+        """ prüft, dass der Ladepunkt nicht manuell gesperrt wurde.
+        """
+        if (self.data["set"]["manual_lock"] is False or
+                (self.template.data["rfid_enabling"] and
+                    (self.data["get"]["rfid"] != "0" or self.data["set"]["rfid"] != "0"))):
+            charging_possbile = True
+            message = None
+        else:
+            charging_possbile = False
+            message = "Keine Ladung, da der Ladepunkt manuell gesperrt wurde."
+        return charging_possbile, message
+
+    def _is_ev_plugged(self) -> Tuple[bool, Optional[str]]:
         """ prüft, ob ein EV angesteckt ist
-        Return
-        ------
-        state: bool
-            ist ein EV angesteckt
-        message: str
-            Text, dass geladen werden kann oder warum nicht geladen werden kann.
         """
-        try:
-            state = self.data["get"]["plug_state"]
-            if not state:
-                message = "Keine Ladung, da kein Auto angesteckt ist."
-            else:
-                if self.data["set"]["plug_time"] == "0":
-                    self.data["set"]["plug_time"] = timecheck.create_timestamp()
-                    Pub().pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/plug_time",
-                              self.data["set"]["plug_time"])
-                message = None
-            return state, message
-        except Exception:
-            log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.cp_num))
-            return False, "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
+        state = self.data["get"]["plug_state"]
+        if not state:
+            message = "Keine Ladung, da kein Auto angesteckt ist."
+        else:
+            if self.data["set"]["plug_time"] == "0":
+                self.data["set"]["plug_time"] = timecheck.create_timestamp()
+                Pub().pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/plug_time",
+                          self.data["set"]["plug_time"])
+            message = None
+        return state, message
 
     def get_state(self):
         """prüft alle Bedingungen und ruft die EV-Logik auf.
@@ -477,27 +266,32 @@ class Chargepoint:
                 self.set_current_prev = 0
             else:
                 self.set_current_prev = self.data["set"]["current"]
+            self.__validate_rfid()
             message = "Keine Ladung, da ein Fehler aufgetreten ist."
             charging_possbile = False
-            state, message = self._is_grid_protection_inactive()
-            if state:
-                state, message = self._is_ripple_control_receiver_inactive()
+            try:
+                state, message = self._is_grid_protection_inactive()
                 if state:
-                    state, message = self._is_loadmanagement_available()
+                    state, message = self._is_ripple_control_receiver_inactive()
                     if state:
-                        state, message = self._is_ev_plugged()
+                        state, message = self._is_loadmanagement_available()
                         if state:
-                            state, message = self._is_manual_lock_inactive()
+                            state, message = self._is_ev_plugged()
                             if state:
-                                charging_possbile, message = self._is_autolock_inactive()
+                                state, message = self._is_autolock_inactive()
+                                if state:
+                                    charging_possbile, message = self._is_manual_lock_inactive()
+            except Exception:
+                log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.cp_num))
+                return False, "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
             if charging_possbile:
-                ev_num, message = self.template.get_ev(self.data["set"]["rfid"], self.data["config"]["ev"])
+                ev_num, message = self.template.get_ev(self.data["get"]["rfid"], self.data["config"]["ev"])
                 if ev_num != -1:
+                    if self.data["get"]["rfid"] != "0":
+                        self.__link_rfid_to_cp()
                     return ev_num, message
-                # Tag zurücksetzen, wenn kein EV zugeordnet werden kann
-                if self.data["set"]["rfid"] != "0":
-                    self.data["set"]["rfid"] = "0"
-                    Pub().pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/rfid", self.data["set"]["rfid"])
+                else:
+                    self.data["get"]["state_str"] = message
             # Charging Ev ist noch das EV des vorherigen Zyklus, wenn das nicht -1 war und jetzt nicht mehr geladen
             # werden soll (-1), Daten zurücksetzen.
             if self.data["set"]["charging_ev"] != -1:
@@ -732,6 +526,49 @@ class Chargepoint:
         except Exception:
             log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.cp_num))
 
+    def __link_rfid_to_cp(self) -> None:
+        """ Wenn der Tag einem EV zugeordnet worden ist, wird der Tag unter set/rfid abgelegt und muss der Timer
+        zurückgesetzt werden.
+        """
+        rfid = self.data["get"]["rfid"]
+        self.data["set"]["rfid"] = rfid
+        Pub().pub("openWB/chargepoint/"+str(self.cp_num)+"/set/rfid", rfid)
+        self.data["get"]["rfid"] = "0"
+        Pub().pub("openWB/chargepoint/"+str(self.cp_num)+"/get/rfid", "0")
+        self.data["get"]["rfid_timestamp"] = "0"
+        Pub().pub(f"openWB/set/chargepoint/{self.cp_num}/get/rfid_timestamp", "0")
+
+    def __validate_rfid(self) -> None:
+        """Prüft, dass der Tag an diesem Ladepunkt gültig ist und  dass dieser innerhalb von 5 Minuten einem EV zugeordnet
+        wird.
+        """
+        msg = ""
+        if self.data["get"]["rfid"] != "0":
+            if data.data.optional_data["optional"].data["rfid"]["active"]:
+                rfid = self.data["get"]["rfid"]
+                if rfid in self.template.data["valid_tags"] or len(self.template.data["valid_tags"]) == 0:
+                    if self.data["get"]["rfid_timestamp"] == "0":
+                        self.data["get"]["rfid_timestamp"] = timecheck.create_timestamp()
+                        Pub().pub(f"openWB/set/chargepoint/{self.cp_num}/get/rfid_timestamp",
+                                  self.data["get"]["rfid_timestamp"])
+                        return
+                    else:
+                        if timecheck.check_timestamp(self.data["get"]["rfid_timestamp"], 300):
+                            return
+                        else:
+                            self.data["get"]["rfid_timestamp"] = "0"
+                            Pub().pub(f"openWB/set/chargepoint/{self.cp_num}/get/rfid_timestamp", "0")
+                            msg = "Es ist in den letzten 5 Minuten kein EV angesteckt worden, dem " \
+                                f"der RFID-Tag/Code {rfid} zugeordnet werden kann. Daher wird dieser verworfen."
+                else:
+                    msg = f"Der Tag {rfid} ist an Ladepunkt {self.cp_num} nicht gültig."
+            else:
+                msg = "RFID ist nicht aktiviert."
+            self.data["get"]["rfid"] = "0"
+            Pub().pub(f"openWB/set/chargepoint/{self.cp_num}/get/rfid", "0")
+            log.info(f"LP{self.cp_num}: {msg}")
+            self.data["get"]["state_str"] = msg
+
 
 def get_chargepoint_template_default():
     return {
@@ -888,8 +725,7 @@ class CpTemplate:
         ev_num = -1
         message = None
         try:
-            if (data.data.optional_data["optional"].data["rfid"]["active"]
-                    and self.data["rfid_enabling"] and rfid != "0"):
+            if data.data.optional_data["optional"].data["rfid"]["active"] and rfid != "0":
                 vehicle = ev.get_ev_to_rfid(rfid)
                 if vehicle is None:
                     ev_num = -1

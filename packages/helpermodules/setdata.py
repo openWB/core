@@ -544,11 +544,9 @@ class SetData:
                     "/get/state_str" in msg.topic or
                     "/get/heartbeat" in msg.topic):
                 self._validate_value(msg, str)
-            elif "/get/read_tag" in msg.topic:
-                self._validate_value(msg, "json")
-            elif "/get/rfid" in msg.topic:
-                # isss Anpassung muss noch in die nightly
-                Pub().pub(msg.topic, "")
+            elif ("/get/rfid" in msg.topic or
+                    "/get/rfid_timestamp" in msg.topic):
+                self._validate_value(msg, str)
             else:
                 self.__unknown_topic(msg)
         except Exception:

@@ -152,7 +152,6 @@ class Prepare:
         """ ermittelt die gewünschte Stromstärke für jeden LP.
         """
         data.data.cp_data["all"].get_power_counter()
-        data.data.cp_data["all"].match_rfid_to_cp()
         for cp_item in data.data.cp_data:
             state = True
             try:
