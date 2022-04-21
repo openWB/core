@@ -49,7 +49,7 @@ def collect_data(chargepoint):
                           str(chargepoint.data["get"]["counter"]))
             # Bei einem Wechsel das Lademodus wird ein neuer Logeintrag erstellt.
             if chargepoint.data["get"]["charge_state"]:
-                if log_data["timestamp_start_charging"] == "0":
+                if log_data["timestamp_start_charging"] is None:
                     log_data["timestamp_start_charging"] = timecheck.create_timestamp()
                     Pub().pub("openWB/set/chargepoint/"+str(chargepoint.cp_num) +
                               "/set/log/timestamp_start_charging", log_data["timestamp_start_charging"])
@@ -97,7 +97,7 @@ def save_data(chargepoint, charging_ev, immediately=True, reset=False):
         # Es wurde noch nie ein Auto zugeordnet
         if charging_ev == -1:
             return
-        if log_data["timestamp_start_charging"] == "0":
+        if log_data["timestamp_start_charging"] is None:
             # Die Daten wurden schon erfasst.
             return
         if not immediately:
@@ -193,7 +193,7 @@ def save_data(chargepoint, charging_ev, immediately=True, reset=False):
             json.dump(content, json_file)
 
         # Werte zurücksetzen
-        log_data["timestamp_start_charging"] = "0"
+        log_data["timestamp_start_charging"] = None
         Pub().pub("openWB/set/chargepoint/"+str(chargepoint.cp_num) +
                   "/set/log/timestamp_start_charging", log_data["timestamp_start_charging"])
         if reset:

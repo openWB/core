@@ -49,7 +49,7 @@ def _perform_phase_switch(
         # Phasenumschaltung entsprechend Modul
         chargepoint_module.switch_phases(phases_to_use, duration)
         # Kurze Pause, bevor mit der Ladung gestartet wird.
-        # Die Ladung wird in start_charging wieder gestartet, wenn phase_switch_timestamp wieder auf "0" gesetzt wird.
+        # Die Ladung wird in start_charging wieder gestartet, wenn phase_switch_timestamp wieder auf None gesetzt wird.
         if charge_state:
             time.sleep(1)
     except Exception:

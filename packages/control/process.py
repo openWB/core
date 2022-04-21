@@ -84,11 +84,11 @@ class Process:
         # Strom gesetzt werden.
         if (charging_ev.ev_template.data["prevent_switch_stop"] and
                 chargepoint.data["set"]["log"]["charged_since_plugged_counter"] == 0 and
-                charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] != "0"):
+                charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] is not None):
             current = 0
 
         # Unstimmige Werte loggen
-        if (charging_ev.data["control_parameter"]["timestamp_switch_on_off"] != "0" and
+        if (charging_ev.data["control_parameter"]["timestamp_switch_on_off"] is not None and
                 not chargepoint.data["get"]["charge_state"] and
                 data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] == 0):
             log.error("Reservierte Leistung kann am Algorithmus-Ende nicht 0 sein.")
@@ -99,7 +99,7 @@ class Process:
                 "LP"+str(chargepoint.cp_num)+": Ladung wurde trotz verhinderter Unterbrechung gestoppt.")
 
         # Wenn ein EV zugeordnet ist und die Phasenumschaltung aktiv ist, darf kein Strom gesetzt werden.
-        if charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] != "0":
+        if charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] is not None:
             current = 0
 
         chargepoint.data["set"]["current"] = current

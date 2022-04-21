@@ -542,7 +542,7 @@ def get_difference(timestamp_begin: str, timestamp_end: str) -> str:
         return f"{int(diff.total_seconds())}"
     except Exception:
         log.exception("Fehler im System-Modul")
-        return "0"
+        return None
 
 
 def duration_sum(first: str, second: str) -> str:

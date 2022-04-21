@@ -68,9 +68,9 @@ class AllChargepoints:
                                 # Kein EV, das auf das Ablaufen der Einschalt- oder Phasenumschaltverzögerung wartet
                                 (chargepoint.data["set"]["charging_ev"] != -1 and
                                  chargepoint.data["set"]["charging_ev_data"].data["control_parameter"][
-                                     "timestamp_perform_phase_switch"] == "0" and
+                                     "timestamp_perform_phase_switch"] is None and
                                  chargepoint.data["set"]["charging_ev_data"].data["control_parameter"][
-                                     "timestamp_switch_on_off"] == "0")):
+                                     "timestamp_switch_on_off"] is None)):
                             continue
                         else:
                             break
@@ -122,12 +122,12 @@ class Chargepoint:
                         "autolock_state": 0,
                         "current": 0,
                         "energy_to_charge": 0,
-                        "plug_time": "0",
-                        "rfid": "0",
+                        "plug_time": None,
+                        "rfid": None,
                         "manual_lock": False,
                         "loadmanagement_available": True,
                         "log": {"counter_at_plugtime": 0,
-                                "timestamp_start_charging": "0",
+                                "timestamp_start_charging": None,
                                 "counter_at_mode_switch": 0,
                                 "charged_since_mode_switch": 0,
                                 "charged_since_plugged_counter": 0,
@@ -135,8 +135,8 @@ class Chargepoint:
                                 "time_charged": "00:00",
                                 "chargemode_log_entry": "_"}},
                 "get": {
-                    "rfid_timestamp": "0",
-                    "rfid": "0",
+                    "rfid_timestamp": None,
+                    "rfid": None,
                     "daily_yield": 0,
                     "plug_state": False,
                     "charge_state": False,
@@ -156,14 +156,14 @@ class Chargepoint:
         general_data = data.data.general_data["general"].data
         if general_data["grid_protection_configured"]:
             if general_data["grid_protection_active"]:
-                if general_data["grid_protection_timestamp"] != "0":
+                if general_data["grid_protection_timestamp"] is not None:
                     # Timer ist  abgelaufen
                     if not timecheck.check_timestamp(
                             general_data["grid_protection_timestamp"],
                             general_data["grid_protection_random_stop"]):
                         state = False
                         message = "Ladepunkt gesperrt, da der Netzschutz aktiv ist."
-                        Pub().pub("openWB/set/general/grid_protection_timestamp", "0")
+                        Pub().pub("openWB/set/general/grid_protection_timestamp", None)
                         Pub().pub("openWB/set/general/grid_protection_random_stop", 0)
                 else:
                     state = False
@@ -212,7 +212,7 @@ class Chargepoint:
             # Darf Autolock durch Tag überschrieben werden?
             if (data.data.optional_data["optional"].data["rfid"]["active"] and
                     self.template.data["rfid_enabling"]):
-                if self.data["get"]["rfid"] == "0" and self.data["set"]["rfid"] == "0":
+                if self.data["get"]["rfid"] is None and self.data["set"]["rfid"] is None:
                     state = False
                     message = "Keine Ladung, da der Ladepunkt durch Autolock gesperrt ist und erst per RFID \
                         freigeschaltet werden muss."
@@ -229,7 +229,7 @@ class Chargepoint:
         """
         if (self.data["set"]["manual_lock"] is False or
                 (self.template.data["rfid_enabling"] and
-                    (self.data["get"]["rfid"] != "0" or self.data["set"]["rfid"] != "0"))):
+                    (self.data["get"]["rfid"] is not None or self.data["set"]["rfid"] is not None))):
             charging_possbile = True
             message = None
         else:
@@ -244,7 +244,7 @@ class Chargepoint:
         if not state:
             message = "Keine Ladung, da kein Auto angesteckt ist."
         else:
-            if self.data["set"]["plug_time"] == "0":
+            if self.data["set"]["plug_time"] is None:
                 self.data["set"]["plug_time"] = timecheck.create_timestamp()
                 Pub().pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/plug_time",
                           self.data["set"]["plug_time"])
@@ -287,7 +287,7 @@ class Chargepoint:
             if charging_possbile:
                 ev_num, message = self.template.get_ev(self.data["get"]["rfid"], self.data["config"]["ev"])
                 if ev_num != -1:
-                    if self.data["get"]["rfid"] != "0":
+                    if self.data["get"]["rfid"] is not None:
                         self.__link_rfid_to_cp()
                     return ev_num, message
                 else:
@@ -321,10 +321,10 @@ class Chargepoint:
                     self.data["set"]["charging_ev_prev"] = -1
                     Pub().pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/charging_ev_prev",
                               self.data["set"]["charging_ev_prev"])
-                    self.data["set"]["rfid"] = "0"
-                    Pub().pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/rfid", "0")
-                    self.data["set"]["plug_time"] = "0"
-                    Pub().pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/plug_time", "0")
+                    self.data["set"]["rfid"] = None
+                    Pub().pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/rfid", None)
+                    self.data["set"]["plug_time"] = None
+                    Pub().pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/plug_time", None)
                     self.data["set"]["phases_to_use"] = self.data["get"]["phases_in_use"]
                     Pub().pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/phases_to_use",
                               self.data["set"]["phases_to_use"])
@@ -370,16 +370,16 @@ class Chargepoint:
         try:
             charging_ev = self.data["set"]["charging_ev_data"]
             # Umschaltung im Gange
-            if charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] != "0":
+            if charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] is not None:
                 phase_switch_pause = charging_ev.ev_template.data["phase_switch_pause"]
                 # Umschaltung abgeschlossen
                 if not timecheck.check_timestamp(
                         charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"],
                         6 + phase_switch_pause - 1):
                     log.debug("phase switch running")
-                    charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] = "0"
+                    charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] = None
                     Pub().pub("openWB/set/vehicle/" + str(charging_ev.ev_num) +
-                              "/control_parameter/timestamp_perform_phase_switch", "0")
+                              "/control_parameter/timestamp_perform_phase_switch", None)
                     # Aktuelle Ladeleistung und Differenz wieder freigeben.
                     if charging_ev.data["control_parameter"]["phases"] == 3:
                         data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= charging_ev.data[
@@ -410,7 +410,7 @@ class Chargepoint:
                 # nicht zwischendurch eine neue Umschaltung getriggert werden.
                 if self.data["set"]["phases_to_use"] != charging_ev.data["control_parameter"]["phases"]:
                     # Wenn die Umschaltverzögerung aktiv ist, darf nicht umgeschaltet werden.
-                    if charging_ev.data["control_parameter"]["timestamp_auto_phase_switch"] == "0":
+                    if charging_ev.data["control_parameter"]["timestamp_auto_phase_switch"] is None:
                         if self.data["config"]["auto_phase_switch_hw"]:
                             charge_state = self.data["get"]["charge_state"]
                             phase_switch.thread_phase_switch(
@@ -492,7 +492,7 @@ class Chargepoint:
                           str(charging_ev.data["control_parameter"]["phases"]) +
                           "phases_in_use " + str(self.data["get"]["phases_in_use"]))
                 charging_ev.data["control_parameter"]["phases"] = self.data["get"]["phases_in_use"]
-                if charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] == "0":
+                if charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] is None:
                     if self.data["get"]["phases_in_use"] == 1:
                         phases = 1
                     else:
@@ -533,21 +533,21 @@ class Chargepoint:
         rfid = self.data["get"]["rfid"]
         self.data["set"]["rfid"] = rfid
         Pub().pub("openWB/chargepoint/"+str(self.cp_num)+"/set/rfid", rfid)
-        self.data["get"]["rfid"] = "0"
-        Pub().pub("openWB/chargepoint/"+str(self.cp_num)+"/get/rfid", "0")
-        self.data["get"]["rfid_timestamp"] = "0"
-        Pub().pub(f"openWB/set/chargepoint/{self.cp_num}/get/rfid_timestamp", "0")
+        self.data["get"]["rfid"] = None
+        Pub().pub("openWB/chargepoint/"+str(self.cp_num)+"/get/rfid", None)
+        self.data["get"]["rfid_timestamp"] = None
+        Pub().pub(f"openWB/set/chargepoint/{self.cp_num}/get/rfid_timestamp", None)
 
     def __validate_rfid(self) -> None:
         """Prüft, dass der Tag an diesem Ladepunkt gültig ist und  dass dieser innerhalb von 5 Minuten einem EV zugeordnet
         wird.
         """
         msg = ""
-        if self.data["get"]["rfid"] != "0":
+        if self.data["get"]["rfid"] is not None:
             if data.data.optional_data["optional"].data["rfid"]["active"]:
                 rfid = self.data["get"]["rfid"]
                 if rfid in self.template.data["valid_tags"] or len(self.template.data["valid_tags"]) == 0:
-                    if self.data["get"]["rfid_timestamp"] == "0":
+                    if self.data["get"]["rfid_timestamp"] is None:
                         self.data["get"]["rfid_timestamp"] = timecheck.create_timestamp()
                         Pub().pub(f"openWB/set/chargepoint/{self.cp_num}/get/rfid_timestamp",
                                   self.data["get"]["rfid_timestamp"])
@@ -556,16 +556,16 @@ class Chargepoint:
                         if timecheck.check_timestamp(self.data["get"]["rfid_timestamp"], 300):
                             return
                         else:
-                            self.data["get"]["rfid_timestamp"] = "0"
-                            Pub().pub(f"openWB/set/chargepoint/{self.cp_num}/get/rfid_timestamp", "0")
+                            self.data["get"]["rfid_timestamp"] = None
+                            Pub().pub(f"openWB/set/chargepoint/{self.cp_num}/get/rfid_timestamp", None)
                             msg = "Es ist in den letzten 5 Minuten kein EV angesteckt worden, dem " \
                                 f"der RFID-Tag/Code {rfid} zugeordnet werden kann. Daher wird dieser verworfen."
                 else:
                     msg = f"Der Tag {rfid} ist an Ladepunkt {self.cp_num} nicht gültig."
             else:
                 msg = "RFID ist nicht aktiviert."
-            self.data["get"]["rfid"] = "0"
-            Pub().pub(f"openWB/set/chargepoint/{self.cp_num}/get/rfid", "0")
+            self.data["get"]["rfid"] = None
+            Pub().pub(f"openWB/set/chargepoint/{self.cp_num}/get/rfid", None)
             log.info(f"LP{self.cp_num}: {msg}")
             self.data["get"]["state_str"] = msg
 
@@ -725,7 +725,7 @@ class CpTemplate:
         ev_num = -1
         message = None
         try:
-            if data.data.optional_data["optional"].data["rfid"]["active"] and rfid != "0":
+            if data.data.optional_data["optional"].data["rfid"]["active"] and rfid is not None:
                 vehicle = ev.get_ev_to_rfid(rfid)
                 if vehicle is None:
                     ev_num = -1
