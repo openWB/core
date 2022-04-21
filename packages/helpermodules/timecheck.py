@@ -442,6 +442,19 @@ def create_timestamp():
         raise
 
 
+def create_timestamp_unix():
+    """ erzeugt einen Zeitstempel mit dem aktuellen Datum und Uhrzeit
+
+    Return
+    ------
+    int: Unix Zeitstempel
+    """
+    try:
+        return int(datetime.now().timestamp())
+    except Exception:
+        raise
+
+
 def create_timestamp_YYYYMM():
     """ erzeugt einen Zeitstempel mit dem aktuellen Jahr und Monat
 

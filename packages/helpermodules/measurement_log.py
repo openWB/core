@@ -16,6 +16,7 @@ def save_log(folder):
     """ erstellt für jeden Tag eine Datei, die die Daten für den Langzeitgraph enthält.
     Dazu werden alle 5 Min folgende Daten als json-Liste gespeichert:
     {
+        "timestamp": int,
         "date": str,
         "cp": {
             "cp1": {
@@ -83,6 +84,7 @@ def save_log(folder):
             date = timecheck.create_timestamp_time()
         else:
             date = timecheck.create_timestamp_YYYYMMDD()
+        current_timestamp = timecheck.create_timestamp_unix()
         cp_dict = {}
         for cp in data.data.cp_data:
             try:
@@ -136,6 +138,7 @@ def save_log(folder):
                     log.exception("Fehler im Werte-Logging-Modul für Speicher "+str(bat))
 
         new_entry = {
+            "timestamp": current_timestamp,
             "date": date,
             "cp": cp_dict,
             "ev": ev_dict,
