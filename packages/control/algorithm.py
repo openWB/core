@@ -537,7 +537,7 @@ class Algorithm:
                                 cp.data["get"]["charge_state"] and
                                 charging_ev.data["control_parameter"]["chargemode"] == "pv_charging" and
                                 data.data.general_data["general"].get_phases_chargemode("pv_charging") == 0 and
-                                charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] == "0"):
+                                charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] is None):
                             # Gibt die Stromstärke und Phasen zurück, mit denen nach der Umschaltung geladen werden
                             # soll. Falls keine Umschaltung erforderlich ist, werden Strom und Phasen, die übergeben
                             # wurden, wieder zurückgegeben.

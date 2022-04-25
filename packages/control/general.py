@@ -68,7 +68,7 @@ class General:
                                  str(data.data.counter_data[evu_counter].data["get"]["frequency"])+"Hz")
                     if 5180 < frequency < 5300:
                         self.data["grid_protection_random_stop"] = 0
-                        self.data["grid_protection_timestamp"] = "0"
+                        self.data["grid_protection_timestamp"] = None
                         self.data["grid_protection_active"] = True
                         Pub().pub("openWB/set/general/grid_protection_timestamp",
                                   self.data["grid_protection_timestamp"])
@@ -86,7 +86,7 @@ class General:
                         log.info("Netzfrequenz wieder im normalen Bereich. Frequenz: " +
                                  str(data.data.counter_data[evu_counter].data["get"]["frequency"])+"Hz")
                         Pub().pub(
-                            "openWB/set/general/grid_protection_timestamp", "0")
+                            "openWB/set/general/grid_protection_timestamp", None)
                         Pub().pub(
                             "openWB/set/general/grid_protection_random_stop", 0)
         except Exception:

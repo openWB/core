@@ -124,11 +124,10 @@ class SetData:
                 if self._validate_collection_value(msg, data_type, ranges, collection):
                     valid = True
             elif data_type == str:
-                if isinstance(value, str):
+                if isinstance(value, str) or value is None:
                     valid = True
                 else:
-                    log.error("Payload ungültig: Topic "+str(msg.topic) +
-                              ", Payload "+str(value)+" sollte ein String sein.")
+                    log.error(f"Payload ungültig: Topic {msg.topic}, Payload {value} sollte ein String sein.")
             elif data_type == int or data_type == float:
                 if self._validate_min_max_value(value, msg, data_type, ranges):
                     valid = True

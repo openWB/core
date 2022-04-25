@@ -520,7 +520,7 @@ def get_difference_to_now(timestamp_begin: str) -> str:
         return "00:00"
 
 
-def get_difference(timestamp_begin: str, timestamp_end: str) -> str:
+def get_difference(timestamp_begin: str, timestamp_end: str) -> Optional[str]:
     """ ermittelt den Abstand zwischen zwei Zeitstempeln in absoluten Sekunden.
 
     Parameter
@@ -542,7 +542,7 @@ def get_difference(timestamp_begin: str, timestamp_end: str) -> str:
         return f"{int(diff.total_seconds())}"
     except Exception:
         log.exception("Fehler im System-Modul")
-        return "0"
+        return None
 
 
 def duration_sum(first: str, second: str) -> str:
