@@ -228,9 +228,8 @@ class Prepare:
                         # der LP zurückgesetzt werden, wenn er gerade lädt, um in der Regelung wieder berücksichtigt
                         # zu werden.
                         if current_changed:
-                            log.debug("LP"+str(cp.cp_num) +
-                                      " : Da sich die Stromstärke geändert hat, muss der Ladepunkt im \
-                                                    Algorithmus neu priorisiert werden.")
+                            log.debug(f"LP{cp.cp_num}: Da sich die Stromstärke geändert hat, muss der Ladepunkt im "
+                                      "Algorithmus neu priorisiert werden.")
                             data.data.pv_data["all"].reset_switch_on_off(
                                 cp, charging_ev)
                             charging_ev.reset_phase_switch()

@@ -774,6 +774,9 @@ class Algorithm:
                 self._process_data(chargepoint, 0)
                 return
 
+            if chargepoint.data["set"]["charging_ev_data"].data["control_parameter"]["timestamp_perform_phase_switch"] != "0":
+                return
+
             allocated_current, threshold_reached = data.data.pv_data["all"].switch_on(
                 chargepoint,
                 current_to_allocate,
