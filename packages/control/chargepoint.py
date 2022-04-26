@@ -129,6 +129,7 @@ class Chargepoint:
                         "rfid": None,
                         "manual_lock": False,
                         "loadmanagement_available": True,
+                        "required_power": 0,
                         "log": {"imported_at_plugtime": 0,
                                 "timestamp_start_charging": None,
                                 "imported_at_mode_switch": 0,
@@ -502,8 +503,8 @@ class Chargepoint:
                             phases = 1
                         else:
                             phases = 3
-                        log.debug(("Automat. Phasenumschaltung vor Ladestart: Es wird die kleinstmögliche Phasenzahl angenommen. "
-                                   f"Phasenzahl: {phases}"))
+                        log.debug(("Automat. Phasenumschaltung vor Ladestart: Es wird die kleinstmögliche Phasenzahl "
+                                   f"angenommen. Phasenzahl: {phases}"))
                 else:
                     phases = charging_ev.data["control_parameter"]["phases"]
                     log.debug("Umschaltung wird durchgeführt, Phasenzahl nicht ändern "+str(phases))

@@ -8,7 +8,7 @@ in der Regelung neu priorisiert werden und eine neue Zuteilung des Stroms erhalt
 """
 import logging
 import traceback
-from typing import Dict, Optional, Tuple, Union
+from typing import List, Dict, Optional, Tuple, Union
 
 from control import data
 from helpermodules.pub import Pub
@@ -314,7 +314,7 @@ class Ev:
             log.exception("Fehler im ev-Modul "+str(self.ev_num))
             return 0
 
-    def auto_phase_switch(self, cp_num, current, phases_in_use, current_get):
+    def auto_phase_switch(self, cp_num: int, current_get: List[float]) -> Tuple[int, float, Optional[str]]:
         """ prüft, ob ein Timer für die Phasenumschaltung gestartet oder gestoppt werden muss oder ein Timer für die
         Phasenumschaltung abgelaufen ist.
 
@@ -335,6 +335,8 @@ class Ev:
             Phasenanzahl , mit der geladen werden soll.
         """
         message = None
+        current = self.data["control_parameter"]["required_current"]
+        phases_in_use = self.data["control_parameter"]["phases"]
         phases_to_use = phases_in_use
         timestamp_auto_phase_switch = self.data["control_parameter"]["timestamp_auto_phase_switch"]
         try:
@@ -357,8 +359,8 @@ class Ev:
                                 current = self.data["control_parameter"]["required_current"]
                                 timestamp_auto_phase_switch = None
                             else:
-                                message = (f'Umschaltverzögerung von 1 auf 3 Phasen für {pv_config["phase_switch_delay"]} '
-                                           'Min aktiv.')
+                                message = ('Umschaltverzögerung von 1 auf 3 Phasen für '
+                                           f'{pv_config["phase_switch_delay"]} Min aktiv.')
                         # Wenn im einphasigen Laden die Maximalstromstärke erreicht wird und der Timer noch nicht läuft,
                         # Timer für das Umschalten auf 3 Phasen starten.
                         elif self.data["control_parameter"]["timestamp_auto_phase_switch"] is None:
@@ -388,8 +390,8 @@ class Ev:
                                 message = "Umschaltverzögerung von 3 auf 1 Phase für " + \
                                     str(16-pv_config["phase_switch_delay"]
                                         ) + " Min aktiv."
-                        # Wenn im dreiphasigen Laden die Minimalstromstärke erreicht wird und der Timer noch nicht läuft,
-                        # Timer für das Umschalten auf eine Phase starten.
+                        # Wenn im dreiphasigen Laden die Minimalstromstärke erreicht wird und der Timer noch nicht
+                        # läuft, Timer für das Umschalten auf eine Phase starten.
                         elif self.data["control_parameter"]["timestamp_auto_phase_switch"] is None:
                             timestamp_auto_phase_switch = timecheck.create_timestamp()
                             message = "Umschaltverzögerung von 3 auf 1 Phase für " + \
