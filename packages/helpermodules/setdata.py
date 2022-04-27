@@ -381,10 +381,12 @@ class SetData:
                 self._validate_value(msg, bool)
             elif ("/control_parameter/timestamp_switch_on_off" in msg.topic or
                     "/control_parameter/timestamp_auto_phase_switch" in msg.topic or
-                    "/control_parameter/timestamp_perform_phase_switch" in msg.topic):
+                    "/control_parameter/timestamp_perform_phase_switch" in msg.topic or
+                    "/control_parameter/current_plan" in msg.topic):
                 self._validate_value(msg, str)
-            elif "/control_parameter/used_amount" in msg.topic:
-                self._validate_value(msg, float, [(0, 50000)])
+            elif ("/control_parameter/used_amount_instant_charging" in msg.topic or
+                    "/control_parameter/imported_at_plan_start" in msg.topic):
+                self._validate_value(msg, float, [(0, float("inf"))])
             else:
                 self.__unknown_topic(msg)
         except Exception:
@@ -414,7 +416,7 @@ class SetData:
                 elif "/chargemode/instant_charging/limit/soc" in msg.topic:
                     self._validate_value(msg, int, [(0, 100)], pub_json=True)
                 elif "/chargemode/instant_charging/limit/amount" in msg.topic:
-                    self._validate_value(msg, int, [(2, 100)], pub_json=True)
+                    self._validate_value(msg, int, [(1000, float("inf"))], pub_json=True)
                 elif "/chargemode/pv_charging/feed_in_limit" in msg.topic:
                     self._validate_value(msg, bool, pub_json=True)
                 elif "/chargemode/pv_charging/min_current" in msg.topic:
