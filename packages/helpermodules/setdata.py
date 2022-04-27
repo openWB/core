@@ -383,6 +383,8 @@ class SetData:
                     "/control_parameter/timestamp_auto_phase_switch" in msg.topic or
                     "/control_parameter/timestamp_perform_phase_switch" in msg.topic):
                 self._validate_value(msg, str)
+            elif "/control_parameter/used_amount" in msg.topic:
+                self._validate_value(msg, float, [(0, 50000)])
             else:
                 self.__unknown_topic(msg)
         except Exception:

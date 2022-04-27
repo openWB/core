@@ -214,6 +214,7 @@ class UpdateConfig:
                    "^openWB/vehicle/[0-9]+/control_parameter/required_current$",
                    "^openWB/vehicle/[0-9]+/control_parameter/timestamp_auto_phase_switch$",
                    "^openWB/vehicle/[0-9]+/control_parameter/timestamp_perform_phase_switch$",
+                   "^openWB/vehicle/[0-9]+/control_parameter/used_amount$",
                    "^openWB/vehicle/[0-9]+/control_parameter/phases$",
                    "^openWB/vehicle/[0-9]+/set/ev_template$",
 

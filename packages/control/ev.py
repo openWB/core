@@ -8,7 +8,7 @@ in der Regelung neu priorisiert werden und eine neue Zuteilung des Stroms erhalt
 """
 import logging
 import traceback
-from typing import Union
+from typing import Optional, Tuple, Union
 
 from control import data
 from helpermodules.pub import Pub
@@ -71,7 +71,8 @@ class Ev:
                                                "timestamp_auto_phase_switch": None,
                                                "timestamp_perform_phase_switch": None,
                                                "submode": "stop",
-                                               "chargemode": "stop"}}
+                                               "chargemode": "stop",
+                                               "used_amount": 0}}
         except Exception:
             log.exception("Fehler im ev-Modul "+str(self.ev_num))
 
@@ -90,11 +91,14 @@ class Ev:
                       "/control_parameter/submode", "stop")
             Pub().pub("openWB/set/vehicle/"+str(self.ev_num) +
                       "/control_parameter/chargemode", "stop")
-            self.data["control_parameter"]["required_current"] = 0
-            self.data["control_parameter"]["timestamp_auto_phase_switch"] = None
-            self.data["control_parameter"]["timestamp_perform_phase_switch"] = None
-            self.data["control_parameter"]["submode"] = "stop"
-            self.data["control_parameter"]["chargemode"] = "stop"
+            Pub().pub("openWB/set/vehicle/"+str(self.ev_num) +
+                      "/control_parameter/used_amount", 0)
+            self.data["control_parameter"].update({"required_current": 0,
+                                                   "timestamp_auto_phase_switch": None,
+                                                  "timestamp_perform_phase_switch": None,
+                                                   "submode": "stop",
+                                                   "chargemode": "stop",
+                                                   "used_amount": 0})
         except Exception:
             log.exception("Fehler im ev-Modul "+str(self.ev_num))
 
@@ -129,7 +133,10 @@ class Ev:
             if (required_current == 0) or (required_current is None):
                 if self.charge_template.data["chargemode"]["selected"] == "instant_charging":
                     required_current, submode, message = self.charge_template.instant_charging(
-                        self.data["get"]["soc"], charged_since_mode_switch)
+                        self.data["get"]["soc"],
+                        charged_since_mode_switch,
+                        self.data["control_parameter"]["used_amount"],
+                        self.ev_num)
                 elif self.charge_template.data["chargemode"]["selected"] == "pv_charging":
                     required_current, submode, message = self.charge_template.pv_charging(
                         self.data["get"]["soc"])
@@ -578,7 +585,11 @@ class ChargeTemplate:
             log.exception("Fehler im ev-Modul "+str(self.ct_num))
             return 0, "stop", "Keine Ladung, da da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
 
-    def instant_charging(self, soc, amount):
+    def instant_charging(self,
+                         soc: int,
+                         amount: int,
+                         used_amount: float,
+                         ev_num: int) -> Tuple[int, str, Optional[str]]:
         """ prüft, ob die Lademengenbegrenzung erreicht wurde und setzt entsprechend den Ladestrom.
 
         Parameter
@@ -605,11 +616,14 @@ class ChargeTemplate:
                     message = "Keine Ladung, da der Soc bereits erreicht wurde."
                     return 0, "stop", message
             elif instant_charging["limit"]["selected"] == "amount":
-                if amount < instant_charging["limit"]["amount"]:
+                if used_amount < self.data["chargemode"]["instant_charging"]["limit"]["amount"]:
+                    Pub().pub(f"openWB/set/vehicle/{ev_num}/control_parameter/used_amount", amount)
                     return instant_charging["current"], "instant_charging", message
                 else:
                     message = "Keine Ladung, da die Energiemenge bereits geladen wurde."
                     return 0, "stop", message
+            else:
+                raise TypeError(f'{instant_charging["limit"]["selected"]} unbekanntes Sofortladen-Limit.')
         except Exception:
             log.exception("Fehler im ev-Modul "+str(self.ct_num))
             return 0, "stop", "Keine Ladung, da da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
