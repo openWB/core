@@ -579,9 +579,9 @@
 												<div class="col-md-8">
 													<div class="form-row form-group mb-1 vaRow">
 														<div class="col">
-															<input type="range" class="charge-point-instant-charge-limit-amount form-control-range rangeInput" id="amountlimitCpT" min="1" max="50" step="1" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/instant_charging/limit/amount">
+															<input type="range" class="charge-point-instant-charge-limit-amount form-control-range rangeInput" id="amountlimitCpT" min="1000" max="50000" step="1000" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/instant_charging/limit/amount">
 														</div>
-														<label for="amountlimitCpT" class="col-form-label valueLabel" data-suffix="kWh">-- kWh</label>
+														<label for="amountlimitCpT" class="col-form-label valueLabel" data-suffix="Wh">-- Wh</label>
 													</div>
 												</div>
 											</div>

@@ -322,12 +322,11 @@ class Prepare:
                 soc_obj.update({"range": vehicle.data["get"]["range"]})
             info_obj = {"id": vehicle.ev_num,
                         "name": vehicle.data["name"]}
-            if vehicle.charge_template.data["chargemode"]["selected"] == "time_charging":
-                current_plan = vehicle.charge_template.data["chargemode"]["current_plan"]
-            elif vehicle.charge_template.data["chargemode"]["selected"] == "scheduled_charging":
-                current_plan = vehicle.charge_template.data["chargemode"]["current_plan"]
+            if (vehicle.charge_template.data["chargemode"]["selected"] == "time_charging" or
+                    vehicle.charge_template.data["chargemode"]["selected"] == "scheduled_charging"):
+                current_plan = vehicle.data["control_parameter"]["current_plan"]
             else:
-                current_plan = ""
+                current_plan = None
             config_obj = {"charge_template": vehicle.charge_template.ct_num,
                           "ev_template": vehicle.ev_template.et_num,
                           "chargemode": vehicle.charge_template.data["chargemode"]["selected"],

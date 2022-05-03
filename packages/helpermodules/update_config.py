@@ -210,10 +210,13 @@ class UpdateConfig:
                    "^openWB/vehicle/[0-9]+/match_ev/tag_id$",
                    "^openWB/vehicle/[0-9]+/control_parameter/submode$",
                    "^openWB/vehicle/[0-9]+/control_parameter/chargemode$",
+                   "^openWB/vehicle/[0-9]+/control_parameter/current_plan$",
+                   "^openWB/vehicle/[0-9]+/control_parameter/imported_at_plan_start$",
                    "^openWB/vehicle/[0-9]+/control_parameter/prio$",
                    "^openWB/vehicle/[0-9]+/control_parameter/required_current$",
                    "^openWB/vehicle/[0-9]+/control_parameter/timestamp_auto_phase_switch$",
                    "^openWB/vehicle/[0-9]+/control_parameter/timestamp_perform_phase_switch$",
+                   "^openWB/vehicle/[0-9]+/control_parameter/used_amount_instant_charging$",
                    "^openWB/vehicle/[0-9]+/control_parameter/phases$",
                    "^openWB/vehicle/[0-9]+/set/ev_template$",
 
