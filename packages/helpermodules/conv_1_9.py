@@ -165,8 +165,8 @@ def _chargelogfile_entry_generator_func(file):
                         "data":
                         {
                             "range_charged": float(row[2]),
-                            "charged_since_mode_switch": 0,
-                            "charged_since_plugged_counter": float(row[3]),
+                            "imported_since_mode_switch": 0,
+                            "imported_since_plugged": float(row[3]),
                             "power": float(row[4]),
                             "costs": truncate(costs, 2)
                         }
@@ -227,31 +227,31 @@ def _dailylog_entry_generator_func(file):
                         "date": row[0][:2]+":"+row[0][-2:],
                         "cp": {
                             "all": {
-                                "counter": row[7]
+                                "imported": row[7]
                             },
                             "cp1": {
-                                "counter": row[4],
+                                "imported": row[4],
                             },
                             "cp2": {
-                                "counter": row[5],
+                                "imported": row[5],
                             },
                             "cp3": {
-                                "counter": row[6],
+                                "imported": row[6],
                             },
                             "cp4": {
-                                "counter": row[15],
+                                "imported": row[15],
                             },
                             "cp5": {
-                                "counter": row[16],
+                                "imported": row[16],
                             },
                             "cp6": {
-                                "counter": row[17],
+                                "imported": row[17],
                             },
                             "cp7": {
-                                "counter": row[18],
+                                "imported": row[18],
                             },
                             "cp8": {
-                                "counter": row[19],
+                                "imported": row[19],
                             }
                         },
                         "ev": {
@@ -357,31 +357,31 @@ def _monthlylog_entry_generator_func(file):
                         "date": row[0],
                         "cp": {
                             "all": {
-                                "counter": row[7]
+                                "imported": row[7]
                             },
                             "cp1": {
-                                "counter": row[4],
+                                "imported": row[4],
                             },
                             "cp2": {
-                                "counter": row[5],
+                                "imported": row[5],
                             },
                             "cp3": {
-                                "counter": row[6],
+                                "imported": row[6],
                             },
                             "cp4": {
-                                "counter": row[12],
+                                "imported": row[12],
                             },
                             "cp5": {
-                                "counter": row[13],
+                                "imported": row[13],
                             },
                             "cp6": {
-                                "counter": row[14],
+                                "imported": row[14],
                             },
                             "cp7": {
-                                "counter": row[15],
+                                "imported": row[15],
                             },
                             "cp8": {
-                                "counter": row[16],
+                                "imported": row[16],
                             }
                         },
                         "counter": {

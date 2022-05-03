@@ -151,7 +151,7 @@ class Prepare:
     def _check_chargepoints(self):
         """ ermittelt die gewünschte Stromstärke für jeden LP.
         """
-        data.data.cp_data["all"].get_power_counter()
+        data.data.cp_data["all"].get_cp_sum()
         for cp_item in data.data.cp_data:
             state = True
             try:
@@ -173,8 +173,8 @@ class Prepare:
                                       "/set/change_ev_permitted", [True, ""])
                         else:
                             # Darf das EV geändert werden?
-                            if (cp.data["set"]["log"]["counter_at_plugtime"] == 0 or
-                                    cp.data["set"]["log"]["counter_at_plugtime"] == cp.data["get"]["counter"]):
+                            if (cp.data["set"]["log"]["imported_at_plugtime"] == 0 or
+                                    cp.data["set"]["log"]["imported_at_plugtime"] == cp.data["get"]["imported"]):
                                 cp.data["set"]["charging_ev"] = vehicle
                                 Pub().pub("openWB/set/chargepoint/" +
                                           str(cp.cp_num)+"/set/charging_ev", vehicle)
@@ -212,7 +212,7 @@ class Prepare:
                         phases = cp.get_phases(
                             charging_ev.charge_template.data["chargemode"]["selected"])
                         state, message_ev, submode, required_current = charging_ev.get_required_current(
-                            cp.data["set"]["log"]["charged_since_mode_switch"])
+                            cp.data["set"]["log"]["imported_since_mode_switch"])
                         self._pub_connected_vehicle(charging_ev, cp)
                         # Einhaltung des Minimal- und Maximalstroms prüfen
                         required_current = charging_ev.check_min_max_current(

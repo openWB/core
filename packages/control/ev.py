@@ -115,7 +115,7 @@ class Ev:
 
         Parameter
         ---------
-        charged_since_mode_switch: float
+        imported_since_mode_switch: float
             seit dem letzten Lademodi-Wechsel geladene Energie.
         Return
         ------

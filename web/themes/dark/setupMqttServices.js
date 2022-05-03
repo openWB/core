@@ -19,7 +19,7 @@ var topicsToSubscribeFirst = [
 var topicsToSubscribe = [
 	// data for all charge points
 	["openWB/chargepoint/get/power", 1], // total actual charging power; int, unit: Wh
-	["openWB/chargepoint/get/daily_yield", 1], // total counted energy for charging; float, unit: kWh
+	["openWB/chargepoint/get/daily_imported", 1], // total counted energy for charging; float, unit: kWh
 	["openWB/chargepoint/get/daily_exported", 1], // total counted energy for discharging (V2G/V2H); float, unit: kWh
 
 	// // pv topics
@@ -31,15 +31,15 @@ var topicsToSubscribe = [
 	["openWB/bat/config/configured", 1], // is a battery module configured? bool
 	["openWB/bat/get/power", 1], // total actual power; int, unit: W
 	["openWB/bat/get/soc", 1], // total actual soc; int, unit: %, 0-100
-	["openWB/bat/get/daily_yield_export", 1], // total daily imported energy; float, unit: kWh
-	["openWB/bat/get/daily_yield_import", 1], // total daily imported energy; float, unit: kWh
+	["openWB/bat/get/daily_exported", 1], // total daily imported energy; float, unit: kWh
+	["openWB/bat/get/daily_imported", 1], // total daily imported energy; float, unit: kWh
 
 	// counter topics, counter with index 0 is always main grid counter
 	["openWB/counter/set/home_consumption", 1], // actual home power
 	["openWB/counter/set/daily_yield_home_consumption", 1], // daily home energy
 	["openWB/counter/+/get/power", 1], // actual power; int, unit: W
-	["openWB/counter/+/get/daily_yield_import", 1], // daily imported energy; float, unit: kWh
-	["openWB/counter/+/get/daily_yield_export", 1], // daily exported energy; float, unit: kWh
+	["openWB/counter/+/get/daily_imported", 1], // daily imported energy; float, unit: kWh
+	["openWB/counter/+/get/daily_exported", 1], // daily exported energy; float, unit: kWh
 
 	// charge point topics
 	["openWB/chargepoint/+/config", 1], // chargepoint configuration; JSON { name: str, template: int, connected_phases: int, phase_1: int, auto_phase_switch_hardware: bool, control_pilot_interruption_hw: bool, connection_module: JSON { selected: str, config: JSON } }
@@ -249,33 +249,33 @@ var options = {
 		topicsToSubscribeFirst.forEach((topic) => {
 			client.subscribe(topic[0], { qos: 0 });
 		});
-		setTimeout(function() {
+		setTimeout(function () {
 			topicsToSubscribe.forEach((topic) => {
 				client.subscribe(topic[0], { qos: 0 });
 			});
 		}, 200);
 	},
 	//Gets Called if the connection could not be established
-	onFailure: function(message) {
-		setTimeout(function() { client.connect(options); }, 5000);
+	onFailure: function (message) {
+		setTimeout(function () { client.connect(options); }, 5000);
 	}
 };
 
 var clientUid = Math.random().toString(36).replace(/[^a-z]+/g, "").substr(0, 5);
 var client = new Messaging.Client(location.hostname, 9001, clientUid);
 
-$(document).ready(function() {
+$(document).ready(function () {
 	client.connect(options);
 	timeOfLastMqttMessage = Date.now();
 });
 
 //Gets  called if the websocket/mqtt connection gets disconnected for any reason
-client.onConnectionLost = function(responseObject) {
+client.onConnectionLost = function (responseObject) {
 	client.connect(options);
 };
 
 //Gets called whenever you receive a message
-client.onMessageArrived = function(message) {
+client.onMessageArrived = function (message) {
 	handleMessage(message.destinationName, message.payloadString);
 };
 

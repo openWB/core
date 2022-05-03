@@ -48,7 +48,8 @@ class AllChargepoints:
     """
 
     def __init__(self):
-        self.data = {"get": {"daily_yield": 0}}
+        self.data = {"get": {"daily_imported": 0,
+                             "daily_exported": 0}}
         Pub().pub("openWB/set/chargepoint/get/power", 0)
 
     def no_charge(self):
@@ -81,24 +82,26 @@ class AllChargepoints:
         except Exception:
             log.exception("Fehler in der allgemeinen Ladepunkt-Klasse")
 
-    def get_power_counter(self):
+    def get_cp_sum(self):
         """ ermittelt die aktuelle Leistung und Zählerstand von allen Ladepunkten.
         """
-        counter = 0
-        power = 0
+        imported, exported, power = 0, 0, 0
         try:
             for cp in data.data.cp_data:
                 try:
                     if "cp" in cp:
                         chargepoint = data.data.cp_data[cp]
                         power = power + chargepoint.data["get"]["power"]
-                        counter = counter + chargepoint.data["get"]["counter"]
+                        imported = imported + chargepoint.data["get"]["imported"]
+                        exported = exported + chargepoint.data["get"]["exported"]
                 except Exception:
                     log.exception("Fehler in der allgemeinen Ladepunkt-Klasse für Ladepunkt "+cp)
             self.data["get"]["power"] = power
             Pub().pub("openWB/set/chargepoint/get/power", power)
-            self.data["get"]["counter"] = counter
-            Pub().pub("openWB/set/chargepoint/get/counter", counter)
+            self.data["get"]["imported"] = imported
+            Pub().pub("openWB/set/chargepoint/get/imported", imported)
+            self.data["get"]["exported"] = exported
+            Pub().pub("openWB/set/chargepoint/get/exported", exported)
         except Exception:
             log.exception("Fehler in der allgemeinen Ladepunkt-Klasse")
 
@@ -126,21 +129,24 @@ class Chargepoint:
                         "rfid": None,
                         "manual_lock": False,
                         "loadmanagement_available": True,
-                        "log": {"counter_at_plugtime": 0,
+                        "log": {"imported_at_plugtime": 0,
                                 "timestamp_start_charging": None,
-                                "counter_at_mode_switch": 0,
-                                "charged_since_mode_switch": 0,
-                                "charged_since_plugged_counter": 0,
+                                "imported_at_mode_switch": 0,
+                                "imported_since_mode_switch": 0,
+                                "imported_since_plugged": 0,
                                 "range_charged": 0,
                                 "time_charged": "00:00",
                                 "chargemode_log_entry": "_"}},
                 "get": {
                     "rfid_timestamp": None,
                     "rfid": None,
-                    "daily_yield": 0,
+                    "daily_imported": 0,
+                    "daily_exported": 0,
                     "plug_state": False,
                     "charge_state": False,
                     "power": 0,
+                    "imported": 0,
+                    "exported": 0,
                     "connected_vehicle": {"soc_config": {},
                                           "soc": {},
                                           "info": {},
@@ -400,7 +406,7 @@ class Chargepoint:
             # Wenn noch kein Logeintrag erstellt wurde, wurde noch nicht geladen und die Phase kann noch umgeschaltet
             # werden.
             if not charging_ev.ev_template.data["prevent_switch_stop"] or self.data["set"]["log"][
-                    "charged_since_plugged_counter"] == 0:
+                    "imported_since_plugged"] == 0:
                 # Einmal muss die Anzahl der Phasen gesetzt werden.
                 if "phases_to_use" not in self.data["set"]:
                     Pub().pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/phases_to_use",
@@ -509,7 +515,7 @@ class Chargepoint:
                 # Wenn noch kein Logeintrag erstellt wurde, wurde noch nicht geladen und die Phase kann noch
                 # umgeschaltet werden.
                 if charging_ev.ev_template.data["prevent_switch_stop"] and self.data["set"]["log"][
-                        "charged_since_plugged_counter"] != 0:
+                        "imported_since_plugged"] != 0:
                     log.info("Phasenumschaltung an Ladepunkt" + str(self.cp_num) +
                              " nicht möglich, da bei EV " +
                              str(charging_ev.ev_num) +

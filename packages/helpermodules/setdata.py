@@ -483,8 +483,9 @@ class SetData:
             enthält Topic und Payload
         """
         try:
-            if ("openWB/set/chargepoint/get/counter" in msg.topic or
-                    "openWB/set/chargepoint/get/daily_yield" in msg.topic):
+            if ("openWB/set/chargepoint/get/imported" in msg.topic or
+                    "openWB/set/chargepoint/get/daily_imported" in msg.topic or
+                    "openWB/set/chargepoint/get/daily_exported" in msg.topic):
                 self._validate_value(msg, float, [(0, float("inf"))])
             elif "template" in msg.topic:
                 self._validate_value(msg, "json")
@@ -513,11 +514,11 @@ class SetData:
             elif "/set/change_ev_permitted" in msg.topic:
                 self._validate_value(msg, "json")
             elif ("/set/log/range_charged" in msg.topic or
-                    "/set/log/counter" in msg.topic or
-                    "/set/log/charged_since_mode_switch" in msg.topic or
-                    "/set/log/charged_since_plugged_counter" in msg.topic or
-                    "/set/log/counter_at_mode_switch" in msg.topic or
-                    "/set/log/counter_at_plugtime" in msg.topic):
+                    "/set/log/imported" in msg.topic or
+                    "/set/log/imported_since_mode_switch" in msg.topic or
+                    "/set/log/imported_since_plugged" in msg.topic or
+                    "/set/log/imported_at_mode_switch" in msg.topic or
+                    "/set/log/imported_at_plugtime" in msg.topic):
                 self._validate_value(msg, float, [(0, float("inf"))])
             elif "/set/log/timestamp_start_charging" in msg.topic:
                 self._validate_value(msg, str)
@@ -531,9 +532,10 @@ class SetData:
                     "/get/power_factors" in msg.topic):
                 self._validate_value(
                     msg, float, [(0, float("inf"))], collection=list)
-            elif ("/get/daily_yield" in msg.topic or
+            elif ("/get/daily_imported" in msg.topic or
+                    "/get/daily_exported" in msg.topic or
                     "/get/power" in msg.topic or
-                    "/get/counter" in msg.topic or
+                    "/get/imported" in msg.topic or
                     "/get/exported" in msg.topic):
                 self._validate_value(msg, float, [(0, float("inf"))])
             elif "/get/phases_in_use" in msg.topic:
@@ -626,8 +628,8 @@ class SetData:
                 self._validate_value(msg, float)
             elif ("openWB/set/bat/get/imported" in msg.topic or
                     "openWB/set/bat/get/exported" in msg.topic or
-                    "openWB/set/bat/get/daily_yield_export" in msg.topic or
-                    "openWB/set/bat/get/daily_yield_import" in msg.topic):
+                    "openWB/set/bat/get/daily_exported" in msg.topic or
+                    "openWB/set/bat/get/daily_imported" in msg.topic):
                 self._validate_value(msg, float, [(0, float("inf"))])
             elif "/config" in msg.topic:
                 self._validate_value(msg, "json")
@@ -635,8 +637,8 @@ class SetData:
                 self._validate_value(msg, float)
             elif ("/get/imported" in msg.topic or
                     "/get/exported" in msg.topic or
-                    "/get/daily_yield_export" in msg.topic or
-                    "/get/daily_yield_import" in msg.topic):
+                    "/get/daily_exported" in msg.topic or
+                    "/get/daily_imported" in msg.topic):
                 self._validate_value(msg, float, [(0, float("inf"))])
             elif "/get/soc" in msg.topic:
                 self._validate_value(msg, float, [(0, 100)])
@@ -814,8 +816,8 @@ class SetData:
             elif ("/get/power_average" in msg.topic
                     or "/get/unbalanced_load" in msg.topic
                     or "/get/frequency" in msg.topic
-                    or "/get/daily_yield_export" in msg.topic
-                    or "/get/daily_yield_import" in msg.topic
+                    or "/get/daily_exported" in msg.topic
+                    or "/get/daily_imported" in msg.topic
                     or "/get/imported" in msg.topic
                     or "/get/exported" in msg.topic):
                 self._validate_value(
