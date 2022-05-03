@@ -405,7 +405,7 @@ class Chargepoint:
                 return
             # Wenn noch kein Logeintrag erstellt wurde, wurde noch nicht geladen und die Phase kann noch umgeschaltet
             # werden.
-            if not charging_ev.ev_template.data["prevent_switch_stop"] or self.data["set"]["log"][
+            if not charging_ev.ev_template.data["prevent_phase_switch"] or self.data["set"]["log"][
                     "imported_since_plugged"] == 0:
                 # Einmal muss die Anzahl der Phasen gesetzt werden.
                 if "phases_to_use" not in self.data["set"]:
@@ -514,7 +514,7 @@ class Chargepoint:
             if phases != self.data["get"]["phases_in_use"]:
                 # Wenn noch kein Logeintrag erstellt wurde, wurde noch nicht geladen und die Phase kann noch
                 # umgeschaltet werden.
-                if charging_ev.ev_template.data["prevent_switch_stop"] and self.data["set"]["log"][
+                if charging_ev.ev_template.data["prevent_phase_switch"] and self.data["set"]["log"][
                         "imported_since_plugged"] != 0:
                     log.info("Phasenumschaltung an Ladepunkt" + str(self.cp_num) +
                              " nicht möglich, da bei EV " +

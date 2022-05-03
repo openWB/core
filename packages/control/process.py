@@ -82,7 +82,7 @@ class Process:
 
         # Wenn bei einem EV, das keine Umschaltung verträgt, vor dem ersten Laden noch umgeschaltet wird, darf kein
         # Strom gesetzt werden.
-        if (charging_ev.ev_template.data["prevent_switch_stop"] and
+        if (charging_ev.ev_template.data["prevent_phase_switch"] and
                 chargepoint.data["set"]["log"]["imported_since_plugged"] == 0 and
                 charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] is not None):
             current = 0
@@ -92,7 +92,7 @@ class Process:
                 not chargepoint.data["get"]["charge_state"] and
                 data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] == 0):
             log.error("Reservierte Leistung kann am Algorithmus-Ende nicht 0 sein.")
-        if (chargepoint.data["set"]["charging_ev_data"].ev_template.data["prevent_switch_stop"] and
+        if (chargepoint.data["set"]["charging_ev_data"].ev_template.data["prevent_phase_switch"] and
                 chargepoint.data["get"]["charge_state"] and
                 chargepoint.data["set"]["current"] == 0):
             log.error(

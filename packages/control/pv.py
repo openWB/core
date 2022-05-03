@@ -128,8 +128,7 @@ class PvAll:
             all_overhang = self.overhang_left()
             # Berücksichtigung der Speicherleistung
             all_overhang += bat_overhang
-            if not chargepoint.data["set"]["charging_ev_data"].ev_template.data["prevent_switch_stop"] or max(
-                    chargepoint.data["get"]["currents"]) == 0:
+            if max(chargepoint.data["get"]["currents"]) == 0:
                 if control_parameter["timestamp_switch_on_off"] is not None:
                     # Wurde die Einschaltschwelle erreicht? Reservierte Leistung aus all_overhang rausrechnen,
                     # da diese Leistung ja schon reserviert wurde, als die Einschaltschwelle erreicht wurde.
@@ -279,7 +278,7 @@ class PvAll:
                 # Wurde die Abschaltschwelle ggf. durch die Verzögerung anderer LP erreicht?
                 if ((overhang + self.data["set"]["released_evu_overhang"]) <
                         (pv_config["switch_off_threshold"]*-1 + feed_in_yield)):
-                    if not chargepoint.data["set"]["charging_ev_data"].ev_template.data["prevent_switch_stop"]:
+                    if not chargepoint.data["set"]["charging_ev_data"].ev_template.data["prevent_charge_stop"]:
                         control_parameter["timestamp_switch_on_off"] = timecheck.create_timestamp()
                         # merken, dass ein LP verzögert wird, damit nicht zu viele LP verzögert werden.
                         self.data["set"]["released_evu_overhang"] += chargepoint.data["set"]["required_power"]
