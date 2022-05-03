@@ -129,6 +129,7 @@ class Chargepoint:
                         "rfid": None,
                         "manual_lock": False,
                         "loadmanagement_available": True,
+                        "required_power": 0,
                         "log": {"imported_at_plugtime": 0,
                                 "timestamp_start_charging": None,
                                 "imported_at_mode_switch": 0,
@@ -393,6 +394,7 @@ class Chargepoint:
                     elif charging_ev.data["control_parameter"]["phases"] == 1:
                         data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= charging_ev.ev_template.data[
                             "max_current_one_phase"] * 230
+                    self.data["set"]["current"] = charging_ev.data["control_parameter"]["required_current"]
                 else:
                     # Wenn eine Umschaltung im Gange ist, muss erst gewartet werden, bis diese fertig ist.
                     if self.data["set"]["phases_to_use"] == 3:
@@ -492,19 +494,17 @@ class Chargepoint:
             # bis der Algorithmus eine Umschaltung vorgibt, zB weil der gewählte Lademodus eine
             # andere Phasenzahl benötigt oder bei PV-Laden die automatische Umschaltung aktiv ist.
             if chargemode_phases == 0:
-                log.debug("timestamp_perform_phase_switch " +
-                          str(charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"]) +
-                          "control_parameter phases " +
-                          str(charging_ev.data["control_parameter"]["phases"]) +
-                          "phases_in_use " + str(self.data["get"]["phases_in_use"]))
-                charging_ev.data["control_parameter"]["phases"] = self.data["get"]["phases_in_use"]
                 if charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] is None:
-                    if self.data["get"]["phases_in_use"] == 1:
-                        phases = 1
+                    if self.data["get"]["charge_state"]:
+                        phases = self.data["set"]["phases_to_use"]
                     else:
-                        phases = 3
-                    log.debug("Automat. Phasenumschaltung: Es wird die bisher genutzte Phasenzahl weiter genutzt, \
-                        bis der Algorithmus eine Umschaltung vorgibt. Phasenzahl: "+str(phases))
+                        if ((not charging_ev.ev_template.data["prevent_switch_stop"] or self.data["set"]["log"][
+                                "charged_since_plugged_counter"] == 0) and self.data["config"]["auto_phase_switch_hw"]):
+                            phases = 1
+                        else:
+                            phases = 3
+                        log.debug(("Automat. Phasenumschaltung vor Ladestart: Es wird die kleinstmögliche Phasenzahl "
+                                   f"angenommen. Phasenzahl: {phases}"))
                 else:
                     phases = charging_ev.data["control_parameter"]["phases"]
                     log.debug("Umschaltung wird durchgeführt, Phasenzahl nicht ändern "+str(phases))

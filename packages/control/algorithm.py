@@ -52,12 +52,12 @@ class Algorithm:
             # Lastmanagement für alle Zähler
             self._check_loadmanagement()
 
+            # Phasenumschaltung
+            self._check_auto_phase_switch_delay()
+
             # Abschaltschwelle prüfen und ggf. Abschaltverzögerung starten
             for mode in reversed(self.chargemodes[8:-4]):
                 self._switch_off_threshold(mode)
-
-            # Phasenumschaltung
-            self._check_auto_phase_switch_delay()
 
             # Überschuss auf Ladepunkte verteilen
             self._manage_distribution()
@@ -493,7 +493,7 @@ class Algorithm:
         preferenced_chargepoints = []
         # enthält alle LP, auf die das Tupel zutrifft
         valid_chargepoints = {}
-        for cp in data.data.cp_data:
+        for cp in data.data.cp_data.values():
             if isinstance(cp, Chargepoint):
                 try:
                     # chargestate, weil nur die geprüft werden sollen, die tatsächlich laden und nicht die, die in
@@ -543,8 +543,7 @@ class Algorithm:
                             # wurden, wieder zurückgegeben.
                             log.debug(f"Ladepunkt {cp.cp_num}: Prüfen, ob Phasenumschaltung durchgeführt werden soll.")
                             phases, current, message = charging_ev.auto_phase_switch(
-                                cp.cp_num, charging_ev.data["control_parameter"]["required_current"],
-                                charging_ev.data["control_parameter"]["phases"],
+                                cp.cp_num,
                                 cp.data["get"]["currents"])
                             if message is not None:
                                 cp.data["get"]["state_str"] = message
@@ -774,6 +773,10 @@ class Algorithm:
                 self._process_data(chargepoint, 0)
                 return
 
+            if chargepoint.data["set"]["charging_ev_data"].data["control_parameter"][
+                    "timestamp_perform_phase_switch"]:
+                return
+
             allocated_current, threshold_reached = data.data.pv_data["all"].switch_on(
                 chargepoint,
                 current_to_allocate,
@@ -980,7 +983,8 @@ class Algorithm:
                 current = max(cp.data["get"]["currents"]) + 5
                 msg = "Es darf um max 5A über den aktuell genutzten Strom geregelt werden."
             log.debug(f"LP{cp.cp_num}: {msg} -> neuer Strom {current}A")
-            cp.data["get"]["state_str"] = msg
+            if cp.data["get"]["state_str"] is None:
+                cp.data["get"]["state_str"] = msg
 
         # Einhalten des Mindeststroms des Lademodus und Maximalstroms des EV
         current = charging_ev.check_min_max_current(current, phases, pv=True)
