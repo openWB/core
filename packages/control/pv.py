@@ -283,7 +283,7 @@ class PvAll:
                     # Wurde die Abschaltschwelle ggf. durch die Verzögerung anderer LP erreicht?
                     if ((overhang + self.data["set"]["released_evu_overhang"]) <
                             (pv_config["switch_off_threshold"]*-1 + feed_in_yield)):
-                        if not chargepoint.data["set"]["charging_ev_data"].ev_template.data["prevent_switch_stop"]:
+                        if not chargepoint.data["set"]["charging_ev_data"].ev_template.data["prevent_charge_stop"]:
                             control_parameter["timestamp_switch_on_off"] = timecheck.create_timestamp()
                             # merken, dass ein LP verzögert wird, damit nicht zu viele LP verzögert werden.
                             self.data["set"]["released_evu_overhang"] += chargepoint.data["set"]["required_power"]
