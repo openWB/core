@@ -498,7 +498,7 @@ class Chargepoint:
                     if self.data["get"]["charge_state"]:
                         phases = self.data["set"]["phases_to_use"]
                     else:
-                        if ((not charging_ev.ev_template.data["prevent_switch_stop"] or self.data["set"]["log"][
+                        if ((not charging_ev.ev_template.data["prevent_phase_switch"] or self.data["set"]["log"][
                                 "charged_since_plugged_counter"] == 0) and self.data["config"]["auto_phase_switch_hw"]):
                             phases = 1
                         else:
