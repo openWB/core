@@ -574,7 +574,7 @@ class SetData:
                 self._validate_value(
                     msg, float, [(float("-inf"), 0)], collection=list)
             elif "/config/max_ac_out" in msg.topic:
-                self._validate_value(msg, int, [(float("-inf"), 0)])
+                self._validate_value(msg, int, [(0, float("inf"))])
             else:
                 self.__unknown_topic(msg)
         except Exception:

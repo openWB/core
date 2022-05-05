@@ -31,8 +31,8 @@ class Bat:
         self.data = {}
         self.bat_num = index
         self.data["get"] = {}
-        self.data["get"]["daily_yield_import"] = 0
-        self.data["get"]["daily_yield_export"] = 0
+        self.data["get"]["daily_imported"] = 0
+        self.data["get"]["daily_exported"] = 0
 
 
 class BatAll:
@@ -86,8 +86,8 @@ class BatAll:
                 parent_data = data.data.pv_data[f"pv{parent['id']}"].data
                 # Bei einem Hybrid-System darf die Summe aus Batterie-Ladeleistung, die für den Algorithmus verwendet
                 # werden soll und PV-Leistung nicht größer als die max Ausgangsleistung des WR sein.
-                if parent_data["config"]["max_ac_out"] < 0:
-                    max_bat_power = parent_data["config"]["max_ac_out"] - parent_data["get"]["power"]
+                if parent_data["config"]["max_ac_out"] > 0:
+                    max_bat_power = parent_data["config"]["max_ac_out"]*-1 - parent_data["get"]["power"]
                     if battery.data["get"]["power"] > max_bat_power:
                         if battery.data["get"]["fault_state"] == 0:
                             battery.data["get"]["fault_state"] = 1
@@ -289,20 +289,3 @@ class BatAll:
                          "W Speicher-Leistung , die für die folgenden Ladepunkte übrig ist.")
         except Exception:
             log.exception("Fehler im Bat-Modul")
-
-
-<< << << < HEAD
-
-
-class Bat:
-
-    def __init__(self, index):
-        self.data = {}
-        self.bat_num = index
-        self.data["get"] = {}
-        self.data["get"]["daily_imported"] = 0
-        self.data["get"]["daily_exported"] = 0
-
-
-== == == =
->>>>>> > 7e3f5164(max_bat_power_hybrid_system)

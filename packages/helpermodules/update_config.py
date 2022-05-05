@@ -311,10 +311,6 @@ class UpdateConfig:
         ("openWB/system/ip_address", "unknown"),
         ("openWB/system/release_train", "master"))
 
-    new_topics = (
-        ("(openWB/pv/[0-9]+)", "/config/max_ac_out", 0),
-    )
-
     def __init__(self) -> None:
         self.all_received_topics = {}
 
@@ -333,7 +329,6 @@ class UpdateConfig:
         self.__pub_missing_defaults()
         self.__update_version()
         self.__solve_breaking_changes()
-        self.__add_new_topics()
 
     def getserial(self):
         """ Extract serial from cpuinfo file
@@ -386,11 +381,11 @@ class UpdateConfig:
                     payload.update({"prevent_charge_stop": combined_setting, "prevent_phase_switch": combined_setting})
                     Pub().pub(topic.replace("openWB/", "openWB/set/"), payload)
 
-    def __add_new_topics(self):
-        for topic in self.all_received_topics:
-            regex = re.search(f"{self.new_topics[0][0]}/get/fault_state", topic)
+        # zu konfiguriertem Wechselrichter die maximale Ausgangsleistung hinzufügen
+        for topic, payload in self.all_received_topics.items():
+            regex = re.search("(openWB/pv/[0-9]+)/get/fault_state", topic)
             if regex is not None:
                 module = regex.group(1)
-                if f"{module}{self.new_topics[0][1]}" not in self.all_received_topics:
+                if f"{module}/config/max_ac_out" not in self.all_received_topics.keys():
                     Pub().pub(
-                        f'{module.replace("openWB/", "openWB/set/")}{self.new_topics[0][1]}', self.new_topics[0][2])
+                        f'{module.replace("openWB/", "openWB/set/")}/config/max_ac_out', 0)
