@@ -15,7 +15,6 @@ class UpdateConfig:
     valid_topic = ["^openWB/bat/config/configured$",
                    "^openWB/bat/set/charging_power_left$",
                    "^openWB/bat/set/switch_on_soc_reached$",
-                   "^openWB/bat/set/hybrid_system_detected$",
                    "^openWB/bat/get/soc$",
                    "^openWB/bat/get/power$",
                    "^openWB/bat/get/imported$",
@@ -188,6 +187,7 @@ class UpdateConfig:
                    "^openWB/pv/get/daily_yield$",
                    "^openWB/pv/get/monthly_yield$",
                    "^openWB/pv/get/yearly_yield$",
+                   "^openWB/pv/[0-9]+/config/max_ac_out$",
                    "^openWB/pv/[0-9]+/get/counter$",
                    "^openWB/pv/[0-9]+/get/power$",
                    "^openWB/pv/[0-9]+/get/currents$",
@@ -380,3 +380,12 @@ class UpdateConfig:
                     payload.pop("prevent_switch_stop")
                     payload.update({"prevent_charge_stop": combined_setting, "prevent_phase_switch": combined_setting})
                     Pub().pub(topic.replace("openWB/", "openWB/set/"), payload)
+
+        # zu konfiguriertem Wechselrichter die maximale Ausgangsleistung hinzufügen
+        for topic, payload in self.all_received_topics.items():
+            regex = re.search("(openWB/pv/[0-9]+)/get/fault_state", topic)
+            if regex is not None:
+                module = regex.group(1)
+                if f"{module}/config/max_ac_out" not in self.all_received_topics.keys():
+                    Pub().pub(
+                        f'{module.replace("openWB/", "openWB/set/")}/config/max_ac_out', 0)

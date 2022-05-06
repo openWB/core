@@ -20,6 +20,7 @@ from control import chargepoint
 from control import data
 from control import ev
 from control import counter
+from control import pv
 from modules.common.component_type import ComponentType, special_to_general_type_mapping, type_to_topic_mapping
 
 log = logging.getLogger(__name__)
@@ -365,6 +366,10 @@ class Command:
             default_config = counter.get_counter_default_config()
             for item in default_config:
                 Pub().pub("openWB/set/counter/"+str(new_id)+"/config/"+item, default_config[item])
+        elif general_type == ComponentType.INVERTER:
+            default_config = pv.get_inverter_default_config()
+            for item in default_config:
+                Pub().pub("openWB/set/pv/"+str(new_id)+"/config/"+item, default_config[item])
         Pub().pub("openWB/set/system/device/"+str(payload["data"]["deviceId"]
                                                   )+"/component/"+str(new_id)+"/config", component_default)
         self.max_id_hierarchy = self.max_id_hierarchy + 1

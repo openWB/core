@@ -557,8 +557,6 @@ class SetData:
                 self._validate_value(msg, float)
             elif "openWB/set/pv/set/available_power" in msg.topic:
                 self._validate_value(msg, float)
-            elif "/config" in msg.topic:
-                self._validate_value(msg, "json")
             elif "/get/fault_state" in msg.topic:
                 self._validate_value(msg, int, [(0, 2)])
             elif "/get/fault_str" in msg.topic:
@@ -575,6 +573,8 @@ class SetData:
             elif "/get/currents" in msg.topic:
                 self._validate_value(
                     msg, float, [(float("-inf"), 0)], collection=list)
+            elif "/config/max_ac_out" in msg.topic:
+                self._validate_value(msg, int, [(0, float("inf"))])
             else:
                 self.__unknown_topic(msg)
         except Exception:
@@ -591,8 +591,7 @@ class SetData:
         """
         try:
             if ("openWB/set/bat/config/configured" in msg.topic or
-                    "openWB/set/bat/set/switch_on_soc_reached" in msg.topic or
-                    "openWB/set/bat/set/hybrid_system_detected" in msg.topic):
+                    "openWB/set/bat/set/switch_on_soc_reached" in msg.topic):
                 self._validate_value(msg, bool)
             elif "openWB/set/bat/set/charging_power_left" in msg.topic:
                 self._validate_value(msg, float)

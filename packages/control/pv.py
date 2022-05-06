@@ -428,12 +428,19 @@ class PvAll:
             log.exception("Fehler im allgemeinen PV-Modul")
 
 
+def get_inverter_default_config():
+    return {"max_ac_out": 0}
+
+
 class Pv:
 
     def __init__(self, index):
-        self.data = {}
+        self.data = {
+            "get": {
+                "daily_yield": 0,
+                "monthly_yield": 0,
+                "yearly_yield": 0
+            },
+            "config": {}
+        }
         self.pv_num = index
-        self.data["get"] = {}
-        self.data["get"]["daily_yield"] = 0
-        self.data["get"]["monthly_yield"] = 0
-        self.data["get"]["yearly_yield"] = 0
