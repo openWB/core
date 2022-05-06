@@ -128,4 +128,3 @@ class SonnenbatterieCounter:
         else:
             raise FaultState.error("Unbekannte Variante: " + str(self.__device_variant))
         self.__store.set(state)
-        log.debug("Komponente "+self.component_config["name"]+" wurde erfolgreich auslesen.")
