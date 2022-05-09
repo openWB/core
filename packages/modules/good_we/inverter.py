@@ -1,6 +1,4 @@
 #!/usr/bin/env python3
-from pymodbus.constants import Endian
-
 from modules.common import modbus
 from modules.common.component_state import InverterState
 from modules.common.fault_state import ComponentInfo
@@ -10,27 +8,27 @@ from modules.common.store import get_inverter_value_store
 
 def get_default_config() -> dict:
     return {
-        "name": "Solax Wechselrichter",
+        "name": "GoodWe Wechselrichter",
         "id": 0,
         "type": "inverter",
         "configuration": {}
     }
 
 
-class SolaxInverter:
-    def __init__(self, device_id: int, component_config: dict, tcp_client: modbus.ModbusClient, modbus_id: int) -> None:
-        self.component_config = component_config
+class GoodWeInverter:
+    def __init__(self, modbus_id: int, component_config: dict, tcp_client: modbus.ModbusClient) -> None:
         self.__modbus_id = modbus_id
+        self.component_config = component_config
         self.__tcp_client = tcp_client
         self.__store = get_inverter_value_store(component_config["id"])
         self.component_info = ComponentInfo.from_component_config(component_config)
 
     def update(self) -> None:
         with self.__tcp_client:
-            power_temp = self.__tcp_client.read_input_registers(10, [ModbusDataType.UINT_16] * 2, unit=self.__modbus_id)
-            power = sum(power_temp) * -1
-            counter = self.__tcp_client.read_input_registers(82, ModbusDataType.UINT_32, wordorder=Endian.Little,
-                                                             unit=self.__modbus_id) * 100
+            power = sum([self.__tcp_client.read_holding_registers(reg, ModbusDataType.UINT_32,
+                        unit=self.__modbus_id) for reg in [35105, 35109, 35113, 35117]]) * -1
+            counter = self.__tcp_client.read_holding_registers(
+                35191, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
 
         inverter_state = InverterState(
             power=power,

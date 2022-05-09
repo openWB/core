@@ -25,7 +25,7 @@ class FroniusBat:
         self.__store = get_bat_value_store(component_config["id"])
         self.component_info = ComponentInfo.from_component_config(component_config)
 
-    def update(self) -> None:
+    def update(self) -> BatState:
         meter_id = str(self.device_config["meter_id"])
 
         resp_json = req.get_http_session().get(
@@ -59,4 +59,7 @@ class FroniusBat:
             imported=imported,
             exported=exported
         )
+        return bat_state
+
+    def set_bat_state(self, bat_state: BatState) -> None:
         self.__store.set(bat_state)
