@@ -516,11 +516,14 @@ class Algorithm:
             return
         else:
             # Solange die Liste durchgehen, bis die Abschaltschwelle nicht mehr erreicht wird.
+            # Nicht den Überhang aus dem PV-Modul verwenden, da in diesem der Regelbereich berücksichtigt ist und die
+            # Abschaltschwelle um die Mitte des Regelbereichs verzögert greifen würde.
+            overhang = data.data.counter_data[data.data.counter_data["all"].get_evu_counter(
+            )].data["get"]["power"] + data.data.bat_data["all"].power_for_bat_charging()
             for cp in preferenced_chargepoints:
                 try:
                     if cp.data["set"]["current"] != 0:
-                        data.data.pv_data["all"].switch_off_check_threshold(
-                            cp, self._get_bat_and_evu_overhang())
+                        data.data.pv_data["all"].switch_off_check_threshold(cp, overhang)
                 except Exception:
                     log.exception(f"Fehler im Algorithmus-Modul für Ladepunkt{cp.cp_num}")
 
