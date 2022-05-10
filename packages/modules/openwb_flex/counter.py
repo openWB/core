@@ -50,7 +50,7 @@ class EvuKitFlex:
                 imported = self.__client.get_imported()
                 exported = self.__client.get_exported()
             else:
-                currents = list(map(abs, self.__client.get_currents()))
+                currents = self.__client.get_currents()
         finally:
             self.__tcp_client.close_connection()
         if isinstance(self.__client, Mpm3pm):
