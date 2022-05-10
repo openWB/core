@@ -186,7 +186,7 @@ class SetData:
             else:
                 Pub().pub(msg.topic, "")
         except Exception:
-            log.exception("Fehler im setdata-Modul")
+            log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
             Pub().pub(msg.topic, "")
 
     def _change_key(self, next_level, key_list, value):
@@ -202,17 +202,14 @@ class SetData:
         value:
             Wert, der geschrieben werden soll.
         """
-        try:
-            if len(key_list) == 1:
-                next_level[key_list[0]] = value
-            else:
-                if key_list[0] not in next_level:
-                    next_level[key_list[0]] = {}
-                next_key = key_list[0]
-                key_list.pop(0)
-                self._change_key(next_level[next_key], key_list, value)
-        except Exception:
-            log.exception("Fehler im setdata-Modul")
+        if len(key_list) == 1:
+            next_level[key_list[0]] = value
+        else:
+            if key_list[0] not in next_level:
+                next_level[key_list[0]] = {}
+            next_key = key_list[0]
+            key_list.pop(0)
+            self._change_key(next_level[next_key], key_list, value)
 
     def _validate_collection_value(self, msg, data_type, ranges=None, collection=None):
         """ prüft, ob die Liste vom angegebenen Typ ist und ob Minimal- und Maximalwert eingehalten werden.
@@ -250,7 +247,7 @@ class SetData:
                           str(value)+" sollte eine Kollektion vom Typ "+str(collection)+" sein.")
             return valid
         except Exception:
-            log.exception("Fehler im setdata-Modul")
+            log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 
     def _validate_min_max_value(self, value, msg, data_type, ranges: Optional[List[Tuple[int, float]]] = None):
         """ prüft, ob der Payload Minimal- und Maximalwert einhält.
@@ -311,7 +308,7 @@ class SetData:
                 valid = False
             return valid
         except Exception:
-            log.exception("Fehler im setdata-Modul")
+            log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 
     def _validate_bool_value(self, value, msg):
         if isinstance(value, bool):
@@ -334,7 +331,7 @@ class SetData:
                           str(msg.topic)+" mit leerem Payload")
                 Pub().pub(msg.topic, "")
         except Exception:
-            log.exception("Fehler im setdata-Modul")
+            log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 
     def process_vehicle_topic(self, msg):
         """ Handler für die EV-Topics
@@ -390,7 +387,7 @@ class SetData:
             else:
                 self.__unknown_topic(msg)
         except Exception:
-            log.exception("Fehler im setdata-Modul")
+            log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 
     def _subprocess_vehicle_chargemode_topic(self, msg):
         """ Handler für die EV-Chargemode-Template-Topics
@@ -445,7 +442,7 @@ class SetData:
             else:
                 self.__unknown_topic(msg)
         except Exception:
-            log.exception("Fehler im setdata-Modul")
+            log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 
     def process_chargepoint_topic(self, msg):
         """ Handler für die Ladepunkt-Topics
@@ -529,7 +526,7 @@ class SetData:
             else:
                 self.__unknown_topic(msg)
         except Exception:
-            log.exception("Fehler im setdata-Modul")
+            log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 
     def process_pv_topic(self, msg):
         """ Handler für die PV-Topics
@@ -578,7 +575,7 @@ class SetData:
             else:
                 self.__unknown_topic(msg)
         except Exception:
-            log.exception("Fehler im setdata-Modul")
+            log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 
     def process_bat_topic(self, msg):
         """ Handler für die Hausspeicher-Topics
@@ -622,7 +619,7 @@ class SetData:
             else:
                 self.__unknown_topic(msg)
         except Exception:
-            log.exception("Fehler im setdata-Modul")
+            log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 
     def process_general_topic(self, msg):
         """ Handler für die Allgemeinen-Topics
@@ -700,7 +697,7 @@ class SetData:
             else:
                 self.__unknown_topic(msg)
         except Exception:
-            log.exception("Fehler im setdata-Modul")
+            log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 
     def process_optional_topic(self, msg):
         """ Handler für die Optionalen-Topics
@@ -747,7 +744,7 @@ class SetData:
             else:
                 self.__unknown_topic(msg)
         except Exception:
-            log.exception("Fehler im setdata-Modul")
+            log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 
     def process_counter_topic(self, msg):
         """ Handler für die Zähler-Topics
@@ -806,7 +803,7 @@ class SetData:
             else:
                 self.__unknown_topic(msg)
         except Exception:
-            log.exception("Fehler im setdata-Modul")
+            log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 
     def process_log_topic(self, msg):
         """Handler für die Log-Topics
@@ -825,7 +822,7 @@ class SetData:
             else:
                 self.__unknown_topic(msg)
         except Exception:
-            log.exception("Fehler im setdata-Modul")
+            log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 
     def process_graph_topic(self, msg):
         """Handler für die Graph-Topics
@@ -845,7 +842,7 @@ class SetData:
             else:
                 self.__unknown_topic(msg)
         except Exception:
-            log.exception("Fehler im setdata-Modul")
+            log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 
     def process_system_topic(self, msg):
         """Handler für die System-Topics
@@ -909,7 +906,7 @@ class SetData:
                 # str(json.loads(str(msg.payload.decode("utf-8")))))
                 Pub().pub(msg.topic, "")
         except Exception:
-            log.exception("Fehler im setdata-Modul")
+            log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 
     def process_command_topic(self, msg):
         """Handler für die Befehl-Topics
@@ -929,4 +926,4 @@ class SetData:
             else:
                 self.__unknown_topic(msg)
         except Exception:
-            log.exception("Fehler im setdata-Modul")
+            log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")

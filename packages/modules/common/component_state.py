@@ -58,6 +58,8 @@ class CounterState:
         self.powers = powers
         if currents is None and powers:
             currents = [powers[i]/voltages[i] for i in range(0, 3)]
+        if currents and powers:
+            currents = [currents[i]*-1 if powers[i] < 0 and currents[i] > 0 else currents[i] for i in range(0, 3)]
         self.currents = currents
         if power_factors is None:
             power_factors = [0.0]*3
