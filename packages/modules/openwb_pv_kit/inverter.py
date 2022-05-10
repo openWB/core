@@ -7,7 +7,7 @@ from modules.openwb_flex.inverter import PvKitFlex
 
 def get_default_config() -> dict:
     return {
-        "name": "Zähler an EVU-Kit",
+        "name": "PV-Kit",
         "type": "inverter",
         "id": 0,
         "configuration": {
@@ -17,7 +17,7 @@ def get_default_config() -> dict:
 
 
 class PvKit(PvKitFlex):
-    def __init__(self, device_id: int, component_config: dict) -> None:
+    def __init__(self, device_id: int, component_config: dict, tcp_client: modbus.ModbusClient) -> None:
         self.data = {"config": component_config}
         version = self.data["config"]["configuration"]["version"]
         if version == 0 or version == 1:
@@ -25,8 +25,7 @@ class PvKit(PvKitFlex):
         elif version == 2:
             id = 116
         else:
-            raise FaultState.error("Version "+str(version) +
-                                   " unbekannt.")
+            raise FaultState.error("Version "+str(version) + " unbekannt.")
         self.data["config"]["configuration"]["id"] = id
 
-        super().__init__(device_id, self.data["config"], modbus.ModbusClient("192.168.193.15", 8899))
+        super().__init__(device_id, self.data["config"], tcp_client)
