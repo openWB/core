@@ -261,7 +261,7 @@ class PvAll:
                     "chargemode_config"]["pv_charging"]["feed_in_yield"]
             else:
                 feed_in_yield = 0
-            log.debug(f'LP{chargepoint.cp_num} Switch-Off-Threshold prüfen: Überschuss {overhang}W, freigegebener '
+            log.debug(f'LP{chargepoint.cp_num} Switch-Off-Threshold prüfen: EVU {overhang}W, freigegebener '
                       f'Überschuss {self.data["set"]["released_evu_overhang"]}W, Einspeisungsgrenze {feed_in_yield}W')
             # Wenn automatische Phasenumschaltung aktiv, erstmal die Umschaltung abwarten, bevor die Abschaltschwelle
             # greift.
@@ -272,7 +272,7 @@ class PvAll:
                     if ((overhang +
                             self.data["set"]["released_evu_overhang"] -
                             chargepoint.data["set"]["required_power"])
-                            > (pv_config["switch_off_threshold"]*-1 + feed_in_yield)):
+                            < (pv_config["switch_off_threshold"] + feed_in_yield)):
                         control_parameter["timestamp_switch_on_off"] = None
                         self.data["set"]["released_evu_overhang"] -= chargepoint.data["set"]["required_power"]
                         log.info("Abschaltschwelle während der Verzögerung überschritten.")
@@ -281,8 +281,8 @@ class PvAll:
                             "/control_parameter/timestamp_switch_on_off", None)
                 else:
                     # Wurde die Abschaltschwelle ggf. durch die Verzögerung anderer LP erreicht?
-                    if ((overhang + self.data["set"]["released_evu_overhang"]) <
-                            (pv_config["switch_off_threshold"]*-1 + feed_in_yield)):
+                    if ((overhang + self.data["set"]["released_evu_overhang"]) >
+                            (pv_config["switch_off_threshold"] + feed_in_yield)):
                         if not chargepoint.data["set"]["charging_ev_data"].ev_template.data["prevent_charge_stop"]:
                             control_parameter["timestamp_switch_on_off"] = timecheck.create_timestamp()
                             # merken, dass ein LP verzögert wird, damit nicht zu viele LP verzögert werden.
