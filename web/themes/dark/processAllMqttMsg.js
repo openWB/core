@@ -690,7 +690,7 @@ function processChargePointMessages(mqttTopic, mqttPayload) {
 		} else {
 			element.removeClass('text-green').addClass('text-orange');
 		}
-	} else if (mqttTopic.match(/^openwb\/chargepoint\/[0-9]+\/get\/manual_lock$/i)) {
+	} else if (mqttTopic.match(/^openwb\/chargepoint\/[0-9]+\/set\/manual_lock$/i)) {
 		// console.log("charge point manual_lock");
 		var index = getIndex(mqttTopic); // extract number between two / /
 		var parent = $('.charge-point-card[data-cp="' + index + '"]'); // get parent row element for charge point
