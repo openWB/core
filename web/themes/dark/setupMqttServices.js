@@ -51,7 +51,7 @@ var topicsToSubscribe = [
 	["openWB/chargepoint/+/get/phases_in_use", 1], // actual number of phases used while charging; int, 0-3
 	["openWB/chargepoint/+/get/plug_state", 1], // state of plug; int, 0 = disconnected, 1 = connected
 	["openWB/chargepoint/+/get/charge_state", 1], // state of charge; int, 0 = not charging, 1 = charging
-	["openWB/chargepoint/+/get/manual_lock", 1], // is manual lock active? int, 0 = off, 1 = on
+	["openWB/chargepoint/+/set/manual_lock", 1], // is manual lock active? int, 0 = off, 1 = on
 	["openWB/chargepoint/+/get/enabled", 1], // is the chargepoint enabled? int, 0 = disabled, 1 = enabled
 	["openWB/chargepoint/+/set/current", 1], // actual set current; float, unit: A
 
