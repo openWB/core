@@ -471,24 +471,22 @@ class Chargepoint:
         except Exception:
             log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.cp_num))
 
-    def get_phases(self, mode):
+    def get_phases(self) -> int:
         """ ermittelt die maximal mögliche Anzahl Phasen, die von Konfiguration, Auto und Ladepunkt unterstützt wird
         und prüft anschließend, ob sich die Anzahl der genutzten Phasen geändert hat.
-        Return
-        ------
-        phases: int
-            Anzahl Phasen
         """
-        try:
-            phases = 0
-            charging_ev = self.data["set"]["charging_ev_data"]
-            config = self.data["config"]
-            if charging_ev.ev_template.data["max_phases"] <= config["connected_phases"]:
+        phases = 0
+        charging_ev = self.data["set"]["charging_ev_data"]
+        mode = charging_ev.charge_template.data["chargemode"]["selected"]
+        config = self.data["config"]
+        if charging_ev.ev_template.data["prevent_phase_switch"]:
+            if charging_ev.ev_template.data["max_phases"] == config["connected_phases"]:
+                log.debug(f'EV unterstützt nur {charging_ev.ev_template.data["max_phases"]} Phase(n).')
                 phases = charging_ev.ev_template.data["max_phases"]
-                log.debug("EV-Phasenzahl beschränkt die nutzbaren Phasen auf "+str(phases))
             else:
-                phases = config["connected_phases"]
-                log.debug("Anzahl angeschlossener Phasen beschränkt die nutzbaren Phasen auf "+str(phases))
+                raise Exception(
+                    f'EV-Phasenzahl {charging_ev.ev_template.data["max_phases"]} und LP-Phasenzahl {config["connected_phases"]} passen nicht zueinander!')
+        else:
             chargemode_phases = data.data.general_data["general"].get_phases_chargemode(mode)
             # Wenn die Lademodus-Phasen 0 sind, wird die bisher genutzte Phasenzahl weiter genutzt,
             # bis der Algorithmus eine Umschaltung vorgibt, zB weil der gewählte Lademodus eine
@@ -496,41 +494,43 @@ class Chargepoint:
             if chargemode_phases == 0:
                 if charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] is None:
                     if self.data["get"]["charge_state"]:
-                        phases = self.data["set"]["phases_to_use"]
+                        chargemode_phases = self.data["set"]["phases_to_use"]
                     else:
                         if ((not charging_ev.ev_template.data["prevent_phase_switch"] or self.data["set"]["log"][
                                 "charged_since_plugged_counter"] == 0) and self.data["config"]["auto_phase_switch_hw"]):
-                            phases = 1
+                            chargemode_phases = 1
                         else:
-                            phases = 3
+                            chargemode_phases = 3
                         log.debug(("Automat. Phasenumschaltung vor Ladestart: Es wird die kleinstmögliche Phasenzahl "
                                    f"angenommen. Phasenzahl: {phases}"))
                 else:
-                    phases = charging_ev.data["control_parameter"]["phases"]
+                    chargemode_phases = charging_ev.data["control_parameter"]["phases"]
                     log.debug("Umschaltung wird durchgeführt, Phasenzahl nicht ändern "+str(phases))
-            elif chargemode_phases < phases:
+            if chargemode_phases <= config["connected_phases"]:
                 phases = chargemode_phases
-                log.debug("Lademodus-Phasen beschränkt die nutzbaren Phasen auf "+str(phases))
-            if phases != self.data["get"]["phases_in_use"]:
-                # Wenn noch kein Logeintrag erstellt wurde, wurde noch nicht geladen und die Phase kann noch
-                # umgeschaltet werden.
-                if charging_ev.ev_template.data["prevent_phase_switch"] and self.data["set"]["log"][
-                        "imported_since_plugged"] != 0:
-                    log.info("Phasenumschaltung an Ladepunkt" + str(self.cp_num) +
-                             " nicht möglich, da bei EV " +
-                             str(charging_ev.ev_num) +
-                             " nach Ladestart nicht mehr umgeschaltet werden darf.")
-                    phases = self.data["get"]["phases_in_use"]
-                elif self.data["config"]["auto_phase_switch_hw"] is False:
-                    log.info("Phasenumschaltung an Ladepunkt" + str(self.cp_num) +
-                             " wird durch die Hardware nicht unterstützt.")
-                    phases = self.data["get"]["phases_in_use"]
-            if phases != charging_ev.data["control_parameter"]["phases"]:
-                charging_ev.data["control_parameter"]["phases"] = phases
-                Pub().pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/control_parameter/phases", phases)
-            return phases
-        except Exception:
-            log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.cp_num))
+                log.debug("Lademodus beschränkt die nutzbaren Phasen auf "+str(phases))
+            else:
+                phases = config["connected_phases"]
+                log.debug("Anzahl angeschlossener Phasen beschränkt die nutzbaren Phasen auf "+str(phases))
+
+        if phases != self.data["get"]["phases_in_use"]:
+            # Wenn noch kein Logeintrag erstellt wurde, wurde noch nicht geladen und die Phase kann noch
+            # umgeschaltet werden.
+            if charging_ev.ev_template.data["prevent_phase_switch"] and self.data["set"]["log"][
+                    "imported_since_plugged"] != 0:
+                log.info("Phasenumschaltung an Ladepunkt" + str(self.cp_num) +
+                         " nicht möglich, da bei EV " +
+                         str(charging_ev.ev_num) +
+                         " nach Ladestart nicht mehr umgeschaltet werden darf.")
+                phases = self.data["get"]["phases_in_use"]
+            elif self.data["config"]["auto_phase_switch_hw"] is False:
+                log.info("Phasenumschaltung an Ladepunkt" + str(self.cp_num) +
+                         " wird durch die Hardware nicht unterstützt.")
+                phases = self.data["get"]["phases_in_use"]
+        if phases != charging_ev.data["control_parameter"]["phases"]:
+            charging_ev.data["control_parameter"]["phases"] = phases
+            Pub().pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/control_parameter/phases", phases)
+        return phases
 
     def __link_rfid_to_cp(self) -> None:
         """ Wenn der Tag einem EV zugeordnet worden ist, wird der Tag unter set/rfid abgelegt und muss der Timer
