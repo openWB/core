@@ -43,6 +43,8 @@ def setup_logging() -> None:
     urllib3_file_handler.addFilter(filter_soc_pos)
     urllib3_log.addHandler(urllib3_file_handler)
 
+    logging.getLogger("pymodbus").setLevel(logging.WARNING)
+
 
 log = logging.getLogger(__name__)
 
