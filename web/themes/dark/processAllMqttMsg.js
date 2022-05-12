@@ -651,7 +651,7 @@ function processChargePointMessages(mqttTopic, mqttPayload) {
 			actualPower = actualPower.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 		}
 		element.text(actualPower + ' ' + unit);
-	} else if (mqttTopic.match(/^openWB\/chargepoint\/[0-9]+\/set\/log\/charged_since_plugged_counter$/i)) {
+	} else if (mqttTopic.match(/^openWB\/chargepoint\/[0-9]+\/set\/log\/imported_since_plugged$/i)) {
 		// energy charged since ev was plugged in
 		// also calculates and displays km charged
 		// console.log("charged since plugged counter");

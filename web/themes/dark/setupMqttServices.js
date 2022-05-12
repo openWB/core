@@ -46,7 +46,7 @@ var topicsToSubscribe = [
 	["openWB/chargepoint/+/get/state_str", 1], // information about actual state; str
 	["openWB/chargepoint/+/get/fault_str", 1], // any error messages; str
 	["openWB/chargepoint/+/get/fault_state", 1], // error state; int, 0 = ok, 1 = warning, 2 = error
-	["openWB/chargepoint/+/set/log/charged_since_plugged_counter", 1], // energy charged since the vehicle was plugged in; float, unit: kWh
+	["openWB/chargepoint/+/set/log/imported_since_plugged", 1], // energy charged since the vehicle was plugged in; float, unit: kWh
 	["openWB/chargepoint/+/get/power", 1], // actual charging power
 	["openWB/chargepoint/+/get/phases_in_use", 1], // actual number of phases used while charging; int, 0-3
 	["openWB/chargepoint/+/get/plug_state", 1], // state of plug; int, 0 = disconnected, 1 = connected
