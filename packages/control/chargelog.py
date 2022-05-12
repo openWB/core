@@ -62,7 +62,7 @@ def collect_data(chargepoint):
                           str(log_data["imported_since_mode_switch"])+" counter " +
                           str(chargepoint.data["get"]["imported"]))
                 log_data["range_charged"] = log_data["imported_since_mode_switch"] / \
-                    charging_ev.ev_template.data["average_consump"]*100
+                    charging_ev.ev_template.data["average_consump"]/10
                 log_data["time_charged"] = timecheck.get_difference_to_now(
                     log_data["timestamp_start_charging"])
                 Pub().pub("openWB/set/chargepoint/"+str(chargepoint.cp_num) +
@@ -111,7 +111,7 @@ def save_data(chargepoint, charging_ev, immediately=True, reset=False):
         log_data["imported_since_mode_switch"] = chargepoint.data["get"]["imported"] - \
             log_data["imported_at_mode_switch"]
         log_data["range_charged"] = log_data["imported_since_mode_switch"] / \
-            charging_ev.ev_template.data["average_consump"]*100
+            charging_ev.ev_template.data["average_consump"]/10
         log_data["time_charged"] = timecheck.get_difference_to_now(
             log_data["timestamp_start_charging"])
         Pub().pub("openWB/set/chargepoint/"+str(chargepoint.cp_num) +

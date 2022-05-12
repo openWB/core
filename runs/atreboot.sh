@@ -8,7 +8,9 @@ chmod 666 "${LOGFILE}"
 
 {
 	echo "atreboot.sh started"
-	rm "${OPENWBBASEDIR}/ramdisk/bootdone"
+	if [[ -f "${OPENWBBASEDIR}/ramdisk/bootdone" ]]; then
+		rm "${OPENWBBASEDIR}/ramdisk/bootdone"
+	fi
 	mosquitto_pub -p 1886 -t openWB/system/boot_done -r -m 'false'
 	(sleep 600; sudo kill "$$") &
 
