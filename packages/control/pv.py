@@ -266,41 +266,49 @@ class PvAll:
             # Wenn automatische Phasenumschaltung aktiv, erstmal die Umschaltung abwarten, bevor die Abschaltschwelle
             # greift.
             if control_parameter["timestamp_auto_phase_switch"] is None:
-                if control_parameter["timestamp_switch_on_off"]:
-                    # Wurde die Abschaltschwelle erreicht?
-                    # Eigene Leistung aus der freigegebenen Leistung rausrechnen.
-                    if ((overhang +
-                            self.data["set"]["released_evu_overhang"] -
+                control_parameter["timestamp_switch_on_off"] = None
+                self.data["set"]["released_evu_overhang"] -= chargepoint.data["set"]["required_power"]
+                log.info("Abschaltverzögerung gestoppt, da die Verzögerung für die Phasenumschaltung aktiv ist. " +
+                         "Diese wird abgewartet, bevor die Abschaltverzögerung gestartet wird.")
+                Pub().pub(
+                    "openWB/set/vehicle/" + str(chargepoint.data["set"]["charging_ev_data"].ev_num) +
+                    "/control_parameter/timestamp_switch_on_off", None)
+            power_in_use = (overhang + self.data["set"]["released_evu_overhang"] -
                             chargepoint.data["set"]["required_power"])
-                            < (pv_config["switch_off_threshold"] + feed_in_yield)):
-                        control_parameter["timestamp_switch_on_off"] = None
-                        self.data["set"]["released_evu_overhang"] -= chargepoint.data["set"]["required_power"]
-                        log.info("Abschaltschwelle während der Verzögerung überschritten.")
+            threshold = pv_config["switch_off_threshold"] + feed_in_yield
+            log.debug(f"Relevante Leistung für Löschen der Abschaltschwelle: {power_in_use}W, Schwelle: {threshold}W")
+            if control_parameter["timestamp_switch_on_off"]:
+                # Wurde die Abschaltschwelle erreicht?
+                # Eigene Leistung aus der freigegebenen Leistung rausrechnen.
+                if power_in_use < threshold:
+                    control_parameter["timestamp_switch_on_off"] = None
+                    self.data["set"]["released_evu_overhang"] -= chargepoint.data["set"]["required_power"]
+                    log.info("Abschaltschwelle während der Verzögerung überschritten.")
+                    Pub().pub(
+                        "openWB/set/vehicle/" + str(chargepoint.data["set"]["charging_ev_data"].ev_num) +
+                        "/control_parameter/timestamp_switch_on_off", None)
+            else:
+                # Wurde die Abschaltschwelle ggf. durch die Verzögerung anderer LP erreicht?
+                if ((overhang + self.data["set"]["released_evu_overhang"]) >
+                        (pv_config["switch_off_threshold"] + feed_in_yield)):
+                    if not chargepoint.data["set"]["charging_ev_data"].ev_template.data["prevent_charge_stop"]:
+                        control_parameter["timestamp_switch_on_off"] = timecheck.create_timestamp()
+                        # merken, dass ein LP verzögert wird, damit nicht zu viele LP verzögert werden.
+                        self.data["set"]["released_evu_overhang"] += chargepoint.data["set"]["required_power"]
+                        message = "Ladevorgang wird nach Ablauf der Abschaltverzögerung (" + str(
+                            pv_config["switch_off_delay"])+"s) gestoppt."
+                        log.info("LP "+str(chargepoint.cp_num)+": "+message)
+                        chargepoint.data["get"]["state_str"] = message
                         Pub().pub(
                             "openWB/set/vehicle/" + str(chargepoint.data["set"]["charging_ev_data"].ev_num) +
-                            "/control_parameter/timestamp_switch_on_off", None)
-                else:
-                    # Wurde die Abschaltschwelle ggf. durch die Verzögerung anderer LP erreicht?
-                    if ((overhang + self.data["set"]["released_evu_overhang"]) >
-                            (pv_config["switch_off_threshold"] + feed_in_yield)):
-                        if not chargepoint.data["set"]["charging_ev_data"].ev_template.data["prevent_charge_stop"]:
-                            control_parameter["timestamp_switch_on_off"] = timecheck.create_timestamp()
-                            # merken, dass ein LP verzögert wird, damit nicht zu viele LP verzögert werden.
-                            self.data["set"]["released_evu_overhang"] += chargepoint.data["set"]["required_power"]
-                            message = "Ladevorgang wird nach Ablauf der Abschaltverzögerung (" + str(
-                                pv_config["switch_off_delay"])+"s) gestoppt."
-                            log.info("LP "+str(chargepoint.cp_num)+": "+message)
-                            chargepoint.data["get"]["state_str"] = message
-                            Pub().pub(
-                                "openWB/set/vehicle/" + str(chargepoint.data["set"]["charging_ev_data"].ev_num) +
-                                "/control_parameter/timestamp_switch_on_off", control_parameter
-                                ["timestamp_switch_on_off"])
-                            # Die Abschaltschwelle wird immer noch überschritten und es sollten weitere LP abgeschaltet
-                            # werden.
-                        else:
-                            msg = "Stoppen des Ladevorgangs aufgrund des EV-Profils verhindert."
-                            chargepoint.data["get"]["state_str"] = msg
-                            log.info(f"LP {chargepoint.cp_num}: {msg}")
+                            "/control_parameter/timestamp_switch_on_off", control_parameter
+                            ["timestamp_switch_on_off"])
+                        # Die Abschaltschwelle wird immer noch überschritten und es sollten weitere LP abgeschaltet
+                        # werden.
+                    else:
+                        msg = "Stoppen des Ladevorgangs aufgrund des EV-Profils verhindert."
+                        chargepoint.data["get"]["state_str"] = msg
+                        log.info(f"LP {chargepoint.cp_num}: {msg}")
         except Exception:
             log.exception("Fehler im allgemeinen PV-Modul")
 
