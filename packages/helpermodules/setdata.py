@@ -498,11 +498,15 @@ class SetData:
                     msg, int, [(0, float("inf"))], pub_json=True)
             elif "/config" in msg.topic:
                 self._validate_value(msg, "json")
-            elif ("/get/voltages" in msg.topic or
-                    "/get/currents" in msg.topic or
-                    "/get/power_factors" in msg.topic):
+            elif ("/get/voltages" in msg.topic):
                 self._validate_value(
-                    msg, float, [(0, float("inf"))], collection=list)
+                    msg, float, [(0, 500)], collection=list)
+            elif ("/get/currents" in msg.topic):
+                self._validate_value(
+                    msg, float, collection=list)
+            elif ("/get/power_factors" in msg.topic):
+                self._validate_value(
+                    msg, float, [(-1, 1)], collection=list)
             elif ("/get/daily_imported" in msg.topic or
                     "/get/daily_exported" in msg.topic or
                     "/get/power" in msg.topic or
@@ -778,11 +782,13 @@ class SetData:
             elif ("/get/powers" in msg.topic or
                     "/get/currents" in msg.topic):
                 self._validate_value(
-                    msg, float, [(float("-inf"), float("inf"))], collection=list)
-            elif ("/get/voltages" in msg.topic or
-                    "/get/power_factors" in msg.topic):
+                    msg, float, collection=list)
+            elif ("/get/voltages" in msg.topic):
                 self._validate_value(
-                    msg, float, [(0, float("inf"))], collection=list)
+                    msg, float, [(0, 500)], collection=list)
+            elif ("/get/power_factors" in msg.topic):
+                self._validate_value(
+                    msg, float, [(-1, 1)], collection=list)
             elif ("/get/power_average" in msg.topic
                     or "/get/unbalanced_load" in msg.topic
                     or "/get/frequency" in msg.topic
