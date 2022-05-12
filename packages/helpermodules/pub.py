@@ -58,4 +58,4 @@ def pub_single(topic, payload, hostname="localhost", no_json=False):
         else:
             publish.single(topic, json.dumps(payload), hostname=hostname, retain=True)
     except Exception:
-        log.exception("Fehler im pub-Modul")
+        log.exception(f"Fehler im pub-Modul. Host {hostname}")
