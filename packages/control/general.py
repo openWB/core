@@ -19,7 +19,7 @@ class General:
         self.data: Dict = {"grid_protection_active": False}
 
     def get_phases_chargemode(self, chargemode: str) -> int:
-        """ gibt die Anazhl Phasen zurück, mit denen im jeweiligen Lademodus geladen wird.
+        """ gibt die Anzahl Phasen zurück, mit denen im jeweiligen Lademodus geladen wird.
         Wenn der Lademodus Stop oder Standby ist, wird 0 zurückgegeben, da in diesem Fall
         die bisher genutzte Phasenzahl weiter genutzt wird, bis der Algorithmus eine Umschaltung vorgibt.
 
@@ -42,7 +42,7 @@ class General:
             return 1
 
     def grid_protection(self):
-        """ Wenn der Netschutz konfiguriert ist, wird geprüft, ob die Frequenz außerhalb des Normalbereichs liegt
+        """ Wenn der Netzschutz konfiguriert ist, wird geprüft, ob die Frequenz außerhalb des Normalbereichs liegt
         und dann der Netzschutz aktiviert. Bei der Ermittlung des benötigten Stroms im EV-Modul wird geprüft, ob
         der Netzschutz aktiv ist und dann die Ladung gestoppt.
         """

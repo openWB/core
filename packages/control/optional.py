@@ -42,7 +42,7 @@ class Optional:
 
         Return
         ------
-        list: Key des Dictionarys (Unix-Sekunden der günstigen Stunden)
+        list: Key des Dictionary (Unix-Sekunden der günstigen Stunden)
         """
         try:
             price_list = self.data["et"]["get"]["price_list"]

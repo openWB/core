@@ -69,7 +69,7 @@ class CounterAll:
                     evu_counter_data["get"]["fault_state"] = 1
                     evu_counter_data["get"][
                         "fault_str"] = "Der Wert für den Hausverbrauch ist nicht plausibel (negativ). Bitte "\
-                        "die Leistungen der Komponenten und die Anordnung in der Hierachie prüfen."
+                        "die Leistungen der Komponenten und die Anordnung in der Hierarchie prüfen."
                     evu_counter = self.get_id_evu_counter()
                     Pub().pub(f"openWB/set/counter/{evu_counter}/get/fault_state",
                               evu_counter_data["get"]["fault_state"])

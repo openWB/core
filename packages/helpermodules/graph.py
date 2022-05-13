@@ -55,13 +55,6 @@ class Graph:
                     {"bat-all-power": _convert_to_kW(data.data.bat_data["all"].data["get"]["power"])})
                 dataline.update(
                     {"bat-all-soc": data.data.bat_data["all"].data["get"]["soc"]})
-            # # smarthome 1
-            # if (( verbraucher1_aktiv == 1 )); then
-            #     dataline="$dataline,\"load1-power\":$(convertTokW $verbraucher1_watt)"
-            # fi
-            # if (( verbraucher2_aktiv == 1 )); then
-            #     dataline="$dataline,\"load2-power\":$(convertTokW $verbraucher2_watt)"
-            # fi
 
             Pub().pub("openWB/set/graph/lastlivevaluesJson", dataline)
             Pub().pub("openWB/set/system/lastlivevaluesJson", dataline)

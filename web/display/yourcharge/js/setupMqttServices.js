@@ -44,7 +44,7 @@ var topicsToSubscribe = [
   ["openWB/system/IpAddress", 1],
   ["openWB/system/Uptime", 1],
   ["openWB/system/Version", 1],
-  ["openWB/system/wizzardDone", 1],
+  ["openWB/system/wizardDone", 1],
   ["openWB/system/reloadDisplay", 1],
   // pv topics
   ["openWB/pv/W", 1],

@@ -56,7 +56,7 @@ class System:
                     if "cp" in cp:
                         chargepoint = data.data.cp_data[cp]
                         if chargepoint.chargepoint_module.connection_module["type"] == "external_openwb":
-                            log.info("Update an LP "+str(chargepoint.cp_num)+" angestossen.")
+                            log.info("Update an LP "+str(chargepoint.cp_num)+" angestoßen.")
                             ip_address = chargepoint.chargepoint_module.connection_module["configuration"][
                                 "ip_address"]
                             pub.pub_single("openWB/config/set/releaseTrain", train, ip_address, no_json=True)

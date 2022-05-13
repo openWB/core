@@ -143,7 +143,7 @@ def check_plans_timeframe(plans, hours=None):
     state = False
     try:
         for plan in plans.values():
-            # Nur Keys mit Plannummer berücksichtigen
+            # Nur Keys mit Plan-Nummer berücksichtigen
             if isinstance(plan, dict):
                 state = check_timeframe(plan, hours)
                 if state:
@@ -156,7 +156,7 @@ def check_plans_timeframe(plans, hours=None):
 
 
 def check_timeframe(plan, hours):
-    """ schaut, ob Plaene aktiv sind, prüft, ob das Zeitfenster aktuell ist.
+    """ schaut, ob Pläne aktiv sind, prüft, ob das Zeitfenster aktuell ist.
 
     Parameters
     ----------
@@ -265,7 +265,7 @@ def check_duration(plan, duration):
     Um etwas Puffer zu haben, werden bei Überschreiten des Zeitpunkts die nachfolgenden 20 Min auch noch als Ladezeit
     zurückgegeben.
 
-    Paramter
+    Parameter
     --------
     plan : dictionary
         Plan, für den geprüft werden soll, ob mit der Ladung begonnen werden soll

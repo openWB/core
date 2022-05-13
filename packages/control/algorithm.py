@@ -1227,7 +1227,7 @@ def use_evu_bat_power(chargepoint: Chargepoint,
     genügend Leistung/Strom vom Lastmanagement zur Verfügung steht. Das ist erforderlich, da mehrere LP an derselben
     Phase laden können und dann insgesamt zwar genug Überschuss vorhanden ist, aber nicht unbedingt auf der benötigten
     Phase.
-    Wenn das Lastmanagement aktiv wird, wird der fehlende Strom dem Lastamanagement entnommen und zurückgegeben.
+    Wenn das Lastmanagement aktiv wird, wird der fehlende Strom dem Lastmanagement entnommen und zurückgegeben.
     """
     power_diff = current_diff * phases * 230
     if pv_mode:

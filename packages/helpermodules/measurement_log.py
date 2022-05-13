@@ -263,22 +263,22 @@ def update_daily_yields():
         # Tagesertrag Speicher
         for bat in daily_log[0]["bat"]:
             if bat in data.data.bat_data:
-                daily_importeded = data.data.bat_data[bat].data["get"]["imported"] - \
+                daily_imported = data.data.bat_data[bat].data["get"]["imported"] - \
                     daily_log[0]["bat"][bat]["imported"]
-                daily_exporteded = data.data.bat_data[bat].data["get"]["exported"] - \
+                daily_exported = data.data.bat_data[bat].data["get"]["exported"] - \
                     daily_log[0]["bat"][bat]["exported"]
-                data.data.bat_data[bat].data["get"]["daily_imported"] = daily_importeded
-                data.data.bat_data[bat].data["get"]["daily_exported"] = daily_exporteded
+                data.data.bat_data[bat].data["get"]["daily_imported"] = daily_imported
+                data.data.bat_data[bat].data["get"]["daily_exported"] = daily_exported
                 if "bat" in bat:
                     Pub().pub("openWB/set/bat/"+str(
-                        data.data.bat_data[bat].bat_num)+"/get/daily_imported", daily_importeded)
+                        data.data.bat_data[bat].bat_num)+"/get/daily_imported", daily_imported)
                     Pub().pub("openWB/set/bat/"+str(
-                        data.data.bat_data[bat].bat_num)+"/get/daily_exported", daily_exporteded)
+                        data.data.bat_data[bat].bat_num)+"/get/daily_exported", daily_exported)
                 else:
                     Pub().pub("openWB/set/bat/get/daily_imported",
-                              daily_importeded)
+                              daily_imported)
                     Pub().pub("openWB/set/bat/get/daily_exported",
-                              daily_exporteded)
+                              daily_exported)
             else:
                 log.info("Speicher "+str(bat) +
                          " wurde zwischenzeitlich gelöscht und wird daher nicht mehr aufgeführt.")

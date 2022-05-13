@@ -31,4 +31,4 @@ def thread_cp_interruption(cp_num: int, chargepoint_module: AbstractChargepoint,
             log.debug(f"Kein Thread zur CP-Unterbrechung an LP{cp_num} gestartet, da bereits eine CP-Unterbrechung "
                       f"aktiv ist.")
     except Exception:
-        log.exception("Fehler im Modul fuer die CP-Unterbrechung")
+        log.exception("Fehler im Modul für die CP-Unterbrechung")

@@ -1,6 +1,6 @@
-""" Verschachtelte Listen, die die Daten zur Berechnung des Alogrithmus enthalten.
+""" Verschachtelte Listen, die die Daten zur Berechnung des Algorithmus enthalten.
 Dictionary: Zugriff erfolgt bei Dictionary über Keys, nicht über Indizes wie bei Listen. Das hat den Vorteil, dass
-Instanzen gelöscht werden können, der Zugriff aber nicht verändert werden musss.
+Instanzen gelöscht werden können, der Zugriff aber nicht verändert werden muss.
 """
 import logging
 import threading
