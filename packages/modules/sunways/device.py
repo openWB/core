@@ -16,7 +16,7 @@ def get_default_config() -> dict:
         "type": "sunways",
         "id": 0,
         "configuration": {
-            "ip_address": "",
+            "ip_address": None,
             "password": ""
         }
     }
