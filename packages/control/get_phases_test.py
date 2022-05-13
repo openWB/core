@@ -1,6 +1,6 @@
+from unittest.mock import Mock
 from typing import Optional
 import pytest
-from unittest.mock import Mock
 
 
 from control import chargepoint, data
@@ -8,6 +8,7 @@ from control import ev
 from control.chargepoint import Chargepoint, CpTemplate
 from control.ev import ChargeTemplate, Ev, EvTemplate
 from control.general import General
+from helpermodules import pub
 
 
 @pytest.fixture
@@ -29,6 +30,13 @@ def cp() -> Chargepoint:
 def general() -> None:
     data.data_init()
     data.data.general_data["general"] = General()
+
+
+@pytest.fixture(autouse=True)
+def mock_pub(monkeypatch) -> None:
+    pub_mock = Mock()
+    pub_mock.pub.return_value = None
+    monkeypatch.setattr(pub, 'PubSingleton', pub_mock)
 
 
 class Params:
