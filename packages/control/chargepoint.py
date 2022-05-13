@@ -479,33 +479,42 @@ class Chargepoint:
         charging_ev = self.data["set"]["charging_ev_data"]
         mode = charging_ev.charge_template.data["chargemode"]["selected"]
         config = self.data["config"]
-        if charging_ev.ev_template.data["prevent_phase_switch"]:
-            if charging_ev.ev_template.data["max_phases"] == config["connected_phases"]:
-                log.debug(f'EV unterstützt nur {charging_ev.ev_template.data["max_phases"]} Phase(n).')
+
+        chargemode_phases = data.data.general_data["general"].get_phases_chargemode(mode)
+        # Wenn die Lademodus-Phasen 0 sind, wird die bisher genutzte Phasenzahl weiter genutzt,
+        # bis der Algorithmus eine Umschaltung vorgibt, zB weil der gewählte Lademodus eine
+        # andere Phasenzahl benötigt oder bei PV-Laden die automatische Umschaltung aktiv ist.
+        if chargemode_phases == 0:
+            if charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] is None:
+                if self.data["get"]["charge_state"]:
+                    chargemode_phases = self.data["set"]["phases_to_use"]
+                else:
+                    if ((not charging_ev.ev_template.data["prevent_phase_switch"] or self.data["set"]["log"][
+                            "imported_since_plugged"] == 0) and self.data["config"]["auto_phase_switch_hw"]):
+                        chargemode_phases = 1
+                    else:
+                        chargemode_phases = self.data["set"]["phases_to_use"]
+                    log.debug(("Automat. Phasenumschaltung vor Ladestart: Es wird die kleinstmögliche Phasenzahl "
+                               f"angenommen. Phasenzahl: {phases}"))
+            else:
+                chargemode_phases = charging_ev.data["control_parameter"]["phases"]
+                log.debug(f"Umschaltung wird durchgeführt, Phasenzahl nicht ändern {phases}")
+
+        if charging_ev.ev_template.data["prevent_phase_switch"] and config["auto_phase_switch_hw"] is False:
+            if (charging_ev.ev_template.data["max_phases"] == config["connected_phases"] or
+                    config["auto_phase_switch_hw"]):
+                if chargemode_phases == charging_ev.ev_template.data["max_phases"]:
+                    log.debug(f'EV unterstützt nur {charging_ev.ev_template.data["max_phases"]} Phase(n).')
+                else:
+                    log.debug(
+                        f'EV unterstützt nur {charging_ev.ev_template.data["max_phases"]} Phase(n). Phasenzahl des '
+                        'Lademodus wird ignoriert.')
                 phases = charging_ev.ev_template.data["max_phases"]
             else:
                 raise Exception(
-                    f'EV-Phasenzahl {charging_ev.ev_template.data["max_phases"]} und LP-Phasenzahl {config["connected_phases"]} passen nicht zueinander!')
+                    f'EV-Phasenzahl {charging_ev.ev_template.data["max_phases"]} und LP-Phasenzahl '
+                    f'{config["connected_phases"]} passen nicht zueinander!')
         else:
-            chargemode_phases = data.data.general_data["general"].get_phases_chargemode(mode)
-            # Wenn die Lademodus-Phasen 0 sind, wird die bisher genutzte Phasenzahl weiter genutzt,
-            # bis der Algorithmus eine Umschaltung vorgibt, zB weil der gewählte Lademodus eine
-            # andere Phasenzahl benötigt oder bei PV-Laden die automatische Umschaltung aktiv ist.
-            if chargemode_phases == 0:
-                if charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] is None:
-                    if self.data["get"]["charge_state"]:
-                        chargemode_phases = self.data["set"]["phases_to_use"]
-                    else:
-                        if ((not charging_ev.ev_template.data["prevent_phase_switch"] or self.data["set"]["log"][
-                                "charged_since_plugged_counter"] == 0) and self.data["config"]["auto_phase_switch_hw"]):
-                            chargemode_phases = 1
-                        else:
-                            chargemode_phases = 3
-                        log.debug(("Automat. Phasenumschaltung vor Ladestart: Es wird die kleinstmögliche Phasenzahl "
-                                   f"angenommen. Phasenzahl: {phases}"))
-                else:
-                    chargemode_phases = charging_ev.data["control_parameter"]["phases"]
-                    log.debug("Umschaltung wird durchgeführt, Phasenzahl nicht ändern "+str(phases))
             if chargemode_phases <= config["connected_phases"]:
                 phases = chargemode_phases
                 log.debug("Lademodus beschränkt die nutzbaren Phasen auf "+str(phases))
@@ -518,9 +527,7 @@ class Chargepoint:
             # umgeschaltet werden.
             if charging_ev.ev_template.data["prevent_phase_switch"] and self.data["set"]["log"][
                     "imported_since_plugged"] != 0:
-                log.info("Phasenumschaltung an Ladepunkt" + str(self.cp_num) +
-                         " nicht möglich, da bei EV " +
-                         str(charging_ev.ev_num) +
+                log.info(f"Phasenumschaltung an Ladepunkt {self.cp_num} nicht möglich, da bei EV {charging_ev.ev_num}"
                          " nach Ladestart nicht mehr umgeschaltet werden darf.")
                 phases = self.data["get"]["phases_in_use"]
             elif self.data["config"]["auto_phase_switch_hw"] is False:

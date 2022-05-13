@@ -222,10 +222,10 @@ class Prepare:
                             if message_ev is not None:
                                 message = message_ev
 
-                            # Die benötigte Stromstärke hat sich durch eine Änderung des Lademodus oder der Konfiguration
-                            # geändert. Die Zuteilung entsprechend der Priorisierung muss neu geprüft werden. Daher muss
-                            # der LP zurückgesetzt werden, wenn er gerade lädt, um in der Regelung wieder berücksichtigt
-                            # zu werden.
+                            # Die benötigte Stromstärke hat sich durch eine Änderung des Lademodus oder der
+                            # Konfiguration geändert. Die Zuteilung entsprechend der Priorisierung muss neu geprüft
+                            # werden. Daher muss der LP zurückgesetzt werden, wenn er gerade lädt, um in der Regelung
+                            # wieder berücksichtigt zu werden.
                             if current_changed:
                                 log.debug(f"LP{cp.cp_num}: Da sich die Stromstärke geändert hat, muss der Ladepunkt im "
                                           "Algorithmus neu priorisiert werden.")
@@ -237,13 +237,14 @@ class Prepare:
                                 if max(cp.data["get"]["currents"]) > min_charge_current:
                                     cp.data["set"]["current"] = 0
                                 else:
-                                    # Wenn nicht geladen wird, obwohl geladen werde kann, soll das EV im Algorithmus nicht
-                                    # berücksichtigt werden. Wenn der Sollstrom gesetzt ist, wird das EV nur im LM
-                                    # berücksichtigt.
+                                    # Wenn nicht geladen wird, obwohl geladen werde kann, soll das EV im Algorithmus
+                                    # nicht berücksichtigt werden. Wenn der Sollstrom gesetzt ist, wird das EV nur im
+                                    # LM berücksichtigt.
                                     cp.data["set"]["current"] = required_current
-                                # Da nicht bekannt ist, ob mit Bezug, Überschuss oder aus dem Speicher geladen wird, wird
-                                # die freiwerdende Leistung erst im nächsten Durchlauf berücksichtigt. Ggf. entsteht so
-                                # eine kurze Unterbrechung der Ladung, wenn während dem Laden umkonfiguriert wird.
+                                # Da nicht bekannt ist, ob mit Bezug, Überschuss oder aus dem Speicher geladen wird,
+                                # wird die freiwerdende Leistung erst im nächsten Durchlauf berücksichtigt. Ggf.
+                                # entsteht so eine kurze Unterbrechung der Ladung, wenn während dem Laden
+                                # umkonfiguriert wird.
                             charging_ev.set_control_parameter(
                                 submode, required_current)
                             # Ein Eintrag muss nur erstellt werden, wenn vorher schon geladen wurde und auch danach noch
@@ -262,11 +263,10 @@ class Prepare:
                                 cp.data["set"]["charging_ev"] = -1
                                 Pub().pub("openWB/set/chargepoint/" +
                                           str(cp.cp_num)+"/set/charging_ev", -1)
-                                log.debug(
-                                    "LP " + str(cp.cp_num) + ", EV: " + cp.data["set"]["charging_ev_data"].data["name"] +
-                                    " (EV-Nr." + str(vehicle) + "): Lademodus " +
-                                    str(charging_ev.charge_template.data["chargemode"]["selected"]) + ", Submodus: " +
-                                    str(charging_ev.data["control_parameter"]["submode"]))
+                                log.debug(f'LP {cp.cp_num}, EV: {cp.data["set"]["charging_ev_data"].data["name"]}'
+                                          f' (EV-Nr.{vehicle}): Lademodus '
+                                          f'{charging_ev.charge_template.data["chargemode"]["selected"]}, Submodus: '
+                                          f'{charging_ev.data["control_parameter"]["submode"]}')
                             else:
                                 if (charging_ev.data["control_parameter"]["timestamp_switch_on_off"] is not None and
                                         not cp.data["get"]["charge_state"] and
