@@ -520,11 +520,11 @@ function processSystemMessages(mqttmsg, mqttpayload) {
     $("#date").text(date);
   } else if (mqttmsg == "openWB/system/IpAddress") {
     $(".systemIpAddress").text(mqttpayload);
-  } else if (mqttmsg == "openWB/system/wizzardDone") {
+  } else if (mqttmsg == "openWB/system/wizardDone") {
     if (mqttpayload > 99) {
-      $("#wizzardModal").modal("hide");
+      $("#wizardModal").modal("hide");
     } else {
-      $("#wizzardModal").modal("show");
+      $("#wizardModal").modal("show");
     }
   } else if (mqttmsg == "openWB/system/reloadDisplay") {
     if (mqttpayload == "1") {

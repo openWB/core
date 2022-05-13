@@ -20,11 +20,11 @@ from helpermodules import system
 from control import pv
 
 log = logging.getLogger(__name__)
-mqqt_log = logging.getLogger("mqtt")
+mqtt_log = logging.getLogger("mqtt")
 
 
 class SubData:
-    """ Klasse, die die benötigten Topics abonniert, die Instanzen ertstellt, wenn z.b. ein Modul neu konfiguriert
+    """ Klasse, die die benötigten Topics abonniert, die Instanzen erstellt, wenn z.b. ein Modul neu konfiguriert
     wird, Instanzen löscht, wenn Module gelöscht werden, und die Werte in die Attribute der Instanzen schreibt.
     """
 
@@ -103,7 +103,7 @@ class SubData:
     def on_message(self, client, userdata, msg):
         """ wartet auf eingehende Topics.
         """
-        mqqt_log.debug("Topic: "+str(msg.topic) +
+        mqtt_log.debug("Topic: "+str(msg.topic) +
                        ", Payload: "+str(msg.payload.decode("utf-8")))
         self.heartbeat = True
         if "openWB/vehicle/template/charge_template/" in msg.topic:
@@ -685,7 +685,7 @@ class SubData:
                     dev = importlib.import_module(
                         "."+device_config["type"]+".device", "modules")
                     var["device"+index] = dev.Device(device_config)
-                    # Durch das erneute Subscriben werden die Komponenten mit dem aktualisierten TCP-Client angelegt.
+                    # Durch das erneute Subscribe werden die Komponenten mit dem aktualisierten TCP-Client angelegt.
                     client.subscribe("openWB/system/device/" +
                                      index+"/component/#", 2)
             elif re.search("^.+/device/[0-9]+/get$", msg.topic) is not None:

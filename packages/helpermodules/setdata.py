@@ -12,7 +12,7 @@ from helpermodules.pub import Pub
 from helpermodules import subdata
 
 log = logging.getLogger(__name__)
-mqqt_log = logging.getLogger("mqtt")
+mqtt_log = logging.getLogger("mqtt")
 
 
 class SetData:
@@ -69,7 +69,7 @@ class SetData:
         """
         self.heartbeat = True
         if str(msg.payload.decode("utf-8")) != "":
-            mqqt_log.debug("Topic: "+str(msg.topic) + ", Payload: "+str(msg.payload.decode("utf-8")))
+            mqtt_log.debug("Topic: "+str(msg.topic) + ", Payload: "+str(msg.payload.decode("utf-8")))
             if "openWB/set/vehicle/" in msg.topic:
                 if "openWB/set/vehicle/template/ev_template/" in msg.topic:
                     self.event_ev_template.wait(5)
@@ -862,7 +862,7 @@ class SetData:
             if "openWB/set/system/lastlivevaluesJson" in msg.topic:
                 self._validate_value(msg, "json")
             elif ("openWB/set/system/perform_update" in msg.topic or
-                    "openWB/set/system/wizzard_done" in msg.topic or
+                    "openWB/set/system/wizard_done" in msg.topic or
                     "openWB/set/system/update_in_progress" in msg.topic or
                     "openWB/set/system/dataprotection_acknowledged" in msg.topic):
                 self._validate_value(msg, bool)

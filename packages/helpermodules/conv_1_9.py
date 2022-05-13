@@ -18,7 +18,7 @@ except Exception:
 
 class StreamArray(list):
     """
-    Converts a generator into a list object that can be json serialisable
+    Converts a generator into a list object that can be json serialized
     while still retaining the iterative nature of a generator.
 
     IE. It converts it to a list without having to exhaust the generator
@@ -44,7 +44,7 @@ class StreamArray(list):
 
 
 def conv_1_9_datetimes(datetime_str):
-    """ knovertiert Datum-Uhrzeit aus 1.9x in das Format in 2.x
+    """ konvertiert Datum-Uhrzeit aus 1.9x in das Format in 2.x
 
     Parameter
     ---------

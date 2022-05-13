@@ -1,6 +1,6 @@
 
-  <!-- modal wizzard-window -->
-  <div class="modal" id="wizzardModal">
+  <!-- modal wizard-window -->
+  <div class="modal" id="wizardModal">
     <div class="modal-dialog">
       <div class="modal-content">
         <!-- modal header -->

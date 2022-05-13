@@ -23,10 +23,10 @@
 		// 	// --> openWB/system/dataprotection_acknowledged
 		// 	// load dataprotection page
 		// 	include 'settings/datenschutz.html';
-		// } elseif ( !isset($wizzarddoneold) || ($wizzarddoneold < 100) ) {
-		// 	// --> openWB/system/wizzard_done
-		// 	// load wizzard page
-		// 	include 'settings/wizzard.php';
+		// } elseif ( !isset($wizarddoneold) || ($wizarddoneold < 100) ) {
+		// 	// --> openWB/system/wizard_done
+		// 	// load wizard page
+		// 	include 'settings/wizard.php';
 		// } elseif ( $isssold == 1 ) {
 		// 	// --> openWB/general/extern
 		// 	// load chargepoint only page

@@ -7,7 +7,7 @@ charging_ev = -1 zeigt an, dass der LP im Algorithmus nicht berücksichtigt werd
 auch charging_ev_prev -1 und im nächsten Zyklus kann ein neues Profil geladen werden.
 
 RFID-Tags/Code-Eingabe:
-Mit einem Tag/Code kann optional der Ladepunkt freigeschaltet werden, es wird geleichzeitig immer ein EV damit
+Mit einem Tag/Code kann optional der Ladepunkt freigeschaltet werden, es wird gleichzeitig immer ein EV damit
 zugeordnet, mit dem nach der Freischaltung geladen werden soll. Wenn max 5 Min nach dem Scannen kein Auto
 angesteckt wird, wird der Tag verworfen. Ebenso wenn kein EV gefunden wird.
 Tag-Liste: Tags, mit denen der Ladepunkt freigeschaltet werden kann. Ist diese leer, kann mit jedem Tag der Ladepunkt
@@ -523,7 +523,7 @@ class Chargepoint:
                     phases = self.data["get"]["phases_in_use"]
                 elif self.data["config"]["auto_phase_switch_hw"] is False:
                     log.info("Phasenumschaltung an Ladepunkt" + str(self.cp_num) +
-                             " hardwaretechnisch nicht möglich.")
+                             " wird durch die Hardware nicht unterstützt.")
                     phases = self.data["get"]["phases_in_use"]
             if phases != charging_ev.data["control_parameter"]["phases"]:
                 charging_ev.data["control_parameter"]["phases"] = phases

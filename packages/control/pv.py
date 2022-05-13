@@ -262,8 +262,8 @@ class PvAll:
             else:
                 feed_in_yield = 0
             log.debug(f'LP{chargepoint.cp_num} Switch-Off-Threshold prüfen: EVU {overhang}W, freigegebener '
-                      f'Überschuss {self.data["set"]["released_evu_overhang"]}W, Einspeisungsgrenze {feed_in_yield}W')
-            # Wenn automatische Phasenumschaltung aktiv, erstmal die Umschaltung abwarten, bevor die Abschaltschwelle
+                      f'Überschuss {self.data["set"]["released_evu_overhang"]}W, Einspeisegrenze {feed_in_yield}W')
+            # Wenn automatische Phasenumschaltung aktiv, die Umschaltung abwarten, bevor die Abschaltschwelle
             # greift.
             if control_parameter["timestamp_auto_phase_switch"] is None:
                 control_parameter["timestamp_switch_on_off"] = None
