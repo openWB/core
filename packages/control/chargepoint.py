@@ -432,8 +432,6 @@ class Chargepoint:
                             # 1 -> 3
                             if charging_ev.data["control_parameter"]["phases"] == 3:
                                 message = "Umschaltung von 1 auf 3 Phasen."
-                                log.info("LP "+str(self.cp_num)+": "+message)
-                                self.data["get"]["state_str"] = message
                                 # Timestamp für die Durchführungsdauer
                                 # Ladeleistung reservieren, da während der Umschaltung die Ladung pausiert wird.
                                 data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] += charging_ev.data[
@@ -443,7 +441,7 @@ class Chargepoint:
                                 Pub().pub("openWB/set/vehicle/"+str(charging_ev.ev_num) +
                                           "/control_parameter/timestamp_perform_phase_switch",
                                           charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"])
-                            elif charging_ev.data["control_parameter"]["phases"] == 1:
+                            else:
                                 message = "Umschaltung von 3 auf 1 Phase."
                                 # Timestamp für die Durchführungsdauer
                                 charging_ev.data["control_parameter"][
@@ -455,8 +453,12 @@ class Chargepoint:
                                 data.data.pv_data["all"].data["set"][
                                     "reserved_evu_overhang"] += charging_ev.ev_template.data[
                                         "max_current_one_phase"] * 230
-                                log.info("LP "+str(self.cp_num)+": "+message)
-                                self.data["get"]["state_str"] = message
+                            log.info("LP "+str(self.cp_num)+": "+message)
+                            self.data["get"]["state_str"] = message
+                            if self.data["set"]["phases_to_use"] != charging_ev.data["control_parameter"]["phases"]:
+                                Pub().pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/phases_to_use",
+                                          charging_ev.data["control_parameter"]["phases"])
+                                self.data["set"]["phases_to_use"] = charging_ev.data["control_parameter"]["phases"]
                         else:
                             log.error(
                                 "Phasenumschaltung an Ladepunkt" + str(self.cp_num) +
@@ -464,10 +466,7 @@ class Chargepoint:
                     else:
                         log.error("Phasenumschaltung an Ladepunkt" + str(self.cp_num) +
                                   " nicht möglich, da gerade eine Umschaltung im Gange ist.")
-            if self.data["set"]["phases_to_use"] != charging_ev.data["control_parameter"]["phases"]:
-                Pub().pub("openWB/set/chargepoint/"+str(self.cp_num)+"/set/phases_to_use",
-                          charging_ev.data["control_parameter"]["phases"])
-                self.data["set"]["phases_to_use"] = charging_ev.data["control_parameter"]["phases"]
+
         except Exception:
             log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.cp_num))
 
