@@ -278,7 +278,8 @@ class PvAll:
             log.debug(f"Relevante Leistung für Löschen der Abschaltschwelle: {power_in_use}W, Schwelle: {threshold}W")
             if control_parameter["timestamp_switch_on_off"]:
                 # Wurde die Abschaltschwelle erreicht?
-                if power_in_use < threshold:
+                # Eigene Leistung aus der freigegebenen Leistung rausrechnen.
+                if power_in_use - chargepoint.data["set"]["required_power"] < threshold:
                     control_parameter["timestamp_switch_on_off"] = None
                     self.data["set"]["released_evu_overhang"] -= chargepoint.data["set"]["required_power"]
                     log.info("Abschaltschwelle während der Verzögerung überschritten.")
