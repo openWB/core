@@ -547,7 +547,8 @@ class Algorithm:
                             log.debug(f"Ladepunkt {cp.cp_num}: Prüfen, ob Phasenumschaltung durchgeführt werden soll.")
                             phases, current, message = charging_ev.auto_phase_switch(
                                 cp.cp_num,
-                                cp.data["get"]["currents"])
+                                cp.data["get"]["currents"],
+                                cp.data["get"]["power"])
                             if message is not None:
                                 cp.data["get"]["state_str"] = message
                             # Nachdem im Automatikmodus die Anzahl Phasen bekannt ist, Einhaltung des Maximalstroms
