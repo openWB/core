@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import IntEnum
 import logging
 import traceback
 from typing import Optional
@@ -9,7 +9,7 @@ from modules.common import component_type
 log = logging.getLogger("soc."+__name__)
 
 
-class FaultStateLevel(Enum):
+class FaultStateLevel(IntEnum):
     NO_ERROR = 0
     WARNING = 1
     ERROR = 2
@@ -33,7 +33,7 @@ class FaultState(Exception):
 
     def store_error(self, component_info: ComponentInfo) -> None:
         try:
-            if self.fault_state is not FaultStateLevel.NO_ERROR:
+            if self.fault_state != FaultStateLevel.NO_ERROR:
                 log.error(component_info.name + ": FaultState " +
                           str(self.fault_state) + ", FaultStr " +
                           self.fault_str + ", Traceback: \n" +

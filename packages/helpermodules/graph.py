@@ -6,6 +6,7 @@ import logging
 
 from control import data
 from helpermodules.pub import Pub
+from modules.common.fault_state import FaultStateLevel
 
 log = logging.getLogger(__name__)
 
@@ -23,13 +24,13 @@ class Graph:
             dataline = {"timestamp": int(
                 time.time()), "time": datetime.datetime.today().strftime("%H:%M:%S")}
             evu_counter = data.data.counter_data["all"].get_evu_counter()
-            if data.data.counter_data[evu_counter].data["get"]["fault_state"] == 0:
+            if data.data.counter_data[evu_counter].data["get"]["fault_state"] < FaultStateLevel.ERROR:
                 dataline.update({"grid": _convert_to_kW(
                     data.data.counter_data[evu_counter].data["get"]["power"])})
             for c in data.data.counter_data:
                 if "counter" in c and evu_counter not in c:
                     counter = data.data.counter_data[c]
-                    if counter.data["get"]["fault_state"] == 0:
+                    if counter.data["get"]["fault_state"] < FaultStateLevel.ERROR:
                         dataline.update({"counter"+str(counter.counter_num) +
                                          "-power": _convert_to_kW(counter.data["get"]["power"])})
             dataline.update(
@@ -43,7 +44,7 @@ class Graph:
                 for cp in data.data.cp_data:
                     if "cp" in cp:
                         chargepoint = data.data.cp_data[cp]
-                        if chargepoint.data["get"]["fault_state"] == 0:
+                        if chargepoint.data["get"]["fault_state"] < FaultStateLevel.ERROR:
                             dataline.update(
                                 {"cp" + str(chargepoint.cp_num) +
                                  "-power": _convert_to_kW(chargepoint.data["get"]["power"])})

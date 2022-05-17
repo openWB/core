@@ -21,6 +21,7 @@ import logging
 
 from control import data
 from helpermodules.pub import Pub
+from modules.common.fault_state import FaultStateLevel
 
 log = logging.getLogger(__name__)
 
@@ -89,8 +90,8 @@ class BatAll:
                 if parent_data["config"]["max_ac_out"] > 0:
                     max_bat_power = parent_data["config"]["max_ac_out"]*-1 - parent_data["get"]["power"]
                     if battery.data["get"]["power"] > max_bat_power:
-                        if battery.data["get"]["fault_state"] == 0:
-                            battery.data["get"]["fault_state"] = 1
+                        if battery.data["get"]["fault_state"] == FaultStateLevel.NO_ERROR:
+                            battery.data["get"]["fault_state"] = FaultStateLevel.WARNING.value
                             battery.data["get"]["fault_str"] = ("Die maximale Entladeleistung des Wechselrichters" +
                                                                 " ist erreicht.")
                             Pub().pub(f"openWB/set/bat/{battery.bat_num}/get/fault_state",
