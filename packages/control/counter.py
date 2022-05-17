@@ -259,18 +259,18 @@ class CounterAll:
         else:
             return False
 
-    def hierarchy_add_item_aside(self, new_id: int, new_type: ComponentType, id_to_find: int) -> bool:
+    def hierarchy_add_item_aside(self, new_id: int, new_type: ComponentType, id_to_find: int) -> None:
         """ ruft die rekursive Funktion zum Hinzufügen eines Zählers oder Ladepunkts in die Zählerhierarchie auf
         derselben Ebene wie das angegebene Element.
         """
         if self.__is_id_in_top_level(id_to_find):
             self.data["get"]["hierarchy"].append({"id": new_id, "type": new_type.value, "children": []})
             Pub().pub("openWB/set/counter/get/hierarchy", self.data["get"]["hierarchy"])
-            return True
         else:
-            return self.__edit_element_in_hierarchy(
-                self.data["get"]["hierarchy"][0],
-                id_to_find, self._add_item_aside, new_id, new_type)
+            if (self.__edit_element_in_hierarchy(
+                    self.data["get"]["hierarchy"][0],
+                    id_to_find, self._add_item_aside, new_id, new_type) is False):
+                raise IndexError(f"Element {id_to_find} konnte nicht in der Hierarchie gefunden werden.")
 
     def _add_item_aside(
             self, child: Dict, current_entry: Dict, id_to_find: int, new_id: int, new_type: ComponentType) -> bool:
@@ -281,7 +281,7 @@ class CounterAll:
         else:
             return False
 
-    def hierarchy_remove_item(self, id_to_find: int, keep_children: bool = True) -> bool:
+    def hierarchy_remove_item(self, id_to_find: int, keep_children: bool = True) -> None:
         """ruft die rekursive Funktion zum Löschen eines Elements. Je nach Flag werden die Kinder gelöscht oder auf die
         Ebene des gelöschten Elements gehoben.
         """
@@ -291,11 +291,11 @@ class CounterAll:
                 self.data["get"]["hierarchy"].extend(item["children"])
             self.data["get"]["hierarchy"].remove(item)
             Pub().pub("openWB/set/counter/get/hierarchy", self.data["get"]["hierarchy"])
-            return True
         else:
-            return self.__edit_element_in_hierarchy(
-                self.data["get"]["hierarchy"][0],
-                id_to_find, self._remove_item, keep_children)
+            if (self.__edit_element_in_hierarchy(
+                    self.data["get"]["hierarchy"][0],
+                    id_to_find, self._remove_item, keep_children) is False):
+                raise IndexError(f"Element {id_to_find} konnte nicht in der Hierarchie gefunden werden.")
 
     def _remove_item(self, child: Dict, current_entry: Dict, id: str, keep_children: bool) -> bool:
         if id == child["id"]:
@@ -307,18 +307,18 @@ class CounterAll:
         else:
             return False
 
-    def hierarchy_add_item_below(self, new_id: int, new_type: ComponentType, id_to_find: int):
+    def hierarchy_add_item_below(self, new_id: int, new_type: ComponentType, id_to_find: int) -> None:
         """ruft die rekursive Funktion zum Hinzufügen eines Elements als Kind des angegebenen Elements.
         """
         item = self.__is_id_in_top_level(id_to_find)
         if item:
             item["children"].append({"id": new_id, "type": new_type.value, "children": []})
             Pub().pub("openWB/set/counter/get/hierarchy", self.data["get"]["hierarchy"])
-            return True
         else:
-            return self.__edit_element_in_hierarchy(
-                self.data["get"]["hierarchy"][0],
-                id_to_find, self._add_item_below, new_id, new_type)
+            if (self.__edit_element_in_hierarchy(
+                    self.data["get"]["hierarchy"][0],
+                    id_to_find, self._add_item_below, new_id, new_type) is False):
+                raise IndexError(f"Element {id_to_find} konnte nicht in der Hierarchie gefunden werden.")
 
     def _add_item_below(self, child: Dict, current_entry: Dict, id_to_find: int, new_id: int, new_type: ComponentType):
         if id_to_find == child["id"]:
@@ -334,9 +334,10 @@ class CounterAll:
                 return True
             else:
                 if len(child["children"]) != 0:
-                    return self.__edit_element_in_hierarchy(child, id_to_find, func, *args)
+                    if self.__edit_element_in_hierarchy(child, id_to_find, func, *args):
+                        return True
         else:
-            raise IndexError(f"Element {id_to_find} konnte nicht in der Hierarchie gefunden werden.")
+            return False
 
 
 def get_max_id_in_hierarchy(current_entry: List, max_id: int) -> int:

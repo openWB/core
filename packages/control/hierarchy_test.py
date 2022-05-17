@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Dict, List, Optional, Union
 import pytest
 from unittest.mock import Mock
 
@@ -47,8 +47,8 @@ class ParamsAdd:
                  new_id: int,
                  new_type: ComponentType,
                  id_to_find: int,
-                 expected_return: bool,
-                 expected_hierarchy: List) -> None:
+                 expected_hierarchy: List,
+                 expected_return: Optional[bool] = None) -> None:
         self.name = name
         self.counter_all = counter_all
         self.new_id = new_id
@@ -62,7 +62,7 @@ class ParamsItem:
     def __init__(self, name: str,
                  counter_all: CounterAll,
                  id,
-                 expected_return,
+                 expected_return: Optional[Union[List, Dict]] = None,
                  expected_hierarchy: Optional[List] = None) -> None:
         self.name = name
         self.counter_all = counter_all
@@ -80,12 +80,12 @@ def set_up(monkeypatch):
 
 
 cases_add_item_below = [
-    ParamsAdd("add_below_one_level", hierarchy_one_level(), 1, ComponentType.INVERTER, 0, True, [
+    ParamsAdd("add_below_one_level", hierarchy_one_level(), 1, ComponentType.INVERTER, 0, [
         {"id": 0, "type": "counter", "children": [
             {"id": 1, "type": "inverter", "children": []}]}]),
     ParamsAdd(
         "add_below_two_level", hierarchy_two_level(),
-        1, ComponentType.INVERTER, 2, True,
+        1, ComponentType.INVERTER, 2,
         [{'id': 0, 'type': "counter", 'children': [
             {'id': 2, 'type': "cp", 'children': [
                 {'id': 1, 'type': "inverter", 'children': []}]}]},
@@ -96,52 +96,48 @@ cases_add_item_below = [
 @pytest.mark.parametrize("params", cases_add_item_below, ids=[c.name for c in cases_add_item_below])
 def test_add_item_below(params: ParamsAdd):
     # execution
-    actual = params.counter_all.hierarchy_add_item_below(params.new_id, params.new_type, params.id_to_find)
+    params.counter_all.hierarchy_add_item_below(params.new_id, params.new_type, params.id_to_find)
 
     # evaluation
-    assert actual == params.expected_return
     assert params.counter_all.data["get"]["hierarchy"] == params.expected_hierarchy
 
 
 cases_delete_keep_children = [
-    ParamsItem("delete_keep_children_one_level", hierarchy_one_level(), 0, True, []),
+    ParamsItem("delete_keep_children_one_level", hierarchy_one_level(), 0, expected_hierarchy=[]),
     ParamsItem(
-        "delete_keep_children_two_level", hierarchy_two_level(), 0, True,
-        [{"id": 7, "type": "inverter", "children": []},
-         {'id': 2, 'type': "cp", 'children': []}])
+        "delete_keep_children_two_level", hierarchy_two_level(), 0,
+        expected_hierarchy=[{"id": 7, "type": "inverter", "children": []}, {'id': 2, 'type': "cp", 'children': []}])
 ]
 
 
 @pytest.mark.parametrize("params", cases_delete_keep_children, ids=[c.name for c in cases_delete_keep_children])
 def test_delete_keep_children(params: ParamsItem):
     # execution
-    actual = params.counter_all.hierarchy_remove_item(params.id, True)
+    params.counter_all.hierarchy_remove_item(params.id, True)
 
     # evaluation
-    assert actual == params.expected_return
     assert params.counter_all.data["get"]["hierarchy"] == params.expected_hierarchy
 
 
 cases_delete_discard_children = [
-    ParamsItem("delete_discard_children_one_level", hierarchy_one_level(),  0, True, []),
+    ParamsItem("delete_discard_children_one_level", hierarchy_one_level(),  0, expected_hierarchy=[]),
     ParamsItem("delete_discard_children_two_level", hierarchy_two_level(),
-               0, True, [{"id": 7, "type": "inverter", "children": []}])
+               0, expected_hierarchy=[{"id": 7, "type": "inverter", "children": []}])
 ]
 
 
 @pytest.mark.parametrize("params", cases_delete_discard_children, ids=[c.name for c in cases_delete_discard_children])
 def test_delete_discard_children(params: ParamsItem):
     # execution
-    actual = params.counter_all.hierarchy_remove_item(params.id, False)
+    params.counter_all.hierarchy_remove_item(params.id, False)
 
     # evaluation
-    assert actual == params.expected_return
     assert params.counter_all.data["get"]["hierarchy"] == params.expected_hierarchy
 
 
 cases_get_chargepoints_of_counter = [
-    ParamsItem("get_chargepoints_of_counter", hierarchy_cp(), "counter2", ["cp3", "cp5", "cp6"]),
-    ParamsItem("get_chargepoints_of_counter", hierarchy_two_level(), "counter0", ["cp2"])
+    ParamsItem("get_chargepoints_of_counter", hierarchy_cp(), "counter2", expected_return=["cp3", "cp5", "cp6"]),
+    ParamsItem("get_chargepoints_of_counter", hierarchy_two_level(), "counter0", expected_return=["cp2"])
 ]
 
 
@@ -157,8 +153,8 @@ def test_get_chargepoints_of_counter(params: ParamsItem):
 
 
 cases_get_counters_to_check = [
-    ParamsItem("get_counters_to_check", hierarchy_cp(), 5, ["counter4", "counter2", "counter0"]),
-    ParamsItem("get_counters_to_check", hierarchy_two_level(), 2, ["counter0"])
+    ParamsItem("get_counters_to_check", hierarchy_cp(), 5, expected_return=["counter4", "counter2", "counter0"]),
+    ParamsItem("get_counters_to_check", hierarchy_two_level(), 2, expected_return=["counter0"])
 ]
 
 
@@ -172,10 +168,11 @@ def test_get_counters_to_check(params: ParamsItem):
 
 
 cases_get_entry_of_element = [
-    ParamsItem("get_entry_of_element", hierarchy_cp(), 5, {"id": 5, "type": "cp", "children": []}),
-    ParamsItem("get_entry_of_element", hierarchy_two_level(), 0, {"id": 0, "type": "counter",
-                                                                  "children": [
-                                                                      {"id": 2, "type": "cp", "children": []}]})
+    ParamsItem("get_entry_of_element", hierarchy_cp(), 5, expected_return={"id": 5, "type": "cp", "children": []}),
+    ParamsItem("get_entry_of_element", hierarchy_two_level(), 0,
+               expected_return={"id": 0, "type": "counter",
+                                "children": [
+                                    {"id": 2, "type": "cp", "children": []}]})
 ]
 
 
@@ -189,15 +186,15 @@ def test_get_entry_of_element(params: ParamsItem):
 
 
 cases_get_entry_of_parent = [
-    ParamsItem("get_entry_of_parent_cp", hierarchy_cp(), 5, {"id": 4, "type": "counter", "children": [
+    ParamsItem("get_entry_of_parent_cp", hierarchy_cp(), 5, expected_return={"id": 4, "type": "counter", "children": [
         {"id": 5, "type": "cp", "children": []},
         {"id": 6, "type": "cp", "children": []}]}),
-    ParamsItem("get_entry_of_parent_two_level", hierarchy_two_level(), 2, {"id": 0, "type": "counter",
-                                                                           "children": [
-                                                                               {"id": 2,
-                                                                                "type": "cp",
-                                                                                "children": []}]}),
-    ParamsItem("get_entry_of_parent_one_level", hierarchy_one_level(), 0, {})
+    ParamsItem("get_entry_of_parent_two_level", hierarchy_two_level(), 2, expected_return={"id": 0, "type": "counter",
+                                                                                           "children": [
+                                                                                               {"id": 2,
+                                                                                                   "type": "cp",
+                                                                                                   "children": []}]}),
+    ParamsItem("get_entry_of_parent_one_level", hierarchy_one_level(), 0, expected_return={})
 ]
 
 
