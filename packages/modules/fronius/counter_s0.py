@@ -25,7 +25,7 @@ class FroniusS0Counter:
         self.__store = get_counter_value_store(component_config["id"])
         self.component_info = ComponentInfo.from_component_config(component_config)
 
-    def update(self) -> CounterState:
+    def update(self) -> None:
         session = req.get_http_session()
         response = session.get(
             'http://'+self.device_config["ip_address"]+'/solar_api/v1/GetPowerFlowRealtimeData.fcgi',
@@ -48,7 +48,4 @@ class FroniusS0Counter:
             exported=exported,
             power=power
         )
-        return counter_state
-
-    def set_counter_state(self, counter_state: CounterState) -> None:
         self.__store.set(counter_state)

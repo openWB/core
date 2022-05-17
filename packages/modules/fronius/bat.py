@@ -11,7 +11,9 @@ def get_default_config() -> dict:
         "name": "Fronius Speicher",
         "id": 0,
         "type": "bat",
-        "configuration": {}
+        "configuration": {
+            "meter_id": 0
+        }
     }
 
 
@@ -25,8 +27,8 @@ class FroniusBat:
         self.__store = get_bat_value_store(component_config["id"])
         self.component_info = ComponentInfo.from_component_config(component_config)
 
-    def update(self) -> BatState:
-        meter_id = str(self.device_config["meter_id"])
+    def update(self) -> None:
+        meter_id = str(self.component_config["configuration"]["meter_id"])
 
         resp_json = req.get_http_session().get(
             'http://' + self.device_config["ip_address"] + '/solar_api/v1/GetPowerFlowRealtimeData.fcgi',
@@ -59,7 +61,4 @@ class FroniusBat:
             imported=imported,
             exported=exported
         )
-        return bat_state
-
-    def set_bat_state(self, bat_state: BatState) -> None:
         self.__store.set(bat_state)
