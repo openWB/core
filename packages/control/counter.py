@@ -6,6 +6,7 @@ from typing import Callable, Dict, List
 from control import data
 from helpermodules.pub import Pub
 from modules.common.component_type import ComponentType
+from modules.common.fault_state import FaultStateLevel
 
 log = logging.getLogger(__name__)
 
@@ -65,8 +66,8 @@ class CounterAll:
                 log.error(
                     f"Ungültiger Hausverbrauch: Leistung der Elemente {power}W, "
                     f"EVU-Leistung {evu}W, Berücksichtigte Komponenten neben EVU {elements}")
-                if evu_counter_data["get"]["fault_state"] == 0:
-                    evu_counter_data["get"]["fault_state"] = 1
+                if evu_counter_data["get"]["fault_state"] == FaultStateLevel.NO_ERROR:
+                    evu_counter_data["get"]["fault_state"] = FaultStateLevel.WARNING.value
                     evu_counter_data["get"][
                         "fault_str"] = "Der Wert für den Hausverbrauch ist nicht plausibel (negativ). Bitte "\
                         "die Leistungen der Komponenten und die Anordnung in der Hierarchie prüfen."
@@ -375,11 +376,11 @@ class Counter:
             # Wenn der Zähler keine Werte liefert, darf nicht geladen werden.
             connected_cps = data.data.counter_data["all"].get_chargepoints_of_counter(f'counter{self.counter_num}')
             for cp in connected_cps:
-                if self.data["get"]["fault_state"] > 0:
+                if self.data["get"]["fault_state"] == FaultStateLevel.ERROR:
                     data.data.cp_data[cp].data["set"]["loadmanagement_available"] = False
                 else:
                     data.data.cp_data[cp].data["set"]["loadmanagement_available"] = True
-            if self.data["get"]["fault_state"] > 0:
+            if self.data["get"]["fault_state"] == FaultStateLevel.ERROR:
                 self.data["get"]["power"] = 0
                 return
 
