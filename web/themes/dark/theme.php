@@ -653,38 +653,35 @@
 									<div class="chargemode-options chargemode-option-scheduled_charging">
 										<div class="form-row vaRow mb-1">
 											<div class="col">
-												<h3 class="mb-0">Einstellungen für "Zielladen"</h3>
+												<h3 class="mb-0">Zeitpläne</h3>
 											</div>
-											<!-- <div class="col-2 text-right">
-												<button type="button" class="btn btn-sm btn-secondary">
+											<div class="col-2 text-right">
+												<button type="button" class="scheduled-charging-settings-link btn btn-sm btn-secondary">
 													<i class="fas fa-cogs"></i>
 												</button>
-											</div> -->
+											</div>
 										</div>
 										<div class="form-row mb-1 charge-point-schedule-plan charge-point-schedule-plan-template hide" data-plan="">
 											<div class="col">
-												<div class="form-row">
-													<div class="col">
-														<span class="charge-point-schedule-name">--</span>
-														<span class="charge-point-schedule-edit"><i class="fas fa-edit"></i></span>
-													</div>
-													<div class="col-lg-6">
-														<span class="charge-point-schedule-frequency">
-															<i class="fas fa-calendar-alt"></i>
-															<span class="charge-point-schedule-frequency-value">--</span>
-														</span>
-														<span class="charge-point-schedule-date">
-															<i class="fas fa-calendar-day"></i>
-															<span class="charge-point-schedule-date-value">--</span>
-														</span>
-														<i class="fas fa-clock"></i> <span class="charge-point-schedule-time">--</span>
-														<i class="fas fa-car-battery"></i> <span class="charge-point-schedule-soc">--</span>%
-													</div>
-												</div>
+												<span class="charge-point-schedule-name">--</span>
 											</div>
-											<div class="col-4 text-right">
+											<div class="col-lg-6 text-right">
+												<span class="charge-point-schedule-active border rounded p-1">
+													<span class="charge-point-schedule-frequency">
+														<i class="fas fa-calendar-alt"></i>
+														<span class="charge-point-schedule-frequency-value">--</span>
+													</span>
+													<span class="charge-point-schedule-date">
+														<i class="fas fa-calendar-day"></i>
+														<span class="charge-point-schedule-date-value">--</span>
+													</span>
+													<i class="fas fa-clock"></i> <span class="charge-point-schedule-time">--</span>
+													<i class="fas fa-car-battery"></i> <span class="charge-point-schedule-soc">--</span>%
+												</span>
+											</div>
+											<!-- <div class="col-4 text-right">
 												<input class="charge-point-schedule-active" type="checkbox" data-toggle="toggle" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/scheduled_charging/plans/<sched>/active" data-on="An" data-off="Aus" data-onstyle="success" data-offstyle="danger" data-size="sm" data-style="w-100">
-											</div>
+											</div> -->
 										</div>
 									</div>
 								</div>
@@ -1004,6 +1001,11 @@
 							}
 						}
 					}
+				});
+
+				$('.container').on('click', '.scheduled-charging-settings-link', function(event){
+					event.stopPropagation();
+					window.location.href="settings/#/VehicleConfiguration";
 				});
 
 				// $('.btn[value="Reset"]').click(function(event){

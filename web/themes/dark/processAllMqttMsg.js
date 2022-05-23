@@ -8,6 +8,7 @@
 
 var graphRefreshCounter = 0;
 var chargeModeTemplate = {};
+var schedulePlan = {};
 var evuCounterIndex = undefined;
 
 // function getCol(matrix, col){
@@ -159,10 +160,10 @@ function refreshChargeTemplate(templateIndex) {
 				// remove checkbox toggle button style as they will not function after cloning
 				sourceElement.find('input[type=checkbox][data-toggle^=toggle]').bootstrapToggle('destroy');
 				// now create any other schedule plan
-				if ("plans" in chargeModeTemplate[templateIndex].chargemode.scheduled_charging) {
-					for (const [key, value] of Object.entries(chargeModeTemplate[templateIndex].chargemode.scheduled_charging.plans)) {
-						// console.log("schedule id: "+key);
-						// console.log(value);
+				if (templateIndex in schedulePlan) {
+					for (const [key, value] of Object.entries(schedulePlan[templateIndex])) {
+						console.log("schedule id: "+key);
+						console.log(value);
 						if (parent.find('.charge-point-schedule-plan[data-plan=' + key + ']').length == 0) {
 							// console.log('creating schedule plan with id "'+key+'"');
 							var clonedElement = sourceElement.clone();
@@ -179,25 +180,25 @@ function refreshChargeTemplate(templateIndex) {
 							schedulePlanElement.find('input[type=checkbox][data-toggle^=toggle]').bootstrapToggle();
 							// set values from payload
 							schedulePlanElement.find('.charge-point-schedule-name').text(value.name);
-							schedulePlanElement.find('.charge-point-schedule-soc').text(value.soc);
+							schedulePlanElement.find('.charge-point-schedule-soc').text(value.limit.soc);
 							schedulePlanElement.find('.charge-point-schedule-time').text(value.time);
 							if (value.active == true) {
-								schedulePlanElement.find('.charge-point-schedule-active').bootstrapToggle('on', true);
+								schedulePlanElement.find('.charge-point-schedule-active').removeClass('alert-danger border-danger');
+								schedulePlanElement.find('.charge-point-schedule-active').addClass('alert-success border-success');
 							} else {
-								schedulePlanElement.find('.charge-point-schedule-active').bootstrapToggle('off', true);
+								schedulePlanElement.find('.charge-point-schedule-active').removeClass('alert-success border-success');
+								schedulePlanElement.find('.charge-point-schedule-active').addClass('alert-danger border-danger');
 							}
 							switch (value.frequency.selected) {
 								case "once":
 									schedulePlanElement.find('.charge-point-schedule-frequency').addClass('hide');
 									schedulePlanElement.find('.charge-point-schedule-date').removeClass('hide');
-									schedulePlanElement.find('.charge-point-schedule-edit').removeClass('hide');
 									const d = new Date(value.frequency.once);
 									schedulePlanElement.find('.charge-point-schedule-date-value').text(d.toLocaleDateString(undefined, { year: "numeric", month: "2-digit", day: "2-digit", weekday: "short" }));
 									break;
 								case "daily":
 									schedulePlanElement.find('.charge-point-schedule-frequency').removeClass('hide');
 									schedulePlanElement.find('.charge-point-schedule-date').addClass('hide');
-									schedulePlanElement.find('.charge-point-schedule-edit').addClass('hide');
 									schedulePlanElement.find('.charge-point-schedule-frequency-value').text('täglich');
 									break;
 								case "weekly":
@@ -213,7 +214,6 @@ function refreshChargeTemplate(templateIndex) {
 									});
 									schedulePlanElement.find('.charge-point-schedule-frequency').removeClass('hide');
 									schedulePlanElement.find('.charge-point-schedule-date').addClass('hide');
-									schedulePlanElement.find('.charge-point-schedule-edit').addClass('hide');
 									schedulePlanElement.find('.charge-point-schedule-frequency-value').text(daysText);
 									break;
 								default:
@@ -926,6 +926,7 @@ function processChargePointMessages(mqttTopic, mqttPayload) {
 }
 
 function processVehicleMessages(mqttTopic, mqttPayload) {
+	console.log("vehicle message", mqttTopic);
 	if (mqttTopic.match(/^openwb\/vehicle\/[0-9]+\/name$/i)) {
 		// this topic is used to populate the charge point list
 		var index = getIndex(mqttTopic); // extract number between two / /
@@ -943,6 +944,14 @@ function processVehicleMessages(mqttTopic, mqttPayload) {
 	} else if (mqttTopic.match(/^openwb\/vehicle\/template\/charge_template\/[0-9]+$/i)) {
 		templateIndex = mqttTopic.match(/[0-9]+$/i);
 		chargeModeTemplate[templateIndex] = JSON.parse(mqttPayload);
+		refreshChargeTemplate(templateIndex);
+	} else if (mqttTopic.match(/^openwb\/vehicle\/template\/charge_template\/[0-9]+\/chargemode\/scheduled_charging\/plans\/[0-9]+$/i)) {
+		templateIndex = mqttTopic.match(/[0-9]+/i)[0];
+		planIndex = mqttTopic.match(/[0-9]+$/i)[0];
+		if (! (templateIndex in schedulePlan)) {
+			schedulePlan[templateIndex] = {};
+		}
+		schedulePlan[templateIndex][planIndex] = JSON.parse(mqttPayload);
 		refreshChargeTemplate(templateIndex);
 	}
 }
