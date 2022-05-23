@@ -41,11 +41,12 @@ class Device(AbstractDevice):
     def __init__(self, device_config: dict) -> None:
         self.components = {}  # type: Dict[str, http_component_classes]
         try:
+            self.device_config = device_config
             port = self.device_config["configuration"]["port"]
             self.domain = self.device_config["configuration"]["protocol"] + \
-                "://" + self.device_config["configuration"]["domain"] + \
-                ":" + port if port else ""
-            self.device_config = device_config
+                "://" + self.device_config["configuration"]["domain"]
+            if port is not None:
+                self.domain = self.domain + ":" + port
         except Exception:
             log.exception("Fehler im Modul "+device_config["name"])
 
@@ -107,7 +108,10 @@ def create_legacy_device_config(url: str):
     device_config = get_default_config()
     device_config["configuration"]["protocol"] = parsed_url.scheme
     device_config["configuration"]["domain"] = parsed_url.hostname
-    device_config["configuration"]["port"] = str(parsed_url.port)
+    if parsed_url.port is not None:
+        device_config["configuration"]["port"] = int(parsed_url.port)
+    else:
+        device_config["configuration"]["port"] = None
     return device_config
 
 

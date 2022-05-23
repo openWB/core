@@ -17,7 +17,7 @@ def get_default_config() -> dict:
         "id": 0,
         "configuration": {
             "ip_address": None,
-            "password": ""
+            "password": None
         }
     }
 
@@ -80,8 +80,8 @@ def read_legacy(component_type: str, ip_address: str, password: str, num: Option
     component_config["id"] = num
     dev.add_component(component_config)
 
-    log.debug('Sunways IP-Adresse: ' + str(ip_address))
-    log.debug('Sunways Passwort: ' + str(password))
+    log.debug('Sunways IP-Adresse: ' + ip_address)
+    log.debug('Sunways Passwort: ' + password)
 
     dev.update()
 

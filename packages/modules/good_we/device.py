@@ -90,7 +90,7 @@ def read_legacy(component_type: str, ip_address: str, id: int, num: Optional[int
     component_config["id"] = num
     dev.add_component(component_config)
 
-    log.debug('GoodWe IP-Adresse: ' + str(ip_address))
+    log.debug('GoodWe IP-Adresse: ' + ip_address)
     log.debug('GoodWe ID: ' + str(id))
 
     dev.update()

@@ -86,7 +86,7 @@ def read_legacy(component_type: str, ip_address: str, num: Optional[int] = None)
     component_config["id"] = num
     dev.add_component(component_config)
 
-    log.debug('Siemens IP-Adresse: ' + str(ip_address))
+    log.debug('Siemens IP-Adresse: ' + ip_address)
 
     dev.update()
 

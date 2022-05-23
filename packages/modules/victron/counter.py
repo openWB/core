@@ -12,8 +12,7 @@ def get_default_config() -> dict:
         "name": "Victron Zähler",
         "id": 0,
         "type": "counter",
-        "configuration":
-        {
+        "configuration": {
             "modbus_id": 1,
             "energy_meter": True
         }
