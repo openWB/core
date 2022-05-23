@@ -179,25 +179,25 @@ function refreshChargeTemplate(templateIndex) {
 							schedulePlanElement.find('input[type=checkbox][data-toggle^=toggle]').bootstrapToggle();
 							// set values from payload
 							schedulePlanElement.find('.charge-point-schedule-name').text(value.name);
-							schedulePlanElement.find('.charge-point-schedule-soc').text(value.soc);
+							schedulePlanElement.find('.charge-point-schedule-soc').text(value.limit.soc);
 							schedulePlanElement.find('.charge-point-schedule-time').text(value.time);
 							if (value.active == true) {
-								schedulePlanElement.find('.charge-point-schedule-active').bootstrapToggle('on', true);
+								schedulePlanElement.find('.charge-point-schedule-active').removeClass('alert-danger border-danger');
+								schedulePlanElement.find('.charge-point-schedule-active').addClass('alert-success border-success');
 							} else {
-								schedulePlanElement.find('.charge-point-schedule-active').bootstrapToggle('off', true);
+								schedulePlanElement.find('.charge-point-schedule-active').removeClass('alert-success border-success');
+								schedulePlanElement.find('.charge-point-schedule-active').addClass('alert-danger border-danger');
 							}
 							switch (value.frequency.selected) {
 								case "once":
 									schedulePlanElement.find('.charge-point-schedule-frequency').addClass('hide');
 									schedulePlanElement.find('.charge-point-schedule-date').removeClass('hide');
-									schedulePlanElement.find('.charge-point-schedule-edit').removeClass('hide');
 									const d = new Date(value.frequency.once);
 									schedulePlanElement.find('.charge-point-schedule-date-value').text(d.toLocaleDateString(undefined, { year: "numeric", month: "2-digit", day: "2-digit", weekday: "short" }));
 									break;
 								case "daily":
 									schedulePlanElement.find('.charge-point-schedule-frequency').removeClass('hide');
 									schedulePlanElement.find('.charge-point-schedule-date').addClass('hide');
-									schedulePlanElement.find('.charge-point-schedule-edit').addClass('hide');
 									schedulePlanElement.find('.charge-point-schedule-frequency-value').text('täglich');
 									break;
 								case "weekly":
@@ -213,7 +213,6 @@ function refreshChargeTemplate(templateIndex) {
 									});
 									schedulePlanElement.find('.charge-point-schedule-frequency').removeClass('hide');
 									schedulePlanElement.find('.charge-point-schedule-date').addClass('hide');
-									schedulePlanElement.find('.charge-point-schedule-edit').addClass('hide');
 									schedulePlanElement.find('.charge-point-schedule-frequency-value').text(daysText);
 									break;
 								default:
