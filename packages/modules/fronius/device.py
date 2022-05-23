@@ -3,13 +3,14 @@ import logging
 from typing import Dict, Optional, Union, List
 
 from helpermodules.cli import run_using_positional_cli_args
+from modules.common.store import get_inverter_value_store
 from modules.common.abstract_device import AbstractDevice
-from modules.common.component_context import MultiComponentUpdateContext
+from modules.common.component_context import MultiComponentUpdateContext, SingleComponentUpdateContext
 from modules.fronius import bat
 from modules.fronius import counter_s0
 from modules.fronius import counter_sm
 from modules.fronius import inverter
-from modules.fronius import meter
+from modules.fronius.abstract_config import Fronius
 
 log = logging.getLogger(__name__)
 
@@ -20,7 +21,6 @@ def get_default_config() -> dict:
         "type": "fronius",
         "id": 0,
         "configuration": {
-            "meter_id": 0,  # ToDo: move to counter_*
             "ip_address": None
         }
     }
@@ -41,7 +41,9 @@ class Device(AbstractDevice):
     def __init__(self, device_config: dict) -> None:
         self.components = {}  # type: Dict[str, fronius_component_classes]
         try:
-            self.device_config = device_config
+            self.config = device_config \
+                if isinstance(device_config, Fronius) \
+                else Fronius.from_dict(device_config)
         except Exception:
             log.exception("Fehler im Modul "+device_config["name"])
 
@@ -49,7 +51,7 @@ class Device(AbstractDevice):
         component_type = component_config["type"]
         if component_type in self.COMPONENT_TYPE_TO_CLASS:
             self.components["component"+str(component_config["id"])] = self.COMPONENT_TYPE_TO_CLASS[component_type](
-                self.device_config["id"], component_config, self.device_config["configuration"])
+                self.config.id, component_config, self.config.configuration)
         else:
             raise Exception(
                 "illegal component type " + component_type + ". Allowed values: " +
@@ -60,45 +62,11 @@ class Device(AbstractDevice):
         log.debug("Start device reading " + str(self.components))
         if self.components:
             with MultiComponentUpdateContext(self.components):
-                # zuerst den WR auslesen
                 for component in self.components:
-                    if isinstance(self.components[component], inverter.FroniusInverter):
-                        inverter_state = self.components[component].update()
-                        self.components[component].set_inverter_state(inverter_state)
-                        # Rückgabe der Leistung des ersten WR mit zurückgesetzter Vorzeichenumkehr
-                        power_inverter = -1 * inverter_state.power
-                        break
-                else:
-                    power_inverter = 0
-                # dann Zähler auslesen und Werte verrechnen
-                for component in self.components:
-                    if isinstance(self.components[component], counter_sm.FroniusSmCounter):
-                        counter_state, meter_location = self.components[component].update()
-                        if meter_location == meter.MeterLocation.load:
-                            # wenn SmartMeter im Verbrauchszweig sitzt sind folgende Annahmen getroffen:
-                            # PV Leistung wird gleichmäßig auf alle Phasen verteilt
-                            # Spannungen und Leistungsfaktoren sind am Verbrauchszweig == Einspeisepunkt
-                            # Hier gehen wir mal davon aus, dass der Wechselrichter seine PV-Leistung gleichmäßig
-                            # auf alle Phasen aufteilt.
-                            powers = [-1 * power - power_inverter/3 for power in counter_state.powers]
-                            # Wegen der geänderten Leistungen sind die Ströme erneut zu berechnen
-                            currents = [powers[i] / counter_state.voltages[i] for i in range(0, 3)]
-                            counter_state.powers = powers
-                            counter_state.currents = currents
-                        self.components[component].set_counter_state(counter_state)
-                        break
-                    elif isinstance(self.components[component], counter_s0.FroniusS0Counter):
-                        counter_state = self.components[component].update()
-                        counter_state.power += power_inverter
-                        self.components[component].set_counter_state(counter_state)
-                        break
-                for component in self.components:
-                    if isinstance(self.components[component], bat.FroniusBat):
-                        bat_state = self.components[component].update()
-                        self.components[component].set_bat_state(bat_state)
+                    self.components[component].update()
         else:
             log.warning(
-                self.device_config["name"] +
+                self.config.name +
                 ": Es konnten keine Werte gelesen werden, da noch keine Komponenten konfiguriert wurden."
             )
 
@@ -109,7 +77,6 @@ def read_legacy(
         meter_id: int,
         variant: int,
         ip_address2: str = "none",
-        bat_module: str = "none",
         num: Optional[int] = None) -> None:
     COMPONENT_TYPE_TO_MODULE = {
         "bat": bat,
@@ -120,14 +87,14 @@ def read_legacy(
 
     device_config = get_default_config()
     device_config["configuration"]["ip_address"] = ip_address
-    device_config["configuration"]["meter_id"] = meter_id
     dev = Device(device_config)
     if component_type in COMPONENT_TYPE_TO_MODULE:
         component_config = COMPONENT_TYPE_TO_MODULE[component_type].get_default_config()
-        if component_type == "counter_sm":
+        if component_type == "bat":
+            component_config["configuration"]["meter_id"] = meter_id
+        elif component_type == "counter_sm":
             component_config["configuration"]["variant"] = variant
-        elif component_type == "inverter":
-            component_config["configuration"]["ip_address2"] = ip_address2
+            component_config["configuration"]["meter_id"] = meter_id
     else:
         raise Exception(
             "illegal component type " + component_type + ". Allowed values: " +
@@ -136,9 +103,22 @@ def read_legacy(
     component_config["id"] = num
     dev.add_component(component_config)
 
-    log.debug('Fronius IP-Adresse: ' + str(ip_address))
+    log.debug('Fronius IP-Adresse: ' + ip_address)
 
-    dev.update()
+    if component_type == "bat" or "counter" in component_type:
+        dev.update()
+    elif component_type == "inverter" and num:
+        inverter1 = inverter.FroniusInverter(num, component_config, dev.config.configuration)
+        if ip_address2 != "none":
+            device_config["configuration"]["ip_address"] = ip_address2
+            inverter2 = inverter.FroniusInverter(num, component_config, dev.config.configuration)
+        with SingleComponentUpdateContext(inverter1.component_info):
+            total_power = inverter1.read_power()
+            if ip_address2 != "none":
+                total_power += inverter2.read_power()
+            get_inverter_value_store(num).set(inverter1.fill_inverter_state(total_power))
+    else:
+        raise Exception("illegal component num " + str(num) + ". Should be an int if it is an inverter.")
 
 
 def main(argv: List[str]) -> None:

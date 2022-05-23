@@ -92,7 +92,7 @@ def read_legacy(component_type: str, version: int, ip_address: str, port: int, i
     dev.add_component(component_config)
 
     log.debug('openWB flex Version: ' + str(version))
-    log.debug('openWB flex-Kit IP-Adresse: ' + str(ip_address))
+    log.debug('openWB flex-Kit IP-Adresse: ' + ip_address)
     log.debug('openWB flex-Kit Port: ' + str(port))
     log.debug('openWB flex-Kit ID: ' + str(id))
 

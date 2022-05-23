@@ -22,7 +22,8 @@ def get_default_config() -> dict:
         "id": 0,
         "configuration": {
             "protocol": "http",
-            "domain": ""
+            "domain": None,
+            "port": 80
         }
     }
 
@@ -41,16 +42,19 @@ class Device(AbstractDevice):
         self.components = {}  # type: Dict[str, http_component_classes]
         try:
             self.device_config = device_config
+            port = self.device_config["configuration"]["port"]
+            self.domain = self.device_config["configuration"]["protocol"] + \
+                "://" + self.device_config["configuration"]["domain"]
+            if port is not None:
+                self.domain = self.domain + ":" + str(port)
         except Exception:
             log.exception("Fehler im Modul "+device_config["name"])
 
     def add_component(self, component_config: dict) -> None:
         component_type = component_config["type"]
         if component_type in self.COMPONENT_TYPE_TO_CLASS:
-            domain = self.device_config["configuration"]["protocol"] + \
-                "://" + self.device_config["configuration"]["domain"]
             self.components["component"+str(component_config["id"])] = self.COMPONENT_TYPE_TO_CLASS[component_type](
-                component_config, domain)
+                self.device_config["id"], component_config, self.domain)
         else:
             raise Exception(
                 "illegal component type " + component_type + ". Allowed values: " +
@@ -103,8 +107,11 @@ def create_legacy_device_config(url: str):
     parsed_url = parse_url(url)
     device_config = get_default_config()
     device_config["configuration"]["protocol"] = parsed_url.scheme
-    device_config["configuration"]["domain"] = parsed_url.hostname+":" + \
-        str(parsed_url.port) if parsed_url.port else parsed_url.hostname
+    device_config["configuration"]["domain"] = parsed_url.hostname
+    if parsed_url.port is not None:
+        device_config["configuration"]["port"] = int(parsed_url.port)
+    else:
+        device_config["configuration"]["port"] = None
     return device_config
 
 

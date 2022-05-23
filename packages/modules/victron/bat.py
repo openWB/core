@@ -12,7 +12,9 @@ def get_default_config() -> dict:
         "name": "Victron Speicher",
         "id": 0,
         "type": "bat",
-        "configuration": {}
+        "configuration": {
+            "modbus_id": 100
+        }
     }
 
 
@@ -27,9 +29,10 @@ class VictronBat:
         self.component_info = ComponentInfo.from_component_config(component_config)
 
     def update(self) -> None:
+        modbus_id = self.component_config["configuration"]["modbus_id"]
         with self.__tcp_client:
-            power = self.__tcp_client.read_holding_registers(842, ModbusDataType.INT_16, unit=100)
-            soc = self.__tcp_client.read_holding_registers(843, ModbusDataType.UINT_16, unit=100)
+            power = self.__tcp_client.read_holding_registers(842, ModbusDataType.INT_16, unit=modbus_id)
+            soc = self.__tcp_client.read_holding_registers(843, ModbusDataType.UINT_16, unit=modbus_id)
 
         topic_str = "openWB/set/system/device/" + str(
             self.__device_id)+"/component/"+str(self.component_config["id"])+"/"
