@@ -545,7 +545,7 @@ def get_charge_template_scheduled_plan_default() -> dict:
         "time": "07:00",  # ToDo: aktuelle Zeit verwenden
         "limit":
             {
-                "selected": "none",
+                "selected": "amount",
                 "soc": 50,
                 "amount": 10000
             },

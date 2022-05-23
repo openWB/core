@@ -666,7 +666,7 @@
 												<span class="charge-point-schedule-name">--</span>
 											</div>
 											<div class="col-lg-6 text-right">
-												<span class="charge-point-schedule-active border rounded p-2">
+												<span class="charge-point-schedule-active border rounded p-1">
 													<span class="charge-point-schedule-frequency">
 														<i class="fas fa-calendar-alt"></i>
 														<span class="charge-point-schedule-frequency-value">--</span>

@@ -8,6 +8,7 @@
 
 var graphRefreshCounter = 0;
 var chargeModeTemplate = {};
+var schedulePlan = {};
 var evuCounterIndex = undefined;
 
 // function getCol(matrix, col){
@@ -159,10 +160,10 @@ function refreshChargeTemplate(templateIndex) {
 				// remove checkbox toggle button style as they will not function after cloning
 				sourceElement.find('input[type=checkbox][data-toggle^=toggle]').bootstrapToggle('destroy');
 				// now create any other schedule plan
-				if ("plans" in chargeModeTemplate[templateIndex].chargemode.scheduled_charging) {
-					for (const [key, value] of Object.entries(chargeModeTemplate[templateIndex].chargemode.scheduled_charging.plans)) {
-						// console.log("schedule id: "+key);
-						// console.log(value);
+				if (templateIndex in schedulePlan) {
+					for (const [key, value] of Object.entries(schedulePlan[templateIndex])) {
+						console.log("schedule id: "+key);
+						console.log(value);
 						if (parent.find('.charge-point-schedule-plan[data-plan=' + key + ']').length == 0) {
 							// console.log('creating schedule plan with id "'+key+'"');
 							var clonedElement = sourceElement.clone();
@@ -925,6 +926,7 @@ function processChargePointMessages(mqttTopic, mqttPayload) {
 }
 
 function processVehicleMessages(mqttTopic, mqttPayload) {
+	console.log("vehicle message", mqttTopic);
 	if (mqttTopic.match(/^openwb\/vehicle\/[0-9]+\/name$/i)) {
 		// this topic is used to populate the charge point list
 		var index = getIndex(mqttTopic); // extract number between two / /
@@ -942,6 +944,14 @@ function processVehicleMessages(mqttTopic, mqttPayload) {
 	} else if (mqttTopic.match(/^openwb\/vehicle\/template\/charge_template\/[0-9]+$/i)) {
 		templateIndex = mqttTopic.match(/[0-9]+$/i);
 		chargeModeTemplate[templateIndex] = JSON.parse(mqttPayload);
+		refreshChargeTemplate(templateIndex);
+	} else if (mqttTopic.match(/^openwb\/vehicle\/template\/charge_template\/[0-9]+\/chargemode\/scheduled_charging\/plans\/[0-9]+$/i)) {
+		templateIndex = mqttTopic.match(/[0-9]+/i)[0];
+		planIndex = mqttTopic.match(/[0-9]+$/i)[0];
+		if (! (templateIndex in schedulePlan)) {
+			schedulePlan[templateIndex] = {};
+		}
+		schedulePlan[templateIndex][planIndex] = JSON.parse(mqttPayload);
 		refreshChargeTemplate(templateIndex);
 	}
 }
