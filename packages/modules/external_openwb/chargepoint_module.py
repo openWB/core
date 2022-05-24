@@ -14,7 +14,7 @@ def get_default_config() -> Dict:
                 "type": "external_openwb",
                 "name": "Externe openWB",
                 "configuration": {
-                    "ip_address": "192.168.193.5",
+                    "ip_address": None,
                     "duo_num": 1
                 }
             },

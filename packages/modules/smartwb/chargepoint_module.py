@@ -16,11 +16,10 @@ def get_default_config() -> Dict:
         "connection_module": {
             "type": "smartwb",
             "name": "smartWB / EVSE-Wifi (>= v1.x.x/v2.x.x)",
-            "configuration":
-                {
-                    "ip_address": "192.168.1.85",
+            "configuration": {
+                    "ip_address": None,
                     "timeout": 2
-                }
+            }
         },
         "power_module": {}
     }

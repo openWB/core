@@ -18,9 +18,9 @@ def get_default_config() -> Dict:
             "connection_module": {
                 "type": "openwb_pro",
                 "name": "openWB Pro",
-                "configuration":
-                {"ip_address": "192.168.1.85"
-                 }
+                "configuration": {
+                    "ip_address": None
+                }
             },
             "power_module": {}}
 
