@@ -496,10 +496,6 @@ class Algorithm:
         for cp in data.data.cp_data.values():
             if isinstance(cp, Chargepoint):
                 try:
-                    # chargestate, weil nur die geprüft werden sollen, die tatsächlich laden und nicht die, die in
-                    # diesem Zyklus eingeschaltet wurden.
-                    if not cp.data["get"]["charge_state"]:
-                        continue
                     if cp.data["set"]["charging_ev"] != -1:
                         charging_ev = cp.data["set"]["charging_ev_data"]
                         if((charging_ev.charge_template.data["prio"] == prio) and
@@ -523,7 +519,8 @@ class Algorithm:
             for cp in preferenced_chargepoints:
                 try:
                     if cp.data["set"]["current"] != 0:
-                        data.data.pv_data["all"].switch_off_check_threshold(cp, overhang)
+                        if data.data.pv_data["all"].switch_off_check_threshold(cp, overhang) is False:
+                            cp.data["set"]["current"] = 0
                 except Exception:
                     log.exception(f"Fehler im Algorithmus-Modul für Ladepunkt{cp.cp_num}")
 
