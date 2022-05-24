@@ -64,6 +64,24 @@ def _pub_configurable_devices_components() -> None:
                 ]
             },
             {
+                "value": "batterx",
+                "text": "BatterX",
+                "component": [
+                    {
+                        "value": "bat",
+                        "text": "BatterX-Speicher"
+                    },
+                    {
+                        "value": "counter",
+                        "text": "BatterX-Zähler"
+                    },
+                    {
+                        "value": "inverter",
+                        "text": "BatterX-Wechselrichter"
+                    }
+                ]
+            },
+            {
                 "value": "carlo_gavazzi",
                 "text": "Carlo Gavazzi",
                 "component": [
@@ -106,6 +124,24 @@ def _pub_configurable_devices_components() -> None:
                     {
                         "value": "inverter",
                         "text": "Fronius Wechselrichter"
+                    }
+                ]
+            },
+            {
+                "value": "good_we",
+                "text": "GoodWe",
+                "component": [
+                    {
+                        "value": "bat",
+                        "text": " GoodWe-Speicher"
+                    },
+                    {
+                        "value": "counter",
+                        "text": "GoodWe-Zähler"
+                    },
+                    {
+                        "value": "inverter",
+                        "text": "GoodWe-Wechselrichter"
                     }
                 ]
             },
@@ -192,12 +228,22 @@ def _pub_configurable_devices_components() -> None:
                 ]
             },
             {
-                "value": "openwb",
-                "text": "openWB Kit",
+                "value": "openwb_bat_kit",
+                "text": "openWB Speicher-Kit",
                 "component": [
                     {
                         "value": "bat",
                         "text": "Speicher-Kit"
+                    }
+                ]
+            },
+            {
+                "value": "openwb_evu_kit",
+                "text": "openWB EVU-Kit",
+                "component": [
+                    {
+                        "value": "bat",
+                        "text": "Speicher-Zähler am EVU-Kit"
                     },
                     {
                         "value": "counter",
@@ -205,7 +251,7 @@ def _pub_configurable_devices_components() -> None:
                     },
                     {
                         "value": "inverter",
-                        "text": "PV-Kit"
+                        "text": "PV-Zähler am EVU-Kit"
                     }
                 ]
             },
@@ -228,12 +274,12 @@ def _pub_configurable_devices_components() -> None:
                 ]
             },
             {
-                "value": "openwb_pv_evu",
-                "text": "openWB PV-Zähler am EVU-Kit",
+                "value": "openwb_pv_kit",
+                "text": "openWB PV-Kit",
                 "component": [
                     {
                         "value": "inverter",
-                        "text": "PV-Zähler"
+                        "text": "PV-Kit"
                     }
                 ]
             },
@@ -391,6 +437,24 @@ def _pub_configurable_devices_components() -> None:
                     {
                         "value": "inverter",
                         "text": "Sunways-Wechselrichter"
+                    }
+                ]
+            },
+            {
+                "value": "tesla",
+                "text": "Tesla-Device",
+                "component": [
+                    {
+                        "value": "bat",
+                        "text": "Powerwall-Speicher"
+                    },
+                    {
+                        "value": "counter",
+                        "text": "Powerwall-Zähler"
+                    },
+                    {
+                        "value": "inverter",
+                        "text": "Powerwall-Wechselrichter"
                     }
                 ]
             },
