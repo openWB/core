@@ -1,7 +1,6 @@
 """prüft, ob Zeitfenster aktuell sind
 """
 import logging
-from datetime import timedelta
 import datetime
 from typing import Dict, List, Optional, Tuple
 
@@ -18,7 +17,7 @@ def set_date(now: datetime.datetime,
         end = end.replace(now.year, now.month, now.day)
         if begin > end:
             # Endzeit ist am nächsten Tag
-            end = end + timedelta(days=1)
+            end = end + datetime.timedelta(days=1)
         return begin, end
     except Exception:
         log.exception("Fehler im System-Modul")
@@ -184,7 +183,7 @@ def check_timeframe(plan, hours):
                     end = end.replace(now.year, now.month, now.day)
                     # Wenn der Zeitpunkt an diesem Tag schon vorüber ist, nächsten Tag prüfen.
                     if end < now:
-                        end += timedelta(days=1)
+                        end += datetime.timedelta(days=1)
                     begin = _calc_begin(end, hours)
                 state = is_timeframe_valid(now, begin, end)
 
@@ -221,7 +220,7 @@ def check_timeframe(plan, hours):
 def _calc_begin(end: datetime.datetime, hours: int) -> datetime.datetime:
     """ berechnet den Zeitpunkt, der die angegebenen Stunden vor dem Endzeitpunkt liegt.
     """
-    prev = timedelta(hours)
+    prev = datetime.timedelta(hours)
     return end - prev
 
 
@@ -259,7 +258,7 @@ def check_duration(plan: Dict, duration: float) -> Tuple[int, float]:
         if -0.33 <= remaining_time < 0:
             remaining_time = remaining_time * -1
         elif remaining_time < -0.33:
-            delta = timedelta(days=1)
+            delta = datetime.timedelta(days=1)
             end += delta
             state, remaining_time = _is_duration_valid(now, duration, end)
         return state, remaining_time
@@ -275,7 +274,7 @@ def check_duration(plan: Dict, duration: float) -> Tuple[int, float]:
             else:
                 # Wenn der Zeitpunkt an diesem Tag schon vorüber ist (verbleibende Zeit ist negativ), nächsten Tag
                 # prüfen.
-                delta = timedelta(days=1)
+                delta = datetime.timedelta(days=1)
                 end += delta
                 state, remaining_time = _is_duration_valid(
                     now, duration, end)
@@ -283,7 +282,7 @@ def check_duration(plan: Dict, duration: float) -> Tuple[int, float]:
         # prüfen, ob für den nächsten Tag ein Termin ansteht und heute schon begonnen werden muss
         if plan["frequency"]["weekly"][now.weekday() + 1]:
             end = end.replace(now.year, now.month, now.day)
-            delta = timedelta(days=1)
+            delta = datetime.timedelta(days=1)
             end += delta
             return _is_duration_valid(now, duration, end)
         else:
@@ -303,7 +302,7 @@ def _is_duration_valid(now: datetime.datetime, duration: float, end: datetime.da
     0, 0: hat noch Zeit
     """
     try:
-        delta = timedelta(hours=int(duration), minutes=((duration % 1) * 60))
+        delta = datetime.timedelta(hours=int(duration), minutes=((duration % 1) * 60))
         begin = end - delta
         difference = (now - begin).total_seconds()
         if difference > 0:
@@ -364,7 +363,7 @@ def check_timestamp(timestamp: str, duration: int) -> bool:
     try:
         stamp = datetime.datetime.strptime(timestamp, "%m/%d/%Y, %H:%M:%S")
         now = datetime.datetime.today()
-        delta = timedelta(seconds=duration)
+        delta = datetime.timedelta(seconds=duration)
         if (now - delta) > stamp:
             return False
         else:
@@ -483,31 +482,28 @@ def duration_sum(first: str, second: str) -> str:
         return "00:00"
 
 
-def __get_timedelta_obj(time: str) -> timedelta:
+def __get_timedelta_obj(time: str) -> datetime.timedelta:
     """ erstellt aus einem String ein timedelta-Objekt.
 
     Parameter
     ---------
     time: str
         Zeitstrings HH:MM ggf DD:HH:MM
-    Return
-    ------
-    time: timedelta
     """
     time_charged = time.split(":")
     if len(time_charged) == 2:
-        delta = timedelta(hours=int(time_charged[0]),
-                          minutes=int(time_charged[1]))
+        delta = datetime.timedelta(hours=int(time_charged[0]),
+                                   minutes=int(time_charged[1]))
     elif len(time_charged) == 3:
-        delta = timedelta(days=int(time_charged[0]),
-                          hours=int(time_charged[1]),
-                          minutes=int(time_charged[2]))
+        delta = datetime.timedelta(days=int(time_charged[0]),
+                                   hours=int(time_charged[1]),
+                                   minutes=int(time_charged[2]))
     else:
         raise Exception("Unknown charge duration: "+time)
     return delta
 
 
-def __convert_timedelta_to_HHMM(timedelta_obj: timedelta) -> str:
+def __convert_timedelta_to_HHMM(timedelta_obj: datetime.timedelta) -> str:
     diff_hours = int(timedelta_obj.total_seconds() / 3600)
     diff_minutes = int((timedelta_obj.total_seconds() % 3600) / 60)
     return f"{diff_hours}:{diff_minutes:02d}"
