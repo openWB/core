@@ -12,6 +12,7 @@ def get_default_config() -> Dict:
     return {"id": 0,
             "connection_module": {
                 "type": "mqtt",
+                "name": "MQTT-Ladepunkt",
                 "configuration":
                 {}
             },

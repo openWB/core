@@ -1,4 +1,6 @@
+import importlib
 import logging
+from pathlib import Path
 
 from helpermodules.pub import Pub
 
@@ -23,470 +25,61 @@ def _pub_configurable_soc_modules() -> None:
                     "type": None,
                     "configuration": {}
                 }
-            },
-            {
-                "value": "tesla",
-                "text": "Tesla",
-                "defaults": {
-                        "name": "Tesla SoC-Modul",
-                        "type": "tesla",
-                        "id": 0,
-                        "configuration": {
-                            "tesla_ev_num": 0
-                        }
-                }
-            }
-        ]
+            }]
+        pathlist = Path("/var/www/html/openWB/packages/modules").glob('**/soc.py')
+        for path in pathlist:
+            try:
+                dev_defaults = importlib.import_module(
+                    f".{path.parts[-2]}.soc", "modules").get_default_config()
+                soc_modules.append({
+                    "value": dev_defaults["type"],
+                    "text": dev_defaults["name"],
+                    "defaults": dev_defaults
+                })
+            # Testfiles und Hilfsmodule, die keine get_default_config-Methode haben, überspringen
+            except AttributeError:
+                pass
+        soc_modules = sorted(soc_modules, key=lambda d: d['value'])
         Pub().pub("openWB/set/system/configurable/soc_modules", soc_modules)
     except Exception:
         log.exception("Fehler im configuration-Modul")
 
 
 def _pub_configurable_devices_components() -> None:
+    def add_components(device: str, pattern: str) -> None:
+        pathlist = Path(f"/var/www/html/openWB/packages/modules/{device}").glob(f'**/{pattern}.py')
+        for path in pathlist:
+            try:
+                comp_defaults = importlib.import_module(
+                    f".{path.parts[-2]}.{path.parts[-1][:-3]}", "modules").get_default_config()
+                component.append({
+                    "value": comp_defaults["type"],
+                    "text": comp_defaults["name"]
+                })
+            # Testfiles und Hilfsmodule, die keine get_default_config-Methode haben, überspringen
+            except AttributeError:
+                pass
+
     try:
-        devices_components = [
-            {
-                "value": "alpha_ess",
-                "text": "Alpha ESS",
-                "component": [
-                    {
-                        "value": "bat",
-                        "text": "Alpha Ess-Speicher"
-                    },
-                    {
-                        "value": "counter",
-                        "text": "Alpha Ess-Zähler"
-                    },
-                    {
-                        "value": "inverter",
-                        "text": "Alpha Ess-Wechselrichter"
-                    }
-                ]
-            },
-            {
-                "value": "batterx",
-                "text": "BatterX",
-                "component": [
-                    {
-                        "value": "bat",
-                        "text": "BatterX-Speicher"
-                    },
-                    {
-                        "value": "counter",
-                        "text": "BatterX-Zähler"
-                    },
-                    {
-                        "value": "inverter",
-                        "text": "BatterX-Wechselrichter"
-                    }
-                ]
-            },
-            {
-                "value": "carlo_gavazzi",
-                "text": "Carlo Gavazzi",
-                "component": [
-                    {
-                        "value": "counter",
-                        "text": "Carlo Gavazzi-Zähler"
-                    }
-                ]
-            },
-            {
-                "value": "discovergy",
-                "text": "Discovergy",
-                "component": [
-                    {
-                        "value": "counter",
-                        "text": "Discovergy-Zähler"
-                    },
-                    {
-                        "value": "inverter",
-                        "text": "Discovergy-Wechselrichter"
-                    }
-                ]
-            },
-            {
-                "value": "fronius",
-                "text": "Fronius",
-                "component": [
-                    {
-                        "value": "bat",
-                        "text": " Fronius Speicher"
-                    },
-                    {
-                        "value": "counter_s0",
-                        "text": "Fronius S0 Zähler"
-                    },
-                    {
-                        "value": "counter_sm",
-                        "text": "Fronius Smart Meter"
-                    },
-                    {
-                        "value": "inverter",
-                        "text": "Fronius Wechselrichter"
-                    }
-                ]
-            },
-            {
-                "value": "good_we",
-                "text": "GoodWe",
-                "component": [
-                    {
-                        "value": "bat",
-                        "text": " GoodWe-Speicher"
-                    },
-                    {
-                        "value": "counter",
-                        "text": "GoodWe-Zähler"
-                    },
-                    {
-                        "value": "inverter",
-                        "text": "GoodWe-Wechselrichter"
-                    }
-                ]
-            },
-            {
-                "value": "http",
-                "text": "HTTP",
-                "component": [
-                    {
-                        "value": "bat",
-                        "text": "HTTP-Speicher"
-                    },
-                    {
-                        "value": "counter",
-                        "text": "HTTP-Zähler"
-                    },
-                    {
-                        "value": "inverter",
-                        "text": "HTTP-Wechselrichter"
-                    }
-                ]
-            },
-            {
-                "value": "huawei",
-                "text": "Huawei",
-                "component": [
-                    {
-                        "value": "bat",
-                        "text": "Huawei-Speicher"
-                    },
-                    {
-                        "value": "counter",
-                        "text": "Huawei-Zähler"
-                    },
-                    {
-                        "value": "inverter",
-                        "text": "Huawei-Wechselrichter"
-                    }
-                ]
-            },
-            {
-                "value": "janitza",
-                "text": "Janitza",
-                "component": [
-                    {
-                        "value": "counter",
-                        "text": "Janitza-Zähler"
-                    }
-                ]
-            },
-            {
-                "value": "json",
-                "text": "JSON",
-                "component": [
-                    {
-                        "value": "bat",
-                        "text": "JSON-Speicher"
-                    },
-                    {
-                        "value": "counter",
-                        "text": "JSON-Zähler"
-                    },
-                    {
-                        "value": "inverter",
-                        "text": "JSON-Wechselrichter"
-                    }
-                ]
-            },
-            {
-                "value": "mqtt",
-                "text": "MQTT-Device",
-                "component": [
-                    {
-                        "value": "bat",
-                        "text": "MQTT-Speicher"
-                    },
-                    {
-                        "value": "counter",
-                        "text": "MQTT-Zähler"
-                    },
-                    {
-                        "value": "inverter",
-                        "text": "MQTT-Wechselrichter"
-                    }
-                ]
-            },
-            {
-                "value": "openwb_bat_kit",
-                "text": "openWB Speicher-Kit",
-                "component": [
-                    {
-                        "value": "bat",
-                        "text": "Speicher-Kit"
-                    }
-                ]
-            },
-            {
-                "value": "openwb_evu_kit",
-                "text": "openWB EVU-Kit",
-                "component": [
-                    {
-                        "value": "bat",
-                        "text": "Speicher-Zähler am EVU-Kit"
-                    },
-                    {
-                        "value": "counter",
-                        "text": "EVU-Kit"
-                    },
-                    {
-                        "value": "inverter",
-                        "text": "PV-Zähler am EVU-Kit"
-                    }
-                ]
-            },
-            {
-                "value": "openwb_flex",
-                "text": "openWB Kit flex",
-                "component": [
-                    {
-                        "value": "bat",
-                        "text": "Speicher-Kit flex"
-                    },
-                    {
-                        "value": "counter",
-                        "text": "EVU-Kit flex"
-                    },
-                    {
-                        "value": "inverter",
-                        "text": "PV-Kit flex"
-                    }
-                ]
-            },
-            {
-                "value": "openwb_pv_kit",
-                "text": "openWB PV-Kit",
-                "component": [
-                    {
-                        "value": "inverter",
-                        "text": "PV-Kit"
-                    }
-                ]
-            },
-            {
-                "value": "powerdog",
-                "text": "Powerdog-Device",
-                "component": [
-                    {
-                        "value": "counter",
-                        "text": "Powerdog-Zähler"
-                    },
-                    {
-                        "value": "inverter",
-                        "text": "Powerdog-Wechselrichter"
-                    }
-                ]
-            },
-            {
-                "value": "saxpower",
-                "text": "Saxpower-Device",
-                "component": [
-                    {
-                        "value": "bat",
-                        "text": "Saxpower-Speicher"
-                    }
-                ]
-            },
-            {
-                "value": "siemens",
-                "text": "Siemens-Device",
-                "component": [
-                    {
-                        "value": "bat",
-                        "text": "Siemens-Speicher"
-                    },
-                    {
-                        "value": "counter",
-                        "text": "Siemens-Zähler"
-                    },
-                    {
-                        "value": "inverter",
-                        "text": "Siemens-Wechselrichter"
-                    }
-                ]
-            }, {
-                "value": "sma_modbus_tcp",
-                "text": "SMA ModbusTCP",
-                "component": [
-                    {
-                        "value": "inverter_webbox",
-                        "text": "SMA Wechselrichter Webbox"
-                    },
-                    {
-                        "value": "inverter_modbus_tcp",
-                        "text": "SMA ModbusTCP Wechselrichter"
-                    }
-                ]
-            },
-            {
-                "value": "sma_shm",
-                "text": "SMA SmartHome Manager",
-                "component": [
-                    {
-                        "value": "counter",
-                        "text": "SMA SHM-Zähler"
-                    },
-                    {
-                        "value": "inverter",
-                        "text": "SMA SHM-Wechselrichter"
-                    }
-                ]
-            },
-            {
-                "value": "solax",
-                "text": "Solax-Device",
-                "component": [
-                    {
-                        "value": "bat",
-                        "text": "Solax-Speicher"
-                    },
-                    {
-                        "value": "counter",
-                        "text": "Solax-Zähler"
-                    },
-                    {
-                        "value": "inverter",
-                        "text": "Solax-Wechselrichter"
-                    }
-                ]
-            },
-            {
-                "value": "sonnenbatterie",
-                "text": "Sonnenbatterie-Device",
-                "component": [
-                    {
-                        "value": "bat",
-                        "text": "Sonnenbatterie-Speicher"
-                    },
-                    {
-                        "value": "counter",
-                        "text": "Sonnenbatterie-Zähler"
-                    },
-                    {
-                        "value": "inverter",
-                        "text": "Sonnenbatterie-Wechselrichter"
-                    }
-                ]
-            },
-            {
-                "value": "studer",
-                "text": "Studer-Device",
-                "component": [
-                    {
-                        "value": "bat",
-                        "text": "Studer-Speicher"
-                    },
-                    {
-                        "value": "inverter",
-                        "text": "Studer-Wechselrichter"
-                    }
-                ]
-            },
-            {
-                "value": "sungrow",
-                "text": "Sungrow-Device",
-                "component": [
-                    {
-                        "value": "bat",
-                        "text": "Sungrow-Speicher"
-                    },
-                    {
-                        "value": "counter",
-                        "text": "Sungrow-Zähler"
-                    },
-                    {
-                        "value": "inverter",
-                        "text": "Sungrow-Wechselrichter"
-                    }
-                ]
-            },
-            {
-                "value": "sunny_island",
-                "text": "Sunny Island-Device",
-                "component": [
-                    {
-                        "value": "bat",
-                        "text": "Sunny Island-Speicher"
-                    }
-                ]
-            },
-            {
-                "value": "sunways",
-                "text": "Sunways-Device",
-                "component": [
-                    {
-                        "value": "inverter",
-                        "text": "Sunways-Wechselrichter"
-                    }
-                ]
-            },
-            {
-                "value": "tesla",
-                "text": "Tesla-Device",
-                "component": [
-                    {
-                        "value": "bat",
-                        "text": "Powerwall-Speicher"
-                    },
-                    {
-                        "value": "counter",
-                        "text": "Powerwall-Zähler"
-                    },
-                    {
-                        "value": "inverter",
-                        "text": "Powerwall-Wechselrichter"
-                    }
-                ]
-            },
-            {
-                "value": "victron",
-                "text": "Victron-Device",
-                "component": [
-                    {
-                        "value": "bat",
-                        "text": "Victron-Speicher"
-                    },
-                    {
-                        "value": "counter",
-                        "text": "Victron-Zähler"
-                    },
-                    {
-                        "value": "inverter",
-                        "text": "Victron-Wechselrichter"
-                    }
-                ]
-            },
-            {
-                "value": "virtual",
-                "text": "Virtuelles Gerät",
-                "component": [
-                    {
-                        "value": "counter",
-                        "text": "Virtueller Zähler"
-                    }
-                ]
-            }
-        ]
+        devices_components = []
+        pathlist = Path("/var/www/html/openWB/packages/modules").glob('**/device.py')
+        for path in pathlist:
+            device = path.parts[-2]
+            component = []
+            add_components(device, "bat*")
+            add_components(device, "counter*")
+            add_components(device, "inverter*")
+            try:
+                dev_defaults = importlib.import_module(f".{device}.device", "modules").get_default_config()
+                devices_components.append({
+                    "value": dev_defaults["type"],
+                    "text": dev_defaults["name"],
+                    "component": component
+                })
+            # Testfiles und Hilfsmodule, die keine get_default_config-Methode haben, überspringen
+            except AttributeError:
+                pass
+        devices_components = sorted(devices_components, key=lambda d: d['value'])
         Pub().pub("openWB/set/system/configurable/devices_components", devices_components)
     except Exception:
         log.exception("Fehler im configuration-Modul")
@@ -494,28 +87,20 @@ def _pub_configurable_devices_components() -> None:
 
 def _pub_configurable_chargepoints() -> None:
     try:
-        chargepoints = [
-            {
-                "value": "external_openwb",
-                "text": "Externe openWB"
-            },
-            {
-                "value": "ip_evse",
-                "text": "openWB IP-EVSE"
-            },
-            {
-                "value": "mqtt",
-                "text": "MQTT-Ladepunkt"
-            },
-            {
-                "value": "openwb_pro",
-                "text": "openWB Pro"
-            },
-            {
-                "value": "smartwb",
-                "text": "smartWB / EVSE-Wifi (>= v1.x.x/v2.x.x)"
-            }
-        ]
+        chargepoints = []
+        pathlist = Path("/var/www/html/openWB/packages/modules").glob('**/chargepoint_module.py')
+        for path in pathlist:
+            try:
+                dev_defaults = importlib.import_module(
+                    f".{path.parts[-2]}.chargepoint_module", "modules").get_default_config()
+                chargepoints.append({
+                    "value": dev_defaults["type"],
+                    "text": dev_defaults["name"]
+                })
+            # Testfiles und Hilfsmodule, die keine get_default_config-Methode haben, überspringen
+            except AttributeError:
+                pass
+        chargepoints = sorted(chargepoints, key=lambda d: d['value'])
         Pub().pub("openWB/set/system/configurable/chargepoints", chargepoints)
     except Exception:
         log.exception("Fehler im configuration-Modul")

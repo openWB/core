@@ -3,7 +3,7 @@ import logging
 import pathlib
 import time
 from pathlib import Path
-from typing import List, Union
+from typing import Dict, List, Union
 
 from helpermodules import compatibility
 from helpermodules.cli import run_using_positional_cli_args
@@ -15,6 +15,17 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.tesla import api
 
 log = logging.getLogger("soc."+__name__)
+
+
+def get_default_config() -> Dict:
+    return {
+        "name": "Tesla",
+        "type": "tesla",
+        "id": 0,
+        "configuration": {
+                "tesla_ev_num": 0
+        }
+    }
 
 
 class TeslaConfiguration:

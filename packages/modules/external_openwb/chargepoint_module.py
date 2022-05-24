@@ -12,6 +12,7 @@ def get_default_config() -> Dict:
     return {"id": 0,
             "connection_module": {
                 "type": "external_openwb",
+                "name": "Externe openWB",
                 "configuration": {
                     "ip_address": "192.168.193.5",
                     "duo_num": 1
