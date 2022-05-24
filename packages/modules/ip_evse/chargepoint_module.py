@@ -14,10 +14,11 @@ def get_default_config() -> Dict:
     return {"id": 0,
             "connection_module": {
                 "type": "ip_evse",
-                "configuration":
-                {"ip_address": "192.168.193.5",
-                 "modbus_id": 1
-                 }
+                "name": "openWB IP-EVSE",
+                "configuration": {
+                    "ip_address": None,
+                    "modbus_id": 1
+                }
             },
             "power_module": {}}
 
