@@ -145,8 +145,18 @@ class SetData:
                     if "charge_template" in msg.topic:
                         event = self.event_charge_template
                         if "ct"+str(index) in subdata.SubData.ev_charge_template_data:
-                            template = copy.deepcopy(
-                                subdata.SubData.ev_charge_template_data["ct"+str(index)].data)
+                            template = copy.deepcopy(subdata.SubData.ev_charge_template_data["ct"+str(index)].data)
+                            # Wenn eine Einzeleinstellung empfangen wird, muss das gesamte Template gepublished werden
+                            # (pub_json=True), allerdings ohne Pläne. Diese sind in einem Extra-Topic und werden immer
+                            # als komplettes json empfangen (mit pub_json=False).
+                            try:
+                                template["chargemode"]["scheduled_charging"].pop("plans")
+                            except KeyError:
+                                log.debug("Key 'plans' nicht gefunden, keine Zielladen-Pläne vorhanden.")
+                            try:
+                                template["time_charging"].pop("plans")
+                            except KeyError:
+                                log.debug("Key 'plans' nicht gefunden, keine Zeitladen-Pläne vorhanden.")
                         else:
                             template = {}
                     elif "ev_template" in msg.topic:
@@ -425,8 +435,6 @@ class SetData:
                     self._validate_value(msg, int, [(6, 32)], pub_json=True)
                 elif "/chargemode/pv_charging/max_soc" in msg.topic:
                     self._validate_value(msg, int, [(0, 101)], pub_json=True)
-                elif "/chargemode/scheduled_charging/[0-9]+/active" in msg.topic:
-                    self._validate_value(msg, bool, pub_json=True)
                 elif "/chargemode/scheduled_charging/plans" in msg.topic:
                     self._validate_value(msg, "json")
                 elif "/chargemode/scheduled_charging" in msg.topic:
