@@ -39,7 +39,7 @@ def _pub_configurable_soc_modules() -> None:
             # Testfiles und Hilfsmodule, die keine get_default_config-Methode haben, überspringen
             except AttributeError:
                 pass
-        soc_modules = sorted(soc_modules, key=lambda d: d['value'])
+        soc_modules = sorted(soc_modules, key=lambda d: d['text'])
         Pub().pub("openWB/set/system/configurable/soc_modules", soc_modules)
     except Exception:
         log.exception("Fehler im configuration-Modul")
@@ -79,7 +79,7 @@ def _pub_configurable_devices_components() -> None:
             # Testfiles und Hilfsmodule, die keine get_default_config-Methode haben, überspringen
             except AttributeError:
                 pass
-        devices_components = sorted(devices_components, key=lambda d: d['value'])
+        devices_components = sorted(devices_components, key=lambda d: d['text'])
         Pub().pub("openWB/set/system/configurable/devices_components", devices_components)
     except Exception:
         log.exception("Fehler im configuration-Modul")
@@ -94,13 +94,13 @@ def _pub_configurable_chargepoints() -> None:
                 dev_defaults = importlib.import_module(
                     f".{path.parts[-2]}.chargepoint_module", "modules").get_default_config()
                 chargepoints.append({
-                    "value": dev_defaults["type"],
-                    "text": dev_defaults["name"]
+                    "value": dev_defaults["connection_module"]["type"],
+                    "text": dev_defaults["connection_module"]["name"]
                 })
             # Testfiles und Hilfsmodule, die keine get_default_config-Methode haben, überspringen
             except AttributeError:
                 pass
-        chargepoints = sorted(chargepoints, key=lambda d: d['value'])
+        chargepoints = sorted(chargepoints, key=lambda d: d['text'])
         Pub().pub("openWB/set/system/configurable/chargepoints", chargepoints)
     except Exception:
         log.exception("Fehler im configuration-Modul")
