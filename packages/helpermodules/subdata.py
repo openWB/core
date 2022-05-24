@@ -243,7 +243,8 @@ class SubData:
         """
         try:
             index = self.get_index(msg.topic)
-            if str(msg.payload.decode("utf-8")) == "":
+            if str(msg.payload.decode("utf-8")) == "" and re.search("^.+/vehicle/template/charge_template/[0-9]+$",
+                                                                    msg.topic) is not None:
                 if "ct"+index in var:
                     var.pop("ct"+index)
             else:
