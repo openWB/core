@@ -484,7 +484,7 @@ def get_charge_template_default() -> dict:
                 "pv_charging":
                 {
                     "min_soc_current": 10,
-                    "min_current": 6,
+                    "min_current": 0,
                     "feed_in_limit": False,
                     "min_soc": 0,
                     "max_soc": 100

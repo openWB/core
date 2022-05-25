@@ -64,7 +64,7 @@ var topicsToSubscribe = [
 	// vehicle topics
 	["openWB/vehicle/+/name", 1], // populate a list of vehicle id/name info
 	["openWB/vehicle/template/charge_template/+", 1], // populate a list of charge templates
-	["openWB/vehicle/template/charge_template/+/chargemode/scheduled_charging/plans/+"], // populate a list of schedule plans
+	["openWB/vehicle/template/charge_template/+/chargemode/scheduled_charging/plans/+", 1], // populate a list of schedule plans
 
 	// charge mode config
 	["openWB/general/chargemode_config/pv_charging/bat_prio", 0],
