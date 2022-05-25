@@ -42,6 +42,8 @@ class Prepare:
             data.data.system_data = {
                 "system": copy.deepcopy(subdata.SubData.system_data["system"])} | {
                 k: subdata.SubData.system_data[k] for k in subdata.SubData.system_data if "device" in k}
+            data.data.general_data = copy.deepcopy(subdata.SubData.general_data)
+            self.__copy_cp_data()
         except Exception:
             log.exception("Fehler im Prepare-Modul")
 
@@ -61,6 +63,25 @@ class Prepare:
                         break
             else:
                 data.data.counter_data[counter] = copy.deepcopy(subdata.SubData.counter_data[counter])
+
+    def __copy_cp_data(self):
+        data.data.cp_data.clear()
+        for cp in subdata.SubData.cp_data:
+            if isinstance(subdata.SubData.cp_data[cp], Chargepoint):
+                if "config" in subdata.SubData.cp_data[cp].data:
+                    data.data.cp_data[cp] = copy.deepcopy(subdata.SubData.cp_data[cp])
+            else:
+                data.data.cp_data[cp] = copy.deepcopy(subdata.SubData.cp_data[cp])
+        data.data.cp_template_data = copy.deepcopy(subdata.SubData.cp_template_data)
+        for chargepoint in data.data.cp_data:
+            try:
+                if "cp" in chargepoint:
+                    data.data.cp_data[chargepoint].template = data.data.cp_template_data["cpt" + str(
+                        data.data.cp_data[chargepoint].data["config"]["template"])]
+                    # Status zurücksetzen (wird jeden Zyklus neu ermittelt)
+                    data.data.cp_data[chargepoint].data["get"]["state_str"] = None
+            except Exception:
+                log.exception("Fehler im Prepare-Modul für Ladepunkt "+str(chargepoint))
 
     def copy_module_data(self):
         """ kopiert die Daten, die per MQTT empfangen wurden.
@@ -106,23 +127,7 @@ class Prepare:
         try:
             data.data.general_data = copy.deepcopy(subdata.SubData.general_data)
             data.data.optional_data = copy.deepcopy(subdata.SubData.optional_data)
-            data.data.cp_data.clear()
-            for cp in subdata.SubData.cp_data:
-                if isinstance(subdata.SubData.cp_data[cp], Chargepoint):
-                    if "config" in subdata.SubData.cp_data[cp].data:
-                        data.data.cp_data[cp] = copy.deepcopy(subdata.SubData.cp_data[cp])
-                else:
-                    data.data.cp_data[cp] = copy.deepcopy(subdata.SubData.cp_data[cp])
-            data.data.cp_template_data = copy.deepcopy(subdata.SubData.cp_template_data)
-            for chargepoint in data.data.cp_data:
-                try:
-                    if "cp" in chargepoint:
-                        data.data.cp_data[chargepoint].template = data.data.cp_template_data["cpt" + str(
-                            data.data.cp_data[chargepoint].data["config"]["template"])]
-                        # Status zurücksetzen (wird jeden Zyklus neu ermittelt)
-                        data.data.cp_data[chargepoint].data["get"]["state_str"] = None
-                except Exception:
-                    log.exception("Fehler im Prepare-Modul für Ladepunkt "+str(chargepoint))
+            self.__copy_cp_data()
             data.data.ev_data.clear()
             for ev in subdata.SubData.ev_data:
                 if "name" in subdata.SubData.ev_data[ev].data:
