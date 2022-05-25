@@ -54,7 +54,11 @@ def _get_virtual_counters():
         for item in data.data.system_data:
             try:
                 if "device" in item:
-                    if data.data.system_data[item].device_config["type"] == "virtual":
+                    try:
+                        type = data.data.system_data[item].device_config.type
+                    except AttributeError:
+                        type = data.data.system_data[item].device_config["type"]
+                    if type == "virtual":
                         thread = None
                         module = data.data.system_data[item]
                         thread = threading.Thread(target=module.get_values, args=())
@@ -108,7 +112,11 @@ def _get_modules() -> List[threading.Thread]:
         for item in data.data.system_data:
             try:
                 if "device" in item:
-                    if data.data.system_data[item].device_config["type"] != "virtual":
+                    try:
+                        type = data.data.system_data[item].device_config.type
+                    except AttributeError:
+                        type = data.data.system_data[item].device_config["type"]
+                    if type != "virtual":
                         thread = None
                         module = data.data.system_data[item]
                         thread = threading.Thread(target=module.update, args=())
