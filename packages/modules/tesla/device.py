@@ -90,7 +90,7 @@ class Device(AbstractDevice):
     def __init__(self, device_config: dict) -> None:
         self._components = {}  # type: Dict[str, tesla_component_classes]
         try:
-            self.config = device_config \
+            self.device_config = device_config \
                 if isinstance(device_config, Tesla) \
                 else Tesla.from_dict(device_config)
         except Exception:
@@ -110,9 +110,9 @@ class Device(AbstractDevice):
     def update(self) -> None:
         log.debug("Beginning update")
         cookies = None
-        address = self.config.configuration.ip_address
-        email = self.config.configuration.email
-        password = self.config.configuration.password
+        address = self.device_config.configuration.ip_address
+        email = self.device_config.configuration.email
+        password = self.device_config.configuration.password
         with MultiComponentUpdateContext(self._components):
             try:
                 cookies = json.loads(COOKIE_FILE.read_text())
@@ -144,7 +144,7 @@ class Device(AbstractDevice):
                 self._components[component].update(client, aggregate)
         else:
             log.warning(
-                self.config.name +
+                self.device_config.name +
                 ": Es konnten keine Werte gelesen werden, da noch keine Komponenten konfiguriert wurden."
             )
 
