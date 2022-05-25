@@ -85,6 +85,8 @@ class InverterState:
         """
         if currents is None:
             currents = [0.0]*3
+        else:
+            currents = [currents[i]*-1 if currents[i] > 0 else currents[i] for i in range(0, 3)]
         self.currents = currents
         self.power = power
         self.counter = counter

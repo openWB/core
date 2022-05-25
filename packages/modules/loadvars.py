@@ -34,7 +34,7 @@ def __get_values(value_functions: List[Callable]):
 
             # Wait for all to complete
             for thread in threads:
-                thread.join(timeout=3)
+                thread.join(timeout=data.data.general_data["general"].data["control_interval"]/3)
 
             for thread in threads:
                 if thread.is_alive():

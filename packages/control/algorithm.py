@@ -535,7 +535,8 @@ class Algorithm:
                         charging_ev = cp.data["set"]["charging_ev_data"]
                         if (cp.data["config"]["auto_phase_switch_hw"] and
                                 cp.data["get"]["charge_state"] and
-                                charging_ev.data["control_parameter"]["chargemode"] == "pv_charging" and
+                                (charging_ev.data["control_parameter"]["chargemode"] == "pv_charging" or
+                                 charging_ev.data["control_parameter"]["submode"] == "pv_charging") and
                                 data.data.general_data["general"].get_phases_chargemode("pv_charging") == 0 and
                                 charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] is None):
                             # Gibt die Stromstärke und Phasen zurück, mit denen nach der Umschaltung geladen werden
