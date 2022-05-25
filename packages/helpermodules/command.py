@@ -5,7 +5,7 @@ import importlib
 import json
 import logging
 import subprocess
-from typing import Dict
+from typing import List
 import paho.mqtt.client as mqtt
 import re
 import time
@@ -29,31 +29,43 @@ log = logging.getLogger(__name__)
 class Command:
     """
     """
+    # Tuple: (Name der maximalen ID, Topic zur Ermittlung, Default-Wert)
+    MAX_IDS = [("autolock_plan", "chargepoint/template/+/autolock", -1),
+               ("mqtt_bridge", "system/mqtt/bridge", -1),
+               ("charge_template", "vehicle/template/charge_template", 0),
+               ("charge_template_scheduled_plan",
+               "vehicle/template/charge_template/+/chargemode/scheduled_charging/plans",
+                -1),
+               ("charge_template_time_charging_plan", "vehicle/template/charge_template/+/time_charging/plans", -1),
+               ("chargepoint_template", "chargepoint/template", 0),
+               ("device", "system/device", -1),
+               ("ev_template", "vehicle/template/ev_template", 0),
+               ("vehicle", "vehicle", 0)]
 
     def __init__(self):
         try:
-            self.__get_max_id_by_topic_id("autolock_plan", "chargepoint/template/+/autolock", -1)
-            self.__get_max_id_by_topic_id("mqtt_bridge", "system/mqtt/bridge", -1)
-            self.__get_max_id_by_topic_id("charge_template", "vehicle/template/charge_template", 0)
-            self.__get_max_id_by_topic_id(
-                "charge_template_scheduled_plan",
-                "vehicle/template/charge_template/+/chargemode/scheduled_charging/plans", -1)
-            self.__get_max_id_by_topic_id(
-                "charge_template_time_charging_plan",
-                "vehicle/template/charge_template/+/time_charging/plans", -1)
-            self.__get_max_id_by_topic_id("chargepoint_template", "chargepoint/template", 0)
-            self.__get_max_id_by_json_object("hierarchy", "counter/get/hierarchy", -1)
-            self.__get_max_id_by_topic_id("device", "system/device", -1)
-            self.__get_max_id_by_topic_id("ev_template", "vehicle/template/ev_template", 0)
-            self.__get_max_id_by_topic_id("vehicle", "vehicle", 0)
+            self.__get_max_ids()
+            self.__get_max_id_by_json_object("hierarchy", "counter/get/hierarchy/", -1)
         except Exception:
             log.exception("Fehler im Command-Modul")
 
-    def __get_max_id_by_topic_id(self, id_topic: str, topic: str, default: int) -> None:
+    def __get_max_ids(self) -> None:
         """ ermittelt die maximale ID vom Broker """
         try:
-            max_id = ProcessBrokerBranch(topic).get_max_id(default)
-            Pub().pub("openWB/set/command/max_id/"+id_topic, max_id)
+            received_topics = ProcessBrokerBranch("").get_max_id()
+            for id_topic, topic_str, default in self.MAX_IDS:
+                max_id = default
+                for topic in received_topics:
+                    search_str = "openWB/" + topic_str.replace("+", "[0-9]+")
+                    result = re.search('^('+search_str+'/*).*$', topic)
+                    if result is not None:
+                        topic_found = result.group(1)
+                        topic_rest = topic.replace(topic_found, "")
+                        current_id_regex = re.search('^([0-9]+)/*.*$', topic_rest)
+                        if current_id_regex is not None:
+                            current_id = int(current_id_regex.group(1))
+                            max_id = max(current_id, max_id)
+                Pub().pub("openWB/set/command/max_id/"+id_topic, max_id)
         except Exception:
             log.exception("Fehler im Command-Modul")
 
@@ -161,8 +173,7 @@ class Command:
         if self.max_id_device >= payload["data"]["id"]:
             log.info("Device mit ID " +
                      str(payload["data"]["id"])+" gelöscht.")
-            ProcessBrokerBranch(
-                "system/device/"+str(payload["data"]["id"])).remove_topics()
+            ProcessBrokerBranch(f'system/device/{payload["data"]["id"]}/').remove_topics()
         else:
             pub_error(payload, connection_id, "Die ID ist größer als die maximal vergebene ID.")
 
@@ -199,7 +210,7 @@ class Command:
         if self.max_id_hierarchy >= payload["data"]["id"]:
             data.data.counter_data["all"].hierarchy_remove_item(payload["data"]["id"])
             log.info("Ladepunkt mit ID " + str(payload["data"]["id"])+" gelöscht.")
-            ProcessBrokerBranch("chargepoint/"+str(payload["data"]["id"])).remove_topics()
+            ProcessBrokerBranch(f'chargepoint/{payload["data"]["id"]}/').remove_topics()
         else:
             pub_error(payload, connection_id, "Die ID ist größer als die maximal vergebene ID.")
 
@@ -222,8 +233,7 @@ class Command:
             if payload["data"]["id"] > 0:
                 log.info("Ladepunkt-Vorlage mit ID " +
                          str(payload["data"]["id"])+" gelöscht.")
-                ProcessBrokerBranch("chargepoint/template/" +
-                                    str(payload["data"]["id"])).remove_topics()
+                ProcessBrokerBranch(f'chargepoint/template/{payload["data"]["id"]}/').remove_topics()
             else:
                 pub_error(payload, connection_id, "Ladepunkt-Vorlage mit ID 0 darf nicht gelöscht werden.")
         else:
@@ -381,7 +391,7 @@ class Command:
         """
         if self.max_id_hierarchy >= payload["data"]["id"]:
             log.info("Komponente mit ID "+str(payload["data"]["id"])+" gelöscht.")
-            branch = "system/device/"+str(payload["data"]["deviceId"])+"/component/"+str(payload["data"]["id"])
+            branch = f'system/device{payload["data"]["deviceId"]}/component/{payload["data"]["id"]}/'
             ProcessBrokerBranch(branch).remove_topics()
         else:
             pub_error(payload, connection_id, "Die ID ist größer als die maximal vergebene ID.")
@@ -436,8 +446,7 @@ class Command:
                 log.info(
                     "EV mit ID "+str(payload["data"]["id"])+" gelöscht.")
                 Pub().pub("openWB/vehicle/"+str(payload["data"]["id"]), "")
-                ProcessBrokerBranch(
-                    "vehicle/"+str(payload["data"]["id"])).remove_topics()
+                ProcessBrokerBranch(f'vehicle/{payload["data"]["id"]}/').remove_topics()
             else:
                 pub_error(payload, connection_id, "Vehicle mit ID 0 darf nicht gelöscht werden.")
         else:
@@ -561,7 +570,7 @@ class ProcessBrokerBranch:
         self.topic_str = topic_str
 
     def get_payload(self):
-        self.payload: Dict
+        self.payload: str
         self.__connect_to_broker(self.__get_payload)
         return json.loads(self.payload)
 
@@ -573,14 +582,14 @@ class ProcessBrokerBranch:
         except Exception:
             log.exception("Fehler im Command-Modul")
 
-    def get_max_id(self, default: int):
+    def get_max_id(self) -> List[str]:
         try:
-            self.max_id = default
-            self.search_str = "openWB/" + self.topic_str.replace("+", "[0-9]+")
+            self.received_topics = []
             self.__connect_to_broker(self.__on_message_max_id)
-            return self.max_id
+            return self.received_topics
         except Exception:
             log.exception("Fehler im Command-Modul")
+            return[]
 
     def __connect_to_broker(self, on_message):
         """ abonniert alle Topics.
@@ -605,8 +614,8 @@ class ProcessBrokerBranch:
         """ connect to broker and subscribe to set topics
         """
         try:
-            client.subscribe("openWB/"+self.topic_str+"/#", 2)
-            client.subscribe("openWB/set/"+self.topic_str+"/#", 2)
+            client.subscribe("openWB/"+self.topic_str+"#", 2)
+            client.subscribe("openWB/set/"+self.topic_str+"#", 2)
         except Exception:
             log.exception("Fehler im Command-Modul")
 
@@ -627,14 +636,7 @@ class ProcessBrokerBranch:
 
     def __on_message_max_id(self, client, userdata, msg):
         try:
-            result = re.search('^('+self.search_str+'/*).*$', msg.topic)
-            if result is not None:
-                topic_found = result.group(1)
-                topic_rest = msg.topic.replace(topic_found, "")
-                current_id_regex = re.search('^([0-9]+)/*.*$', topic_rest)
-                if current_id_regex is not None:
-                    current_id = int(current_id_regex.group(1))
-                    self.max_id = max(current_id, self.max_id)
+            self.received_topics.append(msg.topic)
         except Exception:
             log.exception("Fehler im Command-Modul")
 
