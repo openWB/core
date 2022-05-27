@@ -1,1 +1,1 @@
-@reboot root /var/www/html/openWB/runs/atreboot.sh &
+@reboot openwb /var/www/html/openWB/runs/atreboot.sh &

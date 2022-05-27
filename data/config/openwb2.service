@@ -2,7 +2,7 @@
 Description="Regelung openWB 2.0"
 
 [Service]
-User=pi
+User=openwb
 WorkingDirectory=/var/www/html/openWB
 ExecStart=/var/www/html/openWB/packages/main.py
 Restart=always
