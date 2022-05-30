@@ -16,10 +16,11 @@ echo "done"
 
 echo "create user $OPENWB_USER"
 # Will do nothing if user already exists:
-useradd "$OPENWB_USER" --create-home
+/usr/sbin/useradd "$OPENWB_USER" --create-home
 # The user "openwb" is still new and we might need sudo in many places. Thus for now we give the user
 # unrestricted sudo. This should be restricted in the future
-echo "$OPENWB_USER ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/openwb
+echo "$OPENWB_USER ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/openwb
+chmod 440 /etc/sudoers.d/openwb
 echo "done"
 
 echo "check for initial git clone..."
