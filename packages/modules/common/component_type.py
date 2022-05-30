@@ -18,7 +18,7 @@ def special_to_general_type_mapping(component_type: str) -> ComponentType:
     elif "cp" in component_type:
         return ComponentType.CHARGEPOINT
     else:
-        raise TypeError(f"Typ {component_type} konnte keinem bekannten Komponenten-Typ zugeordnet werden.")
+        raise TypeError("Typ "+component_type+" konnte keinem bekannten Komponenten-Typ zugeordnet werden.")
 
 
 def type_to_topic_mapping(component_type: str) -> str:

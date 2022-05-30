@@ -109,12 +109,11 @@ def read_legacy(
         dev.update()
     elif component_type == "inverter" and num:
         inverter1 = inverter.FroniusInverter(num, component_config, dev.device_config.configuration)
-        if ip_address2 != "none":
-            device_config["configuration"]["ip_address"] = ip_address2
-            inverter2 = inverter.FroniusInverter(num, component_config, dev.device_config.configuration)
         with SingleComponentUpdateContext(inverter1.component_info):
             total_power = inverter1.read_power()
             if ip_address2 != "none":
+                dev.device_config.configuration.ip_address = ip_address2
+                inverter2 = inverter.FroniusInverter(num, component_config, dev.device_config.configuration)
                 total_power += inverter2.read_power()
             get_inverter_value_store(num).set(inverter1.fill_inverter_state(total_power))
     else:
