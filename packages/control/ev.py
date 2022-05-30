@@ -320,29 +320,33 @@ class Ev:
                           get_power: float) -> Tuple[int, float, Optional[str]]:
         message = None
         current = self.data["control_parameter"]["required_current"]
-        min_current = self.ev_template.data["min_current"]
+        # Manche EV laden mit 6.1A bei 6A Sollstrom
+        min_current = self.ev_template.data["min_current"] + 1
         max_current = self.ev_template.data["max_current_one_phase"] - self.ev_template.data["nominal_difference"]
-        required_power = self.ev_template.data["min_current"] * 3 * 230
         timestamp_auto_phase_switch = self.data["control_parameter"]["timestamp_auto_phase_switch"]
         phases_to_use = self.data["control_parameter"]["phases"]
+        phases_in_use = self.data["control_parameter"]["phases"]
         pv_config = data.data.general_data["general"].data["chargemode_config"]["pv_charging"]
         if self.charge_template.data["chargemode"]["pv_charging"]["feed_in_limit"]:
             feed_in_yield = pv_config["feed_in_yield"]
         else:
             feed_in_yield = 0
         # verbleibender EVU-Überschuss unter Berücksichtigung der Einspeisegrenze und Speicherleistung
-        all_overhang = data.data.pv_data["all"].overhang_left(
-        ) + data.data.bat_data["all"].power_for_bat_charging() + feed_in_yield
-        if self.data["control_parameter"]["phases"] == 1:
+        all_overhang = data.data.pv_data["all"].data["set"]["available_power"] - \
+            data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] + \
+            data.data.bat_data["all"].power_for_bat_charging() + feed_in_yield
+        if phases_in_use == 1:
             direction_str = "Umschaltverzögerung von 1 auf 3"
             delay = pv_config["phase_switch_delay"] * 60
-            required_power = self.ev_template.data["min_current"] * 3 * 230
+            required_power = self.ev_template.data["min_current"] * 3 * \
+                230 - self.ev_template.data["max_current_one_phase"] * 230
             new_phase = 3
             new_current = self.ev_template.data["min_current"]
         else:
             direction_str = "Umschaltverzögerung von 3 auf 1"
             delay = (16 - pv_config["phase_switch_delay"]) * 60
-            required_power = self.ev_template.data["max_current_one_phase"] * 230
+            required_power = self.ev_template.data["max_current_one_phase"] * \
+                230 - self.ev_template.data["min_current"] * 3 * 230
             new_phase = 1
             new_current = self.ev_template.data["max_current_one_phase"]
 
@@ -353,14 +357,20 @@ class Ev:
         if not self.ev_template.data["prevent_phase_switch"] and self.data["control_parameter"][
                 "timestamp_perform_phase_switch"] is None:
             if timestamp_auto_phase_switch is None:
-                if (max(get_currents) < min_current or
-                        (max(get_currents) > max_current and all_overhang > required_power-get_power)):
+                condition_1_to_3 = (max(get_currents) > max_current and
+                                    all_overhang > self.ev_template.data["min_current"] * 3 * 230 - get_power and
+                                    phases_in_use == 1)
+                condition_3_to_1 = max(get_currents) < min_current and all_overhang < 0 and phases_in_use == 3
+                if condition_3_to_1 or condition_1_to_3:
                     # Umschaltverzögerung starten
                     timestamp_auto_phase_switch = timecheck.create_timestamp()
                     data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] += required_power
                     message = f'{direction_str} Phasen für {delay/60} Min aktiv.'
             else:
-                if max(get_currents) < min_current or (max(get_currents) > max_current and all_overhang > 0):
+                condition_1_to_3 = max(get_currents) > max_current and all_overhang > 0 and phases_in_use == 1
+                condition_3_to_1 = max(get_currents) < min_current and all_overhang + \
+                    required_power < 0 and phases_in_use == 3
+                if condition_3_to_1 or condition_1_to_3:
                     # Timer laufen lassen
                     if timecheck.check_timestamp(timestamp_auto_phase_switch, delay):
                         message = f'{direction_str} Phasen für {delay/60} Min aktiv.'
