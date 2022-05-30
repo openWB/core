@@ -1,10 +1,4 @@
 #!/bin/bash
-
-if [ "$(id -u -n)" != "openwb" ]; then
-	echo "Re-running script ${BASH_SOURCE[0]} as user openwb"
-	exec sudo -u openwb bash "${BASH_SOURCE[0]}"
-fi
-
 OPENWBBASEDIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 
 # setup logfile
@@ -13,6 +7,17 @@ touch "$LOGFILE"
 chmod 666 "$LOGFILE"
 
 {
+	if ! id -u openwb >/dev/null 2>&1; then
+		echo "user 'openwb' missing"
+		echo "starting upgrade skript..."
+		"$OPENWBBASEDIR/upgrade2openwbuser.sh"
+	fi
+
+	if [ "$(id -u -n)" != "openwb" ]; then
+		echo "Re-running script ${BASH_SOURCE[0]} as user openwb"
+		exec sudo -u openwb bash "${BASH_SOURCE[0]}"
+	fi
+
 	echo "atreboot.sh started"
 	if [[ -f "${OPENWBBASEDIR}/ramdisk/bootdone" ]]; then
 		rm "${OPENWBBASEDIR}/ramdisk/bootdone"
