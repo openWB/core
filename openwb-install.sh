@@ -23,11 +23,6 @@ echo "$OPENWB_USER ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/openwb
 chmod 440 /etc/sudoers.d/openwb
 echo "done"
 
-echo "adding default user ($(id -un 1000), ID:1000) to group $OPENWB_USER"
-echo "if you are using another user for development, please add that user manually"
-/usr/sbin/usermod -a -G "$OPENWB_USER" "$(id -un 1000)"
-echo "done"
-
 echo "check for initial git clone..."
 if [ ! -d "${OPENWBBASEDIR}/web" ]; then
 	mkdir "$OPENWBBASEDIR"
@@ -37,10 +32,6 @@ if [ ! -d "${OPENWBBASEDIR}/web" ]; then
 else
 	echo "ok"
 fi
-
-echo "setting group write access for cloned git repo..."
-chmod -R g+w "$OPENWBBASEDIR"
-echo "done"
 
 echo -n "check for ramdisk... "
 if grep -Fxq "tmpfs ${OPENWBBASEDIR}/ramdisk tmpfs nodev,nosuid,size=32M 0 0" /etc/fstab; then
@@ -117,3 +108,6 @@ systemctl start openwb2.service
 
 echo "installation finished, now running atreboot.sh..."
 "${OPENWBBASEDIR}/runs/atreboot.sh"
+
+echo "all done"
+echo "if you want to use this installation for developmenet, add a password for user 'openwb'"

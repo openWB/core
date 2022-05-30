@@ -23,11 +23,6 @@ echo "$OPENWB_USER ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/openwb
 chmod 440 /etc/sudoers.d/openwb
 echo "done"
 
-echo "adding default user ($(id -un 1000), ID:1000) to group openwb"
-echo "if you are using another user for development, please add that user manually"
-/usr/bin/usermod -a -G "$OPENWB_USER" "$(id -un 1000)"
-echo "done"
-
 echo -n "updating crontab... "
 cp "${OPENWBBASEDIR}/data/config/openwb.cron" /etc/cron.d/openwb
 echo "installed"
@@ -37,9 +32,8 @@ systemctl daemon-reload
 systemctl enable openwb2.service
 echo "done"
 
-echo "fixing permissions in $OPENWBBASEDIR..."
+echo "setting permissions in $OPENWBBASEDIR..."
 chown -R "$OPENWB_USER:$OPENWB_USER" "$OPENWBBASEDIR"
-chmod -R g+w "$OPENWBBASEDIR"
 echo "done"
 
 echo "upgrade to openwb user finished, rebooting..."
