@@ -38,6 +38,10 @@ else
 	echo "ok"
 fi
 
+echo "setting group write access for cloned git repo..."
+chmod -R g+w "$OPENWBBASEDIR"
+echo "done"
+
 echo -n "check for ramdisk... "
 if grep -Fxq "tmpfs ${OPENWBBASEDIR}/ramdisk tmpfs nodev,nosuid,size=32M 0 0" /etc/fstab; then
 	echo "ok"
