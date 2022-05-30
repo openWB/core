@@ -25,7 +25,7 @@ echo "done"
 
 echo "adding default user ($(id -un 1000), ID:1000) to group $OPENWB_USER"
 echo "if you are using another user for development, please add that user manually"
-/usr/bin/usermod -a -G "$OPENWB_USER" "$(id -un 1000)"
+/usr/sbin/usermod -a -G "$OPENWB_USER" "$(id -un 1000)"
 echo "done"
 
 echo "check for initial git clone..."
