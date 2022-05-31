@@ -10,7 +10,7 @@ chmod 666 "$LOGFILE"
 	if ! id -u openwb >/dev/null 2>&1; then
 		echo "user 'openwb' missing"
 		echo "starting upgrade skript..."
-		"$OPENWBBASEDIR/upgrade2openwbuser.sh"
+		"$OPENWBBASEDIR/runs/upgrade2openwbuser.sh" >> "${OPENWBBASEDIR}/data/log/update.log" 2>&1
 	fi
 
 	if [ "$(id -u -n)" != "openwb" ]; then
