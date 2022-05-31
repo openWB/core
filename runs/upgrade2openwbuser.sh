@@ -21,7 +21,7 @@ echo "done"
 
 echo "create user $OPENWB_USER"
 # Will do nothing if user already exists:
-/usr/sbin/useradd "$OPENWB_USER" -g "OPENWB_GROUP" --create-home
+/usr/sbin/useradd "$OPENWB_USER" -g "$OPENWB_GROUP" --create-home
 echo "done"
 
 # The user "openwb" is still new and we might need sudo in many places. Thus for now we give the user

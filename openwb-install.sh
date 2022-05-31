@@ -1,6 +1,7 @@
 #!/bin/bash
 OPENWBBASEDIR=/var/www/html/openWB
 OPENWB_USER=openwb
+OPENWB_GROUP=openwb
 
 if (( $(id -u) != 0 )); then
 	echo "this script has to be run as user root or with sudo"
@@ -14,9 +15,16 @@ apt-get update
 apt-get -q -y install vim bc apache2 php php-gd php-curl php-xml php-json libapache2-mod-php jq git mosquitto mosquitto-clients socat python3-pip sshpass
 echo "done"
 
+echo "create group $OPENWB_GROUP"
+# Will do nothing if group already exists:
+/usr/sbin/groupadd "$OPENWB_GROUP"
+echo "done"
+
 echo "create user $OPENWB_USER"
 # Will do nothing if user already exists:
-/usr/sbin/useradd "$OPENWB_USER" --create-home
+/usr/sbin/useradd "$OPENWB_USER" -g "$OPENWB_GROUP" --create-home
+echo "done"
+
 # The user "openwb" is still new and we might need sudo in many places. Thus for now we give the user
 # unrestricted sudo. This should be restricted in the future
 echo "$OPENWB_USER ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/openwb
@@ -26,7 +34,7 @@ echo "done"
 echo "check for initial git clone..."
 if [ ! -d "${OPENWBBASEDIR}/web" ]; then
 	mkdir "$OPENWBBASEDIR"
-	chown "$OPENWB_USER:$OPENWB_USER" "$OPENWBBASEDIR"
+	chown "$OPENWB_USER:$OPENWB_GROUP" "$OPENWBBASEDIR"
 	sudo -u "$OPENWB_USER" git clone https://github.com/openWB/core.git --branch master "$OPENWBBASEDIR"
 	echo "git cloned"
 else
