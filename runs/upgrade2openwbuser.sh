@@ -23,7 +23,7 @@ echo "$OPENWB_USER ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/openwb
 chmod 440 /etc/sudoers.d/openwb
 echo "done"
 
-echo -n "updating crontab... "
+echo "updating crontab..."
 cp "${OPENWBBASEDIR}/data/config/openwb.cron" /etc/cron.d/openwb
 echo "installed"
 
@@ -37,4 +37,4 @@ chown -R "$OPENWB_USER:$OPENWB_USER" "$OPENWBBASEDIR"
 echo "done"
 
 echo "upgrade to openwb user finished, rebooting..."
-reboot
+/usr/sbin/reboot
