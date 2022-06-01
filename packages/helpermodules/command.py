@@ -21,6 +21,7 @@ from control import data
 from control import ev
 from control import counter
 from control import pv
+from modules.common.config import to_dict
 from modules.common.component_type import ComponentType, special_to_general_type_mapping, type_to_topic_mapping
 
 log = logging.getLogger(__name__)
@@ -160,7 +161,7 @@ class Command:
         log.info(
             "Neues Device vom Typ "+str(payload["data"]["type"])+" mit ID "+str(new_id)+" hinzugefügt.")
         dev = importlib.import_module("."+payload["data"]["type"]+".device", "modules")
-        device_default = dev.get_default_config()
+        device_default = to_dict(dev.Setup())
         device_default["id"] = new_id
         Pub().pub("openWB/set/system/device/" +
                   str(new_id)+"/config", device_default)
@@ -186,7 +187,7 @@ class Command:
         chargepoint_default = chargepoint.get_chargepoint_default()
         # chargepoint_default["id"] = new_id
         module = importlib.import_module("." + payload["data"]["type"] + ".chargepoint_module", "modules")
-        chargepoint_default = {**chargepoint_default, **module.get_default_config()}
+        chargepoint_default = {**chargepoint_default, **to_dict(module.Setup())}
         chargepoint_default["id"] = new_id
         chargepoint_default["type"] = payload["data"]["type"]
         try:
@@ -356,7 +357,7 @@ class Command:
             "Neue Komponente vom Typ"+str(payload["data"]["type"])+" mit ID "+str(new_id)+" hinzugefügt.")
         component = importlib.import_module(
             "."+payload["data"]["deviceType"]+"."+payload["data"]["type"], "modules")
-        component_default = component.get_default_config()
+        component_default = to_dict(component.Setup())
         component_default["id"] = new_id
         general_type = special_to_general_type_mapping(payload["data"]["type"])
         try:

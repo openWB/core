@@ -3,6 +3,7 @@ import logging
 from pathlib import Path
 
 from helpermodules.pub import Pub
+from modules.common.config import to_dict
 
 log = logging.getLogger(__name__)
 
@@ -29,8 +30,8 @@ def _pub_configurable_soc_modules() -> None:
         pathlist = Path("/var/www/html/openWB/packages/modules").glob('**/soc.py')
         for path in pathlist:
             try:
-                dev_defaults = importlib.import_module(
-                    f".{path.parts[-2]}.soc", "modules").get_default_config()
+                dev_defaults = to_dict(importlib.import_module(
+                    f".{path.parts[-2]}.soc", "modules").Setup())
                 soc_modules.append({
                     "value": dev_defaults["type"],
                     "text": dev_defaults["name"],
@@ -50,8 +51,8 @@ def _pub_configurable_devices_components() -> None:
         pathlist = Path(f"/var/www/html/openWB/packages/modules/{device}").glob(f'**/{pattern}.py')
         for path in pathlist:
             try:
-                comp_defaults = importlib.import_module(
-                    f".{path.parts[-2]}.{path.parts[-1][:-3]}", "modules").get_default_config()
+                comp_defaults = to_dict(importlib.import_module(
+                    f".{path.parts[-2]}.{path.parts[-1][:-3]}", "modules").Setup())
                 component.append({
                     "value": comp_defaults["type"],
                     "text": comp_defaults["name"]
@@ -70,7 +71,7 @@ def _pub_configurable_devices_components() -> None:
             add_components(device, "counter*")
             add_components(device, "inverter*")
             try:
-                dev_defaults = importlib.import_module(f".{device}.device", "modules").get_default_config()
+                dev_defaults = to_dict(importlib.import_module(f".{device}.device", "modules").Setup())
                 devices_components.append({
                     "value": dev_defaults["type"],
                     "text": dev_defaults["name"],
@@ -91,8 +92,8 @@ def _pub_configurable_chargepoints() -> None:
         pathlist = Path("/var/www/html/openWB/packages/modules").glob('**/chargepoint_module.py')
         for path in pathlist:
             try:
-                dev_defaults = importlib.import_module(
-                    f".{path.parts[-2]}.chargepoint_module", "modules").get_default_config()
+                dev_defaults = to_dict(importlib.import_module(
+                    f".{path.parts[-2]}.chargepoint_module", "modules").Setup())
                 chargepoints.append({
                     "value": dev_defaults["connection_module"]["type"],
                     "text": dev_defaults["connection_module"]["name"]

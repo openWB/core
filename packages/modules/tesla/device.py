@@ -8,6 +8,7 @@ from typing import Callable, Dict, Union, Optional, List
 
 from helpermodules.cli import run_using_positional_cli_args
 from modules.common.abstract_device import AbstractDevice
+from modules.common.config import Config, from_dict, to_dict
 from modules.common.component_context import MultiComponentUpdateContext
 from modules.common.req import get_http_session
 from modules.common.store import RAMDISK_PATH
@@ -19,60 +20,22 @@ from modules.tesla.http_client import PowerwallHttpClient
 log = logging.getLogger(__name__)
 
 
-def get_default_config() -> dict:
-    return {
-        "name": "Tesla",
-        "type": "tesla",
-        "id": 0,
-        "configuration": {
-            "ip_address": None,
-            "email": None,
-            "password": None
-        }
-    }
+class Configuration(Config):
+    config_class = None
+
+    def __init__(self, ip_address: int = None, email: str = None, password: str = None):
+        super().__init__(locals())
 
 
-class TeslaConfiguration:
-    def __init__(self, ip_address: str, email: str, password: str):
-        self.ip_address = ip_address
-        self.email = email
-        self.password = password
+class Setup(Config):
+    config_class = Configuration
 
-    @staticmethod
-    def from_dict(device_config: dict):
-        keys = ["ip_address", "email", "password"]
-        try:
-            values = [device_config[key] for key in keys]
-        except KeyError as e:
-            raise Exception(
-                "Illegal configuration <{}>: Expected object with properties: {}".format(device_config, keys)
-            ) from e
-        return TeslaConfiguration(*values)
-
-
-class Tesla:
-    def __init__(self, name: str, type: str, id: int, configuration: TeslaConfiguration) -> None:
-        self.name = name
-        self.type = type
-        self.id = id
-        self.configuration = configuration
-
-    @staticmethod
-    def from_dict(device_config: dict):
-        keys = ["name", "type", "id", "configuration"]
-        try:
-            values = [device_config[key] for key in keys]
-            values = []
-            for key in keys:
-                if isinstance(device_config[key], Dict):
-                    values.append(TeslaConfiguration.from_dict(device_config[key]))
-                else:
-                    values.append(device_config[key])
-        except KeyError as e:
-            raise Exception(
-                "Illegal configuration <{}>: Expected object with properties: {}".format(device_config, keys)
-            ) from e
-        return Tesla(*values)
+    def __init__(self,
+                 name: str = "Tesla",
+                 type: str = "tesla",
+                 id: int = 0,
+                 configuration: Configuration = Configuration()) -> None:
+        super().__init__(locals())
 
 
 UpdateFunction = Callable[[PowerwallHttpClient], None]
@@ -91,8 +54,8 @@ class Device(AbstractDevice):
         self.components = {}  # type: Dict[str, tesla_component_classes]
         try:
             self.device_config = device_config \
-                if isinstance(device_config, Tesla) \
-                else Tesla.from_dict(device_config)
+                if isinstance(device_config, Setup) \
+                else from_dict(device_config, Setup)
         except Exception:
             log.exception("Fehler im Modul "+device_config["name"])
 
@@ -182,7 +145,7 @@ def read_legacy(component_type: str,
         "counter": counter,
         "inverter": inverter
     }
-    device_config = get_default_config()
+    device_config = to_dict(Setup())
     device_config.update({"configuration": {
         "ip_address": address,
         "email": email,
@@ -190,7 +153,7 @@ def read_legacy(component_type: str,
     }})
     dev = Device(device_config)
     if component_type in COMPONENT_TYPE_TO_MODULE:
-        component_config = COMPONENT_TYPE_TO_MODULE[component_type].get_default_config()
+        component_config = to_dict(COMPONENT_TYPE_TO_MODULE[component_type].Setup())
     else:
         raise Exception(
             "illegal component type " + component_type + ". Allowed values: " +
