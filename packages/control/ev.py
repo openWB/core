@@ -327,6 +327,7 @@ class Ev:
         phases_to_use = self.data["control_parameter"]["phases"]
         phases_in_use = self.data["control_parameter"]["phases"]
         pv_config = data.data.general_data["general"].data["chargemode_config"]["pv_charging"]
+        max_phases_ev = self.ev_template.data["max_phases"]
         if self.charge_template.data["chargemode"]["pv_charging"]["feed_in_limit"]:
             feed_in_yield = pv_config["feed_in_yield"]
         else:
@@ -338,7 +339,7 @@ class Ev:
         if phases_in_use == 1:
             direction_str = "Umschaltverzögerung von 1 auf 3"
             delay = pv_config["phase_switch_delay"] * 60
-            required_power = self.ev_template.data["min_current"] * 3 * \
+            required_power = self.ev_template.data["min_current"] * max_phases_ev * \
                 230 - self.ev_template.data["max_current_one_phase"] * 230
             new_phase = 3
             new_current = self.ev_template.data["min_current"]
@@ -346,7 +347,7 @@ class Ev:
             direction_str = "Umschaltverzögerung von 3 auf 1"
             delay = (16 - pv_config["phase_switch_delay"]) * 60
             required_power = self.ev_template.data["max_current_one_phase"] * \
-                230 - self.ev_template.data["min_current"] * 3 * 230
+                230 - self.ev_template.data["min_current"] * max_phases_ev * 230
             new_phase = 1
             new_current = self.ev_template.data["max_current_one_phase"]
 
@@ -358,7 +359,8 @@ class Ev:
                 "timestamp_perform_phase_switch"] is None:
             if timestamp_auto_phase_switch is None:
                 condition_1_to_3 = (max(get_currents) > max_current and
-                                    all_overhang > self.ev_template.data["min_current"] * 3 * 230 - get_power and
+                                    all_overhang > self.ev_template.data[
+                                        "min_current"] * max_phases_ev * 230 - get_power and
                                     phases_in_use == 1)
                 condition_3_to_1 = max(get_currents) < min_current and all_overhang < 0 and phases_in_use == 3
                 if condition_3_to_1 or condition_1_to_3:
