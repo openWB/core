@@ -3,10 +3,21 @@ OPENWBBASEDIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 
 # setup logfile
 LOGFILE="${OPENWBBASEDIR}/ramdisk/main.log"
-touch "${LOGFILE}"
-chmod 666 "${LOGFILE}"
+touch "$LOGFILE"
+chmod 666 "$LOGFILE"
 
 {
+	if ! id -u openwb >/dev/null 2>&1; then
+		echo "user 'openwb' missing"
+		echo "starting upgrade skript..."
+		"$OPENWBBASEDIR/runs/upgrade2openwbuser.sh" >> "${OPENWBBASEDIR}/data/log/update.log" 2>&1
+	fi
+
+	if [ "$(id -u -n)" != "openwb" ]; then
+		echo "Re-running script ${BASH_SOURCE[0]} as user openwb"
+		exec sudo -u openwb bash "${BASH_SOURCE[0]}"
+	fi
+
 	echo "atreboot.sh started"
 	if [[ -f "${OPENWBBASEDIR}/ramdisk/bootdone" ]]; then
 		rm "${OPENWBBASEDIR}/ramdisk/bootdone"
@@ -93,7 +104,7 @@ chmod 666 "${LOGFILE}"
 
 	# check for other dependencies
 	echo "python packages..."
-	sudo pip3 install -r "${OPENWBBASEDIR}/requirements.txt"
+	pip3 install -r "${OPENWBBASEDIR}/requirements.txt"
 
 	# update version
 	echo "version..."
@@ -152,7 +163,7 @@ chmod 666 "${LOGFILE}"
 	# curl --connect-timeout 10 -s https://raw.githubusercontent.com/snaptec/openWB/stable/web/version > ${OPENWBBASEDIR}/ramdisk/vstable
 
 	# update our local version
-	sudo git -C "${OPENWBBASEDIR}/" show --pretty='format:%ci [%h]' | head -n1 > "${OPENWBBASEDIR}/web/lastcommit"
+	git -C "${OPENWBBASEDIR}/" show --pretty='format:%ci [%h]' | head -n1 > "${OPENWBBASEDIR}/web/lastcommit"
 	# and record the current commit details
 	commitId=$(git -C "${OPENWBBASEDIR}/" log --format="%h" -n 1)
 	echo "$commitId" > "${OPENWBBASEDIR}/ramdisk/currentCommitHash"
@@ -175,4 +186,4 @@ chmod 666 "${LOGFILE}"
 	mosquitto_pub -p 1883 -t openWB/system/boot_done -r -m 'true'
 	mosquitto_pub -t openWB/system/reloadDisplay -m "1"
 	touch "${OPENWBBASEDIR}/ramdisk/bootdone"
-} >> "${LOGFILE}" 2>&1
+} >> "$LOGFILE" 2>&1

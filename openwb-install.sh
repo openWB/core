@@ -1,5 +1,7 @@
 #!/bin/bash
 OPENWBBASEDIR=/var/www/html/openWB
+OPENWB_USER=openwb
+OPENWB_GROUP=openwb
 
 if (( $(id -u) != 0 )); then
 	echo "this script has to be run as user root or with sudo"
@@ -13,11 +15,27 @@ apt-get update
 apt-get -q -y install vim bc apache2 php php-gd php-curl php-xml php-json libapache2-mod-php jq git mosquitto mosquitto-clients socat python3-pip sshpass
 echo "done"
 
+echo "create group $OPENWB_GROUP"
+# Will do nothing if group already exists:
+/usr/sbin/groupadd "$OPENWB_GROUP"
+echo "done"
+
+echo "create user $OPENWB_USER"
+# Will do nothing if user already exists:
+/usr/sbin/useradd "$OPENWB_USER" -g "$OPENWB_GROUP" --create-home
+echo "done"
+
+# The user "openwb" is still new and we might need sudo in many places. Thus for now we give the user
+# unrestricted sudo. This should be restricted in the future
+echo "$OPENWB_USER ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/openwb
+chmod 440 /etc/sudoers.d/openwb
+echo "done"
+
 echo "check for initial git clone..."
 if [ ! -d "${OPENWBBASEDIR}/web" ]; then
-	cd /var/www/html/ || exit
-	git clone https://github.com/openWB/core.git --branch master "${OPENWBBASEDIR}"
-	chown -R pi:pi openWB
+	mkdir "$OPENWBBASEDIR"
+	chown "$OPENWB_USER:$OPENWB_GROUP" "$OPENWBBASEDIR"
+	sudo -u "$OPENWB_USER" git clone https://github.com/openWB/core.git --branch master "$OPENWBBASEDIR"
 	echo "git cloned"
 else
 	echo "ok"
@@ -88,7 +106,7 @@ elif [ -d "/etc/php/7.4/" ]; then
 fi
 
 echo "installing python requirements..."
-pip install -r "${OPENWBBASEDIR}/requirements.txt"
+sudo -u "$OPENWB_USER" pip install -r "${OPENWBBASEDIR}/requirements.txt"
 
 echo "installing openwb2 system service..."
 ln -s "${OPENWBBASEDIR}/data/config/openwb2.service" /etc/systemd/system/openwb2.service
@@ -98,3 +116,6 @@ systemctl start openwb2.service
 
 echo "installation finished, now running atreboot.sh..."
 "${OPENWBBASEDIR}/runs/atreboot.sh"
+
+echo "all done"
+echo "if you want to use this installation for developmenet, add a password for user 'openwb'"
