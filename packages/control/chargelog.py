@@ -53,7 +53,7 @@ def collect_data(chargepoint):
                     log_data.timestamp_start_charging = timecheck.create_timestamp()
                     Pub().pub("openWB/set/chargepoint/"+str(chargepoint.num) +
                               "/set/log/timestamp_start_charging", log_data.timestamp_start_charging)
-                    log_data.chargemode_log_entry = charging_ev.data["control_parameter"]["chargemode"]
+                    log_data.chargemode_log_entry = charging_ev.data.control_parameter.chargemode
                     Pub().pub("openWB/set/chargepoint/"+str(chargepoint.num) +
                               "/set/log/chargemode_log_entry", log_data.chargemode_log_entry)
                 log_data.imported_since_mode_switch = chargepoint.data.get.imported - \
@@ -154,7 +154,7 @@ def save_data(chargepoint, charging_ev, immediately=True, reset=False):
                 "id": charging_ev.num,
                 "name": charging_ev.data["name"],
                 "chargemode": log_data.chargemode_log_entry,
-                "prio": charging_ev.data["control_parameter"]["prio"],
+                "prio": charging_ev.data.control_parameter.prio,
                 "rfid": chargepoint.data.set.rfid
             },
             "time":

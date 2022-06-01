@@ -124,7 +124,7 @@ def test_get_phases(monkeypatch, cp: Chargepoint, params: Params):
     cp.data.set.charging_ev_data.ev_template.data["prevent_phase_switch"] = params.prevent_phase_switch
     cp.data.set.charging_ev_data.data["control_parameter"][
         "timestamp_perform_phase_switch"] = params.timestamp_perform_phase_switch
-    cp.data.set.charging_ev_data.data["control_parameter"]["phases"] = params.phases_in_use
+    cp.data.set.charging_ev_data.data.control_parameter.phases = params.phases_in_use
     cp.data.get.charge_state = params.charge_state
     cp.data.get.phases_in_use = params.phases_in_use
     cp.data.set.phases_to_use = params.phases_in_use

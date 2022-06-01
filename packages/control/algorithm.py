@@ -88,13 +88,13 @@ class Algorithm:
                 if cp.data.set.charging_ev != -1:
                     charging_ev = cp.data.set.charging_ev_data
                     # Wenn beim PV-Laden über der eingestellten Stromstärke geladen wird, zuerst zurücknehmen.
-                    if((charging_ev.charge_template.data["chargemode"]["selected"] == "pv_charging" or
-                            charging_ev.data["control_parameter"]["submode"] == "pv_charging") and
+                    if((charging_ev.charge_template.datachargemode.selected == "pv_charging" or
+                            charging_ev.data.control_parameter.submode == "pv_charging") and
                             cp.data.set.current != 0):
                         if max(cp.data.get.currents) != 0:
                             # Strom, mit dem tatsächlich geladen wird, verwenden, da man sonst mehr Strom
                             # freigibt, als zur Verfügung steht.
-                            released_current = charging_ev.data["control_parameter"]["required_current"] - max(
+                            released_current = charging_ev.data.control_parameter.required_current - max(
                                 cp.data.get.currents)
                             released_power = released_current * 230 * cp.data.get.phases_in_use
                             # Nur wenn mit mehr als der benötigten Stromstärke geladen wird, kann der
@@ -102,14 +102,14 @@ class Algorithm:
                             if released_current < 0:
                                 data.data.pv_data["all"].allocate_evu_power(released_power)
                                 self._process_data(
-                                    cp, charging_ev.data["control_parameter"]["required_current"])
+                                    cp, charging_ev.data.control_parameter.required_current)
                                 loadmanagement.loadmanagement_for_cp(
                                     cp,
                                     released_current,
                                     cp.data.get.phases_in_use)
                                 log.debug(
                                     "Ladung an LP" + str(cp.num) + " um " + str(released_current) +
-                                    "A auf " + str(charging_ev.data["control_parameter"]["required_current"]) +
+                                    "A auf " + str(charging_ev.data.control_parameter.required_current) +
                                     "A angepasst.")
                         else:
                             # Wenn das EV nicht laden will, trotztdem zugeteilten Überschuss zurücknehmen,
@@ -117,10 +117,10 @@ class Algorithm:
                             # dann doch noch anfängt. Dieser Strom darf aber nicht freigegeben werden, da er
                             # keine Auswirkungen auf den EVU-Überschuss hat.
                             self._process_data(
-                                cp, charging_ev.data["control_parameter"]["required_current"])
+                                cp, charging_ev.data["control_parameter.required_current"])
                             log.debug(
                                 "Ladung an LP" + str(cp.num) + " auf " +
-                                str(charging_ev.data["control_parameter"]["required_current"]) +
+                                str(charging_ev.data["control_parameter.required_current"]) +
                                 "A angepasst.")
             except Exception:
                 log.exception(f"Fehler im Algorithmus-Modul für Ladepunkt {cp.num}")
@@ -144,12 +144,12 @@ class Algorithm:
                     try:
                         max_get_current = max(cp.data.get.currents)
                         if (cp.data.set.current > max_get_current
-                                > cp.data.set.charging_ev_data.ev_template.data["nominal_difference"]):
+                                > cp.data.set.charging_ev_data.ev_template.data.nominal_difference):
                             # Manche EVs laden mit weniger Strom als der Min-Strom.
-                            if (max_get_current > cp.data.set.charging_ev_data.ev_template.data["min_current"]):
+                            if (max_get_current > cp.data.set.charging_ev_data.ev_template.data.min_current):
                                 cp.data.set.current = max_get_current
                             else:
-                                cp.data.set.current = cp.data.set.charging_ev_data.ev_template.data["min_current"]
+                                cp.data.set.current = cp.data.set.charging_ev_data.ev_template.data.min_current
                     except Exception:
                         log.exception(f"Fehler im Algorithmus-Modul für Ladepunkt {cp.num}")
                 # Begrenzung der Schleifendurchläufe: Im ersten Durchlauf wird versucht, die Überlast durch Reduktion
@@ -231,13 +231,13 @@ class Algorithm:
                     # Wenn der LP erst in diesem Zyklus eingeschaltet wird, sind noch keine phases_in_use
                     # hinterlegt.
                     if not chargepoint.data.get.charge_state:
-                        phases = charging_ev.data["control_parameter"]["phases"]
+                        phases = charging_ev.data.control_parameter.phases
                     else:
                         phases = chargepoint.data.get.phases_in_use
-                    if((charging_ev.charge_template.data["prio"] == prio) and
-                            (charging_ev.charge_template.data["chargemode"]["selected"] == mode or
+                    if((charging_ev.charge_template.data.prio == prio) and
+                            (charging_ev.charge_template.data.chargemode.selected == mode or
                                 mode is None) and
-                            (charging_ev.data["control_parameter"]["submode"] == submode) and
+                            (charging_ev.data.control_parameter.submode == submode) and
                             # LP muss auf der Phase laden, die überlastet ist.
                             (phases == 3 or max_overshoot_phase == chargepoint.data.config.phase_1 or
                                 chargepoint.data.config.phase_1 == 0)):
@@ -278,7 +278,7 @@ class Algorithm:
                         # hinterlegt.
                         ev_data = cp.data.set.charging_ev_data
                         if not cp.data.get.charge_state:
-                            phases = ev_data.data["control_parameter"]["phases"]
+                            phases = ev_data.data.control_parameter.phases
                         else:
                             phases = cp.data.get.phases_in_use
                         # Wenn max_overshoot_phase -1 ist, wurde die maximale Gesamtleistung überschritten und
@@ -293,10 +293,9 @@ class Algorithm:
                             considered_current = cp.data.set.current
                         else:
                             # Dies ist der aktuell betrachtete Ladepunkt. Es wurde noch kein Strom gesetzt.
-                            considered_current = ev_data.data["control_parameter"][
-                                "required_current"]
+                            considered_current = ev_data.data.control_parameter.required_current
                         adaptable_current = considered_current - \
-                            ev_data.ev_template.data["min_current"]
+                            ev_data.ev_template.data.min_current
                         # Der Strom kann nicht weiter reduziert werden.
                         if adaptable_current <= 0:
                             # Ladung darf gestoppt werden.
@@ -304,7 +303,7 @@ class Algorithm:
                                 taken_current = cp.data.set.current*-1
                                 remaining_current_overshoot += taken_current
                                 # In diesem Zyklus darf nicht mehr geladen werden.
-                                ev_data.data["control_parameter"]["required_current"] = 0
+                                ev_data.data.control_parameter.required_current = 0
                                 self._process_data(cp, 0)
                                 message = "Das Lastmanagement hat den Ladevorgang gestoppt."
                             else:
@@ -322,7 +321,7 @@ class Algorithm:
                                       str(round(taken_current, 2))+"A auf " +
                                       str(round(required_current, 2))+"A angepasst.")
                             current_diff = round(
-                                ev_data.data["control_parameter"]["required_current"] - required_current,
+                                ev_data.data.control_parameter.required_current - required_current,
                                 2)
                             message = f"Das Lastmanagement hat die Sollstromstärke um {current_diff}A runtergeregelt."
                         # Werte aktualisieren
@@ -369,15 +368,14 @@ class Algorithm:
                         continue
                     if cp.data.set.charging_ev != -1:
                         charging_ev = cp.data.set.charging_ev_data
-                        if((charging_ev.charge_template.data["prio"] == prio) and
-                            (charging_ev.charge_template.data["chargemode"]["selected"] == mode or
+                        if((charging_ev.charge_template.data.prio == prio) and
+                            (charging_ev.charge_template.data.chargemode.selected == mode or
                                 mode is None) and
-                                (charging_ev.data["control_parameter"]["submode"] == submode) and
-                                (cp.data.set.charging_ev_data.data["control_parameter"][
-                                    "required_current"] > cp.data.set.current) and
+                                (charging_ev.data.control_parameter.submode == submode) and
+                                (cp.data.set.charging_ev_data.data.control_parameter.required_current > cp.data.set.current) and
                                 # nur die hochregeln, die auch mit der Sollstromstärke laden
                                 (max(cp.data.get.currents) > cp.data.set.current
-                                    - charging_ev.ev_template.data["nominal_difference"])):
+                                    - charging_ev.ev_template.data.nominal_difference)):
                             valid_chargepoints[cp] = None
                 except Exception:
                     log.exception("Fehler im Algorithmus-Modul für Ladepunkt"+cp.num)
@@ -399,12 +397,11 @@ class Algorithm:
                         bat_data = copy.deepcopy(data.data.bat_data)
                         cp_data_old = copy.deepcopy(data.data.cp_data)
                         # Fehlenden Ladestrom ermitteln
-                        missing_current = cp.data.set.charging_ev_data.data[
-                            "control_parameter"]["required_current"] - cp.data.set.current
+                        missing_current = cp.data.set.charging_ev_data.data.control_parameter.required_current - cp.data.set.current
                         # Wenn der LP erst in diesem Zyklus eingeschaltet wird, sind noch keine phases_in_use
                         # hinterlegt.
                         if cp.data.get.phases_in_use == 0:
-                            phases = cp.data.set.charging_ev_data.data["control_parameter"]["phases"]
+                            phases = cp.data.set.charging_ev_data.data.control_parameter.phases
                         else:
                             phases = cp.data.get.phases_in_use
                         # Lastmanagement für den fehlenden Ladestrom durchführen
@@ -459,9 +456,8 @@ class Algorithm:
                                 str(round(missing_current, 2))+"A angepasst."
                             log.debug(message)
                         ev_data = cp.data.set.charging_ev_data
-                        current_diff = round(ev_data.data[
-                            "control_parameter"]["required_current"] - cp.data.set.current, 2)
-                        if current_diff > ev_data.ev_template.data["nominal_difference"]:
+                        current_diff = round(ev_data.data.control_parameter.required_current - cp.data.set.current, 2)
+                        if current_diff > ev_data.ev_template.data.nominal_difference:
                             cp.data.get.state_str = (f"Das Lastmanagement hat die Sollstromstärke um "
                                                      f"{current_diff}A runtergeregelt.")
                     except Exception:
@@ -486,9 +482,9 @@ class Algorithm:
             try:
                 if cp.data.set.charging_ev != -1:
                     charging_ev = cp.data.set.charging_ev_data
-                    if((charging_ev.charge_template.data["prio"] == prio) and
-                        (charging_ev.charge_template.data["chargemode"]["selected"] == mode or mode is None) and
-                            (charging_ev.data["control_parameter"]["submode"] == submode)):
+                    if((charging_ev.charge_template.data.prio == prio) and
+                        (charging_ev.charge_template.data.chargemode.selected == mode or mode is None) and
+                            (charging_ev.data["control_parameter.submode"] == submode)):
                         valid_chargepoints[cp] = None
             except Exception:
                 log.exception(f"Fehler im Algorithmus-Modul für Ladepunkt{cp.num}")
@@ -543,10 +539,10 @@ class Algorithm:
                         # Nachdem im Automatikmodus die Anzahl Phasen bekannt ist, Einhaltung des Maximalstroms
                         # prüfen.
                         required_current = charging_ev.check_min_max_current(current, control_parameter["phases"])
-                        charging_ev.data["control_parameter"]["required_current"] = required_current
+                        charging_ev.data.control_parameter.required_current = required_current
                         Pub().pub("openWB/set/vehicle/"+str(charging_ev.num) +
                                   "/control_parameter/required_current", required_current)
-                        charging_ev.data["control_parameter"]["phases"] = phases
+                        charging_ev.data.control_parameter.phases = phases
                         Pub().pub("openWB/set/vehicle/"+str(charging_ev.num) +
                                   "/control_parameter/phases", phases)
                         self._process_data(cp, current)
@@ -574,12 +570,12 @@ class Algorithm:
                             # set-> current enthält einen Wert, wenn das EV in diesem Zyklus eingeschaltet werden
                             # soll, aktuell aber noch nicht lädt.
                             if (cp.data.set.current != 0 or
-                                    charging_ev.data["control_parameter"]["required_current"] == 0):
+                                    charging_ev.data.control_parameter.required_current == 0):
                                 continue
-                            if((charging_ev.charge_template.data["prio"] == prio) and
-                                (charging_ev.charge_template.data["chargemode"]["selected"] == mode or
+                            if((charging_ev.charge_template.data.prio == prio) and
+                                (charging_ev.charge_template.data.chargemode.selected == mode or
                                  mode is None) and
-                                    (charging_ev.data["control_parameter"]["submode"] == submode)):
+                                    (charging_ev.data.control_parameter.submode == submode)):
                                 valid_chargepoints[cp] = None
                     preferenced_chargepoints = self._get_preferenced_chargepoint(
                         valid_chargepoints, True)
@@ -607,18 +603,18 @@ class Algorithm:
         for chargepoint in preferenced_chargepoints:
             try:
                 charging_ev = chargepoint.data.set.charging_ev_data
-                phases = charging_ev.data["control_parameter"]["phases"]
-                required_current = charging_ev.data["control_parameter"]["required_current"]
+                phases = charging_ev.data.control_parameter.phases
+                required_current = charging_ev.data.control_parameter.required_current
                 required_power = phases * 230 * \
-                    charging_ev.data["control_parameter"]["required_current"]
+                    charging_ev.data.control_parameter.required_current
                 Pub().pub("openWB/set/chargepoint/"+str(chargepoint.num) +
                           "/set/required_power", required_power)
                 chargepoint.data.set.required_power = required_power
-                if charging_ev.data["control_parameter"]["submode"] == "pv_charging":
+                if charging_ev.data.control_parameter.submode == "pv_charging":
                     self._calc_pv_charging(
                         chargepoint, required_current, phases, current_mode_index)
-                elif (charging_ev.data["control_parameter"]["submode"] == "stop" or
-                        (charging_ev.data["control_parameter"]["submode"] == "standby")):
+                elif (charging_ev.data.control_parameter.submode == "stop" or
+                        (charging_ev.data.control_parameter.submode == "standby")):
                     required_current = 0
                     self._process_data(chargepoint, required_current)
                 else:
@@ -689,7 +685,7 @@ class Algorithm:
                             break
                         else:
                             # Abschalten
-                            if not chargepoint.data.set.charging_ev_data.ev_template.data["prevent_charge_stop"]:
+                            if not chargepoint.data.set.charging_ev_data.ev_template.data.prevent_charge_stop:
                                 remaining_current_overshoot = self._down_regulation(
                                     mode, chargepoints,
                                     remaining_current_overshoot,
@@ -736,10 +732,10 @@ class Algorithm:
                 (log.info(
                     "LP: " + str(chargepoint.num) + ", Ladestrom: " + str(chargepoint.data.set.current) +
                     "A, Phasen: " +
-                    str(chargepoint.data.set.charging_ev_data.data["control_parameter"]["phases"]) +
+                    str(chargepoint.data.set.charging_ev_data.data.control_parameter.phases) +
                     ", Ladeleistung: " +
                     str(
-                        (chargepoint.data.set.charging_ev_data.data["control_parameter"]["phases"] *
+                        (chargepoint.data.set.charging_ev_data.data.control_parameter.phases *
                          chargepoint.data.set.current * 230)) + "W"))
             data.data.counter_data[evu_counter].print_stats()
         except Exception:
@@ -797,10 +793,10 @@ class Algorithm:
                                     # werden soll, aktuell aber noch nicht lädt.
                                     if cp.data.set.current == 0:
                                         continue
-                                    if((charging_ev.charge_template.data["prio"] == prio) and
-                                       (charging_ev.charge_template.data["chargemode"]["selected"] == mode or
+                                    if((charging_ev.charge_template.data.prio == prio) and
+                                       (charging_ev.charge_template.data.chargemode.selected == mode or
                                         mode is None) and
-                                            (charging_ev.data["control_parameter"]["submode"] == submode)):
+                                            (charging_ev.data.control_parameter.submode == submode)):
                                         valid_chargepoints[cp] = None
                         except Exception:
                             log.exception("Fehler im Algorithmus-Modul für Ladepunkt "+item)
@@ -810,7 +806,7 @@ class Algorithm:
                         for cp in preferenced_chargepoints:
                             try:
                                 # abschalten
-                                if not cp.data.set.charging_ev_data.ev_template.data["prevent_charge_stop"]:
+                                if not cp.data.set.charging_ev_data.ev_template.data.prevent_charge_stop:
                                     data.data.pv_data["all"].allocate_evu_power(
                                         -1 * cp.data.set.charging_ev_data.data["control_parameter"]
                                         ["required_current"] * 230 * chargepoint.data.get.phases_in_use)
@@ -877,15 +873,15 @@ class Algorithm:
                 try:
                     if cp.data.set.charging_ev != -1:
                         charging_ev = cp.data.set.charging_ev_data
-                        if ((charging_ev.charge_template.data["prio"] == prio and
-                                (charging_ev.charge_template.data["chargemode"]["selected"] == mode or
+                        if ((charging_ev.charge_template.data.prio == prio and
+                                (charging_ev.charge_template.data.chargemode.selected == mode or
                                     mode is None) and
-                                charging_ev.data["control_parameter"]["submode"] == submode and
+                                charging_ev.data.control_parameter.submode == submode and
                                 charging_ev.charge_template.data["chargemode"]["pv_charging"][
-                            "feed_in_limit"] == feed_in_limit) and
+                                    "feed_in_limit"] == feed_in_limit) and
                                 cp.data.set.current != 0):
                             # Erst hochregeln, wenn geladen wird.
-                            if ((cp.data.set.current - charging_ev.ev_template.data["nominal_difference"])
+                            if ((cp.data.set.current - charging_ev.ev_template.data.nominal_difference)
                                     < max(cp.data.get.currents)):
                                 # Ev dieser Prioritätsstufe zählen
                                 num_of_ev += 1
@@ -921,13 +917,13 @@ class Algorithm:
                         try:
                             if cp.data.set.charging_ev != -1:
                                 charging_ev = cp.data.set.charging_ev_data
-                                if ((charging_ev.charge_template.data["prio"] == prio and
-                                        (charging_ev.charge_template.data["chargemode"]["selected"] == mode or
+                                if ((charging_ev.charge_template.data.prio == prio and
+                                        (charging_ev.charge_template.data.chargemode.selected == mode or
                                             mode is None) and
-                                        charging_ev.data["control_parameter"]["submode"] == submode) and
+                                        charging_ev.data.control_parameter.submode == submode) and
                                         cp.data.set.current != 0):
                                     if ((cp.data.set.current
-                                            - charging_ev.ev_template.data["nominal_difference"])
+                                            - charging_ev.ev_template.data.nominal_difference)
                                             < max(cp.data.get.currents) and
                                             charging_ev.charge_template.data["chargemode"]["pv_charging"][
                                                 "feed_in_limit"] == feed_in_limit):
@@ -949,7 +945,7 @@ class Algorithm:
         if cp.data.get.charge_state:
             phases = cp.data.get.phases_in_use
         else:
-            phases = cp.data.set.charging_ev_data.data["control_parameter"]["phases"]
+            phases = cp.data.set.charging_ev_data.data.control_parameter.phases
         if diff_per_ev_power != 0:
             new_current = (diff_per_ev_power / 230 / phases) + cp.data.set.current
         else:
@@ -957,9 +953,9 @@ class Algorithm:
         log.debug(f"LP{cp.num}: max Überschuss pro Phase {new_current}A")
 
         # Um max. +/- 5A pro Zyklus regeln
-        if ((-5-charging_ev.ev_template.data["nominal_difference"])
+        if ((-5-charging_ev.ev_template.data.nominal_difference)
                 < (new_current - max(cp.data.get.currents))
-                < (5+charging_ev.ev_template.data["nominal_difference"])):
+                < (5+charging_ev.ev_template.data.nominal_difference)):
             current = new_current
         else:
             if new_current < max(cp.data.get.currents):
@@ -1005,7 +1001,7 @@ class Algorithm:
         for cp in data.data.cp_data.values():
             try:
                 if cp.data.set.charging_ev != -1:
-                    if (cp.data.set.charging_ev_data.data["control_parameter"]["submode"] ==
+                    if (cp.data.set.charging_ev_data.data.control_parameter.submode ==
                             "pv_charging" and cp.data.get.charge_state):
                         if data.data.pv_data["all"].switch_off_check_timer(cp):
                             # Ladung stoppen
@@ -1051,11 +1047,11 @@ class Algorithm:
                     # entsprechend der Bedingung die Values im Dictionary füllen
                     if condition_types[condition] == "min_current":
                         valid_chargepoints.update(
-                            (cp, cp.data.set.charging_ev_data.data["control_parameter"]["required_current"])
+                            (cp, cp.data.set.charging_ev_data.data.control_parameter.required_current)
                             for cp, val in valid_chargepoints.items())
                     elif condition_types[condition] == "soc":
                         valid_chargepoints.update(
-                            (cp, cp.data.set.charging_ev_data.data["get"]["soc"]) for cp,
+                            (cp, cp.data.set.charging_ev_data.data.get.soc) for cp,
                             val in valid_chargepoints.items())
                     elif condition_types[condition] == "plug_in":
                         valid_chargepoints.update(
@@ -1107,14 +1103,14 @@ class Algorithm:
                     try:
                         if cp.data.set.charging_ev != -1:
                             charging_ev = cp.data.set.charging_ev_data
-                            if (charging_ev.data["control_parameter"]["submode"] == "pv_charging" and
+                            if (charging_ev.data.control_parameter.submode == "pv_charging" and
                                     not charging_ev.charge_template.data["chargemode"]["pv_charging"][
                                         "feed_in_limit"]):
                                 if cp.data.set.charging_ev_data.data["control_parameter"][
                                         "phases"] == 1:
-                                    max_current = charging_ev.ev_template.data["max_current_one_phase"]
+                                    max_current = charging_ev.ev_template.data.max_current_one_phase
                                 else:
-                                    max_current = charging_ev.ev_template.data["max_current_multi_phases"]
+                                    max_current = charging_ev.ev_template.data.max_current_multi_phases
                                 if cp.data.set.current != max_current:
                                     return False
                     except Exception:

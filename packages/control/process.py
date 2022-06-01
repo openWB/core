@@ -78,7 +78,7 @@ class Process:
         current = round(chargepoint.data.set.current, 2)
         # Zur Sicherheit - nach dem der Algorithmus abgeschlossen ist - nochmal die Einhaltung der Stromstärken
         # prüfen.
-        current = charging_ev.check_min_max_current(current, charging_ev.data["control_parameter"]["phases"])
+        current = charging_ev.check_min_max_current(current, charging_ev.data.control_parameter.phases)
 
         # Wenn bei einem EV, das keine Umschaltung verträgt, vor dem ersten Laden noch umgeschaltet wird, darf kein
         # Strom gesetzt werden.
@@ -99,7 +99,7 @@ class Process:
                 "LP"+str(chargepoint.num)+": Ladung wurde trotz verhinderter Unterbrechung gestoppt.")
 
         # Wenn ein EV zugeordnet ist und die Phasenumschaltung aktiv ist, darf kein Strom gesetzt werden.
-        if charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] is not None:
+        if charging_ev.data.control_parameter.timestamp_perform_phase_switch is not None:
             current = 0
 
         chargepoint.data.set.current = current

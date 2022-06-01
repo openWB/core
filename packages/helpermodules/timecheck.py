@@ -2,7 +2,9 @@
 """
 import logging
 import datetime
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
+
+from control.ev import ScheduledChargingPlan, TimeChargingPlan
 
 log = logging.getLogger(__name__)
 
@@ -101,7 +103,7 @@ def is_now_in_locking_time(now: datetime.datetime,
             return False
 
 
-def check_plans_timeframe(plans: Dict[str, Dict], hours: Optional[int] = None) -> Optional[Dict]:
+def check_plans_timeframe(plans: Dict[int, TimeChargingPlan], hours: Optional[int] = None) -> Optional[TimeChargingPlan]:
     """ geht alle Pläne durch.
 
     Parameters
@@ -121,7 +123,7 @@ def check_plans_timeframe(plans: Dict[str, Dict], hours: Optional[int] = None) -
     try:
         for plan in plans.values():
             # Nur Keys mit Plan-Nummer berücksichtigen
-            if isinstance(plan, Dict):
+            if isinstance(plan, TimeChargingPlan):
                 state = check_timeframe(plan, hours)
                 if state:
                     return plan
@@ -132,7 +134,7 @@ def check_plans_timeframe(plans: Dict[str, Dict], hours: Optional[int] = None) -
         return None
 
 
-def check_timeframe(plan, hours):
+def check_timeframe(plan: Union[ScheduledChargingPlan, TimeChargingPlan], hours: Optional[int]):
     """ schaut, ob Pläne aktiv sind, prüft, ob das Zeitfenster aktuell ist.
 
     Parameters
@@ -150,15 +152,15 @@ def check_timeframe(plan, hours):
     """
     state = None
     try:
-        if plan["active"]:
+        if plan.active:
             now = datetime.datetime.today()
             if hours is None:
-                begin = datetime.datetime.strptime(plan["time"][0], '%H:%M')
-                end = datetime.datetime.strptime(plan["time"][1], '%H:%M')
+                begin = datetime.datetime.strptime(plan.time[0], '%H:%M')
+                end = datetime.datetime.strptime(plan.time[1], '%H:%M')
             else:
-                end = datetime.datetime.strptime(plan["time"], '%H:%M')
+                end = datetime.datetime.strptime(plan.time, '%H:%M')
 
-            if plan["frequency"]["selected"] == "once":
+            if plan.frequency.selected == "once":
                 if hours is None:
                     beginDate = datetime.datetime.strptime(plan["frequency"]["once"][0], "%Y-%m-%d")
                     begin = begin.replace(beginDate.year, beginDate.month,
@@ -171,7 +173,7 @@ def check_timeframe(plan, hours):
                 end = end.replace(endDate.year, endDate.month, endDate.day)
                 state = is_timeframe_valid(now, begin, end)
 
-            elif plan["frequency"]["selected"] == "daily":
+            elif plan.frequency.selected == "daily":
                 if hours is None:
                     begin, end = set_date(now, begin, end)
                 else:
@@ -182,19 +184,19 @@ def check_timeframe(plan, hours):
                     begin = _calc_begin(end, hours)
                 state = is_timeframe_valid(now, begin, end)
 
-            elif plan["frequency"]["selected"] == "weekly":
+            elif plan.frequency.selected == "weekly":
                 if hours is None:
                     if begin < end:
                         # Endzeit ist am gleichen Tag
-                        if plan["frequency"]["weekly"][now.weekday()]:
+                        if plan.frequency.weekly[now.weekday()]:
                             begin, end = set_date(now, begin, end)
                             state = is_timeframe_valid(now, begin, end)
                         else:
                             state = False
                     else:
-                        if (plan["frequency"]["weekly"][now.weekday()]
-                                or plan["frequency"]["weekly"][now.weekday() +
-                                                               1]):
+                        if (plan.frequency.weekly[now.weekday()]
+                                or plan.frequency.weekly[now.weekday() +
+                                                         1]):
                             begin, end = set_date(now, begin, end)
                             state = is_timeframe_valid(now, begin, end)
                         else:
@@ -219,7 +221,7 @@ def _calc_begin(end: datetime.datetime, hours: int) -> datetime.datetime:
     return end - prev
 
 
-def check_duration(plan: Dict, duration: float) -> Tuple[int, float]:
+def check_duration(plan: ScheduledChargingPlan, duration: float) -> Tuple[int, float]:
     """ prüft, ob der in angegebene Zeitpunkt abzüglich der Dauer jetzt ist.
     Um etwas Puffer zu haben, werden bei Überschreiten des Zeitpunkts die nachfolgenden 20 Min auch noch als Ladezeit
     zurückgegeben.
@@ -231,7 +233,7 @@ def check_duration(plan: Dict, duration: float) -> Tuple[int, float]:
     0, 0: hat noch Zeit
     """
     now = datetime.datetime.today()
-    end = datetime.datetime.strptime(plan["time"], '%H:%M')
+    end = datetime.datetime.strptime(plan.time, '%H:%M')
 
     if plan["frequency"]["selected"] == "once":
         endDate = datetime.datetime.strptime(plan["frequency"]["once"], "%Y-%m-%d")
@@ -244,7 +246,7 @@ def check_duration(plan: Dict, duration: float) -> Tuple[int, float]:
             remaining_time = 0
         return state, remaining_time
 
-    elif plan["frequency"]["selected"] == "daily":
+    elif plan.frequency.selected == "daily":
         end = end.replace(now.year, now.month, now.day)
         # Wenn der Zeitpunkt an diesem Tag schon vorüber ist (verbleibende Zeit ist negativ), nächsten Tag prüfen.
         state, remaining_time = _is_duration_valid(now, duration, end)
@@ -256,8 +258,8 @@ def check_duration(plan: Dict, duration: float) -> Tuple[int, float]:
             end += delta
             state, remaining_time = _is_duration_valid(now, duration, end)
         return state, remaining_time
-    elif plan["frequency"]["selected"] == "weekly":
-        if plan["frequency"]["weekly"][now.weekday()]:
+    elif plan.frequency.selected == "weekly":
+        if plan.frequency.weekly[now.weekday()]:
             end = end.replace(now.year, now.month, now.day)
             state, remaining_time = _is_duration_valid(now, duration, end)
             # Zeitpunkt ist an diesem Tag noch nicht vorbei
@@ -274,7 +276,7 @@ def check_duration(plan: Dict, duration: float) -> Tuple[int, float]:
                     now, duration, end)
             return state, remaining_time
         # prüfen, ob für den nächsten Tag ein Termin ansteht und heute schon begonnen werden muss
-        if plan["frequency"]["weekly"][now.weekday() + 1]:
+        if plan.frequency.weekly[now.weekday() + 1]:
             end = end.replace(now.year, now.month, now.day)
             delta = datetime.timedelta(days=1)
             end += delta
@@ -282,7 +284,7 @@ def check_duration(plan: Dict, duration: float) -> Tuple[int, float]:
         else:
             return 0, 0
     else:
-        raise TypeError(f'Unbekannte Häufigkeit {plan["frequency"]["selected"]}')
+        raise TypeError(f'Unbekannte Häufigkeit {plan.frequency.selected}')
 
 
 def _is_duration_valid(now: datetime.datetime, duration: float, end: datetime.datetime):

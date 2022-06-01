@@ -10,6 +10,7 @@ from helpermodules.pub import Pub
 from helpermodules import measurement_log
 from control import chargepoint
 from control import ev
+from control.data import to_dict
 
 log = logging.getLogger(__name__)
 
@@ -255,13 +256,13 @@ class UpdateConfig:
         ("openWB/chargepoint/get/power", 0),
         ("openWB/chargepoint/template/0", chargepoint.get_chargepoint_template_default()),
         ("openWB/counter/get/hierarchy", []),
-        ("openWB/vehicle/0/name", ev.get_vehicle_default()["name"]),
-        ("openWB/vehicle/0/charge_template", ev.get_vehicle_default()["charge_template"]),
+        ("openWB/vehicle/0/name", ev.EvData().name),
+        ("openWB/vehicle/0/charge_template", ev.Ev(0).charge_template.ct_num),
         ("openWB/vehicle/0/soc_module/config", {"type": None, "configuration": {}}),
-        ("openWB/vehicle/0/ev_template", ev.get_vehicle_default()["ev_template"]),
-        ("openWB/vehicle/0/tag_id", ev.get_vehicle_default()["tag_id"]),
-        ("openWB/vehicle/0/get/soc", ev.get_vehicle_default()["get/soc"]),
-        ("openWB/vehicle/template/ev_template/0", ev.get_ev_template_default()),
+        ("openWB/vehicle/0/ev_template", ev.Ev(0).ev_template.et_num),
+        ("openWB/vehicle/0/tag_id", ev.Ev(0).data.tag_id),
+        ("openWB/vehicle/0/get/soc", ev.Ev(0).data.get.soc),
+        ("openWB/vehicle/template/ev_template/0", to_dict(ev.EvTemplateData())),
         ("openWB/vehicle/template/charge_template/0", ev.get_charge_template_default()),
         ("openWB/general/chargemode_config/instant_charging/phases_to_use", 1),
         ("openWB/general/chargemode_config/pv_charging/bat_prio", 1),

@@ -21,6 +21,7 @@ from control import optional
 from helpermodules.pub import Pub
 from helpermodules import system
 from control import pv
+from control.data import from_dict
 
 log = logging.getLogger(__name__)
 mqtt_log = logging.getLogger("mqtt")
@@ -222,7 +223,7 @@ class SubData:
                     if re.search("^.+/vehicle/[0-9]+/soc_module/config$", msg.topic) is not None:
                         var["ev"+index].soc_module = None
                     elif re.search("^.+/vehicle/[0-9]+/get.+$", msg.topic) is not None:
-                        self.set_json_payload(var["ev"+index].data["get"], msg)
+                        self.set_json_payload_class(var["ev"+index].data.get, msg)
                     else:
                         if "ev"+index in var:
                             var.pop("ev"+index)
@@ -231,13 +232,9 @@ class SubData:
                         var["ev"+index] = ev.Ev(int(index))
 
                     if re.search("^.+/vehicle/[0-9]+/get.+$", msg.topic) is not None:
-                        if "get" not in var["ev"+index].data:
-                            var["ev"+index].data["get"] = {}
-                        self.set_json_payload(var["ev"+index].data["get"], msg)
+                        self.set_json_payload_class(var["ev"+index].data.get, msg)
                     elif re.search("^.+/vehicle/[0-9]+/set.+$", msg.topic) is not None:
-                        if "set" not in var["ev"+index].data:
-                            var["ev"+index].data["set"] = {}
-                        self.set_json_payload(var["ev"+index].data["set"], msg)
+                        self.set_json_payload_class(var["ev"+index].data.set, msg)
                     elif re.search("^.+/vehicle/[0-9]+/soc_module/config$", msg.topic) is not None:
                         config = json.loads(str(msg.payload.decode("utf-8")))
                         if config["type"] is None:
@@ -246,12 +243,10 @@ class SubData:
                             mod = importlib.import_module("."+config["type"]+".soc", "modules")
                             var["ev"+index].soc_module = mod.Soc(config)
                     elif re.search("^.+/vehicle/[0-9]+/control_parameter/.+$", msg.topic) is not None:
-                        if "control_parameter" not in var["ev"+index].data:
-                            var["ev"+index].data["control_parameter"] = {}
-                        self.set_json_payload(
-                            var["ev"+index].data["control_parameter"], msg)
+                        self.set_json_payload_class(
+                            var["ev"+index].data.control_parameter, msg)
                     else:
-                        self.set_json_payload(var["ev"+index].data, msg)
+                        self.set_json_payload_class(var["ev"+index].data, msg)
         except Exception:
             log.exception("Fehler im subdata-Modul")
 
@@ -302,11 +297,12 @@ class SubData:
                             index_second)] = json.loads(str(msg.payload.decode("utf-8")))
                 else:
                     # Pläne unverändert übernehmen
-                    scheduled_charging_plans = var["ct" + index].data["chargemode"]["scheduled_charging"]["plans"]
-                    time_charging_plans = var["ct" + index].data["time_charging"]["plans"]
-                    var["ct" + index].data = json.loads(str(msg.payload.decode("utf-8")))
-                    var["ct"+index].data["time_charging"]["plans"] = time_charging_plans
-                    var["ct"+index].data["chargemode"]["scheduled_charging"]["plans"] = scheduled_charging_plans
+                    scheduled_charging_plans = var["ct" + index].data.chargemode.scheduled_charging.plans
+                    time_charging_plans = var["ct" + index].data.time_charging.plans
+                    var["ct" + index].data = from_dict(json.loads(str(msg.payload.decode("utf-8"))),
+                                                       ev.ChargeTemplateData)
+                    var["ct"+index].data.time_charging.plans = time_charging_plans
+                    var["ct"+index].data.chargemode.scheduled_charging.plans = scheduled_charging_plans
                     self.event_charge_template.set()
         except Exception:
             log.exception("Fehler im subdata-Modul")
@@ -332,7 +328,7 @@ class SubData:
                 else:
                     if "et"+index not in var:
                         var["et"+index] = ev.EvTemplate(int(index))
-                    var["et" + index].data = json.loads(str(msg.payload.decode("utf-8")))
+                    var["et" + index].data = from_dict(json.loads(str(msg.payload.decode("utf-8"))), ev.EvTemplateData)
                     self.event_ev_template.set()
         except Exception:
             log.exception("Fehler im subdata-Modul")
