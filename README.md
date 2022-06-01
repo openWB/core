@@ -38,6 +38,12 @@ In der Shell folgendes eingeben:
 
 	curl -s https://raw.githubusercontent.com/openWB/core/master/openwb-install.sh | sudo bash
 
+# Entwicklung
+
+Der Dienst läuft als Benutzer "openwb" und dementsprechend sind auch die Zugriffsrechte gesetzt. Wenn die Installation auch zur Entwicklung genutzt wird,
+müssen zwingend Lese- und Schreibrechte der Dateien geprüft und ggf korrigiert werden. Um das zu vermeiden empfielt es sich, ein Kennwort für den
+Benutzer "openwb" zu setzen und auch mit dieser Anmeldung die Dateien zu bearbeiten.
+
 # Extra Hardware
 
 ## Taster am Raspberry zur Einstellung des Lademodi
