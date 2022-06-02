@@ -70,9 +70,13 @@ class ChargepointModule(AbstractChargepoint):
                 charge_state=charge_state
             )
 
-            if json_rsp["RFIDUID"] >= 3:
+            if json_rsp.get("RFIDUID"):
+                if json_rsp["RFIDUID"] == "":
+                    tag = None
+                else:
+                    tag = json_rsp["RFIDUID"]
                 chargepoint_state.read_tag = {
-                    "read_tag": str(json_rsp["RFIDUID"]),
+                    "read_tag": tag,
                     "timestamp": timecheck.create_timestamp()}
 
             self.__store.set(chargepoint_state)
