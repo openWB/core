@@ -3,6 +3,8 @@ import logging
 import traceback
 from typing import Optional
 
+from modules.common.abstract_component import AbstractSetup
+
 from helpermodules import compatibility, exceptions, pub
 from modules.common import component_type
 
@@ -22,7 +24,7 @@ class ComponentInfo:
         self.type = type
 
     @staticmethod
-    def from_component_config(component_config: dict):
+    def from_component_config(component_config: AbstractSetup):
         return ComponentInfo(component_config.id, component_config.name, component_config.type)
 
 

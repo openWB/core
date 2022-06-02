@@ -21,7 +21,7 @@ from control import data
 from control import ev
 from control import counter
 from control import pv
-from modules.common.config import to_dict
+from modules.common.abstract_component import to_dict
 from modules.common.component_type import ComponentType, special_to_general_type_mapping, type_to_topic_mapping
 
 log = logging.getLogger(__name__)

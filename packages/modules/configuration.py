@@ -3,7 +3,7 @@ import logging
 from pathlib import Path
 
 from helpermodules.pub import Pub
-from modules.common.config import to_dict
+from modules.common.abstract_component import to_dict
 
 log = logging.getLogger(__name__)
 

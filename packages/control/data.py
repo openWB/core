@@ -5,6 +5,8 @@ Instanzen gelöscht werden können, der Zugriff aber nicht verändert werden mus
 import logging
 import threading
 
+from modules.common.abstract_component import to_dict
+
 log = logging.getLogger(__name__)
 
 data = None
@@ -268,7 +270,7 @@ class Data:
                         log.debug(key+"\n"+str(data[key].data))
                     except AttributeError:
                         # Devices haben kein data-Dict
-                        pass
+                        log.debug(f'{key}\n{to_dict(data[key].device_config)}')
                 else:
                     log.debug(key+"\n"+"Klasse fehlt")
             except Exception:

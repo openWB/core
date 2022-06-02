@@ -8,7 +8,7 @@ import requests_mock
 from modules.tesla import bat
 from modules.tesla.device import Device, Setup
 from modules.common.component_state import BatState
-from modules.common.config import to_dict
+from modules.common.abstract_component import to_dict
 from test_utils.mock_ramdisk import MockRamdisk
 
 sample_soe_json = """{"percentage":69.16}"""

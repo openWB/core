@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from dataclasses import dataclass
 import json
 import logging
 import requests
@@ -7,8 +8,8 @@ from requests import HTTPError
 from typing import Callable, Dict, Union, Optional, List
 
 from helpermodules.cli import run_using_positional_cli_args
+from modules.common.abstract_component import AbstractConfiguration, AbstractSetup, from_dict, to_dict
 from modules.common.abstract_device import AbstractDevice
-from modules.common.config import Config, from_dict, to_dict
 from modules.common.component_context import MultiComponentUpdateContext
 from modules.common.req import get_http_session
 from modules.common.store import RAMDISK_PATH
@@ -20,22 +21,19 @@ from modules.tesla.http_client import PowerwallHttpClient
 log = logging.getLogger(__name__)
 
 
-class Configuration(Config):
-    config_class = None
+@dataclass
+class Configuration(AbstractConfiguration):
+    ip_address: Optional[str] = None
+    email: Optional[str] = None
+    password: Optional[str] = None
 
-    def __init__(self, ip_address: int = None, email: str = None, password: str = None):
-        super().__init__(locals())
 
-
-class Setup(Config):
-    config_class = Configuration
-
-    def __init__(self,
-                 name: str = "Tesla",
-                 type: str = "tesla",
-                 id: int = 0,
-                 configuration: Configuration = Configuration()) -> None:
-        super().__init__(locals())
+@dataclass
+class Setup(AbstractSetup):
+    name: str = "Tesla"
+    type: str = "tesla"
+    id: int = 0
+    configuration: Configuration = Configuration()
 
 
 UpdateFunction = Callable[[PowerwallHttpClient], None]
