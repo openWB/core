@@ -67,8 +67,7 @@ class ChargepointModule(AbstractChargepoint):
                 currents=[json_rsp["currentP1"], json_rsp["currentP2"], json_rsp["currentP3"]],
                 imported=json_rsp["meterReading"],
                 plug_state=plug_state,
-                charge_state=charge_state,
-                phases_in_use=json_rsp["phases_in_use"]
+                charge_state=charge_state
             )
 
             if json_rsp["RFIDUID"] >= 3:
