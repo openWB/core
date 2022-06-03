@@ -654,7 +654,7 @@ function putgraphtogether() {
 			all16 = 0;
 
 			var percent = (allChartData.length / 30 * 100).toFixed();
-			$('#waitForGraphLoadingDiv').text('Erst ca. ' + percent + '% der mindestens benötigten Datenpunkte für den Graph seit Neustart vorhanden.');
+			$('#waitForGraphLoadingDiv').text('Erst ca. ' + percent + '% der mindestens benötigten Datenpunkte für das Diagramm vorhanden.');
 		}
 	}
 } // end putgraphtogether
