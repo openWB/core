@@ -27,10 +27,14 @@
 					<!-- link will be setup with mqtt topic -->
 					<a class="nav-link etproviderLink" href="#">Stromtarif-Info</a>
 				</li>
-				<li class="nav-item">
-					<a class="nav-link" href="hilfe/hilfe.php">Hilfe</a>
+				<li class="nav-item dropdown">
+					<a class="nav-link dropdown-toggle" href="#" role="button" data-toggle="dropdown" aria-expanded="false">Auswertungen</a>
+					<div class="dropdown-menu" aria-labelledby="navbarDropdown">
+						<a href="settings/#/Logging/ChargeLog" class="dropdown-item">Ladeprotokoll</a>
+						<a href="settings/#/Logging/DailyChart" class="dropdown-item">Tagesauswertung</a>
+						<a href="settings/#/Logging/MonthlyChart" class="dropdown-item">Monatsauswertung</a>
+					</div>
 				</li>
-
 				<li class="nav-item">
 					<a class="nav-link" id="navSettings" href="settings/">Einstellungen</a>
 				</li>
