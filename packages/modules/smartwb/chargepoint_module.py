@@ -39,8 +39,9 @@ class ChargepointModule(AbstractChargepoint):
         with SingleComponentUpdateContext(self.component_info):
             ip_address = self.connection_module["configuration"]["ip_address"]
             timeout = self.connection_module["configuration"]["timeout"]
+            # Stromvorgabe in Hundertstel Ampere
             params = (
-                ('current', '$current'),
+                ('current', int(current*100)),
             )
             req.get_http_session().get('http://'+ip_address+'/setCurrent', params=params, timeout=(timeout, None))
 
@@ -63,7 +64,7 @@ class ChargepointModule(AbstractChargepoint):
                 plug_state = False
 
             chargepoint_state = ChargepointState(
-                power=json_rsp["actualPower"] / 1000,
+                power=json_rsp["actualPower"] * 1000,
                 currents=[json_rsp["currentP1"], json_rsp["currentP2"], json_rsp["currentP3"]],
                 imported=json_rsp["meterReading"],
                 plug_state=plug_state,
@@ -78,5 +79,8 @@ class ChargepointModule(AbstractChargepoint):
                 chargepoint_state.read_tag = {
                     "read_tag": tag,
                     "timestamp": timecheck.create_timestamp()}
+
+            if json_rsp.get("voltageP1"):
+                chargepoint_state.voltages = [json_rsp["voltageP1"], json_rsp["voltageP2"], json_rsp["voltageP3"]]
 
             self.__store.set(chargepoint_state)
