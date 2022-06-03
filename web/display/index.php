@@ -39,8 +39,6 @@
 		<!-- Bootstrap -->
 		<link rel="stylesheet" type="text/css" href="css/bootstrap.css">
 		<!-- Main style -->
-		<link rel="stylesheet" type="text/css" href="fonts/eleganticons/et-icons.css">
-		<!-- Main style -->
 		<link rel="stylesheet" type="text/css" href="css/cardio.css">
 		<style>
 			body {
