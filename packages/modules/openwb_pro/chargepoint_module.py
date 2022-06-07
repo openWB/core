@@ -1,7 +1,6 @@
 
 import logging
 import time
-import requests
 from typing import Dict
 
 from modules.common.abstract_chargepoint import AbstractChargepoint
@@ -9,6 +8,7 @@ from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.fault_state import ComponentInfo
 from modules.common.store import get_chargepoint_value_store
 from modules.common.component_state import ChargepointState
+from modules.common import req
 
 log = logging.getLogger(__name__)
 
@@ -34,25 +34,22 @@ class ChargepointModule(AbstractChargepoint):
         self.component_info = ComponentInfo(
             self.id,
             "Ladepunkt", "chargepoint")
+        self.__session = req.get_http_session()
 
         with SingleComponentUpdateContext(self.component_info):
-            response = requests.post(
+            self.__session.post(
                 'http://' + self.connection_module["configuration"]["ip_address"] + '/connect.php',
                 data={'heartbeatenabled': '1'})
-            response.raise_for_status()
 
     def set_current(self, current: float) -> None:
         with SingleComponentUpdateContext(self.component_info):
             ip_address = self.connection_module["configuration"]["ip_address"]
-            response = requests.post('http://'+ip_address+'/connect.php', data={'ampere': current})
-            response.raise_for_status()
+            self.__session.post('http://'+ip_address+'/connect.php', data={'ampere': current})
 
     def get_values(self) -> None:
         with SingleComponentUpdateContext(self.component_info):
             ip_address = self.connection_module["configuration"]["ip_address"]
-            response = requests.get('http://'+ip_address+'/api2.php')
-            response.raise_for_status()
-            json_rsp = response.json()
+            json_rsp = self.__session.get('http://'+ip_address+'/api2.php').json()
             log.debug("openWB Pro "+str(self.id)+": "+str(json_rsp))
 
             chargepoint_state = ChargepointState(
@@ -70,10 +67,9 @@ class ChargepointModule(AbstractChargepoint):
     def switch_phases(self, phases_to_use: int, duration: int) -> None:
         with SingleComponentUpdateContext(self.component_info):
             ip_address = self.connection_module["configuration"]["ip_address"]
-            response = requests.get('http://'+ip_address+'/api2.php')
-            response.raise_for_status()
+            response = self.__session.get('http://'+ip_address+'/api2.php')
             if response.json()["phases_target"] != phases_to_use:
                 ip_address = self.connection_module["configuration"]["ip_address"]
-                response = requests.post('http://'+ip_address+'/connect.php', data={'phasetarget': str(phases_to_use)})
-                response.raise_for_status()
+                self.__session.post('http://'+ip_address+'/connect.php',
+                                    data={'phasetarget': str(phases_to_use)})
                 time.sleep(duration)
