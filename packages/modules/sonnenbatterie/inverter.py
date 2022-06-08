@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import logging
-import requests
 
 from modules.common import simcount
 from modules.common.component_state import InverterState
@@ -87,7 +86,8 @@ class SonnenbatterieInverter:
         )
 
     def __read_variant_2_element(self, element: str) -> str:
-        response = req.get_http_session().get('http://' + self.__device_address + ':7979/rest/devices/battery/' + element, timeout=5)
+        response = req.get_http_session().get('http://' + self.__device_address +
+                                              ':7979/rest/devices/battery/' + element, timeout=5)
         response.encoding = 'utf-8'
         return response.text.strip(" \n\r")
 
