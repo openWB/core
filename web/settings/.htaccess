@@ -1,4 +1,4 @@
-<Files *.html>
+<Files index.html>
     FileETag None
     Header unset ETag
     Header set Cache-Control "max-age=0, no-cache, no-store, must-revalidate"
