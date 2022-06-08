@@ -5,7 +5,7 @@
 *.log.lock
 .DS_Store
 .ftp*
-.vscode/settings.json
+.vscode/*
 __pycache__/
 data/log/*
 data/charge_log/*

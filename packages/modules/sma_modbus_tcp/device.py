@@ -22,7 +22,7 @@ def get_default_config() -> dict:
         "type": "sma_modbus_tcp",
         "id": 0,
         "configuration": {
-            "ip": None
+            "ip_address": None
         }
     }
 
@@ -51,7 +51,7 @@ class Device(AbstractDevice):
         if component_type in self.COMPONENT_TYPE_TO_CLASS:
             self.components["component"+str(component_config["id"])] = (self.COMPONENT_TYPE_TO_CLASS[component_type](
                 self.device_config["id"],
-                self.device_config["configuration"]["ip"],
+                self.device_config["configuration"]["ip_address"],
                 component_config))
         else:
             raise Exception(

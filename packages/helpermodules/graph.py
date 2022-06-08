@@ -39,7 +39,7 @@ class Graph:
                 {"charging-all": _convert_to_kW(data.data.cp_data["all"].data["get"]["power"])})
             if len(data.data.pv_data) > 1:
                 dataline.update(
-                    {"pv-all": _convert_to_kW(data.data.pv_data["all"].data["get"]["power"])})
+                    {"pv-all": _convert_to_kW(data.data.pv_data["all"].data["get"]["power"])*-1})
             if len(data.data.cp_data) > 1:
                 for cp in data.data.cp_data:
                     if "cp" in cp:

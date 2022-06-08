@@ -391,7 +391,7 @@ class Command:
         """
         if self.max_id_hierarchy >= payload["data"]["id"]:
             log.info("Komponente mit ID "+str(payload["data"]["id"])+" gelöscht.")
-            branch = f'system/device{payload["data"]["deviceId"]}/component/{payload["data"]["id"]}/'
+            branch = f'system/device/{payload["data"]["deviceId"]}/component/{payload["data"]["id"]}/'
             ProcessBrokerBranch(branch).remove_topics()
         else:
             pub_error(payload, connection_id, "Die ID ist größer als die maximal vergebene ID.")
