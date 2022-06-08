@@ -53,6 +53,8 @@ class HandlerAlgorithm:
                         prep.copy_system_data()
                         log.setLevel(data.data.system_data["system"].data["debug_level"])
                         loadvars.get_hardware_values()
+                        # Kurz warten, damit alle Topics von setdata und subdata verarbeitet werden können.
+                        time.sleep(0.5)
                         # Virtuelle Module ermitteln die Werte rechnerisch auf Basis der Messwerte anderer Module.
                         # Daher können sie erst die Werte ermitteln, wenn die physischen Module ihre Werte ermittelt
                         # haben. Würde man alle Module parallel abfragen, wären die virtuellen Module immer einen
