@@ -70,6 +70,16 @@ chmod 666 "$LOGFILE"
 		sudo cp "${OPENWBBASEDIR}/data/config/000-default.conf" /etc/apache2/sites-available/
 		echo "...changed"
 	fi
+	echo "checking apache headers module..."
+	if a2query -m headers
+	then
+		echo "already enabled"
+	else
+		echo "currently disabled; enabling module"
+		sudo a2enmod headers
+		sudo systemctl restart apache2
+	fi
+	echo "done"
 
 	# check for needed packages
 	echo "apt packages..."
