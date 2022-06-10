@@ -242,6 +242,7 @@ class UpdateConfig:
                    "^openWB/system/device/[0-9]+/component/[0-9]+/simulation/power_present$",
                    "^openWB/system/device/[0-9]+/component/[0-9]+/simulation/present_imported$",
                    "^openWB/system/device/[0-9]+/component/[0-9]+/simulation/present_exported$",
+                   "^openWB/system/device/module_update_completed$",
                    "^openWB/system/configurable/soc_modules$",
                    "^openWB/system/configurable/devices_components$",
                    "^openWB/system/configurable/chargepoints$",
@@ -310,6 +311,7 @@ class UpdateConfig:
         ("openWB/optional/rfid/active", False),
         ("openWB/system/dataprotection_acknowledged", False),
         ("openWB/system/debug_level", 30),
+        ("openWB/system/device/module_update_completed", True),
         ("openWB/system/ip_address", "unknown"),
         ("openWB/system/release_train", "master"))
 
