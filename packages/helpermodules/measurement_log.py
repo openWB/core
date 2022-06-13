@@ -198,7 +198,7 @@ def save_log(folder):
 
 
 def _get_totals(entries: List) -> Dict:
-    totals = {"cp": {}, "ev": {}, "counter": {}, "pv": {}, "bat": {}}
+    totals = {"cp": {}, "counter": {}, "pv": {}, "bat": {}}
     for group in totals.keys():
         for item in entries:
             for module in item[group]:
