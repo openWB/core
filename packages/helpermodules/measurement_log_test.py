@@ -3,7 +3,7 @@ from helpermodules import measurement_log
 
 def test_get_totals():
     # execution
-    totals = measurement_log._get_totals(SAMPLE)
+    totals = measurement_log.get_totals(SAMPLE)
 
     # evaluation
     assert totals == TOTALS
@@ -43,15 +43,25 @@ SAMPLE = [{'bat': {'all': {'exported': 0, 'imported': 58.774, 'soc': 51},
            'date': '13:51',
            'ev': {'ev0': {'soc': 6}},
            'pv': {'all': {'imported': 339}, 'pv1': {'imported': 339}},
-           'timestamp': 1654861869}]
+           'timestamp': 1654861869},
+          {'bat': {'all': {'exported': 0, 'imported': 234.308, 'soc': 55},
+                   'bat2': {'exported': 0, 'imported': 234.308, 'soc': 55}},
+           'counter': {'counter0': {'exported': 4.921, 'imported': 1.384}},
+           'cp': {'all': {'exported': 0, 'imported': 120},
+                  'cp4': {'exported': 0, 'imported': 90},
+                  'cp5': {'exported': 0, 'imported': 0},
+                  'cp6': {'exported': 0, 'imported': 66}},
+           'date': '13:51',
+           'ev': {'ev0': {'soc': 6}},
+           'pv': {'all': {'imported': 339}, 'pv1': {'imported': 339}},
+           'timestamp': 1654862069}]
 
-TOTALS = {'bat': {'all': {'exported': 0, 'imported': 175.534, 'soc': 4},
-          'bat2': {'exported': 0, 'imported': 172.556, 'soc': 4}},
+TOTALS = {'bat': {'all': {'exported': 0, 'imported': 175.534},
+          'bat2': {'exported': 0, 'imported': 172.556}},
           'counter': {'counter0': {'exported': 1.105, 'imported': 1.1}},
           'cp': {'all': {'exported': 0, 'imported': 105},
                  'cp3': {'exported': 0, 'imported': 10},
                  'cp4': {'exported': 0, 'imported': 85},
                  'cp5': {'exported': 0, 'imported': 0},
-                 'cp6': {'exported': 0, 'imported': 64}},
-          'ev': {'ev0': {'soc': 6}},
+                 'cp6': {'exported': 0, 'imported': 2}},
           'pv': {'all': {'imported': 251}, 'pv1': {'imported': 247}}}

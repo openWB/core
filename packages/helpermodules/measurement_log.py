@@ -1,6 +1,5 @@
 
 
-import copy
 from decimal import Decimal
 import json
 import logging
@@ -190,25 +189,36 @@ def save_log(folder):
                 content = json.load(jsonFile)
         entries = content["entries"]
         entries.append(new_entry)
-        content["totals"] = _get_totals(entries)
+        content["totals"] = get_totals(entries)
         with open(filepath, "w") as jsonFile:
             json.dump(content, jsonFile)
     except Exception:
         log.exception("Fehler im Werte-Logging-Modul")
 
 
-def _get_totals(entries: List) -> Dict:
+def get_totals(entries: List) -> Dict:
     totals = {"cp": {}, "counter": {}, "pv": {}, "bat": {}}
+    prev_entry = {}
     for group in totals.keys():
-        for item in entries:
-            for module in item[group]:
-                if module not in totals[group]:
-                    totals[group][module] = copy.deepcopy(item[group][module])
+        for entry in entries:
+            for module in entry[group]:
+                if not prev_entry or module not in totals[group]:
+                    totals[group][module] = {"imported": 0} if group == "pv" else {"imported": 0, "exported": 0}
                 else:
-                    for key, value in item[group][module].items():
-                        value0 = entries[0][group][module][key]
-                        # avoid floating point issues with using Decimal
-                        totals[group][module][key] = float(Decimal(str(value)) - Decimal(str(value0)))
+                    for key, value in entry[group][module].items():
+                        if key != "soc":
+                            try:
+                                prev_value = prev_entry[group][module][key]
+                            # Wenn ein Modul neu hinzugefügt wurde, das es mit dieser ID schonmal gab, werden die Werte
+                            # zusammen addiert.
+                            except KeyError:
+                                prev_value = entry[group][module][key]
+                            # avoid floating point issues with using Decimal
+                            value = str(Decimal(str(value)) - Decimal(str(prev_value)) +
+                                        Decimal(str(totals[group][module][key])))
+                            # remove trailing zeros
+                            totals[group][module][key] = float(value) if "." in value else int(value)
+            prev_entry = entry
     return totals
 
 
