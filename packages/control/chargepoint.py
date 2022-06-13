@@ -53,7 +53,7 @@ class AllChargepoints:
         Pub().pub("openWB/set/chargepoint/get/power", 0)
 
     def no_charge(self):
-        """ Wenn keine EV angesteckt sind oder keine EV laden/laden möchten, werden die Algorithmus-Werte
+        """ Wenn keine EV angesteckt sind oder keine Verzögerungen aktiv sind, werden die Algorithmus-Werte
         zurückgesetzt.
         (dient der Robustheit)
         """
@@ -70,6 +70,8 @@ class AllChargepoints:
                                 (chargepoint.data["set"]["charging_ev"] != -1 and
                                  chargepoint.data["set"]["charging_ev_data"].data["control_parameter"][
                                      "timestamp_perform_phase_switch"] is None and
+                                 chargepoint.data["set"]["charging_ev_data"].data["control_parameter"][
+                                    "timestamp_auto_phase_switch"] is None and
                                  chargepoint.data["set"]["charging_ev_data"].data["control_parameter"][
                                      "timestamp_switch_on_off"] is None)):
                             continue

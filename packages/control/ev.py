@@ -385,7 +385,7 @@ class Ev:
                 else:
                     timestamp_auto_phase_switch = None
                     data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= required_power
-                    message = f"{direction_str} abgebrochen."
+                    message = f"{direction_str} Phasen abgebrochen."
 
         if message:
             log.info(f"LP {cp_num}: {message}")
