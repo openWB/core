@@ -1,10 +1,13 @@
+import glob
 import json
 import logging
 import re
 import time
+from typing import List
 import paho.mqtt.client as mqtt
 
 from helpermodules.pub import Pub
+from helpermodules import measurement_log
 from control import chargepoint
 from control import ev
 
@@ -389,3 +392,18 @@ class UpdateConfig:
                 if f"{module}/config/max_ac_out" not in self.all_received_topics.keys():
                     Pub().pub(
                         f'{module.replace("openWB/", "openWB/set/")}/config/max_ac_out', 0)
+
+        # Summen in Tages- und Monatslog hinzufügen
+        files = glob.glob("/var/www/html/openWB/data/daily_log/*")
+        files.extend(glob.glob("/var/www/html/openWB/data/monthly_log/*"))
+        for file in files:
+            with open(file, "r") as jsonFile:
+                content = json.load(jsonFile)
+                if isinstance(content, List):
+                    try:
+                        new_content = {"entries": content, "totals": measurement_log.get_totals(content)}
+                        with open(file, "w") as jsonFile:
+                            json.dump(new_content, jsonFile)
+                        log.debug(f"Format des Logfiles {file} aktualisiert.")
+                    except Exception:
+                        log.exception(f"Logfile {file} entspricht nicht dem Dateiformat von Alpha 3.")
