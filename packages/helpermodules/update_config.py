@@ -328,10 +328,13 @@ class UpdateConfig:
         time.sleep(2)
         client.loop_stop()
 
-        self.__remove_outdated_topics()
-        self.__pub_missing_defaults()
-        self.__update_version()
-        self.__solve_breaking_changes()
+        try:
+            self.__remove_outdated_topics()
+            self.__pub_missing_defaults()
+            self.__update_version()
+            self.__solve_breaking_changes()
+        except Exception:
+            log.exception("Fehler beim Prüfen des Brokers.")
 
     def getserial(self):
         """ Extract serial from cpuinfo file
@@ -398,12 +401,16 @@ class UpdateConfig:
         files.extend(glob.glob("/var/www/html/openWB/data/monthly_log/*"))
         for file in files:
             with open(file, "r") as jsonFile:
-                content = json.load(jsonFile)
-                if isinstance(content, List):
-                    try:
-                        new_content = {"entries": content, "totals": measurement_log.get_totals(content)}
-                        with open(file, "w") as jsonFile:
-                            json.dump(new_content, jsonFile)
-                        log.debug(f"Format des Logfiles {file} aktualisiert.")
-                    except Exception:
-                        log.exception(f"Logfile {file} entspricht nicht dem Dateiformat von Alpha 3.")
+                try:
+                    content = json.load(jsonFile)
+                    if isinstance(content, List):
+                        try:
+                            new_content = {"entries": content, "totals": measurement_log.get_totals(content)}
+                            with open(file, "w") as jsonFile:
+                                json.dump(new_content, jsonFile)
+                            log.debug(f"Format des Logfiles {file} aktualisiert.")
+                        except Exception:
+                            log.exception(f"Logfile {file} entspricht nicht dem Dateiformat von Alpha 3.")
+                except json.decoder.JSONDecodeError:
+                    log.exception(
+                        f"Logfile {file} konnte nicht konvertiert werden, da es keine gültigen json-Daten enthält.")
