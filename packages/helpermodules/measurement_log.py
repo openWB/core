@@ -79,15 +79,14 @@ def save_log(folder):
             }
         }],
         "totals": {
-            {'bat': {'all': {'exported': 0, 'imported': 175.534, 'soc': 4},
-            'bat2': {'exported': 0, 'imported': 172.556, 'soc': 4}},
+            {'bat': {'all': {'exported': 0, 'imported': 175.534},
+            'bat2': {'exported': 0, 'imported': 172.556}},
             'counter': {'counter0': {'exported': 1.105, 'imported': 1.1}},
             'cp': {'all': {'exported': 0, 'imported': 105},
                     'cp3': {'exported': 0, 'imported': 10},
                     'cp4': {'exported': 0, 'imported': 85},
                     'cp5': {'exported': 0, 'imported': 0},
                     'cp6': {'exported': 0, 'imported': 64}},
-            'ev': {'ev0': {'soc': 6}},
             'pv': {'all': {'imported': 251}, 'pv1': {'imported': 247}}}
         }
     }
