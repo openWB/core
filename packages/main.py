@@ -201,9 +201,9 @@ try:
     t_set.start()
     t_comm.start()
     t_soc.start()
-    # Warten, damit subdata Zeit hat, alle Topics auf dem Broker zu empfangen.
-    time.sleep(5)
-    # blocking
-    repeated_handler_call()
 except Exception:
     log.exception("Fehler im Main-Modul")
+# Warten, damit subdata Zeit hat, alle Topics auf dem Broker zu empfangen.
+time.sleep(5)
+# blocking
+repeated_handler_call()
