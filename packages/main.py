@@ -150,7 +150,6 @@ def repeated_handler_call():
     timer_5min = 0
     next_time = time.time() + delay
     while True:
-        time.sleep(max(0, next_time - time.time()))
         try:
             if timer_5min >= 290:
                 handler.handler5Min()
@@ -164,6 +163,7 @@ def repeated_handler_call():
             log.exception("Fehler im Main-Modul")
         # skip tasks if we are behind schedule:
         next_time += (time.time() - next_time) // delay * delay + delay
+        time.sleep(max(0, next_time - time.time()))
 
 
 try:
@@ -201,6 +201,7 @@ try:
     t_set.start()
     t_comm.start()
     t_soc.start()
+    # Warten, damit subdata Zeit hat, alle Topics auf dem Broker zu empfangen.
     time.sleep(5)
     # blocking
     repeated_handler_call()
