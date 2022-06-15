@@ -78,7 +78,7 @@ cases = [
     Params("switch before charge start", connected_phases=3, auto_phase_switch_hw=True, max_phases=3,
            prevent_phase_switch=True, chargemode_phases=3, phases_in_use=1, imported_since_plugged=0,
            expected_phases=3),
-    Params("don'change during phase switch", connected_phases=3, auto_phase_switch_hw=True, max_phases=3,
+    Params("don't change during phase switch", connected_phases=3, auto_phase_switch_hw=True, max_phases=3,
            prevent_phase_switch=False, chargemode_phases=0, phases_in_use=1, imported_since_plugged=0,
            expected_phases=1, timestamp_perform_phase_switch="2022/05/11, 15:00:02"),
     Params("auto phase during charge 3", connected_phases=3, auto_phase_switch_hw=True, max_phases=3,
@@ -92,12 +92,21 @@ cases = [
            expected_phases=3, charge_state=False),
     Params("auto phase before charge no hw switch 1", connected_phases=3, auto_phase_switch_hw=False, max_phases=3,
            prevent_phase_switch=False, chargemode_phases=0, phases_in_use=1, imported_since_plugged=0,
-           expected_phases=1, charge_state=False),
+           expected_phases=3, charge_state=False),
     Params("auto phase use min phase at start", connected_phases=3, auto_phase_switch_hw=True, max_phases=3,
            prevent_phase_switch=False, chargemode_phases=0, phases_in_use=3, imported_since_plugged=0,
            expected_phases=1, charge_state=False),
     Params("cp phases < chargemode phases", connected_phases=1, auto_phase_switch_hw=False, max_phases=3,
            prevent_phase_switch=False, chargemode_phases=3, phases_in_use=1, imported_since_plugged=0,
+           expected_phases=1),
+    Params("cp phases < ev phases", connected_phases=1, auto_phase_switch_hw=False, max_phases=3,
+           prevent_phase_switch=False, chargemode_phases=3, phases_in_use=1, imported_since_plugged=0,
+           expected_phases=1),
+    Params("cp phases > ev phases", connected_phases=3, auto_phase_switch_hw=False, max_phases=1,
+           prevent_phase_switch=False, chargemode_phases=3, phases_in_use=3, imported_since_plugged=0,
+           expected_phases=1),
+    Params("cp phases > ev phases, in use 0", connected_phases=3, auto_phase_switch_hw=False, max_phases=1,
+           prevent_phase_switch=False, chargemode_phases=3, phases_in_use=0, imported_since_plugged=0,
            expected_phases=1)
 ]
 
@@ -125,31 +134,3 @@ def test_get_phases(monkeypatch, cp, params: Params):
 
     # evaluation
     assert phases == params.expected_phases
-
-
-cases_fail = [
-    Params("ev phases != cp phases", connected_phases=3, auto_phase_switch_hw=False, max_phases=1,
-           prevent_phase_switch=True, chargemode_phases=1, phases_in_use=3, imported_since_plugged=0,
-           expected_phases=3),
-]
-
-
-@pytest.mark.parametrize("params", cases_fail, ids=[c.name for c in cases_fail])
-def test_get_phases_fail(monkeypatch, cp, params: Params):
-    # setup
-    mock_chargemode_phases = Mock(name="chargemode_phases", return_value=params.chargemode_phases)
-    monkeypatch.setattr(data.data.general_data["general"], "get_phases_chargemode", mock_chargemode_phases)
-
-    cp.data["config"]["connected_phases"] = params.connected_phases
-    cp.data["config"]["auto_phase_switch_hw"] = params.auto_phase_switch_hw
-    cp.data["set"]["charging_ev_data"].ev_template.data["max_phases"] = params.max_phases
-    cp.data["set"]["charging_ev_data"].ev_template.data["prevent_phase_switch"] = params.prevent_phase_switch
-    cp.data["get"]["phases_in_use"] = params.phases_in_use
-    cp.data["set"]["log"]["imported_since_plugged"] = params.imported_since_plugged
-
-    # execution
-    with pytest.raises(Exception) as exc_info:
-        cp.get_phases()
-
-    # evaluation
-    assert exc_info.value.args[0] == 'EV-Phasenzahl 1 und LP-Phasenzahl 3 passen nicht zueinander!'

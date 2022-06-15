@@ -201,9 +201,9 @@ class Chargepoint:
             message = None
         else:
             state = False
-            message = "Ladepunkt gesperrt, da keine Werte vom EVU-Zähler empfangen wurden und deshalb kein \
-            Lastmanagement durchgeführt werden kann. Falls Sie dennoch laden möchten, können Sie als EVU-Zähler \
-                'Virtuell' auswählen und einen konstanten Hausverbrauch angeben."
+            message = ("Ladepunkt gesperrt, da keine Werte vom EVU-Zähler empfangen wurden und deshalb kein "
+                       "Lastmanagement durchgeführt werden kann. Falls Sie dennoch laden möchten, können Sie als "
+                       "EVU-Zähler 'Virtuell' auswählen und einen konstanten Hausverbrauch angeben.")
         return state, message
 
     def _is_autolock_inactive(self) -> Tuple[bool, Optional[str]]:
@@ -223,8 +223,8 @@ class Chargepoint:
                     self.template.data["rfid_enabling"]):
                 if self.data["get"]["rfid"] is None and self.data["set"]["rfid"] is None:
                     state = False
-                    message = "Keine Ladung, da der Ladepunkt durch Autolock gesperrt ist und erst per RFID \
-                        freigeschaltet werden muss."
+                    message = ("Keine Ladung, da der Ladepunkt durch Autolock gesperrt ist und erst per RFID "
+                               "freigeschaltet werden muss.")
                 else:
                     state = True
                     message = None
@@ -480,6 +480,12 @@ class Chargepoint:
         charging_ev = self.data["set"]["charging_ev_data"]
         mode = charging_ev.charge_template.data["chargemode"]["selected"]
         config = self.data["config"]
+        if charging_ev.ev_template.data["max_phases"] <= config["connected_phases"]:
+            phases = charging_ev.ev_template.data["max_phases"]
+            log.debug(f"EV-Phasenzahl beschränkt die nutzbaren Phasen auf {phases}")
+        else:
+            phases = config["connected_phases"]
+            log.debug(f"Anzahl angeschlossener Phasen beschränkt die nutzbaren Phasen auf {phases}")
 
         chargemode_phases = data.data.general_data["general"].get_phases_chargemode(mode)
         # Wenn die Lademodus-Phasen 0 sind, wird die bisher genutzte Phasenzahl weiter genutzt,
@@ -488,53 +494,33 @@ class Chargepoint:
         if chargemode_phases == 0:
             if charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] is None:
                 if self.data["get"]["charge_state"]:
-                    chargemode_phases = self.data["set"]["phases_to_use"]
+                    phases = self.data["set"]["phases_to_use"]
                 else:
-                    if ((not charging_ev.ev_template.data["prevent_phase_switch"] or self.data["set"]["log"][
-                            "imported_since_plugged"] == 0) and self.data["config"]["auto_phase_switch_hw"]):
-                        chargemode_phases = 1
+                    if ((not charging_ev.ev_template.data["prevent_phase_switch"] or
+                            self.data["set"]["log"]["imported_since_plugged"] == 0) and
+                            self.data["config"]["auto_phase_switch_hw"]):
+                        phases = 1
                     else:
-                        chargemode_phases = self.data["set"]["phases_to_use"]
-                    log.debug(("Automat. Phasenumschaltung vor Ladestart: Es wird die kleinstmögliche Phasenzahl "
-                               f"angenommen. Phasenzahl: {phases}"))
+                        log.debug(("Automat. Phasenumschaltung vor Ladestart: Es wird die kleinstmögliche Phasenzahl "
+                                   f"angenommen. Phasenzahl: {phases}"))
             else:
-                chargemode_phases = charging_ev.data["control_parameter"]["phases"]
+                phases = charging_ev.data["control_parameter"]["phases"]
                 log.debug(f"Umschaltung wird durchgeführt, Phasenzahl nicht ändern {phases}")
-
-        if charging_ev.ev_template.data["prevent_phase_switch"] and config["auto_phase_switch_hw"] is False:
-            if (charging_ev.ev_template.data["max_phases"] == config["connected_phases"] or
-                    config["auto_phase_switch_hw"]):
-                if chargemode_phases == charging_ev.ev_template.data["max_phases"]:
-                    log.debug(f'EV unterstützt nur {charging_ev.ev_template.data["max_phases"]} Phase(n).')
-                else:
-                    log.debug(
-                        f'EV unterstützt nur {charging_ev.ev_template.data["max_phases"]} Phase(n). Phasenzahl des '
-                        'Lademodus wird ignoriert.')
-                phases = charging_ev.ev_template.data["max_phases"]
-            else:
-                raise Exception(
-                    f'EV-Phasenzahl {charging_ev.ev_template.data["max_phases"]} und LP-Phasenzahl '
-                    f'{config["connected_phases"]} passen nicht zueinander!')
-        else:
-            if chargemode_phases <= config["connected_phases"]:
-                phases = chargemode_phases
-                log.debug("Lademodus beschränkt die nutzbaren Phasen auf "+str(phases))
-            else:
-                phases = config["connected_phases"]
-                log.debug("Anzahl angeschlossener Phasen beschränkt die nutzbaren Phasen auf "+str(phases))
+        elif chargemode_phases < phases:
+            phases = chargemode_phases
+            log.debug(f"Lademodus-Phasen beschränkt die nutzbaren Phasen auf {phases}")
 
         if phases != self.data["get"]["phases_in_use"]:
             # Wenn noch kein Logeintrag erstellt wurde, wurde noch nicht geladen und die Phase kann noch
             # umgeschaltet werden.
-            if charging_ev.ev_template.data["prevent_phase_switch"] and self.data["set"]["log"][
-                    "imported_since_plugged"] != 0:
-                log.info(f"Phasenumschaltung an Ladepunkt {self.cp_num} nicht möglich, da bei EV {charging_ev.ev_num}"
-                         " nach Ladestart nicht mehr umgeschaltet werden darf.")
-                phases = self.data["get"]["phases_in_use"]
-            elif self.data["config"]["auto_phase_switch_hw"] is False:
-                log.info("Phasenumschaltung an Ladepunkt" + str(self.cp_num) +
-                         " wird durch die Hardware nicht unterstützt.")
-                phases = self.data["get"]["phases_in_use"]
+            if self.data["set"]["log"]["imported_since_plugged"] != 0:
+                if charging_ev.ev_template.data["prevent_phase_switch"]:
+                    log.info(f"Phasenumschaltung an Ladepunkt {self.cp_num} nicht möglich, da bei EV"
+                             f"{charging_ev.ev_num} nach Ladestart nicht mehr umgeschaltet werden darf.")
+                    phases = self.data["get"]["phases_in_use"]
+                elif self.data["config"]["auto_phase_switch_hw"] is False:
+                    log.info(f"Phasenumschaltung an Ladepunkt {self.cp_num} wird durch die Hardware nicht unterstützt.")
+                    phases = self.data["get"]["phases_in_use"]
         if phases != charging_ev.data["control_parameter"]["phases"]:
             charging_ev.data["control_parameter"]["phases"] = phases
             Pub().pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/control_parameter/phases", phases)
@@ -572,8 +558,8 @@ class Chargepoint:
                         else:
                             self.data["get"]["rfid_timestamp"] = None
                             Pub().pub(f"openWB/set/chargepoint/{self.cp_num}/get/rfid_timestamp", None)
-                            msg = "Es ist in den letzten 5 Minuten kein EV angesteckt worden, dem " \
-                                f"der RFID-Tag/Code {rfid} zugeordnet werden kann. Daher wird dieser verworfen."
+                            msg = ("Es ist in den letzten 5 Minuten kein EV angesteckt worden, dem "
+                                   f"der RFID-Tag/Code {rfid} zugeordnet werden kann. Daher wird dieser verworfen.")
                 else:
                     msg = f"Der Tag {rfid} ist an Ladepunkt {self.cp_num} nicht gültig."
             else:
