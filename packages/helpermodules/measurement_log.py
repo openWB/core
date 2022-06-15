@@ -213,8 +213,10 @@ def get_totals(entries: List) -> Dict:
                             except KeyError:
                                 prev_value = entry[group][module][key]
                             # avoid floating point issues with using Decimal
-                            value = str(Decimal(str(value)) - Decimal(str(prev_value)) +
-                                        Decimal(str(totals[group][module][key])))
+                            value = (Decimal(str(value))
+                                     - Decimal(str(prev_value))
+                                     + Decimal(str(totals[group][module][key])))
+                            value = f'{value: f}'
                             # remove trailing zeros
                             totals[group][module][key] = float(value) if "." in value else int(value)
             prev_entry = entry
