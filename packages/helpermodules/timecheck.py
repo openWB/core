@@ -56,11 +56,9 @@ def is_autolock_of_plan_active(plan: Dict) -> bool:
         unlock: datetime.datetime
         if plan["frequency"]["selected"] == "once":
             lock = datetime.datetime.strptime(
-                plan["frequency"]["once"][0] + plan["time"][0],
-                "%y-%m-%d%H:%M")
+                plan["frequency"]["once"][0] + plan["time"][0], "%Y-%m-%d%H:%M")
             unlock = datetime.datetime.strptime(
-                plan["frequency"]["once"][1] + plan["time"][1],
-                "%y-%m-%d%H:%M")
+                plan["frequency"]["once"][1] + plan["time"][1], "%Y-%m-%d%H:%M")
         else:
             lock, unlock = set_date(
                 now, datetime.datetime.strptime(plan["time"][0], '%H:%M'),
@@ -162,15 +160,12 @@ def check_timeframe(plan, hours):
 
             if plan["frequency"]["selected"] == "once":
                 if hours is None:
-                    beginDate = datetime.datetime.strptime(plan["frequency"]["once"][0],
-                                                           "%y-%m-%d")
+                    beginDate = datetime.datetime.strptime(plan["frequency"]["once"][0], "%Y-%m-%d")
                     begin = begin.replace(beginDate.year, beginDate.month,
                                           beginDate.day)
-                    endDate = datetime.datetime.strptime(plan["frequency"]["once"][1],
-                                                         "%y-%m-%d")
+                    endDate = datetime.datetime.strptime(plan["frequency"]["once"][1], "%Y-%m-%d")
                 else:
-                    endDate = datetime.datetime.strptime(plan["frequency"]["once"][0],
-                                                         "%y-%m-%d")
+                    endDate = datetime.datetime.strptime(plan["frequency"]["once"][0], "%Y-%m-%d")
                     end = end.replace(endDate.year, endDate.month, endDate.day)
                     begin = _calc_begin(end, hours)
                 end = end.replace(endDate.year, endDate.month, endDate.day)
@@ -239,8 +234,7 @@ def check_duration(plan: Dict, duration: float) -> Tuple[int, float]:
     end = datetime.datetime.strptime(plan["time"], '%H:%M')
 
     if plan["frequency"]["selected"] == "once":
-        endDate = datetime.datetime.strptime(plan["frequency"]["once"][0],
-                                             "%y-%m-%d")
+        endDate = datetime.datetime.strptime(plan["frequency"]["once"][0], "%Y-%m-%d")
         end = end.replace(endDate.year, endDate.month, endDate.day)
         state, remaining_time = _is_duration_valid(now, duration, end)
         if -0.33 <= remaining_time < 0:

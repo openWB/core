@@ -140,24 +140,28 @@ class Ev:
                 if plan_data["num"]:
                     name = self.charge_template.data["chargemode"]["scheduled_charging"]["plans"][plan_data["num"]][
                         "name"]
+                    # Wenn mit einem neuen Plan geladen wird, muss auch die Energiemenge von neuem gezählt werden.
+                    if self.charge_template.data["chargemode"]["scheduled_charging"]["plans"][plan_data["num"]][
+                            "limit"]["selected"] == "amount" and name != self.data["control_parameter"]["current_plan"]:
+                        self.data["control_parameter"]["imported_at_plan_start"] = charged_since_mode_switch
+                        Pub().pub(
+                            f"openWB/set/vehicle/{self.ev_num}/control_parameter/imported_at_plan_start",
+                            charged_since_mode_switch)
                 else:
                     name = None
-                # Wenn mit einem neuen Plan geladen wird, muss auch die Energiemenge von neuem gezählt werden.
-                if self.charge_template.data["chargemode"]["scheduled_charging"]["plans"][plan_data["num"]]["limit"][
-                        "selected"] == "amount" and name != self.data["control_parameter"]["current_plan"]:
-                    self.data["control_parameter"]["imported_at_plan_start"] = charged_since_mode_switch
-                    Pub().pub(
-                        "openWB/set/vehicle/{self.ev_num}/control_parameter/imported_at_plan_start",
-                        charged_since_mode_switch)
                 required_current, submode, message = self.charge_template.scheduled_charging_calc_current(
                     plan_data, self.data["get"]["soc"], used_amount)
                 self.data["control_parameter"]["current_plan"] = name
-                Pub().pub("openWB/set/vehicle/{self.ev_num}/control_parameter/current_plan", name)
+                Pub().pub(f"openWB/set/vehicle/{self.ev_num}/control_parameter/current_plan", name)
 
-            elif self.charge_template.data["time_charging"]["active"]:
-                required_current, submode, message, name = self.charge_template.time_charging()
-                self.data["control_parameter"]["current_plan"] = name
-                Pub().pub("openWB/set/vehicle/{self.ev_num}/control_parameter/current_plan", name)
+            # Wenn Zielladen auf Überschuss wartet, prüfen, ob Zeitladen aktiv ist.
+            if ((required_current is None or required_current <= 1) and
+                    self.charge_template.data["time_charging"]["active"]):
+                time_charging_current, submode, message, name = self.charge_template.time_charging()
+                if time_charging_current > 0:
+                    self.data["control_parameter"]["current_plan"] = name
+                    Pub().pub(f"openWB/set/vehicle/{self.ev_num}/control_parameter/current_plan", name)
+                    required_current = time_charging_current
             if (required_current == 0) or (required_current is None):
                 if self.charge_template.data["chargemode"]["selected"] == "instant_charging":
                     # Wenn der Submode auf stop gestellt wird, wird auch die Energiemenge seit Moduswechsel
