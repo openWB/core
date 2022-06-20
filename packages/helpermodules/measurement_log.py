@@ -141,7 +141,7 @@ def save_log(folder):
             for pv in data.data.pv_data:
                 try:
                     pv_dict.update(
-                        {pv: {"imported": data.data.pv_data[pv].data["get"]["counter"]}})
+                        {pv: {"exported": data.data.pv_data[pv].data["get"]["counter"]}})
                 except Exception:
                     log.exception("Fehler im Werte-Logging-Modul für Wechselrichter "+str(pv))
 
@@ -202,7 +202,7 @@ def get_totals(entries: List) -> Dict:
         for entry in entries:
             for module in entry[group]:
                 if not prev_entry or module not in totals[group]:
-                    totals[group][module] = {"imported": 0} if group == "pv" else {"imported": 0, "exported": 0}
+                    totals[group][module] = {"exported": 0} if group == "pv" else {"imported": 0, "exported": 0}
                 else:
                     for key, value in entry[group][module].items():
                         if key != "soc":
