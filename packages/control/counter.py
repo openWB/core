@@ -98,7 +98,7 @@ class CounterAll:
             evu_imported = data.data.counter_data[self.get_evu_counter()].data["get"]["daily_imported"]
             evu_exported = data.data.counter_data[self.get_evu_counter()].data["get"]["daily_exported"]
             if len(data.data.pv_data) > 1:
-                pv = data.data.pv_data["all"].data["get"]["daily_yield"]
+                pv = data.data.pv_data["all"].data["get"]["daily_exported"]
             else:
                 pv = 0
             if len(data.data.bat_data) > 1:

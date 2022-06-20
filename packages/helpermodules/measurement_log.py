@@ -287,12 +287,12 @@ def update_daily_yields():
         # Tagesertrag PV
         for pv in last_entry["pv"]:
             if pv in data.data.pv_data:
-                daily_yield = data.data.pv_data[pv].data["get"]["counter"] - entry0["pv"][pv]["imported"]
-                data.data.pv_data[pv].data["get"]["daily_yield"] = daily_yield
+                daily_exported = data.data.pv_data[pv].data["get"]["counter"] - entry0["pv"][pv]["imported"]
+                data.data.pv_data[pv].data["get"]["daily_exported"] = daily_exported
                 if "pv" in pv:
-                    Pub().pub(f"openWB/set/pv/{data.data.pv_data[pv].num}/get/daily_yield", daily_yield)
+                    Pub().pub(f"openWB/set/pv/{data.data.pv_data[pv].num}/get/daily_exported", daily_exported)
                 else:
-                    Pub().pub("openWB/set/pv/get/daily_yield", daily_yield)
+                    Pub().pub("openWB/set/pv/get/daily_exported", daily_exported)
             else:
                 log.info(f"Wechselrichter {pv} wurde zwischenzeitlich gelöscht und wird daher nicht mehr aufgeführt.")
         # Tagesertrag Speicher

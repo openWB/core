@@ -33,7 +33,7 @@ class PvAll:
             if len(data.data.pv_data) > 1:
                 # Summe von allen konfigurierten Modulen
                 self.data["get"]["counter"] = 0
-                self.data["get"]["daily_yield"] = 0
+                self.data["get"]["daily_exported"] = 0
                 self.data["get"]["monthly_yield"] = 0
                 self.data["get"]["yearly_yield"] = 0
                 self.data["get"]["power"] = 0
@@ -42,7 +42,7 @@ class PvAll:
                         if "pv" in module:
                             self.data["get"]["power"] += data.data.pv_data[module].data["get"]["power"]
                             self.data["get"]["counter"] += data.data.pv_data[module].data["get"]["counter"]
-                            self.data["get"]["daily_yield"] += data.data.pv_data[module].data["get"]["daily_yield"]
+                            self.data["get"]["daily_exported"] += data.data.pv_data[module].data["get"]["daily_exported"]
                             self.data["get"]["monthly_yield"] += data.data.pv_data[module].data["get"]["monthly_yield"]
                             self.data["get"]["yearly_yield"] += data.data.pv_data[module].data["get"]["yearly_yield"]
                     except Exception:
@@ -452,7 +452,7 @@ class Pv:
     def __init__(self, index):
         self.data = {
             "get": {
-                "daily_yield": 0,
+                "daily_exported": 0,
                 "monthly_yield": 0,
                 "yearly_yield": 0
             },
