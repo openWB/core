@@ -23,9 +23,10 @@ class TestSmartWb:
     SAMPLE_CP_STATE_V1 = ChargepointState(
         power=5790,
         currents=[8.54, 8.54, 8.54],
-        imported=54.35,
+        imported=54350.0,
         plug_state=True,
-        charge_state=False
+        charge_state=False,
+        phases_in_use=3
     )
     SAMPLE_V1 = {
         "type": "parameters",
@@ -48,10 +49,11 @@ class TestSmartWb:
         }]
     }
     SAMPLE_CP_STATE_V2 = ChargepointState(
+        phases_in_use=1,
         power=2251,
         currents=[9.78, 0, 0],
         voltages=[228.28, 231.85, 232.07],
-        imported=54.35,
+        imported=54350.0,
         plug_state=True,
         charge_state=True,
         read_tag={"read_tag": "0a1b2c3d", "timestamp": '05/16/2022, 08:40:52'}
@@ -83,6 +85,43 @@ class TestSmartWb:
                 "RFIDUID": "0a1b2c3d"
             }]
     }
+    SAMPLE_CP_STATE_NOT_CHARGING_V2 = ChargepointState(
+        power=2251,
+        currents=[0, 0, 0],
+        voltages=[228.28, 231.85, 232.07],
+        imported=54350.0,
+        plug_state=True,
+        charge_state=True,
+        read_tag={"read_tag": "0a1b2c3d", "timestamp": '05/16/2022, 08:40:52'},
+        phases_in_use=1
+    )
+    SAMPLE_NOT_CHARGING_V2 = {
+        "type": "parameters",
+        "list": [
+            {
+                "vehicleState": 3,
+                "evseState": False,
+                "maxCurrent": 16,
+                "actualCurrent": 10,
+                "actualCurrentMA": 1000,
+                "actualPower": 2.251,
+                "duration": 1821000,
+                "alwaysActive": False,
+                "lastActionUser": "GUI",
+                "lastActionUID": "GUI",
+                "energy": 9.52,
+                "mileage": 82.3,
+                "meterReading": 54.35,
+                "currentP1": 0,
+                "currentP2": 0,
+                "currentP3": 0,
+                "voltageP1": 228.28,
+                "voltageP2": 231.85,
+                "voltageP3": 232.07,
+                "useMeter": True,
+                "RFIDUID": "0a1b2c3d"
+            }]
+    }
 
     @pytest.fixture(autouse=True)
     def setup(self, monkeypatch):
@@ -99,6 +138,7 @@ class TestSmartWb:
     @pytest.mark.parametrize("params", [
         Params("smartWB V1", SAMPLE_V1, SAMPLE_CP_STATE_V1),
         Params("smartWB V2", SAMPLE_V2, SAMPLE_CP_STATE_V2),
+        Params("smartWB V2 not charging", SAMPLE_NOT_CHARGING_V2, SAMPLE_CP_STATE_NOT_CHARGING_V2),
     ])
     def test_get_values_v2(self, cp, requests_mock: requests_mock.mock, params: Params):
         # setup

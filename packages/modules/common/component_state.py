@@ -107,13 +107,13 @@ class CarState:
 
 class ChargepointState:
     def __init__(self,
+                 phases_in_use: int,
                  imported: float = 0,
                  exported: float = 0,
                  power: float = 0,
                  voltages: Optional[List[float]] = None,
                  currents: Optional[List[float]] = None,
                  power_factors: Optional[List[float]] = None,
-                 phases_in_use: Optional[int] = None,
                  charge_state: bool = False,
                  plug_state: bool = False,
                  read_tag: Optional[Dict[str, str]] = None):
@@ -129,11 +129,6 @@ class ChargepointState:
         self.imported = imported
         self.exported = exported
         self.power = power
-        if phases_in_use is None:
-            phases_in_use = 0
-            for current in currents:
-                if current >= 3:
-                    phases_in_use += 1
         self.phases_in_use = phases_in_use
         self.charge_state = charge_state
         self.plug_state = plug_state

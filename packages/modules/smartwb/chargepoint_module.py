@@ -36,6 +36,7 @@ class ChargepointModule(AbstractChargepoint):
             "Ladepunkt", "chargepoint")
         self.__client_error_context = ErrorCounterContext(
             "Anhaltender Fehler beim Auslesen des Ladepunkts. Sollstromstärke wird zurückgesetzt.")
+        self.phases_in_use = 1
 
     def set_current(self, current: float) -> None:
         if self.__client_error_context.error_counter_exceeded():
@@ -45,9 +46,7 @@ class ChargepointModule(AbstractChargepoint):
                 ip_address = self.connection_module["configuration"]["ip_address"]
                 timeout = self.connection_module["configuration"]["timeout"]
                 # Stromvorgabe in Hundertstel Ampere
-                params = (
-                    ('current', int(current*100)),
-                )
+                params = (('current', int(current*100)),)
                 req.get_http_session().get('http://'+ip_address+'/setCurrent', params=params, timeout=(timeout, None))
 
     def get_values(self) -> None:
@@ -69,12 +68,22 @@ class ChargepointModule(AbstractChargepoint):
                     charge_state = False
                     plug_state = False
 
+                currents = [json_rsp["currentP1"], json_rsp["currentP2"], json_rsp["currentP3"]]
+
+                if currents[2] > 3:
+                    self.phases_in_use = 3
+                elif currents[1] > 3:
+                    self.phases_in_use = 2
+                elif currents[0] > 3:
+                    self.phases_in_use = 1
+
                 chargepoint_state = ChargepointState(
                     power=json_rsp["actualPower"] * 1000,
-                    currents=[json_rsp["currentP1"], json_rsp["currentP2"], json_rsp["currentP3"]],
-                    imported=json_rsp["meterReading"],
+                    currents=currents,
+                    imported=json_rsp["meterReading"] * 1000,
                     plug_state=plug_state,
-                    charge_state=charge_state
+                    charge_state=charge_state,
+                    phases_in_use=self.phases_in_use
                 )
 
                 if json_rsp.get("RFIDUID"):
