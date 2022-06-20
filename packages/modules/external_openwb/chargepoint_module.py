@@ -48,15 +48,15 @@ class ChargepointModule(AbstractChargepoint):
         with SingleComponentUpdateContext(self.component_info):
             with self.__client_error_context:
                 ip_address = self.connection_module["configuration"]["ip_address"]
-                cp_num = self.id
+                num = self.id
                 my_ip_address = data.data.system_data["system"].data["ip_address"]
                 pub.pub_single("openWB/set/isss/heartbeat", 0, hostname=ip_address)
                 pub.pub_single("openWB/set/isss/parentWB", my_ip_address,
                                hostname=ip_address, no_json=True)
                 if (self.connection_module["configuration"]["duo_num"] == 2):
-                    pub.pub_single("openWB/set/isss/parentCPlp2", str(cp_num), hostname=ip_address)
+                    pub.pub_single("openWB/set/isss/parentCPlp2", str(num), hostname=ip_address)
                 else:
-                    pub.pub_single("openWB/set/isss/parentCPlp1", str(cp_num), hostname=ip_address)
+                    pub.pub_single("openWB/set/isss/parentCPlp1", str(num), hostname=ip_address)
                 self.__client_error_context.reset_error_counter()
 
     def switch_phases(self, phases_to_use: int, duration: int) -> None:

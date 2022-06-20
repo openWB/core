@@ -60,7 +60,7 @@ class VirtualCounter:
                     evu_phases = self.cp_tp_evu_phase_mapping[str(chargepoint.data["config"]["phase_1"])]
                 except KeyError:
                     raise FaultState.error(f"Für den virtuellen Zähler muss der Anschluss der Phasen von Ladepunkt "
-                                           f"{chargepoint.cp_num} an die Phasen der EVU angegeben werden.")
+                                           f"{chargepoint.num} an die Phasen der EVU angegeben werden.")
                 self.currents = [self.currents[i] + chargepoint.data["get"]
                                  ["currents"][evu_phases[i]] for i in range(0, 3)]
 

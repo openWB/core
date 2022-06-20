@@ -276,8 +276,8 @@ def update_daily_yields():
                 daily_exported = cp.data["get"]["exported"] - entry0["cp"][chargepoint]["exported"]
                 cp.data["get"].update({"daily_exported": daily_exported, "daily_imported": daily_imported})
                 if "cp" in chargepoint:
-                    Pub().pub(f"openWB/set/chargepoint/{cp.cp_num}/get/daily_imported", daily_imported)
-                    Pub().pub(f"openWB/set/chargepoint/{cp.cp_num}/get/daily_exported", daily_exported)
+                    Pub().pub(f"openWB/set/chargepoint/{cp.num}/get/daily_imported", daily_imported)
+                    Pub().pub(f"openWB/set/chargepoint/{cp.num}/get/daily_exported", daily_exported)
                 else:
                     Pub().pub("openWB/set/chargepoint/get/daily_imported", daily_imported)
                     Pub().pub("openWB/set/chargepoint/get/daily_exported", daily_exported)

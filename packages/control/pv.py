@@ -161,7 +161,7 @@ class PvAll:
                         message = "Einschaltschwelle von " + \
                             str(pv_config["switch_on_threshold"]) + \
                             "W während der Einschaltverzögerung unterschritten."
-                        log.info("LP "+str(chargepoint.cp_num)+": "+message)
+                        log.info("LP "+str(chargepoint.num)+": "+message)
                         chargepoint.data["get"]["state_str"] = message
                         Pub().pub(
                             "openWB/set/vehicle/" + str(chargepoint.data["set"]["charging_ev_data"].num) +
@@ -179,7 +179,7 @@ class PvAll:
                         message = "Die Ladung wird gestartet, sobald nach " + \
                             str(pv_config["switch_on_delay"]) + \
                             "s die Einschaltverzögerung abgelaufen ist."
-                        log.info("LP "+str(chargepoint.cp_num)+": "+message)
+                        log.info("LP "+str(chargepoint.num)+": "+message)
                         chargepoint.data["get"]["state_str"] = message
                         Pub().pub(
                             "openWB/set/vehicle/" + str(chargepoint.data["set"]["charging_ev_data"].num) +
@@ -189,7 +189,7 @@ class PvAll:
                         # Einschaltschwelle nicht erreicht
                         message = "Die Ladung kann nicht gestartet werden, da die Einschaltschwelle ("+str(
                             pv_config["switch_on_threshold"])+"W) nicht erreicht wird."
-                        log.info("LP "+str(chargepoint.cp_num)+": "+message)
+                        log.info("LP "+str(chargepoint.num)+": "+message)
                         if chargepoint.data["get"]["state_str"] is None:
                             chargepoint.data["get"]["state_str"] = message
                         required_power = 0
@@ -232,7 +232,7 @@ class PvAll:
                     control_parameter["timestamp_switch_on_off"] = None
                     self.data["set"]["released_evu_overhang"] -= chargepoint.data["set"]["required_power"]
                     message = "Ladevorgang nach Ablauf der Abschaltverzögerung gestoppt."
-                    log.info("LP "+str(chargepoint.cp_num)+": "+message)
+                    log.info("LP "+str(chargepoint.num)+": "+message)
                     chargepoint.data["get"]["state_str"] = message
                     Pub().pub(
                         "openWB/set/vehicle/" + str(chargepoint.data["set"]["charging_ev_data"].num) +
@@ -262,7 +262,7 @@ class PvAll:
                 "chargemode_config"]["pv_charging"]["feed_in_yield"]
         else:
             feed_in_yield = 0
-        log.debug(f'LP{chargepoint.cp_num} Switch-Off-Threshold prüfen: EVU {overhang}W, freigegebener '
+        log.debug(f'LP{chargepoint.num} Switch-Off-Threshold prüfen: EVU {overhang}W, freigegebener '
                   f'Überschuss {self.data["set"]["released_evu_overhang"]}W, Einspeisegrenze {feed_in_yield}W')
         # Wenn automatische Phasenumschaltung aktiv, die Umschaltung abwarten, bevor die Abschaltschwelle
         # greift.
@@ -316,7 +316,7 @@ class PvAll:
                     msg = "Stoppen des Ladevorgangs aufgrund des EV-Profils verhindert."
         if msg:
             chargepoint.data["get"]["state_str"] = msg
-            log.info(f"LP {chargepoint.cp_num}: {msg}")
+            log.info(f"LP {chargepoint.num}: {msg}")
         return charge
 
     def reset_switch_on_off(self, chargepoint, charging_ev):

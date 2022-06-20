@@ -168,7 +168,7 @@ class CounterAll:
             except Exception:
                 log.exception("Fehler in der allgemeinen Zähler-Klasse")
 
-    def get_counters_to_check(self, cp_num: int):
+    def get_counters_to_check(self, num: int):
         """ ermittelt alle Zähler im Zweig des Ladepunkts.
 
         Return
@@ -178,7 +178,7 @@ class CounterAll:
         """
         try:
             self.connected_counters.clear()
-            self.__get_all_counter_in_branch(self.data["get"]["hierarchy"][0], cp_num)
+            self.__get_all_counter_in_branch(self.data["get"]["hierarchy"][0], num)
             return self.connected_counters
         except Exception:
             log.exception("Fehler in der allgemeinen Zähler-Klasse")

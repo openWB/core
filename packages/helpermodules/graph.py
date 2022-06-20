@@ -46,10 +46,10 @@ class Graph:
                         chargepoint = data.data.cp_data[cp]
                         if chargepoint.data["get"]["fault_state"] < FaultStateLevel.ERROR:
                             dataline.update(
-                                {"cp" + str(chargepoint.cp_num) +
+                                {"cp" + str(chargepoint.num) +
                                  "-power": _convert_to_kW(chargepoint.data["get"]["power"])})
                         # if chargepoint.data["get"]["connected_vehicle"]["soc_config"]["configured"]:
-                        #     dataline.update({"cp"+str(chargepoint.cp_num)+"-soc": _convert_to_kW(
+                        #     dataline.update({"cp"+str(chargepoint.num)+"-soc": _convert_to_kW(
                         #         chargepoint.data["get"]["connected_vehicle"]["soc"]["soc"])})
             if len(data.data.bat_data) > 1:
                 dataline.update(
