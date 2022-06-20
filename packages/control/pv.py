@@ -458,4 +458,4 @@ class Pv:
             },
             "config": {}
         }
-        self.pv_num = index
+        self.num = index

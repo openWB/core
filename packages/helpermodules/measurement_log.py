@@ -290,7 +290,7 @@ def update_daily_yields():
                 daily_yield = data.data.pv_data[pv].data["get"]["counter"] - entry0["pv"][pv]["imported"]
                 data.data.pv_data[pv].data["get"]["daily_yield"] = daily_yield
                 if "pv" in pv:
-                    Pub().pub(f"openWB/set/pv/{data.data.pv_data[pv].pv_num}/get/daily_yield", daily_yield)
+                    Pub().pub(f"openWB/set/pv/{data.data.pv_data[pv].num}/get/daily_yield", daily_yield)
                 else:
                     Pub().pub("openWB/set/pv/get/daily_yield", daily_yield)
             else:
