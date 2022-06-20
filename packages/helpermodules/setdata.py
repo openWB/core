@@ -553,7 +553,7 @@ class SetData:
             if "openWB/set/pv/config/configured" in msg.topic:
                 self._validate_value(msg, bool)
             elif ("openWB/set/pv/get/daily_exported" in msg.topic or
-                    "openWB/set/pv/get/monthly_yield" in msg.topic or
+                    "openWB/set/pv/get/monthly_exported" in msg.topic or
                     "openWB/set/pv/get/yearly_yield" in msg.topic):
                 self._validate_value(msg, float, [(0, float("inf"))])
             elif "openWB/set/pv/get/counter" in msg.topic:
@@ -571,7 +571,7 @@ class SetData:
             elif "/get/fault_str" in msg.topic:
                 self._validate_value(msg, str)
             elif ("/get/daily_exported" in msg.topic or
-                    "/get/monthly_yield" in msg.topic or
+                    "/get/monthly_exported" in msg.topic or
                     "/get/yearly_yield" in msg.topic or
                     "/get/energy" in msg.topic):
                 self._validate_value(msg, float, [(0, float("inf"))])

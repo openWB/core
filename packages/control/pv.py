@@ -34,7 +34,7 @@ class PvAll:
                 # Summe von allen konfigurierten Modulen
                 self.data["get"]["counter"] = 0
                 self.data["get"]["daily_exported"] = 0
-                self.data["get"]["monthly_yield"] = 0
+                self.data["get"]["monthly_exported"] = 0
                 self.data["get"]["yearly_yield"] = 0
                 self.data["get"]["power"] = 0
                 for module in data.data.pv_data:
@@ -43,7 +43,7 @@ class PvAll:
                             self.data["get"]["power"] += data.data.pv_data[module].data["get"]["power"]
                             self.data["get"]["counter"] += data.data.pv_data[module].data["get"]["counter"]
                             self.data["get"]["daily_exported"] += data.data.pv_data[module].data["get"]["daily_exported"]
-                            self.data["get"]["monthly_yield"] += data.data.pv_data[module].data["get"]["monthly_yield"]
+                            self.data["get"]["monthly_exported"] += data.data.pv_data[module].data["get"]["monthly_exported"]
                             self.data["get"]["yearly_yield"] += data.data.pv_data[module].data["get"]["yearly_yield"]
                     except Exception:
                         log.exception("Fehler im allgemeinen PV-Modul für "+str(module))
@@ -453,7 +453,7 @@ class Pv:
         self.data = {
             "get": {
                 "daily_exported": 0,
-                "monthly_yield": 0,
+                "monthly_exported": 0,
                 "yearly_yield": 0
             },
             "config": {}
