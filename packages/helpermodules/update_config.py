@@ -413,3 +413,12 @@ class UpdateConfig:
                 except json.decoder.JSONDecodeError:
                     log.exception(
                         f"Logfile {file} konnte nicht konvertiert werden, da es keine gültigen json-Daten enthält.")
+            with open(file, "r") as jsonFile:
+                try:
+                    content = json.load(jsonFile)
+                    if content["entries"]["pv"]["all"].get("imported"):
+                        for entry in content["entries"]["pv"]:
+                            content["entries"]["pv"][entry]["exported"] = content["entries"]["pv"][entry]["imported"]
+                        content["entries"]["pv"]["totals"]["exported"] = content["entries"]["pv"]["totals"]["imported"]
+                except Exception:
+                    log.exception(f"Logfile {file} konnte nicht konvertiert werden.")

@@ -47,10 +47,10 @@ def save_log(folder):
             }
             "pv": {
                 "all": {
-                    "counter": Wh
+                    "exported": Wh
                 }
                 "pv0": {
-                    "counter": Wh
+                    "exported": Wh
                 }
                 ... (dynamisch, je nach konfigurierter Anzahl)
             }

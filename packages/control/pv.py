@@ -40,11 +40,12 @@ class PvAll:
                 for module in data.data.pv_data:
                     try:
                         if "pv" in module:
-                            self.data["get"]["power"] += data.data.pv_data[module].data["get"]["power"]
-                            self.data["get"]["counter"] += data.data.pv_data[module].data["get"]["counter"]
-                            self.data["get"]["daily_exported"] += data.data.pv_data[module].data["get"]["daily_exported"]
-                            self.data["get"]["monthly_exported"] += data.data.pv_data[module].data["get"]["monthly_exported"]
-                            self.data["get"]["yearly_exported"] += data.data.pv_data[module].data["get"]["yearly_exported"]
+                            module_data = data.data.pv_data[module].data
+                            self.data["get"]["power"] += module_data["get"]["power"]
+                            self.data["get"]["counter"] += module_data["get"]["counter"]
+                            self.data["get"]["daily_exported"] += module_data["get"]["daily_exported"]
+                            self.data["get"]["monthly_exported"] += module_data["get"]["monthly_exported"]
+                            self.data["get"]["yearly_exported"] += module_data["get"]["yearly_exported"]
                     except Exception:
                         log.exception("Fehler im allgemeinen PV-Modul für "+str(module))
                 # Alle Summentopics im Dict publishen
