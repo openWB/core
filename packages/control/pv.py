@@ -35,7 +35,7 @@ class PvAll:
                 self.data["get"]["counter"] = 0
                 self.data["get"]["daily_exported"] = 0
                 self.data["get"]["monthly_exported"] = 0
-                self.data["get"]["yearly_yield"] = 0
+                self.data["get"]["yearly_exported"] = 0
                 self.data["get"]["power"] = 0
                 for module in data.data.pv_data:
                     try:
@@ -44,7 +44,7 @@ class PvAll:
                             self.data["get"]["counter"] += data.data.pv_data[module].data["get"]["counter"]
                             self.data["get"]["daily_exported"] += data.data.pv_data[module].data["get"]["daily_exported"]
                             self.data["get"]["monthly_exported"] += data.data.pv_data[module].data["get"]["monthly_exported"]
-                            self.data["get"]["yearly_yield"] += data.data.pv_data[module].data["get"]["yearly_yield"]
+                            self.data["get"]["yearly_exported"] += data.data.pv_data[module].data["get"]["yearly_exported"]
                     except Exception:
                         log.exception("Fehler im allgemeinen PV-Modul für "+str(module))
                 # Alle Summentopics im Dict publishen
@@ -454,7 +454,7 @@ class Pv:
             "get": {
                 "daily_exported": 0,
                 "monthly_exported": 0,
-                "yearly_yield": 0
+                "yearly_exported": 0
             },
             "config": {}
         }
