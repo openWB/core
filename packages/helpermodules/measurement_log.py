@@ -264,8 +264,8 @@ def update_daily_yields():
                 daily_imported = counter.data["get"]["imported"] - entry0["counter"][c]["imported"]
                 daily_exported = counter.data["get"]["exported"] - entry0["counter"][c]["exported"]
                 counter.data["get"].update({"daily_imported": daily_imported, "daily_exported": daily_exported})
-                Pub().pub(f"openWB/set/counter/{counter.counter_num}/get/daily_imported", daily_imported)
-                Pub().pub(f"openWB/set/counter/{counter.counter_num}/get/daily_exported", daily_exported)
+                Pub().pub(f"openWB/set/counter/{counter.num}/get/daily_imported", daily_imported)
+                Pub().pub(f"openWB/set/counter/{counter.num}/get/daily_exported", daily_exported)
             else:
                 log.info(f"Zähler {c} wurde zwischenzeitlich gelöscht und wird daher nicht mehr aufgeführt.")
         # Tagesertrag Ladepunkte

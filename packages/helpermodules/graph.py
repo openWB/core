@@ -31,7 +31,7 @@ class Graph:
                 if "counter" in c and evu_counter not in c:
                     counter = data.data.counter_data[c]
                     if counter.data["get"]["fault_state"] < FaultStateLevel.ERROR:
-                        dataline.update({"counter"+str(counter.counter_num) +
+                        dataline.update({"counter"+str(counter.num) +
                                          "-power": _convert_to_kW(counter.data["get"]["power"])})
             dataline.update(
                 {"house-power": _convert_to_kW(data.data.counter_data["all"].data["set"]["home_consumption"])})
