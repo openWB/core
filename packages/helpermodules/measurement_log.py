@@ -303,8 +303,8 @@ def update_daily_yields():
                 daily_exported = bat.data["get"]["exported"] - entry0["bat"][b]["exported"]
                 bat.data["get"].update({"daily_imported": daily_imported, "daily_exported": daily_exported})
                 if "bat" in b:
-                    Pub().pub(f"openWB/set/bat/{bat.bat_num}/get/daily_imported", daily_imported)
-                    Pub().pub(f"openWB/set/bat/{bat.bat_num}/get/daily_exported", daily_exported)
+                    Pub().pub(f"openWB/set/bat/{bat.num}/get/daily_imported", daily_imported)
+                    Pub().pub(f"openWB/set/bat/{bat.num}/get/daily_exported", daily_exported)
                 else:
                     Pub().pub("openWB/set/bat/get/daily_imported", daily_imported)
                     Pub().pub("openWB/set/bat/get/daily_exported", daily_exported)

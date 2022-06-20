@@ -30,7 +30,7 @@ class Bat:
 
     def __init__(self, index):
         self.data = {}
-        self.bat_num = index
+        self.num = index
         self.data["get"] = {}
         self.data["get"]["daily_imported"] = 0
         self.data["get"]["daily_exported"] = 0
@@ -69,7 +69,7 @@ class BatAll:
                             soc_sum += battery.data["get"]["soc"]
                             soc_count += 1
                         except Exception:
-                            log.exception(f"Fehler im Bat-Modul {battery.bat_num}")
+                            log.exception(f"Fehler im Bat-Modul {battery.num}")
                 self.data["get"]["soc"] = int(soc_sum / soc_count)
                 # Alle Summentopics im Dict publishen
                 {Pub().pub("openWB/set/bat/get/"+k, v) for (k, v) in self.data["get"].items()}
@@ -82,7 +82,7 @@ class BatAll:
 
     def __max_bat_power_hybrid_system(self, battery: Bat) -> float:
         if battery.data["get"]["power"] > 0:
-            parent = data.data.counter_data["all"].get_entry_of_parent(battery.bat_num)
+            parent = data.data.counter_data["all"].get_entry_of_parent(battery.num)
             if parent.get("type") == "inverter":
                 parent_data = data.data.pv_data[f"pv{parent['id']}"].data
                 # Bei einem Hybrid-System darf die Summe aus Batterie-Ladeleistung, die für den Algorithmus verwendet
@@ -94,12 +94,12 @@ class BatAll:
                             battery.data["get"]["fault_state"] = FaultStateLevel.WARNING.value
                             battery.data["get"]["fault_str"] = ("Die maximale Entladeleistung des Wechselrichters" +
                                                                 " ist erreicht.")
-                            Pub().pub(f"openWB/set/bat/{battery.bat_num}/get/fault_state",
+                            Pub().pub(f"openWB/set/bat/{battery.num}/get/fault_state",
                                       battery.data["get"]["fault_state"])
-                            Pub().pub(f"openWB/set/bat/{battery.bat_num}/get/fault_str",
+                            Pub().pub(f"openWB/set/bat/{battery.num}/get/fault_str",
                                       battery.data["get"]["fault_str"])
                         log.warning(
-                            f"Bat {battery.bat_num}: Die maximale Entladeleistung des Wechselrichters ist erreicht.")
+                            f"Bat {battery.num}: Die maximale Entladeleistung des Wechselrichters ist erreicht.")
                     return max(battery.data["get"]["power"], max_bat_power)
         return battery.data["get"]["power"]
 
