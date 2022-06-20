@@ -187,7 +187,7 @@ class Prepare:
                                     Pub().pub("openWB/set/chargepoint/"+str(cp.cp_num) +
                                               "/set/change_ev_permitted", [True, ""])
                                     charging_ev.data["set"]["ev_template"] = charging_ev.ev_template.data
-                                    Pub().pub("openWB/set/vehicle/"+str(charging_ev.ev_num) +
+                                    Pub().pub("openWB/set/vehicle/"+str(charging_ev.num) +
                                               "/set/ev_template", charging_ev.data["set"]["ev_template"])
                                 else:
                                     # Altes EV beibehalten.
@@ -327,7 +327,7 @@ class Prepare:
                                 "fault_str": vehicle.data["get"]["fault_str"]})
             if vehicle.data["get"].get("range"):
                 soc_obj.update({"range": vehicle.data["get"]["range"]})
-            info_obj = {"id": vehicle.ev_num,
+            info_obj = {"id": vehicle.num,
                         "name": vehicle.data["name"]}
             if (vehicle.charge_template.data["chargemode"]["selected"] == "time_charging" or
                     vehicle.charge_template.data["chargemode"]["selected"] == "scheduled_charging"):

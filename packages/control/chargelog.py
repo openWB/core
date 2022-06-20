@@ -151,7 +151,7 @@ def save_data(chargepoint, charging_ev, immediately=True, reset=False):
             },
             "vehicle":
             {
-                "id": charging_ev.ev_num,
+                "id": charging_ev.num,
                 "name": charging_ev.data["name"],
                 "chargemode": log_data["chargemode_log_entry"],
                 "prio": charging_ev.data["control_parameter"]["prio"],

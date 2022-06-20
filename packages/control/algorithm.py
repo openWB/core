@@ -554,10 +554,10 @@ class Algorithm:
                             required_current = charging_ev.check_min_max_current(
                                 current, charging_ev.data["control_parameter"]["phases"])
                             charging_ev.data["control_parameter"]["required_current"] = required_current
-                            Pub().pub("openWB/set/vehicle/"+str(charging_ev.ev_num) +
+                            Pub().pub("openWB/set/vehicle/"+str(charging_ev.num) +
                                       "/control_parameter/required_current", required_current)
                             charging_ev.data["control_parameter"]["phases"] = phases
-                            Pub().pub("openWB/set/vehicle/"+str(charging_ev.ev_num) +
+                            Pub().pub("openWB/set/vehicle/"+str(charging_ev.num) +
                                       "/control_parameter/phases", phases)
                             self._process_data(cp, current)
                 except Exception:

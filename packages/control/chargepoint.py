@@ -294,11 +294,11 @@ class Chargepoint:
                 log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.cp_num))
                 return False, "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
             if charging_possbile:
-                ev_num, message = self.template.get_ev(self.data["get"]["rfid"], self.data["config"]["ev"])
-                if ev_num != -1:
+                num, message = self.template.get_ev(self.data["get"]["rfid"], self.data["config"]["ev"])
+                if num != -1:
                     if self.data["get"]["rfid"] is not None:
                         self.__link_rfid_to_cp()
-                    return ev_num, message
+                    return num, message
                 else:
                     self.data["get"]["state_str"] = message
             # Charging Ev ist noch das EV des vorherigen Zyklus, wenn das nicht -1 war und jetzt nicht mehr geladen
@@ -387,7 +387,7 @@ class Chargepoint:
                         6 + phase_switch_pause - 1):
                     log.debug("phase switch running")
                     charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] = None
-                    Pub().pub("openWB/set/vehicle/" + str(charging_ev.ev_num) +
+                    Pub().pub("openWB/set/vehicle/" + str(charging_ev.num) +
                               "/control_parameter/timestamp_perform_phase_switch", None)
                     # Aktuelle Ladeleistung und Differenz wieder freigeben.
                     if charging_ev.data["control_parameter"]["phases"] == 3:
@@ -440,7 +440,7 @@ class Chargepoint:
                                     "control_parameter"]["required_current"] * 3 * 230
                                 charging_ev.data["control_parameter"][
                                     "timestamp_perform_phase_switch"] = timecheck.create_timestamp()
-                                Pub().pub("openWB/set/vehicle/"+str(charging_ev.ev_num) +
+                                Pub().pub("openWB/set/vehicle/"+str(charging_ev.num) +
                                           "/control_parameter/timestamp_perform_phase_switch",
                                           charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"])
                             else:
@@ -448,7 +448,7 @@ class Chargepoint:
                                 # Timestamp für die Durchführungsdauer
                                 charging_ev.data["control_parameter"][
                                     "timestamp_perform_phase_switch"] = timecheck.create_timestamp()
-                                Pub().pub("openWB/set/vehicle/"+str(charging_ev.ev_num) +
+                                Pub().pub("openWB/set/vehicle/"+str(charging_ev.num) +
                                           "/control_parameter/timestamp_perform_phase_switch",
                                           charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"])
                                 # Ladeleistung reservieren, da während der Umschaltung die Ladung pausiert wird.
@@ -516,14 +516,14 @@ class Chargepoint:
             if self.data["set"]["log"]["imported_since_plugged"] != 0:
                 if charging_ev.ev_template.data["prevent_phase_switch"]:
                     log.info(f"Phasenumschaltung an Ladepunkt {self.cp_num} nicht möglich, da bei EV"
-                             f"{charging_ev.ev_num} nach Ladestart nicht mehr umgeschaltet werden darf.")
+                             f"{charging_ev.num} nach Ladestart nicht mehr umgeschaltet werden darf.")
                     phases = self.data["get"]["phases_in_use"]
                 elif self.data["config"]["auto_phase_switch_hw"] is False:
                     log.info(f"Phasenumschaltung an Ladepunkt {self.cp_num} wird durch die Hardware nicht unterstützt.")
                     phases = self.data["get"]["phases_in_use"]
         if phases != charging_ev.data["control_parameter"]["phases"]:
             charging_ev.data["control_parameter"]["phases"] = phases
-            Pub().pub("openWB/set/vehicle/"+str(charging_ev.ev_num)+"/control_parameter/phases", phases)
+            Pub().pub("openWB/set/vehicle/"+str(charging_ev.num)+"/control_parameter/phases", phases)
         return phases
 
     def __link_rfid_to_cp(self) -> None:
@@ -717,26 +717,26 @@ class CpTemplate:
             dem Ladepunkt fest zugeordnetes EV
         Return
         ------
-        ev_num: int
+        num: int
             Nummer des zugeordneten EVs, -1 wenn keins zugeordnet werden konnte.
         message: str
             Status-Text
         """
-        ev_num = -1
+        num = -1
         message = None
         try:
             if data.data.optional_data["optional"].data["rfid"]["active"] and rfid is not None:
                 vehicle = ev.get_ev_to_rfid(rfid)
                 if vehicle is None:
-                    ev_num = -1
+                    num = -1
                     message = "Keine Ladung, da dem RFID-Tag " + str(rfid)+" kein EV-Profil zugeordnet werden kann."
                 else:
-                    ev_num = vehicle
+                    num = vehicle
             else:
-                ev_num = assigned_ev
+                num = assigned_ev
 
-            return ev_num, message
+            return num, message
         except Exception:
             log.exception(
                 "Fehler in der Ladepunkt-Template Klasse")
-            return ev_num, "Keine Ladung, da ein interner Fehler aufgetreten ist: " + traceback.format_exc()
+            return num, "Keine Ladung, da ein interner Fehler aufgetreten ist: " + traceback.format_exc()
