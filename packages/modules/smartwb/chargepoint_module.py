@@ -80,7 +80,7 @@ class ChargepointModule(AbstractChargepoint):
                 chargepoint_state = ChargepointState(
                     power=json_rsp["actualPower"] * 1000,
                     currents=currents,
-                    imported=json_rsp["meterReading"],
+                    imported=json_rsp["meterReading"] * 1000,
                     plug_state=plug_state,
                     charge_state=charge_state,
                     phases_in_use=self.phases_in_use

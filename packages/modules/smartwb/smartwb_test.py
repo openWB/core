@@ -23,7 +23,7 @@ class TestSmartWb:
     SAMPLE_CP_STATE_V1 = ChargepointState(
         power=5790,
         currents=[8.54, 8.54, 8.54],
-        imported=54.35,
+        imported=54350.0,
         plug_state=True,
         charge_state=False,
         phases_in_use=3
@@ -53,7 +53,7 @@ class TestSmartWb:
         power=2251,
         currents=[9.78, 0, 0],
         voltages=[228.28, 231.85, 232.07],
-        imported=54.35,
+        imported=54350.0,
         plug_state=True,
         charge_state=True,
         read_tag={"read_tag": "0a1b2c3d", "timestamp": '05/16/2022, 08:40:52'}
@@ -89,7 +89,7 @@ class TestSmartWb:
         power=2251,
         currents=[0, 0, 0],
         voltages=[228.28, 231.85, 232.07],
-        imported=54.35,
+        imported=54350.0,
         plug_state=True,
         charge_state=True,
         read_tag={"read_tag": "0a1b2c3d", "timestamp": '05/16/2022, 08:40:52'},
