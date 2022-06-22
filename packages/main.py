@@ -129,8 +129,7 @@ class HandlerAlgorithm:
                 soc.heartbeat = False
 
             cleanup_logfiles()
-            measurement_log.save_log("daily")
-            measurement_log.update_daily_yields()
+            measurement_log.measurement_log_daily()
             # Wenn ein neuer Tag ist, Monatswerte schreiben.
             day = timecheck.create_timestamp_YYYYMMDD()[-2:]
             if self.current_day != day:
