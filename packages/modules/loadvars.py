@@ -16,8 +16,6 @@ class Loadvars:
     def get_hardware_values(self):
         with ModuleUpdateCompletedContext(self.event_module_update_completed):
             self.__get_values([self._get_cp, self._get_general, self._get_modules])
-            data.data.pv_data["all"].calc_power_for_all_components()
-            data.data.bat_data["all"].calc_power_for_all_components()
 
     def get_virtual_values(self):
         """ Virtuelle Module ermitteln die Werte rechnerisch auf Basis der Messwerte anderer Module.

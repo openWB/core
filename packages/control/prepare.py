@@ -18,8 +18,8 @@ log = logging.getLogger(__name__)
 
 
 class Prepare:
-    def __init__(self):
-        pass
+    def __init__(self, event_module_update_completed):
+        self.event_module_update_completed = event_module_update_completed
 
     def setup_algorithm(self):
         """ bereitet die Daten für den Algorithmus vor und startet diesen.
@@ -32,6 +32,10 @@ class Prepare:
         data.data.print_all()
 
     def copy_system_data(self):
+        with ModuleDataReceivedContext(self.event_module_update_completed):
+            self.__copy_system_data()
+
+    def __copy_system_data(self):
         """ kopiert die Daten, die per MQTT empfangen wurden.
         """
         try:
@@ -84,6 +88,10 @@ class Prepare:
                 log.exception("Fehler im Prepare-Modul für Ladepunkt "+str(chargepoint))
 
     def copy_module_data(self):
+        with ModuleDataReceivedContext(self.event_module_update_completed):
+            self.__copy_module_data()
+
+    def __copy_module_data(self):
         """ kopiert die Daten, die per MQTT empfangen wurden.
         """
         try:
@@ -124,34 +132,35 @@ class Prepare:
     def copy_data(self):
         """ kopiert die Daten, die per MQTT empfangen wurden.
         """
-        try:
-            data.data.general_data = copy.deepcopy(subdata.SubData.general_data)
-            data.data.optional_data = copy.deepcopy(subdata.SubData.optional_data)
-            self.__copy_cp_data()
-            data.data.ev_data.clear()
-            for ev in subdata.SubData.ev_data:
-                if "name" in subdata.SubData.ev_data[ev].data:
-                    data.data.ev_data[ev] = copy.deepcopy(subdata.SubData.ev_data[ev])
-            data.data.ev_template_data = copy.deepcopy(subdata.SubData.ev_template_data)
-            data.data.ev_charge_template_data = copy.deepcopy(subdata.SubData.ev_charge_template_data)
-            for vehicle in data.data.ev_data:
-                try:
-                    # Globaler oder individueller Lademodus?
-                    if data.data.general_data["general"].data["chargemode_config"]["individual_mode"]:
-                        data.data.ev_data[vehicle].charge_template = data.data.ev_charge_template_data["ct" + str(
-                            data.data.ev_data[vehicle].data["charge_template"])]
-                    else:
-                        data.data.ev_data[vehicle].charge_template = data.data.ev_charge_template_data["ct0"]
-                    # zuerst das aktuelle Template laden
-                    data.data.ev_data[vehicle].ev_template = data.data.ev_template_data["et" + str(
-                        data.data.ev_data[vehicle].data["ev_template"])]
-                except Exception:
-                    log.exception("Fehler im Prepare-Modul für EV "+str(vehicle))
+        with ModuleDataReceivedContext(self.event_module_update_completed):
+            try:
+                data.data.general_data = copy.deepcopy(subdata.SubData.general_data)
+                data.data.optional_data = copy.deepcopy(subdata.SubData.optional_data)
+                self.__copy_cp_data()
+                data.data.ev_data.clear()
+                for ev in subdata.SubData.ev_data:
+                    if "name" in subdata.SubData.ev_data[ev].data:
+                        data.data.ev_data[ev] = copy.deepcopy(subdata.SubData.ev_data[ev])
+                data.data.ev_template_data = copy.deepcopy(subdata.SubData.ev_template_data)
+                data.data.ev_charge_template_data = copy.deepcopy(subdata.SubData.ev_charge_template_data)
+                for vehicle in data.data.ev_data:
+                    try:
+                        # Globaler oder individueller Lademodus?
+                        if data.data.general_data["general"].data["chargemode_config"]["individual_mode"]:
+                            data.data.ev_data[vehicle].charge_template = data.data.ev_charge_template_data["ct" + str(
+                                data.data.ev_data[vehicle].data["charge_template"])]
+                        else:
+                            data.data.ev_data[vehicle].charge_template = data.data.ev_charge_template_data["ct0"]
+                        # zuerst das aktuelle Template laden
+                        data.data.ev_data[vehicle].ev_template = data.data.ev_template_data["et" + str(
+                            data.data.ev_data[vehicle].data["ev_template"])]
+                    except Exception:
+                        log.exception("Fehler im Prepare-Modul für EV "+str(vehicle))
 
-            self.__copy_counter_data()
-            data.data.graph_data = copy.deepcopy(subdata.SubData.graph_data)
-        except Exception:
-            log.exception("Fehler im Prepare-Modul")
+                self.__copy_counter_data()
+                data.data.graph_data = copy.deepcopy(subdata.SubData.graph_data)
+            except Exception:
+                log.exception("Fehler im Prepare-Modul")
 
     def _check_chargepoints(self):
         """ ermittelt die gewünschte Stromstärke für jeden LP.
@@ -388,3 +397,23 @@ class Prepare:
             data.data.counter_data["all"].calc_home_consumption()
         except Exception:
             log.exception("Fehler im Prepare-Modul")
+
+
+class ModuleDataReceivedContext:
+    """ Moduldaten erst kopieren, wenn alle Daten vom Broker empfangen wurden."""
+
+    def __init__(self, event_module_update_completed):
+        self.event_module_update_completed = event_module_update_completed
+
+    def __enter__(self):
+        try:
+            timeout = data.data.general_data["general"].data["control_interval"]/2
+        except KeyError:
+            timeout = 5
+        if self.event_module_update_completed.wait(timeout) is False:
+            log.error(
+                "Modul-Daten wurden noch nicht vollständig empfangen. Timeout abgelaufen, fortsetzen der Regelung.")
+        return None
+
+    def __exit__(self, exception_type, exception, exception_traceback) -> bool:
+        return True
