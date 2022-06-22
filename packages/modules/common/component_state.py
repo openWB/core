@@ -74,12 +74,12 @@ class CounterState:
 class InverterState:
     def __init__(
         self,
-        counter: float,
+        exported: float,
         power: float,
         currents: Optional[List[float]] = None,
     ):
         """Args:
-            counter: total energy in Wh
+            exported: total energy in Wh
             power: actual power in W
             currents: actual currents for 3 phases in A
         """
@@ -89,7 +89,7 @@ class InverterState:
             currents = [currents[i]*-1 if currents[i] > 0 else currents[i] for i in range(0, 3)]
         self.currents = currents
         self.power = power
-        self.counter = counter
+        self.exported = exported
 
 
 @auto_str

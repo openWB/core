@@ -484,7 +484,7 @@ function processPvMessages(mqttTopic, mqttPayload) {
 			pvWatt = pvWatt.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 		}
 		$('.pv-sum-power').text(pvWatt + ' ' + unitPrefix + unit);
-	} else if (mqttTopic == 'openWB/pv/get/daily_yield') {
+	} else if (mqttTopic == 'openWB/pv/get/daily_exported') {
 		var unit = "Wh";
 		var unitPrefix = "";
 		var pvDailyYield = parseFloat(mqttPayload);

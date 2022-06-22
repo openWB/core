@@ -98,7 +98,7 @@ class CounterAll:
             evu_imported = data.data.counter_data[self.get_evu_counter()].data["get"]["daily_imported"]
             evu_exported = data.data.counter_data[self.get_evu_counter()].data["get"]["daily_exported"]
             if len(data.data.pv_data) > 1:
-                pv = data.data.pv_data["all"].data["get"]["daily_yield"]
+                pv = data.data.pv_data["all"].data["get"]["daily_exported"]
             else:
                 pv = 0
             if len(data.data.bat_data) > 1:
@@ -168,7 +168,7 @@ class CounterAll:
             except Exception:
                 log.exception("Fehler in der allgemeinen Zähler-Klasse")
 
-    def get_counters_to_check(self, cp_num: int):
+    def get_counters_to_check(self, num: int):
         """ ermittelt alle Zähler im Zweig des Ladepunkts.
 
         Return
@@ -178,7 +178,7 @@ class CounterAll:
         """
         try:
             self.connected_counters.clear()
-            self.__get_all_counter_in_branch(self.data["get"]["hierarchy"][0], cp_num)
+            self.__get_all_counter_in_branch(self.data["get"]["hierarchy"][0], num)
             return self.connected_counters
         except Exception:
             log.exception("Fehler in der allgemeinen Zähler-Klasse")
@@ -366,15 +366,15 @@ class Counter:
                          "get": {
                 "daily_exported": 0,
                 "daily_imported": 0}}
-            self.counter_num = index
+            self.num = index
         except Exception:
-            log.exception("Fehler in der Zähler-Klasse von "+str(self.counter_num))
+            log.exception("Fehler in der Zähler-Klasse von "+str(self.num))
 
     def setup_counter(self):
         # Zählvariablen vor dem Start der Regelung zurücksetzen
         try:
             # Wenn der Zähler keine Werte liefert, darf nicht geladen werden.
-            connected_cps = data.data.counter_data["all"].get_chargepoints_of_counter(f'counter{self.counter_num}')
+            connected_cps = data.data.counter_data["all"].get_chargepoints_of_counter(f'counter{self.num}')
             for cp in connected_cps:
                 if self.data["get"]["fault_state"] == FaultStateLevel.ERROR:
                     data.data.cp_data[cp].data["set"]["loadmanagement_available"] = False
@@ -385,7 +385,7 @@ class Counter:
                 return
 
             # Nur beim EVU-Zähler wird auch die maximale Leistung geprüft.
-            if f'counter{self.counter_num}' == data.data.counter_data["all"].get_evu_counter():
+            if f'counter{self.num}' == data.data.counter_data["all"].get_evu_counter():
                 # max Leistung
                 if self.data["get"]["power"] > 0:
                     self.data["set"]["consumption_left"] = self.data["config"]["max_total_power"] \
@@ -398,25 +398,25 @@ class Counter:
             try:
                 self.data["set"]["currents_used"] = self.data["get"]["currents"]
             except KeyError:
-                log.warning(f"Zähler {self.counter_num}: Einzelwerte für Zähler-Phasenströme unbekannt")
+                log.warning(f"Zähler {self.num}: Einzelwerte für Zähler-Phasenströme unbekannt")
                 self.data["set"]["state_str"] = "Das Lastmanagement regelt nur anhand der Gesamtleistung, da keine \
                     Phasenströme ermittelt werden konnten."
-                Pub().pub("openWB/set/counter/"+str(self.counter_num) + "/set/state_str",
+                Pub().pub("openWB/set/counter/"+str(self.num) + "/set/state_str",
                           self.data["set"]["state_str"])
         except Exception:
-            log.exception("Fehler in der Zähler-Klasse von "+str(self.counter_num))
+            log.exception("Fehler in der Zähler-Klasse von "+str(self.num))
 
     def put_stats(self):
         try:
-            if f'counter{self.counter_num}' == data.data.counter_data["all"].get_evu_counter():
-                Pub().pub("openWB/set/counter/"+str(self.counter_num)+"/set/consumption_left",
+            if f'counter{self.num}' == data.data.counter_data["all"].get_evu_counter():
+                Pub().pub("openWB/set/counter/"+str(self.num)+"/set/consumption_left",
                           self.data["set"]["consumption_left"])
                 log.debug(str(self.data["set"]["consumption_left"])+"W verbleibende EVU-Bezugs-Leistung")
         except Exception:
-            log.exception("Fehler in der Zähler-Klasse von "+str(self.counter_num))
+            log.exception("Fehler in der Zähler-Klasse von "+str(self.num))
 
     def print_stats(self):
         try:
             log.debug(str(self.data["set"]["consumption_left"])+"W verbleibende EVU-Bezugs-Leistung")
         except Exception:
-            log.exception("Fehler in der Zähler-Klasse von "+str(self.counter_num))
+            log.exception("Fehler in der Zähler-Klasse von "+str(self.num))

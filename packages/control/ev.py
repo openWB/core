@@ -45,10 +45,10 @@ def get_ev_to_rfid(rfid):
         try:
             if "ev" in vehicle:
                 if rfid in data.data.ev_data[vehicle].data["tag_id"]:
-                    return data.data.ev_data[vehicle].ev_num
+                    return data.data.ev_data[vehicle].num
         except Exception:
             log.exception("Fehler im ev-Modul "+vehicle)
-            return data.data.ev_data[0].ev_num
+            return data.data.ev_data[0].num
     else:
         return None
 
@@ -62,7 +62,7 @@ class Ev:
             self.ev_template: EvTemplate
             self.charge_template: ChargeTemplate
             self.soc_module: AbstractSoc = None
-            self.ev_num = index
+            self.num = index
             self.data = {"set": {},
                          "control_parameter": {"required_current": 0,
                                                "phases": 0,
@@ -76,28 +76,28 @@ class Ev:
                                                "imported_at_plan_start": 0,
                                                "current_plan": None}}
         except Exception:
-            log.exception("Fehler im ev-Modul "+str(self.ev_num))
+            log.exception("Fehler im ev-Modul "+str(self.num))
 
     def reset_ev(self):
         """ setzt alle Werte zurück, die während des Algorithmus gesetzt werden.
         """
         try:
-            log.debug("EV "+str(self.ev_num)+" zurückgesetzt.")
-            Pub().pub("openWB/set/vehicle/"+str(self.ev_num) +
+            log.debug("EV "+str(self.num)+" zurückgesetzt.")
+            Pub().pub("openWB/set/vehicle/"+str(self.num) +
                       "/control_parameter/required_current", 0)
-            Pub().pub("openWB/set/vehicle/"+str(self.ev_num) +
+            Pub().pub("openWB/set/vehicle/"+str(self.num) +
                       "/control_parameter/timestamp_auto_phase_switch", None)
-            Pub().pub("openWB/set/vehicle/"+str(self.ev_num) +
+            Pub().pub("openWB/set/vehicle/"+str(self.num) +
                       "/control_parameter/timestamp_perform_phase_switch", None)
-            Pub().pub("openWB/set/vehicle/"+str(self.ev_num) +
+            Pub().pub("openWB/set/vehicle/"+str(self.num) +
                       "/control_parameter/submode", "stop")
-            Pub().pub("openWB/set/vehicle/"+str(self.ev_num) +
+            Pub().pub("openWB/set/vehicle/"+str(self.num) +
                       "/control_parameter/chargemode", "stop")
-            Pub().pub("openWB/set/vehicle/"+str(self.ev_num) +
+            Pub().pub("openWB/set/vehicle/"+str(self.num) +
                       "/control_parameter/used_amount_instant_charging", 0)
-            Pub().pub("openWB/set/vehicle/"+str(self.ev_num) +
+            Pub().pub("openWB/set/vehicle/"+str(self.num) +
                       "/control_parameter/imported_at_plan_start", 0)
-            Pub().pub("openWB/set/vehicle/"+str(self.ev_num) +
+            Pub().pub("openWB/set/vehicle/"+str(self.num) +
                       "/control_parameter/current_plan", None)
             self.data["control_parameter"].update({"required_current": 0,
                                                    "timestamp_auto_phase_switch": None,
@@ -108,7 +108,7 @@ class Ev:
                                                    "imported_at_plan_start": 0,
                                                    "current_plan": None})
         except Exception:
-            log.exception("Fehler im ev-Modul "+str(self.ev_num))
+            log.exception("Fehler im ev-Modul "+str(self.num))
 
     def get_required_current(self, charged_since_mode_switch: float) -> Tuple[bool, str, str, float]:
         """ ermittelt, ob und mit welchem Strom das EV geladen werden soll (unabhängig vom Lastmanagement)
@@ -145,14 +145,14 @@ class Ev:
                             "limit"]["selected"] == "amount" and name != self.data["control_parameter"]["current_plan"]:
                         self.data["control_parameter"]["imported_at_plan_start"] = charged_since_mode_switch
                         Pub().pub(
-                            f"openWB/set/vehicle/{self.ev_num}/control_parameter/imported_at_plan_start",
+                            f"openWB/set/vehicle/{self.num}/control_parameter/imported_at_plan_start",
                             charged_since_mode_switch)
                 else:
                     name = None
                 required_current, submode, message = self.charge_template.scheduled_charging_calc_current(
                     plan_data, self.data["get"]["soc"], used_amount)
                 self.data["control_parameter"]["current_plan"] = name
-                Pub().pub(f"openWB/set/vehicle/{self.ev_num}/control_parameter/current_plan", name)
+                Pub().pub(f"openWB/set/vehicle/{self.num}/control_parameter/current_plan", name)
 
             # Wenn Zielladen auf Überschuss wartet, prüfen, ob Zeitladen aktiv ist.
             if ((required_current is None or required_current <= 1) and
@@ -160,7 +160,7 @@ class Ev:
                 time_charging_current, submode, message, name = self.charge_template.time_charging()
                 if time_charging_current > 0:
                     self.data["control_parameter"]["current_plan"] = name
-                    Pub().pub(f"openWB/set/vehicle/{self.ev_num}/control_parameter/current_plan", name)
+                    Pub().pub(f"openWB/set/vehicle/{self.num}/control_parameter/current_plan", name)
                     required_current = time_charging_current
             if (required_current == 0) or (required_current is None):
                 if self.charge_template.data["chargemode"]["selected"] == "instant_charging":
@@ -171,7 +171,7 @@ class Ev:
                             "used_amount_instant_charging"]):
                         self.data["control_parameter"]["used_amount_instant_charging"] = charged_since_mode_switch
                         Pub().pub(
-                            f"openWB/set/vehicle/{self.ev_num}/control_parameter/used_amount_instant_charging",
+                            f"openWB/set/vehicle/{self.num}/control_parameter/used_amount_instant_charging",
                             charged_since_mode_switch)
                     required_current, submode, message = self.charge_template.instant_charging(
                         self.data["get"]["soc"],
@@ -192,7 +192,7 @@ class Ev:
 
             return state, message, submode, required_current
         except Exception:
-            log.exception("Fehler im ev-Modul "+str(self.ev_num))
+            log.exception("Fehler im ev-Modul "+str(self.num))
             return False, "ein interner Fehler aufgetreten ist: "+traceback.format_exc(), "stop", 0
 
     def check_state(self, required_current, set_current, charge_state):
@@ -243,7 +243,7 @@ class Ev:
                       str(current_changed)+", Änderung des Lademodus :"+str(mode_changed))
             return current_changed, mode_changed
         except Exception:
-            log.exception("Fehler im ev-Modul "+str(self.ev_num))
+            log.exception("Fehler im ev-Modul "+str(self.num))
             return True
 
     def set_control_parameter(self, submode, required_current):
@@ -256,19 +256,19 @@ class Ev:
         """
         try:
             self.data["control_parameter"]["submode"] = submode
-            Pub().pub("openWB/set/vehicle/"+str(self.ev_num) +
+            Pub().pub("openWB/set/vehicle/"+str(self.num) +
                       "/control_parameter/submode", submode)
             self.data["control_parameter"]["chargemode"] = self.charge_template.data["chargemode"]["selected"]
-            Pub().pub("openWB/set/vehicle/"+str(self.ev_num)+"/control_parameter/chargemode",
+            Pub().pub("openWB/set/vehicle/"+str(self.num)+"/control_parameter/chargemode",
                       self.charge_template.data["chargemode"]["selected"])
             self.data["control_parameter"]["prio"] = self.charge_template.data["prio"]
-            Pub().pub("openWB/set/vehicle/"+str(self.ev_num) +
+            Pub().pub("openWB/set/vehicle/"+str(self.num) +
                       "/control_parameter/prio", self.charge_template.data["prio"])
             self.data["control_parameter"]["required_current"] = required_current
-            Pub().pub("openWB/set/vehicle/"+str(self.ev_num) +
+            Pub().pub("openWB/set/vehicle/"+str(self.num) +
                       "/control_parameter/required_current", required_current)
         except Exception:
-            log.exception("Fehler im ev-Modul "+str(self.ev_num))
+            log.exception("Fehler im ev-Modul "+str(self.num))
 
     def check_min_max_current(self, required_current, phases, pv=False):
         """ prüft, ob der gesetzte Ladestrom über dem Mindest-Ladestrom und unter dem Maximal-Ladestrom des EVs liegt.
@@ -315,7 +315,7 @@ class Ev:
                           str(required_current_prev)+" neue Sollstromstärke: "+str(required_current))
             return required_current
         except Exception:
-            log.exception("Fehler im ev-Modul "+str(self.ev_num))
+            log.exception("Fehler im ev-Modul "+str(self.num))
             return 0
 
     def auto_phase_switch(self,
@@ -395,7 +395,7 @@ class Ev:
             log.info(f"LP {cp_num}: {message}")
         if timestamp_auto_phase_switch != self.data["control_parameter"]["timestamp_auto_phase_switch"]:
             self.data["control_parameter"]["timestamp_auto_phase_switch"] = timestamp_auto_phase_switch
-            Pub().pub(f"openWB/set/vehicle/{self.ev_num}/control_parameter/timestamp_auto_phase_switch",
+            Pub().pub(f"openWB/set/vehicle/{self.num}/control_parameter/timestamp_auto_phase_switch",
                       timestamp_auto_phase_switch)
         return phases_to_use, current, message
 
@@ -406,7 +406,7 @@ class Ev:
         """
         if self.data["control_parameter"]["timestamp_auto_phase_switch"] is not None:
             self.data["control_parameter"]["timestamp_auto_phase_switch"] = None
-            Pub().pub("openWB/set/vehicle/"+str(self.ev_num) +
+            Pub().pub("openWB/set/vehicle/"+str(self.num) +
                       "/control_parameter/timestamp_auto_phase_switch", None)
             # Wenn der Timer läuft, ist den Control-Paranetern die alte Phasenzahl hinterlegt.
             if self.data["control_parameter"]["phases"] == 3:

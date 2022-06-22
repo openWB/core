@@ -47,10 +47,10 @@ def save_log(folder):
             }
             "pv": {
                 "all": {
-                    "counter": Wh
+                    "exported": Wh
                 }
                 "pv0": {
-                    "counter": Wh
+                    "exported": Wh
                 }
                 ... (dynamisch, je nach konfigurierter Anzahl)
             }
@@ -141,7 +141,7 @@ def save_log(folder):
             for pv in data.data.pv_data:
                 try:
                     pv_dict.update(
-                        {pv: {"imported": data.data.pv_data[pv].data["get"]["counter"]}})
+                        {pv: {"exported": data.data.pv_data[pv].data["get"]["exported"]}})
                 except Exception:
                     log.exception("Fehler im Werte-Logging-Modul für Wechselrichter "+str(pv))
 
@@ -202,7 +202,7 @@ def get_totals(entries: List) -> Dict:
         for entry in entries:
             for module in entry[group]:
                 if not prev_entry or module not in totals[group]:
-                    totals[group][module] = {"imported": 0} if group == "pv" else {"imported": 0, "exported": 0}
+                    totals[group][module] = {"exported": 0} if group == "pv" else {"imported": 0, "exported": 0}
                 else:
                     for key, value in entry[group][module].items():
                         if key != "soc":
@@ -264,8 +264,8 @@ def update_daily_yields():
                 daily_imported = counter.data["get"]["imported"] - entry0["counter"][c]["imported"]
                 daily_exported = counter.data["get"]["exported"] - entry0["counter"][c]["exported"]
                 counter.data["get"].update({"daily_imported": daily_imported, "daily_exported": daily_exported})
-                Pub().pub(f"openWB/set/counter/{counter.counter_num}/get/daily_imported", daily_imported)
-                Pub().pub(f"openWB/set/counter/{counter.counter_num}/get/daily_exported", daily_exported)
+                Pub().pub(f"openWB/set/counter/{counter.num}/get/daily_imported", daily_imported)
+                Pub().pub(f"openWB/set/counter/{counter.num}/get/daily_exported", daily_exported)
             else:
                 log.info(f"Zähler {c} wurde zwischenzeitlich gelöscht und wird daher nicht mehr aufgeführt.")
         # Tagesertrag Ladepunkte
@@ -276,8 +276,8 @@ def update_daily_yields():
                 daily_exported = cp.data["get"]["exported"] - entry0["cp"][chargepoint]["exported"]
                 cp.data["get"].update({"daily_exported": daily_exported, "daily_imported": daily_imported})
                 if "cp" in chargepoint:
-                    Pub().pub(f"openWB/set/chargepoint/{cp.cp_num}/get/daily_imported", daily_imported)
-                    Pub().pub(f"openWB/set/chargepoint/{cp.cp_num}/get/daily_exported", daily_exported)
+                    Pub().pub(f"openWB/set/chargepoint/{cp.num}/get/daily_imported", daily_imported)
+                    Pub().pub(f"openWB/set/chargepoint/{cp.num}/get/daily_exported", daily_exported)
                 else:
                     Pub().pub("openWB/set/chargepoint/get/daily_imported", daily_imported)
                     Pub().pub("openWB/set/chargepoint/get/daily_exported", daily_exported)
@@ -287,12 +287,12 @@ def update_daily_yields():
         # Tagesertrag PV
         for pv in last_entry["pv"]:
             if pv in data.data.pv_data:
-                daily_yield = data.data.pv_data[pv].data["get"]["counter"] - entry0["pv"][pv]["imported"]
-                data.data.pv_data[pv].data["get"]["daily_yield"] = daily_yield
+                daily_exported = data.data.pv_data[pv].data["get"]["exported"] - entry0["pv"][pv]["exported"]
+                data.data.pv_data[pv].data["get"]["daily_exported"] = daily_exported
                 if "pv" in pv:
-                    Pub().pub(f"openWB/set/pv/{data.data.pv_data[pv].pv_num}/get/daily_yield", daily_yield)
+                    Pub().pub(f"openWB/set/pv/{data.data.pv_data[pv].num}/get/daily_exported", daily_exported)
                 else:
-                    Pub().pub("openWB/set/pv/get/daily_yield", daily_yield)
+                    Pub().pub("openWB/set/pv/get/daily_exported", daily_exported)
             else:
                 log.info(f"Wechselrichter {pv} wurde zwischenzeitlich gelöscht und wird daher nicht mehr aufgeführt.")
         # Tagesertrag Speicher
@@ -303,8 +303,8 @@ def update_daily_yields():
                 daily_exported = bat.data["get"]["exported"] - entry0["bat"][b]["exported"]
                 bat.data["get"].update({"daily_imported": daily_imported, "daily_exported": daily_exported})
                 if "bat" in b:
-                    Pub().pub(f"openWB/set/bat/{bat.bat_num}/get/daily_imported", daily_imported)
-                    Pub().pub(f"openWB/set/bat/{bat.bat_num}/get/daily_exported", daily_exported)
+                    Pub().pub(f"openWB/set/bat/{bat.num}/get/daily_imported", daily_imported)
+                    Pub().pub(f"openWB/set/bat/{bat.num}/get/daily_exported", daily_exported)
                 else:
                     Pub().pub("openWB/set/bat/get/daily_imported", daily_imported)
                     Pub().pub("openWB/set/bat/get/daily_exported", daily_exported)

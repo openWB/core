@@ -39,13 +39,13 @@ class Process:
                                     ["ev" + str(chargepoint.data["set"]["charging_ev_prev"])],
                                     immediately=False)
                             chargepoint.data["set"]["current"] = 0
-                            Pub().pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/set/current", 0)
+                            Pub().pub("openWB/set/chargepoint/"+str(chargepoint.num)+"/set/current", 0)
                         if chargepoint.data["get"]["state_str"] is not None:
-                            Pub().pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/get/state_str",
+                            Pub().pub("openWB/set/chargepoint/"+str(chargepoint.num)+"/get/state_str",
                                       chargepoint.data["get"]["state_str"])
                         else:
                             Pub().pub(
-                                f"openWB/set/chargepoint/{chargepoint.cp_num}/get/state_str", "Ladevorgang läuft...")
+                                f"openWB/set/chargepoint/{chargepoint.num}/get/state_str", "Ladevorgang läuft...")
                         modules_threads.append(self._start_charging(chargepoint))
                 except Exception:
                     log.exception("Fehler im Process-Modul für Ladepunkt "+str(cp))
@@ -96,15 +96,15 @@ class Process:
                 chargepoint.data["get"]["charge_state"] and
                 chargepoint.data["set"]["current"] == 0):
             log.error(
-                "LP"+str(chargepoint.cp_num)+": Ladung wurde trotz verhinderter Unterbrechung gestoppt.")
+                "LP"+str(chargepoint.num)+": Ladung wurde trotz verhinderter Unterbrechung gestoppt.")
 
         # Wenn ein EV zugeordnet ist und die Phasenumschaltung aktiv ist, darf kein Strom gesetzt werden.
         if charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] is not None:
             current = 0
 
         chargepoint.data["set"]["current"] = current
-        Pub().pub("openWB/set/chargepoint/"+str(chargepoint.cp_num)+"/set/current", current)
-        log.info("LP"+str(chargepoint.cp_num)+": set current "+str(current)+" A")
+        Pub().pub("openWB/set/chargepoint/"+str(chargepoint.num)+"/set/current", current)
+        log.info("LP"+str(chargepoint.num)+": set current "+str(current)+" A")
 
     def _start_charging(self, chargepoint: chargepoint.Chargepoint) -> threading.Thread:
         return threading.Thread(target=chargepoint.chargepoint_module.set_current,

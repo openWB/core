@@ -31,7 +31,7 @@ class Graph:
                 if "counter" in c and evu_counter not in c:
                     counter = data.data.counter_data[c]
                     if counter.data["get"]["fault_state"] < FaultStateLevel.ERROR:
-                        dataline.update({"counter"+str(counter.counter_num) +
+                        dataline.update({"counter"+str(counter.num) +
                                          "-power": _convert_to_kW(counter.data["get"]["power"])})
             dataline.update(
                 {"house-power": _convert_to_kW(data.data.counter_data["all"].data["set"]["home_consumption"])})
@@ -46,10 +46,10 @@ class Graph:
                         chargepoint = data.data.cp_data[cp]
                         if chargepoint.data["get"]["fault_state"] < FaultStateLevel.ERROR:
                             dataline.update(
-                                {"cp" + str(chargepoint.cp_num) +
+                                {"cp" + str(chargepoint.num) +
                                  "-power": _convert_to_kW(chargepoint.data["get"]["power"])})
                         # if chargepoint.data["get"]["connected_vehicle"]["soc_config"]["configured"]:
-                        #     dataline.update({"cp"+str(chargepoint.cp_num)+"-soc": _convert_to_kW(
+                        #     dataline.update({"cp"+str(chargepoint.num)+"-soc": _convert_to_kW(
                         #         chargepoint.data["get"]["connected_vehicle"]["soc"]["soc"])})
             if len(data.data.bat_data) > 1:
                 dataline.update(

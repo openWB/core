@@ -49,7 +49,7 @@ class UpdateSoc:
             if ev.soc_module is not None:
                 for cp in cp_data.values():
                     if not isinstance(cp, AllChargepoints):
-                        if cp.data["set"]["charging_ev"] == ev.ev_num:
+                        if cp.data["set"]["charging_ev"] == ev.num:
                             charge_state = cp.data["get"]["charge_state"]
                             plug_state = cp.data["get"]["plug_state"]
                             break
@@ -58,5 +58,5 @@ class UpdateSoc:
                     plug_state = False
                 if ev.ev_template.soc_interval_expired(plug_state, charge_state, ev.data["get"].get("soc_timestamp")):
                     threads.append(threading.Thread(target=ev.soc_module.update,
-                                                    args=(charge_state,), name=f"soc_ev{ev.ev_num}"))
+                                                    args=(charge_state,), name=f"soc_ev{ev.num}"))
         return threads
