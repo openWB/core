@@ -25,7 +25,7 @@ var topicsToSubscribe = [
 	// // pv topics
 	["openWB/pv/config/configured", 1], // is a pv module configured? bool
 	["openWB/pv/get/power", 1], // total actual power; negative int, unit: W
-	["openWB/pv/get/daily_yield", 1], // total daily yield; float, unit: kWh
+	["openWB/pv/get/daily_exported", 1], // total daily yield; float, unit: kWh
 
 	// // house battery
 	["openWB/bat/config/configured", 1], // is a battery module configured? bool

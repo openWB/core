@@ -437,7 +437,8 @@ class UpdateConfig:
                             payload = json.loads(str(payload.decode("utf-8")))
                             if payload["type"] == "inverter" and "counter_path" in payload["configuration"]:
                                 updated_payload = payload
-                                updated_payload["configuration"]["exported_path"] = payload["configuration"]["counter_path"]
+                                updated_payload["configuration"]["exported_path"] = payload[
+                                    "configuration"]["counter_path"]
                                 updated_payload["configuration"].pop("counter_path")
                                 Pub().pub(topic.replace("openWB/", "openWB/set/"), updated_payload)
                 elif payload["type"] == "json":
