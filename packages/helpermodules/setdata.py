@@ -556,7 +556,7 @@ class SetData:
                     "openWB/set/pv/get/monthly_exported" in msg.topic or
                     "openWB/set/pv/get/yearly_exported" in msg.topic):
                 self._validate_value(msg, float, [(0, float("inf"))])
-            elif "openWB/set/pv/get/counter" in msg.topic:
+            elif "openWB/set/pv/get/exported" in msg.topic:
                 self._validate_value(msg, float, [(0, float("inf"))])
             elif "openWB/set/pv/get/power" in msg.topic:
                 self._validate_value(msg, float, [(float("-inf"), 0)])
@@ -575,7 +575,7 @@ class SetData:
                     "/get/yearly_exported" in msg.topic or
                     "/get/energy" in msg.topic):
                 self._validate_value(msg, float, [(0, float("inf"))])
-            elif "/get/counter" in msg.topic:
+            elif "/get/exported" in msg.topic:
                 self._validate_value(msg, float, [(0, float("inf"))])
             elif "/get/power" in msg.topic:
                 self._validate_value(msg, float, [(float("-inf"), 0)])

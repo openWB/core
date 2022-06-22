@@ -99,8 +99,8 @@ def read_legacy(ip1: str, webbox: int, ip2: str, ip3: str, ip4: str, version: in
         for inverter in itertools.chain((inverter1,), inverters_additional):
             state = inverter.read_inverter_state()
             total_power += state.power
-            total_energy += state.counter
-        get_inverter_value_store(num).set(InverterState(counter=total_energy, power=total_power))
+            total_energy += state.exported
+        get_inverter_value_store(num).set(InverterState(exported=total_energy, power=total_power))
 
 
 def main(argv: List[str]):

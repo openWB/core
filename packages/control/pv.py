@@ -32,7 +32,7 @@ class PvAll:
         try:
             if len(data.data.pv_data) > 1:
                 # Summe von allen konfigurierten Modulen
-                self.data["get"]["counter"] = 0
+                self.data["get"]["exported"] = 0
                 self.data["get"]["daily_exported"] = 0
                 self.data["get"]["monthly_exported"] = 0
                 self.data["get"]["yearly_exported"] = 0
@@ -42,7 +42,7 @@ class PvAll:
                         if "pv" in module:
                             module_data = data.data.pv_data[module].data
                             self.data["get"]["power"] += module_data["get"]["power"]
-                            self.data["get"]["counter"] += module_data["get"]["counter"]
+                            self.data["get"]["exported"] += module_data["get"]["exported"]
                             self.data["get"]["daily_exported"] += module_data["get"]["daily_exported"]
                             self.data["get"]["monthly_exported"] += module_data["get"]["monthly_exported"]
                             self.data["get"]["yearly_exported"] += module_data["get"]["yearly_exported"]

@@ -141,7 +141,7 @@ def save_log(folder):
             for pv in data.data.pv_data:
                 try:
                     pv_dict.update(
-                        {pv: {"exported": data.data.pv_data[pv].data["get"]["counter"]}})
+                        {pv: {"exported": data.data.pv_data[pv].data["get"]["exported"]}})
                 except Exception:
                     log.exception("Fehler im Werte-Logging-Modul für Wechselrichter "+str(pv))
 
@@ -287,7 +287,7 @@ def update_daily_yields():
         # Tagesertrag PV
         for pv in last_entry["pv"]:
             if pv in data.data.pv_data:
-                daily_exported = data.data.pv_data[pv].data["get"]["counter"] - entry0["pv"][pv]["imported"]
+                daily_exported = data.data.pv_data[pv].data["get"]["exported"] - entry0["pv"][pv]["exported"]
                 data.data.pv_data[pv].data["get"]["daily_exported"] = daily_exported
                 if "pv" in pv:
                     Pub().pub(f"openWB/set/pv/{data.data.pv_data[pv].num}/get/daily_exported", daily_exported)

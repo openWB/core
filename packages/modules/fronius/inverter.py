@@ -50,11 +50,11 @@ class FroniusInverter:
 
     def fill_inverter_state(self, power):
         topic = "openWB/set/system/device/" + str(self.__device_id)+"/component/" + str(self.component_config["id"])+"/"
-        _, counter = self.__sim_count.sim_count(power, topic=topic, data=self.simulation, prefix="pv")
+        _, exported = self.__sim_count.sim_count(power, topic=topic, data=self.simulation, prefix="pv")
 
         return InverterState(
             power=power,
-            counter=counter
+            exported=exported
         )
 
     def update(self) -> None:

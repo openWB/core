@@ -81,7 +81,7 @@ class SonnenbatterieInverter:
             pv_power, topic=topic_str, data=self.simulation, prefix="pv"
         )
         return InverterState(
-            counter=exported,
+            exported=exported,
             power=pv_power
         )
 
@@ -101,7 +101,7 @@ class SonnenbatterieInverter:
             pv_power, topic=topic_str, data=self.simulation, prefix="pv"
         )
         return InverterState(
-            counter=exported,
+            exported=exported,
             power=pv_power
         )
 

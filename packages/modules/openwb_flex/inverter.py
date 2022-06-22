@@ -51,14 +51,14 @@ class PvKitFlex:
             topic_str = "openWB/set/system/device/" + \
                 str(self.__device_id)+"/component/" + \
                 str(self.component_config["id"])+"/"
-            _, counter = self.__sim_count.sim_count(
+            _, exported = self.__sim_count.sim_count(
                 power, topic=topic_str, data=self.__simulation, prefix="pv")
         else:
-            counter = self.__client.get_exported()
+            exported = self.__client.get_exported()
 
         inverter_state = InverterState(
             power=power,
-            counter=counter,
+            exported=exported,
             currents=currents
         )
         self.__store.set(inverter_state)

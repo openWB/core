@@ -184,13 +184,13 @@ class UpdateConfig:
                    "^openWB/pv/set/reserved_evu_overhang$",
                    "^openWB/pv/set/released_evu_overhang$",
                    "^openWB/pv/set/available_power$",
-                   "^openWB/pv/get/counter$",
+                   "^openWB/pv/get/exported$",
                    "^openWB/pv/get/power$",
                    "^openWB/pv/get/daily_exported$",
                    "^openWB/pv/get/monthly_exported$",
                    "^openWB/pv/get/yearly_exported$",
                    "^openWB/pv/[0-9]+/config/max_ac_out$",
-                   "^openWB/pv/[0-9]+/get/counter$",
+                   "^openWB/pv/[0-9]+/get/exported$",
                    "^openWB/pv/[0-9]+/get/power$",
                    "^openWB/pv/[0-9]+/get/currents$",
                    "^openWB/pv/[0-9]+/get/energy$",
@@ -399,26 +399,54 @@ class UpdateConfig:
         files = glob.glob("/var/www/html/openWB/data/daily_log/*")
         files.extend(glob.glob("/var/www/html/openWB/data/monthly_log/*"))
         for file in files:
-            with open(file, "r") as jsonFile:
+            with open(file, "r+") as jsonFile:
                 try:
                     content = json.load(jsonFile)
                     if isinstance(content, List):
                         try:
                             new_content = {"entries": content, "totals": measurement_log.get_totals(content)}
-                            with open(file, "w") as jsonFile:
-                                json.dump(new_content, jsonFile)
+                            json.dump(new_content, jsonFile)
                             log.debug(f"Format des Logfiles {file} aktualisiert.")
                         except Exception:
                             log.exception(f"Logfile {file} entspricht nicht dem Dateiformat von Alpha 3.")
                 except json.decoder.JSONDecodeError:
                     log.exception(
                         f"Logfile {file} konnte nicht konvertiert werden, da es keine gültigen json-Daten enthält.")
-            with open(file, "r") as jsonFile:
+            with open(file, "r+") as jsonFile:
                 try:
                     content = json.load(jsonFile)
-                    if content["entries"]["pv"]["all"].get("imported"):
-                        for entry in content["entries"]["pv"]:
-                            content["entries"]["pv"][entry]["exported"] = content["entries"]["pv"][entry]["imported"]
-                        content["entries"]["pv"]["totals"]["exported"] = content["entries"]["pv"]["totals"]["imported"]
+                    for e in content["entries"]:
+                        for module in e["pv"]:
+                            if e["pv"][module].get("imported"):
+                                e["pv"][module]["exported"] = e["pv"][module]["imported"]
+                    for entry in content["totals"]["pv"]:
+                        if content["totals"]["pv"][entry].get("imported"):
+                            content["totals"]["pv"][entry]["exported"] = content["totals"]["pv"][entry]["imported"]
+                    json.dump(content, jsonFile)
                 except Exception:
                     log.exception(f"Logfile {file} konnte nicht konvertiert werden.")
+
+        # prevent_switch_stop auf zwei Einstellungen prevent_phase_switch und prevent_charge_stop aufteilen
+        for topic, payload in self.all_received_topics.items():
+            if re.search("^openWB/system/device/[0-9]+/config$", topic) is not None:
+                payload = json.loads(str(payload.decode("utf-8")))
+                if payload["type"] == "http":
+                    index = re.search('(?!/)([0-9]*)(?=/|$)', topic).group()
+                    for topic, payload in self.all_received_topics.items():
+                        if re.search(f"^openWB/system/device/{index}/component/[0-9]+/config$", topic) is not None:
+                            payload = json.loads(str(payload.decode("utf-8")))
+                            if payload["type"] == "inverter" and "counter_path" in payload["configuration"]:
+                                updated_payload = payload
+                                updated_payload["configuration"]["exported_path"] = payload["configuration"]["counter_path"]
+                                updated_payload["configuration"].pop("counter_path")
+                                Pub().pub(topic.replace("openWB/", "openWB/set/"), updated_payload)
+                elif payload["type"] == "json":
+                    index = re.search('(?!/)([0-9]*)(?=/|$)', topic).group()
+                    for topic, payload in self.all_received_topics.items():
+                        if re.search(f"^openWB/system/device/{index}/component/[0-9]+/config$", topic) is not None:
+                            payload = json.loads(str(payload.decode("utf-8")))
+                            if payload["type"] == "inverter" and "jq_counter" in payload["configuration"]:
+                                updated_payload = payload
+                                updated_payload["configuration"]["jq_exported"] = payload["configuration"]["jq_counter"]
+                                updated_payload["configuration"].pop("jq_counter")
+                                Pub().pub(topic.replace("openWB/", "openWB/set/"), updated_payload)
