@@ -3,6 +3,7 @@
 
 import copy
 import logging
+import threading
 
 from control import chargelog
 from control import data
@@ -18,10 +19,10 @@ log = logging.getLogger(__name__)
 
 
 class Prepare:
-    def __init__(self, event_module_update_completed):
+    def __init__(self, event_module_update_completed: threading.Event):
         self.event_module_update_completed = event_module_update_completed
 
-    def setup_algorithm(self):
+    def setup_algorithm(self) -> None:
         """ bereitet die Daten für den Algorithmus vor und startet diesen.
         """
         self._counter()
@@ -31,11 +32,11 @@ class Prepare:
         self._get_home_consumption()
         data.data.print_all()
 
-    def copy_system_data(self):
+    def copy_system_data(self) -> None:
         with ModuleDataReceivedContext(self.event_module_update_completed):
             self.__copy_system_data()
 
-    def __copy_system_data(self):
+    def __copy_system_data(self) -> None:
         """ kopiert die Daten, die per MQTT empfangen wurden.
         """
         try:
@@ -51,7 +52,7 @@ class Prepare:
         except Exception:
             log.exception("Fehler im Prepare-Modul")
 
-    def __copy_counter_data(self):
+    def __copy_counter_data(self) -> None:
         data.data.counter_data.clear()
         for counter in subdata.SubData.counter_data:
             stop = False
@@ -68,7 +69,7 @@ class Prepare:
             else:
                 data.data.counter_data[counter] = copy.deepcopy(subdata.SubData.counter_data[counter])
 
-    def __copy_cp_data(self):
+    def __copy_cp_data(self) -> None:
         data.data.cp_data.clear()
         for cp in subdata.SubData.cp_data:
             if isinstance(subdata.SubData.cp_data[cp], Chargepoint):
@@ -87,11 +88,11 @@ class Prepare:
             except Exception:
                 log.exception("Fehler im Prepare-Modul für Ladepunkt "+str(chargepoint))
 
-    def copy_module_data(self):
+    def copy_module_data(self) -> None:
         with ModuleDataReceivedContext(self.event_module_update_completed):
             self.__copy_module_data()
 
-    def __copy_module_data(self):
+    def __copy_module_data(self) -> None:
         """ kopiert die Daten, die per MQTT empfangen wurden.
         """
         try:
@@ -129,7 +130,7 @@ class Prepare:
         except Exception:
             log.exception("Fehler im Prepare-Modul")
 
-    def copy_data(self):
+    def copy_data(self) -> None:
         """ kopiert die Daten, die per MQTT empfangen wurden.
         """
         with ModuleDataReceivedContext(self.event_module_update_completed):
