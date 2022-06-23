@@ -42,10 +42,11 @@ class SubData:
     system_data = {}
     graph_data = {}
 
-    def __init__(self, event_ev_template, event_charge_template, event_cp_config):
+    def __init__(self, event_ev_template, event_charge_template, event_cp_config, event_module_update_completed):
         self.event_ev_template = event_ev_template
         self.event_charge_template = event_charge_template
         self.event_cp_config = event_cp_config
+        self.event_module_update_completed = event_module_update_completed
         self.heartbeat = False
 
         self.bat_data["all"] = bat.BatAll()
@@ -97,6 +98,7 @@ class SubData:
         client.subscribe("openWB/counter/#", 2)
         # Nicht mit wildcard abonnieren, damit nicht die Komponenten vor den Devices empfangen werden.
         client.subscribe("openWB/system/+", 2)
+        client.subscribe("openWB/system/device/module_update_completed", 2)
         client.subscribe("openWB/system/mqtt/bridge/+", 2)
         client.subscribe("openWB/system/device/+/config", 2)
 
@@ -742,6 +744,8 @@ class SubData:
                 subprocess.run([str(Path(__file__).resolve().parents[2] / "runs" / "start_remote_support.sh"),
                                 token, port, user])
             else:
+                if "module_update_completed" in msg.topic:
+                    self.event_module_update_completed.set()
                 self.set_json_payload(var["system"].data, msg)
         except Exception:
             log.exception("Fehler im subdata-Modul")

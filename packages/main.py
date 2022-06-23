@@ -52,13 +52,13 @@ class HandlerAlgorithm:
                         # Mit aktuellen Einstellungen arbeiten.
                         prep.copy_system_data()
                         log.setLevel(data.data.system_data["system"].data["debug_level"])
-                        loadvars.get_hardware_values()
+                        loadvars_.get_hardware_values()
                         # Virtuelle Module ermitteln die Werte rechnerisch auf Basis der Messwerte anderer Module.
                         # Daher können sie erst die Werte ermitteln, wenn die physischen Module ihre Werte ermittelt
                         # haben. Würde man alle Module parallel abfragen, wären die virtuellen Module immer einen
                         # Zyklus hinterher.
                         prep.copy_module_data()
-                        loadvars.get_virtual_values()
+                        loadvars_.get_virtual_values()
                         # Kurz warten, damit alle Topics von setdata und subdata verarbeitet werden können.
                         time.sleep(0.5)
                         prep.copy_module_data()
@@ -86,9 +86,9 @@ class HandlerAlgorithm:
                 def handler_without_control_interval():
                     # Wenn kein Regelintervall bekannt ist, alle 10s regeln.
                     prep.copy_system_data()
-                    loadvars.get_hardware_values()
+                    loadvars_.get_hardware_values()
                     prep.copy_module_data()
-                    loadvars.get_virtual_values()
+                    loadvars_.get_virtual_values()
                     self.heartbeat = True
                     # Kurz warten, damit alle Topics von setdata und subdata verarbeitet werden können.
                     time.sleep(0.3)
@@ -178,7 +178,8 @@ try:
     proc = process.Process()
     control = algorithm.Algorithm()
     handler = HandlerAlgorithm()
-    prep = prepare.Prepare()
+    loadvars_ = loadvars.Loadvars()
+    prep = prepare.Prepare(loadvars_.event_module_update_completed)
     event_ev_template = threading.Event()
     event_ev_template.set()
     event_charge_template = threading.Event()
@@ -188,7 +189,7 @@ try:
     set = setdata.SetData(event_ev_template, event_charge_template,
                           event_cp_config)
     sub = subdata.SubData(event_ev_template, event_charge_template,
-                          event_cp_config)
+                          event_cp_config, loadvars_.event_module_update_completed)
     comm = command.Command()
     soc = update_soc.UpdateSoc()
     t_sub = Thread(target=sub.sub_topics, args=())

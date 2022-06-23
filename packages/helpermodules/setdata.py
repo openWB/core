@@ -912,6 +912,8 @@ class SetData:
                     self._validate_value(msg, int, [(0, 2)])
                 elif "/get/fault_str" in msg.topic:
                     self._validate_value(msg, str)
+                elif "module_update_completed" in msg.topic:
+                    self._validate_value(msg, bool)
                 else:
                     self.__unknown_topic(msg)
             else:
