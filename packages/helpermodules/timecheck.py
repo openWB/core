@@ -234,7 +234,7 @@ def check_duration(plan: Dict, duration: float) -> Tuple[int, float]:
     end = datetime.datetime.strptime(plan["time"], '%H:%M')
 
     if plan["frequency"]["selected"] == "once":
-        endDate = datetime.datetime.strptime(plan["frequency"]["once"][0], "%Y-%m-%d")
+        endDate = datetime.datetime.strptime(plan["frequency"]["once"], "%Y-%m-%d")
         end = end.replace(endDate.year, endDate.month, endDate.day)
         state, remaining_time = _is_duration_valid(now, duration, end)
         if -0.33 <= remaining_time < 0:
