@@ -407,7 +407,9 @@ class UpdateConfig:
                     if isinstance(content, List):
                         try:
                             new_content = {"entries": content, "totals": measurement_log.get_totals(content)}
+                            jsonFile.seek(0)
                             json.dump(new_content, jsonFile)
+                            jsonFile.truncate()
                             log.debug(f"Format des Logfiles {file} aktualisiert.")
                         except Exception:
                             log.exception(f"Logfile {file} entspricht nicht dem Dateiformat von Alpha 3.")
@@ -421,10 +423,14 @@ class UpdateConfig:
                         for module in e["pv"]:
                             if e["pv"][module].get("imported"):
                                 e["pv"][module]["exported"] = e["pv"][module]["imported"]
+                                e["pv"][module].pop("imported")
                     for entry in content["totals"]["pv"]:
                         if content["totals"]["pv"][entry].get("imported"):
                             content["totals"]["pv"][entry]["exported"] = content["totals"]["pv"][entry]["imported"]
+                            content["totals"]["pv"][entry].pop("imported")
+                    jsonFile.seek(0)
                     json.dump(content, jsonFile)
+                    jsonFile.truncate()
                 except Exception:
                     log.exception(f"Logfile {file} konnte nicht konvertiert werden.")
 
