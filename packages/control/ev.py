@@ -718,9 +718,8 @@ class ChargeTemplate:
                 current = plan_data["max_current"]
             else:
                 current = required_current
-            message = "Zielladen mit "+str(current) + \
-                "A. Der verfügbare Ladezeitraum reicht nicht aus, um das zu erreichen. \
-                Daher wird bis max. 20 Minuten nach dem angegebenen Zieltermin geladen."
+            message = (f"Zielladen mit {current}A. Der verfügbare Ladezeitraum reicht nicht aus, um das zu erreichen."
+                       "Daher wird bis max. 20 Minuten nach dem angegebenen Zieltermin geladen.")
             return current, "instant_charging", message
         else:
             # Liegt der Zieltermin innerhalb der nächsten 24h?
@@ -731,16 +730,15 @@ class ChargeTemplate:
                     hourlist = data.data.optional_data["optional"].et_get_loading_hours(
                         plan_data["remaining_time"])
                     if timecheck.is_list_valid(hourlist):
-                        message = "Sofortladen, da ein günstiger Zeitpunkt zum preisbasierten Laden \
-                            ist."
+                        message = "Sofortladen, da ein günstiger Zeitpunkt zum preisbasierten Laden ist."
                         return plan_data["available_current"], "instant_charging", message
                     else:
-                        message = "Kein Sofortladen, da kein günstiger Zeitpunkt zum preisbasierten Laden \
-                            ist. Falls vorhanden, wird mit EVU-Überschuss geladen."
+                        message = ("Kein Sofortladen, da kein günstiger Zeitpunkt zum preisbasierten Laden "
+                                   "ist. Falls vorhanden, wird mit EVU-Überschuss geladen.")
                         return 1, "pv_charging", message
                 else:
-                    message = "Kein Sofortladen, da noch Zeit bis zum Zieltermin ist. Falls vorhanden, \
-                        wird mit EVU-Überschuss geladen."
+                    message = ("Kein Sofortladen, da noch Zeit bis zum Zieltermin ist. Falls vorhanden, "
+                               "wird mit EVU-Überschuss geladen.")
                     return 1, "pv_charging", message
             else:
                 message = "Keine Ladung, da noch mehr als ein Tag bis zum Zieltermin ist. "

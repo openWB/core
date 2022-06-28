@@ -445,8 +445,8 @@ class Algorithm:
                                 data.data.cp_data = cp_data_old
                                 log.debug("Keine Hochregelung für Ladepunkt "+str(cp.num) +
                                           ", da nur noch das Offset zum Maximalstrom verfügbar ist.")
-                                message = "Das Lastmanagement konnte den Ladepunkt nicht auf die gewünschte \
-                                    Stromstärke hochregeln."
+                                message = ("Das Lastmanagement konnte den Ladepunkt nicht auf die gewünschte "
+                                           "Stromstärke hochregeln.")
                                 # Beim Wiederherstellen der Kopie wird die Adresse der Kopie zugewiesen, sodass die
                                 # Adresse des LP aktualisiert werden muss,
                                 # um Änderungen in der Klasse vorzunehmen, die das data-Modul referenziert.
@@ -458,9 +458,8 @@ class Algorithm:
                                     cp, undo_missing_current, phases)
                                 self._process_data(
                                     cp, cp.data["set"]["current"] + missing_current + undo_missing_current)
-                                message = "Das Lastmanagement hat den Ladestrom um " + \
-                                    str(round(
-                                        (missing_current + undo_missing_current), 2))+"A angepasst."
+                                message = ("Das Lastmanagement hat den Ladestrom um "
+                                           f"{round((missing_current + undo_missing_current), 2)}A angepasst.")
                                 log.debug(message)
                         # Zuvor fehlender Ladestrom kann nun genutzt werden
                         else:

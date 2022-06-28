@@ -213,14 +213,14 @@ class Prepare:
                                             "openWB/set/chargepoint/"+str(cp.num)+"/set/charging_ev_prev", -1)
                                     else:
                                         raise ValueError(
-                                            "Wenn kein aktuelles und kein vorheriges Ev zugeordnet waren, \
-                                                sollte noch nicht geladen worden sein.")
+                                            "Wenn kein aktuelles und kein vorheriges Ev zugeordnet waren, "
+                                            "sollte noch nicht geladen worden sein.")
                                     charging_ev = data.data.ev_data["ev" + str(vehicle)]
                                     charging_ev.ev_template.data = charging_ev.data["set"]["ev_template"]
                                     cp.data["set"]["charging_ev_data"] = charging_ev
                                     Pub().pub("openWB/set/chargepoint/"+str(cp.num)+"/set/change_ev_permitted", [
-                                        False, "Das Fahrzeug darf nur geändert werden, wenn noch nicht geladen wurde. \
-                                                Bitte abstecken, dann wird das gewählte Fahrzeug verwendet."])
+                                        False, "Das Fahrzeug darf nur geändert werden, wenn noch nicht geladen wurde. "
+                                        "Bitte abstecken, dann wird das gewählte Fahrzeug verwendet."])
                                     log.warning(
                                         "Das Fahrzeug darf nur geändert werden, wenn noch nicht geladen wurde.")
 
