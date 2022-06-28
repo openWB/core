@@ -201,7 +201,7 @@ def check_timeframe(plan, hours):
                             state = False
                 else:
                     if plan["frequency"]["weekly"][now.weekday()]:
-                        end = end.replace(end.year, end.month, end.day)
+                        end = end.replace(now.year, now.month, now.day)
                         begin = _calc_begin(end, hours)
                         state = is_timeframe_valid(now, begin, end)
                     else:
