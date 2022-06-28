@@ -165,7 +165,7 @@ def check_timeframe(plan, hours):
                                           beginDate.day)
                     endDate = datetime.datetime.strptime(plan["frequency"]["once"][1], "%Y-%m-%d")
                 else:
-                    endDate = datetime.datetime.strptime(plan["frequency"]["once"][0], "%Y-%m-%d")
+                    endDate = datetime.datetime.strptime(plan["frequency"]["once"], "%Y-%m-%d")
                     end = end.replace(endDate.year, endDate.month, endDate.day)
                     begin = _calc_begin(end, hours)
                 end = end.replace(endDate.year, endDate.month, endDate.day)
