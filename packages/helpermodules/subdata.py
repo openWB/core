@@ -15,6 +15,7 @@ from control import counter
 from control import ev
 from control import general
 from helpermodules import graph
+from helpermodules.utils.topic_parser import get_index, get_second_index
 from control import optional
 from helpermodules.pub import Pub
 from helpermodules import system
@@ -22,24 +23,6 @@ from control import pv
 
 log = logging.getLogger(__name__)
 mqtt_log = logging.getLogger("mqtt")
-
-
-def get_index(topic: str) -> str:
-    """extrahiert den Index aus einem Topic (Zahl zwischen zwei // oder am Stringende)
-    """
-    regex = re.search('(?!/)([0-9]*)(?=/|$)', topic)
-    if regex is None:
-        raise Exception(f"Couldn't find index in {topic}")
-    return regex.group()
-
-
-def get_second_index(topic: str) -> str:
-    """extrahiert den zweiten Index aus einem Topic (Zahl zwischen zwei //)
-    """
-    regex = re.search('^.+/([0-9]*)/.+/([0-9]+)/*.*$', topic)
-    if regex is None:
-        raise Exception(f"Couldn't find index in {topic}")
-    return regex.group(2)
 
 
 class SubData:

@@ -8,8 +8,9 @@ import paho.mqtt.client as mqtt
 import re
 
 import logging
-from helpermodules.pub import Pub
 from helpermodules import subdata
+from helpermodules.pub import Pub
+from helpermodules.utils.topic_parser import get_index
 
 log = logging.getLogger(__name__)
 mqtt_log = logging.getLogger("mqtt")
@@ -140,7 +141,7 @@ class SetData:
                     Pub().pub(msg.topic, "")
                 else:
                     # aktuelles json-Objekt liegt in subdata
-                    index = subdata.get_index(msg.topic)
+                    index = get_index(msg.topic)
                     if "charge_template" in msg.topic:
                         event = self.event_charge_template
                         if "ct"+str(index) in subdata.SubData.ev_charge_template_data:
