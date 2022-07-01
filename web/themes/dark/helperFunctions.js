@@ -112,11 +112,10 @@ function setToggleBtnGroup(groupId, option) {
         $(this).closest('label').removeClass('active');
     });
     // show/hide respective option-values and progress
-    if (btnGroup.hasClass('chargepoint-chargemode')){
+    if (btnGroup.hasClass('charge-point-charge-mode')){
         chargemodeOptionsShowHide(btnGroup, option);
     }
-    if (btnGroup.hasClass('chargepoint-instantchargelimitselected')){
-        // console.log('btnGroup chargepoint-instantchargelimitselected');
+    if (btnGroup.hasClass('charge-point-instant-charge-limit-selected')){
         chargemodeLimitOptionsShowHide(btnGroup, option);
     }
 
