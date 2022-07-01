@@ -294,7 +294,8 @@ class Chargepoint:
                 log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.num))
                 return False, "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
             if charging_possbile:
-                num, message = self.template.get_ev(self.data["get"]["rfid"], self.data["config"]["ev"])
+                num, message = self.template.get_ev(
+                    self.data["get"]["rfid"] or self.data["set"]["rfid"], self.data["config"]["ev"])
                 if num != -1:
                     if self.data["get"]["rfid"] is not None:
                         self.__link_rfid_to_cp()
