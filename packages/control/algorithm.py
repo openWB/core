@@ -532,12 +532,16 @@ class Algorithm:
                 try:
                     if cp.data["set"]["charging_ev"] != -1:
                         charging_ev = cp.data["set"]["charging_ev_data"]
-                        if (cp.data["config"]["auto_phase_switch_hw"] and
-                                cp.data["get"]["charge_state"] and
-                                (charging_ev.data["control_parameter"]["chargemode"] == "pv_charging" or
-                                 charging_ev.data["control_parameter"]["submode"] == "pv_charging") and
-                                data.data.general_data["general"].get_phases_chargemode("pv_charging") == 0 and
-                                charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] is None):
+                        control_parameter = charging_ev.data["control_parameter"]
+                        pv_auto_switch = (control_parameter["chargemode"] == "pv_charging" and
+                                          data.data.general_data["general"].get_phases_chargemode("pv_charging") == 0)
+                        scheduled_auto_switch = (control_parameter["chargemode"] == "scheduled_charging" and
+                                                 control_parameter["submode"] == "pv_charging" and
+                                                 data.data.general_data[
+                            "general"].get_phases_chargemode("scheduled_charging") == 0)
+                        if (cp.data["config"]["auto_phase_switch_hw"] and cp.data["get"]["charge_state"] and
+                                (pv_auto_switch or scheduled_auto_switch) and
+                                control_parameter["timestamp_perform_phase_switch"] is None):
                             # Gibt die Stromstärke und Phasen zurück, mit denen nach der Umschaltung geladen werden
                             # soll. Falls keine Umschaltung erforderlich ist, werden Strom und Phasen, die übergeben
                             # wurden, wieder zurückgegeben.
@@ -550,8 +554,7 @@ class Algorithm:
                                 cp.data["get"]["state_str"] = message
                             # Nachdem im Automatikmodus die Anzahl Phasen bekannt ist, Einhaltung des Maximalstroms
                             # prüfen.
-                            required_current = charging_ev.check_min_max_current(
-                                current, charging_ev.data["control_parameter"]["phases"])
+                            required_current = charging_ev.check_min_max_current(current, control_parameter["phases"])
                             charging_ev.data["control_parameter"]["required_current"] = required_current
                             Pub().pub("openWB/set/vehicle/"+str(charging_ev.num) +
                                       "/control_parameter/required_current", required_current)
