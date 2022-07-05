@@ -241,6 +241,7 @@ var retries = 0;
 
 //Connect Options
 var isSSL = location.protocol == 'https:'
+var port = isSSL ? 9002 : 9001;
 var options = {
 	timeout: 5,
 	useSSL: isSSL,
@@ -263,7 +264,8 @@ var options = {
 };
 
 var clientUid = Math.random().toString(36).replace(/[^a-z]+/g, "").substr(0, 5);
-var client = new Messaging.Client(location.hostname, 9001, clientUid);
+console.debug(`connecting to broker on ${location.hostname}:${port} as client "${clientUid}"`);
+var client = new Messaging.Client(location.hostname, port, clientUid);
 
 $(document).ready(function () {
 	client.connect(options);
@@ -282,7 +284,7 @@ client.onMessageArrived = function (message) {
 
 //Creates a new Messaging.Message Object and sends it
 function publish(payload, topic) {
-	console.debug("publish: " + topic + ": " + payload);
+	console.debug(`publishing message: ${topic} -> ${payload}`);
 	if (topic != undefined) {
 		var message = new Messaging.Message(JSON.stringify(payload));
 		message.destinationName = topic;
