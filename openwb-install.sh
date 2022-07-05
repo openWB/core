@@ -67,6 +67,7 @@ cp -a "${OPENWBBASEDIR}/data/config/mosquitto.conf" /etc/mosquitto/mosquitto.con
 cp "${OPENWBBASEDIR}/data/config/openwb.conf" /etc/mosquitto/conf.d/openwb.conf
 sudo cp /etc/ssl/certs/ssl-cert-snakeoil.pem /etc/mosquitto/certs/openwb.pem
 sudo cp /etc/ssl/private/ssl-cert-snakeoil.key /etc/mosquitto/certs/openwb.key
+sudo chgrp mosquitto /etc/mosquitto/certs/openwb.key
 systemctl start mosquitto
 
 #check for mosquitto_local instance

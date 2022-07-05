@@ -73,7 +73,7 @@ chmod 666 "$LOGFILE"
 		echo "...updated"
 	fi
 	echo "checking required apache modules..."
-	if a2query -m headers
+	if sudo a2query -m headers
 	then
 		echo "headers already enabled"
 	else
@@ -81,7 +81,7 @@ chmod 666 "$LOGFILE"
 		sudo a2enmod headers
 		restartService=1
 	fi
-	if a2query -m ssl
+	if sudo a2query -m ssl
 	then
 		echo "ssl already enabled"
 	else
@@ -118,6 +118,7 @@ chmod 666 "$LOGFILE"
 		echo -n "copy ssl certs..."
 		sudo cp /etc/ssl/certs/ssl-cert-snakeoil.pem /etc/mosquitto/certs/openwb.pem
 		sudo cp /etc/ssl/private/ssl-cert-snakeoil.key /etc/mosquitto/certs/openwb.key
+		sudo chgrp mosquitto /etc/mosquitto/certs/openwb.key
 		restartService=1
 		echo "done"
 	fi
