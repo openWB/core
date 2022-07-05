@@ -63,23 +63,38 @@ chmod 666 "$LOGFILE"
 
 	# check for apache configuration
 	echo "apache..."
-	if grep -Fxq "AllowOverride" /etc/apache2/sites-available/000-default.conf
+	restartService=0
+	if grep -q "openwb-version:1$" /etc/apache2/sites-available/000-default.conf
 	then
 		echo "...ok"
 	else
 		sudo cp "${OPENWBBASEDIR}/data/config/000-default.conf" /etc/apache2/sites-available/
-		echo "...changed"
+		restartService=1
+		echo "...updated"
 	fi
-	echo "checking apache headers module..."
-	if a2query -m headers
+	echo "checking required apache modules..."
+	if sudo a2query -m headers
 	then
-		echo "already enabled"
+		echo "headers already enabled"
 	else
-		echo "currently disabled; enabling module"
+		echo "headers currently disabled; enabling module"
 		sudo a2enmod headers
-		sudo systemctl restart apache2
+		restartService=1
 	fi
-	echo "done"
+	if sudo a2query -m ssl
+	then
+		echo "ssl already enabled"
+	else
+		echo "ssl currently disabled; enabling module"
+		sudo a2enmod ssl
+		sudo a2ensite default-ssl
+		restartService=1
+	fi
+	if (( restartService == 1 )); then
+		echo -n "restarting apache..."
+		sudo systemctl restart apache2
+		echo "done"
+	fi
 
 	# check for needed packages
 	echo "apt packages..."
@@ -87,29 +102,52 @@ chmod 666 "$LOGFILE"
 
 	# check for mosquitto configuration
 	echo "check mosquitto installation..."
+	restartService=0
 	# check for mosquitto configuration
-	if [ ! -f /etc/mosquitto/conf.d/openwb.conf ] || ! sudo grep -Fq "persistent_client_expiration" /etc/mosquitto/mosquitto.conf; then
-		echo "updating mosquitto config file"
+	if ! sudo grep -q "openwb-version:1$" /etc/mosquitto/mosquitto.conf; then
+		echo "updating mosquitto.conf"
+		sudo cp "${OPENWBBASEDIR}/data/config/mosquitto.conf" /etc/mosquitto/mosquitto.conf
+		restartService=1
+	fi
+	if ! sudo grep -q "openwb-version:1$" /etc/mosquitto/conf.d/openwb.conf; then
+		echo "updating mosquitto openwb.conf"
 		sudo cp "${OPENWBBASEDIR}/data/config/openwb.conf" /etc/mosquitto/conf.d/openwb.conf
-		sudo service mosquitto restart
+		restartService=1
+	fi
+	if [[ ! -f /etx/mosquitto/certs/openwb.key ]]; then
+		echo -n "copy ssl certs..."
+		sudo cp /etc/ssl/certs/ssl-cert-snakeoil.pem /etc/mosquitto/certs/openwb.pem
+		sudo cp /etc/ssl/private/ssl-cert-snakeoil.key /etc/mosquitto/certs/openwb.key
+		sudo chgrp mosquitto /etc/mosquitto/certs/openwb.key
+		restartService=1
+		echo "done"
+	fi
+	if (( restartService == 1 )); then
+		echo -n "restarting mosquitto service..."
+		sudo systemctl stop mosquitto
+		sleep 2
+		sudo systemctl start mosquitto
+		echo "done"
 	fi
 
 	#check for mosquitto_local instance
-	if [ ! -f /etc/mosquitto/mosquitto_local.conf ]; then
-		echo "setting up mosquitto local instance"
-		sudo install -d -m 0755 -o root -g root /etc/mosquitto/conf_local.d/
-		sudo install -d -m 0755 -o mosquitto -g root /var/lib/mosquitto_local
+	restartService=0
+	if ! sudo grep -q "openwb-version:1$" /etc/mosquitto/mosquitto_local.conf; then
+		echo "updating mosquitto_local.conf"
 		sudo cp -a "${OPENWBBASEDIR}/data/config/mosquitto_local.conf" /etc/mosquitto/mosquitto_local.conf
-		sudo cp -a "${OPENWBBASEDIR}/data/config/openwb_local.conf" /etc/mosquitto/conf_local.d/
-
-		sudo cp "${OPENWBBASEDIR}/data/config/mosquitto_local_init" /etc/init.d/mosquitto_local
-		sudo chown root.root /etc/init.d/mosquitto_local
-		sudo chmod 755 /etc/init.d/mosquitto_local
-	else
-		sudo cp -a "${OPENWBBASEDIR}/data/config/openwb_local.conf" /etc/mosquitto/conf_local.d/
+		restartService=1
 	fi
-	sudo systemctl daemon-reload
-	sudo service mosquitto_local start
+	if ! sudo grep -q "openwb-version:1$" /etc/mosquitto/conf_local.d/openwb_local.conf; then
+		sudo cp -a "${OPENWBBASEDIR}/data/config/openwb_local.conf" /etc/mosquitto/conf_local.d/
+		restartService=1
+	fi
+	if (( restartService == 1 )); then
+		echo -n "restarting mosquitto_local service..."
+		sudo systemctl stop mosquitto_local
+		sleep 2
+		sudo systemctl start mosquitto_local
+		echo "done"
+	fi
 	echo "mosquitto done"
 
 	# check for other dependencies
@@ -166,7 +204,7 @@ chmod 666 "$LOGFILE"
 	# get local ip
 	mosquitto_pub -t openWB/system/ip_address -p 1886 -r -m "\"$(ip route get 1 | awk '{print $7;exit}')\""
 	# update current published versions
-	echo "load versions..."
+	# echo "load versions..."
 	# change needed after repo is public!
 	# curl --connect-timeout 10 -s https://raw.githubusercontent.com/snaptec/openWB/master/web/version > ${OPENWBBASEDIR}/ramdisk/vnightly
 	# curl --connect-timeout 10 -s https://raw.githubusercontent.com/snaptec/openWB/beta/web/version > ${OPENWBBASEDIR}/ramdisk/vbeta
