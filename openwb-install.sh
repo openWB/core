@@ -60,34 +60,32 @@ else
 fi
 
 # check for mosquitto configuration
-echo "check mosquitto installation..."
-if [ ! -f /etc/mosquitto/conf.d/openwb.conf ] || ! grep -Fq "persistent_client_expiration" /etc/mosquitto/mosquitto.conf; then
-	echo "updating mosquitto config file"
-	service mosquitto stop
-	sleep 2
-	cp "${OPENWBBASEDIR}/data/config/openwb.conf" /etc/mosquitto/conf.d/openwb.conf
-	service mosquitto start
-fi
+echo "updating mosquitto config file"
+systemctl stop mosquitto
+sleep 2
+cp -a "${OPENWBBASEDIR}/data/config/mosquitto.conf" /etc/mosquitto/mosquitto.conf
+cp "${OPENWBBASEDIR}/data/config/openwb.conf" /etc/mosquitto/conf.d/openwb.conf
+sudo cp /etc/ssl/certs/ssl-cert-snakeoil.pem /etc/mosquitto/certs/openwb.pem
+sudo cp /etc/ssl/private/ssl-cert-snakeoil.key /etc/mosquitto/certs/openwb.key
+systemctl start mosquitto
 
 #check for mosquitto_local instance
-if [ ! -f /etc/mosquitto/mosquitto_local.conf ]; then
+if [ ! -f /etc/init.d/mosquitto_local ]; then
 	echo "setting up mosquitto local instance"
 	install -d -m 0755 -o root -g root /etc/mosquitto/conf_local.d/
 	install -d -m 0755 -o mosquitto -g root /var/lib/mosquitto_local
-	cp -a "${OPENWBBASEDIR}/data/config/mosquitto_local.conf" /etc/mosquitto/mosquitto_local.conf
-	cp -a "${OPENWBBASEDIR}/data/config/openwb_local.conf" /etc/mosquitto/conf_local.d/
 	cp "${OPENWBBASEDIR}/data/config/mosquitto_local_init" /etc/init.d/mosquitto_local
 	chown root:root /etc/init.d/mosquitto_local
 	chmod 755 /etc/init.d/mosquitto_local
 	systemctl daemon-reload
 	systemctl enable mosquitto_local
-	service mosquitto_local start
 else
-	service mosquitto_local stop
+	systemctl stop mosquitto_local
 	sleep 2
-	cp -a "${OPENWBBASEDIR}/data/config/openwb_local.conf" /etc/mosquitto/conf_local.d/
-	service mosquitto_local start
 fi
+cp -a "${OPENWBBASEDIR}/data/config/mosquitto_local.conf" /etc/mosquitto/mosquitto_local.conf
+cp -a "${OPENWBBASEDIR}/data/config/openwb_local.conf" /etc/mosquitto/conf_local.d/
+systemctl start mosquitto_local
 echo "mosquitto done"
 
 # apache
@@ -104,6 +102,13 @@ elif [ -d "/etc/php/7.4/" ]; then
 	echo "post_max_size = 300M" >> /etc/php/7.4/apache2/conf.d/20-uploadlimit.ini
 	echo "done (OS Bullseye)"
 fi
+echo -n "enabling apache ssl module..."
+a2enmod ssl
+a2ensite default-ssl
+echo "done"
+echo -n "restarting apache..."
+systemctl restart apache2
+echo "done"
 
 echo "installing python requirements..."
 sudo -u "$OPENWB_USER" pip install -r "${OPENWBBASEDIR}/requirements.txt"
@@ -111,8 +116,8 @@ sudo -u "$OPENWB_USER" pip install -r "${OPENWBBASEDIR}/requirements.txt"
 echo "installing openwb2 system service..."
 ln -s "${OPENWBBASEDIR}/data/config/openwb2.service" /etc/systemd/system/openwb2.service
 systemctl daemon-reload
-systemctl enable openwb2.service
-systemctl start openwb2.service
+systemctl enable openwb2
+systemctl start openwb2
 
 echo "installation finished, now running atreboot.sh..."
 "${OPENWBBASEDIR}/runs/atreboot.sh"
