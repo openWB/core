@@ -6,6 +6,7 @@ fi
 
 newHostname=$1
 echo "changing hostname to $newHostname..."
+sudo hostname "$newHostname"
 touch /tmp/tmphostname
 echo "$newHostname" > /tmp/tmphostname
 sudo mv /tmp/tmphostname /etc/hostname
@@ -18,6 +19,4 @@ sudo cp /etc/ssl/certs/ssl-cert-snakeoil.pem /etc/mosquitto/certs/openwb.pem
 sudo cp /etc/ssl/private/ssl-cert-snakeoil.key /etc/mosquitto/certs/openwb.key
 sudo chgrp mosquitto /etc/mosquitto/certs/openwb.key
 echo "done"
-# reboot
-echo "rebooting system"
-# sudo reboot
+echo "reboot required!"
