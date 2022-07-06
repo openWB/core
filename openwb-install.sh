@@ -105,7 +105,10 @@ elif [ -d "/etc/php/7.4/" ]; then
 fi
 echo -n "enabling apache ssl module..."
 a2enmod ssl
-a2ensite default-ssl
+a2enmod proxy_wstunnel
+sudo a2dissite default-ssl
+sudo cp "${OPENWBBASEDIR}/data/config/apache-openwb-ssl.conf" /etc/apache2/sites-available/ 
+sudo a2ensite apache-openwb-ssl
 echo "done"
 echo -n "restarting apache..."
 systemctl restart apache2
