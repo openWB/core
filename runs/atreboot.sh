@@ -64,8 +64,7 @@ chmod 666 "$LOGFILE"
 	# check for apache configuration
 	echo "apache..."
 	restartService=0
-	if grep -q "openwb-version:1$" /etc/apache2/sites-available/000-default.conf
-	then
+	if grep -q "openwb-version:1$" /etc/apache2/sites-available/000-default.conf; then
 		echo "...ok"
 	else
 		sudo cp "${OPENWBBASEDIR}/data/config/000-default.conf" /etc/apache2/sites-available/
@@ -73,21 +72,32 @@ chmod 666 "$LOGFILE"
 		echo "...updated"
 	fi
 	echo "checking required apache modules..."
-	if sudo a2query -m headers
-	then
+	if sudo a2query -m headers; then
 		echo "headers already enabled"
 	else
 		echo "headers currently disabled; enabling module"
 		sudo a2enmod headers
 		restartService=1
 	fi
-	if sudo a2query -m ssl
-	then
+	if sudo a2query -m ssl; then
 		echo "ssl already enabled"
 	else
 		echo "ssl currently disabled; enabling module"
 		sudo a2enmod ssl
-		sudo a2ensite default-ssl
+		restartService=1
+	fi
+	if sudo a2query -m proxy_wstunnel; then
+		echo "proxy_wstunnel already enabled"
+	else
+		echo "proxy_wstunnel currently disabled; enabling module"
+		sudo a2enmod proxy_wstunnel
+		restartService=1
+	fi
+	if ! sudo grep -q "openwb-version:1$" /etc/apache/sites-available/apache-openwb-ssl.conf; then
+		echo "installing ssl site configuration"
+		sudo a2dissite default-ssl
+		sudo cp "${OPENWBBASEDIR}/data/config/apache-openwb-ssl.conf" /etc/apache2/sites-available/ 
+		sudo a2ensite apache-openwb-ssl
 		restartService=1
 	fi
 	if (( restartService == 1 )); then
