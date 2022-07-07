@@ -7,6 +7,19 @@ touch "$LOGFILE"
 chmod 666 "$LOGFILE"
 
 {
+	versionMatch() {
+		file=$1
+		target=$2
+		currentVersion=$(grep -o "openwb-version:[0-9]\+" "$file" | grep -o "[0-9]\+$")
+		installedVersion=$(grep -o "openwb-version:[0-9]\+" "$target" | grep -o "[0-9]\+$")
+		# echo "$currentVersion == $installedVersion ?"
+		if (( currentVersion == installedVersion )); then
+			return 0
+		else
+			return 1
+		fi
+	}
+
 	if ! id -u openwb >/dev/null 2>&1; then
 		echo "user 'openwb' missing"
 		echo "starting upgrade skript..."
@@ -62,9 +75,9 @@ chmod 666 "$LOGFILE"
 	sudo ifconfig eth0:0 192.168.193.250 netmask 255.255.255.0 up
 
 	# check for apache configuration
-	echo "apache..."
+	echo "apache default site..."
 	restartService=0
-	if grep -q "openwb-version:1$" /etc/apache2/sites-available/000-default.conf; then
+	if versionMatch "${OPENWBBASEDIR}/data/config/000-default.conf" /etc/apache2/sites-available/000-default.conf; then
 		echo "...ok"
 	else
 		sudo cp "${OPENWBBASEDIR}/data/config/000-default.conf" /etc/apache2/sites-available/
@@ -93,7 +106,7 @@ chmod 666 "$LOGFILE"
 		sudo a2enmod proxy_wstunnel
 		restartService=1
 	fi
-	if ! sudo grep -q "openwb-version:1$" /etc/apache/sites-available/apache-openwb-ssl.conf; then
+	if ! versionMatch "${OPENWBBASEDIR}/data/config/apache-openwb-ssl.conf" /etc/apache2/sites-available/apache-openwb-ssl.conf; then
 		echo "installing ssl site configuration"
 		sudo a2dissite default-ssl
 		sudo cp "${OPENWBBASEDIR}/data/config/apache-openwb-ssl.conf" /etc/apache2/sites-available/ 
@@ -114,17 +127,21 @@ chmod 666 "$LOGFILE"
 	echo "check mosquitto installation..."
 	restartService=0
 	# check for mosquitto configuration
-	if ! sudo grep -q "openwb-version:1$" /etc/mosquitto/mosquitto.conf; then
+	if versionMatch "${OPENWBBASEDIR}/data/config/mosquitto.conf" /etc/mosquitto/mosquitto.conf; then
+		echo "mosquitto.conf already up to date"
+	else
 		echo "updating mosquitto.conf"
 		sudo cp "${OPENWBBASEDIR}/data/config/mosquitto.conf" /etc/mosquitto/mosquitto.conf
 		restartService=1
 	fi
-	if ! sudo grep -q "openwb-version:1$" /etc/mosquitto/conf.d/openwb.conf; then
+	if versionMatch "${OPENWBBASEDIR}/data/config/openwb.conf" /etc/mosquitto/conf.d/openwb.conf; then
+		echo "mosquitto openwb.conf already up to date"
+	else
 		echo "updating mosquitto openwb.conf"
 		sudo cp "${OPENWBBASEDIR}/data/config/openwb.conf" /etc/mosquitto/conf.d/openwb.conf
 		restartService=1
 	fi
-	if [[ ! -f /etx/mosquitto/certs/openwb.key ]]; then
+	if [[ ! -f /etc/mosquitto/certs/openwb.key ]]; then
 		echo -n "copy ssl certs..."
 		sudo cp /etc/ssl/certs/ssl-cert-snakeoil.pem /etc/mosquitto/certs/openwb.pem
 		sudo cp /etc/ssl/private/ssl-cert-snakeoil.key /etc/mosquitto/certs/openwb.key
@@ -142,12 +159,16 @@ chmod 666 "$LOGFILE"
 
 	#check for mosquitto_local instance
 	restartService=0
-	if ! sudo grep -q "openwb-version:1$" /etc/mosquitto/mosquitto_local.conf; then
+	if versionMatch "${OPENWBBASEDIR}/data/config/mosquitto_local.conf" /etc/mosquitto/mosquitto_local.conf; then
+		echo "mosquitto_local.conf already up to date"
+	else
 		echo "updating mosquitto_local.conf"
 		sudo cp -a "${OPENWBBASEDIR}/data/config/mosquitto_local.conf" /etc/mosquitto/mosquitto_local.conf
 		restartService=1
 	fi
-	if ! sudo grep -q "openwb-version:1$" /etc/mosquitto/conf_local.d/openwb_local.conf; then
+	if versionMatch "${OPENWBBASEDIR}/data/config/openwb_local.conf" /etc/mosquitto/conf_local.d/openwb_local.conf; then
+		echo "mosquitto openwb_local.conf already up to date"
+	else
 		sudo cp -a "${OPENWBBASEDIR}/data/config/openwb_local.conf" /etc/mosquitto/conf_local.d/
 		restartService=1
 	fi
