@@ -1,3 +1,4 @@
+import threading
 import pytest
 from typing import List, Optional
 from unittest.mock import Mock
@@ -23,7 +24,7 @@ def vehicle() -> Ev:
 
 @pytest.fixture(autouse=True)
 def data_module() -> None:
-    data.data_init()
+    data.data_init(threading.Event())
     data.data.general_data["general"] = General()
     data.data.general_data["general"].data = {"chargemode_config": {"pv_charging": {"phase_switch_delay": 7}}}
     data.data.pv_data["all"] = PvAll()

@@ -108,8 +108,8 @@ class CounterAll:
                 bat_imported = 0
                 bat_exported = 0
             if len(data.data.cp_data) > 1:
-                cp_imported = data.data.cp_all_data.data["get"]["daily_imported"]
-                cp_exported = data.data.cp_all_data.data["get"]["daily_exported"]
+                cp_imported = data.data.cp_all_data.data.get.daily_imported
+                cp_exported = data.data.cp_all_data.data.get.daily_exported
             else:
                 cp_imported, cp_exported = 0, 0
             daily_yield_home_consumption = (evu_imported + pv - cp_imported + cp_exported + bat_exported

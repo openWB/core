@@ -1,8 +1,10 @@
+import threading
 from unittest.mock import Mock
 import pytest
 from helpermodules import measurement_log
 from helpermodules import pub
-from control import bat, chargepoint, counter, data, pv
+from control import bat, chargepoint, counter, pv
+from control import data
 
 
 def test_get_totals():
@@ -15,11 +17,12 @@ def test_get_totals():
 
 @pytest.fixture(autouse=True)
 def data_module() -> None:
-    data.data_init()
+    data.data_init(threading.Event())
     data.data.bat_data.update({"all": bat.BatAll(), "bat2": bat.Bat(2)})
     data.data.counter_data.update({"counter0": counter.Counter(0)})
-    data.data.cp_data.update({"all": chargepoint.AllChargepoints(), "cp4": chargepoint.Chargepoint(
-        4), "cp5": chargepoint.Chargepoint(5), "cp6": chargepoint.Chargepoint(6)})
+    data.data.cp_all_data = chargepoint.AllChargepoints()
+    data.data.cp_data.update({"cp4": chargepoint.Chargepoint(
+        4, None), "cp5": chargepoint.Chargepoint(5, None), "cp6": chargepoint.Chargepoint(6, None)})
     data.data.pv_data.update({"all": pv.PvAll(), "pv1": pv.Pv(1)})
 
 

@@ -1,19 +1,21 @@
+import threading
 from unittest.mock import Mock
 from typing import Optional
 import pytest
 
 
-from control import chargepoint, data
+from control import chargepoint
 from control import ev
 from control.chargepoint import Chargepoint, CpTemplate
 from control.ev import ChargeTemplate, Ev, EvTemplate
 from control.general import General
 from helpermodules import pub
+from control import data
 
 
 @pytest.fixture
 def cp() -> Chargepoint:
-    chargep = Chargepoint(0)
+    chargep = Chargepoint(0, None)
     chargep.template = CpTemplate()
     chargep.template.data = chargepoint.get_chargepoint_template_default()
     chargep.data.set.charging_ev_data = Ev(0)
@@ -27,7 +29,7 @@ def cp() -> Chargepoint:
 
 @pytest.fixture(autouse=True)
 def general() -> None:
-    data.data_init()
+    data.data_init(threading.Event())
     data.data.general_data["general"] = General()
 
 

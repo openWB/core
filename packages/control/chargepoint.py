@@ -13,15 +13,19 @@ angesteckt wird, wird der Tag verworfen. Ebenso wenn kein EV gefunden wird.
 Tag-Liste: Tags, mit denen der Ladepunkt freigeschaltet werden kann. Ist diese leer, kann mit jedem Tag der Ladepunkt
 freigeschaltet werden.
 """
+import copy
 from dataclasses import dataclass, field
+import dataclasses
 import logging
+from threading import Thread
+import threading
 import traceback
 from typing import Dict, List, Optional, Tuple
 
 from control import chargelog
 from control import cp_interruption
 from control import data
-from control import ev
+from control import ev as ev_module
 from control.ev import Ev
 from control import phase_switch
 from helpermodules.pub import Pub
@@ -45,13 +49,25 @@ def get_chargepoint_default() -> dict:
 log = logging.getLogger(__name__)
 
 
+@dataclass
+class AllGet:
+    daily_imported: float = 0
+    daily_exported: float = 0
+    power: float = 0
+    imported: float = 0
+    exported: float = 0
+
+
+@dataclass
+class AllChargepointData:
+    get: AllGet = AllGet()
+
+
+@dataclass
 class AllChargepoints:
-    """
-    """
+    data = AllChargepointData()
 
     def __init__(self):
-        self.data = {"get": {"daily_imported": 0,
-                             "daily_exported": 0}}
         Pub().pub("openWB/set/chargepoint/get/power", 0)
 
     def no_charge(self):
@@ -100,11 +116,11 @@ class AllChargepoints:
                         exported = exported + chargepoint.data.get.exported
                 except Exception:
                     log.exception("Fehler in der allgemeinen Ladepunkt-Klasse für Ladepunkt "+cp)
-            self.data["get"]["power"] = power
+            self.data.get.power = power
             Pub().pub("openWB/set/chargepoint/get/power", power)
-            self.data["get"]["imported"] = imported
+            self.data.get.imported = imported
             Pub().pub("openWB/set/chargepoint/get/imported", imported)
-            self.data["get"]["exported"] = exported
+            self.data.get.exported = exported
             Pub().pub("openWB/set/chargepoint/get/exported", exported)
         except Exception:
             log.exception("Fehler in der allgemeinen Ladepunkt-Klasse")
@@ -250,6 +266,30 @@ class Config:
     control_pilot_interruption_hw: bool = False
     id: int = 0
 
+    def __post_init__(self):
+        self.event_update_state: threading.Event
+
+    @property
+    def ev(self) -> int:
+        return self._ev
+
+    @ev.setter
+    def ev(self, ev: int):
+        self._ev = ev
+        try:
+            self.event_update_state.set()
+        except AttributeError:
+            pass
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        if state.get('event_update_state'):
+            del state['event_update_state']
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+
 
 def get_factory() -> Get:
     return Get()
@@ -269,12 +309,31 @@ class ChargepointData:
     set: Set = field(default_factory=set_factory)
     config: Config = field(default_factory=config_factory)
 
+    def set_event(self, event: Optional[threading.Event] = None) -> None:
+        self.event_update_state = event
+        if event:
+            self.config.event_update_state = event
+
+    def __getstate__(self):
+        # Copy the object's state from self.__dict__ which contains
+        # all our instance attributes. Always use the dict.copy()
+        # method to avoid modifying the original state.
+        state = self.__dict__.copy()
+        # Remove the unpicklable entries.
+        if state.get('event_update_state'):
+            del state['event_update_state']
+        return state
+
+    def __setstate__(self, state):
+        # Restore instance attributes (i.e., filename and lineno).
+        self.__dict__.update(state)
+
 
 class Chargepoint:
     """ geht alle Ladepunkte durch, prüft, ob geladen werden darf und ruft die Funktion des angesteckten Autos auf.
     """
 
-    def __init__(self, index):
+    def __init__(self, index: int, event: Optional[threading.Event]):
         try:
             self.template: CpTemplate = None
             self.chargepoint_module: AbstractChargepoint = None
@@ -284,6 +343,7 @@ class Chargepoint:
             self.set_current_prev = 0
             # bestehende Daten auf dem Broker nicht zurücksetzen, daher nicht publishen
             self.data: ChargepointData = ChargepointData()
+            self.data.set_event(event)
         except Exception:
             log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.num))
 
@@ -390,7 +450,7 @@ class Chargepoint:
             message = None
         return state, message
 
-    def get_state(self):
+    def get_state(self) -> Tuple[int, bool, Optional[str]]:
         """prüft alle Bedingungen und ruft die EV-Logik auf.
         Return
         ------
@@ -419,13 +479,15 @@ class Chargepoint:
                                     charging_possbile, message = self._is_manual_lock_inactive()
             except Exception:
                 log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.num))
-                return False, "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
+                return -1, False, "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
+            num, message_ev = self.template.get_ev(self.data.get.rfid or self.data.set.rfid, self.data.config.ev)
+            if message_ev:
+                message = message_ev
             if charging_possbile:
-                num, message = self.template.get_ev(self.data.get.rfid or self.data.set.rfid, self.data.config.ev)
                 if num != -1:
                     if self.data.get.rfid is not None:
                         self.__link_rfid_to_cp()
-                    return num, message
+                    return num, True, message
                 else:
                     self.data.get.state_str = message
             # Charging Ev ist noch das EV des vorherigen Zyklus, wenn das nicht -1 war und jetzt nicht mehr geladen
@@ -470,10 +532,10 @@ class Chargepoint:
             Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/current", 0)
             self.data.set.energy_to_charge = 0
             Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/energy_to_charge", 0)
-            return -1, message
+            return num, False, message
         except Exception:
             log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.num))
-            return -1, "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
+            return -1, False, "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
 
     def initiate_control_pilot_interruption(self):
         """ prüft, ob eine Control Pilot- Unterbrechung erforderlich ist und führt diese durch.
@@ -696,6 +758,198 @@ class Chargepoint:
             log.info(f"LP{self.num}: {msg}")
             self.data.get.state_str = msg
 
+    def update(self, ev_list:  Dict[str, Ev]) -> None:
+        vehicle, charging_possible, message = self.get_state()
+        if vehicle != -1:
+            try:
+                charging_ev = self._get_charging_ev(vehicle, ev_list)
+                phases = self.get_phases()
+                state, message_ev, submode, required_current = charging_ev.get_required_current(
+                    self.data.set.log.imported_since_mode_switch)
+                self._pub_connected_vehicle(charging_ev)
+                # Einhaltung des Minimal- und Maximalstroms prüfen
+                required_current = charging_ev.check_min_max_current(
+                    required_current, charging_ev.data["control_parameter"]["phases"])
+                current_changed, mode_changed = charging_ev.check_state(
+                    required_current, self.data.set.current, self.data.get.charge_state)
+
+                # Die benötigte Stromstärke hat sich durch eine Änderung des Lademodus oder der
+                # Konfiguration geändert. Die Zuteilung entsprechend der Priorisierung muss neu geprüft
+                # werden. Daher muss der LP zurückgesetzt werden, wenn er gerade lädt, um in der Regelung
+                # wieder berücksichtigt zu werden.
+                if current_changed:
+                    log.debug(f"LP{self.num}: Da sich die Stromstärke geändert hat, muss der Ladepunkt im "
+                              "Algorithmus neu priorisiert werden.")
+                    data.data.pv_data["all"].reset_switch_on_off(
+                        self, charging_ev)
+                    charging_ev.reset_phase_switch()
+                    min_charge_current = self.data.set.current - \
+                        charging_ev.ev_template.data["nominal_difference"]
+                    if max(self.data.get.currents) > min_charge_current:
+                        self.data.set.current = 0
+                    else:
+                        # Wenn nicht geladen wird, obwohl geladen werde kann, soll das EV im Algorithmus
+                        # nicht berücksichtigt werden. Wenn der Sollstrom gesetzt ist, wird das EV nur im
+                        # LM berücksichtigt.
+                        self.data.set.current = required_current
+                    # Da nicht bekannt ist, ob mit Bezug, Überschuss oder aus dem Speicher geladen wird,
+                    # wird die freiwerdende Leistung erst im nächsten Durchlauf berücksichtigt. Ggf.
+                    # entsteht so eine kurze Unterbrechung der Ladung, wenn während dem Laden
+                    # umkonfiguriert wird.
+                if charging_possible:
+                    message = message_ev if message_ev else message
+                    charging_ev.set_control_parameter(submode, required_current)
+                # Ein Eintrag muss nur erstellt werden, wenn vorher schon geladen wurde und auch danach noch
+                # geladen werden soll.
+                if mode_changed and self.data.get.charge_state and state:
+                    chargelog.save_data(self, charging_ev)
+
+                # Wenn die Nachrichten gesendet wurden, EV wieder löschen, wenn das EV im Algorithmus nicht
+                # berücksichtigt werden soll.
+                if not state:
+                    if self.data.set.charging_ev != -1:
+                        # Altes EV merken
+                        self.data.set.charging_ev_prev = self.data.set.charging_ev
+                        Pub().pub("openWB/set/chargepoint/"+str(self.num) +
+                                  "/set/charging_ev_prev", self.data.set.charging_ev_prev)
+                    self.data.set.charging_ev = -1
+                    Pub().pub("openWB/set/chargepoint/" +
+                              str(self.num)+"/set/charging_ev", -1)
+                    log.debug(f'LP {self.num}, EV: {self.data.set.charging_ev_data.data["name"]}'
+                              f' (EV-Nr.{vehicle}): Lademodus '
+                              f'{charging_ev.charge_template.data["chargemode"]["selected"]}, Submodus: '
+                              f'{charging_ev.data["control_parameter"]["submode"]}')
+                else:
+                    if (charging_ev.data["control_parameter"]["timestamp_switch_on_off"] is not None and
+                            not self.data.get.charge_state and
+                            data.data.pv_data["all"].data["set"]["overhang_power_left"] == 0):
+                        log.error("Reservierte Leistung kann nicht 0 sein.")
+
+                    log.debug(
+                        "LP " + str(self.num) + ", EV: " + self.data.set.charging_ev_data.data
+                        ["name"] + " (EV-Nr." + str(vehicle) + "): Theoretisch benötigter Strom " +
+                        str(required_current) + "A, Lademodus " +
+                        str(charging_ev.charge_template.data["chargemode"]["selected"]) + ", Submodus: " +
+                        str(charging_ev.data["control_parameter"]["submode"]) + ", Phasen: " + str(phases) +
+                        ", Priorität: " + str(charging_ev.charge_template.data["prio"]) +
+                        ", max. Ist-Strom: " + str(max(self.data.get.currents)))
+            except Exception:
+                log.exception("Fehler im Prepare-Modul für Ladepunkt "+str(self.num))
+                ev_list[f"ev{vehicle}"].data["control_parameter"]["submode"] = "stop"
+        else:
+            # Wenn kein EV zur Ladung zugeordnet wird, auf hinterlegtes EV zurückgreifen.
+            self._pub_connected_vehicle(
+                ev_list["ev"+str(self.data.config.ev)])
+        if message is not None and self.data.get.state_str is None:
+            log.info("LP "+str(self.num)+": "+message)
+            self.data.get.state_str = message
+
+    def _get_charging_ev(self, vehicle: int, ev_list: Dict[str, Ev]) -> Ev:
+        charging_ev = ev_list[f"ev{vehicle}"]
+        # Das EV darf nur gewechselt werden, wenn noch nicht geladen wurde.
+        if (self.data.set.charging_ev == vehicle or
+                self.data.set.charging_ev_prev == vehicle):
+            # Das EV entspricht dem bisherigen EV.
+            self.data.set.charging_ev = vehicle
+            Pub().pub("openWB/set/chargepoint/" +
+                      str(self.num)+"/set/charging_ev", vehicle)
+            charging_ev.ev_template.data = charging_ev.data["set"]["ev_template"]
+            self.data.set.charging_ev_data = charging_ev
+            Pub().pub("openWB/set/chargepoint/"+str(self.num) +
+                      "/set/change_ev_permitted", [True, ""])
+        else:
+            # Darf das EV geändert werden?
+            if (self.data.set.log.imported_at_plugtime == 0 or
+                    self.data.set.log.imported_at_plugtime == self.data.get.imported):
+                self.data.set.charging_ev = vehicle
+                Pub().pub("openWB/set/chargepoint/" +
+                          str(self.num)+"/set/charging_ev", vehicle)
+                self.data.set.charging_ev_data = charging_ev
+                Pub().pub("openWB/set/chargepoint/"+str(self.num) +
+                          "/set/change_ev_permitted", [True, ""])
+                charging_ev.data["set"]["ev_template"] = charging_ev.ev_template.data
+                Pub().pub("openWB/set/vehicle/"+str(charging_ev.num) +
+                          "/set/ev_template", charging_ev.data["set"]["ev_template"])
+            else:
+                # Altes EV beibehalten.
+                if self.data.set.charging_ev != -1:
+                    vehicle = self.data.set.charging_ev
+                elif self.data.set.charging_ev_prev != -1:
+                    vehicle = self.data.set.charging_ev_prev
+                    self.data.set.charging_ev = vehicle
+                    Pub().pub(
+                        "openWB/set/chargepoint/"+str(self.num)+"/set/charging_ev", vehicle)
+                    self.data.set.charging_ev_prev = -1
+                    Pub().pub(
+                        "openWB/set/chargepoint/"+str(self.num)+"/set/charging_ev_prev", -1)
+                else:
+                    raise ValueError(
+                        "Wenn kein aktuelles und kein vorheriges Ev zugeordnet waren, \
+                            sollte noch nicht geladen worden sein.")
+                charging_ev = ev_list["ev" + str(vehicle)]
+                charging_ev.ev_template.data = charging_ev.data["set"]["ev_template"]
+                self.data.set.charging_ev_data = charging_ev
+                Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/change_ev_permitted", [
+                    False, "Das Fahrzeug darf nur geändert werden, wenn noch nicht geladen wurde. \
+                            Bitte abstecken, dann wird das gewählte Fahrzeug verwendet."])
+                log.warning(
+                    "Das Fahrzeug darf nur geändert werden, wenn noch nicht geladen wurde.")
+        return charging_ev
+
+    def _pub_connected_vehicle(self, vehicle):
+        """ published die Daten, die zur Anzeige auf der Hauptseite benötigt werden.
+
+        Parameter
+        ---------
+        vehicle: dict
+            EV, das dem LP zugeordnet ist
+        cp_num: int
+            LP-Nummer
+        """
+        try:
+            # soc_config_obj = {
+            #     # "configured": vehicle.data["soc"]["config"]["configured"],
+            #     # "manual": vehicle.data["soc"]["config"]["manual"]
+            # }
+            soc_obj = ConnectedSoc(
+                range_charged=self.data.set.log.range_charged,
+                range_unit=data.data.general_data["general"].data["range_unit"],
+            )
+            if vehicle.data["get"].get("soc_timestamp"):
+                soc_obj.timestamp = vehicle.data["get"]["soc_timestamp"]
+                soc_obj.soc = vehicle.data["get"]["soc"]
+                soc_obj.fault_state = vehicle.data["get"]["fault_state"]
+                soc_obj.fault_str = vehicle.data["get"]["fault_str"]
+            if vehicle.data["get"].get("range"):
+                soc_obj.range = vehicle.data["get"]["range"]
+            info_obj = ConnectedInfo(id=vehicle.num,
+                                     name=vehicle.data["name"])
+            if (vehicle.charge_template.data["chargemode"]["selected"] == "time_charging" or
+                    vehicle.charge_template.data["chargemode"]["selected"] == "scheduled_charging"):
+                current_plan = vehicle.data["control_parameter"]["current_plan"]
+            else:
+                current_plan = None
+            config_obj = ConnectedConfig(charge_template=vehicle.charge_template.ct_num,
+                                         ev_template=vehicle.ev_template.et_num,
+                                         chargemode=vehicle.charge_template.data["chargemode"]["selected"],
+                                         priority=vehicle.charge_template.data["prio"],
+                                         current_plan=current_plan,
+                                         average_consumption=vehicle.ev_template.data["average_consump"])
+            # if soc_config_obj != self.data.get.connected_vehicle.soc_config:
+            #     Pub().pub("openWB/chargepoint/"+str(self.cp_num) +
+            #               "/get/connected_vehicle/soc_config", soc_config_obj)
+            if soc_obj != self.data.get.connected_vehicle.soc:
+                Pub().pub("openWB/chargepoint/"+str(self.num) +
+                          "/get/connected_vehicle/soc", dataclasses.asdict(soc_obj))
+            if info_obj != self.data.get.connected_vehicle.info:
+                Pub().pub("openWB/chargepoint/"+str(self.num) +
+                          "/get/connected_vehicle/info", dataclasses.asdict(info_obj))
+            if config_obj != self.data.get.connected_vehicle.config:
+                Pub().pub("openWB/chargepoint/"+str(self.num) +
+                          "/get/connected_vehicle/config", dataclasses.asdict(config_obj))
+        except Exception:
+            log.exception("Fehler im Prepare-Modul")
+
 
 def get_chargepoint_template_default():
     return {
@@ -853,7 +1107,7 @@ class CpTemplate:
         message = None
         try:
             if data.data.optional_data["optional"].data["rfid"]["active"] and rfid is not None:
-                vehicle = ev.get_ev_to_rfid(rfid)
+                vehicle = ev_module.get_ev_to_rfid(rfid)
                 if vehicle is None:
                     num = -1
                     message = "Keine Ladung, da dem RFID-Tag " + str(rfid)+" kein EV-Profil zugeordnet werden kann."
@@ -867,3 +1121,55 @@ class CpTemplate:
             log.exception(
                 "Fehler in der Ladepunkt-Template Klasse")
             return num, "Keine Ladung, da ein interner Fehler aufgetreten ist: " + traceback.format_exc()
+
+
+class ChargepointStateUpdate:
+    def __init__(self,
+                 index: int,
+                 event_copy_data: threading.Event,
+                 event_global_data_initialized: threading.Event,
+                 cp_template_data: Dict,
+                 ev_data: Dict,
+                 ev_charge_template_data: Dict,
+                 ev_template_data: Dict) -> None:
+        self.event_update_state = threading.Event()
+        self.event_copy_data = event_copy_data
+        self.event_global_data_initialized = event_global_data_initialized
+        self.chargepoint: Chargepoint = Chargepoint(index, self.event_update_state)
+        self.cp_template_data = cp_template_data
+        self.ev_data = ev_data
+        self.ev_charge_template_data = ev_charge_template_data
+        self.ev_template_data = ev_template_data
+        Thread(target=self.update, args=()).start()
+
+    def update(self):
+        self.event_global_data_initialized.wait()
+        while self.event_update_state.wait():
+            try:
+                self.event_copy_data.clear()
+                cp = copy.deepcopy(self.chargepoint)
+                cp.template = copy.deepcopy(self.cp_template_data[f"cpt{self.chargepoint.data.config.template}"])
+                ev_list = {}
+                for ev in self.ev_data:
+                    if "name" in self.ev_data[ev].data:
+                        ev_list[ev] = copy.deepcopy(self.ev_data[ev])
+                for vehicle in ev_list:
+                    try:
+                        # Globaler oder individueller Lademodus?
+                        if data.data.general_data["general"].data["chargemode_config"]["individual_mode"]:
+                            ev_list[vehicle].charge_template = copy.deepcopy(self.ev_charge_template_data["ct" + str(
+                                ev_list[vehicle].data["charge_template"])])
+                        else:
+                            ev_list[vehicle].charge_template = copy.deepcopy(self.ev_charge_template_data["ct0"])
+                        # zuerst das aktuelle Template laden
+                        ev_list[vehicle].ev_template = copy.deepcopy(self.ev_template_data["et" + str(
+                            ev_list[vehicle].data["ev_template"])])
+                    except Exception:
+                        log.exception("Fehler im Prepare-Modul für EV "+str(vehicle))
+                self.event_copy_data.set()
+                cp.update(ev_list)
+                self.event_update_state.clear()
+            except Exception:
+                log.exception("Fehler ChargepointStateUpdate")
+                self.event_copy_data.set()
+                self.event_update_state.clear()
