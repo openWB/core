@@ -41,18 +41,18 @@ def loadmanagement_for_cp(chargepoint: Chargepoint,
             required_current_phases = [required_current]*3
         else:
             # Es ist nicht bekannt, an welcher Phase der EVU L1 des LP angeschlossen ist.
-            if chargepoint.data["config"]["phase_1"] == 0:
+            if chargepoint.data.config.phase_1 == 0:
                 # Es muss noch auf allen 3 Phasen genügend Reserve sein.
                 required_current_phases = [required_current]*3
-            elif chargepoint.data["config"]["phase_1"] == 1:
+            elif chargepoint.data.config.phase_1 == 1:
                 required_current_phases = [required_current, 0, 0]
-            elif chargepoint.data["config"]["phase_1"] == 2:
+            elif chargepoint.data.config.phase_1 == 2:
                 required_current_phases = [0, required_current, 0]
-            elif chargepoint.data["config"]["phase_1"] == 3:
+            elif chargepoint.data.config.phase_1 == 3:
                 required_current_phases = [0, 0, required_current]
             else:
                 raise ValueError(
-                    chargepoint.data["config"]["phase_1"]+"ist keine gültige Zahl für die angeschlossene Phase (0-3")
+                    f"{chargepoint.data.config.phase_1} ist keine gültige Zahl für die angeschlossene Phase (0-3")
         counters = data.data.counter_data["all"].get_counters_to_check(
             chargepoint.num)
         # Stromstärke merken, wenn das Lastmanagement nicht aktiv wird, wird nach der Prüfung die neue verwendete

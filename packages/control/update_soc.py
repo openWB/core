@@ -49,9 +49,9 @@ class UpdateSoc:
             if ev.soc_module is not None:
                 for cp in cp_data.values():
                     if not isinstance(cp, AllChargepoints):
-                        if cp.data["set"]["charging_ev"] == ev.num:
-                            charge_state = cp.data["get"]["charge_state"]
-                            plug_state = cp.data["get"]["plug_state"]
+                        if cp.data.set.charging_ev == ev.num:
+                            charge_state = cp.data.get.charge_state
+                            plug_state = cp.data.get.plug_state
                             break
                 else:
                     charge_state = False

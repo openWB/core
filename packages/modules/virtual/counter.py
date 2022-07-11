@@ -57,14 +57,14 @@ class VirtualCounter:
             if element["type"] == ComponentType.CHARGEPOINT.value:
                 chargepoint = data.data.cp_data[f"cp{element['id']}"]
                 try:
-                    evu_phases = self.cp_tp_evu_phase_mapping[str(chargepoint.data["config"]["phase_1"])]
+                    evu_phases = self.cp_tp_evu_phase_mapping[str(chargepoint.data.config.phase_1)]
                 except KeyError:
                     raise FaultState.error(f"Für den virtuellen Zähler muss der Anschluss der Phasen von Ladepunkt "
                                            f"{chargepoint.num} an die Phasen der EVU angegeben werden.")
                 self.currents = [self.currents[i] + chargepoint.data["get"]
                                  ["currents"][evu_phases[i]] for i in range(0, 3)]
 
-                self.power = self.power + chargepoint.data["get"]["power"]
+                self.power = self.power + chargepoint.data.get.power
             elif element["type"] == ComponentType.BAT.value:
                 add_current_power(data.data.bat_data[f"bat{element['id']}"])
             elif element["type"] == ComponentType.COUNTER.value:

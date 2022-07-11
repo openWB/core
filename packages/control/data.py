@@ -2,9 +2,11 @@
 Dictionary: Zugriff erfolgt bei Dictionary über Keys, nicht über Indizes wie bei Listen. Das hat den Vorteil, dass
 Instanzen gelöscht werden können, der Zugriff aber nicht verändert werden muss.
 """
+from dataclasses import dataclass
 import logging
 import threading
-
+from typing import Callable, Dict, Type, TypeVar
+from control.chargepoint import AllChargepoints, Chargepoint
 log = logging.getLogger(__name__)
 
 data = None
@@ -19,6 +21,7 @@ class Data:
         self._counter_data = {}
         self._counter_module_data = {}
         self._cp_data = {}
+        self._cp_all_data = AllChargepoints()
         self._cp_template_data = {}
         self._ev_charge_template_data = {}
         self._ev_data = {}
@@ -103,7 +106,7 @@ class Data:
         self.event.set()
 
     @property
-    def cp_data(self):
+    def cp_data(self) -> Dict[str, Chargepoint]:
         self.event.wait()
         self.event.clear()
         temp = self._cp_data
@@ -115,6 +118,21 @@ class Data:
         self.event.wait()
         self.event.clear()
         self._cp_data = value
+        self.event.set()
+
+    @property
+    def cp_all_data(self) -> AllChargepoints:
+        self.event.wait()
+        self.event.clear()
+        temp = self._cp_all_data
+        self.event.set()
+        return temp
+
+    @cp_all_data.setter
+    def cp_all_data(self, value):
+        self.event.wait()
+        self.event.clear()
+        self._cp_all_data = value
         self.event.set()
 
     @property
@@ -280,3 +298,38 @@ def data_init():
     """
     global data
     data = Data()
+
+
+C = TypeVar("C")
+
+
+@dataclass
+class AbstractConfiguration:
+    pass
+
+
+@dataclass
+class AbstractSetup:
+    name: str = ""
+    type: str = ""
+    id: int = 0
+    configuration = Callable[[C], None]
+
+
+T = TypeVar("T", AbstractConfiguration, AbstractSetup)
+
+
+def from_dict(device_config: Dict, class_type: Type[T]) -> T:
+    values = []
+    keys = class_type().__dict__.keys()
+    try:
+        for key in keys:
+            if isinstance(device_config[key], Dict):
+                values.append(from_dict(device_config[key], type(getattr(class_type, key))))
+            else:
+                values.append(device_config[key])
+    except KeyError as e:
+        raise Exception(
+            "Illegal configuration <{}>: Expected object with properties: {}".format(device_config, keys)
+        ) from e
+    return class_type(*values)
