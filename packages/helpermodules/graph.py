@@ -36,7 +36,7 @@ class Graph:
             dataline.update(
                 {"house-power": _convert_to_kW(data.data.counter_data["all"].data["set"]["home_consumption"])})
             dataline.update(
-                {"charging-all": _convert_to_kW(data.data.cp_data["all"].data["get"]["power"])})
+                {"charging-all": _convert_to_kW(data.data.cp_all_data.data["get"]["power"])})
             if len(data.data.pv_data) > 1:
                 dataline.update(
                     {"pv-all": _convert_to_kW(data.data.pv_data["all"].data["get"]["power"])*-1})
@@ -44,13 +44,13 @@ class Graph:
                 for cp in data.data.cp_data:
                     if "cp" in cp:
                         chargepoint = data.data.cp_data[cp]
-                        if chargepoint.data["get"]["fault_state"] < FaultStateLevel.ERROR:
+                        if chargepoint.data.get.fault_state < FaultStateLevel.ERROR:
                             dataline.update(
                                 {"cp" + str(chargepoint.num) +
-                                 "-power": _convert_to_kW(chargepoint.data["get"]["power"])})
-                        # if chargepoint.data["get"]["connected_vehicle"]["soc_config"]["configured"]:
-                        #     dataline.update({"cp"+str(chargepoint.num)+"-soc": _convert_to_kW(
-                        #         chargepoint.data["get"]["connected_vehicle"]["soc"]["soc"])})
+                                 "-power": _convert_to_kW(chargepoint.data.get.power)})
+                        # if chargepoint.data.get.connected_vehicle.soc_config"]["configured"]:
+                        #     dataline.update({"cp"+str(chargepoint.cp_num)+"-soc": _convert_to_kW(
+                        #         chargepoint.data.get.connected_vehicle.soc"]["soc"])})
             if len(data.data.bat_data) > 1:
                 dataline.update(
                     {"bat-all-power": _convert_to_kW(data.data.bat_data["all"].data["get"]["power"])})

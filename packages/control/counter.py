@@ -51,7 +51,7 @@ class CounterAll:
             elements = self.get_entry_of_element(self.get_id_evu_counter())["children"]
             for element in elements:
                 if element["type"] == ComponentType.CHARGEPOINT.value:
-                    power += data.data.cp_data[f"cp{element['id']}"].data["get"]["power"]
+                    power += data.data.cp_data[f"cp{element['id']}"].data.get.power
                 elif element["type"] == ComponentType.BAT.value:
                     power += data.data.bat_data[f"bat{element['id']}"].data["get"]["power"]
                 elif element["type"] == ComponentType.COUNTER.value:
@@ -108,8 +108,8 @@ class CounterAll:
                 bat_imported = 0
                 bat_exported = 0
             if len(data.data.cp_data) > 1:
-                cp_imported = data.data.cp_data["all"].data["get"]["daily_imported"]
-                cp_exported = data.data.cp_data["all"].data["get"]["daily_exported"]
+                cp_imported = data.data.cp_all_data.data["get"]["daily_imported"]
+                cp_exported = data.data.cp_all_data.data["get"]["daily_exported"]
             else:
                 cp_imported, cp_exported = 0, 0
             daily_yield_home_consumption = (evu_imported + pv - cp_imported + cp_exported + bat_exported
@@ -377,9 +377,9 @@ class Counter:
             connected_cps = data.data.counter_data["all"].get_chargepoints_of_counter(f'counter{self.num}')
             for cp in connected_cps:
                 if self.data["get"]["fault_state"] == FaultStateLevel.ERROR:
-                    data.data.cp_data[cp].data["set"]["loadmanagement_available"] = False
+                    data.data.cp_data[cp].data.set.loadmanagement_available = False
                 else:
-                    data.data.cp_data[cp].data["set"]["loadmanagement_available"] = True
+                    data.data.cp_data[cp].data.set.loadmanagement_available = True
             if self.data["get"]["fault_state"] == FaultStateLevel.ERROR:
                 self.data["get"]["power"] = 0
                 return

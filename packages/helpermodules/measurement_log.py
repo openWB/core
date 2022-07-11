@@ -113,14 +113,14 @@ def save_log(folder):
     for cp in data.data.cp_data:
         try:
             if "cp" in cp:
-                cp_dict.update({cp: {"imported": data.data.cp_data[cp].data["get"]["imported"],
-                                     "exported": data.data.cp_data[cp].data["get"]["exported"]}})
+                cp_dict.update({cp: {"imported": data.data.cp_data[cp].data.get.imported,
+                                     "exported": data.data.cp_data[cp].data.get.exported}})
         except Exception:
             log.exception("Fehler im Werte-Logging-Modul für Ladepunkt "+str(cp))
     try:
         cp_dict.update(
-            {"all": {"imported": data.data.cp_data["all"].data["get"]["imported"],
-                     "exported": data.data.cp_data["all"].data["get"]["exported"]}})
+            {"all": {"imported": data.data.cp_all_data.data["get"]["imported"],
+                     "exported": data.data.cp_all_data.data["get"]["exported"]}})
     except Exception:
         log.exception("Fehler im Werte-Logging-Modul")
 
@@ -256,7 +256,11 @@ def update_daily_yields(totals):
 
 def update_module_yields(module: str, totals: Dict) -> None:
     def update_imported_exported(daily_imported: float, daily_exported: float) -> None:
-        module_data.data["get"].update({"daily_imported": daily_imported, "daily_exported": daily_exported})
+        if isinstance(module_data.data, Dict):
+            module_data.data["get"].update({"daily_imported": daily_imported, "daily_exported": daily_exported})
+        else:
+            module_data.data.get.daily_imported = daily_imported
+            module_data.data.get.daily_exported = daily_exported
         if module == "cp":
             topic = "chargepoint"
         else:

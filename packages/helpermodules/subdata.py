@@ -32,6 +32,7 @@ class SubData:
 
     # Instanzen
     cp_data = {}
+    cp_all_data: chargepoint.AllChargepoints
     cp_template_data = {}
     pv_data = {}
     ev_data = {}
@@ -52,7 +53,7 @@ class SubData:
         self.heartbeat = False
 
         self.bat_data["all"] = bat.BatAll()
-        self.cp_data["all"] = chargepoint.AllChargepoints()
+        self.cp_all_data = chargepoint.AllChargepoints()
         self.counter_data["all"] = counter.CounterAll()
         self.pv_data["all"] = pv.PvAll()
         self.graph_data["graph"] = graph.Graph()
@@ -159,6 +160,38 @@ class SubData:
             else:
                 if key in dict:
                     dict.pop(key)
+        except Exception:
+            log.exception("Fehler im subdata-Modul")
+
+    def set_json_payload_class(self, class_obj, msg):
+        """ dekodiert das JSON-Objekt und setzt diesen für den Value in das übergebene Dictionary, als Key wird der
+        Name nach dem letzten / verwendet.
+        Parameters
+        ----------
+        dict : dictionary
+            Dictionary, in dem der Wert abgelegt wird
+        msg :
+            enthält den Payload als json-Objekt
+        """
+        try:
+            regex = re.search("/([a-z,A-Z,0-9,_]+)(?!.*/)", msg.topic)
+            if regex:
+                key = regex.group(1)
+                if msg.payload:
+                    payload = json.loads(str(msg.payload.decode("utf-8")))
+                    if isinstance(payload, Dict):
+                        for key, value in payload.items():
+                            setattr(class_obj, key, value)
+                    else:
+                        setattr(class_obj, key, json.loads(str(msg.payload.decode("utf-8"))))
+                else:
+                    if isinstance(class_obj, Dict):
+                        if key in class_obj:
+                            class_obj.pop(key)
+                    else:
+                        log.error("Elemente können nur aus Dictionaries entfernt werden, nicht aus Klassen.")
+            else:
+                raise Exception(f"Key konnte nicht aus Topic {msg.topic} ermittelt werden.")
         except Exception:
             log.exception("Fehler im subdata-Modul")
 
@@ -318,25 +351,15 @@ class SubData:
                     if "cp"+index not in var:
                         var["cp"+index] = chargepoint.Chargepoint(int(index))
                     if re.search("^.+/chargepoint/[0-9]+/set/.+$", msg.topic) is not None:
-                        if "set" not in var["cp"+index].data:
-                            var["cp"+index].data["set"] = {}
                         if re.search("^.+/chargepoint/[0-9]+/set/log/.+$", msg.topic) is not None:
-                            if "log" not in var["cp"+index].data["set"]:
-                                var["cp"+index].data["set"]["log"] = {}
-                            self.set_json_payload(
-                                var["cp"+index].data["set"]["log"], msg)
+                            self.set_json_payload_class(var["cp"+index].data.set.log, msg)
                         else:
-                            self.set_json_payload(var["cp"+index].data["set"], msg)
+                            self.set_json_payload_class(var["cp"+index].data.set, msg)
                     elif re.search("^.+/chargepoint/[0-9]+/get/.+$", msg.topic) is not None:
-                        if "get" not in var["cp"+index].data:
-                            var["cp"+index].data["get"] = {}
                         if re.search("^.+/chargepoint/[0-9]+/get/connected_vehicle/.+$", msg.topic) is not None:
-                            if "connected_vehicle" not in var["cp"+index].data["get"]:
-                                var["cp"+index].data["get"]["connected_vehicle"] = {}
-                            self.set_json_payload(
-                                var["cp"+index].data["get"]["connected_vehicle"], msg)
+                            self.set_json_payload_class(var["cp"+index].data.get.connected_vehicle, msg)
                         elif re.search("^.+/chargepoint/[0-9]+/get/.+$", msg.topic) is not None:
-                            self.set_json_payload(var["cp"+index].data["get"], msg)
+                            self.set_json_payload_class(var["cp"+index].data.get, msg)
                     elif re.search("^.+/chargepoint/[0-9]+/config$", msg.topic) is not None:
                         config = json.loads(
                             str(msg.payload.decode("utf-8")))
@@ -347,10 +370,10 @@ class SubData:
                                 "."+config["connection_module"]["type"]+".chargepoint_module", "modules")
                             var["cp"+index].chargepoint_module = mod.ChargepointModule(
                                 config["id"], config["connection_module"], config["power_module"])
-                        self.set_json_payload(var["cp"+index].data, msg)
+                        self.set_json_payload_class(var["cp"+index].data, msg)
                         self.event_cp_config.set()
             elif re.search("^.+/chargepoint/get/.+$", msg.topic) is not None:
-                self.set_json_payload(var["all"].data["get"], msg)
+                self.set_json_payload(self.cp_all_data.data["get"], msg)
         except Exception:
             log.exception("Fehler im subdata-Modul")
 

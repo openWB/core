@@ -26,52 +26,52 @@ def collect_data(chargepoint):
         Ladepunkt, dessen Logdaten gesammelt werden
     """
     try:
-        log_data = chargepoint.data["set"]["log"]
-        charging_ev = chargepoint.data["set"]["charging_ev_data"]
-        if chargepoint.data["get"]["plug_state"]:
+        log_data = chargepoint.data.set.log
+        charging_ev = chargepoint.data.set.charging_ev_data
+        if chargepoint.data.get.plug_state:
             # Zählerstand beim Einschalten merken
-            if log_data["imported_at_plugtime"] == 0:
-                log_data["imported_at_plugtime"] = chargepoint.data["get"]["imported"]
+            if log_data.imported_at_plugtime == 0:
+                log_data.imported_at_plugtime = chargepoint.data.get.imported
                 Pub().pub("openWB/set/chargepoint/"+str(chargepoint.num) +
-                          "/set/log/imported_at_plugtime", log_data["imported_at_plugtime"])
+                          "/set/log/imported_at_plugtime", log_data.imported_at_plugtime)
                 log.debug("imported_at_plugtime " +
-                          str(chargepoint.data["get"]["imported"]))
+                          str(chargepoint.data.get.imported))
             # Bisher geladene Energie ermitteln
-            log_data["imported_since_plugged"] = chargepoint.data["get"]["imported"] - \
-                log_data["imported_at_plugtime"]
+            log_data.imported_since_plugged = chargepoint.data.get.imported - \
+                log_data.imported_at_plugtime
             Pub().pub("openWB/set/chargepoint/"+str(chargepoint.num) +
-                      "/set/log/imported_since_plugged", log_data["imported_since_plugged"])
-            if log_data["imported_at_mode_switch"] == 0:
-                log_data["imported_at_mode_switch"] = chargepoint.data["get"]["imported"]
+                      "/set/log/imported_since_plugged", log_data.imported_since_plugged)
+            if log_data.imported_at_mode_switch == 0:
+                log_data.imported_at_mode_switch = chargepoint.data.get.imported
                 Pub().pub("openWB/set/chargepoint/"+str(chargepoint.num) +
-                          "/set/log/imported_at_mode_switch", log_data["imported_at_mode_switch"])
+                          "/set/log/imported_at_mode_switch", log_data.imported_at_mode_switch)
                 log.debug("imported_at_mode_switch " +
-                          str(chargepoint.data["get"]["imported"]))
+                          str(chargepoint.data.get.imported))
             # Bei einem Wechsel das Lademodus wird ein neuer Logeintrag erstellt.
-            if chargepoint.data["get"]["charge_state"]:
-                if log_data["timestamp_start_charging"] is None:
-                    log_data["timestamp_start_charging"] = timecheck.create_timestamp()
+            if chargepoint.data.get.charge_state:
+                if log_data.timestamp_start_charging is None:
+                    log_data.timestamp_start_charging = timecheck.create_timestamp()
                     Pub().pub("openWB/set/chargepoint/"+str(chargepoint.num) +
-                              "/set/log/timestamp_start_charging", log_data["timestamp_start_charging"])
-                    log_data["chargemode_log_entry"] = charging_ev.data["control_parameter"]["chargemode"]
+                              "/set/log/timestamp_start_charging", log_data.timestamp_start_charging)
+                    log_data.chargemode_log_entry = charging_ev.data["control_parameter"]["chargemode"]
                     Pub().pub("openWB/set/chargepoint/"+str(chargepoint.num) +
-                              "/set/log/chargemode_log_entry", log_data["chargemode_log_entry"])
-                log_data["imported_since_mode_switch"] = chargepoint.data["get"]["imported"] - \
-                    log_data["imported_at_mode_switch"]
+                              "/set/log/chargemode_log_entry", log_data.chargemode_log_entry)
+                log_data.imported_since_mode_switch = chargepoint.data.get.imported - \
+                    log_data.imported_at_mode_switch
                 log.debug("imported_since_mode_switch " +
-                          str(log_data["imported_since_mode_switch"])+" counter " +
-                          str(chargepoint.data["get"]["imported"]))
-                log_data["range_charged"] = log_data["imported_since_mode_switch"] / \
+                          str(log_data.imported_since_mode_switch)+" counter " +
+                          str(chargepoint.data.get.imported))
+                log_data.range_charged = log_data.imported_since_mode_switch / \
                     charging_ev.ev_template.data["average_consump"]/10
-                log_data["time_charged"] = timecheck.get_difference_to_now(
-                    log_data["timestamp_start_charging"])
+                log_data.time_charged = timecheck.get_difference_to_now(
+                    log_data.timestamp_start_charging)
                 Pub().pub("openWB/set/chargepoint/"+str(chargepoint.num) +
-                          "/set/log/imported_since_mode_switch", log_data["imported_since_mode_switch"])
+                          "/set/log/imported_since_mode_switch", log_data.imported_since_mode_switch)
                 Pub().pub(
                     "openWB/set/chargepoint/" + str(chargepoint.num) + "/set/log/range_charged",
-                    log_data["range_charged"])
+                    log_data.range_charged)
                 Pub().pub("openWB/set/chargepoint/"+str(chargepoint.num) +
-                          "/set/log/time_charged", log_data["time_charged"])
+                          "/set/log/time_charged", log_data.time_charged)
     except Exception:
         log.exception("Fehler im Ladelog-Modul")
 
@@ -93,34 +93,34 @@ def save_data(chargepoint, charging_ev, immediately=True, reset=False):
         Daten verloren gehen.
     """
     try:
-        log_data = chargepoint.data["set"]["log"]
+        log_data = chargepoint.data.set.log
         # Es wurde noch nie ein Auto zugeordnet
         if charging_ev == -1:
             return
-        if log_data["timestamp_start_charging"] is None:
+        if log_data.timestamp_start_charging is None:
             # Die Daten wurden schon erfasst.
             return
         if not immediately:
-            if chargepoint.data["get"]["power"] != 0:
+            if chargepoint.data.get.power != 0:
                 return
         # Daten vor dem Speichern nochmal aktualisieren, auch wenn nicht mehr geladen wird.
-        log_data["imported_since_plugged"] = chargepoint.data["get"]["imported"] - \
-            log_data["imported_at_plugtime"]
+        log_data.imported_since_plugged = chargepoint.data.get.imported - \
+            log_data.imported_at_plugtime
         Pub().pub("openWB/set/chargepoint/"+str(chargepoint.num) +
-                  "/set/log/imported_since_plugged", log_data["imported_since_plugged"])
-        log_data["imported_since_mode_switch"] = chargepoint.data["get"]["imported"] - \
-            log_data["imported_at_mode_switch"]
-        log_data["range_charged"] = log_data["imported_since_mode_switch"] / \
+                  "/set/log/imported_since_plugged", log_data.imported_since_plugged)
+        log_data.imported_since_mode_switch = chargepoint.data.get.imported - \
+            log_data.imported_at_mode_switch
+        log_data.range_charged = log_data.imported_since_mode_switch / \
             charging_ev.ev_template.data["average_consump"]/10
-        log_data["time_charged"] = timecheck.get_difference_to_now(
-            log_data["timestamp_start_charging"])
+        log_data.time_charged = timecheck.get_difference_to_now(
+            log_data.timestamp_start_charging)
         Pub().pub("openWB/set/chargepoint/"+str(chargepoint.num) +
-                  "/set/log/imported_since_mode_switch", log_data["imported_since_mode_switch"])
+                  "/set/log/imported_since_mode_switch", log_data.imported_since_mode_switch)
         Pub().pub("openWB/set/chargepoint/"+str(chargepoint.num) +
-                  "/set/log/range_charged", log_data["range_charged"])
+                  "/set/log/range_charged", log_data.range_charged)
         Pub().pub("openWB/set/chargepoint/"+str(chargepoint.num) +
-                  "/set/log/time_charged", log_data["time_charged"])
-        time = log_data["time_charged"]
+                  "/set/log/time_charged", log_data.time_charged)
+        time = log_data.time_charged
         time_charged = []
         if len(time) > 8:
             # Wenn es mehrere Tage sind, enthält der String "92 days, 0:02:08" (unwahrscheinlich, aber um Fehler zu
@@ -140,34 +140,34 @@ def save_data(chargepoint, charging_ev, immediately=True, reset=False):
             duration = int(time_charged[0])*60*24 + \
                 int(time_charged[1])*60 + int(time_charged[2])
         if duration > 0:
-            power = log_data["imported_since_mode_switch"] / duration*60
+            power = log_data.imported_since_mode_switch / duration*60
         costs = data.data.general_data["general"].data["price_kwh"] * \
-            log_data["imported_since_mode_switch"]  # / 1000
+            log_data.imported_since_mode_switch  # / 1000
         new_entry = {
             "chargepoint":
             {
                 "id": chargepoint.num,
-                "name": chargepoint.data["config"]["name"],
+                "name": chargepoint.data.config.name,
             },
             "vehicle":
             {
                 "id": charging_ev.num,
                 "name": charging_ev.data["name"],
-                "chargemode": log_data["chargemode_log_entry"],
+                "chargemode": log_data.chargemode_log_entry,
                 "prio": charging_ev.data["control_parameter"]["prio"],
-                "rfid": chargepoint.data["set"]["rfid"]
+                "rfid": chargepoint.data.set.rfid
             },
             "time":
             {
-                "begin": log_data["timestamp_start_charging"],
+                "begin": log_data.timestamp_start_charging,
                 "end": timecheck.create_timestamp(),
-                "time_charged": log_data["time_charged"]
+                "time_charged": log_data.time_charged
             },
             "data":
             {
-                "range_charged": truncate(log_data["range_charged"], 2),
-                "imported_since_mode_switch": truncate(log_data["imported_since_mode_switch"], 2),
-                "imported_since_plugged": truncate(log_data["imported_since_plugged"], 2),
+                "range_charged": truncate(log_data.range_charged, 2),
+                "imported_since_mode_switch": truncate(log_data.imported_since_mode_switch, 2),
+                "imported_since_plugged": truncate(log_data.imported_since_plugged, 2),
                 "power": truncate(power, 2),
                 "costs": truncate(costs, 2)
             }
@@ -193,27 +193,27 @@ def save_data(chargepoint, charging_ev, immediately=True, reset=False):
             json.dump(content, json_file)
 
         # Werte zurücksetzen
-        log_data["timestamp_start_charging"] = None
+        log_data.timestamp_start_charging = None
         Pub().pub("openWB/set/chargepoint/"+str(chargepoint.num) +
-                  "/set/log/timestamp_start_charging", log_data["timestamp_start_charging"])
+                  "/set/log/timestamp_start_charging", log_data.timestamp_start_charging)
         if reset:
-            log_data["imported_at_mode_switch"] = 0
+            log_data.imported_at_mode_switch = 0
         else:
-            log_data["imported_at_mode_switch"] = chargepoint.data["get"]["imported"]
+            log_data.imported_at_mode_switch = chargepoint.data.get.imported
         Pub().pub("openWB/set/chargepoint/"+str(chargepoint.num) +
-                  "/set/log/imported_at_mode_switch", log_data["imported_at_mode_switch"])
-        log_data["chargemode_log_entry"] = "_"
+                  "/set/log/imported_at_mode_switch", log_data.imported_at_mode_switch)
+        log_data.chargemode_log_entry = "_"
         Pub().pub("openWB/set/chargepoint/"+str(chargepoint.num) +
-                  "/set/log/chargemode_log_entry", log_data["chargemode_log_entry"])
-        log_data["imported_since_mode_switch"] = 0
+                  "/set/log/chargemode_log_entry", log_data.chargemode_log_entry)
+        log_data.imported_since_mode_switch = 0
         Pub().pub("openWB/set/chargepoint/"+str(chargepoint.num) +
-                  "/set/log/imported_since_mode_switch", log_data["imported_since_mode_switch"])
-        log_data["range_charged"] = 0
+                  "/set/log/imported_since_mode_switch", log_data.imported_since_mode_switch)
+        log_data.range_charged = 0
         Pub().pub("openWB/set/chargepoint/"+str(chargepoint.num) +
-                  "/set/log/range_charged", log_data["range_charged"])
-        log_data["time_charged"] = "00:00"
+                  "/set/log/range_charged", log_data.range_charged)
+        log_data.time_charged = "00:00"
         Pub().pub("openWB/set/chargepoint/"+str(chargepoint.num) +
-                  "/set/log/time_charged", log_data["time_charged"])
+                  "/set/log/time_charged", log_data.time_charged)
     except Exception:
         log.exception("Fehler im Ladelog-Modul")
 
@@ -338,21 +338,21 @@ def reset_data(chargepoint, charging_ev, immediately=True):
         Soll sofort ein Eintrag erstellt werden oder gewartet werden, bis die Ladung beendet ist.
     """
     try:
-        log_data = chargepoint.data["set"]["log"]
+        log_data = chargepoint.data.set.log
         if charging_ev == -1:
             # Es wurde noch nie ein Auto zugeordnet.
             return
         if not immediately:
-            if chargepoint.data["get"]["power"] != 0:
+            if chargepoint.data.get.power != 0:
                 return
         save_data(chargepoint, charging_ev, immediately, reset=True)
 
-        log_data["imported_at_plugtime"] = 0
+        log_data.imported_at_plugtime = 0
         Pub().pub("openWB/set/chargepoint/"+str(chargepoint.num) +
-                  "/set/log/imported_at_plugtime", log_data["imported_at_plugtime"])
-        log_data["imported_since_plugged"] = 0
+                  "/set/log/imported_at_plugtime", log_data.imported_at_plugtime)
+        log_data.imported_since_plugged = 0
         Pub().pub("openWB/set/chargepoint/"+str(chargepoint.num) +
-                  "/set/log/imported_since_plugged", log_data["imported_since_plugged"])
+                  "/set/log/imported_since_plugged", log_data.imported_since_plugged)
 
     except Exception:
         log.exception("Fehler im Ladelog-Modul")

@@ -14,15 +14,14 @@ from helpermodules import pub
 @pytest.fixture
 def cp() -> Chargepoint:
     chargep = Chargepoint(0)
-    chargep.data["config"] = chargepoint.get_chargepoint_default()
     chargep.template = CpTemplate()
     chargep.template.data = chargepoint.get_chargepoint_template_default()
-    chargep.data["set"]["charging_ev_data"] = Ev(0)
-    chargep.data["set"]["charging_ev_data"].data["config"] = ev.get_vehicle_default()
-    chargep.data["set"]["charging_ev_data"].ev_template = EvTemplate(0)
-    chargep.data["set"]["charging_ev_data"].ev_template.data = ev.get_ev_template_default()
-    chargep.data["set"]["charging_ev_data"].charge_template = ChargeTemplate(0)
-    chargep.data["set"]["charging_ev_data"].charge_template.data = ev.get_charge_template_default()
+    chargep.data.set.charging_ev_data = Ev(0)
+    chargep.data.set.charging_ev_data.data["config"] = ev.get_vehicle_default()
+    chargep.data.set.charging_ev_data.ev_template = EvTemplate(0)
+    chargep.data.set.charging_ev_data.ev_template.data = ev.get_ev_template_default()
+    chargep.data.set.charging_ev_data.charge_template = ChargeTemplate(0)
+    chargep.data.set.charging_ev_data.charge_template.data = ev.get_charge_template_default()
     return chargep
 
 
@@ -112,22 +111,22 @@ cases = [
 
 
 @pytest.mark.parametrize("params", cases, ids=[c.name for c in cases])
-def test_get_phases(monkeypatch, cp, params: Params):
+def test_get_phases(monkeypatch, cp: Chargepoint, params: Params):
     # setup
     mock_chargemode_phases = Mock(name="chargemode_phases", return_value=params.chargemode_phases)
     monkeypatch.setattr(data.data.general_data["general"], "get_phases_chargemode", mock_chargemode_phases)
 
-    cp.data["config"]["connected_phases"] = params.connected_phases
-    cp.data["config"]["auto_phase_switch_hw"] = params.auto_phase_switch_hw
-    cp.data["set"]["charging_ev_data"].ev_template.data["max_phases"] = params.max_phases
-    cp.data["set"]["charging_ev_data"].ev_template.data["prevent_phase_switch"] = params.prevent_phase_switch
-    cp.data["set"]["charging_ev_data"].data["control_parameter"][
+    cp.data.config.connected_phases = params.connected_phases
+    cp.data.config.auto_phase_switch_hw = params.auto_phase_switch_hw
+    cp.data.set.charging_ev_data.ev_template.data["max_phases"] = params.max_phases
+    cp.data.set.charging_ev_data.ev_template.data["prevent_phase_switch"] = params.prevent_phase_switch
+    cp.data.set.charging_ev_data.data["control_parameter"][
         "timestamp_perform_phase_switch"] = params.timestamp_perform_phase_switch
-    cp.data["set"]["charging_ev_data"].data["control_parameter"]["phases"] = params.phases_in_use
-    cp.data["get"]["charge_state"] = params.charge_state
-    cp.data["get"]["phases_in_use"] = params.phases_in_use
-    cp.data["set"]["phases_to_use"] = params.phases_in_use
-    cp.data["set"]["log"]["imported_since_plugged"] = params.imported_since_plugged
+    cp.data.set.charging_ev_data.data["control_parameter"]["phases"] = params.phases_in_use
+    cp.data.get.charge_state = params.charge_state
+    cp.data.get.phases_in_use = params.phases_in_use
+    cp.data.set.phases_to_use = params.phases_in_use
+    cp.data.set.log.imported_since_plugged = params.imported_since_plugged
 
     # execution
     phases = cp.get_phases()

@@ -24,7 +24,7 @@ class Process:
                 try:
                     if "cp" in cp:
                         chargepoint = data.data.cp_data[cp]
-                        if chargepoint.data["set"]["charging_ev"] != -1:
+                        if chargepoint.data.set.charging_ev != -1:
                             # Ladelog-Daten müssen vor dem Setzen des Stroms gesammelt werden,
                             # damit bei Phasenumschaltungs-empfindlichen EV sicher noch nicht geladen wurde.
                             chargelog.collect_data(chargepoint)
@@ -33,16 +33,16 @@ class Process:
                             self._update_state(chargepoint)
                         else:
                             # LP, an denen nicht geladen werden darf
-                            if chargepoint.data["set"]["charging_ev_prev"] != -1:
+                            if chargepoint.data.set.charging_ev_prev != -1:
                                 chargelog.save_data(
                                     chargepoint, data.data.ev_data
-                                    ["ev" + str(chargepoint.data["set"]["charging_ev_prev"])],
+                                    ["ev" + str(chargepoint.data.set.charging_ev_prev)],
                                     immediately=False)
-                            chargepoint.data["set"]["current"] = 0
+                            chargepoint.data.set.current = 0
                             Pub().pub("openWB/set/chargepoint/"+str(chargepoint.num)+"/set/current", 0)
-                        if chargepoint.data["get"]["state_str"] is not None:
+                        if chargepoint.data.get.state_str is not None:
                             Pub().pub("openWB/set/chargepoint/"+str(chargepoint.num)+"/get/state_str",
-                                      chargepoint.data["get"]["state_str"])
+                                      chargepoint.data.get.state_str)
                         else:
                             Pub().pub(
                                 f"openWB/set/chargepoint/{chargepoint.num}/get/state_str", "Ladevorgang läuft...")
@@ -73,9 +73,9 @@ class Process:
     def _update_state(self, chargepoint) -> None:
         """aktualisiert den Zustand des Ladepunkts.
         """
-        charging_ev = chargepoint.data["set"]["charging_ev_data"]
+        charging_ev = chargepoint.data.set.charging_ev_data
 
-        current = round(chargepoint.data["set"]["current"], 2)
+        current = round(chargepoint.data.set.current, 2)
         # Zur Sicherheit - nach dem der Algorithmus abgeschlossen ist - nochmal die Einhaltung der Stromstärken
         # prüfen.
         current = charging_ev.check_min_max_current(current, charging_ev.data["control_parameter"]["phases"])
@@ -83,18 +83,18 @@ class Process:
         # Wenn bei einem EV, das keine Umschaltung verträgt, vor dem ersten Laden noch umgeschaltet wird, darf kein
         # Strom gesetzt werden.
         if (charging_ev.ev_template.data["prevent_phase_switch"] and
-                chargepoint.data["set"]["log"]["imported_since_plugged"] == 0 and
+                chargepoint.data.set.log.imported_since_plugged == 0 and
                 charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] is not None):
             current = 0
 
         # Unstimmige Werte loggen
         if (charging_ev.data["control_parameter"]["timestamp_switch_on_off"] is not None and
-                not chargepoint.data["get"]["charge_state"] and
+                not chargepoint.data.get.charge_state and
                 data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] == 0):
             log.error("Reservierte Leistung kann am Algorithmus-Ende nicht 0 sein.")
-        if (chargepoint.data["set"]["charging_ev_data"].ev_template.data["prevent_phase_switch"] and
-                chargepoint.data["get"]["charge_state"] and
-                chargepoint.data["set"]["current"] == 0):
+        if (chargepoint.data.set.charging_ev_data.ev_template.data["prevent_phase_switch"] and
+                chargepoint.data.get.charge_state and
+                chargepoint.data.set.current == 0):
             log.error(
                 "LP"+str(chargepoint.num)+": Ladung wurde trotz verhinderter Unterbrechung gestoppt.")
 
@@ -102,10 +102,10 @@ class Process:
         if charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] is not None:
             current = 0
 
-        chargepoint.data["set"]["current"] = current
+        chargepoint.data.set.current = current
         Pub().pub("openWB/set/chargepoint/"+str(chargepoint.num)+"/set/current", current)
         log.info("LP"+str(chargepoint.num)+": set current "+str(current)+" A")
 
     def _start_charging(self, chargepoint: chargepoint.Chargepoint) -> threading.Thread:
         return threading.Thread(target=chargepoint.chargepoint_module.set_current,
-                                args=(chargepoint.data["set"]["current"],))
+                                args=(chargepoint.data.set.current,))
