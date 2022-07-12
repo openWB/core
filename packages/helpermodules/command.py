@@ -83,10 +83,10 @@ class Command:
         """
         try:
             # kurze Pause, damit die ID vom Broker ermittelt werden können. Sonst werden noch vorher die retained
-            # Topics empfangen, was zu doppelten Logmeldungen führt.
+            # Topics empfangen, was zu doppelten Meldungen im Protokoll führt.
             time.sleep(1)
             mqtt_broker_ip = "localhost"
-            client = mqtt.Client("openWB-command-" + str(self.getserial()))
+            client = mqtt.Client("openWB-command-" + str(self.get_serial()))
 
             client.on_connect = self.on_connect
             client.on_message = self.on_message
@@ -97,7 +97,7 @@ class Command:
         except Exception:
             log.exception("Fehler im Command-Modul")
 
-    def getserial(self):
+    def get_serial(self):
         """ Extract serial from cpuinfo file
         """
         try:
@@ -227,7 +227,7 @@ class Command:
                   self.max_id_chargepoint_template)
 
     def removeChargepointTemplate(self, connection_id: str, payload: dict) -> None:
-        """ löscht eine ladepunkt-Vorlage.
+        """ löscht eine Ladepunkt-Vorlage.
         """
         if self.max_id_chargepoint_template >= payload["data"]["id"]:
             if payload["data"]["id"] > 0:
@@ -484,14 +484,14 @@ class Command:
             result = subprocess.check_output(
                 ["php", "-f", str(parent_file / "runs" / "cloudRegister.php"), json.dumps(payload["data"])]
             )
-            # exitstatus = 0 is success, std_out contains json: {"username", "password"}
+            # exit status = 0 is success, std_out contains json: {"username", "password"}
             result_dict = json.loads(result)
             connect_payload = {
                 "data": result_dict
             }
             self.connectCloud(connection_id, connect_payload)
         except subprocess.CalledProcessError as error:
-            # exitstatus = 1 is failure, std_out contains error message
+            # exit status = 1 is failure, std_out contains error message
             pub_error(payload, connection_id, error.output.decode("utf-8"))
 
     def connectCloud(self, connection_id: str, payload: dict) -> None:
@@ -530,6 +530,11 @@ class Command:
         log.info("Update requested")
         parent_file = Path(__file__).resolve().parents[2]
         subprocess.run([str(parent_file / "runs" / "update_self.sh")])
+
+    def systemFetchVersions(self, connection_id: str, payload: dict) -> None:
+        log.info("Fetch versions requested")
+        parent_file = Path(__file__).resolve().parents[2]
+        subprocess.run([str(parent_file / "runs" / "update_available_versions.sh")])
 
 
 class ErrorHandlingContext:
@@ -597,7 +602,7 @@ class ProcessBrokerBranch:
         try:
             mqtt_broker_ip = "localhost"
             client = mqtt.Client(
-                "openWB-processBrokerBranch-" + str(self.__getserial()))
+                "openWB-processBrokerBranch-" + str(self.__get_serial()))
 
             client.on_connect = self.__on_connect
             client.on_message = on_message
@@ -646,7 +651,7 @@ class ProcessBrokerBranch:
         except Exception:
             log.exception("Fehler im Command-Modul")
 
-    def __getserial(self):
+    def __get_serial(self):
         """ Extract serial from cpuinfo file
         """
         try:
