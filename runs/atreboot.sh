@@ -241,12 +241,12 @@ chmod 666 "$LOGFILE"
 	# curl --connect-timeout 10 -s https://raw.githubusercontent.com/snaptec/openWB/beta/web/version > ${OPENWBBASEDIR}/ramdisk/vbeta
 	# curl --connect-timeout 10 -s https://raw.githubusercontent.com/snaptec/openWB/stable/web/version > ${OPENWBBASEDIR}/ramdisk/vstable
 
-	# update our local version
-	git -C "${OPENWBBASEDIR}/" show --pretty='format:%ci [%h]' | head -n1 > "${OPENWBBASEDIR}/web/lastcommit"
-	# and record the current commit details
-	commitId=$(git -C "${OPENWBBASEDIR}/" log --format="%h" -n 1)
-	echo "$commitId" > "${OPENWBBASEDIR}/ramdisk/currentCommitHash"
-	git -C "${OPENWBBASEDIR}/" branch -a --contains "$commitId" | perl -nle 'm|.*origin/(.+).*|; print $1' | uniq | xargs > "${OPENWBBASEDIR}/ramdisk/currentCommitBranches"
+	# update versions
+	"$OPENWBBASEDIR/runs/update_available_versions.sh"
+	# # and record the current commit details
+	# commitId=$(git -C "${OPENWBBASEDIR}/" log --format="%h" -n 1)
+	# echo "$commitId" > "${OPENWBBASEDIR}/ramdisk/currentCommitHash"
+	# git -C "${OPENWBBASEDIR}/" branch -a --contains "$commitId" | perl -nle 'm|.*origin/(.+).*|; print $1' | uniq | xargs > "${OPENWBBASEDIR}/ramdisk/currentCommitBranches"
 
 	# set upload limit in php
 	# echo -n "fix upload limit..."

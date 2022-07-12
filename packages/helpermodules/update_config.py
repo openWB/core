@@ -246,7 +246,10 @@ class UpdateConfig:
                    "^openWB/system/configurable/soc_modules$",
                    "^openWB/system/configurable/devices_components$",
                    "^openWB/system/configurable/chargepoints$",
-                   "^openWB/system/mqtt/bridge/[0-9]+$"
+                   "^openWB/system/mqtt/bridge/[0-9]+$",
+                   "^openWB/system/current_commit",
+                   "^openWB/system/current_master_commit",
+                   "^openWB/system/current_missing_commits"
                    ]
     default_topic = (
         ("openWB/chargepoint/template/0", chargepoint.get_chargepoint_template_default()),
@@ -321,7 +324,7 @@ class UpdateConfig:
     def update(self):
         log.debug("Broker-Konfiguration aktualisieren")
         mqtt_broker_ip = "localhost"
-        client = mqtt.Client("openWB-updateconfig-" + self.getserial())
+        client = mqtt.Client("openWB-update-config-" + self.get_serial())
         client.on_connect = self.on_connect
         client.on_message = self.on_message
         client.connect(mqtt_broker_ip, 1886)
@@ -337,7 +340,7 @@ class UpdateConfig:
         except Exception:
             log.exception("Fehler beim Prüfen des Brokers.")
 
-    def getserial(self):
+    def get_serial(self):
         """ Extract serial from cpuinfo file
         """
         with open('/proc/cpuinfo', 'r') as f:
@@ -397,7 +400,7 @@ class UpdateConfig:
                     Pub().pub(
                         f'{module.replace("openWB/", "openWB/set/")}/config/max_ac_out', 0)
 
-        # Summen in Tages- und Monatslog hinzufügen
+        # Summen in Tages- und Monats-Log hinzufügen
         files = glob.glob("/var/www/html/openWB/data/daily_log/*")
         files.extend(glob.glob("/var/www/html/openWB/data/monthly_log/*"))
         for file in files:
@@ -410,7 +413,7 @@ class UpdateConfig:
                             jsonFile.seek(0)
                             json.dump(new_content, jsonFile)
                             jsonFile.truncate()
-                            log.debug(f"Format des Logfiles {file} aktualisiert.")
+                            log.debug(f"Format der Logdatei {file} aktualisiert.")
                         except Exception:
                             log.exception(f"Logfile {file} entspricht nicht dem Dateiformat von Alpha 3.")
                 except json.decoder.JSONDecodeError:
