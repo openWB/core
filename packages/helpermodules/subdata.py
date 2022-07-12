@@ -32,7 +32,7 @@ class SubData:
 
     # Instanzen
     cp_data = {}
-    cp_all_data: chargepoint.AllChargepoints
+    cp_all_data = chargepoint.AllChargepoints()
     cp_template_data = {}
     pv_data = {}
     ev_data = {}
@@ -53,7 +53,6 @@ class SubData:
         self.heartbeat = False
 
         self.bat_data["all"] = bat.BatAll()
-        self.cp_all_data = chargepoint.AllChargepoints()
         self.counter_data["all"] = counter.CounterAll()
         self.pv_data["all"] = pv.PvAll()
         self.graph_data["graph"] = graph.Graph()
