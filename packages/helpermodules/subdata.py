@@ -369,7 +369,7 @@ class SubData:
                                 "."+config["connection_module"]["type"]+".chargepoint_module", "modules")
                             var["cp"+index].chargepoint_module = mod.ChargepointModule(
                                 config["id"], config["connection_module"], config["power_module"])
-                        self.set_json_payload_class(var["cp"+index].data, msg)
+                        self.set_json_payload_class(var["cp"+index].data.config, msg)
                         self.event_cp_config.set()
             elif re.search("^.+/chargepoint/get/.+$", msg.topic) is not None:
                 self.set_json_payload(self.cp_all_data.data["get"], msg)
