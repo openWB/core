@@ -170,7 +170,7 @@ class SetData:
                         event = self.event_cp_config
                         if "cp"+str(index) in subdata.SubData.cp_data:
                             template = copy.deepcopy(
-                                subdata.SubData.cp_data["cp"+str(index)].data["config"])
+                                subdata.SubData.cp_data["cp"+str(index)].data.config)
                         else:
                             template = {}
                     else:

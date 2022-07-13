@@ -71,7 +71,7 @@ class ChargepointModule(AbstractChargepoint):
             with self.__client_error_context:
                 ip_address = self.connection_module["configuration"]["ip_address"]
                 if (self.connection_module["configuration"]["duo_num"] == 2):
-                    pub.pub_single("openWB/set/isss/Cpulp2", "1", hostname=ip_address)
+                    pub.pub_single("openWB/set/isss/Cpulp2", duration, hostname=ip_address)
                 else:
-                    pub.pub_single("openWB/set/isss/Cpulp1", "1", hostname=ip_address)
+                    pub.pub_single("openWB/set/isss/Cpulp1", duration, hostname=ip_address)
                 time.sleep(duration)
