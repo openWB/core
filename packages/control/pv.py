@@ -302,15 +302,16 @@ class PvAll:
                         charge = False
                         msg = ("Da das EV nicht lädt und die Abschaltschwelle erreicht wird, "
                                "wird die Ladefreigabe entzogen.")
-                    control_parameter["timestamp_switch_on_off"] = timecheck.create_timestamp()
-                    # merken, dass ein LP verzögert wird, damit nicht zu viele LP verzögert werden.
-                    self.data["set"]["released_evu_overhang"] += chargepoint.data.set.required_power
-                    msg = "Ladevorgang wird nach Ablauf der Abschaltverzögerung (" + str(
-                        pv_config["switch_off_delay"])+"s) gestoppt."
-                    Pub().pub(
-                        "openWB/set/vehicle/" + str(chargepoint.data.set.charging_ev_data.num) +
-                        "/control_parameter/timestamp_switch_on_off", control_parameter
-                        ["timestamp_switch_on_off"])
+                    else:
+                        control_parameter["timestamp_switch_on_off"] = timecheck.create_timestamp()
+                        # merken, dass ein LP verzögert wird, damit nicht zu viele LP verzögert werden.
+                        self.data["set"]["released_evu_overhang"] += chargepoint.data.set.required_power
+                        msg = "Ladevorgang wird nach Ablauf der Abschaltverzögerung (" + str(
+                            pv_config["switch_off_delay"])+"s) gestoppt."
+                        Pub().pub(
+                            "openWB/set/vehicle/" + str(chargepoint.data.set.charging_ev_data.num) +
+                            "/control_parameter/timestamp_switch_on_off", control_parameter
+                            ["timestamp_switch_on_off"])
                     # Die Abschaltschwelle wird immer noch überschritten und es sollten weitere LP abgeschaltet
                     # werden.
                 else:

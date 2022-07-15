@@ -214,6 +214,10 @@ def ev_factory() -> Ev:
     return Ev(0)
 
 
+def log_factory() -> Log:
+    return Log()
+
+
 @dataclass
 class Set:
     autolock_state: int = 0
@@ -223,7 +227,7 @@ class Set:
     current: float = 0
     energy_to_charge: float = 0
     loadmanagement_available: bool = True
-    log: Log = Log()
+    log: Log = field(default_factory=log_factory)
     manual_lock: bool = False
     phases_to_use: int = 0
     plug_time: Optional[str] = None
