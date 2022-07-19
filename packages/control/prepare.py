@@ -20,10 +20,10 @@ class Prepare:
             for counter in data.data.counter_data:
                 if "counter" in counter:
                     data.data.counter_data[counter].setup_counter()
-            data.data.cp_all_data.get_cp_sum()
-            data.data.cp_all_data.no_charge()
             for cp in data.data.cp_data.values():
                 cp.update(data.data.ev_data)
+            data.data.cp_all_data.get_cp_sum()
+            data.data.cp_all_data.no_charge()
             data.data.pv_data["all"].calc_power_for_control()
             data.data.bat_data["all"].setup_bat()
             data.data.counter_data["all"].calc_home_consumption()
