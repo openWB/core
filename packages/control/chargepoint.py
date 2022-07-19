@@ -68,7 +68,7 @@ class AllChargepoints:
     data = AllChargepointData()
 
     def __init__(self):
-        Pub().pub("openWB/set/chargepoint/get/power", 0)
+        pass
 
     def no_charge(self):
         """ Wenn keine EV angesteckt sind oder keine Verzögerungen aktiv sind, werden die Algorithmus-Werte
@@ -480,7 +480,11 @@ class Chargepoint:
             except Exception:
                 log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.num))
                 return -1, False, "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
-            num, message_ev = self.template.get_ev(self.data.get.rfid or self.data.set.rfid, self.data.config.ev)
+            if state:
+                num, message_ev = self.template.get_ev(self.data.get.rfid or self.data.set.rfid, self.data.config.ev)
+            else:
+                num = -1
+                message_ev = None
             if message_ev:
                 message = message_ev
             if charging_possbile:

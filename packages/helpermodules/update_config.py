@@ -252,6 +252,7 @@ class UpdateConfig:
                    "^openWB/system/current_missing_commits"
                    ]
     default_topic = (
+        ("openWB/chargepoint/get/power", 0),
         ("openWB/chargepoint/template/0", chargepoint.get_chargepoint_template_default()),
         ("openWB/counter/get/hierarchy", []),
         ("openWB/vehicle/0/name", ev.get_vehicle_default()["name"]),
