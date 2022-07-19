@@ -260,6 +260,7 @@ class Data:
     def print_all(self):
         self._print_dictionaries(self._bat_data)
         self._print_dictionaries(self._bat_module_data)
+        log.debug(f"cp_all_data\n{self._cp_all_data.data}")
         self._print_dictionaries(self._cp_data)
         self._print_dictionaries(self._cp_template_data)
         self._print_dictionaries(self._counter_data)
