@@ -2,18 +2,20 @@
 Dictionary: Zugriff erfolgt bei Dictionary über Keys, nicht über Indizes wie bei Listen. Das hat den Vorteil, dass
 Instanzen gelöscht werden können, der Zugriff aber nicht verändert werden muss.
 """
-from dataclasses import dataclass
+import copy
 import logging
 import threading
-from typing import Callable, Dict, Type, TypeVar
+from typing import Dict
 from control.chargepoint import AllChargepoints, Chargepoint
-log = logging.getLogger(__name__)
 
-data = None
+from helpermodules.subdata import SubData
+
+log = logging.getLogger(__name__)
 
 
 class Data:
-    def __init__(self):
+    def __init__(self, event_module_update_completed: threading.Event):
+        self.event_module_update_completed = event_module_update_completed
         self.event = threading.Event()
         self.event.set()
         self._bat_data = {}
@@ -292,44 +294,165 @@ class Data:
             except Exception:
                 log.exception("Fehler im Data-Modul")
 
+    def copy_system_data(self) -> None:
+        with ModuleDataReceivedContext(self.event_module_update_completed):
+            self.__copy_system_data()
 
-def data_init():
+    def __copy_system_data(self) -> None:
+        """ kopiert die Daten, die per MQTT empfangen wurden.
+        """
+        try:
+            # Workaround, da mit Python3.9/pymodbus2.5 eine pymodbus-Instanz nicht mehr kopiert werden kann.
+            # Bei einer Neukonfiguration eines Device/Komponente wird dieses Neuinitialisiert. Nur bei Komponenten
+            # mit simcount werden Werte aktualisiert, diese sollten jedoch nur einmal nach dem Auslesen aktualisiert
+            # werden, sodass die Nutzung einer Referenz vorerst funktioniert.
+            self.system_data = {
+                "system": copy.deepcopy(SubData.system_data["system"])} | {
+                k: SubData.system_data[k] for k in SubData.system_data if "device" in k}
+            self.general_data = copy.deepcopy(SubData.general_data)
+            self.__copy_cp_data()
+        except Exception:
+            log.exception("Fehler im Prepare-Modul")
+
+    def __copy_counter_data(self) -> None:
+        self.counter_data.clear()
+        for counter in SubData.counter_data:
+            stop = False
+            if counter != "all":
+                for dev in SubData.system_data:
+                    if "device" in dev:
+                        for component in SubData.system_data[dev].components:
+                            if component[9:] == counter[7:]:
+                                self.counter_data[counter] = copy.deepcopy(SubData.counter_data[counter])
+                                stop = True
+                                break
+                    if stop:
+                        break
+            else:
+                self.counter_data[counter] = copy.deepcopy(SubData.counter_data[counter])
+
+    def __copy_cp_data(self) -> None:
+        self.cp_data.clear()
+        for cp in SubData.cp_data:
+            if cp != "all":
+                self.cp_data[cp] = copy.deepcopy(SubData.cp_data[cp].chargepoint)
+            else:
+                self.cp_data[cp] = copy.deepcopy(SubData.cp_data[cp])
+        self.cp_template_data = copy.deepcopy(SubData.cp_template_data)
+        for chargepoint in self.cp_data:
+            try:
+                if "cp" in chargepoint:
+                    self.cp_data[chargepoint].template = self.cp_template_data["cpt" + str(
+                        self.cp_data[chargepoint].data.config.template)]
+                    # Status zurücksetzen (wird jeden Zyklus neu ermittelt)
+                    self.cp_data[chargepoint].data.get.state_str = None
+            except Exception:
+                log.exception("Fehler im Prepare-Modul für Ladepunkt "+str(chargepoint))
+
+    def copy_module_data(self) -> None:
+        with ModuleDataReceivedContext(self.event_module_update_completed):
+            self.__copy_module_data()
+
+    def __copy_module_data(self) -> None:
+        """ kopiert die Daten, die per MQTT empfangen wurden.
+        """
+        try:
+            self.__copy_counter_data()
+            self.pv_data.clear()
+            for pv in SubData.pv_data:
+                stop = False
+                if pv != "all":
+                    for dev in SubData.system_data:
+                        if "device" in dev:
+                            for component in SubData.system_data[dev].components:
+                                if component[9:] == pv[2:]:
+                                    self.pv_data[pv] = copy.deepcopy(SubData.pv_data[pv])
+                                    stop = True
+                                    break
+                        if stop:
+                            break
+                else:
+                    self.pv_data[pv] = copy.deepcopy(SubData.pv_data[pv])
+            self.bat_data.clear()
+            for bat in SubData.bat_data:
+                stop = False
+                if bat != "all":
+                    for dev in SubData.system_data:
+                        if "device" in dev:
+                            for component in SubData.system_data[dev].components:
+                                if component[9:] == bat[3:]:
+                                    self.bat_data[bat] = copy.deepcopy(SubData.bat_data[bat])
+                                    stop = True
+                                    break
+                        if stop:
+                            break
+                else:
+                    self.bat_data[bat] = copy.deepcopy(SubData.bat_data[bat])
+        except Exception:
+            log.exception("Fehler im Prepare-Modul")
+
+    def copy_data(self) -> None:
+        """ kopiert die Daten, die per MQTT empfangen wurden.
+        """
+        with ModuleDataReceivedContext(self.event_module_update_completed):
+            try:
+                self.general_data = copy.deepcopy(SubData.general_data)
+                self.optional_data = copy.deepcopy(SubData.optional_data)
+                self.__copy_ev_data()
+                self.__copy_cp_data()
+                self.__copy_counter_data()
+                self.graph_data = copy.deepcopy(SubData.graph_data)
+            except Exception:
+                log.exception("Fehler im Prepare-Modul")
+
+    def __copy_ev_data(self) -> None:
+        self.ev_data.clear()
+        for ev in SubData.ev_data:
+            if "name" in SubData.ev_data[ev].data:
+                self.ev_data[ev] = copy.deepcopy(SubData.ev_data[ev])
+        self.ev_template_data = copy.deepcopy(SubData.ev_template_data)
+        self.ev_charge_template_data = copy.deepcopy(SubData.ev_charge_template_data)
+        for vehicle in self.ev_data:
+            try:
+                # Globaler oder individueller Lademodus?
+                if self.general_data["general"].data["chargemode_config"]["individual_mode"]:
+                    self.ev_data[vehicle].charge_template = self.ev_charge_template_data["ct" + str(
+                        self.ev_data[vehicle].data["charge_template"])]
+                else:
+                    self.ev_data[vehicle].charge_template = self.ev_charge_template_data["ct0"]
+                # zuerst das aktuelle Template laden
+                self.ev_data[vehicle].ev_template = self.ev_template_data["et" + str(
+                    self.ev_data[vehicle].data["ev_template"])]
+            except Exception:
+                log.exception("Fehler im Prepare-Modul für EV "+str(vehicle))
+
+
+class ModuleDataReceivedContext:
+    """ Moduldaten erst kopieren, wenn alle Daten vom Broker empfangen wurden."""
+
+    def __init__(self, event_module_update_completed):
+        self.event_module_update_completed = event_module_update_completed
+
+    def __enter__(self):
+        global data
+        try:
+            timeout = data.general_data["general"].data["control_interval"]/2
+        except KeyError:
+            timeout = 5
+        if self.event_module_update_completed.wait(timeout) is False:
+            log.error(
+                "Modul-Daten wurden noch nicht vollständig empfangen. Timeout abgelaufen, fortsetzen der Regelung.")
+        return None
+
+    def __exit__(self, exception_type, exception, exception_traceback) -> bool:
+        return True
+
+
+data: Data
+
+
+def data_init(event_module_update_completed: threading.Event):
     """instanziiert die Data-Klasse.
     """
     global data
-    data = Data()
-
-
-C = TypeVar("C")
-
-
-@dataclass
-class AbstractConfiguration:
-    pass
-
-
-@dataclass
-class AbstractSetup:
-    name: str = ""
-    type: str = ""
-    id: int = 0
-    configuration = Callable[[C], None]
-
-
-T = TypeVar("T", AbstractConfiguration, AbstractSetup)
-
-
-def from_dict(device_config: Dict, class_type: Type[T]) -> T:
-    values = []
-    keys = class_type().__dict__.keys()
-    try:
-        for key in keys:
-            if isinstance(device_config[key], Dict):
-                values.append(from_dict(device_config[key], type(getattr(class_type, key))))
-            else:
-                values.append(device_config[key])
-    except KeyError as e:
-        raise Exception(
-            "Illegal configuration <{}>: Expected object with properties: {}".format(device_config, keys)
-        ) from e
-    return class_type(*values)
+    data = Data(event_module_update_completed)

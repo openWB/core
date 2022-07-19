@@ -36,7 +36,7 @@ class Graph:
             dataline.update(
                 {"house-power": _convert_to_kW(data.data.counter_data["all"].data["set"]["home_consumption"])})
             dataline.update(
-                {"charging-all": _convert_to_kW(data.data.cp_all_data.data["get"]["power"])})
+                {"charging-all": _convert_to_kW(data.data.cp_all_data.data.get.power)})
             if len(data.data.pv_data) > 1:
                 dataline.update(
                     {"pv-all": _convert_to_kW(data.data.pv_data["all"].data["get"]["power"])*-1})

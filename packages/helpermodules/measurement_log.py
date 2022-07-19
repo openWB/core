@@ -10,6 +10,11 @@ from typing import Dict, List
 from control import data
 from helpermodules.pub import Pub
 from helpermodules import timecheck
+from control.bat import Bat
+from control.chargepoint import Chargepoint
+from control.counter import Counter
+from control.ev import Ev
+from control.pv import Pv
 
 log = logging.getLogger(__name__)
 
@@ -119,8 +124,8 @@ def save_log(folder):
             log.exception("Fehler im Werte-Logging-Modul für Ladepunkt "+str(cp))
     try:
         cp_dict.update(
-            {"all": {"imported": data.data.cp_all_data.data["get"]["imported"],
-                     "exported": data.data.cp_all_data.data["get"]["exported"]}})
+            {"all": {"imported": data.data.cp_all_data.data.get.imported,
+                     "exported": data.data.cp_all_data.data.get.exported}})
     except Exception:
         log.exception("Fehler im Werte-Logging-Modul")
 
@@ -265,7 +270,7 @@ def update_module_yields(module: str, totals: Dict) -> None:
             topic = "chargepoint"
         else:
             topic = module
-        if module in m:
+        if isinstance(module_data, (Ev, Chargepoint, Pv, Bat, Counter)):
             Pub().pub(f"openWB/set/{topic}/{module_data.num}/get/daily_imported", daily_imported)
             Pub().pub(f"openWB/set/{topic}/{module_data.num}/get/daily_exported", daily_exported)
         else:
@@ -288,3 +293,6 @@ def update_module_yields(module: str, totals: Dict) -> None:
                 update_imported_exported(totals[module][m]["imported"], totals[module][m]["exported"])
         else:
             log.info(f"Modul {m} wurde zwischenzeitlich gelöscht und wird daher nicht mehr aufgeführt.")
+        if module == "cp" and m == "all":
+            module_data = data.data.cp_all_data
+            update_imported_exported(totals[module][m]["imported"], totals[module][m]["exported"])

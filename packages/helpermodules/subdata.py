@@ -4,6 +4,7 @@ import importlib
 import json
 import logging
 from pathlib import Path
+import threading
 from typing import Dict
 import paho.mqtt.client as mqtt
 import re
@@ -45,11 +46,19 @@ class SubData:
     system_data = {}
     graph_data = {}
 
-    def __init__(self, event_ev_template, event_charge_template, event_cp_config, event_module_update_completed):
+    def __init__(self,
+                 event_ev_template: threading.Event,
+                 event_charge_template: threading.Event,
+                 event_cp_config: threading.Event,
+                 event_module_update_completed: threading.Event,
+                 event_copy_data: threading.Event,
+                 event_global_data_initialized: threading.Event):
         self.event_ev_template = event_ev_template
         self.event_charge_template = event_charge_template
         self.event_cp_config = event_cp_config
         self.event_module_update_completed = event_module_update_completed
+        self.event_copy_data = event_copy_data
+        self.event_global_data_initialized = event_global_data_initialized
         self.heartbeat = False
 
         self.bat_data["all"] = bat.BatAll()
@@ -348,31 +357,39 @@ class SubData:
                         var.pop("cp"+index)
                 else:
                     if "cp"+index not in var:
-                        var["cp"+index] = chargepoint.Chargepoint(int(index))
+                        var["cp"+index] = chargepoint.ChargepointStateUpdate(
+                            int(index),
+                            self.event_copy_data,
+                            self.event_global_data_initialized,
+                            self.cp_template_data,
+                            self.ev_data,
+                            self.ev_charge_template_data,
+                            self.ev_template_data)
                     if re.search("^.+/chargepoint/[0-9]+/set/.+$", msg.topic) is not None:
                         if re.search("^.+/chargepoint/[0-9]+/set/log/.+$", msg.topic) is not None:
-                            self.set_json_payload_class(var["cp"+index].data.set.log, msg)
+                            self.set_json_payload_class(var["cp"+index].chargepoint.data.set.log, msg)
                         else:
-                            self.set_json_payload_class(var["cp"+index].data.set, msg)
+                            self.set_json_payload_class(var["cp"+index].chargepoint.data.set, msg)
                     elif re.search("^.+/chargepoint/[0-9]+/get/.+$", msg.topic) is not None:
                         if re.search("^.+/chargepoint/[0-9]+/get/connected_vehicle/.+$", msg.topic) is not None:
-                            self.set_json_payload_class(var["cp"+index].data.get.connected_vehicle, msg)
+                            self.set_json_payload_class(var["cp"+index].chargepoint.data.get.connected_vehicle, msg)
                         elif re.search("^.+/chargepoint/[0-9]+/get/.+$", msg.topic) is not None:
-                            self.set_json_payload_class(var["cp"+index].data.get, msg)
+                            self.set_json_payload_class(var["cp"+index].chargepoint.data.get, msg)
                     elif re.search("^.+/chargepoint/[0-9]+/config$", msg.topic) is not None:
                         config = json.loads(
                             str(msg.payload.decode("utf-8")))
-                        if (var["cp"+index].chargepoint_module is None or
-                                config["connection_module"] != var["cp"+index].chargepoint_module.connection_module or
-                                config["power_module"] != var["cp"+index].chargepoint_module.power_module):
+                        if (var["cp"+index].chargepoint.chargepoint_module is None or
+                                config["connection_module"] != var[
+                                    "cp"+index].chargepoint.chargepoint_module.connection_module or
+                                config["power_module"] != var["cp"+index].chargepoint.chargepoint_module.power_module):
                             mod = importlib.import_module(
                                 "."+config["connection_module"]["type"]+".chargepoint_module", "modules")
-                            var["cp"+index].chargepoint_module = mod.ChargepointModule(
+                            var["cp"+index].chargepoint.chargepoint_module = mod.ChargepointModule(
                                 config["id"], config["connection_module"], config["power_module"])
-                        self.set_json_payload_class(var["cp"+index].data.config, msg)
+                        self.set_json_payload_class(var["cp"+index].chargepoint.data.config, msg)
                         self.event_cp_config.set()
             elif re.search("^.+/chargepoint/get/.+$", msg.topic) is not None:
-                self.set_json_payload(self.cp_all_data.data["get"], msg)
+                self.set_json_payload_class(self.cp_all_data.data.get, msg)
         except Exception:
             log.exception("Fehler im subdata-Modul")
 

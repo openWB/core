@@ -2,6 +2,7 @@
 """
 
 import copy
+import dataclasses
 import json
 from typing import List, Optional, Tuple
 import paho.mqtt.client as mqtt
@@ -169,13 +170,12 @@ class SetData:
                     elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/config.*$", msg.topic) is not None:
                         event = self.event_cp_config
                         if "cp"+str(index) in subdata.SubData.cp_data:
-                            template = copy.deepcopy(
-                                subdata.SubData.cp_data["cp"+str(index)].data.config)
+                            template = dataclasses.asdict(
+                                subdata.SubData.cp_data["cp"+str(index)].chargepoint.data.config)
                         else:
                             template = {}
                     else:
-                        raise ValueError(
-                            "Zu "+msg.topic+" konnte kein passendes json-Objekt gefunden werden.")
+                        raise ValueError("Zu "+msg.topic+" konnte kein passendes json-Objekt gefunden werden.")
                     # Wert, der aktualisiert werden soll, erstellen/finden und updaten
                     if event == self.event_cp_config:
                         key_list = msg.topic.split("/")[5:]
