@@ -12,6 +12,7 @@ import logging
 from helpermodules import subdata
 from helpermodules.pub import Pub
 from helpermodules.utils.topic_parser import get_index
+import dataclass_utils
 
 log = logging.getLogger(__name__)
 mqtt_log = logging.getLogger("mqtt")
@@ -146,7 +147,8 @@ class SetData:
                     if "charge_template" in msg.topic:
                         event = self.event_charge_template
                         if "ct"+str(index) in subdata.SubData.ev_charge_template_data:
-                            template = copy.deepcopy(subdata.SubData.ev_charge_template_data["ct"+str(index)].data)
+                            template = dataclass_utils.asdict(copy.deepcopy(
+                                subdata.SubData.ev_charge_template_data["ct"+str(index)].data))
                             # Wenn eine Einzeleinstellung empfangen wird, muss das gesamte Template gepublished werden
                             # (pub_json=True), allerdings ohne Pläne. Diese sind in einem Extra-Topic und werden immer
                             # als komplettes json empfangen (mit pub_json=False).

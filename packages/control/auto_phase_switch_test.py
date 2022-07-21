@@ -6,8 +6,7 @@ from unittest.mock import Mock
 from control.pv import PvAll
 from control.bat import BatAll
 from control.general import General
-from control.ev import ChargeTemplate, Ev, EvTemplate
-from control import ev
+from control.ev import Ev
 from control import data
 
 

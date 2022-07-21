@@ -8,9 +8,8 @@ in der Regelung neu priorisiert werden und eine neue Zuteilung des Stroms erhalt
 """
 from dataclasses import asdict, dataclass, field
 import logging
-from time import strftime
 import traceback
-from typing import Any, List, Dict, Optional, Tuple, Union
+from typing import Any, List, Dict, Optional, Tuple
 
 from control import data
 from helpermodules.pub import Pub
@@ -348,9 +347,11 @@ class Ev:
                 plan_data = self.charge_template.scheduled_charging_recent_plan(
                     self.data.get.soc, self.ev_template, self.data.control_parameter.phases, used_amount)
                 if plan_data["num"]:
-                    name = getattr(self.charge_template.data.chargemode.scheduled_charging.plans, plan_data["num"]).name
+                    name = self.charge_template.data.chargemode.scheduled_charging.plans[plan_data["num"]].name
                     # Wenn mit einem neuen Plan geladen wird, muss auch die Energiemenge von neuem gezählt werden.
-                    if getattr(self.charge_template.data.chargemode.scheduled_charging.plans, plan_data["num"]).limit.selected == "amount" and name != self.data.control_parameter.current_plan:
+                    if (self.charge_template.data.chargemode.scheduled_charging.plans[plan_data["num"]].limit.
+                            selected == "amount" and
+                            name != self.data.control_parameter.current_plan):
                         self.data.control_parameter.imported_at_plan_start = charged_since_mode_switch
                         Pub().pub(
                             f"openWB/set/vehicle/{self.num}/control_parameter/imported_at_plan_start",
@@ -374,7 +375,8 @@ class Ev:
                 if self.charge_template.data.chargemode.selected == "instant_charging":
                     # Wenn der Submode auf stop gestellt wird, wird auch die Energiemenge seit Moduswechsel
                     # zurückgesetzt, dann darf nicht die Energiemenge erneute geladen werden.
-                    if (self.charge_template.data.chargemode.instant_charging.limit.selected == "amount" and charged_since_mode_switch > self.data.control_parameter.used_amount_instant_charging):
+                    if (self.charge_template.data.chargemode.instant_charging.limit.selected == "amount" and
+                            charged_since_mode_switch > self.data.control_parameter.used_amount_instant_charging):
                         self.data.control_parameter.used_amount_instant_charging = charged_since_mode_switch
                         Pub().pub(
                             f"openWB/set/vehicle/{self.num}/control_parameter/used_amount_instant_charging",
@@ -565,16 +567,18 @@ class Ev:
             f'Genutzter Strom: {max(get_currents)}A, Überschuss: {all_overhang}W, benötigte neue Leistung: '
             f'{required_power}W')
         # Wenn gerade umgeschaltet wird, darf kein Timer gestartet werden.
-        if not self.ev_template.data.prevent_phase_switch and self.data.control_parameter.timestamp_perform_phase_switch is None:
+        if (not self.ev_template.data.prevent_phase_switch and
+                self.data.control_parameter.timestamp_perform_phase_switch is None):
             if timestamp_auto_phase_switch is None:
                 condition_1_to_3 = (max(get_currents) > max_current and
-                                    all_overhang > self.ev_template.data.min_current * max_phases_ev * 230 - get_power and
+                                    all_overhang > self.ev_template.data.min_current * max_phases_ev * 230
+                                    - get_power and
                                     phases_in_use == 1)
                 condition_3_to_1 = max(get_currents) < min_current and all_overhang < 0 and phases_in_use == 3
                 if condition_3_to_1 or condition_1_to_3:
                     # Umschaltverzögerung starten
                     timestamp_auto_phase_switch = timecheck.create_timestamp()
-                    data.data.pv_data["all"].data.set.reserved_evu_overhang += required_power
+                    data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] += required_power
                     message = f'{direction_str} Phasen für {delay/60} Min aktiv.'
             else:
                 condition_1_to_3 = max(get_currents) > max_current and all_overhang > 0 and phases_in_use == 1
@@ -586,7 +590,7 @@ class Ev:
                         message = f'{direction_str} Phasen für {delay/60} Min aktiv.'
                     else:
                         timestamp_auto_phase_switch = None
-                        data.data.pv_data["all"].data.set.reserved_evu_overhang -= required_power
+                        data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= required_power
                         phases_to_use = new_phase
                         current = new_current
                         log.debug("Phasenumschaltung kann nun durchgeführt werden.")
@@ -614,17 +618,19 @@ class Ev:
                       "/control_parameter/timestamp_auto_phase_switch", None)
             # Wenn der Timer läuft, ist den Control-Paranetern die alte Phasenzahl hinterlegt.
             if self.data.control_parameter.phases == 3:
-                data.data.pv_data["all"].data.set.reserved_evu_overhang -= self.ev_template.data.max_current_one_phase * \
+                reserved = self.ev_template.data.max_current_one_phase * \
                     230 - self.data.control_parameter.required_current * 3 * 230
+                data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= reserved
                 log.debug(
                     "Zurücksetzen der reservierten Leistung für die Phasenumschaltung. reservierte Leistung: " +
-                    str(data.data.pv_data["all"].data.set.reserved_evu_overhang))
+                    str(data.data.pv_data["all"].data["set"]["reserved_evu_overhang"]))
             else:
-                data.data.pv_data["all"].data.set.reserved_evu_overhang -= self.data.control_parameter.required_current * \
+                reserved = self.data.control_parameter.required_current * \
                     3 * 230 - self.ev_template.data.max_current_one_phase * 230
+                data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= reserved
                 log.debug(
                     "Zurücksetzen der reservierten Leistung für die Phasenumschaltung. reservierte Leistung: " +
-                    str(data.data.pv_data["all"].data.set.reserved_evu_overhang))
+                    str(data.data.pv_data["all"].data["set"]["reserved_evu_overhang"]))
 
     def load_default_profile(self):
         """ prüft, ob nach dem Abstecken das Standardprofil geladen werden soll und lädt dieses ggf..
@@ -673,7 +679,7 @@ class ChargeTemplate:
         message = None
         try:
             instant_charging = self.data.chargemode.instant_charging
-            if data.data.optional_data["optional"].data.et.active:
+            if data.data.optional_data["optional"].data["et"]["active"]:
                 if not data.data.optional_data["optional"].et_price_lower_than_limit():
                     message = "Keine Ladung, da der aktuelle Strompreis über dem maximalen Strompreis liegt."
                     return 0, "stop", message
@@ -785,8 +791,8 @@ class ChargeTemplate:
             return 0, "stop", message
 
         if plan_data["start"] == 1:  # Ladung sollte jetzt starten
-            message = f'Zielladen mit {plan_data["available_current"]}A, um einen SoC von {current_plan.limit.soc}%% um '
-            f'{current_plan.time} zu erreichen.'
+            message = f'Zielladen mit {plan_data["available_current"]}A, um einen SoC von {current_plan.limit.soc}%% '
+            f'um {current_plan.time} zu erreichen.'
             return plan_data["available_current"], "instant_charging", message
         # weniger als die berechnete Zeit verfügbar
         elif plan_data["start"] == 2:
@@ -804,7 +810,7 @@ class ChargeTemplate:
             if timecheck.check_timeframe(current_plan, 24):
                 # Wenn Elektronische Tarife aktiv sind, prüfen, ob jetzt ein günstiger Zeitpunkt zum Laden
                 # ist.
-                if data.data.optional_data["optional"].data.et.active:
+                if data.data.optional_data["optional"].data["et"]["active"]:
                     hourlist = data.data.optional_data["optional"].et_get_loading_hours(
                         plan_data["remaining_time"])
                     if timecheck.is_list_valid(hourlist):

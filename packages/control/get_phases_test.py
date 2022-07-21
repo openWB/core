@@ -5,9 +5,8 @@ import pytest
 
 
 from control import chargepoint
-from control import ev
 from control.chargepoint import Chargepoint, CpTemplate
-from control.ev import ChargeTemplate, Ev, EvTemplate
+from control.ev import Ev
 from control.general import General
 from helpermodules import pub
 from control import data
@@ -115,14 +114,15 @@ def test_get_phases(monkeypatch, cp: Chargepoint, params: Params):
 
     cp.data.config.connected_phases = params.connected_phases
     cp.data.config.auto_phase_switch_hw = params.auto_phase_switch_hw
-    cp.data.set.charging_ev_data.ev_template.data.max_phases = params.max_phases
-    cp.data.set.charging_ev_data.ev_template.data.prevent_phase_switch = params.prevent_phase_switch
-    cp.data.set.charging_ev_data.data.control_parameter.timestamp_perform_phase_switch = params.timestamp_perform_phase_switch
-    cp.data.set.charging_ev_data.data.control_parameter.phases = params.phases_in_use
     cp.data.get.charge_state = params.charge_state
     cp.data.get.phases_in_use = params.phases_in_use
     cp.data.set.phases_to_use = params.phases_in_use
     cp.data.set.log.imported_since_plugged = params.imported_since_plugged
+    charging_ev_data = cp.data.set.charging_ev_data
+    charging_ev_data.ev_template.data.max_phases = params.max_phases
+    charging_ev_data.ev_template.data.prevent_phase_switch = params.prevent_phase_switch
+    charging_ev_data.data.control_parameter.timestamp_perform_phase_switch = params.timestamp_perform_phase_switch
+    charging_ev_data.data.control_parameter.phases = params.phases_in_use
 
     # execution
     phases = cp.get_phases()

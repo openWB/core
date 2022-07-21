@@ -121,7 +121,8 @@ class PvAll:
             required_power = required_current * phases * 230
             threshold_reached = True
             pv_config = data.data.general_data["general"].data["chargemode_config"]["pv_charging"]
-            feed_in_limit = chargepoint.data.set.charging_ev_data.charge_template.data.chargemode.pv_charging.feed_in_limit
+            feed_in_limit = chargepoint.data.set.charging_ev_data.charge_template.data.chargemode.pv_charging.\
+                feed_in_limit
             feed_in_yield = pv_config["feed_in_yield"]
             control_parameter = chargepoint.data.set.charging_ev_data.data.control_parameter
             # verbleibender EVU-Überschuss unter Berücksichtigung der Einspeisegrenze
@@ -207,7 +208,7 @@ class PvAll:
             log.exception("Fehler im allgemeinen PV-Modul")
             return 0, False
 
-    def switch_off_check_timer(self, chargepoint):
+    def switch_off_check_timer(self, chargepoint: Chargepoint):
         """ prüft, ob der Timer der Ausschaltverzögerung abgelaufen ist.
 
         Parameter
@@ -222,13 +223,13 @@ class PvAll:
         """
         try:
             pv_config = data.data.general_data["general"].data["chargemode_config"]["pv_charging"]
-            control_parameter = chargepoint.data.set.charging_ev_data.data["control_parameter"]
+            control_parameter = chargepoint.data.set.charging_ev_data.data.control_parameter
 
             if control_parameter.timestamp_switch_on_off is not None:
                 if not timecheck.check_timestamp(
                         control_parameter.timestamp_switch_on_off,
                         pv_config["switch_off_delay"]):
-                    control_parameter["timestamp_switch_on_off"] = None
+                    control_parameter.timestamp_switch_on_off = None
                     self.data["set"]["released_evu_overhang"] -= chargepoint.data.set.required_power
                     message = "Ladevorgang nach Ablauf der Abschaltverzögerung gestoppt."
                     log.info("LP "+str(chargepoint.num)+": "+message)
@@ -317,7 +318,7 @@ class PvAll:
             log.info(f"LP {chargepoint.num}: {msg}")
         return charge
 
-    def reset_switch_on_off(self, chargepoint, charging_ev):
+    def reset_switch_on_off(self, chargepoint: Chargepoint, charging_ev):
         """ Zeitstempel und reservierte Leistung löschen
 
         Parameter

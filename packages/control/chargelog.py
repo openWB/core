@@ -2,6 +2,7 @@ import json
 import logging
 import math
 import pathlib
+from typing import Dict
 
 from control import data
 from helpermodules.pub import Pub
@@ -62,7 +63,7 @@ def collect_data(chargepoint):
                           str(log_data.imported_since_mode_switch)+" counter " +
                           str(chargepoint.data.get.imported))
                 log_data.range_charged = log_data.imported_since_mode_switch / \
-                    charging_ev.ev_template.data["average_consump"]/10
+                    charging_ev.ev_template.data.average_consump/10
                 log_data.time_charged = timecheck.get_difference_to_now(
                     log_data.timestamp_start_charging)
                 Pub().pub("openWB/set/chargepoint/"+str(chargepoint.num) +
@@ -76,7 +77,7 @@ def collect_data(chargepoint):
         log.exception("Fehler im Ladelog-Modul")
 
 
-def save_data(chargepoint, charging_ev, immediately=True, reset=False):
+def save_data(chargepoint, charging_ev, immediately: bool = True, reset: bool = False):
     """ json-Objekt für den Log-Eintrag erstellen, an die Datei anhängen und die Daten, die sich auf den Ladevorgang
     beziehen, löschen.
 
@@ -111,7 +112,7 @@ def save_data(chargepoint, charging_ev, immediately=True, reset=False):
         log_data.imported_since_mode_switch = chargepoint.data.get.imported - \
             log_data.imported_at_mode_switch
         log_data.range_charged = log_data.imported_since_mode_switch / \
-            charging_ev.ev_template.data["average_consump"]/10
+            charging_ev.ev_template.data.average_consump/10
         log_data.time_charged = timecheck.get_difference_to_now(
             log_data.timestamp_start_charging)
         Pub().pub("openWB/set/chargepoint/"+str(chargepoint.num) +
@@ -218,7 +219,7 @@ def save_data(chargepoint, charging_ev, immediately=True, reset=False):
         log.exception("Fehler im Ladelog-Modul")
 
 
-def get_log_data(request):
+def get_log_data(request: Dict):
     """ json-Objekt mit gefilterten Logdaten erstellen
 
     Parameter
@@ -324,7 +325,7 @@ def get_log_data(request):
     return log_data
 
 
-def reset_data(chargepoint, charging_ev, immediately=True):
+def reset_data(chargepoint, charging_ev, immediately: bool = True):
     """nach dem Abstecken Log-Eintrag erstellen und alle Log-Daten zurücksetzen.
 
     Parameter
@@ -358,7 +359,7 @@ def reset_data(chargepoint, charging_ev, immediately=True):
         log.exception("Fehler im Ladelog-Modul")
 
 
-def truncate(number, decimals=0):
+def truncate(number: float, decimals: int = 0):
     """
     Returns a value truncated to a specific number of decimal places.
     """

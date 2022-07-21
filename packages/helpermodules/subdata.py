@@ -21,7 +21,7 @@ from control import optional
 from helpermodules.pub import Pub
 from helpermodules import system
 from control import pv
-from control.data import from_dict
+from dataclass_utils import dataclass_from_dict
 
 log = logging.getLogger(__name__)
 mqtt_log = logging.getLogger("mqtt")
@@ -233,6 +233,8 @@ class SubData:
 
                     if re.search("^.+/vehicle/[0-9]+/get.+$", msg.topic) is not None:
                         self.set_json_payload_class(var["ev"+index].data.get, msg)
+                    elif re.search("^.+/vehicle/[0-9]+/set/ev_template$", msg.topic) is not None:
+                        self.set_json_payload_class(var["ev"+index].data.set.ev_template.data, msg)
                     elif re.search("^.+/vehicle/[0-9]+/set.+$", msg.topic) is not None:
                         self.set_json_payload_class(var["ev"+index].data.set, msg)
                     elif re.search("^.+/vehicle/[0-9]+/soc_module/config$", msg.topic) is not None:
@@ -281,26 +283,28 @@ class SubData:
                             log.error("Es konnte kein Zielladen-Plan mit der ID " +
                                       str(index_second)+" in der Ladevorlage "+str(index)+" gefunden werden.")
                     else:
-                        var["ct"+index].data.chargemode.scheduled_charging.plans[str(
-                            index_second)] = json.loads(str(msg.payload.decode("utf-8")))
+                        var["ct"+index].data.chargemode.scheduled_charging.plans[
+                            index_second] = dataclass_from_dict(ev.ScheduledChargingPlan,
+                                                                json.loads(str(msg.payload.decode("utf-8"))))
                 elif re.search("^.+/vehicle/template/charge_template/[0-9]+/time_charging/plans/[0-9]+$",
                                msg.topic) is not None:
                     index_second = get_second_index(msg.topic)
                     if str(msg.payload.decode("utf-8")) == "":
                         try:
-                            var["ct"+index].data["time_charging"]["plans"].pop(index_second)
+                            var["ct"+index].data.time_charging.plans.pop(index_second)
                         except KeyError:
                             log.error("Es konnte kein Zeitladen-Plan mit der ID " +
                                       str(index_second)+" in der Ladevorlage "+str(index)+" gefunden werden.")
                     else:
-                        var["ct"+index].data["time_charging"]["plans"][str(
-                            index_second)] = json.loads(str(msg.payload.decode("utf-8")))
+                        var["ct"+index].data.time_charging.plans[
+                            index_second] = dataclass_from_dict(ev.TimeChargingPlan,
+                                                                json.loads(str(msg.payload.decode("utf-8"))))
                 else:
                     # Pläne unverändert übernehmen
                     scheduled_charging_plans = var["ct" + index].data.chargemode.scheduled_charging.plans
                     time_charging_plans = var["ct" + index].data.time_charging.plans
-                    var["ct" + index].data = from_dict(json.loads(str(msg.payload.decode("utf-8"))),
-                                                       ev.ChargeTemplateData)
+                    var["ct" + index].data = dataclass_from_dict(ev.ChargeTemplateData,
+                                                                 json.loads(str(msg.payload.decode("utf-8"))))
                     var["ct"+index].data.time_charging.plans = time_charging_plans
                     var["ct"+index].data.chargemode.scheduled_charging.plans = scheduled_charging_plans
                     self.event_charge_template.set()
@@ -328,7 +332,9 @@ class SubData:
                 else:
                     if "et"+index not in var:
                         var["et"+index] = ev.EvTemplate(int(index))
-                    var["et" + index].data = from_dict(json.loads(str(msg.payload.decode("utf-8"))), ev.EvTemplateData)
+                    var["et" +
+                        index].data = dataclass_from_dict(ev.EvTemplateData,
+                                                          json.loads(str(msg.payload.decode("utf-8"))))
                     self.event_ev_template.set()
         except Exception:
             log.exception("Fehler im subdata-Modul")

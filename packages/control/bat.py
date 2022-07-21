@@ -92,12 +92,12 @@ class BatAll:
                     if battery.data["get"]["power"] > max_bat_power:
                         if battery.data["get"]["fault_state"] == FaultStateLevel.NO_ERROR:
                             battery.data["get"]["fault_state"] = FaultStateLevel.WARNING.value
-                            battery.data.get.fault_str = ("Die maximale Entladeleistung des Wechselrichters" +
-                                                          " ist erreicht.")
+                            battery.data["get"]["fault_str"] = ("Die maximale Entladeleistung des Wechselrichters" +
+                                                                " ist erreicht.")
                             Pub().pub(f"openWB/set/bat/{battery.num}/get/fault_state",
                                       battery.data["get"]["fault_state"])
                             Pub().pub(f"openWB/set/bat/{battery.num}/get/fault_str",
-                                      battery.data.get.fault_str)
+                                      battery.data["get"]["fault_str"])
                         log.warning(
                             f"Bat {battery.num}: Die maximale Entladeleistung des Wechselrichters ist erreicht.")
                     return max(battery.data["get"]["power"], max_bat_power)

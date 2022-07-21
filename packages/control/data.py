@@ -9,7 +9,7 @@ from typing import Dict
 from control.chargepoint import AllChargepoints, Chargepoint
 
 from helpermodules.subdata import SubData
-from packages.control.ev import ChargeTemplate, Ev, EvTemplate
+from control.ev import ChargeTemplate, Ev, EvTemplate
 
 log = logging.getLogger(__name__)
 
@@ -408,8 +408,7 @@ class Data:
     def __copy_ev_data(self) -> None:
         self.ev_data.clear()
         for ev in SubData.ev_data:
-            if "name" in SubData.ev_data[ev].data:
-                self.ev_data[ev] = copy.deepcopy(SubData.ev_data[ev])
+            self.ev_data[ev] = copy.deepcopy(SubData.ev_data[ev])
         self.ev_template_data = copy.deepcopy(SubData.ev_template_data)
         self.ev_charge_template_data = copy.deepcopy(SubData.ev_charge_template_data)
         for vehicle in self.ev_data:

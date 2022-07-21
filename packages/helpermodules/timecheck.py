@@ -58,9 +58,9 @@ def is_autolock_of_plan_active(plan: Dict) -> bool:
         unlock: datetime.datetime
         if plan["frequency"]["selected"] == "once":
             lock = datetime.datetime.strptime(
-                plan["frequency"]["once"][0] + plan["time"][0], "%Y-%m-%d%H:%M")
+                plan.frequency.once[0] + plan["time"][0], "%Y-%m-%d%H:%M")
             unlock = datetime.datetime.strptime(
-                plan["frequency"]["once"][1] + plan["time"][1], "%Y-%m-%d%H:%M")
+                plan.frequency.once[1] + plan["time"][1], "%Y-%m-%d%H:%M")
         else:
             lock, unlock = set_date(
                 now, datetime.datetime.strptime(plan["time"][0], '%H:%M'),
@@ -103,16 +103,13 @@ def is_now_in_locking_time(now: datetime.datetime,
             return False
 
 
-def check_plans_timeframe(plans: Dict[int, TimeChargingPlan], hours: Optional[int] = None) -> Optional[TimeChargingPlan]:
+def check_plans_timeframe(plans: Dict[int, TimeChargingPlan]) -> Optional[TimeChargingPlan]:
     """ geht alle Pläne durch.
 
     Parameters
     ----------
     plans: Dictionary
         Liste der Pläne, deren Zeitfenster geprüft werden sollen
-    hours = None: int
-        Stunden, die der Beginn vorher liegen soll; Werden keine Stunden angegeben, wird der Beginn dem Dictionary
-        entnommen.
 
     Returns
     -------
@@ -124,7 +121,7 @@ def check_plans_timeframe(plans: Dict[int, TimeChargingPlan], hours: Optional[in
         for plan in plans.values():
             # Nur Keys mit Plan-Nummer berücksichtigen
             if isinstance(plan, TimeChargingPlan):
-                state = check_timeframe(plan, hours)
+                state = check_timeframe(plan)
                 if state:
                     return plan
         else:
@@ -134,7 +131,7 @@ def check_plans_timeframe(plans: Dict[int, TimeChargingPlan], hours: Optional[in
         return None
 
 
-def check_timeframe(plan: Union[ScheduledChargingPlan, TimeChargingPlan], hours: Optional[int]):
+def check_timeframe(plan: Union[ScheduledChargingPlan, TimeChargingPlan], hours: Optional[int] = None):
     """ schaut, ob Pläne aktiv sind, prüft, ob das Zeitfenster aktuell ist.
 
     Parameters
@@ -162,12 +159,12 @@ def check_timeframe(plan: Union[ScheduledChargingPlan, TimeChargingPlan], hours:
 
             if plan.frequency.selected == "once":
                 if hours is None:
-                    beginDate = datetime.datetime.strptime(plan["frequency"]["once"][0], "%Y-%m-%d")
+                    beginDate = datetime.datetime.strptime(plan.frequency.once[0], "%Y-%m-%d")
                     begin = begin.replace(beginDate.year, beginDate.month,
                                           beginDate.day)
-                    endDate = datetime.datetime.strptime(plan["frequency"]["once"][1], "%Y-%m-%d")
+                    endDate = datetime.datetime.strptime(plan.frequency.once[1], "%Y-%m-%d")
                 else:
-                    endDate = datetime.datetime.strptime(plan["frequency"]["once"], "%Y-%m-%d")
+                    endDate = datetime.datetime.strptime(plan.frequency.once, "%Y-%m-%d")
                     end = end.replace(endDate.year, endDate.month, endDate.day)
                     begin = _calc_begin(end, hours)
                 end = end.replace(endDate.year, endDate.month, endDate.day)
@@ -202,7 +199,7 @@ def check_timeframe(plan: Union[ScheduledChargingPlan, TimeChargingPlan], hours:
                         else:
                             state = False
                 else:
-                    if plan["frequency"]["weekly"][now.weekday()]:
+                    if plan.frequency.weekly[now.weekday()]:
                         end = end.replace(now.year, now.month, now.day)
                         begin = _calc_begin(end, hours)
                         state = is_timeframe_valid(now, begin, end)
@@ -235,8 +232,8 @@ def check_duration(plan: ScheduledChargingPlan, duration: float) -> Tuple[int, f
     now = datetime.datetime.today()
     end = datetime.datetime.strptime(plan.time, '%H:%M')
 
-    if plan["frequency"]["selected"] == "once":
-        endDate = datetime.datetime.strptime(plan["frequency"]["once"], "%Y-%m-%d")
+    if plan.frequency.selected == "once":
+        endDate = datetime.datetime.strptime(plan.frequency.once, "%Y-%m-%d")
         end = end.replace(endDate.year, endDate.month, endDate.day)
         state, remaining_time = _is_duration_valid(now, duration, end)
         if -0.33 <= remaining_time < 0:

@@ -21,7 +21,6 @@ from control import data
 from control import ev
 from control import counter
 from control import pv
-from control.data import to_dict
 from modules.common.component_type import ComponentType, special_to_general_type_mapping, type_to_topic_mapping
 import dataclass_utils
 
@@ -298,7 +297,7 @@ class Command:
         new_id = self.max_id_charge_template_scheduled_plan + 1
         log.info("Neues Zielladen-Template mit ID " + str(new_id) + " zu Template " +
                  str(payload["data"]["template"]) + " hinzugefügt.")
-        charge_template_default = to_dict(ev.ScheduledChargingPlan())
+        charge_template_default = dataclass_utils.asdict(ev.ScheduledChargingPlan())
         Pub().pub(
             "openWB/set/vehicle/template/charge_template/" + str(payload["data"]["template"]) +
             "/chargemode/scheduled_charging/plans/" + str(new_id),
@@ -327,7 +326,7 @@ class Command:
         new_id = self.max_id_charge_template_time_charging_plan + 1
         log.info("Neues Zeitladen-Template mit ID " + str(new_id) + " zu Template " +
                  str(payload["data"]["template"]) + " hinzugefügt.")
-        time_charging_plan_default = to_dict(ev.TimeChargingPlan())
+        time_charging_plan_default = dataclass_utils.asdict(ev.TimeChargingPlan())
         Pub().pub(
             "openWB/set/vehicle/template/charge_template/" + str(payload["data"]["template"]) +
             "/time_charging/plans/" + str(new_id),
@@ -403,7 +402,7 @@ class Command:
         """
         new_id = self.max_id_ev_template + 1
         log.info("Neues EV-Template mit ID "+str(new_id)+" hinzugefügt.")
-        ev_template_default = to_dict(ev.EvTemplateData())
+        ev_template_default = dataclass_utils.asdict(ev.EvTemplateData())
         Pub().pub("openWB/set/vehicle/template/ev_template/" +
                   str(new_id), ev_template_default)
         self.max_id_ev_template = new_id

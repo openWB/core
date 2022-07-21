@@ -9,6 +9,7 @@ from control import data
 from control import loadmanagement
 from control.chargepoint import Chargepoint
 from helpermodules.pub import Pub
+from packages.control.ev import Ev
 
 log = logging.getLogger(__name__)
 
@@ -372,7 +373,7 @@ class Algorithm:
                             (charging_ev.charge_template.data.chargemode.selected == mode or
                                 mode is None) and
                                 (charging_ev.data.control_parameter.submode == submode) and
-                                (cp.data.set.charging_ev_data.data.control_parameter.required_current > cp.data.set.current) and
+                                (charging_ev.data.control_parameter.required_current > cp.data.set.current) and
                                 # nur die hochregeln, die auch mit der Sollstromstärke laden
                                 (max(cp.data.get.currents) > cp.data.set.current
                                     - charging_ev.ev_template.data.nominal_difference)):
@@ -397,7 +398,8 @@ class Algorithm:
                         bat_data = copy.deepcopy(data.data.bat_data)
                         cp_data_old = copy.deepcopy(data.data.cp_data)
                         # Fehlenden Ladestrom ermitteln
-                        missing_current = cp.data.set.charging_ev_data.data.control_parameter.required_current - cp.data.set.current
+                        missing_current = (cp.data.set.charging_ev_data.data.control_parameter.required_current
+                                           - cp.data.set.current)
                         # Wenn der LP erst in diesem Zyklus eingeschaltet wird, sind noch keine phases_in_use
                         # hinterlegt.
                         if cp.data.get.phases_in_use == 0:
@@ -680,7 +682,8 @@ class Algorithm:
                         if remaining_current_overshoot <= 0:
                             # LP kann nun wie gewünscht eingeschaltet werden
                             self._process_data(
-                                chargepoint, chargepoint.data.set.charging_ev_data.data.control_parameter.required_current)
+                                chargepoint,
+                                chargepoint.data.set.charging_ev_data.data.control_parameter.required_current)
                             break
                         else:
                             # Abschalten
@@ -860,6 +863,13 @@ class Algorithm:
         zunächst die Anzahl der EV ermittelt. Danach wird der Überschuss pro Phase, über die das EV lädt, ermittelt
         und auf die Phasen aufgeschlagen.
         """
+        def regarding_vehicle(charging_ev: Ev, cp: Chargepoint) -> bool:
+            return ((charging_ev.charge_template.data.prio == prio and
+                    (charging_ev.charge_template.data.chargemode.selected == mode or
+                     mode is None) and
+                    charging_ev.data.control_parameter.submode == submode and
+                    charging_ev.charge_template.data.chargemode.pv_charging.
+                    feed_in_limit == feed_in_limit) and cp.data.set.current != 0)
         try:
             num_of_ev = 0
             mode = mode_tuple[0]
@@ -870,12 +880,7 @@ class Algorithm:
                 try:
                     if cp.data.set.charging_ev != -1:
                         charging_ev = cp.data.set.charging_ev_data
-                        if ((charging_ev.charge_template.data.prio == prio and
-                                (charging_ev.charge_template.data.chargemode.selected == mode or
-                                    mode is None) and
-                                charging_ev.data.control_parameter.submode == submode and
-                                charging_ev.charge_template.data.chargemode.pv_charging.feed_in_limit == feed_in_limit) and
-                                cp.data.set.current != 0):
+                        if regarding_vehicle(charging_ev, cp):
                             # Erst hochregeln, wenn geladen wird.
                             if ((cp.data.set.current - charging_ev.ev_template.data.nominal_difference)
                                     < max(cp.data.get.currents)):
@@ -913,15 +918,10 @@ class Algorithm:
                         try:
                             if cp.data.set.charging_ev != -1:
                                 charging_ev = cp.data.set.charging_ev_data
-                                if ((charging_ev.charge_template.data.prio == prio and
-                                        (charging_ev.charge_template.data.chargemode.selected == mode or
-                                            mode is None) and
-                                        charging_ev.data.control_parameter.submode == submode) and
-                                        cp.data.set.current != 0):
+                                if regarding_vehicle(charging_ev, cp):
                                     if ((cp.data.set.current
                                             - charging_ev.ev_template.data.nominal_difference)
-                                            < max(cp.data.get.currents) and
-                                            charging_ev.charge_template.data.chargemode.pv_charging.feed_in_limit == feed_in_limit):
+                                            < max(cp.data.get.currents)):
                                         self.__distribute_remaining_overhang_to_cp(cp,
                                                                                    dif_per_ev_current,
                                                                                    diff_per_ev_power)
