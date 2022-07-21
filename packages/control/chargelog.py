@@ -2,6 +2,7 @@ import json
 import logging
 import math
 import pathlib
+from typing import Union
 
 from control import data
 from helpermodules.pub import Pub
@@ -63,7 +64,7 @@ def collect_data(chargepoint):
                           str(chargepoint.data.get.imported))
                 log_data.range_charged = log_data.imported_since_mode_switch / \
                     charging_ev.ev_template.data["average_consump"]/10
-                log_data.time_charged = timecheck.get_difference_to_now(
+                log_data.time_charged, _ = timecheck.get_difference_to_now(
                     log_data.timestamp_start_charging)
                 Pub().pub("openWB/set/chargepoint/"+str(chargepoint.num) +
                           "/set/log/imported_since_mode_switch", log_data.imported_since_mode_switch)
@@ -76,7 +77,7 @@ def collect_data(chargepoint):
         log.exception("Fehler im Ladelog-Modul")
 
 
-def save_data(chargepoint, charging_ev, immediately=True, reset=False):
+def save_data(chargepoint, charging_ev, immediately: bool = True, reset: bool = False):
     """ json-Objekt für den Log-Eintrag erstellen, an die Datei anhängen und die Daten, die sich auf den Ladevorgang
     beziehen, löschen.
 
@@ -112,7 +113,7 @@ def save_data(chargepoint, charging_ev, immediately=True, reset=False):
             log_data.imported_at_mode_switch
         log_data.range_charged = log_data.imported_since_mode_switch / \
             charging_ev.ev_template.data["average_consump"]/10
-        log_data.time_charged = timecheck.get_difference_to_now(
+        log_data.time_charged, duration = timecheck.get_difference_to_now(
             log_data.timestamp_start_charging)
         Pub().pub("openWB/set/chargepoint/"+str(chargepoint.num) +
                   "/set/log/imported_since_mode_switch", log_data.imported_since_mode_switch)
@@ -120,29 +121,11 @@ def save_data(chargepoint, charging_ev, immediately=True, reset=False):
                   "/set/log/range_charged", log_data.range_charged)
         Pub().pub("openWB/set/chargepoint/"+str(chargepoint.num) +
                   "/set/log/time_charged", log_data.time_charged)
-        time = log_data.time_charged
-        time_charged = []
-        if len(time) > 8:
-            # Wenn es mehrere Tage sind, enthält der String "92 days, 0:02:08" (unwahrscheinlich, aber um Fehler zu
-            # vermeiden)
-            t = str(time).split(" ")
-            time_charged.append(t[0])
-            t_2 = str(t[2]).split(":")
-            time_charged.append(t_2[0])
-            time_charged.append(t_2[1])
-        else:
-            time_charged = str(time).split(":")
         power = 0
-        duration = 0
-        if len(time_charged) == 2:
-            duration = int(time_charged[0])*60 + int(time_charged[1])
-        elif len(time_charged) == 3:
-            duration = int(time_charged[0])*60*24 + \
-                int(time_charged[1])*60 + int(time_charged[2])
         if duration > 0:
-            power = log_data.imported_since_mode_switch / duration*60
+            power = log_data.imported_since_mode_switch / duration
         costs = data.data.general_data["general"].data["price_kwh"] * \
-            log_data.imported_since_mode_switch  # / 1000
+            log_data.imported_since_mode_switch / 1000
         new_entry = {
             "chargepoint":
             {
@@ -218,7 +201,7 @@ def save_data(chargepoint, charging_ev, immediately=True, reset=False):
         log.exception("Fehler im Ladelog-Modul")
 
 
-def get_log_data(request):
+def get_log_data(request: dict):
     """ json-Objekt mit gefilterten Logdaten erstellen
 
     Parameter
@@ -234,12 +217,12 @@ def get_log_data(request):
             (str(request["year"]) + str(request["month"]) + ".json"))
         try:
             with open(filepath, "r", encoding="utf-8") as json_file:
-                chargelog = json.load(json_file)
+                charge_log = json.load(json_file)
         except FileNotFoundError:
             log.debug("Kein Ladelog für %s gefunden!" % (str(request)))
             return log_data
         # Liste mit gefilterten Einträgen erstellen
-        for entry in chargelog:
+        for entry in charge_log:
             if len(entry) > 0:
                 if(
                     "id" in request["filter"]["chargepoint"] and
@@ -324,7 +307,7 @@ def get_log_data(request):
     return log_data
 
 
-def reset_data(chargepoint, charging_ev, immediately=True):
+def reset_data(chargepoint, charging_ev, immediately: bool = True):
     """nach dem Abstecken Log-Eintrag erstellen und alle Log-Daten zurücksetzen.
 
     Parameter
@@ -358,7 +341,7 @@ def reset_data(chargepoint, charging_ev, immediately=True):
         log.exception("Fehler im Ladelog-Modul")
 
 
-def truncate(number, decimals=0):
+def truncate(number: Union[int, float], decimals: int = 0):
     """
     Returns a value truncated to a specific number of decimal places.
     """
