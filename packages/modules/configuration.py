@@ -51,10 +51,10 @@ def _pub_configurable_devices_components() -> None:
         for path in pathlist:
             try:
                 comp_defaults = importlib.import_module(
-                    f".{path.parts[-2]}.{path.parts[-1][:-3]}", "modules").get_default_config()
+                    f".{path.parts[-2]}.{path.parts[-1][:-3]}", "modules").component_descriptor.configuration_factory()
                 component.append({
-                    "value": comp_defaults["type"],
-                    "text": comp_defaults["name"]
+                    "value": comp_defaults.type,
+                    "text": comp_defaults.name
                 })
             # Testfiles und Hilfsmodule, die keine get_default_config-Methode haben, überspringen
             except AttributeError:
@@ -70,10 +70,11 @@ def _pub_configurable_devices_components() -> None:
             add_components(device, "counter*")
             add_components(device, "inverter*")
             try:
-                dev_defaults = importlib.import_module(f".{device}.device", "modules").get_default_config()
+                dev_defaults = importlib.import_module(
+                    f".{device}.device", "modules").device_descriptor.configuration_factory()
                 devices_components.append({
-                    "value": dev_defaults["type"],
-                    "text": dev_defaults["name"],
+                    "value": dev_defaults.type,
+                    "text": dev_defaults.name,
                     "component": component
                 })
             # Testfiles und Hilfsmodule, die keine get_default_config-Methode haben, überspringen
