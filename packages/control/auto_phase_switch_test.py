@@ -14,11 +14,6 @@ from control import data
 @pytest.fixture
 def vehicle() -> Ev:
     vehicle = Ev(0)
-    vehicle.data["config"] = ev.get_vehicle_default()
-    vehicle.ev_template = EvTemplate(0)
-    vehicle.ev_template.data = to_dict(ev.EvTemplateData())
-    vehicle.charge_template = ChargeTemplate(0)
-    vehicle.charge_template.data = ev.get_charge_template_default()
     return vehicle
 
 

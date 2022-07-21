@@ -276,12 +276,12 @@ class SubData:
                     index_second = get_second_index(msg.topic)
                     if str(msg.payload.decode("utf-8")) == "":
                         try:
-                            var["ct"+index].data["chargemode"]["scheduled_charging"]["plans"].pop(index_second)
+                            var["ct"+index].data.chargemode.scheduled_charging.plans.pop(index_second)
                         except KeyError:
                             log.error("Es konnte kein Zielladen-Plan mit der ID " +
                                       str(index_second)+" in der Ladevorlage "+str(index)+" gefunden werden.")
                     else:
-                        var["ct"+index].data["chargemode"]["scheduled_charging"]["plans"][str(
+                        var["ct"+index].data.chargemode.scheduled_charging.plans[str(
                             index_second)] = json.loads(str(msg.payload.decode("utf-8")))
                 elif re.search("^.+/vehicle/template/charge_template/[0-9]+/time_charging/plans/[0-9]+$",
                                msg.topic) is not None:

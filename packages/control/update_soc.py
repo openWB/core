@@ -56,7 +56,7 @@ class UpdateSoc:
                 else:
                     charge_state = False
                     plug_state = False
-                if ev.ev_template.soc_interval_expired(plug_state, charge_state, ev.data["get"].get("soc_timestamp")):
+                if ev.ev_template.soc_interval_expired(plug_state, charge_state, ev.data.get.soc_timestamp):
                     threads.append(threading.Thread(target=ev.soc_module.update,
                                                     args=(charge_state,), name=f"soc_ev{ev.num}"))
         return threads

@@ -121,16 +121,15 @@ class PvAll:
             required_power = required_current * phases * 230
             threshold_reached = True
             pv_config = data.data.general_data["general"].data["chargemode_config"]["pv_charging"]
-            feed_in_limit = chargepoint.data.set.charging_ev_data.charge_template.data["chargemode"][
-                "pv_charging"]["feed_in_limit"]
+            feed_in_limit = chargepoint.data.set.charging_ev_data.charge_template.data.chargemode.pv_charging.feed_in_limit
             feed_in_yield = pv_config["feed_in_yield"]
-            control_parameter = chargepoint.data.set.charging_ev_data.data["control_parameter"]
+            control_parameter = chargepoint.data.set.charging_ev_data.data.control_parameter
             # verbleibender EVU-Überschuss unter Berücksichtigung der Einspeisegrenze
             all_overhang = self.overhang_left()
             # Berücksichtigung der Speicherleistung
             all_overhang += bat_overhang
             if max(chargepoint.data.get.currents) == 0:
-                if control_parameter["timestamp_switch_on_off"] is not None:
+                if control_parameter.timestamp_switch_on_off is not None:
                     # Wurde die Einschaltschwelle erreicht? Reservierte Leistung aus all_overhang rausrechnen,
                     # da diese Leistung ja schon reserviert wurde, als die Einschaltschwelle erreicht wurde.
                     if ((not feed_in_limit and
@@ -184,8 +183,7 @@ class PvAll:
                         chargepoint.data.get.state_str = message
                         Pub().pub(
                             "openWB/set/vehicle/" + str(chargepoint.data.set.charging_ev_data.num) +
-                            "/control_parameter/timestamp_switch_on_off", control_parameter
-                            ["timestamp_switch_on_off"])
+                            "/control_parameter/timestamp_switch_on_off", control_parameter.timestamp_switch_on_off)
                     else:
                         # Einschaltschwelle nicht erreicht
                         message = "Die Ladung kann nicht gestartet werden, da die Einschaltschwelle ("+str(
@@ -254,11 +252,10 @@ class PvAll:
         """
         charge = True
         msg = None
-        control_parameter = chargepoint.data.set.charging_ev_data.data["control_parameter"]
+        control_parameter = chargepoint.data.set.charging_ev_data.data.control_parameter
         pv_config = data.data.general_data["general"].data["chargemode_config"]["pv_charging"]
         # Der EVU-Überschuss muss ggf um die Einspeisegrenze bereinigt werden.
-        if chargepoint.data.set.charging_ev_data.charge_template.data["chargemode"]["pv_charging"][
-                "feed_in_limit"]:
+        if chargepoint.data.set.charging_ev_data.charge_template.data.chargemode.pv_charging.feed_in_limit:
             feed_in_yield = data.data.general_data["general"].data[
                 "chargemode_config"]["pv_charging"]["feed_in_yield"]
         else:
@@ -267,8 +264,8 @@ class PvAll:
                   f'Überschuss {self.data["set"]["released_evu_overhang"]}W, Einspeisegrenze {feed_in_yield}W')
         # Wenn automatische Phasenumschaltung aktiv, die Umschaltung abwarten, bevor die Abschaltschwelle
         # greift.
-        if control_parameter["timestamp_auto_phase_switch"]:
-            control_parameter["timestamp_switch_on_off"] = None
+        if control_parameter.timestamp_auto_phase_switch:
+            control_parameter.timestamp_switch_on_off = None
             self.data["set"]["released_evu_overhang"] -= chargepoint.data.set.required_power
             log.info("Abschaltverzögerung gestoppt, da die Verzögerung für die Phasenumschaltung aktiv ist. " +
                      "Diese wird abgewartet, bevor die Abschaltverzögerung gestartet wird.")
@@ -282,7 +279,7 @@ class PvAll:
             # Wurde die Abschaltschwelle erreicht?
             # Eigene Leistung aus der freigegebenen Leistung rausrechnen.
             if power_in_use - chargepoint.data.set.required_power < threshold:
-                control_parameter["timestamp_switch_on_off"] = None
+                control_parameter.timestamp_switch_on_off = None
                 self.data["set"]["released_evu_overhang"] -= chargepoint.data.set.required_power
                 log.info("Abschaltschwelle während der Verzögerung überschritten.")
                 Pub().pub(
@@ -303,15 +300,14 @@ class PvAll:
                         msg = ("Da das EV nicht lädt und die Abschaltschwelle erreicht wird, "
                                "wird die Ladefreigabe entzogen.")
                     else:
-                        control_parameter["timestamp_switch_on_off"] = timecheck.create_timestamp()
+                        control_parameter.timestamp_switch_on_off = timecheck.create_timestamp()
                         # merken, dass ein LP verzögert wird, damit nicht zu viele LP verzögert werden.
                         self.data["set"]["released_evu_overhang"] += chargepoint.data.set.required_power
                         msg = "Ladevorgang wird nach Ablauf der Abschaltverzögerung (" + str(
                             pv_config["switch_off_delay"])+"s) gestoppt."
                         Pub().pub(
                             "openWB/set/vehicle/" + str(chargepoint.data.set.charging_ev_data.num) +
-                            "/control_parameter/timestamp_switch_on_off", control_parameter
-                            ["timestamp_switch_on_off"])
+                            "/control_parameter/timestamp_switch_on_off", control_parameter.timestamp_switch_on_off)
                     # Die Abschaltschwelle wird immer noch überschritten und es sollten weitere LP abgeschaltet
                     # werden.
                 else:
@@ -332,8 +328,8 @@ class PvAll:
             EV, das dem Ladepunkt zugeordnet ist
         """
         try:
-            if charging_ev.data["control_parameter"]["timestamp_switch_on_off"] is not None:
-                charging_ev.data["control_parameter"]["timestamp_switch_on_off"] = None
+            if charging_ev.data.control_parameter.timestamp_switch_on_off is not None:
+                charging_ev.data.control_parameter.timestamp_switch_on_off = None
                 Pub().pub("openWB/set/vehicle/"+str(charging_ev.num) +
                           "/control_parameter/timestamp_switch_on_off", None)
                 # Wenn bereits geladen wird, freigegebene Leistung freigeben. Wenn nicht geladen wird, reservierte

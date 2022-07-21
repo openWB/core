@@ -6,8 +6,9 @@ mit denen das EV aktuell in der Regelung berücksichtigt wird. Bei der Ermittlun
 stärke wird auch geprüft, ob sich an diesen Parametern etwas geändert hat. Falls ja, muss das EV
 in der Regelung neu priorisiert werden und eine neue Zuteilung des Stroms erhalten.
 """
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 import logging
+from time import strftime
 import traceback
 from typing import Any, List, Dict, Optional, Tuple, Union
 
@@ -15,7 +16,6 @@ from control import data
 from helpermodules.pub import Pub
 from helpermodules import timecheck
 from modules.common.abstract_soc import AbstractSoc
-from dataclass_utils import asdict
 
 log = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ def get_vehicle_default() -> dict:
 
 
 def get_charge_template_default() -> dict:
-    ct_default = to_dict(ChargeTemplateData())
+    ct_default = asdict(ChargeTemplateData())
     ct_default["chargemode"]["scheduled_charging"].pop("plans")
     ct_default["time_charging"].pop("plans")
     return ct_default
@@ -64,14 +64,14 @@ def time_plan_factory():
 
 
 @dataclass
-class Frequency(AbstractConfiguration):
+class Frequency:
     selected: str = "daily"
     once: List[str] = field(default_factory=once_factory)
     weekly: List[bool] = field(default_factory=weekly_factory)
 
 
 @dataclass
-class Limit(AbstractConfiguration):
+class Limit:
     selected: str = "none"
     soc: int = 50
     amount: int = 1000
@@ -86,7 +86,7 @@ def frequency_factory() -> Frequency:
 
 
 @dataclass
-class ScheduledChargingPlan(AbstractConfiguration):
+class ScheduledChargingPlan:
     name: str = "Zielladen-Standard"
     active: bool = False
     time: str = "07:00"  # ToDo: aktuelle Zeit verwenden
@@ -95,12 +95,12 @@ class ScheduledChargingPlan(AbstractConfiguration):
 
 
 @dataclass
-class ScheduledCharging(AbstractConfiguration):
+class ScheduledCharging:
     plans: Dict[int, ScheduledChargingPlan] = field(default_factory=scheduled_plan_factory)
 
 
 @dataclass
-class TimeChargingPlan(AbstractConfiguration):
+class TimeChargingPlan:
     name: str = "Zeitladen-Standard"
     active: bool = False
     time: List[str] = field(default_factory=time_factory)  # ToDo: aktuelle Zeit verwenden + 1 Stunde
@@ -109,19 +109,19 @@ class TimeChargingPlan(AbstractConfiguration):
 
 
 @dataclass
-class TimeCharging(AbstractConfiguration):
+class TimeCharging:
     active: bool = False
     plans: Dict[int, TimeChargingPlan] = field(default_factory=time_plan_factory)
 
 
 @dataclass
-class InstantCharging(AbstractConfiguration):
+class InstantCharging:
     current: int = 10
     limit: Limit = field(default_factory=limit_factory)
 
 
 @dataclass
-class PvCharging(AbstractConfiguration):
+class PvCharging:
     min_soc_current: int = 10
     min_current: int = 0
     feed_in_limit: bool = False
@@ -142,7 +142,7 @@ def instant_charging_factory() -> InstantCharging:
 
 
 @dataclass
-class Chargemode(AbstractConfiguration):
+class Chargemode:
     selected: str = "stop"
     pv_charging: PvCharging = field(default_factory=pv_charging_factory)
     scheduled_charging: ScheduledCharging = field(default_factory=scheduled_charging_factory)
@@ -158,7 +158,7 @@ def chargemode_factory() -> Chargemode:
 
 
 @dataclass
-class ChargeTemplateData(AbstractConfiguration):
+class ChargeTemplateData:
     name: str = "Standard-Ladeprofil-Vorlage"
     disable_after_unplug: bool = False
     prio: bool = False
@@ -168,18 +168,18 @@ class ChargeTemplateData(AbstractConfiguration):
 
 
 @dataclass
-class Soc(AbstractConfiguration):
+class Soc:
     request_interval_charging: int = 5
     request_interval_not_charging: int = 720
     request_only_plugged: bool = False
 
 
 def soc_factory() -> Soc:
-    return Soc
+    return Soc()
 
 
 @dataclass
-class EvTemplateData(AbstractConfiguration):
+class EvTemplateData:
     name: str = "Standard-Fahrzeug-Vorlage"
     max_current_multi_phases: int = 16
     max_phases: int = 3
@@ -197,7 +197,7 @@ class EvTemplateData(AbstractConfiguration):
 
 
 @dataclass
-class ControlParameter(AbstractConfiguration):
+class ControlParameter:
     required_current: float = 0
     phases: int = 0
     prio: bool = False
@@ -212,7 +212,7 @@ class ControlParameter(AbstractConfiguration):
 
 
 @dataclass
-class EvTemplate(AbstractConfiguration):
+class EvTemplate:
     """ Klasse mit den EV-Daten
     """
 
@@ -221,9 +221,9 @@ class EvTemplate(AbstractConfiguration):
         self.et_num = index
 
     def soc_interval_expired(
-            self, plug_state: bool, charge_state: bool, soc_timestamp: Union[str, None]) -> bool:
+            self, plug_state: bool, charge_state: bool, soc_timestamp: str) -> bool:
         request_soc = False
-        if soc_timestamp is None:
+        if soc_timestamp == "":
             # Initiale Abfrage
             request_soc = True
         else:
@@ -241,21 +241,26 @@ class EvTemplate(AbstractConfiguration):
 
 
 def ev_template_factory() -> EvTemplate:
-    return EvTemplate
+    return EvTemplate()
 
 
 @dataclass
-class Set(AbstractConfiguration):
+class Set:
     ev_template: EvTemplate = field(default_factory=ev_template_factory)
 
 
 @dataclass
-class Get(AbstractConfiguration):
+class Get:
     soc: int = 0
+    soc_timestamp: str = ""
 
 
 def control_parameter_factory() -> ControlParameter:
-    return ControlParameter
+    return ControlParameter()
+
+
+def get_factory() -> Get:
+    return Get()
 
 
 @dataclass
@@ -266,7 +271,7 @@ class EvData:
     ev_template: int = 0
     name: str = "Standard-Fahrzeug"
     tag_id: List[str] = field(default_factory=emtpy_list_factory)
-    get: Get = Get()
+    get: Get = field(default_factory=get_factory)
 
 
 class Ev:
@@ -341,13 +346,11 @@ class Ev:
             if self.charge_template.data.chargemode.selected == "scheduled_charging":
                 used_amount = charged_since_mode_switch - self.data.control_parameter.imported_at_plan_start
                 plan_data = self.charge_template.scheduled_charging_recent_plan(
-                    self.data.soc, self.ev_template, self.data.control_parameter.phases, used_amount)
+                    self.data.get.soc, self.ev_template, self.data.control_parameter.phases, used_amount)
                 if plan_data["num"]:
-                    name = self.charge_template.data["chargemode"]["scheduled_charging"]["plans"][plan_data["num"]][
-                        "name"]
+                    name = getattr(self.charge_template.data.chargemode.scheduled_charging.plans, plan_data["num"]).name
                     # Wenn mit einem neuen Plan geladen wird, muss auch die Energiemenge von neuem gezählt werden.
-                    if self.charge_template.data["chargemode"]["scheduled_charging"]["plans"][plan_data["num"]][
-                            "limit"]["selected"] == "amount" and name != self.data.control_parameter.current_plan:
+                    if getattr(self.charge_template.data.chargemode.scheduled_charging.plans, plan_data["num"]).limit.selected == "amount" and name != self.data.control_parameter.current_plan:
                         self.data.control_parameter.imported_at_plan_start = charged_since_mode_switch
                         Pub().pub(
                             f"openWB/set/vehicle/{self.num}/control_parameter/imported_at_plan_start",
@@ -534,7 +537,7 @@ class Ev:
         phases_to_use = self.data.control_parameter.phases
         phases_in_use = self.data.control_parameter.phases
         pv_config = data.data.general_data["general"].data["chargemode_config"]["pv_charging"]
-        max_phases_ev = self.ev_template.data["max_phases"]
+        max_phases_ev = self.ev_template.data.max_phases
         if self.charge_template.data.chargemode.pv_charging.feed_in_limit:
             feed_in_yield = pv_config["feed_in_yield"]
         else:
@@ -565,8 +568,7 @@ class Ev:
         if not self.ev_template.data.prevent_phase_switch and self.data.control_parameter.timestamp_perform_phase_switch is None:
             if timestamp_auto_phase_switch is None:
                 condition_1_to_3 = (max(get_currents) > max_current and
-                                    all_overhang > self.ev_template.data[
-                                        "min_current"] * max_phases_ev * 230 - get_power and
+                                    all_overhang > self.ev_template.data.min_current * max_phases_ev * 230 - get_power and
                                     phases_in_use == 1)
                 condition_3_to_1 = max(get_currents) < min_current and all_overhang < 0 and phases_in_use == 3
                 if condition_3_to_1 or condition_1_to_3:
@@ -860,7 +862,7 @@ def get_ev_to_rfid(rfid):
         try:
             if "ev" in vehicle:
                 if rfid in data.data.ev_data[vehicle].data.tag_id:
-                    return data.data.ev_data[vehicle].ev_num
+                    return data.data.ev_data[vehicle].num
         except Exception:
             log.exception("Fehler im ev-Modul "+vehicle)
             return None

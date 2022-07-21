@@ -74,7 +74,7 @@ class CounterAll:
                     evu_counter = self.get_id_evu_counter()
                     Pub().pub(f"openWB/set/counter/{evu_counter}/get/fault_state",
                               evu_counter_data["get"]["fault_state"])
-                    Pub().pub(f"openWB/set/counter/{evu_counter}/get/fault_str", evu_counter_data["get"]["fault_str"])
+                    Pub().pub(f"openWB/set/counter/{evu_counter}/get/fault_str", evu_counter_data.get.fault_str)
                 if self.data["set"]["invalid_home_consumption"] < 3:
                     self.data["set"]["invalid_home_consumption"] += 1
                     Pub().pub("openWB/set/counter/set/invalid_home_consumption",

@@ -509,13 +509,11 @@ class Chargepoint:
                 # Abstecken
                 if not self.data.get.plug_state:
                     # Standardprofil nach Abstecken laden
-                    if data.data.ev_data["ev"+str(self.data.set.charging_ev_prev)].charge_template.data[
-                            "load_default"]:
+                    if data.data.ev_data["ev"+str(self.data.set.charging_ev_prev)].charge_template.data.load_default:
                         self.data.config.ev = 0
                         Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/config/ev", 0)
                     # Ladepunkt nach Abstecken sperren
-                    if data.data.ev_data["ev"+str(self.data.set.charging_ev_prev)].charge_template.data[
-                            "disable_after_unplug"]:
+                    if data.data.ev_data["ev"+str(self.data.set.charging_ev_prev)].charge_template.data.disable_after_unplug:
                         self.data.set.manual_lock = True
                         Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/manual_lock", True)
                     # Ev wurde noch nicht aktualisiert.
@@ -547,16 +545,15 @@ class Chargepoint:
         try:
             charging_ev = self.data.set.charging_ev_data
             # Unterstützt der Ladepunkt die CP-Unterbrechung und benötigt das Auto eine CP-Unterbrechung?
-            if charging_ev.ev_template.data["control_pilot_interruption"]:
+            if charging_ev.ev_template.data.control_pilot_interruption:
                 if self.data.config.control_pilot_interruption_hw:
                     # Wird die Ladung gestartet?
                     if self.set_current_prev == 0 and self.data.set.current != 0:
                         cp_interruption.thread_cp_interruption(self.num,
                                                                self.chargepoint_module,
-                                                               charging_ev.ev_template.data[
-                                                                   "control_pilot_interruption_duration"])
+                                                               charging_ev.ev_template.data.control_pilot_interruption_duration)
                         message = "Control-Pilot-Unterbrechung für " + str(
-                            charging_ev.ev_template.data["control_pilot_interruption_duration"]) + "s."
+                            charging_ev.ev_template.data.control_pilot_interruption_duration) + "s."
                         log.info("LP "+str(self.num)+": "+message)
                         self.data.get.state_str = message
                 else:
@@ -579,16 +576,14 @@ class Chargepoint:
                         charging_ev.data.control_parameter.timestamp_perform_phase_switch,
                         6 + phase_switch_pause - 1):
                     log.debug("phase switch running")
-                    charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] = None
+                    charging_ev.data.control_parameter.timestamp_perform_phase_switch = None
                     Pub().pub("openWB/set/vehicle/" + str(charging_ev.num) +
                               "/control_parameter/timestamp_perform_phase_switch", None)
                     # Aktuelle Ladeleistung und Differenz wieder freigeben.
                     if charging_ev.data.control_parameter.phases == 3:
-                        data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= charging_ev.data[
-                            "control_parameter"]["required_current"] * 3 * 230
+                        data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= charging_ev.data.control_parameter.required_current * 3 * 230
                     elif charging_ev.data.control_parameter.phases == 1:
-                        data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= charging_ev.ev_template.data[
-                            "max_current_one_phase"] * 230
+                        data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= charging_ev.ev_template.data.max_current_one_phase * 230
                     self.data.set.current = charging_ev.data.control_parameter.required_current
                 else:
                     # Wenn eine Umschaltung im Gange ist, muss erst gewartet werden, bis diese fertig ist.
@@ -602,7 +597,7 @@ class Chargepoint:
                 return
             # Wenn noch kein Logeintrag erstellt wurde, wurde noch nicht geladen und die Phase kann noch umgeschaltet
             # werden.
-            if (not charging_ev.ev_template.data["prevent_phase_switch"] or
+            if (not charging_ev.ev_template.data.prevent_phase_switch or
                     self.data.set.log.imported_since_plugged == 0):
                 # Einmal muss die Anzahl der Phasen gesetzt werden.
                 if self.data.set.phases_to_use == 0:
@@ -618,7 +613,7 @@ class Chargepoint:
                             charge_state = self.data.get.charge_state
                             phase_switch.thread_phase_switch(
                                 self.num, self.chargepoint_module, charging_ev.data.control_parameter.phases,
-                                charging_ev.ev_template.data["phase_switch_pause"],
+                                charging_ev.ev_template.data.phase_switch_pause,
                                 charge_state)
                             log.debug("start phase switch phases_to_use " +
                                       str(self.data.set.phases_to_use) +
@@ -629,25 +624,22 @@ class Chargepoint:
                                 message = "Umschaltung von 1 auf 3 Phasen."
                                 # Timestamp für die Durchführungsdauer
                                 # Ladeleistung reservieren, da während der Umschaltung die Ladung pausiert wird.
-                                data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] += charging_ev.data[
-                                    "control_parameter"]["required_current"] * 3 * 230
-                                charging_ev.data["control_parameter"][
-                                    "timestamp_perform_phase_switch"] = timecheck.create_timestamp()
+                                data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] += charging_ev.data.control_parameter.required_current * 3 * 230
+                                charging_ev.data.control_parameter.timestamp_perform_phase_switch = timecheck.create_timestamp(
+                                )
                                 Pub().pub("openWB/set/vehicle/"+str(charging_ev.num) +
                                           "/control_parameter/timestamp_perform_phase_switch",
                                           charging_ev.data.control_parameter.timestamp_perform_phase_switch)
                             else:
                                 message = "Umschaltung von 3 auf 1 Phase."
                                 # Timestamp für die Durchführungsdauer
-                                charging_ev.data["control_parameter"][
-                                    "timestamp_perform_phase_switch"] = timecheck.create_timestamp()
+                                charging_ev.data.control_parameter.timestamp_perform_phase_switch = timecheck.create_timestamp(
+                                )
                                 Pub().pub("openWB/set/vehicle/"+str(charging_ev.num) +
                                           "/control_parameter/timestamp_perform_phase_switch",
                                           charging_ev.data.control_parameter.timestamp_perform_phase_switch)
                                 # Ladeleistung reservieren, da während der Umschaltung die Ladung pausiert wird.
-                                data.data.pv_data["all"].data["set"][
-                                    "reserved_evu_overhang"] += charging_ev.ev_template.data[
-                                        "max_current_one_phase"] * 230
+                                data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] += charging_ev.ev_template.data.max_current_one_phase * 230
                             log.info("LP "+str(self.num)+": "+message)
                             self.data.get.state_str = message
                             if self.data.set.phases_to_use != charging_ev.data.control_parameter.phases:
@@ -673,8 +665,8 @@ class Chargepoint:
         charging_ev = self.data.set.charging_ev_data
         mode = charging_ev.charge_template.data.chargemode.selected
         config = self.data.config
-        if charging_ev.ev_template.data["max_phases"] <= config.connected_phases:
-            phases = charging_ev.ev_template.data["max_phases"]
+        if charging_ev.ev_template.data.max_phases <= config.connected_phases:
+            phases = charging_ev.ev_template.data.max_phases
             log.debug(f"EV-Phasenzahl beschränkt die nutzbaren Phasen auf {phases}")
         else:
             phases = config.connected_phases
@@ -685,11 +677,11 @@ class Chargepoint:
         # bis der Algorithmus eine Umschaltung vorgibt, zB weil der gewählte Lademodus eine
         # andere Phasenzahl benötigt oder bei PV-Laden die automatische Umschaltung aktiv ist.
         if chargemode_phases == 0:
-            if charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] is None:
+            if charging_ev.data.control_parameter.timestamp_perform_phase_switch is None:
                 if self.data.get.charge_state:
                     phases = self.data.set.phases_to_use
                 else:
-                    if ((not charging_ev.ev_template.data["prevent_phase_switch"] or
+                    if ((not charging_ev.ev_template.data.prevent_phase_switch or
                             self.data.set.log.imported_since_plugged == 0) and
                             self.data.config.auto_phase_switch_hw):
                         phases = 1
@@ -707,7 +699,7 @@ class Chargepoint:
             # Wenn noch kein Logeintrag erstellt wurde, wurde noch nicht geladen und die Phase kann noch
             # umgeschaltet werden.
             if self.data.set.log.imported_since_plugged != 0:
-                if charging_ev.ev_template.data["prevent_phase_switch"]:
+                if charging_ev.ev_template.data.prevent_phase_switch:
                     log.info(f"Phasenumschaltung an Ladepunkt {self.num} nicht möglich, da bei EV"
                              f"{charging_ev.num} nach Ladestart nicht mehr umgeschaltet werden darf.")
                     phases = self.data.get.phases_in_use
@@ -819,24 +811,23 @@ class Chargepoint:
                     self.data.set.charging_ev = -1
                     Pub().pub("openWB/set/chargepoint/" +
                               str(self.num)+"/set/charging_ev", -1)
-                    log.debug(f'LP {self.num}, EV: {self.data.set.charging_ev_data.data["name"]}'
+                    log.debug(f'LP {self.num}, EV: {self.data.set.charging_ev_data.data.name}'
                               f' (EV-Nr.{vehicle}): Lademodus '
                               f'{charging_ev.charge_template.data.chargemode.selected}, Submodus: '
                               f'{charging_ev.data.control_parameter.submode}')
                 else:
-                    if (charging_ev.data["control_parameter"]["timestamp_switch_on_off"] is not None and
+                    if (charging_ev.data.control_parameter.timestamp_switch_on_off is not None and
                             not self.data.get.charge_state and
                             data.data.pv_data["all"].data["set"]["overhang_power_left"] == 0):
                         log.error("Reservierte Leistung kann nicht 0 sein.")
 
                     log.debug(
-                        "LP " + str(self.num) + ", EV: " + self.data.set.charging_ev_data.data
-                        ["name"] + " (EV-Nr." + str(vehicle) + "): Theoretisch benötigter Strom " +
-                        str(required_current) + "A, Lademodus " +
-                        str(charging_ev.charge_template.data.chargemode.selected) + ", Submodus: " +
-                        str(charging_ev.data.control_parameter.submode) + ", Phasen: " + str(phases) +
-                        ", Priorität: " + str(charging_ev.charge_template.data.prio) +
-                        ", max. Ist-Strom: " + str(max(self.data.get.currents)))
+                        f"LP {self.num}, EV: {self.data.set.charging_ev_data.data.name} (EV-Nr.{vehicle}): Theoretisch benötigter Strom "
+                        f"{required_current}A, Lademodus "
+                        f"{charging_ev.charge_template.data.chargemode.selected}, Submodus: "
+                        f"{charging_ev.data.control_parameter.submode}, Phasen: {phases}"
+                        f", Priorität: {charging_ev.charge_template.data.prio}"
+                        f", max. Ist-Strom: {max(self.data.get.currents)}")
             except Exception:
                 log.exception("Fehler im Prepare-Modul für Ladepunkt "+str(self.num))
                 ev_list[f"ev{vehicle}"].data.control_parameter.submode = "stop"
@@ -857,7 +848,7 @@ class Chargepoint:
             self.data.set.charging_ev = vehicle
             Pub().pub("openWB/set/chargepoint/" +
                       str(self.num)+"/set/charging_ev", vehicle)
-            charging_ev.ev_template.data = charging_ev.data["set"]["ev_template"]
+            charging_ev.ev_template.data = charging_ev.data.set.ev_template
             self.data.set.charging_ev_data = charging_ev
             Pub().pub("openWB/set/chargepoint/"+str(self.num) +
                       "/set/change_ev_permitted", [True, ""])
@@ -871,9 +862,9 @@ class Chargepoint:
                 self.data.set.charging_ev_data = charging_ev
                 Pub().pub("openWB/set/chargepoint/"+str(self.num) +
                           "/set/change_ev_permitted", [True, ""])
-                charging_ev.data["set"]["ev_template"] = charging_ev.ev_template.data
+                charging_ev.data.set.ev_template = charging_ev.ev_template.data
                 Pub().pub("openWB/set/vehicle/"+str(charging_ev.num) +
-                          "/set/ev_template", charging_ev.data["set"]["ev_template"])
+                          "/set/ev_template", charging_ev.data.set.ev_template)
             else:
                 # Altes EV beibehalten.
                 if self.data.set.charging_ev != -1:
@@ -891,7 +882,7 @@ class Chargepoint:
                         "Wenn kein aktuelles und kein vorheriges Ev zugeordnet waren, \
                             sollte noch nicht geladen worden sein.")
                 charging_ev = ev_list["ev" + str(vehicle)]
-                charging_ev.ev_template.data = charging_ev.data["set"]["ev_template"]
+                charging_ev.ev_template.data = charging_ev.data.set.ev_template
                 self.data.set.charging_ev_data = charging_ev
                 Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/change_ev_permitted", [
                     False, "Das Fahrzeug darf nur geändert werden, wenn noch nicht geladen wurde. \
@@ -920,12 +911,12 @@ class Chargepoint:
                 range_unit=data.data.general_data["general"].data["range_unit"],
             )
             if vehicle.data["get"].get("soc_timestamp"):
-                soc_obj.timestamp = vehicle.data["get"]["soc_timestamp"]
+                soc_obj.timestamp = vehicle.data.get.soc_timestamp
                 soc_obj.soc = vehicle.data.get.soc
-                soc_obj.fault_state = vehicle.data["get"]["fault_state"]
-                soc_obj.fault_str = vehicle.data["get"]["fault_str"]
+                soc_obj.fault_state = vehicle.data.get.fault_state
+                soc_obj.fault_str = vehicle.data.get.fault_str
             if vehicle.data["get"].get("range"):
-                soc_obj.range = vehicle.data["get"]["range"]
+                soc_obj.range = vehicle.data.get.range
             info_obj = ConnectedInfo(id=vehicle.num,
                                      name=vehicle.data["name"])
             if (vehicle.charge_template.data.chargemode.selected == "time_charging" or

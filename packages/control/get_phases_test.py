@@ -19,11 +19,6 @@ def cp() -> Chargepoint:
     chargep.template = CpTemplate()
     chargep.template.data = chargepoint.get_chargepoint_template_default()
     chargep.data.set.charging_ev_data = Ev(0)
-    chargep.data.set.charging_ev_data.data["config"] = ev.get_vehicle_default()
-    chargep.data.set.charging_ev_data.ev_template = EvTemplate(0)
-    chargep.data.set.charging_ev_data.ev_template.data = ev.get_ev_template_default()
-    chargep.data.set.charging_ev_data.charge_template = ChargeTemplate(0)
-    chargep.data.set.charging_ev_data.charge_template.data = ev.get_charge_template_default()
     return chargep
 
 
@@ -120,10 +115,9 @@ def test_get_phases(monkeypatch, cp: Chargepoint, params: Params):
 
     cp.data.config.connected_phases = params.connected_phases
     cp.data.config.auto_phase_switch_hw = params.auto_phase_switch_hw
-    cp.data.set.charging_ev_data.ev_template.data["max_phases"] = params.max_phases
-    cp.data.set.charging_ev_data.ev_template.data["prevent_phase_switch"] = params.prevent_phase_switch
-    cp.data.set.charging_ev_data.data["control_parameter"][
-        "timestamp_perform_phase_switch"] = params.timestamp_perform_phase_switch
+    cp.data.set.charging_ev_data.ev_template.data.max_phases = params.max_phases
+    cp.data.set.charging_ev_data.ev_template.data.prevent_phase_switch = params.prevent_phase_switch
+    cp.data.set.charging_ev_data.data.control_parameter.timestamp_perform_phase_switch = params.timestamp_perform_phase_switch
     cp.data.set.charging_ev_data.data.control_parameter.phases = params.phases_in_use
     cp.data.get.charge_state = params.charge_state
     cp.data.get.phases_in_use = params.phases_in_use
