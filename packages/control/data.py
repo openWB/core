@@ -335,10 +335,8 @@ class Data:
     def __copy_cp_data(self) -> None:
         self.cp_data.clear()
         for cp in SubData.cp_data:
-            if cp != "all":
-                self.cp_data[cp] = copy.deepcopy(SubData.cp_data[cp].chargepoint)
-            else:
-                self.cp_data[cp] = copy.deepcopy(SubData.cp_data[cp])
+            self.cp_data[cp] = copy.deepcopy(SubData.cp_data[cp].chargepoint)
+        self.cp_all_data = copy.deepcopy(SubData.cp_all_data)
         self.cp_template_data = copy.deepcopy(SubData.cp_template_data)
         for chargepoint in self.cp_data:
             try:
