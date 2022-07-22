@@ -24,11 +24,11 @@ class Params:
 # ]
 cases_get_difference = [
     Params("get_difference_minutes_before", "02/18/2022, 10:42:23",
-           second_time="02/18/2022, 10:40:56", expected_return="87"),
+           second_time="02/18/2022, 10:40:56", expected_return=87),
     Params("get_difference_minutes_after", "02/18/2022, 10:50:45",
-           second_time="02/18/2022, 10:42:56", expected_return="469"),
-    Params("get_difference_hours", "02/18/2022, 10:42:56", second_time="02/18/2022, 08:18:45", expected_return="8651"),
-    Params("get_difference_days", "02/18/2022, 08:18:45", second_time="02/16/2022, 10:42:56", expected_return="164149"),
+           second_time="02/18/2022, 10:42:56", expected_return=469),
+    Params("get_difference_hours", "02/18/2022, 10:42:56", second_time="02/18/2022, 08:18:45", expected_return=8651),
+    Params("get_difference_days", "02/18/2022, 08:18:45", second_time="02/16/2022, 10:42:56", expected_return=164149),
 ]
 
 cases_duration_sum = [
