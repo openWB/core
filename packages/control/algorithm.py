@@ -9,7 +9,7 @@ from control import data
 from control import loadmanagement
 from control.chargepoint import Chargepoint
 from helpermodules.pub import Pub
-from packages.control.ev import Ev
+from control.ev import Ev
 
 log = logging.getLogger(__name__)
 

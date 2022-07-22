@@ -769,7 +769,7 @@ class Chargepoint:
                 required_current = charging_ev.check_min_max_current(
                     required_current, charging_ev.data.control_parameter.phases)
                 current_changed, mode_changed = charging_ev.check_state(
-                    required_current, self.data.set.current, self.data.get.charge_state)
+                    required_current, self.data.set.current)
 
                 # Die benötigte Stromstärke hat sich durch eine Änderung des Lademodus oder der
                 # Konfiguration geändert. Die Zuteilung entsprechend der Priorisierung muss neu geprüft

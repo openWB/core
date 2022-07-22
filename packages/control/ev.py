@@ -403,7 +403,7 @@ class Ev:
             log.exception("Fehler im ev-Modul "+str(self.num))
             return False, "ein interner Fehler aufgetreten ist: "+traceback.format_exc(), "stop", 0
 
-    def check_state(self, required_current, set_current, charge_state):
+    def check_state(self, required_current, set_current):
         """ prüft, ob sich etwas an den Parametern für die Regelung geändert hat,
         sodass der LP neu in die Priorisierung eingeordnet werden muss und veröffentlicht die Regelparameter.
 
