@@ -1,6 +1,6 @@
 from typing import Optional
 
-from modules.sma_sunny_boy.inverter_version import SmaInverterVersion
+from modules.sma_sunny_boy.inv_version import SmaInverterVersion
 
 
 class SmaSunnyBoyConfiguration:
