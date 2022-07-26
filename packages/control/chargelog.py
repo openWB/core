@@ -174,6 +174,7 @@ def save_data(chargepoint, charging_ev, immediately: bool = True, reset: bool = 
         content.append(new_entry)
         with open(filepath, "w", encoding="utf-8") as json_file:
             json.dump(content, json_file)
+        log.debug(f"Neuer Ladelogeintrag: {new_entry}")
 
         # Werte zurücksetzen
         log_data.timestamp_start_charging = None
