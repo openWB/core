@@ -464,36 +464,34 @@ class Chargepoint:
             self.set_current_prev = self.data.set.current
             self.__validate_rfid()
             message = "Keine Ladung, da ein Fehler aufgetreten ist."
-            charging_possbile = False
             try:
-                state, message = self._is_grid_protection_inactive()
-                if state:
-                    state, message = self._is_ripple_control_receiver_inactive()
-                    if state:
-                        state, message = self._is_loadmanagement_available()
-                        if state:
-                            state, message = self._is_ev_plugged()
-                            if state:
-                                state, message = self._is_autolock_inactive()
-                                if state:
+                charging_possbile, message = self._is_grid_protection_inactive()
+                if charging_possbile:
+                    charging_possbile, message = self._is_ripple_control_receiver_inactive()
+                    if charging_possbile:
+                        charging_possbile, message = self._is_loadmanagement_available()
+                        if charging_possbile:
+                            charging_possbile, message = self._is_ev_plugged()
+                            if charging_possbile:
+                                charging_possbile, message = self._is_autolock_inactive()
+                                if charging_possbile:
                                     charging_possbile, message = self._is_manual_lock_inactive()
             except Exception:
                 log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.num))
                 return -1, False, "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
-            if state:
-                num, message_ev = self.template.get_ev(self.data.get.rfid or self.data.set.rfid, self.data.config.ev)
-            else:
-                num = -1
-                message_ev = None
-            if message_ev:
-                message = message_ev
             if charging_possbile:
+                num, message_ev = self.template.get_ev(self.data.get.rfid or self.data.set.rfid, self.data.config.ev)
+                if message_ev:
+                    message = message_ev
                 if num != -1:
                     if self.data.get.rfid is not None:
                         self.__link_rfid_to_cp()
                     return num, True, message
                 else:
                     self.data.get.state_str = message
+            else:
+                num = -1
+                message_ev = None
             # Charging Ev ist noch das EV des vorherigen Zyklus, wenn das nicht -1 war und jetzt nicht mehr geladen
             # werden soll (-1), Daten zurücksetzen.
             if self.data.set.charging_ev != -1:
