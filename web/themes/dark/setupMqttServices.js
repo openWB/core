@@ -241,7 +241,7 @@ var retries = 0;
 
 //Connect Options
 var isSSL = location.protocol == 'https:'
-var port = location.port;
+var port = parseInt(location.port);
 var options = {
 	timeout: 5,
 	useSSL: isSSL,
