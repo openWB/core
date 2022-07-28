@@ -447,7 +447,7 @@ class Algorithm:
                                 loadmanagement.loadmanagement_for_cp(
                                     cp, undo_missing_current, phases)
                                 self._process_data(
-                                    cp, cp.data["set"]["current"] + missing_current + undo_missing_current)
+                                    cp, cp.data.set.current + missing_current + undo_missing_current)
                                 message = ("Das Lastmanagement hat den Ladestrom um "
                                            f"{round((missing_current + undo_missing_current), 2)}A angepasst.")
                                 log.debug(message)
