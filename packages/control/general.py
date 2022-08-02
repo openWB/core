@@ -33,8 +33,9 @@ class General:
         int: Anzahl Phasen
         """
         try:
-            if chargemode == "stop" or chargemode == "standby":
-                return 0
+            if chargemode == "stop":
+                # von maximaler Phasenzahl ausgehen.
+                return 3
             else:
                 return self.data["chargemode_config"][chargemode]["phases_to_use"]
         except Exception:
