@@ -225,7 +225,7 @@ def get_log_data(request: dict):
         # Liste mit gefilterten Einträgen erstellen
         for entry in charge_log:
             if len(entry) > 0:
-                if(
+                if (
                     "id" in request["filter"]["chargepoint"] and
                     len(request["filter"]["chargepoint"]["id"]) > 0 and
                     entry["chargepoint"]["id"] not in request["filter"]["chargepoint"]["id"]
@@ -235,7 +235,7 @@ def get_log_data(request: dict):
                         (str(entry["chargepoint"]["id"]), str(request["filter"]["chargepoint"]["id"]))
                     )
                     continue
-                if(
+                if (
                     "id" in request["filter"]["vehicle"] and
                     len(request["filter"]["vehicle"]["id"]) > 0 and
                     entry["vehicle"]["id"] not in request["filter"]["vehicle"]["id"]
@@ -245,7 +245,7 @@ def get_log_data(request: dict):
                         (str(entry["vehicle"]["id"]), str(request["filter"]["vehicle"]["id"]))
                     )
                     continue
-                if(
+                if (
                     "rfid" in request["filter"]["vehicle"] and
                     len(request["filter"]["vehicle"]["rfid"]) > 0 and
                     entry["vehicle"]["rfid"] not in request["filter"]["vehicle"]["rfid"]
@@ -255,7 +255,7 @@ def get_log_data(request: dict):
                         (str(entry["vehicle"]["rfid"]), str(request["filter"]["vehicle"]["rfid"]))
                     )
                     continue
-                if(
+                if (
                     "chargemode" in request["filter"]["vehicle"] and
                     len(request["filter"]["vehicle"]["chargemode"]) > 0 and
                     entry["vehicle"]["chargemode"] not in request["filter"]["vehicle"]["chargemode"]
@@ -265,7 +265,7 @@ def get_log_data(request: dict):
                         (str(entry["vehicle"]["chargemode"]), str(request["filter"]["vehicle"]["chargemode"]))
                     )
                     continue
-                if(
+                if (
                     "prio" in request["filter"]["vehicle"] and
                     request["filter"]["vehicle"]["prio"] is not entry["vehicle"]["prio"]
                 ):

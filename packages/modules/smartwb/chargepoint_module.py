@@ -35,7 +35,7 @@ class ChargepointModule(AbstractChargepoint):
             self.id,
             "Ladepunkt", "chargepoint")
         self.__client_error_context = ErrorCounterContext(
-            "Anhaltender Fehler beim Auslesen des Ladepunkts. Sollstromstärke wird zurückgesetzt.")
+            "Anhaltender Fehler beim Auslesen des Ladepunkts. Soll-Stromstärke wird zurückgesetzt.")
         self.phases_in_use = 1
 
     def set_current(self, current: float) -> None:
@@ -100,3 +100,10 @@ class ChargepointModule(AbstractChargepoint):
 
                 self.__store.set(chargepoint_state)
                 self.__client_error_context.reset_error_counter()
+
+    def clear_rfid(self) -> None:
+        with SingleComponentUpdateContext(self.component_info):
+            with self.__client_error_context:
+                ip_address = self.connection_module["configuration"]["ip_address"]
+                timeout = self.connection_module["configuration"]["timeout"]
+                req.get_http_session().get('http://'+ip_address+'/clearRfid', timeout=(timeout, None))

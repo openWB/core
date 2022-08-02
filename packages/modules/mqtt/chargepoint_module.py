@@ -30,11 +30,11 @@ class ChargepointModule(AbstractChargepoint):
 
     def set_current(self, current: float) -> None:
         with SingleComponentUpdateContext(self.component_info):
-            log.debug("MQTT-Ladepunkte subscriben die Sollstromstärke direkt vom Broker.")
+            log.debug("MQTT-Ladepunkte abonnieren die Soll-Stromstärke direkt vom Broker.")
 
     def get_values(self) -> None:
         with SingleComponentUpdateContext(self.component_info):
             log.debug("MQTT-Ladepunkte müssen nicht ausgelesen werden.")
 
     def switch_phases(self, phases_to_use: int, duration: int) -> None:
-        log.warning("Phasenumschaltung für MQTT-Ladepunkte nicht unterstüzt.")
+        log.warning("Phasenumschaltung für MQTT-Ladepunkte nicht unterstützt.")
