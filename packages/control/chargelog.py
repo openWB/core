@@ -48,7 +48,7 @@ def collect_data(chargepoint):
                           "/set/log/imported_at_mode_switch", log_data.imported_at_mode_switch)
                 log.debug("imported_at_mode_switch " +
                           str(chargepoint.data.get.imported))
-            # Bei einem Wechsel das Lademodus wird ein neuer Logeintrag erstellt.
+            # Bei einem Wechsel das Lademodus wird ein neuer Eintrag im Protokoll erstellt.
             if chargepoint.data.get.charge_state:
                 if log_data.timestamp_start_charging is None:
                     log_data.timestamp_start_charging = timecheck.create_timestamp()
@@ -74,7 +74,7 @@ def collect_data(chargepoint):
                 Pub().pub("openWB/set/chargepoint/"+str(chargepoint.num) +
                           "/set/log/time_charged", log_data.time_charged)
     except Exception:
-        log.exception("Fehler im Ladelog-Modul")
+        log.exception("Fehler im Ladeprotokoll-Modul")
 
 
 def save_data(chargepoint, charging_ev, immediately: bool = True, reset: bool = False):
@@ -161,7 +161,7 @@ def save_data(chargepoint, charging_ev, immediately: bool = True, reset: bool = 
         ).parents[2] / "data"/"charge_log").mkdir(mode=0o755, parents=True, exist_ok=True)
         filepath = str(
             pathlib.Path(__file__).resolve().parents[2] / "data" / "charge_log" /
-            (timecheck.create_timestamp_YYYYMM() + ".json"))
+            (timecheck.create_timestamp(timecheck.TimestampFormat.year_month) + ".json"))
         try:
             with open(filepath, "r", encoding="utf-8") as json_file:
                 content = json.load(json_file)
@@ -174,7 +174,7 @@ def save_data(chargepoint, charging_ev, immediately: bool = True, reset: bool = 
         content.append(new_entry)
         with open(filepath, "w", encoding="utf-8") as json_file:
             json.dump(content, json_file)
-        log.debug(f"Neuer Ladelogeintrag: {new_entry}")
+        log.debug(f"Neuer Ladeprotokolleintrag: {new_entry}")
 
         # Werte zurücksetzen
         log_data.timestamp_start_charging = None
@@ -199,7 +199,7 @@ def save_data(chargepoint, charging_ev, immediately: bool = True, reset: bool = 
         Pub().pub("openWB/set/chargepoint/"+str(chargepoint.num) +
                   "/set/log/time_charged", log_data.time_charged)
     except Exception:
-        log.exception("Fehler im Ladelog-Modul")
+        log.exception("Fehler im Ladeprotokoll-Modul")
 
 
 def get_log_data(request: dict):
@@ -220,7 +220,7 @@ def get_log_data(request: dict):
             with open(filepath, "r", encoding="utf-8") as json_file:
                 charge_log = json.load(json_file)
         except FileNotFoundError:
-            log.debug("Kein Ladelog für %s gefunden!" % (str(request)))
+            log.debug("Kein Ladeprotokoll für %s gefunden!" % (str(request)))
             return log_data
         # Liste mit gefilterten Einträgen erstellen
         for entry in charge_log:
@@ -304,7 +304,7 @@ def get_log_data(request: dict):
                 "costs": costs,
             }
     except Exception:
-        log.exception("Fehler im Ladelog-Modul")
+        log.exception("Fehler im Ladeprotokoll-Modul")
     return log_data
 
 
@@ -339,7 +339,7 @@ def reset_data(chargepoint, charging_ev, immediately: bool = True):
                   "/set/log/imported_since_plugged", log_data.imported_since_plugged)
 
     except Exception:
-        log.exception("Fehler im Ladelog-Modul")
+        log.exception("Fehler im Ladeprotokoll-Modul")
 
 
 def truncate(number: Union[int, float], decimals: int = 0):
@@ -357,4 +357,4 @@ def truncate(number: Union[int, float], decimals: int = 0):
         factor = 10.0 ** decimals
         return math.trunc(number * factor) / factor
     except Exception:
-        log.exception("Fehler im Ladelog-Modul")
+        log.exception("Fehler im Ladeprotokoll-Modul")

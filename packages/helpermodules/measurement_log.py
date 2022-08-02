@@ -107,12 +107,12 @@ def save_log(folder):
     Parameter
     ---------
     folder: str
-        gibt an, ob ein Tages-oder Monatslogeintrag erstellt werden soll.
+        gibt an, ob ein Tages-oder Monats-Eintrag im Protokoll erstellt werden soll.
     """
     if folder == "daily":
-        date = timecheck.create_timestamp_time()
+        date = timecheck.create_timestamp(timecheck.TimestampFormat.time)
     else:
-        date = timecheck.create_timestamp_YYYYMMDD()
+        date = timecheck.create_timestamp(timecheck.TimestampFormat.year_month_day)
     current_timestamp = timecheck.create_timestamp_unix()
     cp_dict = {}
     for cp in data.data.cp_data:
@@ -183,13 +183,13 @@ def save_log(folder):
                                                                                  parents=True, exist_ok=True)
         filepath = str(
             Path(__file__).resolve().parents[2] / "data" / "daily_log" /
-            (timecheck.create_timestamp_YYYYMMDD() + ".json"))
+            (timecheck.create_timestamp(timecheck.TimestampFormat.year_month_day) + ".json"))
     else:
         (pathlib.Path(__file__).resolve().parents[2] / "data"/"monthly_log").mkdir(mode=0o755,
                                                                                    parents=True, exist_ok=True)
         filepath = str(
             Path(__file__).resolve().parents[2] / "data" / "monthly_log" /
-            (timecheck.create_timestamp_YYYYMM() + ".json"))
+            (timecheck.create_timestamp(timecheck.TimestampFormat.year_month) + ".json"))
     try:
         with open(filepath, "r") as jsonFile:
             content = json.load(jsonFile)
@@ -219,7 +219,7 @@ def get_totals(entries: List) -> Dict:
                         if key != "soc":
                             try:
                                 prev_value = prev_entry[group][module][key]
-                            # Wenn ein Modul neu hinzugefügt wurde, das es mit dieser ID schonmal gab, werden die Werte
+                            # Wenn ein Modul neu hinzugefügt wurde, das es mit dieser ID bereits gab, werden die Werte
                             # zusammen addiert.
                             except KeyError:
                                 prev_value = entry[group][module][key]
