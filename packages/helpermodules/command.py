@@ -595,7 +595,7 @@ class ProcessBrokerBranch:
             return self.received_topics
         except Exception:
             log.exception("Fehler im Command-Modul")
-            return[]
+            return []
 
     def __connect_to_broker(self, on_message):
         """ abonniert alle Topics.

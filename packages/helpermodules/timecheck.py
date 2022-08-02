@@ -471,12 +471,9 @@ def __get_timedelta_obj(time: str) -> timedelta:
     """
     time_charged = time.split(":")
     if len(time_charged) == 2:
-        delta = timedelta(hours=int(time_charged[0]),
-                                   minutes=int(time_charged[1]))
+        delta = timedelta(hours=int(time_charged[0]), minutes=int(time_charged[1]))
     elif len(time_charged) == 3:
-        delta = timedelta(days=int(time_charged[0]),
-                                   hours=int(time_charged[1]),
-                                   minutes=int(time_charged[2]))
+        delta = timedelta(days=int(time_charged[0]), hours=int(time_charged[1]), minutes=int(time_charged[2]))
     else:
         raise Exception("Unknown charge duration: "+time)
     return delta
