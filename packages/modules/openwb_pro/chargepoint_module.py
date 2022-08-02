@@ -82,3 +82,8 @@ class ChargepointModule(AbstractChargepoint):
                     self.__session.post('http://'+ip_address+'/connect.php',
                                         data={'phasetarget': str(phases_to_use)})
                     time.sleep(duration)
+
+    def clear_rfid(self) -> None:
+        with SingleComponentUpdateContext(self.component_info, False):
+            with self.__client_error_context:
+                log.debug("Die openWB-Pro unterstützt keine RFID-Tags.")
