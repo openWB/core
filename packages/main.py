@@ -132,7 +132,7 @@ class HandlerAlgorithm:
             cleanup_logfiles()
             measurement_log.measurement_log_daily()
             # Wenn ein neuer Tag ist, Monatswerte schreiben.
-            day = timecheck.create_timestamp(timecheck.TimestampFormat.year_month_day)[-2:]
+            day = timecheck.create_timestamp_YYYYMMDD()[-2:]
             if self.current_day != day:
                 self.current_day = day
                 measurement_log.save_log("monthly")
