@@ -181,7 +181,15 @@ function refreshChargeTemplate(templateIndex) {
 							schedulePlanElement.find('input[type=checkbox][data-toggle^=toggle]').bootstrapToggle();
 							// set values from payload
 							schedulePlanElement.find('.charge-point-schedule-name').text(value.name);
-							schedulePlanElement.find('.charge-point-schedule-soc').text(value.limit.soc);
+							if (value.limit.selected == "soc") {
+								schedulePlanElement.find('.charge-point-schedule-limit').text(value.limit.soc + "%");
+								schedulePlanElement.find('.charge-point-schedule-limit-icon').removeClass('fa-bolt');
+								schedulePlanElement.find('.charge-point-schedule-limit-icon').addClass('fa-car-battery');
+							} else {
+								schedulePlanElement.find('.charge-point-schedule-limit').text((value.limit.amount/1000) + "kWh");
+								schedulePlanElement.find('.charge-point-schedule-limit-icon').removeClass('fa-car-battery');
+								schedulePlanElement.find('.charge-point-schedule-limit-icon').addClass('fa-bolt');
+							}
 							schedulePlanElement.find('.charge-point-schedule-time').text(value.time);
 							if (value.active == true) {
 								schedulePlanElement.find('.charge-point-schedule-active').removeClass('alert-danger border-danger');
