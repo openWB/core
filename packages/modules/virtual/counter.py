@@ -15,10 +15,10 @@ from modules.virtual.config import VirtualCounterSetup
 
 class VirtualCounter:
     # Gedrehter Anschluss der Ladepunkte:
-    # Phase 1 LP -> LP-P 0 = EVU-P 0, LP-P 1 = EVU-P 1, LP-P 2 = EVU-P 2
-    # Phase 1 LP -> LP-P 0 = EVU-P 1, LP-P 1 = EVU-P 2, LP-P 2 = EVU-P 0
-    # Phase 3 LP -> LP-P 0 = EVU-P 2, LP-P 1 = EVU-P 0, LP-P 2 = EVU-P 1
-    cp_tp_evu_phase_mapping = {"1": [0, 1, 2], "2": [1, 2, 0], "3": [2, 0, 1]}
+    # Phase 1 LP -> LP 0 = EVU 0, LP 1 = EVU 1, LP 2 = EVU 2
+    # Phase 1 LP -> LP 0 = EVU 2, LP 1 = EVU 0, LP 2 = EVU 1
+    # Phase 3 LP -> LP 0 = EVU 1, LP 1 = EVU 2, LP 2 = EVU 0
+    cp_tp_evu_phase_mapping = {"1": [0, 1, 2], "2": [2, 0, 1], "3": [1, 2, 0]}
 
     def __init__(self, device_id: int, component_config: Union[Dict, VirtualCounterSetup]) -> None:
         self.__device_id = device_id
