@@ -18,13 +18,10 @@ class PubSingleton:
         self.client.loop_start()
 
     def pub(self, topic: str, payload, qos: int = 0, retain: bool = True) -> None:
-        try:
-            if payload == "":
-                self.client.publish(topic, payload, qos=qos, retain=retain)
-            else:
-                self.client.publish(topic, payload=json.dumps(payload), qos=qos, retain=retain)
-        except Exception:
-            log.exception("Fehler im pub-Modul")
+        if payload == "":
+            self.client.publish(topic, payload, qos=qos, retain=retain)
+        else:
+            self.client.publish(topic, payload=json.dumps(payload), qos=qos, retain=retain)
 
 
 class Pub:
@@ -52,10 +49,7 @@ def pub_single(topic, payload, hostname="localhost", no_json=False):
     no_json: bool
         Kompatibilität mit ISSS, die ramdisk verwenden.
     """
-    try:
-        if no_json:
-            publish.single(topic, payload, hostname=hostname, retain=True)
-        else:
-            publish.single(topic, json.dumps(payload), hostname=hostname, retain=True)
-    except Exception:
-        log.exception(f"Fehler im pub-Modul. Host {hostname}")
+    if no_json:
+        publish.single(topic, payload, hostname=hostname, retain=True)
+    else:
+        publish.single(topic, json.dumps(payload), hostname=hostname, retain=True)
