@@ -42,7 +42,7 @@ class VirtualCounter:
             self.power += element.data["get"]["power"]
 
         counter_all = data.data.counter_data["all"]
-        elements = counter_all.get_entry_of_element(self.component_config.id)["children"]
+        elements = counter_all.get_all_elements_without_children(self.component_config.id)
         for element in elements:
             if element["type"] == ComponentType.CHARGEPOINT.value:
                 chargepoint = data.data.cp_data[f"cp{element['id']}"]
