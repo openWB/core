@@ -18,7 +18,7 @@ class VirtualCounter:
     # Phase 1 LP -> LP 0 = EVU 0, LP 1 = EVU 1, LP 2 = EVU 2
     # Phase 1 LP -> LP 0 = EVU 2, LP 1 = EVU 0, LP 2 = EVU 1
     # Phase 3 LP -> LP 0 = EVU 1, LP 1 = EVU 2, LP 2 = EVU 0
-    cp_tp_evu_phase_mapping = {"1": [0, 1, 2], "2": [2, 0, 1], "3": [1, 2, 0]}
+    cp_to_evu_phase_mapping = {"1": [0, 1, 2], "2": [2, 0, 1], "3": [1, 2, 0]}
 
     def __init__(self, device_id: int, component_config: Union[Dict, VirtualCounterSetup]) -> None:
         self.__device_id = device_id
@@ -47,7 +47,7 @@ class VirtualCounter:
             if element["type"] == ComponentType.CHARGEPOINT.value:
                 chargepoint = data.data.cp_data[f"cp{element['id']}"]
                 try:
-                    evu_phases = self.cp_tp_evu_phase_mapping[str(chargepoint.data.config.phase_1)]
+                    evu_phases = self.cp_to_evu_phase_mapping[str(chargepoint.data.config.phase_1)]
                 except KeyError:
                     raise FaultState.error(f"Für den virtuellen Zähler muss der Anschluss der Phasen von Ladepunkt "
                                            f"{chargepoint.num} an die Phasen der EVU angegeben werden.")

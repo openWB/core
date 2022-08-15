@@ -348,6 +348,10 @@ class Chargepoint:
         except Exception:
             log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.num))
 
+    def set_state_and_log(self, message: str) -> None:
+        log.info(message)
+        self.data.get.state_str = message
+
     def _is_grid_protection_inactive(self) -> Tuple[bool, Optional[str]]:
         """ prüft, ob der Netzschutz inaktiv ist oder ob alle Ladepunkt gestoppt werden müssen.
         """
@@ -556,12 +560,10 @@ class Chargepoint:
                                                                    "control_pilot_interruption_duration"])
                         message = "Control-Pilot-Unterbrechung für " + str(
                             charging_ev.ev_template.data["control_pilot_interruption_duration"]) + "s."
-                        log.info("LP "+str(self.num)+": "+message)
-                        self.data.get.state_str = message
+                        self.set_state_and_log(f"LP {self.num}: {message}")
                 else:
                     message = "CP-Unterbrechung nicht möglich, da der Ladepunkt keine CP-Unterbrechung unterstützt."
-                    log.info("LP "+str(self.num)+": "+message)
-                    self.data.get.state_str = message
+                    self.set_state_and_log(f"LP {self.num}: {message}")
         except Exception:
             log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.num))
 
@@ -647,8 +649,7 @@ class Chargepoint:
                                 data.data.pv_data["all"].data["set"][
                                     "reserved_evu_overhang"] += charging_ev.ev_template.data[
                                         "max_current_one_phase"] * 230
-                            log.info("LP "+str(self.num)+": "+message)
-                            self.data.get.state_str = message
+                            self.set_state_and_log(f"LP {self.num}: {message}")
                             if self.data.set.phases_to_use != charging_ev.data["control_parameter"]["phases"]:
                                 Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/phases_to_use",
                                           charging_ev.data["control_parameter"]["phases"])
@@ -760,8 +761,7 @@ class Chargepoint:
             self.data.get.rfid = None
             Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid", None)
             self.chargepoint_module.clear_rfid()
-            log.info(f"LP{self.num}: {msg}")
-            self.data.get.state_str = msg
+            self.set_state_and_log(f"LP{self.num}: {msg}")
 
     def update(self, ev_list:  Dict[str, Ev]) -> None:
         vehicle, charging_possible, message = self.get_state()
@@ -846,8 +846,7 @@ class Chargepoint:
             self._pub_connected_vehicle(
                 ev_list["ev"+str(self.data.config.ev)])
         if message is not None and self.data.get.state_str is None:
-            log.info("LP "+str(self.num)+": "+message)
-            self.data.get.state_str = message
+            self.set_state_and_log(f"LP {self.num}: {message}")
 
     def _get_charging_ev(self, vehicle: int, ev_list: Dict[str, Ev]) -> Ev:
         charging_ev = ev_list[f"ev{vehicle}"]

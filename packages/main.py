@@ -59,8 +59,6 @@ class HandlerAlgorithm:
                         # Zyklus hinterher.
                         data.data.copy_module_data()
                         loadvars_.get_virtual_values()
-                        # Kurz warten, damit alle Topics von setdata und subdata verarbeitet werden können.
-                        time.sleep(0.5)
                         data.data.copy_module_data()
                         data.data.copy_data()
                         self.heartbeat = True

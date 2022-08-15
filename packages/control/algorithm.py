@@ -374,11 +374,13 @@ class Algorithm:
                                 mode is None) and
                                 (charging_ev.data["control_parameter"]["submode"] == submode) and
                                 (cp.data.set.charging_ev_data.data["control_parameter"][
-                                    "required_current"] > cp.data.set.current) and
-                                # nur die hochregeln, die auch mit der Sollstromstärke laden
-                                (max(cp.data.get.currents) > cp.data.set.current
-                                    - charging_ev.ev_template.data["nominal_difference"])):
-                            valid_chargepoints[cp] = None
+                                    "required_current"] > cp.data.set.current)):
+                            if (max(cp.data.get.currents) > cp.data.set.current
+                                    - charging_ev.ev_template.data["nominal_difference"]):
+                                valid_chargepoints[cp] = None
+                            else:
+                                cp.set_state_and_log(f"LP{cp.num} wird nicht hochgeregelt, da das EV nicht mit der "
+                                                     "Sollstromstärke (abzüglich der erlaubten Stromabweichung) lädt.")
                 except Exception:
                     log.exception(f"Fehler im Algorithmus-Modul für Ladepunkt{cp.num}")
             preferenced_chargepoints = self._get_preferenced_chargepoint(
