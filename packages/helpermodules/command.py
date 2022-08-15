@@ -384,7 +384,7 @@ class Command:
         Pub().pub("openWB/set/system/device/"+str(payload["data"]["deviceId"]
                                                   )+"/component/"+str(new_id)+"/config", component_default)
         self.max_id_hierarchy = self.max_id_hierarchy + 1
-        Pub().pub("openWB/set/command/max_id/component",
+        Pub().pub("openWB/set/command/max_id/hierarchy",
                   self.max_id_hierarchy)
 
     def removeComponent(self, connection_id: str, payload: dict) -> None:
