@@ -613,7 +613,7 @@ class Chargepoint:
                 if self.data.set.phases_to_use != charging_ev.data["control_parameter"]["phases"]:
                     # Wenn die Umschaltverzögerung aktiv ist, darf nicht umgeschaltet werden.
                     if charging_ev.data["control_parameter"]["timestamp_auto_phase_switch"] is None:
-                        if self.data.get.imported:
+                        if self.data.config.auto_phase_switch_hw:
                             charge_state = self.data.get.charge_state
                             phase_switch.thread_phase_switch(
                                 self.num, self.chargepoint_module, charging_ev.data["control_parameter"]["phases"],
