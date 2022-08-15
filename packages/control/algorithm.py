@@ -380,7 +380,7 @@ class Algorithm:
                                     - charging_ev.ev_template.data["nominal_difference"])):
                             valid_chargepoints[cp] = None
                 except Exception:
-                    log.exception("Fehler im Algorithmus-Modul für Ladepunkt"+cp.num)
+                    log.exception(f"Fehler im Algorithmus-Modul für Ladepunkt{cp.num}")
             preferenced_chargepoints = self._get_preferenced_chargepoint(
                 valid_chargepoints, False)
 
@@ -449,7 +449,9 @@ class Algorithm:
                                 self._process_data(
                                     cp, cp.data.set.current + missing_current + undo_missing_current)
                                 message = ("Das Lastmanagement hat den Ladestrom um "
-                                           f"{round((missing_current + undo_missing_current), 2)}A angepasst.")
+                                           f"{round((missing_current + undo_missing_current), 2)}A auf "
+                                           f"{cp.data.set.current + missing_current + undo_missing_current}A "
+                                           f"angepasst.")
                                 log.debug(message)
                         # Zuvor fehlender Ladestrom kann nun genutzt werden
                         else:
