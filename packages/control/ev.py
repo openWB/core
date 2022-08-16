@@ -319,7 +319,7 @@ class Ev:
         except Exception:
             log.exception("Fehler im ev-Modul "+str(self.num))
 
-    def get_required_current(self, charged_since_mode_switch: float) -> Tuple[bool, str, str, float]:
+    def get_required_current(self, charged_since_mode_switch: float) -> Tuple[bool, Optional[str], str, float]:
         """ ermittelt, ob und mit welchem Strom das EV geladen werden soll (unabhängig vom Lastmanagement)
 
         Parameter

@@ -89,7 +89,7 @@ class Algorithm:
                 if cp.data.set.charging_ev != -1:
                     charging_ev = cp.data.set.charging_ev_data
                     # Wenn beim PV-Laden über der eingestellten Stromstärke geladen wird, zuerst zurücknehmen.
-                    if((charging_ev.charge_template.data.chargemode.selected == "pv_charging" or
+                    if ((charging_ev.charge_template.data.chargemode.selected == "pv_charging" or
                             charging_ev.data.control_parameter.submode == "pv_charging") and
                             cp.data.set.current != 0):
                         if max(cp.data.get.currents) != 0:
@@ -235,7 +235,7 @@ class Algorithm:
                         phases = charging_ev.data.control_parameter.phases
                     else:
                         phases = chargepoint.data.get.phases_in_use
-                    if((charging_ev.charge_template.data.prio == prio) and
+                    if ((charging_ev.charge_template.data.prio == prio) and
                             (charging_ev.charge_template.data.chargemode.selected == mode or
                                 mode is None) and
                             (charging_ev.data.control_parameter.submode == submode) and
@@ -369,7 +369,7 @@ class Algorithm:
                         continue
                     if cp.data.set.charging_ev != -1:
                         charging_ev = cp.data.set.charging_ev_data
-                        if((charging_ev.charge_template.data.prio == prio) and
+                        if ((charging_ev.charge_template.data.prio == prio) and
                             (charging_ev.charge_template.data.chargemode.selected == mode or
                                 mode is None) and
                                 (charging_ev.data.control_parameter.submode == submode) and
@@ -486,7 +486,7 @@ class Algorithm:
             try:
                 if cp.data.set.charging_ev != -1:
                     charging_ev = cp.data.set.charging_ev_data
-                    if((charging_ev.charge_template.data.prio == prio) and
+                    if ((charging_ev.charge_template.data.prio == prio) and
                         (charging_ev.charge_template.data.chargemode.selected == mode or mode is None) and
                             (charging_ev.data.control_parameter.submode == submode)):
                         valid_chargepoints[cp] = None
@@ -576,7 +576,7 @@ class Algorithm:
                             if (cp.data.set.current != 0 or
                                     charging_ev.data.control_parameter.required_current == 0):
                                 continue
-                            if((charging_ev.charge_template.data.prio == prio) and
+                            if ((charging_ev.charge_template.data.prio == prio) and
                                 (charging_ev.charge_template.data.chargemode.selected == mode or
                                  mode is None) and
                                     (charging_ev.data.control_parameter.submode == submode)):
@@ -795,7 +795,7 @@ class Algorithm:
                                     # werden soll, aktuell aber noch nicht lädt.
                                     if cp.data.set.current == 0:
                                         continue
-                                    if((charging_ev.charge_template.data.prio == prio) and
+                                    if ((charging_ev.charge_template.data.prio == prio) and
                                        (charging_ev.charge_template.data.chargemode.selected == mode or
                                         mode is None) and
                                             (charging_ev.data.control_parameter.submode == submode)):
