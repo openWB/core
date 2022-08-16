@@ -23,6 +23,7 @@ class CounterAll:
         # Hilfsvariablen für die rekursiven Funktionen
         self.connected_counters = []
         self.connected_chargepoints = []
+        self.childless = []
 
     def get_evu_counter(self) -> str:
         return f"counter{self.get_id_evu_counter()}"
@@ -121,6 +122,20 @@ class CounterAll:
             log.exception("Fehler in der allgemeinen Zähler-Klasse")
 
     # Hierarchie analysieren
+    def get_all_elements_without_children(self, id: int) -> List[Dict]:
+        self.childless.clear()
+        self.get_all_elements_without_children_recursive(self.get_entry_of_element(id))
+        return self.childless
+
+    def get_all_elements_without_children_recursive(self, child: Dict):
+        for child in child["children"]:
+            try:
+                if len(child["children"]) != 0:
+                    self.get_all_elements_without_children_recursive(child)
+                else:
+                    self.childless.append(child)
+            except Exception:
+                log.exception("Fehler in der allgemeinen Zähler-Klasse")
 
     def get_chargepoints_of_counter(self, counter):
         """ gibt eine Liste der Ladepunkte, die in den folgenden Zweigen des Zählers sind, zurück.

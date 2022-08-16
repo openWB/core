@@ -8,8 +8,10 @@ import threading
 from typing import Dict
 from control.chargepoint import AllChargepoints, Chargepoint
 
+import dataclass_utils
 from helpermodules.subdata import SubData
 from control.ev import ChargeTemplate, Ev, EvTemplate
+from modules.common.abstract_device import AbstractDevice
 
 log = logging.getLogger(__name__)
 
@@ -274,6 +276,7 @@ class Data:
         self._print_dictionaries(self._optional_data)
         self._print_dictionaries(self._pv_data)
         self._print_dictionaries(self._system_data)
+        self._print_device_config(self._system_data)
         log.debug("\n")
 
     def _print_dictionaries(self, data):
@@ -293,6 +296,16 @@ class Data:
                         pass
                 else:
                     log.debug(key+"\n"+"Klasse fehlt")
+            except Exception:
+                log.exception("Fehler im Data-Modul")
+
+    def _print_device_config(self, data: Dict[str, AbstractDevice]):
+        for key, value in data.items():
+            try:
+                if isinstance(value, AbstractDevice):
+                    log.debug(f"{key}\n{dataclass_utils.asdict(value.device_config)}")
+                    for comp_key, comp_value in value.components.items():
+                        log.debug(f"{comp_key}\n{dataclass_utils.asdict(comp_value.component_config)}")
             except Exception:
                 log.exception("Fehler im Data-Modul")
 

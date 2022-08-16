@@ -2,7 +2,7 @@ import json
 import logging
 import math
 import pathlib
-from typing import Dict
+from typing import Dict, Union
 
 from control import data
 from helpermodules.pub import Pub
@@ -64,7 +64,7 @@ def collect_data(chargepoint):
                           str(chargepoint.data.get.imported))
                 log_data.range_charged = log_data.imported_since_mode_switch / \
                     charging_ev.ev_template.data.average_consump/10
-                log_data.time_charged = timecheck.get_difference_to_now(
+                log_data.time_charged, _ = timecheck.get_difference_to_now(
                     log_data.timestamp_start_charging)
                 Pub().pub("openWB/set/chargepoint/"+str(chargepoint.num) +
                           "/set/log/imported_since_mode_switch", log_data.imported_since_mode_switch)
@@ -113,7 +113,7 @@ def save_data(chargepoint, charging_ev, immediately: bool = True, reset: bool = 
             log_data.imported_at_mode_switch
         log_data.range_charged = log_data.imported_since_mode_switch / \
             charging_ev.ev_template.data.average_consump/10
-        log_data.time_charged = timecheck.get_difference_to_now(
+        log_data.time_charged, duration = timecheck.get_difference_to_now(
             log_data.timestamp_start_charging)
         Pub().pub("openWB/set/chargepoint/"+str(chargepoint.num) +
                   "/set/log/imported_since_mode_switch", log_data.imported_since_mode_switch)
@@ -121,29 +121,11 @@ def save_data(chargepoint, charging_ev, immediately: bool = True, reset: bool = 
                   "/set/log/range_charged", log_data.range_charged)
         Pub().pub("openWB/set/chargepoint/"+str(chargepoint.num) +
                   "/set/log/time_charged", log_data.time_charged)
-        time = log_data.time_charged
-        time_charged = []
-        if len(time) > 8:
-            # Wenn es mehrere Tage sind, enthält der String "92 days, 0:02:08" (unwahrscheinlich, aber um Fehler zu
-            # vermeiden)
-            t = str(time).split(" ")
-            time_charged.append(t[0])
-            t_2 = str(t[2]).split(":")
-            time_charged.append(t_2[0])
-            time_charged.append(t_2[1])
-        else:
-            time_charged = str(time).split(":")
         power = 0
-        duration = 0
-        if len(time_charged) == 2:
-            duration = int(time_charged[0])*60 + int(time_charged[1])
-        elif len(time_charged) == 3:
-            duration = int(time_charged[0])*60*24 + \
-                int(time_charged[1])*60 + int(time_charged[2])
         if duration > 0:
-            power = log_data.imported_since_mode_switch / duration*60
+            power = log_data.imported_since_mode_switch / duration
         costs = data.data.general_data["general"].data["price_kwh"] * \
-            log_data.imported_since_mode_switch  # / 1000
+            log_data.imported_since_mode_switch / 1000
         new_entry = {
             "chargepoint":
             {
@@ -192,6 +174,7 @@ def save_data(chargepoint, charging_ev, immediately: bool = True, reset: bool = 
         content.append(new_entry)
         with open(filepath, "w", encoding="utf-8") as json_file:
             json.dump(content, json_file)
+        log.debug(f"Neuer Ladelogeintrag: {new_entry}")
 
         # Werte zurücksetzen
         log_data.timestamp_start_charging = None
@@ -235,14 +218,14 @@ def get_log_data(request: Dict):
             (str(request["year"]) + str(request["month"]) + ".json"))
         try:
             with open(filepath, "r", encoding="utf-8") as json_file:
-                chargelog = json.load(json_file)
+                charge_log = json.load(json_file)
         except FileNotFoundError:
             log.debug("Kein Ladelog für %s gefunden!" % (str(request)))
             return log_data
         # Liste mit gefilterten Einträgen erstellen
-        for entry in chargelog:
+        for entry in charge_log:
             if len(entry) > 0:
-                if(
+                if (
                     "id" in request["filter"]["chargepoint"] and
                     len(request["filter"]["chargepoint"]["id"]) > 0 and
                     entry["chargepoint"]["id"] not in request["filter"]["chargepoint"]["id"]
@@ -252,7 +235,7 @@ def get_log_data(request: Dict):
                         (str(entry["chargepoint"]["id"]), str(request["filter"]["chargepoint"]["id"]))
                     )
                     continue
-                if(
+                if (
                     "id" in request["filter"]["vehicle"] and
                     len(request["filter"]["vehicle"]["id"]) > 0 and
                     entry["vehicle"]["id"] not in request["filter"]["vehicle"]["id"]
@@ -262,7 +245,7 @@ def get_log_data(request: Dict):
                         (str(entry["vehicle"]["id"]), str(request["filter"]["vehicle"]["id"]))
                     )
                     continue
-                if(
+                if (
                     "rfid" in request["filter"]["vehicle"] and
                     len(request["filter"]["vehicle"]["rfid"]) > 0 and
                     entry["vehicle"]["rfid"] not in request["filter"]["vehicle"]["rfid"]
@@ -272,7 +255,7 @@ def get_log_data(request: Dict):
                         (str(entry["vehicle"]["rfid"]), str(request["filter"]["vehicle"]["rfid"]))
                     )
                     continue
-                if(
+                if (
                     "chargemode" in request["filter"]["vehicle"] and
                     len(request["filter"]["vehicle"]["chargemode"]) > 0 and
                     entry["vehicle"]["chargemode"] not in request["filter"]["vehicle"]["chargemode"]
@@ -282,7 +265,7 @@ def get_log_data(request: Dict):
                         (str(entry["vehicle"]["chargemode"]), str(request["filter"]["vehicle"]["chargemode"]))
                     )
                     continue
-                if(
+                if (
                     "prio" in request["filter"]["vehicle"] and
                     request["filter"]["vehicle"]["prio"] is not entry["vehicle"]["prio"]
                 ):
@@ -359,7 +342,7 @@ def reset_data(chargepoint, charging_ev, immediately: bool = True):
         log.exception("Fehler im Ladelog-Modul")
 
 
-def truncate(number: float, decimals: int = 0):
+def truncate(number: Union[int, float], decimals: int = 0):
     """
     Returns a value truncated to a specific number of decimal places.
     """

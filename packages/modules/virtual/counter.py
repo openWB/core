@@ -1,42 +1,32 @@
 #!/usr/bin/env python3
+from typing import Dict, Union
 from operator import add
 
+from dataclass_utils import dataclass_from_dict
 from control import data
 from modules.common import simcount
 from modules.common.component_state import CounterState
+from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.store import get_counter_value_store
 from modules.common.component_type import ComponentType
-
-
-def get_default_config() -> dict:
-    return {
-        "name": "Virtueller Zähler",
-        "type": "counter",
-        "id": None,
-        "configuration": {
-            "external_consumption": 400
-        }
-    }
+from modules.virtual.config import VirtualCounterSetup
 
 
 class VirtualCounter:
-
     # Gedrehter Anschluss der Ladepunkte:
     # Phase 1 LP -> LP-P 0 = EVU-P 0, LP-P 1 = EVU-P 1, LP-P 2 = EVU-P 2
     # Phase 1 LP -> LP-P 0 = EVU-P 1, LP-P 1 = EVU-P 2, LP-P 2 = EVU-P 0
     # Phase 3 LP -> LP-P 0 = EVU-P 2, LP-P 1 = EVU-P 0, LP-P 2 = EVU-P 1
     cp_tp_evu_phase_mapping = {"1": [0, 1, 2], "2": [1, 2, 0], "3": [2, 0, 1]}
 
-    def __init__(self, device_id: int, component_config: dict) -> None:
+    def __init__(self, device_id: int, component_config: Union[Dict, VirtualCounterSetup]) -> None:
         self.__device_id = device_id
-        self.component_config = component_config
+        self.component_config = dataclass_from_dict(VirtualCounterSetup, component_config)
         self.__sim_count = simcount.SimCountFactory().get_sim_counter()()
         self.simulation = {}
-        self.__store = get_counter_value_store(component_config["id"])
-        self.component_info = ComponentInfo(self.component_config["id"],
-                                            self.component_config["name"],
-                                            self.component_config["type"])
+        self.__store = get_counter_value_store(self.component_config.id)
+        self.component_info = ComponentInfo.from_component_config(self.component_config)
 
     def update(self):
         self.currents = [0.0]*3
@@ -52,7 +42,7 @@ class VirtualCounter:
             self.power += element.data["get"]["power"]
 
         counter_all = data.data.counter_data["all"]
-        elements = counter_all.get_entry_of_element(self.component_config["id"])["children"]
+        elements = counter_all.get_all_elements_without_children(self.component_config.id)
         for element in elements:
             if element["type"] == ComponentType.CHARGEPOINT.value:
                 chargepoint = data.data.cp_data[f"cp{element['id']}"]
@@ -61,8 +51,7 @@ class VirtualCounter:
                 except KeyError:
                     raise FaultState.error(f"Für den virtuellen Zähler muss der Anschluss der Phasen von Ladepunkt "
                                            f"{chargepoint.num} an die Phasen der EVU angegeben werden.")
-                self.currents = [self.currents[i] + chargepoint.data["get"]
-                                 ["currents"][evu_phases[i]] for i in range(0, 3)]
+                self.currents = [self.currents[i] + chargepoint.data.get.currents[evu_phases[i]] for i in range(0, 3)]
 
                 self.power = self.power + chargepoint.data.get.power
             elif element["type"] == ComponentType.BAT.value:
@@ -72,9 +61,9 @@ class VirtualCounter:
             elif element["type"] == ComponentType.INVERTER.value:
                 add_current_power(data.data.pv_data[f"pv{element['id']}"])
 
-        self.power += self.component_config["configuration"]["external_consumption"]
-        self.currents = [c + self.power/3 for c in self.currents]
-        topic_str = "openWB/set/system/device/{}/component/{}/".format(self.__device_id, self.component_config["id"])
+        self.power += self.component_config.configuration.external_consumption
+        self.currents = [c + self.component_config.configuration.external_consumption/3 for c in self.currents]
+        topic_str = "openWB/set/system/device/{}/component/{}/".format(self.__device_id, self.component_config.id)
         imported, exported = self.__sim_count.sim_count(
             self.power,
             topic=topic_str,
@@ -89,3 +78,6 @@ class VirtualCounter:
         if self.incomplete_currents is False:
             counter_state.currents = self.currents
         self.__store.set(counter_state)
+
+
+component_descriptor = ComponentDescriptor(configuration_factory=VirtualCounterSetup)

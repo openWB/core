@@ -238,3 +238,25 @@ def test_get_max_id():
         {"id": 2, "type": ComponentType.CHARGEPOINT, "children": [
             {"id": 5, "type": ComponentType.CHARGEPOINT, "children": []}]},
         {"id": 6, "type": ComponentType.CHARGEPOINT, "children": []}]}], -1) == 6
+
+
+cases_get_all_elements_without_children = [
+    ParamsItem("get_all_elements_without_children_cp", hierarchy_cp(),
+               0, expected_return=[{"id": 7, "type": "inverter", "children": []},
+               {"id": 3, "type": "cp", "children": []}, {"id": 5, "type": "cp", "children": []},
+               {"id": 6, "type": "cp", "children": []}]),
+    ParamsItem("get_all_elements_without_children_two_level", hierarchy_two_level(),
+               0, expected_return=[{"id": 2, "type": "cp", "children": []}]),
+    ParamsItem("get_all_elements_without_children_one_level", hierarchy_one_level(), 0, expected_return=[])
+]
+
+
+@pytest.mark.parametrize("params",
+                         cases_get_all_elements_without_children,
+                         ids=[c.name for c in cases_get_all_elements_without_children])
+def test_get_all_elements_without_children(params: ParamsItem):
+    # execution
+    actual = params.counter_all.get_all_elements_without_children(params.id)
+
+    # evaluation
+    assert actual == params.expected_return

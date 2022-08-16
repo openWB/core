@@ -30,7 +30,7 @@ class ChargepointModule(AbstractChargepoint):
             self.id,
             "Ladepunkt", "chargepoint")
         self.__client_error_context = ErrorCounterContext(
-            "Anhaltender Fehler beim Auslesen des Ladepunkts. Sollstromstärke wird zurückgesetzt.")
+            "Anhaltender Fehler beim Auslesen des Ladepunkts. Soll-Stromstärke wird zurückgesetzt.")
 
     def set_current(self, current: float) -> None:
         if self.__client_error_context.error_counter_exceeded():
@@ -75,3 +75,9 @@ class ChargepointModule(AbstractChargepoint):
                 else:
                     pub.pub_single("openWB/set/isss/Cpulp1", duration, hostname=ip_address)
                 time.sleep(duration)
+
+    def clear_rfid(self) -> None:
+        with SingleComponentUpdateContext(self.component_info):
+            with self.__client_error_context:
+                ip_address = self.connection_module["configuration"]["ip_address"]
+                pub.pub_single("openWB/set/isss/ClearRfid", 1, hostname=ip_address)

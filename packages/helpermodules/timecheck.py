@@ -310,12 +310,12 @@ def _is_duration_valid(now: datetime.datetime, duration: float, end: datetime.da
         return 1, 0
 
 
-def is_list_valid(hourlist: List[int]) -> bool:
+def is_list_valid(hour_list: List[int]) -> bool:
     """ prüft, ob eine der angegebenen Unix-Zeiten aktuell ist.
 
     Parameter
     ---------
-    hourlist: list
+    hour_list: list
         Liste mit Unix-Zeiten
 
     Return
@@ -325,7 +325,7 @@ def is_list_valid(hourlist: List[int]) -> bool:
     """
     try:
         now = datetime.datetime.today()
-        for hour in hourlist:
+        for hour in hour_list:
             timestamp = datetime.datetime.fromtimestamp(float(hour))
             if timestamp.hour == now.hour:
                 return True
@@ -407,7 +407,7 @@ def create_timestamp_time() -> str:
         raise
 
 
-def get_difference_to_now(timestamp_begin: str) -> str:
+def get_difference_to_now(timestamp_begin: str) -> Tuple[str, int]:
     """ ermittelt den Abstand zwischen zwei Zeitstempeln.
 
     Parameter
@@ -417,20 +417,21 @@ def get_difference_to_now(timestamp_begin: str) -> str:
 
     Return
     ------
-    diff: str
-        Differenz HH:MM, ggf DD days, HH:MM
+    diff: [str, int]
+        str: Differenz HH:MM, ggf DD days, HH:MM
+        int: Differenz in Sekunden
     """
     try:
         begin = datetime.datetime.strptime(timestamp_begin[:-3], "%m/%d/%Y, %H:%M")
         now = datetime.datetime.today()
         diff = (now - begin)
-        return __convert_timedelta_to_HHMM(diff)
+        return [__convert_timedelta_to_time_string(diff), int(diff.total_seconds())]
     except Exception:
         log.exception("Fehler im System-Modul")
-        return "00:00"
+        return ["00:00", 0]
 
 
-def get_difference(timestamp_begin: str, timestamp_end: str) -> Optional[str]:
+def get_difference(timestamp_begin: str, timestamp_end: str) -> Optional[int]:
     """ ermittelt den Abstand zwischen zwei Zeitstempeln in absoluten Sekunden.
 
     Parameter
@@ -449,7 +450,7 @@ def get_difference(timestamp_begin: str, timestamp_end: str) -> Optional[str]:
         begin = datetime.datetime.strptime(timestamp_begin, "%m/%d/%Y, %H:%M:%S")
         end = datetime.datetime.strptime(timestamp_end, "%m/%d/%Y, %H:%M:%S")
         diff = (begin - end)
-        return f"{int(diff.total_seconds())}"
+        return int(diff.total_seconds())
     except Exception:
         log.exception("Fehler im System-Modul")
         return None
@@ -469,7 +470,7 @@ def duration_sum(first: str, second: str) -> str:
     """
     try:
         sum = __get_timedelta_obj(first) + __get_timedelta_obj(second)
-        return __convert_timedelta_to_HHMM(sum)
+        return __convert_timedelta_to_time_string(sum)
     except Exception:
         log.exception("Fehler im System-Modul")
         return "00:00"
@@ -496,7 +497,7 @@ def __get_timedelta_obj(time: str) -> datetime.timedelta:
     return delta
 
 
-def __convert_timedelta_to_HHMM(timedelta_obj: datetime.timedelta) -> str:
+def __convert_timedelta_to_time_string(timedelta_obj: datetime.timedelta) -> str:
     diff_hours = int(timedelta_obj.total_seconds() / 3600)
     diff_minutes = int((timedelta_obj.total_seconds() % 3600) / 60)
     return f"{diff_hours}:{diff_minutes:02d}"

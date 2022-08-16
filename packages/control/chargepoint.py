@@ -2,7 +2,8 @@
 
 charging_ev: EV, das aktuell laden darf
 charging_ev_prev: EV, das vorher geladen hat. Dies wird benötigt, da wenn das EV nicht mehr laden darf, z.B. weil
-Autolock aktiv ist, gewartet werden muss, bis die Ladeleistung 0 ist und dann erst der Logeintrag erstellt werden kann.
+Autolock aktiv ist, gewartet werden muss, bis die Ladeleistung 0 ist und dann erst der Eintrag im Protokoll erstellt
+werden kann.
 charging_ev = -1 zeigt an, dass der LP im Algorithmus nicht berücksichtigt werden soll. Ist das Ev abgesteckt, wird
 auch charging_ev_prev -1 und im nächsten Zyklus kann ein neues Profil geladen werden.
 
@@ -427,12 +428,12 @@ class Chargepoint:
         if (self.data.set.manual_lock is False or
                 (self.template.data["rfid_enabling"] and
                     (self.data.get.rfid is not None or self.data.set.rfid is not None))):
-            charging_possbile = True
+            charging_possible = True
             message = None
         else:
-            charging_possbile = False
+            charging_possible = False
             message = "Keine Ladung, da der Ladepunkt manuell gesperrt wurde."
-        return charging_possbile, message
+        return charging_possible, message
 
     def _is_ev_plugged(self) -> Tuple[bool, Optional[str]]:
         """ prüft, ob ein EV angesteckt ist
@@ -462,36 +463,34 @@ class Chargepoint:
             self.set_current_prev = self.data.set.current
             self.__validate_rfid()
             message = "Keine Ladung, da ein Fehler aufgetreten ist."
-            charging_possbile = False
             try:
-                state, message = self._is_grid_protection_inactive()
-                if state:
-                    state, message = self._is_ripple_control_receiver_inactive()
-                    if state:
-                        state, message = self._is_loadmanagement_available()
-                        if state:
-                            state, message = self._is_ev_plugged()
-                            if state:
-                                state, message = self._is_autolock_inactive()
-                                if state:
-                                    charging_possbile, message = self._is_manual_lock_inactive()
+                charging_possible, message = self._is_grid_protection_inactive()
+                if charging_possible:
+                    charging_possible, message = self._is_ripple_control_receiver_inactive()
+                    if charging_possible:
+                        charging_possible, message = self._is_loadmanagement_available()
+                        if charging_possible:
+                            charging_possible, message = self._is_ev_plugged()
+                            if charging_possible:
+                                charging_possible, message = self._is_autolock_inactive()
+                                if charging_possible:
+                                    charging_possible, message = self._is_manual_lock_inactive()
             except Exception:
                 log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.num))
                 return -1, False, "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
-            if state:
+            if charging_possible:
                 num, message_ev = self.template.get_ev(self.data.get.rfid or self.data.set.rfid, self.data.config.ev)
-            else:
-                num = -1
-                message_ev = None
-            if message_ev:
-                message = message_ev
-            if charging_possbile:
+                if message_ev:
+                    message = message_ev
                 if num != -1:
                     if self.data.get.rfid is not None:
                         self.__link_rfid_to_cp()
                     return num, True, message
                 else:
                     self.data.get.state_str = message
+            else:
+                num = -1
+                message_ev = None
             # Charging Ev ist noch das EV des vorherigen Zyklus, wenn das nicht -1 war und jetzt nicht mehr geladen
             # werden soll (-1), Daten zurücksetzen.
             if self.data.set.charging_ev != -1:
@@ -597,8 +596,8 @@ class Chargepoint:
                         raise ValueError(str(self.data.set.phases_to_use)+" ist keine gültige Phasenzahl (1/3).")
                     self.data.get.state_str = message
                 return
-            # Wenn noch kein Logeintrag erstellt wurde, wurde noch nicht geladen und die Phase kann noch umgeschaltet
-            # werden.
+            # Wenn noch kein Eintrag im Protokoll erstellt wurde, wurde noch nicht geladen und die Phase kann noch
+            # umgeschaltet werden.
             if (not charging_ev.ev_template.data.prevent_phase_switch or
                     self.data.set.log.imported_since_plugged == 0):
                 # Einmal muss die Anzahl der Phasen gesetzt werden.
@@ -698,7 +697,7 @@ class Chargepoint:
             log.debug(f"Lademodus-Phasen beschränkt die nutzbaren Phasen auf {phases}")
 
         if phases != self.data.get.phases_in_use:
-            # Wenn noch kein Logeintrag erstellt wurde, wurde noch nicht geladen und die Phase kann noch
+            # Wenn noch kein Eintrag im Protokoll erstellt wurde, wurde noch nicht geladen und die Phase kann noch
             # umgeschaltet werden.
             if self.data.set.log.imported_since_plugged != 0:
                 if charging_ev.ev_template.data.prevent_phase_switch:
@@ -722,12 +721,13 @@ class Chargepoint:
         Pub().pub("openWB/chargepoint/"+str(self.num)+"/set/rfid", rfid)
         self.data.get.rfid = None
         Pub().pub("openWB/chargepoint/"+str(self.num)+"/get/rfid", None)
+        self.chargepoint_module.clear_rfid()
         self.data.get.rfid_timestamp = None
         Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid_timestamp", None)
 
     def __validate_rfid(self) -> None:
-        """Prüft, dass der Tag an diesem Ladepunkt gültig ist und  dass dieser innerhalb von 5 Minuten einem EV zugeordnet
-        wird.
+        """Prüft, dass der Tag an diesem Ladepunkt gültig ist und  dass dieser innerhalb von 5 Minuten einem EV
+        zugeordnet wird.
         """
         msg = ""
         if self.data.get.rfid is not None:
@@ -753,6 +753,7 @@ class Chargepoint:
                 msg = "RFID ist nicht aktiviert."
             self.data.get.rfid = None
             Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid", None)
+            self.chargepoint_module.clear_rfid()
             log.info(f"LP{self.num}: {msg}")
             self.data.get.state_str = msg
 
@@ -787,7 +788,7 @@ class Chargepoint:
                         self.data.set.current = 0
                     else:
                         # Wenn nicht geladen wird, obwohl geladen werde kann, soll das EV im Algorithmus
-                        # nicht berücksichtigt werden. Wenn der Sollstrom gesetzt ist, wird das EV nur im
+                        # nicht berücksichtigt werden. Wenn der Soll-Strom gesetzt ist, wird das EV nur im
                         # LM berücksichtigt.
                         self.data.set.current = required_current
                     # Da nicht bekannt ist, ob mit Bezug, Überschuss oder aus dem Speicher geladen wird,
