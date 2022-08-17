@@ -1,4 +1,3 @@
-from pathlib import Path
 from typing import Type
 
 import pytest
@@ -32,13 +31,13 @@ class ErrorF(ErrorD):
     pass
 
 
-@pytest.mark.parametrize("exception,expected_message",
-                         [[ErrorRoot, "<class '" + Path(__file__).resolve().parts[-5] +
-                           ".packages.helpermodules.exceptions.registry_test.ErrorRoot'> ErrorRoot"],
-                          [ErrorB, "B"],
-                          [ErrorC, "A"],
-                          [ErrorD, "B"],
-                          [ErrorF, "F"]])
+@pytest.mark.parametrize("exception,expected_message", [
+    [ErrorRoot, "<class 'helpermodules.exceptions.registry_test.ErrorRoot'> ErrorRoot"],
+    [ErrorB, "B"],
+    [ErrorC, "A"],
+    [ErrorD, "B"],
+    [ErrorF, "F"]
+])
 def test_uses_exact_match_if_available(exception: Type, expected_message: str):
     # setup
     registry = ExceptionRegistry()
