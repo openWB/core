@@ -22,17 +22,16 @@ class SunnyBoySmartEnergyBat:
         self.__sim_count = simcount.SimCountFactory().get_sim_counter()()
         self.simulation = {}
         self.__store = get_bat_value_store(self.component_config.id)
-        self.component_info = ComponentInfo.from_component_config(component_config)
+        self.component_info = ComponentInfo.from_component_config(self.component_config)
 
     def update(self) -> None:
         self.__store.set(self.read())
 
     def read(self) -> BatState:
         unit = 3
-        with self.__tcp_client:
-            soc = self.__tcp_client.read_holding_registers(30845, ModbusDataType.UINT_32, unit=unit)
-            current = self.__tcp_client.read_holding_registers(30843, ModbusDataType.INT_32, unit=unit)/-1000
-            voltage = self.__tcp_client.read_holding_registers(30851, ModbusDataType.INT_32, unit=unit)/100
+        soc = self.__tcp_client.read_holding_registers(30845, ModbusDataType.UINT_32, unit=unit)
+        current = self.__tcp_client.read_holding_registers(30843, ModbusDataType.INT_32, unit=unit)/-1000
+        voltage = self.__tcp_client.read_holding_registers(30851, ModbusDataType.INT_32, unit=unit)/100
 
         power = current*voltage
         topic_str = "openWB/set/system/device/" + str(
