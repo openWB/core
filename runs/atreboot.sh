@@ -119,9 +119,8 @@ chmod 666 "$LOGFILE"
 		echo "done"
 	fi
 
-	# check for needed packages
-	echo "apt packages..."
-	# nothing here yet, all in install.sh
+	# update old ladelog
+	"$OPENWBBASEDIR/runs/transferladelog.sh"
 
 	# check for mosquitto configuration
 	echo "check mosquitto installation..."
