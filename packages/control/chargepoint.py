@@ -670,7 +670,12 @@ class Chargepoint:
         """
         phases = 0
         charging_ev = self.data.set.charging_ev_data
-        mode = charging_ev.charge_template.data["chargemode"]["selected"]
+        # Zeitladen kann nicht als Lademodus ausgewählt werden. Ob Zeitladen aktiv ist, lässt sich aus dem Submode
+        # erkennen.
+        if charging_ev.data["control_parameter"]["submode"] == "time_charging":
+            mode = "time_charging"
+        else:
+            mode = charging_ev.charge_template.data["chargemode"]["selected"]
         config = self.data.config
         if charging_ev.ev_template.data["max_phases"] <= config.connected_phases:
             phases = charging_ev.ev_template.data["max_phases"]
@@ -768,9 +773,9 @@ class Chargepoint:
         if vehicle != -1:
             try:
                 charging_ev = self._get_charging_ev(vehicle, ev_list)
-                phases = self.get_phases()
                 state, message_ev, submode, required_current = charging_ev.get_required_current(
                     self.data.set.log.imported_since_mode_switch)
+                phases = self.get_phases()
                 self._pub_connected_vehicle(charging_ev)
                 # Einhaltung des Minimal- und Maximalstroms prüfen
                 required_current = charging_ev.check_min_max_current(
