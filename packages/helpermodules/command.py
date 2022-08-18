@@ -1,26 +1,18 @@
-"""verarbeitet Befehl vom Broker
-"""
-
 import importlib
 import json
 import logging
 import subprocess
+import time
 from typing import List
 import paho.mqtt.client as mqtt
 import re
-import time
 import traceback
 from pathlib import Path
 
 from helpermodules import measurement_log
+from helpermodules.broker import InternalBroker
 from helpermodules.pub import Pub
-from control import bridge
-from control import chargelog
-from control import chargepoint
-from control import data
-from control import ev
-from control import counter
-from control import pv
+from control import bridge, chargelog, chargepoint, data, ev, counter, pv
 from modules.common.component_type import ComponentType, special_to_general_type_mapping, type_to_topic_mapping
 import dataclass_utils
 
@@ -577,89 +569,41 @@ class ProcessBrokerBranch:
 
     def get_payload(self):
         self.payload: str
-        self.__connect_to_broker(self.__get_payload)
+        InternalBroker("processBrokerBranch", self.on_connect, self.__get_payload)
         return json.loads(self.payload)
 
     def remove_topics(self):
         """ löscht einen Topic-Zweig auf dem Broker. Payload "" löscht nur ein einzelnes Topic.
         """
-        try:
-            self.__connect_to_broker(self.__on_message_rm)
-        except Exception:
-            log.exception("Fehler im Command-Modul")
+        InternalBroker("processBrokerBranch", self.on_connect, self.__on_message_rm)
 
     def get_max_id(self) -> List[str]:
         try:
             self.received_topics = []
-            self.__connect_to_broker(self.__on_message_max_id)
+            InternalBroker("processBrokerBranch", self.on_connect, self.__on_message_max_id)
             return self.received_topics
         except Exception:
             log.exception("Fehler im Command-Modul")
             return []
 
-    def __connect_to_broker(self, on_message):
-        """ abonniert alle Topics.
-        """
-        try:
-            mqtt_broker_ip = "localhost"
-            client = mqtt.Client(
-                "openWB-processBrokerBranch-" + str(self.__get_serial()))
-
-            client.on_connect = self.__on_connect
-            client.on_message = on_message
-
-            client.connect(mqtt_broker_ip, 1886)
-            client.loop_start()
-            time.sleep(0.5)
-            client.loop_stop()
-
-        except Exception:
-            log.exception("Fehler im Command-Modul")
-
-    def __on_connect(self, client, userdata, flags, rc):
+    def on_connect(self, client, userdata, flags, rc):
         """ connect to broker and subscribe to set topics
         """
-        try:
-            client.subscribe("openWB/"+self.topic_str+"#", 2)
-            client.subscribe("openWB/set/"+self.topic_str+"#", 2)
-        except Exception:
-            log.exception("Fehler im Command-Modul")
+        client.subscribe("openWB/"+self.topic_str+"#", 2)
+        client.subscribe("openWB/set/"+self.topic_str+"#", 2)
 
     def __on_message_rm(self, client, userdata, msg):
-        """ wartet auf eingehende Topics.
-        """
-        try:
-            if str(msg.payload.decode("utf-8")) != '':
-                log.debug("Gelöschtes Topic: "+str(msg.topic))
-                Pub().pub(msg.topic, "")
-                if "openWB/system/device/" in msg.topic and "component" in msg.topic and "config" in msg.topic:
-                    payload = json.loads(str(msg.payload.decode("utf-8")))
-                    topic = type_to_topic_mapping(payload["type"])
-                    data.data.counter_data["all"].hierarchy_remove_item(payload["id"])
-                    client.subscribe("openWB/"+topic+"/"+str(payload["id"])+"/#", 2)
-        except Exception:
-            log.exception("Fehler im Command-Modul")
+        if str(msg.payload.decode("utf-8")) != '':
+            log.debug("Gelöschtes Topic: "+str(msg.topic))
+            Pub().pub(msg.topic, "")
+            if "openWB/system/device/" in msg.topic and "component" in msg.topic and "config" in msg.topic:
+                payload = json.loads(str(msg.payload.decode("utf-8")))
+                topic = type_to_topic_mapping(payload["type"])
+                data.data.counter_data["all"].hierarchy_remove_item(payload["id"])
+                client.subscribe("openWB/"+topic+"/"+str(payload["id"])+"/#", 2)
 
     def __on_message_max_id(self, client, userdata, msg):
-        try:
-            self.received_topics.append(msg.topic)
-        except Exception:
-            log.exception("Fehler im Command-Modul")
+        self.received_topics.append(msg.topic)
 
     def __get_payload(self, client, userdata, msg):
-        try:
-            self.payload = msg.payload
-        except Exception:
-            log.exception("Fehler im Command-Modul")
-
-    def __get_serial(self):
-        """ Extract serial from cpuinfo file
-        """
-        try:
-            with open('/proc/cpuinfo', 'r') as f:
-                for line in f:
-                    if line[0:6] == 'Serial':
-                        return line[10:26]
-                return "0000000000000000"
-        except Exception:
-            log.exception("Fehler im Command-Modul")
+        self.payload = msg.payload
