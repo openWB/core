@@ -2,10 +2,9 @@ import glob
 import json
 import logging
 import re
-import time
 from typing import List
-import paho.mqtt.client as mqtt
 
+from helpermodules.broker import InternalBrokerClient
 from helpermodules.pub import Pub
 from helpermodules import measurement_log
 from control import chargepoint
@@ -324,14 +323,7 @@ class UpdateConfig:
 
     def update(self):
         log.debug("Broker-Konfiguration aktualisieren")
-        mqtt_broker_ip = "localhost"
-        client = mqtt.Client("openWB-update-config-" + self.get_serial())
-        client.on_connect = self.on_connect
-        client.on_message = self.on_message
-        client.connect(mqtt_broker_ip, 1886)
-        client.loop_start()
-        time.sleep(2)
-        client.loop_stop()
+        InternalBrokerClient("update-config", self.on_connect, self.on_message).start_finite_loop()
 
         try:
             self.__remove_outdated_topics()
@@ -340,15 +332,6 @@ class UpdateConfig:
             self.__solve_breaking_changes()
         except Exception:
             log.exception("Fehler beim Prüfen des Brokers.")
-
-    def get_serial(self):
-        """ Extract serial from cpuinfo file
-        """
-        with open('/proc/cpuinfo', 'r') as f:
-            for line in f:
-                if line[0:6] == 'Serial':
-                    return line[10:26]
-            return "0000000000000000"
 
     def on_connect(self, client, userdata, flags, rc):
         """ connect to broker and subscribe to set topics

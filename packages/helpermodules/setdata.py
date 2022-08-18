@@ -5,11 +5,11 @@ import copy
 import dataclasses
 import json
 from typing import List, Optional, Tuple
-import paho.mqtt.client as mqtt
 import re
 
 import logging
 from helpermodules import subdata
+from helpermodules.broker import InternalBrokerClient
 from helpermodules.pub import Pub
 from helpermodules.utils.topic_parser import get_index
 
@@ -25,31 +25,11 @@ class SetData:
         self.heartbeat = False
 
     def set_data(self):
-        """ abonniert alle set-Topics.
-        """
-        mqtt_broker_ip = "localhost"
-        self.client = mqtt.Client("openWB-mqttset-" + self.getserial())
-        # ipallowed='^[0-9.]+$'
-        # nameallowed='^[a-zA-Z ]+$'
-        # namenumballowed='^[0-9a-zA-Z ]+$'
-
-        self.client.on_connect = self.on_connect
-        self.client.on_message = self.on_message
-        self.client.connect(mqtt_broker_ip, 1886)
-        self.client.loop_forever()
+        self.internal_broker_client = InternalBrokerClient("mqttset", self.on_connect, self.on_message)
+        self.internal_broker_client.start_infinite_loop()
 
     def disconnect(self) -> None:
-        self.client.disconnect()
-        log.info("Verbindung von Client openWB-mqttset-" + self.getserial()+" geschlossen.")
-
-    def getserial(self):
-        """ Extract serial from cpuinfo file
-        """
-        with open('/proc/cpuinfo', 'r') as f:
-            for line in f:
-                if line[0:6] == 'Serial':
-                    return line[10:26]
-            return "0000000000000000"
+        self.internal_broker_client.disconnect()
 
     def on_connect(self, client, userdata, flags, rc):
         """ connect to broker and subscribe to set topics
