@@ -8,7 +8,7 @@ import re
 import traceback
 from pathlib import Path
 
-from helpermodules import measurement_log
+from helpermodules import backup, measurement_log
 from helpermodules.broker import InternalBrokerClient
 from helpermodules.pub import Pub
 from control import bridge, chargelog, chargepoint, data, ev, counter, pv
@@ -515,6 +515,10 @@ class Command:
         log.info("Fetch versions requested")
         parent_file = Path(__file__).resolve().parents[2]
         subprocess.run([str(parent_file / "runs" / "update_available_versions.sh")])
+
+    def createBackup(self, connection_id: str, payload: dict) -> None:
+        log.info("Backup creation requested")
+        backup.Backup()
 
 
 class ErrorHandlingContext:
