@@ -6,19 +6,13 @@ from unittest.mock import Mock
 from control.pv import PvAll
 from control.bat import BatAll
 from control.general import General
-from control.ev import ChargeTemplate, Ev, EvTemplate
-from control import ev
+from control.ev import Ev
 from control import data
 
 
 @pytest.fixture
 def vehicle() -> Ev:
     vehicle = Ev(0)
-    vehicle.data["config"] = ev.get_vehicle_default()
-    vehicle.ev_template = EvTemplate(0)
-    vehicle.ev_template.data = ev.get_ev_template_default()
-    vehicle.charge_template = ChargeTemplate(0)
-    vehicle.charge_template.data = ev.get_charge_template_default()
     return vehicle
 
 
@@ -117,10 +111,10 @@ def test_auto_phase_switch(monkeypatch, vehicle: Ev, params: Params):
     mock_power_for_bat_charging = Mock(name="power_for_bat_charging", return_value=0)
     monkeypatch.setattr(data.data.bat_data["all"], "power_for_bat_charging", mock_power_for_bat_charging)
 
-    vehicle.ev_template.data["max_current_one_phase"] = params.max_current_one_phase
-    vehicle.data["control_parameter"]["timestamp_auto_phase_switch"] = params.timestamp_auto_phase_switch
-    vehicle.data["control_parameter"]["phases"] = params.phases_to_use
-    vehicle.data["control_parameter"]["required_current"] = params.required_current
+    vehicle.ev_template.data.max_current_one_phase = params.max_current_one_phase
+    vehicle.data.control_parameter.timestamp_auto_phase_switch = params.timestamp_auto_phase_switch
+    vehicle.data.control_parameter.phases = params.phases_to_use
+    vehicle.data.control_parameter.required_current = params.required_current
     data.data.pv_data["all"].data["set"]["available_power"] = params.available_power
     data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] = params.reserved_evu_overhang
 

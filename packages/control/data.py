@@ -10,6 +10,7 @@ from control.chargepoint import AllChargepoints, Chargepoint
 
 import dataclass_utils
 from helpermodules.subdata import SubData
+from control.ev import ChargeTemplate, Ev, EvTemplate
 from modules.common.abstract_device import AbstractDevice
 
 log = logging.getLogger(__name__)
@@ -155,7 +156,7 @@ class Data:
         self.event.set()
 
     @property
-    def ev_charge_template_data(self):
+    def ev_charge_template_data(self) -> Dict[str, ChargeTemplate]:
         self.event.wait()
         self.event.clear()
         temp = self._ev_charge_template_data
@@ -170,7 +171,7 @@ class Data:
         self.event.set()
 
     @property
-    def ev_data(self):
+    def ev_data(self) -> Dict[str, Ev]:
         self.event.wait()
         self.event.clear()
         temp = self._ev_data
@@ -185,7 +186,7 @@ class Data:
         self.event.set()
 
     @property
-    def ev_template_data(self):
+    def ev_template_data(self) -> Dict[str, EvTemplate]:
         self.event.wait()
         self.event.clear()
         temp = self._ev_template_data
@@ -420,8 +421,7 @@ class Data:
     def __copy_ev_data(self) -> None:
         self.ev_data.clear()
         for ev in SubData.ev_data:
-            if "name" in SubData.ev_data[ev].data:
-                self.ev_data[ev] = copy.deepcopy(SubData.ev_data[ev])
+            self.ev_data[ev] = copy.deepcopy(SubData.ev_data[ev])
         self.ev_template_data = copy.deepcopy(SubData.ev_template_data)
         self.ev_charge_template_data = copy.deepcopy(SubData.ev_charge_template_data)
         for vehicle in self.ev_data:
@@ -429,12 +429,12 @@ class Data:
                 # Globaler oder individueller Lademodus?
                 if self.general_data["general"].data["chargemode_config"]["individual_mode"]:
                     self.ev_data[vehicle].charge_template = self.ev_charge_template_data["ct" + str(
-                        self.ev_data[vehicle].data["charge_template"])]
+                        self.ev_data[vehicle].data.charge_template)]
                 else:
                     self.ev_data[vehicle].charge_template = self.ev_charge_template_data["ct0"]
                 # zuerst das aktuelle Template laden
                 self.ev_data[vehicle].ev_template = self.ev_template_data["et" + str(
-                    self.ev_data[vehicle].data["ev_template"])]
+                    self.ev_data[vehicle].data.ev_template)]
             except Exception:
                 log.exception("Fehler im Prepare-Modul für EV "+str(vehicle))
 

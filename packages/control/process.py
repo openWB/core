@@ -78,28 +78,28 @@ class Process:
         current = round(chargepoint.data.set.current, 2)
         # Zur Sicherheit - nach dem der Algorithmus abgeschlossen ist - nochmal die Einhaltung der Stromstärken
         # prüfen.
-        current = charging_ev.check_min_max_current(current, charging_ev.data["control_parameter"]["phases"])
+        current = charging_ev.check_min_max_current(current, charging_ev.data.control_parameter.phases)
 
         # Wenn bei einem EV, das keine Umschaltung verträgt, vor dem ersten Laden noch umgeschaltet wird, darf kein
         # Strom gesetzt werden.
-        if (charging_ev.ev_template.data["prevent_phase_switch"] and
+        if (charging_ev.ev_template.data.prevent_phase_switch and
                 chargepoint.data.set.log.imported_since_plugged == 0 and
-                charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] is not None):
+                charging_ev.data.control_parameter.timestamp_perform_phase_switch is not None):
             current = 0
 
         # Unstimmige Werte loggen
-        if (charging_ev.data["control_parameter"]["timestamp_switch_on_off"] is not None and
+        if (charging_ev.data.control_parameter.timestamp_switch_on_off is not None and
                 not chargepoint.data.get.charge_state and
                 data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] == 0):
             log.error("Reservierte Leistung kann am Algorithmus-Ende nicht 0 sein.")
-        if (chargepoint.data.set.charging_ev_data.ev_template.data["prevent_phase_switch"] and
+        if (chargepoint.data.set.charging_ev_data.ev_template.data.prevent_phase_switch and
                 chargepoint.data.get.charge_state and
                 chargepoint.data.set.current == 0):
             log.error(
                 "LP"+str(chargepoint.num)+": Ladung wurde trotz verhinderter Unterbrechung gestoppt.")
 
         # Wenn ein EV zugeordnet ist und die Phasenumschaltung aktiv ist, darf kein Strom gesetzt werden.
-        if charging_ev.data["control_parameter"]["timestamp_perform_phase_switch"] is not None:
+        if charging_ev.data.control_parameter.timestamp_perform_phase_switch is not None:
             current = 0
 
         chargepoint.data.set.current = current

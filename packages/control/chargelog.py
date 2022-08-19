@@ -2,7 +2,7 @@ import json
 import logging
 import math
 import pathlib
-from typing import Union
+from typing import Dict, Union
 
 from control import data
 from helpermodules.pub import Pub
@@ -54,7 +54,7 @@ def collect_data(chargepoint):
                     log_data.timestamp_start_charging = timecheck.create_timestamp()
                     Pub().pub("openWB/set/chargepoint/"+str(chargepoint.num) +
                               "/set/log/timestamp_start_charging", log_data.timestamp_start_charging)
-                    log_data.chargemode_log_entry = charging_ev.data["control_parameter"]["chargemode"]
+                    log_data.chargemode_log_entry = charging_ev.data.control_parameter.chargemode
                     Pub().pub("openWB/set/chargepoint/"+str(chargepoint.num) +
                               "/set/log/chargemode_log_entry", log_data.chargemode_log_entry)
                 log_data.imported_since_mode_switch = chargepoint.data.get.imported - \
@@ -63,7 +63,7 @@ def collect_data(chargepoint):
                           str(log_data.imported_since_mode_switch)+" counter " +
                           str(chargepoint.data.get.imported))
                 log_data.range_charged = log_data.imported_since_mode_switch / \
-                    charging_ev.ev_template.data["average_consump"]/10
+                    charging_ev.ev_template.data.average_consump/10
                 log_data.time_charged, _ = timecheck.get_difference_to_now(
                     log_data.timestamp_start_charging)
                 Pub().pub("openWB/set/chargepoint/"+str(chargepoint.num) +
@@ -112,7 +112,7 @@ def save_data(chargepoint, charging_ev, immediately: bool = True, reset: bool = 
         log_data.imported_since_mode_switch = chargepoint.data.get.imported - \
             log_data.imported_at_mode_switch
         log_data.range_charged = log_data.imported_since_mode_switch / \
-            charging_ev.ev_template.data["average_consump"]/10
+            charging_ev.ev_template.data.average_consump/10
         log_data.time_charged, duration = timecheck.get_difference_to_now(
             log_data.timestamp_start_charging)
         Pub().pub("openWB/set/chargepoint/"+str(chargepoint.num) +
@@ -135,9 +135,9 @@ def save_data(chargepoint, charging_ev, immediately: bool = True, reset: bool = 
             "vehicle":
             {
                 "id": charging_ev.num,
-                "name": charging_ev.data["name"],
+                "name": charging_ev.data.name,
                 "chargemode": log_data.chargemode_log_entry,
-                "prio": charging_ev.data["control_parameter"]["prio"],
+                "prio": charging_ev.data.control_parameter.prio,
                 "rfid": chargepoint.data.set.rfid
             },
             "time":
@@ -202,7 +202,7 @@ def save_data(chargepoint, charging_ev, immediately: bool = True, reset: bool = 
         log.exception("Fehler im Ladelog-Modul")
 
 
-def get_log_data(request: dict):
+def get_log_data(request: Dict):
     """ json-Objekt mit gefilterten Logdaten erstellen
 
     Parameter

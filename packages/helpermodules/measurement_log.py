@@ -134,7 +134,7 @@ def save_log(folder):
         try:
             if "ev" in ev:
                 ev_dict.update(
-                    {ev: {"soc": data.data.ev_data[ev].data["get"]["soc"]}})
+                    {ev: {"soc": data.data.ev_data[ev].data.get.soc}})
         except Exception:
             log.exception("Fehler im Werte-Logging-Modul für EV "+str(ev))
 
