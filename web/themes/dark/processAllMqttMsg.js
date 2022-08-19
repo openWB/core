@@ -9,6 +9,7 @@
 var graphRefreshCounter = 0;
 var chargeModeTemplate = {};
 var schedulePlan = {};
+var vehicleSoc = {};
 var evuCounterIndex = undefined;
 
 // function getCol(matrix, col){
@@ -97,14 +98,11 @@ function refreshChargeTemplate(templateIndex) {
 	if (chargeModeTemplate.hasOwnProperty(templateIndex)) {
 		parents = $('.charge-point-card[data-charge-template=' + templateIndex + ']');
 		if (parents.length > 0) {
-			// console.log("selected elements: "+parents.length);
-			// console.log(parents);
+			// console.debug("selected elements", parents);
 			for (currentParent of parents) {
-				// console.log("currentParent");
-				// console.log(currentParent);
+				// console.debug("currentParent", currentParent);
 				parent = $(currentParent);
-				// console.log("parent");
-				// console.log(parent);
+				// console.debug("parent", parent);
 
 				// ***** time_charging *****
 				// time_charging.active
@@ -163,8 +161,7 @@ function refreshChargeTemplate(templateIndex) {
 				if (templateIndex in schedulePlan) {
 					parent.find(".charge-point-schedule-plan-missing").addClass("hide");
 					for (const [key, value] of Object.entries(schedulePlan[templateIndex])) {
-						console.log("schedule id: "+key);
-						console.log(value);
+						console.debug("schedule", key, value);
 						if (parent.find('.charge-point-schedule-plan[data-plan=' + key + ']').length == 0) {
 							// console.log('creating schedule plan with id "'+key+'"');
 							var clonedElement = sourceElement.clone();
@@ -244,9 +241,40 @@ function refreshChargeTemplate(templateIndex) {
 	}
 }
 
+function refreshVehicleSoc(vehicleIndex) {
+	if (vehicleSoc.hasOwnProperty(vehicleIndex)) {
+		$('.charge-point-vehicle-data[data-ev="'+vehicleIndex+'"]').each(function () {
+			var parent = $(this).closest('.charge-point-card');
+			var elementIsConfigured = $(parent).find('.charge-point-soc-configured'); // now get parents respective child element
+			var elementIsNotConfigured = $(parent).find('.charge-point-soc-not-configured'); // now get parents respective child element
+			if (vehicleSoc[vehicleIndex].type === null) {
+				// not configured
+				$(elementIsNotConfigured).removeClass('hide');
+				$(elementIsConfigured).addClass('hide');
+			} else {
+				// configured
+				$(elementIsNotConfigured).addClass('hide');
+				$(elementIsConfigured).removeClass('hide');
+			}
+			if (vehicleSoc[vehicleIndex].type == "manual") {
+				// "manual"
+				$(elementIsConfigured).addClass('manualSoC');
+				$(elementIsConfigured).find('.charge-point-manual-soc-symbol').removeClass('hide');
+				$(elementIsConfigured).find('.charge-point-reload-soc-symbol').addClass('hide');
+			} else {
+				$(elementIsConfigured).removeClass('manualSoC');
+				$(elementIsConfigured).find('.charge-point-manual-soc-symbol').addClass('hide');
+				$(elementIsConfigured).find('.charge-point-reload-soc-symbol').removeClass('hide');
+			}
+		});
+	} else {
+		console.warn("no vehicle soc data found for index", vehicleIndex);
+	}
+}
+
 function handleMessage(mqttTopic, mqttPayload) {
 	// receives all messages and calls respective function to process them
-	// console.log("new message: "+mqttTopic+": "+mqttPayload);
+	// console.info("new message: "+mqttTopic+": "+mqttPayload);
 	processPreloader(mqttTopic);
 	if (mqttTopic.match(/^openwb\/counter\/[0-9]+\//i)) { processCounterMessages(mqttTopic, mqttPayload) }
 	else if (mqttTopic.match(/^openwb\/counter\//i)) { processGlobalCounterMessages(mqttTopic, mqttPayload); }
@@ -763,36 +791,10 @@ function processChargePointMessages(mqttTopic, mqttPayload) {
 		element.text(soc);
 		var spinner = parent.find('.charge-point-reload-soc-symbol');
 		spinner.removeClass('fa-spin');
-		// "range" ToDo
-		// "range_unit" ToDo
-		// "timestamp" ToDo
+		// "range" + "range_unit" + "timestamp"
+		element.attr('title', Math.round(socData.range) + socData.range_unit + " (" + socData.timestamp + ")");
 		// "fault_stat" ToDo
 		// "fault_str" ToDo
-	} else if (mqttTopic.match(/^openwb\/chargepoint\/[0-9]+\/get\/connected_vehicle\/soc_config$/i)) {
-		// { "configured", "manual" }
-		var configData = JSON.parse(mqttPayload);
-		var index = getIndex(mqttTopic); // extract number between two / /
-		var parent = $('.charge-point-card[data-cp="' + index + '"]'); // get parent row element for charge point
-		// "configured" bool
-		var elementIsConfigured = $(parent).find('.charge-point-soc-configured'); // now get parents respective child element
-		var elementIsNotConfigured = $(parent).find('.charge-point-soc-not-configured'); // now get parents respective child element
-		if (configData.configured == true) {
-			$(elementIsNotConfigured).addClass('hide');
-			$(elementIsConfigured).removeClass('hide');
-		} else {
-			$(elementIsNotConfigured).removeClass('hide');
-			$(elementIsConfigured).addClass('hide');
-		}
-		// "manual" bool
-		if (configData.manual == true) {
-			$(elementIsConfigured).addClass('manualSoC');
-			$(elementIsConfigured).find('.charge-point-manual-soc-symbol').removeClass('hide');
-			$(elementIsConfigured).find('.charge-point-reload-soc-symbol').addClass('hide');
-		} else {
-			$(elementIsConfigured).removeClass('manualSoC');
-			$(elementIsConfigured).find('.charge-point-manual-soc-symbol').addClass('hide');
-			$(elementIsConfigured).find('.charge-point-reload-soc-symbol').removeClass('hide');
-		}
 	} else if (mqttTopic.match(/^openwb\/chargepoint\/[0-9]+\/get\/connected_vehicle\/info$/i)) {
 		// info of the vehicle if connected
 		// { "id", "name" }
@@ -804,6 +806,7 @@ function processChargePointMessages(mqttTopic, mqttPayload) {
 		parent.find('.charge-point-vehicle-data[data-ev]').attr('data-ev', infoData.id).data('ev', infoData.id); // set data-ev setting for this charge point
 		// "name" str
 		parent.find('.charge-point-vehicle-name').text(infoData.name);
+		refreshVehicleSoc(infoData.id);
 	} else if (mqttTopic.match(/^openwb\/chargepoint\/[0-9]+\/get\/connected_vehicle\/config$/i)) {
 		// settings of the vehicle if connected
 		// { "charge_template", "ev_template", "chargemode", "priority", "average_consumption" }
@@ -951,6 +954,14 @@ function processVehicleMessages(mqttTopic, mqttPayload) {
 				}
 			}
 		});
+	} else if (mqttTopic.match(/^openwb\/vehicle\/[0-9]+\/soc_module\/config$/i)) {
+		// { "type": "<selected module>", "configuration": { <module specific data> } }
+		// we use the data "type" to detect, if a soc module is configure (type != None) or manual soc is selected (type == manual)
+		var vehicleIndex = getIndex(mqttTopic); // extract number between two / /
+		var configData = JSON.parse(mqttPayload);
+		vehicleSoc[vehicleIndex] = configData;
+		console.debug("update vehicle soc config", vehicleIndex, configData);
+		refreshVehicleSoc(vehicleIndex);
 	} else if (mqttTopic.match(/^openwb\/vehicle\/template\/charge_template\/[0-9]+$/i)) {
 		templateIndex = mqttTopic.match(/[0-9]+$/i);
 		chargeModeTemplate[templateIndex] = JSON.parse(mqttPayload);
@@ -965,7 +976,7 @@ function processVehicleMessages(mqttTopic, mqttPayload) {
 			}
 			schedulePlan[templateIndex][planIndex] = newPlan;
 		} catch (error) {
-			console.log("error parsing schedule plan!");
+			console.error("error parsing schedule plan!");
 			delete schedulePlan[templateIndex][planIndex];
 			if (Object.keys(schedulePlan[templateIndex]).length == 0) {
 				delete schedulePlan[templateIndex];
@@ -978,7 +989,6 @@ function processVehicleMessages(mqttTopic, mqttPayload) {
 function processGraphMessages(mqttTopic, mqttPayload) {
 	// processes mqttTopic for topic openWB/graph
 	// called by handleMessage
-	// console.log("received graph msg: " + mqttTopic + ": " + mqttPayload);
 	if (mqttTopic == 'openWB/graph/boolDisplayHouseConsumption') {
 		if (mqttPayload == 1) {
 			boolDisplayHouseConsumption = false;
@@ -1089,7 +1099,7 @@ function processGraphMessages(mqttTopic, mqttPayload) {
 		if (initialRead == 0 && window['all' + index] == 0) {
 			window['all' + index + 'p'] = mqttPayload;
 			window['all' + index] = 1;
-			putgraphtogether();
+			mergeGraphData();
 		}
 	} else if (mqttTopic == 'openWB/graph/lastlivevaluesJson') {
 		// graph messages if local connection
