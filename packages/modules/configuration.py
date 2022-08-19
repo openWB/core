@@ -2,8 +2,8 @@ import importlib
 import logging
 from pathlib import Path
 
+import dataclass_utils
 from helpermodules.pub import Pub
-
 log = logging.getLogger(__name__)
 
 
@@ -26,18 +26,18 @@ def _pub_configurable_soc_modules() -> None:
                     "configuration": {}
                 }
             }]
-        pathlist = Path("/var/www/html/openWB/packages/modules").glob('**/soc.py')
+        pathlist = Path(_get_packages_path()/"modules").glob('**/soc.py')
         for path in pathlist:
             try:
                 if path.name.endswith("_test.py"):
                     # Tests überspringen
                     continue
                 dev_defaults = importlib.import_module(
-                    f".{path.parts[-2]}.soc", "modules").get_default_config()
+                    f".{path.parts[-2]}.soc", "modules").device_descriptor.configuration_factory()
                 soc_modules.append({
-                    "value": dev_defaults["type"],
-                    "text": dev_defaults["name"],
-                    "defaults": dev_defaults
+                    "value": dev_defaults.type,
+                    "text": dev_defaults.name,
+                    "defaults": dataclass_utils.asdict(dev_defaults)
                 })
             except Exception:
                 log.exception("Fehler im configuration-Modul")
@@ -49,7 +49,7 @@ def _pub_configurable_soc_modules() -> None:
 
 def _pub_configurable_devices_components() -> None:
     def add_components(device: str, pattern: str) -> None:
-        pathlist = Path(f"/var/www/html/openWB/packages/modules/{device}").glob(f'**/{pattern}.py')
+        pathlist = Path(_get_packages_path()/"modules"/device).glob(f'**/{pattern}.py')
         for path in pathlist:
             if path.name.endswith("_test.py"):
                 # Tests überspringen
@@ -63,7 +63,7 @@ def _pub_configurable_devices_components() -> None:
 
     try:
         devices_components = []
-        pathlist = Path("/var/www/html/openWB/packages/modules").glob('**/device.py')
+        pathlist = Path(_get_packages_path()/"modules").glob('**/device.py')
         for path in pathlist:
             try:
                 device = path.parts[-2]
@@ -89,7 +89,7 @@ def _pub_configurable_devices_components() -> None:
 def _pub_configurable_chargepoints() -> None:
     try:
         chargepoints = []
-        pathlist = Path("/var/www/html/openWB/packages/modules").glob('**/chargepoint_module.py')
+        pathlist = Path(_get_packages_path()/"modules").glob('**/chargepoint_module.py')
         for path in pathlist:
             try:
                 if path.name.endswith("_test.py"):
@@ -107,3 +107,7 @@ def _pub_configurable_chargepoints() -> None:
         Pub().pub("openWB/set/system/configurable/chargepoints", chargepoints)
     except Exception:
         log.exception("Fehler im configuration-Modul")
+
+
+def _get_packages_path() -> Path:
+    return Path(__file__).resolve().parents[2]/"packages"

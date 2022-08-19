@@ -260,7 +260,7 @@ def _check_max_currents(counter, required_current_phases, phases, offset):
         currents_used = [0, 0, 0]
         max_current_overshoot = 0
         if offset:
-            offset_current = 300 / 230 / phases
+            offset_current = 2
         else:
             offset_current = 0
         try:
@@ -291,7 +291,7 @@ def _check_max_currents(counter, required_current_phases, phases, offset):
             # Wenn Zähler geprüft werden, wird ohne Offset geprüft. Beim Runterregeln soll aber das Offset
             # berücksichtigt werden, um Schwingen zu vermeiden.
             return (loadmanagement,
-                    max_current_overshoot + (300 / 230 / phases),
+                    max_current_overshoot + 2,
                     currents_used.index(max(currents_used))+1)
         except Exception:
             log.exception("Fehler im Lastmanagement-Modul")

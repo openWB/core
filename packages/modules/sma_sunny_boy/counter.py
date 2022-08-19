@@ -23,16 +23,15 @@ class SmaSunnyBoyCounter:
         self.__sim_count = simcount.SimCountFactory().get_sim_counter()()
         self.simulation = {}
         self.__store = get_counter_value_store(self.component_config.id)
-        self.component_info = ComponentInfo.from_component_config(component_config)
+        self.component_info = ComponentInfo.from_component_config(self.component_config)
 
     def update(self):
-        with self.__tcp_client:
-            imp = self.__tcp_client.read_holding_registers(30865, ModbusDataType.UINT_32, unit=3)
-            exp = self.__tcp_client.read_holding_registers(30867, ModbusDataType.UINT_32, unit=3)
-            if imp > 5:
-                power = imp
-            else:
-                power = exp * -1
+        imp = self.__tcp_client.read_holding_registers(30865, ModbusDataType.UINT_32, unit=3)
+        exp = self.__tcp_client.read_holding_registers(30867, ModbusDataType.UINT_32, unit=3)
+        if imp > 5:
+            power = imp
+        else:
+            power = exp * -1
 
         topic_str = "openWB/set/system/device/{}/component/{}/".format(self.__device_id, self.component_config.id)
         imported, exported = self.__sim_count.sim_count(power, topic=topic_str, data=self.simulation, prefix="bezug")

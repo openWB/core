@@ -63,6 +63,7 @@ var topicsToSubscribe = [
 
 	// vehicle topics
 	["openWB/vehicle/+/name", 1], // populate a list of vehicle id/name info
+	["openWB/vehicle/+/soc_module/config", 1], // soc configuration of the vehicle; JSON { "type": text, "configuration": object }
 	["openWB/vehicle/template/charge_template/+", 1], // populate a list of charge templates
 	["openWB/vehicle/template/charge_template/+/chargemode/scheduled_charging/plans/+", 1], // populate a list of schedule plans
 
