@@ -244,7 +244,7 @@ class SubData:
                             var["ev"+index].soc_module = None
                         else:
                             mod = importlib.import_module("."+config["type"]+".soc", "modules")
-                            var["ev"+index].soc_module = mod.Soc(config)
+                            var["ev"+index].soc_module = mod.Soc(config, index)
                     elif re.search("^.+/vehicle/[0-9]+/control_parameter/.+$", msg.topic) is not None:
                         if "control_parameter" not in var["ev"+index].data:
                             var["ev"+index].data["control_parameter"] = {}

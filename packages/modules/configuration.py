@@ -2,8 +2,8 @@ import importlib
 import logging
 from pathlib import Path
 
+import dataclass_utils
 from helpermodules.pub import Pub
-
 log = logging.getLogger(__name__)
 
 
@@ -33,11 +33,11 @@ def _pub_configurable_soc_modules() -> None:
                     # Tests überspringen
                     continue
                 dev_defaults = importlib.import_module(
-                    f".{path.parts[-2]}.soc", "modules").get_default_config()
+                    f".{path.parts[-2]}.soc", "modules").device_descriptor.configuration_factory()
                 soc_modules.append({
-                    "value": dev_defaults["type"],
-                    "text": dev_defaults["name"],
-                    "defaults": dev_defaults
+                    "value": dev_defaults.type,
+                    "text": dev_defaults.name,
+                    "defaults": dataclass_utils.asdict(dev_defaults)
                 })
             except Exception:
                 log.exception("Fehler im configuration-Modul")
