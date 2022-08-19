@@ -76,7 +76,7 @@ def __refresh_token(token: TeslaSocToken) -> TeslaSocToken:
     resp_json = resp.json()
     token.refresh_token = resp_json["refresh_token"]
     token.access_token = resp_json["access_token"]
-    token.created_at = resp_json["created_at"]
+    token.created_at = time.time()
     token.expires_in = resp_json["expires_in"]
     log.debug("Token Refresh succeeded")
     return token
