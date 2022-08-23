@@ -46,17 +46,20 @@ class UpdateSoc:
         ev_data = copy.deepcopy(data.data.ev_data)
         # Alle Autos durchgehen
         for ev in ev_data.values():
-            if ev.soc_module is not None:
-                for cp in cp_data.values():
-                    if not isinstance(cp, AllChargepoints):
-                        if cp.data.set.charging_ev == ev.num:
-                            charge_state = cp.data.get.charge_state
-                            plug_state = cp.data.get.plug_state
-                            break
-                else:
-                    charge_state = False
-                    plug_state = False
-                if ev.ev_template.soc_interval_expired(plug_state, charge_state, ev.data.get.soc_timestamp):
-                    threads.append(threading.Thread(target=ev.soc_module.update,
-                                                    args=(charge_state,), name=f"soc_ev{ev.num}"))
+            try:
+                if ev.soc_module is not None:
+                    for cp in cp_data.values():
+                        if not isinstance(cp, AllChargepoints):
+                            if cp.data.set.charging_ev == ev.num:
+                                charge_state = cp.data.get.charge_state
+                                plug_state = cp.data.get.plug_state
+                                break
+                    else:
+                        charge_state = False
+                        plug_state = False
+                    if ev.ev_template.soc_interval_expired(plug_state, charge_state, ev.data.get.soc_timestamp):
+                        threads.append(threading.Thread(target=ev.soc_module.update,
+                                                        args=(charge_state,), name=f"soc_ev{ev.num}"))
+            except Exception:
+                log.exception("Fehler im Main-Modul")
         return threads
