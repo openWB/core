@@ -1,12 +1,14 @@
 """ Modul zum Updaten der Steuerung und Triggern der externen Wbs, zu updaten."""
 
-from pathlib import Path
 import logging
+import os
 import subprocess
 import time
 import _thread as thread
 import threading
 import sys
+from pathlib import Path
+
 
 from helpermodules import pub
 from control import data
@@ -65,6 +67,13 @@ class System:
                     log.exception("Fehler im System-Modul")
         except Exception:
             log.exception("Fehler im System-Modul")
+
+    def update_ip_address(self) -> None:
+        with os.popen("(ip route get 1 | awk '{print $7}')") as process:
+            new_ip = process.readline().rstrip("\n")
+        if new_ip != self.data["ip_address"]:
+            self.data["ip_address"] = new_ip
+            pub.Pub().pub("openWB/set/system/ip_address", new_ip)
 
 
 def quit_function(fn_name):
