@@ -23,7 +23,7 @@ class Soc(AbstractSoc):
         self.soc_config = dataclass_from_dict(TeslaSoc, soc_config)
         self.vehicle = vehicle
         self.store = store.get_car_value_store(self.vehicle)
-        self.component_info = ComponentInfo(self.vehicle, "Tesla", "vehicle")
+        self.component_info = ComponentInfo(self.vehicle, self.soc_config.name, "vehicle")
 
     def update(self, charge_state: bool = False) -> None:
         with SingleComponentUpdateContext(self.component_info):
