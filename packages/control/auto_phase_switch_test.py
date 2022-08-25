@@ -19,8 +19,7 @@ def vehicle() -> Ev:
 @pytest.fixture(autouse=True)
 def data_module() -> None:
     data.data_init(threading.Event())
-    data.data.general_data["general"] = General()
-    data.data.general_data["general"].data = {"chargemode_config": {"pv_charging": {"phase_switch_delay": 7}}}
+    data.data.general_data = General()
     data.data.pv_data["all"] = PvAll()
     data.data.bat_data["all"] = BatAll()
 

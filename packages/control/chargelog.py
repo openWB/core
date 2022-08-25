@@ -124,7 +124,7 @@ def save_data(chargepoint, charging_ev, immediately: bool = True, reset: bool = 
         power = 0
         if duration > 0:
             power = log_data.imported_since_mode_switch / duration
-        costs = data.data.general_data["general"].data["price_kwh"] * \
+        costs = data.data.general_data.data.price_kwh * \
             log_data.imported_since_mode_switch / 1000
         new_entry = {
             "chargepoint":

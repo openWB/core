@@ -355,14 +355,14 @@ class Chargepoint:
         """
         state = True
         message = None
-        general_data = data.data.general_data["general"].data
-        if general_data["grid_protection_configured"]:
-            if general_data["grid_protection_active"]:
-                if general_data["grid_protection_timestamp"] is not None:
+        general_data = data.data.general_data.data
+        if general_data.grid_protection_configured:
+            if general_data.grid_protection_active:
+                if general_data.grid_protection_timestamp is not None:
                     # Timer ist  abgelaufen
                     if not timecheck.check_timestamp(
-                            general_data["grid_protection_timestamp"],
-                            general_data["grid_protection_random_stop"]):
+                            general_data.grid_protection_timestamp,
+                            general_data.grid_protection_random_stop):
                         state = False
                         message = "Ladepunkt gesperrt, da der Netzschutz aktiv ist."
                         Pub().pub("openWB/set/general/grid_protection_timestamp", None)
@@ -377,10 +377,10 @@ class Chargepoint:
         """
         state = True
         message = None
-        general_data = data.data.general_data["general"].data
-        if general_data["ripple_control_receiver"]["configured"]:
-            if (general_data["ripple_control_receiver"]["r1_active"] or
-                    general_data["ripple_control_receiver"]["r2_active"]):
+        general_data = data.data.general_data.data
+        if general_data.ripple_control_receiver.configured:
+            if (general_data.ripple_control_receiver.r1_active or
+                    general_data.ripple_control_receiver.r2_active):
                 state = False
                 message = "Ladepunkt gesperrt, da der Rundsteuerempfängerkontakt geschlossen ist."
         return state, message
@@ -678,7 +678,7 @@ class Chargepoint:
             phases = config.connected_phases
             log.debug(f"Anzahl angeschlossener Phasen beschränkt die nutzbaren Phasen auf {phases}")
 
-        chargemode_phases = data.data.general_data["general"].get_phases_chargemode(mode)
+        chargemode_phases = data.data.general_data.get_phases_chargemode(mode)
         # Wenn die Lademodus-Phasen 0 sind, wird die bisher genutzte Phasenzahl weiter genutzt,
         # bis der Algorithmus eine Umschaltung vorgibt, zB weil der gewählte Lademodus eine
         # andere Phasenzahl benötigt oder bei PV-Laden die automatische Umschaltung aktiv ist.
@@ -930,7 +930,7 @@ class Chargepoint:
             # }
             soc_obj = ConnectedSoc(
                 range_charged=self.data.set.log.range_charged,
-                range_unit=data.data.general_data["general"].data["range_unit"],
+                range_unit=data.data.general_data.data.range_unit,
             )
             if vehicle.data.get.soc_timestamp != "":
                 soc_obj.timestamp = vehicle.data.get.soc_timestamp
@@ -1171,7 +1171,7 @@ class ChargepointStateUpdate:
                 for vehicle in ev_list:
                     try:
                         # Globaler oder individueller Lademodus?
-                        if data.data.general_data["general"].data["chargemode_config"]["individual_mode"]:
+                        if data.data.general_data.data.chargemode_config.individual_mode:
                             ev_list[vehicle].charge_template = copy.deepcopy(self.ev_charge_template_data["ct" + str(
                                 ev_list[vehicle].data.charge_template)])
                         else:

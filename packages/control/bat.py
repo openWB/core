@@ -129,12 +129,12 @@ class BatAll:
         """ ermittelt die Lade-Leistung des Speichers, die zum Laden der EV verwendet werden darf.
         """
         try:
-            config = data.data.general_data["general"].data["chargemode_config"]["pv_charging"]
-            if not config["bat_prio"]:
+            config = data.data.general_data.data.chargemode_config.pv_charging
+            if not config.bat_prio:
                 # Laderegelung wurde noch nicht freigegeben
                 if not self.data["set"]["switch_on_soc_reached"]:
-                    if config["switch_on_soc"] != 0:
-                        if config["switch_on_soc"] < self.data["get"]["soc"]:
+                    if config.switch_on_soc != 0:
+                        if config.switch_on_soc < self.data["get"]["soc"]:
                             self.data["set"]["switch_on_soc_reached"] = True
                             self.data["set"]["charging_power_left"] = self.data["get"]["power"]
                         else:
@@ -148,8 +148,8 @@ class BatAll:
                                  "W")))
                     else:
                         # Kein Einschalt-Soc; Nutzung, wenn Soc über Ausschalt-Soc liegt.
-                        if config["switch_off_soc"] != 0:
-                            if config["switch_off_soc"] < self.data["get"]["soc"]:
+                        if config.switch_off_soc != 0:
+                            if config.switch_off_soc < self.data["get"]["soc"]:
                                 self.data["set"]["switch_on_soc_reached"] = True
                                 self.data["set"]["charging_power_left"] = self.data["get"]["power"]
                             else:
@@ -167,9 +167,9 @@ class BatAll:
                             self.data["set"]["charging_power_left"] = self.data["get"]["power"]
                 # Laderegelung wurde freigegeben.
                 elif self.data["set"]["switch_on_soc_reached"]:
-                    if config["switch_off_soc"] != 0:
+                    if config.switch_off_soc != 0:
                         # Greift der Ausschalt-Soc?
-                        if config["switch_off_soc"] < self.data["get"]["soc"]:
+                        if config.switch_off_soc < self.data["get"]["soc"]:
                             self.data["set"]["charging_power_left"] = self.data["get"]["power"]
                         else:
                             self.data["set"]["switch_on_soc_reached"] = False
@@ -196,19 +196,16 @@ class BatAll:
                                  "W")))
                 # Ladeleistungs-Reserve
                 self.data["set"]["charging_power_left"] = self.data["set"]["charging_power_left"] - \
-                    config["charging_power_reserve"]
-                log.debug("".join(("Ladeleistungs-Reserve subtrahieren: ",
-                                   self.data["set"]["charging_power_left"], " = ",
-                                   self.data["set"]["charging_power_left"], " - ",
-                                   config["charging_power_reserve"])))
+                    config.charging_power_reserve
+                log.debug(f'Ladeleistungs-Reserve subtrahieren: {self.data["set"]["charging_power_left"]} = '
+                          f'{self.data["set"]["charging_power_left"]} - {config.charging_power_reserve}')
             # Wenn der Speicher Vorrang hat, darf die erlaubte Entlade-Leistung zum Laden der EV genutzt werden, wenn
             # der Soc über dem minimalen Entlade-Soc liegt.
             else:
-                if config["rundown_soc"] != 100:
-                    if self.data["get"]["soc"] > config["rundown_soc"]:
-                        self.data["set"]["charging_power_left"] = config["rundown_power"]
-                        log.debug("".join(
-                            ("Erlaubte Entlade-Leistung nutzen (", str(config["rundown_power"]), "W)")))
+                if config.rundown_soc != 100:
+                    if self.data["get"]["soc"] > config.rundown_soc:
+                        self.data["set"]["charging_power_left"] = config.rundown_power
+                        log.debug(f"Erlaubte Entlade-Leistung nutzen ({config.rundown_power}W)")
                     else:
                         # 50 W Überschuss übrig lassen, die sich der Speicher dann nehmen kann. Wenn der Speicher
                         # schneller regelt, als die LP, würde sonst der Speicher reduziert werden.

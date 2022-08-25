@@ -139,7 +139,7 @@ def _chargelogfile_entry_generator_func(file):
                         raise ValueError(str(duration_list) +
                                          " hat kein bekanntes Format.")
                     try:
-                        costs = data.data.general_data["general"].data["price_kwh"] * row[3]
+                        costs = data.data.general_data.data.price_kwh * row[3]
                     except Exception:
                         costs = 0
                     new_entry = {

@@ -39,7 +39,7 @@ class Loadvars:
 
                 # Wait for all to complete
                 for thread in threads:
-                    thread.join(timeout=data.data.general_data["general"].data["control_interval"]/3)
+                    thread.join(timeout=data.data.general_data.data.control_interval/3)
 
                 for thread in threads:
                     if thread.is_alive():
@@ -50,7 +50,7 @@ class Loadvars:
         except Exception:
             log.exception("Fehler im loadvars-Modul")
 
-    def _get_virtual_counters(self) -> None:
+    def _get_virtual_counters(self) -> List[threading.Thread]:
         """ vorhandene Zähler durchgehen und je nach Konfiguration Module zur Abfrage der Werte aufrufen
         """
         modules_threads = []  # type: List[threading.Thread]
@@ -70,7 +70,6 @@ class Loadvars:
                                 modules_threads.append(thread)
                 except Exception:
                     log.exception("Fehler im loadvars-Modul")
-            return modules_threads
         except Exception:
             log.exception("Fehler im loadvars-Modul")
         finally:
@@ -99,8 +98,7 @@ class Loadvars:
         try:
             # Beim ersten Durchlauf wird in jedem Fall eine Exception geworfen,
             # da die Daten erstmalig ins data-Modul kopiert werden müssen.
-            if data.data.general_data["general"].data[
-                    "ripple_control_receiver"]["configured"]:
+            if data.data.general_data.data.ripple_control_receiver.configured:
                 threads.append(threading.Thread(target=ripple_control_receiver.read, args=()))
         except Exception:
             log.exception("Fehler im loadvars-Modul")
@@ -137,7 +135,7 @@ class ModuleUpdateCompletedContext:
         self.event_module_update_completed = event_module_update_completed
 
     def __enter__(self):
-        timeout = data.data.general_data["general"].data["control_interval"]/2
+        timeout = data.data.general_data.data.control_interval/2
         if self.event_module_update_completed.wait(timeout) is False:
             log.error(
                 "Modul-Daten wurden noch nicht vollständig empfangen. Timeout abgelaufen, fortsetzen der Regelung.")

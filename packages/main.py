@@ -43,11 +43,11 @@ class HandlerAlgorithm:
             # kopiert werden müssen.
             try:
                 log.info("# ***Start*** ")
-                exit_time = data.data.general_data["general"].data["control_interval"]
+                exit_time = data.data.general_data.data.control_interval
 
                 @exit_after(exit_time)
                 def handler_with_control_interval():
-                    if (data.data.general_data["general"].data["control_interval"]
+                    if (data.data.general_data.data.control_interval
                             / 10) == self.interval_counter:
                         # Mit aktuellen Einstellungen arbeiten.
                         data.data.copy_system_data()
@@ -134,7 +134,7 @@ class HandlerAlgorithm:
             if self.current_day != day:
                 self.current_day = day
                 measurement_log.save_log("monthly")
-            data.data.general_data["general"].grid_protection()
+            data.data.general_data.grid_protection()
             data.data.optional_data["optional"].et_get_prices()
             data.data.system_data["system"].update_ip_address()
         except Exception:

@@ -524,11 +524,10 @@ class Algorithm:
                     charging_ev = cp.data.set.charging_ev_data
                     control_parameter = charging_ev.data.control_parameter
                     pv_auto_switch = (control_parameter.chargemode == "pv_charging" and
-                                      data.data.general_data["general"].get_phases_chargemode("pv_charging") == 0)
+                                      data.data.general_data.get_phases_chargemode("pv_charging") == 0)
                     scheduled_auto_switch = (control_parameter.chargemode == "scheduled_charging" and
                                              control_parameter.submode == "pv_charging" and
-                                             data.data.general_data[
-                                                 "general"].get_phases_chargemode("scheduled_charging") == 0)
+                                             data.data.general_data.get_phases_chargemode("scheduled_charging") == 0)
                     if (cp.data.config.auto_phase_switch_hw and cp.data.get.charge_state and
                             (pv_auto_switch or scheduled_auto_switch) and
                             control_parameter.timestamp_perform_phase_switch is None):
@@ -855,8 +854,7 @@ class Algorithm:
                     if overhang > 0.01:
                         self._distribute_remaining_overhang(mode, False)
                     if (overhang
-                            - data.data.general_data["general"].data["chargemode_config"]["pv_charging"][
-                                "feed_in_yield"]) > 0.01:
+                            - data.data.general_data.data.chargemode_config.pv_charging.feed_in_yield) > 0.01:
                         self._distribute_remaining_overhang(mode, True)
             data.data.pv_data["all"].put_stats()
         except Exception:
@@ -907,8 +905,7 @@ class Algorithm:
                 if not feed_in_limit:
                     diff_per_ev_power = (evu_overhang + bat_overhang) / num_of_ev
                 else:
-                    feed_in_yield = data.data.general_data["general"].data[
-                        "chargemode_config"]["pv_charging"]["feed_in_yield"]
+                    feed_in_yield = data.data.general_data.data.chargemode_config.pv_charging.feed_in_yield
                     if evu_overhang <= feed_in_yield:
                         diff_per_ev_power = (evu_overhang - feed_in_yield + bat_overhang) / num_of_ev
                         log.debug(f"Zuteilbare Leistung pro EV: {diff_per_ev_power}W")

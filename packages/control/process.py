@@ -70,7 +70,7 @@ class Process:
         except Exception:
             log.exception("Fehler im Process-Modul")
 
-    def _update_state(self, chargepoint) -> None:
+    def _update_state(self, chargepoint: chargepoint.Chargepoint) -> None:
         """aktualisiert den Zustand des Ladepunkts.
         """
         charging_ev = chargepoint.data.set.charging_ev_data

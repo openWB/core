@@ -315,7 +315,7 @@ def _check_unbalanced_load(currents_used, offset) -> Tuple[bool, float, float]:
     max_current_overshoot: maximale Überschreitung der Stromstärke
     int: Phase, die den höchsten Strom verbraucht
     """
-    if data.data.general_data["general"].data["chargemode_config"]["unbalanced_load"] and currents_used:
+    if data.data.general_data.data.chargemode_config.unbalanced_load and currents_used:
         max_current_overshoot = 0
         if offset:
             offset_current = 1
@@ -328,13 +328,13 @@ def _check_unbalanced_load(currents_used, offset) -> Tuple[bool, float, float]:
             max_current = max(currents_used)
             if max_current < 0:
                 max_current = 0
-            if ((max_current - min_current) <= data.data.general_data["general"].data["chargemode_config"][
-                    "unbalanced_load_limit"] - offset_current):
+            if ((max_current - min_current) <=
+                    data.data.general_data.data.chargemode_config.unbalanced_load_limit - offset_current):
                 return False, 0, 0
             else:
                 max_current_overshoot = (
                     max_current - min_current) - \
-                    data.data.general_data["general"].data["chargemode_config"]["unbalanced_load_limit"]
+                    data.data.general_data.data.chargemode_config.unbalanced_load_limit
                 log.warning("Schieflast wurde überschritten.")
                 return True, max_current_overshoot + 1, currents_used.index(max_current)+1
         except Exception:

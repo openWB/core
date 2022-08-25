@@ -11,6 +11,7 @@ from control.chargepoint import AllChargepoints, Chargepoint
 import dataclass_utils
 from helpermodules.subdata import SubData
 from control.ev import ChargeTemplate, Ev, EvTemplate
+from control.general import General
 from modules.common.abstract_device import AbstractDevice
 
 log = logging.getLogger(__name__)
@@ -31,7 +32,7 @@ class Data:
         self._ev_charge_template_data = {}
         self._ev_data = {}
         self._ev_template_data = {}
-        self._general_data = {}
+        self._general_data = General()
         self._graph_data = {}
         self._optional_data = {}
         self._pv_data = {}
@@ -201,7 +202,7 @@ class Data:
         self.event.set()
 
     @property
-    def general_data(self):
+    def general_data(self) -> General:
         self.event.wait()
         self.event.clear()
         temp = self._general_data
@@ -271,7 +272,7 @@ class Data:
         self._print_dictionaries(self._ev_charge_template_data)
         self._print_dictionaries(self._ev_data)
         self._print_dictionaries(self._ev_template_data)
-        self._print_dictionaries(self._general_data)
+        log.debug(f"general_data\n{self._general_data.data}")
         self._print_dictionaries(self._graph_data)
         self._print_dictionaries(self._optional_data)
         self._print_dictionaries(self._pv_data)
@@ -427,7 +428,7 @@ class Data:
         for vehicle in self.ev_data:
             try:
                 # Globaler oder individueller Lademodus?
-                if self.general_data["general"].data["chargemode_config"]["individual_mode"]:
+                if self.general_data.data.chargemode_config.individual_mode:
                     self.ev_data[vehicle].charge_template = self.ev_charge_template_data["ct" + str(
                         self.ev_data[vehicle].data.charge_template)]
                 else:
@@ -448,7 +449,7 @@ class ModuleDataReceivedContext:
     def __enter__(self):
         global data
         try:
-            timeout = data.general_data["general"].data["control_interval"]/2
+            timeout = data.general_data.data.control_interval/2
         except KeyError:
             timeout = 5
         if self.event_module_update_completed.wait(timeout) is False:
