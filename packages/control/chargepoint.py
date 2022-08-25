@@ -778,88 +778,91 @@ class Chargepoint:
         self._pub_connected_vehicle(charging_ev)
 
     def update(self, ev_list: Dict[str, Ev]) -> None:
-        vehicle, charging_possible, message = self.prepare_cp()
-        if vehicle != -1:
-            try:
-                charging_ev = self._get_charging_ev(vehicle, ev_list)
-                state, message_ev, submode, required_current = charging_ev.get_required_current(
-                    self.data.set.log.imported_since_mode_switch)
-                phases = self.get_phases()
-                self._pub_connected_vehicle(charging_ev)
-                # Einhaltung des Minimal- und Maximalstroms prüfen
-                required_current = charging_ev.check_min_max_current(
-                    required_current, charging_ev.data.control_parameter.phases)
-                current_changed, mode_changed = charging_ev.check_state(
-                    required_current, self.data.set.current)
+        try:
+            vehicle, charging_possible, message = self.prepare_cp()
+            if vehicle != -1:
+                try:
+                    charging_ev = self._get_charging_ev(vehicle, ev_list)
+                    state, message_ev, submode, required_current = charging_ev.get_required_current(
+                        self.data.set.log.imported_since_mode_switch)
+                    phases = self.get_phases()
+                    self._pub_connected_vehicle(charging_ev)
+                    # Einhaltung des Minimal- und Maximalstroms prüfen
+                    required_current = charging_ev.check_min_max_current(
+                        required_current, charging_ev.data.control_parameter.phases)
+                    current_changed, mode_changed = charging_ev.check_state(
+                        required_current, self.data.set.current)
 
-                # Die benötigte Stromstärke hat sich durch eine Änderung des Lademodus oder der
-                # Konfiguration geändert. Die Zuteilung entsprechend der Priorisierung muss neu geprüft
-                # werden. Daher muss der LP zurückgesetzt werden, wenn er gerade lädt, um in der Regelung
-                # wieder berücksichtigt zu werden.
-                if current_changed:
-                    log.debug(f"LP{self.num}: Da sich die Stromstärke geändert hat, muss der Ladepunkt im "
-                              "Algorithmus neu priorisiert werden.")
-                    data.data.pv_data["all"].reset_switch_on_off(
-                        self, charging_ev)
-                    charging_ev.reset_phase_switch()
-                    min_charge_current = self.data.set.current - \
-                        charging_ev.ev_template.data.nominal_difference
-                    if max(self.data.get.currents) > min_charge_current:
-                        self.data.set.current = 0
+                    # Die benötigte Stromstärke hat sich durch eine Änderung des Lademodus oder der
+                    # Konfiguration geändert. Die Zuteilung entsprechend der Priorisierung muss neu geprüft
+                    # werden. Daher muss der LP zurückgesetzt werden, wenn er gerade lädt, um in der Regelung
+                    # wieder berücksichtigt zu werden.
+                    if current_changed:
+                        log.debug(f"LP{self.num}: Da sich die Stromstärke geändert hat, muss der Ladepunkt im "
+                                  "Algorithmus neu priorisiert werden.")
+                        data.data.pv_data["all"].reset_switch_on_off(
+                            self, charging_ev)
+                        charging_ev.reset_phase_switch()
+                        min_charge_current = self.data.set.current - \
+                            charging_ev.ev_template.data.nominal_difference
+                        if max(self.data.get.currents) > min_charge_current:
+                            self.data.set.current = 0
+                        else:
+                            # Wenn nicht geladen wird, obwohl geladen werde kann, soll das EV im Algorithmus
+                            # nicht berücksichtigt werden. Wenn der Soll-Strom gesetzt ist, wird das EV nur im
+                            # LM berücksichtigt.
+                            self.data.set.current = required_current
+                        # Da nicht bekannt ist, ob mit Bezug, Überschuss oder aus dem Speicher geladen wird,
+                        # wird die freiwerdende Leistung erst im nächsten Durchlauf berücksichtigt. Ggf.
+                        # entsteht so eine kurze Unterbrechung der Ladung, wenn während dem Laden
+                        # umkonfiguriert wird.
+                    if charging_possible:
+                        message = message_ev if message_ev else message
+                        charging_ev.set_control_parameter(submode, required_current)
+                    # Ein Eintrag muss nur erstellt werden, wenn vorher schon geladen wurde und auch danach noch
+                    # geladen werden soll.
+                    if mode_changed and self.data.get.charge_state and state:
+                        chargelog.save_data(self, charging_ev)
+
+                    # Wenn die Nachrichten gesendet wurden, EV wieder löschen, wenn das EV im Algorithmus nicht
+                    # berücksichtigt werden soll.
+                    if not state:
+                        if self.data.set.charging_ev != -1:
+                            # Altes EV merken
+                            self.data.set.charging_ev_prev = self.data.set.charging_ev
+                            Pub().pub("openWB/set/chargepoint/"+str(self.num) +
+                                      "/set/charging_ev_prev", self.data.set.charging_ev_prev)
+                        self.data.set.charging_ev = -1
+                        Pub().pub("openWB/set/chargepoint/" +
+                                  str(self.num)+"/set/charging_ev", -1)
+                        log.debug(f'LP {self.num}, EV: {self.data.set.charging_ev_data.data.name}'
+                                  f' (EV-Nr.{vehicle}): Lademodus '
+                                  f'{charging_ev.charge_template.data.chargemode.selected}, Submodus: '
+                                  f'{charging_ev.data.control_parameter.submode}')
                     else:
-                        # Wenn nicht geladen wird, obwohl geladen werde kann, soll das EV im Algorithmus
-                        # nicht berücksichtigt werden. Wenn der Soll-Strom gesetzt ist, wird das EV nur im
-                        # LM berücksichtigt.
-                        self.data.set.current = required_current
-                    # Da nicht bekannt ist, ob mit Bezug, Überschuss oder aus dem Speicher geladen wird,
-                    # wird die freiwerdende Leistung erst im nächsten Durchlauf berücksichtigt. Ggf.
-                    # entsteht so eine kurze Unterbrechung der Ladung, wenn während dem Laden
-                    # umkonfiguriert wird.
-                if charging_possible:
-                    message = message_ev if message_ev else message
-                    charging_ev.set_control_parameter(submode, required_current)
-                # Ein Eintrag muss nur erstellt werden, wenn vorher schon geladen wurde und auch danach noch
-                # geladen werden soll.
-                if mode_changed and self.data.get.charge_state and state:
-                    chargelog.save_data(self, charging_ev)
+                        if (charging_ev.data.control_parameter.timestamp_switch_on_off is not None and
+                                not self.data.get.charge_state and
+                                data.data.pv_data["all"].data["set"]["overhang_power_left"] == 0):
+                            log.error("Reservierte Leistung kann nicht 0 sein.")
 
-                # Wenn die Nachrichten gesendet wurden, EV wieder löschen, wenn das EV im Algorithmus nicht
-                # berücksichtigt werden soll.
-                if not state:
-                    if self.data.set.charging_ev != -1:
-                        # Altes EV merken
-                        self.data.set.charging_ev_prev = self.data.set.charging_ev
-                        Pub().pub("openWB/set/chargepoint/"+str(self.num) +
-                                  "/set/charging_ev_prev", self.data.set.charging_ev_prev)
-                    self.data.set.charging_ev = -1
-                    Pub().pub("openWB/set/chargepoint/" +
-                              str(self.num)+"/set/charging_ev", -1)
-                    log.debug(f'LP {self.num}, EV: {self.data.set.charging_ev_data.data.name}'
-                              f' (EV-Nr.{vehicle}): Lademodus '
-                              f'{charging_ev.charge_template.data.chargemode.selected}, Submodus: '
-                              f'{charging_ev.data.control_parameter.submode}')
-                else:
-                    if (charging_ev.data.control_parameter.timestamp_switch_on_off is not None and
-                            not self.data.get.charge_state and
-                            data.data.pv_data["all"].data["set"]["overhang_power_left"] == 0):
-                        log.error("Reservierte Leistung kann nicht 0 sein.")
-
-                    log.debug(
-                        f"LP {self.num}, EV: {self.data.set.charging_ev_data.data.name} (EV-Nr.{vehicle}): Theoretisch"
-                        f" benötigter Strom {required_current}A, Lademodus "
-                        f"{charging_ev.charge_template.data.chargemode.selected}, Submodus: "
-                        f"{charging_ev.data.control_parameter.submode}, Phasen: {phases}"
-                        f", Priorität: {charging_ev.charge_template.data.prio}"
-                        f", max. Ist-Strom: {max(self.data.get.currents)}")
-            except Exception:
-                log.exception("Fehler im Prepare-Modul für Ladepunkt "+str(self.num))
-                ev_list[f"ev{vehicle}"].data.control_parameter.submode = "stop"
-        else:
-            # Wenn kein EV zur Ladung zugeordnet wird, auf hinterlegtes EV zurückgreifen.
-            self._pub_connected_vehicle(
-                ev_list["ev"+str(self.data.config.ev)])
-        if message is not None and self.data.get.state_str is None:
-            self.set_state_and_log(message)
+                        log.debug(
+                            f"LP {self.num}, EV: {self.data.set.charging_ev_data.data.name} (EV-Nr.{vehicle}): "
+                            f"Theoretisch benötigter Strom {required_current}A, Lademodus "
+                            f"{charging_ev.charge_template.data.chargemode.selected}, Submodus: "
+                            f"{charging_ev.data.control_parameter.submode}, Phasen: {phases}"
+                            f", Priorität: {charging_ev.charge_template.data.prio}"
+                            f", max. Ist-Strom: {max(self.data.get.currents)}")
+                except Exception:
+                    log.exception("Fehler im Prepare-Modul für Ladepunkt "+str(self.num))
+                    ev_list[f"ev{vehicle}"].data.control_parameter.submode = "stop"
+            else:
+                # Wenn kein EV zur Ladung zugeordnet wird, auf hinterlegtes EV zurückgreifen.
+                self._pub_connected_vehicle(
+                    ev_list["ev"+str(self.data.config.ev)])
+            if message is not None and self.data.get.state_str is None:
+                self.set_state_and_log(message)
+        except Exception:
+            log.exception(f"Fehler bei Ladepunkt {self.num}")
 
     def _get_charging_ev(self, vehicle: int, ev_list: Dict[str, Ev]) -> Ev:
         charging_ev = ev_list[f"ev{vehicle}"]
