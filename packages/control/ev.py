@@ -252,6 +252,8 @@ class Set:
 class Get:
     soc: int = 0
     soc_timestamp: str = ""
+    force_soc_update: bool = False
+    range: float = 0
 
 
 def control_parameter_factory() -> ControlParameter:
