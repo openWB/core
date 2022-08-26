@@ -1069,7 +1069,9 @@
 			$('.container').on('click', '.charge-point-soc-configured', function (event) {
 				event.stopPropagation();
 				// send mqtt set to force reload of charge point SoC after click
-				var cp = parseInt($(this).closest('[data-cp]').data('cp'));  // get attribute cp-# of parent element
+				var parentChargePoint = $(this).closest('[data-cp]');
+				var cp = parseInt(parentChargePoint.data('cp'));  // get attribute cp-# of parent element
+				var ev = parseInt(parentChargePoint.find('.charge-point-vehicle-data[data-ev]').data('ev'));
 				if (!isNaN(cp) && cp > 0) {
 					if ($(this).hasClass('manualSoC')) {
 						var currentSoc = parseInt($(this).find('.charge-point-soc').text());
@@ -1082,9 +1084,9 @@
 					} else {
 						var spinner = $(this).find('.charge-point-reload-soc-symbol');
 						var isRunning = spinner.hasClass("fa-spin");
-						if (!isRunning) {
+						if (!isNaN(ev) && !isRunning) {
 							spinner.addClass("fa-spin");
-							publish(1, "openWB/set/lp/" + cp + "/ForceSoCUpdate");
+							publish(1, "openWB/set/vehicle/" + ev + "/get/force_soc_update");
 						}
 					}
 				}

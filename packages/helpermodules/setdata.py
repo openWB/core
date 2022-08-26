@@ -379,8 +379,8 @@ class SetData:
                 self._validate_value(msg, float, [(0, 100)])
             elif "/get/range" in msg.topic:
                 self._validate_value(msg, float, [(0, 1000)])
-            elif "/get/soc_timestamp" in msg.topic:
-                self._validate_value(msg, str)
+            elif "/get/force_soc_update" in msg.topic:
+                self._validate_value(msg, bool)
             elif "/control_parameter/required_current" in msg.topic:
                 self._validate_value(msg, float, [(6, 32), (0, 0)])
             elif "/control_parameter/phases" in msg.topic:
