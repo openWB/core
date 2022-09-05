@@ -42,7 +42,7 @@ class SubData:
     ev_charge_template_data = {}
     counter_data = {}
     bat_data = {}
-    general_data = {}
+    general_data = general.General()
     optional_data = {}
     system_data = {}
     graph_data = {}
@@ -534,51 +534,23 @@ class SubData:
         """
         try:
             if re.search("^.+/general/.+$", msg.topic) is not None:
-                if "general" not in var:
-                    var["general"] = general.General()
-                if re.search("^.+/general/notifications/.+$", msg.topic) is not None:
-                    if "notifications" not in var["general"].data:
-                        var["general"].data["notifications"] = {}
-                    self.set_json_payload(
-                        var["general"].data["notifications"], msg)
-                elif re.search("^.+/general/ripple_control_receiver/.+$", msg.topic) is not None:
-                    if "ripple_control_receiver" not in var["general"].data:
-                        var["general"].data["ripple_control_receiver"] = {}
-                    self.set_json_payload(
-                        var["general"].data["ripple_control_receiver"], msg)
+                if re.search("^.+/general/ripple_control_receiver/.+$", msg.topic) is not None:
+                    self.set_json_payload_class(var.data.ripple_control_receiver, msg)
                 elif re.search("^.+/general/chargemode_config/.+$", msg.topic) is not None:
-                    if "chargemode_config" not in var["general"].data:
-                        var["general"].data["chargemode_config"] = {}
                     if re.search("^.+/general/chargemode_config/pv_charging/.+$", msg.topic) is not None:
-                        if "pv_charging" not in var["general"].data["chargemode_config"]:
-                            var["general"].data["chargemode_config"]["pv_charging"] = {}
-                        self.set_json_payload(
-                            var["general"].data["chargemode_config"]["pv_charging"], msg)
+                        self.set_json_payload_class(var.data.chargemode_config.pv_charging, msg)
                     elif re.search("^.+/general/chargemode_config/instant_charging/.+$", msg.topic) is not None:
-                        if "instant_charging" not in var["general"].data["chargemode_config"]:
-                            var["general"].data["chargemode_config"]["instant_charging"] = {}
-                        self.set_json_payload(
-                            var["general"].data["chargemode_config"]["instant_charging"], msg)
+                        self.set_json_payload_class(var.data.chargemode_config.instant_charging, msg)
                     elif re.search("^.+/general/chargemode_config/scheduled_charging/.+$", msg.topic) is not None:
-                        if "scheduled_charging" not in var["general"].data["chargemode_config"]:
-                            var["general"].data["chargemode_config"]["scheduled_charging"] = {}
-                        self.set_json_payload(
-                            var["general"].data["chargemode_config"]["scheduled_charging"], msg)
+                        self.set_json_payload_class(var.data.chargemode_config.scheduled_charging, msg)
                     elif re.search("^.+/general/chargemode_config/time_charging/.+$", msg.topic) is not None:
-                        if "time_charging" not in var["general"].data["chargemode_config"]:
-                            var["general"].data["chargemode_config"]["time_charging"] = {}
-                        self.set_json_payload(
-                            var["general"].data["chargemode_config"]["time_charging"], msg)
+                        self.set_json_payload_class(var.data.chargemode_config.time_charging, msg)
                     elif re.search("^.+/general/chargemode_config/standby/.+$", msg.topic) is not None:
-                        if "standby" not in var["general"].data["chargemode_config"]:
-                            var["general"].data["chargemode_config"]["standby"] = {}
-                        self.set_json_payload(
-                            var["general"].data["chargemode_config"]["standby"], msg)
+                        self.set_json_payload_class(var.data.chargemode_config.standby, msg)
                     else:
-                        self.set_json_payload(
-                            var["general"].data["chargemode_config"], msg)
+                        self.set_json_payload_class(var.data.chargemode_config, msg)
                 else:
-                    self.set_json_payload(var["general"].data, msg)
+                    self.set_json_payload_class(var.data, msg)
         except Exception:
             log.exception("Fehler im subdata-Modul")
 

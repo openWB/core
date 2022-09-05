@@ -24,7 +24,7 @@ def cp() -> Chargepoint:
 @pytest.fixture(autouse=True)
 def general() -> None:
     data.data_init(threading.Event())
-    data.data.general_data["general"] = General()
+    data.data.general_data = General()
 
 
 @pytest.fixture(autouse=True)
@@ -110,7 +110,7 @@ cases = [
 def test_get_phases(monkeypatch, cp: Chargepoint, params: Params):
     # setup
     mock_chargemode_phases = Mock(name="chargemode_phases", return_value=params.chargemode_phases)
-    monkeypatch.setattr(data.data.general_data["general"], "get_phases_chargemode", mock_chargemode_phases)
+    monkeypatch.setattr(data.data.general_data, "get_phases_chargemode", mock_chargemode_phases)
 
     cp.data.config.connected_phases = params.connected_phases
     cp.data.config.auto_phase_switch_hw = params.auto_phase_switch_hw

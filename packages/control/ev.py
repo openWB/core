@@ -540,10 +540,10 @@ class Ev:
         timestamp_auto_phase_switch = self.data.control_parameter.timestamp_auto_phase_switch
         phases_to_use = self.data.control_parameter.phases
         phases_in_use = self.data.control_parameter.phases
-        pv_config = data.data.general_data["general"].data["chargemode_config"]["pv_charging"]
+        pv_config = data.data.general_data.data.chargemode_config.pv_charging
         max_phases_ev = self.ev_template.data.max_phases
         if self.charge_template.data.chargemode.pv_charging.feed_in_limit:
-            feed_in_yield = pv_config["feed_in_yield"]
+            feed_in_yield = pv_config.feed_in_yield
         else:
             feed_in_yield = 0
         # verbleibender EVU-Überschuss unter Berücksichtigung der Einspeisegrenze und Speicherleistung
@@ -552,14 +552,14 @@ class Ev:
             data.data.bat_data["all"].power_for_bat_charging() + feed_in_yield
         if phases_in_use == 1:
             direction_str = "Umschaltverzögerung von 1 auf 3"
-            delay = pv_config["phase_switch_delay"] * 60
+            delay = pv_config.phase_switch_delay * 60
             required_power = self.ev_template.data.min_current * max_phases_ev * \
                 230 - self.ev_template.data.max_current_one_phase * 230
             new_phase = 3
             new_current = self.ev_template.data.min_current
         else:
             direction_str = "Umschaltverzögerung von 3 auf 1"
-            delay = (16 - pv_config["phase_switch_delay"]) * 60
+            delay = (16 - pv_config.phase_switch_delay) * 60
             required_power = self.ev_template.data.max_current_one_phase * \
                 230 - self.ev_template.data.min_current * max_phases_ev * 230
             new_phase = 1
