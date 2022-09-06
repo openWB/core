@@ -454,6 +454,10 @@ class Algorithm:
                                            f"{cp.data.set.current + missing_current + undo_missing_current}A "
                                            f"angepasst.")
                                 log.debug(message)
+                            current_to_allocate = (cp.data.set.charging_ev_data.data.control_parameter.required_current
+                                                   - cp.data.set.current)
+                            self._reduce_others(cp, current_to_allocate, phases, stop_others=False)
+
                         # Zuvor fehlender Ladestrom kann nun genutzt werden
                         else:
                             self._process_data(
@@ -468,8 +472,6 @@ class Algorithm:
                                                      f"{current_diff}A runtergeregelt.")
                     except Exception:
                         log.exception(f"Fehler im Algorithmus-Modul für Ladepunkt {cp.num}")
-                data.data.counter_data[data.data.counter_data["all"].get_evu_counter(
-                )].print_stats()
         except Exception:
             log.exception("Fehler im Algorithmus-Modul")
 
@@ -623,17 +625,30 @@ class Algorithm:
                     required_current = 0
                     self._process_data(chargepoint, required_current)
                 else:
-                    self._calc_normal_load(
-                        chargepoint, required_current, phases, current_mode_index)
+                    self._calc_normal_load(chargepoint, required_current, phases)
             except Exception:
                 log.exception(f"Fehler im Algorithmus-Modul für Ladepunkt {chargepoint.num}")
 
     def _calc_normal_load(self,
                           chargepoint: Chargepoint,
                           required_current: float,
-                          phases: int,
-                          current_mode_index: int) -> None:
-        """ prüft, ob mit PV geladen werden kann oder bezogen werden muss. Falls erforderlich LP mit niedrigerer
+                          phases: int) -> None:
+        try:
+            # Wenn bereits geladen wird, nur die Änderung zuteilen
+            current_to_allocate = required_current
+            max_used_current = max(chargepoint.data.get.currents)
+            if max_used_current != 0:
+                current_to_allocate -= max_used_current
+            self._reduce_others(chargepoint, current_to_allocate, phases)
+        except Exception:
+            log.exception("Fehler im Algorithmus-Modul")
+
+    def _reduce_others(self,
+                       chargepoint: Chargepoint,
+                       current_to_allocate: float,
+                       phases: int,
+                       stop_others: bool = True) -> None:
+        """Falls erforderlich LP mit niedrigerer
         Ladepriorität reduzieren/abschalten, um LP laden. Ladepunkte mit gleichem Lademodus und gleicher Priorität
         dürfen nur reduziert, aber nicht abgeschaltet werden.
         """
@@ -645,15 +660,10 @@ class Algorithm:
             bat_data = copy.deepcopy(data.data.bat_data)
             cp_data_old = copy.deepcopy(data.data.cp_data)
 
-            # Wenn bereits geladen wird, nur die Änderung zuteilen
-            current_to_allocate = required_current
-            max_used_current = max(chargepoint.data.get.currents)
-            if max_used_current != 0:
-                current_to_allocate -= max_used_current
-
             log.debug("Benötigter neuer/zusätzlicher Strom "+str(current_to_allocate)+"A")
             _, overloaded_counters = allocate_power(chargepoint, current_to_allocate, phases)
-            self._process_data(chargepoint, required_current)
+            self._process_data(chargepoint,
+                               chargepoint.data.set.charging_ev_data.data.control_parameter.required_current)
 
             if data.data.counter_data["all"].data["set"]["loadmanagement_active"] and len(overloaded_counters) != 0:
                 # Lastmanagement hat eingegriffen
@@ -672,6 +682,9 @@ class Algorithm:
                 chargepoints = data.data.counter_data["all"].get_chargepoints_of_counter(
                     overloaded_counters[0][0])
                 remaining_current_overshoot = overloaded_counters[0][1][0]
+                control_parameter = chargepoint.data.set.charging_ev_data.data.control_parameter
+                current_mode_index = self._get_mode_index(
+                    control_parameter.chargemode, control_parameter.submode, control_parameter.prio)
                 # LP mit niedrigerer Priorität reduzieren und ggf. stoppen
                 for mode in reversed(self.chargemodes[(current_mode_index+1):-4]):
                     try:
@@ -690,7 +703,8 @@ class Algorithm:
                             break
                         else:
                             # Abschalten
-                            if not chargepoint.data.set.charging_ev_data.ev_template.data.prevent_charge_stop:
+                            if (not chargepoint.data.set.charging_ev_data.ev_template.data.prevent_charge_stop and
+                                    stop_others):
                                 remaining_current_overshoot = self._down_regulation(
                                     mode, chargepoints,
                                     remaining_current_overshoot,
@@ -741,7 +755,6 @@ class Algorithm:
                     str(
                         (chargepoint.data.set.charging_ev_data.data.control_parameter.phases *
                          chargepoint.data.set.current * 230)) + "W"))
-            data.data.counter_data[evu_counter].print_stats()
         except Exception:
             log.exception("Fehler im Algorithmus-Modul")
 
@@ -1139,6 +1152,9 @@ class Algorithm:
         except Exception:
             log.exception("Fehler im Algorithmus-Modul")
             return 0
+
+    def _get_mode_index(self, chargemode: Optional[str], submode: str, prio: bool) -> int:
+        return self.chargemodes.index((chargemode, submode, prio))
 
 
 def allocate_power(chargepoint: Chargepoint,
