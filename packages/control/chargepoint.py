@@ -15,7 +15,7 @@ Tag-Liste: Tags, mit denen der Ladepunkt freigeschaltet werden kann. Ist diese l
 freigeschaltet werden.
 """
 import copy
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 import dataclasses
 import logging
 from threading import Thread
@@ -60,17 +60,22 @@ class AllGet:
     exported: float = 0
 
 
+def all_get_factory() -> AllGet:
+    return AllGet()
+
+
 @dataclass
 class AllChargepointData:
-    get: AllGet = AllGet()
+    get: AllGet = field(default_factory=all_get_factory)
+
+
+def all_chargepoint_data_factory() -> AllChargepointData:
+    return AllChargepointData()
 
 
 @dataclass
 class AllChargepoints:
-    data = AllChargepointData()
-
-    def __init__(self):
-        pass
+    data: AllChargepointData = field(default_factory=all_chargepoint_data_factory)
 
     def no_charge(self):
         """ Wenn keine EV angesteckt sind oder keine Verzögerungen aktiv sind, werden die Algorithmus-Werte
@@ -889,7 +894,7 @@ class Chargepoint:
                           "/set/change_ev_permitted", [True, ""])
                 charging_ev.data.set.ev_template = charging_ev.ev_template
                 Pub().pub("openWB/set/vehicle/"+str(charging_ev.num) +
-                          "/set/ev_template", charging_ev.data.set.ev_template)
+                          "/set/ev_template", asdict(charging_ev.data.set.ev_template.data))
             else:
                 # Altes EV beibehalten.
                 if self.data.set.charging_ev != -1:

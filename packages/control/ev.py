@@ -195,6 +195,10 @@ class EvTemplateData:
     soc: Soc = field(default_factory=soc_factory)
 
 
+def ev_template_data_factory() -> EvTemplateData:
+    return EvTemplateData()
+
+
 @dataclass
 class ControlParameter:
     required_current: float = 0
@@ -215,9 +219,8 @@ class EvTemplate:
     """ Klasse mit den EV-Daten
     """
 
-    def __init__(self, index: int = 0):
-        self.data: EvTemplateData = EvTemplateData()
-        self.et_num = index
+    data: EvTemplateData = field(default_factory=ev_template_data_factory)
+    et_num: int = 0
 
     def soc_interval_expired(
             self, plug_state: bool, charge_state: bool, soc_timestamp: str) -> bool:
@@ -248,6 +251,10 @@ class Set:
     ev_template: EvTemplate = field(default_factory=ev_template_factory)
 
 
+def set_factory() -> Set:
+    return Set()
+
+
 @dataclass
 class Get:
     soc: int = 0
@@ -266,7 +273,7 @@ def get_factory() -> Get:
 
 @dataclass
 class EvData:
-    set: Set = Set()
+    set: Set = field(default_factory=set_factory)
     control_parameter: ControlParameter = field(default_factory=control_parameter_factory)
     charge_template: int = 0
     ev_template: int = 0
@@ -279,9 +286,9 @@ class Ev:
     """Logik des EV
     """
 
-    def __init__(self, index):
+    def __init__(self, index: int):
         try:
-            self.ev_template: EvTemplate = EvTemplate(0)
+            self.ev_template: EvTemplate = EvTemplate()
             self.charge_template: ChargeTemplate = ChargeTemplate(0)
             self.soc_module: AbstractSoc = None
             self.num = index
