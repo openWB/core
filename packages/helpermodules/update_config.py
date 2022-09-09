@@ -212,6 +212,7 @@ class UpdateConfig:
                    "^openWB/vehicle/[0-9]+/tag_id$",
                    "^openWB/vehicle/[0-9]+/get/fault_state$",
                    "^openWB/vehicle/[0-9]+/get/fault_str$",
+                   "^openWB/vehicle/[0-9]+/get/force_soc_update$",
                    "^openWB/vehicle/[0-9]+/get/range$",
                    "^openWB/vehicle/[0-9]+/get/soc$",
                    "^openWB/vehicle/[0-9]+/get/soc_timestamp$",
