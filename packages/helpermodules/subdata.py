@@ -234,7 +234,9 @@ class SubData:
                     if re.search("^.+/vehicle/[0-9]+/get.+$", msg.topic) is not None:
                         self.set_json_payload_class(var["ev"+index].data.get, msg)
                     elif re.search("^.+/vehicle/[0-9]+/set/ev_template$", msg.topic) is not None:
-                        self.set_json_payload_class(var["ev"+index].data.set.ev_template.data, msg)
+                        var["ev"+index].data.set.ev_template.data = dataclass_from_dict(
+                            ev.EvTemplateData,
+                            json.loads(str(msg.payload.decode("utf-8"))))
                     elif re.search("^.+/vehicle/[0-9]+/set.+$", msg.topic) is not None:
                         self.set_json_payload_class(var["ev"+index].data.set, msg)
                     elif re.search("^.+/vehicle/[0-9]+/soc_module/config$", msg.topic) is not None:
