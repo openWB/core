@@ -6,7 +6,7 @@ import time
 
 from control import data
 from control.chargepoint import AllChargepoints
-
+from helpermodules.pub import Pub
 log = logging.getLogger("soc."+__name__)
 
 
@@ -59,6 +59,9 @@ class UpdateSoc:
                         plug_state = False
                     if (ev.ev_template.soc_interval_expired(plug_state, charge_state, ev.data.get.soc_timestamp) or
                             ev.data.get.force_soc_update):
+                        if ev.data.get.force_soc_update:
+                            ev.data.get.force_soc_update = False
+                            Pub().pub(f"openWB/set/vehicle/{ev.num}/get/force_soc_update", False)
                         threads.append(threading.Thread(target=ev.soc_module.update,
                                                         args=(charge_state,), name=f"soc_ev{ev.num}"))
             except Exception:
