@@ -1,7 +1,7 @@
 """Zähler-Logik
 """
 import logging
-from typing import Callable, Dict, List
+from typing import Callable, Dict, List, Union
 
 from control import data
 from helpermodules.pub import Pub
@@ -355,6 +355,21 @@ class CounterAll:
                         return True
         else:
             return False
+
+    def get_list_of_elements_per_level(self) -> List[List[Dict[str, Union[int, str]]]]:
+        elements_per_level = []
+        for item in self.data["get"]["hierarchy"]:
+            list(zip(elements_per_level, self._get_list_of_elements_per_level(elements_per_level, item, 0)))
+        return elements_per_level
+
+    def _get_list_of_elements_per_level(self, elements_per_level: List, child: Dict, index: int):
+        try:
+            elements_per_level[index].extend([{"type": child["type"], "id": child["id"]}])
+        except IndexError:
+            elements_per_level.insert(index, [{"type": child["type"], "id": child["id"]}])
+        for child in child["children"]:
+            elements_per_level = self._get_list_of_elements_per_level(elements_per_level, child, index+1)
+        return elements_per_level
 
 
 def get_max_id_in_hierarchy(current_entry: List, max_id: int) -> int:

@@ -42,17 +42,9 @@ class HandlerAlgorithm:
             @exit_after(data.data.general_data.data.control_interval)
             def handler_with_control_interval():
                 if (data.data.general_data.data.control_interval / 10) == self.interval_counter:
-                    # Mit aktuellen Einstellungen arbeiten.
                     data.data.copy_data()
                     log.setLevel(data.data.system_data["system"].data["debug_level"])
-                    loadvars_.get_hardware_values()
-                    # Virtuelle Module ermitteln die Werte rechnerisch auf Basis der Messwerte anderer Module.
-                    # Daher können sie erst die Werte ermitteln, wenn die physischen Module ihre Werte ermittelt
-                    # haben. Würde man alle Module parallel abfragen, wären die virtuellen Module immer einen
-                    # Zyklus hinterher.
-                    data.data.copy_module_data()
-                    loadvars_.get_virtual_values()
-                    data.data.copy_module_data()
+                    loadvars_.get_values()
                     data.data.copy_data()
                     self.heartbeat = True
                     if data.data.system_data["system"].data["perform_update"]:

@@ -17,7 +17,7 @@ class SunnyIslandBat:
                  tcp_client: modbus.ModbusTcpClient_) -> None:
         self.component_config = dataclass_from_dict(SmaSunnyIslandBatSetup, component_config)
         self.__tcp_client = tcp_client
-        self.__store = get_bat_value_store(self.component_config.id)
+        self.store = get_bat_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
 
     def read(self) -> BatState:
@@ -36,7 +36,7 @@ class SunnyIslandBat:
         )
 
     def update(self) -> None:
-        self.__store.set(self.read())
+        self.store.set(self.read())
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=SmaSunnyIslandBatSetup)

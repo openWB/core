@@ -16,7 +16,7 @@ class HttpCounter:
         self.__device_id = device_id
         self.component_config = dataclass_from_dict(HttpCounterSetup, component_config)
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
-        self.__store = get_counter_value_store(self.component_config.id)
+        self.store = get_counter_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
 
         self.__get_power = create_request_function(url, self.component_config.configuration.power_path)
@@ -41,7 +41,7 @@ class HttpCounter:
             exported=exported,
             power=power
         )
-        self.__store.set(counter_state)
+        self.store.set(counter_state)
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=HttpCounterSetup)

@@ -30,7 +30,7 @@ class ChargepointModule(AbstractChargepoint):
         self.id = id
         self.connection_module = connection_module
         self.power_module = power_module
-        self.__store = get_chargepoint_value_store(self.id)
+        self.store = get_chargepoint_value_store(self.id)
         self.component_info = ComponentInfo(
             self.id,
             "Ladepunkt", "chargepoint")
@@ -69,7 +69,7 @@ class ChargepointModule(AbstractChargepoint):
                     phases_in_use=json_rsp["phases_in_use"]
                 )
 
-                self.__store.set(chargepoint_state)
+                self.store.set(chargepoint_state)
                 self.__client_error_context.reset_error_counter()
 
     def switch_phases(self, phases_to_use: int, duration: int) -> None:

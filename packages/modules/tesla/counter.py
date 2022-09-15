@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 class TeslaCounter:
     def __init__(self, component_config: Union[Dict, TeslaCounterSetup]) -> None:
         self.component_config = dataclass_from_dict(TeslaCounterSetup, component_config)
-        self.__store = get_counter_value_store(self.component_config.id)
+        self.store = get_counter_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
 
     def update(self, client: PowerwallHttpClient, aggregate):
@@ -43,7 +43,7 @@ class TeslaCounter:
                 exported=aggregate["site"]["energy_exported"],
                 power=aggregate["site"]["instant_power"]
             )
-        self.__store.set(powerwall_state)
+        self.store.set(powerwall_state)
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=TeslaCounterSetup)

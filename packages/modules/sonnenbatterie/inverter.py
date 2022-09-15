@@ -26,7 +26,7 @@ class SonnenbatterieInverter:
         self.__device_variant = device_variant
         self.component_config = dataclass_from_dict(SonnenbatterieInverterSetup, component_config)
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
-        self.__store = get_inverter_value_store(self.component_config.id)
+        self.store = get_inverter_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
 
     def __read_variant_1(self):
@@ -105,7 +105,7 @@ class SonnenbatterieInverter:
             state = self.__update_variant_2()
         else:
             raise FaultState.error("Unbekannte Variante: " + str(self.__device_variant))
-        self.__store.set(state)
+        self.store.set(state)
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=SonnenbatterieInverterSetup)

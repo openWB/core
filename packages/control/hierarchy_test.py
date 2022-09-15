@@ -250,3 +250,28 @@ def test_get_all_elements_without_children(params: ParamsItem):
 
     # evaluation
     assert actual == params.expected_return
+
+
+cases_list_of_elements_per_level = [
+    ParamsItem("list_of_elements_per_level_cp", hierarchy_cp(),
+               0, expected_return=[[{"id": 0, "type": "counter"}],
+                                   [{"id": 7, "type": "inverter"}, {"id": 2, "type": "counter"}],
+                                   [{"id": 3, "type": "cp"}, {"id": 4, "type": "counter"}],
+                                   [{"id": 5, "type": "cp"}, {"id": 6, "type": "cp"}]]),
+    ParamsItem("list_of_elements_per_level_two_level", hierarchy_two_level(),
+               0, expected_return=[[{"id": 0, "type": "counter"}, {"id": 7, "type": "inverter"}],
+                                   [{"id": 2, "type": "cp"}]]),
+    ParamsItem("list_of_elements_per_level_one_level", hierarchy_one_level(),
+               0, expected_return=[[{"id": 0, "type": "counter"}]])
+]
+
+
+@pytest.mark.parametrize("params",
+                         cases_list_of_elements_per_level,
+                         ids=[c.name for c in cases_list_of_elements_per_level])
+def test_list_of_elements_per_level(params: ParamsItem):
+    # execution
+    actual = params.counter_all.get_list_of_elements_per_level()
+
+    # evaluation
+    assert actual == params.expected_return

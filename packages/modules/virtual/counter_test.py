@@ -4,9 +4,9 @@ from unittest.mock import Mock
 
 import pytest
 
+from control import data
 from control.chargepoint import Chargepoint
 from control.counter import CounterAll
-from control import data
 from modules.common.component_state import CounterState
 from modules.virtual import counter
 from modules.virtual.config import VirtualCounterConfiguration, VirtualCounterSetup
@@ -47,17 +47,23 @@ cases = [Params("twisted cp", init_twisted_cp, CounterState(currents=[16, 32, 32
 
 
 @pytest.mark.parametrize("params", cases, ids=[c.name for c in cases])
-def test_virtual_counter(monkeypatch, params):
+def test_virtual_counter(mock_pub: Mock, params):
     # setup
-    mock_counter_value_store = Mock()
-    monkeypatch.setattr(counter, "get_counter_value_store", Mock(return_value=mock_counter_value_store))
     c = counter.VirtualCounter(0, VirtualCounterSetup(
         id=6, configuration=VirtualCounterConfiguration(external_consumption=0)))
     params.init_func()
 
     # execution
     c.update()
+    c.store.update()
 
     # evaluation
-    counter_state = mock_counter_value_store.set.call_args[0][0]
-    assert counter_state.currents == params.expected_state.currents
+    for call in mock_pub.mock_calls:
+        try:
+            if call.args[0] == 'openWB/set/counter/6/get/currents':
+                assert params.expected_state.currents == call.args[1]
+                break
+        except IndexError:
+            pass
+    else:
+        pytest.fail("Topic openWB/set/counter/6/get/currents is missing")

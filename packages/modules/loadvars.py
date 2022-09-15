@@ -1,9 +1,12 @@
 import logging
 import threading
-from typing import Callable, List
+from typing import List
 
 from control import data
 from modules import ripple_control_receiver
+from modules.common.abstract_device import AbstractDevice
+from modules.common.component_type import ComponentType, type_to_topic_mapping
+from modules.common.store import update_values
 from helpermodules import pub
 
 log = logging.getLogger(__name__)
@@ -13,85 +16,79 @@ class Loadvars:
     def __init__(self) -> None:
         self.event_module_update_completed = threading.Event()
 
-    def get_hardware_values(self) -> None:
-        with ModuleUpdateCompletedContext(self.event_module_update_completed):
-            self.__get_values([self._get_cp, self._get_general, self._get_modules])
-
-    def get_virtual_values(self) -> None:
-        """ Virtuelle Module ermitteln die Werte rechnerisch auf Basis der Messwerte anderer Module.
-        Daher können sie erst die Werte ermitteln, wenn die physischen Module ihre Werte ermittelt haben.
-        Würde man alle Module parallel abfragen, wären die virtuellen Module immer einen Zyklus hinterher.
-        """
-        with ModuleUpdateCompletedContext(self.event_module_update_completed):
-            self.__get_values([self._get_virtual_counters])
+    def get_values(self) -> None:
+        try:
+            self._set_values()
+            levels = data.data.counter_data["all"].get_list_of_elements_per_level()
+            levels.reverse()
+            for level in levels:
+                with ModuleUpdateCompletedContext(self.event_module_update_completed):
+                    self._update_values_of_level(level)
+                data.data.copy_module_data()
+            with ModuleUpdateCompletedContext(self.event_module_update_completed):
+                self._thread_handler(self._get_general())
             data.data.pv_data["all"].calc_power_for_all_components()
             data.data.bat_data["all"].calc_power_for_all_components()
-
-    def __get_values(self, value_functions: List[Callable]) -> None:
-        try:
-            threads = []
-            for func in value_functions:
-                threads.extend(func())
-            # Start them all
-            if threads:
-                for thread in threads:
-                    thread.start()
-
-                # Wait for all to complete
-                for thread in threads:
-                    thread.join(timeout=data.data.general_data.data.control_interval/3)
-
-                for thread in threads:
-                    if thread.is_alive():
-                        log.error(
-                            thread.name +
-                            " konnte nicht innerhalb des Timeouts die Werte abfragen, die abgefragten Werte werden" +
-                            " nicht in der Regelung verwendet.")
         except Exception:
             log.exception("Fehler im loadvars-Modul")
 
-    def _get_virtual_counters(self) -> List[threading.Thread]:
-        """ vorhandene Zähler durchgehen und je nach Konfiguration Module zur Abfrage der Werte aufrufen
-        """
-        modules_threads = []  # type: List[threading.Thread]
-        try:
-            for item in data.data.system_data:
-                try:
-                    if "device" in item:
-                        try:
-                            type = data.data.system_data[item].device_config.type
-                        except AttributeError:
-                            type = data.data.system_data[item].device_config["type"]
-                        if type == "virtual":
-                            thread = None
-                            module = data.data.system_data[item]
-                            thread = threading.Thread(target=module.update, args=())
-                            if thread is not None:
-                                modules_threads.append(thread)
-                except Exception:
-                    log.exception("Fehler im loadvars-Modul")
-        except Exception:
-            log.exception("Fehler im loadvars-Modul")
-        finally:
-            return modules_threads
+    def _set_values(self) -> None:
+        """Threads, um Werte von Geräten abzufragen"""
+        modules_threads: List[threading.Thread] = []
+        for item in data.data.system_data.values():
+            try:
+                if isinstance(item, AbstractDevice):
+                    modules_threads.append(threading.Thread(target=item.update, args=()))
+            except Exception:
+                log.exception(f"Fehler im loadvars-Modul bei Element {item}")
+        for cp in data.data.cp_data.values():
+            try:
+                modules_threads.append(threading.Thread(target=cp.chargepoint_module.get_values, args=()))
+            except Exception:
+                log.exception(f"Fehler im loadvars-Modul bei Element {cp.num}")
+        self._thread_handler(modules_threads)
 
-    def _get_cp(self) -> List[threading.Thread]:
-        modules_threads = []  # type: List[threading.Thread]
-        try:
-            for item in data.data.cp_data:
-                try:
-                    if "cp" in item:
-                        thread = None
-                        chargepoint_module = data.data.cp_data[item].chargepoint_module
-                        thread = threading.Thread(target=chargepoint_module.get_values, args=())
-                        if thread is not None:
-                            modules_threads.append(thread)
-                except Exception:
-                    log.exception("Fehler im loadvars-Modul")
-        except Exception:
-            log.exception("Fehler im loadvars-Modul")
-        finally:
-            return modules_threads
+    def _update_values_of_level(self, elements) -> None:
+        """Threads, um von der niedrigsten Ebene der Hierarchie Werte ggf. miteinander zu verrechnen und zu publishen"""
+        modules_threads: List[threading.Thread] = []
+        for element in elements:
+            try:
+                if element["type"] == ComponentType.CHARGEPOINT.value:
+                    chargepoint = data.data.cp_data[f'{type_to_topic_mapping(element["type"])}{element["id"]}']
+                    modules_threads.append(threading.Thread(
+                        target=update_values, args=(chargepoint.chargepoint_module,)))
+                else:
+                    component = self.__get_component_obj_by_id(element["id"])
+                    if component is None:
+                        continue
+                    modules_threads.append(threading.Thread(target=update_values, args=(component,)))
+            except Exception:
+                log.exception(f"Fehler im loadvars-Modul bei Element {element}")
+        self._thread_handler(modules_threads)
+
+    def __get_component_obj_by_id(self, id: int):
+        for item in data.data.system_data.values():
+            if isinstance(item, AbstractDevice):
+                for comp in item.components.values():
+                    if comp.component_config.id == id:
+                        return comp
+        else:
+            log.error(f"Element {id} konnte keinem Gerät zugeordnet werden.")
+            return None
+
+    def _thread_handler(self, threads: List[threading.Thread]) -> None:
+        # Start them all
+        for thread in threads:
+            thread.start()
+
+        # Wait for all to complete
+        for thread in threads:
+            thread.join(timeout=data.data.general_data.data.control_interval/3)
+
+        for thread in threads:
+            if thread.is_alive():
+                log.error(f"{thread.name} konnte nicht innerhalb des Timeouts die Werte abfragen, die abgefragten "
+                          "Werte werden nicht in der Regelung verwendet.")
 
     def _get_general(self) -> List[threading.Thread]:
         threads = []  # type: List[threading.Thread]
@@ -104,30 +101,6 @@ class Loadvars:
             log.exception("Fehler im loadvars-Modul")
         finally:
             return threads
-
-    def _get_modules(self) -> List[threading.Thread]:
-        modules_threads = []  # type: List[threading.Thread]
-        try:
-            for item in data.data.system_data:
-                try:
-                    if "device" in item:
-                        try:
-                            type = data.data.system_data[item].device_config.type
-                        except AttributeError:
-                            type = data.data.system_data[item].device_config["type"]
-                        if type != "virtual":
-                            thread = None
-                            module = data.data.system_data[item]
-                            thread = threading.Thread(target=module.update, args=())
-                            if thread is not None:
-                                modules_threads.append(thread)
-                except Exception:
-                    log.exception("Fehler im loadvars-Modul")
-            return modules_threads
-        except Exception:
-            log.exception("Fehler im loadvars-Modul")
-        finally:
-            return modules_threads
 
 
 class ModuleUpdateCompletedContext:

@@ -22,11 +22,11 @@ class SunnyBoySmartEnergyBat:
         self.component_config = dataclass_from_dict(SmaSunnyBoySmartEnergyBatSetup, component_config)
         self.__tcp_client = tcp_client
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
-        self.__store = get_bat_value_store(self.component_config.id)
+        self.store = get_bat_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
 
     def update(self) -> None:
-        self.__store.set(self.read())
+        self.store.set(self.read())
 
     def read(self) -> BatState:
         unit = 3

@@ -20,7 +20,7 @@ class AlphaEssCounter:
                  device_config: AlphaEssConfiguration) -> None:
         self.component_config = dataclass_from_dict(AlphaEssCounterSetup, component_config)
         self.__tcp_client = tcp_client
-        self.__store = get_counter_value_store(self.component_config.id)
+        self.store = get_counter_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
         self.__device_config = device_config
 
@@ -28,7 +28,7 @@ class AlphaEssCounter:
         time.sleep(0.1)
         factory_method = self.__get_values_factory()
         counter_state = factory_method(unit_id)
-        self.__store.set(counter_state)
+        self.store.set(counter_state)
 
     def __get_values_factory(self,) -> Callable[[int], CounterState]:
         if self.__device_config.source == 0 and self.__device_config.version == 0:

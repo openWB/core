@@ -23,7 +23,7 @@ class SungrowBat:
         self.component_config = dataclass_from_dict(SungrowBatSetup, component_config)
         self.__tcp_client = tcp_client
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
-        self.__store = get_bat_value_store(self.component_config.id)
+        self.store = get_bat_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
 
     def update(self) -> None:
@@ -42,7 +42,7 @@ class SungrowBat:
             imported=imported,
             exported=exported
         )
-        self.__store.set(bat_state)
+        self.store.set(bat_state)
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=SungrowBatSetup)

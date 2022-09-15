@@ -22,7 +22,7 @@ class FroniusInverter:
         self.component_config = dataclass_from_dict(FroniusInverterSetup, component_config)
         self.device_config = device_config
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
-        self.__store = get_inverter_value_store(self.component_config.id)
+        self.store = get_inverter_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
 
     def read_power(self) -> float:
@@ -54,7 +54,7 @@ class FroniusInverter:
         )
 
     def update(self) -> None:
-        self.__store.set(self.fill_inverter_state(self.read_power()))
+        self.store.set(self.fill_inverter_state(self.read_power()))
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=FroniusInverterSetup)

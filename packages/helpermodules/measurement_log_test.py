@@ -35,8 +35,11 @@ def test_get_daily_yields(mock_pub):
             try:
                 if call.args[0] == topic:
                     assert value == call.args[1]
+                    break
             except IndexError:
                 pass
+        else:
+            pytest.fail(f"Topic {topic} is missing")
 
 
 EXPECTED = {
