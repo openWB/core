@@ -23,7 +23,7 @@ class HuaweiCounter:
         self.component_config = dataclass_from_dict(HuaweiCounterSetup, component_config)
         self.__modbus_id = modbus_id
         self.__tcp_client = tcp_client
-        self.__sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
+        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.__store = get_counter_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
 
@@ -34,7 +34,7 @@ class HuaweiCounter:
         currents = [val / -100 for val in self.__tcp_client.read_holding_registers(
             37107, [ModbusDataType.INT_32] * 3, unit=self.__modbus_id)]
 
-        imported, exported = self.__sim_counter.sim_count(power)
+        imported, exported = self.sim_counter.sim_count(power)
 
         counter_state = CounterState(
             currents=currents,

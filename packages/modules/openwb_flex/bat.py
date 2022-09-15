@@ -26,7 +26,7 @@ class BatKitFlex:
         self.__client = factory(self.component_config.configuration.id,
                                 tcp_client)
         self.__tcp_client = tcp_client
-        self.__sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
+        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
         self.__store = get_bat_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
 
@@ -40,7 +40,7 @@ class BatKitFlex:
             else:
                 _, power = self.__client.get_power()
             if isinstance(self.__client, Lovato):
-                imported, exported = self.__sim_counter.sim_count(power)
+                imported, exported = self.sim_counter.sim_count(power)
             else:
                 imported = self.__client.get_imported()
                 exported = self.__client.get_exported()

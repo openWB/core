@@ -24,7 +24,7 @@ class AlphaEssBat:
         self.__device_id = device_id
         self.component_config = dataclass_from_dict(AlphaEssBatSetup, component_config)
         self.__tcp_client = tcp_client
-        self.__sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
+        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
         self.__store = get_bat_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
 
@@ -45,7 +45,7 @@ class AlphaEssBat:
         soc_reg = self.__tcp_client.read_holding_registers(0x0102, ModbusDataType.INT_16, unit=unit_id)
         soc = int(soc_reg * 0.1)
 
-        imported, exported = self.__sim_counter.sim_count(power)
+        imported, exported = self.sim_counter.sim_count(power)
         bat_state = BatState(
             power=power,
             soc=soc,

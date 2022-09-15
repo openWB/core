@@ -24,7 +24,7 @@ class PvKitFlex:
             self.component_config.configuration.version)
         self.__client = factory(self.component_config.configuration.id, tcp_client)
         self.__tcp_client = tcp_client
-        self.__sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
+        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
         self.simulation = {}
         self.__store = get_inverter_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
@@ -43,7 +43,7 @@ class PvKitFlex:
             currents = self.__client.get_currents()
 
             if isinstance(self.__client, Lovato):
-                _, exported = self.__sim_counter.sim_count(power)
+                _, exported = self.sim_counter.sim_count(power)
             else:
                 exported = self.__client.get_exported()
 

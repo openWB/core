@@ -19,7 +19,7 @@ class FroniusS0Counter:
         self.__device_id = device_id
         self.component_config = dataclass_from_dict(FroniusS0CounterSetup, component_config)
         self.device_config = device_config
-        self.__sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
+        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.__store = get_counter_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
 
@@ -31,7 +31,7 @@ class FroniusS0Counter:
         # Wenn WR aus bzw. im Standby (keine Antwort), ersetze leeren Wert durch eine 0.
         power = float(response.json()["Body"]["Data"]["Site"]["P_Grid"]) or 0
 
-        imported, exported = self.__sim_counter.sim_count(power)
+        imported, exported = self.sim_counter.sim_count(power)
 
         counter_state = CounterState(
             imported=imported,

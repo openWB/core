@@ -21,7 +21,7 @@ class FroniusInverter:
         self.__device_id = device_id
         self.component_config = dataclass_from_dict(FroniusInverterSetup, component_config)
         self.device_config = device_config
-        self.__sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
+        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
         self.__store = get_inverter_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
 
@@ -46,7 +46,7 @@ class FroniusInverter:
         return power
 
     def fill_inverter_state(self, power):
-        _, exported = self.__sim_counter.sim_count(power)
+        _, exported = self.sim_counter.sim_count(power)
 
         return InverterState(
             power=power,

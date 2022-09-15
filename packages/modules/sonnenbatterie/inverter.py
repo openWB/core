@@ -25,7 +25,7 @@ class SonnenbatterieInverter:
         self.__device_address = device_address
         self.__device_variant = device_variant
         self.component_config = dataclass_from_dict(SonnenbatterieInverterSetup, component_config)
-        self.__sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
+        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
         self.__store = get_inverter_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
 
@@ -73,7 +73,7 @@ class SonnenbatterieInverter:
         inverter_state = self.__read_variant_1()
         pv_power = -inverter_state["Production_W"]
         log.debug('Speicher PV Leistung: ' + str(pv_power))
-        _, exported = self.__sim_counter.sim_count(pv_power)
+        _, exported = self.sim_counter.sim_count(pv_power)
         return InverterState(
             exported=exported,
             power=pv_power
@@ -89,7 +89,7 @@ class SonnenbatterieInverter:
         # Auslesen einer Sonnenbatterie Eco 6 über die integrierte REST-API des Batteriesystems
         pv_power = -int(float(self.__read_variant_2_element("M03")))
         log.debug('Speicher PV Leistung: ' + str(pv_power))
-        _, exported = self.__sim_counter.sim_count(pv_power)
+        _, exported = self.sim_counter.sim_count(pv_power)
         return InverterState(
             exported=exported,
             power=pv_power

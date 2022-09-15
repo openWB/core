@@ -23,7 +23,7 @@ class PowerdogCounter:
         self.__device_id = device_id
         self.component_config = dataclass_from_dict(PowerdogCounterSetup, component_config)
         self.__tcp_client = tcp_client
-        self.__sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
+        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.__store = get_counter_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
 
@@ -34,7 +34,7 @@ class PowerdogCounter:
         return home_consumption
 
     def set_counter_state(self, power: float) -> None:
-        imported, exported = self.__sim_counter.sim_count(power)
+        imported, exported = self.sim_counter.sim_count(power)
         counter_state = CounterState(
             imported=imported,
             exported=exported,

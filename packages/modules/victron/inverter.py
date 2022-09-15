@@ -23,7 +23,7 @@ class VictronInverter:
         self.__device_id = device_id
         self.component_config = dataclass_from_dict(VictronInverterSetup, component_config)
         self.__tcp_client = tcp_client
-        self.__sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
+        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
         self.__store = get_inverter_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
 
@@ -48,7 +48,7 @@ class VictronInverter:
                 power_temp2 = self.__tcp_client.read_holding_registers(850, ModbusDataType.UINT_16, unit=100)
                 power = (sum(power_temp1)+power_temp2) * -1
 
-        _, exported = self.__sim_counter.sim_count(power)
+        _, exported = self.sim_counter.sim_count(power)
         inverter_state = InverterState(
             power=power,
             exported=exported

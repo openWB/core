@@ -22,7 +22,7 @@ class SungrowCounter:
         self.__device_modbus_id = device_modbus_id
         self.component_config = dataclass_from_dict(SungrowCounterSetup, component_config)
         self.__tcp_client = tcp_client
-        self.__sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
+        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.__store = get_counter_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
 
@@ -53,7 +53,7 @@ class SungrowCounter:
             # powers = [power / 10 for power in powers]
             # log.info("power: " + str(power) + " powers?: " + str(powers))
 
-        imported, exported = self.__sim_counter.sim_count(power)
+        imported, exported = self.sim_counter.sim_count(power)
 
         counter_state = CounterState(
             imported=imported,

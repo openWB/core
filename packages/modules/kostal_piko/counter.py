@@ -19,7 +19,7 @@ class KostalPikoCounter:
         self.__device_id = device_id
         self.component_config = dataclass_from_dict(KostalPikoCounterSetup, component_config)
         self.ip_address = ip_address
-        self.__sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
+        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.__store = get_counter_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
 
@@ -34,7 +34,7 @@ class KostalPikoCounter:
 
     def update(self):
         power, powers = self.get_values()
-        imported, exported = self.__sim_counter.sim_count(power)
+        imported, exported = self.sim_counter.sim_count(power)
         counter_state = CounterState(
             imported=imported,
             exported=exported,

@@ -23,7 +23,7 @@ class HuaweiInverter:
         self.__modbus_id = modbus_id
         self.component_config = dataclass_from_dict(HuaweiInverterSetup, component_config)
         self.__tcp_client = tcp_client
-        self.__sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
+        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
         self.__store = get_inverter_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
 
@@ -31,7 +31,7 @@ class HuaweiInverter:
         time.sleep(0.1)
         power = self.__tcp_client.read_holding_registers(32064, ModbusDataType.INT_32, unit=self.__modbus_id) * -1
 
-        _, exported = self.__sim_counter.sim_count(power)
+        _, exported = self.sim_counter.sim_count(power)
         inverter_state = InverterState(
             power=power,
             exported=exported

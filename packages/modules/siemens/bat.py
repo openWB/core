@@ -20,7 +20,7 @@ class SiemensBat:
         self.__device_id = device_id
         self.component_config = dataclass_from_dict(SiemensBatSetup, component_config)
         self.__tcp_client = tcp_client
-        self.__sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
+        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
         self.__store = get_bat_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
 
@@ -29,7 +29,7 @@ class SiemensBat:
             power = self.__tcp_client.read_holding_registers(6, ModbusDataType.INT_32, unit=1) * -1
             soc = int(self.__tcp_client.read_holding_registers(8, ModbusDataType.INT_32, unit=1))
 
-        imported, exported = self.__sim_counter.sim_count(power)
+        imported, exported = self.sim_counter.sim_count(power)
         bat_state = BatState(
             power=power,
             soc=soc,

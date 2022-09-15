@@ -21,14 +21,14 @@ class BYDBat:
                  device_config) -> None:
         self.__device_config = device_config
         self.component_config = dataclass_from_dict(BYDBatSetup, component_config)
-        self.__sim_counter = SimCounter(self.__device_config.id, self.component_config.id, prefix="speicher")
+        self.sim_counter = SimCounter(self.__device_config.id, self.component_config.id, prefix="speicher")
         self.__store = get_bat_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
 
     def update(self) -> None:
         power, soc = self.get_values()
 
-        imported, exported = self.__sim_counter.sim_count(power)
+        imported, exported = self.sim_counter.sim_count(power)
         bat_state = BatState(
             power=power,
             soc=soc,

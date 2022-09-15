@@ -17,7 +17,7 @@ class BatterXCounter:
     def __init__(self, device_id: int, component_config: Union[Dict, BatterXCounterSetup]) -> None:
         self.__device_id = device_id
         self.component_config = dataclass_from_dict(BatterXCounterSetup, component_config)
-        self.__sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
+        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.__store = get_counter_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
 
@@ -33,7 +33,7 @@ class BatterXCounter:
             log.debug(
                 "Powerfaktor sollte laut Doku enthalten sein, ID 2881 kann aber nicht ermittelt werden.")
             power_factors = None
-        imported, exported = self.__sim_counter.sim_count(power)
+        imported, exported = self.sim_counter.sim_count(power)
 
         counter_state = CounterState(
             imported=imported,

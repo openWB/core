@@ -20,7 +20,7 @@ class FroniusBat:
         self.__device_id = device_id
         self.component_config = dataclass_from_dict(FroniusBatSetup, component_config)
         self.device_config = device_config
-        self.__sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
+        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
         self.__store = get_bat_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
 
@@ -47,7 +47,7 @@ class FroniusBat:
             # Wenn WR aus bzw. im Standby (keine Antwort), ersetze leeren Wert durch eine 0.
             soc = 0
 
-        imported, exported = self.__sim_counter.sim_count(power)
+        imported, exported = self.sim_counter.sim_count(power)
         bat_state = BatState(
             power=power,
             soc=soc,

@@ -15,7 +15,7 @@ class LgBat:
     def __init__(self, device_id: int, component_config: Union[Dict, LgBatSetup]) -> None:
         self.__device_id = device_id
         self.component_config = dataclass_from_dict(LgBatSetup, component_config)
-        self.__sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
+        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
         self.__store = get_bat_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
 
@@ -30,7 +30,7 @@ class LgBat:
                 'Speicher-SOC ist nicht numerisch und wird auf 0 gesetzt.').store_error(self.component_info)
             soc = 0
 
-        imported, exported = self.__sim_counter.sim_count(power)
+        imported, exported = self.sim_counter.sim_count(power)
         bat_state = BatState(
             power=power,
             soc=soc,

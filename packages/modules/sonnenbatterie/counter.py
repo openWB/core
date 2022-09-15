@@ -25,7 +25,7 @@ class SonnenbatterieCounter:
         self.__device_address = device_address
         self.__device_variant = device_variant
         self.component_config = dataclass_from_dict(SonnenbatterieCounterSetup, component_config)
-        self.__sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
+        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.__store = get_counter_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
 
@@ -78,7 +78,7 @@ class SonnenbatterieCounter:
         log.debug('EVU Spannung: ' + str(grid_voltage))
         grid_frequency = counter_state["Fac"]
         log.debug('EVU Netzfrequenz: ' + str(grid_frequency))
-        imported, exported = self.__sim_counter.sim_count(grid_power)
+        imported, exported = self.sim_counter.sim_count(grid_power)
         return CounterState(
             power=grid_power,
             voltages=[grid_voltage]*3,
@@ -99,7 +99,7 @@ class SonnenbatterieCounter:
         grid_import_power = int(float(self.__read_variant_2_element("M39")))
         grid_export_power = int(float(self.__read_variant_2_element("M38")))
         grid_power = grid_import_power - grid_export_power
-        imported, exported = self.__sim_counter.sim_count(grid_power)
+        imported, exported = self.sim_counter.sim_count(grid_power)
         return CounterState(
             power=grid_power,
             imported=imported,

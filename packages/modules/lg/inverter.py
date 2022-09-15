@@ -14,13 +14,13 @@ class LgInverter:
     def __init__(self, device_id: int, component_config:  Union[Dict, LgInverterSetup]) -> None:
         self.__device_id = device_id
         self.component_config = dataclass_from_dict(LgInverterSetup, component_config)
-        self.__sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
+        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
         self.__store = get_inverter_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
 
     def update(self, response: Dict) -> None:
         power = float(response["statistics"]["pcs_pv_total_power"]) * -1
-        _, exported = self.__sim_counter.sim_count(power)
+        _, exported = self.sim_counter.sim_count(power)
         inverter_state = InverterState(
             exported=exported,
             power=power

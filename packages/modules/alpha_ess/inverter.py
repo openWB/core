@@ -20,7 +20,7 @@ class AlphaEssInverter:
         self.__device_id = device_id
         self.component_config = dataclass_from_dict(AlphaEssInverterSetup, component_config)
         self.__tcp_client = tcp_client
-        self.__sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
+        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
         self.__store = get_inverter_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
         self.__device_config = device_config
@@ -29,7 +29,7 @@ class AlphaEssInverter:
         reg_p = self.__version_factory()
         power = self.__get_power(unit_id, reg_p)
 
-        _, exported = self.__sim_counter.sim_count(power)
+        _, exported = self.sim_counter.sim_count(power)
         inverter_state = InverterState(
             power=power,
             exported=exported
