@@ -1,8 +1,7 @@
 import threading
-from unittest.mock import Mock
 import pytest
+
 from helpermodules import measurement_log
-from helpermodules import pub
 from control import bat, chargepoint, counter, pv
 from control import data
 
@@ -26,36 +25,37 @@ def data_module() -> None:
     data.data.pv_data.update({"all": pv.PvAll(), "pv1": pv.Pv(1)})
 
 
-def test_get_daily_yields(monkeypatch):
-    # setup
-    pub_singleton_mock = Mock()
-    pub_singleton_mock.pub.return_value = None
-    monkeypatch.setattr(pub, 'PubSingleton', pub_singleton_mock)
-    instance_mock = Mock()
-    monkeypatch.setattr(pub.Pub, 'instance', instance_mock)
-
-    # execution
+def test_get_daily_yields(mock_pub):
+    # setup and execution
     [measurement_log.update_module_yields(type, TOTALS) for type in ("bat", "counter", "cp", "pv")]
 
     # evaluation
-    calls = instance_mock.pub.call_args_list
-    assert calls[0].args[0] == "openWB/set/bat/get/daily_imported" and calls[0].args[1] == 175.534
-    assert calls[1].args[0] == "openWB/set/bat/get/daily_exported" and calls[1].args[1] == 0
-    assert calls[2].args[0] == "openWB/set/bat/2/get/daily_imported" and calls[2].args[1] == 172.556
-    assert calls[3].args[0] == "openWB/set/bat/2/get/daily_exported" and calls[3].args[1] == 0
-    assert calls[4].args[0] == "openWB/set/counter/0/get/daily_imported" and calls[4].args[1] == 1.1
-    assert calls[5].args[0] == "openWB/set/counter/0/get/daily_exported" and calls[5].args[1] == 1.105
-    assert calls[6].args[0] == "openWB/set/chargepoint/get/daily_imported" and calls[6].args[1] == 105
-    assert calls[7].args[0] == "openWB/set/chargepoint/get/daily_exported" and calls[7].args[1] == 0
-    assert calls[8].args[0] == "openWB/set/chargepoint/4/get/daily_imported" and calls[8].args[1] == 85
-    assert calls[9].args[0] == "openWB/set/chargepoint/4/get/daily_exported" and calls[9].args[1] == 0
-    assert calls[10].args[0] == "openWB/set/chargepoint/5/get/daily_imported" and calls[10].args[1] == 0
-    assert calls[11].args[0] == "openWB/set/chargepoint/5/get/daily_exported" and calls[11].args[1] == 0
-    assert calls[12].args[0] == "openWB/set/chargepoint/6/get/daily_imported" and calls[12].args[1] == 2
-    assert calls[13].args[0] == "openWB/set/chargepoint/6/get/daily_exported" and calls[13].args[1] == 0
-    assert calls[14].args[0] == "openWB/set/pv/get/daily_exported" and calls[14].args[1] == 251
-    assert calls[15].args[0] == "openWB/set/pv/1/get/daily_exported" and calls[15].args[1] == 247
+    for topic, value in EXPECTED.items():
+        for call in mock_pub.mock_calls:
+            try:
+                if call.args[0] == topic:
+                    assert value == call.args[1]
+            except IndexError:
+                pass
 
+
+EXPECTED = {
+    "openWB/set/bat/get/daily_imported": 175.534,
+    "openWB/set/bat/get/daily_exported": 0,
+    "openWB/set/bat/2/get/daily_imported": 172.556,
+    "openWB/set/bat/2/get/daily_exported": 0,
+    "openWB/set/counter/0/get/daily_imported": 1.1,
+    "openWB/set/counter/0/get/daily_exported": 1.105,
+    "openWB/set/chargepoint/get/daily_imported": 105,
+    "openWB/set/chargepoint/get/daily_exported": 0,
+    "openWB/set/chargepoint/4/get/daily_imported": 85,
+    "openWB/set/chargepoint/4/get/daily_exported": 0,
+    "openWB/set/chargepoint/5/get/daily_imported": 0,
+    "openWB/set/chargepoint/5/get/daily_exported": 0,
+    "openWB/set/chargepoint/6/get/daily_imported": 2,
+    "openWB/set/chargepoint/6/get/daily_exported": 0,
+    "openWB/set/pv/get/daily_exported": 251,
+    "openWB/set/pv/1/get/daily_exported": 247}
 
 SAMPLE = [{'bat': {'all': {'exported': 0, 'imported': 58.774, 'soc': 51},
           'bat2': {'exported': 0, 'imported': 61.752, 'soc': 51}},

@@ -1,11 +1,9 @@
 from typing import Dict, List, Optional, Union
 import pytest
-from unittest.mock import Mock
 
 
 from control.counter import CounterAll, get_max_id_in_hierarchy
 from modules.common.component_type import ComponentType
-from helpermodules.pub import PubSingleton
 
 
 def hierarchy_empty() -> CounterAll:
@@ -69,14 +67,6 @@ class ParamsItem:
         self.id = id
         self.expected_return = expected_return
         self.expected_hierarchy = expected_hierarchy
-
-
-@pytest.fixture(autouse=True)
-def set_up(monkeypatch):
-    mock_init = Mock(name="init", return_value=None)
-    mock_pub = Mock(name="pub")
-    monkeypatch.setattr(PubSingleton, "__init__", mock_init)
-    monkeypatch.setattr(PubSingleton, "pub", mock_pub)
 
 
 cases_add_item_below = [

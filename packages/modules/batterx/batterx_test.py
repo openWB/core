@@ -1,42 +1,37 @@
 from unittest.mock import Mock
 
-import pytest
 import requests_mock
 
 
 from modules.common.component_state import BatState, CounterState, InverterState
 from modules.batterx import bat, counter, device, inverter
+from modules.batterx.config import (BatterX, BatterXBatSetup, BatterXConfiguration, BatterXCounterSetup,
+                                    BatterXInverterSetup)
 
 
-class TestBatterXDevice:
-    @pytest.fixture(autouse=True)
-    def setup(self, monkeypatch, requests_mock: requests_mock.mock):
-        self.mock_bat_value_store = Mock()
-        self.mock_counter_value_store = Mock()
-        self.mock_inverter_value_store = Mock()
-        self.mock_simcount = Mock()
-        monkeypatch.setattr(bat, 'get_bat_value_store', Mock(return_value=self.mock_bat_value_store))
-        monkeypatch.setattr(counter, 'get_counter_value_store', Mock(return_value=self.mock_counter_value_store))
-        monkeypatch.setattr(inverter, 'get_inverter_value_store', Mock(return_value=self.mock_inverter_value_store))
-        requests_mock.get("http://1.1.1.1/api.php?get=currentstate", json=SAMPLE)
+def test_batterx(monkeypatch, requests_mock: requests_mock.mock):
+    # setup
+    mock_bat_value_store = Mock()
+    mock_counter_value_store = Mock()
+    mock_inverter_value_store = Mock()
+    monkeypatch.setattr(bat, 'get_bat_value_store', Mock(return_value=mock_bat_value_store))
+    monkeypatch.setattr(counter, 'get_counter_value_store', Mock(return_value=mock_counter_value_store))
+    monkeypatch.setattr(inverter, 'get_inverter_value_store', Mock(return_value=mock_inverter_value_store))
+    requests_mock.get("http://1.1.1.1/api.php?get=currentstate", json=SAMPLE)
 
-    def test_read(self):
-        # setup
-        device_config = device.BatterX()
-        device_config.configuration.ip_address = "1.1.1.1"
-        dev = device.Device(device_config)
-        dev = device._add_component(dev, "inverter", 1)
-        dev = device._add_component(dev, "counter", None)
-        dev = device._add_component(dev, "bat", None)
+    dev = device.Device(BatterX(configuration=BatterXConfiguration(ip_address="1.1.1.1")))
+    dev.add_component(BatterXBatSetup(id=2))
+    dev.add_component(BatterXCounterSetup(id=0))
+    dev.add_component(BatterXInverterSetup(id=1))
 
-        # execution
-        dev.update()
+    # execution
+    dev.update()
 
-        # evaluation
-        assert self.mock_counter_value_store.set.call_count == 1
-        assert vars(self.mock_bat_value_store.set.call_args[0][0]) == vars(SAMPLE_BAT_STATE)
-        assert vars(self.mock_counter_value_store.set.call_args[0][0]) == vars(SAMPLE_COUNTER_STATE)
-        assert vars(self.mock_inverter_value_store.set.call_args[0][0]) == vars(SAMPLE_INVERTER_STATE)
+    # evaluation
+    assert mock_counter_value_store.set.call_count == 1
+    assert vars(mock_bat_value_store.set.call_args[0][0]) == vars(SAMPLE_BAT_STATE)
+    assert vars(mock_counter_value_store.set.call_args[0][0]) == vars(SAMPLE_COUNTER_STATE)
+    assert vars(mock_inverter_value_store.set.call_args[0][0]) == vars(SAMPLE_INVERTER_STATE)
 
 
 SAMPLE_BAT_STATE = BatState(

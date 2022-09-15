@@ -13,7 +13,8 @@ def mock_today(monkeypatch) -> None:
 
 
 @pytest.fixture(autouse=True)
-def mock_pub(monkeypatch) -> None:
+def mock_pub(monkeypatch) -> Mock:
     pub_mock = Mock()
     pub_mock.pub.return_value = None
     monkeypatch.setattr(pub, 'PubSingleton', pub_mock)
+    return pub_mock
