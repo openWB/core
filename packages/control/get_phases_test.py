@@ -8,7 +8,6 @@ from control import chargepoint
 from control.chargepoint import Chargepoint, CpTemplate
 from control.ev import Ev
 from control.general import General
-from helpermodules import pub
 from control import data
 
 
@@ -25,13 +24,6 @@ def cp() -> Chargepoint:
 def general() -> None:
     data.data_init(threading.Event())
     data.data.general_data = General()
-
-
-@pytest.fixture(autouse=True)
-def mock_pub(monkeypatch) -> None:
-    pub_mock = Mock()
-    pub_mock.pub.return_value = None
-    monkeypatch.setattr(pub, 'PubSingleton', pub_mock)
 
 
 class Params:
