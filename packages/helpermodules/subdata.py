@@ -698,7 +698,7 @@ class SubData:
                 index = get_index(msg.topic)
                 index_second = get_second_index(msg.topic)
                 self.set_json_payload(
-                    var["device"+index].components["component"+index_second].simulation, msg)
+                    var["device"+index].components["component"+index_second].sim_counter.data, msg)
             elif re.search("^.+/device/[0-9]+/component/[0-9]+/config$", msg.topic) is not None:
                 index = get_index(msg.topic)
                 index_second = get_second_index(msg.topic)
