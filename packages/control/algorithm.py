@@ -1154,7 +1154,11 @@ class Algorithm:
             return 0
 
     def _get_mode_index(self, chargemode: Optional[str], submode: str, prio: bool) -> int:
-        return self.chargemodes.index((chargemode, submode, prio))
+        try:
+            return self.chargemodes.index((chargemode, submode, prio))
+        except ValueError:
+            # bei bestimmten Submodes ist der Lademodus egal
+            return self.chargemodes.index((None, submode, prio))
 
 
 def allocate_power(chargepoint: Chargepoint,
