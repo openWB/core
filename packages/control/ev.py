@@ -50,16 +50,12 @@ def emtpy_list_factory():
     return []
 
 
-def scheduled_plan_factory() -> Dict:
-    return {0: ScheduledChargingPlan()}
+def empty_dict_factory() -> Dict:
+    return {}
 
 
 def time_factory():
     return ["06:00", "07:00"]
-
-
-def time_plan_factory():
-    return {0: TimeChargingPlan()}
 
 
 @dataclass
@@ -95,7 +91,7 @@ class ScheduledChargingPlan:
 
 @dataclass
 class ScheduledCharging:
-    plans: Dict[int, ScheduledChargingPlan] = field(default_factory=scheduled_plan_factory)
+    plans: Dict[int, ScheduledChargingPlan] = field(default_factory=empty_dict_factory)
 
 
 @dataclass
@@ -110,7 +106,7 @@ class TimeChargingPlan:
 @dataclass
 class TimeCharging:
     active: bool = False
-    plans: Dict[int, TimeChargingPlan] = field(default_factory=time_plan_factory)
+    plans: Dict[int, TimeChargingPlan] = field(default_factory=empty_dict_factory)
 
 
 @dataclass
@@ -666,16 +662,15 @@ class ChargeTemplate:
         message = None
         try:
             if self.data.time_charging.plans:
-                plan = timecheck.check_plans_timeframe(
-                    self.data.time_charging.plans)
+                plan = timecheck.check_plans_timeframe(self.data.time_charging.plans)
                 if plan is not None:
                     return plan.current, "time_charging", message, plan.name
                 else:
-                    message = "Keine Ladung, da kein Zeitfenster aktiv ist."
-                    return 0, "stop", message, None
+                    message = "Keine Ladung, da kein Zeitfenster für Zeitladen aktiv ist."
             else:
                 message = "Keine Ladung, da keine Zeitfenster für Zeitladen konfiguriert sind."
-                return 0, "stop", message, None
+            log.debug(message)
+            return 0, "stop", message, None
         except Exception:
             log.exception("Fehler im ev-Modul "+str(self.ct_num))
             return 0, "stop", "Keine Ladung, da da ein interner Fehler aufgetreten ist: "+traceback.format_exc(), None
