@@ -249,8 +249,10 @@ class UpdateConfig:
                    "^openWB/system/configurable/devices_components$",
                    "^openWB/system/configurable/chargepoints$",
                    "^openWB/system/mqtt/bridge/[0-9]+$",
+                   "^openWB/system/current_branch",
                    "^openWB/system/current_commit",
-                   "^openWB/system/current_master_commit",
+                   "^openWB/system/available_branches",
+                   "^openWB/system/current_branch_commit",
                    "^openWB/system/current_missing_commits"
                    ]
     default_topic = (

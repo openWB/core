@@ -2,21 +2,34 @@
 OPENWBBASEDIR=$(cd "$(dirname "$0")/../" && pwd)
 LOGFILE="${OPENWBBASEDIR}/data/log/update.log"
 GITREMOTE="origin"
-# ToDo: get user selected branch
-SELECTEDBRANCH="master"
+SELECTEDBRANCH="$1"
+DEFAULTTAG="*HEAD*"
+# ToDo: honor selected tag
+SELECTEDTAG="$2"
 
 echo "#### running update ####" > "$LOGFILE"
 
 {
 	# fetch new release from GitHub
-	echo "#### 1. fetching latest data from $GITREMOTE ####"
+	echo "#### 1. fetching latest data from '$GITREMOTE' ####"
 	git -C "$OPENWBBASEDIR" fetch -v "$GITREMOTE" && echo "#### done"
 
-	# without tags yet
-	echo "#### 2. applying latest changes ####"
-	git -C "$OPENWBBASEDIR" reset --hard "$GITREMOTE/$SELECTEDBRANCH" && echo "#### done"
+	# checkout selected branch
+	echo "#### 2. checkout selected branch '$SELECTEDBRANCH'"
+	git -C "$OPENWBBASEDIR" checkout --force "$SELECTEDBRANCH" && echo "#### done"
+
+	# reset to latest revision or selected tag
+	echo "#### 3. reset working dir ###"
+	resetTarget="$GITREMOTE/$SELECTEDBRANCH"
+	if [[ -z "$SELECTEDTAG" ]] || [[ $SELECTEDTAG != "$DEFAULTTAG" ]]; then
+		echo "#### selected tag: '$SELECTEDTAG'"
+		resetTarget="$SELECTEDTAG"
+	else
+		echo "#### no tag selected, resetting to latest revision"
+	fi
+	git -C "$OPENWBBASEDIR" reset --hard "$resetTarget" && echo "#### done"
 
 	# now reboot system
-	echo "#### 3. rebooting system ####"
+	echo "#### 4. rebooting system ####"
 	sudo reboot now &
 } >> "$LOGFILE" 2>&1
