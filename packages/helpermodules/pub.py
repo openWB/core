@@ -1,27 +1,23 @@
-"""Modul, das die publish-Verbindung zum Broker bereit stellt.
-"""
-
 import json
 import logging
-import os
-
-import paho.mqtt.client as mqtt
 import paho.mqtt.publish as publish
+
+from helpermodules.broker import InternalBrokerPublisher
+
 
 log = logging.getLogger(__name__)
 
 
 class PubSingleton:
     def __init__(self) -> None:
-        self.client = mqtt.Client("openWB-python-bulkpublisher-" + str(os.getpid()))
-        self.client.connect("localhost", 1886)
-        self.client.loop_start()
+        self.publisher = InternalBrokerPublisher()
+        self.publisher.start_loop()
 
     def pub(self, topic: str, payload, qos: int = 0, retain: bool = True) -> None:
         if payload == "":
-            self.client.publish(topic, payload, qos=qos, retain=retain)
+            self.publisher.client.publish(topic, payload, qos=qos, retain=retain)
         else:
-            self.client.publish(topic, payload=json.dumps(payload), qos=qos, retain=retain)
+            self.publisher.client.publish(topic, payload=json.dumps(payload), qos=qos, retain=retain)
 
 
 class Pub:

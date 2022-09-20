@@ -6,7 +6,6 @@ import logging
 from pathlib import Path
 import threading
 from typing import Dict
-import paho.mqtt.client as mqtt
 import re
 import subprocess
 
@@ -16,6 +15,7 @@ from control import counter
 from control import ev
 from control import general
 from helpermodules import graph
+from helpermodules.broker import InternalBrokerClient
 from helpermodules.utils.topic_parser import get_index, get_second_index
 from control import optional
 from helpermodules.pub import Pub
@@ -68,34 +68,11 @@ class SubData:
         self.graph_data["graph"] = graph.Graph()
 
     def sub_topics(self):
-        """ abonniert alle Topics.
-        """
-        try:
-            mqtt_broker_ip = "localhost"
-            self.client = mqtt.Client("openWB-mqttsub-" + self.getserial())
-            # ipallowed='^[0-9.]+$'
-            # nameallowed='^[a-zA-Z ]+$'
-            # namenumballowed='^[0-9a-zA-Z ]+$'
-
-            self.client.on_connect = self.on_connect
-            self.client.on_message = self.on_message
-            self.client.connect(mqtt_broker_ip, 1886)
-            self.client.loop_forever()
-        except Exception:
-            log.exception("Fehler im subdata-Modul")
+        self.internal_broker_client = InternalBrokerClient("mqttsub", self.on_connect, self.on_message)
+        self.internal_broker_client.start_infinite_loop()
 
     def disconnect(self) -> None:
-        self.client.disconnect()
-        log.info("Verbindung von Client openWB-mqttsub-" + self.getserial()+" geschlossen.")
-
-    def getserial(self):
-        """ Extract serial from cpuinfo file
-        """
-        with open('/proc/cpuinfo', 'r') as f:
-            for line in f:
-                if line[0:6] == 'Serial':
-                    return line[10:26]
-            return "0000000000000000"
+        self.internal_broker_client.disconnect()
 
     def on_connect(self, client, userdata, flags, rc):
         """ connect to broker and subscribe to set topics
