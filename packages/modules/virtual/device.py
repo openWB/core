@@ -36,7 +36,7 @@ class Device(AbstractDevice):
             self.components["component"+str(component_config.id)] = (self.COMPONENT_TYPE_TO_CLASS[component_type](
                 self.device_config.id, component_config))
 
-    def get_values(self) -> None:
+    def update(self) -> None:
         log.debug("Start device reading" + str(self.components))
         if self.components:
             for component in self.components:

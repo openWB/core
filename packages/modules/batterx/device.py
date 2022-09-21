@@ -44,7 +44,7 @@ class Device(AbstractDevice):
         component_config = dataclass_from_dict(COMPONENT_TYPE_TO_MODULE[
             component_type].component_descriptor.configuration_factory, component_config)
         if component_type in self.COMPONENT_TYPE_TO_CLASS:
-            self.components["component"+str(component_config.type)] = (self.COMPONENT_TYPE_TO_CLASS[component_type](
+            self.components["component"+str(component_config.id)] = (self.COMPONENT_TYPE_TO_CLASS[component_type](
                 self.device_config.id, component_config))
         else:
             raise Exception(

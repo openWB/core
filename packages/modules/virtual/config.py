@@ -1,3 +1,6 @@
+from modules.common.component_setup import ComponentSetup
+
+
 class VirtualConfiguration:
     def __init__(self):
         pass
@@ -20,13 +23,10 @@ class VirtualCounterConfiguration:
         self.external_consumption = external_consumption
 
 
-class VirtualCounterSetup:
+class VirtualCounterSetup(ComponentSetup[VirtualCounterConfiguration]):
     def __init__(self,
                  name: str = "Virtueller Zähler",
                  type: str = "counter",
                  id: int = 0,
                  configuration: VirtualCounterConfiguration = None) -> None:
-        self.name = name
-        self.type = type
-        self.id = id
-        self.configuration = configuration or VirtualCounterConfiguration()
+        super().__init__(name, type, id, configuration or VirtualCounterConfiguration())

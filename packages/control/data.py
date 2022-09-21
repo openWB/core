@@ -415,6 +415,7 @@ class Data:
                 self.__copy_ev_data()
                 self.__copy_cp_data()
                 self.__copy_counter_data()
+                self.__copy_system_data()
                 self.graph_data = copy.deepcopy(SubData.graph_data)
             except Exception:
                 log.exception("Fehler im Prepare-Modul")

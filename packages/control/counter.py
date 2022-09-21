@@ -415,8 +415,8 @@ class Counter:
                 self.data["set"]["currents_used"] = self.data["get"]["currents"]
             except KeyError:
                 log.warning(f"Zähler {self.num}: Einzelwerte für Zähler-Phasenströme unbekannt")
-                self.data["set"]["state_str"] = "Das Lastmanagement regelt nur anhand der Gesamtleistung, da keine \
-                    Phasenströme ermittelt werden konnten."
+                self.data["set"]["state_str"] = ("Das Lastmanagement regelt nur anhand der Gesamtleistung, da keine " +
+                                                 "Phasenströme ermittelt werden konnten.")
                 Pub().pub("openWB/set/counter/"+str(self.num) + "/set/state_str",
                           self.data["set"]["state_str"])
         except Exception:
