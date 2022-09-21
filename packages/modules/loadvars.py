@@ -65,7 +65,7 @@ class Loadvars:
                         if type == "virtual":
                             thread = None
                             module = data.data.system_data[item]
-                            thread = threading.Thread(target=module.get_values, args=())
+                            thread = threading.Thread(target=module.update, args=())
                             if thread is not None:
                                 modules_threads.append(thread)
                 except Exception:
