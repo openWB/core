@@ -4,7 +4,7 @@ import logging
 import datetime
 from typing import Dict, List, Optional, Tuple, Union
 
-from control.ev import ScheduledChargingPlan, TimeChargingPlan
+from helpermodules.abstract_plans import ScheduledChargingPlan, TimeChargingPlan
 
 log = logging.getLogger(__name__)
 
