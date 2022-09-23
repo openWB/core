@@ -53,6 +53,9 @@ def cleanup_logfiles():
     """ ruft das Skript zum Kürzen der Logfiles auf.
     """
     log.debug("Logdateien kürzen")
-    parent_file = Path(__file__).resolve().parents[2]
-    subprocess.run([str(parent_file / "runs" / "cleanup_log.sh"), str(parent_file / "ramdisk" / "main.log")])
-    subprocess.run([str(parent_file / "runs" / "cleanup_log.sh"), str(parent_file / "ramdisk" / "mqtt.log")])
+    for path in Path(_get_parent_path()/"ramdisk").glob('*.log'):
+        subprocess.run([str(_get_parent_path() / "runs" / "cleanup_log.sh"), str(path)])
+
+
+def _get_parent_path() -> Path:
+    return Path(__file__).resolve().parents[2]
