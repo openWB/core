@@ -134,8 +134,7 @@ class Algorithm:
             if loadmanagement_state:
                 log.warning("## Ladung wegen aktiven Lastmanagements stoppen.")
                 # Zähler mit der größten Überlastung ermitteln
-                overloaded_counters = sorted(
-                    overloaded_counters.items(), key=lambda e: e[1][1], reverse=True)
+                sorted_overloaded_counters = loadmanagement.sort_overloaded_counter(overloaded_counters)
                 n = 0  # Zähler, der betrachtet werden soll
                 # set current auf den maximalen get current stellen, damit der tatsächlich genutzte Strom reduziert
                 # wird und nicht der maximal nutzbare, der ja eventuell gar nicht voll ausgenutzt wird, sodass die
@@ -157,13 +156,13 @@ class Algorithm:
                 # zu eliminieren, im zweiten durch Abschalten. Daher die zweifache Anzahl von Zählern als Durchläufe.
                 for b in range(0, len(data.data.counter_data)*2):
                     chargepoints = data.data.counter_data["all"].get_chargepoints_of_counter(
-                        overloaded_counters[n][0])
-                    overshoot = overloaded_counters[n][1][0]
+                        sorted_overloaded_counters[n][0])
+                    overshoot = sorted_overloaded_counters[n][1][0]
                     # Das Lademodi-Tupel rückwärts durchgehen und LP mit niedrig priorisiertem Lademodus zuerst
                     # reduzieren/stoppen.
                     for mode in reversed(self.chargemodes[:-4]):
                         overshoot = self._down_regulation(
-                            mode, chargepoints, overshoot, overloaded_counters[n][1][1])
+                            mode, chargepoints, overshoot, sorted_overloaded_counters[n][1][1])
                         if overshoot == 0:
                             break
                     # Wenn kein Ladepunkt lädt, kann die Wallbox nichts am Lastmanagement ausrichten. Die Überlastung
@@ -195,8 +194,7 @@ class Algorithm:
                     if not loadmanagement_state:
                         # Lastmanagement ist nicht mehr aktiv
                         break
-                    overloaded_counters = sorted(
-                        overloaded_counters.items(), key=lambda e: e[1][1], reverse=True)
+                    sorted_overloaded_counters = loadmanagement.sort_overloaded_counter(overloaded_counters)
             else:
                 log.debug(
                     "## Ladung muss nicht wegen aktiven Lastmanagements gestoppt werden.")
@@ -307,6 +305,7 @@ class Algorithm:
                                 ev_data.data.control_parameter.required_current = 0
                                 self._process_data(cp, 0)
                                 message = "Das Lastmanagement hat den Ladevorgang gestoppt."
+                                log.debug(f"{cp.num}: Das Lastmanagement hat den Ladevorgang gestoppt.")
                             else:
                                 continue
                         else:
@@ -415,16 +414,15 @@ class Algorithm:
                             cp, missing_current, phases)
                         log.debug("Lastmanagement aktiv: "+str(loadmanagement_state))
                         if loadmanagement_state:
-                            overloaded_counters = sorted(
-                                overloaded_counters.items(), key=lambda e: e[1][1], reverse=True)
+                            sorted_overloaded_counters = loadmanagement.sort_overloaded_counter(overloaded_counters)
                             # Wenn max_overshoot_phase -1 ist, wurde die maximale Gesamtleistung überschritten und
                             # max_current_overshoot muss,
                             # wenn weniger als 3 Phasen genutzt werden, entsprechend multipliziert werden.
-                            if overloaded_counters[0][1][1] == -1 and phases < 3:
+                            if sorted_overloaded_counters[0][1][1] == -1 and phases < 3:
                                 undo_missing_current = (
-                                    overloaded_counters[0][1][0] * (3 - phases + 1)) * -1
+                                    sorted_overloaded_counters[0][1][0] * (3 - phases + 1)) * -1
                             else:
-                                undo_missing_current = overloaded_counters[0][1][0] * -1
+                                undo_missing_current = sorted_overloaded_counters[0][1][0] * -1
                             # Dies tritt nur ein, wenn Bezug möglich ist, dieser aber unter dem Offset liegt. Dann
                             # wird nämlich durch das Lastmanagement versucht, das Offset auszugleichen.
                             # In diesem Fall soll keine Anpassung erfolgen.
@@ -674,14 +672,13 @@ class Algorithm:
                     " muss erst ein Ladepunkt mit gleicher/niedrigerer Priorität reduziert/gestoppt werden.")
                 data.data.counter_data[evu_counter].print_stats()
                 # Zähler mit der größten Überlastung ermitteln
-                overloaded_counters = sorted(
-                    overloaded_counters.items(), key=lambda e: e[1][1], reverse=True)
+                sorted_overloaded_counters = loadmanagement.sort_overloaded_counter(overloaded_counters)
                 # Ergebnisse des Lastmanagements holen, das beim Einschalten durchgeführt worden ist. Es ist
                 # ausreichend, Zähler mit der größten Überlastung im Pfad zu betrachten. Kann diese nicht eliminiert
                 # werden, kann der Ladepunkt nicht laden.
                 chargepoints = data.data.counter_data["all"].get_chargepoints_of_counter(
-                    overloaded_counters[0][0])
-                remaining_current_overshoot = overloaded_counters[0][1][0]
+                    sorted_overloaded_counters[0][0])
+                remaining_current_overshoot = sorted_overloaded_counters[0][1][0]
                 control_parameter = chargepoint.data.set.charging_ev_data.data.control_parameter
                 current_mode_index = self._get_mode_index(
                     control_parameter.chargemode, control_parameter.submode, control_parameter.prio)
@@ -693,13 +690,11 @@ class Algorithm:
                             mode,
                             chargepoints,
                             remaining_current_overshoot,
-                            overloaded_counters[0][1][1],
+                            sorted_overloaded_counters[0][1][1],
                             prevent_stop=True)
                         if remaining_current_overshoot <= 0:
                             # LP kann nun wie gewünscht eingeschaltet werden
-                            self._process_data(
-                                chargepoint,
-                                chargepoint.data.set.charging_ev_data.data.control_parameter.required_current)
+                            self._process_data(chargepoint, control_parameter.required_current)
                             break
                         else:
                             # Abschalten
@@ -708,25 +703,26 @@ class Algorithm:
                                 remaining_current_overshoot = self._down_regulation(
                                     mode, chargepoints,
                                     remaining_current_overshoot,
-                                    overloaded_counters[0][1][1],
+                                    sorted_overloaded_counters[0][1][1],
                                     prevent_stop=False)
                                 if remaining_current_overshoot <= 0:
                                     # LP kann nun wie gewünscht eingeschaltet werden
-                                    self._process_data(
-                                        chargepoint,
-                                        chargepoint.data.set.charging_ev_data.data.control_parameter.required_current)
+                                    self._process_data(chargepoint, control_parameter.required_current)
                                     break
                     except Exception:
                         log.exception("Fehler im Algorithmus-Modul für Modus "+str(mode))
                 else:
                     # Ladepunkt, der gestartet werden soll reduzieren
                     remaining_current_overshoot = self._perform_down_regulation(
-                        [chargepoint], remaining_current_overshoot, overloaded_counters[0][1][1], prevent_stop=True)
+                        [chargepoint],
+                        remaining_current_overshoot,
+                        sorted_overloaded_counters[0][1][1],
+                        prevent_stop=True)
                     # Ladepunkte mit gleicher Priorität reduzieren. Diese dürfen nicht gestoppt werden.
                     if remaining_current_overshoot != 0:
                         remaining_current_overshoot = self._down_regulation(
                             self.chargemodes[current_mode_index],
-                            chargepoints, remaining_current_overshoot, overloaded_counters[0][1][1],
+                            chargepoints, remaining_current_overshoot, sorted_overloaded_counters[0][1][1],
                             prevent_stop=True)
                     if remaining_current_overshoot != 0:
                         # Ladepunkt darf nicht laden
@@ -1231,17 +1227,15 @@ def use_evu_bat_power(chargepoint: Chargepoint,
     loadmanagement_state, overloaded_counters = loadmanagement.loadmanagement_for_cp(
         chargepoint, current_diff, phases)
     if loadmanagement_state:
-        overloaded_counters = sorted(
-            overloaded_counters.items(), key=lambda e: e[1][1], reverse=True)
+        sorted_overloaded_counters = loadmanagement.sort_overloaded_counter(overloaded_counters)
         # Wenn max_overshoot_phase -1 ist, wurde die maximale Gesamtleistung überschritten und
         # max_current_overshoot muss, wenn weniger als 3 Phasen genutzt werden, entsprechend multipliziert
         # werden.
-        if overloaded_counters[0][1][1] == -1 and phases < 3:
+        if sorted_overloaded_counters[0][1][1] == -1 and phases < 3:
             missing_current = (
-                overloaded_counters[0][1][0] * (3 - phases + 1)) * -1
+                sorted_overloaded_counters[0][1][0] * (3 - phases + 1)) * -1
         else:
-            missing_current = overloaded_counters[0][1][0] * -1
-        loadmanagement.loadmanagement_for_cp(
-            chargepoint, missing_current, phases)
+            missing_current = sorted_overloaded_counters[0][1][0] * -1
+        loadmanagement.loadmanagement_for_cp(chargepoint, missing_current, phases)
         return missing_current
     return 0
