@@ -342,3 +342,7 @@ def _check_unbalanced_load(currents_used, offset) -> Tuple[bool, float, float]:
             return False, 0, 0
     else:
         return False, 0, 0
+
+
+def sort_overloaded_counter(overloaded_counters: Dict[str, Tuple[float, int]]) -> List[Tuple[str, Tuple[float, int]]]:
+    return sorted(overloaded_counters.items(), key=lambda e: e[1][0], reverse=True)
