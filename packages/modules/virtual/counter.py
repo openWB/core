@@ -61,7 +61,7 @@ class VirtualCounter:
                 add_current_power(data.data.pv_data[f"pv{element['id']}"])
 
         self.power += self.component_config.configuration.external_consumption
-        self.currents = [c + self.component_config.configuration.external_consumption/3 for c in self.currents]
+        self.currents = [c + self.component_config.configuration.external_consumption/3/230 for c in self.currents]
         imported, exported = self.sim_counter.sim_count(self.power)
         counter_state = CounterState(
             imported=imported,
