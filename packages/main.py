@@ -39,65 +39,37 @@ class HandlerAlgorithm:
         """ führt den Algorithmus durch.
         """
         try:
-            # Beim ersten Durchlauf wird in jedem Fall eine Exception geworfen, da die Daten erstmalig ins data-Modul
-            # kopiert werden müssen.
-            try:
-                log.info("# ***Start*** ")
-                exit_time = data.data.general_data.data.control_interval
-
-                @exit_after(exit_time)
-                def handler_with_control_interval():
-                    if (data.data.general_data.data.control_interval
-                            / 10) == self.interval_counter:
-                        # Mit aktuellen Einstellungen arbeiten.
-                        data.data.copy_data()
-                        log.setLevel(data.data.system_data["system"].data["debug_level"])
-                        loadvars_.get_hardware_values()
-                        # Virtuelle Module ermitteln die Werte rechnerisch auf Basis der Messwerte anderer Module.
-                        # Daher können sie erst die Werte ermitteln, wenn die physischen Module ihre Werte ermittelt
-                        # haben. Würde man alle Module parallel abfragen, wären die virtuellen Module immer einen
-                        # Zyklus hinterher.
-                        data.data.copy_module_data()
-                        loadvars_.get_virtual_values()
-                        data.data.copy_module_data()
-                        data.data.copy_data()
-                        self.heartbeat = True
-                        if data.data.system_data["system"].data["perform_update"]:
-                            data.data.system_data["system"].perform_update()
-                            return
-                        elif data.data.system_data["system"].data[
-                                "update_in_progress"]:
-                            log.info(
-                                "Regelung pausiert, da ein Update durchgeführt wird."
-                            )
-                            return
-                        prep.setup_algorithm()
-                        control.calc_current()
-                        proc.process_algorithm_results()
-                        data.data.graph_data["graph"].pub_graph_data()
-                        self.interval_counter = 1
-                    else:
-                        self.interval_counter = self.interval_counter + 1
-                handler_with_control_interval()
-            except Exception:
-                @exit_after(10)
-                def handler_without_control_interval():
-                    # Wenn kein Regelintervall bekannt ist, alle 10s regeln.
+            @exit_after(data.data.general_data.data.control_interval)
+            def handler_with_control_interval():
+                if (data.data.general_data.data.control_interval / 10) == self.interval_counter:
+                    # Mit aktuellen Einstellungen arbeiten.
                     data.data.copy_data()
+                    log.setLevel(data.data.system_data["system"].data["debug_level"])
                     loadvars_.get_hardware_values()
+                    # Virtuelle Module ermitteln die Werte rechnerisch auf Basis der Messwerte anderer Module.
+                    # Daher können sie erst die Werte ermitteln, wenn die physischen Module ihre Werte ermittelt
+                    # haben. Würde man alle Module parallel abfragen, wären die virtuellen Module immer einen
+                    # Zyklus hinterher.
                     data.data.copy_module_data()
                     loadvars_.get_virtual_values()
-                    self.heartbeat = True
-                    # Kurz warten, damit alle Topics von setdata und subdata verarbeitet werden können.
-                    time.sleep(0.3)
                     data.data.copy_module_data()
                     data.data.copy_data()
+                    self.heartbeat = True
+                    if data.data.system_data["system"].data["perform_update"]:
+                        data.data.system_data["system"].perform_update()
+                        return
+                    elif data.data.system_data["system"].data["update_in_progress"]:
+                        log.info("Regelung pausiert, da ein Update durchgeführt wird.")
                     event_global_data_initialized.set()
                     prep.setup_algorithm()
                     control.calc_current()
                     proc.process_algorithm_results()
                     data.data.graph_data["graph"].pub_graph_data()
-                handler_without_control_interval()
+                    self.interval_counter = 1
+                else:
+                    self.interval_counter = self.interval_counter + 1
+            log.info("# ***Start*** ")
+            handler_with_control_interval()
         except Exception:
             log.exception("Fehler im Main-Modul")
 
