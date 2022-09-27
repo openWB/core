@@ -503,7 +503,14 @@ class Command:
     def systemUpdate(self, connection_id: str, payload: dict) -> None:
         log.info("Update requested")
         parent_file = Path(__file__).resolve().parents[2]
-        subprocess.run([str(parent_file / "runs" / "update_self.sh")])
+        if "branch" in payload["data"] and "tag" in payload["data"]:
+            log.warn("Update to branch '%s' tag '%s' requested", payload["data"]["branch"], payload["data"]["tag"])
+            subprocess.run([
+                str(parent_file / "runs" / "update_self.sh"),
+                str(payload["data"]["branch"]),
+                str(payload["data"]["tag"])])
+        else:
+            subprocess.run([str(parent_file / "runs" / "update_self.sh")])
 
     def systemFetchVersions(self, connection_id: str, payload: dict) -> None:
         log.info("Fetch versions requested")
