@@ -431,7 +431,7 @@ class Command:
         Pub().pub("openWB/set/system/debug_level", 10)
         subprocess.run([str(parent_file / "runs" / "send_debug.sh"),
                         json.dumps(payload["data"])])
-        Pub().pub("openWB/set/system/debug_level", 30)
+        Pub().pub("openWB/set/system/debug_level", previous_log_level)
 
     def getChargeLog(self, connection_id: str, payload: dict) -> None:
         Pub().pub(
