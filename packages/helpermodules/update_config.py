@@ -274,7 +274,7 @@ class UpdateConfig:
         ("openWB/general/chargemode_config/pv_charging/rundown_soc", 50),
         ("openWB/general/chargemode_config/pv_charging/charging_power_reserve", 200),
         ("openWB/general/chargemode_config/pv_charging/control_range", [0, 230]),
-        ("openWB/general/chargemode_config/pv_charging/switch_off_threshold", 5),
+        ("openWB/general/chargemode_config/pv_charging/switch_off_threshold", 50),
         ("openWB/general/chargemode_config/pv_charging/switch_off_delay", 60),
         ("openWB/general/chargemode_config/pv_charging/switch_on_delay", 30),
         ("openWB/general/chargemode_config/pv_charging/switch_on_threshold", 1500),
