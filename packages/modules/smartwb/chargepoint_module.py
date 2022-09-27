@@ -30,7 +30,7 @@ class ChargepointModule(AbstractChargepoint):
         self.id = id
         self.connection_module = connection_module
         self.power_module = power_module
-        self.__store = get_chargepoint_value_store(self.id)
+        self.store = get_chargepoint_value_store(self.id)
         self.component_info = ComponentInfo(
             self.id,
             "Ladepunkt", "chargepoint")
@@ -98,7 +98,7 @@ class ChargepointModule(AbstractChargepoint):
                 if json_rsp.get("voltageP1"):
                     chargepoint_state.voltages = [json_rsp["voltageP1"], json_rsp["voltageP2"], json_rsp["voltageP3"]]
 
-                self.__store.set(chargepoint_state)
+                self.store.set(chargepoint_state)
                 self.__client_error_context.reset_error_counter()
 
     def clear_rfid(self) -> None:

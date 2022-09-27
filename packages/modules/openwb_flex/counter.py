@@ -27,7 +27,7 @@ class EvuKitFlex:
                                 tcp_client)
         self.__tcp_client = tcp_client
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
-        self.__store = get_counter_value_store(self.component_config.id)
+        self.store = get_counter_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
 
     def update(self):
@@ -61,7 +61,7 @@ class EvuKitFlex:
             power=power,
             frequency=frequency
         )
-        self.__store.set(counter_state)
+        self.store.set(counter_state)
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=EvuKitFlexSetup)

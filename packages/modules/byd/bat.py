@@ -22,7 +22,7 @@ class BYDBat:
         self.__device_config = device_config
         self.component_config = dataclass_from_dict(BYDBatSetup, component_config)
         self.sim_counter = SimCounter(self.__device_config.id, self.component_config.id, prefix="speicher")
-        self.__store = get_bat_value_store(self.component_config.id)
+        self.store = get_bat_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
 
     def update(self) -> None:
@@ -35,7 +35,7 @@ class BYDBat:
             imported=imported,
             exported=exported
         )
-        self.__store.set(bat_state)
+        self.store.set(bat_state)
 
     def get_values(self) -> Tuple[float, float]:
         '''BYD Speicher bieten zwei HTML-Seiten, auf denen Informationen abgegriffen werden können:

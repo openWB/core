@@ -26,7 +26,7 @@ class SonnenbatterieBat:
         self.__device_variant = device_variant
         self.component_config = dataclass_from_dict(SonnenbatterieBatSetup, component_config)
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
-        self.__store = get_bat_value_store(self.component_config.id)
+        self.store = get_bat_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
 
     def __read_variant_0(self):
@@ -127,7 +127,7 @@ class SonnenbatterieBat:
             state = self.__update_variant_2()
         else:
             raise FaultState.error("Unbekannte Variante: " + str(self.__device_variant))
-        self.__store.set(state)
+        self.store.set(state)
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=SonnenbatterieBatSetup)

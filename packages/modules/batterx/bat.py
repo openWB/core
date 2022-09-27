@@ -15,7 +15,7 @@ class BatterXBat:
         self.__device_id = device_id
         self.component_config = dataclass_from_dict(BatterXBatSetup, component_config)
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
-        self.__store = get_bat_value_store(self.component_config.id)
+        self.store = get_bat_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
 
     def update(self, resp: Dict) -> None:
@@ -28,7 +28,7 @@ class BatterXBat:
             imported=imported,
             exported=exported
         )
-        self.__store.set(bat_state)
+        self.store.set(bat_state)
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=BatterXBatSetup)

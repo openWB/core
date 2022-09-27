@@ -19,7 +19,7 @@ class SolaredgeCounter:
                  tcp_client: modbus.ModbusTcpClient_) -> None:
         self.component_config = dataclass_from_dict(SolaredgeCounterSetup, component_config)
         self.__tcp_client = tcp_client
-        self.__store = get_counter_value_store(self.component_config.id)
+        self.store = get_counter_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
 
     def update(self):
@@ -78,7 +78,7 @@ class SolaredgeCounter:
             power_factors=power_factors,
             frequency=frequency
         )
-        self.__store.set(counter_state)
+        self.store.set(counter_state)
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=SolaredgeCounterSetup)

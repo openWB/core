@@ -17,7 +17,7 @@ class KostalPikoInverter:
                  ip_address: str) -> None:
         self.component_config = dataclass_from_dict(KostalPikoInverterSetup, component_config)
         self.ip_address = ip_address
-        self.__store = get_inverter_value_store(self.component_config.id)
+        self.store = get_inverter_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
 
     def get_values(self) -> Tuple[float, float]:
@@ -32,11 +32,8 @@ class KostalPikoInverter:
             power = power*-1
 
         exported = float(resp["dxsEntries"][1]["value"]) * 1000
-        return power, exported
 
-    def update(self):
-        power, exported = self.get_values()
-        self.__store.set(InverterState(
+        self.store.set(InverterState(
             exported=exported,
             power=power
         ))

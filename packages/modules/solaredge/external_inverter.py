@@ -21,11 +21,11 @@ class SolaredgeExternalInverter:
         self.component_config = dataclass_from_dict(SolaredgeExternalInverterSetup, component_config)
         self.__tcp_client = tcp_client
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
-        self.__store = get_inverter_value_store(self.component_config.id)
+        self.store = get_inverter_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
 
     def update(self, state: InverterState) -> None:
-        self.__store.set(state)
+        self.store.set(state)
 
     def read_state(self) -> InverterState:
         unit = self.component_config.configuration.modbus_id

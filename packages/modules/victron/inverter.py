@@ -24,7 +24,7 @@ class VictronInverter:
         self.component_config = dataclass_from_dict(VictronInverterSetup, component_config)
         self.__tcp_client = tcp_client
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
-        self.__store = get_inverter_value_store(self.component_config.id)
+        self.store = get_inverter_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
 
     def update(self) -> None:
@@ -53,7 +53,7 @@ class VictronInverter:
             power=power,
             exported=exported
         )
-        self.__store.set(inverter_state)
+        self.store.set(inverter_state)
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=VictronInverterSetup)

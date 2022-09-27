@@ -17,7 +17,7 @@ class StuderInverter:
                  tcp_client: modbus.ModbusTcpClient_) -> None:
         self.component_config = dataclass_from_dict(StuderInverterSetup, component_config)
         self.__tcp_client = tcp_client
-        self.__store = get_inverter_value_store(self.component_config.id)
+        self.store = get_inverter_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
 
     def update(self) -> None:
@@ -54,7 +54,7 @@ class StuderInverter:
             power=power,
             exported=exported
         )
-        self.__store.set(inverter_state)
+        self.store.set(inverter_state)
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=StuderInverterSetup)

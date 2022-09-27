@@ -26,11 +26,10 @@ class FroniusSmCounter:
         self.component_config = dataclass_from_dict(FroniusSmCounterSetup, component_config)
         self.device_config = device_config
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
-        self.__store = get_counter_value_store(self.component_config.id)
+        self.store = get_counter_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
 
     def update(self) -> None:
-
         session = req.get_http_session()
         variant = self.component_config.configuration.variant
         if variant == 0 or variant == 1:
@@ -39,9 +38,8 @@ class FroniusSmCounter:
             counter_state = self.__update_variant_2(session)
         else:
             raise FaultState.error("Unbekannte Variante: "+str(variant))
-
         counter_state.imported, counter_state.exported = self.sim_counter.sim_count(counter_state.power)
-        self.__store.set(counter_state)
+        self.store.set(counter_state)
 
     def __update_variant_0_1(self, session: Session) -> CounterState:
         variant = self.component_config.configuration.variant

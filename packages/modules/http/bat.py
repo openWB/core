@@ -16,7 +16,7 @@ class HttpBat:
         self.__device_id = device_id
         self.component_config = dataclass_from_dict(HttpBatSetup, component_config)
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
-        self.__store = get_bat_value_store(self.component_config.id)
+        self.store = get_bat_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
 
         self.__get_power = create_request_function(url, self.component_config.configuration.power_path)
@@ -37,7 +37,7 @@ class HttpBat:
             imported=imported,
             exported=exported
         )
-        self.__store.set(bat_state)
+        self.store.set(bat_state)
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=HttpBatSetup)

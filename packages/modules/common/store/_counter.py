@@ -1,9 +1,13 @@
+from operator import add
+
+from control import data
 from helpermodules import compatibility
 from modules.common.component_state import CounterState
+from modules.common.component_type import ComponentType
+from modules.common.fault_state import FaultState
 from modules.common.store import ValueStore
 from modules.common.store._api import LoggingValueStore
 from modules.common.store._broker import pub_to_broker
-from modules.common.store._util import process_error
 from modules.common.store.ramdisk import files
 
 
@@ -13,14 +17,14 @@ class CounterValueStoreRamdisk(ValueStore[CounterState]):
             files.evu.voltages.write(counter_state.voltages)
             if counter_state.currents:
                 files.evu.currents.write(counter_state.currents)
-            files.evu.powers_import.write(counter_state.powers)
+            files.evu.powers_import.write([int(p) for p in counter_state.powers])
             files.evu.power_factors.write(counter_state.power_factors)
             files.evu.energy_import.write(counter_state.imported)
             files.evu.energy_export.write(counter_state.exported)
             files.evu.power_import.write(int(counter_state.power))
             files.evu.frequency.write(counter_state.frequency)
         except Exception as e:
-            process_error(e)
+            raise FaultState.from_exception(e)
 
 
 class CounterValueStoreBroker(ValueStore[CounterState]):
@@ -28,21 +32,88 @@ class CounterValueStoreBroker(ValueStore[CounterState]):
         self.num = component_num
 
     def set(self, counter_state: CounterState):
-        try:
-            pub_to_broker("openWB/set/counter/" + str(self.num) + "/get/voltages", counter_state.voltages, 2)
-            if counter_state.currents:
-                pub_to_broker("openWB/set/counter/" + str(self.num) + "/get/currents", counter_state.currents, 2)
-            pub_to_broker("openWB/set/counter/" + str(self.num) + "/get/powers", counter_state.powers, 2)
-            pub_to_broker("openWB/set/counter/" + str(self.num) + "/get/power_factors", counter_state.power_factors, 2)
-            pub_to_broker("openWB/set/counter/" + str(self.num) + "/get/imported", counter_state.imported)
-            pub_to_broker("openWB/set/counter/" + str(self.num) + "/get/exported", counter_state.exported)
-            pub_to_broker("openWB/set/counter/" + str(self.num) + "/get/power", counter_state.power)
-            pub_to_broker("openWB/set/counter/" + str(self.num) + "/get/frequency", counter_state.frequency)
-        except Exception as e:
-            process_error(e)
+        self.state = counter_state
+
+    def update(self):
+        pub_to_broker("openWB/set/counter/" + str(self.num) + "/get/voltages", self.state.voltages, 2)
+        if self.state.currents:
+            pub_to_broker("openWB/set/counter/" + str(self.num) + "/get/currents", self.state.currents, 2)
+        pub_to_broker("openWB/set/counter/" + str(self.num) + "/get/powers", self.state.powers, 2)
+        pub_to_broker("openWB/set/counter/" + str(self.num) + "/get/power_factors", self.state.power_factors, 2)
+        pub_to_broker("openWB/set/counter/" + str(self.num) + "/get/imported", self.state.imported)
+        pub_to_broker("openWB/set/counter/" + str(self.num) + "/get/exported", self.state.exported)
+        pub_to_broker("openWB/set/counter/" + str(self.num) + "/get/power", self.state.power)
+        pub_to_broker("openWB/set/counter/" + str(self.num) + "/get/frequency", self.state.frequency)
 
 
-def get_counter_value_store(component_num: int) -> ValueStore[CounterState]:
-    return LoggingValueStore(
-        CounterValueStoreRamdisk() if compatibility.is_ramdisk_in_use() else CounterValueStoreBroker(component_num)
-    )
+class PurgeCounterState:
+    # Gedrehter Anschluss der Ladepunkte:
+    # Phase 1 LP -> LP 0 = EVU 0, LP 1 = EVU 1, LP 2 = EVU 2
+    # Phase 1 LP -> LP 0 = EVU 2, LP 1 = EVU 0, LP 2 = EVU 1
+    # Phase 3 LP -> LP 0 = EVU 1, LP 1 = EVU 2, LP 2 = EVU 0
+    cp_to_evu_phase_mapping = {"1": [0, 1, 2], "2": [2, 0, 1], "3": [1, 2, 0]}
+
+    def __init__(self, delegate: LoggingValueStore, add_child_values: bool = False) -> None:
+        self.delegate = delegate
+        self.add_child_values = add_child_values
+
+    def set(self, state: CounterState) -> None:
+        self.delegate.set(state)
+
+    def update(self) -> None:
+        state = self.calc_virtual(self.delegate.delegate.state)
+        self.delegate.delegate.set(state)  # Logging in update methode
+        self.delegate.update()
+
+    def calc_virtual(self, state: CounterState) -> CounterState:
+        if self.add_child_values:
+            self.currents = state.currents if state.currents else [0.0]*3
+            self.incomplete_currents = False
+
+            def add_current_power(element):
+                if element.data["get"].get("currents"):
+                    self.currents = list(map(add, self.currents, element.data["get"]["currents"]))
+                else:
+                    self.currents = [0, 0, 0]
+                    self.incomplete_currents = True
+                state.power += element.data["get"]["power"]
+                state.imported += element.data["get"]["imported"]
+                state.exported += element.data["get"]["exported"]
+
+            counter_all = data.data.counter_data["all"]
+            elements = counter_all.get_entry_of_element(self.delegate.delegate.num)["children"]
+            for element in elements:
+                if element["type"] == ComponentType.CHARGEPOINT.value:
+                    chargepoint = data.data.cp_data[f"cp{element['id']}"]
+                    try:
+                        evu_phases = self.cp_to_evu_phase_mapping[str(chargepoint.data.config.phase_1)]
+                    except KeyError:
+                        raise FaultState.error(f"Für den virtuellen Zähler muss der Anschluss der Phasen von Ladepunkt"
+                                               f" {chargepoint.num} an die Phasen der EVU angegeben werden.")
+                    self.currents = [self.currents[i] + chargepoint.data.get.currents[evu_phases[i]]
+                                     for i in range(0, 3)]
+
+                    state.power += chargepoint.data.get.power
+                    state.imported += chargepoint.data.get.imported
+                elif element["type"] == ComponentType.BAT.value:
+                    add_current_power(data.data.bat_data[f"bat{element['id']}"])
+                elif element["type"] == ComponentType.COUNTER.value:
+                    add_current_power(data.data.counter_data[f"counter{element['id']}"])
+                elif element["type"] == ComponentType.INVERTER.value:
+                    add_current_power(data.data.pv_data[f"pv{element['id']}"])
+
+            if self.incomplete_currents is False:
+                state.currents = self.currents
+                state.powers = [state.currents[i]*230 for i in range(0, 3)]
+            else:
+                state.currents = None
+                state.powers = None
+        return state
+
+
+def get_counter_value_store(component_num: int, add_child_values: bool = False) -> PurgeCounterState:
+    if compatibility.is_ramdisk_in_use():
+        delegate = CounterValueStoreRamdisk()
+    else:
+        delegate = CounterValueStoreBroker(component_num)
+    return PurgeCounterState(LoggingValueStore(delegate), add_child_values)

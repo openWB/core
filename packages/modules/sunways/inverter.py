@@ -26,7 +26,7 @@ class SunwaysInverter:
         self.component_config = dataclass_from_dict(SunwaysInverterSetup, component_config)
         self.ip_address = ip_address
         self.password = password
-        self.__store = get_inverter_value_store(self.component_config.id)
+        self.store = get_inverter_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
 
     def update(self) -> None:
@@ -43,7 +43,7 @@ class SunwaysInverter:
             power=float(values[1].split(' ')[0])*-1,
             exported=float(values[16])*1000
         )
-        self.__store.set(inverter_state)
+        self.store.set(inverter_state)
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=SunwaysInverterSetup)

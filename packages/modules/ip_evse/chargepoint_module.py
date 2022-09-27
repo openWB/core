@@ -30,7 +30,7 @@ class ChargepointModule(AbstractChargepoint):
         self.power_module = power_module
         ip_address = self.connection_module["configuration"]["ip_address"]
         self.__client = modbus.ModbusClient(ip_address, 8899)
-        self.__store = get_chargepoint_value_store(self.id)
+        self.store = get_chargepoint_value_store(self.id)
         self.component_info = ComponentInfo(
             self.id,
             "Ladepunkt", "chargepoint")
@@ -54,7 +54,7 @@ class ChargepointModule(AbstractChargepoint):
             chargepoint_state = ChargepointState(
                 plug_state=plug_state,
                 charge_state=charge_state)
-            self.__store.set(chargepoint_state)
+            self.store.set(chargepoint_state)
 
     def set_current(self, current: float) -> None:
         with SingleComponentUpdateContext(self.component_info):
