@@ -5,8 +5,12 @@ sleep 60
 debugFile=${OPENWBBASEDIR}/ramdisk/debug.log
 touch "$debugFile"
 {
-	echo "$1" > "$debugFile"
-	debugemail=$2
+	echo "$1" | jq -r .message
+	debugEmail=$(echo "$1" | jq -r .email)
+	echo "$debugEmail"
+	echo "$1" | jq -r .serialNumber
+	echo "$1" | jq -r .installedComponents
+	echo "$1" | jq -r .vehicles
 	echo "############################ system ###############"
 	uptime
 	free
@@ -34,12 +38,12 @@ touch "$debugFile"
 
 	# echo "############################ smarthome.log ##############"
 	# tail -200 "${OPENWBBASEDIR}/ramdisk/smarthome.log"
-} >> "$debugFile"
+} >>"$debugFile"
 
-echo "***** uploading debuglog..." >> "$RAMDISKDIR/main.log"
-curl --upload "$debugFile" "https://openwb.de/tools/debug2.php?debugemail=$debugemail"
+echo "***** uploading debuglog..." >>"$RAMDISKDIR/main.log"
+curl --upload "$debugFile" "https://openwb.de/tools/debug2.php?debugemail=$debugEmail"
 
-echo "***** cleanup..." >> "$RAMDISKDIR/main.log"
+echo "***** cleanup..." >>"$RAMDISKDIR/main.log"
 rm "$debugFile"
 
-echo "***** debuglog end" >> "$RAMDISKDIR/main.log"
+echo "***** debuglog end" >>"$RAMDISKDIR/main.log"
