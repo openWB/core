@@ -923,6 +923,8 @@ class SetData:
                 self._validate_value(msg, "json")
             elif "error" in msg.topic:
                 self._validate_value(msg, "json")
+            elif "messages" in msg.topic:
+                self._validate_value(msg, "json")
             else:
                 self.__unknown_topic(msg)
         except Exception:

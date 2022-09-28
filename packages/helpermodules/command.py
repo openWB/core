@@ -8,7 +8,7 @@ import re
 import traceback
 from pathlib import Path
 
-from helpermodules import backup, measurement_log
+from helpermodules import measurement_log
 from helpermodules.broker import InternalBrokerClient
 from helpermodules.pub import Pub
 from control import bridge, chargelog, chargepoint, data, ev, counter, pv
@@ -518,7 +518,18 @@ class Command:
 
     def createBackup(self, connection_id: str, payload: dict) -> None:
         log.info("Backup creation requested")
-        backup.Backup()
+        log.info(str(payload))
+        parent_file = Path(__file__).resolve().parents[2]
+        result = subprocess.run(
+            [str(parent_file / "runs" / "backup.sh"),
+             "1" if "use_extended_filename" in payload["data"] and payload["data"]["use_extended_filename"] else "0"],
+            stdout=subprocess.PIPE)
+        if result.returncode == 0:
+            pub_success(payload, connection_id,
+                        "Backupdatei '" + result.stdout.decode("utf-8").rstrip('\n') + "' erfolgreich erstellt.")
+        else:
+            pub_error(payload, connection_id,
+                      "Backup-Status: " + str(result.returncode) + " Meldung: " + result.stdout.decode("utf-8"))
 
 
 class ErrorHandlingContext:
@@ -536,6 +547,19 @@ class ErrorHandlingContext:
             return True
         else:
             return False
+
+
+def pub_success(payload: dict, connection_id: str, message: str) -> None:
+    try:
+        log.info("pub_success: " + message)
+        success_payload = {
+            "source": payload["command"],
+            "type": "success",
+            "message": message
+        }
+        Pub().pub("openWB/set/command/" + str(connection_id) + "/messages", success_payload, retained=False)
+    except Exception:
+        log.exception("Fehler im Command-Modul")
 
 
 def pub_error(payload: dict, connection_id: str, error_str: str) -> None:
