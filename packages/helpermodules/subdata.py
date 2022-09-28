@@ -664,8 +664,7 @@ class SubData:
                         "."+device_config["type"]+".device", "modules")
                     var["device"+index] = dev.Device(device_config)
                     # Durch das erneute Subscribe werden die Komponenten mit dem aktualisierten TCP-Client angelegt.
-                    client.subscribe("openWB/system/device/" +
-                                     index+"/component/#", 2)
+                    client.subscribe(f"openWB/system/device/{index}/component/+/config", 2)
             elif re.search("^.+/device/[0-9]+/get$", msg.topic) is not None:
                 index = get_index(msg.topic)
                 if "get" not in var["device"+index].data:
@@ -703,6 +702,7 @@ class SubData:
                         json.loads(str(msg.payload.decode("utf-8"))))
                     if sim_data:
                         var["device"+index].components["component" + index_second].simulation = sim_data
+                    client.subscribe(f"openWB/system/device/{index}/component/{index_second}/simulation/#", 2)
             elif "mqtt" and "bridge" in msg.topic:
                 index = get_index(msg.topic)
                 parent_file = Path(__file__).resolve().parents[2]
