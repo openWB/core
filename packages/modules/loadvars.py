@@ -8,6 +8,7 @@ from modules.common.abstract_device import AbstractDevice
 from modules.common.component_type import ComponentType, type_to_topic_mapping
 from modules.common.store import update_values
 from helpermodules import pub
+from helpermodules.utils import thread_handler
 
 log = logging.getLogger(__name__)
 
@@ -26,7 +27,7 @@ class Loadvars:
                     self._update_values_of_level(level)
                 data.data.copy_module_data()
             with ModuleUpdateCompletedContext(self.event_module_update_completed):
-                self._thread_handler(self._get_general())
+                thread_handler(self._get_general())
             data.data.pv_data["all"].calc_power_for_all_components()
             data.data.bat_data["all"].calc_power_for_all_components()
         except Exception:
@@ -46,7 +47,7 @@ class Loadvars:
                 modules_threads.append(threading.Thread(target=cp.chargepoint_module.get_values, args=()))
             except Exception:
                 log.exception(f"Fehler im loadvars-Modul bei Element {cp.num}")
-        self._thread_handler(modules_threads)
+        thread_handler(modules_threads)
 
     def _update_values_of_level(self, elements) -> None:
         """Threads, um von der niedrigsten Ebene der Hierarchie Werte ggf. miteinander zu verrechnen und zu publishen"""
@@ -64,7 +65,7 @@ class Loadvars:
                     modules_threads.append(threading.Thread(target=update_values, args=(component,)))
             except Exception:
                 log.exception(f"Fehler im loadvars-Modul bei Element {element}")
-        self._thread_handler(modules_threads)
+        thread_handler(modules_threads)
 
     def __get_component_obj_by_id(self, id: int):
         for item in data.data.system_data.values():
@@ -75,20 +76,6 @@ class Loadvars:
         else:
             log.error(f"Element {id} konnte keinem Gerät zugeordnet werden.")
             return None
-
-    def _thread_handler(self, threads: List[threading.Thread]) -> None:
-        # Start them all
-        for thread in threads:
-            thread.start()
-
-        # Wait for all to complete
-        for thread in threads:
-            thread.join(timeout=data.data.general_data.data.control_interval/3)
-
-        for thread in threads:
-            if thread.is_alive():
-                log.error(f"{thread.name} konnte nicht innerhalb des Timeouts die Werte abfragen, die abgefragten "
-                          "Werte werden nicht in der Regelung verwendet.")
 
     def _get_general(self) -> List[threading.Thread]:
         threads = []  # type: List[threading.Thread]

@@ -1,5 +1,5 @@
 import logging
-from typing import List
+from typing import List, Tuple
 import copy
 import threading
 import time
@@ -7,6 +7,8 @@ import time
 from control import data
 from control.chargepoint import AllChargepoints
 from helpermodules.pub import Pub
+from helpermodules.utils import thread_handler
+
 log = logging.getLogger("soc."+__name__)
 
 
@@ -21,27 +23,16 @@ class UpdateSoc:
             self.heartbeat = True
             time.sleep(max(0, next_time - time.time()))
             try:
-                threads = self.__get_threads()
-                # Start them all
-                if threads:
-                    for thread in threads:
-                        thread.start()
-
-                    # Wait for all to complete
-                    for thread in threads:
-                        thread.join(timeout=10)
-
-                    for thread in threads:
-                        if thread.is_alive():
-                            log.error("thread.name konnte nicht innerhalb des Timeouts die Werte abfragen, die "
-                                      "abgefragten Werte werden nicht in der Regelung verwendet.")
+                threads_set, threads_update = self.__get_threads()
+                thread_handler(threads_set)
+                thread_handler(threads_update)
             except Exception:
                 log.exception("Fehler im Main-Modul")
             # skip tasks if we are behind schedule:
             next_time += (time.time() - next_time) // delay * delay + delay
 
-    def __get_threads(self) -> List[threading.Thread]:
-        threads = []
+    def __get_threads(self) -> Tuple[List[threading.Thread], List[threading.Thread]]:
+        threads_set, threads_update = [], []
         cp_data = copy.deepcopy(data.data.cp_data)
         ev_data = copy.deepcopy(data.data.ev_data)
         # Alle Autos durchgehen
@@ -62,8 +53,10 @@ class UpdateSoc:
                         if ev.data.get.force_soc_update:
                             ev.data.get.force_soc_update = False
                             Pub().pub(f"openWB/set/vehicle/{ev.num}/get/force_soc_update", False)
-                        threads.append(threading.Thread(target=ev.soc_module.update,
-                                                        args=(charge_state,), name=f"soc_ev{ev.num}"))
+                        threads_set.append(threading.Thread(target=ev.soc_module.update,
+                                                            args=(charge_state,), name=f"soc_ev{ev.num}"))
+                        threads_update.append(threading.Thread(target=ev.soc_module.store.update,
+                                                               args=(), name=f"soc_ev{ev.num}"))
             except Exception:
                 log.exception("Fehler im Main-Modul")
-        return threads
+        return threads_set, threads_update
