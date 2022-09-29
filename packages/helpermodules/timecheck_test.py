@@ -1,7 +1,11 @@
-from typing import Optional, Union
+import datetime
+from typing import List, Optional, Union
+from unittest.mock import Mock
 import pytest
 
+from control.ev import ChargeTemplate
 from helpermodules import timecheck
+from helpermodules.abstract_plans import Frequency, ScheduledChargingPlan
 
 
 class Params:
@@ -59,3 +63,79 @@ def test_duration_sum(params: Params):
 
     # evaluation
     assert params.expected_return == diff
+
+
+@pytest.mark.parametrize("begin_hour, begin_min, end_hour, end_min,expected",
+                         [pytest.param(0, 0, 5, 5, 9300, id="too early"),
+                          pytest.param(8, 18, 10, 35, -780, id="start"),
+                          pytest.param(18, 8, 17, 24, -11640, id="missed date")
+                          ])
+def test_get_remaining_time(begin_hour: int, begin_min: int, end_hour: int, end_min: int, expected: int):
+    # setup
+    end = datetime.datetime(2022, 9, 26, end_hour, end_min)
+    begin = datetime.datetime(2022, 9, 26, begin_hour, begin_min)
+
+    # execution
+    diff = timecheck._get_remaining_time(begin, 2.5, end)
+
+    # evaluation
+    assert expected == diff
+
+
+@pytest.mark.parametrize("time, selected, date, expected",
+                         [pytest.param("9:00", "once", ["2022-05-16", ], (-7852.0, False), id="once"),
+                          pytest.param("8:00", "once", ["2022-05-16", ], (-11452.0, True), id="once missed date"),
+                          pytest.param("12:00", "daily", [], (2948.0, False), id="daily today"),
+                          pytest.param("2:00", "daily", [], (53348.0, False), id="daily  missed today, use next day"),
+                          pytest.param("8:05", "weekly", [True, False, False, False,
+                                       False, False, False], (593648.0, False), id="weekly missed today"),
+                          pytest.param("2:00", "weekly", [False, False, True, False, False, False, False],
+                          (139748.0, False),
+                             id="weekly missed today's date, no date on next day"),
+                          pytest.param("2:00", "weekly", [True, True, False, False, False, False, False],
+                          (53348.0, False),
+                             id="weekly missed today's date, date on next day"),
+                          ]
+                         )
+def test_check_duration(time: str, selected: str, date: List, expected: float):
+    # setup
+    plan = Mock(spec=ScheduledChargingPlan, time=time, frequency=Mock(spec=Frequency, selected=selected,))
+    if date:
+        setattr(plan.frequency, selected, date)
+
+    # execution
+    remaining_time, missed_date_today = timecheck.check_duration(plan, 2.5, ChargeTemplate.BUFFER)
+
+    # evaluation
+    assert (remaining_time, missed_date_today) == expected
+
+
+@pytest.mark.parametrize("weekday, weekly, expected_days",
+                         [pytest.param(0, [True, True, False, False, False, False, False], 1),
+                          pytest.param(0, [True, False, False, False, False, False, False], 7),
+                          pytest.param(3, [True, False, False, False, False, False, False], 4),
+                          ]
+                         )
+def test_get_next_charging_day(weekday: int, weekly: List[bool], expected_days: int):
+    # setup and execution
+    days = timecheck._get_next_charging_day(weekly, weekday)
+
+    # evaluation
+    assert days == expected_days
+
+
+@pytest.mark.parametrize("now, end, expected_missed",
+                         [pytest.param(datetime.datetime(2022, 9, 29, 8, 40),
+                                       datetime.datetime(2022, 9, 29, 9, 5), False),
+                          pytest.param(datetime.datetime(2022, 9, 29, 8, 40),
+                                       datetime.datetime(2022, 9, 29, 8, 39), False),
+                          pytest.param(datetime.datetime(2022, 9, 29, 8, 40),
+                                       datetime.datetime(2022, 9, 29, 8, 19), True)
+                          ]
+                         )
+def test_missed_date_today(now: datetime.datetime, end: datetime.datetime, expected_missed: bool):
+    # setup and execution
+    missed = timecheck._missed_date_today(now, end, -1200)
+
+    # evaluation
+    assert missed == expected_missed
