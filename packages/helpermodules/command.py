@@ -553,11 +553,13 @@ def pub_success(payload: dict, connection_id: str, message: str) -> None:
     try:
         log.info("pub_success: " + message)
         success_payload = {
-            "source": payload["command"],
+            "source": "command",
             "type": "success",
-            "message": message
+            "message": message,
+            "timestamp": int(time.time())
         }
-        Pub().pub("openWB/set/command/" + str(connection_id) + "/messages", success_payload, retained=False)
+        Pub().pub("openWB/set/command/" + str(connection_id) + "/messages/" + str(int(time.time() * 1000)),
+                  success_payload)
     except Exception:
         log.exception("Fehler im Command-Modul")
 
