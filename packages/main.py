@@ -23,7 +23,7 @@ from control import data
 from control import process
 from control import algorithm
 from helpermodules.system import exit_after
-from control import update_soc
+from modules import update_soc
 
 logger.setup_logging()
 log = logging.getLogger()
