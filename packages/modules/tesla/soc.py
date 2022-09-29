@@ -22,7 +22,7 @@ class Soc(AbstractSoc):
     def __init__(self, soc_config: Union[Dict, TeslaSoc], vehicle: int):
         self.soc_config = dataclass_from_dict(TeslaSoc, soc_config)
         self.vehicle = vehicle
-        self.value_store = store.get_car_value_store(self.vehicle)
+        self.store = store.get_car_value_store(self.vehicle)
         self.component_info = ComponentInfo(self.vehicle, "Tesla", "vehicle")
 
     def update(self, charge_state: bool = False) -> None:
@@ -32,7 +32,7 @@ class Soc(AbstractSoc):
                 self.__wake_up_car()
             soc, range = api.request_soc_range(
                 vehicle=self.soc_config.configuration.tesla_ev_num, token=self.soc_config.configuration.token)
-            self.value_store.set(CarState(soc, range))
+            self.store.set(CarState(soc, range))
 
     def __wake_up_car(self):
         log.debug("Tesla"+str(self.vehicle)+": Waking up car.")
