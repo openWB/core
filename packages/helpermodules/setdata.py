@@ -468,23 +468,13 @@ class SetData:
                 self._validate_value(msg, bool)
             elif "/set/autolock_state" in msg.topic:
                 self._validate_value(msg, int, [(0, 4)])
-            elif "/set/rfid" in msg.topic:
-                self._validate_value(msg, str)
-            elif ("/set/log/time_charged" in msg.topic or
-                    "/set/log/chargemode_log_entry" in msg.topic or
+            elif ("/set/rfid" in msg.topic or
                     "/set/plug_time" in msg.topic):
                 self._validate_value(msg, str)
+            elif "/set/log" in msg.topic:
+                self._validate_value(msg, "json")
             elif "/set/change_ev_permitted" in msg.topic:
                 self._validate_value(msg, "json")
-            elif ("/set/log/range_charged" in msg.topic or
-                    "/set/log/imported" in msg.topic or
-                    "/set/log/imported_since_mode_switch" in msg.topic or
-                    "/set/log/imported_since_plugged" in msg.topic or
-                    "/set/log/imported_at_mode_switch" in msg.topic or
-                    "/set/log/imported_at_plugtime" in msg.topic):
-                self._validate_value(msg, float, [(0, float("inf"))])
-            elif "/set/log/timestamp_start_charging" in msg.topic:
-                self._validate_value(msg, str)
             elif "/config/ev" in msg.topic:
                 self._validate_value(
                     msg, int, [(0, float("inf"))], pub_json=True)

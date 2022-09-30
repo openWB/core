@@ -347,8 +347,9 @@ class SubData:
                             self.ev_charge_template_data,
                             self.ev_template_data)
                     if re.search("^.+/chargepoint/[0-9]+/set/.+$", msg.topic) is not None:
-                        if re.search("^.+/chargepoint/[0-9]+/set/log/.+$", msg.topic) is not None:
-                            self.set_json_payload_class(var["cp"+index].chargepoint.data.set.log, msg)
+                        if re.search("^.+/chargepoint/[0-9]+/set/log$", msg.topic) is not None:
+                            var["cp"+index].chargepoint.data.set.log = dataclass_from_dict(
+                                chargepoint.Log, json.loads(str(msg.payload.decode("utf-8"))))
                         else:
                             self.set_json_payload_class(var["cp"+index].chargepoint.data.set, msg)
                     elif re.search("^.+/chargepoint/[0-9]+/get/.+$", msg.topic) is not None:
