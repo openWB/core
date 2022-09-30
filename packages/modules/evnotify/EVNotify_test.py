@@ -2,36 +2,10 @@ from unittest.mock import Mock
 
 import pytest
 
-from dataclass_utils import dataclass_from_dict
 from modules.common import store
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.evnotify import api
-from modules.evnotify.EVNotify import EVNotify, EVNotifyConfiguration
-
-
-def create_evnotify_configuration_dict() -> dict:
-    return {"akey": "someKey", "token": "someToken", "id": 42}
-
-
-class TestEVNotifyConfiguration:
-    def test_from_dict_initializes_correctly(self):
-        # execution
-        actual = dataclass_from_dict(EVNotifyConfiguration, {"akey": "someKey", "token": "someToken", "id": 42})
-
-        # evaluation
-        assert actual.id == 42
-        assert actual.akey == "someKey"
-        assert actual.token == "someToken"
-
-    @pytest.mark.parametrize("property", ["id", "akey", "token"])
-    def test_from_dict_throws_if_missing_property(self, property: str):
-        # setup
-        dict = create_evnotify_configuration_dict()
-        del dict[property]
-
-        # execution & evaluation
-        with pytest.raises(Exception, match="^Cannot determine value for parameter " + property):
-            dataclass_from_dict(EVNotifyConfiguration, dict)
+from modules.evnotify.soc import EVNotify, EVNotifyConfiguration, Soc
 
 
 class TestEVNotify:
@@ -46,7 +20,7 @@ class TestEVNotify:
 
     def test_update_updates_value_store(self, monkeypatch):
         # execution
-        EVNotify(EVNotifyConfiguration(1, "someKey", "someToken")).update()
+        Soc(EVNotify(configuration=EVNotifyConfiguration(1, "someKey", "someToken")), 0).update()
 
         # evaluation
         self.assert_context_manager_called_with(None)
@@ -60,7 +34,7 @@ class TestEVNotify:
         self.mock_fetch_soc.side_effect = dummy_error
 
         # execution
-        EVNotify(EVNotifyConfiguration(1, "someKey", "someToken")).update()
+        Soc(EVNotify(configuration=EVNotifyConfiguration(1, "someKey", "someToken")), 0).update()
 
         # evaluation
         self.assert_context_manager_called_with(dummy_error)
