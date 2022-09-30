@@ -218,96 +218,80 @@ def _calc_begin(end: datetime.datetime, hours: int) -> datetime.datetime:
     return end - prev
 
 
-def check_duration(plan: ScheduledChargingPlan, duration: float) -> Tuple[int, float]:
+def check_duration(plan: ScheduledChargingPlan, duration: float, buffer: int) -> Tuple[Optional[float], bool]:
     """ prüft, ob der in angegebene Zeitpunkt abzüglich der Dauer jetzt ist.
     Um etwas Puffer zu haben, werden bei Überschreiten des Zeitpunkts die nachfolgenden 20 Min auch noch als Ladezeit
     zurückgegeben.
 
     Return
     ------
-    2, int: Zeitpunkt ist um mehr als 5 Min überschritten worden, verbleibende Zeit in h
-    1, 0: Ladung sollte starten
-    0, 0: hat noch Zeit
+    neg: Zeitpunkt vorbei
+    pos: verbleibende Sekunden
     """
+
     now = datetime.datetime.today()
     end = datetime.datetime.strptime(plan.time, '%H:%M')
-
+    remaining_time = None
     if plan.frequency.selected == "once":
-        endDate = datetime.datetime.strptime(plan.frequency.once, "%Y-%m-%d")
+        endDate = datetime.datetime.strptime(plan.frequency.once[0], "%Y-%m-%d")
         end = end.replace(endDate.year, endDate.month, endDate.day)
-        state, remaining_time = _is_duration_valid(now, duration, end)
-        if -0.33 <= remaining_time < 0:
-            remaining_time = remaining_time * -1
-        elif remaining_time < -0.33:
-            state = 0
-            remaining_time = 0
-        return state, remaining_time
-
+        remaining_time = _get_remaining_time(now, duration, end)
     elif plan.frequency.selected == "daily":
         end = end.replace(now.year, now.month, now.day)
-        # Wenn der Zeitpunkt an diesem Tag schon vorüber ist (verbleibende Zeit ist negativ), nächsten Tag prüfen.
-        state, remaining_time = _is_duration_valid(now, duration, end)
-        # Bis zwanzig Minuten nach Überschreiten des Zeitpunkts darf noch geladen werden.
-        if -0.33 <= remaining_time < 0:
-            remaining_time = remaining_time * -1
-        elif remaining_time < -0.33:
-            delta = datetime.timedelta(days=1)
-            end += delta
-            state, remaining_time = _is_duration_valid(now, duration, end)
-        return state, remaining_time
+        remaining_time_today = _get_remaining_time(now, duration, end)
+        remaining_time, end = check_following_days(now, duration, end, remaining_time_today, buffer)
     elif plan.frequency.selected == "weekly":
+        end = end.replace(now.year, now.month, now.day)
         if plan.frequency.weekly[now.weekday()]:
-            end = end.replace(now.year, now.month, now.day)
-            state, remaining_time = _is_duration_valid(now, duration, end)
-            # Zeitpunkt ist an diesem Tag noch nicht vorbei
-            if state == 1:
-                return state, remaining_time
-            elif -0.33 <= remaining_time < 0:
-                remaining_time = remaining_time * -1
-            else:
-                # Wenn der Zeitpunkt an diesem Tag schon vorüber ist (verbleibende Zeit ist negativ), nächsten Tag
-                # prüfen.
-                delta = datetime.timedelta(days=1)
-                end += delta
-                state, remaining_time = _is_duration_valid(
-                    now, duration, end)
-            return state, remaining_time
+            remaining_time = _get_remaining_time(now, duration, end)
         # prüfen, ob für den nächsten Tag ein Termin ansteht und heute schon begonnen werden muss
-        if plan.frequency.weekly[now.weekday() + 1]:
-            end = end.replace(now.year, now.month, now.day)
-            delta = datetime.timedelta(days=1)
-            end += delta
-            return _is_duration_valid(now, duration, end)
-        else:
-            return 0, 0
+        if all(day == 0 for day in plan.frequency.weekly):
+            raise ValueError("Es muss mindestens ein Tag ausgewählt werden.")
+        num_of_following_days = _get_next_charging_day(plan.frequency.weekly, now.weekday())
+        remaining_time, end = check_following_days(now, duration, end, remaining_time, buffer, num_of_following_days)
     else:
         raise TypeError(f'Unbekannte Häufigkeit {plan.frequency.selected}')
+    return remaining_time, _missed_date_today(now, end, buffer)
 
 
-def _is_duration_valid(now: datetime.datetime, duration: float, end: datetime.datetime):
-    """ prüft, ob der Endzeitpunkt der Ladung abzüglich der Ladedauer in den nächsten 5 Min liegt oder schon vorüber
-    ist.
-
-    Return
-    ------
-    2, int: Zeitpunkt ist um mehr als 5 Min überschritten worden, verbleibende Zeit in h
-    1, 0: Ladung sollte starten
-    0, 0: hat noch Zeit
-    """
+def _get_next_charging_day(weekly_temp: List[bool], weekday: int) -> int:
+    weekly_temp[weekday] = False
     try:
-        delta = datetime.timedelta(hours=int(duration), minutes=((duration % 1) * 60))
-        begin = end - delta
-        difference = (now - begin).total_seconds()
-        if difference > 0:
-            remaining_time = duration - (difference / 3600)
-            return 2, remaining_time
-        elif difference > (-300):
-            return 1, 0
-        else:
-            return 0, 0
-    except Exception:
-        log.exception("Fehler im System-Modul")
-        return 1, 0
+        return (weekly_temp[weekday:] + weekly_temp[:weekday]).index(True)
+    except ValueError:
+        # Es wird nur am Wochentag von weekday geladen.
+        return 7
+
+
+def _missed_date_today(now: datetime.datetime,
+                       end: datetime.datetime,
+                       buffer: float):
+    return end < now + datetime.timedelta(seconds=buffer)
+
+
+def check_following_days(now: datetime.datetime,
+                         duration: float,
+                         end: datetime.datetime,
+                         remaining_time_today: Optional[float],
+                         buffer: float,
+                         num_of_following_days: int = 1) -> Tuple[Optional[float], datetime.datetime]:
+    # Zeitpunkt heute darf noch nicht verstrichen sein
+    if remaining_time_today and not _missed_date_today(now, end, buffer):
+        return remaining_time_today, end
+    end = end+datetime.timedelta(days=num_of_following_days)
+    remaining_time = _get_remaining_time(now, duration, end)
+    return remaining_time, end
+
+
+def _get_remaining_time(now: datetime.datetime, duration: float, end: datetime.datetime) -> float:
+    """ Return
+    ------
+    neg: Zeitpunkt vorbei
+    pos: verbleibende Sekunden
+    """
+    delta = datetime.timedelta(hours=int(duration), minutes=((duration % 1) * 60))
+    start_time = end-delta
+    return (start_time-now).total_seconds()
 
 
 def is_list_valid(hour_list: List[int]) -> bool:

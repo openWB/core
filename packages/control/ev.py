@@ -300,7 +300,7 @@ class Ev:
                 used_amount = charged_since_mode_switch - self.data.control_parameter.imported_at_plan_start
                 plan_data = self.charge_template.scheduled_charging_recent_plan(
                     self.data.get.soc, self.ev_template, self.data.control_parameter.phases, used_amount)
-                if plan_data["num"]:
+                if plan_data:
                     name = self.charge_template.data.chargemode.scheduled_charging.plans[plan_data["num"]].name
                     # Wenn mit einem neuen Plan geladen wird, muss auch die Energiemenge von neuem gezählt werden.
                     if (self.charge_template.data.chargemode.scheduled_charging.plans[plan_data["num"]].limit.
@@ -600,6 +600,7 @@ class Ev:
 class ChargeTemplate:
     """ Klasse der Lademodus-Vorlage
     """
+    BUFFER = -1200  # nach mehr als 20 Min Überschreitung wird der Termin als verpasst angesehen
 
     def __init__(self, index):
         self.data: ChargeTemplateData = ChargeTemplateData()
@@ -698,10 +699,9 @@ class ChargeTemplate:
         Ladestrom ein. Um etwas mehr Puffer zu haben, wird bis 20 Min nach dem Zieltermin noch geladen, wenn dieser
         nicht eingehalten werden konnte.
         """
-        smallest_remaining_time = 0
-        plan_data = {"start": -1, "num": None}
+        smallest_remaining_time = float("inf")
+        plan_data = {}
         battery_capacity = ev_template.data.battery_capacity
-        start = -1  # Es wurde noch kein Plan geprüft.
         for num, plan in self.data.chargemode.scheduled_charging.plans.items():
             if plan.active:
                 try:
@@ -715,17 +715,18 @@ class ChargeTemplate:
                     else:
                         missing_amount = plan.limit.amount - used_amount
                     duration = missing_amount/(available_current*230)
-                    start, remaining_time = timecheck.check_duration(plan, duration)
-                    # Erster Plan
-                    if ((start == plan_data["start"] and remaining_time <= smallest_remaining_time) or
-                            start > plan_data["start"]):
-                        smallest_remaining_time = remaining_time
-                        plan_data["remaining_time"] = remaining_time
-                        plan_data["available_current"] = available_current
-                        plan_data["start"] = start
-                        plan_data["required_wh"] = missing_amount
-                        plan_data["max_current"] = max_current
-                        plan_data["num"] = num
+                    remaining_time, missed_date_today = timecheck.check_duration(plan, duration, self.BUFFER)
+                    if remaining_time:
+                        if (remaining_time < 0 and missed_date_today is False) or remaining_time > 0:
+                            if remaining_time < smallest_remaining_time:
+                                smallest_remaining_time = remaining_time
+                                plan_data["remaining_time"] = remaining_time
+                                plan_data["available_current"] = available_current
+                                plan_data["required_wh"] = missing_amount
+                                plan_data["max_current"] = max_current
+                                plan_data["num"] = num
+                    log.debug(f"Plan-Nr. {num}: Differenz zum Start {remaining_time}s, Dauer {duration}h, "
+                              f"Termin heute verpasst: {missed_date_today}")
                 except Exception:
                     log.exception("Fehler im ev-Modul "+str(self.ct_num))
         return plan_data
@@ -743,24 +744,22 @@ class ChargeTemplate:
             message = "Keine Ladung, da die Energiemenge bereits erreicht wurde."
             return 0, "stop", message
 
-        if plan_data["start"] == 1:  # Ladung sollte jetzt starten
-            message = f'Zielladen mit {plan_data["available_current"]}A, um einen SoC von {current_plan.limit.soc}%% '
-            f'um {current_plan.time} zu erreichen.'
+        if 0 < plan_data["remaining_time"] < 300:  # 5 Min vor spätestem Ladestart
+            if current_plan.limit.selected == "soc":
+                limit_string = f'einen SoC von {current_plan.limit.soc}%'
+            else:
+                limit_string = f'{current_plan.limit.amount/1000}kWh geladene Energie'
+            message = (f'Zielladen mit {plan_data["available_current"]}A, um {limit_string} '
+                       f' um {current_plan.time} zu erreichen.')
             return plan_data["available_current"], "instant_charging", message
         # weniger als die berechnete Zeit verfügbar
-        elif plan_data["start"] == 2:
-            required_current = plan_data["required_wh"] / \
-                (plan_data["remaining_time"]*230)
-            if required_current >= plan_data["max_current"]:
-                current = plan_data["max_current"]
-            else:
-                current = required_current
-            message = (f"Zielladen mit {current}A. Der verfügbare Ladezeitraum reicht nicht aus, um das zu erreichen."
-                       "Daher wird bis max. 20 Minuten nach dem angegebenen Zieltermin geladen.")
-            return current, "instant_charging", message
+        elif plan_data["remaining_time"] <= 0:  # Ladestart wurde um maximal 20 Min verpasst.
+            message = (f'Zielladen mit {plan_data["max_current"]}A. Der verfügbare Ladezeitraum reicht nicht aus, um '
+                       'das zu erreichen. Daher wird bis max. 20 Minuten nach dem angegebenen Zieltermin geladen.')
+            return plan_data["max_current"], "instant_charging", message
         else:
             # Liegt der Zieltermin innerhalb der nächsten 24h?
-            if timecheck.check_timeframe(current_plan, 24):
+            if 300 < plan_data["remaining_time"] < 86400:
                 # Wenn Elektronische Tarife aktiv sind, prüfen, ob jetzt ein günstiger Zeitpunkt zum Laden
                 # ist.
                 if data.data.optional_data["optional"].data["et"]["active"]:
