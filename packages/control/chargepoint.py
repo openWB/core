@@ -915,7 +915,7 @@ class Chargepoint:
     def _set_charging_ev_and_charging_ev_prev(self, charging_ev: int, charging_ev_prev: int) -> None:
         self.data.set.charging_ev = charging_ev
         Pub().pub(
-            "openWB/set/chargepoint/"+str(self.num)+"/set/charging_ev", charging_ev_prev)
+            "openWB/set/chargepoint/"+str(self.num)+"/set/charging_ev", charging_ev)
         self.data.set.charging_ev_prev = charging_ev_prev
         Pub().pub(
             "openWB/set/chargepoint/"+str(self.num)+"/set/charging_ev_prev", charging_ev_prev)
