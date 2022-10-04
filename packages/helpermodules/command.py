@@ -26,7 +26,7 @@ class Command:
                ("mqtt_bridge", "system/mqtt/bridge", -1),
                ("charge_template", "vehicle/template/charge_template", 0),
                ("charge_template_scheduled_plan",
-               "vehicle/template/charge_template/+/chargemode/scheduled_charging/plans",
+                "vehicle/template/charge_template/+/chargemode/scheduled_charging/plans",
                 -1),
                ("charge_template_time_charging_plan", "vehicle/template/charge_template/+/time_charging/plans", -1),
                ("chargepoint_template", "chargepoint/template", 0),
@@ -66,7 +66,7 @@ class Command:
         try:
             hierarchy = ProcessBrokerBranch(topic).get_payload()
             max_id = counter.get_max_id_in_hierarchy(hierarchy, default)
-            Pub().pub("openWB/set/command/max_id/"+id_topic, max_id)
+            Pub().pub(f'openWB/set/command/max_id/{id_topic}', max_id)
         except Exception:
             log.exception("Fehler im Command-Modul")
 
@@ -98,15 +98,14 @@ class Command:
                 if "todo" in msg.topic:
                     payload = json.loads(str(msg.payload.decode("utf-8")))
                     connection_id = msg.topic.split("/")[2]
-                    log.debug("Befehl: "+str(payload)+", Connection-ID: "+str(connection_id))
+                    log.debug(f'Befehl: {payload}, Connection-ID: {connection_id}')
                     # Methoden-Name = Befehl
                     try:
                         func = getattr(self, payload["command"])
                         with ErrorHandlingContext(payload, connection_id):
                             func(connection_id, payload)
                     except Exception:
-                        log.error("Zu dem Befehl wurde keine Methode gefunden.")
-                        pub_error(payload, connection_id, "Zu dem Befehl wurde keine Methode gefunden.")
+                        pub_error_user(payload, connection_id, "Zu dem Befehl wurde keine Methode gefunden.")
                     Pub().pub(msg.topic, "")
                 elif "max_id" in msg.topic:
                     self.__process_max_id_topic(msg)
@@ -121,8 +120,8 @@ class Command:
                 var = result.group(1)
                 # Der Variablen-Name für die maximale ID setzt sich aus "max_id_" und dem Topic-Namen nach dem letzten /
                 # zusammen.
-                setattr(self, "max_id_"+var, payload)
-                log.debug("Max ID "+var+" "+str(payload))
+                setattr(self, f'max_id_{var}', payload)
+                log.debug(f'Max ID {var} {payload}')
         except Exception:
             log.exception("Fehler im Command-Modul")
 
@@ -130,32 +129,32 @@ class Command:
         """ sendet das Topic, zu dem ein neues Device erstellt werden soll.
         """
         new_id = self.max_id_device + 1
-        log.info(
-            "Neues Device vom Typ "+str(payload["data"]["type"])+" mit ID "+str(new_id)+" hinzugefügt.")
         dev = importlib.import_module("."+payload["data"]["type"]+".device", "modules")
         device_default = dataclass_utils.asdict(dev.device_descriptor.configuration_factory())
         device_default["id"] = new_id
-        Pub().pub("openWB/set/system/device/" +
-                  str(new_id)+"/config", device_default)
+        Pub().pub(f'openWB/set/system/device/{new_id}/config', device_default)
         self.max_id_device = self.max_id_device + 1
         Pub().pub("openWB/set/command/max_id/device", self.max_id_device)
+        pub_success_user(
+            payload, connection_id,
+            f'Neues Device vom Typ \'{payload["data"]["type"]}\' mit ID \'{new_id}\' hinzugefügt.')
 
     def removeDevice(self, connection_id: str, payload: dict) -> None:
         """ löscht ein Device.
         """
         if self.max_id_device >= payload["data"]["id"]:
-            log.info("Device mit ID " +
-                     str(payload["data"]["id"])+" gelöscht.")
             ProcessBrokerBranch(f'system/device/{payload["data"]["id"]}/').remove_topics()
+            pub_success_user(payload, connection_id, f'Gerät mit ID \'{payload["data"]["id"]}\' gelöscht.')
         else:
-            pub_error(payload, connection_id, "Die ID ist größer als die maximal vergebene ID.")
+            pub_error_user(
+                payload, connection_id,
+                f'Die ID \'{payload["data"]["id"]}\' ist größer als die maximal vergebene ID \'{self.max_id_device}\'.')
 
     def addChargepoint(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem ein neuer Chargepoint erstellt werden soll.
         """
         new_id = self.max_id_hierarchy + 1
-        log.info(
-            "Neuer Ladepunkt mit ID "+str(new_id)+" wird hinzugefügt.")
+        log.info(f'Neuer Ladepunkt mit ID \'{new_id}\' wird hinzugefügt.')
         chargepoint_default = chargepoint.get_chargepoint_default()
         # chargepoint_default["id"] = new_id
         module = importlib.import_module("." + payload["data"]["type"] + ".chargepoint_module", "modules")
@@ -166,167 +165,190 @@ class Command:
             evu_counter = data.data.counter_data["all"].get_id_evu_counter()
             data.data.counter_data["all"].hierarchy_add_item_below(
                 new_id, ComponentType.CHARGEPOINT, evu_counter)
-            Pub().pub("openWB/set/chargepoint/"+str(new_id)+"/config", chargepoint_default)
-            Pub().pub("openWB/set/chargepoint/"+str(new_id)+"/set/manual_lock", False)
+            Pub().pub(f'openWB/set/chargepoint/{new_id}/config', chargepoint_default)
+            Pub().pub(f'openWB/set/chargepoint/{new_id}/set/manual_lock', False)
             self.max_id_hierarchy = self.max_id_hierarchy + 1
             Pub().pub("openWB/set/command/max_id/hierarchy", self.max_id_hierarchy)
             if self.max_id_chargepoint_template == -1:
                 self.addChargepointTemplate("addChargepoint", {})
             if self.max_id_vehicle == -1:
                 self.addVehicle("addChargepoint", {})
+            pub_success_user(payload, connection_id, f'Neuer Ladepunkt mit ID \'{new_id}\' wurde erstellt.')
         except (TypeError, IndexError):
-            pub_error(payload, connection_id, "Bitte erst einen EVU-Zähler konfigurieren!")
+            pub_error_user(payload, connection_id, "Bitte zuerst einen EVU-Zähler konfigurieren!")
 
     def removeChargepoint(self, connection_id: str, payload: dict) -> None:
         """ löscht ein Chargepoint.
         """
         if self.max_id_hierarchy >= payload["data"]["id"]:
             data.data.counter_data["all"].hierarchy_remove_item(payload["data"]["id"])
-            log.info("Ladepunkt mit ID " + str(payload["data"]["id"])+" gelöscht.")
             ProcessBrokerBranch(f'chargepoint/{payload["data"]["id"]}/').remove_topics()
+            pub_success_user(payload, connection_id, f'Ladepunkt mit ID \'{payload["data"]["id"]}\' gelöscht.')
         else:
-            pub_error(payload, connection_id, "Die ID ist größer als die maximal vergebene ID.")
+            pub_error_user(
+                payload, connection_id,
+                f'Die ID \'{payload["data"]["id"]}\' ist größer als die maximal vergebene '
+                f'ID \'{self.max_id_hierarchy}\'.')
 
     def addChargepointTemplate(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem eine neue Ladepunkt-Vorlage erstellt werden soll.
         """
         new_id = self.max_id_chargepoint_template + 1
-        log.info("Neue Ladepunkt-Vorlage mit ID "+str(new_id)+" hinzugefügt.")
         default = chargepoint.get_chargepoint_template_default()
         default["id"] = new_id
-        Pub().pub("openWB/set/chargepoint/template/"+str(new_id), default)
+        Pub().pub(f'openWB/set/chargepoint/template/{new_id}', default)
         self.max_id_chargepoint_template = self.max_id_chargepoint_template + 1
         Pub().pub("openWB/set/command/max_id/chargepoint_template",
                   self.max_id_chargepoint_template)
+        pub_success_user(
+            payload, connection_id,
+            f'Neue Ladepunkt-Vorlage mit ID \'{new_id}\' hinzugefügt.')
 
     def removeChargepointTemplate(self, connection_id: str, payload: dict) -> None:
         """ löscht eine Ladepunkt-Vorlage.
         """
         if self.max_id_chargepoint_template >= payload["data"]["id"]:
             if payload["data"]["id"] > 0:
-                log.info("Ladepunkt-Vorlage mit ID " +
-                         str(payload["data"]["id"])+" gelöscht.")
                 ProcessBrokerBranch(f'chargepoint/template/{payload["data"]["id"]}/').remove_topics()
+                pub_success_user(payload, connection_id,
+                                 f'Ladepunkt-Vorlage mit ID \'{payload["data"]["id"]}\' gelöscht.')
             else:
-                pub_error(payload, connection_id, "Ladepunkt-Vorlage mit ID 0 darf nicht gelöscht werden.")
+                pub_error_user(payload, connection_id, "Ladepunkt-Vorlage mit ID 0 darf nicht gelöscht werden.")
         else:
-            pub_error(payload, connection_id, "Die ID ist größer als die maximal vergebene ID.")
+            pub_error_user(
+                payload, connection_id,
+                f'Die ID \'{payload["data"]["id"]}\' ist größer als '
+                f'die maximal vergebene ID \'{self.max_id_chargepoint_template}\'.')
 
     def addAutolockPlan(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem ein neuer Zielladen-Plan erstellt werden soll.
         """
         new_id = self.max_id_autolock_plan + 1
-        log.info("Neuer Autolock-Plan mit ID " + str(new_id) + " zu Template " +
-                 str(payload["data"]["template"]) + " hinzugefügt.")
         default = chargepoint.get_autolock_plan_default()
-        Pub().pub("openWB/set/chargepoint/template/"+str(payload["data"]
-                                                         ["template"])+"/autolock/"+str(new_id), default)
+        Pub().pub(f'openWB/set/chargepoint/template/{payload["data"]["template"]}/autolock/{new_id}',
+                  default)
         self.max_id_autolock_plan = new_id
         Pub().pub("openWB/set/command/max_id/autolock_plan", new_id)
+        pub_success_user(
+            payload, connection_id,
+            f'Neuer Autolock-Plan mit ID \'{new_id}\' zu Template '
+            f'\'{payload["data"]["template"]}\' hinzugefügt.')
 
     def removeAutolockPlan(self, connection_id: str, payload: dict) -> None:
         """ löscht einen Zielladen-Plan.
         """
         if self.max_id_autolock_plan >= payload["data"]["plan"]:
-            log.info(
-                "Autolock-Plan mit ID " + str(payload["data"]["plan"]) + " zu Template " +
-                str(payload["data"]["template"]) + " gelöscht.")
             Pub().pub(
-                "openWB/chargepoint/template/" + str(payload["data"]["template"]) + "/autolock/" +
-                str(payload["data"]["plan"]),
+                f'openWB/chargepoint/template/{payload["data"]["template"]}'
+                f'/autolock/{payload["data"]["plan"]}',
                 "")
+            pub_success_user(
+                payload, connection_id,
+                f'Autolock-Plan mit ID \'{payload["data"]["plan"]}\' zu Template '
+                f'\'{payload["data"]["template"]}\' gelöscht.')
         else:
-            pub_error(payload, connection_id, "Die ID ist größer als die maximal vergebene ID.")
+            pub_error_user(
+                payload, connection_id,
+                f'Die ID \'{payload["data"]["plan"]}\' ist größer als die '
+                f'maximal vergebene ID \'{self.max_id_autolock_plan}\'.')
 
     def addChargeTemplate(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem eine neue Lade-Vorlage erstellt werden soll.
         """
         new_id = self.max_id_charge_template + 1
-        log.info("Neues Lade-Template mit ID "+str(new_id)+" hinzugefügt.")
         charge_template_default = ev.get_charge_template_default()
         Pub().pub("openWB/set/vehicle/template/charge_template/" +
                   str(new_id), charge_template_default)
         self.max_id_charge_template = new_id
         Pub().pub("openWB/set/command/max_id/charge_template", new_id)
+        pub_success_user(payload, connection_id,
+                         f'Neues Lade-Template mit ID \'{new_id}\' hinzugefügt.')
 
     def removeChargeTemplate(self, connection_id: str, payload: dict) -> None:
         """ löscht eine Lade-Vorlage.
         """
         if self.max_id_charge_template >= payload["data"]["id"]:
             if payload["data"]["id"] > 0:
-                log.info("Lade-Template mit ID " +
-                         str(payload["data"]["id"])+" gelöscht.")
-                Pub().pub("openWB/vehicle/template/charge_template/" +
-                          str(payload["data"]["id"]), "")
+                Pub().pub(f'openWB/vehicle/template/charge_template/{payload["data"]["id"]}', "")
+                pub_success_user(
+                    payload, connection_id,
+                    f'Lade-Template mit ID \'{payload["data"]["id"]}\' gelöscht.')
             else:
-                pub_error(payload, connection_id, "Ladevorlage mit ID 0 darf nicht gelöscht werden.")
+                pub_error_user(payload, connection_id, "Ladevorlage mit ID 0 darf nicht gelöscht werden.")
         else:
-            pub_error(payload, connection_id, "Die ID ist größer als die maximal vergebene ID.")
+            pub_error_user(payload, connection_id, "Die ID ist größer als die maximal vergebene ID.")
 
     def addChargeTemplateSchedulePlan(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem ein neuer Zielladen-Plan erstellt werden soll.
         """
         new_id = self.max_id_charge_template_scheduled_plan + 1
-        log.info("Neues Zielladen-Template mit ID " + str(new_id) + " zu Template " +
-                 str(payload["data"]["template"]) + " hinzugefügt.")
         charge_template_default = dataclass_utils.asdict(ev.ScheduledChargingPlan())
         Pub().pub(
-            "openWB/set/vehicle/template/charge_template/" + str(payload["data"]["template"]) +
-            "/chargemode/scheduled_charging/plans/" + str(new_id),
+            f'openWB/set/vehicle/template/charge_template/{payload["data"]["template"]}'
+            f'/chargemode/scheduled_charging/plans/{new_id}',
             charge_template_default)
         self.max_id_charge_template_scheduled_plan = new_id
         Pub().pub(
             "openWB/set/command/max_id/charge_template_scheduled_plan", new_id)
+        pub_success_user(
+            payload, connection_id,
+            f'Neues Zielladen-Template mit ID \'{new_id}\' zu Template '
+            f'\'{payload["data"]["template"]}\' hinzugefügt.')
 
     def removeChargeTemplateSchedulePlan(self, connection_id: str, payload: dict) -> None:
         """ löscht einen Zielladen-Plan.
         """
         if self.max_id_charge_template_scheduled_plan >= payload["data"]["plan"]:
-            log.info(
-                "Zielladen-Template mit ID " + str(payload["data"]["plan"]) + " zu Template " +
-                str(payload["data"]["template"]) + " gelöscht.")
             Pub().pub(
-                "openWB/vehicle/template/charge_template/" + str(payload["data"]["template"]) +
-                "/chargemode/scheduled_charging/plans/" + str(payload["data"]["plan"]),
+                f'openWB/vehicle/template/charge_template/{payload["data"]["template"]}'
+                f'/chargemode/scheduled_charging/plans/{payload["data"]["plan"]}',
                 "")
+            pub_success_user(
+                payload, connection_id,
+                f'Zielladen-Template mit ID \'{payload["data"]["plan"]}\' zu Template '
+                f'{payload["data"]["template"]}\' gelöscht.')
         else:
-            pub_error(payload, connection_id, "Die ID ist größer als die maximal vergebene ID.")
+            pub_error_user(
+                payload, connection_id,
+                f'Die ID \'{payload["data"]["plan"]}\' ist größer als die maximal vergebene '
+                f'ID \'{self.max_id_charge_template_scheduled_plan}\'.')
 
     def addChargeTemplateTimeChargingPlan(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem ein neuer Zeitladen-Plan erstellt werden soll.
         """
         new_id = self.max_id_charge_template_time_charging_plan + 1
-        log.info("Neues Zeitladen-Template mit ID " + str(new_id) + " zu Template " +
-                 str(payload["data"]["template"]) + " hinzugefügt.")
         time_charging_plan_default = dataclass_utils.asdict(ev.TimeChargingPlan())
         Pub().pub(
-            "openWB/set/vehicle/template/charge_template/" + str(payload["data"]["template"]) +
-            "/time_charging/plans/" + str(new_id),
+            f'openWB/set/vehicle/template/charge_template/{payload["data"]["template"]}'
+            f'/time_charging/plans/{new_id}',
             time_charging_plan_default)
         self.max_id_charge_template_time_charging_plan = new_id
         Pub().pub(
             "openWB/set/command/max_id/charge_template_time_charging_plan", new_id)
+        pub_success_user(
+            payload, connection_id,
+            f'Neues Zeitladen-Template mit ID \'{new_id}\' zu Template '
+            f'{payload["data"]["template"]}\' hinzugefügt.')
 
     def removeChargeTemplateTimeChargingPlan(self, connection_id: str, payload: dict) -> None:
         """ löscht einen Zeitladen-Plan.
         """
         if self.max_id_charge_template_time_charging_plan >= payload["data"]["plan"]:
-            log.info(
-                "Zeitladen-Template mit ID " + str(payload["data"]["plan"]) + " zu Template " +
-                str(payload["data"]["template"]) + " gelöscht.")
             Pub().pub(
-                "openWB/vehicle/template/charge_template/" + str(payload["data"]["template"]) +
-                "/time_charging/plans/" + str(payload["data"]["plan"]),
+                f'openWB/vehicle/template/charge_template/{payload["data"]["template"]}'
+                f'/time_charging/plans/{payload["data"]["plan"]}',
                 "")
+            pub_success_user(
+                payload, connection_id,
+                f'Zeitladen-Template mit ID \'{payload["data"]["plan"]}\' zu Template '
+                f'\'{payload["data"]["template"]}\' gelöscht.')
         else:
-            pub_error(payload, connection_id, "Die ID ist größer als die maximal vergebene ID.")
+            pub_error_user(payload, connection_id, "Die ID ist größer als die maximal vergebene ID.")
 
     def addComponent(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem eine neue Komponente erstellt werden soll.
         """
         new_id = self.max_id_hierarchy + 1
-        log.info(
-            "Neue Komponente vom Typ"+str(payload["data"]["type"])+" mit ID "+str(new_id)+" hinzugefügt.")
         component = importlib.import_module(
             "."+payload["data"]["deviceType"]+"."+payload["data"]["type"], "modules")
         component_default = dataclass_utils.asdict(component.component_descriptor.configuration_factory())
@@ -339,66 +361,75 @@ class Command:
             if general_type == ComponentType.COUNTER:
                 # es gibt noch keinen EVU-Zähler
                 Pub().pub("openWB/set/counter/get/hierarchy",
-                          [{"id": new_id, "type": ComponentType.COUNTER.value, "children": []}] +
+                          [{
+                              "id": new_id,
+                              "type": ComponentType.COUNTER.value,
+                              "children": []
+                          }] +
                           data.data.counter_data["all"].data["get"]["hierarchy"])
             else:
-                pub_error(payload, connection_id, "Bitte erst einen EVU-Zähler konfigurieren!")
+                pub_error_user(payload, connection_id, "Bitte erst einen EVU-Zähler konfigurieren!")
                 return
         # Bei Zählern müssen noch Standardwerte veröffentlicht werden.
         if general_type == ComponentType.COUNTER:
             default_config = counter.get_counter_default_config()
             for item in default_config:
-                Pub().pub("openWB/set/counter/"+str(new_id)+"/config/"+item, default_config[item])
+                Pub().pub(f'openWB/set/counter/{new_id}/config/{item}', default_config[item])
         elif general_type == ComponentType.INVERTER:
             default_config = pv.get_inverter_default_config()
             for item in default_config:
-                Pub().pub("openWB/set/pv/"+str(new_id)+"/config/"+item, default_config[item])
-        Pub().pub("openWB/set/system/device/"+str(payload["data"]["deviceId"]
-                                                  )+"/component/"+str(new_id)+"/config", component_default)
+                Pub().pub(f'openWB/set/pv/{new_id}/config/{item}', default_config[item])
+        Pub().pub(f'openWB/set/system/device/{payload["data"]["deviceId"]}/component/{new_id}/config',
+                  component_default)
         self.max_id_hierarchy = self.max_id_hierarchy + 1
         Pub().pub("openWB/set/command/max_id/hierarchy",
                   self.max_id_hierarchy)
+        pub_success_user(
+            payload, connection_id,
+            f'Neue Komponente vom Typ \'{payload["data"]["type"]}\' mit ID \'{new_id}\' hinzugefügt.')
 
     def removeComponent(self, connection_id: str, payload: dict) -> None:
         """ löscht eine Komponente.
         """
         if self.max_id_hierarchy >= payload["data"]["id"]:
-            log.info("Komponente mit ID "+str(payload["data"]["id"])+" gelöscht.")
             branch = f'system/device/{payload["data"]["deviceId"]}/component/{payload["data"]["id"]}/'
             ProcessBrokerBranch(branch).remove_topics()
+            pub_success_user(
+                payload, connection_id,
+                f'Komponente mit ID \'{payload["data"]["id"]}\' gelöscht.')
         else:
-            pub_error(payload, connection_id, "Die ID ist größer als die maximal vergebene ID.")
+            pub_error_user(payload, connection_id, "Die ID ist größer als die maximal vergebene ID.")
 
     def addEvTemplate(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem ein neues EV-Template erstellt werden soll.
         """
         new_id = self.max_id_ev_template + 1
-        log.info("Neues EV-Template mit ID "+str(new_id)+" hinzugefügt.")
         ev_template_default = dataclass_utils.asdict(ev.EvTemplateData())
-        Pub().pub("openWB/set/vehicle/template/ev_template/" +
-                  str(new_id), ev_template_default)
+        Pub().pub(f'openWB/set/vehicle/template/ev_template/{new_id}', ev_template_default)
         self.max_id_ev_template = new_id
         Pub().pub("openWB/set/command/max_id/ev_template", new_id)
+        pub_success_user(
+            payload, connection_id,
+            f'Neues EV-Template mit ID \'{new_id}\' hinzugefügt.')
 
     def removeEvTemplate(self, connection_id: str, payload: dict) -> None:
         """ löscht ein EV-Template.
         """
         if self.max_id_ev_template >= payload["data"]["id"]:
             if payload["data"]["id"] > 0:
-                log.info("EV-Template mit ID " +
-                         str(payload["data"]["id"])+" gelöscht.")
-                Pub().pub("openWB/vehicle/template/ev_template/" +
-                          str(payload["data"]["id"]), "")
+                Pub().pub(f'openWB/vehicle/template/ev_template/{payload["data"]["id"]}', "")
+                pub_success_user(
+                    payload, connection_id,
+                    f'EV-Template mit ID \'{payload["data"]["id"]}\' gelöscht.')
             else:
-                pub_error(payload, connection_id, "EV-Vorlage mit ID 0 darf nicht gelöscht werden.")
+                pub_error_user(payload, connection_id, "EV-Vorlage mit ID 0 darf nicht gelöscht werden.")
         else:
-            pub_error(payload, connection_id, "Die ID ist größer als die maximal vergebene ID.")
+            pub_error_user(payload, connection_id, "Die ID ist größer als die maximal vergebene ID.")
 
     def addVehicle(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem ein neues Vehicle erstellt werden soll.
         """
         new_id = self.max_id_vehicle + 1
-        log.info("Neues EV mit ID "+str(new_id)+" hinzugefügt.")
         vehicle_default = ev.get_vehicle_default()
         for default in vehicle_default:
             Pub().pub(f"openWB/set/vehicle/{new_id}/{default}", vehicle_default[default])
@@ -410,46 +441,43 @@ class Command:
             self.addChargeTemplate("addVehicle", {})
         if self.max_id_ev_template == -1:
             self.addEvTemplate("addVehicle", {})
+        pub_success_user(payload, connection_id, f'Neues EV mit ID \'{new_id}\' hinzugefügt.')
 
     def removeVehicle(self, connection_id: str, payload: dict) -> None:
         """ löscht ein Vehicle.
         """
         if self.max_id_vehicle >= payload["data"]["id"]:
             if payload["data"]["id"] > 0:
-                log.info(
-                    "EV mit ID "+str(payload["data"]["id"])+" gelöscht.")
-                Pub().pub("openWB/vehicle/"+str(payload["data"]["id"]), "")
+                Pub().pub(f'openWB/vehicle/{payload["data"]["id"]}', "")
                 ProcessBrokerBranch(f'vehicle/{payload["data"]["id"]}/').remove_topics()
+                pub_success_user(
+                    payload, connection_id,
+                    f'EV mit ID \'{payload["data"]["id"]}\' gelöscht.')
             else:
-                pub_error(payload, connection_id, "Vehicle mit ID 0 darf nicht gelöscht werden.")
+                pub_error_user(payload, connection_id, "Vehicle mit ID 0 darf nicht gelöscht werden.")
         else:
-            pub_error(payload, connection_id, "Die ID ist größer als die maximal vergebene ID.")
+            pub_error_user(payload, connection_id, "Die ID ist größer als die maximal vergebene ID.")
 
     def sendDebug(self, connection_id: str, payload: dict) -> None:
+        pub_success_user(payload, connection_id, "Systembericht wird erstellt...")
         parent_file = Path(__file__).resolve().parents[2]
         previous_log_level = data.data.system_data["system"].data["debug_level"]
         Pub().pub("openWB/set/system/debug_level", 10)
         subprocess.run([str(parent_file / "runs" / "send_debug.sh"),
                         json.dumps(payload["data"])])
         Pub().pub("openWB/set/system/debug_level", previous_log_level)
+        pub_success_user(payload, connection_id, "Systembericht wurde versandt.")
 
     def getChargeLog(self, connection_id: str, payload: dict) -> None:
-        Pub().pub(
-            "openWB/set/log/"+connection_id+"/data",
-            chargelog.get_log_data(payload["data"])
-        )
+        Pub().pub(f'openWB/set/log/{connection_id}/data', chargelog.get_log_data(payload["data"]))
 
     def getDailyLog(self, connection_id: str, payload: dict) -> None:
-        Pub().pub(
-            "openWB/set/log/daily/"+payload["data"]["day"],
-            measurement_log.get_daily_log(payload["data"]["day"])
-        )
+        Pub().pub(f'openWB/set/log/daily/{payload["data"]["day"]}',
+                  measurement_log.get_daily_log(payload["data"]["day"]))
 
     def getMonthlyLog(self, connection_id: str, payload: dict) -> None:
-        Pub().pub(
-            "openWB/set/log/monthly/"+payload["data"]["month"],
-            measurement_log.get_monthly_log(payload["data"]["month"])
-        )
+        Pub().pub(f'openWB/set/log/monthly/{payload["data"]["month"]}',
+                  measurement_log.get_monthly_log(payload["data"]["month"]))
 
     def initCloud(self, connection_id: str, payload: dict) -> None:
         parent_file = Path(__file__).resolve().parents[2]
@@ -463,9 +491,10 @@ class Command:
                 "data": result_dict
             }
             self.connectCloud(connection_id, connect_payload)
+            pub_success_user(payload, connection_id, "Verbindung zur Cloud wurde eingerichtet.")
         except subprocess.CalledProcessError as error:
             # exit status = 1 is failure, std_out contains error message
-            pub_error(payload, connection_id, error.output.decode("utf-8"))
+            pub_error_user(payload, connection_id, error.output.decode("utf-8"))
 
     def connectCloud(self, connection_id: str, payload: dict) -> None:
         cloud_config = bridge.get_cloud_config()
@@ -473,29 +502,32 @@ class Command:
         cloud_config["remote"]["password"] = payload["data"]["password"]
         cloud_config["remote"]["prefix"] = payload["data"]["username"] + "/"
         self.addMqttBridge(connection_id, payload, cloud_config)
+        pub_success_user(payload, connection_id, "Verbindung zur Cloud wurde angelegt.")
 
     def addMqttBridge(self, connection_id: str, payload: dict,
                       bridge_default: dict = bridge.get_default_config()) -> None:
         new_id = self.max_id_mqtt_bridge + 1
-        log.info("Neue Bridge mit ID "+str(new_id)+" hinzugefügt.")
-        Pub().pub("openWB/set/system/mqtt/bridge/"+str(new_id), bridge_default)
+        Pub().pub(f'openWB/set/system/mqtt/bridge/{new_id}', bridge_default)
         self.max_id_mqtt_bridge = self.max_id_mqtt_bridge + 1
         Pub().pub("openWB/set/command/max_id/mqtt_bridge", self.max_id_mqtt_bridge)
+        pub_success_user(payload, connection_id, f'Neue Bridge mit ID \'{new_id}\' hinzugefügt.')
 
     def removeMqttBridge(self, connection_id: str, payload: dict) -> None:
         if self.max_id_mqtt_bridge >= payload["data"]["bridge"]:
-            log.info("Bridge mit ID "+str(payload["data"]["bridge"])+" gelöscht.")
-            Pub().pub("openWB/system/mqtt/bridge/"+str(payload["data"]["bridge"]), "")
+            Pub().pub(f'openWB/system/mqtt/bridge/{payload["data"]["bridge"]}', "")
+            pub_success_user(payload, connection_id, f'Bridge mit ID \'{payload["data"]["bridge"]}\' gelöscht.')
         else:
-            pub_error(payload, connection_id, "Die ID ist größer als die maximal vergebene ID.")
+            pub_error_user(payload, connection_id,
+                           f'Die ID \'{payload["data"]["bridge"]}\' ist größer als die maximal vergebene '
+                           f'ID \'{self.max_id_mqtt_bridge}\'.')
 
     def systemReboot(self, connection_id: str, payload: dict) -> None:
-        log.info("Reboot requested")
+        pub_success_user(payload, connection_id, "Neustart wird ausgeführt.")
         parent_file = Path(__file__).resolve().parents[2]
         subprocess.run([str(parent_file / "runs" / "reboot.sh")])
 
     def systemShutdown(self, connection_id: str, payload: dict) -> None:
-        log.info("Shutdown requested")
+        pub_success_user(payload, connection_id, "OpenWB wird heruntergefahren.")
         parent_file = Path(__file__).resolve().parents[2]
         subprocess.run([str(parent_file / "runs" / "shutdown.sh")])
 
@@ -503,18 +535,43 @@ class Command:
         log.info("Update requested")
         parent_file = Path(__file__).resolve().parents[2]
         if "branch" in payload["data"] and "tag" in payload["data"]:
-            log.warn("Update to branch '%s' tag '%s' requested", payload["data"]["branch"], payload["data"]["tag"])
+            pub_success_user(
+                f'Wechsel auf Zweig \'{payload["data"]["branch"]}\' Tag \'{payload["data"]["tag"]}\' gestartet.')
             subprocess.run([
                 str(parent_file / "runs" / "update_self.sh"),
                 str(payload["data"]["branch"]),
                 str(payload["data"]["tag"])])
         else:
+            pub_success_user("Update gestartet.")
             subprocess.run([str(parent_file / "runs" / "update_self.sh")])
 
     def systemFetchVersions(self, connection_id: str, payload: dict) -> None:
         log.info("Fetch versions requested")
         parent_file = Path(__file__).resolve().parents[2]
-        subprocess.run([str(parent_file / "runs" / "update_available_versions.sh")])
+        result = subprocess.run([str(parent_file / "runs" / "update_available_versions.sh")])
+        if result.returncode == 0:
+            pub_success_user(payload, connection_id, "Versionsliste erfolgreich aktualisiert.")
+        else:
+            pub_error_user(
+                payload, connection_id,
+                f'Version-Status: {result.returncode}<br />Meldung: {result.stdout.decode("utf-8")}')
+
+    def createBackup(self, connection_id: str, payload: dict) -> None:
+        pub_success_user(payload, connection_id, "Backup wird erstellt.")
+        parent_file = Path(__file__).resolve().parents[2]
+        result = subprocess.run(
+            [str(parent_file / "runs" / "backup.sh"),
+             "1" if "use_extended_filename" in payload["data"] and payload["data"]["use_extended_filename"] else "0"],
+            stdout=subprocess.PIPE)
+        if result.returncode == 0:
+            file_name = result.stdout.decode("utf-8").rstrip('\n')
+            file_link = "/openWB/data/backup/" + file_name
+            pub_success_user(payload, connection_id,
+                             "Backup erfolgreich erstellt.<br />"
+                             f'Jetzt <a href="{file_link}" target="_blank">herunterladen</a>.')
+        else:
+            pub_error_user(payload, connection_id,
+                           f'Backup-Status: {result.returncode}<br />Meldung: {result.stdout.decode("utf-8")}')
 
 
 class ErrorHandlingContext:
@@ -527,14 +584,47 @@ class ErrorHandlingContext:
 
     def __exit__(self, exception_type, exception, exception_traceback) -> bool:
         if isinstance(exception, Exception):
-            pub_error(self.payload, self.connection_id, "Es ist ein interner Fehler aufgetreten: " +
-                      traceback.format_exc())
+            pub_error_global(self.payload, self.connection_id,
+                             f'Es ist ein interner Fehler aufgetreten: {traceback.format_exc()}')
             return True
         else:
             return False
 
 
-def pub_error(payload: dict, connection_id: str, error_str: str) -> None:
+def pub_success_user(payload: dict, connection_id: str, message: str) -> None:
+    try:
+        log.info("pub_success: " + message)
+        now = time.time()
+        success_payload = {
+            "source": "command",
+            "type": "success",
+            "message": message,
+            "timestamp": int(now)
+        }
+        Pub().pub(f'openWB/set/command/{connection_id}/messages/{(now * 1000):.0f}', success_payload)
+        log.info(f'Befehl erfolgreich ausgeführt: {message}')
+    except Exception:
+        log.exception("Fehler im Command-Modul")
+
+
+def pub_error_user(payload: dict, connection_id: str, error_str: str) -> None:
+    """ sendet ein Fehler-Topic, warum der Befehl nicht ausgeführt werden konnte.
+    """
+    try:
+        now = time.time()
+        error_payload = {
+            "source": "command",
+            "type": "danger",
+            "message": error_str,
+            "timestamp": int(now)
+        }
+        Pub().pub(f'openWB/set/command/{connection_id}/messages/{(now * 1000):.0f}', error_payload)
+        log.error(f'Befehl konnte nicht ausgeführt werden: {error_payload}')
+    except Exception:
+        log.exception("Fehler im Command-Modul")
+
+
+def pub_error_global(payload: dict, connection_id: str, error_str: str) -> None:
     """ sendet ein Fehler-Topic, warum der Befehl nicht ausgeführt werden konnte.
     """
     try:
@@ -543,9 +633,8 @@ def pub_error(payload: dict, connection_id: str, error_str: str) -> None:
             "data": payload["data"],
             "error": error_str
         }
-        Pub().pub("openWB/set/command/" +
-                  str(connection_id)+"/error", error_payload)
-        log.error("Befehl konnte nicht ausgeführt werden: "+str(error_payload))
+        Pub().pub(f'openWB/set/command/{connection_id}/error', error_payload)
+        log.error(f'Befehl konnte nicht ausgeführt werden: {error_payload}')
     except Exception:
         log.exception("Fehler im Command-Modul")
 
@@ -576,18 +665,18 @@ class ProcessBrokerBranch:
     def on_connect(self, client, userdata, flags, rc):
         """ connect to broker and subscribe to set topics
         """
-        client.subscribe("openWB/"+self.topic_str+"#", 2)
-        client.subscribe("openWB/set/"+self.topic_str+"#", 2)
+        client.subscribe(f'openWB/{self.topic_str}#', 2)
+        client.subscribe(f'openWB/set/{self.topic_str}#', 2)
 
     def __on_message_rm(self, client, userdata, msg):
         if str(msg.payload.decode("utf-8")) != '':
-            log.debug("Gelöschtes Topic: "+str(msg.topic))
+            log.debug(f'Gelöschtes Topic: {msg.topic}')
             Pub().pub(msg.topic, "")
             if "openWB/system/device/" in msg.topic and "component" in msg.topic and "config" in msg.topic:
                 payload = json.loads(str(msg.payload.decode("utf-8")))
                 topic = type_to_topic_mapping(payload["type"])
                 data.data.counter_data["all"].hierarchy_remove_item(payload["id"])
-                client.subscribe("openWB/"+topic+"/"+str(payload["id"])+"/#", 2)
+                client.subscribe(f'openWB/{topic}/{payload["id"]}/#', 2)
 
     def __on_message_max_id(self, client, userdata, msg):
         self.received_topics.append(msg.topic)
