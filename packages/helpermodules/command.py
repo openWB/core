@@ -536,13 +536,14 @@ class Command:
         parent_file = Path(__file__).resolve().parents[2]
         if "branch" in payload["data"] and "tag" in payload["data"]:
             pub_success_user(
+                payload, connection_id,
                 f'Wechsel auf Zweig \'{payload["data"]["branch"]}\' Tag \'{payload["data"]["tag"]}\' gestartet.')
             subprocess.run([
                 str(parent_file / "runs" / "update_self.sh"),
                 str(payload["data"]["branch"]),
                 str(payload["data"]["tag"])])
         else:
-            pub_success_user("Update gestartet.")
+            pub_success_user(payload, connection_id, "Update gestartet.")
             subprocess.run([str(parent_file / "runs" / "update_self.sh")])
 
     def systemFetchVersions(self, connection_id: str, payload: dict) -> None:
