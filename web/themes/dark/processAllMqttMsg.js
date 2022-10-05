@@ -690,14 +690,15 @@ function processChargePointMessages(mqttTopic, mqttPayload) {
 			actualPower = actualPower.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 		}
 		element.text(actualPower + ' ' + unit);
-	} else if (mqttTopic.match(/^openWB\/chargepoint\/[0-9]+\/set\/log\/imported_since_plugged$/i)) {
+	} else if (mqttTopic.match(/^openWB\/chargepoint\/[0-9]+\/set\/log$/i)) {
 		// energy charged since ev was plugged in
 		// also calculates and displays km charged
 		// console.log("charged since plugged counter");
 		var index = getIndex(mqttTopic); // extract number between two / /
 		var parent = $('.charge-point-card[data-cp="' + index + '"]'); // get parent row element for charge point
 		var element = parent.find('.charge-point-energy-since-plugged'); // now get parents respective child element
-		var energyCharged = parseFloat(mqttPayload) / 1000;
+		var logData = JSON.parse(mqttPayload);
+		var energyCharged = parseFloat(logData.imported_since_plugged) / 1000;
 		if (isNaN(energyCharged)) {
 			energyCharged = 0;
 		}
