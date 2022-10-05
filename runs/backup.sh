@@ -1,20 +1,23 @@
 #!/bin/bash
 OPENWBBASEDIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+OPENWBDIRNAME=${OPENWBBASEDIR##*/}
+OPENWBDIRNAME=${OPENWBDIRNAME:-/}
+TARBASEDIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 BACKUPDIR="$OPENWBBASEDIR/data/backup"
-LOGFILE="$OPENWBBASEDIR/ramdisk/backup.log"
+LOGFILE="$OPENWBBASEDIR/data/log/backup.log"
 
 useExtendedFilename=$1
 if ((useExtendedFilename == 1)); then
-	FILENAME="openWB_backup_$(date +"%Y-%m-%d_%H:%M:%S").tar.gz"
+	FILENAME="openWB_backup_$(date +"%Y-%m-%d_%H:%M:%S").tar"
 else
-	FILENAME="backup.tar.gz"
+	FILENAME="backup.tar"
 fi
 
 {
-	echo "creating new backup: $FILENAME"
-	# remove old backup files
 	echo "deleting old backup files if present in '$BACKUPDIR'"
 	rm -v "$BACKUPDIR/"*
+	echo "creating new backup: $FILENAME"
+	# remove old backup files
 	BACKUPFILE="$BACKUPDIR/$FILENAME"
 
 	# tell mosquitto to store all retained topics in db now
@@ -25,20 +28,48 @@ fi
 
 	# create backup file
 	echo "creating new backup file: $BACKUPFILE"
-	sudo tar --verbose --create --gzip \
-		--exclude="$BACKUPDIR" \
-		--exclude="$OPENWBBASEDIR/.git" \
-		--exclude "$OPENWBBASEDIR/ramdisk" \
-		--exclude "$OPENWBBASEDIR/__pycache__" \
-		--exclude "$OPENWBBASEDIR/.pytest_cache" \
+	tar --verbose --create \
 		--file="$BACKUPFILE" \
-		"$OPENWBBASEDIR/" "/var/lib/mosquitto/" "/var/lib/mosquitto_local/"
+		--directory="$TARBASEDIR/" \
+		--exclude="$OPENWBDIRNAME/data/backup/*.tar" \
+		--exclude="$OPENWBDIRNAME/data/log/backup.log" \
+		--exclude="$OPENWBDIRNAME/.git" \
+		--exclude "$OPENWBDIRNAME/ramdisk" \
+		--exclude "__pycache__" \
+		--exclude "$OPENWBDIRNAME/.pytest_cache" \
+		"$OPENWBDIRNAME"
+	sudo tar --verbose --append \
+		--file="$BACKUPFILE" \
+		--directory="/var/lib/" \
+		"mosquitto/" "mosquitto_local/"
+	tar --append \
+		--file="$BACKUPFILE" \
+		--directory="$OPENWBBASEDIR/data/log/" \
+		"backup.log"
+	echo "calculating checksums"
+	find . \( \
+		-path ./.git -o \
+		-path ./data/backup -o \
+		-path ./.pytest -o \
+		-name __pycache__ -o \
+		-path ./.pytest_cache -o \
+		-path ./ramdisk -o \
+		-name backup.log \
+		\) -prune -o \
+		-type f -print0 | xargs -0 sha256sum >"$OPENWBBASEDIR/ramdisk/SHA256SUM"
+	tar --append \
+		--file="$BACKUPFILE" \
+		--directory="$OPENWBBASEDIR/ramdisk/" \
+		"SHA256SUM"
+	rm "$OPENWBBASEDIR/ramdisk/SHA256SUM"
+	echo "zipping archive"
+	gzip --verbose "$BACKUPFILE"
 	echo "setting permissions of new backup file"
-	sudo chown openwb:www-data "$BACKUPFILE"
-	sudo chmod 664 "$BACKUPFILE"
+	sudo chown openwb:www-data "$BACKUPFILE.gz"
+	sudo chmod 664 "$BACKUPFILE.gz"
 
 	echo "backup finished"
-} >>"$LOGFILE" 2>&1
+} >"$LOGFILE" 2>&1
 
 # return our filename for further processing
-echo "$FILENAME"
+echo "$FILENAME.gz"

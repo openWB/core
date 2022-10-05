@@ -76,4 +76,4 @@ fi
 	printf "* %s\n" "${commitDiff[@]}"
 	commitDiffMessage=$(jq --compact-output --null-input '$ARGS.positional' --args -- "${commitDiff[@]}")
 	mosquitto_pub -p 1886 -t openWB/system/current_missing_commits -r -m "$commitDiffMessage"
-} >> "$LOGFILE" 2>&1
+} > "$LOGFILE" 2>&1
