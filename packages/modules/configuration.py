@@ -68,9 +68,9 @@ def _pub_configurable_devices_components() -> None:
             try:
                 device = path.parts[-2]
                 component = []
-                add_components(device, "bat*")
-                add_components(device, "counter*")
-                add_components(device, "inverter*")
+                add_components(device, "*bat*")
+                add_components(device, "*counter*")
+                add_components(device, "*inverter*")
                 dev_defaults = importlib.import_module(
                     f".{device}.device", "modules").device_descriptor.configuration_factory()
                 devices_components.append({

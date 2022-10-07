@@ -7,10 +7,10 @@ class BYDConfiguration:
     def __init__(self,
                  ip_address: Optional[str] = None,
                  password: Optional[str] = None,
-                 username: Optional[str] = None):
+                 user: Optional[str] = None):
         self.password = password
         self.ip_address = ip_address
-        self.username = username
+        self.user = user
 
 
 class BYD:

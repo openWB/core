@@ -122,7 +122,7 @@ def read_legacy(component_type: str,
 
 
 def _get_byd_bat_power(bat_ip: str, bat_username: str, bat_password: str, num: int) -> float:
-    bat_dev = BYDDevice(BYD(configuration=BYDConfiguration(username=bat_username,
+    bat_dev = BYDDevice(BYD(configuration=BYDConfiguration(user=bat_username,
                                                            password=bat_password,
                                                            ip_address=bat_ip)))
     bat_dev.add_component(BYDBatSetup(id=num))

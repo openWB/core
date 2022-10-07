@@ -72,7 +72,7 @@ class SolaredgeInverterConfiguration:
 
 class SolaredgeInverterSetup(ComponentSetup[SolaredgeInverterConfiguration]):
     def __init__(self,
-                 name: str = "Solaredge Wechselrichter",
+                 name: str = "SolarEdge Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
                  configuration: SolaredgeInverterConfiguration = None) -> None:

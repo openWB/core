@@ -65,7 +65,7 @@ def read_legacy(component_type: str,
                 username: str,
                 password: str,
                 num: Optional[int] = None) -> None:
-    dev = Device(BYD(configuration=BYDConfiguration(username=username, password=password, ip_address=ip_address)))
+    dev = Device(BYD(configuration=BYDConfiguration(user=username, password=password, ip_address=ip_address)))
     if component_type in COMPONENT_TYPE_TO_MODULE:
         component_config = COMPONENT_TYPE_TO_MODULE[component_type].component_descriptor.configuration_factory()
     else:
