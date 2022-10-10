@@ -8,6 +8,7 @@ from typing import Dict, List, Optional, Tuple
 from control import data
 from control import loadmanagement
 from control.chargepoint import Chargepoint
+from helpermodules.phase_mapping import convert_single_evu_phase_to_cp_phase
 from helpermodules.pub import Pub
 from control.ev import Ev
 
@@ -162,6 +163,11 @@ class Algorithm:
                     # reduzieren/stoppen.
                     for mode in reversed(self.chargemodes[:-4]):
                         overshoot = self._down_regulation(
+                            mode, chargepoints, overshoot, sorted_overloaded_counters[n][1][1], prevent_stop=True)
+                        if overshoot == 0:
+                            break
+                    for mode in reversed(self.chargemodes[:-4]):
+                        overshoot = self._down_regulation(
                             mode, chargepoints, overshoot, sorted_overloaded_counters[n][1][1])
                         if overshoot == 0:
                             break
@@ -227,19 +233,11 @@ class Algorithm:
                     continue
                 if chargepoint.data.set.charging_ev != -1:
                     charging_ev = chargepoint.data.set.charging_ev_data
-                    # Wenn der LP erst in diesem Zyklus eingeschaltet wird, sind noch keine phases_in_use
-                    # hinterlegt.
-                    if not chargepoint.data.get.charge_state:
-                        phases = charging_ev.data.control_parameter.phases
-                    else:
-                        phases = chargepoint.data.get.phases_in_use
                     if ((charging_ev.charge_template.data.prio == prio) and
                             (charging_ev.charge_template.data.chargemode.selected == mode or
                                 mode is None) and
                             (charging_ev.data.control_parameter.submode == submode) and
-                            # LP muss auf der Phase laden, die überlastet ist.
-                            (phases == 3 or max_overshoot_phase == chargepoint.data.config.phase_1 or
-                                chargepoint.data.config.phase_1 == 0)):
+                            self._overshoot_phase_in_use(chargepoint, max_overshoot_phase)):
                         valid_chargepoints[chargepoint] = None
             except Exception:
                 log.exception(f"Fehler im Algorithmus-Modul für Ladepunkt{cp}")
@@ -250,6 +248,19 @@ class Algorithm:
                       " in Lademodus "+str(mode)+" Submodus "+str(submode)+" Prio "+str(prio))
         return self._perform_down_regulation(
             preferenced_chargepoints, max_current_overshoot, max_overshoot_phase, prevent_stop)
+
+    def _overshoot_phase_in_use(self, chargepoint: Chargepoint, max_overshoot_phase: int) -> bool:
+        # Wenn der LP erst in diesem Zyklus eingeschaltet wird, sind noch keine phases_in_use
+        # hinterlegt.
+        if not chargepoint.data.get.charge_state:
+            phases = chargepoint.data.set.charging_ev_data.data.control_parameter.phases
+        else:
+            phases = chargepoint.data.get.phases_in_use
+        # LP muss auf der Phase laden, die überlastet ist.
+        try:
+            return convert_single_evu_phase_to_cp_phase(chargepoint.data.config.phase_1, max_overshoot_phase) <= phases
+        except KeyError:
+            return True
 
     def _perform_down_regulation(
             self,

@@ -2,6 +2,7 @@ from operator import add
 
 from control import data
 from helpermodules import compatibility
+from helpermodules.phase_mapping import convert_cp_phases_to_evu_phases
 from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentType
 from modules.common.fault_state import FaultState
@@ -47,11 +48,7 @@ class CounterValueStoreBroker(ValueStore[CounterState]):
 
 
 class PurgeCounterState:
-    # Gedrehter Anschluss der Ladepunkte:
-    # Phase 1 LP -> LP 0 = EVU 0, LP 1 = EVU 1, LP 2 = EVU 2
-    # Phase 1 LP -> LP 0 = EVU 2, LP 1 = EVU 0, LP 2 = EVU 1
-    # Phase 3 LP -> LP 0 = EVU 1, LP 1 = EVU 2, LP 2 = EVU 0
-    cp_to_evu_phase_mapping = {"1": [0, 1, 2], "2": [2, 0, 1], "3": [1, 2, 0]}
+    
 
     def __init__(self, delegate: LoggingValueStore, add_child_values: bool = False) -> None:
         self.delegate = delegate
@@ -86,7 +83,7 @@ class PurgeCounterState:
                 if element["type"] == ComponentType.CHARGEPOINT.value:
                     chargepoint = data.data.cp_data[f"cp{element['id']}"]
                     try:
-                        evu_phases = self.cp_to_evu_phase_mapping[str(chargepoint.data.config.phase_1)]
+                        evu_phases = convert_cp_phases_to_evu_phases(chargepoint.data.config.phase_1)
                     except KeyError:
                         raise FaultState.error(f"Für den virtuellen Zähler muss der Anschluss der Phasen von Ladepunkt"
                                                f" {chargepoint.num} an die Phasen der EVU angegeben werden.")
