@@ -444,3 +444,15 @@ class UpdateConfig:
                                 updated_payload["configuration"]["jq_exported"] = payload["configuration"]["jq_counter"]
                                 updated_payload["configuration"].pop("jq_counter")
                                 Pub().pub(topic.replace("openWB/", "openWB/set/"), updated_payload)
+                elif payload["type"] == "byd":
+                    index = re.search('(?!/)([0-9]*)(?=/|$)', topic).group()
+                    updated_payload = payload
+                    updated_payload["configuration"]["user"] = payload["configuration"]["username"]
+                    updated_payload["configuration"].pop("username")
+                    Pub().pub(topic.replace("openWB/", "openWB/set/"), updated_payload)
+                elif payload["type"] == "good_we":
+                    index = re.search('(?!/)([0-9]*)(?=/|$)', topic).group()
+                    updated_payload = payload
+                    updated_payload["configuration"]["modbus_id"] = payload["configuration"]["id"]
+                    updated_payload["configuration"].pop("id")
+                    Pub().pub(topic.replace("openWB/", "openWB/set/"), updated_payload)

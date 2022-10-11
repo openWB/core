@@ -44,7 +44,7 @@ class BYDBat:
         '''
         resp = req.get_http_session().get(
             'http://' + self.__device_config.configuration.ip_address + '/asp/Home.asp',
-            auth=(self.__device_config.configuration.username,  self.__device_config.configuration.password))
+            auth=(self.__device_config.configuration.user, self.__device_config.configuration.password))
         return BydParser.parse(resp.text)
 
 
