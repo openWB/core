@@ -15,9 +15,8 @@ fi
 
 {
 	echo "deleting old backup files if present in '$BACKUPDIR'"
-	rm -v "$BACKUPDIR/"*
-	echo "creating new backup: $FILENAME"
 	# remove old backup files
+	rm -v "$BACKUPDIR/"*
 	BACKUPFILE="$BACKUPDIR/$FILENAME"
 
 	# tell mosquitto to store all retained topics in db now
@@ -42,26 +41,30 @@ fi
 		--file="$BACKUPFILE" \
 		--directory="/var/lib/" \
 		"mosquitto/" "mosquitto_local/"
-	tar --append \
-		--file="$BACKUPFILE" \
-		--directory="$OPENWBBASEDIR/data/log/" \
-		"backup.log"
 	echo "calculating checksums"
-	find . \( \
-		-path ./.git -o \
-		-path ./data/backup -o \
-		-path ./.pytest -o \
-		-name __pycache__ -o \
-		-path ./.pytest_cache -o \
-		-path ./ramdisk -o \
-		-name backup.log \
+	# openwb directory
+	find "$OPENWBBASEDIR" \( \
+		-path "$OPENWBBASEDIR/.git" -o \
+		-path "$OPENWBBASEDIR/data/backup" -o \
+		-path "$OPENWBBASEDIR/.pytest" -o \
+		-name "__pycache__" -o \
+		-path "$OPENWBBASEDIR/.pytest_cache" -o \
+		-path "$OPENWBBASEDIR/ramdisk" -o \
+		-name "backup.log" \
 		\) -prune -o \
-		-type f -print0 | xargs -0 sha256sum >"$OPENWBBASEDIR/ramdisk/SHA256SUM"
+		-type f -print0 | xargs -0 sha256sum | sed -n "s|$TARBASEDIR/||p" >"$OPENWBBASEDIR/ramdisk/SHA256SUM"
+	# mosquitto databases
+	find "/var/lib/mosquitto"* \
+		-type f -print0 | xargs -0 sudo sha256sum | sed -n "s|/var/lib/||p" >>"$OPENWBBASEDIR/ramdisk/SHA256SUM"
 	tar --append \
 		--file="$BACKUPFILE" \
 		--directory="$OPENWBBASEDIR/ramdisk/" \
 		"SHA256SUM"
 	rm "$OPENWBBASEDIR/ramdisk/SHA256SUM"
+	tar --append \
+		--file="$BACKUPFILE" \
+		--directory="$OPENWBBASEDIR/data/log/" \
+		"backup.log"
 	echo "zipping archive"
 	gzip --verbose "$BACKUPFILE"
 	echo "setting permissions of new backup file"
