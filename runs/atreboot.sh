@@ -248,6 +248,10 @@ chmod 666 "$LOGFILE"
 	# echo "$commitId" > "${OPENWBBASEDIR}/ramdisk/currentCommitHash"
 	# git -C "${OPENWBBASEDIR}/" branch -a --contains "$commitId" | perl -nle 'm|.*origin/(.+).*|; print $1' | uniq | xargs > "${OPENWBBASEDIR}/ramdisk/currentCommitBranches"
 
+	# set restore dir permissions to allow file upload for apache
+	sudo chgrp www-data "${OPENWBBASEDIR}/data/restore" "${OPENWBBASEDIR}/data/restore/"*
+	sudo chmod g+w "${OPENWBBASEDIR}/data/restore" "${OPENWBBASEDIR}/data/restore/"*
+
 	# set upload limit in php
 	# echo -n "fix upload limit..."
 	# if [ -d "/etc/php/7.3/" ]; then
