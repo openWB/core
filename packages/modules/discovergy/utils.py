@@ -12,9 +12,9 @@ class DiscovergyComponent:
                  component_config: Union[DiscovergyCounterSetup, DiscovergyInverterSetup],
                  persister: Callable[[CounterState], None]):
         self.__meter_id = component_config.configuration.meter_id
-        self.__persister = persister
+        self.store = persister
         self.component_info = ComponentInfo.from_component_config(component_config)
         self.component_config = component_config
 
     def update(self, session: Session):
-        self.__persister(get_last_reading(session, self.__meter_id))
+        self.store(get_last_reading(session, self.__meter_id))

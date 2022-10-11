@@ -23,7 +23,7 @@ class SpeedwireComponent(Generic[T]):
                  value_store_factory: Callable[[int], ValueStore[T]],
                  parser: Callable[[dict], T],
                  component_config: Union[SmaHomeManagerCounterSetup, SmaHomeManagerInverterSetup]):
-        self.__value_store = value_store_factory(component_config.id)
+        self.store = value_store_factory(component_config.id)
         self.__parser = parser
         self.__serial_matcher = _create_serial_matcher(component_config.configuration.serials)
         self.component_info = ComponentInfo.from_component_config(component_config)
@@ -32,6 +32,6 @@ class SpeedwireComponent(Generic[T]):
     def read_datagram(self, datagram: dict) -> bool:
         if self.__serial_matcher(datagram):
             with SingleComponentUpdateContext(self.component_info):
-                self.__value_store.set(self.__parser(datagram))
+                self.store.set(self.__parser(datagram))
             return True
         return False
