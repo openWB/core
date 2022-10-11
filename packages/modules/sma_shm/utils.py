@@ -27,6 +27,7 @@ class SpeedwireComponent(Generic[T]):
         self.__parser = parser
         self.__serial_matcher = _create_serial_matcher(component_config.configuration.serials)
         self.component_info = ComponentInfo.from_component_config(component_config)
+        self.component_config = component_config
 
     def read_datagram(self, datagram: dict) -> bool:
         if self.__serial_matcher(datagram):
