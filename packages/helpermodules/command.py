@@ -575,6 +575,18 @@ class Command:
             pub_error_user(payload, connection_id,
                            f'Backup-Status: {result.returncode}<br />Meldung: {result.stdout.decode("utf-8")}')
 
+    def restoreBackup(self, connection_id: str, payload: dict) -> None:
+        parent_file = Path(__file__).resolve().parents[2]
+        result = subprocess.run(
+            [str(parent_file / "runs" / "prepare_restore.sh")],
+            stdout=subprocess.PIPE)
+        if result.returncode == 0:
+            pub_success_user(payload, connection_id,
+                             "Wiederherstellung vorbereitet. OpenWB wird jetzt zum Abschluss neu gestartet.")
+        else:
+            pub_error_user(payload, connection_id,
+                           f'Restore-Status: {result.returncode}<br />Meldung: {result.stdout.decode("utf-8")}')
+
 
 class ErrorHandlingContext:
     def __init__(self, payload: dict, connection_id: str):
