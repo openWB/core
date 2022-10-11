@@ -27,6 +27,7 @@ fi
 
 	# create backup file
 	echo "creating new backup file: $BACKUPFILE"
+	echo "adding openWB files"
 	tar --verbose --create \
 		--file="$BACKUPFILE" \
 		--directory="$TARBASEDIR/" \
@@ -37,10 +38,19 @@ fi
 		--exclude "__pycache__" \
 		--exclude "$OPENWBDIRNAME/.pytest_cache" \
 		"$OPENWBDIRNAME"
+	echo "adding mosquitto files"
 	sudo tar --verbose --append \
 		--file="$BACKUPFILE" \
 		--directory="/var/lib/" \
 		"mosquitto/" "mosquitto_local/"
+	echo "adding git information"
+	git branch --no-color --show-current >"$OPENWBBASEDIR/ramdisk/GIT_BRANCH"
+	git log --pretty='format:%H' -n1 >"$OPENWBBASEDIR/ramdisk/GIT_HASH"
+	echo "branch: $(<"$OPENWBBASEDIR/ramdisk/GIT_BRANCH") commit-hash: $(<"$OPENWBBASEDIR/ramdisk/GIT_HASH")"
+	tar --verbose --append \
+		--file="$BACKUPFILE" \
+		--directory="$OPENWBBASEDIR/ramdisk/" \
+		"GIT_BRANCH" "GIT_HASH"
 	echo "calculating checksums"
 	# openwb directory
 	find "$OPENWBBASEDIR" \( \
@@ -53,15 +63,20 @@ fi
 		-name "backup.log" \
 		\) -prune -o \
 		-type f -print0 | xargs -0 sha256sum | sed -n "s|$TARBASEDIR/||p" >"$OPENWBBASEDIR/ramdisk/SHA256SUM"
+	# git info files
+	find "$OPENWBBASEDIR/ramdisk/GIT_"* \
+		-type f -print0 | xargs -0 sha256sum | sed -n "s|$OPENWBBASEDIR/ramdisk/||p" >>"$OPENWBBASEDIR/ramdisk/SHA256SUM"
 	# mosquitto databases
 	find "/var/lib/mosquitto"* \
 		-type f -print0 | xargs -0 sudo sha256sum | sed -n "s|/var/lib/||p" >>"$OPENWBBASEDIR/ramdisk/SHA256SUM"
-	tar --append \
+	tar --verbose --append \
 		--file="$BACKUPFILE" \
 		--directory="$OPENWBBASEDIR/ramdisk/" \
 		"SHA256SUM"
-	rm "$OPENWBBASEDIR/ramdisk/SHA256SUM"
-	tar --append \
+	# cleanup
+	echo "removing temporary files"
+	rm -v "$OPENWBBASEDIR/ramdisk/GIT_BRANCH" "$OPENWBBASEDIR/ramdisk/GIT_HASH" "$OPENWBBASEDIR/ramdisk/SHA256SUM"
+	tar --verbose --append \
 		--file="$BACKUPFILE" \
 		--directory="$OPENWBBASEDIR/data/log/" \
 		"backup.log"
