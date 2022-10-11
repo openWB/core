@@ -1,4 +1,6 @@
+import json
 import re
+from typing import Any
 
 
 def get_index(topic: str) -> str:
@@ -17,3 +19,12 @@ def get_second_index(topic: str) -> str:
     if regex is None:
         raise Exception(f"Couldn't find index in {topic}")
     return regex.group(2)
+
+
+def decode_payload(payload) -> Any:
+    try:
+        return json.loads(str(payload.decode("utf-8")))
+    except (TypeError, json.decoder.JSONDecodeError):
+        return str(payload.decode("utf-8"))
+    except AttributeError:
+        return payload

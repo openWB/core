@@ -3,7 +3,6 @@
 
 import copy
 import dataclasses
-import json
 from typing import List, Optional, Tuple
 import re
 
@@ -11,7 +10,7 @@ import logging
 from helpermodules import subdata
 from helpermodules.broker import InternalBrokerClient
 from helpermodules.pub import Pub
-from helpermodules.utils.topic_parser import get_index
+from helpermodules.utils.topic_parser import decode_payload, get_index
 import dataclass_utils
 
 log = logging.getLogger(__name__)
@@ -51,8 +50,8 @@ class SetData:
             enthält Topic und Payload
         """
         self.heartbeat = True
-        if str(msg.payload.decode("utf-8")) != "":
-            mqtt_log.debug("Topic: "+str(msg.topic) + ", Payload: "+str(msg.payload.decode("utf-8")))
+        if decode_payload(msg.payload) != "":
+            mqtt_log.debug(f"Topic: {msg.topic}, Payload: {decode_payload(msg.payload)}")
             if "openWB/set/vehicle/" in msg.topic:
                 if "openWB/set/vehicle/template/ev_template/" in msg.topic:
                     self.event_ev_template.wait(5)
@@ -99,7 +98,7 @@ class SetData:
         """
         valid = False
         try:
-            value = json.loads(str(msg.payload.decode("utf-8")))
+            value = decode_payload(msg.payload)
             if data_type is None or data_type == "json":
                 # Wenn kein gültiges json-Objekt übergeben worden wäre, wäre bei loads eine Exception aufgetreten.
                 valid = True
@@ -223,7 +222,7 @@ class SetData:
         """
         try:
             valid = False
-            value = json.loads(str(msg.payload.decode("utf-8")))
+            value = decode_payload(msg.payload)
             if isinstance(value, list):
                 for item in value:
                     if not self._validate_min_max_value(item, msg, data_type, ranges):
@@ -317,8 +316,7 @@ class SetData:
     def __unknown_topic(self, msg) -> None:
         try:
             if msg.payload:
-                log.error("Unbekanntes set-Topic: "+str(msg.topic) +
-                          ", " + str(json.loads(str(msg.payload.decode("utf-8")))))
+                log.error(f"Unbekanntes set-Topic: {msg.topic}, {decode_payload(msg.payload)}")
                 Pub().pub(msg.topic, "")
             else:
                 log.error("Unbekanntes set-Topic: " +
