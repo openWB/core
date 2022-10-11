@@ -7,6 +7,7 @@ from typing import List
 
 from helpermodules.broker import InternalBrokerClient
 from helpermodules.pub import Pub
+from helpermodules.utils.topic_parser import decode_payload
 from helpermodules import measurement_log
 from control import chargepoint
 from control import ev
@@ -365,7 +366,7 @@ class UpdateConfig:
         # prevent_switch_stop auf zwei Einstellungen prevent_phase_switch und prevent_charge_stop aufteilen
         for topic, payload in self.all_received_topics.items():
             if "openWB/vehicle/template/ev_template/" in topic:
-                payload = json.loads(str(payload.decode("utf-8")))
+                payload = decode_payload(payload)
                 if "prevent_switch_stop" in payload:
                     combined_setting = payload["prevent_switch_stop"]
                     payload.pop("prevent_switch_stop")
@@ -421,12 +422,12 @@ class UpdateConfig:
         # prevent_switch_stop auf zwei Einstellungen prevent_phase_switch und prevent_charge_stop aufteilen
         for topic, payload in self.all_received_topics.items():
             if re.search("^openWB/system/device/[0-9]+/config$", topic) is not None:
-                payload = json.loads(str(payload.decode("utf-8")))
+                payload = decode_payload(payload)
                 if payload["type"] == "http":
                     index = re.search('(?!/)([0-9]*)(?=/|$)', topic).group()
                     for topic, payload in self.all_received_topics.items():
                         if re.search(f"^openWB/system/device/{index}/component/[0-9]+/config$", topic) is not None:
-                            payload = json.loads(str(payload.decode("utf-8")))
+                            payload = decode_payload(payload)
                             if payload["type"] == "inverter" and "counter_path" in payload["configuration"]:
                                 updated_payload = payload
                                 updated_payload["configuration"]["exported_path"] = payload[
@@ -437,7 +438,7 @@ class UpdateConfig:
                     index = re.search('(?!/)([0-9]*)(?=/|$)', topic).group()
                     for topic, payload in self.all_received_topics.items():
                         if re.search(f"^openWB/system/device/{index}/component/[0-9]+/config$", topic) is not None:
-                            payload = json.loads(str(payload.decode("utf-8")))
+                            payload = decode_payload(payload)
                             if payload["type"] == "inverter" and "jq_counter" in payload["configuration"]:
                                 updated_payload = payload
                                 updated_payload["configuration"]["jq_exported"] = payload["configuration"]["jq_counter"]

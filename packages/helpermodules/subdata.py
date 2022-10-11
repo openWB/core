@@ -16,7 +16,7 @@ from control import ev
 from control import general
 from helpermodules import graph
 from helpermodules.broker import InternalBrokerClient
-from helpermodules.utils.topic_parser import get_index, get_second_index
+from helpermodules.utils.topic_parser import decode_payload, get_index, get_second_index
 from control import optional
 from helpermodules.pub import Pub
 from helpermodules import system
@@ -142,7 +142,7 @@ class SubData:
                 raise Exception(f"Couldn't find key-name in {msg.topic}")
             key = regex.group(1)
             if msg.payload:
-                dict[key] = json.loads(str(msg.payload.decode("utf-8")))
+                dict[key] = decode_payload(msg.payload)
             else:
                 if key in dict:
                     dict.pop(key)
@@ -164,12 +164,12 @@ class SubData:
             if regex:
                 key = regex.group(1)
                 if msg.payload:
-                    payload = json.loads(str(msg.payload.decode("utf-8")))
+                    payload = decode_payload(msg.payload)
                     if isinstance(payload, Dict):
                         for key, value in payload.items():
                             setattr(class_obj, key, value)
                     else:
-                        setattr(class_obj, key, json.loads(str(msg.payload.decode("utf-8"))))
+                        setattr(class_obj, key, decode_payload(msg.payload))
                 else:
                     if isinstance(class_obj, Dict):
                         if key in class_obj:
@@ -196,7 +196,7 @@ class SubData:
         try:
             index = get_index(msg.topic)
             if re.search("^.+/vehicle/[0-9]+/.+$", msg.topic) is not None:
-                if str(msg.payload.decode("utf-8")) == "":
+                if decode_payload(msg.payload) == "":
                     if re.search("^.+/vehicle/[0-9]+/soc_module/config$", msg.topic) is not None:
                         var["ev"+index].soc_module = None
                     elif re.search("^.+/vehicle/[0-9]+/get.+$", msg.topic) is not None:
@@ -213,11 +213,11 @@ class SubData:
                     elif re.search("^.+/vehicle/[0-9]+/set/ev_template$", msg.topic) is not None:
                         var["ev"+index].data.set.ev_template.data = dataclass_from_dict(
                             ev.EvTemplateData,
-                            json.loads(str(msg.payload.decode("utf-8"))))
+                            decode_payload(msg.payload))
                     elif re.search("^.+/vehicle/[0-9]+/set.+$", msg.topic) is not None:
                         self.set_json_payload_class(var["ev"+index].data.set, msg)
                     elif re.search("^.+/vehicle/[0-9]+/soc_module/config$", msg.topic) is not None:
-                        config = json.loads(str(msg.payload.decode("utf-8")))
+                        config = decode_payload(msg.payload)
                         if config["type"] is None:
                             var["ev"+index].soc_module = None
                         else:
@@ -245,8 +245,8 @@ class SubData:
         """
         try:
             index = get_index(msg.topic)
-            if str(msg.payload.decode("utf-8")) == "" and re.search("^.+/vehicle/template/charge_template/[0-9]+$",
-                                                                    msg.topic) is not None:
+            if decode_payload(msg.payload) == "" and re.search("^.+/vehicle/template/charge_template/[0-9]+$",
+                                                               msg.topic) is not None:
                 if "ct"+index in var:
                     var.pop("ct"+index)
             else:
@@ -255,7 +255,7 @@ class SubData:
                 if re.search("^.+/vehicle/template/charge_template/[0-9]+/chargemode/scheduled_charging/plans/[0-9]+$",
                              msg.topic) is not None:
                     index_second = get_second_index(msg.topic)
-                    if str(msg.payload.decode("utf-8")) == "":
+                    if decode_payload(msg.payload) == "":
                         try:
                             var["ct"+index].data.chargemode.scheduled_charging.plans.pop(index_second)
                         except KeyError:
@@ -263,12 +263,11 @@ class SubData:
                                       str(index_second)+" in der Ladevorlage "+str(index)+" gefunden werden.")
                     else:
                         var["ct"+index].data.chargemode.scheduled_charging.plans[
-                            index_second] = dataclass_from_dict(ev.ScheduledChargingPlan,
-                                                                json.loads(str(msg.payload.decode("utf-8"))))
+                            index_second] = dataclass_from_dict(ev.ScheduledChargingPlan, decode_payload(msg.payload))
                 elif re.search("^.+/vehicle/template/charge_template/[0-9]+/time_charging/plans/[0-9]+$",
                                msg.topic) is not None:
                     index_second = get_second_index(msg.topic)
-                    if str(msg.payload.decode("utf-8")) == "":
+                    if decode_payload(msg.payload) == "":
                         try:
                             var["ct"+index].data.time_charging.plans.pop(index_second)
                         except KeyError:
@@ -276,14 +275,12 @@ class SubData:
                                       str(index_second)+" in der Ladevorlage "+str(index)+" gefunden werden.")
                     else:
                         var["ct"+index].data.time_charging.plans[
-                            index_second] = dataclass_from_dict(ev.TimeChargingPlan,
-                                                                json.loads(str(msg.payload.decode("utf-8"))))
+                            index_second] = dataclass_from_dict(ev.TimeChargingPlan, decode_payload(msg.payload))
                 else:
                     # Pläne unverändert übernehmen
                     scheduled_charging_plans = var["ct" + index].data.chargemode.scheduled_charging.plans
                     time_charging_plans = var["ct" + index].data.time_charging.plans
-                    var["ct" + index].data = dataclass_from_dict(ev.ChargeTemplateData,
-                                                                 json.loads(str(msg.payload.decode("utf-8"))))
+                    var["ct" + index].data = dataclass_from_dict(ev.ChargeTemplateData, decode_payload(msg.payload))
                     var["ct"+index].data.time_charging.plans = time_charging_plans
                     var["ct"+index].data.chargemode.scheduled_charging.plans = scheduled_charging_plans
                     self.event_charge_template.set()
@@ -305,15 +302,14 @@ class SubData:
         try:
             index = get_index(msg.topic)
             if re.search("^.+/vehicle/template/ev_template/[0-9]+$", msg.topic) is not None:
-                if str(msg.payload.decode("utf-8")) == "":
+                if decode_payload(msg.payload) == "":
                     if "et"+index in var:
                         var.pop("et"+index)
                 else:
                     if "et"+index not in var:
                         var["et"+index] = ev.EvTemplate(int(index))
                     var["et" +
-                        index].data = dataclass_from_dict(ev.EvTemplateData,
-                                                          json.loads(str(msg.payload.decode("utf-8"))))
+                        index].data = dataclass_from_dict(ev.EvTemplateData, decode_payload(msg.payload))
                     self.event_ev_template.set()
         except Exception:
             log.exception("Fehler im subdata-Modul")
@@ -333,7 +329,7 @@ class SubData:
         try:
             if re.search("^.+/chargepoint/[0-9]+/.+$", msg.topic) is not None:
                 index = get_index(msg.topic)
-                if str(msg.payload.decode("utf-8")) == "":
+                if decode_payload(msg.payload) == "":
                     if "cp"+index in var:
                         var.pop("cp"+index)
                 else:
@@ -349,7 +345,7 @@ class SubData:
                     if re.search("^.+/chargepoint/[0-9]+/set/.+$", msg.topic) is not None:
                         if re.search("^.+/chargepoint/[0-9]+/set/log$", msg.topic) is not None:
                             var["cp"+index].chargepoint.data.set.log = dataclass_from_dict(
-                                chargepoint.Log, json.loads(str(msg.payload.decode("utf-8"))))
+                                chargepoint.Log, decode_payload(msg.payload))
                         else:
                             self.set_json_payload_class(var["cp"+index].chargepoint.data.set, msg)
                     elif re.search("^.+/chargepoint/[0-9]+/get/.+$", msg.topic) is not None:
@@ -389,7 +385,7 @@ class SubData:
         """
         try:
             index = get_index(msg.topic)
-            if json.loads(str(msg.payload.decode("utf-8"))):
+            if decode_payload(msg.payload):
                 if "cpt"+index not in var:
                     var["cpt"+index] = chargepoint.CpTemplate()
             else:
@@ -406,7 +402,7 @@ class SubData:
                         var["cpt"+index].data["autolock"]["plans"], msg)
             else:
                 autolock_plans = var["cpt"+index].data["autolock"]["plans"]
-                var["cpt" + index].data = json.loads(str(msg.payload.decode("utf-8")))
+                var["cpt" + index].data = decode_payload(msg.payload)
                 var["cpt"+index].data["autolock"]["plans"] = autolock_plans
 
         except Exception:
@@ -427,7 +423,7 @@ class SubData:
         try:
             if re.search("^.+/pv/[0-9]+/.+$", msg.topic) is not None:
                 index = get_index(msg.topic)
-                if str(msg.payload.decode("utf-8")) == "":
+                if decode_payload(msg.payload) == "":
                     if "pv"+index in var:
                         var.pop("pv"+index)
                 else:
@@ -468,7 +464,7 @@ class SubData:
         try:
             if re.search("^.+/bat/[0-9]+/.+$", msg.topic) is not None:
                 index = get_index(msg.topic)
-                if str(msg.payload.decode("utf-8")) == "":
+                if decode_payload(msg.payload) == "":
                     if "bat"+index in var:
                         var.pop("bat"+index)
                 else:
@@ -598,7 +594,7 @@ class SubData:
         try:
             if re.search("^.+/counter/[0-9]+/.+$", msg.topic) is not None:
                 index = get_index(msg.topic)
-                if str(msg.payload.decode("utf-8")) == "":
+                if decode_payload(msg.payload) == "":
                     if "counter"+index in var:
                         var.pop("counter"+index)
                 else:
@@ -645,14 +641,14 @@ class SubData:
         """
         try:
             if "system" not in var:
-                if str(msg.payload.decode("utf-8")) == "":
+                if decode_payload(msg.payload) == "":
                     if "system" in var:
                         var.pop("system")
                 else:
                     var["system"] = system.System()
             if re.search("^.+/device/[0-9]+/config$", msg.topic) is not None:
                 index = get_index(msg.topic)
-                if str(msg.payload.decode("utf-8")) == "":
+                if decode_payload(msg.payload) == "":
                     if "device"+index in var:
                         var.pop("device"+index)
                     else:
@@ -679,7 +675,7 @@ class SubData:
             elif re.search("^.+/device/[0-9]+/component/[0-9]+/config$", msg.topic) is not None:
                 index = get_index(msg.topic)
                 index_second = get_second_index(msg.topic)
-                if str(msg.payload.decode("utf-8")) == "":
+                if decode_payload(msg.payload) == "":
                     if "device"+index in var:
                         if "component"+str(index_second) in var["device"+index].components:
                             var["device"+index].components.pop(
@@ -699,8 +695,7 @@ class SubData:
                         sim_data = None
                     # Es darf nicht einfach data["config"] aktualisiert werden, da in der __init__ auch die
                     # TCP-Verbindung aufgebaut wird, deren IP dann nicht aktualisiert werden würde.
-                    var["device"+index].add_component(
-                        json.loads(str(msg.payload.decode("utf-8"))))
+                    var["device"+index].add_component(decode_payload(msg.payload))
                     if sim_data:
                         var["device"+index].components["component" + index_second].simulation = sim_data
                     client.subscribe(f"openWB/system/device/{index}/component/{index_second}/simulation/#", 2)
@@ -709,7 +704,7 @@ class SubData:
                 parent_file = Path(__file__).resolve().parents[2]
                 subprocess.call(["php", "-f", str(parent_file / "runs" / "savemqtt.php"), index, msg.payload])
             elif "GetRemoteSupport" in msg.topic:
-                payload = json.loads(str(msg.payload.decode("utf-8")))
+                payload = decode_payload(msg.payload)
                 splitted = payload.split(";")
                 token = splitted[0]
                 port = splitted[1]

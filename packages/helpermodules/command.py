@@ -11,6 +11,7 @@ from pathlib import Path
 from helpermodules import measurement_log
 from helpermodules.broker import InternalBrokerClient
 from helpermodules.pub import Pub
+from helpermodules.utils.topic_parser import decode_payload
 from control import bridge, chargelog, chargepoint, data, ev, counter, pv
 from modules.common.component_type import ComponentType, special_to_general_type_mapping, type_to_topic_mapping
 import dataclass_utils
@@ -94,9 +95,9 @@ class Command:
         """ wartet auf eingehende Topics.
         """
         try:
-            if str(msg.payload.decode("utf-8")) != '':
+            if decode_payload(msg.payload) != '':
                 if "todo" in msg.topic:
-                    payload = json.loads(str(msg.payload.decode("utf-8")))
+                    payload = decode_payload(msg.payload)
                     connection_id = msg.topic.split("/")[2]
                     log.debug(f'Befehl: {payload}, Connection-ID: {connection_id}')
                     # Methoden-Name = Befehl
@@ -114,7 +115,7 @@ class Command:
 
     def __process_max_id_topic(self, msg, no_log: bool = False) -> None:
         try:
-            payload = json.loads(str(msg.payload.decode("utf-8")))
+            payload = decode_payload(msg.payload)
             result = re.search("/([a-z,A-Z,0-9,_]+)(?!.*/)", msg.topic)
             if result is not None:
                 var = result.group(1)
@@ -670,11 +671,11 @@ class ProcessBrokerBranch:
         client.subscribe(f'openWB/set/{self.topic_str}#', 2)
 
     def __on_message_rm(self, client, userdata, msg):
-        if str(msg.payload.decode("utf-8")) != '':
+        if decode_payload(msg.payload) != '':
             log.debug(f'Gelöschtes Topic: {msg.topic}')
             Pub().pub(msg.topic, "")
             if "openWB/system/device/" in msg.topic and "component" in msg.topic and "config" in msg.topic:
-                payload = json.loads(str(msg.payload.decode("utf-8")))
+                payload = decode_payload(msg.payload)
                 topic = type_to_topic_mapping(payload["type"])
                 data.data.counter_data["all"].hierarchy_remove_item(payload["id"])
                 client.subscribe(f'openWB/{topic}/{payload["id"]}/#', 2)
