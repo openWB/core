@@ -307,9 +307,8 @@ class SubData:
                         var.pop("et"+index)
                 else:
                     if "et"+index not in var:
-                        var["et"+index] = ev.EvTemplate(int(index))
-                    var["et" +
-                        index].data = dataclass_from_dict(ev.EvTemplateData, decode_payload(msg.payload))
+                        var["et"+index] = ev.EvTemplate(et_num=int(index))
+                    var["et" + index].data = dataclass_from_dict(ev.EvTemplateData, decode_payload(msg.payload))
                     self.event_ev_template.set()
         except Exception:
             log.exception("Fehler im subdata-Modul")
