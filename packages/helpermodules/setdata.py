@@ -848,6 +848,8 @@ class SetData:
                 self._validate_value(msg, bool)
             elif "openWB/set/system/version" in msg.topic:
                 self._validate_value(msg, str)
+            elif "openWB/set/system/datastore_version" in msg.topic:
+                self._validate_value(msg, int, [(0, 1)])
             elif "openWB/set/system/GetRemoteSupport" in msg.topic:
                 # Server-Topic enthält kein json-Payload.
                 payload = msg.payload.decode("utf-8")
