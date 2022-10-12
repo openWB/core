@@ -186,7 +186,7 @@ chmod 666 "$LOGFILE"
 	pip3 install -r "${OPENWBBASEDIR}/requirements.txt"
 
 	# update version
-	echo "version..."
+	# echo "version..."
 	# uuid=$(</sys/class/net/eth0/address)
 	# owbv=$(<"${OPENWBBASEDIR}/web/version")
 	# curl --connect-timeout 10 -d "update="$releasetrain$uuid"vers"$owbv"" -H "Content-Type: application/x-www-form-urlencoded" -X POST https://openwb.de/tools/update.php
@@ -234,14 +234,9 @@ chmod 666 "$LOGFILE"
 
 	# get local ip
 	mosquitto_pub -t openWB/system/ip_address -p 1886 -r -m "\"$(ip route get 1 | awk '{print $7;exit}')\""
-	# update current published versions
-	# echo "load versions..."
-	# change needed after repo is public!
-	# curl --connect-timeout 10 -s https://raw.githubusercontent.com/snaptec/openWB/master/web/version > ${OPENWBBASEDIR}/ramdisk/vnightly
-	# curl --connect-timeout 10 -s https://raw.githubusercontent.com/snaptec/openWB/beta/web/version > ${OPENWBBASEDIR}/ramdisk/vbeta
-	# curl --connect-timeout 10 -s https://raw.githubusercontent.com/snaptec/openWB/stable/web/version > ${OPENWBBASEDIR}/ramdisk/vstable
 
-	# update versions
+	# update current published versions
+	echo "load versions..."
 	"$OPENWBBASEDIR/runs/update_available_versions.sh"
 	# # and record the current commit details
 	# commitId=$(git -C "${OPENWBBASEDIR}/" log --format="%h" -n 1)
@@ -264,9 +259,7 @@ chmod 666 "$LOGFILE"
 	# all done, remove boot and update status
 	echo "$(date +"%Y-%m-%d %H:%M:%S:")" "boot done :-)"
 	mosquitto_pub -p 1886 -t openWB/system/update_in_progress -r -m 'false'
-	mosquitto_pub -p 1883 -t openWB/system/update_in_progress -r -m 'false'
 	mosquitto_pub -p 1886 -t openWB/system/boot_done -r -m 'true'
-	mosquitto_pub -p 1883 -t openWB/system/boot_done -r -m 'true'
-	mosquitto_pub -t openWB/system/reloadDisplay -m "1"
+	mosquitto_pub -p 1886 -t openWB/system/reloadDisplay -m "1"
 	touch "${OPENWBBASEDIR}/ramdisk/bootdone"
 } >> "$LOGFILE" 2>&1
