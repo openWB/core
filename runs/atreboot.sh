@@ -13,7 +13,7 @@ chmod 666 "$LOGFILE"
 		currentVersion=$(grep -o "openwb-version:[0-9]\+" "$file" | grep -o "[0-9]\+$")
 		installedVersion=$(grep -o "openwb-version:[0-9]\+" "$target" | grep -o "[0-9]\+$")
 		# echo "$currentVersion == $installedVersion ?"
-		if (( currentVersion == installedVersion )); then
+		if ((currentVersion == installedVersion)); then
 			return 0
 		else
 			return 1
@@ -23,7 +23,7 @@ chmod 666 "$LOGFILE"
 	if ! id -u openwb >/dev/null 2>&1; then
 		echo "user 'openwb' missing"
 		echo "starting upgrade skript..."
-		"$OPENWBBASEDIR/runs/upgrade2openwbuser.sh" >> "${OPENWBBASEDIR}/data/log/update.log" 2>&1
+		"$OPENWBBASEDIR/runs/upgrade2openwbuser.sh" >>"${OPENWBBASEDIR}/data/log/update.log" 2>&1
 	fi
 
 	if [ "$(id -u -n)" != "openwb" ]; then
@@ -35,8 +35,11 @@ chmod 666 "$LOGFILE"
 	if [[ -f "${OPENWBBASEDIR}/ramdisk/bootdone" ]]; then
 		rm "${OPENWBBASEDIR}/ramdisk/bootdone"
 	fi
-	mosquitto_pub -p 1886 -t openWB/system/boot_done -r -m 'false'
-	(sleep 600; sudo kill "$$") &
+	mosquitto_pub -p 1886 -t "openWB/system/boot_done" -r -m 'false'
+	(
+		sleep 600
+		sudo kill "$$"
+	) &
 
 	# initialize automatic phase switching
 	# alpha image restricted to standalone installation!
@@ -77,10 +80,10 @@ chmod 666 "$LOGFILE"
 	# check for apache configuration
 	echo "apache default site..."
 	restartService=0
-	if versionMatch "${OPENWBBASEDIR}/data/config/000-default.conf" /etc/apache2/sites-available/000-default.conf; then
+	if versionMatch "${OPENWBBASEDIR}/data/config/000-default.conf" "/etc/apache2/sites-available/000-default.conf"; then
 		echo "...ok"
 	else
-		sudo cp "${OPENWBBASEDIR}/data/config/000-default.conf" /etc/apache2/sites-available/
+		sudo cp "${OPENWBBASEDIR}/data/config/000-default.conf" "/etc/apache2/sites-available/"
 		restartService=1
 		echo "...updated"
 	fi
@@ -106,14 +109,14 @@ chmod 666 "$LOGFILE"
 		sudo a2enmod proxy_wstunnel
 		restartService=1
 	fi
-	if ! versionMatch "${OPENWBBASEDIR}/data/config/apache-openwb-ssl.conf" /etc/apache2/sites-available/apache-openwb-ssl.conf; then
+	if ! versionMatch "${OPENWBBASEDIR}/data/config/apache-openwb-ssl.conf" "/etc/apache2/sites-available/apache-openwb-ssl.conf"; then
 		echo "installing ssl site configuration"
 		sudo a2dissite default-ssl
-		sudo cp "${OPENWBBASEDIR}/data/config/apache-openwb-ssl.conf" /etc/apache2/sites-available/ 
+		sudo cp "${OPENWBBASEDIR}/data/config/apache-openwb-ssl.conf" "/etc/apache2/sites-available/"
 		sudo a2ensite apache-openwb-ssl
 		restartService=1
 	fi
-	if (( restartService == 1 )); then
+	if ((restartService == 1)); then
 		echo -n "restarting apache..."
 		sudo systemctl restart apache2
 		echo "done"
@@ -127,29 +130,29 @@ chmod 666 "$LOGFILE"
 	echo "check mosquitto installation..."
 	restartService=0
 	# check for mosquitto configuration
-	if versionMatch "${OPENWBBASEDIR}/data/config/mosquitto.conf" /etc/mosquitto/mosquitto.conf; then
+	if versionMatch "${OPENWBBASEDIR}/data/config/mosquitto.conf" "/etc/mosquitto/mosquitto.conf"; then
 		echo "mosquitto.conf already up to date"
 	else
 		echo "updating mosquitto.conf"
-		sudo cp "${OPENWBBASEDIR}/data/config/mosquitto.conf" /etc/mosquitto/mosquitto.conf
+		sudo cp "${OPENWBBASEDIR}/data/config/mosquitto.conf" "/etc/mosquitto/mosquitto.conf"
 		restartService=1
 	fi
-	if versionMatch "${OPENWBBASEDIR}/data/config/openwb.conf" /etc/mosquitto/conf.d/openwb.conf; then
+	if versionMatch "${OPENWBBASEDIR}/data/config/openwb.conf" "/etc/mosquitto/conf.d/openwb.conf"; then
 		echo "mosquitto openwb.conf already up to date"
 	else
 		echo "updating mosquitto openwb.conf"
-		sudo cp "${OPENWBBASEDIR}/data/config/openwb.conf" /etc/mosquitto/conf.d/openwb.conf
+		sudo cp "${OPENWBBASEDIR}/data/config/openwb.conf" "/etc/mosquitto/conf.d/openwb.conf"
 		restartService=1
 	fi
-	if [[ ! -f /etc/mosquitto/certs/openwb.key ]]; then
+	if [[ ! -f "/etc/mosquitto/certs/openwb.key" ]]; then
 		echo -n "copy ssl certs..."
-		sudo cp /etc/ssl/certs/ssl-cert-snakeoil.pem /etc/mosquitto/certs/openwb.pem
-		sudo cp /etc/ssl/private/ssl-cert-snakeoil.key /etc/mosquitto/certs/openwb.key
-		sudo chgrp mosquitto /etc/mosquitto/certs/openwb.key
+		sudo cp "/etc/ssl/certs/ssl-cert-snakeoil.pem" "/etc/mosquitto/certs/openwb.pem"
+		sudo cp "/etc/ssl/private/ssl-cert-snakeoil.key" "/etc/mosquitto/certs/openwb.key"
+		sudo chgrp mosquitto "/etc/mosquitto/certs/openwb.key"
 		restartService=1
 		echo "done"
 	fi
-	if (( restartService == 1 )); then
+	if ((restartService == 1)); then
 		echo -n "restarting mosquitto service..."
 		sudo systemctl stop mosquitto
 		sleep 2
@@ -159,20 +162,20 @@ chmod 666 "$LOGFILE"
 
 	#check for mosquitto_local instance
 	restartService=0
-	if versionMatch "${OPENWBBASEDIR}/data/config/mosquitto_local.conf" /etc/mosquitto/mosquitto_local.conf; then
+	if versionMatch "${OPENWBBASEDIR}/data/config/mosquitto_local.conf" "/etc/mosquitto/mosquitto_local.conf"; then
 		echo "mosquitto_local.conf already up to date"
 	else
 		echo "updating mosquitto_local.conf"
-		sudo cp -a "${OPENWBBASEDIR}/data/config/mosquitto_local.conf" /etc/mosquitto/mosquitto_local.conf
+		sudo cp -a "${OPENWBBASEDIR}/data/config/mosquitto_local.conf" "/etc/mosquitto/mosquitto_local.conf"
 		restartService=1
 	fi
-	if versionMatch "${OPENWBBASEDIR}/data/config/openwb_local.conf" /etc/mosquitto/conf_local.d/openwb_local.conf; then
+	if versionMatch "${OPENWBBASEDIR}/data/config/openwb_local.conf" "/etc/mosquitto/conf_local.d/openwb_local.conf"; then
 		echo "mosquitto openwb_local.conf already up to date"
 	else
-		sudo cp -a "${OPENWBBASEDIR}/data/config/openwb_local.conf" /etc/mosquitto/conf_local.d/
+		sudo cp -a "${OPENWBBASEDIR}/data/config/openwb_local.conf" "/etc/mosquitto/conf_local.d/"
 		restartService=1
 	fi
-	if (( restartService == 1 )); then
+	if ((restartService == 1)); then
 		echo -n "restarting mosquitto_local service..."
 		sudo systemctl stop mosquitto_local
 		sleep 2
@@ -186,7 +189,7 @@ chmod 666 "$LOGFILE"
 	pip3 install -r "${OPENWBBASEDIR}/requirements.txt"
 
 	# update version
-	echo "version..."
+	# echo "version..."
 	# uuid=$(</sys/class/net/eth0/address)
 	# owbv=$(<"${OPENWBBASEDIR}/web/version")
 	# curl --connect-timeout 10 -d "update="$releasetrain$uuid"vers"$owbv"" -H "Content-Type: application/x-www-form-urlencoded" -X POST https://openwb.de/tools/update.php
@@ -233,15 +236,10 @@ chmod 666 "$LOGFILE"
 	# fi
 
 	# get local ip
-	mosquitto_pub -t openWB/system/ip_address -p 1886 -r -m "\"$(ip route get 1 | awk '{print $7;exit}')\""
-	# update current published versions
-	# echo "load versions..."
-	# change needed after repo is public!
-	# curl --connect-timeout 10 -s https://raw.githubusercontent.com/snaptec/openWB/master/web/version > ${OPENWBBASEDIR}/ramdisk/vnightly
-	# curl --connect-timeout 10 -s https://raw.githubusercontent.com/snaptec/openWB/beta/web/version > ${OPENWBBASEDIR}/ramdisk/vbeta
-	# curl --connect-timeout 10 -s https://raw.githubusercontent.com/snaptec/openWB/stable/web/version > ${OPENWBBASEDIR}/ramdisk/vstable
+	mosquitto_pub -t "openWB/system/ip_address" -p 1886 -r -m "\"$(ip route get 1 | awk '{print $7;exit}')\""
 
-	# update versions
+	# update current published versions
+	echo "load versions..."
 	"$OPENWBBASEDIR/runs/update_available_versions.sh"
 	# # and record the current commit details
 	# commitId=$(git -C "${OPENWBBASEDIR}/" log --format="%h" -n 1)
@@ -263,10 +261,8 @@ chmod 666 "$LOGFILE"
 
 	# all done, remove boot and update status
 	echo "$(date +"%Y-%m-%d %H:%M:%S:")" "boot done :-)"
-	mosquitto_pub -p 1886 -t openWB/system/update_in_progress -r -m 'false'
-	mosquitto_pub -p 1883 -t openWB/system/update_in_progress -r -m 'false'
-	mosquitto_pub -p 1886 -t openWB/system/boot_done -r -m 'true'
-	mosquitto_pub -p 1883 -t openWB/system/boot_done -r -m 'true'
-	mosquitto_pub -t openWB/system/reloadDisplay -m "1"
+	mosquitto_pub -p 1886 -t "openWB/system/update_in_progress" -r -m 'false'
+	mosquitto_pub -p 1886 -t "openWB/system/boot_done" -r -m 'true'
+	mosquitto_pub -p 1886 -t "openWB/system/reloadDisplay" -m "1"
 	touch "${OPENWBBASEDIR}/ramdisk/bootdone"
-} >> "$LOGFILE" 2>&1
+} >>"$LOGFILE" 2>&1
