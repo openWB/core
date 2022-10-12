@@ -16,6 +16,7 @@ log = logging.getLogger(__name__)
 
 
 class UpdateConfig:
+    DATASTORE_VERSION = 1
     valid_topic = ["^openWB/bat/config/configured$",
                    "^openWB/bat/set/charging_power_left$",
                    "^openWB/bat/set/switch_on_soc_reached$",
@@ -246,7 +247,8 @@ class UpdateConfig:
                    "^openWB/system/current_commit",
                    "^openWB/system/available_branches",
                    "^openWB/system/current_branch_commit",
-                   "^openWB/system/current_missing_commits"
+                   "^openWB/system/current_missing_commits",
+                   "^openWB/system/datastore_version"
                    ]
     default_topic = (
         ("openWB/chargepoint/get/power", 0),
@@ -322,7 +324,6 @@ class UpdateConfig:
     def update(self):
         log.debug("Broker-Konfiguration aktualisieren")
         InternalBrokerClient("update-config", self.on_connect, self.on_message).start_finite_loop()
-
         try:
             self.__remove_outdated_topics()
             self.__pub_missing_defaults()
@@ -362,7 +363,15 @@ class UpdateConfig:
             version = f.read().splitlines()[0]
         Pub().pub("openWB/set/system/version", version)
 
-    def __solve_breaking_changes(self):
+    def __solve_breaking_changes(self) -> None:
+        datastore_version = decode_payload(self.all_received_topics.get("openWB/system/datastore_version")) or 0
+        for version in range(datastore_version, self.DATASTORE_VERSION):
+            try:
+                getattr(self, f"upgrade_datastore_{version}")()
+            except AttributeError:
+                log.error("missing upgrade function! $version$")
+
+    def upgrade_datastore_0(self) -> None:
         # prevent_switch_stop auf zwei Einstellungen prevent_phase_switch und prevent_charge_stop aufteilen
         for topic, payload in self.all_received_topics.items():
             if "openWB/vehicle/template/ev_template/" in topic:
@@ -372,7 +381,7 @@ class UpdateConfig:
                     payload.pop("prevent_switch_stop")
                     payload.update({"prevent_charge_stop": combined_setting, "prevent_phase_switch": combined_setting})
                     Pub().pub(topic.replace("openWB/", "openWB/set/"), payload)
-
+        # Alpha2
         # zu konfiguriertem Wechselrichter die maximale Ausgangsleistung hinzufügen
         for topic, payload in self.all_received_topics.items():
             regex = re.search("(openWB/pv/[0-9]+)/get/fault_state", topic)
@@ -382,6 +391,7 @@ class UpdateConfig:
                     Pub().pub(
                         f'{module.replace("openWB/", "openWB/set/")}/config/max_ac_out', 0)
 
+        # Alpha 3
         # Summen in Tages- und Monats-Log hinzufügen
         files = glob.glob("/var/www/html/openWB/data/daily_log/*")
         files.extend(glob.glob("/var/www/html/openWB/data/monthly_log/*"))
@@ -456,3 +466,4 @@ class UpdateConfig:
                     updated_payload["configuration"]["modbus_id"] = payload["configuration"]["id"]
                     updated_payload["configuration"].pop("id")
                     Pub().pub(topic.replace("openWB/", "openWB/set/"), updated_payload)
+        Pub().pub("openWB/set/system/datastore_version", 1)
