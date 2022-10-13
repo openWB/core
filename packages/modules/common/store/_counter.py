@@ -48,7 +48,6 @@ class CounterValueStoreBroker(ValueStore[CounterState]):
 
 
 class PurgeCounterState:
-    
 
     def __init__(self, delegate: LoggingValueStore, add_child_values: bool = False) -> None:
         self.delegate = delegate
