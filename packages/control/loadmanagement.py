@@ -13,6 +13,7 @@ from typing import Dict, List, Tuple
 
 from control import data
 from control.chargepoint import Chargepoint
+from helpermodules.phase_mapping import convert_single_evu_phase_to_cp_phase
 from modules.common.component_type import ComponentType
 
 log = logging.getLogger(__name__)
@@ -36,23 +37,13 @@ def loadmanagement_for_cp(chargepoint: Chargepoint,
     global overloaded_counters
     overloaded_counters.clear()
     try:
-        # Wenn dreiphasig geladen werden soll, ist es egal, auf welcher Phase L1 angeschlossen ist.
-        if phases == 3:
+        required_current_phases = [0.0]*3
+        try:
+            for i in range(0, phases):
+                evu_phase = convert_single_evu_phase_to_cp_phase(chargepoint.data.config.phase_1, i)
+                required_current_phases[evu_phase] = required_current
+        except KeyError:
             required_current_phases = [required_current]*3
-        else:
-            # Es ist nicht bekannt, an welcher Phase der EVU L1 des LP angeschlossen ist.
-            if chargepoint.data.config.phase_1 == 0:
-                # Es muss noch auf allen 3 Phasen genügend Reserve sein.
-                required_current_phases = [required_current]*3
-            elif chargepoint.data.config.phase_1 == 1:
-                required_current_phases = [required_current, 0, 0]
-            elif chargepoint.data.config.phase_1 == 2:
-                required_current_phases = [0, required_current, 0]
-            elif chargepoint.data.config.phase_1 == 3:
-                required_current_phases = [0, 0, required_current]
-            else:
-                raise ValueError(
-                    f"{chargepoint.data.config.phase_1} ist keine gültige Zahl für die angeschlossene Phase (0-3")
         counters = data.data.counter_data["all"].get_counters_to_check(
             chargepoint.num)
         # Stromstärke merken, wenn das Lastmanagement nicht aktiv wird, wird nach der Prüfung die neue verwendete
