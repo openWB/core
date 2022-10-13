@@ -435,7 +435,7 @@ class UpdateConfig:
             if re.search("^openWB/system/device/[0-9]+/config$", topic) is not None:
                 payload = decode_payload(payload)
                 if payload["type"] == "http":
-                    index = re.search('(?!/)([0-9]*)(?=/|$)', topic).group()
+                    index = get_index(topic)
                     for topic, payload in self.all_received_topics.items():
                         if re.search(f"^openWB/system/device/{index}/component/[0-9]+/config$", topic) is not None:
                             payload = decode_payload(payload)
@@ -446,7 +446,7 @@ class UpdateConfig:
                                 updated_payload["configuration"].pop("counter_path")
                                 Pub().pub(topic.replace("openWB/", "openWB/set/"), updated_payload)
                 elif payload["type"] == "json":
-                    index = re.search('(?!/)([0-9]*)(?=/|$)', topic).group()
+                    index = get_index(topic)
                     for topic, payload in self.all_received_topics.items():
                         if re.search(f"^openWB/system/device/{index}/component/[0-9]+/config$", topic) is not None:
                             payload = decode_payload(payload)
@@ -456,13 +456,11 @@ class UpdateConfig:
                                 updated_payload["configuration"].pop("jq_counter")
                                 Pub().pub(topic.replace("openWB/", "openWB/set/"), updated_payload)
                 elif payload["type"] == "byd":
-                    index = re.search('(?!/)([0-9]*)(?=/|$)', topic).group()
                     updated_payload = payload
                     updated_payload["configuration"]["user"] = payload["configuration"]["username"]
                     updated_payload["configuration"].pop("username")
                     Pub().pub(topic.replace("openWB/", "openWB/set/"), updated_payload)
                 elif payload["type"] == "good_we":
-                    index = re.search('(?!/)([0-9]*)(?=/|$)', topic).group()
                     updated_payload = payload
                     updated_payload["configuration"]["modbus_id"] = payload["configuration"]["id"]
                     updated_payload["configuration"].pop("id")
