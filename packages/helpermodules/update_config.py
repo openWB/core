@@ -7,7 +7,7 @@ from typing import List
 
 from helpermodules.broker import InternalBrokerClient
 from helpermodules.pub import Pub
-from helpermodules.utils.topic_parser import decode_payload
+from helpermodules.utils.topic_parser import decode_payload, get_index, get_second_index
 from helpermodules import measurement_log
 from control import chargepoint
 from control import ev
@@ -16,7 +16,7 @@ log = logging.getLogger(__name__)
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 1
+    DATASTORE_VERSION = 2
     valid_topic = ["^openWB/bat/config/configured$",
                    "^openWB/bat/set/charging_power_left$",
                    "^openWB/bat/set/switch_on_soc_reached$",
@@ -234,6 +234,7 @@ class UpdateConfig:
                    "^openWB/system/update_in_progress$",
                    "^openWB/system/device/[0-9]+/config$",
                    "^openWB/system/device/[0-9]+/component/[0-9]+/config$",
+                   "^openWB/system/device/[0-9]+/component/[0-9]+/simulation$",
                    "^openWB/system/device/[0-9]+/component/[0-9]+/simulation/timestamp_present$",
                    "^openWB/system/device/[0-9]+/component/[0-9]+/simulation/power_present$",
                    "^openWB/system/device/[0-9]+/component/[0-9]+/simulation/present_imported$",
@@ -467,3 +468,26 @@ class UpdateConfig:
                     updated_payload["configuration"].pop("id")
                     Pub().pub(topic.replace("openWB/", "openWB/set/"), updated_payload)
         Pub().pub("openWB/set/system/datastore_version", 1)
+
+    def upgrade_datastore_1(self) -> None:
+        def convert_ws_to_wh(value: float) -> float:
+            return value / 3600
+
+        def get_decoded_value(name: str) -> float:
+            return decode_payload(self.all_received_topics[f"{simulation_topic}/{name}"])
+        for topic in self.all_received_topics.keys():
+            if re.search("^openWB/system/device/[0-9]+/component/[0-9]+/config$", topic) is not None:
+                simulation_topic = (f"openWB/system/device/{get_index(topic)}/component/"
+                                    f"{get_second_index(topic)}/simulation")
+                if self.all_received_topics.get(f"{simulation_topic}/timestamp_present"):
+                    Pub().pub(simulation_topic.replace("openWB/", "openWB/set/"), {
+                        "timestamp": float(get_decoded_value("timestamp_present")),
+                        "power": get_decoded_value("power_present"),
+                        "imported": convert_ws_to_wh(get_decoded_value("present_imported")),
+                        "exported": convert_ws_to_wh(get_decoded_value("present_exported"))
+                    })
+                    Pub().pub(f"{simulation_topic}/timestamp_present", "")
+                    Pub().pub(f"{simulation_topic}/power_present", "")
+                    Pub().pub(f"{simulation_topic}/present_imported", "")
+                    Pub().pub(f"{simulation_topic}/present_exported", "")
+        Pub().pub("openWB/set/system/datastore_version", 2)

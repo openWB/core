@@ -56,7 +56,7 @@ class TestSmartWb:
         imported=54350.0,
         plug_state=True,
         charge_state=True,
-        read_tag={"read_tag": "0a1b2c3d", "timestamp": '05/16/2022, 08:40:52'}
+        rfid="0a1b2c3d"
     )
     SAMPLE_V2 = {
         "type": "parameters",
@@ -92,7 +92,7 @@ class TestSmartWb:
         imported=54350.0,
         plug_state=True,
         charge_state=True,
-        read_tag={"read_tag": "0a1b2c3d", "timestamp": '05/16/2022, 08:40:52'},
+        rfid="0a1b2c3d",
         phases_in_use=1
     )
     SAMPLE_NOT_CHARGING_V2 = {

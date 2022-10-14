@@ -1,7 +1,6 @@
 
 from typing import Dict
 
-from helpermodules import timecheck
 from modules.common.abstract_chargepoint import AbstractChargepoint
 from modules.common.component_context import ErrorCounterContext, SingleComponentUpdateContext
 from modules.common.fault_state import ComponentInfo
@@ -91,9 +90,7 @@ class ChargepointModule(AbstractChargepoint):
                         tag = None
                     else:
                         tag = json_rsp["RFIDUID"]
-                    chargepoint_state.read_tag = {
-                        "read_tag": tag,
-                        "timestamp": timecheck.create_timestamp()}
+                    chargepoint_state.rfid = tag
 
                 if json_rsp.get("voltageP1"):
                     chargepoint_state.voltages = [json_rsp["voltageP1"], json_rsp["voltageP2"], json_rsp["voltageP3"]]
