@@ -95,6 +95,9 @@ def _pub_configurable_chargepoints() -> None:
                 if path.name.endswith("_test.py"):
                     # Tests überspringen
                     continue
+                if path.parts[-2] == "internal_openwb":
+                    # Soll (vorerst) nicht auswählbar sein
+                    continue
                 dev_defaults = importlib.import_module(
                     f".{path.parts[-2]}.chargepoint_module", "modules").get_default_config()
                 chargepoints.append({

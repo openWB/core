@@ -7,7 +7,7 @@ from paho.mqtt.client import Client as MqttClient, MQTTMessage
 
 from helpermodules import pub, compatibility
 from modules.common.fault_state import FaultState
-from modules.common.simcount._simcounter_state import SimCounterState
+from modules.common.simcount.simcounter_state import SimCounterState
 from modules.common.store import ramdisk_write, ramdisk_read_float
 
 log = logging.getLogger(__name__)

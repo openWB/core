@@ -849,7 +849,7 @@ class SetData:
             elif "openWB/set/system/version" in msg.topic:
                 self._validate_value(msg, str)
             elif "openWB/set/system/datastore_version" in msg.topic:
-                self._validate_value(msg, int, [(0, 1)])
+                self._validate_value(msg, int, [(0, 2)])
             elif "openWB/set/system/GetRemoteSupport" in msg.topic:
                 # Server-Topic enthält kein json-Payload.
                 payload = msg.payload.decode("utf-8")
@@ -870,12 +870,8 @@ class SetData:
                 self._validate_value(msg, None)
             elif "device" in msg.topic:
                 if "component" in msg.topic:
-                    if ("/simulation/power_present" in msg.topic or
-                            "/simulation/present_imported" in msg.topic or
-                            "/simulation/present_exported" in msg.topic):
-                        self._validate_value(msg, float)
-                    elif "/simulation/timestamp_present" in msg.topic:
-                        self._validate_value(msg, str)
+                    if "/simulation" in msg.topic:
+                        self._validate_value(msg, "json")
                     elif "/config" in msg.topic:
                         self._validate_value(msg, "json")
                     else:

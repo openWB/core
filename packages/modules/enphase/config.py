@@ -13,8 +13,8 @@ class Enphase:
                  id: int = 0,
                  configuration: EnphaseConfiguration = None) -> None:
         self.name = name
-        self.type = type,
-        self.id = id,
+        self.type = type
+        self.id = id
         self.configuration = configuration or EnphaseConfiguration()
 
 
