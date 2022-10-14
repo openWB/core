@@ -49,16 +49,16 @@ LOGFILE="$OPENWBBASEDIR/data/log/restore.log"
 	echo "Step 4: restore contents of backup"
 	# we use cp not mv because of not empty directories in destination
 	# dotglob is needed to include files and directories beginning with a dot
-	(shopt -s dotglob; sudo cp -v -p -r "${WORKINGDIR}${OPENWBBASEDIR}/"* "${OPENWBBASEDIR}/")
+	(shopt -s dotglob; sudo cp -v -p -r "${WORKINGDIR}/openWB/"* "${OPENWBBASEDIR}/")
 	echo "****************************************"
 	echo "Step 5: restore mosquitto db"
-	if [[ -f "${WORKINGDIR}${MOSQUITTODIR}/mosquitto.db" ]]; then
-		sudo mv -v -f "${WORKINGDIR}${MOSQUITTODIR}/mosquitto.db" "$MOSQUITTODIR/mosquitto.db"
+	if [[ -f "${WORKINGDIR}/mosquitto/mosquitto.db" ]]; then
+		sudo mv -v -f "${WORKINGDIR}/mosquitto/mosquitto.db" "$MOSQUITTODIR/mosquitto.db"
 	else
 		echo "Backup does not contain mosquitto.db. Skipping restore."
 	fi
-	if [[ -f "${WORKINGDIR}${MOSQUITTOLOCALDIR}/mosquitto.db" ]]; then
-		sudo mv -v -f "${WORKINGDIR}${MOSQUITTOLOCALDIR}/mosquitto.db" "$MOSQUITTOLOCALDIR/mosquitto.db"
+	if [[ -f "${WORKINGDIR}/mosquitto_local/mosquitto.db" ]]; then
+		sudo mv -v -f "${WORKINGDIR}/mosquitto_local/mosquitto.db" "$MOSQUITTOLOCALDIR/mosquitto.db"
 	else
 		echo "Backup does not contain local mosquitto.db. Skipping restore."
 	fi
