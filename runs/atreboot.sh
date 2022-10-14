@@ -41,6 +41,17 @@ chmod 666 "$LOGFILE"
 		sudo kill "$$"
 	) &
 
+	# check for pending restore
+	if [[ -f "${OPENWBBASEDIR}/data/restore/run_on_boot" ]]; then
+		echo "pending restore detected, executing restore"
+		# remove flag to prevent a boot loop on failure
+		rm "${OPENWBBASEDIR}/data/restore/run_on_boot"
+		"${OPENWBBASEDIR}/runs/restore.sh"
+		# restore.sh will reboot if successfull
+	else
+		echo "no restore pending, normal startup"
+	fi
+
 	# initialize automatic phase switching
 	# alpha image restricted to standalone installation!
 	# if (( u1p3paktiv == 1 )); then
