@@ -583,6 +583,7 @@ class Command:
         if result.returncode == 0:
             pub_success_user(payload, connection_id,
                              "Wiederherstellung vorbereitet. OpenWB wird jetzt zum Abschluss neu gestartet.")
+            self.systemReboot(connection_id, payload)
         else:
             pub_error_user(payload, connection_id,
                            f'Restore-Status: {result.returncode}<br />Meldung: {result.stdout.decode("utf-8")}')
