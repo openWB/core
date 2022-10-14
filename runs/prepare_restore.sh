@@ -53,6 +53,7 @@ declare resultStatus
 						resultMessage="Der Entwicklungszweig \"$BRANCH\" des Archivs ist ungültig."
 						resultStatus=1
 					else
+						# set trigger for restore (checked in atreboot.sh)
 						touch "${OPENWBBASEDIR}/data/restore/run_on_boot"
 						resultMessage="Wiederherstellung vorbereitet. System wird neu gestartet."
 						resultStatus=0
