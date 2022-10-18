@@ -15,6 +15,7 @@ from control import counter
 from control import ev
 from control import general
 from helpermodules import graph
+from helpermodules.abstract_plans import AutolockPlan
 from helpermodules.broker import InternalBrokerClient
 from helpermodules.utils.topic_parser import decode_payload, get_index, get_second_index
 from control import optional
@@ -385,26 +386,23 @@ class SubData:
         """
         try:
             index = get_index(msg.topic)
-            if decode_payload(msg.payload):
-                if "cpt"+index not in var:
-                    var["cpt"+index] = chargepoint.CpTemplate()
-            else:
-                if "cpt"+index in var:
-                    var.pop("cpt"+index)
+            payload = decode_payload(msg.payload)
             if re.search("/chargepoint/template/[0-9]+/autolock/", msg.topic) is not None:
-                if "autolock" not in var["cpt"+index].data:
-                    var["cpt"+index].data["autolock"] = {}
                 index_second = get_second_index(msg.topic)
-                if "plan"+index_second not in var["cpt"+index].data["autolock"]:
-                    if "plans" not in var["cpt"+index].data["autolock"]:
-                        var["cpt"+index].data["autolock"]["plans"] = {}
-                    self.set_json_payload(
-                        var["cpt"+index].data["autolock"]["plans"], msg)
+                if payload == "":
+                    var["cpt"+index].data.autolock.plans.pop(index_second)
+                else:
+                    var["cpt"+index].data.autolock.plans[
+                        index_second] = dataclass_from_dict(AutolockPlan, payload)
             else:
-                autolock_plans = var["cpt"+index].data["autolock"]["plans"]
-                var["cpt" + index].data = decode_payload(msg.payload)
-                var["cpt"+index].data["autolock"]["plans"] = autolock_plans
-
+                if payload == "":
+                    var.pop("cpt"+index)
+                else:
+                    if "cpt"+index not in var:
+                        var["cpt"+index] = chargepoint.CpTemplate()
+                    autolock_plans = var["cpt"+index].data.autolock.plans
+                    var["cpt"+index].data = dataclass_from_dict(chargepoint.CpTemplateData, payload)
+                    var["cpt"+index].data.autolock.plans = autolock_plans
         except Exception:
             log.exception("Fehler im subdata-Modul")
 
