@@ -724,16 +724,15 @@
 
                 function submitForm(e) {
                     var d = new Date();
-                    date_str = ("0"+(d.getMonth()+1)).slice(-2) + "/" + ("0" + d.getDate()).slice(-2) + "/" + d.getFullYear() + ", " + ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2) + ":" + ("0" + d.getSeconds()).slice(-2);
-                    var val = JSON.stringify({"tag": e.value.slice(2), "timestamp": date_str});
+                    var val = JSON.stringify(e.value.slice(2));
                     console.log(val)
                     if (e.value.startsWith("0") == 1) {
-                        publish( val, "openWB/set/chargepoint/"+e.value.slice(1,2)+"/get/read_tag" );
-                        console.log("openWB/set/chargepoint/"+e.value.slice(1,2)+"/get/read_tag")
+                        publish( val, "openWB/set/chargepoint/"+e.value.slice(1,2)+"/get/rfid" );
+                        console.log("openWB/set/chargepoint/"+e.value.slice(1,2)+"/get/rfid")
                     }
                     else {
-                        console.log("openWB/set/chargepoint/"+e.value.slice(0,2)+"/get/read_tag")
-                        publish( val, "openWB/set/chargepoint/"+e.value.slice(0,2)+"/get/read_tag" );
+                        console.log("openWB/set/chargepoint/"+e.value.slice(0,2)+"/get/rfid")
+                        publish( val, "openWB/set/chargepoint/"+e.value.slice(0,2)+"/get/rfid" );
                     }
                     $( "#PINbox" ).val( "" );
                 };
