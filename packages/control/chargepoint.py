@@ -27,8 +27,9 @@ from control import chargelog
 from control import cp_interruption
 from control import data
 from control import ev as ev_module
-from control.ev import Ev
+from control.ev import Ev, emtpy_list_factory
 from control import phase_switch
+from helpermodules.abstract_plans import AutolockPlan
 from helpermodules.pub import Pub
 from helpermodules import timecheck
 from modules.common.abstract_chargepoint import AbstractChargepoint
@@ -240,7 +241,6 @@ def log_factory() -> Log:
 
 @dataclass
 class Set:
-    autolock_state: int = 0
     change_ev_permitted: bool = False
     charging_ev: int = -1
     charging_ev_prev: int = -1
@@ -409,16 +409,13 @@ class Chargepoint:
         werden kann.
         """
         message = None
-        state = self.template.autolock(
-            self.data.set.autolock_state,
-            self.data.get.charge_state,
-            self.num)
+        state = self.template.is_locked_by_autolock(self.data.get.charge_state)
         if not state:
             state = True
         else:
             # Darf Autolock durch Tag überschrieben werden?
             if (data.data.optional_data["optional"].data["rfid"]["active"] and
-                    self.template.data["rfid_enabling"]):
+                    self.template.data.rfid_enabling):
                 if self.data.get.rfid is None and self.data.set.rfid is None:
                     state = False
                     message = ("Keine Ladung, da der Ladepunkt durch Autolock gesperrt ist und erst per RFID "
@@ -435,7 +432,7 @@ class Chargepoint:
         """ prüft, dass der Ladepunkt nicht manuell gesperrt wurde.
         """
         if (self.data.set.manual_lock is False or
-                (self.template.data["rfid_enabling"] and
+                (self.template.data.rfid_enabling and
                     (self.data.get.rfid is not None or self.data.set.rfid is not None))):
             charging_possible = True
             message = None
@@ -738,7 +735,7 @@ class Chargepoint:
         if self.data.get.rfid is not None:
             if data.data.optional_data["optional"].data["rfid"]["active"]:
                 rfid = self.data.get.rfid
-                if rfid in self.template.data["valid_tags"] or len(self.template.data["valid_tags"]) == 0:
+                if rfid in self.template.data.valid_tags or len(self.template.data.valid_tags) == 0:
                     if self.data.get.rfid_timestamp is None:
                         self.data.get.rfid_timestamp = timecheck.create_timestamp()
                         Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid_timestamp",
@@ -968,28 +965,31 @@ class Chargepoint:
 
 
 def get_chargepoint_template_default():
-    return {
-        "name": "Standard Ladepunkt-Vorlage",
-        "autolock": {
-            "wait_for_charging_end": False,
-            "active": False
-        },
-        "rfid_enabling": False,
-        "valid_tags": []
-    }
+    return asdict(CpTemplateData())
 
 
 def get_autolock_plan_default():
-    return {
-        "name": "Standard Autolock-Plan",
-        "frequency": {
-            "selected": "daily",
-            "once": ["2021-11-01", "2021-11-05"],
-            "weekly": [False, False, False, False, False, False, False]
-        },
-        "time": ["07:00", "16:00"],
-        "active": False
-    }
+    return asdict(AutolockPlan())
+
+
+@dataclass
+class Autolock:
+    active: bool = False
+    plans: Dict[int, AutolockPlan] = field(default_factory=empty_dict_factory)
+    wait_for_charging_end: bool = False
+
+
+def autolock_factory():
+    return Autolock()
+
+
+@dataclass
+class CpTemplateData:
+    autolock: Autolock = field(default_factory=autolock_factory)
+    name: str = "Standard Ladepunkt-Vorlage"
+    rfid_enabling: bool = False
+    valid_tags: List = field(default_factory=emtpy_list_factory)
+    id: int = 0
 
 
 class CpTemplate:
@@ -997,111 +997,23 @@ class CpTemplate:
     """
 
     def __init__(self):
-        self.data = {"autolock": {"plans": {}}}
+        self.data: CpTemplateData = CpTemplateData()
 
-    def autolock(self, autolock_state, charge_state, num):
-        """ ermittelt den Status des Autolock und published diesen.
-
-        Parameter
-        ---------
-        autolock_state : int
-            Autolock-Status-Code:
-            0 = standby
-            1 = Nach Beenden der Ladung wird Autolock aktiviert
-            2 = durch Autolock gesperrt
-            3 = nicht durch Autolock gesperrt
-            4 = Autolock manuell deaktiviert
-
-        charge_state : int
-            Ladung aktiv/nicht aktiv
-
-        num : str
-            Ladepunkt-Nummer
-
-        Return
-        ------
-        False: nicht durch Autolock gesperrt -> Ladung möglich
-        True: durch Autolock gesperrt
-        """
-        try:
-            if (self.data["autolock"]["active"]):
-                if self.data["autolock"]["plans"]:
-                    if autolock_state != 4:
-                        if timecheck.check_plans_timeframe(
-                                self.data["autolock"]["plans"]) is not None:
-                            if self.data["autolock"]["wait_for_charging_end"]:
-                                if charge_state:
-                                    state = 1
-                                else:
-                                    state = 2
-                            else:
-                                state = 2
-                        else:
-                            state = 3
-
-                        Pub().pub(
-                            "openWB/set/chargepoint/" + str(num) +
-                            "/set/autolock_state", state)
-                        if (state == 1) or (state == 3):
-                            return False
-                        elif state == 2:
-                            return True
+    def is_locked_by_autolock(self, charge_state: bool) -> bool:
+        if self.data.autolock.active:
+            if self.data.autolock.plans:
+                if timecheck.check_plans_timeframe(self.data.autolock.plans) is not None:
+                    if self.data.autolock.wait_for_charging_end:
+                        return False if charge_state else True
                     else:
-                        return False
+                        return True
                 else:
-                    log.info("Keine Sperrung durch Autolock, weil keine Zeitpläne konfiguriert sind.")
                     return False
             else:
+                log.info("Keine Sperrung durch Autolock, weil keine Zeitpläne konfiguriert sind.")
                 return False
-        except Exception:
-            log.exception(
-                "Fehler in der Ladepunkt-Template Klasse von " + str(num))
+        else:
             return False
-
-    def autolock_manual_disabling(self, topic_path):
-        """ aktuelles Autolock wird außer Kraft gesetzt.
-
-        Parameter
-        ---------
-        topic_path : str
-            allgemeiner Pfad für Chargepoint-Topics
-        """
-        try:
-            if (self.data["autolock"]["active"]):
-                Pub().pub(topic_path + "/get/autolock", 4)
-        except Exception:
-            log.exception(
-                "Fehler in der Ladepunkt-Template Klasse")
-
-    def autolock_manual_enabling(self, topic_path):
-        """ aktuelles Autolock wird wieder aktiviert.
-
-        Parameter
-        ---------
-        topic_path : str
-            allgemeiner Pfad für Chargepoint-Topics
-        """
-        try:
-            if (self.data["autolock"]["active"]):
-                Pub().pub(topic_path + "/get/autolock", 0)
-        except Exception:
-            log.exception(
-                "Fehler in der Ladepunkt-Template Klasse")
-
-    def autolock_enable_after_charging_end(self, autolock_state, topic_path):
-        """Wenn kein Strom für den Ladepunkt übrig ist, muss Autolock ggf noch aktiviert werden.
-
-        Parameter
-        ---------
-        topic_path : str
-            allgemeiner Pfad für Chargepoint-Topics
-        """
-        try:
-            if (self.data["autolock"]["active"]) and autolock_state == 1:
-                Pub().pub(topic_path + "/set/autolock", 2)
-        except Exception:
-            log.exception(
-                "Fehler in der Ladepunkt-Template Klasse")
 
     def get_ev(self, rfid, assigned_ev):
         """ermittelt das dem Ladepunkt zugeordnete EV

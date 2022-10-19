@@ -7,7 +7,7 @@ def once_factory() -> List:
 
 
 def weekly_factory() -> List:
-    return [False, False, False, False, False, False, False]
+    return [False]*7
 
 
 def time_factory():
@@ -28,8 +28,8 @@ def frequency_factory() -> Frequency:
 @dataclass
 class Limit:
     selected: str = "none"
-    soc: int = 50
     amount: int = 1000
+    soc: int = 50
 
 
 def limit_factory() -> Limit:
@@ -37,18 +37,29 @@ def limit_factory() -> Limit:
 
 
 @dataclass
-class ScheduledChargingPlan:
-    name: str = "Zielladen-Standard"
+class PlanBase:
     active: bool = False
-    time: str = "07:00"  # ToDo: aktuelle Zeit verwenden
-    limit: Limit = field(default_factory=limit_factory)
     frequency: Frequency = field(default_factory=frequency_factory)
 
 
 @dataclass
-class TimeChargingPlan:
-    name: str = "Zeitladen-Standard"
-    active: bool = False
+class TimeframePlan(PlanBase):
     time: List[str] = field(default_factory=time_factory)  # ToDo: aktuelle Zeit verwenden + 1 Stunde
+
+
+@dataclass
+class ScheduledChargingPlan(PlanBase):
+    name: str = "Zielladen-Standard"
+    limit: Limit = field(default_factory=limit_factory)
+    time: str = "07:00"  # ToDo: aktuelle Zeit verwenden
+
+
+@dataclass
+class TimeChargingPlan(TimeframePlan):
+    name: str = "Zeitladen-Standard"
     current: int = 16
-    frequency: Frequency = field(default_factory=frequency_factory)
+
+
+@dataclass
+class AutolockPlan(TimeframePlan):
+    name: str = "Standard Autolock-Plan"

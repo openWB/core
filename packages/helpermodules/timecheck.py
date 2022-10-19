@@ -2,9 +2,9 @@
 """
 import logging
 import datetime
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, TypeVar, Union
 
-from helpermodules.abstract_plans import ScheduledChargingPlan, TimeChargingPlan
+from helpermodules.abstract_plans import AutolockPlan, ScheduledChargingPlan, TimeChargingPlan
 
 log = logging.getLogger(__name__)
 
@@ -43,36 +43,6 @@ def is_timeframe_valid(now: datetime.datetime, begin: datetime.datetime, end: da
         return False
 
 
-def is_autolock_plan_active(plans: Dict) -> bool:
-    for plan in plans:
-        if is_autolock_of_plan_active(plans[plan]):
-            return True
-    else:
-        return False
-
-
-def is_autolock_of_plan_active(plan: Dict) -> bool:
-    if plan["active"]:
-        now = datetime.datetime.today()
-        lock: datetime.datetime
-        unlock: datetime.datetime
-        if plan["frequency"]["selected"] == "once":
-            lock = datetime.datetime.strptime(
-                plan.frequency.once[0] + plan["time"][0], "%Y-%m-%d%H:%M")
-            unlock = datetime.datetime.strptime(
-                plan.frequency.once[1] + plan["time"][1], "%Y-%m-%d%H:%M")
-        else:
-            lock, unlock = set_date(
-                now, datetime.datetime.strptime(plan["time"][0], '%H:%M'),
-                datetime.datetime.strptime(plan["time"][1], '%H:%M'))
-            if plan["frequency"]["selected"] == "weekly" and not plan[
-                    "frequency"]["weekly"][now.weekday()]:
-                # Tag ist nicht konfiguriert
-                return False
-        return is_now_in_locking_time(now, lock, unlock)
-    return False
-
-
 def is_now_in_locking_time(now: datetime.datetime,
                            lock: datetime.datetime,
                            unlock: datetime.datetime) -> bool:
@@ -103,7 +73,10 @@ def is_now_in_locking_time(now: datetime.datetime,
             return False
 
 
-def check_plans_timeframe(plans: Dict[int, TimeChargingPlan]) -> Optional[TimeChargingPlan]:
+T = TypeVar("T", AutolockPlan, TimeChargingPlan)
+
+
+def check_plans_timeframe(plans: Dict[int, T]) -> Optional[T]:
     """ geht alle Pläne durch.
 
     Parameters
@@ -119,11 +92,9 @@ def check_plans_timeframe(plans: Dict[int, TimeChargingPlan]) -> Optional[TimeCh
     state = False
     try:
         for plan in plans.values():
-            # Nur Keys mit Plan-Nummer berücksichtigen
-            if isinstance(plan, TimeChargingPlan):
-                state = check_timeframe(plan)
-                if state:
-                    return plan
+            state = check_timeframe(plan)
+            if state:
+                return plan
         else:
             return None
     except Exception:
