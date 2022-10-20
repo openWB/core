@@ -48,8 +48,7 @@ LOGFILE="$OPENWBBASEDIR/data/log/restore.log"
 	echo "****************************************"
 	echo "Step 4: restore contents of backup"
 	# we use cp not mv because of not empty directories in destination
-	# dotglob is needed to include files and directories beginning with a dot
-	(shopt -s dotglob; sudo cp -v -p -r "${WORKINGDIR}/openWB/"* "${OPENWBBASEDIR}/")
+	sudo cp -v -p -r "${WORKINGDIR}/openWB/." "${OPENWBBASEDIR}/"
 	echo "****************************************"
 	echo "Step 5: restore mosquitto db"
 	if [[ -f "${WORKINGDIR}/mosquitto/mosquitto.db" ]]; then
