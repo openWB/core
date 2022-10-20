@@ -550,10 +550,52 @@
 								</div>
 								<div class="col-md-8 text-right">
 									<input class="charge-point-time-charging-active" type="checkbox"
+										id="timeChargeCpT"
 										data-toggle="toggle"
 										data-topic="openWB/set/vehicle/template/charge_template/<ct>/time_charging/active"
 										data-on="Ja" data-off="Nein" data-onstyle="success" data-offstyle="danger"
 										data-size="sm" data-style="w-100">
+								</div>
+							</div>
+							<div class="chargemode-options chargemode-option-time_charging">
+								<div class="form-row vaRow mb-1">
+									<div class="col">
+										<h3 class="mb-0">Zeitladen-Zeitpläne</h3>
+									</div>
+									<div class="col-2 text-right">
+										<button type="button"
+											class="time_charging-settings-link btn btn-sm btn-secondary">
+											<i class="fas fa-cogs"></i>
+										</button>
+									</div>
+								</div>
+								<div class="form-row mb-1 col charge-point-time-charge-plan-missing alert alert-warning">
+									Es wurden noch keine Zeitpläne eingerichtet!
+								</div>
+								<div class="form-row mb-1 charge-point-time-charge-plan charge-point-time-charge-plan-template hide"
+									data-plan="">
+									<div class="col">
+										<span class="charge-point-time-charge-name">--</span>
+									</div>
+									<div class="col-lg-6 text-right">
+										<span class="charge-point-time-charge-active border rounded p-1">
+											<span class="charge-point-time-charge-frequency">
+												<i class="fas fa-calendar-alt"></i>
+												<span class="charge-point-time-charge-frequency-value">--</span>
+											</span>
+											<span class="charge-point-time-charge-date">
+												<i class="fas fa-calendar-day"></i>
+												<span class="charge-point-time-charge-date-value">--</span>
+											</span>
+											<i class="fas fa-clock"></i> <span
+												class="charge-point-time-charge-time">--</span>
+											<!-- <i class="charge-point-time-charge-limit-icon fas fa-car-battery"></i> <span
+												class="charge-point-time-charge-limit">--</span> -->
+										</span>
+									</div>
+									<!-- <div class="col-4 text-right">
+											<input class="charge-point-time-charge-active" type="checkbox" data-toggle="toggle" data-topic="openWB/set/vehicle/template/charge_template/<ct>/chargemode/scheduled_charging/plans/<sched>/active" data-on="An" data-off="Aus" data-onstyle="success" data-offstyle="danger" data-size="sm" data-style="w-100">
+										</div> -->
 								</div>
 							</div>
 							<div class="charge-point-charge-mode-options mb-0 hide">
@@ -727,7 +769,7 @@
 								<div class="chargemode-options chargemode-option-scheduled_charging">
 									<div class="form-row vaRow mb-1">
 										<div class="col">
-											<h3 class="mb-0">Zeitpläne</h3>
+											<h3 class="mb-0">Zielladen-Zeitpläne</h3>
 										</div>
 										<div class="col-2 text-right">
 											<button type="button"
@@ -893,6 +935,18 @@
 			}
 		}
 
+		function timeChargeOptionsShowHide(element, option) {
+			var parent = element.closest('.charge-point-card[data-cp]');
+			var timeChargeOptionsElement = $(parent).find('.chargemode-option-time_charging');
+			// console.log(parent);
+			// console.log(timeChargeOptionsElement);
+			if (option) {
+				timeChargeOptionsElement.removeClass('hide');
+			} else {
+				timeChargeOptionsElement.addClass('hide');
+			}
+		}
+
 		function chargemodeLimitOptionsShowHide(btnGrp, option) {
 			// show/hide all option-parameters in form-rows for selected option
 			var parent = btnGrp.closest('.charge-point-card[data-cp]');  // get parent div element for charge limitation options
@@ -994,15 +1048,15 @@
 				// load mqtt library
 				'js/mqttws31.js',
 				// some helper functions
-				'themes/dark/helperFunctions.js?ver=20220701',
+				'themes/dark/helperFunctions.js?ver=20221020',
 				// functions for processing messages
-				'themes/dark/processAllMqttMsg.js?ver=20220819',
+				'themes/dark/processAllMqttMsg.js?ver=20221020',
 				// respective Chart.js definition live
 				'themes/dark/livechart.js?ver=20220819',
 				// respective Chart.js definition
 				// 'themes/dark/electricityPriceChart.js?ver=20210120',
 				// functions performing mqtt and start mqtt-service
-				'themes/dark/setupMqttServices.js?ver=202200819',
+				'themes/dark/setupMqttServices.js?ver=20221020',
 			];
 			scriptsToLoad.forEach(function (src) {
 				var script = document.createElement('script');
@@ -1035,6 +1089,9 @@
 							publish(true, topic);
 						} else {
 							publish(false, topic);
+						}
+						if ($(this).hasClass('charge-point-time-charging-active')) {
+							timeChargeOptionsShowHide(this, $(this).prop('checked'));
 						}
 					}
 				} else {
@@ -1094,7 +1151,16 @@
 
 			$('.container').on('click', '.scheduled-charging-settings-link', function (event) {
 				event.stopPropagation();
-				window.location.href = "settings/#/VehicleConfiguration";
+				var parentChargePoint = $(this).closest('[data-cp]');
+				var chargeTemplate = parseInt(parentChargePoint.data('charge-template'));
+				window.location.href = "settings/#/VehicleConfiguration/charge_template/" + chargeTemplate;
+			});
+
+			$('.container').on('click', '.time_charging-settings-link', function (event) {
+				event.stopPropagation();
+				var parentChargePoint = $(this).closest('[data-cp]');
+				var chargeTemplate = parseInt(parentChargePoint.data('charge-template'));
+				window.location.href = "settings/#/VehicleConfiguration/charge_template/" + chargeTemplate;
 			});
 
 			// $('.btn[value="Reset"]').click(function(event){

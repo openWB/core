@@ -9,6 +9,7 @@
 var graphRefreshCounter = 0;
 var chargeModeTemplate = {};
 var schedulePlan = {};
+var timeChargePlan = {};
 var vehicleSoc = {};
 var evuCounterIndex = undefined;
 
@@ -74,6 +75,7 @@ function createChargePoint(hierarchy) {
 				clonedElement.find('#soclimitCpT').attr('id', 'soclimitCp' + chargePointIndex);
 				clonedElement.find('label[for=amountlimitCpT]').attr('for', 'amountlimitCp' + chargePointIndex);
 				clonedElement.find('#amountlimitCpT').attr('id', 'amountlimitCp' + chargePointIndex);
+				clonedElement.find('#timeChargeCpT').attr('id', 'timeChargeCp' + chargePointIndex);
 				// insert after last existing charge point to honor sorting from the array
 				target = $('.charge-point-card[data-cp]').last();
 				// console.log("target: "+target.data('cp')+" index: "+chargePointIndex);
@@ -107,6 +109,7 @@ function refreshChargeTemplate(templateIndex) {
 				// ***** time_charging *****
 				// time_charging.active
 				element = parent.find('.charge-point-time-charging-active');
+				setInputValue(element.attr('id'), chargeModeTemplate[templateIndex].time_charging.active ? 1 : 0);
 				if (chargeModeTemplate[templateIndex].time_charging.active) {
 					element.bootstrapToggle('on', true);
 				} else {
@@ -233,6 +236,87 @@ function refreshChargeTemplate(templateIndex) {
 					}
 				} else {
 					parent.find(".charge-point-schedule-plan-missing").removeClass("hide");
+				}
+
+				// time charging schedules
+				// time_charging.X
+				// first remove all schedule plans except the template
+				parent.find('.charge-point-time-charge-plan[data-plan]').not('.charge-point-time-charge-plan-template').remove();
+				var sourceElement = parent.find('.charge-point-time-charge-plan-template');
+				// remove checkbox toggle button style as they will not function after cloning
+				sourceElement.find('input[type=checkbox][data-toggle^=toggle]').bootstrapToggle('destroy');
+				// now create any other schedule plan
+				if (templateIndex in timeChargePlan) {
+					// console.log("time charge plan found", templateIndex, timeChargePlan[templateIndex]);
+					parent.find(".charge-point-time-charge-plan-missing").addClass("hide");
+					for (const [key, value] of Object.entries(timeChargePlan[templateIndex])) {
+						console.debug("schedule", key, value);
+						if (parent.find('.charge-point-time-charge-plan[data-plan=' + key + ']').length == 0) {
+							// console.log('creating time charge plan with id "'+key+'"');
+							var clonedElement = sourceElement.clone();
+							// update all data referencing the old index in our clone
+							clonedElement.attr('data-plan', key).data('plan', key);
+							// insert after last existing plan to honor sorting from the array
+							target = parent.find('.charge-point-time-charge-plan').last();
+							// console.log("target: "+target.data('plan')+" index: "+key);
+							// console.log(target);
+							// insert clone into DOM
+							clonedElement.insertAfter($(target));
+							// now get our created element and add checkbox toggle buttons
+							timeChargePlanElement = parent.find('.charge-point-time-charge-plan[data-plan=' + key + ']');
+							timeChargePlanElement.find('input[type=checkbox][data-toggle^=toggle]').bootstrapToggle();
+							// set values from payload
+							timeChargePlanElement.find('.charge-point-time-charge-name').text(value.name);
+							timeChargePlanElement.find('.charge-point-time-charge-time').text(value.time[0] + " - " + value.time[1]);
+							if (value.active == true) {
+								timeChargePlanElement.find('.charge-point-time-charge-active').removeClass('alert-danger border-danger');
+								timeChargePlanElement.find('.charge-point-time-charge-active').addClass('alert-success border-success');
+							} else {
+								timeChargePlanElement.find('.charge-point-time-charge-active').removeClass('alert-success border-success');
+								timeChargePlanElement.find('.charge-point-time-charge-active').addClass('alert-danger border-danger');
+							}
+							switch (value.frequency.selected) {
+								case "once":
+									timeChargePlanElement.find('.charge-point-time-charge-frequency').addClass('hide');
+									timeChargePlanElement.find('.charge-point-time-charge-date').removeClass('hide');
+									const begin = new Date(value.frequency.once[0]);
+									const begin_text = begin.toLocaleDateString(undefined, { year: "numeric", month: "2-digit", day: "2-digit", weekday: "short" });
+									const end = new Date(value.frequency.once[1]);
+									const end_text = end.toLocaleDateString(undefined, { year: "numeric", month: "2-digit", day: "2-digit", weekday: "short" });
+									timeChargePlanElement.find('.charge-point-time-charge-date-value').text(begin_text + " - " + end_text);
+									break;
+								case "daily":
+									timeChargePlanElement.find('.charge-point-time-charge-frequency').removeClass('hide');
+									timeChargePlanElement.find('.charge-point-time-charge-date').addClass('hide');
+									timeChargePlanElement.find('.charge-point-time-charge-frequency-value').text('täglich');
+									break;
+								case "weekly":
+									const days = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
+									var daysText = '';
+									value.frequency.weekly.forEach(function (dayValue, index) {
+										if (dayValue == true) {
+											if (daysText.length > 0) {
+												daysText += ',';
+											}
+											daysText += days[index];
+										}
+									});
+									timeChargePlanElement.find('.charge-point-time-charge-frequency').removeClass('hide');
+									timeChargePlanElement.find('.charge-point-time-charge-date').addClass('hide');
+									timeChargePlanElement.find('.charge-point-time-charge-frequency-value').text(daysText);
+									break;
+								default:
+									console.error("unknown schedule frequency: " + value.frequency.selected);
+							}
+							// finally show our new charge point
+							clonedElement.removeClass('charge-point-time-charge-plan-template').removeClass('hide');
+						} else {
+							console.error('time charge plan ' + key + ' already exists');
+						}
+					}
+				} else {
+					// console.log("no time charge plan defined", templateIndex);
+					parent.find(".charge-point-time-charge-plan-missing").removeClass("hide");
 				}
 			}
 		} else {
@@ -981,6 +1065,24 @@ function processVehicleMessages(mqttTopic, mqttPayload) {
 			delete schedulePlan[templateIndex][planIndex];
 			if (Object.keys(schedulePlan[templateIndex]).length == 0) {
 				delete schedulePlan[templateIndex];
+			}
+		}
+		refreshChargeTemplate(templateIndex);
+	} else if (mqttTopic.match(/^openwb\/vehicle\/template\/charge_template\/[0-9]+\/time_charging\/plans\/[0-9]+$/i)) {
+		templateIndex = mqttTopic.match(/[0-9]+/i)[0];
+		planIndex = mqttTopic.match(/[0-9]+$/i)[0];
+		try {
+			// console.log("received time charge plan", templateIndex, planIndex, mqttPayload);
+			const newPlan = JSON.parse(mqttPayload);
+			if (! (templateIndex in timeChargePlan)) {
+				timeChargePlan[templateIndex] = {};
+			}
+			timeChargePlan[templateIndex][planIndex] = newPlan;
+		} catch (error) {
+			console.error("error parsing time charge plan!");
+			delete timeChargePlan[templateIndex][planIndex];
+			if (Object.keys(timeChargePlan[templateIndex]).length == 0) {
+				delete timeChargePlan[templateIndex];
 			}
 		}
 		refreshChargeTemplate(templateIndex);
