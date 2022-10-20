@@ -66,6 +66,7 @@ var topicsToSubscribe = [
 	["openWB/vehicle/+/soc_module/config", 1], // soc configuration of the vehicle; JSON { "type": text, "configuration": object }
 	["openWB/vehicle/template/charge_template/+", 1], // populate a list of charge templates
 	["openWB/vehicle/template/charge_template/+/chargemode/scheduled_charging/plans/+", 1], // populate a list of schedule plans
+	["openWB/vehicle/template/charge_template/+/time_charging/plans/+", 1], // populate a list of time charge plans
 
 	// charge mode config
 	["openWB/general/chargemode_config/pv_charging/bat_prio", 0],
