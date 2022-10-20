@@ -5,7 +5,7 @@ GITREMOTE="origin"
 SELECTEDBRANCH="$1"
 DEFAULTTAG="*HEAD*"
 # ToDo: honor selected tag
-SELECTEDTAG="$2"
+SELECTEDTAG=$2
 
 echo "#### running update ####" > "$LOGFILE"
 
@@ -21,11 +21,12 @@ echo "#### running update ####" > "$LOGFILE"
 	# reset to latest revision or selected tag
 	echo "#### 3. reset working dir ###"
 	resetTarget="$GITREMOTE/$SELECTEDBRANCH"
-	if [[ -z "$SELECTEDTAG" ]] || [[ $SELECTEDTAG != "$DEFAULTTAG" ]]; then
+	echo "SELECTEDTAG: $SELECTEDTAG"
+	if [[ -n $SELECTEDTAG ]] && [[ $SELECTEDTAG != "$DEFAULTTAG" ]]; then
 		echo "#### selected tag: '$SELECTEDTAG'"
 		resetTarget="$SELECTEDTAG"
 	else
-		echo "#### no tag selected, resetting to latest revision"
+		echo "#### no tag or default selected, resetting to latest revision"
 	fi
 	git -C "$OPENWBBASEDIR" reset --hard "$resetTarget" && echo "#### done"
 
