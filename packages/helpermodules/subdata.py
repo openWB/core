@@ -713,6 +713,9 @@ class SubData:
             else:
                 if "module_update_completed" in msg.topic:
                     self.event_module_update_completed.set()
+                elif "openWB/system/available_branches" == msg.topic:
+                    # Logged in update.log, not used in data.data and removed due to readability purposes of main.log.
+                    return
                 self.set_json_payload(var["system"].data, msg)
         except Exception:
             log.exception("Fehler im subdata-Modul")
