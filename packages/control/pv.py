@@ -72,7 +72,7 @@ class PvAll:
         try:
             if self.data["config"]["configured"] is True:
                 # aktuelle Leistung an der EVU, enthält die Leistung der Einspeisegrenze
-                evu_overhang = data.data.counter_data[data.data.counter_data["all"].get_evu_counter(
+                evu_overhang = data.data.counter_data[data.data.counter_all_data.get_evu_counter(
                 )].data["get"]["power"]
 
                 # Regelmodus

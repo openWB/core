@@ -23,7 +23,7 @@ class Graph:
         try:
             dataline = {"timestamp": int(
                 time.time()), "time": datetime.datetime.today().strftime("%H:%M:%S")}
-            evu_counter = data.data.counter_data["all"].get_evu_counter()
+            evu_counter = data.data.counter_all_data.get_evu_counter()
             if data.data.counter_data[evu_counter].data["get"]["fault_state"] < FaultStateLevel.ERROR:
                 dataline.update({"grid": _convert_to_kW(
                     data.data.counter_data[evu_counter].data["get"]["power"])})
@@ -34,7 +34,7 @@ class Graph:
                         dataline.update({"counter"+str(counter.num) +
                                          "-power": _convert_to_kW(counter.data["get"]["power"])})
             dataline.update(
-                {"house-power": _convert_to_kW(data.data.counter_data["all"].data["set"]["home_consumption"])})
+                {"house-power": _convert_to_kW(data.data.counter_all_data.data.set.home_consumption)})
             dataline.update(
                 {"charging-all": _convert_to_kW(data.data.cp_all_data.data.get.power)})
             if len(data.data.pv_data) > 1:

@@ -39,8 +39,8 @@ def test_set_home_consumption(home_consumption: int,
     # setup
     c = hierarchy_standard()
     data.data.counter_data["counter0"].data["get"]["fault_state"] = FaultStateLevel.NO_ERROR
-    c.data["set"]["invalid_home_consumption"] = invalid_home_consumption
-    c.data["set"]["home_consumption"] = 200
+    c.data.set.invalid_home_consumption = invalid_home_consumption
+    c.data.set.home_consumption = 200
     calc_home_consumption_mock = Mock(return_value=[home_consumption, []])
     monkeypatch.setattr(CounterAll, "_calc_home_consumption", calc_home_consumption_mock)
 
@@ -48,5 +48,5 @@ def test_set_home_consumption(home_consumption: int,
     c.set_home_consumption()
 
     # evaluation
-    assert c.data["set"]["invalid_home_consumption"] == expected_invalid_home_consumption
-    assert c.data["set"]["home_consumption"] == expected_home_consumption
+    assert c.data.set.invalid_home_consumption == expected_invalid_home_consumption
+    assert c.data.set.home_consumption == expected_home_consumption

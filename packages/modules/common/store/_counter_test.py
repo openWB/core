@@ -18,8 +18,8 @@ from modules.common.store._counter import PurgeCounterState
 @pytest.fixture(autouse=True)
 def mock_data() -> None:
     data.data_init(Mock())
-    data.data.counter_data["all"] = CounterAll()
-    data.data.counter_data["all"].data.update({"get": {"hierarchy": []}})
+    data.data.counter_all_data = CounterAll()
+    data.data.counter_all_data.data.get.hierarchy = []
 
 
 def add_chargepoint(id: int):
@@ -38,10 +38,10 @@ def mock_data_standard():
     add_chargepoint(3)
     data.data.bat_data["inverter1"] = Mock(spec=Pv, data={"get": {"power": 5786, "exported": 200}})
     data.data.bat_data["bat2"] = Mock(spec=Bat, data={"get": {"power": 223, "exported": 200, "imported": 100}})
-    data.data.counter_data["all"].data["get"]["hierarchy"] = [{"id": 0, "type": "counter",
-                                                               "children": [{"id": 3, "type": "cp", "children": []}]},
-                                                              {"id": 1, "type": "inverter", "children": []},
-                                                              {"id": 2, "type": "bat", "children": []}]
+    data.data.counter_all_data.data.get.hierarchy = [{"id": 0, "type": "counter",
+                                                      "children": [{"id": 3, "type": "cp", "children": []}]},
+                                                     {"id": 1, "type": "inverter", "children": []},
+                                                     {"id": 2, "type": "bat", "children": []}]
 
 
 def mock_data_nested():
@@ -49,7 +49,7 @@ def mock_data_nested():
     add_chargepoint(3)
     data.data.counter_data["counter2"] = Mock(
         spec=Counter, data={"get": {"power": 13359, "exported": 0, "imported": 0, "currents": [19.36, 19.36, 19.36]}})
-    data.data.counter_data["all"].data["get"]["hierarchy"] = [
+    data.data.counter_all_data.data.get.hierarchy = [
         {"id": 0, "type": "counter",
          "children": [{"id": 1, "type": "cp", "children": []},
                       {"id": 2, "type": "counter",

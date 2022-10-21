@@ -82,7 +82,7 @@ class BatAll:
 
     def __max_bat_power_hybrid_system(self, battery: Bat) -> float:
         if battery.data["get"]["power"] > 0:
-            parent = data.data.counter_data["all"].get_entry_of_parent(battery.num)
+            parent = data.data.counter_all_data.get_entry_of_parent(battery.num)
             if parent.get("type") == "inverter":
                 parent_data = data.data.pv_data[f"pv{parent['id']}"].data
                 # Bei einem Hybrid-System darf die Summe aus Batterie-Ladeleistung, die für den Algorithmus verwendet

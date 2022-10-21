@@ -55,7 +55,7 @@ class PurgeInverterState:
         self.delegate.update()
 
     def fix_hybrid_values(self, state: InverterState) -> InverterState:
-        children = data.data.counter_data["all"].get_entry_of_element(self.delegate.delegate.num)["children"]
+        children = data.data.counter_all_data.get_entry_of_element(self.delegate.delegate.num)["children"]
         if len(children):
             hybrid = []
             for c in children:

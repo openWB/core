@@ -163,8 +163,8 @@ class Command:
         chargepoint_default["id"] = new_id
         chargepoint_default["type"] = payload["data"]["type"]
         try:
-            evu_counter = data.data.counter_data["all"].get_id_evu_counter()
-            data.data.counter_data["all"].hierarchy_add_item_below(
+            evu_counter = data.data.counter_all_data.get_id_evu_counter()
+            data.data.counter_all_data.hierarchy_add_item_below(
                 new_id, ComponentType.CHARGEPOINT, evu_counter)
             Pub().pub(f'openWB/set/chargepoint/{new_id}/config', chargepoint_default)
             Pub().pub(f'openWB/set/chargepoint/{new_id}/set/manual_lock', False)
@@ -182,7 +182,7 @@ class Command:
         """ löscht ein Chargepoint.
         """
         if self.max_id_hierarchy >= payload["data"]["id"]:
-            data.data.counter_data["all"].hierarchy_remove_item(payload["data"]["id"])
+            data.data.counter_all_data.hierarchy_remove_item(payload["data"]["id"])
             ProcessBrokerBranch(f'chargepoint/{payload["data"]["id"]}/').remove_topics()
             pub_success_user(payload, connection_id, f'Ladepunkt mit ID \'{payload["data"]["id"]}\' gelöscht.')
         else:
@@ -356,8 +356,8 @@ class Command:
         component_default["id"] = new_id
         general_type = special_to_general_type_mapping(payload["data"]["type"])
         try:
-            data.data.counter_data["all"].hierarchy_add_item_below(
-                new_id, general_type, data.data.counter_data["all"].get_id_evu_counter())
+            data.data.counter_all_data.hierarchy_add_item_below(
+                new_id, general_type, data.data.counter_all_data.get_id_evu_counter())
         except (TypeError, IndexError):
             if general_type == ComponentType.COUNTER:
                 # es gibt noch keinen EVU-Zähler
@@ -367,7 +367,7 @@ class Command:
                               "type": ComponentType.COUNTER.value,
                               "children": []
                           }] +
-                          data.data.counter_data["all"].data["get"]["hierarchy"])
+                          data.data.counter_all_data.data.get.hierarchy)
             else:
                 pub_error_user(payload, connection_id, "Bitte erst einen EVU-Zähler konfigurieren!")
                 return
@@ -692,7 +692,7 @@ class ProcessBrokerBranch:
             if "openWB/system/device/" in msg.topic and "component" in msg.topic and "config" in msg.topic:
                 payload = decode_payload(msg.payload)
                 topic = type_to_topic_mapping(payload["type"])
-                data.data.counter_data["all"].hierarchy_remove_item(payload["id"])
+                data.data.counter_all_data.hierarchy_remove_item(payload["id"])
                 client.subscribe(f'openWB/{topic}/{payload["id"]}/#', 2)
 
     def __on_message_max_id(self, client, userdata, msg):
