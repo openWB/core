@@ -273,7 +273,10 @@ class Ev:
         except Exception:
             log.exception("Fehler im ev-Modul "+str(self.num))
 
-    def get_required_current(self, charged_since_mode_switch: float) -> Tuple[bool, Optional[str], str, float]:
+    def get_required_current(self,
+                             charged_since_mode_switch: float,
+                             max_phases: int,
+                             phase_switch_supported: bool) -> Tuple[bool, Optional[str], str, float, int]:
         """ ermittelt, ob und mit welchem Strom das EV geladen werden soll (unabhängig vom Lastmanagement)
 
         Parameter
@@ -291,7 +294,7 @@ class Ev:
         required_current: int
             Strom, der nach Ladekonfiguration benötigt wird
         """
-        submode = None
+        phases = None
         required_current = None
         message = None
         state = True
@@ -299,7 +302,12 @@ class Ev:
             if self.charge_template.data.chargemode.selected == "scheduled_charging":
                 used_amount = charged_since_mode_switch - self.data.control_parameter.imported_at_plan_start
                 plan_data = self.charge_template.scheduled_charging_recent_plan(
-                    self.data.get.soc, self.ev_template, self.data.control_parameter.phases, used_amount)
+                    self.data.get.soc,
+                    self.ev_template,
+                    self.data.control_parameter.phases,
+                    used_amount,
+                    max_phases,
+                    phase_switch_supported)
                 if plan_data:
                     name = self.charge_template.data.chargemode.scheduled_charging.plans[plan_data["num"]].name
                     # Wenn mit einem neuen Plan geladen wird, muss auch die Energiemenge von neuem gezählt werden.
@@ -312,8 +320,8 @@ class Ev:
                             charged_since_mode_switch)
                 else:
                     name = None
-                required_current, submode, message = self.charge_template.scheduled_charging_calc_current(
-                    plan_data, self.data.get.soc, used_amount)
+                required_current, submode, message, phases = self.charge_template.scheduled_charging_calc_current(
+                    plan_data, self.data.get.soc, used_amount, max_phases)
                 self.data.control_parameter.current_plan = name
                 Pub().pub(f"openWB/set/vehicle/{self.num}/control_parameter/current_plan", name)
 
@@ -351,30 +359,16 @@ class Ev:
                     required_current, submode, message = self.charge_template.stop()
             if submode == "stop" or (self.charge_template.data.chargemode.selected == "stop"):
                 state = False
-
-            return state, message, submode, required_current
+            if phases is None:
+                phases = self.data.control_parameter.phases
+            return state, message, submode, required_current, phases
         except Exception:
             log.exception("Fehler im ev-Modul "+str(self.num))
-            return False, "ein interner Fehler aufgetreten ist: "+traceback.format_exc(), "stop", 0
+            return False, "ein interner Fehler aufgetreten ist.", "stop", 0, self.data.control_parameter.phases
 
-    def check_state(self, required_current, set_current):
+    def check_state(self, required_current: float, set_current: float) -> Tuple[bool, bool]:
         """ prüft, ob sich etwas an den Parametern für die Regelung geändert hat,
         sodass der LP neu in die Priorisierung eingeordnet werden muss und veröffentlicht die Regelparameter.
-
-        Parameter
-        ---------
-        required_current: int
-            neue Stromstärke, mit der geladen werden soll
-
-        set_current: int
-            Soll-Stromstärke
-
-        Return
-        ------
-        current_changed: bool
-            Die Sollstromstärke wurde geändert.
-        mode_changed: bool
-            Der Lademodus wurde geändert.
         """
         try:
             current_changed = False
@@ -694,21 +688,38 @@ class ChargeTemplate:
                                        soc: float,
                                        ev_template: EvTemplate,
                                        phases: int,
-                                       used_amount: float) -> Dict[str, Any]:
+                                       used_amount: float,
+                                       max_phases,
+                                       phase_switch_supported: bool) -> Dict[str, Any]:
         """ prüft, ob der Ziel-SoC oder die Ziel-Energiemenge erreicht wurde und stellt den zur Erreichung nötigen
         Ladestrom ein. Um etwas mehr Puffer zu haben, wird bis 20 Min nach dem Zieltermin noch geladen, wenn dieser
         nicht eingehalten werden konnte.
         """
+        if phase_switch_supported and data.data.general_data.get_phases_chargemode("scheduled_charging") == 0:
+            max_current = ev_template.data.max_current_multi_phases
+            plan_data = self.search_plan(max_current, soc, ev_template, max_phases, used_amount)
+            if plan_data["remaining_time"] > 300:
+                max_current = ev_template.data.max_current_one_phase
+                plan_data = self.search_plan(max_current, soc, ev_template, 1, used_amount)
+        else:
+            if phases == 1:
+                max_current = ev_template.data.max_current_one_phase
+            else:
+                max_current = ev_template.data.max_current_multi_phases
+            plan_data = self.search_plan(max_current, soc, ev_template, phases, used_amount)
+        return plan_data
+
+    def search_plan(self, max_current: int, soc: float,
+                    ev_template: EvTemplate,
+                    phases: int,
+                    used_amount: float):
         smallest_remaining_time = float("inf")
         plan_data = {}
         battery_capacity = ev_template.data.battery_capacity
         for num, plan in self.data.chargemode.scheduled_charging.plans.items():
             if plan.active:
                 try:
-                    if phases == 1:
-                        max_current = ev_template.data.max_current_one_phase
-                    else:
-                        max_current = ev_template.data.max_current_multi_phases
+
                     available_current = 0.8*max_current*phases
                     if plan.limit.selected == "soc":
                         missing_amount = ((plan.limit.soc - soc)/100) * battery_capacity*1000
@@ -724,6 +735,7 @@ class ChargeTemplate:
                                 plan_data["available_current"] = available_current
                                 plan_data["required_wh"] = missing_amount
                                 plan_data["max_current"] = max_current
+                                plan_data["phases"] = phases
                                 plan_data["num"] = num
                     log.debug(f"Plan-Nr. {num}: Differenz zum Start {remaining_time}s, Dauer {duration}h, "
                               f"Termin heute verpasst: {missed_date_today}")
@@ -731,32 +743,40 @@ class ChargeTemplate:
                     log.exception("Fehler im ev-Modul "+str(self.ct_num))
         return plan_data
 
-    def scheduled_charging_calc_current(self, plan_data: dict, soc: int, used_amount: float) -> Tuple[float, str, str]:
+    def scheduled_charging_calc_current(self,
+                                        plan_data: dict,
+                                        soc: int,
+                                        used_amount: float,
+                                        max_phases: int) -> Tuple[float, str, str, int]:
+        current = 0
+        mode = "stop"
+        phases = plan_data["phases"]
         if plan_data["num"] is None:
             message = "Keine Ladung, da keine Ziel-Termine konfiguriert sind."
-            return 0, "stop", message
+            return current, mode, message, phases
         current_plan = self.data.chargemode.scheduled_charging.plans[plan_data["num"]]
         log.debug("Verwendeter Plan: "+str(current_plan.name))
         if current_plan.limit.selected == "soc" and soc >= current_plan.limit.soc:
             message = "Keine Ladung, da der Ziel-Soc bereits erreicht wurde."
-            return 0, "stop", message
-        if current_plan.limit.selected == "amount" and used_amount >= current_plan.limit.amount:
+        elif current_plan.limit.selected == "amount" and used_amount >= current_plan.limit.amount:
             message = "Keine Ladung, da die Energiemenge bereits erreicht wurde."
-            return 0, "stop", message
-
-        if 0 < plan_data["remaining_time"] < 300:  # 5 Min vor spätestem Ladestart
+        elif 0 < plan_data["remaining_time"] < 300:  # 5 Min vor spätestem Ladestart
             if current_plan.limit.selected == "soc":
                 limit_string = f'einen SoC von {current_plan.limit.soc}%'
             else:
                 limit_string = f'{current_plan.limit.amount/1000}kWh geladene Energie'
             message = (f'Zielladen mit {plan_data["available_current"]}A, um {limit_string} '
                        f' um {current_plan.time} zu erreichen.')
-            return plan_data["available_current"], "instant_charging", message
+            current = plan_data["available_current"]
+            mode = "instant_charging"
+            phases = max_phases
         # weniger als die berechnete Zeit verfügbar
         elif plan_data["remaining_time"] <= 0:  # Ladestart wurde um maximal 20 Min verpasst.
             message = (f'Zielladen mit {plan_data["max_current"]}A. Der verfügbare Ladezeitraum reicht nicht aus, um '
                        'das zu erreichen. Daher wird bis max. 20 Minuten nach dem angegebenen Zieltermin geladen.')
-            return plan_data["max_current"], "instant_charging", message
+            current = plan_data["max_current"]
+            mode = "instant_charging"
+            phases = max_phases
         else:
             # Liegt der Zieltermin innerhalb der nächsten 24h?
             if 300 < plan_data["remaining_time"] < 86400:
@@ -767,18 +787,22 @@ class ChargeTemplate:
                         plan_data["remaining_time"])
                     if timecheck.is_list_valid(hourlist):
                         message = "Sofortladen, da ein günstiger Zeitpunkt zum preisbasierten Laden ist."
-                        return plan_data["available_current"], "instant_charging", message
+                        current = plan_data["available_current"]
+                        mode = "instant_charging"
+                        phases = max_phases
                     else:
                         message = ("Kein Sofortladen, da kein günstiger Zeitpunkt zum preisbasierten Laden "
                                    "ist. Falls vorhanden, wird mit EVU-Überschuss geladen.")
-                        return 1, "pv_charging", message
+                        current = 1
+                        mode = "pv_charging"
                 else:
                     message = ("Kein Sofortladen, da noch Zeit bis zum Zieltermin ist. Falls vorhanden, "
                                "wird mit EVU-Überschuss geladen.")
-                    return 1, "pv_charging", message
+                    current = 1
+                    mode = "pv_charging"
             else:
                 message = "Keine Ladung, da noch mehr als ein Tag bis zum Zieltermin ist. "
-                return 0, "stop", message
+        return current, mode, message, phases
 
     def standby(self):
         """ setzt den benötigten Strom auf 0.
