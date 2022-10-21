@@ -12,6 +12,7 @@ import traceback
 from typing import List, Dict, Optional, Tuple
 
 from control import data
+from dataclass_utils.factories import empty_dict_factory, emtpy_list_factory
 from helpermodules.abstract_plans import ScheduledChargingPlan, TimeChargingPlan
 from helpermodules.pub import Pub
 from helpermodules import timecheck
@@ -37,14 +38,6 @@ def get_charge_template_default() -> dict:
     return ct_default
 
 # Avoid anti-pattern: mtuable default arguments
-
-
-def emtpy_list_factory():
-    return []
-
-
-def empty_dict_factory() -> Dict:
-    return {}
 
 
 @dataclass
