@@ -539,7 +539,7 @@ class Algorithm:
                     scheduled_auto_switch = (control_parameter.chargemode == "scheduled_charging" and
                                              control_parameter.submode == "pv_charging" and
                                              data.data.general_data.get_phases_chargemode("scheduled_charging") == 0)
-                    if (cp.data.config.auto_phase_switch_hw and cp.data.get.charge_state and
+                    if (cp.cp_ev_support_phase_switch() and cp.data.get.charge_state and
                             (pv_auto_switch or scheduled_auto_switch) and
                             control_parameter.timestamp_perform_phase_switch is None):
                         # Gibt die Stromstärke und Phasen zurück, mit denen nach der Umschaltung geladen werden
