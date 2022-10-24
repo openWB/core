@@ -404,7 +404,7 @@ class Chargepoint:
             state = True
         else:
             # Darf Autolock durch Tag überschrieben werden?
-            if (data.data.optional_data["optional"].data["rfid"]["active"] and
+            if (data.data.optional_data.data.rfid.active and
                     self.template.data.rfid_enabling):
                 if self.data.get.rfid is None and self.data.set.rfid is None:
                     state = False
@@ -725,7 +725,7 @@ class Chargepoint:
         """
         msg = ""
         if self.data.get.rfid is not None:
-            if data.data.optional_data["optional"].data["rfid"]["active"]:
+            if data.data.optional_data.data.rfid.active:
                 rfid = self.data.get.rfid
                 if rfid in self.template.data.valid_tags or len(self.template.data.valid_tags) == 0:
                     if self.data.get.rfid_timestamp is None:
@@ -1034,7 +1034,7 @@ class CpTemplate:
         num = -1
         message = None
         try:
-            if data.data.optional_data["optional"].data["rfid"]["active"] and rfid is not None:
+            if data.data.optional_data.data.rfid.active and rfid is not None:
                 vehicle = ev_module.get_ev_to_rfid(rfid)
                 if vehicle is None:
                     num = -1

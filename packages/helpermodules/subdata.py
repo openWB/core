@@ -45,7 +45,7 @@ class SubData:
     counter_data = {}
     bat_data = {}
     general_data = general.General()
-    optional_data = {}
+    optional_data = optional.Optional()
     system_data = {}
     graph_data = {}
 
@@ -542,38 +542,21 @@ class SubData:
         """
         try:
             if re.search("/optional/", msg.topic) is not None:
-                if "optional" not in var:
-                    var["optional"] = optional.Optional()
                 if re.search("/optional/led/", msg.topic) is not None:
-                    if "led" not in var["optional"].data:
-                        var["optional"].data["led"] = {}
-                    self.set_json_payload(var["optional"].data["led"], msg)
+                    self.set_json_payload_class(var.data.led, msg)
                 elif re.search("/optional/rfid/", msg.topic) is not None:
-                    if "rfid" not in var["optional"].data:
-                        var["optional"].data["rfid"] = {}
-                    self.set_json_payload(var["optional"].data["rfid"], msg)
+                    self.set_json_payload_class(var.data.rfid, msg)
                 elif re.search("/optional/int_display/", msg.topic) is not None:
-                    if "int_display" not in var["optional"].data:
-                        var["optional"].data["int_display"] = {}
-                    self.set_json_payload(
-                        var["optional"].data["int_display"], msg)
+                    self.set_json_payload_class(var.data.int_display, msg)
                 elif re.search("/optional/et/", msg.topic) is not None:
-                    if "et" not in var["optional"].data:
-                        var["optional"].data["et"] = {}
                     if re.search("/optional/et/get/", msg.topic) is not None:
-                        if "get" not in var["optional"].data["et"]:
-                            var["optional"].data["et"]["get"] = {}
-                        self.set_json_payload(
-                            var["optional"].data["et"]["get"], msg)
+                        self.set_json_payload_class(var.data.et.get, msg)
                     elif re.search("/optional/et/config/", msg.topic) is not None:
-                        if "config" not in var["optional"].data["et"]:
-                            var["optional"].data["et"]["config"] = {}
-                        self.set_json_payload(
-                            var["optional"].data["et"]["config"], msg)
+                        self.set_json_payload_class(var.data.et.config, msg)
                     else:
-                        self.set_json_payload(var["optional"].data["et"], msg)
+                        self.set_json_payload_class(var.data.et, msg)
                 else:
-                    self.set_json_payload(var["optional"].data, msg)
+                    self.set_json_payload_class(var.data, msg)
         except Exception:
             log.exception("Fehler im subdata-Modul")
 

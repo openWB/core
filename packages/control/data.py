@@ -12,6 +12,7 @@ import dataclass_utils
 from helpermodules.subdata import SubData
 from control.ev import ChargeTemplate, Ev, EvTemplate
 from control.general import General
+from control.optional import Optional
 from modules.common.abstract_device import AbstractDevice
 
 log = logging.getLogger(__name__)
@@ -34,7 +35,7 @@ class Data:
         self._ev_template_data = {}
         self._general_data = General()
         self._graph_data = {}
-        self._optional_data = {}
+        self._optional_data = Optional()
         self._pv_data = {}
         self._system_data = {}
 
@@ -217,7 +218,7 @@ class Data:
         self.event.set()
 
     @property
-    def optional_data(self):
+    def optional_data(self) -> Optional:
         self.event.wait()
         self.event.clear()
         temp = self._optional_data
@@ -274,7 +275,7 @@ class Data:
         self._print_dictionaries(self._ev_template_data)
         log.debug(f"general_data\n{self._general_data.data}")
         self._print_dictionaries(self._graph_data)
-        self._print_dictionaries(self._optional_data)
+        log.debug(f"optional_data\n{self._optional_data.data}")
         self._print_dictionaries(self._pv_data)
         self._print_dictionaries(self._system_data)
         self._print_device_config(self._system_data)
