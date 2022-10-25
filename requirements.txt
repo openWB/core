@@ -3,3 +3,5 @@ paho_mqtt==1.6.1
 pymodbus==2.5.2
 pytest==6.2.5
 requests_mock==1.9.3
+lxml==4.7.1
+aiohttp==3.7.2
