@@ -15,9 +15,8 @@ log = logging.getLogger("soc."+__name__)
 
 # async method, called from sync fetch_soc, required because libvwid expects  async enviroment
 
+
 async def _fetch_soc(userid: str, password: str, vin: str, vehicle: int) -> Union[int, float]:
-
-
     log.debug("vwid:_fetch_soc, userid="+userid)
     # log.debug("vwid:_fetch_soc, password=" + password)
     log.debug("vwid:_fetch_soc, vin="+vin)
@@ -58,9 +57,9 @@ async def _fetch_soc(userid: str, password: str, vin: str, vehicle: int) -> Unio
             try:
                 os.chmod(replyFile, 0o777)
             except Exception as e:
-                log.debug("vehicle " + vehicle+ "chmod replyFile exception, e=" + str(e))
+                log.debug("vehicle " + vehicle + "chmod replyFile exception, e=" + str(e))
                 log.debug("vehicle " + vehicle + "use sudo, user: " + getpass.getuser())
-                os.system("sudo chmod 0777 "+replyFile)
+                os.system("sudo chmod 0777 " + replyFile)
 
             tokens_new = pickle.dumps(w.tokens)
             if (tokens_new != tokens_old):    # check for modified tokens
