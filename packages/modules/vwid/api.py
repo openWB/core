@@ -70,15 +70,15 @@ async def _fetch_soc(userid: str, password: str, vin: str, vehicle: int) -> Unio
                 try:
                     os.chmod(tokensFile, 0o777)
                 except Exception as e:
-                    log.debug("vehicle " + 
-                            vehicle + "chmod tokensFile exception, use sudo, e=" + 
-                            str(e) + "user: " + getpass.getuser())
+                    log.debug("vehicle " +
+                              vehicle + "chmod tokensFile exception, use sudo, e=" +
+                              str(e) + "user: " + getpass.getuser())
                     os.system("sudo chmod 0777 " + tokensFile)
             log.debug("vwid.api._fetch_soc return: soc=" + str(soc) + "range=" + str(range))
             return soc, range
 
 
-def fetch_soc(userid: str, password: str, vin:str, vehicle: int) -> Union[int, float]:
+def fetch_soc(userid: str, password: str, vin: str, vehicle: int) -> Union[int, float]:
     log.debug("vwid:fetch_soc, userid=" + userid)
     # log.debug("vwid:fetch_soc, password=" + password)
     log.debug("vwid:fetch_soc, vin=" + vin)
