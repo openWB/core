@@ -27,12 +27,12 @@ class Soc(AbstractSoc):
     def update(self, charge_state: bool = False) -> None:
         with SingleComponentUpdateContext(self.component_info):
             soc, range = api.fetch_soc(
-                self.config.configuration.userid, 
-                self.config.configuration.password, 
-                self.config.configuration.vin, 
+                self.config.configuration.userid,
+                self.config.configuration.password,
+                self.config.configuration.vin,
                 self.vehicle)
             log.debug("vwid: update return: soc="+str(soc)+"range="+str(range))
-            self.store.set(CarState(soc,range))
+            self.store.set(CarState(soc, range))
 
 
 def vwid_update(userid: str, password: str, vin: str, charge_point: int):
@@ -45,4 +45,3 @@ def main(argv: List[str]):
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=VWId)
-

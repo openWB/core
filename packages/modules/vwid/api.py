@@ -6,21 +6,17 @@ from modules.vwid import libvwid
 import os
 import aiohttp
 import asyncio
-import time
 import json
 import pickle
-from datetime import datetime
 import getpass
-
-#//from modules.common import req
 from modules.common.store import RAMDISK_PATH
 
 log = logging.getLogger("soc."+__name__)
 
 # async method, called from sync fetch_soc, required because libvwid expects  async enviroment
-async def _fetch_soc(userid: str, password: str, vin:str, vehicle: int) -> Union[int, float]:
+async def _fetch_soc(userid: str, password: str, vin: str, vehicle: int) -> Union[int, float]:
     log.debug("vwid:_fetch_soc, userid="+userid)
-    #log.debug("vwid:_fetch_soc, password="+password)
+    # log.debug("vwid:_fetch_soc, password="+password)
     log.debug("vwid:_fetch_soc, vin="+vin)
     log.debug("vwid:_fetch_soc, vehicle="+vehicle)
 
@@ -33,15 +29,15 @@ async def _fetch_soc(userid: str, password: str, vin:str, vehicle: int) -> Union
         w.set_credentials(userid, password)
 
         try:
-            tf = open(tokensFile, "rb")     # try to open tokens file
-            w.tokens = pickle.load(tf)      # initialize tokens in vwid
-            tokens_old = pickle.dumps(w.tokens) # remember current tokens
+            tf = open(tokensFile, "rb")           # try to open tokens file
+            w.tokens = pickle.load(tf)            # initialize tokens in vwid
+            tokens_old = pickle.dumps(w.tokens)   # remember current tokens
             w.headers['Authorization'] = 'Bearer %s' % w.tokens["accessToken"]
             tf.close()
         except Exception as e:
-            log.debug("vehicle "+vehicle+ "tokens initialization exception: e="+str(e))
-            log.debug("vehicle "+vehicle+ "tokens initialization exception: set tokens_old to initial value")
-            tokens_old = bytearray(1)   # if no old token found set tokens_old to dummy value
+            log.debug("vehicle " + vehicle + "tokens initialization exception: e=" + str(e))
+            log.debug("vehicle "+ vehicle + "tokens initialization exception: set tokens_old to initial value")
+            tokens_old = bytearray(1)             # if no old token found set tokens_old to dummy value
 
         data = await w.get_status()
         if (data):
@@ -80,7 +76,7 @@ async def _fetch_soc(userid: str, password: str, vin:str, vehicle: int) -> Union
 
 def fetch_soc(userid: str, password: str, vin:str, vehicle: int) -> Union[int, float]:
     log.debug("vwid:fetch_soc, userid="+userid)
-    #log.debug("vwid:fetch_soc, password="+password)
+    # log.debug("vwid:fetch_soc, password="+password)
     log.debug("vwid:fetch_soc, vin="+vin)
     log.debug("vwid:fetch_soc, vehicle="+vehicle)
 
@@ -90,4 +86,3 @@ def fetch_soc(userid: str, password: str, vin:str, vehicle: int) -> Union[int, f
     soc, range = loop.run_until_complete(_fetch_soc(userid, password, vin, vehicle))
     log.debug("vwid.api.fetch_soc return: soc="+str(soc)+"range="+str(range))
     return soc, range
-
