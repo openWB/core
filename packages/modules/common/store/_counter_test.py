@@ -9,7 +9,8 @@ import pytest
 from control import data
 from control.bat import Bat
 from control.chargepoint import Chargepoint
-from control.counter import Counter, CounterAll
+from control.counter import Counter
+from control.counter_all import CounterAll
 from control.pv import Pv
 from modules.common.component_state import CounterState
 from modules.common.store._counter import PurgeCounterState

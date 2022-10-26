@@ -10,7 +10,8 @@ from control.chargepoint import AllChargepoints, Chargepoint
 
 import dataclass_utils
 from helpermodules.subdata import SubData
-from control.counter import Counter, CounterAll
+from control.counter import Counter
+from control.counter_all import CounterAll
 from control.ev import ChargeTemplate, Ev, EvTemplate
 from control.general import General
 from control.optional import Optional
