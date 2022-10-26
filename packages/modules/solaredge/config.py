@@ -4,10 +4,8 @@ from modules.common.component_setup import ComponentSetup
 class SolaredgeConfiguration:
     def __init__(self,
                  port: int = 502,
-                 fix_only_bat_discharging: bool = False,
                  ip_address=None):
         self.port = port
-        self.fix_only_bat_discharging = fix_only_bat_discharging
         self.ip_address = ip_address
 
 

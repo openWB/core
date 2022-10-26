@@ -31,8 +31,8 @@ class SolaredgeInverter:
             self.__tcp_client, self.component_config.configuration.modbus_id, ModbusDataType.UINT_32
         )
 
-    def update(self, state: InverterState) -> None:
-        self.store.set(state)
+    def update(self) -> None:
+        self.store.set(self.read_state())
 
     def read_state(self):
         # 40083 = AC Power value (Watt)

@@ -33,8 +33,8 @@ class SolaredgeExternalInverter:
             self.__tcp_client, self.component_config.configuration.modbus_id, ModbusDataType.UINT_32
         )
 
-    def update(self, state: InverterState) -> None:
-        self.store.set(state)
+    def update(self) -> None:
+        self.store.set(self.read_state())
 
     def read_state(self) -> InverterState:
         power = self._read_scaled_int16(self.registers.powers, 4)[0]
