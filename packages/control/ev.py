@@ -463,8 +463,8 @@ class Ev:
             feed_in_yield = 0
         evu_counter = data.data.counter_all_data.get_evu_counter()
         # verbleibender EVU-Überschuss unter Berücksichtigung der Einspeisegrenze und Speicherleistung
-        all_surplus = -(evu_counter.data["get"]["power"] + evu_counter.data["set"]["released_surplus"] -
-                        evu_counter.data["set"]["reserved_surplus"] + feed_in_yield)
+        all_surplus = -(evu_counter.data.get.power + evu_counter.data.set.released_surplus -
+                        evu_counter.data.set.reserved_surplus + feed_in_yield)
         if phases_in_use == 1:
             direction_str = "Umschaltverzögerung von 1 auf 3"
             delay = pv_config.phase_switch_delay * 60
@@ -498,7 +498,7 @@ class Ev:
                     # Wenn nach der Umschaltung weniger Leistung benötigt wird, soll während der Verzögerung keine
                     # neuen eingeschaltet werden.
                     data.data.counter_all_data.get_evu_counter(
-                    ).data["set"]["reserved_surplus"] += max(0, required_power)
+                    ).data.set.reserved_surplus += max(0, required_power)
                     message = f'{direction_str} Phasen für {delay/60} Min aktiv.'
             else:
                 condition_1_to_3 = max(get_currents) > max_current and all_surplus > 0 and phases_in_use == 1
@@ -510,14 +510,14 @@ class Ev:
                     else:
                         timestamp_auto_phase_switch = None
                         data.data.counter_all_data.get_evu_counter(
-                        ).data["set"]["reserved_surplus"] -= max(0, required_power)
+                        ).data.set.reserved_surplus -= max(0, required_power)
                         phases_to_use = new_phase
                         current = new_current
                         log.debug("Phasenumschaltung kann nun durchgeführt werden.")
                 else:
                     timestamp_auto_phase_switch = None
                     data.data.counter_all_data.get_evu_counter(
-                    ).data["set"]["reserved_surplus"] -= max(0, required_power)
+                    ).data.set.reserved_surplus -= max(0, required_power)
                     message = f"{direction_str} Phasen abgebrochen."
 
         if message:
@@ -541,17 +541,17 @@ class Ev:
             if self.data.control_parameter.phases == 3:
                 reserved = self.ev_template.data.max_current_single_phase * \
                     230 - self.data.control_parameter.required_current * 3 * 230
-                data.data.counter_all_data.get_evu_counter().data["set"]["reserved_surplus"] -= reserved
+                data.data.counter_all_data.get_evu_counter().data.set.reserved_surplus -= reserved
                 log.debug(
                     "Zurücksetzen der reservierten Leistung für die Phasenumschaltung. reservierte Leistung: " +
-                    str(data.data.counter_all_data.get_evu_counter().data["set"]["reserved_surplus"]))
+                    str(data.data.counter_all_data.get_evu_counter().data.set.reserved_surplus))
             else:
                 reserved = self.data.control_parameter.required_current * \
                     3 * 230 - self.ev_template.data.max_current_single_phase * 230
-                data.data.counter_all_data.get_evu_counter().data["set"]["reserved_surplus"] -= reserved
+                data.data.counter_all_data.get_evu_counter().data.set.reserved_surplus -= reserved
                 log.debug(
                     "Zurücksetzen der reservierten Leistung für die Phasenumschaltung. reservierte Leistung: " +
-                    str(data.data.counter_all_data.get_evu_counter().data["set"]["reserved_surplus"]))
+                    str(data.data.counter_all_data.get_evu_counter().data.set.reserved_surplus))
 
     def load_default_profile(self):
         """ prüft, ob nach dem Abstecken das Standardprofil geladen werden soll und lädt dieses ggf..

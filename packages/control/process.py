@@ -89,7 +89,7 @@ class Process:
         # Unstimmige Werte loggen
         if (charging_ev.data.control_parameter.timestamp_switch_on_off is not None and
                 not chargepoint.data.get.charge_state and
-                data.data.counter_all_data.get_evu_counter().data["set"]["reserved_surplus"] == 0):
+                data.data.counter_all_data.get_evu_counter().data.set.reserved_surplus == 0):
             log.error("Reservierte Leistung kann am Algorithmus-Ende nicht 0 sein.")
         if (chargepoint.data.set.charging_ev_data.ev_template.data.prevent_phase_switch and
                 chargepoint.data.get.charge_state and

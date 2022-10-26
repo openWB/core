@@ -580,10 +580,10 @@ class Chargepoint:
                               "/control_parameter/timestamp_perform_phase_switch", None)
                     # Aktuelle Ladeleistung und Differenz wieder freigeben.
                     if charging_ev.data.control_parameter.phases == 3:
-                        evu_counter.data["set"]["reserved_surplus"] -= charging_ev.data. \
+                        evu_counter.data.set.reserved_surplus -= charging_ev.data. \
                             control_parameter.required_current * 3 * 230
                     elif charging_ev.data.control_parameter.phases == 1:
-                        evu_counter.data["set"]["reserved_surplus"] -= charging_ev.ev_template. \
+                        evu_counter.data.set.reserved_surplus -= charging_ev.ev_template. \
                             data.max_current_single_phase * 230
                 else:
                     # Wenn eine Umschaltung im Gange ist, muss erst gewartet werden, bis diese fertig ist.
@@ -624,7 +624,7 @@ class Chargepoint:
                                 message = "Umschaltung von 1 auf 3 Phasen."
                                 # Timestamp für die Durchführungsdauer
                                 # Ladeleistung reservieren, da während der Umschaltung die Ladung pausiert wird.
-                                evu_counter.data["set"]["reserved_surplus"] += charging_ev.data.\
+                                evu_counter.data.set.reserved_surplus += charging_ev.data.\
                                     control_parameter.required_current * 3 * 230
                                 charging_ev.data.control_parameter.timestamp_perform_phase_switch = create_timestamp()
                                 Pub().pub("openWB/set/vehicle/"+str(charging_ev.num) +
@@ -638,7 +638,7 @@ class Chargepoint:
                                           "/control_parameter/timestamp_perform_phase_switch",
                                           charging_ev.data.control_parameter.timestamp_perform_phase_switch)
                                 # Ladeleistung reservieren, da während der Umschaltung die Ladung pausiert wird.
-                                evu_counter.data["set"]["reserved_surplus"] += charging_ev. \
+                                evu_counter.data.set.reserved_surplus += charging_ev. \
                                     ev_template.data.max_current_single_phase * 230
                             self.set_state_and_log(message)
                             if self.data.set.phases_to_use != charging_ev.data.control_parameter.phases:
@@ -850,7 +850,7 @@ class Chargepoint:
                     else:
                         if (charging_ev.data.control_parameter.timestamp_switch_on_off is not None and
                                 not self.data.get.charge_state and
-                                data.data.counter_all_data.get_evu_counter().data["set"]["reserved_surplus"] == 0):
+                                data.data.counter_all_data.get_evu_counter().data.set.reserved_surplus == 0):
                             log.error("Reservierte Leistung kann nicht 0 sein.")
 
                         log.debug(

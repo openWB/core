@@ -9,7 +9,7 @@ from typing import Dict
 import re
 import subprocess
 
-from control import bat
+from control import bat_all, bat, pv_all
 from control import chargepoint
 from control import counter
 from control import counter_all
@@ -36,20 +36,22 @@ class SubData:
     """
 
     # Instanzen
-    cp_data = {}
+    cp_data: Dict[str, chargepoint.Chargepoint] = {}
     cp_all_data = chargepoint.AllChargepoints()
-    cp_template_data = {}
-    pv_data = {}
-    ev_data = {}
-    ev_template_data = {}
-    ev_charge_template_data = {}
-    counter_data = {}
+    cp_template_data: Dict[str, chargepoint.CpTemplate] = {}
+    pv_data: Dict[str, pv.Pv] = {}
+    pv_all_data = pv_all.PvAll()
+    ev_data: Dict[str, ev.Ev] = {}
+    ev_template_data: Dict[str, ev.EvTemplate] = {}
+    ev_charge_template_data: Dict[str, ev.ChargeTemplate] = {}
+    counter_data: Dict[str, counter.Counter] = {}
     counter_all_data = counter_all.CounterAll()
-    bat_data = {}
+    bat_all_data = bat_all.BatAll()
+    bat_data: Dict[str, bat.Bat] = {}
     general_data = general.General()
     optional_data = optional.Optional()
     system_data = {}
-    graph_data = {}
+    graph_data = graph.Graph()
 
     def __init__(self,
                  event_ev_template: threading.Event,
@@ -71,10 +73,6 @@ class SubData:
         self.event_subdata_initialized = event_subdata_initialized
         self.event_vehicle_update_completed = event_vehicle_update_completed
         self.heartbeat = False
-
-        self.bat_data["all"] = bat.BatAll()
-        self.pv_data["all"] = pv.PvAll()
-        self.graph_data["graph"] = graph.Graph()
 
     def sub_topics(self):
         self.internal_broker_client = InternalBrokerClient("mqttsub", self.on_connect, self.on_message)
@@ -441,22 +439,16 @@ class SubData:
                     if "pv"+index not in var:
                         var["pv"+index] = pv.Pv(int(index))
                     if re.search("/pv/[0-9]+/config/", msg.topic) is not None:
-                        self.set_json_payload(var["pv"+index].data["config"], msg)
+                        self.set_json_payload_class(var["pv"+index].data.config, msg)
                     elif re.search("/pv/[0-9]+/get/", msg.topic) is not None:
-                        self.set_json_payload(var["pv"+index].data["get"], msg)
+                        self.set_json_payload_class(var["pv"+index].data.get, msg)
             elif re.search("/pv/", msg.topic) is not None:
                 if re.search("/pv/config/", msg.topic) is not None:
-                    if "config" not in var["all"].data:
-                        var["all"].data["config"] = {}
-                    self.set_json_payload(var["all"].data["config"], msg)
+                    self.set_json_payload_class(self.pv_all_data.data.config, msg)
                 elif re.search("/pv/get/", msg.topic) is not None:
-                    if "get" not in var["all"].data:
-                        var["all"].data["get"] = {}
-                    self.set_json_payload(var["all"].data["get"], msg)
+                    self.set_json_payload_class(self.pv_all_data.data.get, msg)
                 elif re.search("/pv/set/", msg.topic) is not None:
-                    if "set" not in var["all"].data:
-                        var["all"].data["set"] = {}
-                    self.set_json_payload(var["all"].data["set"], msg)
+                    self.set_json_payload_class(self.pv_all_data.data.set, msg)
         except Exception:
             log.exception("Fehler im subdata-Modul")
 
@@ -484,26 +476,16 @@ class SubData:
                     if re.search("/bat/[0-9]+/config$", msg.topic) is not None:
                         self.set_json_payload(var["bat"+index].data, msg)
                     elif re.search("/bat/[0-9]+/get/", msg.topic) is not None:
-                        if "get" not in var["bat"+index].data:
-                            var["bat"+index].data["get"] = {}
-                        self.set_json_payload(var["bat"+index].data["get"], msg)
+                        self.set_json_payload_class(var["bat"+index].data.get, msg)
                     elif re.search("/bat/[0-9]+/set/", msg.topic) is not None:
-                        if "set" not in var["bat"+index].data:
-                            var["bat"+index].data["set"] = {}
-                        self.set_json_payload(var["bat"+index].data["set"], msg)
+                        self.set_json_payload_class(var["bat"+index].data.set, msg)
             elif re.search("/bat/", msg.topic) is not None:
                 if re.search("/bat/get/", msg.topic) is not None:
-                    if "get" not in var["all"].data:
-                        var["all"].data["get"] = {}
-                    self.set_json_payload(var["all"].data["get"], msg)
+                    self.set_json_payload_class(self.bat_all_data.data.get, msg)
                 elif re.search("/bat/set/", msg.topic) is not None:
-                    if "set" not in var["all"].data:
-                        var["all"].data["set"] = {}
-                    self.set_json_payload(var["all"].data["set"], msg)
+                    self.set_json_payload_class(self.bat_all_data.data.set, msg)
                 elif re.search("/bat/config/", msg.topic) is not None:
-                    if "config" not in var["all"].data:
-                        var["all"].data["config"] = {}
-                    self.set_json_payload(var["all"].data["config"], msg)
+                    self.set_json_payload_class(self.bat_all_data.data.config, msg)
         except Exception:
             log.exception("Fehler im subdata-Modul")
 
@@ -595,20 +577,11 @@ class SubData:
                     if "counter"+index not in var:
                         var["counter"+index] = counter.Counter(int(index))
                     if re.search("/counter/[0-9]+/get", msg.topic) is not None:
-                        if "get" not in var["counter"+index].data:
-                            var["counter"+index].data["get"] = {}
-                        self.set_json_payload(
-                            var["counter"+index].data["get"], msg)
+                        self.set_json_payload_class(var["counter"+index].data.get, msg)
                     elif re.search("/counter/[0-9]+/set", msg.topic) is not None:
-                        if "set" not in var["counter"+index].data:
-                            var["counter"+index].data["set"] = {}
-                        self.set_json_payload(
-                            var["counter"+index].data["set"], msg)
+                        self.set_json_payload_class(var["counter"+index].data.set, msg)
                     elif re.search("/counter/[0-9]+/config/", msg.topic) is not None:
-                        if "config" not in var["counter"+index].data:
-                            var["counter"+index].data["config"] = {}
-                        self.set_json_payload(
-                            var["counter"+index].data["config"], msg)
+                        self.set_json_payload_class(var["counter"+index].data.config, msg)
             elif re.search("/counter/", msg.topic) is not None:
                 if re.search("/counter/get", msg.topic) is not None:
                     self.set_json_payload_class(self.counter_all_data.data.get, msg)
@@ -651,11 +624,6 @@ class SubData:
                     var["device"+index] = (dev.Device if hasattr(dev, "Device") else dev.create_device)(config)
                     # Durch das erneute Subscribe werden die Komponenten mit dem aktualisierten TCP-Client angelegt.
                     client.subscribe(f"openWB/system/device/{index}/component/+/config", 2)
-            elif re.search("/device/[0-9]+/get$", msg.topic) is not None:
-                index = get_index(msg.topic)
-                if "get" not in var["device"+index].data:
-                    var["device"+index].data["get"] = {}
-                self.set_json_payload(var["device"+index].data["get"], msg)
             elif re.search("^.+/device/[0-9]+/component/[0-9]+/simulation$", msg.topic) is not None:
                 index = get_index(msg.topic)
                 index_second = get_second_index(msg.topic)
@@ -729,10 +697,7 @@ class SubData:
             enthält Topic und Payload
         """
         try:
-            if re.search("/graph/", msg.topic) is not None:
-                if re.search("/graph/config/", msg.topic) is not None:
-                    if "config" not in var["graph"].data:
-                        var["graph"].data["config"] = {}
-                    self.set_json_payload(var["graph"].data["config"], msg)
+            if re.search("/graph/config/", msg.topic) is not None:
+                self.set_json_payload_class(var.data.config, msg)
         except Exception:
             log.exception("Fehler im subdata-Modul")

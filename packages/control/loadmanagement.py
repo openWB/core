@@ -21,10 +21,10 @@ class Loadmanagement:
                                missing_currents: List[float],
                                counter: Counter,
                                feed_in: int = 0) -> Tuple[List[float], Optional[LimitingValue]]:
-        raw_currents_left = counter.data["set"]["raw_currents_left"]
+        raw_currents_left = counter.data.set.raw_currents_left
         available_currents, limit = self._limit_by_current(missing_currents, raw_currents_left)
         available_currents, limit_power = self._limit_by_power(
-            available_currents, counter.data["set"]["raw_power_left"], feed_in)
+            available_currents, counter.data.set.raw_power_left, feed_in)
         if limit_power is not None:
             limit = limit_power
         if f"counter{counter.num}" == data.data.counter_all_data.get_evu_counter_str():
@@ -38,10 +38,10 @@ class Loadmanagement:
                                        missing_currents: List[float],
                                        counter: Counter,
                                        feed_in: int = 0) -> Tuple[List[float], Optional[LimitingValue]]:
-        raw_currents_left = counter.data["set"]["raw_currents_left"]
+        raw_currents_left = counter.data.set.raw_currents_left
         available_currents, limit = self._limit_by_current(missing_currents, raw_currents_left)
         available_currents, limit_power = self._limit_by_power(
-            available_currents, counter.data["set"]["surplus_power_left"], feed_in)
+            available_currents, counter.data.set.surplus_power_left, feed_in)
         if limit_power is not None:
             limit = limit_power
         if f"counter{counter.num}" == data.data.counter_all_data.get_evu_counter_str():

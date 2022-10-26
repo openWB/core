@@ -30,8 +30,8 @@ class Loadvars:
                 data.data.copy_module_data()
             with ModuleUpdateCompletedContext(self.event_module_update_completed, topic):
                 thread_handler(self._get_general())
-            data.data.pv_data["all"].calc_power_for_all_components()
-            data.data.bat_data["all"].calc_power_for_all_components()
+            data.data.pv_all_data.calc_power_for_all_components()
+            data.data.bat_all_data.calc_power_for_all_components()
         except Exception:
             log.exception("Fehler im loadvars-Modul")
 

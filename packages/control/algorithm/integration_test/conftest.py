@@ -4,7 +4,8 @@ from unittest.mock import Mock
 import pytest
 
 from control import data
-from control.bat import Bat, BatAll
+from control.bat import Bat
+from control.bat_all import BatAll
 from control.chargepoint import Chargepoint
 from control.counter_all import CounterAll
 from control.counter import Counter
@@ -32,10 +33,14 @@ def data_() -> None:
     data.data.counter_data.update({
         "counter0": Counter(0),
         "counter6": Counter(6)})
-    data.data.counter_data["counter0"].data["get"].update({"currents": [0, 2, 1]*3, "power": 690})
-    data.data.counter_data["counter0"].data["config"].update({"max_currents": [32]*3, "max_total_power": 22000})
-    data.data.counter_data["counter6"].data["get"].update({"currents": [0, 4, 2], "power": 1380})
-    data.data.counter_data["counter6"].data["config"].update({"max_currents": [16]*3, "max_total_power": 11000})
+    data.data.counter_data["counter0"].data.get.currents = [0, 2, 1]*3
+    data.data.counter_data["counter0"].data.get.power = 690
+    data.data.counter_data["counter0"].data.config.max_currents = [32]*3
+    data.data.counter_data["counter0"].data.config.max_total_power = 22000
+    data.data.counter_data["counter6"].data.get.currents = [0, 4, 2]
+    data.data.counter_data["counter6"].data.get.power = 1380
+    data.data.counter_data["counter6"].data.config.max_currents = [16]*3
+    data.data.counter_data["counter6"].data.config.max_total_power = 11000
     data.data.counter_all_data = CounterAll()
     data.data.counter_all_data.data.get.hierarchy = NESTED_HIERARCHY
 

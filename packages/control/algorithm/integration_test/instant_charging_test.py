@@ -48,19 +48,17 @@ class ParamsExpectedCounterSet:
 
 
 def assert_counter_set(params: ParamsExpectedCounterSet):
-    assert data.data.counter_data["counter0"].data["set"]["raw_power_left"] == params.expected_raw_power_left
-    assert data.data.counter_data["counter0"].data["set"][
-        "raw_currents_left"] == params.expected_raw_currents_left_counter0
-    assert data.data.counter_data["counter6"].data["set"][
-        "raw_currents_left"] == params.expected_raw_currents_left_counter6
+    assert data.data.counter_data["counter0"].data.set.raw_power_left == params.expected_raw_power_left
+    assert data.data.counter_data["counter0"].data.set.raw_currents_left == params.expected_raw_currents_left_counter0
+    assert data.data.counter_data["counter6"].data.set.raw_currents_left == params.expected_raw_currents_left_counter6
 
 
 def test_start_instant_charging(all_cp_instant_charging_1p, all_cp_not_charging, monkeypatch):
     # alle 3 im Sofortladen, keine Ladung aktiv -> dürfen nur Mindeststrom zugeteilt kriegen
     # setup
-    data.data.counter_data["counter0"].data["set"]["raw_power_left"] = 21310
-    data.data.counter_data["counter0"].data["set"]["raw_currents_left"] = [32, 30, 31]
-    data.data.counter_data["counter6"].data["set"]["raw_currents_left"] = [16, 12, 14]
+    data.data.counter_data["counter0"].data.set.raw_power_left = 21310
+    data.data.counter_data["counter0"].data.set.raw_currents_left = [32, 30, 31]
+    data.data.counter_data["counter6"].data.set.raw_currents_left = [16, 12, 14]
     mockget_component_name_by_id = Mock(return_value="Garage")
     monkeypatch.setattr(additional_current, "get_component_name_by_id", mockget_component_name_by_id)
 
@@ -71,9 +69,9 @@ def test_start_instant_charging(all_cp_instant_charging_1p, all_cp_not_charging,
     assert data.data.cp_data["cp3"].data.set.current == 10
     assert data.data.cp_data["cp4"].data.set.current == 6
     assert data.data.cp_data["cp5"].data.set.current == 6
-    assert data.data.counter_data["counter0"].data["set"]["raw_power_left"] == 16250
-    assert data.data.counter_data["counter0"].data["set"]["raw_currents_left"] == [22, 24, 25]
-    assert data.data.counter_data["counter6"].data["set"]["raw_currents_left"] == [16, 6, 8]
+    assert data.data.counter_data["counter0"].data.set.raw_power_left == 16250
+    assert data.data.counter_data["counter0"].data.set.raw_currents_left == [22, 24, 25]
+    assert data.data.counter_data["counter6"].data.set.raw_currents_left == [16, 6, 8]
 
 
 @dataclass
@@ -115,9 +113,9 @@ cases_limit = [
 @pytest.mark.parametrize("params", cases_limit, ids=[c.name for c in cases_limit])
 def test_instant_charging_limit(params: ParamsLimit, all_cp_instant_charging_1p, all_cp_charging_1p, monkeypatch):
     # setup
-    data.data.counter_data["counter0"].data["set"]["raw_power_left"] = params.raw_power_left
-    data.data.counter_data["counter0"].data["set"]["raw_currents_left"] = params.raw_currents_left_counter0
-    data.data.counter_data["counter6"].data["set"]["raw_currents_left"] = params.raw_currents_left_counter6
+    data.data.counter_data["counter0"].data.set.raw_power_left = params.raw_power_left
+    data.data.counter_data["counter0"].data.set.raw_currents_left = params.raw_currents_left_counter0
+    data.data.counter_data["counter6"].data.set.raw_currents_left = params.raw_currents_left_counter6
     mockget_component_name_by_id = Mock(return_value="Garage")
     monkeypatch.setattr(additional_current, "get_component_name_by_id", mockget_component_name_by_id)
     # execution
@@ -193,9 +191,9 @@ def test_control_parameter_instant_charging(params: ParamsControlParameter, all_
     data.data.cp_data["cp4"].data.set.charging_ev_data.data.control_parameter.submode = params.submode_cp4
     data.data.cp_data["cp5"].data.set.charging_ev_data.data.control_parameter.prio = params.prio_cp5
     data.data.cp_data["cp5"].data.set.charging_ev_data.data.control_parameter.submode = params.submode_cp5
-    data.data.counter_data["counter0"].data["set"]["raw_power_left"] = 22080
-    data.data.counter_data["counter0"].data["set"]["raw_currents_left"] = [32]*3
-    data.data.counter_data["counter6"].data["set"]["raw_currents_left"] = [16]*3
+    data.data.counter_data["counter0"].data.set.raw_power_left = 22080
+    data.data.counter_data["counter0"].data.set.raw_currents_left = [32]*3
+    data.data.counter_data["counter6"].data.set.raw_currents_left = [16]*3
     mockget_component_name_by_id = Mock(return_value="Garage")
     monkeypatch.setattr(additional_current, "get_component_name_by_id", mockget_component_name_by_id)
 

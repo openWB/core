@@ -1,5 +1,5 @@
-from operator import add
 import logging
+from operator import add
 
 from control import data
 from helpermodules import compatibility
@@ -64,11 +64,11 @@ class PurgeInverterState:
                     break
             if len(hybrid):
                 for bat in hybrid:
-                    bat_get = data.data.bat_data[bat].data["get"]
-                    state.power -= bat_get["power"]
-                    state.exported += bat_get["imported"] - bat_get["exported"]
-                    if state.currents and bat_get.get("currents"):
-                        state.currents = list(map(add, state.currents, bat_get["currents"]))
+                    bat_get = data.data.bat_data[bat].data.get
+                    state.power -= bat_get.power
+                    state.exported += bat_get.imported - bat_get.exported
+                    if state.currents:
+                        state.currents = list(map(add, state.currents, bat_get.currents))
                     else:
                         state.currents = [0.0]*3
             if state.dc_power is not None:

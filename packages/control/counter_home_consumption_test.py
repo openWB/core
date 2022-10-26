@@ -38,7 +38,7 @@ def test_set_home_consumption(home_consumption: int,
                               data_):
     # setup
     c = hierarchy_standard()
-    data.data.counter_data["counter0"].data["get"]["fault_state"] = FaultStateLevel.NO_ERROR
+    data.data.counter_data["counter0"].data.get.fault_state = FaultStateLevel.NO_ERROR
     c.data.set.invalid_home_consumption = invalid_home_consumption
     c.data.set.home_consumption = 200
     calc_home_consumption_mock = Mock(return_value=[home_consumption, []])

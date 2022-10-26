@@ -6,9 +6,14 @@ import copy
 import logging
 import threading
 from typing import Dict
-from control.chargepoint import AllChargepoints, Chargepoint
+from control.bat import Bat
+from control.bat_all import BatAll
+from control.chargepoint import AllChargepoints, Chargepoint, CpTemplate
+from control.pv import Pv
+from control.pv_all import PvAll
 
 import dataclass_utils
+from helpermodules.graph import Graph
 from helpermodules.subdata import SubData
 from control.counter import Counter
 from control.counter_all import CounterAll
@@ -25,25 +30,26 @@ class Data:
         self.event_module_update_completed = event_module_update_completed
         self.event = threading.Event()
         self.event.set()
-        self._bat_data = {}
-        self._bat_module_data = {}
-        self._counter_data = {}
+        self._bat_data: Dict[str, Bat] = {}
+        self._bat_all_data = BatAll()
+        self._counter_data: Dict[str, Counter] = {}
         self._counter_all_data = CounterAll()
-        self._cp_data = {}
+        self._cp_data: Dict[str, Chargepoint] = {}
         self._cp_all_data = AllChargepoints()
-        self._cp_template_data = {}
-        self._ev_charge_template_data = {}
-        self._ev_data = {}
-        self._ev_template_data = {}
+        self._cp_template_data: Dict[str, CpTemplate] = {}
+        self._ev_charge_template_data: Dict[str, ChargeTemplate] = {}
+        self._ev_data: Dict[str, Ev] = {}
+        self._ev_template_data: Dict[str, EvTemplate] = {}
         self._general_data = General()
-        self._graph_data = {}
+        self._graph_data = Graph()
         self._optional_data = Optional()
-        self._pv_data = {}
+        self._pv_data: Dict[str, Pv] = {}
+        self._pv_all_data = PvAll()
         self._system_data = {}
 
     # getter-Funktion, der Zugriff erfolgt wie bei einem Zugriff auf eine öffentliche Variable.
     @property
-    def bat_data(self):
+    def bat_data(self) -> Dict[str, Bat]:
         """ gibt die Variable zurück. Durch das Event wird verhindert, das gleichzeitig geschrieben und gelesen wird.
 
         Return
@@ -70,7 +76,22 @@ class Data:
         self.event.set()
 
     @property
-    def graph_data(self):
+    def bat_all_data(self) -> BatAll:
+        self.event.wait()
+        self.event.clear()
+        temp = self._bat_all_data
+        self.event.set()
+        return temp
+
+    @bat_all_data.setter
+    def bat_all_data(self, value):
+        self.event.wait()
+        self.event.clear()
+        self._bat_all_data = value
+        self.event.set()
+
+    @property
+    def graph_data(self) -> Graph:
         self.event.wait()
         self.event.clear()
         temp = self._graph_data
@@ -235,7 +256,7 @@ class Data:
         self.event.set()
 
     @property
-    def pv_data(self):
+    def pv_data(self) -> Dict[str, Pv]:
         self.event.wait()
         self.event.clear()
         temp = self._pv_data
@@ -247,6 +268,21 @@ class Data:
         self.event.wait()
         self.event.clear()
         self._pv_data = value
+        self.event.set()
+
+    @property
+    def pv_all_data(self) -> PvAll:
+        self.event.wait()
+        self.event.clear()
+        temp = self._pv_all_data
+        self.event.set()
+        return temp
+
+    @pv_all_data.setter
+    def pv_all_data(self, value):
+        self.event.wait()
+        self.event.clear()
+        self._pv_all_data = value
         self.event.set()
 
     @property
@@ -266,7 +302,7 @@ class Data:
 
     def print_all(self):
         self._print_dictionaries(self._bat_data)
-        self._print_dictionaries(self._bat_module_data)
+        log.debug(f"bat_all_data\n{self._bat_all_data.data}")
         log.debug(f"cp_all_data\n{self._cp_all_data.data}")
         self._print_dictionaries(self._cp_data)
         self._print_dictionaries(self._cp_template_data)
@@ -276,9 +312,10 @@ class Data:
         self._print_dictionaries(self._ev_data)
         self._print_dictionaries(self._ev_template_data)
         log.debug(f"general_data\n{self._general_data.data}")
-        self._print_dictionaries(self._graph_data)
+        log.debug(f"graph_data\n{self._graph_data.data}")
         log.debug(f"optional_data\n{self._optional_data.data}")
         self._print_dictionaries(self._pv_data)
+        log.debug(f"pv_all_data\n{self._pv_all_data.data}")
         self._print_dictionaries(self._system_data)
         self._print_device_config(self._system_data)
         log.debug("\n")
@@ -379,33 +416,29 @@ class Data:
             self.pv_data.clear()
             for pv in SubData.pv_data:
                 stop = False
-                if pv != "all":
-                    for dev in SubData.system_data:
-                        if "device" in dev:
-                            for component in SubData.system_data[dev].components:
-                                if component[9:] == pv[2:]:
-                                    self.pv_data[pv] = copy.deepcopy(SubData.pv_data[pv])
-                                    stop = True
-                                    break
-                        if stop:
-                            break
-                else:
-                    self.pv_data[pv] = copy.deepcopy(SubData.pv_data[pv])
+                for dev in SubData.system_data:
+                    if "device" in dev:
+                        for component in SubData.system_data[dev].components:
+                            if component[9:] == pv[2:]:
+                                self.pv_data[pv] = copy.deepcopy(SubData.pv_data[pv])
+                                stop = True
+                                break
+                    if stop:
+                        break
+                self.pv_all_data = copy.deepcopy(SubData.pv_all_data)
             self.bat_data.clear()
             for bat in SubData.bat_data:
                 stop = False
-                if bat != "all":
-                    for dev in SubData.system_data:
-                        if "device" in dev:
-                            for component in SubData.system_data[dev].components:
-                                if component[9:] == bat[3:]:
-                                    self.bat_data[bat] = copy.deepcopy(SubData.bat_data[bat])
-                                    stop = True
-                                    break
-                        if stop:
-                            break
-                else:
-                    self.bat_data[bat] = copy.deepcopy(SubData.bat_data[bat])
+                for dev in SubData.system_data:
+                    if "device" in dev:
+                        for component in SubData.system_data[dev].components:
+                            if component[9:] == bat[3:]:
+                                self.bat_data[bat] = copy.deepcopy(SubData.bat_data[bat])
+                                stop = True
+                                break
+                    if stop:
+                        break
+                self.bat_all_data = copy.deepcopy(SubData.bat_all_data)
         except Exception:
             log.exception("Fehler im Prepare-Modul")
 

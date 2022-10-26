@@ -2,10 +2,10 @@ import threading
 import pytest
 from typing import List, Optional
 from unittest.mock import Mock
-from control.counter import Counter
+from control.counter import Counter, CounterData, Get, Set
 
-from control.pv import PvAll
-from control.bat import BatAll
+from control.pv_all import PvAll
+from control.bat_all import BatAll
 from control.general import General
 from control.ev import Ev
 from control import data
@@ -21,8 +21,8 @@ def vehicle() -> Ev:
 def data_module() -> None:
     data.data_init(threading.Event())
     data.data.general_data = General()
-    data.data.pv_data["all"] = PvAll()
-    data.data.bat_data["all"] = BatAll()
+    data.data.pv_all_data = PvAll()
+    data.data.bat_all_data = BatAll()
 
 
 class Params:
@@ -108,9 +108,10 @@ cases = [
 @pytest.mark.parametrize("params", cases, ids=[c.name for c in cases])
 def test_auto_phase_switch(monkeypatch, vehicle: Ev, params: Params):
     # setup
-    mock_evu = Mock(spec=Counter, data={
-                    "set": {"reserved_surplus": params.reserved_evu_overhang, "released_surplus": 0},
-                    "get": {"power": params.available_power}})
+    mock_evu = Mock(spec=Counter, data=Mock(spec=CounterData,
+                                            set=Mock(spec=Set, reserved_surplus=params.reserved_evu_overhang,
+                                                     released_surplus=0),
+                                            get=Mock(spec=Get, power=params.available_power)))
     mock_get_evu_counter = Mock(name="power_for_bat_charging", return_value=mock_evu)
     monkeypatch.setattr(data.data.counter_all_data, "get_evu_counter", mock_get_evu_counter)
 
