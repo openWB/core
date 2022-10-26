@@ -31,8 +31,8 @@ class SolaredgeBat:
         self.store = get_bat_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
 
-    def update(self, state: BatState) -> None:
-        self.store.set(state)
+    def update(self) -> None:
+        self.store.set(self.read_state())
 
     def read_state(self):
         power, soc = self.get_values()

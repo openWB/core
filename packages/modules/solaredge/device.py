@@ -5,16 +5,11 @@ from statistics import mean
 from typing import Dict, Iterable, Tuple, Union, Optional, List
 from urllib3.util import parse_url
 
-try:
-    from control import data
-except ImportError:
-    # Modul wird nur in 2.0 benötigt und ist in 1.9 nicht vorhanden
-    pass
 from dataclass_utils import dataclass_from_dict
 from helpermodules.cli import run_using_positional_cli_args
 from modules.common import modbus
 from modules.common.abstract_device import AbstractDevice, DeviceDescriptor
-from modules.common.component_context import MultiComponentUpdateContext, SingleComponentUpdateContext
+from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.component_state import BatState, InverterState
 from modules.common.fault_state import ComponentInfo
 from modules.common.store import get_inverter_value_store, get_bat_value_store
@@ -103,32 +98,11 @@ class Device(AbstractDevice):
     def update(self) -> None:
         log.debug("Start device reading " + str(self.components))
         if self.components:
-            total_power = 0
-            with MultiComponentUpdateContext(self.components):
-                with self.client:
-                    for component in self.components.values():
-                        if isinstance(component, bat.SolaredgeBat):
-                            parent = data.data.counter_data["all"].get_entry_of_parent(component.component_config.id)
-                            if parent.get("type") != "inverter":
-                                log.warning("Solaredge-Speicher sollten als Hybrid-System konfiguriert werden, d.h. " +
-                                            "die Speicher sind in der Hierarchie unter den Wechselrichtern " +
-                                            "anzuordnen.")
-                            state = component.read_state()
-                            component.update(state)
-                            if self.device_config.configuration.fix_only_bat_discharging:
-                                total_power -= min(state.power, 0)
-                            else:
-                                total_power -= state.power
-                    for component in self.components.values():
-                        if isinstance(component, (SolaredgeInverter, SolaredgeExternalInverter)):
-                            state = component.read_state()
-                            # In 1.9 wurde bisher die Summe der WR-Leistung um die Summe der Batterie-Leistung
-                            # bereinigt. Zähler und Ströme wurden nicht bereinigt.
-                            state.power = state.power - total_power/self.inverter_counter
-                            component.update(state)
-                    for component in self.components.values():
-                        if isinstance(component, SolaredgeCounter):
-                            component.update()
+            with self.client:
+                for component in self.components:
+                    # Auch wenn bei einer Komponente ein Fehler auftritt, sollen alle anderen noch ausgelesen werden.
+                    with SingleComponentUpdateContext(self.components[component].component_info):
+                        self.components[component].update()
         else:
             log.warning(
                 self.device_config.name +
