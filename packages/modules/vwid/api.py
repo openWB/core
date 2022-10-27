@@ -22,8 +22,8 @@ async def _fetch_soc(userid: str, password: str, vin: str, vehicle: int) -> Unio
     log.debug("vwid:_fetch_soc, vin="+vin)
     log.debug("vwid:_fetch_soc, vehicle="+vehicle)
 
-    replyFile = RAMDISK_PATH / 'soc_vwid_reply'
-    tokensFile = RAMDISK_PATH / 'soc_vwid_tokens'
+    replyFile = str(RAMDISK_PATH) + '/soc_vwid_reply_vehicle_' + str(vehicle)
+    tokensFile = str(RAMDISK_PATH) + '/soc_vwid_tokens_vehicle_' + str(vehicle)
 
     async with aiohttp.ClientSession() as session:
         w = libvwid.vwid(session)
