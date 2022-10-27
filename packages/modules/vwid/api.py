@@ -37,8 +37,8 @@ async def _fetch_soc(userid: str, password: str, vin: str, vehicle: int) -> Unio
             w.headers['Authorization'] = 'Bearer %s' % w.tokens["accessToken"]
             tf.close()
         except Exception as e:
-            log.debug("vehicle " + vehicle + "tokens initialization exception: e=" + str(e))
-            log.debug("vehicle " + vehicle + "tokens initialization exception: set tokens_old to initial value")
+            log.debug("vehicle " + vehicle + ", tokens initialization exception: e=" + str(e))
+            log.debug("vehicle " + vehicle + ", tokens initialization exception: set tokens_old to initial value")
             tokens_old = bytearray(1)             # if no old token found set tokens_old to dummy value
 
         data = await w.get_status()
@@ -48,8 +48,9 @@ async def _fetch_soc(userid: str, password: str, vin: str, vehicle: int) -> Unio
             try:
                 f = open(replyFile, 'w', encoding='utf-8')
             except Exception as e:
-                log.debug("vehicle " + vehicle + "replyFile open exception: e=" + str(e) + "user: " + getpass.getuser())
-                log.debug("vehicle " + vehicle + "replyFile open Exception, remove existing file")
+                log.debug("vehicle " + vehicle +
+                          ", replyFile open exception: e=" + str(e) + "user: " + getpass.getuser())
+                log.debug("vehicle " + vehicle + ", replyFile open Exception, remove existing file")
                 os.system("sudo rm " + replyFile)
                 f = open(replyFile, 'w', encoding='utf-8')
             json.dump(data, f, ensure_ascii=False, indent=4)
@@ -57,13 +58,13 @@ async def _fetch_soc(userid: str, password: str, vin: str, vehicle: int) -> Unio
             try:
                 os.chmod(replyFile, 0o777)
             except Exception as e:
-                log.debug("vehicle " + vehicle + "chmod replyFile exception, e=" + str(e))
-                log.debug("vehicle " + vehicle + "use sudo, user: " + getpass.getuser())
+                log.debug("vehicle " + vehicle + ", chmod replyFile exception, e=" + str(e))
+                log.debug("vehicle " + vehicle + ", use sudo, user: " + getpass.getuser())
                 os.system("sudo chmod 0777 " + replyFile)
 
             tokens_new = pickle.dumps(w.tokens)
             if (tokens_new != tokens_old):    # check for modified tokens
-                log.debug("vehicle " + vehicle + "tokens_new != tokens_old, rewrite tokens file")
+                log.debug("vehicle " + vehicle + ", tokens_new != tokens_old, rewrite tokens file")
                 tf = open(tokensFile, "wb")
                 pickle.dump(w.tokens, tf)     # write tokens file
                 tf.close()
@@ -71,7 +72,7 @@ async def _fetch_soc(userid: str, password: str, vin: str, vehicle: int) -> Unio
                     os.chmod(tokensFile, 0o777)
                 except Exception as e:
                     log.debug("vehicle " +
-                              vehicle + "chmod tokensFile exception, use sudo, e=" +
+                              vehicle + ", chmod tokensFile exception, use sudo, e=" +
                               str(e) + "user: " + getpass.getuser())
                     os.system("sudo chmod 0777 " + tokensFile)
             log.debug("vwid.api._fetch_soc return: soc=" + str(soc) + "range=" + str(range))
@@ -82,11 +83,11 @@ def fetch_soc(userid: str, password: str, vin: str, vehicle: int) -> Union[int, 
     log.debug("vwid:fetch_soc, userid=" + userid)
     # log.debug("vwid:fetch_soc, password=" + password)
     log.debug("vwid:fetch_soc, vin=" + vin)
-    log.debug("vwid:fetch_soc, vehicle=" + vehicle)
+    log.info("vwid: fetch_soc, vehicle=" + vehicle)
 
 # prepare and call async method
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     soc, range = loop.run_until_complete(_fetch_soc(userid, password, vin, vehicle))
-    log.debug("vwid.api.fetch_soc return: soc=" + str(soc) + "range=" + str(range))
+    log.debug("vwid.api.fetch_soc vehicle " + vehicle + ", return: soc=" + str(soc) + ", range=" + str(range))
     return soc, range

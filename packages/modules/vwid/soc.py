@@ -31,7 +31,7 @@ class Soc(AbstractSoc):
                 self.config.configuration.password,
                 self.config.configuration.vin,
                 self.vehicle)
-            log.debug("vwid: update return: soc="+str(soc)+"range="+str(range))
+            log.info("vwid: vehicle="+str(self.vehicle) + ", return: soc=" + str(soc)+", range=" + str(range))
             self.store.set(CarState(soc, range))
 
 
