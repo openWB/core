@@ -1,7 +1,7 @@
 """Zähler-Logik
 """
 import logging
-from typing import Callable, Dict, List, Union
+from typing import Callable, Dict, List, Tuple, Union
 
 from control import data
 from helpermodules.pub import Pub
@@ -46,27 +46,13 @@ class CounterAll:
         except Exception:
             log.exception("Fehler in der allgemeinen Zähler-Klasse")
 
-    def calc_home_consumption(self) -> None:
+    def set_home_consumption(self) -> None:
         try:
-            power = 0
-            elements = self.get_entry_of_element(self.get_id_evu_counter())["children"]
-            for element in elements:
-                if element["type"] == ComponentType.CHARGEPOINT.value:
-                    power += data.data.cp_data[f"cp{element['id']}"].data.get.power
-                elif element["type"] == ComponentType.BAT.value:
-                    power += data.data.bat_data[f"bat{element['id']}"].data["get"]["power"]
-                elif element["type"] == ComponentType.COUNTER.value:
-                    power += data.data.counter_data[f"counter{element['id']}"].data["get"]["power"]
-                elif element["type"] == ComponentType.INVERTER.value:
-                    power += data.data.pv_data[f"pv{element['id']}"].data["get"]["power"]
-            evu_counter_data = data.data.counter_data[self.get_evu_counter()].data
-            evu = evu_counter_data["get"]["power"]
-
-            home_consumption = int(evu - power)
+            home_consumption, elements = self._calc_home_consumption()
             if home_consumption < 0:
                 log.error(
-                    f"Ungültiger Hausverbrauch: Leistung der Elemente {power}W, "
-                    f"EVU-Leistung {evu}W, Berücksichtigte Komponenten neben EVU {elements}")
+                    f"Ungültiger Hausverbrauch: {home_consumption}W, Berücksichtigte Komponenten neben EVU {elements}")
+                evu_counter_data = data.data.counter_data[self.get_evu_counter()].data
                 if evu_counter_data["get"]["fault_state"] == FaultStateLevel.NO_ERROR:
                     evu_counter_data["get"]["fault_state"] = FaultStateLevel.WARNING.value
                     evu_counter_data["get"][
@@ -92,6 +78,33 @@ class CounterAll:
             Pub().pub("openWB/set/counter/set/home_consumption", self.data["set"]["home_consumption"])
         except Exception:
             log.exception("Fehler in der allgemeinen Zähler-Klasse")
+
+    def _calc_home_consumption(self) -> Tuple[float, List]:
+        power = 0
+        elements = self.get_entry_of_element(self.get_id_evu_counter())["children"]
+        elements_to_sum_up = elements
+        for element in elements:
+            if element["type"] == ComponentType.INVERTER.value:
+                elements_to_sum_up.extend(self._add_hybrid_bat(element['id']))
+        for element in elements_to_sum_up:
+            if element["type"] == ComponentType.CHARGEPOINT.value:
+                power += data.data.cp_data[f"cp{element['id']}"].data.get.power
+            elif element["type"] == ComponentType.BAT.value:
+                power += data.data.bat_data[f"bat{element['id']}"].data["get"]["power"]
+            elif element["type"] == ComponentType.COUNTER.value:
+                power += data.data.counter_data[f"counter{element['id']}"].data["get"]["power"]
+            elif element["type"] == ComponentType.INVERTER.value:
+                power += data.data.pv_data[f"pv{element['id']}"].data["get"]["power"]
+        evu = data.data.counter_data[self.get_evu_counter()].data["get"]["power"]
+        return evu - power, elements_to_sum_up
+
+    def _add_hybrid_bat(self, id: int) -> List:
+        elements = []
+        inverter_children = self.get_entry_of_element(id)["children"]
+        for child in inverter_children:
+            if child["type"] == ComponentType.BAT.value:
+                elements.append(child)
+        return elements
 
     def calc_daily_yield_home_consumption(self):
         """ berechnet die heute im Haus verbrauchte Energie.
