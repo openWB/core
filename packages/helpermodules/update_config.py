@@ -16,7 +16,7 @@ log = logging.getLogger(__name__)
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 2
+    DATASTORE_VERSION = 3
     valid_topic = ["^openWB/bat/config/configured$",
                    "^openWB/bat/set/charging_power_left$",
                    "^openWB/bat/set/switch_on_soc_reached$",
@@ -489,3 +489,17 @@ class UpdateConfig:
                     Pub().pub(f"{simulation_topic}/present_imported", "")
                     Pub().pub(f"{simulation_topic}/present_exported", "")
         Pub().pub("openWB/set/system/datastore_version", 2)
+
+    def upgrade_datastore_2(self) -> None:
+        for topic, payload in self.all_received_topics.items():
+            if re.search(
+                    "openWB/vehicle/template/charge_template/[0-9]+/chargemode/scheduled_charging/plans/[0-9]+",
+                    topic) is not None:
+                payload = decode_payload(payload)
+                if payload["limit"].get("soc"):
+                    updated_payload = payload
+                    updated_payload["limit"]["soc_scheduled"] = payload["limit"]["soc"]
+                    updated_payload["limit"]["soc_limit"] = payload["limit"]["soc"]
+                    updated_payload["limit"].pop("soc")
+                    Pub().pub(topic.replace("openWB/", "openWB/set/"), updated_payload)
+        Pub().pub("openWB/set/system/datastore_version", 3)
