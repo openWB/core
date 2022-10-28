@@ -182,7 +182,7 @@ function refreshChargeTemplate(templateIndex) {
 							// set values from payload
 							schedulePlanElement.find('.charge-point-schedule-name').text(value.name);
 							if (value.limit.selected == "soc") {
-								schedulePlanElement.find('.charge-point-schedule-limit').text(value.limit.soc + "%");
+								schedulePlanElement.find('.charge-point-schedule-limit').text(value.limit.soc_scheduled + "%");
 								schedulePlanElement.find('.charge-point-schedule-limit-icon').removeClass('fa-bolt');
 								schedulePlanElement.find('.charge-point-schedule-limit-icon').addClass('fa-car-battery');
 							} else {
