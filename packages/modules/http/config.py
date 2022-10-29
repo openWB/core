@@ -82,3 +82,23 @@ class HttpInverterSetup(ComponentSetup[HttpInverterConfiguration]):
                  id: int = 0,
                  configuration: HttpInverterConfiguration = None) -> None:
         super().__init__(name, type, id, configuration or HttpInverterConfiguration())
+
+
+@auto_str
+class HttpSocConfiguration:
+    def __init__(self, soc_url=None, range_url=None):
+        self.soc_url = soc_url
+        self.range_url = range_url
+
+
+@auto_str
+class HttpSocSetup(ComponentSetup[HttpSocConfiguration]):
+    def __init__(self,
+                 name: str = "HTTP SOC Module",
+                 type: str = "http",
+                 id: int = 0,
+                 configuration: HttpSocConfiguration = None) -> None:
+        self.name = name
+        self.type = type
+        self.id = id
+        self.configuration = configuration or HttpSocConfiguration()
