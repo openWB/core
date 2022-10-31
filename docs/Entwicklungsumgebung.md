@@ -17,7 +17,7 @@ Genereller Ablauf, um eigene Änderungen beisteuern zu können:
 * Testen.
 * Wenn alles passt, einen PullRequest (PR) gegen das offizielle Repo erstellen: GitHub in VSCode auswählen, rechts neben 'PULL REQUESTS' findet sich ein 'Create Pull Request' - überprüfen ob das Ziel wirklich master in openWB/Core ist, was eigentlich der Fall sein sollte. Änderungen auswählen, auch diese sollten bereits vorselektiert sein, kurze Beschreibung, und PR absetzen.
 
-Hört sich jetzt schlimmer an als es ist, wenn man den Prozess einmal durch hat ist das kein Drama mehr.
+Hört sich jetzt schlimmer an als es ist, wenn man den Prozess einmal durch hat, ist das kein Drama mehr.
 
 Einrichtung Remote Development: 
 
