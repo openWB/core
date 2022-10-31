@@ -27,7 +27,6 @@ def fetch_soc(soc_url: str, range_url: str, vehicle: int) -> Union[int, float]:
         soc = 0
     else:
         soc_text = req.get_http_session().get(soc_url, timeout=5).text
-        soclog.debug("http_soc: soc_text="+soc_text)
         soc = int(soc_text)
     if range_url is None or range_url == "none":
         soclog.warn("http_soc: range_url not defined - set range to 0.0")
