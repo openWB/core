@@ -26,14 +26,15 @@ def frequency_factory() -> Frequency:
 
 
 @dataclass
-class Limit:
+class ScheduledLimit:
     selected: str = "none"
     amount: int = 1000
-    soc: int = 50
+    soc_limit: int = 90
+    soc_scheduled: int = 80
 
 
-def limit_factory() -> Limit:
-    return Limit()
+def scheduled_limit_factory() -> ScheduledLimit:
+    return ScheduledLimit()
 
 
 @dataclass
@@ -49,8 +50,9 @@ class TimeframePlan(PlanBase):
 
 @dataclass
 class ScheduledChargingPlan(PlanBase):
+    current: int = 14
     name: str = "Zielladen-Standard"
-    limit: Limit = field(default_factory=limit_factory)
+    limit: ScheduledLimit = field(default_factory=scheduled_limit_factory)
     time: str = "07:00"  # ToDo: aktuelle Zeit verwenden
 
 
