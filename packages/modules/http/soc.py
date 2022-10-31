@@ -30,7 +30,6 @@ class Soc(AbstractSoc):
                 self.config.configuration.soc_url,
                 self.config.configuration.range_url,
                 self.vehicle)
-            log.info("http_soc: vehicle="+str(self.vehicle) + ", return: soc=" + str(soc)+", range=" + str(range))
             self.store.set(CarState(soc, range))
 
 
