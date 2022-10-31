@@ -677,7 +677,7 @@ class Chargepoint:
                             self.data.config.auto_phase_switch_hw):
                         phases = 1
                     else:
-                        phases = charging_ev.data.control_parameter.phases
+                        phases = self.data.set.phases_to_use
             else:
                 phases = charging_ev.data.control_parameter.phases
                 log.debug(f"Umschaltung wird durchgeführt, Phasenzahl nicht ändern {phases}")
