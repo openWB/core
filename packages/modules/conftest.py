@@ -25,9 +25,9 @@ module = type(sys)('aiohttp')
 module.ClientSession = Mock()
 sys.modules['aiohttp'] = module
 
-module = type(sys)('lxml')
-module.html.fromString = Mock()
-sys.modules['lxml'] = module
+module = type(sys)('lxml.html')
+module.fromString = Mock()
+sys.modules['lxml.html'] = module
 
 
 @pytest.fixture(autouse=True)
