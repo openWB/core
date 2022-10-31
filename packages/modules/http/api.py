@@ -33,7 +33,6 @@ def fetch_soc(soc_url: str, range_url: str, vehicle: int) -> Union[int, float]:
         range = float(0)
     else:
         range_text = req.get_http_session().get(range_url, timeout=5).text
-        soclog.debug("http_soc: range_text="+range_text)
         range = float(range_text)
     soclog.info("http_soc: soc="+str(soc)+", range="+str(range))
     return soc, range
