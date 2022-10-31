@@ -21,6 +21,14 @@ module = type(sys)('pymodbus.payload')
 module.BinaryPayloadDecoder = Mock()
 sys.modules['pymodbus.payload'] = module
 
+module = type(sys)('aiohttp')
+module.BinaryPayloadDecoder = Mock()
+sys.modules['aiohttp'] = module
+
+module = type(sys)('lxml')
+module.BinaryPayloadDecoder = Mock()
+sys.modules['lxml'] = module
+
 
 @pytest.fixture(autouse=True)
 def mock_simcount(monkeypatch) -> Mock:
