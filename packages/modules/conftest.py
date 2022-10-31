@@ -22,11 +22,11 @@ module.BinaryPayloadDecoder = Mock()
 sys.modules['pymodbus.payload'] = module
 
 module = type(sys)('aiohttp')
-module.BinaryPayloadDecoder = Mock()
+module.ClientSession = Mock()
 sys.modules['aiohttp'] = module
 
 module = type(sys)('lxml')
-module.BinaryPayloadDecoder = Mock()
+module.html.fromString = Mock()
 sys.modules['lxml'] = module
 
 
