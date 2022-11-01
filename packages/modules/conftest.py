@@ -7,6 +7,8 @@ from modules.common import simcount
 
 sys.modules['jq'] = type(sys)('jq')
 sys.modules['pymodbus'] = type(sys)('pymodbus')
+sys.modules['aiohttp'] = type(sys)('aiohttp')
+sys.modules['lxml'] = type(sys)('lxml')
 
 module = type(sys)('pymodbus.client.sync')
 module.ModbusSerialClient = Mock()
@@ -20,14 +22,6 @@ sys.modules['pymodbus.constants'] = module
 module = type(sys)('pymodbus.payload')
 module.BinaryPayloadDecoder = Mock()
 sys.modules['pymodbus.payload'] = module
-
-module = type(sys)('aiohttp')
-module.ClientSession = Mock()
-sys.modules['aiohttp'] = module
-
-module = type(sys)('lxml.html')
-module.fromString = Mock()
-sys.modules['lxml.html'] = module
 
 
 @pytest.fixture(autouse=True)
