@@ -503,4 +503,3 @@ class UpdateConfig:
                     updated_payload["limit"].pop("soc")
                     Pub().pub(topic.replace("openWB/", "openWB/set/"), updated_payload)
         Pub().pub("openWB/set/system/datastore_version", 3)
-
