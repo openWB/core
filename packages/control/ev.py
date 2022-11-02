@@ -339,7 +339,9 @@ class Ev:
             # Wenn Zielladen auf Überschuss wartet, prüfen, ob Zeitladen aktiv ist.
             if ((required_current is None or required_current <= 1) and
                     self.charge_template.data.time_charging.active):
-                time_charging_current, submode, message, name = self.charge_template.time_charging()
+                time_charging_current, submode, message, name = self.charge_template.time_charging(
+                    self.data.get.soc
+                )
                 if time_charging_current > 0:
                     self.data.control_parameter.current_plan = name
                     Pub().pub(f"openWB/set/vehicle/{self.num}/control_parameter/current_plan", name)
@@ -622,16 +624,39 @@ class ChargeTemplate:
 
     TIME_CHARGING_NO_PLAN_CONFIGURED = "Keine Ladung, da keine Zeitfenster für Zeitladen konfiguriert sind."
     TIME_CHARGING_NO_PLAN_ACTIVE = "Keine Ladung, da kein Zeitfenster für Zeitladen aktiv ist."
+    TIME_CHARGING_SOC_REACHED = "Keine Ladung, da der Soc bereits erreicht wurde."
+    TIME_CHARGING_AMOUNT_REACHED = "Keine Ladung, da die Energiemenge bereits geladen wurde."
 
-    def time_charging(self) -> Tuple[int, str, Optional[str], Optional[str]]:
+    def time_charging(self,
+                      soc: float,) -> Tuple[int, str, Optional[str], Optional[str]]:
         """ prüft, ob ein Zeitfenster aktiv ist und setzt entsprechend den Ladestrom
         """
         message = None
         try:
             if self.data.time_charging.plans:
                 plan = timecheck.check_plans_timeframe(self.data.time_charging.plans)
-                if plan is not None:
-                    return plan.current, "time_charging", message, plan.name
+                if plan is not None: # SoC Limit hier hinzufügen
+                    # orig
+                    # return plan.current, "time_charging", message, plan.name
+                    # orig
+                    if soc < 36:
+                        return plan.current, "time_charging", message, plan.name
+                    else:
+                        return 0, "stop", self.TIME_CHARGING_SOC_REACHED, plan.name
+                    #if plan.limit.selected == "none":
+                    #    return plan.current, "instant_charging", message
+                    #elif plan.limit.selected == "soc":
+                    #    if soc < plan.limit.soc:
+                    #        return plan.current, "instant_charging", message
+                    #    else:
+                    #        return 0, "stop", self.INSTANT_CHARGING_SOC_REACHED
+                    #elif plan.limit.selected == "amount":
+                    #    if used_amount_instant_charging < self.data.chargemode.instant_charging.limit.amount:
+                    #        return instant_charging.current, "instant_charging", message
+                    #    else:
+                    #        return 0, "stop", self.INSTANT_CHARGING_AMOUNT_REACHED
+                    #else:
+                    #    raise TypeError(f'{instant_charging.limit.selected} unbekanntes Sofortladen-Limit.')
                 else:
                     message = self.TIME_CHARGING_NO_PLAN_ACTIVE
             else:
