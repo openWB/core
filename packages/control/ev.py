@@ -635,27 +635,27 @@ class ChargeTemplate:
         try:
             if self.data.time_charging.plans:
                 plan = timecheck.check_plans_timeframe(self.data.time_charging.plans)
-                if plan is not None: # SoC Limit hier hinzufügen
+                if plan is not None:  # SoC Limit hier hinzufügen
                     # orig
                     # return plan.current, "time_charging", message, plan.name
                     # orig
-                    if soc < 36:
+                    # if soc < 36:
+                    #    return plan.current, "time_charging", message, plan.name
+                    # else:
+                    #    return 0, "stop", self.TIME_CHARGING_SOC_REACHED, plan.name
+                    if plan.limit.selected == "none":
                         return plan.current, "time_charging", message, plan.name
-                    else:
-                        return 0, "stop", self.TIME_CHARGING_SOC_REACHED, plan.name
-                    #if plan.limit.selected == "none":
-                    #    return plan.current, "instant_charging", message
-                    #elif plan.limit.selected == "soc":
-                    #    if soc < plan.limit.soc:
-                    #        return plan.current, "instant_charging", message
-                    #    else:
-                    #        return 0, "stop", self.INSTANT_CHARGING_SOC_REACHED
-                    #elif plan.limit.selected == "amount":
+                    elif plan.limit.selected == "soc":
+                        if soc < plan.limit.soc:
+                            return plan.current, "time_charging", message, plan.name
+                        else:
+                            return 0, "stop", self.INSTANT_CHARGING_SOC_REACHED, plan.name
+                    # elif plan.limit.selected == "amount":
                     #    if used_amount_instant_charging < self.data.chargemode.instant_charging.limit.amount:
                     #        return instant_charging.current, "instant_charging", message
                     #    else:
                     #        return 0, "stop", self.INSTANT_CHARGING_AMOUNT_REACHED
-                    #else:
+                    # else:
                     #    raise TypeError(f'{instant_charging.limit.selected} unbekanntes Sofortladen-Limit.')
                 else:
                     message = self.TIME_CHARGING_NO_PLAN_ACTIVE

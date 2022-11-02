@@ -33,8 +33,19 @@ class ScheduledLimit:
     soc_scheduled: int = 80
 
 
+@dataclass
+class TimeLimit:
+    selected: str = "none"
+    amount: int = 1000
+    soc_limit: int = 70
+
+
 def scheduled_limit_factory() -> ScheduledLimit:
     return ScheduledLimit()
+
+
+def time_limit_factory() -> TimeLimit:
+    return TimeLimit()
 
 
 @dataclass
@@ -60,6 +71,7 @@ class ScheduledChargingPlan(PlanBase):
 class TimeChargingPlan(TimeframePlan):
     name: str = "Zeitladen-Standard"
     current: int = 16
+    limit: TimeLimit = field(default_factory=time_limit_factory)
 
 
 @dataclass
