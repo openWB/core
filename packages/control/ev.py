@@ -638,20 +638,19 @@ class ChargeTemplate:
         try:
             if self.data.time_charging.plans:
                 plan = timecheck.check_plans_timeframe(self.data.time_charging.plans)
-                if plan is not None:  
-                    if plan.limit.selected == "none": # kein Limit konfiguriert, mit konfigurierter Stromstärke laden
+                if plan is not None:
+                    if plan.limit.selected == "none":  # kein Limit konfiguriert, mit konfigurierter Stromstärke laden
                         return plan.current, "time_charging", message, plan.name
-                    elif plan.limit.selected == "soc": # SoC Limit konfiguriert
+                    elif plan.limit.selected == "soc":  # SoC Limit konfiguriert
                         if soc < plan.limit.soc_limit:
-                            return plan.current, "time_charging", message, plan.name # Limit nicht erreicht
+                            return plan.current, "time_charging", message, plan.name  # Limit nicht erreicht
                         else:
-                            return 0, "stop", self.TIME_CHARGING_SOC_REACHED, plan.name # Limit erreicht, Ladestrom auf 0 setzen
-                    elif plan.limit.selected == "amount": # Energiemengenlimit konfiguriert
-                        log.debug("Aktiver Plan: "+str(plan.name)+" geladene Energie:"+str(used_amount_time_charging)+" konfiguriertes Limit: "+str(plan.limit.amount))
+                            return 0, "stop", self.TIME_CHARGING_SOC_REACHED, plan.name  # Limit erreicht
+                    elif plan.limit.selected == "amount":  # Energiemengenlimit konfiguriert
                         if used_amount_time_charging < plan.limit.amount:
-                            return plan.current, "time_charging", message, plan.name # Limit nicht erreicht
+                            return plan.current, "time_charging", message, plan.name  # Limit nicht erreicht
                         else:
-                            return 0, "stop", self.TIME_CHARGING_AMOUNT_REACHED, plan.name # Limit erreicht, Ladestrom auf 0 setzen
+                            return 0, "stop", self.TIME_CHARGING_AMOUNT_REACHED, plan.name  # Limit erreicht
                     else:
                         raise TypeError(f'{plan.limit.selected} unbekanntes Sofortladen-Limit.')
                 else:
