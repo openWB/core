@@ -507,7 +507,7 @@ class UpdateConfig:
     def upgrade_datastore_3(self) -> None:
         for topic, payload in self.all_received_topics.items():
             if re.search(
-                    "openWB/vehicle/template/charge_template/[0-9]+/chargemode/time_charging/plans/[0-9]+",
+                    "openWB/vehicle/template/charge_template/[0-9]+/time_charging/plans/[0-9]+",
                     topic) is not None:
                 payload = decode_payload(payload)
                 if payload["limit"].get("soc"):
