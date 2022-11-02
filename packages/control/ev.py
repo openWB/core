@@ -646,7 +646,7 @@ class ChargeTemplate:
                     if plan.limit.selected == "none":
                         return plan.current, "time_charging", message, plan.name
                     elif plan.limit.selected == "soc":
-                        if soc < plan.limit.soc:
+                        if soc < plan.limit.soc_limit:
                             return plan.current, "time_charging", message, plan.name
                         else:
                             return 0, "stop", self.INSTANT_CHARGING_SOC_REACHED, plan.name
