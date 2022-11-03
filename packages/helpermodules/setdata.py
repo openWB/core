@@ -623,8 +623,6 @@ class SetData:
                 self._validate_value(msg, int, [(10, 10), (20, 20), (60, 60)])
             elif "openWB/set/general/external_buttons_hw" in msg.topic:
                 self._validate_value(msg, bool)
-            elif "openWB/set/general/chargemode_config/individual_mode" in msg.topic:
-                self._validate_value(msg, bool)
             elif "openWB/set/general/chargemode_config/unbalanced_load_limit" in msg.topic:
                 self._validate_value(msg, int, [(10, 32)])
             elif "openWB/set/general/chargemode_config/unbalanced_load" in msg.topic:

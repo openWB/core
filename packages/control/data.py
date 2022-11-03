@@ -432,12 +432,8 @@ class Data:
         self.ev_charge_template_data = copy.deepcopy(SubData.ev_charge_template_data)
         for vehicle in self.ev_data:
             try:
-                # Globaler oder individueller Lademodus?
-                if self.general_data.data.chargemode_config.individual_mode:
-                    self.ev_data[vehicle].charge_template = self.ev_charge_template_data["ct" + str(
-                        self.ev_data[vehicle].data.charge_template)]
-                else:
-                    self.ev_data[vehicle].charge_template = self.ev_charge_template_data["ct0"]
+                self.ev_data[vehicle].charge_template = self.ev_charge_template_data["ct" + str(
+                    self.ev_data[vehicle].data.charge_template)]
                 # zuerst das aktuelle Template laden
                 self.ev_data[vehicle].ev_template = self.ev_template_data["et" + str(
                     self.ev_data[vehicle].data.ev_template)]

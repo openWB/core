@@ -1082,12 +1082,8 @@ class ChargepointStateUpdate:
                     ev_list[ev] = copy.deepcopy(self.ev_data[ev])
                 for vehicle in ev_list:
                     try:
-                        # Globaler oder individueller Lademodus?
-                        if data.data.general_data.data.chargemode_config.individual_mode:
-                            ev_list[vehicle].charge_template = copy.deepcopy(self.ev_charge_template_data["ct" + str(
-                                ev_list[vehicle].data.charge_template)])
-                        else:
-                            ev_list[vehicle].charge_template = copy.deepcopy(self.ev_charge_template_data["ct0"])
+                        ev_list[vehicle].charge_template = copy.deepcopy(self.ev_charge_template_data["ct" + str(
+                            ev_list[vehicle].data.charge_template)])
                         # zuerst das aktuelle Template laden
                         ev_list[vehicle].ev_template = copy.deepcopy(self.ev_template_data["et" + str(
                             ev_list[vehicle].data.ev_template)])
