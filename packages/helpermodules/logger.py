@@ -16,7 +16,7 @@ def filter_soc_pos(record) -> bool:
 
 
 def setup_logging() -> None:
-    format_str_detailed = '%(asctime)s - {%(name)s:%(lineno)s} - %(levelname)s - %(message)s'
+    format_str_detailed = '%(asctime)s - {%(name)s:%(lineno)s} - {%(levelname)s:%(threadName)s} - %(message)s'
     format_str_short = '%(asctime)s - %(message)s'
     logging.basicConfig(filename=str(Path(__file__).resolve().parents[2] / 'ramdisk' / ('main.log')),
                         format=format_str_detailed,

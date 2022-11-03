@@ -39,12 +39,14 @@ class Loadvars:
         for item in data.data.system_data.values():
             try:
                 if isinstance(item, AbstractDevice):
-                    modules_threads.append(threading.Thread(target=item.update, args=()))
+                    modules_threads.append(threading.Thread(target=item.update, args=(),
+                                           name=f"device{item.device_config.id}"))
             except Exception:
                 log.exception(f"Fehler im loadvars-Modul bei Element {item}")
         for cp in data.data.cp_data.values():
             try:
-                modules_threads.append(threading.Thread(target=cp.chargepoint_module.get_values, args=()))
+                modules_threads.append(threading.Thread(target=cp.chargepoint_module.get_values,
+                                       args=(), name=f"cp{cp.chargepoint_module.id}"))
             except Exception:
                 log.exception(f"Fehler im loadvars-Modul bei Element {cp.num}")
         thread_handler(modules_threads)
@@ -57,12 +59,15 @@ class Loadvars:
                 if element["type"] == ComponentType.CHARGEPOINT.value:
                     chargepoint = data.data.cp_data[f'{type_to_topic_mapping(element["type"])}{element["id"]}']
                     modules_threads.append(threading.Thread(
-                        target=update_values, args=(chargepoint.chargepoint_module,)))
+                        target=update_values,
+                        args=(chargepoint.chargepoint_module,),
+                        name=f"cp{chargepoint.chargepoint_module.id}"))
                 else:
                     component = self.__get_component_obj_by_id(element["id"])
                     if component is None:
                         continue
-                    modules_threads.append(threading.Thread(target=update_values, args=(component,)))
+                    modules_threads.append(threading.Thread(target=update_values, args=(
+                        component,), name=f"component{component.component_config.id}"))
             except Exception:
                 log.exception(f"Fehler im loadvars-Modul bei Element {element}")
         thread_handler(modules_threads)
