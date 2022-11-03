@@ -29,10 +29,10 @@ Für Live-Debugging eine Remote-Session starten, openwb2.service beenden und mai
 
 **Flake8**
 
-Nach dem Erstellen eines PRs gegen das offizielel Repo werden automatisiert einige Tests durchgeführt, schlagen diese fehl muss der PR korrigiert werden.
+Nach dem Erstellen eines PRs gegen das offizielle Repo werden automatisiert einige Tests durchgeführt, schlagen diese fehl muss der PR korrigiert werden.
 Flake8 ist einer dieser Tests und überprüft/forciert saubere Code-Formatierung.
 
-Um nun zu vermeiden dass man dies unnötig häufig macht empfiehlt es sich unbedingt Flake8 direkt selbst in VSCode zu aktivieren und die Fehler und Warnungen zu korrigieren.
+Um nun zu vermeiden, dass man dies unnötig häufig macht, empfiehlt es sich, unbedingt Flake8 direkt selbst in VSCode zu aktivieren und die Fehler und Warnungen zu korrigieren.
 
 Fehler und Warnungen findet man im Tray von VSCode:
 
@@ -49,8 +49,8 @@ Und auch inline direkt im Editor:
 **PyTest**
 
 Neben der Formatierung werden auch automatisierte Funktionstests durchgeführt. Auch diese können in VSCode bereits vor dem Absenden des PRs durchgeführt werden. 
-Zu finden sind die Tests links im Navigationsbaum von VSCode, bei der ersten Nutzung muss noch 'pytest' als Testplatform ausgewählt werden. Anschließend kann man im Navigationsbaum einzelne oder alle Tests starten und überprüfen ob diese erfolgreich waren. Fehler werden direkt im Code der jeweiligen Tests angezeigt um den Test ggf. anpassen zu können.
+Zu finden sind die Tests links im Navigationsbaum von VSCode. Bei der ersten Nutzung muss noch 'pytest' als Testplattform ausgewählt werden. Anschließend kann man im Navigationsbaum einzelne oder alle Tests starten und überprüfen ob diese erfolgreich waren. Fehler werden direkt im Code der jeweiligen Tests angezeigt um den Test ggf. anpassen zu können.
 
-Um sich das Leben einfach zu machen sollte man spätestens hier die Variante 'Remote-Development' wählen, das stellt sicher dass die notwendigen Module allesamt vorhanden sind.
+Um sich das Leben einfach zu machen, sollte man spätestens hier die Variante 'Remote-Development' wählen. Das stellt sicher, dass die notwendigen Module allesamt vorhanden sind.
 
  ![](VSCode-PyTest.png)
