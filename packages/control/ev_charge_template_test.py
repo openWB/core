@@ -20,7 +20,7 @@ def data_module() -> None:
 
 @pytest.mark.parametrize(
     "plans, soc, used_amount_time_charging, plan_found, expected",
-    [pytest.param({}, 0, 0, None, (0, "stop", ChargeTemplate.TIME_CHARGING_NO_PLAN_CONFIGURED, None), 
+    [pytest.param({}, 0, 0, None, (0, "stop", ChargeTemplate.TIME_CHARGING_NO_PLAN_CONFIGURED, None),
                   id="no plan defined"),
      pytest.param({"0": TimeChargingPlan()}, 0, 0,  None,
                   (0, "stop", ChargeTemplate.TIME_CHARGING_NO_PLAN_ACTIVE, None), id="no plan active"),
