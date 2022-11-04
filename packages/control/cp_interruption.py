@@ -24,7 +24,7 @@ def thread_cp_interruption(cp_num: int, chargepoint_module: AbstractChargepoint,
         # gestartet werden.
         if "thread_cp"+str(cp_num) not in cp_interruption_threads:
             cp_interruption_threads["thread_cp"+str(cp_num)] = threading.Thread(
-                target=chargepoint_module.interrupt_cp, args=(duration,))
+                target=chargepoint_module.interrupt_cp, args=(duration,), name=f"cp{chargepoint_module.id}")
             cp_interruption_threads["thread_cp"+str(cp_num)].start()
             log.debug("Thread zur CP-Unterbrechung an LP"+str(cp_num)+" gestartet.")
         else:
