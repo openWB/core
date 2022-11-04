@@ -12,7 +12,7 @@ import traceback
 from typing import List, Dict, Optional, Tuple
 
 from control import data
-from helpermodules.abstract_plans import ScheduledChargingPlan, TimeChargingPlan
+from helpermodules.abstract_plans import Limit, limit_factory, ScheduledChargingPlan, TimeChargingPlan
 from helpermodules.pub import Pub
 from helpermodules import timecheck
 from modules.common.abstract_soc import AbstractSoc
@@ -56,17 +56,6 @@ class ScheduledCharging:
 class TimeCharging:
     active: bool = False
     plans: Dict[int, TimeChargingPlan] = field(default_factory=empty_dict_factory)
-
-
-@dataclass
-class Limit:
-    selected: str = "none"
-    amount: int = 1000
-    soc: int = 50
-
-
-def limit_factory() -> Limit:
-    return Limit()
 
 
 @dataclass
@@ -642,7 +631,7 @@ class ChargeTemplate:
                     if plan.limit.selected == "none":  # kein Limit konfiguriert, mit konfigurierter Stromstärke laden
                         return plan.current, "time_charging", message, plan.name
                     elif plan.limit.selected == "soc":  # SoC Limit konfiguriert
-                        if soc < plan.limit.soc_limit:
+                        if soc < plan.limit.soc:
                             return plan.current, "time_charging", message, plan.name  # Limit nicht erreicht
                         else:
                             return 0, "stop", self.TIME_CHARGING_SOC_REACHED, plan.name  # Limit erreicht
