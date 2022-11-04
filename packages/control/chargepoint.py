@@ -27,8 +27,10 @@ from control import chargelog
 from control import cp_interruption
 from control import data
 from control import ev as ev_module
-from control.ev import Ev, emtpy_list_factory
+from control.ev import Ev
 from control import phase_switch
+from dataclass_utils.factories import (empty_dict_factory, emtpy_list_factory, currents_list_factory,
+                                       voltages_list_factory)
 from helpermodules.abstract_plans import AutolockPlan
 from helpermodules.pub import Pub
 from helpermodules import timecheck
@@ -129,18 +131,6 @@ class AllChargepoints:
             Pub().pub("openWB/set/chargepoint/get/exported", exported)
         except Exception:
             log.exception("Fehler in der allgemeinen Ladepunkt-Klasse")
-
-
-def empty_dict_factory() -> Dict:
-    return {}
-
-
-def currents_list_factory() -> List[float]:
-    return [0.0]*3
-
-
-def voltages_list_factory() -> List[float]:
-    return [230.0]*3
 
 
 @dataclass
