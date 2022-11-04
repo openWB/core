@@ -43,6 +43,7 @@ class SubData:
     ev_template_data = {}
     ev_charge_template_data = {}
     counter_data = {}
+    counter_all_data = counter.CounterAll()
     bat_data = {}
     general_data = general.General()
     optional_data = optional.Optional()
@@ -65,7 +66,6 @@ class SubData:
         self.heartbeat = False
 
         self.bat_data["all"] = bat.BatAll()
-        self.counter_data["all"] = counter.CounterAll()
         self.pv_data["all"] = pv.PvAll()
         self.graph_data["graph"] = graph.Graph()
 
@@ -598,13 +598,9 @@ class SubData:
                             var["counter"+index].data["config"], msg)
             elif re.search("/counter/", msg.topic) is not None:
                 if re.search("/counter/get", msg.topic) is not None:
-                    if "get" not in var["all"].data:
-                        var["all"].data["get"] = {}
-                    self.set_json_payload(var["all"].data["get"], msg)
+                    self.set_json_payload_class(self.counter_all_data.data.get, msg)
                 elif re.search("/counter/set", msg.topic) is not None:
-                    if "set" not in var["all"].data:
-                        var["all"].data["set"] = {}
-                    self.set_json_payload(var["all"].data["set"], msg)
+                    self.set_json_payload_class(self.counter_all_data.data.set, msg)
         except Exception:
             log.exception("Fehler im subdata-Modul")
 

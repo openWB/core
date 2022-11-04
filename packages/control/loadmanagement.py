@@ -44,7 +44,7 @@ def loadmanagement_for_cp(chargepoint: Chargepoint,
                 required_current_phases[evu_phase] = required_current
         except KeyError:
             required_current_phases = [required_current]*3
-        counters = data.data.counter_data["all"].get_counters_to_check(
+        counters = data.data.counter_all_data.get_counters_to_check(
             chargepoint.num)
         # Stromstärke merken, wenn das Lastmanagement nicht aktiv wird, wird nach der Prüfung die neue verwendete
         # Stromstärke gesetzt.
@@ -63,7 +63,7 @@ def loadmanagement_for_cp(chargepoint: Chargepoint,
         if loadmanagement:
             loadmanagement_all_conditions = True
 
-        data.data.counter_data["all"].data["set"]["loadmanagement_active"] = loadmanagement_all_conditions
+        data.data.counter_all_data.data.set.loadmanagement_active = loadmanagement_all_conditions
         return loadmanagement_all_conditions, overloaded_counters
     except Exception:
         log.exception("Fehler im Lastmanagement-Modul")
@@ -86,11 +86,11 @@ def loadmanagement_for_counters() -> Tuple[bool, Dict[str, Tuple[float, int]]]:
             [0, 0, 0], 3, False)
         # Überprüfung der Zwischenzähler
         loadmanagement = _check_all_intermediate_counters(
-            data.data.counter_data["all"].data["get"]["hierarchy"][0])
+            data.data.counter_all_data.data.get.hierarchy[0])
         # Wenn das Lastmanagement aktiv war, darf es nicht wieder zurück gesetzt werden.
         if not loadmanagement_all_conditions:
             loadmanagement_all_conditions = loadmanagement
-        data.data.counter_data["all"].data["set"]["loadmanagement_active"] = loadmanagement_all_conditions
+        data.data.counter_all_data.data.set.loadmanagement_active = loadmanagement_all_conditions
         return loadmanagement_all_conditions, overloaded_counters
     except Exception:
         log.exception("Fehler im Lastmanagement-Modul")
@@ -141,7 +141,7 @@ def _loadmanagement_for_evu(required_current_phases: List[float], phases: int, o
     """ führt die Überprüfung für das Lastmanagement der EVU durch und prüft dabei die maximale Stromstärke, maximalen
     Bezug und maximale Schieflast, falls aktiv.
     """
-    evu_counter = data.data.counter_data["all"].get_evu_counter()
+    evu_counter = data.data.counter_all_data.get_evu_counter()
     max_current_overshoot = 0
     max_overshoot_phase = 0
     consumption_left = 0
@@ -206,7 +206,7 @@ def _check_max_power(required_power, offset):
         Lastmanagement aktiv/inaktiv, verbleibende verfügbare Leistung inklusive Offset (da beim Anpassen des
         Ladestroms nie der Maximalbezug ausgereizt werden)
     """
-    evu_counter = data.data.counter_data["all"].get_evu_counter()
+    evu_counter = data.data.counter_all_data.get_evu_counter()
     if offset:
         offset_power = 300
     else:

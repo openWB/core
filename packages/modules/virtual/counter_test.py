@@ -15,10 +15,10 @@ from modules.virtual.config import VirtualCounterConfiguration, VirtualCounterSe
 @pytest.fixture(autouse=True)
 def init_data() -> None:
     data.data_init(threading.Event())
-    data.data.counter_data["all"] = CounterAll()
-    data.data.counter_data["all"].data = {"get": {"hierarchy": [{"id": 0, "type": "counter", "children": [
+    data.data.counter_all_data = CounterAll()
+    data.data.counter_all_data.data.get.hierarchy = [{"id": 0, "type": "counter", "children": [
         {"id": 6, "type": "counter", "children": [
-            {"id": 3, "type": "cp", "children": []}, {"id": 4, "type": "cp", "children": []}]}]}]}}
+            {"id": 3, "type": "cp", "children": []}, {"id": 4, "type": "cp", "children": []}]}]}]
     data.data.cp_data["cp3"] = Chargepoint(3, None)
     data.data.cp_data["cp3"].data.get.currents = [16, 16, 0]
     data.data.cp_data["cp4"] = Chargepoint(4, None)

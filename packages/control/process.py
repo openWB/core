@@ -66,7 +66,7 @@ class Process:
 
             data.data.pv_data["all"].put_stats()
             data.data.pv_data["all"].print_stats()
-            data.data.counter_data[data.data.counter_data["all"].get_evu_counter()].put_stats()
+            data.data.counter_data[data.data.counter_all_data.get_evu_counter()].put_stats()
         except Exception:
             log.exception("Fehler im Process-Modul")
 

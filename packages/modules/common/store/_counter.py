@@ -76,7 +76,7 @@ class PurgeCounterState:
                 state.imported += element.data["get"]["imported"]
                 state.exported += element.data["get"]["exported"]
 
-            counter_all = data.data.counter_data["all"]
+            counter_all = data.data.counter_all_data
             elements = counter_all.get_entry_of_element(self.delegate.delegate.num)["children"]
             for element in elements:
                 if element["type"] == ComponentType.CHARGEPOINT.value:

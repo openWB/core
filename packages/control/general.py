@@ -165,7 +165,7 @@ class General:
         der Netzschutz aktiv ist und dann die Ladung gestoppt.
         """
         try:
-            evu_counter = data.data.counter_data["all"].get_evu_counter()
+            evu_counter = data.data.counter_all_data.get_evu_counter()
             if self.data.grid_protection_configured:
                 frequency = data.data.counter_data[evu_counter].data["get"]["frequency"] * 100
                 grid_protection_active = self.data.grid_protection_active
