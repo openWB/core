@@ -17,10 +17,10 @@ log = logging.getLogger("soc."+__name__)
 
 
 async def _fetch_soc(userid: str, password: str, vin: str, vehicle: int) -> Union[int, float]:
-    log.debug("vwid:_fetch_soc, userid="+userid)
+    # log.debug("vwid:_fetch_soc, userid="+userid)
     # log.debug("vwid:_fetch_soc, password=" + password)
-    log.debug("vwid:_fetch_soc, vin="+vin)
-    log.debug("vwid:_fetch_soc, vehicle="+vehicle)
+    # log.debug("vwid:_fetch_soc, vin="+vin)
+    # log.debug("vwid:_fetch_soc, vehicle="+vehicle)
 
     replyFile = str(RAMDISK_PATH) + '/soc_vwid_reply_vehicle_' + str(vehicle)
     tokensFile = str(RAMDISK_PATH) + '/soc_vwid_tokens_vehicle_' + str(vehicle)
@@ -75,19 +75,19 @@ async def _fetch_soc(userid: str, password: str, vin: str, vehicle: int) -> Unio
                               vehicle + ", chmod tokensFile exception, use sudo, e=" +
                               str(e) + "user: " + getpass.getuser())
                     os.system("sudo chmod 0777 " + tokensFile)
-            log.debug("vwid.api._fetch_soc return: soc=" + str(soc) + "range=" + str(range))
+            # log.debug("vwid.api._fetch_soc return: soc=" + str(soc) + "range=" + str(range))
             return soc, range
 
 
 def fetch_soc(userid: str, password: str, vin: str, vehicle: int) -> Union[int, float]:
-    log.debug("vwid:fetch_soc, userid=" + userid)
+    # log.debug("vwid:fetch_soc, userid=" + userid)
     # log.debug("vwid:fetch_soc, password=" + password)
-    log.debug("vwid:fetch_soc, vin=" + vin)
-    log.info("vwid: fetch_soc, vehicle=" + vehicle)
+    # log.debug("vwid:fetch_soc, vin=" + vin)
+    # log.debug("vwid: fetch_soc, vehicle=" + vehicle)
 
-# prepare and call async method
+    # prepare and call async method
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     soc, range = loop.run_until_complete(_fetch_soc(userid, password, vin, vehicle))
-    log.debug("vwid.api.fetch_soc vehicle " + vehicle + ", return: soc=" + str(soc) + ", range=" + str(range))
+    # log.debug("vwid.api.fetch_soc vehicle " + vehicle + ", return: soc=" + str(soc) + ", range=" + str(range))
     return soc, range
