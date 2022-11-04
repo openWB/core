@@ -10,8 +10,10 @@ from control.chargepoint import AllChargepoints, Chargepoint
 
 import dataclass_utils
 from helpermodules.subdata import SubData
+from control.counter import Counter, CounterAll
 from control.ev import ChargeTemplate, Ev, EvTemplate
 from control.general import General
+from control.optional import Optional
 from modules.common.abstract_device import AbstractDevice
 
 log = logging.getLogger(__name__)
@@ -25,7 +27,7 @@ class Data:
         self._bat_data = {}
         self._bat_module_data = {}
         self._counter_data = {}
-        self._counter_module_data = {}
+        self._counter_all_data = CounterAll()
         self._cp_data = {}
         self._cp_all_data = AllChargepoints()
         self._cp_template_data = {}
@@ -34,7 +36,7 @@ class Data:
         self._ev_template_data = {}
         self._general_data = General()
         self._graph_data = {}
-        self._optional_data = {}
+        self._optional_data = Optional()
         self._pv_data = {}
         self._system_data = {}
 
@@ -82,7 +84,7 @@ class Data:
         self.event.set()
 
     @property
-    def counter_data(self):
+    def counter_data(self) -> Dict[str, Counter]:
         self.event.wait()
         self.event.clear()
         temp = self._counter_data
@@ -97,18 +99,18 @@ class Data:
         self.event.set()
 
     @property
-    def counter_module_data(self):
+    def counter_all_data(self) -> CounterAll:
         self.event.wait()
         self.event.clear()
-        temp = self._counter_module_data
+        temp = self._counter_all_data
         self.event.set()
         return temp
 
-    @counter_module_data.setter
-    def counter_module_data(self, value):
+    @counter_all_data.setter
+    def counter_all_data(self, value):
         self.event.wait()
         self.event.clear()
-        self._counter_module_data = value
+        self._counter_all_data = value
         self.event.set()
 
     @property
@@ -217,7 +219,7 @@ class Data:
         self.event.set()
 
     @property
-    def optional_data(self):
+    def optional_data(self) -> Optional:
         self.event.wait()
         self.event.clear()
         temp = self._optional_data
@@ -268,13 +270,13 @@ class Data:
         self._print_dictionaries(self._cp_data)
         self._print_dictionaries(self._cp_template_data)
         self._print_dictionaries(self._counter_data)
-        self._print_dictionaries(self._counter_module_data)
+        log.debug(f"counter_all_data\n{self._counter_all_data.data}")
         self._print_dictionaries(self._ev_charge_template_data)
         self._print_dictionaries(self._ev_data)
         self._print_dictionaries(self._ev_template_data)
         log.debug(f"general_data\n{self._general_data.data}")
         self._print_dictionaries(self._graph_data)
-        self._print_dictionaries(self._optional_data)
+        log.debug(f"optional_data\n{self._optional_data.data}")
         self._print_dictionaries(self._pv_data)
         self._print_dictionaries(self._system_data)
         self._print_device_config(self._system_data)
@@ -331,6 +333,7 @@ class Data:
             log.exception("Fehler im Prepare-Modul")
 
     def __copy_counter_data(self) -> None:
+        self.counter_all_data = copy.deepcopy(SubData.counter_all_data)
         self.counter_data.clear()
         for counter in SubData.counter_data:
             stop = False

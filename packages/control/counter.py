@@ -1,9 +1,11 @@
 """Zähler-Logik
 """
+from dataclasses import dataclass, field
 import logging
 from typing import Callable, Dict, List, Tuple, Union
 
 from control import data
+from dataclass_utils.factories import emtpy_list_factory
 from helpermodules.pub import Pub
 from modules.common.component_type import ComponentType
 from modules.common.fault_state import FaultStateLevel
@@ -11,15 +13,39 @@ from modules.common.fault_state import FaultStateLevel
 log = logging.getLogger(__name__)
 
 
+@dataclass
+class Set:
+    loadmanagement_active: bool = False
+    home_consumption: float = 0
+    invalid_home_consumption: int = 0
+    daily_yield_home_consumption: float = 0
+
+
+@dataclass
+class Get:
+    hierarchy: List = field(default_factory=emtpy_list_factory)
+
+
+def get_factory() -> Get:
+    return Get()
+
+
+def set_factory() -> Set:
+    return Set()
+
+
+@dataclass
+class CounterAllData:
+    get: Get = field(default_factory=get_factory)
+    set: Set = field(default_factory=set_factory)
+
+
 class CounterAll:
     """
     """
 
     def __init__(self):
-        self.data = {"set": {"loadmanagement_active": False,
-                             "home_consumption": 0,
-                             "invalid_home_consumption": 0,
-                             "daily_yield_home_consumption": 0}}
+        self.data = CounterAllData()
         # Hilfsvariablen für die rekursiven Funktionen
         self.connected_counters = []
         self.connected_chargepoints = []
@@ -30,7 +56,7 @@ class CounterAll:
 
     def get_id_evu_counter(self) -> int:
         try:
-            for item in self.data["get"]["hierarchy"]:
+            for item in self.data.get.hierarchy:
                 if ComponentType.COUNTER.value == item["type"]:
                     return item['id']
             else:
@@ -40,9 +66,9 @@ class CounterAll:
                 "Ohne Konfiguration eines EVU-Zählers an der Spitze der Hierarchie ist keine Regelung möglich.")
             raise
 
-    def put_stats(self):
+    def put_stats(self) -> None:
         try:
-            Pub().pub("openWB/set/counter/set/loadmanagement_active", self.data["set"]["loadmanagement_active"])
+            Pub().pub("openWB/set/counter/set/loadmanagement_active", self.data.set.loadmanagement_active)
         except Exception:
             log.exception("Fehler in der allgemeinen Zähler-Klasse")
 
@@ -63,19 +89,19 @@ class CounterAll:
                               evu_counter_data["get"]["fault_state"])
                     Pub().pub(f"openWB/set/counter/{evu_counter}/get/fault_str",
                               evu_counter_data["get"]["fault_str"])
-                if self.data["set"]["invalid_home_consumption"] < 3:
-                    self.data["set"]["invalid_home_consumption"] += 1
+                if self.data.set.invalid_home_consumption < 3:
+                    self.data.set.invalid_home_consumption += 1
                     Pub().pub("openWB/set/counter/set/invalid_home_consumption",
-                              self.data["set"]["invalid_home_consumption"])
+                              self.data.set.invalid_home_consumption)
                     return
                 else:
                     home_consumption = 0
             else:
-                self.data["set"]["invalid_home_consumption"] = 0
+                self.data.set.invalid_home_consumption = 0
                 Pub().pub("openWB/set/counter/set/invalid_home_consumption",
-                          self.data["set"]["invalid_home_consumption"])
-            self.data["set"]["home_consumption"] = home_consumption
-            Pub().pub("openWB/set/counter/set/home_consumption", self.data["set"]["home_consumption"])
+                          self.data.set.invalid_home_consumption)
+            self.data.set.home_consumption = home_consumption
+            Pub().pub("openWB/set/counter/set/home_consumption", self.data.set.home_consumption)
         except Exception:
             log.exception("Fehler in der allgemeinen Zähler-Klasse")
 
@@ -106,7 +132,7 @@ class CounterAll:
                 elements.append(child)
         return elements
 
-    def calc_daily_yield_home_consumption(self):
+    def calc_daily_yield_home_consumption(self) -> None:
         """ berechnet die heute im Haus verbrauchte Energie.
         """
         try:
@@ -130,7 +156,7 @@ class CounterAll:
             daily_yield_home_consumption = (evu_imported + pv - cp_imported + cp_exported + bat_exported
                                             - bat_imported - evu_exported)
             Pub().pub("openWB/set/counter/set/daily_yield_home_consumption", daily_yield_home_consumption)
-            self.data["set"]["daily_yield_home_consumption"] = daily_yield_home_consumption
+            self.data.set.daily_yield_home_consumption = daily_yield_home_consumption
         except Exception:
             log.exception("Fehler in der allgemeinen Zähler-Klasse")
 
@@ -140,7 +166,7 @@ class CounterAll:
         self.get_all_elements_without_children_recursive(self.get_entry_of_element(id))
         return self.childless
 
-    def get_all_elements_without_children_recursive(self, child: Dict):
+    def get_all_elements_without_children_recursive(self, child: Dict) -> None:
         for child in child["children"]:
             try:
                 if len(child["children"]) != 0:
@@ -150,41 +176,22 @@ class CounterAll:
             except Exception:
                 log.exception("Fehler in der allgemeinen Zähler-Klasse")
 
-    def get_chargepoints_of_counter(self, counter):
+    def get_chargepoints_of_counter(self, counter: str) -> List[str]:
         """ gibt eine Liste der Ladepunkte, die in den folgenden Zweigen des Zählers sind, zurück.
-
-        Parameter
-        ---------
-        counter: str
-            Zähler, dessen Lp ermittelt werden sollen.
-
-        Return
-        ------
-        chargepoints: list
-            Ladepunkte, die in den folgenden Zweigen des Zählers sind
         """
         self.connected_chargepoints.clear()
-        try:
-            if counter == self.get_evu_counter():
-                counter_object = self.data["get"]["hierarchy"][0]
-            else:
-                counter_object = self.__get_entry(
-                    self.data["get"]["hierarchy"][0],
-                    int(counter[7:]),
-                    self.__get_entry_of_element)
-            self._get_all_cp_connected_to_counter(counter_object)
-            return self.connected_chargepoints
-        except Exception:
-            log.exception("Fehler in der allgemeinen Zähler-Klasse")
-            return None
+        if counter == self.get_evu_counter():
+            counter_object = self.data.get.hierarchy[0]
+        else:
+            counter_object = self.__get_entry(
+                self.data.get.hierarchy[0],
+                int(counter[7:]),
+                self.__get_entry_of_element)
+        self._get_all_cp_connected_to_counter(counter_object)
+        return self.connected_chargepoints
 
-    def _get_all_cp_connected_to_counter(self, child):
+    def _get_all_cp_connected_to_counter(self, child: Dict) -> None:
         """ Rekursive Funktion, die alle Ladepunkte ermittelt, die an den angegebenen Zähler angeschlossen sind.
-
-        Parameter
-        ---------
-        child: object
-            Zähler, dessen Ladepunkte ermittelt werden sollen
         """
         # Alle Objekte der Ebene durchgehen
         for child in child["children"]:
@@ -197,59 +204,39 @@ class CounterAll:
             except Exception:
                 log.exception("Fehler in der allgemeinen Zähler-Klasse")
 
-    def get_counters_to_check(self, num: int):
+    def get_counters_to_check(self, num: int) -> List[str]:
         """ ermittelt alle Zähler im Zweig des Ladepunkts.
-
-        Return
-        ------
-        counters: list
-            Liste der gesuchten Zähler
         """
-        try:
-            self.connected_counters.clear()
-            self.__get_all_counter_in_branch(self.data["get"]["hierarchy"][0], num)
-            return self.connected_counters
-        except Exception:
-            log.exception("Fehler in der allgemeinen Zähler-Klasse")
-            return None
+        self.connected_counters.clear()
+        self.__get_all_counter_in_branch(self.data.get.hierarchy[0], num)
+        return self.connected_counters
 
     def get_entry_of_element(self, id_to_find: int) -> Dict:
         item = self.__is_id_in_top_level(id_to_find)
         if item:
             return item
         else:
-            return self.__get_entry(self.data["get"]["hierarchy"][0], id_to_find, self.__get_entry_of_element)
+            return self.__get_entry(self.data.get.hierarchy[0], id_to_find, self.__get_entry_of_element)
 
     def get_entry_of_parent(self, id_to_find: int) -> Dict:
         if self.__is_id_in_top_level(id_to_find):
             return {}
-        for child in self.data["get"]["hierarchy"][0]["children"]:
+        for child in self.data.get.hierarchy[0]["children"]:
             if child["id"] == id_to_find:
-                return self.data["get"]["hierarchy"][0]
+                return self.data.get.hierarchy[0]
         else:
-            return self.__get_entry(self.data["get"]["hierarchy"][0], id_to_find, self.__get_entry_of_parent)
+            return self.__get_entry(self.data.get.hierarchy[0], id_to_find, self.__get_entry_of_parent)
 
     def __is_id_in_top_level(self, id_to_find: int) -> Dict:
-        for item in self.data["get"]["hierarchy"]:
+        for item in self.data.get.hierarchy:
             if item["id"] == id_to_find:
                 return item
         else:
             return {}
 
-    def __get_all_counter_in_branch(self, child: Dict, id_to_find: int):
+    def __get_all_counter_in_branch(self, child: Dict, id_to_find: int) -> bool:
         """ Rekursive Funktion, die alle Zweige durchgeht, bis der entsprechende Ladepunkt gefunden wird und dann alle
         Zähler in diesem Pfad der Liste anhängt.
-
-        Parameter
-        ---------
-        child: object
-            Zweig, der als nächstes durchsucht werden soll
-        num: int
-            Nummer des gesuchten Ladepunkts/Zählers
-
-        Return
-        ------
-        True/False: Ladepunkt wurde gefunden.
         """
         parent_id = child["id"]
         for child in child["children"]:
@@ -294,11 +281,11 @@ class CounterAll:
         derselben Ebene wie das angegebene Element.
         """
         if self.__is_id_in_top_level(id_to_find):
-            self.data["get"]["hierarchy"].append({"id": new_id, "type": new_type.value, "children": []})
-            Pub().pub("openWB/set/counter/get/hierarchy", self.data["get"]["hierarchy"])
+            self.data.get.hierarchy.append({"id": new_id, "type": new_type.value, "children": []})
+            Pub().pub("openWB/set/counter/get/hierarchy", self.data.get.hierarchy)
         else:
             if (self.__edit_element_in_hierarchy(
-                    self.data["get"]["hierarchy"][0],
+                    self.data.get.hierarchy[0],
                     id_to_find, self._add_item_aside, new_id, new_type) is False):
                 raise IndexError(f"Element {id_to_find} konnte nicht in der Hierarchie gefunden werden.")
 
@@ -306,7 +293,7 @@ class CounterAll:
             self, child: Dict, current_entry: Dict, id_to_find: int, new_id: int, new_type: ComponentType) -> bool:
         if id_to_find == child["id"]:
             current_entry["children"].append({"id": new_id, "type": new_type.value, "children": []})
-            Pub().pub("openWB/set/counter/get/hierarchy", self.data["get"]["hierarchy"])
+            Pub().pub("openWB/set/counter/get/hierarchy", self.data.get.hierarchy)
             return True
         else:
             return False
@@ -318,12 +305,12 @@ class CounterAll:
         item = self.__is_id_in_top_level(id_to_find)
         if item:
             if keep_children:
-                self.data["get"]["hierarchy"].extend(item["children"])
-            self.data["get"]["hierarchy"].remove(item)
-            Pub().pub("openWB/set/counter/get/hierarchy", self.data["get"]["hierarchy"])
+                self.data.get.hierarchy.extend(item["children"])
+            self.data.get.hierarchy.remove(item)
+            Pub().pub("openWB/set/counter/get/hierarchy", self.data.get.hierarchy)
         else:
             if (self.__edit_element_in_hierarchy(
-                    self.data["get"]["hierarchy"][0],
+                    self.data.get.hierarchy[0],
                     id_to_find, self._remove_item, keep_children) is False):
                 raise IndexError(f"Element {id_to_find} konnte nicht in der Hierarchie gefunden werden.")
 
@@ -332,7 +319,7 @@ class CounterAll:
             if keep_children:
                 current_entry["children"].extend(child["children"])
             current_entry["children"].remove(child)
-            Pub().pub("openWB/set/counter/get/hierarchy", self.data["get"]["hierarchy"])
+            Pub().pub("openWB/set/counter/get/hierarchy", self.data.get.hierarchy)
             return True
         else:
             return False
@@ -343,17 +330,18 @@ class CounterAll:
         item = self.__is_id_in_top_level(id_to_find)
         if item:
             item["children"].append({"id": new_id, "type": new_type.value, "children": []})
-            Pub().pub("openWB/set/counter/get/hierarchy", self.data["get"]["hierarchy"])
+            Pub().pub("openWB/set/counter/get/hierarchy", self.data.get.hierarchy)
         else:
             if (self.__edit_element_in_hierarchy(
-                    self.data["get"]["hierarchy"][0],
+                    self.data.get.hierarchy[0],
                     id_to_find, self._add_item_below, new_id, new_type) is False):
                 raise IndexError(f"Element {id_to_find} konnte nicht in der Hierarchie gefunden werden.")
 
-    def _add_item_below(self, child: Dict, current_entry: Dict, id_to_find: int, new_id: int, new_type: ComponentType):
+    def _add_item_below(
+            self, child: Dict, current_entry: Dict, id_to_find: int, new_id: int, new_type: ComponentType) -> bool:
         if id_to_find == child["id"]:
             child["children"].append({"id": new_id, "type": new_type.value, "children": []})
-            Pub().pub("openWB/set/counter/get/hierarchy", self.data["get"]["hierarchy"])
+            Pub().pub("openWB/set/counter/get/hierarchy", self.data.get.hierarchy)
             return True
         else:
             return False
@@ -371,11 +359,11 @@ class CounterAll:
 
     def get_list_of_elements_per_level(self) -> List[List[Dict[str, Union[int, str]]]]:
         elements_per_level = []
-        for item in self.data["get"]["hierarchy"]:
+        for item in self.data.get.hierarchy:
             list(zip(elements_per_level, self._get_list_of_elements_per_level(elements_per_level, item, 0)))
         return elements_per_level
 
-    def _get_list_of_elements_per_level(self, elements_per_level: List, child: Dict, index: int):
+    def _get_list_of_elements_per_level(self, elements_per_level: List, child: Dict, index: int) -> List:
         try:
             elements_per_level[index].extend([{"type": child["type"], "id": child["id"]}])
         except IndexError:
@@ -418,7 +406,7 @@ class Counter:
         # Zählvariablen vor dem Start der Regelung zurücksetzen
         try:
             # Wenn der Zähler keine Werte liefert, darf nicht geladen werden.
-            connected_cps = data.data.counter_data["all"].get_chargepoints_of_counter(f'counter{self.num}')
+            connected_cps = data.data.counter_all_data.get_chargepoints_of_counter(f'counter{self.num}')
             for cp in connected_cps:
                 if self.data["get"]["fault_state"] == FaultStateLevel.ERROR:
                     data.data.cp_data[cp].data.set.loadmanagement_available = False
@@ -429,7 +417,7 @@ class Counter:
                 return
 
             # Nur beim EVU-Zähler wird auch die maximale Leistung geprüft.
-            if f'counter{self.num}' == data.data.counter_data["all"].get_evu_counter():
+            if f'counter{self.num}' == data.data.counter_all_data.get_evu_counter():
                 # max Leistung
                 if self.data["get"]["power"] > 0:
                     self.data["set"]["consumption_left"] = self.data["config"]["max_total_power"] \
@@ -452,7 +440,7 @@ class Counter:
 
     def put_stats(self):
         try:
-            if f'counter{self.num}' == data.data.counter_data["all"].get_evu_counter():
+            if f'counter{self.num}' == data.data.counter_all_data.get_evu_counter():
                 Pub().pub("openWB/set/counter/"+str(self.num)+"/set/consumption_left",
                           self.data["set"]["consumption_left"])
                 log.debug(str(self.data["set"]["consumption_left"])+"W verbleibende EVU-Bezugs-Leistung")

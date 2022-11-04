@@ -55,7 +55,7 @@ class PurgeInverterState:
         self.delegate.update()
 
     def fix_hybrid_values(self, state: InverterState) -> InverterState:
-        children = data.data.counter_data["all"].get_entry_of_element(self.delegate.delegate.num)["children"]
+        children = data.data.counter_all_data.get_entry_of_element(self.delegate.delegate.num)["children"]
         if len(children):
             hybrid = []
             for c in children:
@@ -70,6 +70,10 @@ class PurgeInverterState:
                         state.currents = list(map(add, state.currents, data.data.bat_data[bat].data["get"]["currents"]))
                     else:
                         state.currents = [0.0]*3
+            if state.dc_power is not None:
+                # Wenn keine DC-Leistung anliegt, kann auch keine PV-Leistung anliegen.
+                if state.dc_power == 0:
+                    state.power = 0
         return state
 
 

@@ -99,7 +99,7 @@ class HandlerAlgorithm:
                 self.current_day = day
                 measurement_log.save_log("monthly")
             data.data.general_data.grid_protection()
-            data.data.optional_data["optional"].et_get_prices()
+            data.data.optional_data.et_get_prices()
             data.data.system_data["system"].update_ip_address()
         except Exception:
             log.exception("Fehler im Main-Modul")

@@ -20,14 +20,14 @@ def hierarchy_standard() -> CounterAll:
     #        - bat2
     # counter6
     c = CounterAll()
-    c.data["get"] = {"hierarchy": [{"id": 0, "type": "counter",
-                                   "children": [
-                                       {"id": 3, "type": "cp", "children": []},
-                                       {"id": 4, "type": "cp", "children": []},
-                                       {"id": 5, "type": "cp", "children": []},
-                                       {"id": 1, "type": "inverter", "children": []},
-                                       {"id": 2, "type": "bat", "children": []}]},
-                                   {"id": 6, "type": "counter", "children": []}]}
+    c.data.get.hierarchy = [{"id": 0, "type": "counter",
+                             "children": [
+                                 {"id": 3, "type": "cp", "children": []},
+                                 {"id": 4, "type": "cp", "children": []},
+                                 {"id": 5, "type": "cp", "children": []},
+                                 {"id": 1, "type": "inverter", "children": []},
+                                 {"id": 2, "type": "bat", "children": []}]},
+                            {"id": 6, "type": "counter", "children": []}]
     return c
 
 
@@ -42,15 +42,15 @@ def hierarchy_hybrid() -> CounterAll:
     #                  - bat2
     # counter6
     c = CounterAll()
-    c.data["get"] = {"hierarchy": [{"id": 0, "type": "counter",
-                                   "children": [
-                                       {"id": 3, "type": "cp", "children": []},
-                                       {"id": 4, "type": "cp", "children": []},
-                                       {"id": 5, "type": "cp", "children": []},
-                                       {"id": 1, "type": "inverter",
-                                        "children": [
-                                            {"id": 2, "type": "bat", "children": []}]}]},
-                                   {"id": 6, "type": "counter", "children": []}]}
+    c.data.get.hierarchy = [{"id": 0, "type": "counter",
+                             "children": [
+                                 {"id": 3, "type": "cp", "children": []},
+                                 {"id": 4, "type": "cp", "children": []},
+                                 {"id": 5, "type": "cp", "children": []},
+                                 {"id": 1, "type": "inverter",
+                                  "children": [
+                                      {"id": 2, "type": "bat", "children": []}]}]},
+                            {"id": 6, "type": "counter", "children": []}]
     return c
 
 
@@ -65,15 +65,15 @@ def hierarchy_nested() -> CounterAll:
     #        - inverter1
     #        - bat2
     c = CounterAll()
-    c.data["get"] = {"hierarchy": [{"id": 0, "type": "counter",
-                                   "children": [
-                                       {"id": 3, "type": "cp", "children": []},
-                                       {"id": 6, "type": "counter",
-                                        "children": [
-                                            {"id": 4, "type": "cp", "children": []},
-                                            {"id": 5, "type": "cp", "children": []}]},
-                                       {"id": 1, "type": "inverter", "children": []},
-                                       {"id": 2, "type": "bat", "children": []}]}]}
+    c.data.get.hierarchy = [{"id": 0, "type": "counter",
+                             "children": [
+                                 {"id": 3, "type": "cp", "children": []},
+                                 {"id": 6, "type": "counter",
+                                  "children": [
+                                      {"id": 4, "type": "cp", "children": []},
+                                      {"id": 5, "type": "cp", "children": []}]},
+                                 {"id": 1, "type": "inverter", "children": []},
+                                 {"id": 2, "type": "bat", "children": []}]}]
     return c
 
 

@@ -20,7 +20,7 @@ class Loadvars:
     def get_values(self) -> None:
         try:
             self._set_values()
-            levels = data.data.counter_data["all"].get_list_of_elements_per_level()
+            levels = data.data.counter_all_data.get_list_of_elements_per_level()
             levels.reverse()
             for level in levels:
                 with ModuleUpdateCompletedContext(self.event_module_update_completed):

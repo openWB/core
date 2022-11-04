@@ -12,6 +12,7 @@ import traceback
 from typing import List, Dict, Optional, Tuple
 
 from control import data
+from dataclass_utils.factories import empty_dict_factory, emtpy_list_factory
 from helpermodules.abstract_plans import Limit, limit_factory, ScheduledChargingPlan, TimeChargingPlan
 from helpermodules.pub import Pub
 from helpermodules import timecheck
@@ -37,14 +38,6 @@ def get_charge_template_default() -> dict:
     return ct_default
 
 # Avoid anti-pattern: mtuable default arguments
-
-
-def emtpy_list_factory():
-    return []
-
-
-def empty_dict_factory() -> Dict:
-    return {}
 
 
 @dataclass
@@ -206,6 +199,8 @@ class Get:
     soc_timestamp: str = ""
     force_soc_update: bool = False
     range: float = 0
+    fault_state: int = 0
+    fault_str: str = ""
 
 
 def control_parameter_factory() -> ControlParameter:
@@ -664,8 +659,8 @@ class ChargeTemplate:
         message = None
         try:
             instant_charging = self.data.chargemode.instant_charging
-            if data.data.optional_data["optional"].data["et"]["active"]:
-                if not data.data.optional_data["optional"].et_price_lower_than_limit():
+            if data.data.optional_data.data.et.active:
+                if not data.data.optional_data.et_price_lower_than_limit():
                     return 0, "stop", self.INSTANT_CHARGING_PRICE_EXCEEDED
             if instant_charging.limit.selected == "none":
                 return instant_charging.current, "instant_charging", message
@@ -842,8 +837,8 @@ class ChargeTemplate:
         else:
             # Wenn Elektronische Tarife aktiv sind, prüfen, ob jetzt ein günstiger Zeitpunkt zum Laden
             # ist.
-            if data.data.optional_data["optional"].data["et"]["active"]:
-                hourlist = data.data.optional_data["optional"].et_get_loading_hours(
+            if data.data.optional_data.data.et.active:
+                hourlist = data.data.optional_data.et_get_loading_hours(
                     plan_data.remaining_time)
                 if timecheck.is_list_valid(hourlist):
                     message = "Sofortladen, da ein günstiger Zeitpunkt zum preisbasierten Laden ist."

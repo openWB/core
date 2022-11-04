@@ -8,34 +8,34 @@ from modules.common.component_type import ComponentType
 
 def hierarchy_empty() -> CounterAll:
     c = CounterAll()
-    c.data["get"] = {"hierarchy": []}
+    c.data.get.hierarchy = []
     return c
 
 
 def hierarchy_one_level() -> CounterAll:
     c = CounterAll()
-    c.data["get"] = {"hierarchy": [{"id": 0, "type": "counter", "children": []}]}
+    c.data.get.hierarchy = [{"id": 0, "type": "counter", "children": []}]
     return c
 
 
 def hierarchy_two_level() -> CounterAll:
     c = CounterAll()
-    c.data["get"] = {"hierarchy": [{"id": 0, "type": "counter",
-                                   "children": [{"id": 2, "type": "cp", "children": []}]},
-                                   {"id": 7, "type": "inverter", "children": []}]}
+    c.data.get.hierarchy = [{"id": 0, "type": "counter",
+                             "children": [{"id": 2, "type": "cp", "children": []}]},
+                            {"id": 7, "type": "inverter", "children": []}]
     return c
 
 
 def hierarchy_cp() -> CounterAll:
     c = CounterAll()
-    c.data["get"] = {"hierarchy": [{"id": 0, "type": "counter",
-                                   "children": [
-                                       {"id": 7, "type": "inverter", "children": []},
-                                       {"id": 2, "type": "counter", "children": [
+    c.data.get.hierarchy = [{"id": 0, "type": "counter",
+                             "children": [
+                                 {"id": 7, "type": "inverter", "children": []},
+                                 {"id": 2, "type": "counter", "children": [
                                            {"id": 3, "type": "cp", "children": []},
                                            {"id": 4, "type": "counter", "children": [
                                                {"id": 5, "type": "cp", "children": []},
-                                               {"id": 6, "type": "cp", "children": []}]}]}]}]}
+                                               {"id": 6, "type": "cp", "children": []}]}]}]}]
     return c
 
 
@@ -89,7 +89,7 @@ def test_add_item_below(params: ParamsAdd):
     params.counter_all.hierarchy_add_item_below(params.new_id, params.new_type, params.id_to_find)
 
     # evaluation
-    assert params.counter_all.data["get"]["hierarchy"] == params.expected_hierarchy
+    assert params.counter_all.data.get.hierarchy == params.expected_hierarchy
 
 
 cases_delete_keep_children = [
@@ -106,7 +106,7 @@ def test_delete_keep_children(params: ParamsItem):
     params.counter_all.hierarchy_remove_item(params.id, True)
 
     # evaluation
-    assert params.counter_all.data["get"]["hierarchy"] == params.expected_hierarchy
+    assert params.counter_all.data.get.hierarchy == params.expected_hierarchy
 
 
 cases_delete_discard_children = [
@@ -122,7 +122,7 @@ def test_delete_discard_children(params: ParamsItem):
     params.counter_all.hierarchy_remove_item(params.id, False)
 
     # evaluation
-    assert params.counter_all.data["get"]["hierarchy"] == params.expected_hierarchy
+    assert params.counter_all.data.get.hierarchy == params.expected_hierarchy
 
 
 cases_get_chargepoints_of_counter = [

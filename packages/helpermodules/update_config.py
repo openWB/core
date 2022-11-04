@@ -157,8 +157,6 @@ class UpdateConfig:
                    "^openWB/set/log/request",
                    "^openWB/set/log/data",
 
-                   "^openWB/optional/load_sharing/active$",
-                   "^openWB/optional/load_sharing/max_current$",
                    "^openWB/optional/et/active$",
                    "^openWB/optional/et/get/price_list$",
                    "^openWB/optional/et/get/price$",
@@ -310,8 +308,6 @@ class UpdateConfig:
         ("openWB/optional/int_display/standby", 60),
         ("openWB/optional/int_display/theme", "cards"),
         ("openWB/optional/led/active", False),
-        ("openWB/optional/load_sharing/active", False),
-        ("openWB/optional/load_sharing/max_current", 16),
         ("openWB/optional/rfid/active", False),
         ("openWB/system/dataprotection_acknowledged", False),
         ("openWB/system/debug_level", 30),

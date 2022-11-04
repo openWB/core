@@ -16,8 +16,8 @@ from modules.common.store._inverter import PurgeInverterState
 @pytest.fixture(autouse=True)
 def mock_data() -> None:
     data.data_init(Mock())
-    data.data.counter_data["all"] = CounterAll()
-    data.data.counter_data["all"].data.update({"get": {"hierarchy": []}})
+    data.data.counter_all_data = CounterAll()
+    data.data.counter_all_data.data.get.hierarchy = []
 
 
 STANDARD_HIERARCHY = [{"id": 0, "type": "counter",
@@ -42,7 +42,7 @@ cases = [
 @ pytest.mark.parametrize("params", cases, ids=[c.name for c in cases])
 def test_fix_hybrid_values(params):
     # setup
-    data.data.counter_data["all"].data["get"]["hierarchy"] = params.hierarchy
+    data.data.counter_all_data.data.get.hierarchy = params.hierarchy
     data.data.bat_data["bat2"] = Mock(spec=Bat, data={"get": {"power": 223, "exported": 200, "imported": 100}})
     purge = PurgeInverterState(delegate=Mock(delegate=Mock(num=1)))
 

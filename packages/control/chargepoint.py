@@ -27,8 +27,10 @@ from control import chargelog
 from control import cp_interruption
 from control import data
 from control import ev as ev_module
-from control.ev import Ev, emtpy_list_factory
+from control.ev import Ev
 from control import phase_switch
+from dataclass_utils.factories import (empty_dict_factory, emtpy_list_factory, currents_list_factory,
+                                       voltages_list_factory)
 from helpermodules.abstract_plans import AutolockPlan
 from helpermodules.pub import Pub
 from helpermodules import timecheck
@@ -129,18 +131,6 @@ class AllChargepoints:
             Pub().pub("openWB/set/chargepoint/get/exported", exported)
         except Exception:
             log.exception("Fehler in der allgemeinen Ladepunkt-Klasse")
-
-
-def empty_dict_factory() -> Dict:
-    return {}
-
-
-def currents_list_factory() -> List[float]:
-    return [0.0]*3
-
-
-def voltages_list_factory() -> List[float]:
-    return [230.0]*3
 
 
 @dataclass
@@ -414,7 +404,7 @@ class Chargepoint:
             state = True
         else:
             # Darf Autolock durch Tag überschrieben werden?
-            if (data.data.optional_data["optional"].data["rfid"]["active"] and
+            if (data.data.optional_data.data.rfid.active and
                     self.template.data.rfid_enabling):
                 if self.data.get.rfid is None and self.data.set.rfid is None:
                     state = False
@@ -735,7 +725,7 @@ class Chargepoint:
         """
         msg = ""
         if self.data.get.rfid is not None:
-            if data.data.optional_data["optional"].data["rfid"]["active"]:
+            if data.data.optional_data.data.rfid.active:
                 rfid = self.data.get.rfid
                 if rfid in self.template.data.valid_tags or len(self.template.data.valid_tags) == 0:
                     if self.data.get.rfid_timestamp is None:
@@ -916,7 +906,7 @@ class Chargepoint:
         self.data.set.charging_ev_prev = charging_ev
         Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/charging_ev_prev", charging_ev)
 
-    def _pub_connected_vehicle(self, vehicle):
+    def _pub_connected_vehicle(self, vehicle: Ev):
         """ published die Daten, die zur Anzeige auf der Hauptseite benötigt werden.
 
         Parameter
@@ -935,7 +925,7 @@ class Chargepoint:
                 range_charged=self.data.set.log.range_charged,
                 range_unit=data.data.general_data.data.range_unit,
             )
-            if vehicle.data.get.soc_timestamp != "":
+            if vehicle.soc_module is not None:
                 soc_obj.timestamp = vehicle.data.get.soc_timestamp
                 soc_obj.soc = vehicle.data.get.soc
                 soc_obj.fault_state = vehicle.data.get.fault_state
@@ -1044,7 +1034,7 @@ class CpTemplate:
         num = -1
         message = None
         try:
-            if data.data.optional_data["optional"].data["rfid"]["active"] and rfid is not None:
+            if data.data.optional_data.data.rfid.active and rfid is not None:
                 vehicle = ev_module.get_ev_to_rfid(rfid)
                 if vehicle is None:
                     num = -1

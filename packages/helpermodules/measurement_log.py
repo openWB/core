@@ -256,7 +256,7 @@ def update_daily_yields(totals):
     """ publisht die Tageserträge für Ladepunkte, Zähler, PV und Speicher.
     """
     [update_module_yields(type, totals) for type in ("bat", "counter", "cp", "pv")]
-    data.data.counter_data["all"].calc_daily_yield_home_consumption()
+    data.data.counter_all_data.calc_daily_yield_home_consumption()
 
 
 def update_module_yields(module: str, totals: Dict) -> None:
