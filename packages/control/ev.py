@@ -649,8 +649,8 @@ class ChargeTemplate:
         message = None
         try:
             instant_charging = self.data.chargemode.instant_charging
-            if data.data.optional_data["optional"].data["et"]["active"]:
-                if not data.data.optional_data["optional"].et_price_lower_than_limit():
+            if data.data.optional_data.data.et.active:
+                if not data.data.optional_data.et_price_lower_than_limit():
                     return 0, "stop", self.INSTANT_CHARGING_PRICE_EXCEEDED
             if instant_charging.limit.selected == "none":
                 return instant_charging.current, "instant_charging", message
@@ -827,8 +827,8 @@ class ChargeTemplate:
         else:
             # Wenn Elektronische Tarife aktiv sind, prüfen, ob jetzt ein günstiger Zeitpunkt zum Laden
             # ist.
-            if data.data.optional_data["optional"].data["et"]["active"]:
-                hourlist = data.data.optional_data["optional"].et_get_loading_hours(
+            if data.data.optional_data.data.et.active:
+                hourlist = data.data.optional_data.et_get_loading_hours(
                     plan_data.remaining_time)
                 if timecheck.is_list_valid(hourlist):
                     message = "Sofortladen, da ein günstiger Zeitpunkt zum preisbasierten Laden ist."

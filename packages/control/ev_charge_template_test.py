@@ -15,7 +15,7 @@ from helpermodules.abstract_plans import ScheduledChargingPlan, TimeChargingPlan
 def data_module() -> None:
     data.data_init(Mock())
     data.data.general_data = General()
-    data.data.optional_data["optional"] = optional.Optional()
+    data.data.optional_data = optional.Optional()
 
 
 @pytest.mark.parametrize(
@@ -57,7 +57,7 @@ def test_time_charging(plans: Dict[int, TimeChargingPlan],
 def test_instant_charging(selected: str, current_soc: float, used_amount: float,
                           expected: Tuple[int, str, Optional[str]]):
     # setup
-    data.data.optional_data["optional"].data["et"]["active"] = False
+    data.data.optional_data.data.et.active = False
     ct = ChargeTemplate(0)
     ct.data.chargemode.instant_charging.limit.selected = selected
 
@@ -210,7 +210,7 @@ def test_scheduled_charging_calc_current(plan_data: SelectedPlan,
                                          selected: str,
                                          expected: Tuple[float, str, str, int]):
     # setup
-    data.data.optional_data["optional"].data["et"]["active"] = False
+    data.data.optional_data.data.et.active = False
     ct = ChargeTemplate(0)
     plan = ScheduledChargingPlan(active=True)
     plan.limit.selected = selected
