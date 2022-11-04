@@ -70,6 +70,10 @@ class PurgeInverterState:
                         state.currents = list(map(add, state.currents, data.data.bat_data[bat].data["get"]["currents"]))
                     else:
                         state.currents = [0.0]*3
+            if state.dc_power is not None:
+                # Wenn keine DC-Leistung anliegt, kann auch keine PV-Leistung anliegen.
+                if state.dc_power == 0:
+                    state.power = 0
         return state
 
 
