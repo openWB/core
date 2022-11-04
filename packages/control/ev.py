@@ -652,7 +652,7 @@ class ChargeTemplate:
                         else:
                             return 0, "stop", self.TIME_CHARGING_AMOUNT_REACHED, plan.name  # Limit erreicht
                     else:
-                        raise TypeError(f'{plan.limit.selected} unbekanntes Sofortladen-Limit.')
+                        raise TypeError(f'{plan.limit.selected} unbekanntes Zeitladen-Limit.')
                 else:
                     message = self.TIME_CHARGING_NO_PLAN_ACTIVE
             else:
