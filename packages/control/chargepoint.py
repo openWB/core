@@ -916,7 +916,7 @@ class Chargepoint:
         self.data.set.charging_ev_prev = charging_ev
         Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/charging_ev_prev", charging_ev)
 
-    def _pub_connected_vehicle(self, vehicle):
+    def _pub_connected_vehicle(self, vehicle: Ev):
         """ published die Daten, die zur Anzeige auf der Hauptseite benötigt werden.
 
         Parameter
@@ -935,7 +935,7 @@ class Chargepoint:
                 range_charged=self.data.set.log.range_charged,
                 range_unit=data.data.general_data.data.range_unit,
             )
-            if vehicle.data.get.soc_timestamp != "":
+            if vehicle.soc_module is not None:
                 soc_obj.timestamp = vehicle.data.get.soc_timestamp
                 soc_obj.soc = vehicle.data.get.soc
                 soc_obj.fault_state = vehicle.data.get.fault_state
