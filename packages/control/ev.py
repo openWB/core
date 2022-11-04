@@ -217,6 +217,8 @@ class Get:
     soc_timestamp: str = ""
     force_soc_update: bool = False
     range: float = 0
+    fault_state: int = 0
+    fault_str: str = ""
 
 
 def control_parameter_factory() -> ControlParameter:
