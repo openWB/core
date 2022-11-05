@@ -15,17 +15,6 @@ def time_factory():
 
 
 @dataclass
-class Limit:
-    selected: str = "none"
-    amount: int = 1000
-    soc: int = 50
-
-
-def limit_factory() -> Limit:
-    return Limit()
-
-
-@dataclass
 class Frequency:
     selected: str = "daily"
     once: List[str] = field(default_factory=once_factory)
@@ -71,7 +60,6 @@ class ScheduledChargingPlan(PlanBase):
 class TimeChargingPlan(TimeframePlan):
     name: str = "Zeitladen-Standard"
     current: int = 16
-    limit: Limit = field(default_factory=limit_factory)
 
 
 @dataclass
