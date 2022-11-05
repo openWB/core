@@ -19,15 +19,14 @@ def data_module() -> None:
 
 
 @pytest.mark.parametrize(
-    "plans, soc, used_amount_time_charging, plan_found, expected",
-    [pytest.param({}, 0, 0, None, (0, "stop", ChargeTemplate.TIME_CHARGING_NO_PLAN_CONFIGURED, None),
-                  id="no plan defined"),
-     pytest.param({"0": TimeChargingPlan()}, 0, 0,  None,
+    "plans, plan_found, expected",
+    [pytest.param({}, None, (0, "stop", ChargeTemplate.TIME_CHARGING_NO_PLAN_CONFIGURED, None), id="no plan defined"),
+     pytest.param({"0": TimeChargingPlan()}, None,
                   (0, "stop", ChargeTemplate.TIME_CHARGING_NO_PLAN_ACTIVE, None), id="no plan active"),
-     pytest.param({"0": TimeChargingPlan()}, 0, 0,  TimeChargingPlan(),
+     pytest.param({"0": TimeChargingPlan()}, TimeChargingPlan(),
                   (16, "time_charging", None, "Zeitladen-Standard"), id="plan active")
      ])
-def test_time_charging(plans: Dict[int, TimeChargingPlan], soc: float, used_amount_time_charging: float,
+def test_time_charging(plans: Dict[int, TimeChargingPlan],
                        plan_found: TimeChargingPlan,
                        expected: Tuple[int, str, Optional[str], Optional[str]],
                        monkeypatch):
@@ -38,7 +37,7 @@ def test_time_charging(plans: Dict[int, TimeChargingPlan], soc: float, used_amou
     monkeypatch.setattr(timecheck, "check_plans_timeframe", check_plans_timeframe_mock)
 
     # execution
-    ret = ct.time_charging(soc, used_amount_time_charging)
+    ret = ct.time_charging()
 
     # evaluation
     assert ret == expected
