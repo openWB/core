@@ -19,7 +19,7 @@ fi
 
 	# fetch data from git
 	echo "fetching latest data from $GITREMOTE..."
-	git fetch --verbose --prune --tags --force "$GITREMOTE" && echo "done"
+	git fetch --verbose --prune --tags --prune-tags --force "$GITREMOTE" && echo "done"
 
 	# update branches from $GITREMOTE
 	echo "branches:"
