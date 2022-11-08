@@ -116,17 +116,6 @@ class ChargeTemplateData:
 
 
 @dataclass
-class Soc:
-    request_interval_charging: int = 5
-    request_interval_not_charging: int = 720
-    request_only_plugged: bool = False
-
-
-def soc_factory() -> Soc:
-    return Soc()
-
-
-@dataclass
 class EvTemplateData:
     name: str = "Standard-Fahrzeug-Vorlage"
     max_current_multi_phases: int = 16
@@ -141,7 +130,6 @@ class EvTemplateData:
     max_current_one_phase: int = 32
     battery_capacity: float = 82
     nominal_difference: int = 2
-    soc: Soc = field(default_factory=soc_factory)
 
 
 def ev_template_data_factory() -> EvTemplateData:
@@ -171,23 +159,20 @@ class EvTemplate:
     data: EvTemplateData = field(default_factory=ev_template_data_factory)
     et_num: int = 0
 
-    def soc_interval_expired(
-            self, plug_state: bool, charge_state: bool, soc_timestamp: str) -> bool:
+    def soc_interval_expired(self, charge_state: bool, soc_timestamp: str) -> bool:
         request_soc = False
         if soc_timestamp == "":
             # Initiale Abfrage
             request_soc = True
         else:
-            if (self.data.soc.request_only_plugged is False or
-                    (self.data.soc.request_only_plugged is True and plug_state is True)):
-                if charge_state is True:
-                    interval = self.data.soc.request_interval_charging
-                else:
-                    interval = self.data.soc.request_interval_not_charging
-                # Zeitstempel prüfen, ob wieder abgefragt werden muss.
-                if timecheck.check_timestamp(soc_timestamp, interval*60-5) is False:
-                    # Zeit ist abgelaufen
-                    request_soc = True
+            if charge_state is True:
+                interval = 5
+            else:
+                interval = 720
+            # Zeitstempel prüfen, ob wieder abgefragt werden muss.
+            if timecheck.check_timestamp(soc_timestamp, interval*60-5) is False:
+                # Zeit ist abgelaufen
+                request_soc = True
         return request_soc
 
 
