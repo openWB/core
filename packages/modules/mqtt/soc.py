@@ -25,7 +25,7 @@ class Soc(AbstractSoc):
         pass
 
 
-def mqtt_update(akey: str, token: str, charge_point: int):
+def mqtt_update(charge_point: int):
     pass
 
 
