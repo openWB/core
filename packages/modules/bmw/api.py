@@ -23,6 +23,24 @@ client_id = '31c357a0-7a1d-4590-aa99-33b97244d048'
 client_password = 'c0e3393d-70a2-4f6f-9d3c-8530af64d552'
 
 
+def dump_json(data: dict, fout: str):
+    replyFile = str(RAMDISK_PATH) + fout
+    try:
+        f = open(replyFile, 'w', encoding='utf-8')
+    except Exception as e:
+        log.debug("bmw.dump_json: chmod File" + replyFile + ", exception, e=" + str(e))
+        os.system("sudo rm " + replyFile)
+        f = open(replyFile, 'w', encoding='utf-8')
+    json.dump(data, f, ensure_ascii=False, indent=4)
+    f.close()
+    try:
+        os.chmod(replyFile, 0o777)
+    except Exception as e:
+        log.debug("bmw.dump_json: chmod replyFile " + replyFile + ", exception, e=" + str(e))
+        log.debug("bmw.dump_json: use sudo, user: " + getpass.getuser())
+        os.system("sudo chmod 0777 " + replyFile)
+
+
 # ---------------Helper Function-------------------------------------------
 def get_random_string(length: int) -> str:
     letters = string.ascii_letters
@@ -103,6 +121,7 @@ def authStage1(username: str, password: str, code_challenge: str, state: str) ->
         auth_code = dict(urllib.parse.parse_qsl(response["redirect_to"]))["authorization"]
     except Exception as err:
         log.error("bmw.authStage1: Authentication stage 1 Error" + f" {err=}, {type(err)=}")
+        dump_json(response, '/soc_bmw_authStage1_response')
         raise
 
     return auth_code
@@ -116,11 +135,12 @@ def authStage2(auth_code_1: str, code_challenge: str, state: str) -> str:
             'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_3_1 like Mac OS X)\
                     AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.3 Mobile/15E148 Safari/604.1'
         }
+        scope = 'openid profile email offline_access smacc vehicle_data perseus dlm '
+        scope = scope + 'svds cesim vsapi remote_services fupo authenticate_user'
         data = {
             'client_id': client_id,
             'response_type': 'code',
-            'scope': 'openid profile email offline_access smacc vehicle_data\
-                    perseus dlm svds cesim vsapi remote_services fupo authenticate_user',
+            'scope': scope,
             'redirect_uri': 'com.bmw.connected://oauth',
             'state': state,
             'nonce': 'login_nonce',
@@ -136,6 +156,7 @@ def authStage2(auth_code_1: str, code_challenge: str, state: str) -> str:
         auth_code = dict(urllib.parse.parse_qsl(response.split("?", 1)[1]))["code"]
     except Exception as err:
         log.error("bmw.authStage2: Authentication stage 2 Error" + f" {err=}, {type(err)=}")
+        dump_json(response, '/soc_bmw_authStage2_response')
         raise
 
     return auth_code
@@ -157,6 +178,7 @@ def authStage3(auth_code_2: str, code_challenge: str) -> dict:
         token = json.loads(response)
     except Exception as err:
         log.error("bmw.authStage3: Authentication stage 3 Error" + f" {err=}, {type(err)=}")
+        dump_json(response, '/soc_bmw_authStage2_response')
         raise
 
     return token
@@ -203,84 +225,14 @@ def requestData(token: str, vin: str) -> dict:
 
 
 def fetch_soc(user_id: str, password: str, vin: str, vehicle: int) -> Union[int, float]:
-    # log.debug("bmw:fetch_soc, user_id=" + user_id)
-    # log.debug("bmw:fetch_soc, password=" + password)
-    # log.debug("bmw:fetch_soc, vin=" + vin)
-    # log.debug("bmw: fetch_soc, vehicle=" + vehicle)
-    replyFile = str(RAMDISK_PATH) + '/soc_bmw_reply_vehicle_' + str(vehicle)
 
     try:
         token = requestToken(user_id, password)
         data = requestData(token, vin)
+        dump_json(data, '/soc_bmw_reply_vehicle_' + str(vehicle))
         soc = int(data["state"]["electricChargingState"]["chargingLevelPercent"])
-        # todo: verify range value
         range = float(data["state"]["electricChargingState"]["range"])
-        log.debug("bmw.fetch_soc: Download successful - vehicle: " +
-                  str(vehicle) + ", SoC: " + str(soc) + "%, Range: " + str(range))
     except Exception as err:
         log.error("bmw.fetch_soc: requestData Error, vehicle: " + str(vehicle) + f" {err=}, {type(err)=}")
         raise
-
-    try:
-        f = open(replyFile, 'w', encoding='utf-8')
-    except Exception as e:
-        log.debug("bmw.fetch_soc: vehicle: " + vehicle +
-                  ", replyFile open exception: e=" + str(e) + "user: " + getpass.getuser())
-        log.debug("bmw.fetch_soc: vehicle " + vehicle + ", replyFile open Exception, remove existing file")
-        os.system("sudo rm " + replyFile)
-        f = open(replyFile, 'w', encoding='utf-8')
-        json.dump(data, f, ensure_ascii=False, indent=4)
-    f.close()
-    try:
-        os.chmod(replyFile, 0o777)
-    except Exception as e:
-        log.debug("bmw.fetch_soc: vehicle " + vehicle + ", chmod replyFile exception, e=" + str(e))
-        log.debug("bmw.fetch_soc: vehicle " + vehicle + ", use sudo, user: " + getpass.getuser())
-        os.system("sudo chmod 0777 " + replyFile)
-
-    log.debug("bmw.fetch_soc vehicle=" + vehicle + ", return: soc=" + str(soc) + ", range=" + str(range))
     return soc, range
-
-# code from owb1 - keep for now - not sure about role of meterfile and statefile
-# ---------------Main Function-------------------------------------------
-# def main():
-#     try:
-#         argsStr = base64.b64decode(str(sys.argv[1])).decode('utf-8')
-#         argsDict = json.loads(argsStr)
-#
-#         username = str(argsDict["user"])
-#         password = str(argsDict["pass"])
-#         vin = str(argsDict["vin"]).upper()
-#         socfile = str(argsDict["socfile"])
-#         meterfile = str(argsDict["meterfile"])
-#         statefile = str(argsDict["statefile"])
-#     except:
-#         print("Parameters could not be processed")
-#         raise
-#
-#     try:
-#         token = requestToken(username, password)
-#         data = requestData(token, vin)
-#         soc = int(data["state"]["electricChargingState"]["chargingLevelPercent"])
-#         print("Download successful - SoC: " + str(soc) + "%")
-#     except:
-#         print("Request failed")
-#         raise
-#
-#     try:
-#         with open(socfile, 'w') as f:
-#             f.write(str(int(soc)))
-#         state = {}
-#         state["soc"] = int(soc)
-#         with open(meterfile, 'r') as f:
-#             state["meter"] = float(f.read())
-#         with open(statefile, 'w') as f:
-#             f.write(json.dumps(state))
-#     except:
-#         print("Saving SoC failed")
-#         raise
-#
-#
-# if __name__ == '__main__':
-#     main()
-#
