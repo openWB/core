@@ -27,7 +27,7 @@ class Soc(AbstractSoc):
     def update(self, charge_state: bool = False) -> None:
         with SingleComponentUpdateContext(self.component_info):
             soc, range = api.fetch_soc(
-                self.config.configuration.userid,
+                self.config.configuration.user_id,
                 self.config.configuration.password,
                 self.config.configuration.vin,
                 self.vehicle)
@@ -35,9 +35,9 @@ class Soc(AbstractSoc):
             self.store.set(CarState(soc, range))
 
 
-def bmw_update(userid: str, password: str, vin: str, charge_point: int):
-    log.debug("bmw: userid="+userid+"vin="+vin+"charge_point="+str(charge_point))
-    Soc(BMW(configuration=BMWConfiguration(charge_point, userid, password, vin)), charge_point).update(False)
+def bmw_update(user_id: str, password: str, vin: str, charge_point: int):
+    log.debug("bmw: user_id="+user_id+"vin="+vin+"charge_point="+str(charge_point))
+    Soc(BMW(configuration=BMWConfiguration(charge_point, user_id, password, vin)), charge_point).update(False)
 
 
 def main(argv: List[str]):

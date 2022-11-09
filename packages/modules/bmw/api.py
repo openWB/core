@@ -31,11 +31,11 @@ def get_random_string(length: int) -> str:
 
 
 def create_auth_string(client_id: str, client_password: str) -> str:
-    authstring = client_id + ':' + client_password
-    authbytes = authstring.encode("ascii")
-    b64bytes = base64.b64encode(authbytes)
-    authstring = 'Basic ' + b64bytes.decode("ascii")
-    return authstring
+    auth_string = client_id + ':' + client_password
+    auth_bytes = auth_string.encode("ascii")
+    b64bytes = base64.b64encode(auth_bytes)
+    auth_string = 'Basic ' + b64bytes.decode("ascii")
+    return auth_string
 
 
 # ---------------HTTP Function-------------------------------------------
@@ -100,21 +100,22 @@ def authStage1(username: str, password: str, code_challenge: str, state: str) ->
             'grant_type': 'authorization_code'}
 
         response = json.loads(postHTTP(url, data, headers))
-        authcode = dict(urllib.parse.parse_qsl(response["redirect_to"]))["authorization"]
+        auth_code = dict(urllib.parse.parse_qsl(response["redirect_to"]))["authorization"]
     except Exception as err:
         log.error("bmw.authStage1: Authentication stage 1 Error" + f" {err=}, {type(err)=}")
         raise
 
-    return authcode
+    return auth_code
 
 
-def authStage2(authcode1: str, code_challenge: str, state: str) -> str:
+def authStage2(auth_code_1: str, code_challenge: str, state: str) -> str:
     try:
         url = 'https://' + auth_server + '/gcdm/oauth/authenticate'
         headers = {
             'Content-Type': 'application/x-www-form-urlencoded',
             'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_3_1 like Mac OS X)\
-                    AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.3 Mobile/15E148 Safari/604.1'}
+                    AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.3 Mobile/15E148 Safari/604.1'
+        }
         data = {
             'client_id': client_id,
             'response_type': 'code',
@@ -125,27 +126,29 @@ def authStage2(authcode1: str, code_challenge: str, state: str) -> str:
             'nonce': 'login_nonce',
             'code_challenge': code_challenge,
             'code_challenge_method': 'plain',
-            'authorization': authcode1}
+            'authorization': auth_code_1
+        }
         cookies = {
-            'GCDMSSO': authcode1}
+            'GCDMSSO': auth_code_1
+        }
 
         response = postHTTP(url, data, headers, cookies, allow_redirects=False)
-        authcode = dict(urllib.parse.parse_qsl(response.split("?", 1)[1]))["code"]
+        auth_code = dict(urllib.parse.parse_qsl(response.split("?", 1)[1]))["code"]
     except Exception as err:
         log.error("bmw.authStage2: Authentication stage 2 Error" + f" {err=}, {type(err)=}")
         raise
 
-    return authcode
+    return auth_code
 
 
-def authStage3(authcode2: str, code_challenge: str) -> dict:
+def authStage3(auth_code_2: str, code_challenge: str) -> dict:
     try:
         url = 'https://' + auth_server + '/gcdm/oauth/token'
         headers = {
             'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
             'Authorization': create_auth_string(client_id, client_password)}
         data = {
-            'code': authcode2,
+            'code': auth_code_2,
             'code_verifier': code_challenge,
             'redirect_uri': 'com.bmw.connected://oauth',
             'grant_type': 'authorization_code'}
@@ -164,9 +167,9 @@ def requestToken(username: str, password: str) -> dict:
         code_challenge = get_random_string(86)
         state = get_random_string(22)
 
-        authcode1 = authStage1(username, password, code_challenge, state)
-        authcode2 = authStage2(authcode1, code_challenge, state)
-        token = authStage3(authcode2, code_challenge)
+        auth_code_1 = authStage1(username, password, code_challenge, state)
+        auth_code_2 = authStage2(auth_code_1, code_challenge, state)
+        token = authStage3(auth_code_2, code_challenge)
     except Exception as err:
         log.error("bmw.requestToken: Login Error" + f" {err=}, {type(err)=}")
         raise
@@ -199,15 +202,15 @@ def requestData(token: str, vin: str) -> dict:
     return response
 
 
-def fetch_soc(userid: str, password: str, vin: str, vehicle: int) -> Union[int, float]:
-    # log.debug("bmw:fetch_soc, userid=" + userid)
+def fetch_soc(user_id: str, password: str, vin: str, vehicle: int) -> Union[int, float]:
+    # log.debug("bmw:fetch_soc, user_id=" + user_id)
     # log.debug("bmw:fetch_soc, password=" + password)
     # log.debug("bmw:fetch_soc, vin=" + vin)
     # log.debug("bmw: fetch_soc, vehicle=" + vehicle)
     replyFile = str(RAMDISK_PATH) + '/soc_bmw_reply_vehicle_' + str(vehicle)
 
     try:
-        token = requestToken(userid, password)
+        token = requestToken(user_id, password)
         data = requestData(token, vin)
         soc = int(data["state"]["electricChargingState"]["chargingLevelPercent"])
         # todo: verify range value
@@ -259,7 +262,7 @@ def fetch_soc(userid: str, password: str, vin: str, vehicle: int) -> Union[int, 
 #         token = requestToken(username, password)
 #         data = requestData(token, vin)
 #         soc = int(data["state"]["electricChargingState"]["chargingLevelPercent"])
-#         print("Download sucessful - SoC: " + str(soc) + "%")
+#         print("Download successful - SoC: " + str(soc) + "%")
 #     except:
 #         print("Request failed")
 #         raise
