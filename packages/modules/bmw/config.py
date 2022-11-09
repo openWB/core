@@ -1,5 +1,6 @@
 from typing import Optional
 
+
 class BMWConfiguration:
     def __init__(self, user_id: Optional[str] = None, password: Optional[str] = None, vin: Optional[str] = None):
         self.user_id = user_id
