@@ -56,15 +56,13 @@ class SubData:
                  event_cp_config: threading.Event,
                  event_module_update_completed: threading.Event,
                  event_copy_data: threading.Event,
-                 event_global_data_initialized: threading.Event,
-                 event_subdata_initialized: threading.Event):
+                 event_global_data_initialized: threading.Event):
         self.event_ev_template = event_ev_template
         self.event_charge_template = event_charge_template
         self.event_cp_config = event_cp_config
         self.event_module_update_completed = event_module_update_completed
         self.event_copy_data = event_copy_data
         self.event_global_data_initialized = event_global_data_initialized
-        self.event_subdata_initialized = event_subdata_initialized
         self.heartbeat = False
 
         self.bat_data["all"] = bat.BatAll()
@@ -94,10 +92,8 @@ class SubData:
         client.subscribe("openWB/system/device/module_update_completed", 2)
         client.subscribe("openWB/system/mqtt/bridge/+", 2)
         client.subscribe("openWB/system/device/+/config", 2)
-        Pub().pub("openWB/system/subdata_initialized", True)
 
-    def on_message(self, client, userdata,
-                   msg):
+    def on_message(self, client, userdata, msg):
         """ wartet auf eingehende Topics.
         """
         mqtt_log.debug("Topic: "+str(msg.topic) +
@@ -699,9 +695,6 @@ class SubData:
                 elif "openWB/system/available_branches" == msg.topic:
                     # Logged in update.log, not used in data.data and removed due to readability purposes of main.log.
                     return
-                elif "openWB/system/subdata_initialized" == msg.topic:
-                    Pub().pub("openWB/system/subdata_initialized", "")
-                    self.event_subdata_initialized.set()
                 self.set_json_payload(var["system"].data, msg)
         except Exception:
             log.exception("Fehler im subdata-Modul")
