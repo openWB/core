@@ -501,17 +501,13 @@ class UpdateConfig:
         Pub().pub("openWB/set/system/datastore_version", 3)
 
     def upgrade_datastore_3(self) -> None:
-        log.debug("update datastore to 3")
         for topic, payload in self.all_received_topics.items():
             if re.search(
                     "openWB/vehicle/template/charge_template/[0-9]+/time_charging/plans/[0-9]+",
                     topic) is not None:
-                log.debug("found matching topic: " + str(payload))
                 payload = decode_payload(payload)
                 if "limit" not in payload:
-                    log.debug("limit not found, adding limit")
                     updated_payload = payload
                     updated_payload["limit"] = {"selected": "soc", "amount": 1000, "soc": 70}
-
                     Pub().pub(topic.replace("openWB/", "openWB/set/"), updated_payload)
         Pub().pub("openWB/set/system/datastore_version", 4)
