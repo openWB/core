@@ -3,6 +3,7 @@
 
 import copy
 import dataclasses
+import threading
 from typing import List, Optional, Tuple
 import re
 
@@ -19,14 +20,21 @@ mqtt_log = logging.getLogger("mqtt")
 
 
 class SetData:
-    def __init__(self, event_ev_template, event_charge_template, event_cp_config):
+    def __init__(self,
+                 event_ev_template: threading.Event,
+                 event_charge_template: threading.Event,
+                 event_cp_config: threading.Event,
+                 event_subdata_initialized: threading.Event):
         self.event_ev_template = event_ev_template
         self.event_charge_template = event_charge_template
         self.event_cp_config = event_cp_config
+        self.event_subdata_initialized = event_subdata_initialized
         self.heartbeat = False
 
     def set_data(self):
         self.internal_broker_client = InternalBrokerClient("mqttset", self.on_connect, self.on_message)
+        self.event_subdata_initialized.wait()
+        log.debug("Subdata initialisation completed. Starting setdata loop to broker.")
         self.internal_broker_client.start_infinite_loop()
 
     def disconnect(self) -> None:
