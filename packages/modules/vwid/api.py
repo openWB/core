@@ -16,8 +16,8 @@ log = logging.getLogger("soc."+__name__)
 # async method, called from sync fetch_soc, required because libvwid expects  async enviroment
 
 
-async def _fetch_soc(userid: str, password: str, vin: str, vehicle: int) -> Union[int, float]:
-    # log.debug("vwid:_fetch_soc, userid="+userid)
+async def _fetch_soc(user_id: str, password: str, vin: str, vehicle: int) -> Union[int, float]:
+    # log.debug("vwid:_fetch_soc, user_id="+user_id)
     # log.debug("vwid:_fetch_soc, password=" + password)
     # log.debug("vwid:_fetch_soc, vin="+vin)
     # log.debug("vwid:_fetch_soc, vehicle="+vehicle)
@@ -28,7 +28,7 @@ async def _fetch_soc(userid: str, password: str, vin: str, vehicle: int) -> Unio
     async with aiohttp.ClientSession() as session:
         w = libvwid.vwid(session)
         w.set_vin(vin)
-        w.set_credentials(userid, password)
+        w.set_credentials(user_id, password)
 
         try:
             tf = open(tokensFile, "rb")           # try to open tokens file
@@ -79,8 +79,8 @@ async def _fetch_soc(userid: str, password: str, vin: str, vehicle: int) -> Unio
             return soc, range
 
 
-def fetch_soc(userid: str, password: str, vin: str, vehicle: int) -> Union[int, float]:
-    # log.debug("vwid:fetch_soc, userid=" + userid)
+def fetch_soc(user_id: str, password: str, vin: str, vehicle: int) -> Union[int, float]:
+    # log.debug("vwid:fetch_soc, user_id=" + user_id)
     # log.debug("vwid:fetch_soc, password=" + password)
     # log.debug("vwid:fetch_soc, vin=" + vin)
     # log.debug("vwid: fetch_soc, vehicle=" + vehicle)
@@ -88,6 +88,6 @@ def fetch_soc(userid: str, password: str, vin: str, vehicle: int) -> Union[int, 
     # prepare and call async method
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    soc, range = loop.run_until_complete(_fetch_soc(userid, password, vin, vehicle))
+    soc, range = loop.run_until_complete(_fetch_soc(user_id, password, vin, vehicle))
     # log.debug("vwid.api.fetch_soc vehicle " + vehicle + ", return: soc=" + str(soc) + ", range=" + str(range))
     return soc, range
