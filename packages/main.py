@@ -139,12 +139,14 @@ try:
     event_global_data_initialized = threading.Event()
     event_command_completed = threading.Event()
     event_command_completed.set()
+    event_subdata_initialized = threading.Event()
     prep = prepare.Prepare()
     set = setdata.SetData(event_ev_template, event_charge_template,
-                          event_cp_config)
+                          event_cp_config, event_subdata_initialized)
     sub = subdata.SubData(event_ev_template, event_charge_template,
                           event_cp_config, loadvars_.event_module_update_completed,
-                          event_copy_data, event_global_data_initialized, event_command_completed)
+                          event_copy_data, event_global_data_initialized, event_command_completed,
+                          event_subdata_initialized)
     comm = command.Command(event_command_completed)
     soc = update_soc.UpdateSoc()
     t_sub = Thread(target=sub.sub_topics, args=())
