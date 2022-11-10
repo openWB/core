@@ -24,6 +24,7 @@ class Process:
                 try:
                     if "cp" in cp:
                         chargepoint = data.data.cp_data[cp]
+                        chargepoint.remember_previous_values()
                         if chargepoint.data.set.charging_ev != -1:
                             # Ladelog-Daten müssen vor dem Setzen des Stroms gesammelt werden,
                             # damit bei Phasenumschaltungs-empfindlichen EV sicher noch nicht geladen wurde.
