@@ -11,6 +11,7 @@ from helpermodules import subdata
 from helpermodules.broker import InternalBrokerClient
 from helpermodules.pub import Pub
 from helpermodules.utils.topic_parser import decode_payload, get_index
+from helpermodules.update_config import UpdateConfig
 import dataclass_utils
 
 log = logging.getLogger(__name__)
@@ -847,7 +848,7 @@ class SetData:
             elif "openWB/set/system/version" in msg.topic:
                 self._validate_value(msg, str)
             elif "openWB/set/system/datastore_version" in msg.topic:
-                self._validate_value(msg, int, [(0, 2)])
+                self._validate_value(msg, int, [(0, UpdateConfig.DATASTORE_VERSION)])
             elif "openWB/set/system/GetRemoteSupport" in msg.topic:
                 # Server-Topic enthält kein json-Payload.
                 payload = msg.payload.decode("utf-8")
