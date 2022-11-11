@@ -153,13 +153,15 @@ try:
     event_copy_data = threading.Event()  # set: Kopieren abgeschlossen, reset: es wird kopiert
     event_copy_data.set()
     event_global_data_initialized = threading.Event()
+    event_command_completed = threading.Event()
+    event_command_completed.set()
     prep = prepare.Prepare()
     set = setdata.SetData(event_ev_template, event_charge_template,
                           event_cp_config)
     sub = subdata.SubData(event_ev_template, event_charge_template,
                           event_cp_config, loadvars_.event_module_update_completed,
-                          event_copy_data, event_global_data_initialized)
-    comm = command.Command()
+                          event_copy_data, event_global_data_initialized, event_command_completed)
+    comm = command.Command(event_command_completed)
     soc = update_soc.UpdateSoc()
     t_sub = Thread(target=sub.sub_topics, args=())
     t_set = Thread(target=set.set_data, args=())

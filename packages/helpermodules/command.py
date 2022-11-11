@@ -2,6 +2,7 @@ import importlib
 import json
 import logging
 import subprocess
+import threading
 import time
 from typing import List
 import re
@@ -35,8 +36,9 @@ class Command:
                ("ev_template", "vehicle/template/ev_template", 0),
                ("vehicle", "vehicle", 0)]
 
-    def __init__(self):
+    def __init__(self, event_command_completed: threading.Event):
         try:
+            self.event_command_completed = event_command_completed
             self.__get_max_ids()
             self.__get_max_id_by_json_object("hierarchy", "counter/get/hierarchy/", -1)
         except Exception:
@@ -58,6 +60,7 @@ class Command:
                         if current_id_regex is not None:
                             current_id = int(current_id_regex.group(1))
                             max_id = max(current_id, max_id)
+                setattr(self, f'max_id_{id_topic}', max_id)
                 Pub().pub("openWB/set/command/max_id/"+id_topic, max_id)
         except Exception:
             log.exception("Fehler im Command-Modul")
@@ -67,6 +70,7 @@ class Command:
         try:
             hierarchy = ProcessBrokerBranch(topic).get_payload()
             max_id = counter.get_max_id_in_hierarchy(hierarchy, default)
+            setattr(self, f'max_id_{id_topic}', max_id)
             Pub().pub(f'openWB/set/command/max_id/{id_topic}', max_id)
         except Exception:
             log.exception("Fehler im Command-Modul")
@@ -98,31 +102,17 @@ class Command:
             if decode_payload(msg.payload) != '':
                 if "todo" in msg.topic:
                     payload = decode_payload(msg.payload)
-                    connection_id = msg.topic.split("/")[2]
-                    log.debug(f'Befehl: {payload}, Connection-ID: {connection_id}')
-                    # Methoden-Name = Befehl
-                    try:
-                        func = getattr(self, payload["command"])
-                        with ErrorHandlingContext(payload, connection_id):
-                            func(connection_id, payload)
-                    except Exception:
-                        pub_error_user(payload, connection_id, "Zu dem Befehl wurde keine Methode gefunden.")
-                    Pub().pub(msg.topic, "")
-                elif "max_id" in msg.topic:
-                    self.__process_max_id_topic(msg)
-        except Exception:
-            log.exception("Fehler im Command-Modul")
-
-    def __process_max_id_topic(self, msg, no_log: bool = False) -> None:
-        try:
-            payload = decode_payload(msg.payload)
-            result = re.search("/([a-z,A-Z,0-9,_]+)(?!.*/)", msg.topic)
-            if result is not None:
-                var = result.group(1)
-                # Der Variablen-Name für die maximale ID setzt sich aus "max_id_" und dem Topic-Namen nach dem letzten /
-                # zusammen.
-                setattr(self, f'max_id_{var}', payload)
-                log.debug(f'Max ID {var} {payload}')
+                    with CompleteCommandContext(self.event_command_completed):
+                        connection_id = msg.topic.split("/")[2]
+                        log.debug(f'Befehl: {payload}, Connection-ID: {connection_id}')
+                        # Methoden-Name = Befehl
+                        try:
+                            func = getattr(self, payload["command"])
+                            with ErrorHandlingContext(payload, connection_id):
+                                func(connection_id, payload)
+                        except Exception:
+                            pub_error_user(payload, connection_id, "Zu dem Befehl wurde keine Methode gefunden.")
+                        Pub().pub(msg.topic, "")
         except Exception:
             log.exception("Fehler im Command-Modul")
 
@@ -361,13 +351,14 @@ class Command:
         except (TypeError, IndexError):
             if general_type == ComponentType.COUNTER:
                 # es gibt noch keinen EVU-Zähler
-                Pub().pub("openWB/set/counter/get/hierarchy",
-                          [{
+                hierarchy = ([{
                               "id": new_id,
                               "type": ComponentType.COUNTER.value,
                               "children": []
-                          }] +
-                          data.data.counter_all_data.data.get.hierarchy)
+                              }] +
+                             data.data.counter_all_data.data.get.hierarchy)
+                Pub().pub("openWB/set/counter/get/hierarchy", hierarchy)
+                data.data.counter_all_data.data.get.hierarchy = hierarchy
             else:
                 pub_error_user(payload, connection_id, "Bitte erst einen EVU-Zähler konfigurieren!")
                 return
@@ -606,6 +597,23 @@ class ErrorHandlingContext:
             return True
         else:
             return False
+
+
+class CompleteCommandContext:
+    def __init__(self, event_command_completed: threading.Event):
+        self.event_command_completed = event_command_completed
+
+    def __enter__(self):
+        """Beim Aufruf der Methode wird auf das Setzen des Events gewartet und dann zurückgesetzt."""
+        self.event_command_completed.wait()
+        self.event_command_completed.clear()
+        return None
+
+    def __exit__(self, exception_type, exception, exception_traceback) -> bool:
+        """ Als letztes Topic wird command_completed gesendet. Wenn dies in der subdata empfangen wird, wird das
+        Event gesetzt. Der nächste Befehl wartet in der Enter-Methode auf das Setzen des Events."""
+        Pub().pub("openWB/set/command/command_completed", True)
+        return True
 
 
 def pub_success_user(payload: dict, connection_id: str, message: str) -> None:

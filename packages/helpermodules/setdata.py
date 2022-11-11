@@ -910,6 +910,8 @@ class SetData:
                 self._validate_value(msg, "json")
             elif "messages" in msg.topic:
                 self._validate_value(msg, "json")
+            elif "command_completed" in msg.topic:
+                self._validate_value(msg, bool)
             else:
                 self.__unknown_topic(msg)
         except Exception:
