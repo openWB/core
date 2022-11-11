@@ -13,7 +13,7 @@ from typing import List, Dict, Optional, Tuple
 
 from control import data
 from dataclass_utils.factories import empty_dict_factory, emtpy_list_factory
-from helpermodules.abstract_plans import Limit, limit_factory, ScheduledChargingPlan, TimeChargingPlan
+from helpermodules.abstract_plans import ScheduledChargingPlan, TimeChargingPlan
 from helpermodules.pub import Pub
 from helpermodules import timecheck
 from modules.common.abstract_soc import AbstractSoc
@@ -49,6 +49,17 @@ class ScheduledCharging:
 class TimeCharging:
     active: bool = False
     plans: Dict[int, TimeChargingPlan] = field(default_factory=empty_dict_factory)
+
+
+@dataclass
+class Limit:
+    selected: str = "none"
+    amount: int = 1000
+    soc: int = 50
+
+
+def limit_factory() -> Limit:
+    return Limit()
 
 
 @dataclass
@@ -105,17 +116,6 @@ class ChargeTemplateData:
 
 
 @dataclass
-class Soc:
-    request_interval_charging: int = 5
-    request_interval_not_charging: int = 720
-    request_only_plugged: bool = False
-
-
-def soc_factory() -> Soc:
-    return Soc()
-
-
-@dataclass
 class EvTemplateData:
     name: str = "Standard-Fahrzeug-Vorlage"
     max_current_multi_phases: int = 16
@@ -130,7 +130,6 @@ class EvTemplateData:
     max_current_one_phase: int = 32
     battery_capacity: float = 82
     nominal_difference: int = 2
-    soc: Soc = field(default_factory=soc_factory)
 
 
 def ev_template_data_factory() -> EvTemplateData:
@@ -160,23 +159,20 @@ class EvTemplate:
     data: EvTemplateData = field(default_factory=ev_template_data_factory)
     et_num: int = 0
 
-    def soc_interval_expired(
-            self, plug_state: bool, charge_state: bool, soc_timestamp: str) -> bool:
+    def soc_interval_expired(self, charge_state: bool, soc_timestamp: str) -> bool:
         request_soc = False
         if soc_timestamp == "":
             # Initiale Abfrage
             request_soc = True
         else:
-            if (self.data.soc.request_only_plugged is False or
-                    (self.data.soc.request_only_plugged is True and plug_state is True)):
-                if charge_state is True:
-                    interval = self.data.soc.request_interval_charging
-                else:
-                    interval = self.data.soc.request_interval_not_charging
-                # Zeitstempel prüfen, ob wieder abgefragt werden muss.
-                if timecheck.check_timestamp(soc_timestamp, interval*60-5) is False:
-                    # Zeit ist abgelaufen
-                    request_soc = True
+            if charge_state is True:
+                interval = 5
+            else:
+                interval = 720
+            # Zeitstempel prüfen, ob wieder abgefragt werden muss.
+            if timecheck.check_timestamp(soc_timestamp, interval*60-5) is False:
+                # Zeit ist abgelaufen
+                request_soc = True
         return request_soc
 
 
@@ -323,11 +319,7 @@ class Ev:
             # Wenn Zielladen auf Überschuss wartet, prüfen, ob Zeitladen aktiv ist.
             if ((required_current is None or required_current <= 1) and
                     self.charge_template.data.time_charging.active):
-                used_amount = charged_since_mode_switch - self.data.control_parameter.imported_at_plan_start
-                time_charging_current, submode, message, name = self.charge_template.time_charging(
-                    self.data.get.soc,
-                    used_amount
-                )
+                time_charging_current, submode, message, name = self.charge_template.time_charging()
                 if time_charging_current > 0:
                     self.data.control_parameter.current_plan = name
                     Pub().pub(f"openWB/set/vehicle/{self.num}/control_parameter/current_plan", name)
@@ -610,12 +602,8 @@ class ChargeTemplate:
 
     TIME_CHARGING_NO_PLAN_CONFIGURED = "Keine Ladung, da keine Zeitfenster für Zeitladen konfiguriert sind."
     TIME_CHARGING_NO_PLAN_ACTIVE = "Keine Ladung, da kein Zeitfenster für Zeitladen aktiv ist."
-    TIME_CHARGING_SOC_REACHED = "Keine Ladung, da der Soc bereits erreicht wurde."
-    TIME_CHARGING_AMOUNT_REACHED = "Keine Ladung, da die Energiemenge bereits geladen wurde."
 
-    def time_charging(self,
-                      soc: float,
-                      used_amount_time_charging: float) -> Tuple[int, str, Optional[str], Optional[str]]:
+    def time_charging(self) -> Tuple[int, str, Optional[str], Optional[str]]:
         """ prüft, ob ein Zeitfenster aktiv ist und setzt entsprechend den Ladestrom
         """
         message = None
@@ -623,20 +611,7 @@ class ChargeTemplate:
             if self.data.time_charging.plans:
                 plan = timecheck.check_plans_timeframe(self.data.time_charging.plans)
                 if plan is not None:
-                    if plan.limit.selected == "none":  # kein Limit konfiguriert, mit konfigurierter Stromstärke laden
-                        return plan.current, "time_charging", message, plan.name
-                    elif plan.limit.selected == "soc":  # SoC Limit konfiguriert
-                        if soc < plan.limit.soc:
-                            return plan.current, "time_charging", message, plan.name  # Limit nicht erreicht
-                        else:
-                            return 0, "stop", self.TIME_CHARGING_SOC_REACHED, plan.name  # Limit erreicht
-                    elif plan.limit.selected == "amount":  # Energiemengenlimit konfiguriert
-                        if used_amount_time_charging < plan.limit.amount:
-                            return plan.current, "time_charging", message, plan.name  # Limit nicht erreicht
-                        else:
-                            return 0, "stop", self.TIME_CHARGING_AMOUNT_REACHED, plan.name  # Limit erreicht
-                    else:
-                        raise TypeError(f'{plan.limit.selected} unbekanntes Zeitladen-Limit.')
+                    return plan.current, "time_charging", message, plan.name
                 else:
                     message = self.TIME_CHARGING_NO_PLAN_ACTIVE
             else:

@@ -1,6 +1,9 @@
+from typing import Optional
+
+
 class VWIdConfiguration:
-    def __init__(self, userid: str = "", password: str = "", vin: str = ""):
-        self.userid = userid
+    def __init__(self, user_id: Optional[str] = None, password: Optional[str] = None, vin: Optional[str] = None):
+        self.user_id = user_id
         self.password = password
         self.vin = vin
 

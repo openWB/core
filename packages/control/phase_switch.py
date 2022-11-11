@@ -30,7 +30,9 @@ def thread_phase_switch(
         if "thread_cp"+str(cp_num) not in phase_switch_threads:
             # Thread zur Phasenumschaltung erstellen, starten und der Liste hinzufügen.
             phase_switch_threads["thread_cp"+str(cp_num)] = threading.Thread(
-                target=_perform_phase_switch, args=(chargepoint_module, phases_to_use, duration, charge_state))
+                target=_perform_phase_switch,
+                args=(chargepoint_module, phases_to_use, duration, charge_state),
+                name=f"cp{chargepoint_module.id}")
             phase_switch_threads["thread_cp"+str(cp_num)].start()
             log.debug("Thread zur Phasenumschaltung an LP"+str(cp_num)+" gestartet.")
     except Exception:

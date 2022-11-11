@@ -335,6 +335,8 @@ class Chargepoint:
             # set current aus dem vorherigen Zyklus, um zu wissen, ob am Ende des Zyklus die Ladung freigegeben wird
             # (für Control-Pilot-Unterbrechung)
             self.set_current_prev = 0
+            # Um herauszufinden, ob an-/abgesteckt wurde, zB für SoC.
+            self.plug_state_prev = False
             # bestehende Daten auf dem Broker nicht zurücksetzen, daher nicht publishen
             self.data: ChargepointData = ChargepointData()
             self.data.set_event(event)
@@ -502,10 +504,12 @@ class Chargepoint:
         self.data.set.energy_to_charge = 0
         Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/energy_to_charge", 0)
 
+    def remember_previous_values(self):
+        self.set_current_prev = self.data.set.current
+        self.plug_state_prev = self.data.get.plug_state
+
     def prepare_cp(self) -> Tuple[int, Optional[str]]:
         try:
-            # Für Control-Pilot-Unterbrechung set current merken.
-            self.set_current_prev = self.data.set.current
             self.__validate_rfid()
             charging_possible, message = self.is_charging_possible()
             if charging_possible:
@@ -1082,12 +1086,8 @@ class ChargepointStateUpdate:
                     ev_list[ev] = copy.deepcopy(self.ev_data[ev])
                 for vehicle in ev_list:
                     try:
-                        # Globaler oder individueller Lademodus?
-                        if data.data.general_data.data.chargemode_config.individual_mode:
-                            ev_list[vehicle].charge_template = copy.deepcopy(self.ev_charge_template_data["ct" + str(
-                                ev_list[vehicle].data.charge_template)])
-                        else:
-                            ev_list[vehicle].charge_template = copy.deepcopy(self.ev_charge_template_data["ct0"])
+                        ev_list[vehicle].charge_template = copy.deepcopy(self.ev_charge_template_data["ct" + str(
+                            ev_list[vehicle].data.charge_template)])
                         # zuerst das aktuelle Template laden
                         ev_list[vehicle].ev_template = copy.deepcopy(self.ev_template_data["et" + str(
                             ev_list[vehicle].data.ev_template)])

@@ -85,7 +85,6 @@ def time_charging_factory() -> TimeCharging:
 
 @dataclass
 class ChargemodeConfig:
-    individual_mode: bool = True
     instant_charging: InstantCharging = field(default_factory=instant_charging_factory)
     pv_charging: PvCharging = field(default_factory=pv_charging_factory)
     scheduled_charging: ScheduledCharging = field(default_factory=scheduled_charging_factory)
