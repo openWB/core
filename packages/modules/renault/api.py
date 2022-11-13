@@ -111,7 +111,7 @@ def requestRENAULTData(userid: str, password: str, location: str, country: str, 
     data = urllib.parse.urlencode(payload)
     data = data.encode('Big5')
     reg = urllib.request.Request(kamereonrooturl + '/commerce/v1/persons/' +
-                          kamereonpersonid + '?' + data.decode("utf-8"))
+                                 kamereonpersonid + '?' + data.decode("utf-8"))
     reg.add_header('x-gigya-id_token', gigya_jwttoken)
     reg.add_header('apikey', kamereonapikey)
     dmp = {}
@@ -153,7 +153,7 @@ def requestRENAULTData(userid: str, password: str, location: str, country: str, 
     data = urllib.parse.urlencode(payload)
     data = data.encode('Big5')
     reg = urllib.request.Request(kamereonrooturl + '/commerce/v1/accounts/' +
-                          kamereonaccountid + '/vehicles?' + data.decode("utf-8"))
+                                 kamereonaccountid + '/vehicles?' + data.decode("utf-8"))
     reg.add_header('x-gigya-id_token', gigya_jwttoken)
     reg.add_header('apikey', kamereonapikey)
     dmp = {}
@@ -177,8 +177,8 @@ def requestRENAULTData(userid: str, password: str, location: str, country: str, 
     data = urllib.parse.urlencode(payload)
     data = data.encode('Big5')
     reg = urllib.request.Request(kamereonrooturl + '/commerce/v1/accounts/' +
-                          kamereonaccountid + '/kamereon/kca/car-adapter/v2/cars/'
-                          + vin + '/battery-status?' + data.decode("utf-8"))
+                                 kamereonaccountid + '/kamereon/kca/car-adapter/v2/cars/'
+                                 + vin + '/battery-status?' + data.decode("utf-8"))
     reg.add_header('x-gigya-id_token', gigya_jwttoken)
     reg.add_header('apikey', kamereonapikey)
     dmp = {}
