@@ -7,13 +7,13 @@ import json
 import urllib
 import requests
 import base64
-import http.client as http_client
 from modules.common.store import RAMDISK_PATH
 # currently unused
 # import sys
 # import time
 # import getopt
 # import getpass
+# import http.client as http_client
 
 log = logging.getLogger("soc."+__name__)
 
