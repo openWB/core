@@ -127,4 +127,4 @@ echo "installation finished, now running atreboot.sh..."
 "${OPENWBBASEDIR}/runs/atreboot.sh"
 
 echo "all done"
-echo "if you want to use this installation for developmenet, add a password for user 'openwb'"
+echo "if you want to use this installation for development, add a password for user 'openwb'"

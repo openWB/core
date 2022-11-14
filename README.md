@@ -41,7 +41,7 @@ In der Shell folgendes eingeben:
 # Entwicklung
 
 Der Dienst läuft als Benutzer "openwb" und dementsprechend sind auch die Zugriffsrechte gesetzt. Wenn die Installation auch zur Entwicklung genutzt wird,
-müssen zwingend Lese- und Schreibrechte der Dateien geprüft und ggf korrigiert werden. Um das zu vermeiden empfielt es sich, ein Kennwort für den
+müssen zwingend Lese- und Schreibrechte der Dateien geprüft und ggf korrigiert werden. Um das zu vermeiden empfiehlt es sich, ein Kennwort für den
 Benutzer "openwb" zu setzen und auch mit dieser Anmeldung die Dateien zu bearbeiten.
 
 # Extra Hardware
@@ -49,9 +49,9 @@ Benutzer "openwb" zu setzen und auch mit dieser Anmeldung die Dateien zu bearbei
 ## Taster am Raspberry zur Einstellung des Lademodi
 
 Der Lademodi kann nicht nur über die Weboberfläche sondern auch an der openWB direkt eingestellt werden.
-Hierzu müssen schließende Taster von GND (Pin 34) nach Gpio X  angeschlossen werden.
+Hierzu müssen schließende Taster von GND (Pin 34) nach GPIO X  angeschlossen werden.
 
 	SofortLaden GPIO 12, PIN 32
 	Min+PV GPIO 16, PIN 36
 	NurPV GPIO 6, Pin 31
-	Aus Gpio 13, Pin 33
+	Aus GPIO 13, Pin 33
