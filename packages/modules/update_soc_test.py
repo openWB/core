@@ -6,7 +6,7 @@ import pytest
 from control import data
 from control.chargepoint import Chargepoint, Get, Set
 from control.ev import Ev, EvTemplate
-from modules.tesla.soc import Soc
+from modules.vehicles.tesla.soc import Soc
 from modules.update_soc import UpdateSoc
 
 

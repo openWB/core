@@ -223,7 +223,7 @@ class SubData:
                         if config["type"] is None:
                             var["ev"+index].soc_module = None
                         else:
-                            mod = importlib.import_module("."+config["type"]+".soc", "modules")
+                            mod = importlib.import_module(".vehicles."+config["type"]+".soc", "modules")
                             var["ev"+index].soc_module = mod.Soc(config, index)
                     elif re.search("/vehicle/[0-9]+/control_parameter/", msg.topic) is not None:
                         self.set_json_payload_class(
@@ -362,7 +362,7 @@ class SubData:
                                     "cp"+index].chargepoint.chargepoint_module.connection_module or
                                 config["power_module"] != var["cp"+index].chargepoint.chargepoint_module.power_module):
                             mod = importlib.import_module(
-                                "."+config["connection_module"]["type"]+".chargepoint_module", "modules")
+                                ".chargepoints."+config["connection_module"]["type"]+".chargepoint_module", "modules")
                             var["cp"+index].chargepoint.chargepoint_module = mod.ChargepointModule(
                                 config["id"], config["connection_module"], config["power_module"])
                         self.set_json_payload_class(var["cp"+index].chargepoint.data.config, msg)
@@ -633,7 +633,7 @@ class SubData:
                                   str(index)+" gefunden werden.")
                 else:
                     device_config = decode_payload(msg.payload)
-                    dev = importlib.import_module("."+device_config["type"]+".device", "modules")
+                    dev = importlib.import_module(".devices."+device_config["type"]+".device", "modules")
                     config = dataclass_from_dict(dev.device_descriptor.configuration_factory, device_config)
                     var["device"+index] = (dev.Device if hasattr(dev, "Device") else dev.create_device)(config)
                     # Durch das erneute Subscribe werden die Komponenten mit dem aktualisierten TCP-Client angelegt.
@@ -670,7 +670,7 @@ class SubData:
                     # TCP-Verbindung aufgebaut wird, deren IP dann nicht aktualisiert werden würde.
                     component_config = decode_payload(msg.payload)
                     component = importlib.import_module(
-                        f'.{var["device"+index].device_config.type}.{component_config["type"]}', "modules")
+                        f'.devices.{var["device"+index].device_config.type}.{component_config["type"]}', "modules")
                     config = dataclass_from_dict(component.component_descriptor.configuration_factory, component_config)
                     var["device"+index].add_component(config)
                     client.subscribe(f"openWB/system/device/{index}/component/{index_second}/simulation", 2)

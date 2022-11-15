@@ -130,7 +130,7 @@ class Command:
         """ sendet das Topic, zu dem ein neues Device erstellt werden soll.
         """
         new_id = self.max_id_device + 1
-        dev = importlib.import_module("."+payload["data"]["type"]+".device", "modules")
+        dev = importlib.import_module(".devices."+payload["data"]["type"]+".device", "modules")
         device_default = dataclass_utils.asdict(dev.device_descriptor.configuration_factory())
         device_default["id"] = new_id
         Pub().pub(f'openWB/set/system/device/{new_id}/config', device_default)
@@ -158,7 +158,7 @@ class Command:
         log.info(f'Neuer Ladepunkt mit ID \'{new_id}\' wird hinzugefügt.')
         chargepoint_default = chargepoint.get_chargepoint_default()
         # chargepoint_default["id"] = new_id
-        module = importlib.import_module("." + payload["data"]["type"] + ".chargepoint_module", "modules")
+        module = importlib.import_module(".chargepoints." + payload["data"]["type"] + ".chargepoint_module", "modules")
         chargepoint_default = {**chargepoint_default, **module.get_default_config()}
         chargepoint_default["id"] = new_id
         chargepoint_default["type"] = payload["data"]["type"]
@@ -351,7 +351,7 @@ class Command:
         """
         new_id = self.max_id_hierarchy + 1
         component = importlib.import_module(
-            "."+payload["data"]["deviceType"]+"."+payload["data"]["type"], "modules")
+            ".devices."+payload["data"]["deviceType"]+"."+payload["data"]["type"], "modules")
         component_default = dataclass_utils.asdict(component.component_descriptor.configuration_factory())
         component_default["id"] = new_id
         general_type = special_to_general_type_mapping(payload["data"]["type"])
