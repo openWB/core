@@ -1,25 +1,23 @@
 from typing import Optional
 
 
-class RENAULTConfiguration:
+class RenaultConfiguration:
     def __init__(self,
-                 userid: Optional[str] = None,
+                 user_id: Optional[str] = None,
                  password: Optional[str] = None,
-                 location: Optional[str] = None,
                  country: Optional[str] = None,
                  vin: Optional[str] = None):
-        self.userid = userid
+        self.user_id = user_id
         self.password = password
-        self.location = location
         self.country = country
         self.vin = vin
 
 
-class RENAULT:
+class Renault:
     def __init__(self,
-                 name: str = "RENAULT",
+                 name: str = "Renault",
                  type: str = "renault",
-                 configuration: RENAULTConfiguration = None) -> None:
+                 configuration: RenaultConfiguration = None) -> None:
         self.name = name
         self.type = type
-        self.configuration = configuration or RENAULTConfiguration()
+        self.configuration = configuration or RenaultConfiguration()
