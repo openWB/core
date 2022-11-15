@@ -98,16 +98,20 @@ def postHTTP(url: str = '', data: str = '', headers: str = '', cookies: str = ''
 # ---------------Authentication Function-------------------------------------------
 def authStage1(username: str, password: str, code_challenge: str, state: str) -> str:
     try:
+        response = {}     # initialize to avoid undefined var in exception handling
         url = 'https://' + auth_server + '/gcdm/oauth/authenticate'
+        userAgent = 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_3_1 like Mac OS X) '
+        userAgent = userAgent + 'AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.3 Mobile/15E148 Safari/604.1'
         headers = {
             'Content-Type': 'application/x-www-form-urlencoded',
-            'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_3_1 like Mac OS X)\
-                    AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.3 Mobile/15E148 Safari/604.1'}
+            'User-Agent': userAgent
+            }
+        scope = 'openid profile email offline_access smacc vehicle_data perseus dlm '
+        scope = scope + 'svds cesim vsapi remote_services fupo authenticate_user'
         data = {
             'client_id': client_id,
             'response_type': 'code',
-            'scope': 'openid profile email offline_access smacc vehicle_data perseus dlm\
-                    svds cesim vsapi remote_services fupo authenticate_user',
+            'scope': scope,
             'redirect_uri': 'com.bmw.connected://oauth',
             'state': state,
             'nonce': 'login_nonce',
@@ -121,7 +125,12 @@ def authStage1(username: str, password: str, code_challenge: str, state: str) ->
         auth_code = dict(urllib.parse.parse_qsl(response["redirect_to"]))["authorization"]
     except Exception as err:
         log.error("bmw.authStage1: Authentication stage 1 Error" + f" {err=}, {type(err)=}")
-        dump_json(response, '/soc_bmw_authStage1_response')
+        dmp = {}
+        dmp['url'] = url
+        dmp['headers'] = headers
+        dmp['data'] = data
+        dmp['response'] = response
+        dump_json(dmp, '/soc_bmw_dump_authStage1')
         raise
 
     return auth_code
@@ -129,11 +138,13 @@ def authStage1(username: str, password: str, code_challenge: str, state: str) ->
 
 def authStage2(auth_code_1: str, code_challenge: str, state: str) -> str:
     try:
+        response = {}      # initialize to avoid undefined var in exception handling
         url = 'https://' + auth_server + '/gcdm/oauth/authenticate'
+        userAgent = 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_3_1 like Mac OS X) '
+        userAgent = userAgent + 'AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.3 Mobile/15E148 Safari/604.1'
         headers = {
             'Content-Type': 'application/x-www-form-urlencoded',
-            'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_3_1 like Mac OS X)\
-                    AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.3 Mobile/15E148 Safari/604.1'
+            'User-Agent': userAgent
         }
         scope = 'openid profile email offline_access smacc vehicle_data perseus dlm '
         scope = scope + 'svds cesim vsapi remote_services fupo authenticate_user'
@@ -156,7 +167,13 @@ def authStage2(auth_code_1: str, code_challenge: str, state: str) -> str:
         auth_code = dict(urllib.parse.parse_qsl(response.split("?", 1)[1]))["code"]
     except Exception as err:
         log.error("bmw.authStage2: Authentication stage 2 Error" + f" {err=}, {type(err)=}")
-        dump_json(response, '/soc_bmw_authStage2_response')
+        dmp = {}
+        dmp['url'] = url
+        dmp['headers'] = headers
+        dmp['data'] = data
+        dmp['cookies'] = cookies
+        dmp['response'] = response
+        dump_json(dmp, '/soc_bmw_dump_authStage2')
         raise
 
     return auth_code
@@ -164,6 +181,7 @@ def authStage2(auth_code_1: str, code_challenge: str, state: str) -> str:
 
 def authStage3(auth_code_2: str, code_challenge: str) -> dict:
     try:
+        response = {}      # initialize to avoid undefined var in exception handling
         url = 'https://' + auth_server + '/gcdm/oauth/token'
         headers = {
             'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
@@ -178,7 +196,12 @@ def authStage3(auth_code_2: str, code_challenge: str) -> dict:
         token = json.loads(response)
     except Exception as err:
         log.error("bmw.authStage3: Authentication stage 3 Error" + f" {err=}, {type(err)=}")
-        dump_json(response, '/soc_bmw_authStage2_response')
+        dmp = {}
+        dmp['url'] = url
+        dmp['headers'] = headers
+        dmp['data'] = data
+        dmp['response'] = response
+        dump_json(dmp, '/soc_bmw_dump_authStage3')
         raise
 
     return token
@@ -186,6 +209,11 @@ def authStage3(auth_code_2: str, code_challenge: str) -> dict:
 
 def requestToken(username: str, password: str) -> dict:
     try:
+        code_challenge = {}   # initialize to avoid undefined var in exception handling
+        state = {}            # initialize to avoid undefined var in exception handling
+        auth_code_1 = {}      # initialize to avoid undefined var in exception handling
+        auth_code_2 = {}      # initialize to avoid undefined var in exception handling
+        token = {}            # initialize to avoid undefined var in exception handling
         code_challenge = get_random_string(86)
         state = get_random_string(22)
 
@@ -194,6 +222,13 @@ def requestToken(username: str, password: str) -> dict:
         token = authStage3(auth_code_2, code_challenge)
     except Exception as err:
         log.error("bmw.requestToken: Login Error" + f" {err=}, {type(err)=}")
+        dmp = {}
+        dmp['code_challenge'] = code_challenge
+        dmp['state'] = state
+        dmp['auth_code_1'] = auth_code_1
+        dmp['auth_code_2'] = auth_code_2
+        dmp['token'] = token
+        dump_json(dmp, '/soc_bmw_dump_requestToken')
         raise
 
     return token
@@ -202,6 +237,7 @@ def requestToken(username: str, password: str) -> dict:
 # ---------------Interface Function-------------------------------------------
 def requestData(token: str, vin: str) -> dict:
     try:
+        response = {}      # initialize to avoid undefined var in exception handling
         if vin[:2] == 'WB':
             brand = 'bmw'
         elif vin[:2] == 'WM':
@@ -219,6 +255,11 @@ def requestData(token: str, vin: str) -> dict:
         response = json.loads(body)
     except Exception as err:
         log.error("bmw.requestData: Data Request Error" + f" {err=}, {type(err)=}")
+        dmp = {}
+        dmp['url'] = url
+        dmp['headers'] = headers
+        dmp['response'] = response
+        dump_json(dmp, '/soc_bmw_dump_requestData')
         raise
 
     return response
