@@ -56,13 +56,15 @@ class SubData:
                  event_cp_config: threading.Event,
                  event_module_update_completed: threading.Event,
                  event_copy_data: threading.Event,
-                 event_global_data_initialized: threading.Event):
+                 event_global_data_initialized: threading.Event,
+                 event_command_completed: threading.Event):
         self.event_ev_template = event_ev_template
         self.event_charge_template = event_charge_template
         self.event_cp_config = event_cp_config
         self.event_module_update_completed = event_module_update_completed
         self.event_copy_data = event_copy_data
         self.event_global_data_initialized = event_global_data_initialized
+        self.event_command_completed = event_command_completed
         self.heartbeat = False
 
         self.bat_data["all"] = bat.BatAll()
@@ -87,6 +89,7 @@ class SubData:
         client.subscribe("openWB/graph/#", 2)
         client.subscribe("openWB/optional/#", 2)
         client.subscribe("openWB/counter/#", 2)
+        client.subscribe("openWB/command/command_completed", 2)
         # Nicht mit wildcard abonnieren, damit nicht die Komponenten vor den Devices empfangen werden.
         client.subscribe("openWB/system/+", 2)
         client.subscribe("openWB/system/device/module_update_completed", 2)
@@ -124,6 +127,8 @@ class SubData:
             self.process_counter_topic(self.counter_data, msg)
         elif "openWB/system/" in msg.topic:
             self.process_system_topic(client, self.system_data, msg)
+        elif "openWB/command/command_completed" == msg.topic:
+            self.event_command_completed.set()
         else:
             log.warning("unknown subdata-topic: "+str(msg.topic))
 
