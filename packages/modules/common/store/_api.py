@@ -32,6 +32,11 @@ class LoggingValueStore(Generic[T], ValueStore[T]):
 
 
 def update_values(component):
-    with SingleComponentUpdateContext(component.component_info):
+    with SingleComponentUpdateContext(component.component_info, update_always=False):
         if hasattr(component, "store"):
-            component.store.update()
+            try:
+                component.store.update()
+            except AttributeError:
+                # Wenn keine Daten ausgelesen werden, fehlt das state-Attribut. Die eigentliche Fehlermeldung würde
+                # dann durch die Attribute-Error-Meldung überschrieben werden.
+                pass
