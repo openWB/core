@@ -44,7 +44,10 @@ def collect_data(chargepoint):
             if chargepoint.data.get.charge_state:
                 if log_data.timestamp_start_charging is None:
                     log_data.timestamp_start_charging = timecheck.create_timestamp()
-                    log_data.chargemode_log_entry = charging_ev.data.control_parameter.chargemode
+                    if charging_ev.data.control_parameter.submode == "time_charging":
+                        log_data.chargemode_log_entry = "time_charging"
+                    else:
+                        log_data.chargemode_log_entry = charging_ev.data.control_parameter.chargemode
                 log_data.imported_since_mode_switch = chargepoint.data.get.imported - log_data.imported_at_mode_switch
                 log.debug(f"imported_since_mode_switch {log_data.imported_since_mode_switch} "
                           f"counter {chargepoint.data.get.imported}")

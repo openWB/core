@@ -350,7 +350,7 @@ class Ev:
             log.exception("Fehler im ev-Modul "+str(self.num))
             return False, "ein interner Fehler aufgetreten ist.", "stop", 0, self.data.control_parameter.phases
 
-    def check_state(self, required_current: float, set_current: float) -> Tuple[bool, bool]:
+    def check_state(self, required_current: float, set_current: float, chargemode_log_entry: str) -> Tuple[bool, bool]:
         """ prüft, ob sich etwas an den Parametern für die Regelung geändert hat,
         sodass der LP neu in die Priorisierung eingeordnet werden muss und veröffentlicht die Regelparameter.
         """
@@ -358,7 +358,9 @@ class Ev:
             current_changed = False
             mode_changed = False
 
-            if self.data.control_parameter.chargemode != self.charge_template.data.chargemode.selected:
+            if (self.data.control_parameter.chargemode != chargemode_log_entry or
+                    (self.data.control_parameter.submode != "time_charging" and
+                     chargemode_log_entry == "time_charging")):
                 mode_changed = True
 
             # Die benötigte Stromstärke hat sich durch eine Änderung des Lademodus oder der Konfiguration geändert.
