@@ -10,8 +10,8 @@ from modules.common.abstract_soc import AbstractSoc
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.component_state import CarState
 from modules.common.fault_state import ComponentInfo
-from modules.bmw import api
-from modules.bmw.config import BMW, BMWConfiguration
+from modules.vehicles.bmw import api
+from modules.vehicles.bmw.config import BMW, BMWConfiguration
 
 
 log = logging.getLogger("soc."+__name__)
