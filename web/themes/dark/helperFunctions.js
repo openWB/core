@@ -35,7 +35,7 @@ function setInputValue(elementId, value) {
 	 * sets the value-label (if exists) attached to the element to the element value
 	 * @param {string} elementId - the id of the element
 	 * @param {string} value - the value the element has to be set to
-	 * if the element has data-attribute 'signcheckbox' the checkbox with the id of the attribute
+	 * if the element has data-attribute 'signCheckbox' the checkbox with the id of the attribute
 	 * will represent negative numbers by being checked
 	 * if the element has data-attribute 'list' the value will be selected from the list
 	 * if the element hat data-attribute 'transformation' the value will be calculated by the given formula
@@ -53,7 +53,7 @@ function setInputValue(elementId, value) {
 			// console.log(formula);
 			value = transformRangeValue(formula);
 		}
-		var signCheckboxName = element.data('signcheckbox');
+		var signCheckboxName = element.data('signCheckbox');
 		var signCheckbox = $('#' + signCheckboxName);
 		if ( signCheckbox.length == 1 ) {
 			// checkbox exists

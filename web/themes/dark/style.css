@@ -24,8 +24,9 @@ body {
 	filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#5a5a5a', endColorstr='#0e0e0e',GradientType=0 );
 	background-attachment: fixed;
 }
+
 body > .container {
-	padding: 55px 15px 0;
+	padding: 55px 0px 0;
 }
 
 @keyframes alertPulsation {
@@ -48,6 +49,7 @@ body > .container {
 	50%  { opacity:0; }
 	100% { opacity:1; }
 }
+
 .animate-alertPulsation {
 	-webkit-animation: alertPulsation 1s infinite;
 	-moz-animation: alertPulsation 1s infinite;
@@ -96,7 +98,7 @@ body > .container {
 	display: none;
 }
 
-.lpEnabledStyle {
+.chargepoint-enabled {
 	color: #006515;
 	text-decoration: none;
 }
@@ -104,7 +106,7 @@ body > .container {
 	color: #ffdb00;
 	text-decoration: none;
 }
-.lpDisabledStyle {
+.chargepoint-disabled {
 	color: #A30000;
 	text-decoration: line-through;
 }
@@ -190,7 +192,8 @@ h3 {
 	font-size: 0.5rem;
 }
 
-.regularTextSize {
+.regularTextSize,
+.form-control {
 	font-size: 0.7rem;
 }
 
@@ -214,6 +217,10 @@ h3 {
 
 	h3 {
 		font-size: 0.9rem;
+	}
+
+	.container {
+		max-width: 100%;
 	}
 
 	.verySmallTextSize {
@@ -251,6 +258,10 @@ h3 {
 		font-size: 1.1rem;
 	}
 
+	body > .container {
+		padding: 60px 5% 0;
+	}
+
 	.verySmallTextSize {
 		font-size: 0.8rem;
 	}
@@ -286,6 +297,10 @@ h3 {
 		font-size: 1.6rem;
 	}
 
+	.container {
+		max-width: 1500px;
+	}
+
 	.verySmallTextSize {
 		font-size: 1.1rem;
 	}
@@ -294,9 +309,9 @@ h3 {
 		font-size: 1.25rem;
 	}
 
-	.regularTextSize {
+	/* .regularTextSize {
 		font-size: 1.4rem;
-	}
+	} */
 
 	.largeTextSize {
 		font-size: 1.6rem;
@@ -329,9 +344,9 @@ h3 {
 		font-size: 1.65rem;
 	}
 
-	.regularTextSize {
+	/* .regularTextSize {
 		font-size: 1.8rem;
-	}
+	} */
 
 	.largeTextSize {
 		font-size: 1.8rem;
@@ -346,63 +361,30 @@ h3 {
 :root {
 	--fontCol: rgba(255, 255, 255, 0.82);
 	--gridCol: rgba(255, 255, 255, 0.82);
-	--xgridCol: rgba(255, 255, 255, 0.1);
+	--xGridCol: rgba(255, 255, 255, 0.1);
 	--gridSocCol: rgba(0, 0, 0, 0);
 	--tickCol: rgba(255, 255, 255, 0.82);
-	--lp1Col: rgba(0, 0, 255, 0.7);
-	--lp1bgCol: rgba(0, 0, 255, 0.7);
-	--lp2Col: rgba(50, 30, 105, 0.7);
-	--lp2bgCol: rgba(50, 30, 105, 0.7);
+	--cpCol: rgba(0, 0, 255, 0.7);
+	--cpBgCol: rgba(0, 0, 255, 0.7);
+	--evSocCol: rgba(0, 0, 255, 0.5);
 	--evuCol: rgba(255, 0, 0, 0.7);
-	--evubgCol: rgba(255, 10, 13, 0.3);
+	--evuBgCol: rgba(255, 10, 13, 0.3);
 	--counterCol: rgba(255, 127, 127, 0.7);
-	--counterbgCol: rgba(255, 127, 127, 0.3);
+	--counterBgCol: rgba(255, 127, 127, 0.3);
 	--pvCol: rgba(0, 255, 0, 1);
-	--pvbgCol: rgba(10, 255, 13, 0.3);
-	--speicherCol: rgba(255, 153, 0, 0.8);
-	--speicherbgCol: rgba(200, 255, 13, 0.3);
-	--speicherSocCol: rgba(255, 153, 0, 0.8);
-	--speicherSocbgCol: rgba(200, 255, 13, 0.3);
-	--lp1SocCol: rgba(0, 0, 255, 0.5);
-	--lp2SocCol: rgba(50, 50, 55, 0.5);
-	--hausverbrauchCol: rgba(255,255,255,0.7);
-	--hausverbrauchbgCol: rgba(200, 255, 13, 0.3);
-	--verbraucher1Col: rgba(0, 150, 150, 0.7);
-	--verbraucher1bgCol: rgba(200, 255, 13, 0.3);
-	--verbraucher2Col: rgba(150, 150, 0, 0.7);
-	--verbraucher2bgCol: rgba(200, 255, 13, 0.3);
-	--lpgesamtCol: rgba(50, 50, 55, 0.1);
-	--lpgesamtbgCol: rgba(0, 0, 255, 0.1);
-	--lp3Col: rgba(50, 50, 55, 0.7);
-	--lp3bgCol: blue;
-	--lp4Col: rgba(50, 50, 55, 0.7);
-	--lp4bgCol: blue;
-	--lp5Col: rgba(50, 50, 55, 0.7);
-	--lp5bgCol: blue;
-	--lp6Col: rgba(50, 50, 55, 0.7);
-	--lp6bgCol: blue;
-	--lp7Col: rgba(50, 50, 55, 0.7);
-	--lp7bgCol: blue;
-	--lp8Col: rgba(50, 50, 55, 0.7);
-	--lp8bgCol: blue;
-	--d1Col: rgba(230, 50, 220, 0.7);
-	--d1bgCol: blue;
-	--d2Col: rgba(230, 50, 220, 0.7);
-	--d2bgCol: blue;
-	--d3Col: rgba(230, 50, 220, 0.7);
-	--d3bgCol: blue;
-	--d4Col: rgba(230, 50, 220, 0.7);
-	--d4bgCol: blue;
-	--d5Col: rgba(230, 50, 220, 0.7);
-	--d5bgCol: blue;
-	--d6Col: rgba(230, 50, 220, 0.7);
-	--d6bgCol: blue;
-	--d7Col: rgba(230, 50, 220, 0.7);
-	--d7bgCol: blue;
-	--d8Col: rgba(230, 50, 220, 0.7);
-	--d8bgCol: blue;
-	--d9Col: rgba(230, 50, 220, 0.7);
-	--d9bgCol: blue;
+	--pvBgCol: rgba(10, 255, 13, 0.3);
+	--batteryCol: rgba(255, 153, 0, 0.8);
+	--batteryBgCol: rgba(200, 255, 13, 0.3);
+	--batterySocCol: rgba(255, 153, 0, 0.8);
+	--batterySocBgCol: rgba(200, 255, 13, 0.3);
+	--homeConsumptionCol: rgba(255,255,255,0.7);
+	--homeConsumptionBgCol: rgba(200, 255, 13, 0.3);
+	--cpSumCol: rgba(50, 50, 55, 0.1);
+	--cpSumBgCol: rgba(0, 0, 255, 0.1);
+	--loadCol: rgba(0, 150, 150, 0.7);
+	--loadBgCol: rgba(200, 255, 13, 0.3);
+	--smartHomeDeviceCol: rgba(230, 50, 220, 0.7);
+	--smartHomeDeviceBgCol: blue;
 }
 
 .openwb-device-1 {
@@ -416,7 +398,8 @@ h3 {
 }
 
 #theGraph > div {
-	height: 350px;
+	max-height: 350px;
+	height: 45vh;
 }
 
 #electricityPriceChartCanvasDiv {
@@ -437,4 +420,24 @@ h3 {
 
 #infoHeader .card {
 	min-width: 13em;
+}
+
+#infoHeader .card-body {
+	padding: 0.75rem;
+}
+
+.card-header,
+.card-body {
+	padding: .2vh .6rem;
+}
+
+.btn-group {
+	flex-wrap: wrap;
+}
+
+/* disable collapsing animation for performance reasons */
+.collapsing {
+	-webkit-transition: none;
+	transition: none;
+	display: none;
 }

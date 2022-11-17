@@ -1,58 +1,58 @@
 var style = getComputedStyle(document.body);
 var fontColor = style.getPropertyValue('--fontCol');
 var gridColor = style.getPropertyValue('--gridCol');
-var xGridColor = style.getPropertyValue('--xgridCol');
+var xGridColor = style.getPropertyValue('--xGridCol');
 var gridSocColor = style.getPropertyValue('--gridSocCol');
 var tickColor = style.getPropertyValue('--tickCol');
-var cpColor = style.getPropertyValue('--lp1Col');
-var cpBgColor = style.getPropertyValue('--lp1bgCol');
-var cpSocColor = style.getPropertyValue('--lp1SocCol');
+var cpColor = style.getPropertyValue('--cpCol');
+var cpBgColor = style.getPropertyValue('--cpBgCol');
+var evSocColor = style.getPropertyValue('--evSocCol');
 var evuColor = style.getPropertyValue('--evuCol');
-var evuBgColor = style.getPropertyValue('--evubgCol');
+var evuBgColor = style.getPropertyValue('--evuBgCol');
 var counterColor = style.getPropertyValue('--counterCol');
-var counterBgColor = style.getPropertyValue('--counterbgCol');
+var counterBgColor = style.getPropertyValue('--counterBgCol');
 var pvAllColor = style.getPropertyValue('--pvCol');
-var pvAllBgColor = style.getPropertyValue('--pvbgCol');
-var batAllColor = style.getPropertyValue('--speicherCol');
-var batAllBgColor = style.getPropertyValue('--speicherbgCol');
-var batAllSocColor = style.getPropertyValue('--speicherSocCol');
-var batAllSocBgColor = style.getPropertyValue('--speicherSocbgCol');
-var homeColor = style.getPropertyValue('--hausverbrauchCol');
-var homeBgColor = style.getPropertyValue('--hausverbrauchbgCol');
-var cpAllColor = style.getPropertyValue('--lpgesamtCol');
-var cpAllBgColor = style.getPropertyValue('--lpgesamtbgCol');
-var loadColor = style.getPropertyValue('--verbraucher1Col');
-var loadBgColor = style.getPropertyValue('--verbraucher1bgCol');
-var smartHomeColor = style.getPropertyValue('--d1Col');
-var smartHomeBgColor = style.getPropertyValue('--d1bgCol');
+var pvAllBgColor = style.getPropertyValue('--pvBgCol');
+var batAllColor = style.getPropertyValue('--batteryCol');
+var batAllBgColor = style.getPropertyValue('--batteryBgCol');
+var batAllSocColor = style.getPropertyValue('--batterySocCol');
+var batAllSocBgColor = style.getPropertyValue('--batterySocBgCol');
+var homeColor = style.getPropertyValue('--homeConsumptionCol');
+var homeBgColor = style.getPropertyValue('--homeConsumptionBgCol');
+var cpAllColor = style.getPropertyValue('--cpSumCol');
+var cpAllBgColor = style.getPropertyValue('--cpSumBgCol');
+var loadColor = style.getPropertyValue('--loadCol');
+var loadBgColor = style.getPropertyValue('--loadBgCol');
+var smartHomeColor = style.getPropertyValue('--smartHomeDeviceCol');
+var smartHomeBgColor = style.getPropertyValue('--smartHomeDeviceBgCol');
 
 var initialRead = 0;
-var graphloaded = 0;
+var graphLoaded = 0;
 var maxDisplayLength;
 var boolDisplayHouseConsumption;
 var boolDisplayLoad1;
 var boolDisplayLoad2;
-var boolDisplayLp1Soc;
-var boolDisplayLp2Soc;
-var boolDisplayLp1;
-var boolDisplayLp2;
-var boolDisplayLp3;
-var boolDisplayLpAll;
-var boolDisplaySpeicherSoc;
-var boolDisplaySpeicher;
+var boolDisplayCp1Soc;
+var boolDisplayCp2Soc;
+var boolDisplayCp1;
+var boolDisplayCp2;
+var boolDisplayCp3;
+var boolDisplayCpAll;
+var boolDisplayBatterySoc;
+var boolDisplayBattery;
 var boolDisplayEvu;
 var boolDisplayPv;
 var boolDisplayLegend;
 var boolDisplayLiveGraph;
-var boolDisplayshd1;
-var boolDisplayshd2;
-var boolDisplayshd3;
-var boolDisplayshd4;
-var boolDisplayshd5;
-var boolDisplayshd6;
-var boolDisplayshd7;
-var boolDisplayshd8;
-var boolDisplayshd9;
+var boolDisplaySHD1;
+var boolDisplaySHD2;
+var boolDisplaySHD3;
+var boolDisplaySHD4;
+var boolDisplaySHD5;
+var boolDisplaySHD6;
+var boolDisplaySHD7;
+var boolDisplaySHD8;
+var boolDisplaySHD9;
 var all1 = 0;
 var all2 = 0;
 var all3 = 0;
@@ -86,14 +86,14 @@ var all14p = "";
 var all15p = "";
 var all16p = "";
 
-var hidehaus;
+var hideHaus;
 var myLine;
 var allChartData = [];
 var chartUpdateBuffer = [];
 
-function parseData(alldata) {
+function parseData(allData) {
 	var result = [];
-	alldata.split("\n").forEach(function(line) {
+	allData.split("\n").forEach(function(line) {
 		if (line.length > 5) {
 			try {
 				lineJson = JSON.parse(line);
@@ -162,7 +162,7 @@ let datasetTemplates = {
 		lineTension: 0.2,
 		borderWidth: 1,
 		data: null,
-		hidden: boolDisplaySpeicher,
+		hidden: boolDisplayBattery,
 		yAxisID: 'y1',
 		parsing: {
 			xAxisKey: 'timestamp',
@@ -175,7 +175,7 @@ let datasetTemplates = {
 		borderColor: batAllSocColor,
 		backgroundColor: batAllSocBgColor,
 		borderDash: [10, 5],
-		hidden: boolDisplaySpeicherSoc,
+		hidden: boolDisplayBatterySoc,
 		fill: false,
 		lineTension: 0.2,
 		borderWidth: 2,
@@ -203,7 +203,7 @@ let datasetTemplates = {
 			yAxisKey: null
 		}
 	},
-	// chargepoints
+	// charge points
 	"cp-power": {
 		label: 'LP',
 		jsonKey: null,
@@ -220,10 +220,11 @@ let datasetTemplates = {
 			yAxisKey: null
 		}
 	},
-	"cp-soc": {
-		label: 'LP SoC',
+	// vehicles
+	"ev-soc": {
+		label: 'EV SoC',
 		jsonKey: null,
-		borderColor: cpSocColor,
+		borderColor: evSocColor,
 		borderDash: [10, 5],
 		borderWidth: 2,
 		hidden: false,
@@ -264,7 +265,7 @@ let datasetTemplates = {
 		borderWidth: 2,
 		data: null,
 		yAxisID: 'y1',
-		hidden: boolDisplayshd1,
+		hidden: boolDisplaySHD1,
 		parsing: {
 			xAxisKey: 'timestamp',
 			yAxisKey: null
@@ -280,7 +281,7 @@ let datasetTemplates = {
 	// 	borderWidth: 2,
 	// 	data: null,
 	// 	yAxisID: 'y2',
-	// 	hidden: boolDisplayshd1t1,
+	// 	hidden: boolDisplaySHD1T1,
 	// 	parsing: {
 	// 	xAxisKey: 'timestamp',
 	// 		yAxisKey: null
@@ -331,7 +332,7 @@ var chartDatasets = [
 		lineTension: 0.2,
 		borderWidth: 2,
 		data: allChartData,
-		hidden: boolDisplayLpAll,
+		hidden: boolDisplayCpAll,
 		yAxisID: 'y1',
 		parsing: {
 			xAxisKey: 'timestamp',
@@ -340,7 +341,7 @@ var chartDatasets = [
 	}
 ];
 
-function loadgraph(animationDuration = 1000) {
+function loadGraph(animationDuration = 1000) {
 
 	var chartData = {
 		// labels not used with time scale
@@ -415,33 +416,8 @@ function loadgraph(animationDuration = 1000) {
 						color: fontColor,
 						// filter: function(item,chart) {
 						// 	if (
-						// 		item.text.includes(hidehaus) ||
-						// 		item.text.includes(hideload1) ||
-						// 		item.text.includes(hideload2) ||
-						// 		item.text.includes(hidelp1soc) ||
-						// 		item.text.includes(hidelp2soc) ||
-						// 		item.text.includes(hidelp1) ||
-						// 		item.text.includes(hidelp2) ||
-						// 		item.text.includes(hidelp3) ||
-						// 		item.text.includes(hidelp4) ||
-						// 		item.text.includes(hidelp5) ||
-						// 		item.text.includes(hidelp6) ||
-						// 		item.text.includes(hidelp7) ||
-						// 		item.text.includes(hidelp8) ||
-						// 		item.text.includes(hidespeichersoc) ||
-						// 		item.text.includes(hidespeicher) ||
-						// 		item.text.includes(hidelpa) ||
-						// 		item.text.includes(hidepv) ||
-						// 		item.text.includes(hideevu) ||
-						// 		item.text.includes(hideshd1) ||
-						// 		item.text.includes(hideshd2) ||
-						// 		item.text.includes(hideshd3) ||
-						// 		item.text.includes(hideshd4) ||
-						// 		item.text.includes(hideshd5) ||
-						// 		item.text.includes(hideshd6) ||
-						// 		item.text.includes(hideshd7) ||
-						// 		item.text.includes(hideshd8) ||
-						// 		item.text.includes(hideshd9)
+						// 		item.text.includes(hideHaus) ||
+						// 		...
 						// 	) {
 						// 		return false;
 						// 	} else {
@@ -545,24 +521,23 @@ function loadgraph(animationDuration = 1000) {
 
 	initialRead = 1;
 	$('#waitForGraphLoadingDiv').hide();
-}  // end loadgraph
+}  // end loadGraph
 
 // Sichtbarkeit für SmartHome Devices im Graph
-function setvisibility(datarr, hidevar, hidevalue, booldisplay) {
-	var arrayLength = datarr.length;
+function setVisibility(dataArray, hideVar, hideValue, boolDisplay) {
+	var arrayLength = dataArray.length;
 	var vis = 0
 	for (var i = 0; i < arrayLength; i++) {
-		if ((datarr[i] >= 0.010) || (datarr[i] <= -0.010)) {
+		if ((dataArray[i] >= 0.010) || (dataArray[i] <= -0.010)) {
 			vis = 1
 		}
 	}
 	if (vis == 0) {
-		window[hidevar] = hidevalue;
-		window[booldisplay] = true;
+		window[hideVar] = hideValue;
+		window[boolDisplay] = true;
 	} else {
-		window[hidevar] = 'foo';
-		window[booldisplay] = false;
-
+		window[hideVar] = 'foo';
+		window[boolDisplay] = false;
 	}
 }
 
@@ -618,8 +593,8 @@ function truncateData(data) {
 
 function mergeGraphData() {
 	if ((all1 == 1) && (all2 == 1) && (all3 == 1) && (all4 == 1) && (all5 == 1) && (all6 == 1) && (all7 == 1) && (all8 == 1) && (all9 == 1) && (all10 == 1) && (all11 == 1) && (all12 == 1) && (all13 == 1) && (all14 == 1) && (all15 == 1) && (all16 == 1)) {
-		var alldata = all1p + "\n" + all2p + "\n" + all3p + "\n" + all4p + "\n" + all5p + "\n" + all6p + "\n" + all7p + "\n" + all8p + "\n" + all9p + "\n" + all10p + "\n" + all11p + "\n" + all12p + "\n" + all13p + "\n" + all14p + "\n" + all15p + "\n" + all16p;
-		allChartData = parseData(alldata);
+		var allData = all1p + "\n" + all2p + "\n" + all3p + "\n" + all4p + "\n" + all5p + "\n" + all6p + "\n" + all7p + "\n" + all8p + "\n" + all9p + "\n" + all10p + "\n" + all11p + "\n" + all12p + "\n" + all13p + "\n" + all14p + "\n" + all15p + "\n" + all16p;
+		allChartData = parseData(allData);
 		truncateData(allChartData);
 		if (allChartData.length >= 30) { // 5 minutes * 6 measurements/min
 			Object.keys(allChartData[allChartData.length - 1]).forEach(function(key) {
@@ -632,7 +607,7 @@ function mergeGraphData() {
 
 			initialRead = 1;
 			$('#waitForGraphLoadingDiv').text('Graph lädt...');
-			checkgraphload();
+			checkGraphLoad();
 			// now we are ready to receive small updates for graph data
 		} else {
 			all1 = 0;
@@ -678,83 +653,82 @@ function updateGraph(dataset) {
 	}
 }
 
-function checkgraphload() {
-	if (graphloaded == 1) {
+function checkGraphLoad() {
+	if (graphLoaded == 1) {
 		myLine.destroy();
-		loadgraph(0); // when reloading graph, no more "pumping" animations
+		loadGraph(0); // when reloading graph, no more "pumping" animations
 		return;
 	}
 	if (typeof boolDisplayHouseConsumption === "boolean" &&
-		typeof boolDisplayLpAll === "boolean" &&
+		typeof boolDisplayCpAll === "boolean" &&
 		typeof boolDisplayEvu === "boolean"
 	) {
 		if (initialRead != 0) {
-			if (graphloaded == 0) {
-				graphloaded = 1;
+			if (graphLoaded == 0) {
+				graphLoaded = 1;
 			} else {
 				myLine.destroy();
 			}
-			loadgraph();
+			loadGraph();
 		}
 	}
 }
 
-function forcegraphload() {
-	if (graphloaded == 0) {
+function forceGraphLoad() {
+	if (graphLoaded == 0) {
 		if (!(typeof boolDisplayHouseConsumption === "boolean")) {
-			showhidedataset('boolDisplayHouseConsumption');
+			showHideDataset('boolDisplayHouseConsumption');
 		}
-		if (!(typeof boolDisplayLpAll === "boolean")) {
-			showhidedataset('boolDisplayLpAll');
+		if (!(typeof boolDisplayCpAll === "boolean")) {
+			showHideDataset('boolDisplayCpAll');
 		}
 		if (!(typeof boolDisplayEvu === "boolean")) {
-			showhidedataset('boolDisplayEvu');
+			showHideDataset('boolDisplayEvu');
 		}
 		if (!(typeof boolDisplayLegend === "boolean")) {
-			showhidedataset('boolDisplayLegend');
+			showHideDataset('boolDisplayLegend');
 		}
 		if (typeof maxDisplayLength === "undefined") {
 			console.info("setting graph duration to default of 30 minutes");
 			maxDisplayLength = 30 * 6;
 		}
-		checkgraphload();
+		checkGraphLoad();
 	}
-} // end forcegraphload
+} // end forceGraphLoad
 
-function showhidedataset(thedataset) {
-	if (window[thedataset] == true) {
-		publish("1", "openWB/graph/" + thedataset);
-	} else if (window[thedataset] == false) {
-		publish("0", "openWB/graph/" + thedataset);
+function showHideDataset(theDataset) {
+	if (window[theDataset] == true) {
+		publish("1", "openWB/graph/" + theDataset);
+	} else if (window[theDataset] == false) {
+		publish("0", "openWB/graph/" + theDataset);
 	} else {
-		publish("1", "openWB/graph/" + thedataset);
-	}
-}
-
-function showhidelegend(thedataset) {
-	if (window[thedataset] == true) {
-		publish("0", "openWB/graph/" + thedataset);
-	} else if (window[thedataset] == false) {
-		publish("1", "openWB/graph/" + thedataset);
-	} else {
-		publish("0", "openWB/graph/" + thedataset);
+		publish("1", "openWB/graph/" + theDataset);
 	}
 }
 
-function showhide(thedataset) {
-	if (window[thedataset] == 0) {
-		publish("1", "openWB/graph/" + thedataset);
-	} else if (window[thedataset] == 1) {
-		publish("0", "openWB/graph/" + thedataset);
+function showHideLegend(theDataset) {
+	if (window[theDataset] == true) {
+		publish("0", "openWB/graph/" + theDataset);
+	} else if (window[theDataset] == false) {
+		publish("1", "openWB/graph/" + theDataset);
 	} else {
-		publish("1", "openWB/graph/" + thedataset);
+		publish("0", "openWB/graph/" + theDataset);
+	}
+}
+
+function showHide(theDataset) {
+	if (window[theDataset] == 0) {
+		publish("1", "openWB/graph/" + theDataset);
+	} else if (window[theDataset] == 1) {
+		publish("0", "openWB/graph/" + theDataset);
+	} else {
+		publish("1", "openWB/graph/" + theDataset);
 	}
 }
 
 function subscribeMqttGraphSegments() {
 	console.debug('subscribing to graph topics');
 	for (var segments = 1; segments < 17; segments++) {
-		// topic = "openWB/graph/" + segments + "alllivevalues";
 		topic = "openWB/graph/alllivevaluesJson" + segments;
 		client.subscribe(topic, { qos: 0 });
 	}
@@ -763,12 +737,11 @@ function subscribeMqttGraphSegments() {
 function unsubscribeMqttGraphSegments() {
 	console.debug('unsubscribing from graph topics');
 	for (var segments = 1; segments < 17; segments++) {
-		// topic = "openWB/graph/" + segments + "alllivevalues";
 		topic = "openWB/graph/alllivevaluesJson" + segments;
 		client.unsubscribe(topic);
 	}
 }
 
 $(document).ready(function() {
-	setTimeout(forcegraphload, 15000);
+	setTimeout(forceGraphLoad, 15000);
 });

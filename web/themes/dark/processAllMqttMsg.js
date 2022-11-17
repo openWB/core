@@ -1095,19 +1095,19 @@ function processGraphMessages(mqttTopic, mqttPayload) {
 	if (mqttTopic == 'openWB/graph/boolDisplayHouseConsumption') {
 		if (mqttPayload == 1) {
 			boolDisplayHouseConsumption = false;
-			hidehaus = 'foo';
+			hideHaus = 'foo';
 		} else {
 			boolDisplayHouseConsumption = true;
-			hidehaus = 'Hausverbrauch';
+			hideHaus = 'Hausverbrauch';
 		}
-		checkgraphload();
+		checkGraphLoad();
 	} else if (mqttTopic == 'openWB/graph/boolDisplayLegend') {
 		if (mqttPayload == 0) {
 			boolDisplayLegend = false;
 		} else {
 			boolDisplayLegend = true;
 		}
-		checkgraphload();
+		checkGraphLoad();
 	} else if (mqttTopic == 'openWB/graph/boolDisplayLiveGraph') {
 		if (mqttPayload == 0) {
 			$('#theGraph').addClass('hide');
@@ -1119,82 +1119,82 @@ function processGraphMessages(mqttTopic, mqttPayload) {
 	} else if (mqttTopic == 'openWB/graph/boolDisplayEvu') {
 		if (mqttPayload == 1) {
 			boolDisplayEvu = false;
-			hideevu = 'foo';
+			hideEvu = 'foo';
 		} else {
 			boolDisplayEvu = true;
-			hideevu = 'Bezug';
+			hideEvu = 'Bezug';
 		}
-		checkgraphload();
+		checkGraphLoad();
 	} else if (mqttTopic == 'openWB/graph/boolDisplayPv') {
 		if (mqttPayload == 1) {
 			boolDisplayPv = false;
-			hidepv = 'foo';
+			hidePv = 'foo';
 		} else {
 			boolDisplayPv = true;
-			hidepv = 'PV';
+			hidePv = 'PV';
 		}
-		checkgraphload();
+		checkGraphLoad();
 	} else if (mqttTopic.match(/^openwb\/graph\/booldisplaylp[0-9]+$/i)) {
 		var index = mqttTopic.match(/(\d+)(?!.*\d)/g)[0]; // extract last match = number from mqttTopic
 		// now call functions or set variables corresponding to the index
 		if (mqttPayload == 1) {
-			window['boolDisplayLp' + index] = false;
-			window['hidelp' + index] = 'foo';
+			window['boolDisplayCp' + index] = false;
+			window['hideCp' + index] = 'foo';
 		} else {
-			window['boolDisplayLp' + index] = true;
-			window['hidelp' + index] = 'Lp' + index;
+			window['boolDisplayCp' + index] = true;
+			window['hideCp' + index] = 'Lp' + index;
 		}
-		checkgraphload();
-	} else if (mqttTopic == 'openWB/graph/boolDisplayLpAll') {
+		checkGraphLoad();
+	} else if (mqttTopic == 'openWB/graph/boolDisplayCpAll') {
 		if (mqttPayload == 1) {
-			boolDisplayLpAll = false;
-			hidelpa = 'foo';
+			boolDisplayCpAll = false;
+			hideCpa = 'foo';
 		} else {
-			boolDisplayLpAll = true;
-			hidelpa = 'LP Gesamt';
+			boolDisplayCpAll = true;
+			hideCpa = 'LP Gesamt';
 		}
-		checkgraphload();
-	} else if (mqttTopic == 'openWB/graph/boolDisplaySpeicher') {
+		checkGraphLoad();
+	} else if (mqttTopic == 'openWB/graph/boolDisplayBattery') {
 		if (mqttPayload == 1) {
-			boolDisplaySpeicher = false;
-			hidespeicher = 'foo';
+			boolDisplayBattery = false;
+			hideBattery = 'foo';
 		} else {
-			hidespeicher = 'Speicher';
-			boolDisplaySpeicher = true;
+			hideBattery = 'Speicher';
+			boolDisplayBattery = true;
 		}
-		checkgraphload();
-	} else if (mqttTopic == 'openWB/graph/boolDisplaySpeicherSoc') {
+		checkGraphLoad();
+	} else if (mqttTopic == 'openWB/graph/boolDisplayBatterySoc') {
 		if (mqttPayload == 1) {
-			hidespeichersoc = 'foo';
-			boolDisplaySpeicherSoc = false;
+			hideBatterySoc = 'foo';
+			boolDisplayBatterySoc = false;
 		} else {
-			hidespeichersoc = 'Speicher SoC';
-			boolDisplaySpeicherSoc = true;
+			hideBatterySoc = 'Speicher SoC';
+			boolDisplayBatterySoc = true;
 		}
-		checkgraphload();
+		checkGraphLoad();
 	} else if (mqttTopic.match(/^openwb\/graph\/booldisplaylp[0-9]+soc$/i)) {
 		var index = mqttTopic.match(/(\d+)(?!.*\d)/g)[0]; // extract last match = number from mqttTopic
 		if (mqttPayload == 1) {
 			$('#socenabledlp' + index).removeClass('hide');
-			window['boolDisplayLp' + index + 'Soc'] = false;
-			window['hidelp' + index + 'soc'] = 'foo';
+			window['boolDisplayCp' + index + 'Soc'] = false;
+			window['hideCp' + index + 'soc'] = 'foo';
 		} else {
 			$('#socenabledlp' + index).addClass('hide');
-			window['boolDisplayLp' + index + 'Soc'] = true;
-			window['hidelp' + index + 'soc'] = 'LP' + index + ' SoC';
+			window['boolDisplayCp' + index + 'Soc'] = true;
+			window['hideCp' + index + 'soc'] = 'CP' + index + ' SoC';
 		}
-		checkgraphload();
+		checkGraphLoad();
 	} else if (mqttTopic.match(/^openwb\/graph\/booldisplayload[1-9][0-9]*$/i)) {
 		var index = mqttTopic.match(/(\d+)(?!.*\d)/g)[0]; // extract last match = number from mqttTopic
 		// now call functions or set variables corresponding to the index
 		if (mqttPayload == 1) {
-			window['hideload' + index] = 'foo';
+			window['hideLoad' + index] = 'foo';
 			window['boolDisplayLoad' + index] = false;
 		} else {
-			window['hideload' + index] = 'Verbraucher ' + index;
+			window['hideLoad' + index] = 'Verbraucher ' + index;
 			window['boolDisplayLoad' + index] = true;
 		}
-		checkgraphload();
+		checkGraphLoad();
 	} else if (mqttTopic.match(/^openwb\/graph\/alllivevaluesJson[1-9][0-9]*$/i)) {
 		// graph messages if local connection
 		var index = mqttTopic.match(/(\d+)$/g)[0]; // extract last match = number from mqttTopic
@@ -1228,7 +1228,7 @@ function processGraphMessages(mqttTopic, mqttPayload) {
 			all14 = 0;
 			all15 = 0;
 			all16 = 0;
-			graphCefreshCounter = 0;
+			graphRefreshCounter = 0;
 			subscribeMqttGraphSegments();
 		}
 		graphRefreshCounter += 1;
@@ -1301,7 +1301,7 @@ function processETProviderMessages(mqttTopic, mqttPayload) {
 	// 	// Timeline (x-Achse) ist UNIX Timestamp in UTC, deshalb Umrechnung (*1000) in Javascript-Timestamp (mit Millisekunden)
 	// 	electricityPriceTimeline = getCol(csvData, 0).map(function(x) { return x * 1000; });
 	// 	// Chartline (y-Achse) ist Preis in ct/kWh
-	// 	electricityPriceChartline = getCol(csvData, 1);
+	// 	electricityPriceChartLine = getCol(csvData, 1);
 
 	// 	loadElectricityPriceChart();
 	// }
@@ -1641,7 +1641,7 @@ function processETProviderMessages(mqttTopic, mqttPayload) {
 // }
 
 function processSmartHomeDevicesConfigMessages(mqttTopic, mqttPayload) {
-	// processes mqttTopic for topic openWB/config/get/SmartHome/Devices - config variables (Name / configured only!), actual Variables in proccessSMartHomeDevices
+	// processes mqttTopic for topic openWB/config/get/SmartHome/Devices - config variables (Name / configured only!), actual Variables in processSmartHomeDevices
 	// called by handleMessage
 	processPreloader(mqttTopic);
 	if (mqttTopic.match(/^openwb\/config\/get\/SmartHome\/Devices\/[1-9][0-9]*\/device_configured$/i)) {
