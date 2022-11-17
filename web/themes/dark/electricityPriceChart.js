@@ -16,18 +16,18 @@ function createPriceAnnotations(){
 	var annotations = [];
 	var maxPrice = parseFloat($('#MaxPriceForCharging').val());
 	if ( !isNaN(maxPrice) ) {
-		for ( var i = 0; i < electricityPriceChartline.length; i++ ) {
-			if ( electricityPriceChartline[i] <= maxPrice ) {
+		for ( var i = 0; i < electricityPriceChartLine.length; i++ ) {
+			if ( electricityPriceChartLine[i] <= maxPrice ) {
 				var newAnnotation = new Annotation();
 				newAnnotation.xMin = i;  // set left edge of box
-				while ( i < electricityPriceChartline.length && electricityPriceChartline[i] <= maxPrice ) {
+				while ( i < electricityPriceChartLine.length && electricityPriceChartLine[i] <= maxPrice ) {
 					i++;
 				}
-				if ( i == electricityPriceChartline.length ) {
+				if ( i == electricityPriceChartLine.length ) {
 					// correct index if out of bounds
 					i--;
 				}
-				newAnnotation.xMax = i;  // first index electricityPriceChartline[i] > maxPrice is right edge of box
+				newAnnotation.xMax = i;  // first index electricityPriceChartLine[i] > maxPrice is right edge of box
 				annotations.push(newAnnotation);  // add box to annotations
 			}
 		}
@@ -72,7 +72,7 @@ function loadElectricityPriceChart() {
 		labels: xLabels,
 		datasets: [{
 			//yAxisID: 'y-axis-left',
-			data: electricityPriceChartline,
+			data: electricityPriceChartLine,
 			borderColor: evuCol,  // from liveChart
 			backgroundColor: "rgba(0, 0, 255, 0.7)",
 			borderWidth: 3,
@@ -81,9 +81,9 @@ function loadElectricityPriceChart() {
 		}]
 	}
 
-	var ctxElectricityPricechart = $('#electricityPriceChartCanvas')[0].getContext('2d');
+	var ctxElectricityPriceChart = $('#electricityPriceChartCanvas')[0].getContext('2d');
 
-	window.electricityPricechart = new Chart.Line(ctxElectricityPricechart, {
+	window.electricityPriceChart = new Chart.Line(ctxElectricityPriceChart, {
 		data: electricityPriceChartData,
 		options: {
 			tooltips: {
@@ -115,7 +115,7 @@ function loadElectricityPriceChart() {
 			scales: {
 				xAxes: [{
 					gridLines: {
-						color: xgridCol  // from liveChart
+						color: xGridCol  // from liveChart
 					},
 					ticks: {
 						fontColor: tickCol  // from liveChart
