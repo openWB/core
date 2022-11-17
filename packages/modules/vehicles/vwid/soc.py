@@ -30,14 +30,15 @@ class Soc(AbstractSoc):
                 self.config.configuration.user_id,
                 self.config.configuration.password,
                 self.config.configuration.vin,
+                self.config.configuration.refreshToken,
                 self.vehicle)
             log.info("vwid: vehicle="+str(self.vehicle) + ", return: soc=" + str(soc)+", range=" + str(range))
             self.store.set(CarState(soc, range))
 
 
-def vwid_update(user_id: str, password: str, vin: str, charge_point: int):
+def vwid_update(user_id: str, password: str, vin: str, refreshToken: str, charge_point: int):
     log.debug("vwid: userid="+user_id+"vin="+vin+"charge_point="+str(charge_point))
-    Soc(VWId(configuration=VWIdConfiguration(user_id, password, vin)), charge_point).update(False)
+    Soc(VWId(configuration=VWIdConfiguration(user_id, password, vin, refreshToken)), charge_point).update(False)
 
 
 def main(argv: List[str]):

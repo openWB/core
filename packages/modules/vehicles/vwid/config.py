@@ -2,10 +2,16 @@ from typing import Optional
 
 
 class VWIdConfiguration:
-    def __init__(self, user_id: Optional[str] = None, password: Optional[str] = None, vin: Optional[str] = None):
+    def __init__(self,
+                 user_id: Optional[str] = None,
+                 password: Optional[str] = None,
+                 vin: Optional[str] = None,
+                 refreshToken: Optional[str] = None
+                 ):
         self.user_id = user_id
         self.password = password
         self.vin = vin
+        self.refreshToken = refreshToken
 
 
 class VWId:

@@ -21,7 +21,7 @@ class vwid:
     def __init__(self, session):
         self.session = session
         self.headers = {}
-        self.log = logging.getLogger(__name__)
+        self.log = logging.getLogger("soc."+__name__)
 
     def form_from_response(self, text):
         page = lxml.html.fromstring(text)
@@ -48,7 +48,7 @@ class vwid:
         json_model = json.loads(objects['templateModel'])
 
         if ('errorCode' in json_model):
-            self.log.error("Login error: %s", json_model['errorCode'])
+            self.log.debug("vwid.libvwid: Login error: %s", json_model['errorCode'])
             return False
 
         try:
@@ -66,7 +66,7 @@ class vwid:
             return (form, action)
 
         except KeyError:
-            self.log.error("Missing fields in response from VW API")
+            self.log.debug("vwid.libvwid: Missing fields in response from VW API")
             return False
 
     def set_vin(self, vin):
@@ -97,7 +97,7 @@ class vwid:
         form['email'] = self.username
         response = await self.session.post(LOGIN_HANDLER_BASE+action, data=form)
         if response.status >= 400:
-            self.log.error("Email fail")
+            self.log.debug("vwid.libvwid: Email fail")
             return False
 
         # Fill form with password
@@ -118,9 +118,9 @@ class vwid:
                 url = LOGIN_HANDLER_BASE + action
                 response = await self.session.post(url, data=form, allow_redirects=False)
 
-                self.log.warn("Agreed to terms and conditions")
+                self.log.debug("vwid.libvwid: Agreed to terms and conditions")
             else:
-                self.log.error("Got unknown 303 redirect")
+                self.log.debug("vwid.libvwid: Got unknown 303 redirect")
                 return False
 
         # Handle every single redirect and stop if the redirect
@@ -129,7 +129,7 @@ class vwid:
             url = response.headers['Location']
             if (url.split(':')[0] == "weconnect"):
                 if not ('access_token' in url):
-                    self.log.error("Missing access token")
+                    self.log.debug("vwid.libvwid: Missing access token")
                     return False
                     # Parse query string
                 query_string = url.split('#')[1]
@@ -137,7 +137,7 @@ class vwid:
                 break
 
             if (response.status != 302):
-                self.log.error("Not redirected, status %u" % response.status)
+                self.log.debug("vwid.libvwid: Not redirected, status %u" % response.status)
                 return False
 
             response = await self.session.get(url, data=form, allow_redirects=False)
@@ -155,7 +155,7 @@ class vwid:
         }
         response = await self.session.post(LOGIN_BASE + '/login/v1', json=payload)
         if response.status >= 400:
-            self.log.error("Login failed")
+            self.log.debug("vwid.libvwid: Login failed")
             # Non 2xx response, failed
             return False
         self.tokens = await response.json()
@@ -188,18 +188,18 @@ class vwid:
 
         # If first attempt fails, try to refresh tokens
         if response.status >= 400:
-            self.log.debug("Refreshing tokens")
+            self.log.debug("vwid.libvwid: Refreshing tokens")
             if await self.refresh_tokens():
                 response = await self.session.get(API_BASE + "/vehicles/" + self.vin + "/status", headers=self.headers)
 
         # If refreshing tokens failed, try a full reconnect
         if response.status >= 400:
-            self.log.info("Reconnecting")
+            self.log.debug("vwid.libvwid: Reconnecting")
             if await self.reconnect():
                 response = await self.session.get(API_BASE + "/vehicles/" + self.vin + "/status", headers=self.headers)
 
         if response.status >= 400:
-            self.log.error("Get status failed")
+            self.log.debug("vwid.libvwid: Get status failed")
             return {}
 
         return (await response.json())
