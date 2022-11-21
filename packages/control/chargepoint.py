@@ -788,6 +788,7 @@ class Chargepoint:
                     # Einhaltung des Minimal- und Maximalstroms prüfen
                     required_current = charging_ev.check_min_max_current(
                         required_current, charging_ev.data.control_parameter.phases)
+                    charging_ev.set_control_parameter(submode, required_current)
                     current_changed, mode_changed = charging_ev.check_state(required_current,
                                                                             self.data.set.current,
                                                                             self.data.set.log.chargemode_log_entry)
@@ -816,7 +817,6 @@ class Chargepoint:
                         # entsteht so eine kurze Unterbrechung der Ladung, wenn während dem Laden
                         # umkonfiguriert wird.
                     message = message_ev if message_ev else message
-                    charging_ev.set_control_parameter(submode, required_current)
                     # Ein Eintrag muss nur erstellt werden, wenn vorher schon geladen wurde und auch danach noch
                     # geladen werden soll.
                     if mode_changed and self.data.get.charge_state and state:
