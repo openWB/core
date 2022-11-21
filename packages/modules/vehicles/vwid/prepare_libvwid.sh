@@ -19,19 +19,6 @@ s/ $//
 /self\.log\.info(/s/log.info("/log.debug("vwid.libvwid: /
 ' < libvwid.org > libvwid.mod
 
-# add backup and restore of refreshToken to avoid both tokens to be replaced when accessToken is refreshed
-echo "add backup / restore of refreshToken accessToken renewal"
-ex -s libvwid.mod <<EOF
-/# Use the newly received access token/-3 a
-
-        self.refreshTokenBackup = self.tokens['refreshToken']    # remember current refreshToken
-.
-/# Use the newly received access token/-2 a
-        self.tokens['refreshToken'] = self.refreshTokenBackup    # restore previous refreshToken
-.
-wq
-EOF
-
 echo "checking libvwid.mod for flake8 issues"
 flake8 libvwid.mod > libvwid.flake8
 l=`wc -l libvwid.flake8 | awk '{print $1}'`
