@@ -40,12 +40,9 @@ class UpdateSoc:
         for ev in ev_data.values():
             try:
                 if ev.soc_module is not None:
-                    charge_state, plugged_in = self._get_ev_state(ev.num)
+                    charge_state = self._get_ev_state(ev.num)
                     if (ev.ev_template.soc_interval_expired(charge_state, ev.data.get.soc_timestamp) or
-                            ev.data.get.force_soc_update or
-                            # Nach Abstecken abfragen, da zB für Zielladen der aktuelle SoC benötigt wird, um zu
-                            # entscheiden, ob die Ladung gestartet werden muss.
-                            plugged_in):
+                            ev.data.get.force_soc_update):
                         self._reset_force_soc_update(ev)
                         # Es wird ein Zeitstempel gesetzt, unabhängig ob die Abfrage erfolgreich war, da einige
                         # Hersteller bei zu häufigen Abfragen Accounts sperren.
@@ -64,15 +61,13 @@ class UpdateSoc:
             ev.data.get.force_soc_update = False
             Pub().pub(f"openWB/set/vehicle/{ev.num}/get/force_soc_update", False)
 
-    def _get_ev_state(self, ev_num: int) -> Tuple[bool, bool]:
+    def _get_ev_state(self, ev_num: int) -> bool:
         cp_data = copy.deepcopy(data.data.cp_data)
         for cp in cp_data.values():
             if not isinstance(cp, AllChargepoints):
-                if cp.data.set.charging_ev == ev_num:
+                if cp.data.config.ev == ev_num:
                     charge_state = cp.data.get.charge_state
-                    plugged_in = cp.data.get.plug_state is True and cp.plug_state_prev is False
                     break
         else:
             charge_state = False
-            plugged_in = False
-        return charge_state, plugged_in
+        return charge_state
