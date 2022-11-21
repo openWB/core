@@ -9,7 +9,7 @@ sys.modules['pymodbus'] = type(sys)('pymodbus')
 sys.modules['aiohttp'] = type(sys)('aiohttp')
 sys.modules['lxml'] = type(sys)('lxml')
 sys.modules['lxml.html'] = type(sys)('lxml.html')
-sys.modules['PyJWT'] = type(sys)('PyJWT')
+sys.modules['pyjwt'] = type(sys)('pyjwt')
 
 module = type(sys)('pymodbus.client.sync')
 module.ModbusSerialClient = Mock()
