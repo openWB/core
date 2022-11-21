@@ -532,7 +532,7 @@ class SetData:
             elif "openWB/set/pv/get/exported" in msg.topic:
                 self._validate_value(msg, float, [(0, float("inf"))])
             elif "openWB/set/pv/get/power" in msg.topic:
-                self._validate_value(msg, float, [(float("-inf"), 0)])
+                self._validate_value(msg, float)
             elif ("openWB/set/pv/set/overhang_power_left" in msg.topic or
                     "openWB/set/pv/set/reserved_evu_overhang" in msg.topic or
                     "openWB/set/pv/set/released_evu_overhang" in msg.topic):
