@@ -61,6 +61,10 @@ body > .container {
 	height: 0.6em !important;
 }
 
+.fill-height:has(div.collapse.show) {
+	min-height: 100%;
+}
+
 .pull-right {
 	float:right
 }
