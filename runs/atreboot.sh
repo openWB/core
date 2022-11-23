@@ -52,21 +52,9 @@ chmod 666 "$LOGFILE"
 		echo "no restore pending, normal startup"
 	fi
 
-	# initialize automatic phase switching
-	# alpha image restricted to standalone installation!
-	# if (( u1p3paktiv == 1 )); then
-	# 	echo "triginit..."
-	# 	# quick init of phase switching with default pause duration (2s)
-	# 	sudo python ${OPENWBBASEDIR}/runs/triginit.py
-	# fi
-
-	# check if tesla wall connector is configured and start daemon
-	# if [[ $evsecon == twcmanager ]]; then
-	# 	echo "twcmanager..."
-	# 	if [[ $twcmanagerlp1ip == "localhost/TWC" ]]; then
-	# 		screen -dm -S TWCManager /var/www/html/TWC/TWCManager.py &
-	# 	fi
-	# fi
+	# clean python cache
+	echo "cleaning obsolete python cache folders..."
+	"$OPENWBBASEDIR/runs/cleanPythonCache.sh"
 
 	# check if display is configured and setup timeout
 	# if (( displayaktiv == 1 )); then
