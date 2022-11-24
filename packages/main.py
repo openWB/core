@@ -156,7 +156,7 @@ try:
     t_sub = Thread(target=sub.sub_topics, args=())
     t_set = Thread(target=set.set_data, args=())
     t_comm = Thread(target=comm.sub_commands, args=())
-    t_soc = Thread(target=soc.update, args=())
+    t_soc = Thread(target=soc.update, args=(), name="update_soc")
 
     t_sub.start()
     t_set.start()

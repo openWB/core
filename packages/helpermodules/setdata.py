@@ -463,7 +463,8 @@ class SetData:
                 self._validate_value(msg, int, [(0, 3)])
             elif ("/set/manual_lock" in msg.topic or
                     "/set/perform_control_pilot_interruption" in msg.topic or
-                    "/set/perform_phase_switch" in msg.topic):
+                    "/set/perform_phase_switch" in msg.topic or
+                    "/set/plug_state_prev" in msg.topic):
                 self._validate_value(msg, bool)
             elif "/set/autolock_state" in msg.topic:
                 self._validate_value(msg, int, [(0, 4)])
