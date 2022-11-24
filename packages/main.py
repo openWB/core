@@ -3,6 +3,7 @@
 """
 import logging
 import os
+import schedule
 import time
 import threading
 import traceback
@@ -11,7 +12,6 @@ from threading import Thread
 from modules import loadvars
 from modules import configuration
 from helpermodules import update_config
-from helpermodules import timecheck
 from helpermodules import subdata
 from helpermodules import setdata
 from helpermodules import measurement_log
@@ -22,7 +22,7 @@ from control import prepare
 from control import data
 from control import process
 from control import algorithm
-from helpermodules.system import exit_after
+from helpermodules.utils import exit_after
 from modules import update_soc
 
 logger.setup_logging()
@@ -62,6 +62,8 @@ class HandlerAlgorithm:
                     self.interval_counter = self.interval_counter + 1
             log.info("# ***Start*** ")
             handler_with_control_interval()
+        except KeyboardInterrupt:
+            log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())
         except Exception:
             log.exception("Fehler im Main-Modul")
 
@@ -93,40 +95,28 @@ class HandlerAlgorithm:
 
             cleanup_logfiles()
             measurement_log.measurement_log_daily()
-            # Wenn ein neuer Tag ist, Monatswerte schreiben.
-            day = timecheck.create_timestamp_YYYYMMDD()[-2:]
-            if self.current_day != day:
-                self.current_day = day
-                measurement_log.save_log("monthly")
             data.data.general_data.grid_protection()
             data.data.optional_data.et_get_prices()
             data.data.system_data["system"].update_ip_address()
-        except Exception:
-            log.exception("Fehler im Main-Modul")
-
-
-def repeated_handler_call():
-    """https://stackoverflow.com/questions/474528/
-    what-is-the-best-way-to-repeatedly-execute-a-function-every-x-seconds/25251804#25251804
-    """
-    delay = 10
-    timer_5min = 0
-    next_time = time.time() + delay
-    while True:
-        try:
-            if timer_5min >= 290:
-                handler.handler5Min()
-                timer_5min = 0
-            else:
-                timer_5min += 10
-            handler.handler10Sec()
         except KeyboardInterrupt:
             log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())
         except Exception:
             log.exception("Fehler im Main-Modul")
-        # skip tasks if we are behind schedule:
-        next_time += (time.time() - next_time) // delay * delay + delay
-        time.sleep(max(0, next_time - time.time()))
+
+    @exit_after(10)
+    def handler_midnight(self):
+        try:
+            measurement_log.save_log("monthly")
+        except KeyboardInterrupt:
+            log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())
+        except Exception:
+            log.exception("Fehler im Main-Modul")
+
+
+def schedule_jobs():
+    [schedule.every().minute.at(f":{i:02d}").do(handler.handler10Sec) for i in range(0, 60, 10)]
+    [schedule.every().hour.at(f":{i:02d}").do(handler.handler5Min) for i in range(0, 60, 5)]
+    schedule.every().day.at("00:00:00").do(handler.handler_midnight)
 
 
 try:
@@ -172,9 +162,15 @@ try:
     t_set.start()
     t_comm.start()
     t_soc.start()
+    # Warten, damit subdata Zeit hat, alle Topics auf dem Broker zu empfangen.
+    time.sleep(5)
+    schedule_jobs()
 except Exception:
     log.exception("Fehler im Main-Modul")
-# Warten, damit subdata Zeit hat, alle Topics auf dem Broker zu empfangen.
-time.sleep(5)
-# blocking
-repeated_handler_call()
+
+while True:
+    try:
+        schedule.run_pending()
+        time.sleep(1)
+    except Exception:
+        log.exception("Fehler im Main-Modul")
