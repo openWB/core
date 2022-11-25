@@ -19,6 +19,24 @@ s/ $//
 /self\.log\.info(/s/log.info("/log.debug("vwid.libvwid: /
 ' < libvwid.org > libvwid.mod
 
+
+# add try except around password form line parser to overcome singe } problem
+echo "add backup / restore of refreshToken accessToken renewal"
+ex -s libvwid.mod <<EOF
+/ (name, val) = line.strip().split(':', 1)/-1 a
+                    try:
+.
+/ (name, val) = line.strip().split(':', 1)/ a
+                    except Exception:
+                        self.log.debug("vwid.libvwid.password_form: skip line: (" + line + ")")
+                    else:
+.
+/ (name, val) = line.strip().split(':', 1)/ s/^/    /
+/ (name, val) = line.strip().split(':', 1)/+4 s/^/    /
+/ (name, val) = line.strip().split(':', 1)/+5 s/^/    /
+wq
+EOF
+
 echo "checking libvwid.mod for flake8 issues"
 flake8 libvwid.mod > libvwid.flake8
 l=`wc -l libvwid.flake8 | awk '{print $1}'`
