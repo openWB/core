@@ -47,6 +47,7 @@ class SolaredgeInverter:
         currents = self._read_scaled_uint16(40072, 3)
         # 40100 = DC Power value (Watt)
         # 40101 = DC Power scale factor
+        # Wenn bei Hybrid-Systemen der Speicher aus dem Netz geladen wird, ist die DC-Leistung negativ.
         dc_power = self._read_scaled_int16(40100, 1)[0] * -1
 
         return InverterState(
