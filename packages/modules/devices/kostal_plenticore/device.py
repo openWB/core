@@ -10,7 +10,7 @@ import logging
 from helpermodules.cli import run_using_positional_cli_args
 from modules.common import modbus
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.component_state import BatState, InverterState
+from modules.common.component_state import InverterState
 from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, MultiComponentUpdater
 from modules.common.store import get_counter_value_store
 from modules.devices.kostal_plenticore.bat import KostalPlenticoreBat
@@ -33,35 +33,28 @@ def update(
         reader: Callable[[int, modbus.ModbusDataType], Any],
         set_inverter_state: bool = True):
     battery = next((component for component in components if isinstance(component, KostalPlenticoreBat)), None)
-    bat_state_net = battery.read_state(reader) if battery else None
+    bat_state = battery.read_state(reader) if battery else None
     for component in components:
         if isinstance(component, KostalPlenticoreInverter):
             inverter_state = component.read_state(reader)
-            if bat_state_net:
+            if bat_state:
                 dc_in = component.dc_in_string_1_2(reader)
-                home_consumption = component.home_consumption(reader)
                 if dc_in >= 0:
                     # Wird PV-DC-Leistung erzeugt, müssen die Wandlungsverluste betrachtet werden.
                     # Kostal liefert nur DC-seitige Werte.
-                    if bat_state_net.power < 0:
+                    if bat_state.power < 0:
                         # Wird die Batterie entladen, werden die Wandlungsverluste anteilig an der DC-Leistung auf PV
                         # und Batterie verteilt. Dazu muss der Divisor Total_DC_power != 0 sein.
-                        power_gross = dc_in - bat_state_net.power
+                        power_gross = dc_in - bat_state.power
                         pv_state = InverterState(power=dc_in / power_gross * inverter_state.power,
                                                  exported=inverter_state.exported)
-                        # Speicherladung muss durch Wandlungsverluste und internen Verbrauch korrigiert werden, sonst
-                        # wird ein falscher Hausverbrauch berechnet. Die Verluste fallen hier unter den Tisch.
-                        bat_state_gross = BatState(power=pv_state.power-inverter_state.power-home_consumption,
-                                                   imported=bat_state_net.imported,
-                                                   exported=bat_state_net.exported)
                     else:
                         # Wenn die Batterie geladen wird, dann ist PV-Leistung die Wechselrichter-AC-Leistung + die
                         # Ladeleistung der Batterie. Die PV-Leistung ist die Summe aus verlustbehafteter
                         # AC-Leistungsabgabe des WR und der DC-Ladeleistung. Die Wandlungsverluste werden also nur
                         # in der PV-Leistung ersichtlich.
-                        pv_state = InverterState(power=inverter_state.power - bat_state_net.power,
+                        pv_state = InverterState(power=inverter_state.power - bat_state.power,
                                                  exported=inverter_state.exported)
-                        bat_state_gross = bat_state_net
                     # https://github.com/snaptec/openWB/pull/2440#discussion_r996275286
                     # power_gross = bat_state.power + dc_in
                     # bat_state_gross = BatteryState(power=bat_state_net.power / power_gross * inverter_state.power)
@@ -69,15 +62,14 @@ def update(
                 else:
                     inverter_state.power = 0
                     pv_state = inverter_state
-                    bat_state_gross = bat_state_net
             else:
                 pv_state = inverter_state
             if set_inverter_state:
                 component.update(pv_state)
         elif isinstance(component, KostalPlenticoreCounter):
             component.update(reader)
-    if bat_state_net:
-        battery.update(bat_state_gross)
+    if bat_state:
+        battery.update(bat_state)
     if set_inverter_state is False:
         return pv_state
 

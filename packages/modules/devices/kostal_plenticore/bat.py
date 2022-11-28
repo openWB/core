@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import logging
 from typing import Any, Callable
 from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
@@ -7,6 +8,8 @@ from modules.common.fault_state import ComponentInfo
 from modules.common.simcount import SimCounter
 from modules.common.store import get_bat_value_store
 from modules.devices.kostal_plenticore.config import KostalPlenticoreBatSetup
+
+log = logging.getLogger(__name__)
 
 
 class KostalPlenticoreBat:
@@ -22,6 +25,11 @@ class KostalPlenticoreBat:
         power = reader(582, ModbusDataType.INT_16) * -1
         soc = reader(514, ModbusDataType.INT_16)
         imported, exported = self.sim_counter.sim_count(power)
+        log.debug("raw bat power "+str(power))
+        # Speicherladung muss durch Wandlungsverluste und internen Verbrauch korrigiert werden, sonst
+        # wird ein falscher Hausverbrauch berechnet. Die Verluste fallen hier unter den Tisch.
+        if power < 0:
+            power = reader(106, ModbusDataType.FLOAT_32) * -1
 
         return BatState(
             power=power,

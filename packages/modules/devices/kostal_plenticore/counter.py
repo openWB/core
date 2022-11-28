@@ -25,20 +25,17 @@ class KostalPlenticoreCounter:
         powers = [reader(register, ModbusDataType.FLOAT_32) for register in [224, 234, 244]]
         power = reader(252, ModbusDataType.FLOAT_32)
         frequency = reader(220, ModbusDataType.FLOAT_32)
-        imported, exported = self.sim_counter.sim_count(power)
 
         return CounterState(
             powers=powers,
             currents=currents,
             voltages=voltages,
-            imported=imported,
-            exported=exported,
             power=power,
             power_factors=[power_factor]*3,
             frequency=frequency
         )
 
-    def update_imported_exported(self, state):
+    def update_imported_exported(self, state: CounterState) -> CounterState:
         state.imported, state.exported = self.sim_counter.sim_count(state.power)
         return state
 

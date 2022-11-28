@@ -28,9 +28,6 @@ class KostalPlenticoreInverter:
     def dc_in_string_1_2(self, reader: Callable[[int, ModbusDataType], Any]):
         return reader(260, ModbusDataType.FLOAT_32) + reader(270, ModbusDataType.FLOAT_32)
 
-    def home_consumption(self, reader: Callable[[int, ModbusDataType], Any]):
-        return reader(106, ModbusDataType.FLOAT_32)
-
     def update(self, state):
         self.store.set(state)
 
