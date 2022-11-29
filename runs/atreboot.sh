@@ -31,6 +31,15 @@ chmod 666 "$LOGFILE"
 		exec sudo -u openwb bash "${BASH_SOURCE[0]}"
 	fi
 
+	echo "atreboot.sh started"
+	if [[ -f "${OPENWBBASEDIR}/ramdisk/bootdone" ]]; then
+		rm "${OPENWBBASEDIR}/ramdisk/bootdone"
+	fi
+	(
+		sleep 600
+		sudo kill "$$"
+	) &
+
 	if versionMatch "${OPENWBBASEDIR}/data/config/openwb.cron" "/etc/cron.d/openwb"; then
 		echo "openwb.cron already up to date"
 	else
@@ -45,15 +54,6 @@ chmod 666 "$LOGFILE"
 		sudo cp "${OPENWBBASEDIR}/data/config/openwb2.service" "/etc/systemd/system/openwb2.service"
 		sudo reboot now &
 	fi
-
-	echo "atreboot.sh started"
-	if [[ -f "${OPENWBBASEDIR}/ramdisk/bootdone" ]]; then
-		rm "${OPENWBBASEDIR}/ramdisk/bootdone"
-	fi
-	(
-		sleep 600
-		sudo kill "$$"
-	) &
 
 	# check for pending restore
 	if [[ -f "${OPENWBBASEDIR}/data/restore/run_on_boot" ]]; then
