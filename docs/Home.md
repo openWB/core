@@ -7,5 +7,6 @@ Eine Übersicht über die wichtigsten Features findet Ihr [hier](https://openwb.
 
 Unterstützung und Infos zu neuen Releases gibt's im Forum [Software 2.x](https://openwb.de/forum/viewforum.php?f=13).
 
-Die Erstellung von Wiki-Beiträgen ist [hier](https://github.com/openWB/core/wiki/Wiki-Eintrag_erstellen) beschrieben.  
+Die Erstellung von Wiki-Beiträgen ist [hier](https://github.com/openWB/core/wiki/Wiki-Eintrag_erstellen) beschrieben.
+
 _Das Wiki befindet sich aktuell noch im Aufbau._
