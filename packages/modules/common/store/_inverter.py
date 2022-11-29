@@ -71,8 +71,8 @@ class PurgeInverterState:
                     else:
                         state.currents = [0.0]*3
             if state.dc_power is not None:
-                # Wenn keine DC-Leistung anliegt, kann auch keine PV-Leistung anliegen.
-                if state.dc_power == 0:
+                # Wenn keine/negative DC-Leistung anliegt, kann keine PV-Leistung erzeugt werden.
+                if state.dc_power <= 0:
                     state.power = 0
         return state
 

@@ -341,7 +341,7 @@ class Ev:
                         required_current, submode, _ = self.charge_template.standby()
                 elif self.charge_template.data.chargemode.selected == "stop":
                     required_current, submode, message = self.charge_template.stop()
-            if submode == "stop" or (self.charge_template.data.chargemode.selected == "stop"):
+            if submode == "stop" or submode == "standby" or (self.charge_template.data.chargemode.selected == "stop"):
                 state = False
             if phases is None:
                 phases = self.data.control_parameter.phases
@@ -358,9 +358,7 @@ class Ev:
             current_changed = False
             mode_changed = False
 
-            if (self.data.control_parameter.chargemode != chargemode_log_entry or
-                    (self.data.control_parameter.submode != "time_charging" and
-                     chargemode_log_entry == "time_charging")):
+            if self.data.control_parameter.chargemode != chargemode_log_entry:
                 mode_changed = True
 
             # Die benötigte Stromstärke hat sich durch eine Änderung des Lademodus oder der Konfiguration geändert.
@@ -400,9 +398,13 @@ class Ev:
             self.data.control_parameter.submode = submode
             Pub().pub("openWB/set/vehicle/"+str(self.num) +
                       "/control_parameter/submode", submode)
-            self.data.control_parameter.chargemode = self.charge_template.data.chargemode.selected
-            Pub().pub("openWB/set/vehicle/"+str(self.num)+"/control_parameter/chargemode",
-                      self.charge_template.data.chargemode.selected)
+            if submode == "time_charging":
+                self.data.control_parameter.chargemode = "time_charging"
+                Pub().pub("openWB/set/vehicle/"+str(self.num)+"/control_parameter/chargemode", "time_charging")
+            else:
+                self.data.control_parameter.chargemode = self.charge_template.data.chargemode.selected
+                Pub().pub("openWB/set/vehicle/"+str(self.num)+"/control_parameter/chargemode",
+                          self.charge_template.data.chargemode.selected)
             self.data.control_parameter.prio = self.charge_template.data.prio
             Pub().pub("openWB/set/vehicle/"+str(self.num) +
                       "/control_parameter/prio", self.charge_template.data.prio)

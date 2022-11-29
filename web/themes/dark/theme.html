@@ -94,7 +94,7 @@
 		}
 		var themeCookie = getCookie('openWBTheme');
 		// include special Theme style
-		$('head').append('<link rel="stylesheet" href="themes/' + themeCookie + '/style.css?v=20221117">');
+		$('head').append('<link rel="stylesheet" href="themes/' + themeCookie + '/style.css?v=20221122">');
 	</script>
 </head>
 
@@ -134,7 +134,7 @@
 
 			<!-- Battery Card -->
 			<div class="house-battery-configured col-sm hide">
-				<div class="card border-warning">
+				<div class="card border-warning fill-height">
 					<div class="card-header bg-warning collapsed" data-toggle="collapse" data-target="#cardBat">
 						<i class="fas fa-car-battery"></i>
 						<span class="house-battery-sum-soc">XX %</span>
@@ -199,7 +199,7 @@
 
 			<!-- PV Card -->
 			<div class="pv-configured col-sm">
-				<div class="card border-success">
+				<div class="card border-success fill-height">
 					<div class="card-header bg-success collapsed" data-toggle="collapse" data-target="#cardPV">
 						<i class="fas fa-solar-panel"></i>
 						<span class="pv-sum-power">-- W</span>
@@ -225,7 +225,7 @@
 
 			<!-- Grid Card -->
 			<div class="grid-configured col-sm">
-				<div class="card border-danger">
+				<div class="card border-danger fill-height">
 					<div class="card-header bg-danger collapsed" data-toggle="collapse" data-target="#cardGrid">
 						<i class="fas fa-home"></i>
 						<i class="grid-exporting fas fa-angle-double-right hide"></i>
@@ -298,7 +298,7 @@
 
 			<!-- House Card -->
 			<div class="house-consumption-configured col-sm">
-				<div class="card border-secondary">
+				<div class="card border-secondary fill-height">
 					<div class="card-header bg-secondary collapsed" data-toggle="collapse"
 						data-target="#cardHouseConsumption">
 						<i class="fas fa-home"></i>
@@ -325,7 +325,7 @@
 
 			<!-- charge point sum card -->
 			<div class="charge-point-sum-configured col-sm">
-				<div class="card border-primary">
+				<div class="card border-primary fill-height">
 					<div class="card-header bg-primary collapsed" data-toggle="collapse"
 						data-target="#cardChargePointSum">
 						<i class="fas fa-charging-station"></i>
@@ -560,7 +560,7 @@
 							<div class="chargemode-options chargemode-option-time_charging">
 								<div class="form-row vaRow mb-1">
 									<div class="col">
-										<h3 class="mb-0">Zeitladen-Zeitpläne</h3>
+										<h3 class="mb-0">Termine Zeitladen</h3>
 									</div>
 									<div class="col-2 text-right">
 										<button type="button"
@@ -769,7 +769,7 @@
 								<div class="chargemode-options chargemode-option-scheduled_charging">
 									<div class="form-row vaRow mb-1">
 										<div class="col">
-											<h3 class="mb-0">Zielladen-Zeitpläne</h3>
+											<h3 class="mb-0">Termine Zielladen</h3>
 										</div>
 										<div class="col-2 text-right">
 											<button type="button"

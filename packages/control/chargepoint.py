@@ -240,6 +240,7 @@ class Set:
     log: Log = field(default_factory=log_factory)
     manual_lock: bool = False
     phases_to_use: int = 0
+    plug_state_prev: bool = False
     plug_time: Optional[str] = None
     required_power: float = 0
     rfid: Optional[str] = None
@@ -334,9 +335,7 @@ class Chargepoint:
             self.num = index
             # set current aus dem vorherigen Zyklus, um zu wissen, ob am Ende des Zyklus die Ladung freigegeben wird
             # (für Control-Pilot-Unterbrechung)
-            self.set_current_prev = 0
-            # Um herauszufinden, ob an-/abgesteckt wurde, zB für SoC.
-            self.plug_state_prev = False
+            self.set_current_prev = 0.0
             # bestehende Daten auf dem Broker nicht zurücksetzen, daher nicht publishen
             self.data: ChargepointData = ChargepointData()
             self.data.set_event(event)
@@ -505,11 +504,13 @@ class Chargepoint:
         Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/energy_to_charge", 0)
 
     def remember_previous_values(self):
-        self.set_current_prev = self.data.set.current
-        self.plug_state_prev = self.data.get.plug_state
+        self.data.set.plug_state_prev = self.data.get.plug_state
+        Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/plug_state_prev", self.data.set.plug_state_prev)
 
     def prepare_cp(self) -> Tuple[int, Optional[str]]:
         try:
+            # Für Control-Pilot-Unterbrechung set current merken.
+            self.set_current_prev = self.data.set.current
             self.__validate_rfid()
             charging_possible, message = self.is_charging_possible()
             if charging_possible:
@@ -524,7 +525,6 @@ class Chargepoint:
                     self.data.get.state_str = message
             else:
                 num = -1
-                message_ev = None
             self._process_charge_stop()
             return num, message
         except Exception:
@@ -772,6 +772,9 @@ class Chargepoint:
 
     def update(self, ev_list: Dict[str, Ev]) -> None:
         try:
+            # SoC nach Anstecken aktualisieren
+            if self.data.get.plug_state is True and self.data.set.plug_state_prev is False:
+                Pub().pub(f"openWB/set/vehicle/{self.data.config.ev}/get/force_soc_update", True)
             vehicle, message = self.prepare_cp()
             if vehicle != -1:
                 try:
@@ -788,6 +791,7 @@ class Chargepoint:
                     # Einhaltung des Minimal- und Maximalstroms prüfen
                     required_current = charging_ev.check_min_max_current(
                         required_current, charging_ev.data.control_parameter.phases)
+                    charging_ev.set_control_parameter(submode, required_current)
                     current_changed, mode_changed = charging_ev.check_state(required_current,
                                                                             self.data.set.current,
                                                                             self.data.set.log.chargemode_log_entry)
@@ -816,7 +820,6 @@ class Chargepoint:
                         # entsteht so eine kurze Unterbrechung der Ladung, wenn während dem Laden
                         # umkonfiguriert wird.
                     message = message_ev if message_ev else message
-                    charging_ev.set_control_parameter(submode, required_current)
                     # Ein Eintrag muss nur erstellt werden, wenn vorher schon geladen wurde und auch danach noch
                     # geladen werden soll.
                     if mode_changed and self.data.get.charge_state and state:
