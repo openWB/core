@@ -27,12 +27,9 @@ class Soc(AbstractSoc):
     def update(self, charge_state: bool = False) -> None:
         with SingleComponentUpdateContext(self.component_info):
             soc, range = api.fetch_soc(
-                self.config.configuration.user_id,
-                self.config.configuration.password,
-                self.config.configuration.vin,
-                self.config.configuration.refreshToken,
+                self.config,
                 self.vehicle)
-            log.info("vwid: vehicle="+str(self.vehicle) + ", return: soc=" + str(soc)+", range=" + str(range))
+            log.info("Result: soc=" + str(soc)+", range=" + str(range))
             self.store.set(CarState(soc, range))
 
 
