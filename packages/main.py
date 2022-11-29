@@ -2,7 +2,6 @@
 """Starten der benötigten Prozesse
 """
 import logging
-import os
 import schedule
 import time
 import threading
@@ -120,12 +119,7 @@ def schedule_jobs():
 
 
 try:
-    # Regelung erst starten, wenn atreboot.sh fertig ist.
-    log.debug("Warten auf das Ende des Boot-Prozesses")
-    while os.path.isfile(os.path.dirname(os.path.abspath(__file__)) + "/../ramdisk/bootdone") is False:
-        time.sleep(1)
-    log.debug("Boot-Prozess abgeschlossen")
-
+    log.debug("Start openWB2.service")
     loadvars_ = loadvars.Loadvars()
     data.data_init(loadvars_.event_module_update_completed)
     update_config.UpdateConfig().update()

@@ -35,11 +35,25 @@ chmod 666 "$LOGFILE"
 	if [[ -f "${OPENWBBASEDIR}/ramdisk/bootdone" ]]; then
 		rm "${OPENWBBASEDIR}/ramdisk/bootdone"
 	fi
-	mosquitto_pub -p 1886 -t "openWB/system/boot_done" -r -m 'false'
 	(
 		sleep 600
 		sudo kill "$$"
 	) &
+
+	if versionMatch "${OPENWBBASEDIR}/data/config/openwb.cron" "/etc/cron.d/openwb"; then
+		echo "openwb.cron already up to date"
+	else
+		echo "updating openwb.cron"
+		sudo cp "${OPENWBBASEDIR}/data/config/openwb.cron" "/etc/cron.d/openwb"
+	fi
+
+	if versionMatch "${OPENWBBASEDIR}/data/config/openwb2.service" "/etc/systemd/system/openwb2.service"; then
+		echo "openwb2.service already up to date"
+	else
+		echo "updating openwb2.service"
+		sudo cp "${OPENWBBASEDIR}/data/config/openwb2.service" "/etc/systemd/system/openwb2.service"
+		sudo reboot now &
+	fi
 
 	# check for pending restore
 	if [[ -f "${OPENWBBASEDIR}/data/restore/run_on_boot" ]]; then
@@ -261,7 +275,6 @@ chmod 666 "$LOGFILE"
 	# all done, remove boot and update status
 	echo "$(date +"%Y-%m-%d %H:%M:%S:")" "boot done :-)"
 	mosquitto_pub -p 1886 -t "openWB/system/update_in_progress" -r -m 'false'
-	mosquitto_pub -p 1886 -t "openWB/system/boot_done" -r -m 'true'
 	mosquitto_pub -p 1886 -t "openWB/system/reloadDisplay" -m "1"
 	touch "${OPENWBBASEDIR}/ramdisk/bootdone"
 } >>"$LOGFILE" 2>&1
