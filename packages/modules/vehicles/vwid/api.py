@@ -75,7 +75,7 @@ class api:
                         log.error("server error: \n" + json.dumps(self.data['error'], ensure_ascii=False, indent=4))
                     if self.data['data'] != {}:
                         log.debug("batteryStatus: \n" +
-                                 json.dumps(self.data['data']['batteryStatus'], ensure_ascii=False, indent=4))
+                                  json.dumps(self.data['data']['batteryStatus'], ensure_ascii=False, indent=4))
                 except Exception as e:
                     log.error("response decode error: " + str(e))
                     log.error("response: \n" + json.dumps(self.data, ensure_ascii=False, indent=4))
