@@ -64,7 +64,7 @@ class socUtils:
             self.exp = self.token_dec[expName]
             self.exp_dt = datetime.datetime.fromtimestamp(self.exp).strftime(fmt)
         except Exception as e:
-            log.debug('get_token_expiration error ' + str(e))
+            log.exception('get_token_expiration error ' + str(e))
             self.exp = None
             self.exp_dt = None
 
