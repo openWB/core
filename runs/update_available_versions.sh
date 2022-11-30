@@ -16,6 +16,7 @@ fi
 	currentCommit=$(git log --pretty='format:%ci [%h]' -n1)
 	echo "current commit: $currentCommit"
 	mosquitto_pub -p 1886 -t openWB/system/current_commit -r -m "\"$currentCommit\""
+	echo "$currentCommit" >"$OPENWBBASEDIR/web/lastcommit"
 
 	# fetch data from git
 	echo "fetching latest data from $GITREMOTE..."
