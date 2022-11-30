@@ -56,7 +56,7 @@ class socUtils:
             # log.debug("write_token.mqtt: " + json.dumps(config, ensure_ascii=False, indent=4))
             Pub().pub(topic, config)
         except Exception as e:
-            log.debug('Token mqtt write exception ' + str(e))
+            log.exception('Token mqtt write exception ' + str(e))
 
     def get_token_expiration(self, token: str, expName: str, fmt: str) -> Union[int, str]:
         try:
