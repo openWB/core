@@ -6,6 +6,7 @@ import pytest
 from control import data
 from control.chargepoint import Chargepoint, Get, Set
 from control.ev import Ev, EvTemplate
+from modules.common.abstract_soc import SocUpdateData
 from modules.vehicles.tesla.soc import Soc
 from modules.update_soc import UpdateSoc
 
@@ -36,10 +37,10 @@ def test_get_ev_state(ev_num: int,
     data.data.cp_data["cp0"].data.get.charge_state = set_charge_state
 
     # execution
-    charge_state = UpdateSoc()._get_ev_state(0)
+    soc_update_data = UpdateSoc()._get_soc_update_data(0)
 
     # evaluation
-    assert charge_state == expected_charge_state
+    assert soc_update_data.charge_state == expected_charge_state
 
 
 @pytest.mark.parametrize(
@@ -63,8 +64,8 @@ def test_get_threads(soc_module: Optional[Soc],
     data.data.ev_data["ev0"] = ev
     soc_interval_expired_mock = Mock(return_value=soc_interval_expired)
     monkeypatch.setattr(EvTemplate, "soc_interval_expired", soc_interval_expired_mock)
-    get_ev_state_mock = Mock(return_value=False)
-    monkeypatch.setattr(UpdateSoc, "_get_ev_state", get_ev_state_mock)
+    get_soc_update_data_mock = Mock(return_value=SocUpdateData())
+    monkeypatch.setattr(UpdateSoc, "_get_soc_update_data", get_soc_update_data_mock)
     monkeypatch.setattr(UpdateSoc, "_reset_force_soc_update", Mock())
 
     # execution
