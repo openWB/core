@@ -1,4 +1,10 @@
 from abc import abstractmethod
+from dataclasses import dataclass
+
+
+@dataclass
+class SocUpdateData:
+    charge_state: bool = False
 
 
 class AbstractSoc:
@@ -7,5 +13,5 @@ class AbstractSoc:
         pass
 
     @abstractmethod
-    def update(self, chargepoint_state) -> None:
+    def update(self, soc_update_data: SocUpdateData) -> None:
         pass

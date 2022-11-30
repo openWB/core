@@ -8,7 +8,7 @@ from dataclass_utils import asdict, dataclass_from_dict
 from helpermodules.cli import run_using_positional_cli_args
 from modules.common import store
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.abstract_soc import AbstractSoc
+from modules.common.abstract_soc import AbstractSoc, SocUpdateData
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.component_state import CarState
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -25,10 +25,10 @@ class Soc(AbstractSoc):
         self.store = store.get_car_value_store(self.vehicle)
         self.component_info = ComponentInfo(self.vehicle, self.soc_config.name, "vehicle")
 
-    def update(self, charge_state: bool = False) -> None:
+    def update(self, soc_update_data: SocUpdateData) -> None:
         with SingleComponentUpdateContext(self.component_info):
             self.soc_config.configuration.token = api.validate_token(self.soc_config.configuration.token)
-            if charge_state is False:
+            if soc_update_data.charge_state is False:
                 self.__wake_up_car()
             soc, range = api.request_soc_range(
                 vehicle=self.soc_config.configuration.tesla_ev_num, token=self.soc_config.configuration.token)
@@ -65,7 +65,7 @@ def read_legacy(id: int,
         token = json.load(f)
     soc = Soc(TeslaSoc(configuration=TeslaSocConfiguration(
         tesla_ev_num=tesla_ev_num, token=dataclass_from_dict(TeslaSocToken, token))), id)
-    soc.update(charge_state)
+    soc.update(SocUpdateData(charge_state=charge_state))
     with open(token_file, "w") as f:
         f.write(json.dumps(asdict(soc.soc_config.configuration.token)))
 
