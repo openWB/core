@@ -50,18 +50,18 @@ class socUtils:
         except Exception as e:
             log.debug('Token file write exception ' + str(e))
 
-    def write_token_mqtt(self, topic: str, token: str, config={}):
+    def write_token_mqtt(self, topic: str, token: str, name: str, config={}):
         try:
-            config['configuration']['refreshToken'] = token
+            config['configuration'][name] = token
             # log.debug("write_token.mqtt: " + json.dumps(config, ensure_ascii=False, indent=4))
             Pub().pub(topic, config)
         except Exception as e:
             log.debug('Token mqtt write exception ' + str(e))
 
-    def get_token_expiration(self, token: str, fmt: str) -> Union[int, str]:
+    def get_token_expiration(self, token: str, expName: str, fmt: str) -> Union[int, str]:
         try:
             self.token_dec = jwt.decode(token, 'utf-8', options={"verify_signature": False})
-            self.exp = self.token_dec['exp']
+            self.exp = self.token_dec[expName]
             self.exp_dt = datetime.datetime.fromtimestamp(self.exp).strftime(fmt)
         except Exception as e:
             log.debug('get_token_expiration error ' + str(e))

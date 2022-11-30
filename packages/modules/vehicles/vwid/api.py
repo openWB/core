@@ -99,7 +99,8 @@ class api:
                         # self.expOld = self.refreshTokenOld_dec['exp']
                         # self.expOld_dt = datetime.datetime.fromtimestamp(self.expOld).strftime(date_fmt)
 
-                        self.expOld, self.expOld_dt = self.su.get_token_expiration(self.refreshTokenOld, date_fmt)
+                        self.expOld, self.expOld_dt =\
+                            self.su.get_token_expiration(self.refreshTokenOld, 'exp', date_fmt)
                         self.now = int(time.time())
                         expirationThreshold = self.expOld - refreshToken_exp_days * 86400
 
@@ -123,7 +124,8 @@ class api:
                         # self.expNew = self.refreshTokenNew_dec['exp']
                         # self.expNew_dt = datetime.datetime.fromtimestamp(self.expNew).strftime(date_fmt)
 
-                        self.expNew, self.expNew_dt = self.su.get_token_expiration(self.refreshTokenNew, date_fmt)
+                        self.expNew, self.expNew_dt =\
+                            self.su.get_token_expiration(self.refreshTokenNew, 'exp', date_fmt)
                         log.debug("store new refreshToken, expires on " + self.expNew_dt)
                     except Exception as e:
                         log.debug("new refreshToken decode exception, e=" + str(e))
@@ -135,6 +137,7 @@ class api:
                     self.su.write_token_mqtt(
                                              "openWB/set/vehicle/" + vehicle + "/soc_module/config",
                                              self.refreshTokenNew,
+                                             'refreshToken',
                                              conf.__dict__)
 
                 if (self.w.tokens['accessToken'] != self.accessTokenOld):  # modified accessToken?
