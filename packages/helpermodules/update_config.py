@@ -321,6 +321,7 @@ class UpdateConfig:
         InternalBrokerClient("update-config", self.on_connect, self.on_message).start_finite_loop()
         try:
             self.__remove_outdated_topics()
+            self._remove_invalid_topics()
             self.__pub_missing_defaults()
             self.__update_version()
             self.__solve_breaking_changes()
@@ -345,6 +346,14 @@ class UpdateConfig:
             else:
                 Pub().pub(topic, "")
                 log.debug("Ungültiges Topic zum Startzeitpunkt: "+str(topic))
+
+    def _remove_invalid_topics(self):
+        # remove all chargepoints without config. This data comes from deleted chargepoints that are still sent to an
+        # invalid CP number.
+        for topic in self.all_received_topics.keys():
+            if re.search("/chargepoint/[0-9]+/", topic) is not None:
+                if f"openWB/chargepoint/{get_index(topic)}/config" not in self.all_received_topics.keys():
+                    Pub().pub(topic, "")
 
     def __pub_missing_defaults(self):
         # zwingend erforderliche Standardwerte setzen
