@@ -54,7 +54,7 @@ class api:
                     self.w.tokens['refreshToken'] = self.refreshToken
 
             except Exception:
-                log.debug("refreshToken initialization exception: set refreshToken_old to initial value")
+                log.exception("refreshToken initialization exception: set refreshToken_old to initial value")
                 self.w.tokens['refreshToken'] = initialToken
 
             self.refreshTokenOld = self.w.tokens['refreshToken']   # remember current refreshToken
