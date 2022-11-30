@@ -8,7 +8,7 @@ from dataclass_utils import dataclass_from_dict
 from modules.vehicles.mqtt.config import MqttSocSetup
 from helpermodules.cli import run_using_positional_cli_args
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.abstract_soc import AbstractSoc
+from modules.common.abstract_soc import AbstractSoc, SocUpdateData
 from modules.common.component_context import SingleComponentUpdateContext
 
 log = logging.getLogger("soc."+__name__)
@@ -20,7 +20,7 @@ class Soc(AbstractSoc):
         self.vehicle = vehicle
         self.component_info = ComponentInfo(self.vehicle, self.config.name, "vehicle")
 
-    def update(self, charge_state: bool = False) -> None:
+    def update(self, soc_update_data: SocUpdateData) -> None:
         with SingleComponentUpdateContext(self.component_info):
             log.debug("MQTT-Fahrzeuge müssen nicht ausgelesen werden.")
 

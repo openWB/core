@@ -10,6 +10,7 @@ from control.ev import Ev
 from helpermodules import timecheck
 from helpermodules.pub import Pub
 from helpermodules.utils import thread_handler
+from modules.common.abstract_soc import SocUpdateData
 
 log = logging.getLogger("soc."+__name__)
 
@@ -40,15 +41,15 @@ class UpdateSoc:
         for ev in ev_data.values():
             try:
                 if ev.soc_module is not None:
-                    charge_state = self._get_ev_state(ev.num)
-                    if (ev.ev_template.soc_interval_expired(charge_state, ev.data.get.soc_timestamp) or
+                    soc_update_data = self._get_soc_update_data(ev.num)
+                    if (ev.ev_template.soc_interval_expired(soc_update_data.charge_state, ev.data.get.soc_timestamp) or
                             ev.data.get.force_soc_update):
                         self._reset_force_soc_update(ev)
                         # Es wird ein Zeitstempel gesetzt, unabhängig ob die Abfrage erfolgreich war, da einige
                         # Hersteller bei zu häufigen Abfragen Accounts sperren.
                         Pub().pub(f"openWB/set/vehicle/{ev.num}/get/soc_timestamp", timecheck.create_timestamp())
                         threads_set.append(threading.Thread(target=ev.soc_module.update,
-                                                            args=(charge_state,), name=f"soc_ev{ev.num}"))
+                                                            args=(soc_update_data,), name=f"soc_ev{ev.num}"))
                         if hasattr(ev.soc_module, "store"):
                             threads_update.append(threading.Thread(target=ev.soc_module.store.update,
                                                                    args=(), name=f"soc_ev{ev.num}"))
@@ -61,7 +62,7 @@ class UpdateSoc:
             ev.data.get.force_soc_update = False
             Pub().pub(f"openWB/set/vehicle/{ev.num}/get/force_soc_update", False)
 
-    def _get_ev_state(self, ev_num: int) -> bool:
+    def _get_soc_update_data(self, ev_num: int) -> SocUpdateData:
         cp_data = copy.deepcopy(data.data.cp_data)
         for cp in cp_data.values():
             if not isinstance(cp, AllChargepoints):
@@ -70,4 +71,4 @@ class UpdateSoc:
                     break
         else:
             charge_state = False
-        return charge_state
+        return SocUpdateData(charge_state=charge_state)

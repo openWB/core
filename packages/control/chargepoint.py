@@ -791,10 +791,9 @@ class Chargepoint:
                     # Einhaltung des Minimal- und Maximalstroms prüfen
                     required_current = charging_ev.check_min_max_current(
                         required_current, charging_ev.data.control_parameter.phases)
+                    current_changed = charging_ev.check_if_current_changed(required_current, self.data.set.current)
                     charging_ev.set_control_parameter(submode, required_current)
-                    current_changed, mode_changed = charging_ev.check_state(required_current,
-                                                                            self.data.set.current,
-                                                                            self.data.set.log.chargemode_log_entry)
+                    mode_changed = charging_ev.check_if_mode_changed(self.data.set.log.chargemode_log_entry)
 
                     # Die benötigte Stromstärke hat sich durch eine Änderung des Lademodus oder der
                     # Konfiguration geändert. Die Zuteilung entsprechend der Priorisierung muss neu geprüft

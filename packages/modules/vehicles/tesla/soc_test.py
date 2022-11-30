@@ -3,6 +3,7 @@ from unittest.mock import Mock
 import pytest
 
 from modules.common import store
+from modules.common.abstract_soc import SocUpdateData
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.vehicles.tesla import api
 from modules.vehicles.tesla.soc import Soc
@@ -27,7 +28,7 @@ class TestTesla:
     def test_update_updates_value_store_no_chargepoint(self, monkeypatch):
         # execution
         Soc(TeslaSoc(configuration=TeslaSocConfiguration(
-            tesla_ev_num=0, token=self.token)), 0).update(False)
+            tesla_ev_num=0, token=self.token)), 0).update(SocUpdateData())
 
         # evaluation
         self.assert_context_manager_called_with(None)
@@ -39,7 +40,7 @@ class TestTesla:
     def test_update_updates_value_store_not_charging(self, monkeypatch):
         # execution
         Soc(TeslaSoc(configuration=TeslaSocConfiguration(
-            tesla_ev_num=0, token=self.token)), 0).update(False)
+            tesla_ev_num=0, token=self.token)), 0).update(SocUpdateData())
 
         # evaluation
         self.assert_context_manager_called_with(None)
@@ -55,7 +56,7 @@ class TestTesla:
 
         # execution
         Soc(TeslaSoc(configuration=TeslaSocConfiguration(
-            tesla_ev_num=0, token=self.token)), 0).update(False)
+            tesla_ev_num=0, token=self.token)), 0).update(SocUpdateData())
 
         # evaluation
         self.assert_context_manager_called_with(dummy_error)

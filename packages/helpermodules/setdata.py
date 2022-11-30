@@ -459,66 +459,69 @@ class SetData:
                 self._validate_value(msg, float, [(0, float("inf"))])
             elif "template" in msg.topic:
                 self._validate_value(msg, "json")
-            elif ("/set/charging_ev" in msg.topic or
-                    "/set/charging_ev_prev" in msg.topic):
-                self._validate_value(msg, int, [(-1, float("inf"))])
-            elif "/set/current" in msg.topic:
-                self._validate_value(msg, float, [(6, 32), (0, 0)])
-            elif ("/set/energy_to_charge" in msg.topic or
-                    "/set/required_power" in msg.topic):
-                self._validate_value(msg, float, [(0, float("inf"))])
-            elif "/set/phases_to_use" in msg.topic:
-                self._validate_value(msg, int, [(0, 3)])
-            elif ("/set/manual_lock" in msg.topic or
-                    "/set/perform_control_pilot_interruption" in msg.topic or
-                    "/set/perform_phase_switch" in msg.topic or
-                    "/set/plug_state_prev" in msg.topic):
-                self._validate_value(msg, bool)
-            elif "/set/autolock_state" in msg.topic:
-                self._validate_value(msg, int, [(0, 4)])
-            elif ("/set/rfid" in msg.topic or
-                    "/set/plug_time" in msg.topic):
-                self._validate_value(msg, str)
-            elif "/set/log" in msg.topic:
+            elif re.search("openWB/chargepoint/[0-9]+/config", msg.topic) is not None:
                 self._validate_value(msg, "json")
-            elif "/set/change_ev_permitted" in msg.topic:
-                self._validate_value(msg, "json")
-            elif "/config/ev" in msg.topic:
-                self._validate_value(
-                    msg, int, [(0, float("inf"))], pub_json=True)
-            elif "/config" in msg.topic:
-                self._validate_value(msg, "json")
-            elif ("/get/voltages" in msg.topic):
-                self._validate_value(
-                    msg, float, [(0, 500)], collection=list)
-            elif ("/get/currents" in msg.topic):
-                self._validate_value(
-                    msg, float, collection=list)
-            elif ("/get/power_factors" in msg.topic):
-                self._validate_value(
-                    msg, float, [(-1, 1)], collection=list)
-            elif ("/get/daily_imported" in msg.topic or
-                    "/get/daily_exported" in msg.topic or
-                    "/get/power" in msg.topic or
-                    "/get/imported" in msg.topic or
-                    "/get/exported" in msg.topic):
-                self._validate_value(msg, float, [(0, float("inf"))])
-            elif "/get/phases_in_use" in msg.topic:
-                self._validate_value(msg, int, [(0, 3)])
-            elif ("/get/charge_state" in msg.topic or
-                    "/get/plug_state" in msg.topic):
-                self._validate_value(msg, bool)
-            elif "/get/fault_state" in msg.topic:
-                self._validate_value(msg, int, [(0, 2)])
-            elif ("/get/fault_str" in msg.topic or
-                    "/get/state_str" in msg.topic or
-                    "/get/heartbeat" in msg.topic):
-                self._validate_value(msg, str)
-            elif ("/get/rfid" in msg.topic or
-                    "/get/rfid_timestamp" in msg.topic):
-                self._validate_value(msg, str)
+            elif subdata.SubData.cp_data.get(f"cp{get_index(msg.topic)}"):
+                if ("/set/charging_ev" in msg.topic or
+                        "/set/charging_ev_prev" in msg.topic):
+                    self._validate_value(msg, int, [(-1, float("inf"))])
+                elif "/set/current" in msg.topic:
+                    self._validate_value(msg, float, [(6, 32), (0, 0)])
+                elif ("/set/energy_to_charge" in msg.topic or
+                        "/set/required_power" in msg.topic):
+                    self._validate_value(msg, float, [(0, float("inf"))])
+                elif "/set/phases_to_use" in msg.topic:
+                    self._validate_value(msg, int, [(0, 3)])
+                elif ("/set/manual_lock" in msg.topic or
+                        "/set/perform_control_pilot_interruption" in msg.topic or
+                        "/set/perform_phase_switch" in msg.topic or
+                        "/set/plug_state_prev" in msg.topic):
+                    self._validate_value(msg, bool)
+                elif "/set/autolock_state" in msg.topic:
+                    self._validate_value(msg, int, [(0, 4)])
+                elif ("/set/rfid" in msg.topic or
+                        "/set/plug_time" in msg.topic):
+                    self._validate_value(msg, str)
+                elif "/set/log" in msg.topic:
+                    self._validate_value(msg, "json")
+                elif "/set/change_ev_permitted" in msg.topic:
+                    self._validate_value(msg, "json")
+                elif "/config/ev" in msg.topic:
+                    self._validate_value(
+                        msg, int, [(0, float("inf"))], pub_json=True)
+                elif ("/get/voltages" in msg.topic):
+                    self._validate_value(
+                        msg, float, [(0, 500)], collection=list)
+                elif ("/get/currents" in msg.topic):
+                    self._validate_value(
+                        msg, float, collection=list)
+                elif ("/get/power_factors" in msg.topic):
+                    self._validate_value(
+                        msg, float, [(-1, 1)], collection=list)
+                elif ("/get/daily_imported" in msg.topic or
+                        "/get/daily_exported" in msg.topic or
+                        "/get/power" in msg.topic or
+                        "/get/imported" in msg.topic or
+                        "/get/exported" in msg.topic):
+                    self._validate_value(msg, float, [(0, float("inf"))])
+                elif "/get/phases_in_use" in msg.topic:
+                    self._validate_value(msg, int, [(0, 3)])
+                elif ("/get/charge_state" in msg.topic or
+                        "/get/plug_state" in msg.topic):
+                    self._validate_value(msg, bool)
+                elif "/get/fault_state" in msg.topic:
+                    self._validate_value(msg, int, [(0, 2)])
+                elif ("/get/fault_str" in msg.topic or
+                        "/get/state_str" in msg.topic or
+                        "/get/heartbeat" in msg.topic):
+                    self._validate_value(msg, str)
+                elif ("/get/rfid" in msg.topic or
+                        "/get/rfid_timestamp" in msg.topic):
+                    self._validate_value(msg, str)
+                else:
+                    self.__unknown_topic(msg)
             else:
-                self.__unknown_topic(msg)
+                log.warning(f"Kein Ladepunkt {get_index(msg.topic)} mit gültiger Konfiguration gefunden.")
         except Exception:
             log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 
