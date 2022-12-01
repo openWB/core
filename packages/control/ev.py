@@ -12,7 +12,8 @@ import traceback
 from typing import List, Dict, Optional, Tuple
 
 from control import data
-from dataclass_utils.factories import empty_dict_factory, emtpy_list_factory
+from control.chargemode import Chargemode as Chargemode_enum
+from dataclass_utils.factories import currents_list_factory, empty_dict_factory, emtpy_list_factory
 from helpermodules.abstract_plans import Limit, limit_factory, ScheduledChargingPlan, TimeChargingPlan
 from helpermodules.pub import Pub
 from helpermodules import timecheck
@@ -128,13 +129,14 @@ def ev_template_data_factory() -> EvTemplateData:
 @dataclass
 class ControlParameter:
     required_current: float = 0
+    required_currents: List[float] = field(default_factory=currents_list_factory)
     phases: int = 0
     prio: bool = False
     timestamp_switch_on_off: Optional[str] = None
     timestamp_auto_phase_switch: Optional[str] = None
     timestamp_perform_phase_switch: Optional[str] = None
-    submode: str = "stop"
-    chargemode: str = "stop"
+    submode: Chargemode_enum = Chargemode_enum.STOP
+    chargemode: Chargemode_enum = Chargemode_enum.STOP
     used_amount_instant_charging: float = 0
     imported_at_plan_start: float = 0
     current_plan: Optional[str] = None
@@ -301,7 +303,7 @@ class Ev:
                 else:
                     name = None
                 required_current, submode, message, phases = self.charge_template.scheduled_charging_calc_current(
-                    plan_data, self.data.get.soc, used_amount, max_phases)
+                    plan_data, self.data.get.soc, used_amount, max_phases, self.ev_template.data.min_current)
                 self.data.control_parameter.current_plan = name
                 Pub().pub(f"openWB/set/vehicle/{self.num}/control_parameter/current_plan", name)
 
@@ -332,7 +334,7 @@ class Ev:
                         self.data.control_parameter.used_amount_instant_charging)
                 elif self.charge_template.data.chargemode.selected == "pv_charging":
                     required_current, submode, message = self.charge_template.pv_charging(
-                        self.data.get.soc)
+                        self.data.get.soc, self.ev_template.data.min_current)
                 elif self.charge_template.data.chargemode.selected == "standby":
                     # Text von Zeit-und Zielladen nicht überschreiben.
                     if message is None:
@@ -396,14 +398,14 @@ class Ev:
             neuer Lademodus, in dem geladen werden soll
         """
         try:
-            self.data.control_parameter.submode = submode
+            self.data.control_parameter.submode = Chargemode_enum(submode)
             Pub().pub("openWB/set/vehicle/"+str(self.num) +
                       "/control_parameter/submode", submode)
             if submode == "time_charging":
                 self.data.control_parameter.chargemode = "time_charging"
                 Pub().pub("openWB/set/vehicle/"+str(self.num)+"/control_parameter/chargemode", "time_charging")
             else:
-                self.data.control_parameter.chargemode = self.charge_template.data.chargemode.selected
+                self.data.control_parameter.chargemode = Chargemode_enum(self.charge_template.data.chargemode.selected)
                 Pub().pub("openWB/set/vehicle/"+str(self.num)+"/control_parameter/chargemode",
                           self.charge_template.data.chargemode.selected)
             self.data.control_parameter.prio = self.charge_template.data.prio
@@ -481,10 +483,10 @@ class Ev:
             feed_in_yield = pv_config.feed_in_yield
         else:
             feed_in_yield = 0
+        evu_counter = data.data.counter_all_data.get_evu_counter()
         # verbleibender EVU-Überschuss unter Berücksichtigung der Einspeisegrenze und Speicherleistung
-        all_overhang = data.data.pv_data["all"].data["set"]["available_power"] - \
-            data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] + \
-            data.data.bat_data["all"].power_for_bat_charging() + feed_in_yield
+        all_surplus = -(evu_counter.data["get"]["power"] + evu_counter.data["set"]["released_surplus"] -
+                        evu_counter.data["set"]["reserved_surplus"] + feed_in_yield)
         if phases_in_use == 1:
             direction_str = "Umschaltverzögerung von 1 auf 3"
             delay = pv_config.phase_switch_delay * 60
@@ -501,39 +503,43 @@ class Ev:
             new_current = self.ev_template.data.max_current_one_phase
 
         log.debug(
-            f'Genutzter Strom: {max(get_currents)}A, Überschuss: {all_overhang}W, benötigte neue Leistung: '
+            f'Genutzter Strom: {max(get_currents)}A, Überschuss: {all_surplus}W, benötigte neue Leistung: '
             f'{required_power}W')
         # Wenn gerade umgeschaltet wird, darf kein Timer gestartet werden.
         if (not self.ev_template.data.prevent_phase_switch and
                 self.data.control_parameter.timestamp_perform_phase_switch is None):
             if timestamp_auto_phase_switch is None:
                 condition_1_to_3 = (max(get_currents) > max_current and
-                                    all_overhang > self.ev_template.data.min_current * max_phases_ev * 230
+                                    all_surplus > self.ev_template.data.min_current * max_phases_ev * 230
                                     - get_power and
                                     phases_in_use == 1)
-                condition_3_to_1 = max(get_currents) < min_current and all_overhang < 0 and phases_in_use == 3
+                condition_3_to_1 = max(get_currents) < min_current and all_surplus <= 0 and phases_in_use >= 1
                 if condition_3_to_1 or condition_1_to_3:
                     # Umschaltverzögerung starten
                     timestamp_auto_phase_switch = timecheck.create_timestamp()
-                    data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] += required_power
+                    # Wenn nach der Umschaltung weniger Leistung benötigt wird, soll während der Verzögerung keine
+                    # neuen eingeschaltet werden.
+                    data.data.counter_all_data.get_evu_counter(
+                    ).data["set"]["reserved_surplus"] += max(0, required_power)
                     message = f'{direction_str} Phasen für {delay/60} Min aktiv.'
             else:
-                condition_1_to_3 = max(get_currents) > max_current and all_overhang > 0 and phases_in_use == 1
-                condition_3_to_1 = max(get_currents) < min_current and all_overhang + \
-                    required_power < 0 and phases_in_use == 3
+                condition_1_to_3 = max(get_currents) > max_current and all_surplus > 0 and phases_in_use == 1
+                condition_3_to_1 = max(get_currents) < min_current and phases_in_use == 3
                 if condition_3_to_1 or condition_1_to_3:
                     # Timer laufen lassen
                     if timecheck.check_timestamp(timestamp_auto_phase_switch, delay):
                         message = f'{direction_str} Phasen für {delay/60} Min aktiv.'
                     else:
                         timestamp_auto_phase_switch = None
-                        data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= required_power
+                        data.data.counter_all_data.get_evu_counter(
+                        ).data["set"]["reserved_surplus"] -= max(0, required_power)
                         phases_to_use = new_phase
                         current = new_current
                         log.debug("Phasenumschaltung kann nun durchgeführt werden.")
                 else:
                     timestamp_auto_phase_switch = None
-                    data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= required_power
+                    data.data.counter_all_data.get_evu_counter(
+                    ).data["set"]["reserved_surplus"] -= max(0, required_power)
                     message = f"{direction_str} Phasen abgebrochen."
 
         if message:
@@ -557,17 +563,17 @@ class Ev:
             if self.data.control_parameter.phases == 3:
                 reserved = self.ev_template.data.max_current_one_phase * \
                     230 - self.data.control_parameter.required_current * 3 * 230
-                data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= reserved
+                data.data.counter_all_data.get_evu_counter().data["set"]["reserved_surplus"] -= reserved
                 log.debug(
                     "Zurücksetzen der reservierten Leistung für die Phasenumschaltung. reservierte Leistung: " +
-                    str(data.data.pv_data["all"].data["set"]["reserved_evu_overhang"]))
+                    str(data.data.counter_all_data.get_evu_counter().data["set"]["reserved_surplus"]))
             else:
                 reserved = self.data.control_parameter.required_current * \
                     3 * 230 - self.ev_template.data.max_current_one_phase * 230
-                data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= reserved
+                data.data.counter_all_data.get_evu_counter().data["set"]["reserved_surplus"] -= reserved
                 log.debug(
                     "Zurücksetzen der reservierten Leistung für die Phasenumschaltung. reservierte Leistung: " +
-                    str(data.data.pv_data["all"].data["set"]["reserved_evu_overhang"]))
+                    str(data.data.counter_all_data.get_evu_counter().data["set"]["reserved_surplus"]))
 
     def load_default_profile(self):
         """ prüft, ob nach dem Abstecken das Standardprofil geladen werden soll und lädt dieses ggf..
@@ -672,7 +678,7 @@ class ChargeTemplate:
 
     PV_CHARGING_SOC_REACHED = "Keine Ladung, da der maximale Soc bereits erreicht wurde."
 
-    def pv_charging(self, soc: float) -> Tuple[int, str, Optional[str]]:
+    def pv_charging(self, soc: float, min_current: int) -> Tuple[int, str, Optional[str]]:
         """ prüft, ob Min-oder Max-Soc erreicht wurden und setzt entsprechend den Ladestrom.
         """
         message = None
@@ -684,7 +690,7 @@ class ChargeTemplate:
                         return pv_charging.min_soc_current, "instant_charging", message
                 if pv_charging.min_current == 0:
                     # nur PV; Ampere darf nicht 0 sein, wenn geladen werden soll
-                    return 1, "pv_charging", message
+                    return min_current, "pv_charging", message
                 else:
                     # Min PV
                     return pv_charging.min_current, "instant_charging", message
@@ -791,7 +797,8 @@ class ChargeTemplate:
                                         plan_data: Optional[SelectedPlan],
                                         soc: int,
                                         used_amount: float,
-                                        max_phases: int) -> Tuple[float, str, str, int]:
+                                        max_phases: int,
+                                        min_current: int) -> Tuple[float, str, str, int]:
         current = 0
         mode = "stop"
         if plan_data is None:
@@ -804,7 +811,7 @@ class ChargeTemplate:
             message = self.SCHEDULED_CHARGING_REACHED_LIMIT_SOC
         elif limit.selected == "soc" and limit.soc_scheduled <= soc < limit.soc_limit:
             message = self.SCHEDULED_CHARGING_REACHED_SCHEDULED_SOC
-            current = 1
+            current = min_current
             mode = "pv_charging"
         elif limit.selected == "amount" and used_amount >= limit.amount:
             message = self.SCHEDULED_CHARGING_REACHED_AMOUNT
@@ -838,11 +845,11 @@ class ChargeTemplate:
                 else:
                     message = ("Kein Sofortladen, da kein günstiger Zeitpunkt zum preisbasierten Laden "
                                "ist. Falls vorhanden, wird mit EVU-Überschuss geladen.")
-                    current = 1
+                    current = min_current
                     mode = "pv_charging"
             else:
                 message = self.SCHEDULED_CHARGING_USE_PV
-                current = 1
+                current = min_current
                 mode = "pv_charging"
         return current, mode, message, phases
 

@@ -22,7 +22,7 @@ class Graph:
 
         try:
             dataline = {"timestamp": int(time.time()), "time": datetime.datetime.today().strftime("%H:%M:%S")}
-            evu_counter = data.data.counter_all_data.get_evu_counter()
+            evu_counter = data.data.counter_all_data.get_evu_counter_str()
             if data.data.counter_data[evu_counter].data["get"]["fault_state"] < FaultStateLevel.ERROR:
                 dataline.update({"grid": _convert_to_kW(data.data.counter_data[evu_counter].data["get"]["power"])})
             for c in data.data.counter_data:

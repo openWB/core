@@ -194,3 +194,11 @@ def test_check_timeframe(plan: Union[AutolockPlan, TimeChargingPlan], now: str, 
 
     # evaluation
     assert state == expected_state
+
+
+def test_convert_to_unix_timestamp():
+    # setup and execution
+    unix_timestamp = timecheck.convert_to_unix_timestamp("10/31/2022, 07:00:00")
+
+    # evaluation
+    assert unix_timestamp == 1667196000

@@ -175,10 +175,6 @@ class UpdateConfig:
                    "^openWB/optional/rfid/active$",
 
                    "^openWB/pv/config/configured$",
-                   "^openWB/pv/set/overhang_power_left$",
-                   "^openWB/pv/set/reserved_evu_overhang$",
-                   "^openWB/pv/set/released_evu_overhang$",
-                   "^openWB/pv/set/available_power$",
                    "^openWB/pv/get/exported$",
                    "^openWB/pv/get/power$",
                    "^openWB/pv/get/daily_exported$",

@@ -24,7 +24,6 @@ class Prepare:
                 cp.update(data.data.ev_data)
             data.data.cp_all_data.get_cp_sum()
             data.data.cp_all_data.no_charge()
-            data.data.pv_data["all"].calc_power_for_control()
             data.data.bat_data["all"].setup_bat()
             data.data.counter_all_data.set_home_consumption()
         except Exception:

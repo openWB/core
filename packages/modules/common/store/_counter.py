@@ -2,7 +2,7 @@ from operator import add
 
 from control import data
 from helpermodules import compatibility
-from helpermodules.phase_mapping import convert_cp_phases_to_evu_phases
+from helpermodules.phase_mapping import convert_cp_currents_to_evu_currents
 from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentType
 from modules.common.fault_state import FaultState
@@ -82,12 +82,14 @@ class PurgeCounterState:
                 if element["type"] == ComponentType.CHARGEPOINT.value:
                     chargepoint = data.data.cp_data[f"cp{element['id']}"]
                     try:
-                        evu_phases = convert_cp_phases_to_evu_phases(chargepoint.data.config.phase_1)
+                        self.currents = list(map(add,
+                                                 self.currents,
+                                                 convert_cp_currents_to_evu_currents(
+                                                     chargepoint.data.config.phase_1,
+                                                     chargepoint.data.get.currents)))
                     except KeyError:
                         raise FaultState.error(f"Für den virtuellen Zähler muss der Anschluss der Phasen von Ladepunkt"
                                                f" {chargepoint.num} an die Phasen der EVU angegeben werden.")
-                    self.currents = [self.currents[i] + chargepoint.data.get.currents[evu_phases[i]]
-                                     for i in range(0, 3)]
 
                     state.power += chargepoint.data.get.power
                     state.imported += chargepoint.data.get.imported

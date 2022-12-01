@@ -13,7 +13,7 @@ from helpermodules import measurement_log
 from helpermodules.broker import InternalBrokerClient
 from helpermodules.pub import Pub
 from helpermodules.utils.topic_parser import decode_payload
-from control import bridge, chargelog, chargepoint, data, ev, counter, pv
+from control import bridge, chargelog, chargepoint, data, ev, counter, counter_all, pv
 from modules.common.component_type import ComponentType, special_to_general_type_mapping, type_to_topic_mapping
 import dataclass_utils
 
@@ -69,7 +69,7 @@ class Command:
         """ ermittelt die maximale ID vom Broker """
         try:
             hierarchy = ProcessBrokerBranch(topic).get_payload()
-            max_id = counter.get_max_id_in_hierarchy(hierarchy, default)
+            max_id = counter_all.get_max_id_in_hierarchy(hierarchy, default)
             setattr(self, f'max_id_{id_topic}', max_id)
             Pub().pub(f'openWB/set/command/max_id/{id_topic}', max_id)
         except Exception:

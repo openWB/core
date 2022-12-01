@@ -20,7 +20,7 @@ from helpermodules import command
 from control import prepare
 from control import data
 from control import process
-from control import algorithm
+from control.algorithm import algorithm
 from helpermodules.utils import exit_after
 from modules import update_soc
 

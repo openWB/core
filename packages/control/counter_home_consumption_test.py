@@ -4,7 +4,7 @@ import pytest
 
 from control import data
 from control.conftest import hierarchy_standard, hierarchy_hybrid, hierarchy_nested
-from control.counter import CounterAll
+from control.counter_all import CounterAll
 from modules.common.fault_state import FaultStateLevel
 
 
@@ -20,7 +20,7 @@ def test_calc_home_consumption(counter_all: Callable[[], CounterAll], data_):
     home_consumption = c._calc_home_consumption()[0]
 
     # evaluation
-    assert home_consumption == 7700
+    assert home_consumption == 500
 
 
 @pytest.mark.parametrize(["home_consumption",

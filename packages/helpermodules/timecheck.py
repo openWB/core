@@ -286,6 +286,10 @@ def create_timestamp_time() -> str:
         raise
 
 
+def convert_to_unix_timestamp(timestamp: str) -> float:
+    return datetime.datetime.strptime(timestamp, "%m/%d/%Y, %H:%M:%S").timestamp()
+
+
 def get_difference_to_now(timestamp_begin: str) -> Tuple[str, int]:
     """ ermittelt den Abstand zwischen zwei Zeitstempeln.
 
