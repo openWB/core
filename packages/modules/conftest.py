@@ -7,6 +7,8 @@ from modules.common import simcount
 
 sys.modules['pymodbus'] = type(sys)('pymodbus')
 sys.modules['aiohttp'] = type(sys)('aiohttp')
+sys.modules['ipparser'] = type(sys)('ipparser')
+sys.modules['ipparser.ipparser'] = type(sys)('ipparser.ipparser')
 sys.modules['lxml'] = type(sys)('lxml')
 sys.modules['lxml.html'] = type(sys)('lxml.html')
 

@@ -6,3 +6,4 @@ requests_mock==1.9.3
 lxml==4.7.1
 aiohttp==3.7.2
 schedule==1.1.0
+ipparser==0.3.8
