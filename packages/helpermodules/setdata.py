@@ -454,6 +454,8 @@ class SetData:
         """
         try:
             if ("openWB/set/chargepoint/get/imported" in msg.topic or
+                    "openWB/set/chargepoint/get/exported" in msg.topic or
+                    "openWB/set/chargepoint/get/power" in msg.topic or
                     "openWB/set/chargepoint/get/daily_imported" in msg.topic or
                     "openWB/set/chargepoint/get/daily_exported" in msg.topic):
                 self._validate_value(msg, float, [(0, float("inf"))])
