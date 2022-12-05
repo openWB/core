@@ -2,7 +2,10 @@ from dataclasses import asdict
 import glob
 import json
 import logging
+from pathlib import Path
 import re
+import subprocess
+import time
 from typing import List
 
 from helpermodules.broker import InternalBrokerClient
@@ -16,7 +19,7 @@ log = logging.getLogger(__name__)
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 4
+    DATASTORE_VERSION = 5
     valid_topic = ["^openWB/bat/config/configured$",
                    "^openWB/bat/set/charging_power_left$",
                    "^openWB/bat/set/switch_on_soc_reached$",
@@ -518,3 +521,14 @@ class UpdateConfig:
                     updated_payload["limit"] = {"selected": "soc", "amount": 1000, "soc": 70}
                     Pub().pub(topic.replace("openWB/", "openWB/set/"), updated_payload)
         Pub().pub("openWB/set/system/datastore_version", 4)
+
+    def upgrade_datastore_4(self) -> None:
+        moved_file = False
+        for path in Path("/etc/mosquitto/conf.d").glob('99-bridge-openwb-*.conf'):
+            subprocess.run(["sudo", "mv", str(path), str(path).replace("conf.d", "conf_local.d")])
+            moved_file = True
+        Pub().pub("openWB/set/system/datastore_version", 5)
+        if moved_file:
+            time.sleep(1)
+            parent_file = Path(__file__).resolve().parents[2]
+            subprocess.run([str(parent_file / "runs" / "reboot.sh")])
