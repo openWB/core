@@ -14,7 +14,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install flake8 pytest paho-mqtt requests-mock jq
+          pip install flake8 pytest paho-mqtt requests-mock jq pyjwt==2.6.0
       - name: Flake8 with annotations
         uses: TrueBrain/actions-flake8@v2.1
         with:
