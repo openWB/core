@@ -186,19 +186,20 @@ class vwid:
         return True
 
     async def get_status(self):
-        response = await self.session.get(API_BASE + "/vehicles/" + self.vin + "/status", headers=self.headers)
+        url = API_BASE + "/vehicles/" + self.vin + "/selectivestatus?jobs=all"
+        response = await self.session.get(url, headers=self.headers)
 
         # If first attempt fails, try to refresh tokens
         if response.status >= 400:
             self.log.debug("Refreshing tokens")
             if await self.refresh_tokens():
-                response = await self.session.get(API_BASE + "/vehicles/" + self.vin + "/status", headers=self.headers)
+                response = await self.session.get(url, headers=self.headers)
 
         # If refreshing tokens failed, try a full reconnect
         if response.status >= 400:
             self.log.info("Reconnecting")
             if await self.reconnect():
-                response = await self.session.get(API_BASE + "/vehicles/" + self.vin + "/status", headers=self.headers)
+                response = await self.session.get(url, headers=self.headers)
 
         if response.status >= 400:
             self.log.error("Get status failed")
