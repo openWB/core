@@ -12,10 +12,10 @@ s/^ *$//
 s/ $//
 /query = /s/ : /: /
 /query = /s/) ]/)]/
-/get_status(self):/s/get_status(self):/get_status(self):\n        url = API_BASE + "\/vehicles\/" + self.vin + "\/selectivestatus?jobs=all"/
-/get(API_BASE/s/(.*,/(url,/
 /self\.log = /s/(.*)/("soc."+__name__)/
 ' < libvwid.org > libvwid.mod
+# /get_status(self):/s/get_status(self):/get_status(self):\n        url = API_BASE + "\/vehicles\/" + self.vin + "\/selectivestatus?jobs=all"/
+# /get(API_BASE/s/(.*,/(url,/
 
 echo "checking libvwid.mod for flake8 issues"
 flake8 libvwid.mod > libvwid.flake8

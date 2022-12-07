@@ -40,6 +40,7 @@ class api:
             self.w = libvwid.vwid(self.session)
             self.w.set_vin(self.vin)
             self.w.set_credentials(self.user_id, self.password)
+            self.w.set_jobs(['charging'])
             self.w.tokens = {}
             self.w.headers = {}
 
