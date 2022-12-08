@@ -461,7 +461,7 @@ class SetData:
                 self._validate_value(msg, float, [(0, float("inf"))])
             elif "template" in msg.topic:
                 self._validate_value(msg, "json")
-            elif re.search("chargepoint/[0-9]+/config", msg.topic) is not None:
+            elif re.search("chargepoint/[0-9]+/config$", msg.topic) is not None:
                 self._validate_value(msg, "json")
             elif subdata.SubData.cp_data.get(f"cp{get_index(msg.topic)}"):
                 if ("/set/charging_ev" in msg.topic or
