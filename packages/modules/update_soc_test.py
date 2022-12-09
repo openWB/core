@@ -44,7 +44,7 @@ def test_get_ev_state(ev_num: int,
 
 
 @pytest.mark.parametrize(
-    "soc_module, force_soc_update, soc_interval_expired, expected_threads_set",
+    "soc_module, force_soc_update, soc_interval_expired, expected_threads_update",
     [
         pytest.param(None, False, False, [], id="soc module none"),
         pytest.param(Mock(spec=Soc), False, True, ["soc_ev0"], id="interval expired"),
@@ -55,7 +55,7 @@ def test_get_ev_state(ev_num: int,
 def test_get_threads(soc_module: Optional[Soc],
                      force_soc_update: bool,
                      soc_interval_expired: bool,
-                     expected_threads_set: List[str],
+                     expected_threads_update: List[str],
                      monkeypatch):
     # setup
     ev = Ev(0)
@@ -69,10 +69,10 @@ def test_get_threads(soc_module: Optional[Soc],
     monkeypatch.setattr(UpdateSoc, "_reset_force_soc_update", Mock())
 
     # execution
-    threads_set, threads_update = UpdateSoc()._get_threads()
+    threads_update = UpdateSoc()._get_threads()[0]
 
     # evaluation
-    if threads_set:
-        assert threads_set[0].name == expected_threads_set[0]
+    if threads_update:
+        assert threads_update[0].name == expected_threads_update[0]
     else:
-        assert threads_set == expected_threads_set
+        assert threads_update == expected_threads_update
