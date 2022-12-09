@@ -32,7 +32,7 @@ class socUtils:
             self.tf.write(token)         # write Token file
             self.tf.close()
         except Exception as e:
-            log.debug('Token file write exception ' + str(e))
+            log.exception('Token file write exception ')
 
     def write_token_mqtt(self, topic: str, token: str, config={}):
         try:
