@@ -31,7 +31,7 @@ class socUtils:
             self.tf = open(path, "w")
             self.tf.write(token)         # write Token file
             self.tf.close()
-        except Exception as e:
+        except Exception:
             log.exception('Token file write exception ')
 
     def write_token_mqtt(self, topic: str, token: str, config={}):
