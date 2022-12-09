@@ -18,19 +18,19 @@ initialToken = '1.2.3'
 log = logging.getLogger("soc."+__name__)
 
 # Constants
-BASE_URL = "https://id.mercedes-benz.com"
-OAUTH_URL = BASE_URL + "/as/authorization.oauth2"
-LOGIN_URL = BASE_URL + "/ciam/auth/login"
-TOKEN_URL = BASE_URL + "/as/token.oauth2"
-STATUS_URL = "https://oneapp.microservice.smart.com"
-REDIRECT_URI = STATUS_URL
-SCOPE = "openid+profile+email+phone+ciam-uid+offline_access"
-CLIENT_ID = "70d89501-938c-4bec-82d0-6abb550b0825"
-GUID = "280C6B55-F179-4428-88B6-E0CCF5C22A7C"
-ACCEPT_LANGUAGE = "de-de"
+bASE_URL = "https://id.mercedes-benz.com"
+oAUTH_URL = bASE_URL + "/as/authorization.oauth2"
+lOGIN_URL = bASE_URL + "/ciam/auth/login"
+tOKEN_URL = bASE_URL + "/as/token.oauth2"
+sTATUS_URL = "https://oneapp.microservice.smart.com"
+rEDIRECT_URI = sTATUS_URL
+sCOPE = "openid+profile+email+phone+ciam-uid+offline_access"
+cLIENT_ID = "70d89501-938c-4bec-82d0-6abb550b0825"
+gUID = "280C6B55-F179-4428-88B6-E0CCF5C22A7C"
+aCCEPT_LANGUAGE = "de-de"
 
 
-class api:
+class Api:
 
     def __init__(self, vehicle: int):
         self.log = logging.getLogger("soc."+__name__)
@@ -65,12 +65,12 @@ class api:
     def get_resume(self) -> str:
 
         response_type = "code"
-        url1 = OAUTH_URL + '?client_id=' + CLIENT_ID + '&response_type=' + response_type + '&scope=' + SCOPE
-        url1 = url1 + '&redirect_uri=' + REDIRECT_URI
+        url1 = oAUTH_URL + '?client_id=' + cLIENT_ID + '&response_type=' + response_type + '&scope=' + sCOPE
+        url1 = url1 + '&redirect_uri=' + rEDIRECT_URI
         url1 = url1 + '&code_challenge=' + self.code_challenge + '&code_challenge_method=' + self.code_challenge_method
         headers1 = {
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            "Accept-Language": ACCEPT_LANGUAGE,
+            "Accept-Language": aCCEPT_LANGUAGE,
             "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 12_5_1 like Mac OS X)\
             AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148"
         }
@@ -95,14 +95,14 @@ class api:
     # step2: login to website, return token
     def login(self) -> str:
 
-        url3 = LOGIN_URL + "/pass"
+        url3 = lOGIN_URL + "/pass"
         headers3 = {
             "Content-Type": "application/json",
             "Accept": "application/json, text/plain, */*",
             "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 12_5_1 like Mac OS X)\
             AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
-            "Referer": LOGIN_URL,
-            "Accept-Language": ACCEPT_LANGUAGE
+            "Referer": lOGIN_URL,
+            "Accept-Language": aCCEPT_LANGUAGE
         }
         d = {}
         d['username'] = self.username
@@ -124,14 +124,14 @@ class api:
 
     # get code
     def get_code(self, token: str) -> str:
-        url4 = BASE_URL + '/' + self.resume
+        url4 = bASE_URL + '/' + self.resume
         headers4 = {
             "Content-Type": "application/x-www-form-urlencoded",
             "Accept": "application/json, text/plain, */*",
             "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 12_5_1 like Mac OS X)\
             AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
-            "Referer": LOGIN_URL,
-            "Accept-Language": ACCEPT_LANGUAGE,
+            "Referer": lOGIN_URL,
+            "Accept-Language": aCCEPT_LANGUAGE,
         }
         d = {}
         d['token'] = token
@@ -147,15 +147,15 @@ class api:
 
     # get Tokens
     def get_Tokens(self, code: str) -> dict:
-        url5 = TOKEN_URL
+        url5 = tOKEN_URL
         headers5 = {
             "Accept": "*/*",
             "User-Agent": "sOAF/202108260942 CFNetwork/978.0.7 Darwin/18.7.0",
-            "Accept-Language": ACCEPT_LANGUAGE,
+            "Accept-Language": aCCEPT_LANGUAGE,
             "Content-Type": "application/x-www-form-urlencoded",
         }
         data5 = "grant_type=authorization_code&code=" + code + "&code_verifier=" + self.code_verifier +\
-                "&redirect_uri=" + REDIRECT_URI + "&client_id=" + CLIENT_ID
+                "&redirect_uri=" + rEDIRECT_URI + "&client_id=" + cLIENT_ID
 
         try:
             response5 = self.session.post(url5, headers=headers5, data=data5)
@@ -187,16 +187,16 @@ class api:
 
     # get_status -> soc, range of Vehicle
     def get_status(self, vin: str) -> Union[int, float]:
-        url7 = STATUS_URL + "/seqc/v0/vehicles/" + vin +\
+        url7 = sTATUS_URL + "/seqc/v0/vehicles/" + vin +\
                "/init-data?requestedData=BOTH&countryCode=DE&locale=de-DE"
         headers7 = {
             "accept": "*/*",
             "accept-language": "de-DE;q=1.0",
             "authorization": "Bearer " + self.Tokens['access_token'],
-            "x-applicationname": CLIENT_ID,
+            "x-applicationname": cLIENT_ID,
             "user-agent": "Device: iPhone 6; OS-version: iOS_12.5.1; App-Name: smart EQ control; App-Version: 3.0;\
             Build: 202108260942; Language: de_DE",
-            "guid": GUID
+            "guid": gUID
         }
 
         try:
@@ -256,7 +256,7 @@ def fetch_soc(conf: SmartEQ, vehicle: int) -> Union[int, float]:
     asyncio.set_event_loop(loop)
 
     # get soc, range from server
-    a = api(vehicle)
+    a = Api(vehicle)
     soc, range = loop.run_until_complete(a._fetch_soc(conf, vehicle))
 
     return soc, range
