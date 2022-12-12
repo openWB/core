@@ -32,7 +32,7 @@ class socUtils:
             self.tf.write(token)         # write Token file
             self.tf.close()
         except Exception as e:
-            log.debug('Token file write exception ' + str(e))
+            log.exception('Token file write exception ' + str(e))
 
     def write_token_mqtt(self, topic: str, token: str, config={}):
         try:
@@ -40,7 +40,7 @@ class socUtils:
             # log.debug("write_token.mqtt: " + json.dumps(config, ensure_ascii=False, indent=4))
             Pub().pub(topic, config)
         except Exception as e:
-            log.debug('Token mqtt write exception ' + str(e))
+            log.exception('Token mqtt write exception ' + str(e))
 
     def get_token_expiration(self, token: str, fmt: str) -> Union[int, str]:
         try:
@@ -48,8 +48,23 @@ class socUtils:
             self.exp = self.token_dec['exp']
             self.exp_dt = datetime.datetime.fromtimestamp(self.exp).strftime(fmt)
         except Exception as e:
-            log.debug('get_token_expiration error ' + str(e))
+            log.exception('get_token_expiration error ' + str(e))
             self.exp = None
             self.exp_dt = None
 
         return self.exp, self.exp_dt
+
+    def keys_exist(self, element, *keys):
+        # Check if *keys (nested) exists in `element` (dict).
+        if not isinstance(element, dict):
+            raise AttributeError('keys_exists() expects dict as first argument.')
+        if len(keys) == 0:
+            raise AttributeError('keys_exists() expects at least two arguments, one given.')
+
+        _element = element
+        for key in keys:
+            try:
+                _element = _element[key]
+            except KeyError:
+                return False
+        return True

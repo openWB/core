@@ -69,20 +69,27 @@ class api:
             # get status from VW server
             self.data = await self.w.get_status()
             if (self.data):
-                try:
-                    if self.data['userCapabilities']['capabilitiesStatus']['error']:
-                        log.error("server error: \n"
-                                  + json.dumps(self.data['userCapabilities']['capabilitiesStatus']['error'],
-                                               ensure_ascii=False, indent=4))
-                except Exception:
-                    pass
+                if self.su.keys_exist(self.data, 'userCapabilities', 'capabilitiesStatus', 'error'):
+                    log.error("server error: \n"
+                              + json.dumps(self.data['userCapabilities']['capabilitiesStatus']['error'],
+                                           ensure_ascii=False, indent=4))
 
-                try:
-                    if self.data['charging']['batteryStatus']:
-                        log.debug("batteryStatus: \n" +
-                                  json.dumps(self.data['charging']['batteryStatus'], ensure_ascii=False, indent=4))
-                except Exception:
-                    pass
+                if self.su.keys_exist(self.data, 'charging', 'batteryStatus'):
+                    log.info("batteryStatus: \n" +
+                              json.dumps(self.data['charging']['batteryStatus'], ensure_ascii=False, indent=4))
+#                try:
+#                    if self.data['userCapabilities']['capabilitiesStatus']['error']:
+#                        log.error("server error: \n"
+#                                  + json.dumps(self.data['userCapabilities']['capabilitiesStatus']['error'],
+#                                               ensure_ascii=False, indent=4))
+#                except Exception:
+#                    pass
+#                try:
+#                    if self.data['charging']['batteryStatus']:
+#                        log.debug("batteryStatus: \n" +
+#                                  json.dumps(self.data['charging']['batteryStatus'], ensure_ascii=False, indent=4))
+#                except Exception:
+#                    pass
 
                 try:
                     self.soc = (self.data['charging']['batteryStatus']['value']['currentSOC_pct'])
