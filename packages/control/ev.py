@@ -377,8 +377,9 @@ class Ev:
             Pub().pub("openWB/set/vehicle/"+str(self.num) +
                       "/control_parameter/submode", submode)
             if submode == "time_charging":
-                self.data.control_parameter.chargemode = "time_charging"
-                Pub().pub("openWB/set/vehicle/"+str(self.num)+"/control_parameter/chargemode", "time_charging")
+                self.data.control_parameter.chargemode = Chargemode_enum.TIME_CHARGING
+                Pub().pub(f"openWB/set/vehicle/{self.num}/control_parameter/chargemode",
+                          Chargemode_enum.TIME_CHARGING.value)
             else:
                 self.data.control_parameter.chargemode = Chargemode_enum(self.charge_template.data.chargemode.selected)
                 Pub().pub("openWB/set/vehicle/"+str(self.num)+"/control_parameter/chargemode",
