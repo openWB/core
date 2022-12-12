@@ -358,36 +358,11 @@ class Ev:
         """
         mode_changed = False
 
-        if self.data.control_parameter.chargemode != chargemode_log_entry:
+        if self.data.control_parameter.chargemode.value != chargemode_log_entry:
             mode_changed = True
 
         log.debug(f"Änderung des Lademodus :{mode_changed}")
         return mode_changed
-
-    def check_if_current_changed(self, required_current: float, set_current: float) -> bool:
-        """ prüft, ob sich etwas an den Parametern für die Regelung geändert hat,
-        sodass der LP neu in die Priorisierung eingeordnet werden muss und veröffentlicht die Regelparameter.
-        """
-        current_changed = False
-        # Die benötigte Stromstärke hat sich durch eine Änderung des Lademodus oder der Konfiguration geändert.
-        # Der Ladepunkt muss in der Regelung neu priorisiert werden.
-        if self.data.control_parameter.required_current != required_current:
-            # Wenn im PV-Laden mit übrigem Überschuss geladen wird und dadurch die aktuelle Soll-Stromstärke über
-            # der neuen benötigten Stromstärke liegt, muss der LP im Algorithmus nicht neu eingeordnet werden, da
-            # der LP mit der bisherigen Stormstärke weiter laden kann und sich die benötigte Stromstärke nur auf
-            # die Reihenfolge innerhalb des Prioritäten-Tupels bezieht und auf dieser Ebene kein LP, der bereits
-            # lädt, für einen neu hinzugekommenen abgeschaltet werden darf. Wenn sich auch der Lademodus geändert
-            # hat, muss die neue Stromstärke in jedem Fall berücksichtigt werden.
-            if ((self.charge_template.data.chargemode.selected == "pv_charging" or
-                    self.charge_template.data.chargemode.selected == "scheduled_charging") and
-                    ((self.data.control_parameter.submode == "pv_charging" or
-                        self.data.control_parameter.chargemode == "pv_charging") and
-                        set_current > self.data.control_parameter.required_current)):
-                current_changed = False
-            else:
-                current_changed = True
-        log.debug(f"Änderung der Sollstromstärke :{current_changed}")
-        return current_changed
 
     def set_control_parameter(self, submode, required_current):
         """ setzt die Regel-Parameter, die der Algorithmus verwendet.

@@ -810,34 +810,14 @@ class Chargepoint:
                     # Einhaltung des Minimal- und Maximalstroms prüfen
                     required_current = charging_ev.check_min_max_current(
                         required_current, charging_ev.data.control_parameter.phases)
-                    current_changed = charging_ev.check_if_current_changed(required_current, self.data.set.current)
                     charging_ev.set_control_parameter(submode, required_current)
                     mode_changed = charging_ev.check_if_mode_changed(self.data.set.log.chargemode_log_entry)
                     self.set_required_currents(required_current)
 
-                    # Die benötigte Stromstärke hat sich durch eine Änderung des Lademodus oder der
-                    # Konfiguration geändert. Die Zuteilung entsprechend der Priorisierung muss neu geprüft
-                    # werden. Daher muss der LP zurückgesetzt werden, wenn er gerade lädt, um in der Regelung
-                    # wieder berücksichtigt zu werden.
-                    if current_changed:
-                        log.debug(f"LP{self.num}: Da sich die Stromstärke geändert hat, muss der Ladepunkt im "
-                                  "Algorithmus neu priorisiert werden.")
+                    if mode_changed:
                         data.data.counter_all_data.get_evu_counter().reset_switch_on_off(
                             self, charging_ev)
                         charging_ev.reset_phase_switch()
-                        min_charge_current = self.data.set.current - \
-                            charging_ev.ev_template.data.nominal_difference
-                        if max(self.data.get.currents) > min_charge_current:
-                            self.data.set.current = 0
-                        else:
-                            # Wenn nicht geladen wird, obwohl geladen werde kann, soll das EV im Algorithmus
-                            # nicht berücksichtigt werden. Wenn der Soll-Strom gesetzt ist, wird das EV nur im
-                            # LM berücksichtigt.
-                            self.data.set.current = required_current
-                        # Da nicht bekannt ist, ob mit Bezug, Überschuss oder aus dem Speicher geladen wird,
-                        # wird die freiwerdende Leistung erst im nächsten Durchlauf berücksichtigt. Ggf.
-                        # entsteht so eine kurze Unterbrechung der Ladung, wenn während dem Laden
-                        # umkonfiguriert wird.
                     message = message_ev if message_ev else message
                     # Ein Eintrag muss nur erstellt werden, wenn vorher schon geladen wurde und auch danach noch
                     # geladen werden soll.
