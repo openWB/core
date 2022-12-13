@@ -2,12 +2,8 @@
 
 from typing import Union
 import logging
-# import os
-# import json
-# import time
 import datetime
 import jwt
-# from modules.common.store import RAMDISK_PATH
 from helpermodules.pub import Pub
 
 initialToken = '1.2.3'
@@ -20,18 +16,6 @@ class socUtils:
     def __init__(self):
         pass
 
-#    def dump_json(self, data: dict, fout: str):
-#        if log.getEffectiveLevel() < 20:
-#            self.jsonFile = str(RAMDISK_PATH) + '/' + fout
-#            try:
-#                self.f = open(self.jsonFile, 'w', encoding='utf-8')
-#            except Exception as e:
-#                log.debug("vwid.dump_json: chmod File" + self.jsonFile + ", exception, e=" + str(e))
-#                os.system("sudo rm " + self.jsonFile)
-#                self.f = open(self.jsonFile, 'w', encoding='utf-8')
-#            json.dump(data, self.f, ensure_ascii=False, indent=4)
-#            self.f.close()
-#
     def read_token_file(self, path: str) -> str:
         try:
             self.tf = open(path, "r")           # try to open Token file
@@ -50,18 +34,18 @@ class socUtils:
         except Exception as e:
             log.exception('Token file write exception ' + str(e))
 
-    def write_token_mqtt(self, topic: str, token: str, name: str, config={}):
+    def write_token_mqtt(self, topic: str, token: str, config={}):
         try:
-            config['configuration'][name] = token
+            config['configuration']['refreshToken'] = token
             # log.debug("write_token.mqtt: " + json.dumps(config, ensure_ascii=False, indent=4))
             Pub().pub(topic, config)
         except Exception as e:
             log.exception('Token mqtt write exception ' + str(e))
 
-    def get_token_expiration(self, token: str, expName: str, fmt: str) -> Union[int, str]:
+    def get_token_expiration(self, token: str, fmt: str) -> Union[int, str]:
         try:
             self.token_dec = jwt.decode(token, 'utf-8', options={"verify_signature": False})
-            self.exp = self.token_dec[expName]
+            self.exp = self.token_dec['exp']
             self.exp_dt = datetime.datetime.fromtimestamp(self.exp).strftime(fmt)
         except Exception as e:
             log.exception('get_token_expiration error ' + str(e))
@@ -69,3 +53,18 @@ class socUtils:
             self.exp_dt = None
 
         return self.exp, self.exp_dt
+
+    def keys_exist(self, element, *keys):
+        # Check if *keys (nested) exists in `element` (dict).
+        if not isinstance(element, dict):
+            raise AttributeError('keys_exists() expects dict as first argument.')
+        if len(keys) == 0:
+            raise AttributeError('keys_exists() expects at least two arguments, one given.')
+
+        _element = element
+        for key in keys:
+            try:
+                _element = _element[key]
+            except KeyError:
+                return False
+        return True

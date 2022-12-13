@@ -5,9 +5,7 @@ from typing import Union
 from modules.vehicles.vwid import libvwid
 import aiohttp
 import asyncio
-# import datetime
 import time
-# import jwt
 import json
 from modules.common.store import RAMDISK_PATH
 from modules.vehicles.vwid.config import VWId
@@ -42,6 +40,7 @@ class api:
             self.w = libvwid.vwid(self.session)
             self.w.set_vin(self.vin)
             self.w.set_credentials(self.user_id, self.password)
+            self.w.set_jobs(['charging'])
             self.w.tokens = {}
             self.w.headers = {}
 
@@ -54,7 +53,7 @@ class api:
                     self.w.tokens['refreshToken'] = self.refreshToken
 
             except Exception:
-                log.exception("refreshToken initialization exception: set refreshToken_old to initial value")
+                log.debug("refreshToken initialization exception: set refreshToken_old to initial value")
                 self.w.tokens['refreshToken'] = initialToken
 
             self.refreshTokenOld = self.w.tokens['refreshToken']   # remember current refreshToken
@@ -70,19 +69,19 @@ class api:
             # get status from VW server
             self.data = await self.w.get_status()
             if (self.data):
-                try:
-                    if self.data['error'] != {}:
-                        log.error("server error: \n" + json.dumps(self.data['error'], ensure_ascii=False, indent=4))
-                    if self.data['data'] != {}:
-                        log.debug("batteryStatus: \n" +
-                                  json.dumps(self.data['data']['batteryStatus'], ensure_ascii=False, indent=4))
-                except Exception as e:
-                    log.error("response decode error: " + str(e))
-                    log.error("response: \n" + json.dumps(self.data, ensure_ascii=False, indent=4))
+                if self.su.keys_exist(self.data, 'userCapabilities', 'capabilitiesStatus', 'error'):
+                    log.error("server error: \n"
+                              + json.dumps(self.data['userCapabilities']['capabilitiesStatus']['error'],
+                                           ensure_ascii=False, indent=4))
+
+                if self.su.keys_exist(self.data, 'charging', 'batteryStatus'):
+                    log.info("batteryStatus: \n" +
+                             json.dumps(self.data['charging']['batteryStatus'],
+                                        ensure_ascii=False, indent=4))
 
                 try:
-                    self.soc = (self.data['data']['batteryStatus']['currentSOC_pct'])
-                    self.range = float(self.data['data']['batteryStatus']['cruisingRangeElectric_km'])
+                    self.soc = (self.data['charging']['batteryStatus']['value']['currentSOC_pct'])
+                    self.range = float(self.data['charging']['batteryStatus']['value']['cruisingRangeElectric_km'])
                 except Exception as e:
                     log.debug("soc/range field missing exception: e=" + str(e))
                     self.soc = 0
@@ -94,13 +93,7 @@ class api:
 
                 if self.refreshTokenOld != initialToken:
                     try:
-                        # self.refreshTokenOld_dec =\
-                        #     jwt.decode(self.refreshTokenOld, 'utf-8', options={"verify_signature": False})
-                        # self.expOld = self.refreshTokenOld_dec['exp']
-                        # self.expOld_dt = datetime.datetime.fromtimestamp(self.expOld).strftime(date_fmt)
-
-                        self.expOld, self.expOld_dt =\
-                            self.su.get_token_expiration(self.refreshTokenOld, 'exp', date_fmt)
+                        self.expOld, self.expOld_dt = self.su.get_token_expiration(self.refreshTokenOld, date_fmt)
                         self.now = int(time.time())
                         expirationThreshold = self.expOld - refreshToken_exp_days * 86400
 
@@ -119,13 +112,7 @@ class api:
 
                 if self.store_refreshToken:          # refreshToken needs to be stored in config json
                     try:
-                        # self.refreshTokenNew_dec =\
-                        #     jwt.decode(self.refreshTokenNew, 'utf-8', options={"verify_signature": False})
-                        # self.expNew = self.refreshTokenNew_dec['exp']
-                        # self.expNew_dt = datetime.datetime.fromtimestamp(self.expNew).strftime(date_fmt)
-
-                        self.expNew, self.expNew_dt =\
-                            self.su.get_token_expiration(self.refreshTokenNew, 'exp', date_fmt)
+                        self.expNew, self.expNew_dt = self.su.get_token_expiration(self.refreshTokenNew, date_fmt)
                         log.debug("store new refreshToken, expires on " + self.expNew_dt)
                     except Exception as e:
                         log.debug("new refreshToken decode exception, e=" + str(e))
@@ -137,7 +124,6 @@ class api:
                     self.su.write_token_mqtt(
                                              "openWB/set/vehicle/" + vehicle + "/soc_module/config",
                                              self.refreshTokenNew,
-                                             'refreshToken',
                                              conf.__dict__)
 
                 if (self.w.tokens['accessToken'] != self.accessTokenOld):  # modified accessToken?
