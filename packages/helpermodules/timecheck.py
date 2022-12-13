@@ -9,40 +9,6 @@ from helpermodules.abstract_plans import AutolockPlan, ScheduledChargingPlan, Ti
 log = logging.getLogger(__name__)
 
 
-def set_date(now: datetime.datetime,
-             begin: datetime.datetime,
-             end: datetime.datetime) -> Tuple[Optional[datetime.datetime], Optional[datetime.datetime]]:
-    """ setzt das Datum auf das heutige Datum, bzw. falls der Endzeitpunkt am nächsten Tag ist, auf morgen
-    """
-    try:
-        begin = begin.replace(now.year, now.month, now.day)
-        end = end.replace(now.year, now.month, now.day)
-        if begin > end:
-            # Endzeit ist am nächsten Tag
-            end = end + datetime.timedelta(days=1)
-        return begin, end
-    except Exception:
-        log.exception("Fehler im System-Modul")
-        return None, None
-
-
-def is_timeframe_valid(now: datetime.datetime, begin: datetime.datetime, end: datetime.datetime) -> bool:
-    """ überprüft, ob das Zeitfenster des Ladeplans aktuell ist.
-    Returns
-    -------
-    True : aktuell
-    False : nicht aktuell
-    """
-    try:
-        if (not (now < begin)) and ((now < end)):
-            return True
-        else:
-            return False
-    except Exception:
-        log.exception("Fehler im System-Modul")
-        return False
-
-
 def is_now_in_locking_time(now: datetime.datetime,
                            lock: datetime.datetime,
                            unlock: datetime.datetime) -> bool:
@@ -77,24 +43,15 @@ T = TypeVar("T", AutolockPlan, TimeChargingPlan)
 
 
 def check_plans_timeframe(plans: Dict[int, T]) -> Optional[T]:
-    """ geht alle Pläne durch.
-
-    Parameters
-    ----------
-    plans: Dictionary
-        Liste der Pläne, deren Zeitfenster geprüft werden sollen
-
-    Returns
-    -------
-    plan: erster aktiver Plan
-    None: falls kein Plan aktiv ist
+    """ gibt den ersten aktiven Plan zurück. None, falls kein Plan aktiv ist.
     """
     state = False
     try:
         for plan in plans.values():
-            state = check_timeframe(plan)
-            if state:
-                return plan
+            if plan.active:
+                state = check_timeframe(plan)
+                if state:
+                    return plan
         else:
             return None
     except Exception:
@@ -102,84 +59,51 @@ def check_plans_timeframe(plans: Dict[int, T]) -> Optional[T]:
         return None
 
 
-def check_timeframe(plan: Union[ScheduledChargingPlan, TimeChargingPlan], hours: Optional[int] = None):
-    """ schaut, ob Pläne aktiv sind, prüft, ob das Zeitfenster aktuell ist.
-
-    Parameters
-    ----------
-    plan: Dictionary
-        Plan dessen Zeitfenster geprüft werden soll
-    hours = None: int
-        Stunden, die der Beginn vorher liegen soll; Werden keine Stunden angegeben, wird der Beginn dem Dictionary
-        entnommen.
-
-    Returns
-    -------
-    True: Zeitfenster gültig
-    False: Zeitfenster nicht gültig
+def check_timeframe(plan: Union[AutolockPlan, TimeChargingPlan]) -> bool:
+    """ Returns: True -> Zeitfenster gültig, False -> Zeitfenster nicht gültig
     """
-    state = None
+    def is_timeframe_valid(now: datetime.datetime, begin: datetime.datetime, end: datetime.datetime) -> bool:
+        return True if (not now < begin) and now < end else False
+
+    state = False
     try:
-        if plan.active:
-            now = datetime.datetime.today()
-            if hours is None:
-                begin = datetime.datetime.strptime(plan.time[0], '%H:%M')
-                end = datetime.datetime.strptime(plan.time[1], '%H:%M')
-            else:
-                end = datetime.datetime.strptime(plan.time, '%H:%M')
+        now = datetime.datetime.today()
+        begin = datetime.datetime.strptime(plan.time[0], '%H:%M')
+        end = datetime.datetime.strptime(plan.time[1], '%H:%M')
 
-            if plan.frequency.selected == "once":
-                if hours is None:
-                    beginDate = datetime.datetime.strptime(plan.frequency.once[0], "%Y-%m-%d")
-                    begin = begin.replace(beginDate.year, beginDate.month,
-                                          beginDate.day)
-                    endDate = datetime.datetime.strptime(plan.frequency.once[1], "%Y-%m-%d")
-                else:
-                    endDate = datetime.datetime.strptime(plan.frequency.once, "%Y-%m-%d")
-                    end = end.replace(endDate.year, endDate.month, endDate.day)
-                    begin = _calc_begin(end, hours)
-                end = end.replace(endDate.year, endDate.month, endDate.day)
-                state = is_timeframe_valid(now, begin, end)
+        if plan.frequency.selected == "once":
+            beginDate = datetime.datetime.strptime(plan.frequency.once[0], "%Y-%m-%d")
+            begin = begin.replace(beginDate.year, beginDate.month, beginDate.day)
+            endDate = datetime.datetime.strptime(plan.frequency.once[1], "%Y-%m-%d")
+            end = end.replace(endDate.year, endDate.month, endDate.day)
+            state = is_timeframe_valid(now, begin, end)
 
-            elif plan.frequency.selected == "daily":
-                if hours is None:
-                    begin, end = set_date(now, begin, end)
+        else:
+            begin = begin.replace(now.year, now.month, now.day)
+            end = end.replace(now.year, now.month, now.day)
+            day_change = begin > end
+            if day_change:
+                # Endzeit ist am nächsten Tag, in Zeitabschnitt vor und nach Mitternacht einteilen
+                state_before_midnight = is_timeframe_valid(now, begin, now.replace(day=now.day+1, hour=0, minute=0))
+                state_after_midnight = is_timeframe_valid(now, now.replace(hour=0, minute=0), end)
+
+            if plan.frequency.selected == "daily":
+                if day_change:
+                    state = state_before_midnight or state_after_midnight
                 else:
-                    end = end.replace(now.year, now.month, now.day)
-                    # Wenn der Zeitpunkt an diesem Tag schon vorüber ist, nächsten Tag prüfen.
-                    if end < now:
-                        end += datetime.timedelta(days=1)
-                    begin = _calc_begin(end, hours)
-                state = is_timeframe_valid(now, begin, end)
+                    state = is_timeframe_valid(now, begin, end)
 
             elif plan.frequency.selected == "weekly":
-                if hours is None:
-                    if begin < end:
-                        # Endzeit ist am gleichen Tag
-                        if plan.frequency.weekly[now.weekday()]:
-                            begin, end = set_date(now, begin, end)
-                            state = is_timeframe_valid(now, begin, end)
-                        else:
-                            state = False
-                    else:
-                        if (plan.frequency.weekly[now.weekday()]
-                                or plan.frequency.weekly[now.weekday() +
-                                                         1]):
-                            begin, end = set_date(now, begin, end)
-                            state = is_timeframe_valid(now, begin, end)
-                        else:
-                            state = False
+                if day_change:
+                    state = ((state_before_midnight and plan.frequency.weekly[now.weekday()]) or
+                             (state_after_midnight and plan.frequency.weekly[now.weekday() - 1]))
                 else:
                     if plan.frequency.weekly[now.weekday()]:
-                        end = end.replace(now.year, now.month, now.day)
-                        begin = _calc_begin(end, hours)
                         state = is_timeframe_valid(now, begin, end)
-                    else:
-                        state = False
     except Exception:
         log.exception("Fehler im System-Modul")
-        return None
-    return state
+    finally:
+        return state
 
 
 def _calc_begin(end: datetime.datetime, hours: int) -> datetime.datetime:
