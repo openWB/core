@@ -553,26 +553,29 @@ class SetData:
                 self._validate_value(msg, float)
             elif "openWB/set/pv/set/available_power" in msg.topic:
                 self._validate_value(msg, float)
-            elif "/get/fault_state" in msg.topic:
-                self._validate_value(msg, int, [(0, 2)])
-            elif "/get/fault_str" in msg.topic:
-                self._validate_value(msg, str)
-            elif ("/get/daily_exported" in msg.topic or
-                    "/get/monthly_exported" in msg.topic or
-                    "/get/yearly_exported" in msg.topic or
-                    "/get/energy" in msg.topic):
-                self._validate_value(msg, float, [(0, float("inf"))])
-            elif "/get/exported" in msg.topic:
-                self._validate_value(msg, float, [(0, float("inf"))])
-            elif "/get/power" in msg.topic:
-                self._validate_value(msg, float, [(float("-inf"), 0)])
-            elif "/get/currents" in msg.topic:
-                self._validate_value(
-                    msg, float, [(float("-inf"), 0)], collection=list)
             elif "/config/max_ac_out" in msg.topic:
                 self._validate_value(msg, int, [(0, float("inf"))])
+            elif subdata.SubData.pv_data.get(f"pv{get_index(msg.topic)}"):
+                if "/get/fault_state" in msg.topic:
+                    self._validate_value(msg, int, [(0, 2)])
+                elif "/get/fault_str" in msg.topic:
+                    self._validate_value(msg, str)
+                elif ("/get/daily_exported" in msg.topic or
+                        "/get/monthly_exported" in msg.topic or
+                        "/get/yearly_exported" in msg.topic or
+                        "/get/energy" in msg.topic):
+                    self._validate_value(msg, float, [(0, float("inf"))])
+                elif "/get/exported" in msg.topic:
+                    self._validate_value(msg, float, [(0, float("inf"))])
+                elif "/get/power" in msg.topic:
+                    self._validate_value(msg, float, [(float("-inf"), 0)])
+                elif "/get/currents" in msg.topic:
+                    self._validate_value(
+                        msg, float, [(float("-inf"), 0)], collection=list)
+                else:
+                    self.__unknown_topic(msg)
             else:
-                self.__unknown_topic(msg)
+                log.warning(f"Kein Wechselrichter {get_index(msg.topic)} mit gültiger Konfiguration gefunden.")
         except Exception:
             log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 
@@ -604,19 +607,22 @@ class SetData:
                 self._validate_value(msg, "json")
             elif "/get/power" in msg.topic:
                 self._validate_value(msg, float)
-            elif ("/get/imported" in msg.topic or
-                    "/get/exported" in msg.topic or
-                    "/get/daily_exported" in msg.topic or
-                    "/get/daily_imported" in msg.topic):
-                self._validate_value(msg, float, [(0, float("inf"))])
-            elif "/get/soc" in msg.topic:
-                self._validate_value(msg, float, [(0, 100)])
-            elif "/get/fault_state" in msg.topic:
-                self._validate_value(msg, int, [(0, 2)])
-            elif "/get/fault_str" in msg.topic:
-                self._validate_value(msg, str)
+            elif subdata.SubData.bat_data.get(f"bat{get_index(msg.topic)}"):
+                if ("/get/imported" in msg.topic or
+                        "/get/exported" in msg.topic or
+                        "/get/daily_exported" in msg.topic or
+                        "/get/daily_imported" in msg.topic):
+                    self._validate_value(msg, float, [(0, float("inf"))])
+                elif "/get/soc" in msg.topic:
+                    self._validate_value(msg, float, [(0, 100)])
+                elif "/get/fault_state" in msg.topic:
+                    self._validate_value(msg, int, [(0, 2)])
+                elif "/get/fault_str" in msg.topic:
+                    self._validate_value(msg, str)
+                else:
+                    self.__unknown_topic(msg)
             else:
-                self.__unknown_topic(msg)
+                log.warning(f"Kein Speicher {get_index(msg.topic)} mit gültiger Konfiguration gefunden.")
         except Exception:
             log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 
@@ -772,35 +778,38 @@ class SetData:
                 self._validate_value(msg, int, [(7, 1500)], collection=list)
             elif "/config/max_total_power" in msg.topic:
                 self._validate_value(msg, int, [(2000, 1000000)])
-            elif ("/get/powers" in msg.topic or
-                    "/get/currents" in msg.topic):
-                self._validate_value(
-                    msg, float, collection=list)
-            elif ("/get/voltages" in msg.topic):
-                self._validate_value(
-                    msg, float, [(0, 500)], collection=list)
-            elif ("/get/power_factors" in msg.topic):
-                self._validate_value(
-                    msg, float, [(-1, 1)], collection=list)
-            elif ("/get/power_average" in msg.topic
-                    or "/get/unbalanced_load" in msg.topic
-                    or "/get/frequency" in msg.topic
-                    or "/get/daily_exported" in msg.topic
-                    or "/get/daily_imported" in msg.topic
-                    or "/get/imported" in msg.topic
-                    or "/get/exported" in msg.topic):
-                self._validate_value(
-                    msg, float, [(0, float("inf"))])
-            elif "/get/fault_state" in msg.topic:
-                self._validate_value(msg, int, [(0, 2)])
-            elif ("/get/fault_str" in msg.topic or
-                  "/set/state_str" in msg.topic):
-                self._validate_value(msg, str)
-            elif "/get/power" in msg.topic:
-                self._validate_value(
-                    msg, float, [(float("-inf"), float("inf"))])
+            elif subdata.SubData.counter_data.get(f"counter{get_index(msg.topic)}"):
+                if ("/get/powers" in msg.topic or
+                        "/get/currents" in msg.topic):
+                    self._validate_value(
+                        msg, float, collection=list)
+                elif ("/get/voltages" in msg.topic):
+                    self._validate_value(
+                        msg, float, [(0, 500)], collection=list)
+                elif ("/get/power_factors" in msg.topic):
+                    self._validate_value(
+                        msg, float, [(-1, 1)], collection=list)
+                elif ("/get/power_average" in msg.topic
+                        or "/get/unbalanced_load" in msg.topic
+                        or "/get/frequency" in msg.topic
+                        or "/get/daily_exported" in msg.topic
+                        or "/get/daily_imported" in msg.topic
+                        or "/get/imported" in msg.topic
+                        or "/get/exported" in msg.topic):
+                    self._validate_value(
+                        msg, float, [(0, float("inf"))])
+                elif "/get/fault_state" in msg.topic:
+                    self._validate_value(msg, int, [(0, 2)])
+                elif ("/get/fault_str" in msg.topic or
+                      "/set/state_str" in msg.topic):
+                    self._validate_value(msg, str)
+                elif "/get/power" in msg.topic:
+                    self._validate_value(
+                        msg, float, [(float("-inf"), float("inf"))])
+                else:
+                    self.__unknown_topic(msg)
             else:
-                self.__unknown_topic(msg)
+                log.warning(f"Kein Zähler {get_index(msg.topic)} mit gültiger Konfiguration gefunden.")
         except Exception:
             log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 
