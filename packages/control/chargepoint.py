@@ -463,6 +463,10 @@ class Chargepoint:
         except Exception:
             log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.num))
             return False, "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
+        if self.data.get.rfid:
+            message += (f"\n RFID-Tag {self.data.get.rfid} kann erst einem EV zugeordnet werden, wenn der Ladepunkt"
+                        " nicht mehr gesperrt ist. Wenn nach dem Scannen nicht innerhalb von 5 Minuten ein Auto"
+                        " angesteckt wird, wird der RFID-Tag verworfen.")
         return charging_possible, message
 
     def _process_charge_stop(self) -> None:
@@ -738,7 +742,8 @@ class Chargepoint:
                                   self.data.get.rfid_timestamp)
                         return
                     else:
-                        if timecheck.check_timestamp(self.data.get.rfid_timestamp, 300):
+                        if (timecheck.check_timestamp(self.data.get.rfid_timestamp, 300) or
+                                self.data.get.plug_state is True):
                             return
                         else:
                             self.data.get.rfid_timestamp = None
