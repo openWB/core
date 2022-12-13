@@ -1,11 +1,11 @@
 import datetime
 from typing import List, Optional, Union
-from unittest.mock import Mock
+from unittest.mock import MagicMock, Mock
 import pytest
 
 from control.ev import ChargeTemplate
 from helpermodules import timecheck
-from helpermodules.abstract_plans import Frequency, ScheduledChargingPlan
+from helpermodules.abstract_plans import AutolockPlan, Frequency, ScheduledChargingPlan, TimeChargingPlan
 
 
 class Params:
@@ -139,3 +139,58 @@ def test_missed_date_today(now: datetime.datetime, end: datetime.datetime, expec
 
     # evaluation
     assert missed == expected_missed
+
+
+@pytest.mark.parametrize(
+    "plan, now, expected_state",
+    [pytest.param(TimeChargingPlan(active=True, time=["10:00", "12:00"],
+                                   frequency=Frequency(selected="once", once=["2022-05-16", "2022-05-16"])),
+                  "2022-05-16 9:50", False, id="once, 10-12 at 9.50"),
+     pytest.param(TimeChargingPlan(active=True, time=["10:00", "12:00"],
+                                   frequency=Frequency(selected="once", once=["2022-05-16", "2022-05-16"])),
+                  "2022-05-16 10:50", True, id="once, 10-12 at 10.50"),
+     pytest.param(TimeChargingPlan(active=True, time=["10:00", "12:00"],
+                                   frequency=Frequency(selected="once", once=["2022-05-16", "2022-05-16"])),
+                  "2022-05-16 13:50", False, id="once, 10-12 at 13.50"),
+     pytest.param(TimeChargingPlan(active=True, time=["10:00", "12:00"], frequency=Frequency(selected="daily")),
+                  "2022-05-16 11:50", True, id="daily, 10-12 at 11.50"),
+     pytest.param(TimeChargingPlan(active=True, time=["22:00", "2:00"], frequency=Frequency(selected="daily")),
+                  "2022-05-16 22:50", True, id="daily, 22-02 at 22.50"),
+     pytest.param(TimeChargingPlan(active=True, time=["22:00", "2:00"], frequency=Frequency(selected="daily")),
+                  "2022-05-17 1:50", True, id="daily, 22-02 at 1.50"),
+     pytest.param(TimeChargingPlan(active=True, time=["22:00", "2:00"], frequency=Frequency(selected="daily")),
+                  "2022-05-17 2:50", False, id="daily, 22-02 at 2.50"),
+     pytest.param(TimeChargingPlan(active=True, time=["10:00", "12:00"],
+                                   frequency=Frequency(selected="weekly", weekly=[1, 0, 0, 0, 0, 0, 0])),
+                  "2022-05-16 10:50", True, id="weekly, 10-12 at 10.50"),
+     pytest.param(TimeChargingPlan(active=True, time=["10:00", "12:00"],
+                                   frequency=Frequency(selected="weekly", weekly=[0, 1, 0, 0, 0, 0, 0])),
+                  "2022-05-16 10:50", False, id="weekly, 10-12 at 10.50"),
+     pytest.param(TimeChargingPlan(active=True, time=["22:00", "2:00"],
+                                   frequency=Frequency(selected="weekly", weekly=[1, 0, 0, 0, 0, 0, 0])),
+                  "2022-05-16 22:50", True, id="weekly, 22-02 at 22.50"),
+     pytest.param(TimeChargingPlan(active=True, time=["22:00", "2:00"],
+                                   frequency=Frequency(selected="weekly", weekly=[1, 0, 0, 0, 0, 0, 0])),
+                  "2022-05-17 1:50", True, id="weekly, 22-02 at 1.50"),
+     pytest.param(TimeChargingPlan(active=True, time=["22:00", "2:00"],
+                                   frequency=Frequency(selected="weekly", weekly=[1, 0, 0, 0, 0, 0, 0])),
+                  "2022-05-16 1:50", False, id="weekly, 22-02 at 1.50, weekday before"),
+     pytest.param(TimeChargingPlan(active=True, time=["22:00", "2:00"],
+                                   frequency=Frequency(selected="weekly", weekly=[1, 0, 0, 0, 0, 0, 0])),
+                  "2022-05-18 1:50", False, id="weekly, 22-02 at 1.50, weekday after"),
+     pytest.param(TimeChargingPlan(active=True, time=["22:00", "2:00"],
+                                   frequency=Frequency(selected="weekly", weekly=[1, 0, 0, 0, 0, 0, 0])),
+                  "2022-05-17 2:50", False, id="weekly, 22-02 at 2.50"),
+     ]
+)
+def test_check_timeframe(plan: Union[AutolockPlan, TimeChargingPlan], now: str, expected_state: bool, monkeypatch):
+    # setup
+    datetime_mock = MagicMock(wraps=datetime.datetime)
+    datetime_mock.today.return_value = datetime.datetime.strptime(now, "%Y-%m-%d %H:%M")
+    monkeypatch.setattr(datetime, "datetime", datetime_mock)
+
+    # execution
+    state = timecheck.check_timeframe(plan)
+
+    # evaluation
+    assert state == expected_state
