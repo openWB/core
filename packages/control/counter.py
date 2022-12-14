@@ -8,6 +8,7 @@ from control.chargepoint import Chargepoint
 from helpermodules import timecheck
 from helpermodules.phase_mapping import convert_cp_currents_to_evu_currents
 from helpermodules.pub import Pub
+from modules.common.component_type import ComponentType
 from modules.common.fault_state import FaultStateLevel
 
 log = logging.getLogger(__name__)
