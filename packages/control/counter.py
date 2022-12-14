@@ -192,7 +192,7 @@ class Counter:
             if control_parameter.timestamp_switch_on_off is not None:
                 # Wurde die Einschaltschwelle erreicht? Reservierte Leistung aus all_surplus rausrechnen,
                 # da diese Leistung ja schon reserviert wurde, als die Einschaltschwelle erreicht wurde.
-                if not((not feed_in_limit and
+                if not ((not feed_in_limit and
                         surplus + required_power > pv_config.switch_on_threshold*control_parameter.phases) or
                         (feed_in_limit and
                             surplus + required_power >= feed_in_yield)):
