@@ -201,4 +201,4 @@ def test_convert_to_unix_timestamp():
     unix_timestamp = timecheck.convert_to_unix_timestamp("10/31/2022, 07:00:00")
 
     # evaluation
-    assert unix_timestamp == 1667196000
+    assert unix_timestamp == 1667196000.0
