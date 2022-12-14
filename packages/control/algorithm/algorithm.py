@@ -73,7 +73,8 @@ class Algorithm:
                         phases, current, message = charging_ev.auto_phase_switch(
                             cp.num,
                             cp.data.get.currents,
-                            cp.data.get.power)
+                            cp.data.get.power,
+                            cp.template.data.max_current_single_phase)
                         if message is not None:
                             cp.data.get.state_str = message
                         # Nachdem im Automatikmodus die Anzahl Phasen bekannt ist, Einhaltung des Maximalstroms
