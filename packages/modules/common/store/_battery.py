@@ -14,8 +14,7 @@ class BatteryValueStoreRamdisk(ValueStore[BatState]):
     def set(self, bat_state: BatState):
         try:
             files.battery.power.write(bat_state.power)
-            if bat_state.soc:
-                files.battery.soc.write(bat_state.soc)
+            files.battery.soc.write(bat_state.soc)
             files.battery.energy_imported.write(bat_state.imported)
             files.battery.energy_exported.write(bat_state.exported)
         except Exception as e:
@@ -32,8 +31,7 @@ class BatteryValueStoreBroker(ValueStore[BatState]):
     def update(self):
         try:
             pub_to_broker("openWB/set/bat/"+str(self.num)+"/get/power", self.state.power, 2)
-            if self.state.soc:
-                pub_to_broker("openWB/set/bat/"+str(self.num)+"/get/soc", self.state.soc, 0)
+            pub_to_broker("openWB/set/bat/"+str(self.num)+"/get/soc", self.state.soc, 0)
             pub_to_broker("openWB/set/bat/"+str(self.num)+"/get/imported", self.state.imported, 2)
             pub_to_broker("openWB/set/bat/"+str(self.num)+"/get/exported", self.state.exported, 2)
         except Exception as e:
