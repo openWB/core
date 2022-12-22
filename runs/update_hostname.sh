@@ -1,5 +1,5 @@
 #!/bin/bash
-if (( $# != 1 )); then
+if (($# != 1)); then
 	echo "ERROR: no new hostname provided!"
 	exit 1
 fi
@@ -8,7 +8,7 @@ newHostname=$1
 echo "changing hostname to $newHostname..."
 sudo hostname "$newHostname"
 touch /tmp/tmphostname
-echo "$newHostname" > /tmp/tmphostname
+echo "$newHostname" >/tmp/tmphostname
 sudo mv /tmp/tmphostname /etc/hostname
 sudo sed -i "s/127.0.1.1.*/127.0.1.1    $newHostname/" /etc/hosts
 # generate new default cert

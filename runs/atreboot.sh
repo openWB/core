@@ -1,7 +1,7 @@
 #!/bin/bash
 OPENWBBASEDIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 
-# setup logfile
+# setup log file
 LOGFILE="${OPENWBBASEDIR}/ramdisk/main.log"
 touch "$LOGFILE"
 chmod 666 "$LOGFILE"
@@ -22,7 +22,7 @@ chmod 666 "$LOGFILE"
 
 	if ! id -u openwb >/dev/null 2>&1; then
 		echo "user 'openwb' missing"
-		echo "starting upgrade skript..."
+		echo "starting upgrade script..."
 		"$OPENWBBASEDIR/runs/upgrade2openwbuser.sh" >>"${OPENWBBASEDIR}/data/log/update.log" 2>&1
 	fi
 
@@ -61,7 +61,7 @@ chmod 666 "$LOGFILE"
 		# remove flag to prevent a boot loop on failure
 		rm "${OPENWBBASEDIR}/data/restore/run_on_boot"
 		"${OPENWBBASEDIR}/runs/restore.sh"
-		# restore.sh will reboot if successfull
+		# restore.sh will reboot if successful
 	else
 		echo "no restore pending, normal startup"
 	fi
