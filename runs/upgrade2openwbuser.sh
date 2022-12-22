@@ -3,7 +3,7 @@ OPENWBBASEDIR=/var/www/html/openWB
 OPENWB_USER=openwb
 OPENWB_GROUP=openwb
 
-if (( $(id -u) != 0 )); then
+if (($(id -u) != 0)); then
 	echo "this script has to be run as user root or with sudo"
 	exit 1
 fi
@@ -27,7 +27,7 @@ echo "done"
 # The user "openwb" is still new and we might need sudo in many places. Thus for now we give the user
 # unrestricted sudo. This should be restricted in the future
 echo "adding new user to sudoers"
-echo "$OPENWB_USER ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/openwb
+echo "$OPENWB_USER ALL=(ALL) NOPASSWD: ALL" >/etc/sudoers.d/openwb
 chmod 440 /etc/sudoers.d/openwb
 echo "done"
 

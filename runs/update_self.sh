@@ -7,7 +7,7 @@ DEFAULTTAG="*HEAD*"
 # ToDo: honor selected tag
 SELECTEDTAG=$2
 
-echo "#### running update ####" > "$LOGFILE"
+echo "#### running update ####" >"$LOGFILE"
 
 {
 	# fetch new release from GitHub
@@ -33,4 +33,4 @@ echo "#### running update ####" > "$LOGFILE"
 	# now reboot system
 	echo "#### 4. rebooting system ####"
 	sudo reboot now &
-} >> "$LOGFILE" 2>&1
+} >>"$LOGFILE" 2>&1

@@ -11,13 +11,12 @@ LOGFILE="$OPENWBBASEDIR/data/log/restore.log"
 	echo "$(date +"%Y-%m-%d %H:%M:%S") Restore of backup started..."
 	echo "****************************************"
 	echo "Step 1: validating extracted files"
-	if [[ ! -f "$WORKINGDIR/SHA256SUM" ]] || \
-		[[ ! -f "$WORKINGDIR/GIT_BRANCH" ]] || \
-		[[ ! -f "$WORKINGDIR/GIT_HASH" ]] || \
-		[[ ! -d "$WORKINGDIR/openWB" ]] || \
-		[[ ! -f "$WORKINGDIR/mosquitto/mosquitto.db" ]] || \
-		[[ ! -f "$WORKINGDIR/mosquitto_local/mosquitto.db" ]]
-	then
+	if [[ ! -f "$WORKINGDIR/SHA256SUM" ]] ||
+		[[ ! -f "$WORKINGDIR/GIT_BRANCH" ]] ||
+		[[ ! -f "$WORKINGDIR/GIT_HASH" ]] ||
+		[[ ! -d "$WORKINGDIR/openWB" ]] ||
+		[[ ! -f "$WORKINGDIR/mosquitto/mosquitto.db" ]] ||
+		[[ ! -f "$WORKINGDIR/mosquitto_local/mosquitto.db" ]]; then
 		echo "this is not a complete archive! aborting restore"
 		exit 1
 	fi
