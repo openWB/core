@@ -31,7 +31,7 @@
 		<link rel="apple-touch-icon" sizes="60x60" href="img/favicons/apple-touch-icon-60x60.png">
 		<link rel="manifest" href="manifest.json">
 		<link rel="shortcut icon" href="img/favicons/favicon.ico">
-		<link rel="apple-touch-startup-image" href="img/loader.gif">
+		<!-- <link rel="apple-touch-startup-image" href="img/loader.gif"> -->
 		<meta name="msapplication-config" content="img/favicons/browserconfig.xml">
 		<meta name="theme-color" content="#ffffff">
 		<meta name="google" content="notranslate">
