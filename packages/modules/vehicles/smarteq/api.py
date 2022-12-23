@@ -244,6 +244,7 @@ class Api:
     def refresh_tokens(self) -> dict:
         self.method += " 2-refresh_tokens"
         url = TOKEN_URL
+        newTokens = {}
         headers = {
             "Accept": "*/*",
             "User-Agent": "sOAF/202108260942 CFNetwork/978.0.7 Darwin/18.7.0",
