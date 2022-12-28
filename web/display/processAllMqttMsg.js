@@ -32,11 +32,11 @@ function setIframeSource(host) {
 		}
 		const host = location.host;
 		var query = "";
-		if (data["openWB/general/extern"]) {
-			host = data["openWB/isss/parentWB"];
-			query += `?parentCPlp1=${data["openWB/isss/parentCPlp1"]}`;
-			query += `&parentCPlp2=${data["openWB/isss/parentCPlp2"]}`;
-		}
+		// if (data["openWB/general/extern"]) {
+		// 	host = data["openWB/isss/parentWB"];
+		// 	query += `?parentCPlp1=${data["openWB/isss/parentCPlp1"]}`;
+		// 	query += `&parentCPlp2=${data["openWB/isss/parentCPlp2"]}`;
+		// }
 		const theme = data["openWB/optional/int_display/theme"];
 		const destination = `http://${host}/openWB/web/display/themes/${theme}/${query}`;
 		const iframe = document.getElementById("displayTarget");
