@@ -253,6 +253,7 @@ chmod 666 "$LOGFILE"
 	if [[ $ip == "\"\"" ]]; then
 		ip="\"unknown\""
 	fi
+	echo "my IP: $ip"
 	mosquitto_pub -t "openWB/system/ip_address" -p 1886 -r -m $ip
 
 	# update current published versions
