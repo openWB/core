@@ -114,6 +114,7 @@ class HandlerAlgorithm:
 
 def schedule_jobs():
     [schedule.every().minute.at(f":{i:02d}").do(handler.handler10Sec) for i in range(0, 60, 10)]
+    [schedule.every().minute.at(f":{i:02d}").do(soc.update) for i in range(0, 60, 10)]
     [schedule.every().hour.at(f":{i:02d}").do(handler.handler5Min) for i in range(0, 60, 5)]
     schedule.every().day.at("00:00:00").do(handler.handler_midnight)
 
@@ -152,12 +153,10 @@ try:
     t_sub = Thread(target=sub.sub_topics, args=())
     t_set = Thread(target=set.set_data, args=())
     t_comm = Thread(target=comm.sub_commands, args=())
-    t_soc = Thread(target=soc.update, args=(), name="update_soc")
 
     t_sub.start()
     t_set.start()
     t_comm.start()
-    t_soc.start()
     # Warten, damit subdata Zeit hat, alle Topics auf dem Broker zu empfangen.
     time.sleep(5)
     schedule_jobs()
