@@ -66,8 +66,8 @@ class System:
             log.exception("Fehler im System-Modul")
 
     def update_ip_address(self) -> None:
-        with os.popen("(ip route get 1 | awk '{print $7}')") as process:
+        with os.popen("ip route get 1 | awk '{print $7}'") as process:
             new_ip = process.readline().rstrip("\n")
-        if new_ip != self.data["ip_address"]:
+        if new_ip != self.data["ip_address"] and new_ip != "":
             self.data["ip_address"] = new_ip
             pub.Pub().pub("openWB/set/system/ip_address", new_ip)
