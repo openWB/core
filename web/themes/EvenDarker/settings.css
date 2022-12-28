@@ -1,7 +1,3 @@
-.openwb-logo {
-	filter:invert(1);
-}
-
 .bg-warning, .bg-info, .bg-success, .bg-light {
 	color: #212529;
 }
