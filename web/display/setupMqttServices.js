@@ -22,7 +22,9 @@ var data = {};
 var retries = 0;
 
 //Connect Options
-var isSSL = location.protocol == 'https:'
+var isSSL = location.protocol == 'https:';
+var port = parseInt(location.port) || (location.protocol == "https:" ? 443 : 80);
+
 var options = {
 	timeout: 5,
 	useSSL: isSSL,
@@ -39,12 +41,13 @@ var options = {
 		console.error("error connecting to broker!");
 		setTimeout(() => {
 			client.connect(options);
-		}, 2000);
+		}, 5000);
 	}
 };
 
 var client_uid = Math.random().toString(36).replace(/[^a-z]+/g, "").substring(0, 5);
-var client = new Messaging.Client(location.hostname, 9001, client_uid);
+console.debug(`connecting to broker on ${location.hostname}:${port} as client "${client_uid}"`);
+var client = new Messaging.Client(location.hostname, port, client_uid);
 
 console.debug("connecting...");
 client.connect(options);
