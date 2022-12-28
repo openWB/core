@@ -33,7 +33,7 @@ def test_get_ev_state(ev_num: int,
                       set_charge_state: bool,
                       expected_charge_state: bool):
     # setup
-    data.data.cp_data["cp0"].data.config.ev = ev_num
+    data.data.cp_data["cp0"].data.set.charging_ev = ev_num
     data.data.cp_data["cp0"].data.get.charge_state = set_charge_state
 
     # execution

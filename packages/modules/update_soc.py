@@ -58,7 +58,7 @@ class UpdateSoc:
         cp_data = copy.deepcopy(data.data.cp_data)
         for cp in cp_data.values():
             if not isinstance(cp, AllChargepoints):
-                if cp.data.config.ev == ev_num:
+                if cp.data.set.charging_ev == ev_num:
                     charge_state = cp.data.get.charge_state
                     break
         else:
