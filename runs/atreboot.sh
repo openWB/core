@@ -40,6 +40,18 @@ chmod 666 "$LOGFILE"
 		sudo kill "$$"
 	) &
 
+	if [ -d "/etc/apt/apt.conf.d" ]; then
+		if versionMatch "${OPENWBBASEDIR}/data/config/apt/99openwb" "/etc/apt/apt.conf.d/99openwb"; then
+			echo "apt configuration already up to date"
+		else
+			echo "updating apt configuration"
+			sudo cp "${OPENWBBASEDIR}/data/config/apt/99openwb" "/etc/apt/apt.conf.d/99openwb"
+		fi
+	else
+		echo "path '/etc/apt/apt.conf.d' is missing! unsupported system!"
+	fi
+	"${OPENWBBASEDIR}/runs/install_packages.sh"
+
 	if versionMatch "${OPENWBBASEDIR}/data/config/openwb.cron" "/etc/cron.d/openwb"; then
 		echo "openwb.cron already up to date"
 	else
@@ -70,20 +82,56 @@ chmod 666 "$LOGFILE"
 	echo "cleaning obsolete python cache folders..."
 	"$OPENWBBASEDIR/runs/cleanPythonCache.sh"
 
-	# check if display is configured and setup timeout
-	# if (( displayaktiv == 1 )); then
-	# 	echo "display..."
-	# 	if ! grep -Fq "pinch" /home/pi/.config/lxsession/LXDE-pi/autostart
-	# 	then
-	# 		echo "not found"
-	# 		echo "@xscreensaver -no-splash" > /home/pi/.config/lxsession/LXDE-pi/autostart
-	# 		echo "@point-rpi" >> /home/pi/.config/lxsession/LXDE-pi/autostart
-	# 		echo "@xset s 600" >> /home/pi/.config/lxsession/LXDE-pi/autostart
-	# 		echo "@chromium-browser --incognito --disable-pinch --kiosk http://localhost/openWB/web/display/" >> /home/pi/.config/lxsession/LXDE-pi/autostart
-	# 	fi
-	# 	echo "deleting browser cache"
-	# 	rm -rf /home/pi/.cache/chromium
-	# fi
+	# display setup
+	echo "display setup..."
+	if versionMatch "${OPENWBBASEDIR}/data/config/display/lightdm-autologin-greeter.conf" "/etc/lightdm/lightdm.conf.d/lightdm-autologin-greeter.conf"; then
+		echo "autologin configured"
+	else
+		echo "updating autologin"
+		sudo cp "${OPENWBBASEDIR}/data/config/display/lightdm-autologin-greeter.conf" "/etc/lightdm/lightdm.conf.d/lightdm-autologin-greeter.conf"
+	fi
+	if versionMatch "${OPENWBBASEDIR}/data/config/display/lightdm-hide-mouse-cursor.conf" "/etc/lightdm/lightdm.conf.d/lightdm-hide-mouse-cursor.conf"; then
+		echo "mouse cursor configured"
+	else
+		echo "updating mouse cursor configuration"
+		sudo cp "${OPENWBBASEDIR}/data/config/display/lightdm-hide-mouse-cursor.conf" "/etc/lightdm/lightdm.conf.d/lightdm-hide-mouse-cursor.conf"
+	fi
+	if versionMatch "${OPENWBBASEDIR}/data/config/display/lxdeautostart" "/home/openwb/.config/lxsession/LXDE/autostart"; then
+		echo "lxde session autostart already configured"
+	else
+		echo "updating lxde session autostart"
+		cp "${OPENWBBASEDIR}/data/config/display/lxdeautostart" "/home/openwb/.config/lxsession/LXDE/autostart"
+	fi
+	# ToDo: read setting!
+	display_enabled=1
+	default_target=$(systemctl get-default)
+	if ((display_enabled == 1)); then
+		if [[ $default_target == "graphical.target" ]]; then
+			echo "graphical target already configured"
+		else
+			echo "setting graphical target as default"
+			sudo systemctl set-default graphical.target
+		fi
+		if systemctl status lightdm.service; then
+			echo "lightdm already running"
+		else
+			echo "lightdm not running, starting service"
+			sudo systemctl start lightdm.service
+		fi
+	else
+		if [[ $default_target == "multi-user.target" ]]; then
+			echo "multi-user target already configured"
+		else
+			echo "setting multi-user target as default"
+			sudo systemctl set-default multi-user.target
+		fi
+		if systemctl status lightdm.service; then
+			echo "lightdm not running"
+		else
+			echo "lightdm running, stopping service"
+			sudo systemctl stop lightdm.service
+		fi
+	fi
 
 	# check for LAN/WLAN connection
 	echo "LAN/WLAN..."
@@ -134,10 +182,6 @@ chmod 666 "$LOGFILE"
 		sudo systemctl restart apache2
 		echo "done"
 	fi
-
-	# check for needed packages
-	echo "apt packages..."
-	# nothing here yet, all in install.sh
 
 	# check for mosquitto configuration
 	echo "check mosquitto installation..."
@@ -197,9 +241,10 @@ chmod 666 "$LOGFILE"
 	fi
 	echo "mosquitto done"
 
-	# check for other dependencies
-	echo "python packages..."
+	# check for python dependencies
+	echo "install required python packages with 'pip3'..."
 	pip3 install -r "${OPENWBBASEDIR}/requirements.txt"
+	echo "done"
 
 	# update version
 	# echo "version..."
