@@ -2,7 +2,6 @@ import logging
 from typing import List, Tuple
 import copy
 import threading
-import time
 
 from control import data
 from control.chargepoint import AllChargepoints
@@ -20,19 +19,12 @@ class UpdateSoc:
         self.heartbeat = False
 
     def update(self) -> None:
-        delay = 10
-        next_time = time.time() + delay
-        while True:
-            self.heartbeat = True
-            time.sleep(max(0, next_time - time.time()))
-            try:
-                threads_set, threads_update = self._get_threads()
-                thread_handler(threads_set)
-                thread_handler(threads_update)
-            except Exception:
-                log.exception("Fehler im Main-Modul")
-            # skip tasks if we are behind schedule:
-            next_time += (time.time() - next_time) // delay * delay + delay
+        try:
+            threads_set, threads_update = self._get_threads()
+            thread_handler(threads_set)
+            thread_handler(threads_update)
+        except Exception:
+            log.exception("Fehler im Main-Modul")
 
     def _get_threads(self) -> Tuple[List[threading.Thread], List[threading.Thread]]:
         threads_set, threads_update = [], []
