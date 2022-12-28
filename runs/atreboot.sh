@@ -249,7 +249,12 @@ chmod 666 "$LOGFILE"
 	# fi
 
 	# get local ip
-	mosquitto_pub -t "openWB/system/ip_address" -p 1886 -r -m "\"$(ip route get 1 | awk '{print $7;exit}')\""
+	ip="\"$(ip route get 1 | awk '{print $7;exit}')\""
+	if [[ $ip == "\"\"" ]]; then
+		ip="\"unknown\""
+	fi
+	echo "my IP: $ip"
+	mosquitto_pub -t "openWB/system/ip_address" -p 1886 -r -m $ip
 
 	# update current published versions
 	echo "load versions..."
