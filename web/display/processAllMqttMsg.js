@@ -38,7 +38,7 @@ function setIframeSource(host) {
 		// 	query += `&parentCPlp2=${data["openWB/isss/parentCPlp2"]}`;
 		// }
 		const theme = data["openWB/optional/int_display/theme"];
-		const destination = `http://${host}/openWB/web/display/themes/${theme}/${query}`;
+		const destination = `${location.protocol}//${host}/openWB/web/display/themes/${theme}/${query}`;
 		const iframe = document.getElementById("displayTarget");
 		if (destination != iframe.src) {
 			addLog(`all done, starting theme '${theme}'`);
