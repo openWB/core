@@ -772,7 +772,10 @@ class Chargepoint:
             charging_ev = self._get_charging_ev(vehicle, ev_list)
         else:
             # Wenn kein EV zur Ladung zugeordnet wird, auf hinterlegtes EV zurückgreifen.
-            charging_ev = ev_list["ev"+str(self.data.config.ev)]
+            try:
+                charging_ev = ev_list["ev"+str(self.data.config.ev)]
+            except KeyError:
+                charging_ev = ev_list["ev0"]
         self._pub_connected_vehicle(charging_ev)
 
     def update(self, ev_list: Dict[str, Ev]) -> None:
@@ -863,15 +866,22 @@ class Chargepoint:
                     ev_list[f"ev{vehicle}"].data.control_parameter.submode = "stop"
             else:
                 # Wenn kein EV zur Ladung zugeordnet wird, auf hinterlegtes EV zurückgreifen.
-                self._pub_connected_vehicle(
-                    ev_list["ev"+str(self.data.config.ev)])
+                try:
+                    self._pub_connected_vehicle(
+                        ev_list["ev"+str(self.data.config.ev)])
+                except KeyError:
+                    self._pub_connected_vehicle(ev_list["ev0"])
             if message is not None and self.data.get.state_str is None:
                 self.set_state_and_log(message)
         except Exception:
             log.exception(f"Fehler bei Ladepunkt {self.num}")
 
     def _get_charging_ev(self, vehicle: int, ev_list: Dict[str, Ev]) -> Ev:
-        charging_ev = ev_list[f"ev{vehicle}"]
+        try:
+            charging_ev = ev_list[f"ev{vehicle}"]
+        except KeyError:
+            charging_ev = ev_list["ev0"]
+            vehicle = 0
         # Das EV darf nur gewechselt werden, wenn noch nicht geladen wurde.
         if (self.data.set.charging_ev == vehicle or
                 self.data.set.charging_ev_prev == vehicle):
