@@ -102,10 +102,11 @@ chmod 666 "$LOGFILE"
 		echo "updating lxde session autostart"
 		cp "${OPENWBBASEDIR}/data/config/display/lxdeautostart" "/home/openwb/.config/lxsession/LXDE/autostart"
 	fi
-	# ToDo: read setting!
-	display_enabled=1
+	"${OPENWBBASEDIR}/runs/update_local_display_timeout.sh"
+
 	default_target=$(systemctl get-default)
-	if ((display_enabled == 1)); then
+	display_active=$(mosquitto_sub -p 1886 -t "openWB/optional/int_display/active" -C 1 -W 1)
+	if (($? == 0 && display_active == "true")); then
 		if [[ $default_target == "graphical.target" ]]; then
 			echo "graphical target already configured"
 		else
