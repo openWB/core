@@ -12,10 +12,10 @@ var topicsToSubscribe = {
 	"openWB/system/boot_done": false,
 	"openWB/system/update_in_progress": false,
 	"openWB/general/extern": false,
-	"openWB/isss/parentWB": false,
-	"openWB/isss/parentCPlp1": false,
-	"openWB/isss/parentCPlp2": false,
 	"openWB/optional/int_display/theme": false,
+	// "openWB/isss/parentWB": false,
+	// "openWB/isss/parentCPlp1": false,
+	// "openWB/isss/parentCPlp2": false,
 };
 
 var data = {};
