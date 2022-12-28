@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+	<base href="/openWB/web/">
+	<meta charset="UTF-8">
+	<!-- display style -->
+	<link rel="stylesheet" type="text/css" href="display/style.css">
+	<script>
+		window.addEventListener("load", () => {
+			// load scripts synchronous in order specified
+			var scriptsToLoad = [
+				// load mqtt library
+				'js/mqttws31.js',
+				// functions for processing messages
+				'display/processAllMqttMsg.js?ver=20221227',
+				// functions performing mqtt and start mqtt-service
+				'display/setupMqttServices.js?ver=20221227',
+			];
+
+			scriptsToLoad.forEach((src) => {
+				var script = document.createElement('script');
+				script.src = src;
+				script.async = false;
+				document.body.appendChild(script);
+			});
+		});
+	</script>
+</head>
+
+<body>
+	<div class="wrapper">
+		<div id="notReady">
+			<img src="img/openWB_logo_dark.png" class="center"/>
+			<p>Lade Einstellungen...</p>
+			<pre id="log"></pre>
+		</div>
+		<iframe id="displayTarget" src="about:blank" class="hide" />
+	</div>
+</body>
+
+</html>
