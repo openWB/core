@@ -39,15 +39,34 @@ function setIframeSource(host) {
 		// }
 		const theme = data["openWB/optional/int_display/theme"];
 		const destination = `${location.protocol}//${host}/openWB/web/display/themes/${theme}/${query}`;
-		const iframe = document.getElementById("displayTarget");
-		if (destination != iframe.src) {
-			addLog(`all done, starting theme '${theme}'`);
-			setTimeout(() => {
-				document.getElementById("notReady").classList.add("hide");
-				iframe.src = destination;
-				iframe.classList.remove("hide");
-			}, 2000);
-		}
+
+		var request = new XMLHttpRequest();
+		request.onload = function() {
+			if (this.readyState == 4) {
+				if (this.status == 200) {
+					addLog(`theme '${theme}' is valid`)
+					const iframe = document.getElementById("displayTarget");
+					if (destination != iframe.src) {
+						addLog(`all done, starting theme '${theme}'`);
+						setTimeout(() => {
+							document.getElementById("notReady").classList.add("hide");
+							iframe.src = destination;
+							iframe.classList.remove("hide");
+						}, 2000);
+					}
+				} else {
+					addLog(`theme '${theme}' not found on server!`);
+				}
+			}
+		};
+		request.ontimeout = function() {
+			console.log("onTimeout", this.readyState, this.status);
+			addLog(`check for theme '${theme}' timed out!`);
+		};
+		request.timeout = 2000;
+		console.log("checking url:", destination);
+		request.open("GET", destination, true);
+		request.send();
 	} else {
 		console.debug("some topics still missing");
 	}
