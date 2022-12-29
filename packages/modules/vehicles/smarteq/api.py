@@ -6,9 +6,13 @@ import asyncio
 import json
 from modules.common.store import RAMDISK_PATH
 from modules.vehicles.smarteq.config import SmartEQ
-import requests
+# import requests
+from modules.common import req
 import bs4
 import pkce
+import os
+import time
+import datetime
 import pickle
 
 date_fmt = '%Y-%m-%d %H:%M:%S'
@@ -29,46 +33,86 @@ CLIENT_ID = "70d89501-938c-4bec-82d0-6abb550b0825"
 GUID = "280C6B55-F179-4428-88B6-E0CCF5C22A7C"
 ACCEPT_LANGUAGE = "de-de"
 
+TOKENS_REFRESH_THRESHOLD = 3600
+
+
+# helper functions
+def nested_key_exists(element: dict, *keys: str) -> bool:
+    # Check if *keys (nested) exists in `element` (dict).
+    if not isinstance(element, dict):
+        raise AttributeError('nested_key_exists() expects dict as first argument - got type ' + str(type(element)))
+    if len(keys) == 0:
+        raise AttributeError('nested_key_exists() expects at least two arguments, one given.')
+
+    _element = element
+    for key in keys:
+        try:
+            _element = _element[key]
+        except KeyError:
+            return False
+    return True
+
 
 class Api:
 
     def __init__(self, vehicle: int):
         self.log = logging.getLogger("soc."+__name__)
+        self.storeFile = str(RAMDISK_PATH) + '/soc_smarteq_store_vh_' + str(vehicle)
         # LOGLEVEL = os.environ.get('LOGLEVEL', 'INFO').upper()
         # logging.basicConfig(level=LOGLEVEL)
-        self.session = requests.session()
-        self.Tokens = {}
-        self.tokensFile = str(RAMDISK_PATH) + '/soc_smarteq_Token_vh_' + str(vehicle)
+
+        # self.method keeps a high level trach of actions
+        self.method = ''
+        self.soc_ts = 'n/a'
+        # self.store is read from ramdisk at start and saved at end.
+        # currently is contains:
+        # Tokens: refresh- and access-tokens of OAUTH
+        # refresh_timestamp: epoch of last refresh_tokens.
+
+        # self.session = requests.session()
+        self.session = req.get_http_session()
+
+        self.load_store()
+        self.oldTokens = self.store['Tokens']
+        self.init = True
+
+    def load_store(self):
+        try:
+            with open(self.storeFile, "rb") as tf:
+                self.store = pickle.load(tf)
+                if 'Tokens' not in self.store:
+                    self.store['Tokens'] = {}
+                    self.store['refresh_timestamp'] = int(0)
+        except Exception:
+            log.exception("init: loading stored data failed, file: " + self.storeFile)
+            self.store = {}
+            self.store['Tokens'] = {}
+            self.store['refresh_timestamp'] = int(0)
+
+    def write_store(self):
+        try:
+            tf = open(self.storeFile, "wb")
+        except Exception:
+            log.exception("write_store")
+            os.system("sudo rm -f " + self.storeFile)
+            tf = open(self.storeFile, "wb")
+        pickle.dump(self.store, tf)
+        tf.close()
+        try:
+            os.chmod(self.storeFile, 0o777)
+        except Exception:
+            log.exception("chmod_store")
+            os.system("sudo chmod 0777 " + self.storeFile)
+
+    # ===== get resume string ======
+    def get_resume(self) -> str:
+        response_type = "code"
         self.code_verifier, self.code_challenge = pkce.generate_pkce_pair()
         self.code_challenge_method = "S256"
-
-        try:
-            tf = open(self.tokensFile, "rb")
-            self.Tokens = pickle.load(tf)
-            tf.close()
-            self.log.debug("Tokens loaded" + json.dumps(self.Tokens))
-        except Exception as e:
-            self.log.exception("Tokens load failed" + str(e))
-            self.Tokens = {}
-
-    def set_credentials(self, username: str, password: str):
-        self.username = username
-        self.password = password
-
-    def set_vin(self, vin: str):
-        self.vin = vin
-
-    def set_chargepoint(self, chargepoint: str):
-        self.chargepoint = chargepoint
-
-    # ===== step1 get resume ======
-    def get_resume(self) -> str:
-
-        response_type = "code"
-        url1 = OAUTH_URL + '?client_id=' + CLIENT_ID + '&response_type=' + response_type + '&scope=' + SCOPE
-        url1 = url1 + '&redirect_uri=' + REDIRECT_URI
-        url1 = url1 + '&code_challenge=' + self.code_challenge + '&code_challenge_method=' + self.code_challenge_method
-        headers1 = {
+        url = OAUTH_URL + '?client_id=' + CLIENT_ID + '&response_type=' + response_type + '&scope=' + SCOPE
+        url = url + '&redirect_uri=' + REDIRECT_URI
+        url = url + '&code_challenge=' + self.code_challenge + '&code_challenge_method=' + self.code_challenge_method
+        headers = {
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
             "Accept-Language": ACCEPT_LANGUAGE,
             "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 12_5_1 like Mac OS X)\
@@ -76,27 +120,28 @@ class Api:
         }
 
         try:
-            response1 = self.session.get(url1, headers=headers1)
-            # self.log.debug("response1.status_code = " + str(response1.status_code))
-            soup = bs4.BeautifulSoup(response1.text, 'html.parser')
+            response = self.session.get(url, headers=headers)
+
+            soup = bs4.BeautifulSoup(response.text, 'html.parser')
+
             for cd in soup.findAll(text=True):
                 if "CDATA" in cd:
+                    self.log.debug("get_resume: cd.CData= " + str(cd))
                     for w in cd.split(','):
                         if w.find("const initialState = ") != -1:
                             iS = w
             if iS:
                 js = iS.split('{')[1].split('}')[0].replace('\\', '').replace('\\"', '"').replace('""', '"')
                 self.resume = js[1:len(js)-1].split(':')[1][2:]
-            # self.log.debug("Step1 get_resume: resume = " + self.resume)
-        except Exception as e:
-            self.log.exception('Step1 get_resume Exception: ' + str(e))
+            self.log.debug("get_resume: resume = " + self.resume)
+        except Exception:
+            log.exception('get_resume')
         return self.resume
 
-    # step2: login to website, return token
+    # login to website, return (intermediate) token
     def login(self) -> str:
-
-        url3 = LOGIN_URL + "/pass"
-        headers3 = {
+        url = LOGIN_URL + "/pass"
+        headers = {
             "Content-Type": "application/json",
             "Accept": "application/json, text/plain, */*",
             "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 12_5_1 like Mac OS X)\
@@ -104,28 +149,31 @@ class Api:
             "Referer": LOGIN_URL,
             "Accept-Language": ACCEPT_LANGUAGE
         }
-        d = {}
-        d['username'] = self.username
-        d['password'] = self.password
-        d['rememberMe'] = 'true'
-        data3 = json.dumps(d)
+        data = json.dumps({'username': self.username,
+                           'password': self.password,
+                           'rememberMe': 'true'})
 
         try:
-            response3 = self.session.post(url3, headers=headers3, data=data3)
-            # self.log.debug("response3.status_code = " + str(response3.status_code))
-            # self.log.debug("response3.text = " + str(response3.text))
-            result_json = json.loads(str(bs4.BeautifulSoup(response3.text, 'html.parser')))
-            # self.log.debug("Step3 result_json:\n" + json.dumps(result_json))
-            token = result_json['token']
-            # self.log.debug("login - step3 - get token = " + token)
-        except Exception as e:
-            self.log.exception('Step3 Exception: ' + str(e))
+            response = self.session.post(url, headers=headers, data=data)
+            self.log.debug("login: status_code = " + str(response.status_code))
+            if response.status_code >= 400:
+                self.log.error("login: failed, status_code = " + str(response.status_code) +
+                               ", check username/password")
+                token = ""
+            else:
+                result_json = json.loads(str(bs4.BeautifulSoup(response.text, 'html.parser')))
+                self.log.debug("login: result_json:\n" + json.dumps(result_json))
+                token = result_json['token']
+                self.log.debug("login: token = " + token)
+        except Exception:
+            log.exception('login')
+            token = ""
         return token
 
     # get code
-    def get_code(self, token: str) -> str:
-        url4 = BASE_URL + '/' + self.resume
-        headers4 = {
+    def get_code(self) -> str:
+        url = BASE_URL + '/' + self.resume
+        headers = {
             "Content-Type": "application/x-www-form-urlencoded",
             "Accept": "application/json, text/plain, */*",
             "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 12_5_1 like Mac OS X)\
@@ -133,66 +181,136 @@ class Api:
             "Referer": LOGIN_URL,
             "Accept-Language": ACCEPT_LANGUAGE,
         }
-        d = {}
-        d['token'] = token
-        data4 = json.dumps(d)
+        data = json.dumps({'token': self.token})
 
         try:
-            response4 = self.session.post(url4, headers=headers4, data=data4)
-            code = response4.url.split('?')[1].split('=')[1]
-            # self.log.debug("login - step4 - get code = " + code)
-        except Exception as e:
-            self.log.exception("Step4 Exception: " + str(e))
+            response = self.session.post(url, headers=headers, data=data)
+            code = response.url.split('?')[1].split('=')[1]
+            self.log.debug("get_code: code=" + code)
+        except Exception:
+            log.exception("get_code")
         return code
 
     # get Tokens
-    def get_Tokens(self, code: str) -> dict:
-        url5 = TOKEN_URL
-        headers5 = {
+    def get_tokens(self) -> dict:
+        self.method += " 3-full (re)connect"
+        self.resume = self.get_resume()
+        self.token = self.login()
+        if self.token == "":
+            self.log.error("login: Login failed - check username/password")
+            return ""
+        code = self.get_code()
+        if code == "":
+            self.log.warn("get_tokens: get_code failed")
+            return {}
+        url = TOKEN_URL
+        headers = {
             "Accept": "*/*",
             "User-Agent": "sOAF/202108260942 CFNetwork/978.0.7 Darwin/18.7.0",
             "Accept-Language": ACCEPT_LANGUAGE,
             "Content-Type": "application/x-www-form-urlencoded",
         }
-        data5 = "grant_type=authorization_code&code=" + code + "&code_verifier=" + self.code_verifier +\
-                "&redirect_uri=" + REDIRECT_URI + "&client_id=" + CLIENT_ID
+        data = "grant_type=authorization_code&code=" + code + "&code_verifier=" + self.code_verifier +\
+               "&redirect_uri=" + REDIRECT_URI + "&client_id=" + CLIENT_ID
 
         try:
-            response5 = self.session.post(url5, headers=headers5, data=data5)
-            # self.log.debug("response5.status_code = " + str(response5.status_code))
-            Tokens = json.loads(response5.text)
+            response = self.session.post(url, headers=headers, data=data)
+
+            Tokens = json.loads(response.text)
             if not Tokens['access_token']:
-                self.log.warn("no access_token found")
-                return {}
-            # self.log.debug("Tokens=\n" + json.dumps(Tokens, indent=4))
-        except Exception as e:
-            self.log.exception("Step5 Exception: " + str(e))
+                self.log.warn("get_tokens: no access_token found")
+                Tokens = {}
+            else:
+                self.log.debug("Tokens=\n" + json.dumps(Tokens, indent=4))
+        except Exception:
+            log.exception('get_tokens')
         return Tokens
+
+    # refresh tokens
+    def refresh_tokens(self) -> dict:
+        self.method += " 2-refresh_tokens"
+        url = TOKEN_URL
+        newTokens = {}
+        headers = {
+            "Accept": "*/*",
+            "User-Agent": "sOAF/202108260942 CFNetwork/978.0.7 Darwin/18.7.0",
+            "Accept-Language": ACCEPT_LANGUAGE,
+            "Content-Type": "application/x-www-form-urlencoded",
+        }
+        data = "grant_type=refresh_token&client_id=" + CLIENT_ID + "&refresh_token=" +\
+               self.store['Tokens']['refresh_token']
+
+        try:
+            response = self.session.post(url,
+                                         headers=headers,
+                                         data=data,
+                                         verify=True,
+                                         allow_redirects=False,
+                                         timeout=(30, 30))
+
+            newTokens = json.loads(response.text)
+            if 'error' in newTokens and newTokens['error'] == 'unauthorized':
+                self.log.warning("refresh_tokens: error: " + newTokens['error'] + ', ' + newTokens['error_description'])
+            if 'access_token' not in newTokens:
+                self.log.debug("refresh_tokens: new access_token not found")
+                newTokens['access_token'] = ""
+            if 'refresh_token' not in newTokens:
+                self.log.debug("refresh_tokens: new refresh_token not found")
+                newTokens['refresh_token'] = ""
+            self.log.debug("refresh_tokens: newTokens=\n" + json.dumps(newTokens, indent=4))
+        except Exception:
+            log.exception('refresh_tokens')
+            newTokens['access_token'] = ""
+            newTokens['refresh_token'] = ""
+        return newTokens
 
     # reconnect to Server
     def reconnect(self) -> dict:
-        token = self.login()
-        if not token:
-            self.log.error("Login failed, token empty - Abort")
-            return {}
+        # check if we have a refresh token and last refresh was more then 1h ago (3600s)
+        if 'refresh_token' in self.store['Tokens']:
+            now = int(time.time())
+            secs_since_refresh = now - self.store['refresh_timestamp']
+            if secs_since_refresh > TOKENS_REFRESH_THRESHOLD:
+                # try to refresh tokens
+                new_tokens = self.refresh_tokens()
+                self.store['refresh_timestamp'] = int(time.time())
+                _ref = True
+            else:
+                # keep existing tokens
+                return self.store['Tokens']
+        else:
+            self.log.debug("reconnect: refresh_token not found in self.store['Tokens']=" +
+                           json.dumps(self.store['Tokens'], indent=4))
+            new_tokens = {'refresh_token': '', 'access_token': ''}
+            _ref = False
+        self.log.debug("reconnect: new_tokens=" + json.dumps(new_tokens, indent=4))
+        if new_tokens['access_token'] == '':
+            if _ref:
+                self.log.warning("reconnect: refresh access_token failed, try full reconnect")
+            Tokens = self.get_tokens()
+        else:
+            self.log.debug("reconnect: refresh access_token successful")
+            Tokens = self.store['Tokens']   # replace expired access and refresh token by new tokens
+            for key in new_tokens:
+                Tokens[key] = new_tokens[key]
+                self.log.debug("reconnect: replace Tokens[" + key + "], new value: " + str(Tokens[key]))
 
-        code = self.get_code(token)
-        self.Tokens = self.get_Tokens(code)
+        return Tokens
 
-        tf = open(self.tokensFile, "wb")
-        pickle.dump(self.Tokens, tf)
-        tf.close()
+    # get Soc,range of Vehicle
+    def get_status(self, vin: str) -> int:
+        self.method += " 1-get_status"
+        if self.init:
+            url = STATUS_URL + "/seqc/v0/vehicles/" + vin +\
+                   "/init-data?requestedData=BOTH&countryCode=DE&locale=de-DE"
+        else:
+            url = STATUS_URL + "/seqc/v0/vehicles/" + vin + "/refresh-data"
+            self.init = False
 
-        return self.Tokens
-
-    # get_status -> soc, range of Vehicle
-    def get_status(self, vin: str) -> Union[int, float]:
-        url7 = STATUS_URL + "/seqc/v0/vehicles/" + vin +\
-               "/init-data?requestedData=BOTH&countryCode=DE&locale=de-DE"
-        headers7 = {
+        headers = {
             "accept": "*/*",
             "accept-language": "de-DE;q=1.0",
-            "authorization": "Bearer " + self.Tokens['access_token'],
+            "authorization": "Bearer " + self.store['Tokens']['access_token'],
             "x-applicationname": CLIENT_ID,
             "user-agent": "Device: iPhone 6; OS-version: iOS_12.5.1; App-Name: smart EQ control; App-Version: 3.0;\
             Build: 202108260942; Language: de_DE",
@@ -200,21 +318,49 @@ class Api:
         }
 
         try:
-            response7 = self.session.get(url7, headers=headers7)
-            # self.log.debug("response7.status_code = " + str(response7.status_code))
-            res7 = json.loads(response7.text)
-            soc = int(res7['precond']['data']['soc']['value'])
-            range = float(res7['precond']['data']['rangeelectric']['value'])
-        except Exception as e:
-            self.log.exception("Step7 Exception: " + str(e))
-            res7s = json.dumps(res7, indent=4)
-            self.log.error("\nget_status result for vin: " + vin + "\n" + res7s)
+            response = self.session.get(url, headers=headers)
+            res = json.loads(response.text)
+            res_json = json.dumps(res, indent=4)
+            if (nested_key_exists(res, 'precond', 'data', 'soc', 'value') and
+               nested_key_exists(res, 'precond', 'data', 'rangeelectric', 'value')):
+                _ts = res['precond']['data']['soc']['ts']
+                self.soc_ts = datetime.datetime.fromtimestamp(_ts).strftime('%Y-%m-%d %H:%M:%S')
+                _ts = res['precond']['data']['rangeelectric']['ts']
+                rng_ts = datetime.datetime.fromtimestamp(_ts).strftime('%Y-%m-%d %H:%M:%S')
+                res_json = "{\nsoc: " + json.dumps(res['precond']['data']['soc'], indent=4).replace("\n", "\n    ")
+                res_json += ",\nsoc.timestamp: \"" + self.soc_ts + "\""
+                res_json += ",\nrangeelectric: " +\
+                            json.dumps(res['precond']['data']['rangeelectric'], indent=4).replace("\n", "\n    ")
+                res_json += ",\nrange.timestamp: \"" + rng_ts + "\"\n}"
+                if rng_ts > self.soc_ts:
+                    self.soc_ts = rng_ts
+                try:
+                    soc = int(res['precond']['data']['soc']['value'])
+                    range = float(res['precond']['data']['rangeelectric']['value'])
+                    self.log.debug("get_status: result json:\n" + res_json)
+                except Exception:
+                    soc = -1
+                    range = 0.0
+            elif 'error' in res and res['error'] == 'unauthorized':
+                self.log.warning("get_status: access_token expired - try refresh")
+                self.log.debug("get_status: error - result json:\n" + res_json)
+                soc = -1
+                range = 0.0
+
+        except Exception:
+            log.exception('get_status')
+            self.log.debug("get_status: result:\n" + res_json)
             soc = -1
             range = 0.0
-            if "Vehicle not found" in res7s:
-                soc = -2
+        if "Vehicle not found" in res_json:
+            soc = -2
+            range = 0.0
         return soc, range
 
+    # fetch soc in 3 stages:
+    #   1. get_status via stored access_token
+    #   2. if expired: refresh_access_token using id and refresh token, then get_status
+    #   3. if refresh token expired: login, get tokens, then get_status
     async def _fetch_soc(self,
                          conf: SmartEQ,
                          vehicle: int) -> Union[int, float]:
@@ -225,25 +371,48 @@ class Api:
 
         try:
             soc = -1
-            if 'access_token' in self.Tokens:
+            range = 0.0
+            if 'refresh_token' in self.store['Tokens']:
+                self.store['Tokens'] = self.reconnect()
+            if 'access_token' in self.store['Tokens']:
                 soc, range = self.get_status(self.vin)
-                if soc > -1:
-                    self.log.info("get_status success- valid token")
+                if soc > 0:
+                    self.log.debug("fetch_soc: 1st attempt successful")
+                else:
+                    self.log.debug("fetch_soc: 1st attempt failed - soc=" + str(soc))
 
             if soc == -1:
-                self.log.error("get_status failed, soc= " + str(soc))
-                self.log.error("get_status failed, reconnecting ...")
-                self.resume = self.get_resume()
-                self.Tokens = self.reconnect()
-                soc, range = self.get_status(self.vin)
+                self.log.debug("fetch_soc: (re)connecting ...")
+                self.store['Tokens'] = self.reconnect()
+                if 'access_token' in self.store['Tokens']:
+                    soc, range = self.get_status(self.vin)
+                    if soc > 0:
+                        self.log.debug("fetch_soc: 2nd attempt successful")
+                    else:
+                        self.log.warning("fetch_soc: 2nd attempt failed - soc=" + str(soc))
+                        range = 0.0
+                else:
+                    self.log.error("fetch_soc: (re-)connect failed")
+                    soc = 0
+                    range = 0.0
             elif soc == -2:
                 self.log.error("get_status failed, verify VIN ...")
+                soc = 0
+                range = 0.0
 
-        except Exception as e:
-            self.log.exception("get_status failed, reconnecting ..." + str(e))
-            self.resume = self.get_resume()
-            self.Tokens = self.reconnect()
-            soc, range = self.get_status(self.vin)
+        except Exception:
+            log.exception("fetch_soc: exception, (re-)connecting ...")
+            self.store['Tokens'] = self.reconnect()
+            if 'access_token' in self.store['Tokens']:
+                soc, range = self.get_status(self.vin)
+        self.log.info(" SOC/Range: " + str(soc) + '%/' + str(range) +
+                      '@' + self.soc_ts +
+                      ', Method: ' + self.method)
+
+        if self.store['Tokens'] != self.oldTokens:
+            self.log.debug("reconnect: tokens changed, store token file")
+            self.write_store()
+
         return soc, range
 
 
