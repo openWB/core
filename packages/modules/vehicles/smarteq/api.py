@@ -166,7 +166,7 @@ class Api:
                 token = result_json['token']
                 self.log.debug("login: token = " + token)
         except Exception:
-            self.log.eexception('login')
+            log.exception('login')
             token = ""
         return token
 
