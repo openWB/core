@@ -6,7 +6,8 @@ import asyncio
 import json
 from modules.common.store import RAMDISK_PATH
 from modules.vehicles.smarteq.config import SmartEQ
-import requests
+# import requests
+from modules.common import req
 import bs4
 import pkce
 import os
@@ -67,11 +68,9 @@ class Api:
         # currently is contains:
         # Tokens: refresh- and access-tokens of OAUTH
         # refresh_timestamp: epoch of last refresh_tokens.
-        self.store = {}
-        self.store['Tokens'] = {}
-        self.store['refresh_timestamp'] = int(0)
 
-        self.session = requests.session()
+        # self.session = requests.session()
+        self.session = req.get_http_session()
 
         self.load_store()
         self.oldTokens = self.store['Tokens']
@@ -79,42 +78,31 @@ class Api:
 
     def load_store(self):
         try:
-            tf = open(self.storeFile, "rb")
-            self.store = pickle.load(tf)
-            if 'Tokens' not in self.store:
-                self.store['Tokens'] = {}
-                self.store['refresh_timestamp'] = int(0)
-            tf.close()
-        except Exception as e:
-            self.log.debug("init: loading stored data failed, file: " + self.storeFile)
-            self.log.debug("load_store: Exception " + str(e))
+            with open(self.storeFile, "rb") as tf:
+                self.store = pickle.load(tf)
+                if 'Tokens' not in self.store:
+                    self.store['Tokens'] = {}
+                    self.store['refresh_timestamp'] = int(0)
+        except Exception:
+            log.exception("init: loading stored data failed, file: " + self.storeFile)
+            self.store = {}
             self.store['Tokens'] = {}
             self.store['refresh_timestamp'] = int(0)
 
     def write_store(self):
         try:
             tf = open(self.storeFile, "wb")
-        except Exception as e:
-            self.log.debug("write_store: Exception " + str(e))
+        except Exception:
+            log.exception("write_store")
             os.system("sudo rm -f " + self.storeFile)
             tf = open(self.storeFile, "wb")
         pickle.dump(self.store, tf)
         tf.close()
         try:
             os.chmod(self.storeFile, 0o777)
-        except Exception as e:
-            self.log.debug("chmod_store: Exception " + str(e))
+        except Exception:
+            log.exception("chmod_store")
             os.system("sudo chmod 0777 " + self.storeFile)
-
-    def set_credentials(self, username: str, password: str):
-        self.username = username
-        self.password = password
-
-    def set_vin(self, vin: str):
-        self.vin = vin
-
-    def set_chargepoint(self, chargepoint: str):
-        self.chargepoint = chargepoint
 
     # ===== get resume string ======
     def get_resume(self) -> str:
@@ -133,8 +121,7 @@ class Api:
 
         try:
             response = self.session.get(url, headers=headers)
-            self.log.debug("get_resume: status_code = " + str(response.status_code))
-            self.log.debug("get_resume: text = " + str(response.text))
+
             soup = bs4.BeautifulSoup(response.text, 'html.parser')
 
             for cd in soup.findAll(text=True):
@@ -147,13 +134,12 @@ class Api:
                 js = iS.split('{')[1].split('}')[0].replace('\\', '').replace('\\"', '"').replace('""', '"')
                 self.resume = js[1:len(js)-1].split(':')[1][2:]
             self.log.debug("get_resume: resume = " + self.resume)
-        except Exception as e:
-            self.log.error('get_resume: Exception: ' + str(e))
+        except Exception:
+            log.exception('get_resume')
         return self.resume
 
     # login to website, return (intermediate) token
     def login(self) -> str:
-        self.resume = self.get_resume()
         url = LOGIN_URL + "/pass"
         headers = {
             "Content-Type": "application/json",
@@ -179,17 +165,13 @@ class Api:
                 self.log.debug("login: result_json:\n" + json.dumps(result_json))
                 token = result_json['token']
                 self.log.debug("login: token = " + token)
-        except Exception as e:
-            self.log.error('login:  Exception: ' + str(e))
+        except Exception:
+            self.log.eexception('login')
             token = ""
         return token
 
     # get code
     def get_code(self) -> str:
-        token = self.login()
-        if token == "":
-            self.log.error("login: Login failed - check username/password")
-            return ""
         url = BASE_URL + '/' + self.resume
         headers = {
             "Content-Type": "application/x-www-form-urlencoded",
@@ -199,19 +181,24 @@ class Api:
             "Referer": LOGIN_URL,
             "Accept-Language": ACCEPT_LANGUAGE,
         }
-        data = json.dumps({'token': token})
+        data = json.dumps({'token': self.token})
 
         try:
             response = self.session.post(url, headers=headers, data=data)
             code = response.url.split('?')[1].split('=')[1]
             self.log.debug("get_code: code=" + code)
-        except Exception as e:
-            self.log.error("get_code: Exception: " + str(e))
+        except Exception:
+            log.exception("get_code")
         return code
 
     # get Tokens
     def get_tokens(self) -> dict:
         self.method += " 3-full (re)connect"
+        self.resume = self.get_resume()
+        self.token = self.login()
+        if self.token == "":
+            self.log.error("login: Login failed - check username/password")
+            return ""
         code = self.get_code()
         if code == "":
             self.log.warn("get_tokens: get_code failed")
@@ -228,16 +215,15 @@ class Api:
 
         try:
             response = self.session.post(url, headers=headers, data=data)
-            self.log.debug("get_tokens: status_code = " + str(response.status_code))
+
             Tokens = json.loads(response.text)
             if not Tokens['access_token']:
                 self.log.warn("get_tokens: no access_token found")
                 Tokens = {}
             else:
                 self.log.debug("Tokens=\n" + json.dumps(Tokens, indent=4))
-        except Exception as e:
-            self.log.exception("get_tokens: Exception: " + str(e))
-        return Tokens
+        except Exception:
+            log.exception('get_tokens')
         return Tokens
 
     # refresh tokens
@@ -261,8 +247,7 @@ class Api:
                                          verify=True,
                                          allow_redirects=False,
                                          timeout=(30, 30))
-            self.log.debug("refresh_tokens: status_code = " + str(response.status_code))
-            self.log.debug("refresh_tokens: text = " + str(response.text))
+
             newTokens = json.loads(response.text)
             if 'error' in newTokens and newTokens['error'] == 'unauthorized':
                 self.log.warning("refresh_tokens: error: " + newTokens['error'] + ', ' + newTokens['error_description'])
@@ -273,8 +258,8 @@ class Api:
                 self.log.debug("refresh_tokens: new refresh_token not found")
                 newTokens['refresh_token'] = ""
             self.log.debug("refresh_tokens: newTokens=\n" + json.dumps(newTokens, indent=4))
-        except Exception as e:
-            self.log.error("refresh_tokens: Exception: " + str(e))
+        except Exception:
+            log.exception('refresh_tokens')
             newTokens['access_token'] = ""
             newTokens['refresh_token'] = ""
         return newTokens
@@ -362,9 +347,9 @@ class Api:
                 soc = -1
                 range = 0.0
 
-        except Exception as e:
-            self.log.error("get_status: Exception: " + str(e))
-            self.log.error("get_status: result:\n" + res_json)
+        except Exception:
+            log.exception('get_status')
+            self.log.debug("get_status: result:\n" + res_json)
             soc = -1
             range = 0.0
         if "Vehicle not found" in res_json:
@@ -415,8 +400,8 @@ class Api:
                 soc = 0
                 range = 0.0
 
-        except Exception as e:
-            self.log.error("fetch_soc: exception, (re-)connecting ..." + str(e))
+        except Exception:
+            log.exception("fetch_soc: exception, (re-)connecting ...")
             self.store['Tokens'] = self.reconnect()
             if 'access_token' in self.store['Tokens']:
                 soc, range = self.get_status(self.vin)
@@ -426,8 +411,8 @@ class Api:
 
         if self.store['Tokens'] != self.oldTokens:
             self.log.debug("reconnect: tokens changed, store token file")
+            self.write_store()
 
-        self.write_store()
         return soc, range
 
 
