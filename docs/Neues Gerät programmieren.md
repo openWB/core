@@ -1,5 +1,3 @@
-
-
 Um die Programmierung neuer Geräte zu erleichtern, findet Ihr unter _docs/samples_ drei Muster:
 1. sample_modbus: Für Geräte, die per Modbus abgefragt werden. Dazu wird im Gerät ein Modbus-Client instanziiert, der dann an die Komponenten übergeben wird.
 2. sample_request_per_component: Für Geräte, die per Http-Request abgefragt werden (lokal oder übers Internet) und bei denen jede Komponente eine eigene URL hat.
