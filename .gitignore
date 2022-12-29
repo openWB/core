@@ -15,4 +15,5 @@ data/backup/*.tar.gz
 data/restore/*.tar.gz
 ramdisk/*
 web/lastcommit
+packages/modules/vehicles/mercedeseq/soc_eq_acc*
 !.gitignore 
