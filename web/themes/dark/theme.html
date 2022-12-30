@@ -7,13 +7,15 @@
 
 	<title>openWB</title>
 	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+	<meta name="viewport"
+		content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
 	<meta name="apple-mobile-web-app-capable" content="yes">
 	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 	<meta name="apple-mobile-web-app-title" content="openWB">
 	<meta name="apple-mobile-web-app-status-bar-style" content="default">
 	<link rel="apple-touch-startup-image" href="/openWB/web/img/favicons/splash1125x2436w.png" />
-	<link rel="apple-touch-startup-image" media="(width: 375px) and (height: 812px) and (-webkit-device-pixel-ratio: 3)" href="img/favicons/splash1125x2436w.png">
+	<link rel="apple-touch-startup-image" media="(width: 375px) and (height: 812px) and (-webkit-device-pixel-ratio: 3)"
+		href="img/favicons/splash1125x2436w.png">
 	<meta name="apple-mobile-web-app-title" content="openWB">
 	<meta name="description" content="openWB">
 	<meta name="keywords" content="openWB">
@@ -66,6 +68,7 @@
 
 		#preloader-image {
 			max-width: 300px;
+			filter: invert(1);
 		}
 
 		#preloader-info {
@@ -549,8 +552,7 @@
 									Zeitladen
 								</div>
 								<div class="col-md-8 text-right">
-									<input class="charge-point-time-charging-active" type="checkbox"
-										id="timeChargeCpT"
+									<input class="charge-point-time-charging-active" type="checkbox" id="timeChargeCpT"
 										data-toggle="toggle"
 										data-topic="openWB/set/vehicle/template/charge_template/<ct>/time_charging/active"
 										data-on="Ja" data-off="Nein" data-onstyle="success" data-offstyle="danger"
@@ -569,7 +571,8 @@
 										</button>
 									</div>
 								</div>
-								<div class="form-row mb-1 col charge-point-time-charge-plan-missing alert alert-warning">
+								<div
+									class="form-row mb-1 col charge-point-time-charge-plan-missing alert alert-warning">
 									Es wurden noch keine Zeitpläne eingerichtet!
 								</div>
 								<div class="form-row mb-1 charge-point-time-charge-plan charge-point-time-charge-plan-template hide"
@@ -798,8 +801,8 @@
 												</span>
 												<i class="fas fa-clock"></i> <span
 													class="charge-point-schedule-time">--</span>
-												<i class="charge-point-schedule-limit-icon fas fa-car-battery"></i> <span
-													class="charge-point-schedule-limit">--</span>
+												<i class="charge-point-schedule-limit-icon fas fa-car-battery"></i>
+												<span class="charge-point-schedule-limit">--</span>
 											</span>
 										</div>
 										<!-- <div class="col-4 text-right">

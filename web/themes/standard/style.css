@@ -4,7 +4,7 @@ Stylesheet zum openWB Standard-Theme
 2019-2020 Michael Ortenstein
 */
 
-html{
+html {
 	min-height: 100%;
 	min-width: 100%;
 }
@@ -16,29 +16,64 @@ body {
 	background: white;
 }
 
-body > .container {
+body>.container {
 	padding: 55px 0px 0;
 }
 
 @keyframes alertPulsation {
-	0%   { opacity:1; }
-	50%  { opacity:0; }
-	100% { opacity:1; }
+	0% {
+		opacity: 1;
+	}
+
+	50% {
+		opacity: 0;
+	}
+
+	100% {
+		opacity: 1;
+	}
 }
-@-o-keyframes alertPulsation{
-	0%   { opacity:1; }
-	50%  { opacity:0; }
-	100% { opacity:1; }
+
+@-o-keyframes alertPulsation {
+	0% {
+		opacity: 1;
+	}
+
+	50% {
+		opacity: 0;
+	}
+
+	100% {
+		opacity: 1;
+	}
 }
-@-moz-keyframes alertPulsation{
-	0%   { opacity:1; }
-	50%  { opacity:0; }
-	100% { opacity:1; }
+
+@-moz-keyframes alertPulsation {
+	0% {
+		opacity: 1;
+	}
+
+	50% {
+		opacity: 0;
+	}
+
+	100% {
+		opacity: 1;
+	}
 }
-@-webkit-keyframes alertPulsation{
-	0%   { opacity:1; }
-	50%  { opacity:0; }
-	100% { opacity:1; }
+
+@-webkit-keyframes alertPulsation {
+	0% {
+		opacity: 1;
+	}
+
+	50% {
+		opacity: 0;
+	}
+
+	100% {
+		opacity: 1;
+	}
 }
 
 .animate-alertPulsation {
@@ -57,15 +92,17 @@ body > .container {
 }
 
 .pull-right {
-	float:right
+	float: right
 }
 
 .row.no-gutter [class*='col-']:first-child:not(:only-child) {
 	padding-right: 0;
 }
+
 .row.no-gutter [class*='col-']:last-child:not(:only-child) {
 	padding-left: 0;
 }
+
 .row.no-gutter [class*='col-']:not(:first-child):not(:last-child):not(:only-child) {
 	padding-right: 0;
 	padding-left: 0;
@@ -73,13 +110,13 @@ body > .container {
 
 .gradient {
 	background: -webkit-linear-gradient(black, #f2f2f2, black);
-	background-clip:initial;
+	background-clip: initial;
 	-webkit-background-clip: text;
 	-webkit-text-fill-color: transparent;
 	text-shadow: 0px 0px 10px rgba(0, 0, 0, 0.15);
 }
 
-.cursor-pointer{
+.cursor-pointer {
 	cursor: pointer;
 }
 
@@ -97,10 +134,12 @@ body > .container {
 	color: #006515;
 	text-decoration: none;
 }
+
 .lpWaitingStyle {
 	color: #ffdb00;
 	text-decoration: none;
 }
+
 .chargepoint-disabled {
 	color: #A30000;
 	text-decoration: line-through;
@@ -145,6 +184,7 @@ body > .container {
 .bg-lightgrey {
 	background-color: #d0d7e6;
 }
+
 .bg-lightblue {
 	background-color: #23ebe1;
 }
@@ -158,11 +198,11 @@ body > .container {
 }
 
 .bg-apricot {
-	background-color:#fefedf;
+	background-color: #fefedf;
 }
 
 .bg-orange {
-	background-color:#fcbe1e;
+	background-color: #fcbe1e;
 }
 
 /* Extra small devices (portrait phones, less than 576px) */
@@ -253,7 +293,7 @@ h3 {
 		font-size: 1.1rem;
 	}
 
-	body > .container {
+	body>.container {
 		padding: 60px 5% 0;
 	}
 
@@ -366,7 +406,8 @@ h3 {
 	--evuBgCol: rgba(255, 10, 13, 0.3);
 	--counterCol: rgba(255, 127, 127, 0.7);
 	--counterBgCol: rgba(255, 127, 127, 0.3);
-	--pvCol: rgba(0, 255, 0, 0.7);;
+	--pvCol: rgba(0, 255, 0, 0.7);
+	;
 	--pvBgCol: rgba(10, 255, 13, 0.3);
 	--batteryCol: rgba(255, 153, 13, 0.7);
 	--batteryBgCol: rgba(200, 255, 13, 0.3);
@@ -392,7 +433,7 @@ h3 {
 	background-color: rgb(150 150 0);
 }
 
-#theGraph > div {
+#theGraph>div {
 	max-height: 350px;
 	height: 45vh;
 }
@@ -405,12 +446,12 @@ h3 {
 	font-family: 'Font Awesome 5 Free';
 	font-weight: 900;
 	content: "\f146";
-	float: right; 
+	float: right;
 }
 
 .card-header.collapsed .collPlus:after {
 	/* symbol for "collapsed" panels */
-	content: "\f0fe"; 
+	content: "\f0fe";
 }
 
 #infoHeader .card {
