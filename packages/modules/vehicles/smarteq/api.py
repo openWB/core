@@ -411,6 +411,7 @@ class Api:
 
         if self.store['Tokens'] != self.oldTokens:
             self.log.debug("reconnect: tokens changed, store token file")
+            self.store['refresh_timestamp'] = int(time.time())
             self.write_store()
 
         return soc, range
