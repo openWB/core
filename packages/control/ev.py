@@ -358,7 +358,7 @@ class Ev:
         """
         mode_changed = False
 
-        if self.data.control_parameter.chargemode.value != chargemode_log_entry:
+        if self.data.control_parameter.chargemode.value != chargemode_log_entry and chargemode_log_entry != "_":
             mode_changed = True
 
         log.debug(f"Änderung des Lademodus :{mode_changed}")
@@ -489,7 +489,7 @@ class Ev:
                                     all_surplus > self.ev_template.data.min_current * max_phases_ev * 230
                                     - get_power and
                                     phases_in_use == 1)
-                condition_3_to_1 = max(get_currents) < min_current and all_surplus <= 0 and phases_in_use >= 1
+                condition_3_to_1 = max(get_currents) < min_current and all_surplus <= 0 and phases_in_use > 1
                 if condition_3_to_1 or condition_1_to_3:
                     # Umschaltverzögerung starten
                     timestamp_auto_phase_switch = timecheck.create_timestamp()
@@ -500,7 +500,7 @@ class Ev:
                     message = f'{direction_str} Phasen für {delay/60} Min aktiv.'
             else:
                 condition_1_to_3 = max(get_currents) > max_current and all_surplus > 0 and phases_in_use == 1
-                condition_3_to_1 = max(get_currents) < min_current and phases_in_use == 3
+                condition_3_to_1 = max(get_currents) < min_current and phases_in_use > 1
                 if condition_3_to_1 or condition_1_to_3:
                     # Timer laufen lassen
                     if timecheck.check_timestamp(timestamp_auto_phase_switch, delay):
