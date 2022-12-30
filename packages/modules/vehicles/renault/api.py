@@ -58,8 +58,10 @@ def fetch_soc(config: RenaultConfiguration) -> CarState:
     responsetext = response.read()
     vehic = json.loads(responsetext)
 
-    if len(config.vin) < 10:
+    if config.vin is None or len(config.vin) < 10:
         vin = vehic['vehicleLinks'][0]['vin']
+    else:
+        vin = config.vin
 
     # Step 8 - battery-status
     # batt = req.get_http_session().get(f"{KAMEREON_ROOTURL}/commerce/v1/accounts/{kamereonaccountid}/kamereon/kca/"
