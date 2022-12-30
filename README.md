@@ -39,7 +39,7 @@ Software:
 In der Shell folgendes eingeben:
 
 ```bash
-curl -s <https://raw.githubusercontent.com/openWB/core/master/openwb-install.sh> | sudo bash
+curl -s https://raw.githubusercontent.com/openWB/core/master/openwb-install.sh | sudo bash
 ```
 
 ## Entwicklung
