@@ -84,6 +84,11 @@ class Api:
                 if 'Tokens' not in self.store:
                     self.store['Tokens'] = {}
                     self.store['refresh_timestamp'] = int(0)
+        except FileNotFoundError:
+            log.warning("init: no store file found; full connect required")
+            self.store = {}
+            self.store['Tokens'] = {}
+            self.store['refresh_timestamp'] = int(0)
         except Exception:
             log.exception("init: loading stored data failed, file: " + self.storeFile)
             self.store = {}
