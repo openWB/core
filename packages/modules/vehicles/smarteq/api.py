@@ -14,6 +14,7 @@ import os
 import time
 import datetime
 import pickle
+import copy
 
 date_fmt = '%Y-%m-%d %H:%M:%S'
 # refreshToken_exp_days = 7    # 7 days before refreshToken expires a new refreshToken shall be stored
@@ -73,7 +74,7 @@ class Api:
         self.session = req.get_http_session()
 
         self.load_store()
-        self.oldTokens = self.store['Tokens']
+        self.oldTokens = copy.deepcopy(self.store['Tokens'])
         self.init = True
 
     def load_store(self):
@@ -411,7 +412,6 @@ class Api:
 
         if self.store['Tokens'] != self.oldTokens:
             self.log.debug("reconnect: tokens changed, store token file")
-            self.store['refresh_timestamp'] = int(time.time())
             self.write_store()
 
         return soc, range
