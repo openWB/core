@@ -1,10 +1,11 @@
 #!/usr/bin/python3
 
 import requests, json, sys, time, os, html
-#from modules.common import store
-from dataclass_utils import asdict, dataclass_from_dict
-from modules.vehicles.mercedeseq.config import MercedesEQSocConfiguration
-from helpermodules.pub import Pub
+sys.path.append("../../../")
+from modules.common import store
+#from ....dataclass_utils import asdict, dataclass_from_dict
+#from ....modules.vehicles.mercedeseq.config import MercedesEQSocConfiguration
+#from ....helpermodules.pub import Pub
 
 
 #call parameters
@@ -59,10 +60,12 @@ if act.status_code == 200:
 	#write tokens to files
 
   #PUB().pub("openWB/set/vehicle/"+str(EVId)+"soc_module/config",)
-
-  fd = open(moddir + 'soc_eq_acc_ev' + str(EVId),'w')
+  tokenfile=moddir + 'soc_eq_acc_ev' + str(EVId)
+  fd = open(tokenfile,'w')
   json.dump({'expires_in' : expires_in, 'refresh_token' : refresh_token, 'access_token' : access_token}, fd)
   fd.close()
+  if oct(os.stat(tokenfile).st_mode)[-3:] != "777":
+    os.chmod(tokenfile,0o777)
   # ev = store.get_car_value_store(ChargePoint)
 
 
