@@ -10,10 +10,14 @@ fi
 
 echo "installing openWB 2 into \"${OPENWBBASEDIR}\""
 
-echo "install required packages..."
-apt-get update
-apt-get -q -y install vim bc apache2 php php-gd php-curl php-xml php-json libapache2-mod-php jq git mosquitto mosquitto-clients socat python3-pip sshpass sudo ssl-cert
-echo "done"
+echo "tweaking apt configuration..."
+if [ -d "/etc/apt/apt.conf.d" ]; then
+	sudo cp "${OPENWBBASEDIR}/data/config/apt/99openwb" "/etc/apt/apt.conf.d/"
+	echo "done"
+else
+	echo "path '/etc/apt/apt.conf.d' is missing! unsupported system!"
+fi
+"${OPENWBBASEDIR}/runs/install_packages.sh"
 
 echo "create group $OPENWB_GROUP"
 # Will do nothing if group already exists:
