@@ -146,20 +146,57 @@ chmod 666 "$LOGFILE"
 	echo "cleaning obsolete python cache folders..."
 	"$OPENWBBASEDIR/runs/cleanPythonCache.sh"
 
-	# check if display is configured and setup timeout
-	# if (( displayaktiv == 1 )); then
-	# 	echo "display..."
-	# 	if ! grep -Fq "pinch" /home/pi/.config/lxsession/LXDE-pi/autostart
-	# 	then
-	# 		echo "not found"
-	# 		echo "@xscreensaver -no-splash" > /home/pi/.config/lxsession/LXDE-pi/autostart
-	# 		echo "@point-rpi" >> /home/pi/.config/lxsession/LXDE-pi/autostart
-	# 		echo "@xset s 600" >> /home/pi/.config/lxsession/LXDE-pi/autostart
-	# 		echo "@chromium-browser --incognito --disable-pinch --kiosk http://localhost/openWB/web/display/" >> /home/pi/.config/lxsession/LXDE-pi/autostart
-	# 	fi
-	# 	echo "deleting browser cache"
-	# 	rm -rf /home/pi/.cache/chromium
-	# fi
+	# display setup
+	echo "display setup..."
+	if versionMatch "${OPENWBBASEDIR}/data/config/display/lightdm-autologin-greeter.conf" "/etc/lightdm/lightdm.conf.d/lightdm-autologin-greeter.conf"; then
+		echo "autologin configured"
+	else
+		echo "updating autologin"
+		sudo cp "${OPENWBBASEDIR}/data/config/display/lightdm-autologin-greeter.conf" "/etc/lightdm/lightdm.conf.d/lightdm-autologin-greeter.conf"
+	fi
+	if versionMatch "${OPENWBBASEDIR}/data/config/display/lightdm-hide-mouse-cursor.conf" "/etc/lightdm/lightdm.conf.d/lightdm-hide-mouse-cursor.conf"; then
+		echo "mouse cursor configured"
+	else
+		echo "updating mouse cursor configuration"
+		sudo cp "${OPENWBBASEDIR}/data/config/display/lightdm-hide-mouse-cursor.conf" "/etc/lightdm/lightdm.conf.d/lightdm-hide-mouse-cursor.conf"
+	fi
+	if versionMatch "${OPENWBBASEDIR}/data/config/display/lxdeautostart" "/home/openwb/.config/lxsession/LXDE/autostart"; then
+		echo "lxde session autostart already configured"
+	else
+		echo "updating lxde session autostart"
+		cp "${OPENWBBASEDIR}/data/config/display/lxdeautostart" "/home/openwb/.config/lxsession/LXDE/autostart"
+	fi
+	"${OPENWBBASEDIR}/runs/update_local_display_timeout.sh"
+
+	default_target=$(systemctl get-default)
+	display_active=$(mosquitto_sub -p 1886 -t "openWB/optional/int_display/active" -C 1 -W 1)
+	if (($? == 0 && display_active == "true")); then
+		if [[ $default_target == "graphical.target" ]]; then
+			echo "graphical target already configured"
+		else
+			echo "setting graphical target as default"
+			sudo systemctl set-default graphical.target
+		fi
+		if systemctl status lightdm.service; then
+			echo "lightdm already running"
+		else
+			echo "lightdm not running, starting service"
+			sudo systemctl start lightdm.service
+		fi
+	else
+		if [[ $default_target == "multi-user.target" ]]; then
+			echo "multi-user target already configured"
+		else
+			echo "setting multi-user target as default"
+			sudo systemctl set-default multi-user.target
+		fi
+		if systemctl status lightdm.service; then
+			echo "lightdm not running"
+		else
+			echo "lightdm running, stopping service"
+			sudo systemctl stop lightdm.service
+		fi
+	fi
 
 	# check for apache configuration
 	echo "apache default site..."
