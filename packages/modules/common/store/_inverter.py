@@ -64,10 +64,11 @@ class PurgeInverterState:
                     break
             if len(hybrid):
                 for bat in hybrid:
-                    state.power -= data.data.bat_data[bat].data["get"]["power"]
-                    state.exported -= data.data.bat_data[bat].data["get"]["exported"]
-                    if state.currents and data.data.bat_data[bat].data["get"].get("currents"):
-                        state.currents = list(map(add, state.currents, data.data.bat_data[bat].data["get"]["currents"]))
+                    bat_get = data.data.bat_data[bat].data["get"]
+                    state.power -= bat_get["power"]
+                    state.exported += bat_get["imported"] - bat_get["exported"]
+                    if state.currents and bat_get.get("currents"):
+                        state.currents = list(map(add, state.currents, bat_get["currents"]))
                     else:
                         state.currents = [0.0]*3
             if state.dc_power is not None:
