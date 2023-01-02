@@ -186,7 +186,7 @@ function refreshChargeTemplate(templateIndex) {
 								schedulePlanElement.find('.charge-point-schedule-limit-icon').removeClass('fa-bolt');
 								schedulePlanElement.find('.charge-point-schedule-limit-icon').addClass('fa-car-battery');
 							} else {
-								schedulePlanElement.find('.charge-point-schedule-limit').text((value.limit.amount/1000) + "kWh");
+								schedulePlanElement.find('.charge-point-schedule-limit').text((value.limit.amount / 1000) + "kWh");
 								schedulePlanElement.find('.charge-point-schedule-limit-icon').removeClass('fa-car-battery');
 								schedulePlanElement.find('.charge-point-schedule-limit-icon').addClass('fa-bolt');
 							}
@@ -327,7 +327,7 @@ function refreshChargeTemplate(templateIndex) {
 
 function refreshVehicleSoc(vehicleIndex) {
 	if (vehicleSoc.hasOwnProperty(vehicleIndex)) {
-		$('.charge-point-vehicle-data[data-ev="'+vehicleIndex+'"]').each(function () {
+		$('.charge-point-vehicle-data[data-ev="' + vehicleIndex + '"]').each(function () {
 			var parent = $(this).closest('.charge-point-card');
 			var elementIsConfigured = $(parent).find('.charge-point-soc-configured'); // now get parents respective child element
 			var elementIsNotConfigured = $(parent).find('.charge-point-soc-not-configured'); // now get parents respective child element
@@ -1056,7 +1056,7 @@ function processVehicleMessages(mqttTopic, mqttPayload) {
 		planIndex = mqttTopic.match(/[0-9]+$/i)[0];
 		try {
 			const newPlan = JSON.parse(mqttPayload);
-			if (! (templateIndex in schedulePlan)) {
+			if (!(templateIndex in schedulePlan)) {
 				schedulePlan[templateIndex] = {};
 			}
 			schedulePlan[templateIndex][planIndex] = newPlan;
@@ -1074,7 +1074,7 @@ function processVehicleMessages(mqttTopic, mqttPayload) {
 		try {
 			// console.log("received time charge plan", templateIndex, planIndex, mqttPayload);
 			const newPlan = JSON.parse(mqttPayload);
-			if (! (templateIndex in timeChargePlan)) {
+			if (!(templateIndex in timeChargePlan)) {
 				timeChargePlan[templateIndex] = {};
 			}
 			timeChargePlan[templateIndex][planIndex] = newPlan;
