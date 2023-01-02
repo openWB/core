@@ -40,6 +40,18 @@ chmod 666 "$LOGFILE"
 		sudo kill "$$"
 	) &
 
+	if [ -d "/etc/apt/apt.conf.d" ]; then
+		if versionMatch "${OPENWBBASEDIR}/data/config/apt/99openwb" "/etc/apt/apt.conf.d/99openwb"; then
+			echo "apt configuration already up to date"
+		else
+			echo "updating apt configuration"
+			sudo cp "${OPENWBBASEDIR}/data/config/apt/99openwb" "/etc/apt/apt.conf.d/99openwb"
+		fi
+	else
+		echo "path '/etc/apt/apt.conf.d' is missing! unsupported system!"
+	fi
+	"${OPENWBBASEDIR}/runs/install_packages.sh"
+
 	if versionMatch "${OPENWBBASEDIR}/data/config/openwb.cron" "/etc/cron.d/openwb"; then
 		echo "openwb.cron already up to date"
 	else
@@ -135,10 +147,6 @@ chmod 666 "$LOGFILE"
 		echo "done"
 	fi
 
-	# check for needed packages
-	echo "apt packages..."
-	# nothing here yet, all in install.sh
-
 	# check for mosquitto configuration
 	echo "check mosquitto installation..."
 	restartService=0
@@ -197,9 +205,10 @@ chmod 666 "$LOGFILE"
 	fi
 	echo "mosquitto done"
 
-	# check for other dependencies
-	echo "python packages..."
+	# check for python dependencies
+	echo "install required python packages with 'pip3'..."
 	pip3 install -r "${OPENWBBASEDIR}/requirements.txt"
+	echo "done"
 
 	# update version
 	# echo "version..."
@@ -254,7 +263,7 @@ chmod 666 "$LOGFILE"
 		ip="\"unknown\""
 	fi
 	echo "my IP: $ip"
-	mosquitto_pub -t "openWB/system/ip_address" -p 1886 -r -m $ip
+	mosquitto_pub -t "openWB/system/ip_address" -p 1886 -r -m "$ip"
 
 	# update current published versions
 	echo "load versions..."
