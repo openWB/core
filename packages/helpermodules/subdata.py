@@ -56,13 +56,17 @@ class SubData:
                  event_cp_config: threading.Event,
                  event_module_update_completed: threading.Event,
                  event_copy_data: threading.Event,
-                 event_global_data_initialized: threading.Event):
+                 event_global_data_initialized: threading.Event,
+                 event_command_completed: threading.Event,
+                 event_subdata_initialized: threading.Event):
         self.event_ev_template = event_ev_template
         self.event_charge_template = event_charge_template
         self.event_cp_config = event_cp_config
         self.event_module_update_completed = event_module_update_completed
         self.event_copy_data = event_copy_data
         self.event_global_data_initialized = event_global_data_initialized
+        self.event_command_completed = event_command_completed
+        self.event_subdata_initialized = event_subdata_initialized
         self.heartbeat = False
 
         self.bat_data["all"] = bat.BatAll()
@@ -87,11 +91,13 @@ class SubData:
         client.subscribe("openWB/graph/#", 2)
         client.subscribe("openWB/optional/#", 2)
         client.subscribe("openWB/counter/#", 2)
+        client.subscribe("openWB/command/command_completed", 2)
         # Nicht mit wildcard abonnieren, damit nicht die Komponenten vor den Devices empfangen werden.
         client.subscribe("openWB/system/+", 2)
         client.subscribe("openWB/system/device/module_update_completed", 2)
         client.subscribe("openWB/system/mqtt/bridge/+", 2)
         client.subscribe("openWB/system/device/+/config", 2)
+        Pub().pub("openWB/system/subdata_initialized", True)
 
     def on_message(self, client, userdata, msg):
         """ wartet auf eingehende Topics.
@@ -124,6 +130,8 @@ class SubData:
             self.process_counter_topic(self.counter_data, msg)
         elif "openWB/system/" in msg.topic:
             self.process_system_topic(client, self.system_data, msg)
+        elif "openWB/command/command_completed" == msg.topic:
+            self.event_command_completed.set()
         else:
             log.warning("unknown subdata-topic: "+str(msg.topic))
 
@@ -223,7 +231,7 @@ class SubData:
                         if config["type"] is None:
                             var["ev"+index].soc_module = None
                         else:
-                            mod = importlib.import_module("."+config["type"]+".soc", "modules")
+                            mod = importlib.import_module(".vehicles."+config["type"]+".soc", "modules")
                             var["ev"+index].soc_module = mod.Soc(config, index)
                     elif re.search("/vehicle/[0-9]+/control_parameter/", msg.topic) is not None:
                         self.set_json_payload_class(
@@ -362,7 +370,7 @@ class SubData:
                                     "cp"+index].chargepoint.chargepoint_module.connection_module or
                                 config["power_module"] != var["cp"+index].chargepoint.chargepoint_module.power_module):
                             mod = importlib.import_module(
-                                "."+config["connection_module"]["type"]+".chargepoint_module", "modules")
+                                ".chargepoints."+config["connection_module"]["type"]+".chargepoint_module", "modules")
                             var["cp"+index].chargepoint.chargepoint_module = mod.ChargepointModule(
                                 config["id"], config["connection_module"], config["power_module"])
                         self.set_json_payload_class(var["cp"+index].chargepoint.data.config, msg)
@@ -633,7 +641,7 @@ class SubData:
                                   str(index)+" gefunden werden.")
                 else:
                     device_config = decode_payload(msg.payload)
-                    dev = importlib.import_module("."+device_config["type"]+".device", "modules")
+                    dev = importlib.import_module(".devices."+device_config["type"]+".device", "modules")
                     config = dataclass_from_dict(dev.device_descriptor.configuration_factory, device_config)
                     var["device"+index] = (dev.Device if hasattr(dev, "Device") else dev.create_device)(config)
                     # Durch das erneute Subscribe werden die Komponenten mit dem aktualisierten TCP-Client angelegt.
@@ -670,7 +678,7 @@ class SubData:
                     # TCP-Verbindung aufgebaut wird, deren IP dann nicht aktualisiert werden würde.
                     component_config = decode_payload(msg.payload)
                     component = importlib.import_module(
-                        f'.{var["device"+index].device_config.type}.{component_config["type"]}', "modules")
+                        f'.devices.{var["device"+index].device_config.type}.{component_config["type"]}', "modules")
                     config = dataclass_from_dict(component.component_descriptor.configuration_factory, component_config)
                     var["device"+index].add_component(config)
                     client.subscribe(f"openWB/system/device/{index}/component/{index_second}/simulation", 2)
@@ -695,6 +703,10 @@ class SubData:
                 elif "openWB/system/available_branches" == msg.topic:
                     # Logged in update.log, not used in data.data and removed due to readability purposes of main.log.
                     return
+                elif "openWB/system/subdata_initialized" == msg.topic:
+                    if decode_payload(msg.payload) != "":
+                        Pub().pub("openWB/system/subdata_initialized", "")
+                        self.event_subdata_initialized.set()
                 self.set_json_payload(var["system"].data, msg)
         except Exception:
             log.exception("Fehler im subdata-Modul")

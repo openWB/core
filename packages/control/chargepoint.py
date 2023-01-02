@@ -240,6 +240,7 @@ class Set:
     log: Log = field(default_factory=log_factory)
     manual_lock: bool = False
     phases_to_use: int = 0
+    plug_state_prev: bool = False
     plug_time: Optional[str] = None
     required_power: float = 0
     rfid: Optional[str] = None
@@ -334,9 +335,7 @@ class Chargepoint:
             self.num = index
             # set current aus dem vorherigen Zyklus, um zu wissen, ob am Ende des Zyklus die Ladung freigegeben wird
             # (für Control-Pilot-Unterbrechung)
-            self.set_current_prev = 0
-            # Um herauszufinden, ob an-/abgesteckt wurde, zB für SoC.
-            self.plug_state_prev = False
+            self.set_current_prev = 0.0
             # bestehende Daten auf dem Broker nicht zurücksetzen, daher nicht publishen
             self.data: ChargepointData = ChargepointData()
             self.data.set_event(event)
@@ -464,6 +463,10 @@ class Chargepoint:
         except Exception:
             log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.num))
             return False, "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
+        if self.data.get.rfid and message is not None:
+            message += (f"\n RFID-Tag {self.data.get.rfid} kann erst einem EV zugeordnet werden, wenn der Ladepunkt"
+                        " nicht mehr gesperrt ist. Wenn nach dem Scannen nicht innerhalb von 5 Minuten ein Auto"
+                        " angesteckt wird, wird der RFID-Tag verworfen.")
         return charging_possible, message
 
     def _process_charge_stop(self) -> None:
@@ -505,11 +508,13 @@ class Chargepoint:
         Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/energy_to_charge", 0)
 
     def remember_previous_values(self):
-        self.set_current_prev = self.data.set.current
-        self.plug_state_prev = self.data.get.plug_state
+        self.data.set.plug_state_prev = self.data.get.plug_state
+        Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/plug_state_prev", self.data.set.plug_state_prev)
 
     def prepare_cp(self) -> Tuple[int, Optional[str]]:
         try:
+            # Für Control-Pilot-Unterbrechung set current merken.
+            self.set_current_prev = self.data.set.current
             self.__validate_rfid()
             charging_possible, message = self.is_charging_possible()
             if charging_possible:
@@ -524,7 +529,6 @@ class Chargepoint:
                     self.data.get.state_str = message
             else:
                 num = -1
-                message_ev = None
             self._process_charge_stop()
             return num, message
         except Exception:
@@ -738,7 +742,8 @@ class Chargepoint:
                                   self.data.get.rfid_timestamp)
                         return
                     else:
-                        if timecheck.check_timestamp(self.data.get.rfid_timestamp, 300):
+                        if (timecheck.check_timestamp(self.data.get.rfid_timestamp, 300) or
+                                self.data.get.plug_state is True):
                             return
                         else:
                             self.data.get.rfid_timestamp = None
@@ -772,6 +777,9 @@ class Chargepoint:
 
     def update(self, ev_list: Dict[str, Ev]) -> None:
         try:
+            # SoC nach Anstecken aktualisieren
+            if self.data.get.plug_state is True and self.data.set.plug_state_prev is False:
+                Pub().pub(f"openWB/set/vehicle/{self.data.config.ev}/get/force_soc_update", True)
             vehicle, message = self.prepare_cp()
             if vehicle != -1:
                 try:
@@ -788,7 +796,9 @@ class Chargepoint:
                     # Einhaltung des Minimal- und Maximalstroms prüfen
                     required_current = charging_ev.check_min_max_current(
                         required_current, charging_ev.data.control_parameter.phases)
-                    current_changed, mode_changed = charging_ev.check_state(required_current, self.data.set.current)
+                    current_changed = charging_ev.check_if_current_changed(required_current, self.data.set.current)
+                    charging_ev.set_control_parameter(submode, required_current)
+                    mode_changed = charging_ev.check_if_mode_changed(self.data.set.log.chargemode_log_entry)
 
                     # Die benötigte Stromstärke hat sich durch eine Änderung des Lademodus oder der
                     # Konfiguration geändert. Die Zuteilung entsprechend der Priorisierung muss neu geprüft
@@ -814,7 +824,6 @@ class Chargepoint:
                         # entsteht so eine kurze Unterbrechung der Ladung, wenn während dem Laden
                         # umkonfiguriert wird.
                     message = message_ev if message_ev else message
-                    charging_ev.set_control_parameter(submode, required_current)
                     # Ein Eintrag muss nur erstellt werden, wenn vorher schon geladen wurde und auch danach noch
                     # geladen werden soll.
                     if mode_changed and self.data.get.charge_state and state:

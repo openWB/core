@@ -2,7 +2,10 @@ from dataclasses import asdict
 import glob
 import json
 import logging
+from pathlib import Path
 import re
+import subprocess
+import time
 from typing import List
 
 from helpermodules.broker import InternalBrokerClient
@@ -16,7 +19,7 @@ log = logging.getLogger(__name__)
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 3
+    DATASTORE_VERSION = 5
     valid_topic = ["^openWB/bat/config/configured$",
                    "^openWB/bat/set/charging_power_left$",
                    "^openWB/bat/set/switch_on_soc_reached$",
@@ -40,8 +43,8 @@ class UpdateConfig:
                    "^openWB/chargepoint/get/imported$",
                    "^openWB/chargepoint/get/daily_exported$",
                    "^openWB/chargepoint/get/daily_imported$",
-                   "^openWB/chargepoint/template/0$",
-                   "^openWB/chargepoint/template/0/autolock/0$",
+                   "^openWB/chargepoint/template/[0-9]+$",
+                   "^openWB/chargepoint/template/[0-9]+/autolock/[0-9]+$",
                    "^openWB/chargepoint/[0-9]+/config$",
                    "^openWB/chargepoint/[0-9]+/get/charge_state$",
                    "^openWB/chargepoint/[0-9]+/get/currents$",
@@ -217,6 +220,7 @@ class UpdateConfig:
                    "^openWB/vehicle/[0-9]+/control_parameter/required_current$",
                    "^openWB/vehicle/[0-9]+/control_parameter/timestamp_auto_phase_switch$",
                    "^openWB/vehicle/[0-9]+/control_parameter/timestamp_perform_phase_switch$",
+                   "^openWB/vehicle/[0-9]+/control_parameter/timestamp_switch_on_off$",
                    "^openWB/vehicle/[0-9]+/control_parameter/used_amount_instant_charging$",
                    "^openWB/vehicle/[0-9]+/control_parameter/phases$",
                    "^openWB/vehicle/[0-9]+/set/ev_template$",
@@ -321,6 +325,7 @@ class UpdateConfig:
         InternalBrokerClient("update-config", self.on_connect, self.on_message).start_finite_loop()
         try:
             self.__remove_outdated_topics()
+            self._remove_invalid_topics()
             self.__pub_missing_defaults()
             self.__update_version()
             self.__solve_breaking_changes()
@@ -345,6 +350,14 @@ class UpdateConfig:
             else:
                 Pub().pub(topic, "")
                 log.debug("Ungültiges Topic zum Startzeitpunkt: "+str(topic))
+
+    def _remove_invalid_topics(self):
+        # remove all chargepoints without config. This data comes from deleted chargepoints that are still sent to an
+        # invalid CP number.
+        for topic in self.all_received_topics.keys():
+            if re.search("/chargepoint/[0-9]+/", topic) is not None:
+                if f"openWB/chargepoint/{get_index(topic)}/config" not in self.all_received_topics.keys():
+                    Pub().pub(topic, "")
 
     def __pub_missing_defaults(self):
         # zwingend erforderliche Standardwerte setzen
@@ -497,3 +510,26 @@ class UpdateConfig:
                     updated_payload["limit"].pop("soc")
                     Pub().pub(topic.replace("openWB/", "openWB/set/"), updated_payload)
         Pub().pub("openWB/set/system/datastore_version", 3)
+
+    def upgrade_datastore_3(self) -> None:
+        for topic, payload in self.all_received_topics.items():
+            if re.search(
+                    "openWB/vehicle/template/charge_template/[0-9]+/time_charging/plans/[0-9]+",
+                    topic) is not None:
+                payload = decode_payload(payload)
+                if "limit" not in payload:
+                    updated_payload = payload
+                    updated_payload["limit"] = {"selected": "soc", "amount": 1000, "soc": 70}
+                    Pub().pub(topic.replace("openWB/", "openWB/set/"), updated_payload)
+        Pub().pub("openWB/set/system/datastore_version", 4)
+
+    def upgrade_datastore_4(self) -> None:
+        moved_file = False
+        for path in Path("/etc/mosquitto/conf.d").glob('99-bridge-openwb-*.conf'):
+            subprocess.run(["sudo", "mv", str(path), str(path).replace("conf.d", "conf_local.d")])
+            moved_file = True
+        Pub().pub("openWB/set/system/datastore_version", 5)
+        if moved_file:
+            time.sleep(1)
+            parent_file = Path(__file__).resolve().parents[2]
+            subprocess.run([str(parent_file / "runs" / "reboot.sh")])

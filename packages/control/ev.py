@@ -13,7 +13,7 @@ from typing import List, Dict, Optional, Tuple
 
 from control import data
 from dataclass_utils.factories import empty_dict_factory, emtpy_list_factory
-from helpermodules.abstract_plans import ScheduledChargingPlan, TimeChargingPlan
+from helpermodules.abstract_plans import Limit, limit_factory, ScheduledChargingPlan, TimeChargingPlan
 from helpermodules.pub import Pub
 from helpermodules import timecheck
 from modules.common.abstract_soc import AbstractSoc
@@ -49,17 +49,6 @@ class ScheduledCharging:
 class TimeCharging:
     active: bool = False
     plans: Dict[int, TimeChargingPlan] = field(default_factory=empty_dict_factory)
-
-
-@dataclass
-class Limit:
-    selected: str = "none"
-    amount: int = 1000
-    soc: int = 50
-
-
-def limit_factory() -> Limit:
-    return Limit()
 
 
 @dataclass
@@ -319,7 +308,11 @@ class Ev:
             # Wenn Zielladen auf Überschuss wartet, prüfen, ob Zeitladen aktiv ist.
             if ((required_current is None or required_current <= 1) and
                     self.charge_template.data.time_charging.active):
-                time_charging_current, submode, message, name = self.charge_template.time_charging()
+                used_amount = charged_since_mode_switch - self.data.control_parameter.imported_at_plan_start
+                time_charging_current, submode, message, name = self.charge_template.time_charging(
+                    self.data.get.soc,
+                    used_amount
+                )
                 if time_charging_current > 0:
                     self.data.control_parameter.current_plan = name
                     Pub().pub(f"openWB/set/vehicle/{self.num}/control_parameter/current_plan", name)
@@ -348,7 +341,7 @@ class Ev:
                         required_current, submode, _ = self.charge_template.standby()
                 elif self.charge_template.data.chargemode.selected == "stop":
                     required_current, submode, message = self.charge_template.stop()
-            if submode == "stop" or (self.charge_template.data.chargemode.selected == "stop"):
+            if submode == "stop" or submode == "standby" or (self.charge_template.data.chargemode.selected == "stop"):
                 state = False
             if phases is None:
                 phases = self.data.control_parameter.phases
@@ -357,41 +350,42 @@ class Ev:
             log.exception("Fehler im ev-Modul "+str(self.num))
             return False, "ein interner Fehler aufgetreten ist.", "stop", 0, self.data.control_parameter.phases
 
-    def check_state(self, required_current: float, set_current: float) -> Tuple[bool, bool]:
+    def check_if_mode_changed(self, chargemode_log_entry: str) -> bool:
         """ prüft, ob sich etwas an den Parametern für die Regelung geändert hat,
         sodass der LP neu in die Priorisierung eingeordnet werden muss und veröffentlicht die Regelparameter.
         """
-        try:
-            current_changed = False
-            mode_changed = False
+        mode_changed = False
 
-            if self.data.control_parameter.chargemode != self.charge_template.data.chargemode.selected:
-                mode_changed = True
+        if self.data.control_parameter.chargemode != chargemode_log_entry:
+            mode_changed = True
 
-            # Die benötigte Stromstärke hat sich durch eine Änderung des Lademodus oder der Konfiguration geändert.
-            # Der Ladepunkt muss in der Regelung neu priorisiert werden.
-            if self.data.control_parameter.required_current != required_current:
-                # Wenn im PV-Laden mit übrigem Überschuss geladen wird und dadurch die aktuelle Soll-Stromstärke über
-                # der neuen benötigten Stromstärke liegt, muss der LP im Algorithmus nicht neu eingeordnet werden, da
-                # der LP mit der bisherigen Stormstärke weiter laden kann und sich die benötigte Stromstärke nur auf
-                # die Reihenfolge innerhalb des Prioritäten-Tupels bezieht und auf dieser Ebene kein LP, der bereits
-                # lädt, für einen neu hinzugekommenen abgeschaltet werden darf. Wenn sich auch der Lademodus geändert
-                # hat, muss die neue Stromstärke in jedem Fall berücksichtigt werden.
-                if ((self.charge_template.data.chargemode.selected == "pv_charging" or
-                        self.charge_template.data.chargemode.selected == "scheduled_charging") and
-                        ((self.data.control_parameter.submode == "pv_charging" or
-                          self.data.control_parameter.chargemode == "pv_charging") and
-                         set_current > self.data.control_parameter.required_current)):
-                    current_changed = False
-                else:
-                    current_changed = True
+        log.debug(f"Änderung des Lademodus :{mode_changed}")
+        return mode_changed
 
-            log.debug("Änderung der Sollstromstärke :" +
-                      str(current_changed)+", Änderung des Lademodus :"+str(mode_changed))
-            return current_changed, mode_changed
-        except Exception:
-            log.exception("Fehler im ev-Modul "+str(self.num))
-            return True
+    def check_if_current_changed(self, required_current: float, set_current: float) -> bool:
+        """ prüft, ob sich etwas an den Parametern für die Regelung geändert hat,
+        sodass der LP neu in die Priorisierung eingeordnet werden muss und veröffentlicht die Regelparameter.
+        """
+        current_changed = False
+        # Die benötigte Stromstärke hat sich durch eine Änderung des Lademodus oder der Konfiguration geändert.
+        # Der Ladepunkt muss in der Regelung neu priorisiert werden.
+        if self.data.control_parameter.required_current != required_current:
+            # Wenn im PV-Laden mit übrigem Überschuss geladen wird und dadurch die aktuelle Soll-Stromstärke über
+            # der neuen benötigten Stromstärke liegt, muss der LP im Algorithmus nicht neu eingeordnet werden, da
+            # der LP mit der bisherigen Stormstärke weiter laden kann und sich die benötigte Stromstärke nur auf
+            # die Reihenfolge innerhalb des Prioritäten-Tupels bezieht und auf dieser Ebene kein LP, der bereits
+            # lädt, für einen neu hinzugekommenen abgeschaltet werden darf. Wenn sich auch der Lademodus geändert
+            # hat, muss die neue Stromstärke in jedem Fall berücksichtigt werden.
+            if ((self.charge_template.data.chargemode.selected == "pv_charging" or
+                    self.charge_template.data.chargemode.selected == "scheduled_charging") and
+                    ((self.data.control_parameter.submode == "pv_charging" or
+                        self.data.control_parameter.chargemode == "pv_charging") and
+                        set_current > self.data.control_parameter.required_current)):
+                current_changed = False
+            else:
+                current_changed = True
+        log.debug(f"Änderung der Sollstromstärke :{current_changed}")
+        return current_changed
 
     def set_control_parameter(self, submode, required_current):
         """ setzt die Regel-Parameter, die der Algorithmus verwendet.
@@ -405,9 +399,13 @@ class Ev:
             self.data.control_parameter.submode = submode
             Pub().pub("openWB/set/vehicle/"+str(self.num) +
                       "/control_parameter/submode", submode)
-            self.data.control_parameter.chargemode = self.charge_template.data.chargemode.selected
-            Pub().pub("openWB/set/vehicle/"+str(self.num)+"/control_parameter/chargemode",
-                      self.charge_template.data.chargemode.selected)
+            if submode == "time_charging":
+                self.data.control_parameter.chargemode = "time_charging"
+                Pub().pub("openWB/set/vehicle/"+str(self.num)+"/control_parameter/chargemode", "time_charging")
+            else:
+                self.data.control_parameter.chargemode = self.charge_template.data.chargemode.selected
+                Pub().pub("openWB/set/vehicle/"+str(self.num)+"/control_parameter/chargemode",
+                          self.charge_template.data.chargemode.selected)
             self.data.control_parameter.prio = self.charge_template.data.prio
             Pub().pub("openWB/set/vehicle/"+str(self.num) +
                       "/control_parameter/prio", self.charge_template.data.prio)
@@ -602,8 +600,12 @@ class ChargeTemplate:
 
     TIME_CHARGING_NO_PLAN_CONFIGURED = "Keine Ladung, da keine Zeitfenster für Zeitladen konfiguriert sind."
     TIME_CHARGING_NO_PLAN_ACTIVE = "Keine Ladung, da kein Zeitfenster für Zeitladen aktiv ist."
+    TIME_CHARGING_SOC_REACHED = "Keine Ladung, da der Soc bereits erreicht wurde."
+    TIME_CHARGING_AMOUNT_REACHED = "Keine Ladung, da die Energiemenge bereits geladen wurde."
 
-    def time_charging(self) -> Tuple[int, str, Optional[str], Optional[str]]:
+    def time_charging(self,
+                      soc: float,
+                      used_amount_time_charging: float) -> Tuple[int, str, Optional[str], Optional[str]]:
         """ prüft, ob ein Zeitfenster aktiv ist und setzt entsprechend den Ladestrom
         """
         message = None
@@ -611,7 +613,20 @@ class ChargeTemplate:
             if self.data.time_charging.plans:
                 plan = timecheck.check_plans_timeframe(self.data.time_charging.plans)
                 if plan is not None:
-                    return plan.current, "time_charging", message, plan.name
+                    if plan.limit.selected == "none":  # kein Limit konfiguriert, mit konfigurierter Stromstärke laden
+                        return plan.current, "time_charging", message, plan.name
+                    elif plan.limit.selected == "soc":  # SoC Limit konfiguriert
+                        if soc < plan.limit.soc:
+                            return plan.current, "time_charging", message, plan.name  # Limit nicht erreicht
+                        else:
+                            return 0, "stop", self.TIME_CHARGING_SOC_REACHED, plan.name  # Limit erreicht
+                    elif plan.limit.selected == "amount":  # Energiemengenlimit konfiguriert
+                        if used_amount_time_charging < plan.limit.amount:
+                            return plan.current, "time_charging", message, plan.name  # Limit nicht erreicht
+                        else:
+                            return 0, "stop", self.TIME_CHARGING_AMOUNT_REACHED, plan.name  # Limit erreicht
+                    else:
+                        raise TypeError(f'{plan.limit.selected} unbekanntes Zeitladen-Limit.')
                 else:
                     message = self.TIME_CHARGING_NO_PLAN_ACTIVE
             else:

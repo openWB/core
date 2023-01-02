@@ -4,7 +4,7 @@ $debug = false;
 $bridgePrefix = "99-bridge-openwb";
 // generate a random integer for our clientID
 $randomnr = rand();
-$mosquittoConfDir = "/etc/mosquitto/conf.d/";
+$mosquittoConfDir = "/etc/mosquitto/conf_local.d/";
 
 if ($argc > 2) {
 	$bridgeId = $argv[1];

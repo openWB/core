@@ -1,7 +1,7 @@
 #!/bin/bash
 OPENWBBASEDIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 
-# setup logfile
+# setup log file
 LOGFILE="${OPENWBBASEDIR}/ramdisk/main.log"
 touch "$LOGFILE"
 chmod 666 "$LOGFILE"
@@ -22,7 +22,7 @@ chmod 666 "$LOGFILE"
 
 	if ! id -u openwb >/dev/null 2>&1; then
 		echo "user 'openwb' missing"
-		echo "starting upgrade skript..."
+		echo "starting upgrade script..."
 		"$OPENWBBASEDIR/runs/upgrade2openwbuser.sh" >>"${OPENWBBASEDIR}/data/log/update.log" 2>&1
 	fi
 
@@ -35,11 +35,25 @@ chmod 666 "$LOGFILE"
 	if [[ -f "${OPENWBBASEDIR}/ramdisk/bootdone" ]]; then
 		rm "${OPENWBBASEDIR}/ramdisk/bootdone"
 	fi
-	mosquitto_pub -p 1886 -t "openWB/system/boot_done" -r -m 'false'
 	(
 		sleep 600
 		sudo kill "$$"
 	) &
+
+	if versionMatch "${OPENWBBASEDIR}/data/config/openwb.cron" "/etc/cron.d/openwb"; then
+		echo "openwb.cron already up to date"
+	else
+		echo "updating openwb.cron"
+		sudo cp "${OPENWBBASEDIR}/data/config/openwb.cron" "/etc/cron.d/openwb"
+	fi
+
+	if versionMatch "${OPENWBBASEDIR}/data/config/openwb2.service" "/etc/systemd/system/openwb2.service"; then
+		echo "openwb2.service already up to date"
+	else
+		echo "updating openwb2.service"
+		sudo cp "${OPENWBBASEDIR}/data/config/openwb2.service" "/etc/systemd/system/openwb2.service"
+		sudo reboot now &
+	fi
 
 	# check for pending restore
 	if [[ -f "${OPENWBBASEDIR}/data/restore/run_on_boot" ]]; then
@@ -47,26 +61,14 @@ chmod 666 "$LOGFILE"
 		# remove flag to prevent a boot loop on failure
 		rm "${OPENWBBASEDIR}/data/restore/run_on_boot"
 		"${OPENWBBASEDIR}/runs/restore.sh"
-		# restore.sh will reboot if successfull
+		# restore.sh will reboot if successful
 	else
 		echo "no restore pending, normal startup"
 	fi
 
-	# initialize automatic phase switching
-	# alpha image restricted to standalone installation!
-	# if (( u1p3paktiv == 1 )); then
-	# 	echo "triginit..."
-	# 	# quick init of phase switching with default pause duration (2s)
-	# 	sudo python ${OPENWBBASEDIR}/runs/triginit.py
-	# fi
-
-	# check if tesla wall connector is configured and start daemon
-	# if [[ $evsecon == twcmanager ]]; then
-	# 	echo "twcmanager..."
-	# 	if [[ $twcmanagerlp1ip == "localhost/TWC" ]]; then
-	# 		screen -dm -S TWCManager /var/www/html/TWC/TWCManager.py &
-	# 	fi
-	# fi
+	# clean python cache
+	echo "cleaning obsolete python cache folders..."
+	"$OPENWBBASEDIR/runs/cleanPythonCache.sh"
 
 	# check if display is configured and setup timeout
 	# if (( displayaktiv == 1 )); then
@@ -247,7 +249,12 @@ chmod 666 "$LOGFILE"
 	# fi
 
 	# get local ip
-	mosquitto_pub -t "openWB/system/ip_address" -p 1886 -r -m "\"$(ip route get 1 | awk '{print $7;exit}')\""
+	ip="\"$(ip route get 1 | awk '{print $7;exit}')\""
+	if [[ $ip == "\"\"" ]]; then
+		ip="\"unknown\""
+	fi
+	echo "my IP: $ip"
+	mosquitto_pub -t "openWB/system/ip_address" -p 1886 -r -m $ip
 
 	# update current published versions
 	echo "load versions..."
@@ -273,7 +280,6 @@ chmod 666 "$LOGFILE"
 	# all done, remove boot and update status
 	echo "$(date +"%Y-%m-%d %H:%M:%S:")" "boot done :-)"
 	mosquitto_pub -p 1886 -t "openWB/system/update_in_progress" -r -m 'false'
-	mosquitto_pub -p 1886 -t "openWB/system/boot_done" -r -m 'true'
 	mosquitto_pub -p 1886 -t "openWB/system/reloadDisplay" -m "1"
 	touch "${OPENWBBASEDIR}/ramdisk/bootdone"
 } >>"$LOGFILE" 2>&1

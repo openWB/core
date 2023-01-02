@@ -1,2 +1,1 @@
-# openwb-version:1
-@reboot openwb /var/www/html/openWB/runs/atreboot.sh &
+# openwb-version:2

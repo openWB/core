@@ -12,7 +12,7 @@ echo "installing openWB 2 into \"${OPENWBBASEDIR}\""
 
 echo "install required packages..."
 apt-get update
-apt-get -q -y install vim bc apache2 php php-gd php-curl php-xml php-json libapache2-mod-php jq git mosquitto mosquitto-clients socat python3-pip sshpass sudo
+apt-get -q -y install vim bc apache2 php php-gd php-curl php-xml php-json libapache2-mod-php jq git mosquitto mosquitto-clients socat python3-pip sshpass sudo ssl-cert
 echo "done"
 
 echo "create group $OPENWB_GROUP"
@@ -127,4 +127,4 @@ echo "installation finished, now running atreboot.sh..."
 "${OPENWBBASEDIR}/runs/atreboot.sh"
 
 echo "all done"
-echo "if you want to use this installation for developmenet, add a password for user 'openwb'"
+echo "if you want to use this installation for development, add a password for user 'openwb'"

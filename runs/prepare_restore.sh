@@ -24,13 +24,12 @@ declare resultStatus
 	else
 		echo "****************************************"
 		echo "Step 3: validating extracted files"
-		if [[ ! -f "$WORKINGDIR/SHA256SUM" ]] || \
-			[[ ! -f "$WORKINGDIR/GIT_BRANCH" ]] || \
-			[[ ! -f "$WORKINGDIR/GIT_HASH" ]] || \
-			[[ ! -d "$WORKINGDIR/openWB" ]] || \
-			[[ ! -f "$WORKINGDIR/mosquitto/mosquitto.db" ]] || \
-			[[ ! -f "$WORKINGDIR/mosquitto_local/mosquitto.db" ]]
-		then
+		if [[ ! -f "$WORKINGDIR/SHA256SUM" ]] ||
+			[[ ! -f "$WORKINGDIR/GIT_BRANCH" ]] ||
+			[[ ! -f "$WORKINGDIR/GIT_HASH" ]] ||
+			[[ ! -d "$WORKINGDIR/openWB" ]] ||
+			[[ ! -f "$WORKINGDIR/mosquitto/mosquitto.db" ]] ||
+			[[ ! -f "$WORKINGDIR/mosquitto_local/mosquitto.db" ]]; then
 			resultMessage="Das Archiv ist nicht vollständig!"
 			resultStatus=1
 		else

@@ -26,14 +26,14 @@ def _pub_configurable_soc_modules() -> None:
                     "configuration": {}
                 }
             }]
-        pathlist = Path(_get_packages_path()/"modules").glob('**/soc.py')
-        for path in pathlist:
+        path_list = Path(_get_packages_path()/"modules"/"vehicles").glob('**/soc.py')
+        for path in path_list:
             try:
                 if path.name.endswith("_test.py"):
                     # Tests überspringen
                     continue
                 dev_defaults = importlib.import_module(
-                    f".{path.parts[-2]}.soc", "modules").device_descriptor.configuration_factory()
+                    f".vehicles.{path.parts[-2]}.soc", "modules").device_descriptor.configuration_factory()
                 soc_modules.append({
                     "value": dev_defaults.type,
                     "text": dev_defaults.name,
@@ -41,7 +41,7 @@ def _pub_configurable_soc_modules() -> None:
                 })
             except Exception:
                 log.exception("Fehler im configuration-Modul")
-        soc_modules = sorted(soc_modules, key=lambda d: d['text'])
+        soc_modules = sorted(soc_modules, key=lambda d: d['text'].upper())
         Pub().pub("openWB/set/system/configurable/soc_modules", soc_modules)
     except Exception:
         log.exception("Fehler im configuration-Modul")
@@ -49,13 +49,14 @@ def _pub_configurable_soc_modules() -> None:
 
 def _pub_configurable_devices_components() -> None:
     def add_components(device: str, pattern: str) -> None:
-        pathlist = Path(_get_packages_path()/"modules"/device).glob(f'**/{pattern}.py')
-        for path in pathlist:
+        path_list = Path(_get_packages_path()/"modules"/"devices"/device).glob(f'**/{pattern}.py')
+        for path in path_list:
             if path.name.endswith("_test.py"):
                 # Tests überspringen
                 continue
             comp_defaults = importlib.import_module(
-                f".{path.parts[-2]}.{path.parts[-1][:-3]}", "modules").component_descriptor.configuration_factory()
+                f".devices.{path.parts[-2]}.{path.parts[-1][:-3]}",
+                "modules").component_descriptor.configuration_factory()
             component.append({
                 "value": comp_defaults.type,
                 "text": comp_defaults.name
@@ -63,8 +64,8 @@ def _pub_configurable_devices_components() -> None:
 
     try:
         devices_components = []
-        pathlist = Path(_get_packages_path()/"modules").glob('**/device.py')
-        for path in pathlist:
+        path_list = Path(_get_packages_path()/"modules"/"devices").glob('**/device.py')
+        for path in path_list:
             try:
                 device = path.parts[-2]
                 component = []
@@ -72,7 +73,7 @@ def _pub_configurable_devices_components() -> None:
                 add_components(device, "*counter*")
                 add_components(device, "*inverter*")
                 dev_defaults = importlib.import_module(
-                    f".{device}.device", "modules").device_descriptor.configuration_factory()
+                    f".devices.{device}.device", "modules").device_descriptor.configuration_factory()
                 devices_components.append({
                     "value": dev_defaults.type,
                     "text": dev_defaults.name,
@@ -80,7 +81,7 @@ def _pub_configurable_devices_components() -> None:
                 })
             except Exception:
                 log.exception("Fehler im configuration-Modul")
-        devices_components = sorted(devices_components, key=lambda d: d['text'])
+        devices_components = sorted(devices_components, key=lambda d: d['text'].upper())
         Pub().pub("openWB/set/system/configurable/devices_components", devices_components)
     except Exception:
         log.exception("Fehler im configuration-Modul")
@@ -89,8 +90,8 @@ def _pub_configurable_devices_components() -> None:
 def _pub_configurable_chargepoints() -> None:
     try:
         chargepoints = []
-        pathlist = Path(_get_packages_path()/"modules").glob('**/chargepoint_module.py')
-        for path in pathlist:
+        path_list = Path(_get_packages_path()/"modules"/"chargepoints").glob('**/chargepoint_module.py')
+        for path in path_list:
             try:
                 if path.name.endswith("_test.py"):
                     # Tests überspringen
@@ -99,14 +100,14 @@ def _pub_configurable_chargepoints() -> None:
                     # Soll (vorerst) nicht auswählbar sein
                     continue
                 dev_defaults = importlib.import_module(
-                    f".{path.parts[-2]}.chargepoint_module", "modules").get_default_config()
+                    f".chargepoints.{path.parts[-2]}.chargepoint_module", "modules").get_default_config()
                 chargepoints.append({
                     "value": dev_defaults["connection_module"]["type"],
                     "text": dev_defaults["connection_module"]["name"]
                 })
             except Exception:
                 log.exception("Fehler im configuration-Modul")
-        chargepoints = sorted(chargepoints, key=lambda d: d['text'])
+        chargepoints = sorted(chargepoints, key=lambda d: d['text'].upper())
         Pub().pub("openWB/set/system/configurable/chargepoints", chargepoints)
     except Exception:
         log.exception("Fehler im configuration-Modul")
