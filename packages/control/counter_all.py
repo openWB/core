@@ -16,6 +16,15 @@ log = logging.getLogger(__name__)
 
 
 @dataclass
+class Config:
+    reserve_for_not_charging: bool = True
+
+
+def config_factory() -> Config:
+    return Config()
+
+
+@dataclass
 class Set:
     loadmanagement_active: bool = False
     home_consumption: float = 0
@@ -38,6 +47,7 @@ def set_factory() -> Set:
 
 @dataclass
 class CounterAllData:
+    config: Config = field(default_factory=config_factory)
     get: Get = field(default_factory=get_factory)
     set: Set = field(default_factory=set_factory)
 
