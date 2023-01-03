@@ -166,3 +166,14 @@ def get_missing_currents_left(preferenced_chargepoints: List[Chargepoint]) -> Tu
             else:
                 missing_currents[i] += 0
     return missing_currents, counts
+
+
+def reset_current_to_target_current():
+    """target_current enthält die gesetzte Stromstärke der vorherigen Stufe. Notwendig, um zB bei der
+    Mindeststromstärke erkennen zu können, ob diese ein vom LM begrenzter Strom aus Stufe 2 oder der Mindeststrom
+    aus Stufe 1 ist."""
+    for cp in data.data.cp_data.values():
+        try:
+            cp.data.set.target_current = cp.data.set.current
+        except Exception:
+            log.exception(f"Fehler im Algorithmus-Modul für Ladepunkt{cp.num}")

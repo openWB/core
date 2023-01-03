@@ -17,8 +17,7 @@ class MinCurrent:
             if preferenced_chargepoints:
                 log.debug(f"Mode-Tuple {mode_tuple}, Zähler {counter.num}")
                 common.update_raw_data(preferenced_chargepoints, diff_to_zero=True)
-                chargepoints = len(preferenced_chargepoints)
-                for i in range(chargepoints):
+                while len(preferenced_chargepoints):
                     cp = preferenced_chargepoints[0]
                     missing_currents, counts = common.get_min_current(cp)
                     if max(missing_currents) > 0:

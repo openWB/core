@@ -40,8 +40,7 @@ class SurplusLed:
              counter: Counter) -> None:
         log.debug(f"Mode-Tuple {mode_tuple}, Zähler {counter.num}")
         common.update_raw_data(chargepoints, surplus=True)
-        chargepoints_num = len(chargepoints)
-        for i in range(chargepoints_num):
+        while len(chargepoints):
             cp = chargepoints[0]
             missing_currents, counts = common.get_missing_currents_left(chargepoints)
             available_currents, limit = Loadmanagement().get_available_currents_surplus(missing_currents,
@@ -137,10 +136,3 @@ class SurplusLed:
             else:
                 charging_ev_data.data.control_parameter.required_currents = [
                     charging_ev_data.ev_template.data.max_current_multi_phases]*3
-
-    def reset_current_to_target_current(self):
-        for cp in data.data.cp_data.values():
-            try:
-                cp.data.set.target_current = cp.data.set.current
-            except Exception:
-                log.exception(f"Fehler im Algorithmus-Modul für Ladepunkt{cp.num}")
