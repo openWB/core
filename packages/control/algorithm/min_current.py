@@ -35,7 +35,9 @@ class MinCurrent:
                                                                available_for_cp,
                                                                cp)
                         else:
-                            cp.data.set.current = available_for_cp
-                            log.debug(f"LP{cp.num}: Stromstärke {available_for_cp}A. Zuteilung ohne Berücksichtigung" +
-                                      " im Lastmanagement, da kein Ladestart zu erwarten ist.")
+                            cp.data.set.current = cp.data.set.charging_ev_data.ev_template.data.min_current
+                            log.debug(
+                                f"LP{cp.num}: Stromstärke {cp.data.set.charging_ev_data.ev_template.data.min_current}" +
+                                "A. Zuteilung ohne Berücksichtigung im Lastmanagement, da kein Ladestart zu erwarten " +
+                                "ist.")
                     preferenced_chargepoints.pop(0)
