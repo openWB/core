@@ -139,13 +139,12 @@ class BatAll:
                             self.data["set"]["charging_power_left"] = self.data["get"]["power"]
                         else:
                             self.data["set"]["charging_power_left"] = 0
-                        log.debug(
-                            "".join(
-                                ("Laderegelung wurde ", "freigegeben."
-                                 if self.data["set"]["switch_on_soc_reached"] else
-                                 "nicht freigegeben, da Einschalt-SoC nicht erreicht.",
-                                 " Verbleibene Speicher-Leistung: ", self.data["set"]["charging_power_left"],
-                                 "W")))
+                        if self.data["set"]["switch_on_soc_reached"]:
+                            msg = "freigegeben."
+                        else:
+                            msg = "nicht freigegeben, da Einschalt-SoC nicht erreicht."
+                        log.debug(f'Laderegelung wurde {msg} Verbleibene Speicher-Leistung: '
+                                  f'{self.data["set"]["charging_power_left"]}W')
                     else:
                         # Kein Einschalt-Soc; Nutzung, wenn Soc über Ausschalt-Soc liegt.
                         if config.switch_off_soc != 0:

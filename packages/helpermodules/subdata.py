@@ -12,6 +12,7 @@ import subprocess
 from control import bat
 from control import chargepoint
 from control import counter
+from control import counter_all
 from control import ev
 from control import general
 from helpermodules import graph
@@ -43,7 +44,7 @@ class SubData:
     ev_template_data = {}
     ev_charge_template_data = {}
     counter_data = {}
-    counter_all_data = counter.CounterAll()
+    counter_all_data = counter_all.CounterAll()
     bat_data = {}
     general_data = general.General()
     optional_data = optional.Optional()

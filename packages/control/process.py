@@ -65,9 +65,7 @@ class Process:
                             thread.name +
                             " konnte nicht innerhalb des Timeouts die Werte senden.")
 
-            data.data.pv_data["all"].put_stats()
-            data.data.pv_data["all"].print_stats()
-            data.data.counter_data[data.data.counter_all_data.get_evu_counter()].put_stats()
+            data.data.counter_all_data.get_evu_counter().put_stats()
         except Exception:
             log.exception("Fehler im Process-Modul")
 
@@ -91,7 +89,7 @@ class Process:
         # Unstimmige Werte loggen
         if (charging_ev.data.control_parameter.timestamp_switch_on_off is not None and
                 not chargepoint.data.get.charge_state and
-                data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] == 0):
+                data.data.counter_all_data.get_evu_counter().data["set"]["reserved_surplus"] == 0):
             log.error("Reservierte Leistung kann am Algorithmus-Ende nicht 0 sein.")
         if (chargepoint.data.set.charging_ev_data.ev_template.data.prevent_phase_switch and
                 chargepoint.data.get.charge_state and

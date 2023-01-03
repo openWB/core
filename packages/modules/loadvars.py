@@ -1,12 +1,13 @@
 import logging
 import threading
-from typing import Any, List, Optional
+from typing import List
 
 from control import data
 from modules import ripple_control_receiver
 from modules.common.abstract_device import AbstractDevice
 from modules.common.component_type import ComponentType, type_to_topic_mapping
 from modules.common.store import update_values
+from modules.common.utils.component_parser import get_component_obj_by_id
 from helpermodules import pub
 from helpermodules.utils import thread_handler
 
@@ -64,7 +65,7 @@ class Loadvars:
                             args=(chargepoint.chargepoint_module,),
                             name=f"cp{chargepoint.chargepoint_module.id}"))
                 else:
-                    component = self.__get_component_obj_by_id(element["id"], not_finished_threads)
+                    component = get_component_obj_by_id(element["id"], not_finished_threads)
                     if component is None:
                         continue
                     modules_threads.append(threading.Thread(target=update_values, args=(
@@ -81,20 +82,6 @@ class Loadvars:
                 if t == module_thread.name:
                     return True
         return False
-
-    def __get_component_obj_by_id(self, id: int, not_finished_threads: List[str]) -> Optional[Any]:
-        for item in data.data.system_data.values():
-            if isinstance(item, AbstractDevice):
-                for t in not_finished_threads:
-                    if t == f"device{item.device_config.id}":
-                        log.error(f"Keine aktuellen Werte für Gerät {item.device_config.name}")
-                        return None
-                for comp in item.components.values():
-                    if comp.component_config.id == id:
-                        return comp
-        else:
-            log.error(f"Element {id} konnte keinem Gerät zugeordnet werden.")
-            return None
 
     def _get_general(self) -> List[threading.Thread]:
         threads = []  # type: List[threading.Thread]

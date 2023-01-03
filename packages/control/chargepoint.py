@@ -32,6 +32,7 @@ from control import phase_switch
 from dataclass_utils.factories import (empty_dict_factory, emtpy_list_factory, currents_list_factory,
                                        voltages_list_factory)
 from helpermodules.abstract_plans import AutolockPlan
+from helpermodules.phase_mapping import convert_single_evu_phase_to_cp_phase
 from helpermodules.pub import Pub
 from helpermodules import timecheck
 from modules.common.abstract_chargepoint import AbstractChargepoint
@@ -105,7 +106,7 @@ class AllChargepoints:
                 except Exception:
                     log.exception("Fehler in der allgemeinen Ladepunkt-Klasse für Ladepunkt "+cp)
             else:
-                data.data.pv_data["all"].reset_pv_data()
+                data.data.counter_all_data.get_evu_counter().reset_pv_data()
         except Exception:
             log.exception("Fehler in der allgemeinen Ladepunkt-Klasse")
 
@@ -244,6 +245,7 @@ class Set:
     plug_time: Optional[str] = None
     required_power: float = 0
     rfid: Optional[str] = None
+    target_current: float = 0  # Sollstrom aus fest vorgegebener Stromstärke
     charging_ev_data: Ev = field(default_factory=ev_factory)
 
 
@@ -343,8 +345,9 @@ class Chargepoint:
             log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.num))
 
     def set_state_and_log(self, message: str) -> None:
-        log.info(f"LP {self.num}: {message}")
-        self.data.get.state_str = message
+        if message:
+            log.info(f"LP {self.num}: {message}")
+            self.data.get.state_str = message
 
     def _is_grid_protection_inactive(self) -> Tuple[bool, Optional[str]]:
         """ prüft, ob der Netzschutz inaktiv ist oder ob alle Ladepunkt gestoppt werden müssen.
@@ -475,7 +478,7 @@ class Chargepoint:
         if self.data.set.charging_ev_prev != -1:
             # Daten zurücksetzen, wenn nicht geladen werden soll.
             data.data.ev_data["ev"+str(self.data.set.charging_ev_prev)].reset_ev()
-            data.data.pv_data["all"].reset_switch_on_off(
+            data.data.counter_all_data.get_evu_counter().reset_switch_on_off(
                 self, data.data.ev_data["ev"+str(self.data.set.charging_ev_prev)])
             # Abstecken
             if not self.data.get.plug_state:
@@ -562,6 +565,7 @@ class Chargepoint:
         """prüft, ob eine Phasenumschaltung erforderlich ist und führt diese durch.
         """
         try:
+            evu_counter = data.data.counter_all_data.get_evu_counter()
             charging_ev = self.data.set.charging_ev_data
             # Umschaltung im Gange
             if charging_ev.data.control_parameter.timestamp_perform_phase_switch is not None:
@@ -576,10 +580,10 @@ class Chargepoint:
                               "/control_parameter/timestamp_perform_phase_switch", None)
                     # Aktuelle Ladeleistung und Differenz wieder freigeben.
                     if charging_ev.data.control_parameter.phases == 3:
-                        data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= charging_ev.data. \
+                        evu_counter.data["set"]["reserved_surplus"] -= charging_ev.data. \
                             control_parameter.required_current * 3 * 230
                     elif charging_ev.data.control_parameter.phases == 1:
-                        data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] -= charging_ev.ev_template. \
+                        evu_counter.data["set"]["reserved_surplus"] -= charging_ev.ev_template. \
                             data.max_current_one_phase * 230
                     self.data.set.current = charging_ev.data.control_parameter.required_current
                 else:
@@ -621,7 +625,7 @@ class Chargepoint:
                                 message = "Umschaltung von 1 auf 3 Phasen."
                                 # Timestamp für die Durchführungsdauer
                                 # Ladeleistung reservieren, da während der Umschaltung die Ladung pausiert wird.
-                                data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] += charging_ev.data.\
+                                evu_counter.data["set"]["reserved_surplus"] += charging_ev.data.\
                                     control_parameter.required_current * 3 * 230
                                 charging_ev.data.control_parameter.timestamp_perform_phase_switch = create_timestamp()
                                 Pub().pub("openWB/set/vehicle/"+str(charging_ev.num) +
@@ -635,7 +639,7 @@ class Chargepoint:
                                           "/control_parameter/timestamp_perform_phase_switch",
                                           charging_ev.data.control_parameter.timestamp_perform_phase_switch)
                                 # Ladeleistung reservieren, da während der Umschaltung die Ladung pausiert wird.
-                                data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] += charging_ev. \
+                                evu_counter.data["set"]["reserved_surplus"] += charging_ev. \
                                     ev_template.data.max_current_one_phase * 230
                             self.set_state_and_log(message)
                             if self.data.set.phases_to_use != charging_ev.data.control_parameter.phases:
@@ -759,6 +763,20 @@ class Chargepoint:
             self.chargepoint_module.clear_rfid()
             self.set_state_and_log(msg)
 
+    def set_required_currents(self, required_current: float) -> None:
+        control_parameter = self.data.set.charging_ev_data.data.control_parameter
+        try:
+            for i in range(0, control_parameter.phases):
+                evu_phase = convert_single_evu_phase_to_cp_phase(self.data.config.phase_1, i)
+                control_parameter.required_currents[evu_phase] = required_current
+        except KeyError:
+            control_parameter.required_currents = [required_current]*3
+            self.set_state_and_log("Für eine korrekte Funktion des Lastmanagements muss der Anschluss der " +
+                                   f"Phasen von Ladepunkt {self.num} an die Phasen der EVU angegeben werden." +
+                                   " Andernfalls wird der benötigte Strom auf allen 3 Phasen vorgehalten, " +
+                                   "was ggf eine unnötige Reduktion der Ladeleistung zur Folge hat.")
+        self.data.set.required_power = sum(control_parameter.required_currents) * 230
+
     def update_ev(self, ev_list: Dict[str, Ev]) -> None:
         # Für Control-Pilot-Unterbrechung set current merken.
         self.set_current_prev = self.data.set.current
@@ -796,33 +814,14 @@ class Chargepoint:
                     # Einhaltung des Minimal- und Maximalstroms prüfen
                     required_current = charging_ev.check_min_max_current(
                         required_current, charging_ev.data.control_parameter.phases)
-                    current_changed = charging_ev.check_if_current_changed(required_current, self.data.set.current)
                     charging_ev.set_control_parameter(submode, required_current)
                     mode_changed = charging_ev.check_if_mode_changed(self.data.set.log.chargemode_log_entry)
+                    self.set_required_currents(required_current)
 
-                    # Die benötigte Stromstärke hat sich durch eine Änderung des Lademodus oder der
-                    # Konfiguration geändert. Die Zuteilung entsprechend der Priorisierung muss neu geprüft
-                    # werden. Daher muss der LP zurückgesetzt werden, wenn er gerade lädt, um in der Regelung
-                    # wieder berücksichtigt zu werden.
-                    if current_changed:
-                        log.debug(f"LP{self.num}: Da sich die Stromstärke geändert hat, muss der Ladepunkt im "
-                                  "Algorithmus neu priorisiert werden.")
-                        data.data.pv_data["all"].reset_switch_on_off(
+                    if mode_changed:
+                        data.data.counter_all_data.get_evu_counter().reset_switch_on_off(
                             self, charging_ev)
                         charging_ev.reset_phase_switch()
-                        min_charge_current = self.data.set.current - \
-                            charging_ev.ev_template.data.nominal_difference
-                        if max(self.data.get.currents) > min_charge_current:
-                            self.data.set.current = 0
-                        else:
-                            # Wenn nicht geladen wird, obwohl geladen werde kann, soll das EV im Algorithmus
-                            # nicht berücksichtigt werden. Wenn der Soll-Strom gesetzt ist, wird das EV nur im
-                            # LM berücksichtigt.
-                            self.data.set.current = required_current
-                        # Da nicht bekannt ist, ob mit Bezug, Überschuss oder aus dem Speicher geladen wird,
-                        # wird die freiwerdende Leistung erst im nächsten Durchlauf berücksichtigt. Ggf.
-                        # entsteht so eine kurze Unterbrechung der Ladung, wenn während dem Laden
-                        # umkonfiguriert wird.
                     message = message_ev if message_ev else message
                     # Ein Eintrag muss nur erstellt werden, wenn vorher schon geladen wurde und auch danach noch
                     # geladen werden soll.
@@ -847,7 +846,7 @@ class Chargepoint:
                     else:
                         if (charging_ev.data.control_parameter.timestamp_switch_on_off is not None and
                                 not self.data.get.charge_state and
-                                data.data.pv_data["all"].data["set"]["overhang_power_left"] == 0):
+                                data.data.counter_all_data.get_evu_counter().data["set"]["reserved_surplus"] == 0):
                             log.error("Reservierte Leistung kann nicht 0 sein.")
 
                         log.debug(

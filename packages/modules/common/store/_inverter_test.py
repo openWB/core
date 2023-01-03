@@ -8,7 +8,7 @@ import pytest
 
 from control import data
 from control.bat import Bat
-from control.counter import CounterAll
+from control.counter_all import CounterAll
 from modules.common.component_state import InverterState
 from modules.common.store._inverter import PurgeInverterState
 

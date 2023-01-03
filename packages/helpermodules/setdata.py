@@ -547,12 +547,6 @@ class SetData:
                 self._validate_value(msg, float, [(0, float("inf"))])
             elif "openWB/set/pv/get/power" in msg.topic:
                 self._validate_value(msg, float)
-            elif ("openWB/set/pv/set/overhang_power_left" in msg.topic or
-                    "openWB/set/pv/set/reserved_evu_overhang" in msg.topic or
-                    "openWB/set/pv/set/released_evu_overhang" in msg.topic):
-                self._validate_value(msg, float)
-            elif "openWB/set/pv/set/available_power" in msg.topic:
-                self._validate_value(msg, float)
             elif "/config/max_ac_out" in msg.topic:
                 self._validate_value(msg, int, [(0, float("inf"))])
             elif subdata.SubData.pv_data.get(f"pv{get_index(msg.topic)}"):
@@ -806,6 +800,9 @@ class SetData:
                 elif "/get/power" in msg.topic:
                     self._validate_value(
                         msg, float, [(float("-inf"), float("inf"))])
+                elif ("/set/reserved_surplus" in msg.topic or
+                      "set/released_surplus" in msg.topic):
+                    self._validate_value(msg, float)
                 else:
                     self.__unknown_topic(msg)
             else:

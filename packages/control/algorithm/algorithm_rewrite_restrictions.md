@@ -1,0 +1,2 @@
+- vorerst Bt und Pv nur auf Level 1 zulässig bzw als Hybrid-System
+- Es wird keine Phasenumschaltung 3p->1p getriggert, damit ein anderes EV die Einschaltschwelle erreicht.

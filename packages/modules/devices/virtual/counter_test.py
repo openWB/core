@@ -6,7 +6,7 @@ import pytest
 
 from control import data
 from control.chargepoint import Chargepoint
-from control.counter import CounterAll
+from control.counter_all import CounterAll
 from modules.common.component_state import CounterState
 from modules.devices.virtual import counter
 from modules.devices.virtual.config import VirtualCounterConfiguration, VirtualCounterSetup

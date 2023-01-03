@@ -13,6 +13,11 @@ def convert_cp_phases_to_evu_phases(phase_1: int) -> List[int]:
     return CP_TO_EVU_PHASE_MAPPING[phase_1]
 
 
+def convert_cp_currents_to_evu_currents(phase_1: int, currents: List[float]) -> List[float]:
+    evu_phases = convert_cp_phases_to_evu_phases(phase_1)
+    return [currents[evu_phases[i]] for i in range(0, 3)]
+
+
 def convert_single_cp_phase_to_evu_phase(phase_1: int, cp_phase: int) -> int:
     return CP_TO_EVU_PHASE_MAPPING[phase_1][cp_phase]
 
