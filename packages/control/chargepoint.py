@@ -773,8 +773,10 @@ class Chargepoint:
         else:
             # Wenn kein EV zur Ladung zugeordnet wird, auf hinterlegtes EV zurückgreifen.
             try:
-                charging_ev = ev_list["ev"+str(self.data.config.ev)]
+                charging_ev = ev_list[f"ev{self.data.config.ev}"]
             except KeyError:
+                log.error(f"EV {self.data.config.ev} konnte nicht gefunden werden, daher wird das Standardfahrzeug" +
+                          " verwendet.")
                 charging_ev = ev_list["ev0"]
         self._pub_connected_vehicle(charging_ev)
 
@@ -867,9 +869,10 @@ class Chargepoint:
             else:
                 # Wenn kein EV zur Ladung zugeordnet wird, auf hinterlegtes EV zurückgreifen.
                 try:
-                    self._pub_connected_vehicle(
-                        ev_list["ev"+str(self.data.config.ev)])
+                    self._pub_connected_vehicle(ev_list[f"ev{self.data.config.ev}"])
                 except KeyError:
+                    log.error(f"EV {self.data.config.ev} konnte nicht gefunden werden, daher wird das " +
+                              "Standardfahrzeug verwendet.")
                     self._pub_connected_vehicle(ev_list["ev0"])
             if message is not None and self.data.get.state_str is None:
                 self.set_state_and_log(message)
@@ -880,6 +883,8 @@ class Chargepoint:
         try:
             charging_ev = ev_list[f"ev{vehicle}"]
         except KeyError:
+            log.error(f"EV {vehicle} konnte nicht gefunden werden, daher wird das Standardfahrzeug" +
+                      " verwendet.")
             charging_ev = ev_list["ev0"]
             vehicle = 0
         # Das EV darf nur gewechselt werden, wenn noch nicht geladen wurde.
