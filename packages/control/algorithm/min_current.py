@@ -1,4 +1,5 @@
 import logging
+from control import data
 
 from control.algorithm import common
 from control.loadmanagement import Loadmanagement
@@ -23,12 +24,18 @@ class MinCurrent:
                     if max(missing_currents) > 0:
                         available_currents, limit = Loadmanagement().get_available_currents(missing_currents, counter)
                         available_for_cp = common.available_current_for_cp(cp, counts, available_currents)
-                        if available_for_cp < cp.data.set.charging_ev_data.ev_template.data.min_current:
-                            common.set_current_counterdiff(-cp.data.set.current, 0, cp)
-                            cp.set_state_and_log(
-                                f"Ladung kann nicht gestartet werden{limit.value.format(counter.num)}")
+                        if (data.data.counter_all_data.data.config.reserve_for_not_charging is False and
+                                (max(cp.data.get.currents) > 0 or cp.data.set.target_current == 0)):
+                            if available_for_cp < cp.data.set.charging_ev_data.ev_template.data.min_current:
+                                common.set_current_counterdiff(-cp.data.set.current, 0, cp)
+                                cp.set_state_and_log(
+                                    f"Ladung kann nicht gestartet werden{limit.value.format(counter.num)}")
+                            else:
+                                common.set_current_counterdiff(available_for_cp-cp.data.set.target_current,
+                                                               available_for_cp,
+                                                               cp)
                         else:
-                            common.set_current_counterdiff(available_for_cp-cp.data.set.target_current,
-                                                           available_for_cp,
-                                                           cp)
+                            cp.data.set.current = available_for_cp
+                            log.debug(f"LP{cp.num}: Stromstärke {available_for_cp}A. Zuteilung ohne Berücksichtigung" +
+                                      " im Lastmanagement, da kein Ladestart zu erwarten ist.")
                     preferenced_chargepoints.pop(0)
