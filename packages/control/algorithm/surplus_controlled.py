@@ -8,13 +8,13 @@ from control.counter import Counter
 from control.chargepoint import Chargepoint
 from control.algorithm.filter_chargepoints import (get_chargepoints_by_mode, get_chargepoints_by_mode_and_counter,
                                                    get_preferenced_chargepoint_charging, get_chargepoints_pv_charging,
-                                                   get_chargepoints_surplus_led)
+                                                   get_chargepoints_surplus_controlled)
 from modules.common.utils.component_parser import get_component_name_by_id
 
 log = logging.getLogger(__name__)
 
 
-class SurplusLed:
+class SurplusControlled:
     def __init__(self) -> None:
         pass
 
@@ -125,7 +125,7 @@ class SurplusLed:
                 data.data.counter_all_data.get_evu_counter().switch_on_threshold_reached(cp)
 
     def set_required_current_to_max(self) -> None:
-        for cp in get_chargepoints_surplus_led():
+        for cp in get_chargepoints_surplus_controlled():
             charging_ev_data = cp.data.set.charging_ev_data
             required_currents = charging_ev_data.data.control_parameter.required_currents
 

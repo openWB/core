@@ -2,8 +2,8 @@ from typing import List
 from unittest.mock import Mock
 import pytest
 
-from control.algorithm import surplus_led
-from control.algorithm.surplus_led import SurplusLed
+from control.algorithm import surplus_controlled
+from control.algorithm.surplus_controlled import SurplusControlled
 from control.chargepoint import Chargepoint, ChargepointData, Get, Set
 from control.ev import ChargeTemplate, Ev
 
@@ -43,7 +43,7 @@ def test_filter_by_feed_in_limit(feed_in_limit_1: bool,
     cp2 = setup_cp(mock_cp2, feed_in_limit_2)
     cp3 = setup_cp(mock_cp3, feed_in_limit_3)
     # execution
-    cp_with_feed_in, cp_without_feed_in = SurplusLed().filter_by_feed_in_limit([cp1, cp2, cp3])
+    cp_with_feed_in, cp_without_feed_in = SurplusControlled().filter_by_feed_in_limit([cp1, cp2, cp3])
     # evaluation
     assert (cp_with_feed_in, cp_without_feed_in) == expected_sorted
 
@@ -61,7 +61,7 @@ def test_limit_adjust_current(new_current: float, expected_current: float, monke
     monkeypatch.setattr(Chargepoint, "set_state_and_log", Mock())
 
     # execution
-    current = SurplusLed()._limit_adjust_current(cp, new_current)
+    current = SurplusControlled()._limit_adjust_current(cp, new_current)
     # evaluation
     assert current == expected_current
 
@@ -81,11 +81,12 @@ def test_set_required_current_to_max(phases: int,
     ev.data.control_parameter.phases = phases
     ev.data.control_parameter.required_currents = required_currents
     mock_cp1.data = ChargepointData(set=Set(charging_ev_data=ev))
-    mock_get_chargepoints_surplus_led = Mock(return_value=[mock_cp1])
-    monkeypatch.setattr(surplus_led, "get_chargepoints_surplus_led", mock_get_chargepoints_surplus_led)
+    mock_get_chargepoints_surplus_controlled = Mock(return_value=[mock_cp1])
+    monkeypatch.setattr(surplus_controlled, "get_chargepoints_surplus_controlled",
+                        mock_get_chargepoints_surplus_controlled)
 
     # execution
-    SurplusLed().set_required_current_to_max()
+    SurplusControlled().set_required_current_to_max()
 
     # evaluation
     assert mock_cp1.data.set.charging_ev_data.data.control_parameter.required_currents == expected_currents

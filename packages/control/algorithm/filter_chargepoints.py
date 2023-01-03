@@ -63,7 +63,7 @@ def get_chargepoints_pv_charging() -> List[Chargepoint]:
     return chargepoints
 
 
-def get_chargepoints_surplus_led() -> List[Chargepoint]:
+def get_chargepoints_surplus_controlled() -> List[Chargepoint]:
     chargepoints: List[Chargepoint] = []
     for mode in common.CHARGEMODES[6: 12]:
         chargepoints.extend(get_chargepoints_by_mode(mode))

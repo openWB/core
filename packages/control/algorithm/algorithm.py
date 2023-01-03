@@ -6,7 +6,7 @@ from control.algorithm import common
 from control.algorithm.additional_current import AdditionalCurrent
 from control.algorithm.min_current import MinCurrent
 from control.algorithm.no_current import NoCurrent
-from control.algorithm.surplus_led import SurplusLed
+from control.algorithm.surplus_controlled import SurplusControlled
 from control.chargemode import Chargemode
 from helpermodules.pub import Pub
 log = logging.getLogger(__name__)
@@ -17,7 +17,7 @@ class Algorithm:
         self.additional_current = AdditionalCurrent()
         self.min_current = MinCurrent()
         self.no_current = NoCurrent()
-        self.surplus_led = SurplusLed()
+        self.surplus_controlled = SurplusControlled()
 
     def calc_current(self) -> None:
         """ Einstiegspunkt in den Regel-Algorithmus
@@ -26,7 +26,7 @@ class Algorithm:
             log.debug("# Algorithmus-Start")
             self.evu_counter = data.data.counter_all_data.get_evu_counter()
             self._check_auto_phase_switch_delay()
-            self.surplus_led.check_submode_pv_charging()
+            self.surplus_controlled.check_submode_pv_charging()
             common.reset_current()
             common.reset_current_to_target_current()
             log.debug("**Mindestrom setzen**")
@@ -35,12 +35,12 @@ class Algorithm:
             common.reset_current_to_target_current()
             self.additional_current.set_additional_current([0, 8])
             counter.limit_raw_power_left_to_surplus(self.evu_counter.calc_surplus())
-            self.surplus_led.check_switch_on()
+            self.surplus_controlled.check_switch_on()
             if self.evu_counter.data["set"]["surplus_power_left"] > 0:
                 log.debug("**PV-geführten Strom setzen**")
                 common.reset_current_to_target_current()
-                self.surplus_led.set_required_current_to_max()
-                self.surplus_led.set_surplus_current([6, 12])
+                self.surplus_controlled.set_required_current_to_max()
+                self.surplus_controlled.set_surplus_current([6, 12])
             else:
                 log.debug("**Keine Leistung für PV-geführtes Laden übrig.**")
             self.no_current.set_no_current()

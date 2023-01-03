@@ -3,7 +3,7 @@ from typing import List, Optional
 from unittest.mock import Mock
 import pytest
 
-from control.algorithm import additional_current, surplus_led
+from control.algorithm import additional_current, surplus_controlled
 from control.algorithm.integration_test.conftest import ParamsExpectedSetCurrent, assert_expected_current
 from control.chargemode import Chargemode
 from control import data
@@ -212,7 +212,7 @@ def test_surplus(params: ParamsSurplus, all_cp_pv_charging_3p, all_cp_charging_3
     data.data.counter_data["counter0"].data["set"]["raw_currents_left"] = params.raw_currents_left_counter0
     data.data.counter_data["counter6"].data["set"]["raw_currents_left"] = params.raw_currents_left_counter6
     mockget_component_name_by_id = Mock(return_value="Garage")
-    monkeypatch.setattr(surplus_led, "get_component_name_by_id", mockget_component_name_by_id)
+    monkeypatch.setattr(surplus_controlled, "get_component_name_by_id", mockget_component_name_by_id)
 
     # execution
     Algorithm().calc_current()
@@ -262,7 +262,7 @@ def test_phase_switch(all_cp_pv_charging_3p, all_cp_charging_3p, monkeypatch):
     data.data.counter_data["counter6"].data["set"][
         "raw_currents_left"] = cases_phase_switch[0].raw_currents_left_counter6
     mockget_component_name_by_id = Mock(return_value="Garage")
-    monkeypatch.setattr(surplus_led, "get_component_name_by_id", mockget_component_name_by_id)
+    monkeypatch.setattr(surplus_controlled, "get_component_name_by_id", mockget_component_name_by_id)
     mockget_get_phases_chargemode = Mock(return_value=0)
     monkeypatch.setattr(algorithm_data.data.general_data, "get_phases_chargemode", mockget_get_phases_chargemode)
 
@@ -292,7 +292,7 @@ def test_phase_switch_1p_3p(all_cp_pv_charging_1p, monkeypatch):
     data.data.counter_data["counter6"].data["set"][
         "raw_currents_left"] = cases_phase_switch[1].raw_currents_left_counter6
     mockget_component_name_by_id = Mock(return_value="Garage")
-    monkeypatch.setattr(surplus_led, "get_component_name_by_id", mockget_component_name_by_id)
+    monkeypatch.setattr(surplus_controlled, "get_component_name_by_id", mockget_component_name_by_id)
     mockget_get_phases_chargemode = Mock(return_value=0)
     monkeypatch.setattr(algorithm_data.data.general_data, "get_phases_chargemode", mockget_get_phases_chargemode)
     data.data.cp_data["cp3"].data.get.currents = [32, 0, 0]
