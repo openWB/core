@@ -7,7 +7,7 @@ from control import data
 from control.chargepoint.chargepoint import Chargepoint, Get, Log, Set
 from control.ev import Ev, EvTemplate, EvTemplateData
 from modules.common.abstract_soc import SocUpdateData
-from modules.vehicles.tesla.soc import Soc
+from modules.vehicles.tesla.soc import create_vehicle
 from modules.update_soc import UpdateSoc
 
 
@@ -51,12 +51,12 @@ def test_get_ev_state(ev_num: int,
     "soc_module, force_soc_update, soc_interval_expired, expected_threads_update",
     [
         pytest.param(None, False, False, [], id="soc module none"),
-        pytest.param(Mock(spec=Soc), False, True, ["soc_ev0"], id="interval expired"),
-        pytest.param(Mock(spec=Soc), True, False, ["soc_ev0"], id="force soc update"),
-        pytest.param(Mock(spec=Soc), False, False, [], id="no soc request needed"),
+        pytest.param(Mock(spec=create_vehicle, update=Mock()), False, True, ["soc_ev0"], id="interval expired"),
+        pytest.param(Mock(spec=create_vehicle, update=Mock()), True, False, ["soc_ev0"], id="force soc update"),
+        pytest.param(Mock(spec=create_vehicle, update=Mock()), False, False, [], id="no soc request needed"),
     ]
 )
-def test_get_threads(soc_module: Optional[Soc],
+def test_get_threads(soc_module: Optional[create_vehicle],
                      force_soc_update: bool,
                      soc_interval_expired: bool,
                      expected_threads_update: List[str],
