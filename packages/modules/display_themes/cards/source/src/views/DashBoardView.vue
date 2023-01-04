@@ -14,7 +14,13 @@ import {
   faHome as fasHome,
 } from "@fortawesome/free-solid-svg-icons";
 /* add icons to the library */
-library.add(fasChargingStation, fasGaugeHigh, fasSolarPanel, fasCarBattery, fasHome);
+library.add(
+  fasChargingStation,
+  fasGaugeHigh,
+  fasSolarPanel,
+  fasCarBattery,
+  fasHome
+);
 
 export default {
   name: "DashBoard",
@@ -93,7 +99,7 @@ export default {
   <div class="dash-board-card-wrapper">
     <dash-board-card color="danger">
       <template #headerLeft>
-        <font-awesome-icon fixed-width :icon="['fas', 'fa-gauge-high']"/>
+        <font-awesome-icon fixed-width :icon="['fas', 'fa-gauge-high']" />
         EVU
       </template>
       <template #headerRight>
@@ -107,7 +113,7 @@ export default {
     </dash-board-card>
     <dash-board-card color="light">
       <template #headerLeft>
-        <font-awesome-icon fixed-width :icon="['fas', 'fa-home']"/>
+        <font-awesome-icon fixed-width :icon="['fas', 'fa-home']" />
         Hausverbrauch
       </template>
       <template #headerRight>
@@ -117,7 +123,7 @@ export default {
     </dash-board-card>
     <dash-board-card color="warning" v-if="batteryConfigured">
       <template #headerLeft>
-        <font-awesome-icon fixed-width :icon="['fas', 'fa-car-battery']"/>
+        <font-awesome-icon fixed-width :icon="['fas', 'fa-car-battery']" />
         Speicher
       </template>
       <template #headerRight>
@@ -132,7 +138,7 @@ export default {
     </dash-board-card>
     <dash-board-card color="primary">
       <template #headerLeft>
-        <font-awesome-icon fixed-width :icon="['fas', 'fa-charging-station']"/>
+        <font-awesome-icon fixed-width :icon="['fas', 'fa-charging-station']" />
         Ladepunkte
       </template>
       <template #headerRight>
@@ -145,7 +151,7 @@ export default {
     </dash-board-card>
     <dash-board-card color="success" v-if="pvConfigured">
       <template #headerLeft>
-        <font-awesome-icon fixed-width :icon="['fas', 'fa-solar-panel']"/>
+        <font-awesome-icon fixed-width :icon="['fas', 'fa-solar-panel']" />
         PV
       </template>
       <template #headerRight>

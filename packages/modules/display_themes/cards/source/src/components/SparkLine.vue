@@ -1,9 +1,27 @@
 <template>
-  <svg class="spark-line" :viewBox="`0 0 ${width} ${height}`" width="100%" preserveAspectRatio="xMinYMin">
+  <svg
+    class="spark-line"
+    :viewBox="`0 0 ${width} ${height}`"
+    width="100%"
+    preserveAspectRatio="xMinYMin"
+  >
     <path class="soc-path" v-if="socData" :d="socPath" />
-    <rect v-for="bar in bars" :key="bar.x" :x="bar.x" :y="bar.y" :width="bar.width" :height="bar.height"
-      :class="colorNegative && bar.negative ? 'negative' : ''" />
-    <line class="zero-line" :x1="0" :y1="zeroHeight" :x2="width" :y2="zeroHeight" />
+    <rect
+      v-for="bar in bars"
+      :key="bar.x"
+      :x="bar.x"
+      :y="bar.y"
+      :width="bar.width"
+      :height="bar.height"
+      :class="colorNegative && bar.negative ? 'negative' : ''"
+    />
+    <line
+      class="zero-line"
+      :x1="0"
+      :y1="zeroHeight"
+      :x2="width"
+      :y2="zeroHeight"
+    />
   </svg>
 </template>
 
@@ -47,22 +65,27 @@ export default {
       if (this.socData) {
         return this.socData.slice(-this.maxPoints);
       }
-      return;
+      return undefined;
     },
     zeroHeight() {
       return (
         this.height -
         ((0 - this.lowestPoint) / (this.highestPoint - this.lowestPoint)) *
-        this.height
+          this.height
       );
     },
     coordinates() {
-      return this.calculateCoordinates(this.slicedData, this.lowestPoint, this.highestPoint);
+      return this.calculateCoordinates(
+        this.slicedData,
+        this.lowestPoint,
+        this.highestPoint
+      );
     },
     socCoordinates() {
       if (this.socData) {
         return this.calculateCoordinates(this.slicedSocData, 0, 100);
       }
+      return undefined;
     },
     bars() {
       const barCoordinates = [];
@@ -89,14 +112,16 @@ export default {
         let lastPoint = this.socCoordinates.slice(-1)[0];
         var path = `M 0,${this.height}`; // start in lower left corner
         path += ` L 0,${firstPoint.y}`; // go vertical to first value
-        this.socCoordinates.forEach((point, n) => {
+        this.socCoordinates.forEach((point) => {
           path += ` L ${point.x + this.stroke / 2},${point.y}`; // x is centered on bars
         });
-        path += ` L ${lastPoint.x + this.stroke},${lastPoint.y}` // extend last value to right end of last bar
-          + ` L ${lastPoint.x + this.stroke},${this.height}` // go vertical to zero
-          + " Z"; // close path
+        path +=
+          ` L ${lastPoint.x + this.stroke},${lastPoint.y}` + // extend last value to right end of last bar
+          ` L ${lastPoint.x + this.stroke},${this.height}` + // go vertical to zero
+          " Z"; // close path
         return path;
       }
+      return undefined;
     },
   },
   methods: {
@@ -104,15 +129,12 @@ export default {
       const coordinateArray = [];
       dataset.forEach((item, n) => {
         const x = (n * this.width) / this.maxPoints + 1; // compensate stroke-width
-        const y =
-          this.height -
-          ((item - min) / (max - min)) *
-          this.height;
+        const y = this.height - ((item - min) / (max - min)) * this.height;
         coordinateArray.push({ x, y });
       });
       return coordinateArray;
-    }
-  }
+    },
+  },
 };
 </script>
 
