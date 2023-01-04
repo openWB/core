@@ -103,7 +103,7 @@ export default {
     calculateCoordinates(dataset, min, max) {
       const coordinateArray = [];
       dataset.forEach((item, n) => {
-        const x = (n * this.width) / this.maxPoints;
+        const x = (n * this.width) / this.maxPoints + 1; // compensate stroke-width
         const y =
           this.height -
           ((item - min) / (max - min)) *
@@ -130,6 +130,7 @@ svg path {
   stroke: v-bind(color);
   fill: v-bind(color);
   fill-opacity: 0.5;
+  stroke-width: 1px;
 }
 
 svg rect.negative {
