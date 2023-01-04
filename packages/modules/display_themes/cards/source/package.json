@@ -4,12 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "vite --host",
-    "build": "vite build",
+    "build": "vite build --out-dir=../web/ --emptyOutDir",
     "preview": "vite preview --host",
     "test:unit": "vitest run --environment jsdom --root src/",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs --fix --ignore-path .gitignore",
-    "build-dev": "vite build --mode=development --out-dir=../../../../../web/display/themes/cards --emptyOutDir",
-    "build-prod": "vite build --out-dir=../../../../../web/display/themes/cards --emptyOutDir"
+    "build-dev": "vite build --mode=development --out-dir=../web/ --emptyOutDir"
   },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^6.2.1",

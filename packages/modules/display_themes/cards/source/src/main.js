@@ -13,8 +13,8 @@ const app = createApp(App);
 app.use(createPinia());
 app.use(router);
 app.use(Inkline, {
-	colorMode: "dark",
-	components,
+  colorMode: "dark",
+  components,
 });
 
 app.mount("#app");
