@@ -151,14 +151,11 @@ export default {
 
 <style scoped>
 .charge-points-card-wrapper {
-  display: flex;
-  gap: var(--spacing);
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(36rem, 1fr));
+  grid-gap: var(--spacing);
 }
 .card {
-  min-width: 26rem;
-  min-height: 130px;
-  flex: 26rem;
   ----background: inherit !important;
   ----body--color: var(--contrast-color-for-dark-background) !important;
 }
