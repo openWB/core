@@ -8,7 +8,7 @@ from control.chargepoint import AllChargepoints
 from control.ev import Ev
 from helpermodules import timecheck
 from helpermodules.pub import Pub
-from helpermodules.utils import thread_handler
+from helpermodules.utils import exit_after, thread_handler
 from modules.common.abstract_soc import SocUpdateData
 
 log = logging.getLogger("soc."+__name__)
@@ -18,6 +18,7 @@ class UpdateSoc:
     def __init__(self) -> None:
         self.heartbeat = False
 
+    @exit_after(10)
     def update(self) -> None:
         try:
             threads_set, threads_update = self._get_threads()

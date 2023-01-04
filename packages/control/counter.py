@@ -309,13 +309,13 @@ class Counter:
             feed_in_yield = data.data.general_data.data.chargemode_config.pv_charging.feed_in_yield
         else:
             feed_in_yield = 0
-        switch_off_surplus = self.data["get"]["power"] * -1
+        switch_off_surplus = self.data["get"]["power"]
         log.debug(f'LP{chargepoint.num} Switch-Off-Threshold prüfen: EVU {switch_off_surplus}W, freigegebener '
                   f'Überschuss {self.data["set"]["released_surplus"]}W, Einspeisegrenze {feed_in_yield}W')
         # Wenn automatische Phasenumschaltung aktiv, die Umschaltung abwarten, bevor die Abschaltschwelle
         # greift.
 
-        power_in_use = switch_off_surplus + self.data["set"]["released_surplus"]
+        power_in_use = switch_off_surplus - self.data["set"]["released_surplus"]
         threshold = pv_config.switch_off_threshold + feed_in_yield
         log.debug(f"Relevante Leistung für Löschen der Abschaltschwelle: {power_in_use}W, Schwelle: {threshold}W")
         if control_parameter.timestamp_switch_on_off:
@@ -326,14 +326,14 @@ class Counter:
                          "Diese wird abgewartet, bevor die Abschaltverzögerung gestartet wird.")
             # Wurde die Abschaltschwelle erreicht?
             # Eigene Leistung aus der freigegebenen Leistung rausrechnen.
-            if power_in_use - chargepoint.data.set.required_power > threshold:
+            if power_in_use - chargepoint.data.set.required_power < threshold:
                 timestamp_switch_on_off = None
                 self.data["set"]["released_surplus"] -= chargepoint.data.set.required_power
                 msg = self.SWITCH_OFF_EXCEEDED
         else:
             if control_parameter.timestamp_auto_phase_switch is None:
                 # Wurde die Abschaltschwelle ggf. durch die Verzögerung anderer LP erreicht?
-                if power_in_use < threshold:
+                if power_in_use > threshold:
                     if not chargepoint.data.set.charging_ev_data.ev_template.data.prevent_charge_stop:
                         # EV, die ohnehin nicht laden, wird direkt die Ladefreigabe entzogen.
                         # Würde man required_power vom released_evu_surplus subtrahieren, würden keine anderen EVs
