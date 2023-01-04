@@ -30,7 +30,6 @@ log = logging.getLogger()
 
 class HandlerAlgorithm:
     def __init__(self):
-        self.heartbeat = False
         self.interval_counter = 1
         self.current_day = None
 
@@ -86,11 +85,6 @@ class HandlerAlgorithm:
                 Thread(target=set.set_data, args=()).start()
             else:
                 set.heartbeat = False
-
-            if not soc.heartbeat:
-                log.error("Heartbeat für SoC-Abfrage nicht zurückgesetzt.")
-            else:
-                soc.heartbeat = False
 
             cleanup_logfiles()
             measurement_log.measurement_log_daily()
