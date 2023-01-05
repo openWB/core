@@ -91,7 +91,7 @@ def set_current_counterdiff(diff: float, current: float, chargepoint: Chargepoin
 
 def get_current_to_set(set_current: float, diff: float, prev_current: float) -> float:
     """Der neue Strom darf nicht höher als der in dieser Stufe bisher gesetzter sein, um das LM der untergeordneten
-    Zähler nicht zu untergraben. Der Vergleich muss psotiv sein, wenn zum ersten Mal auf dieser Stufe ein Strom gesetzt
+    Zähler nicht zu untergraben. Der Vergleich muss positiv sein, wenn zum ersten Mal auf dieser Stufe ein Strom gesetzt
     wird."""
     new_current = prev_current + diff
     if new_current > set_current and set_current != 0:
@@ -106,15 +106,16 @@ def get_current_to_set(set_current: float, diff: float, prev_current: float) -> 
 
 def available_current_for_cp(chargepoint: Chargepoint,
                              counts: List[int],
-                             available_currents: List[float]) -> float:
-    charging_ev_data = chargepoint.data.set.charging_ev_data
-    required_currents = charging_ev_data.data.control_parameter.required_currents
-
-    counts_cp = [1 if required_currents[i] != 0 else 0 for i in range(3)]
+                             available_currents: List[float],
+                             missing_currents: List[float]) -> float:
+    control_parameter = chargepoint.data.set.charging_ev_data.data.control_parameter
     available_current = float("inf")
     for i in range(0, 3):
-        if counts_cp[i] != 0:
+        if (control_parameter.required_currents[i] != 0 and
+                missing_currents[i] != available_currents[i]):
             available_current = min(available_current, available_currents[i]/counts[i])
+    if available_current == float("inf"):
+        available_current = control_parameter.required_current - chargepoint.data.set.target_current
     return available_current
 
 

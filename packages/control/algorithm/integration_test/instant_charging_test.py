@@ -18,6 +18,7 @@ def all_cp_instant_charging_1p():
         control_parameter = data.data.cp_data[f"cp{i}"].data.set.charging_ev_data.data.control_parameter
         control_parameter.required_currents = [0]*3
         control_parameter.required_currents[i-3] = 16
+        control_parameter.required_current = 16
         control_parameter.chargemode = Chargemode.INSTANT_CHARGING
         control_parameter.submode = Chargemode.INSTANT_CHARGING
 
@@ -34,6 +35,7 @@ def all_cp_instant_charging_3p():
     for i in range(3, 6):
         control_parameter = data.data.cp_data[f"cp{i}"].data.set.charging_ev_data.data.control_parameter
         control_parameter.required_currents = [16]*3
+        control_parameter.required_current = 16
         control_parameter.chargemode = Chargemode.INSTANT_CHARGING
         data.data.cp_data[f"cp{i}"].data.get.currents = [16]*3
 
