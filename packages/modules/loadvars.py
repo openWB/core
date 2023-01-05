@@ -4,11 +4,11 @@ from typing import List
 
 from control import data
 from modules import ripple_control_receiver
+from modules.utils import ModuleUpdateCompletedContext
 from modules.common.abstract_device import AbstractDevice
 from modules.common.component_type import ComponentType, type_to_topic_mapping
 from modules.common.store import update_values
 from modules.common.utils.component_parser import get_component_obj_by_id
-from helpermodules import pub
 from helpermodules.utils import thread_handler
 
 log = logging.getLogger(__name__)
@@ -94,20 +94,3 @@ class Loadvars:
             log.exception("Fehler im loadvars-Modul")
         finally:
             return threads
-
-
-class ModuleUpdateCompletedContext:
-    def __init__(self, event_module_update_completed: threading.Event):
-        self.event_module_update_completed = event_module_update_completed
-
-    def __enter__(self):
-        timeout = data.data.general_data.data.control_interval/2
-        if self.event_module_update_completed.wait(timeout) is False:
-            log.error(
-                "Modul-Daten wurden noch nicht vollständig empfangen. Timeout abgelaufen, fortsetzen der Regelung.")
-        return None
-
-    def __exit__(self, exception_type, exception, exception_traceback) -> bool:
-        self.event_module_update_completed.clear()
-        pub.Pub().pub("openWB/set/system/device/module_update_completed", True)
-        return True
