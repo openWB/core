@@ -5,7 +5,7 @@ from typing import Iterable, Optional, Union, List
 from helpermodules.cli import run_using_positional_cli_args
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_context import SingleComponentUpdateContext
-from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType
+from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, MultiComponentUpdater
 from modules.common.modbus import ModbusTcpClient_
 from modules.devices.sample_modbus import bat, counter, inverter
 from modules.devices.sample_modbus.bat import SampleBat
@@ -27,12 +27,15 @@ def create_device(device_config: Sample):
         return SampleInverter(device_config.id, component_config, device_config.configuration.url)
 
     def update_components(components: Iterable[Union[SampleBat, SampleCounter, SampleInverter]]):
-        with ModbusTcpClient_(device_config.configuration.address, port) as client:
-            log.debug('reading: %s', device_config.configuration.address)
+        with client as c:
             for component in components:
                 with SingleComponentUpdateContext(component.component_info):
-                    component.update(client)
+                    component.update(c)
 
+    try:
+        client = ModbusTcpClient_(device_config.configuration.address, port)
+    except:
+        log.exception("Fehler in create_device")
     return ConfigurableDevice(
         device_config=device_config,
         component_factory=ComponentFactoryByType(
@@ -40,7 +43,7 @@ def create_device(device_config: Sample):
             counter=create_counter_component,
             inverter=create_inverter_component,
         ),
-        component_updater=update_components
+        component_updater=MultiComponentUpdater(update_components)
     )
 
 

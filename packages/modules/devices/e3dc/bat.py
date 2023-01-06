@@ -29,7 +29,7 @@ class E3dcBat:
         self.component_config = component_config
         # bat
         self.sim_counter = SimCounter(device_id, self.component_config.id, prefix="speicher")
-        self.__store = get_bat_value_store(self.component_config.id)
+        self.store = get_bat_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
 
     def update(self, client: modbus.ModbusTcpClient_) -> None:
@@ -42,7 +42,7 @@ class E3dcBat:
             imported=imported,
             exported=exported
         )
-        self.__store.set(bat_state)
+        self.store.set(bat_state)
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=E3dcBatSetup)
