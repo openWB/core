@@ -4,8 +4,8 @@ Wenn die PV-Leistung um die Ladeleistung des Speichers zu niedrig ist, liegt ein
 
 Das Verrechnen von Hybrid-Systemen erfolgt automatisch und muss nicht im Wechselrichter-Modul implementiert werden. Wenn ein Hybrid-System vorhanden ist und die Speicher-Leistung aus der Wechselrichter-Leistung herausgerechnet werden muss, ordne den Speicher in der Hierarchie unter dem Wechselrichter an.
 
-Bei einem Hybrid-System wird der Speicher in der Hierarchie hinter dem Wechselrichter angeordnet:
-![Hierarchie Hybrid-Systeme](hybrid.png)
+Bei einem Hybrid-System wird der Speicher in der Hierarchie hinter dem Wechselrichter angeordnet:  
+<img src="hybrid.png" width="500">
 
-Im Vergleich dazu die Standard-Konfiguration:
-![Hierarchie Standard](standard.png)
+Im Vergleich dazu die Standard-Konfiguration:  
+<img src="standard.png" width="500">
