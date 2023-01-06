@@ -122,7 +122,7 @@ def test_scheduled_charging_recent_plan(params: Params, monkeypatch):
     monkeypatch.setattr(data.data.general_data, "get_phases_chargemode", get_phases_chargemode_mock)
     search_plan_mock = Mock(return_value=params.search_plan)
     monkeypatch.setattr(ChargeTemplate, "search_plan", search_plan_mock)
-    evt_data = Mock(spec=EvTemplateData, max_current_multi_phases=16, max_current_one_phase=32)
+    evt_data = Mock(spec=EvTemplateData, max_current_multi_phases=16, max_current_single_phase=32)
     evt = Mock(spec=EvTemplate, data=evt_data)
 
     # execution

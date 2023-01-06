@@ -9,6 +9,7 @@ from control.chargemode import Chargemode
 from control import data
 from control.algorithm.algorithm import Algorithm
 from control.algorithm.algorithm import data as algorithm_data
+from control.chargepoint import CpTemplate
 from dataclass_utils.factories import currents_list_factory
 
 
@@ -41,6 +42,7 @@ def all_cp_charging_3p():
         data.data.cp_data[f"cp{i}"].data.set.required_power = sum(
             charging_ev_data.data.control_parameter.required_currents) * 230
         data.data.cp_data[f"cp{i}"].data.config.auto_phase_switch_hw = True
+        data.data.cp_data[f"cp{i}"].template = CpTemplate()
 
 
 @pytest.fixture()
@@ -59,6 +61,7 @@ def all_cp_pv_charging_1p():
         data.data.cp_data[f"cp{i}"].data.set.required_power = sum(
             charging_ev_data.data.control_parameter.required_currents) * 230
         data.data.cp_data[f"cp{i}"].data.config.auto_phase_switch_hw = True
+        data.data.cp_data[f"cp{i}"].template = CpTemplate()
     data.data.cp_data["cp3"].data.get.currents = [16, 0, 0]
     data.data.cp_data["cp4"].data.get.currents = [8, 0, 0]
     data.data.cp_data["cp5"].data.get.currents = [8, 0, 0]

@@ -584,7 +584,7 @@ class Chargepoint:
                             control_parameter.required_current * 3 * 230
                     elif charging_ev.data.control_parameter.phases == 1:
                         evu_counter.data["set"]["reserved_surplus"] -= charging_ev.ev_template. \
-                            data.max_current_one_phase * 230
+                            data.max_current_single_phase * 230
                     self.data.set.current = charging_ev.data.control_parameter.required_current
                 else:
                     # Wenn eine Umschaltung im Gange ist, muss erst gewartet werden, bis diese fertig ist.
@@ -640,7 +640,7 @@ class Chargepoint:
                                           charging_ev.data.control_parameter.timestamp_perform_phase_switch)
                                 # Ladeleistung reservieren, da während der Umschaltung die Ladung pausiert wird.
                                 evu_counter.data["set"]["reserved_surplus"] += charging_ev. \
-                                    ev_template.data.max_current_one_phase * 230
+                                    ev_template.data.max_current_single_phase * 230
                             self.set_state_and_log(message)
                             if self.data.set.phases_to_use != charging_ev.data.control_parameter.phases:
                                 Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/phases_to_use",
@@ -1013,10 +1013,12 @@ def autolock_factory():
 @dataclass
 class CpTemplateData:
     autolock: Autolock = field(default_factory=autolock_factory)
+    id: int = 0
+    max_current_multi_phases: int = 32
+    max_current_single_phase: int = 32
     name: str = "Standard Ladepunkt-Vorlage"
     rfid_enabling: bool = False
     valid_tags: List = field(default_factory=emtpy_list_factory)
-    id: int = 0
 
 
 class CpTemplate:

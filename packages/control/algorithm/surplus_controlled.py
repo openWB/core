@@ -132,9 +132,9 @@ class SurplusControlled:
 
             if control_parameter.phases == 1:
                 control_parameter.required_currents = [
-                    charging_ev_data.ev_template.data.max_current_one_phase if required_currents[i] != 0 else 0
+                    charging_ev_data.ev_template.data.max_current_single_phase if required_currents[i] != 0 else 0
                     for i in range(3)]
-                control_parameter.required_current = charging_ev_data.ev_template.data.max_current_one_phase
+                control_parameter.required_current = charging_ev_data.ev_template.data.max_current_single_phase
             else:
                 control_parameter.required_currents = [
                     charging_ev_data.ev_template.data.max_current_multi_phases]*3
