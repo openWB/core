@@ -46,7 +46,7 @@ def set_factory() -> Set:
 
 @dataclass
 class CounterAllData:
-    config: Config = field(default_factory=set_factory)
+    config: Config = field(default_factory=config_factory)
     get: Get = field(default_factory=get_factory)
     set: Set = field(default_factory=set_factory)
 
