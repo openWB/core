@@ -7,7 +7,7 @@ Das Lastmanagement funktioniert dreistufig (ab Version 1.99.101.1):
 3. Zuteilung des Überschusses (falls vorhanden und Lademodus PV oder Zielladen) unter Berücksichtigung des Lastmanagements: Der verfügbare Strom wird unter allen Ladepunkten mit der gleichen Priorisierung aufgeteilt.
 
 ### Lastmanagement mit kaskadierten Zählern
-<img src="kaskadierte_zaehler.png" width="48">
+<img src="kaskadierte_zaehler.png" width="500">
 
 _Einstellungen -> Konfiguration -> Geräte und Komponenten_  
 Unter _Geräte und Komponenten_  müssen zunächst alle Zähler in der Anlage kofniguriert werden (bitte den Hilfetext in der Benutzeroberfläche zum Anlegen von Geräten und Komponenten beachten). Wenn an einer Zuleitung nur Ladepunkte oder Verbraucher mit einer festen Leistung angeschlossen sind und kein physischer Zähler verbaut ist, kann auch ein virtueller Zähler angelegt werden (Loadsharing). Ob ein Zähler als EVU-Zähler oder Zwischenzähler arbeitet, ergibt sich durch die Anordnung in der Struktur.
