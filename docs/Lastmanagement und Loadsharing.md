@@ -6,7 +6,7 @@ Das Lastmanagement funktioniert dreistufig:
 2. Zuteilung des Lademodus-Sollstroms unter Berücksichtigung des Lastmanagements: Der verfügbare Strom wird unter allen Ladepunkten mit der gleichen Priorisierung aufgeteilt.
 3. Zuteilung des Überschusses (falls vorhanden und Lademodus PV oder Zielladen) unter Berücksichtigung des Lastmanagements: Der verfügbare Strom wird unter allen Ladepunkten mit der gleichen Priorisierung aufgeteilt.
 
-<img width="734" alt="kaskadiert Zähler" src="https://github.com/openWB/core/blob/wiki/docs/kaskadierte_zaehler.png">
+![kaskadierte Zähler](kaskadierte_zaehler.png)
 
 _Einstellungen -> Konfiguration -> Geräte und Komponenten_  
 Zunächst muss ggf ein Gerät und für den EVU-Zähler und jeden Zwischenzähler eine Komponente angelegt werden. Wenn an einer Zuleitung nur Ladepunkte oder Verbraucher mit einer festen Leistung angeschlossen sind und kein physischer Zähler verbaut ist, kann auch ein virtueller Zähler als Zwischenzähler angelegt werden (Loadsharing).
