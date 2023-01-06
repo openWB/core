@@ -46,7 +46,7 @@ class SurplusControlled:
             available_currents, limit = Loadmanagement().get_available_currents_surplus(missing_currents,
                                                                                         counter,
                                                                                         feed_in_yield)
-            available_for_cp = common.available_current_for_cp(cp, counts, available_currents)
+            available_for_cp = common.available_current_for_cp(cp, counts, available_currents, missing_currents)
             current = common.get_current_to_set(cp.data.set.current, available_for_cp, cp.data.set.target_current)
             self._set_loadmangement_message(current, limit, cp, counter)
             limited_current = self._limit_adjust_current(cp, current)
@@ -128,11 +128,14 @@ class SurplusControlled:
         for cp in get_chargepoints_surplus_controlled():
             charging_ev_data = cp.data.set.charging_ev_data
             required_currents = charging_ev_data.data.control_parameter.required_currents
+            control_parameter = charging_ev_data.data.control_parameter
 
-            if charging_ev_data.data.control_parameter.phases == 1:
-                charging_ev_data.data.control_parameter.required_currents = [
+            if control_parameter.phases == 1:
+                control_parameter.required_currents = [
                     charging_ev_data.ev_template.data.max_current_one_phase if required_currents[i] != 0 else 0
                     for i in range(3)]
+                control_parameter.required_current = charging_ev_data.ev_template.data.max_current_one_phase
             else:
-                charging_ev_data.data.control_parameter.required_currents = [
+                control_parameter.required_currents = [
                     charging_ev_data.ev_template.data.max_current_multi_phases]*3
+                control_parameter.required_current = charging_ev_data.ev_template.data.max_current_multi_phases

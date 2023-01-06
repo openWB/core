@@ -22,13 +22,15 @@ class MinCurrent:
                     missing_currents, counts = common.get_min_current(cp)
                     if max(missing_currents) > 0:
                         available_currents, limit = Loadmanagement().get_available_currents(missing_currents, counter)
-                        available_for_cp = common.available_current_for_cp(cp, counts, available_currents)
+                        available_for_cp = common.available_current_for_cp(
+                            cp, counts, available_currents, missing_currents)
                         if available_for_cp < cp.data.set.charging_ev_data.ev_template.data.min_current:
                             common.set_current_counterdiff(-cp.data.set.current, 0, cp)
                             cp.set_state_and_log(
                                 f"Ladung kann nicht gestartet werden{limit.value.format(counter.num)}")
                         else:
-                            common.set_current_counterdiff(available_for_cp-cp.data.set.target_current,
-                                                           available_for_cp,
+                            common.set_current_counterdiff((cp.data.set.charging_ev_data.ev_template.data.min_current
+                                                            - cp.data.set.target_current),
+                                                           cp.data.set.charging_ev_data.ev_template.data.min_current,
                                                            cp)
                     preferenced_chargepoints.pop(0)

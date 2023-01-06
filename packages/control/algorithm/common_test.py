@@ -101,24 +101,25 @@ def test_get_current_to_set(set_current: float, diff: float, expected_current: f
 
 
 @pytest.mark.parametrize(
-    "counts, available_currents, required_currents, expected_current",
+    "counts, available_currents, missing_currents, expected_current",
     [
-        pytest.param([2]*3, [12, 15, 16], [1]*3, 6),
-        pytest.param([2]*3, [12, 15, 16], [0, 1, 1], 7.5),
-        pytest.param([2]*3, [12, 15, 16], [0, 0, 1], 8),
+        pytest.param([2]*3, [12, 15, 16], [5]*3, 6),
+        pytest.param([2]*3, [1]*3, [2]*3, 0.5),
+        pytest.param([2]*3, [0]*3, [2]*3, 0),
     ])
 def test_available_currents_for_cp(counts: List[int],
                                    available_currents: List[float],
-                                   required_currents: List[float],
+                                   missing_currents: List[float],
                                    expected_current: float):
     # setup
     cp = Chargepoint(4, None)
     ev = Ev(0)
-    ev.data.control_parameter.required_currents = required_currents
+    ev.data.control_parameter.required_currents = [16]*3
     cp.data.set.charging_ev_data = ev
+    cp.data.set.target_current = 10
 
     # evaluation
-    current = common.available_current_for_cp(cp, counts, available_currents)
+    current = common.available_current_for_cp(cp, counts, available_currents, missing_currents)
 
     # assertion
     assert current == expected_current
