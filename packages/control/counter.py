@@ -326,7 +326,7 @@ class Counter:
                          "Diese wird abgewartet, bevor die Abschaltverzögerung gestartet wird.")
             # Wurde die Abschaltschwelle erreicht?
             # Eigene Leistung aus der freigegebenen Leistung rausrechnen.
-            if power_in_use - chargepoint.data.set.required_power < threshold:
+            if power_in_use - chargepoint.data.set.required_power > threshold:
                 timestamp_switch_on_off = None
                 self.data["set"]["released_surplus"] -= chargepoint.data.set.required_power
                 msg = self.SWITCH_OFF_EXCEEDED
