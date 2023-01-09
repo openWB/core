@@ -4,7 +4,8 @@ from typing import List, Union, Iterable
 
 from helpermodules.cli import run_using_positional_cli_args
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, SingleComponentUpdateContext
+from modules.common.configurable_device import (ConfigurableDevice, ComponentFactoryByType, MultiComponentUpdater,
+                                                SingleComponentUpdateContext)
 from modules.common import modbus
 from modules.devices.e3dc.bat import E3dcBat, read_bat
 from modules.devices.e3dc.inverter import E3dcInverter, read_inverter
@@ -42,11 +43,15 @@ def create_device(device_config: E3dc) -> ConfigurableDevice:
 
     def update_components(components: Iterable[Union[E3dcBat, E3dcCounter, E3dcInverter,
                                                      E3dcExternalInverter]]) -> None:
-        with modbus.ModbusTcpClient_(device_config.configuration.address, 502) as client:
-            log.debug('reading: %s', device_config.configuration.address)
+        with client as c:
             for component in components:
                 with SingleComponentUpdateContext(component.component_info):
-                    component.update(client)
+                    component.update(c)
+
+    try:
+        client = modbus.ModbusTcpClient_(device_config.configuration.address, 502)
+    except Exception:
+        log.exception("Fehler in create_device")
 
     return ConfigurableDevice(
         device_config=device_config,
@@ -56,7 +61,7 @@ def create_device(device_config: E3dc) -> ConfigurableDevice:
             inverter=create_inverter_component,
             external_inverter=create_external_inverter_component
         ),
-        component_updater=update_components
+        component_updater=MultiComponentUpdater(update_components)
     )
 
 

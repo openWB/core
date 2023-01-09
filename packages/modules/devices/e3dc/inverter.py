@@ -34,7 +34,7 @@ class E3dcInverter:
                  component_config: E3dcInverterSetup) -> None:
         self.component_config = component_config
         self.sim_counter = SimCounter(device_id, self.component_config.id, prefix="pv")
-        self.__store = get_inverter_value_store(self.component_config.id)
+        self.store = get_inverter_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
 
     def update(self, client: modbus.ModbusTcpClient_) -> None:
@@ -61,7 +61,7 @@ class E3dcInverter:
             power=pv_total,
             exported=pv_exported
         )
-        self.__store.set(inverter_state)
+        self.store.set(inverter_state)
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=E3dcInverterSetup)

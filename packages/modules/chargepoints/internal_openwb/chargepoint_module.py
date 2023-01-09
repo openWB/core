@@ -88,7 +88,7 @@ class ChargepointModule(AbstractChargepoint):
         self.component_info = ComponentInfo(
             self.config.id,
             "Ladepunkt "+str(self.config.id), "chargepoint")
-        self.__store = get_chargepoint_value_store(self.config.id)
+        self.store = get_chargepoint_value_store(self.config.id)
         self.__client = ClientFactory(self.config.id, self.config.serial_client)
         self.old_plug_state = False
 
@@ -155,7 +155,7 @@ class ChargepointModule(AbstractChargepoint):
             else:
                 raise FaultState.error(__name__ + " " + str(type(e)) + " " + str(e)) from e
 
-        self.__store.set(chargepoint_state)
+        self.store.set(chargepoint_state)
         return chargepoint_state, self.set_current_evse
 
     def perform_phase_switch(self, phases_to_use: int, duration: int) -> None:

@@ -45,7 +45,7 @@ class E3dcCounter:
                  component_config: E3dcCounterSetup) -> None:
         self.component_config = component_config
         self.sim_counter = SimCounter(device_id, self.component_config.id, prefix="bezug")
-        self.__store = get_counter_value_store(self.component_config.id)
+        self.store = get_counter_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
 
     def update(self, client: modbus.ModbusTcpClient_) -> None:
@@ -57,7 +57,7 @@ class E3dcCounter:
             powers=powers,
             power=power
         )
-        self.__store.set(counter_state)
+        self.store.set(counter_state)
         log.debug("Update completed successfully")
 
 
