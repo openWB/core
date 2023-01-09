@@ -59,7 +59,8 @@ class SubData:
                  event_copy_data: threading.Event,
                  event_global_data_initialized: threading.Event,
                  event_command_completed: threading.Event,
-                 event_subdata_initialized: threading.Event):
+                 event_subdata_initialized: threading.Event,
+                 event_vehicle_update_completed: threading.Event):
         self.event_ev_template = event_ev_template
         self.event_charge_template = event_charge_template
         self.event_cp_config = event_cp_config
@@ -68,6 +69,7 @@ class SubData:
         self.event_global_data_initialized = event_global_data_initialized
         self.event_command_completed = event_command_completed
         self.event_subdata_initialized = event_subdata_initialized
+        self.event_vehicle_update_completed = event_vehicle_update_completed
         self.heartbeat = False
 
         self.bat_data["all"] = bat.BatAll()
@@ -206,7 +208,9 @@ class SubData:
         """
         try:
             index = get_index(msg.topic)
-            if re.search("/vehicle/[0-9]+/", msg.topic) is not None:
+            if "openWB/vehicle/set/vehicle_update_completed" in msg.topic:
+                self.event_vehicle_update_completed.set()
+            elif re.search("/vehicle/[0-9]+/", msg.topic) is not None:
                 if decode_payload(msg.payload) == "":
                     if re.search("/vehicle/[0-9]+/soc_module/config$", msg.topic) is not None:
                         var["ev"+index].soc_module = None

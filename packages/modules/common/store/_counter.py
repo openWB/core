@@ -64,6 +64,9 @@ class PurgeCounterState:
     def calc_virtual(self, state: CounterState) -> CounterState:
         if self.add_child_values:
             self.currents = state.currents if state.currents else [0.0]*3
+            self.power = state.power
+            self.imported = state.imported
+            self.exported = state.exported
             self.incomplete_currents = False
 
             def add_current_power(element):
@@ -72,9 +75,15 @@ class PurgeCounterState:
                 else:
                     self.currents = [0, 0, 0]
                     self.incomplete_currents = True
-                state.power += element.data["get"]["power"]
-                state.imported += element.data["get"]["imported"]
-                state.exported += element.data["get"]["exported"]
+                self.power += element.data["get"]["power"]
+
+            def add_imported_exported(element):
+                self.imported += element.data["get"]["imported"]
+                self.exported += element.data["get"]["exported"]
+
+            def add_exported(element):
+                self.imported += element.data["get"]["imported"]
+                self.exported += element.data["get"]["exported"]
 
             counter_all = data.data.counter_all_data
             elements = counter_all.get_entry_of_element(self.delegate.delegate.num)["children"]
@@ -91,22 +100,21 @@ class PurgeCounterState:
                         raise FaultState.error(f"Für den virtuellen Zähler muss der Anschluss der Phasen von Ladepunkt"
                                                f" {chargepoint.num} an die Phasen der EVU angegeben werden.")
 
-                    state.power += chargepoint.data.get.power
-                    state.imported += chargepoint.data.get.imported
+                    self.power += chargepoint.data.get.power
+                    self.imported += chargepoint.data.get.imported
                 elif element["type"] == ComponentType.BAT.value:
                     add_current_power(data.data.bat_data[f"bat{element['id']}"])
+                    add_imported_exported(data.data.bat_data[f"bat{element['id']}"])
                 elif element["type"] == ComponentType.COUNTER.value:
                     add_current_power(data.data.counter_data[f"counter{element['id']}"])
+                    add_imported_exported(data.data.counter_data[f"counter{element['id']}"])
                 elif element["type"] == ComponentType.INVERTER.value:
                     add_current_power(data.data.pv_data[f"pv{element['id']}"])
+                    add_exported(data.data.pv_data[f"pv{element['id']}"])
 
-            if self.incomplete_currents is False:
-                state.currents = self.currents
-                state.powers = [state.currents[i]*230 for i in range(0, 3)]
-            else:
-                state.currents = None
-                state.powers = None
-        return state
+            if self.incomplete_currents:
+                self.currents = None
+        return CounterState(currents=self.currents, power=self.power, exported=self.exported, imported=self.imported)
 
 
 def get_counter_value_store(component_num: int, add_child_values: bool = False) -> PurgeCounterState:

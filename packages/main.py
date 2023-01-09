@@ -136,14 +136,14 @@ try:
     event_command_completed.set()
     event_subdata_initialized = threading.Event()
     prep = prepare.Prepare()
+    soc = update_soc.UpdateSoc()
     set = setdata.SetData(event_ev_template, event_charge_template,
                           event_cp_config, event_subdata_initialized)
     sub = subdata.SubData(event_ev_template, event_charge_template,
                           event_cp_config, loadvars_.event_module_update_completed,
                           event_copy_data, event_global_data_initialized, event_command_completed,
-                          event_subdata_initialized)
+                          event_subdata_initialized, soc.event_vehicle_update_completed)
     comm = command.Command(event_command_completed)
-    soc = update_soc.UpdateSoc()
     t_sub = Thread(target=sub.sub_topics, args=())
     t_set = Thread(target=set.set_data, args=())
     t_comm = Thread(target=comm.sub_commands, args=())

@@ -347,6 +347,8 @@ class SetData:
                 self._validate_value(msg, str)
             elif "openWB/set/vehicle/template" in msg.topic:
                 self._subprocess_vehicle_chargemode_topic(msg)
+            elif "openWB/set/vehicle/set/vehicle_update_completed" in msg.topic:
+                self._validate_value(msg, bool)
             elif "/soc_module/config" in msg.topic:
                 self._validate_value(msg, "json")
             elif "/get/fault_state" in msg.topic:
