@@ -19,15 +19,17 @@ log = logging.getLogger("soc."+__name__)
 class UpdateSoc:
     def __init__(self) -> None:
         self.heartbeat = False
-        self.event_module_update_completed = Event()
+        self.event_vehicle_update_completed = Event()
+        self.event_vehicle_update_completed.set()
 
     def update(self) -> None:
+        topic = "openWB/set/vehicle/set/vehicle_update_completed"
         try:
             threads_update, threads_store = self._get_threads()
-            with ModuleUpdateCompletedContext(self.event_module_update_completed):
+            with ModuleUpdateCompletedContext(self.event_vehicle_update_completed, topic):
                 threads_update, threads_store = self._get_threads()
                 thread_handler(threads_update)
-            with ModuleUpdateCompletedContext(self.event_module_update_completed):
+            with ModuleUpdateCompletedContext(self.event_vehicle_update_completed, topic):
                 threads_store, threads_failed = self._filter_failed_store_threads(threads_store)
                 thread_handler(threads_store)
                 self._reset_failed_soc_request(threads_failed)

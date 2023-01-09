@@ -19,15 +19,16 @@ class Loadvars:
         self.event_module_update_completed = threading.Event()
 
     def get_values(self) -> None:
+        topic = "openWB/set/system/device/module_update_completed"
         try:
             not_finished_threads = self._set_values()
             levels = data.data.counter_all_data.get_list_of_elements_per_level()
             levels.reverse()
             for level in levels:
-                with ModuleUpdateCompletedContext(self.event_module_update_completed):
+                with ModuleUpdateCompletedContext(self.event_module_update_completed, topic):
                     self._update_values_of_level(level, not_finished_threads)
                 data.data.copy_module_data()
-            with ModuleUpdateCompletedContext(self.event_module_update_completed):
+            with ModuleUpdateCompletedContext(self.event_module_update_completed, topic):
                 thread_handler(self._get_general())
             data.data.pv_data["all"].calc_power_for_all_components()
             data.data.bat_data["all"].calc_power_for_all_components()
