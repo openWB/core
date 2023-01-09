@@ -585,7 +585,6 @@ class Chargepoint:
                     elif charging_ev.data.control_parameter.phases == 1:
                         evu_counter.data["set"]["reserved_surplus"] -= charging_ev.ev_template. \
                             data.max_current_single_phase * 230
-                    self.data.set.current = charging_ev.data.control_parameter.required_current
                 else:
                     # Wenn eine Umschaltung im Gange ist, muss erst gewartet werden, bis diese fertig ist.
                     if self.data.set.phases_to_use == 3:
@@ -594,7 +593,7 @@ class Chargepoint:
                         message = "Umschaltung von 3 auf 1 Phase."
                     else:
                         raise ValueError(str(self.data.set.phases_to_use)+" ist keine gültige Phasenzahl (1/3).")
-                    self.data.get.state_str = message
+                    self.set_state_and_log(message)
                 return
             # Wenn noch kein Eintrag im Protokoll erstellt wurde, wurde noch nicht geladen und die Phase kann noch
             # umgeschaltet werden.
