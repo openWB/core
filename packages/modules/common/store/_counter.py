@@ -82,7 +82,6 @@ class PurgeCounterState:
                 self.exported += element.data["get"]["exported"]
 
             def add_exported(element):
-                self.imported += element.data["get"]["imported"]
                 self.exported += element.data["get"]["exported"]
 
             counter_all = data.data.counter_all_data
