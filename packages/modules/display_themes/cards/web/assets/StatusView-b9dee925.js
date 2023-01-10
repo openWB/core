@@ -1,0 +1,1 @@
+import{_ as e}from"./vendor-inkline-e555ebca.js";import"./vendor-a9456d51.js";const s={};function t(r,a){return"Status"}const o=e(s,[["render",t],["__file","/var/www/html/openWB/packages/modules/display_themes/cards/source/src/views/StatusView.vue"]]);export{o as default};
