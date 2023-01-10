@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-from typing import Tuple
 import logging
 
 from modules.common import modbus
@@ -15,17 +14,10 @@ from modules.devices.e3dc.config import E3dcInverterSetup
 log = logging.getLogger(__name__)
 
 
-def read_inverter(client: modbus.ModbusTcpClient_, read_ext) -> Tuple[int, int]:
+def read_inverter(client: modbus.ModbusTcpClient_) -> int:
     # 40067 PV Leistung
-    pv = client.read_holding_registers(40067, ModbusDataType.INT_32,
-                                       wordorder=Endian.Little, unit=1) * -1
-    if read_ext == 1:
-        # 40075 externe PV Leistung
-        pv_external = client.read_holding_registers(40075, ModbusDataType.INT_32,
-                                                    wordorder=Endian.Little, unit=1)
-    else:
-        pv_external = 0
-    return pv, pv_external
+    pv = int(client.read_holding_registers(40067, ModbusDataType.INT_32, wordorder=Endian.Little, unit=1) * -1)
+    return pv
 
 
 class E3dcInverter:
@@ -39,26 +31,12 @@ class E3dcInverter:
 
     def update(self, client: modbus.ModbusTcpClient_) -> None:
 
-        pv, pv_external = read_inverter(client, self.component_config.configuration.read_ext)
-        # pv_external - > pv Leistung
-        # die als externe Produktion an e3dc angeschlossen ist
-        # nur auslesen wenn als relevant parametrisiert
-        # (read_external = 1) , sonst doppelte Auslesung
-        # pv -> pv Leistung die direkt an e3dc angeschlossen ist
-        log.debug("read_ext %d", self.component_config.configuration.read_ext)
-        log.debug("pv %d pv_external %d", pv, pv_external)
-        # pv_other sagt aus, ob WR definiert ist,
-        # und dessen PV Leistung auch gilt
-        # wenn 0 gilt nur PV und pv_external aus e3dc
-        pv_total = pv + pv_external
-        # Wenn wr1 nicht definiert ist,
-        # gilt nur die PV Leistung die hier im Modul ermittelt wurde
-        # als gesamte PV Leistung für wr1
+        pv = read_inverter(client)
         # Im gegensatz zu v1.9 implementierung wird nicht mehr die PV
         # leistung vom WR1 gelesen, da die durch v2.0 separat gehandelt wird
-        _, pv_exported = self.sim_counter.sim_count(pv_total)
+        _, pv_exported = self.sim_counter.sim_count(pv)
         inverter_state = InverterState(
-            power=pv_total,
+            power=pv,
             exported=pv_exported
         )
         self.store.set(inverter_state)
