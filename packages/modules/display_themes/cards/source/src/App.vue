@@ -29,6 +29,7 @@ export default {
         reconnectPeriod: 4000,
       },
       mqttTopicsToSubscribe: [
+        "openWB/optional/int_display/theme",
         "openWB/counter/get/hierarchy",
         "openWB/counter/set/home_consumption",
         "openWB/counter/+/get/power",

@@ -6,6 +6,14 @@ export const useMqttStore = defineStore("mqtt", {
     chartData: {},
   }),
   getters: {
+    getThemeConfiguration: (state) => {
+      if ("openWB/optional/int_display/theme" in state.topics &&
+      state.topics["openWB/optional/int_display/theme"] !== undefined &&
+        "configuration" in state.topics["openWB/optional/int_display/theme"]) {
+        return state.topics["openWB/optional/int_display/theme"].configuration;
+      }
+      return undefined;
+    },
     getWildcardIndexList: (state) => {
       return (baseTopic, isRegex = false) => {
         let baseTopicRegex = baseTopic;
