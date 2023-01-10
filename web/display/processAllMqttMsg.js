@@ -37,7 +37,7 @@ function setIframeSource(host) {
 		// 	query += `?parentCPlp1=${data["openWB/isss/parentCPlp1"]}`;
 		// 	query += `&parentCPlp2=${data["openWB/isss/parentCPlp2"]}`;
 		// }
-		const theme = data["openWB/optional/int_display/theme"];
+		const theme = data["openWB/optional/int_display/theme"].type;
 		const destination = `${location.protocol}//${host}/openWB/web/display/themes/${theme}/${query}`;
 
 		var request = new XMLHttpRequest();
