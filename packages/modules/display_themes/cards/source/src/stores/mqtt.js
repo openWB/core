@@ -7,9 +7,11 @@ export const useMqttStore = defineStore("mqtt", {
   }),
   getters: {
     getThemeConfiguration: (state) => {
-      if ("openWB/optional/int_display/theme" in state.topics &&
-      state.topics["openWB/optional/int_display/theme"] !== undefined &&
-        "configuration" in state.topics["openWB/optional/int_display/theme"]) {
+      if (
+        "openWB/optional/int_display/theme" in state.topics &&
+        state.topics["openWB/optional/int_display/theme"] !== undefined &&
+        "configuration" in state.topics["openWB/optional/int_display/theme"]
+      ) {
         return state.topics["openWB/optional/int_display/theme"].configuration;
       }
       return undefined;

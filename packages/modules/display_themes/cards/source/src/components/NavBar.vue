@@ -35,8 +35,12 @@ export default {
 
 <template>
   <i-nav vertical class="_align-items:stretch">
-    <nav-item v-if="dashBoardEnabled" :to="{ name: 'dash-board' }"> DashBoard </nav-item>
-    <nav-item v-if="chargePointsEnabled" :to="{ name: 'charge-points' }"> Ladepunkte </nav-item>
+    <nav-item v-if="dashBoardEnabled" :to="{ name: 'dash-board' }">
+      DashBoard
+    </nav-item>
+    <nav-item v-if="chargePointsEnabled" :to="{ name: 'charge-points' }">
+      Ladepunkte
+    </nav-item>
     <nav-item v-if="stateEnabled" :to="{ name: 'status' }"> Status </nav-item>
   </i-nav>
 </template>

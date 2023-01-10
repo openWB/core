@@ -21,7 +21,7 @@ library.add(
 );
 
 export default {
-  name: "ChargePoints",
+  name: "ChargePointsView",
   data() {
     return {
       mqttStore: useMqttStore(),

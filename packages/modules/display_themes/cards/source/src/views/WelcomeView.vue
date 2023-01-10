@@ -2,7 +2,7 @@
 import { useMqttStore } from "@/stores/mqtt.js";
 
 export default {
-  name: "Welcome",
+  name: "WelcomeView",
   data() {
     return {
       mqttStore: useMqttStore(),
@@ -20,14 +20,14 @@ export default {
         if (this.mqttStore.getThemeConfiguration.enable_status_view) {
           return "status";
         }
-        return undefined;
       }
+      return undefined;
     },
   },
   methods: {
     selectFirstRoute() {
       if (this.firstView) {
-        this.$router.push({name: this.firstView});
+        this.$router.push({ name: this.firstView });
       } else {
         console.warn("no router view enabled, check your configuration!");
       }
@@ -44,9 +44,7 @@ export default {
     <i-row center middle>
       <i-column>
         <i-card color="primary">
-          <template #header>
-            Cards Theme
-          </template>
+          <template #header> Cards Theme </template>
           <img src="/openWB_logo_dark.png" />
         </i-card>
       </i-column>

@@ -23,7 +23,7 @@ library.add(
 );
 
 export default {
-  name: "DashBoard",
+  name: "DashboardView",
   data() {
     return {
       mqttStore: useMqttStore(),
@@ -58,7 +58,8 @@ export default {
     },
     homeCardEnabled() {
       if (this.mqttStore.getThemeConfiguration) {
-        return this.mqttStore.getThemeConfiguration.enable_dashboard_card_home_consumption;
+        return this.mqttStore.getThemeConfiguration
+          .enable_dashboard_card_home_consumption;
       }
       return true;
     },
@@ -73,7 +74,8 @@ export default {
     },
     batteryCardEnabled() {
       if (this.mqttStore.getThemeConfiguration) {
-        return this.mqttStore.getThemeConfiguration.enable_dashboard_card_battery_sum;
+        return this.mqttStore.getThemeConfiguration
+          .enable_dashboard_card_battery_sum;
       }
       return true;
     },
@@ -94,7 +96,8 @@ export default {
     },
     chargePointsCardEnabled() {
       if (this.mqttStore.getThemeConfiguration) {
-        return this.mqttStore.getThemeConfiguration.enable_dashboard_card_charge_point_sum;
+        return this.mqttStore.getThemeConfiguration
+          .enable_dashboard_card_charge_point_sum;
       }
       return true;
     },
@@ -106,7 +109,8 @@ export default {
     },
     pvCardEnabled() {
       if (this.mqttStore.getThemeConfiguration) {
-        return this.mqttStore.getThemeConfiguration.enable_dashboard_card_inverter_sum;
+        return this.mqttStore.getThemeConfiguration
+          .enable_dashboard_card_inverter_sum;
       }
       return true;
     },
@@ -151,7 +155,10 @@ export default {
       </template>
       <spark-line color="var(--color--light)" :data="homePowerChartData" />
     </dash-board-card>
-    <dash-board-card color="warning" v-if="batteryConfigured && batteryCardEnabled">
+    <dash-board-card
+      color="warning"
+      v-if="batteryConfigured && batteryCardEnabled"
+    >
       <template #headerLeft>
         <font-awesome-icon fixed-width :icon="['fas', 'fa-car-battery']" />
         Speicher
