@@ -45,7 +45,7 @@ export default {
       <i-column>
         <i-card color="primary">
           <template #header> Cards Theme </template>
-          <img src="/openWB_logo_dark.png" />
+          <img class="logo" src="/openWB_logo_dark.png" />
         </i-card>
       </i-column>
     </i-row>
@@ -61,5 +61,9 @@ export default {
 .card {
   ----background: inherit !important;
   ----body--color: var(--contrast-color-for-dark-background) !important;
+}
+
+img.logo {
+  max-width: 100%;
 }
 </style>
