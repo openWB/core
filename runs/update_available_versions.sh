@@ -14,7 +14,7 @@ fi
 	# update our local version
 	currentCommit=$(git -C "$OPENWBBASEDIR" log --pretty='format:%ci [%h]' -n1)
 	echo "current commit: $currentCommit"
-	mosquitto_pub -p 1886 -t "openWB/set/system/current_commit" -r -m "\"$currentCommit\""
+	mosquitto_pub -p 1886 -t "openWB/system/current_commit" -r -m "\"$currentCommit\""
 	echo "$currentCommit" >"$OPENWBBASEDIR/web/lastcommit"
 
 	# fetch data from git
@@ -57,17 +57,17 @@ fi
 			jq -n -R 'reduce inputs as $key ({}; . + { ($key): { commit: (input), tags: (input|fromjson) } })'
 	)
 	echo "$branchJson"
-	mosquitto_pub -p 1886 -t "openWB/set/system/available_branches" -r -m "$branchJson"
+	mosquitto_pub -p 1886 -t "openWB/system/available_branches" -r -m "$branchJson"
 
 	# update current branch
 	currentBranch=$(git -C "$OPENWBBASEDIR" branch --no-color --show-current)
 	echo "currently selected branch: $currentBranch"
-	mosquitto_pub -p 1886 -t "openWB/set/system/current_branch" -r -m "\"$currentBranch\""
+	mosquitto_pub -p 1886 -t "openWB/system/current_branch" -r -m "\"$currentBranch\""
 
 	# update $currentBranch commit
 	currentBranchCommit=$(git -C "$OPENWBBASEDIR" log --pretty='format:%ci [%h]' -n1 "$GITREMOTE/$currentBranch")
 	echo "last commit to $currentBranch branch: $currentBranchCommit"
-	mosquitto_pub -p 1886 -t "openWB/set/system/current_branch_commit" -r -m "\"$currentBranchCommit\""
+	mosquitto_pub -p 1886 -t "openWB/system/current_branch_commit" -r -m "\"$currentBranchCommit\""
 
 	# list missing commits
 	echo "changes:"
@@ -75,5 +75,5 @@ fi
 	read -r -d '' -a commitDiff < <(git -C "$OPENWBBASEDIR" log --pretty='format:%ci [%h] - %s' "$currentBranch..$GITREMOTE/$currentBranch")
 	printf "* %s\n" "${commitDiff[@]}"
 	commitDiffMessage=$(jq --compact-output --null-input '$ARGS.positional' --args -- "${commitDiff[@]}")
-	mosquitto_pub -p 1886 -t "openWB/set/system/current_missing_commits" -r -m "$commitDiffMessage"
+	mosquitto_pub -p 1886 -t "openWB/system/current_missing_commits" -r -m "$commitDiffMessage"
 } >"$LOGFILE" 2>&1
