@@ -1,8 +1,9 @@
 #!/bin/bash
 OPENWBBASEDIR=$(cd "$(dirname "$0")/../" && pwd)
+RAMDISKDIR="${OPENWBBASEDIR}/ramdisk"
 sleep 60
 
-debugFile=${OPENWBBASEDIR}/ramdisk/debug.log
+debugFile="${RAMDISKDIR}/debug.log"
 touch "$debugFile"
 {
 	echo "$1" | jq -r .message
@@ -11,6 +12,9 @@ touch "$debugFile"
 	echo "$1" | jq -r .serialNumber
 	echo "$1" | jq -r .installedComponents
 	echo "$1" | jq -r .vehicles
+	echo "############################ version ##############"
+	cat "${OPENWBBASEDIR}/web/version"
+	cat "${OPENWBBASEDIR}/web/lastcommit"
 	echo "############################ system ###############"
 	uptime
 	free
@@ -18,13 +22,10 @@ touch "$debugFile"
 	df -h
 	echo "############################ network ##############"
 	ifconfig
-	echo "############################ version ##############"
-	cat "${OPENWBBASEDIR}/web/version"
-	cat "${OPENWBBASEDIR}/web/lastcommit"
 	echo "############################ main.log ##############"
-	tail -2500 "${OPENWBBASEDIR}/ramdisk/main.log"
+	tail -2500 "${RAMDISKDIR}/main.log"
 	echo "############################ mqtt ##############"
-	tail -1000 "${OPENWBBASEDIR}/ramdisk/mqtt.log"
+	tail -1000 "${RAMDISKDIR}/mqtt.log"
 
 	for currentConfig in /etc/mosquitto/conf.d/99-bridge-*; do
 		if [ -f "$currentConfig" ]; then
@@ -37,7 +38,7 @@ touch "$debugFile"
 	timeout 1 mosquitto_sub -v -t 'openWB/#'
 
 	# echo "############################ smarthome.log ##############"
-	# tail -200 "${OPENWBBASEDIR}/ramdisk/smarthome.log"
+	# tail -200 "${RAMDISKDIR}/smarthome.log"
 } >>"$debugFile"
 
 echo "***** uploading debuglog..." >>"$RAMDISKDIR/main.log"
