@@ -113,7 +113,12 @@ class PurgeCounterState:
 
             if self.incomplete_currents:
                 self.currents = None
-        return CounterState(currents=self.currents, power=self.power, exported=self.exported, imported=self.imported)
+            return CounterState(currents=self.currents,
+                                power=self.power,
+                                exported=self.exported,
+                                imported=self.imported)
+        else:
+            return state
 
 
 def get_counter_value_store(component_num: int, add_child_values: bool = False) -> PurgeCounterState:
