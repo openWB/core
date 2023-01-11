@@ -771,7 +771,7 @@ class SetData:
             elif "openWB/set/optional/int_display/standby" in msg.topic:
                 self._validate_value(msg, int, [(0, 300)])
             elif "openWB/set/optional/int_display/theme" in msg.topic:
-                self._validate_value(msg, str)
+                self._validate_value(msg, "json")
             elif "openWB/set/optional/led/active" in msg.topic:
                 self._validate_value(msg, bool)
             else:

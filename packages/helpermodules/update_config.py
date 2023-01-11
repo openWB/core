@@ -309,7 +309,7 @@ class UpdateConfig:
         ("openWB/optional/int_display/pin_active", False),
         ("openWB/optional/int_display/pin_code", "0000"),
         ("openWB/optional/int_display/standby", 60),
-        ("openWB/optional/int_display/theme", "cards"),
+        ("openWB/optional/int_display/theme", {"name": None, "type": None, "configuration": {}}),
         ("openWB/optional/led/active", False),
         ("openWB/optional/rfid/active", False),
         ("openWB/system/dataprotection_acknowledged", False),
