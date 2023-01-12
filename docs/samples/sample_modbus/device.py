@@ -33,7 +33,7 @@ def create_device(device_config: Sample):
                     component.update(c)
 
     try:
-        client = ModbusTcpClient_(device_config.configuration.address, port)
+        client = ModbusTcpClient_(device_config.configuration.ip_address, port)
     except:
         log.exception("Fehler in create_device")
     return ConfigurableDevice(
