@@ -3,7 +3,7 @@
 from dataclasses import dataclass, field
 import logging
 import operator
-from typing import List
+from typing import List, Tuple
 
 from control import data
 from control.ev import Ev
@@ -222,36 +222,43 @@ class Counter:
     SWITCH_ON_NO_STOP = ("Die Ladung wurde aufgrund des EV-Profils ohne "
                          " Einschaltverzögerung gestartet, um die Ladung nicht zu unterbrechen.")
 
+    def calc_switch_on_power(self, chargepoint: Chargepoint) -> Tuple[float, float]:
+        surplus = self.data.set.surplus_power_left - self.data.set.reserved_surplus
+        control_parameter = chargepoint.data.set.charging_ev_data.data.control_parameter
+        pv_config = data.data.general_data.data.chargemode_config.pv_charging
+
+        if chargepoint.data.set.charging_ev_data.charge_template.data.chargemode.pv_charging.feed_in_limit:
+            threshold = pv_config.feed_in_yield
+        else:
+            threshold = pv_config.switch_on_threshold*control_parameter.phases
+        return surplus, threshold
+
     def switch_on_threshold_reached(self, chargepoint: Chargepoint):
         try:
-            surplus = self.data.set.surplus_power_left - self.data.set.reserved_surplus
             message = None
             control_parameter = chargepoint.data.set.charging_ev_data.data.control_parameter
-            required_power = (chargepoint.data.set.charging_ev_data.ev_template.data.
-                              min_current * control_parameter.phases * 230)
-            pv_config = data.data.general_data.data.chargemode_config.pv_charging
             feed_in_limit = chargepoint.data.set.charging_ev_data.charge_template.data.chargemode.pv_charging.\
                 feed_in_limit
-            feed_in_yield = pv_config.feed_in_yield
+            pv_config = data.data.general_data.data.chargemode_config.pv_charging
             timestamp_switch_on_off = control_parameter.timestamp_switch_on_off
+
+            surplus, threshold = self.calc_switch_on_power(chargepoint)
             if control_parameter.timestamp_switch_on_off is not None:
                 # Wurde die Einschaltschwelle erreicht? Reservierte Leistung aus all_surplus rausrechnen,
                 # da diese Leistung ja schon reserviert wurde, als die Einschaltschwelle erreicht wurde.
-                if not ((not feed_in_limit and
-                        surplus + required_power > pv_config.switch_on_threshold*control_parameter.phases) or
-                        (feed_in_limit and
-                            surplus + required_power >= feed_in_yield)):
+                required_power = (chargepoint.data.set.charging_ev_data.ev_template.data.
+                                  min_current * control_parameter.phases * 230)
+                if surplus + required_power <= threshold:
                     # Einschaltschwelle wurde unterschritten, Timer zurücksetzen
                     timestamp_switch_on_off = None
-                    self.data.set.reserved_surplus -= pv_config.switch_on_threshold*control_parameter.phases
+                    self.data.set.reserved_surplus -= threshold
                     message = self.SWITCH_ON_FALLEN_BELOW.format(pv_config.switch_on_threshold)
             else:
                 # Timer starten
-                if ((not feed_in_limit and surplus > pv_config.switch_on_threshold*control_parameter.phases) or
-                        (feed_in_limit and surplus >= feed_in_yield and
-                            self.data.set.reserved_surplus == 0)):
+                if (surplus >= threshold) and ((feed_in_limit and self.data.set.reserved_surplus == 0) or
+                                               not feed_in_limit):
                     timestamp_switch_on_off = timecheck.create_timestamp()
-                    self.data.set.reserved_surplus += pv_config.switch_on_threshold*control_parameter.phases
+                    self.data.set.reserved_surplus += threshold
                     message = self.SWITCH_ON_WAITING.format(pv_config.switch_on_delay)
                 else:
                     # Einschaltschwelle nicht erreicht
@@ -338,6 +345,24 @@ class Counter:
             log.exception("Fehler im allgemeinen PV-Modul")
             return expired
 
+    def calc_switch_off_threshold(self, chargepoint: Chargepoint) -> Tuple[float, float]:
+        pv_config = data.data.general_data.data.chargemode_config.pv_charging
+        # Der EVU-Überschuss muss ggf um die Einspeisegrenze bereinigt werden.
+        if chargepoint.data.set.charging_ev_data.charge_template.data.chargemode.pv_charging.feed_in_limit:
+            feed_in_yield = data.data.general_data.data.chargemode_config.pv_charging.feed_in_yield
+        else:
+            feed_in_yield = 0
+        threshold = pv_config.switch_off_threshold + feed_in_yield
+        return threshold, feed_in_yield
+
+    def calc_switch_off(self, chargepoint: Chargepoint) -> Tuple[float, float]:
+        switch_off_power = (self.data.get.power - self.data.set.released_surplus
+                            - data.data.bat_all_data.power_for_bat_charging())
+        threshold, feed_in_yield = self.calc_switch_off_threshold(chargepoint)
+        log.debug(f'LP{chargepoint.num} Switch-Off-Threshold prüfen: {switch_off_power}W, Schwelle: {threshold}W, '
+                  f'freigegebener Überschuss {self.data.set.released_surplus}W, Einspeisegrenze {feed_in_yield}W')
+        return switch_off_power, threshold
+
     def switch_off_check_threshold(self, chargepoint: Chargepoint) -> bool:
         """ prüft, ob die Abschaltschwelle erreicht wurde und startet die Abschaltverzögerung.
         Ist die Abschaltverzögerung bereits aktiv, wird geprüft, ob die Abschaltschwelle wieder
@@ -347,22 +372,11 @@ class Counter:
         msg = None
         control_parameter = chargepoint.data.set.charging_ev_data.data.control_parameter
         timestamp_switch_on_off = control_parameter.timestamp_switch_on_off
-        pv_config = data.data.general_data.data.chargemode_config.pv_charging
-        # Der EVU-Überschuss muss ggf um die Einspeisegrenze bereinigt werden.
-        if chargepoint.data.set.charging_ev_data.charge_template.data.chargemode.pv_charging.feed_in_limit:
-            feed_in_yield = data.data.general_data.data.chargemode_config.pv_charging.feed_in_yield
-        else:
-            feed_in_yield = 0
-        switch_off_surplus = self.data.get.power - data.data.bat_all_data.power_for_bat_charging()
-        log.debug(f'LP{chargepoint.num} Switch-Off-Threshold prüfen: EVU {switch_off_surplus}W, freigegebener '
-                  f'Überschuss {self.data.set.released_surplus}W, Einspeisegrenze {feed_in_yield}W')
-        # Wenn automatische Phasenumschaltung aktiv, die Umschaltung abwarten, bevor die Abschaltschwelle
-        # greift.
 
-        power_in_use = switch_off_surplus - self.data.set.released_surplus
-        threshold = pv_config.switch_off_threshold + feed_in_yield
-        log.debug(f"Relevante Leistung für Löschen der Abschaltschwelle: {power_in_use}W, Schwelle: {threshold}W")
+        power_in_use, threshold = self.calc_switch_off(chargepoint)
         if control_parameter.timestamp_switch_on_off:
+            # Wenn automatische Phasenumschaltung aktiv, die Umschaltung abwarten, bevor die Abschaltschwelle
+            # greift.
             if control_parameter.timestamp_auto_phase_switch:
                 timestamp_switch_on_off = None
                 self.data.set.released_surplus -= chargepoint.data.set.required_power
@@ -392,7 +406,8 @@ class Counter:
                             timestamp_switch_on_off = timecheck.create_timestamp()
                             # merken, dass ein LP verzögert wird, damit nicht zu viele LP verzögert werden.
                             self.data.set.released_surplus += chargepoint.data.set.required_power
-                            msg = self.SWITCH_OFF_WAITING.format(pv_config.switch_off_delay)
+                            msg = self.SWITCH_OFF_WAITING.format(
+                                data.data.general_data.data.chargemode_config.pv_charging.switch_off_delay)
                         # Die Abschaltschwelle wird immer noch überschritten und es sollten weitere LP abgeschaltet
                         # werden.
                     else:

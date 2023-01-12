@@ -89,33 +89,44 @@ class SurplusControlled:
         MAX_CURRENT = 5
         msg = None
         nominal_difference = chargepoint.data.set.charging_ev_data.ev_template.data.nominal_difference
-        # Um max. +/- 5A pro Zyklus regeln
-        if (-MAX_CURRENT-nominal_difference
-                < new_current - max(chargepoint.data.get.currents)
-                < MAX_CURRENT+nominal_difference):
-            current = new_current
+        if chargepoint.data.set.charging_ev_data.chargemode_changed:
+            return new_current
         else:
-            if new_current < max(chargepoint.data.get.currents):
-                current = max(chargepoint.data.get.currents) - MAX_CURRENT
-                msg = "Es darf um max 5A unter den aktuell genutzten Strom geregelt werden."
-
+            # Um max. +/- 5A pro Zyklus regeln
+            if (-MAX_CURRENT-nominal_difference
+                    < new_current - max(chargepoint.data.get.currents)
+                    < MAX_CURRENT+nominal_difference):
+                current = new_current
             else:
-                current = max(chargepoint.data.get.currents) + MAX_CURRENT
-                msg = "Es darf um max 5A über den aktuell genutzten Strom geregelt werden."
-        chargepoint.set_state_and_log(msg)
-        return max(current, chargepoint.data.set.charging_ev_data.ev_template.data.min_current)
+                if new_current < max(chargepoint.data.get.currents):
+                    current = max(chargepoint.data.get.currents) - MAX_CURRENT
+                    msg = "Es darf um max 5A unter den aktuell genutzten Strom geregelt werden."
+
+                else:
+                    current = max(chargepoint.data.get.currents) + MAX_CURRENT
+                    msg = "Es darf um max 5A über den aktuell genutzten Strom geregelt werden."
+            chargepoint.set_state_and_log(msg)
+            return max(current, chargepoint.data.set.charging_ev_data.ev_template.data.min_current)
 
     def check_submode_pv_charging(self) -> None:
+        evu_counter = data.data.counter_all_data.get_evu_counter()
+
         for cp in get_chargepoints_pv_charging():
-            if cp.data.set.current != 0:
-                if data.data.counter_all_data.get_evu_counter().switch_off_check_timer(cp):
-                    cp.data.set.charging_ev_data.data.control_parameter.required_currents = [0]*3
-                else:
-                    data.data.counter_all_data.get_evu_counter().switch_off_check_threshold(cp)
+            if cp.data.set.charging_ev_data.chargemode_changed:
+                if cp.data.get.charge_state:
+                    threshold = evu_counter.calc_switch_off_threshold(cp)[0]
+                    if evu_counter.calc_surplus() - cp.data.set.required_power < threshold:
+                        cp.data.set.charging_ev_data.data.control_parameter.required_currents = [0]*3
             else:
-                # Wenn charge_state False und set_current > 0, will Auto nicht laden
-                if not data.data.counter_all_data.get_evu_counter().switch_on_timer_expired(cp):
-                    cp.data.set.charging_ev_data.data.control_parameter.required_currents = [0]*3
+                if cp.data.set.current != 0:
+                    if evu_counter.switch_off_check_timer(cp):
+                        cp.data.set.charging_ev_data.data.control_parameter.required_currents = [0]*3
+                    else:
+                        evu_counter.switch_off_check_threshold(cp)
+                else:
+                    # Wenn charge_state False und set_current > 0, will Auto nicht laden
+                    if not evu_counter.switch_on_timer_expired(cp):
+                        cp.data.set.charging_ev_data.data.control_parameter.required_currents = [0]*3
 
     def check_switch_on(self) -> None:
         for cp in get_chargepoints_pv_charging():
