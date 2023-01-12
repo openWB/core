@@ -17,16 +17,16 @@ log = logging.getLogger(__name__)
 
 def create_device(device_config: Sample):
     def create_bat_component(component_config: SampleBatSetup):
-        return SampleBat(device_config.id, component_config, device_config.configuration.url)
+        return SampleBat(device_config.id, component_config)
 
     def create_counter_component(component_config: SampleCounterSetup):
-        return SampleCounter(device_config.id, component_config, device_config.configuration.url)
+        return SampleCounter(device_config.id, component_config)
 
     def create_inverter_component(component_config: SampleInverterSetup):
-        return SampleInverter(device_config.id, component_config, device_config.configuration.url)
+        return SampleInverter(device_config.id, component_config)
 
     def update_components(components: Iterable[Union[SampleBat, SampleCounter, SampleInverter]]):
-        response = req.get_http_session().get(device_config.configuration.url, timeout=5).json()
+        response = req.get_http_session().get(device_config.configuration.ip_address, timeout=5).json()
         for component in components:
             component.update(response)
 
