@@ -564,10 +564,10 @@ class SetData:
                 elif "/get/exported" in msg.topic:
                     self._validate_value(msg, float, [(0, float("inf"))])
                 elif "/get/power" in msg.topic:
-                    self._validate_value(msg, float, [(float("-inf"), 0)])
+                    self._validate_value(msg, float)
                 elif "/get/currents" in msg.topic:
                     self._validate_value(
-                        msg, float, [(float("-inf"), 0)], collection=list)
+                        msg, float, collection=list)
                 else:
                     self.__unknown_topic(msg)
             else:
