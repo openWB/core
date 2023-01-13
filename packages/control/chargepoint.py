@@ -705,13 +705,19 @@ class Chargepoint:
             # Wenn noch kein Eintrag im Protokoll erstellt wurde, wurde noch nicht geladen und die Phase kann noch
             # umgeschaltet werden.
             if self.data.set.log.imported_since_plugged != 0:
+                no_switch = False
                 if charging_ev.ev_template.data.prevent_phase_switch:
                     log.info(f"Phasenumschaltung an Ladepunkt {self.num} nicht möglich, da bei EV"
                              f"{charging_ev.num} nach Ladestart nicht mehr umgeschaltet werden darf.")
-                    phases = self.data.get.phases_in_use
+                    no_switch = True
                 elif self.cp_ev_support_phase_switch() is False:
                     log.info(f"Phasenumschaltung an Ladepunkt {self.num} wird durch die Hardware nicht unterstützt.")
-                    phases = self.data.get.phases_in_use
+                    no_switch = True
+                if no_switch:
+                    if self.data.get.phases_in_use != 0:
+                        phases = self.data.get.phases_in_use
+                    else:
+                        phases = self.data.set.charging_ev_data.data.control_parameter.phases
         if phases != charging_ev.data.control_parameter.phases:
             charging_ev.data.control_parameter.phases = phases
             Pub().pub("openWB/set/vehicle/"+str(charging_ev.num)+"/control_parameter/phases", phases)
