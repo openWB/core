@@ -115,6 +115,7 @@ def test_available_currents_for_cp(counts: List[int],
     cp = Chargepoint(4, None)
     ev = Ev(0)
     ev.data.control_parameter.required_currents = [16]*3
+    ev.data.control_parameter.required_current = 16
     cp.data.set.charging_ev_data = ev
     cp.data.set.target_current = 10
 
