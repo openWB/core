@@ -46,8 +46,8 @@ class Tasmota:
             power_factors=power_factors
         )
         log.debug("tasmota.get_CounterState:\nurl=" + url +
-                 "\nresponse=" + str(response) +
-                 "\nCounterState=" + str(counter_state))
+                  "\nresponse=" + str(response) +
+                  "\nCounterState=" + str(counter_state))
         return counter_state
 
     def set_PowerOn(self) -> str:
