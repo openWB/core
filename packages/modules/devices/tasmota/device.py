@@ -6,7 +6,6 @@ from dataclass_utils import dataclass_from_dict
 from helpermodules.cli import run_using_positional_cli_args
 from modules.devices.tasmota import counter
 from modules.devices.tasmota.config import Tasmota, TasmotaCounterSetup
-from modules.common import req
 from modules.common.abstract_device import AbstractDevice, DeviceDescriptor
 from modules.common.component_context import SingleComponentUpdateContext
 
@@ -22,22 +21,21 @@ class Device(AbstractDevice):
         self.components = {}  # type: Dict[str, counter.TasmotaCounter]
         try:
             self.device_config = dataclass_from_dict(Tasmota, device_config)
-            self.url = self.device_config.configuration.url
+            self.ip_address = self.device_config.configuration.ip_address
+            self.phase = int(self.device_config.configuration.phase)
         except Exception:
             log.exception("Fehler im Modul "+self.device_config.name)
 
     def add_component(self, component_config: Union[Dict, TasmotaCounterSetup]) -> None:
         if isinstance(component_config, Dict):
-            # log.info("tasmota: device.add_component.isinstance-true")
             component_type = component_config["type"]
         else:
-            # log.info("tasmota: device.add_component.isinstance-false")
             component_type = component_config.type
         component_config = dataclass_from_dict(COMPONENT_TYPE_TO_MODULE[
             component_type].component_descriptor.configuration_factory, component_config)
         if component_type in self.COMPONENT_TYPE_TO_CLASS:
             self.components["component"+str(component_config.id)] = self.COMPONENT_TYPE_TO_CLASS[component_type](
-                self.device_config.id, component_config, self.url)
+                self.device_config.id, component_config, self.ip_address, self.phase)
         else:
             raise Exception(
                 "illegal component type " + component_type + ". Allowed values: " +
@@ -45,11 +43,10 @@ class Device(AbstractDevice):
             )
 
     def update(self) -> None:
-        response = req.get_http_session().get(self.url, timeout=5).json()
         if self.components:
             for component in self.components:
                 with SingleComponentUpdateContext(self.components[component].component_info):
-                    self.components[component].update(response)
+                    self.components[component].update()
         else:
             log.warning(
                 self.device_config.name +
@@ -62,9 +59,10 @@ COMPONENT_TYPE_TO_MODULE = {
     }
 
 
-def read_legacy(component_type: str, url: str, num: Optional[int] = None) -> None:
+def read_legacy(component_type: str, ip_address: str, phase: str, num: Optional[int] = None) -> None:
     device_config = Tasmota()
-    device_config.configuration.url = url
+    device_config.configuration.ip_address = ip_address
+    device_config.configuration.phase = int(phase)
     dev = Device(device_config)
     if component_type in COMPONENT_TYPE_TO_MODULE:
         component_config = COMPONENT_TYPE_TO_MODULE[component_type].component_descriptor.configuration_factory()

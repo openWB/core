@@ -2,8 +2,12 @@ from modules.common.component_setup import ComponentSetup
 
 
 class TasmotaConfiguration:
-    def __init__(self, url=None):
-        self.url = url
+    def __init__(self, ip_address=None, phase=None):
+        self.ip_address = ip_address
+        try:
+            self.phase = int(phase)
+        except Exception:
+            self.phase = 1
 
 
 class Tasmota:
