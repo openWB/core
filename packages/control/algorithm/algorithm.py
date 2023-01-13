@@ -23,7 +23,7 @@ class Algorithm:
         """ Einstiegspunkt in den Regel-Algorithmus
         """
         try:
-            log.debug("# Algorithmus-Start")
+            log.debug("# Algorithmus")
             self.evu_counter = data.data.counter_all_data.get_evu_counter()
             self._check_auto_phase_switch_delay()
             self.surplus_controlled.check_submode_pv_charging()
@@ -62,7 +62,7 @@ class Algorithm:
                     scheduled_auto_switch = (
                         control_parameter.chargemode == Chargemode.SCHEDULED_CHARGING and
                         control_parameter.submode == Chargemode.PV_CHARGING and
-                        data.data.general_data.get_phases_chargemode(Chargemode.SCHEDULED_CHARGING) == 0)
+                        data.data.general_data.get_phases_chargemode(Chargemode.SCHEDULED_CHARGING.value) == 0)
                     if (cp.cp_ev_support_phase_switch() and cp.data.get.charge_state and
                             (pv_auto_switch or scheduled_auto_switch) and
                             control_parameter.timestamp_perform_phase_switch is None):

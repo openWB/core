@@ -278,6 +278,7 @@ class Ev:
         """
         phases = None
         required_current = None
+        submode = None
         message = None
         state = True
         try:
@@ -308,17 +309,19 @@ class Ev:
                 Pub().pub(f"openWB/set/vehicle/{self.num}/control_parameter/current_plan", name)
 
             # Wenn Zielladen auf Überschuss wartet, prüfen, ob Zeitladen aktiv ist.
-            if ((required_current is None or required_current <= 1) and
+            if (submode != "instant_charging" and
                     self.charge_template.data.time_charging.active):
                 used_amount = charged_since_mode_switch - self.data.control_parameter.imported_at_plan_start
-                time_charging_current, submode, message, name = self.charge_template.time_charging(
+                tmp_current, tmp_submode, tmp_message, name = self.charge_template.time_charging(
                     self.data.get.soc,
                     used_amount
                 )
-                if time_charging_current > 0:
+                if tmp_current > 0:
                     self.data.control_parameter.current_plan = name
                     Pub().pub(f"openWB/set/vehicle/{self.num}/control_parameter/current_plan", name)
-                    required_current = time_charging_current
+                    required_current = tmp_current
+                    submode = tmp_submode
+                    message = tmp_message
             if (required_current == 0) or (required_current is None):
                 if self.charge_template.data.chargemode.selected == "instant_charging":
                     # Wenn der Submode auf stop gestellt wird, wird auch die Energiemenge seit Moduswechsel
