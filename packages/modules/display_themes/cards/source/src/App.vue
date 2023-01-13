@@ -44,7 +44,13 @@ export default {
         "openWB/chargepoint/+/get/charge_state",
         "openWB/chargepoint/+/get/phases_in_use",
         "openWB/chargepoint/+/set/current",
+        "openWB/chargepoint/+/set/manual_lock",
         "openWB/chargepoint/+/config",
+        "openWB/chargepoint/+/get/connected_vehicle/+",
+        "openWB/vehicle/+/name",
+        "openWB/vehicle/+/soc_module/config",
+        "openWB/vehicle/+/get/fault_state",
+        "openWB/vehicle/+/get/soc",
       ],
       mqttStore: useMqttStore(),
     };
@@ -107,6 +113,25 @@ export default {
           console.error("Unsubscribe error", error);
         }
       });
+    },
+    doPublish(topic, payload, retain = true, qos = 2) {
+      console.debug("doPublish", topic, payload);
+      let options = {
+        qos: qos,
+        retain: retain,
+      };
+      this.client.publish(topic, JSON.stringify(payload), options, (error) => {
+        if (error) {
+          console.error("Publish error", error);
+        }
+      });
+    },
+    sendTopicToBroker(topic, payload = undefined) {
+      let setTopic = topic.replace("openWB/", "openWB/set/");
+      if (payload === undefined) {
+        payload = this.mqttStore.topics[topic];
+      }
+      this.doPublish(setTopic, payload);
     },
   },
   created() {

@@ -29,7 +29,7 @@
 export default {
   props: {
     data: {
-      required: true,
+      required: false,
       type: Array,
       default() {
         return [];
@@ -59,7 +59,10 @@ export default {
       return Math.floor(this.width / (this.stroke + this.gap));
     },
     slicedData() {
-      return this.data.slice(-this.maxPoints);
+      if (this.data) {
+        return this.data.slice(-this.maxPoints);
+      }
+      return undefined;
     },
     slicedSocData() {
       if (this.socData) {
@@ -75,11 +78,14 @@ export default {
       );
     },
     coordinates() {
-      return this.calculateCoordinates(
-        this.slicedData,
-        this.lowestPoint,
-        this.highestPoint
-      );
+      if (this.data) {
+        return this.calculateCoordinates(
+          this.slicedData,
+          this.lowestPoint,
+          this.highestPoint
+        );
+      }
+      return undefined;
     },
     socCoordinates() {
       if (this.socData) {
@@ -88,23 +94,26 @@ export default {
       return undefined;
     },
     bars() {
-      const barCoordinates = [];
-      this.coordinates.forEach((point) => {
-        const left = point.x;
-        const y = point.y;
-        const width = this.stroke;
-        const top = Math.min(y, this.zeroHeight);
-        const height = Math.abs(y - this.zeroHeight);
-        const isNegative = y > this.zeroHeight;
-        barCoordinates.push({
-          x: left,
-          y: top,
-          width: width,
-          height: height,
-          negative: isNegative,
+      if (this.coordinates) {
+        const barCoordinates = [];
+        this.coordinates.forEach((point) => {
+          const left = point.x;
+          const y = point.y;
+          const width = this.stroke;
+          const top = Math.min(y, this.zeroHeight);
+          const height = Math.abs(y - this.zeroHeight);
+          const isNegative = y > this.zeroHeight;
+          barCoordinates.push({
+            x: left,
+            y: top,
+            width: width,
+            height: height,
+            negative: isNegative,
+          });
         });
-      });
-      return barCoordinates;
+        return barCoordinates;
+      }
+      return undefined;
     },
     socPath() {
       if (this.socCoordinates) {

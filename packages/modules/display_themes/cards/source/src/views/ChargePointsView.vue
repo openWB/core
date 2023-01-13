@@ -11,13 +11,25 @@ import {
   faPlugCircleCheck as fasPlugCircleCheck,
   faPlugCircleBolt as fasPlugCircleBolt,
   faWrench as fasWrench,
+  faLock as fasLock,
+  faLockOpen as fasLockOpen,
+  faCar as fasCar,
+  faCarBattery as fasCarBattery,
+  faTimesCircle as fasTimesCircle,
+  faExclamationTriangle as fasExclamationTriangle,
 } from "@fortawesome/free-solid-svg-icons";
 /* add icons to the library */
 library.add(
   fasPlugCircleXmark,
   fasPlugCircleCheck,
   fasPlugCircleBolt,
-  fasWrench
+  fasWrench,
+  fasLock,
+  fasLockOpen,
+  fasCar,
+  fasCarBattery,
+  fasTimesCircle,
+  fasExclamationTriangle
 );
 
 export default {
@@ -31,6 +43,17 @@ export default {
   computed: {
     chargePointIds() {
       return this.mqttStore.getObjectIds("cp");
+    },
+    vehicleList() {
+      let topicList = this.mqttStore.getWildcardTopics("openWB/vehicle/+/name");
+      var vehicleList = {};
+      Object.keys(topicList).forEach((topic) => {
+        let id = parseInt(
+          topic.match(/(?:\/)([0-9]+)(?=\/)*/g)[0].replace(/[^0-9]+/g, "")
+        );
+        vehicleList[id] = topicList[topic];
+      });
+      return vehicleList;
     },
   },
   methods: {
@@ -55,6 +78,9 @@ export default {
     getChargePointPowerChartData(id) {
       return this.mqttStore.chartData[`openWB/chargepoint/${id}/get/power`];
     },
+    getVehicleSocChartData(vehicleId) {
+      return this.mqttStore.chartData[`openWB/vehicle/${vehicleId}/get/soc`];
+    },
     getChargePointSetCurrent(id) {
       return this.mqttStore.getValueString(
         `openWB/chargepoint/${id}/set/current`,
@@ -76,6 +102,43 @@ export default {
       return this.mqttStore.getValueBool(
         `openWB/chargepoint/${id}/get/charge_state`
       );
+    },
+    getChargePointManualLock(id) {
+      return this.mqttStore.getValueBool(
+        `openWB/chargepoint/${id}/set/manual_lock`
+      );
+    },
+    toggleChargePointManualLock(id) {
+      this.$root.sendTopicToBroker(
+        `openWB/chargepoint/${id}/set/manual_lock`,
+        !this.mqttStore.getValueBool(`openWB/chargepoint/${id}/set/manual_lock`)
+      );
+    },
+    getChargePointConnectedVehicleInfo(id) {
+      return this.mqttStore.topics[
+        `openWB/chargepoint/${id}/get/connected_vehicle/info`
+      ];
+    },
+    getChargePointConnectedVehicleId(id) {
+      return this.mqttStore.topics[
+        `openWB/chargepoint/${id}/get/connected_vehicle/info`
+      ].id;
+    },
+    getChargePointConnectedVehicleSoc(id) {
+      return this.mqttStore.topics[
+        `openWB/chargepoint/${id}/get/connected_vehicle/soc`
+      ];
+    },
+    getVehicleSocConfigured(vehicleId) {
+      return (
+        this.mqttStore.topics[`openWB/vehicle/${vehicleId}/soc_module/config`]
+          .type != null
+      );
+    },
+    getVehicleFaultState(vehicleId) {
+      return this.mqttStore.topics[
+        `openWB/vehicle/${vehicleId}/get/fault_state`
+      ];
     },
   },
 };
@@ -103,7 +166,7 @@ export default {
                 ? getChargePointChargeState(id)
                   ? ['_color:success']
                   : '_color:warning'
-                : '_color_danger'
+                : '_color:gray'
             "
           />
         </i-badge>
@@ -113,6 +176,22 @@ export default {
           <i-column>
             <i-row>
               <i-column>
+                <font-awesome-icon
+                  fixed-width
+                  :icon="
+                    getChargePointManualLock(id)
+                      ? ['fas', 'fa-lock']
+                      : ['fas', 'fa-lock-open']
+                  "
+                  :class="
+                    getChargePointManualLock(id)
+                      ? ['_color:danger']
+                      : '_color:success'
+                  "
+                  @click="toggleChargePointManualLock(id)"
+                />
+              </i-column>
+              <i-column class="_text-align:right">
                 {{ getChargePointPower(id) }}
                 {{ getChargePointPhasesInUse(id) }}
                 {{ getChargePointSetCurrent(id) }}
@@ -129,9 +208,60 @@ export default {
           </i-column>
           <i-column md="6">
             <i-row>
-              <i-column> Vehicle Data </i-column>
+              <i-column>
+                <font-awesome-icon fixed-width :icon="['fas', 'fa-car']" />
+                {{ getChargePointConnectedVehicleInfo(id).name }}
+              </i-column>
+              <i-column
+                v-if="
+                  getVehicleSocConfigured(getChargePointConnectedVehicleId(id))
+                "
+                class="_text-align:right"
+              >
+                <font-awesome-icon
+                  fixed-width
+                  :icon="['fas', 'fa-car-battery']"
+                />
+                {{ getChargePointConnectedVehicleSoc(id).soc }}%
+                <font-awesome-icon
+                  v-if="
+                    getVehicleFaultState(
+                      getChargePointConnectedVehicleId(id)
+                    ) != 0
+                  "
+                  fixed-width
+                  :icon="
+                    getVehicleFaultState(getChargePointConnectedVehicleId(id)) >
+                    0
+                      ? getVehicleFaultState(
+                          getChargePointConnectedVehicleId(id)
+                        ) > 1
+                        ? ['fas', 'times-circle']
+                        : ['fas', 'exclamation-triangle']
+                      : []
+                  "
+                  :class="
+                    getVehicleFaultState(getChargePointConnectedVehicleId(id)) >
+                    0
+                      ? getVehicleFaultState(
+                          getChargePointConnectedVehicleId(id)
+                        ) > 1
+                        ? '_color:danger'
+                        : '_color:warning'
+                      : ''
+                  "
+                />
+              </i-column>
             </i-row>
             <i-row>
+              <i-column>
+                <spark-line
+                  color="var(--color--primary)"
+                  :socData="getVehicleSocChartData(getChargePointConnectedVehicleId(id))"
+                />
+              </i-column>
+            </i-row>
+            <!-- <i-row>
               <i-column>
                 <i-button
                   block
@@ -141,7 +271,7 @@ export default {
                   <font-awesome-icon fixed-width :icon="['fas', 'fa-wrench']" />
                 </i-button>
               </i-column>
-            </i-row>
+            </i-row> -->
           </i-column>
         </i-row>
       </i-container>
