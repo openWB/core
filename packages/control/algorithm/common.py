@@ -110,12 +110,13 @@ def available_current_for_cp(chargepoint: Chargepoint,
                              missing_currents: List[float]) -> float:
     control_parameter = chargepoint.data.set.charging_ev_data.data.control_parameter
     available_current = float("inf")
+    missing_current_cp = control_parameter.required_current - chargepoint.data.set.target_current
     for i in range(0, 3):
         if (control_parameter.required_currents[i] != 0 and
                 missing_currents[i] != available_currents[i]):
-            available_current = min(available_current, available_currents[i]/counts[i])
+            available_current = min(missing_current_cp, available_currents[i]/counts[i])
     if available_current == float("inf"):
-        available_current = control_parameter.required_current - chargepoint.data.set.target_current
+        available_current = missing_current_cp
     return available_current
 
 
