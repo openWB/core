@@ -695,7 +695,10 @@ class ChargeTemplate:
             if plan_data:
                 if plan_data.remaining_time > 300:
                     max_current = ev_template.data.max_current_single_phase
-                    plan_data = self.search_plan(max_current, soc, ev_template, 1, used_amount)
+                    plan_data_single_phase = self.search_plan(max_current, soc, ev_template, 1, used_amount)
+                    if plan_data_single_phase:
+                        if plan_data_single_phase.remaining_time > 300:
+                            plan_data = plan_data_single_phase
         else:
             if phases == 1:
                 max_current = ev_template.data.max_current_single_phase
@@ -802,7 +805,6 @@ class ChargeTemplate:
                 plan_data.available_current, limit_string, current_plan.time)
             current = plan_data.available_current
             mode = "instant_charging"
-            phases = max_phases
         # weniger als die berechnete Zeit verfügbar
         elif plan_data.remaining_time <= 0:  # Ladestart wurde um maximal 20 Min verpasst.
             message = self.SCHEDULED_CHARGING_MAX_CURRENT.format(plan_data.max_current)

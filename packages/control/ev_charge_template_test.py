@@ -193,11 +193,11 @@ def test_search_plan(check_duration_return1: Tuple[Optional[float], bool],
                      ChargeTemplate.SCHEDULED_CHARGING_REACHED_AMOUNT, 3), id="reached amount"),
         pytest.param(SelectedPlan(remaining_time=299), 0, 999, "amount",
                      (14, "instant_charging", ChargeTemplate.SCHEDULED_CHARGING_IN_TIME.format(
-                         14, ChargeTemplate.SCHEDULED_CHARGING_LIMITED_BY_AMOUNT.format(1.0), "07:00"), 3),
+                         14, ChargeTemplate.SCHEDULED_CHARGING_LIMITED_BY_AMOUNT.format(1.0), "07:00"), 1),
                      id="in time, limited by amount"),
         pytest.param(SelectedPlan(remaining_time=299), 79, 0, "soc",
                      (14, "instant_charging", ChargeTemplate.SCHEDULED_CHARGING_IN_TIME.format(
-                         14, ChargeTemplate.SCHEDULED_CHARGING_LIMITED_BY_SOC.format(80), "07:00"), 3),
+                         14, ChargeTemplate.SCHEDULED_CHARGING_LIMITED_BY_SOC.format(80), "07:00"), 1),
                      id="in time, limited by soc"),
         pytest.param(SelectedPlan(remaining_time=0), 79, 0, "soc",
                      (16, "instant_charging", ChargeTemplate.SCHEDULED_CHARGING_MAX_CURRENT.format(16), 3),
