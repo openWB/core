@@ -36,10 +36,10 @@ class Soc(AbstractSoc):
                 log.error("Result not stored: soc=" + str(soc)+", range=" + str(range))
 
 
-def skodaconnect_update(user_id: str, password: str, vin: str, charge_point: int):
+def skodaconnect_update(user_id: str, password: str, vin: str, refreshToken: str, charge_point: int):
     log.debug("skodaconnect: userid="+user_id+"vin="+vin+"charge_point="+str(charge_point))
     Soc(
-        SkodaConnect(configuration=SkodaConnectConfiguration(user_id, password, vin)),
+        SkodaConnect(configuration=SkodaConnectConfiguration(user_id, password, vin, refreshToken)),
         charge_point).update(False)
 
 

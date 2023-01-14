@@ -1,5 +1,6 @@
 import inspect
 from inspect import FullArgSpec
+import typing
 from typing import TypeVar, Type, Union
 
 T = TypeVar('T')
@@ -38,5 +39,16 @@ def _get_argument_value(arg_spec: FullArgSpec, index: int, parameters: dict):
 
 def _dataclass_from_dict_recurse(value, requested_type: Type[T]):
     return dataclass_from_dict(requested_type, value) \
-        if isinstance(value, dict) and not issubclass(requested_type, dict) \
+        if isinstance(value, dict) and not (
+            _is_optional_of_dict(requested_type) or
+            issubclass(requested_type, dict)) \
         else value
+
+
+def _is_optional_of_dict(requested_type):
+    # Optional[dict] is an alias for Union[dict, None]
+    if typing.get_origin(requested_type) == Union:
+        args = typing.get_args(requested_type)
+        if len(args) == 2:
+            return issubclass(args[0], dict) and issubclass(args[1], type(None))
+    return False
