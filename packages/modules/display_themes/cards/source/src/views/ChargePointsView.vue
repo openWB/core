@@ -37,6 +37,7 @@ export default {
   data() {
     return {
       mqttStore: useMqttStore(),
+      modalChargePointSettingsVisible: false,
     };
   },
   components: { DashBoardCard, SparkLine, FontAwesomeIcon },
@@ -44,14 +45,23 @@ export default {
     chargePointIds() {
       return this.mqttStore.getObjectIds("cp");
     },
+    vehicleListDemo() {
+      return [
+          { id: 1, label: 'Richard Hendricks' },
+          { id: 2, label: 'Bertram Gilfoyle' },
+          { id: 3, label: 'Dinesh Chugtai' },
+          { id: 4, label: 'Jared Dunn' },
+          { id: 5, label: 'Erlich Bachman' }
+      ];
+    },
     vehicleList() {
       let topicList = this.mqttStore.getWildcardTopics("openWB/vehicle/+/name");
-      var vehicleList = {};
+      var vehicleList = [];
       Object.keys(topicList).forEach((topic) => {
         let id = parseInt(
           topic.match(/(?:\/)([0-9]+)(?=\/)*/g)[0].replace(/[^0-9]+/g, "")
         );
-        vehicleList[id] = topicList[topic];
+        vehicleList.push({id: id, label: topicList[topic]});
       });
       return vehicleList;
     },
@@ -59,6 +69,7 @@ export default {
   methods: {
     toggleChargePointSettings(id) {
       console.log(id);
+      this.modalChargePointSettingsVisible = true;
     },
     getChargePointName(id) {
       if (
@@ -119,15 +130,32 @@ export default {
         `openWB/chargepoint/${id}/get/connected_vehicle/info`
       ];
     },
+    getChargePointConnectedVehicle(id) {
+      return {
+        id: this.getChargePointConnectedVehicleId(id),
+        label: this.getChargePointConnectedVehicleName(id),
+      };
+    },
     getChargePointConnectedVehicleId(id) {
       return this.mqttStore.topics[
         `openWB/chargepoint/${id}/get/connected_vehicle/info`
       ].id;
     },
+    getChargePointConnectedVehicleName(id) {
+      return this.mqttStore.topics[
+        `openWB/chargepoint/${id}/get/connected_vehicle/info`
+      ].name;
+    },
     getChargePointConnectedVehicleSoc(id) {
       return this.mqttStore.topics[
         `openWB/chargepoint/${id}/get/connected_vehicle/soc`
       ];
+    },
+    setChargePointConnectedVehicle(id, $event) {
+      console.log("set", id, $event);
+      if ($event.id != this.getChargePointConnectedVehicleId(id)) {
+        console.log("vehicle changed");
+      }
     },
     getVehicleSocConfigured(vehicleId) {
       return (
@@ -175,30 +203,32 @@ export default {
         <i-row>
           <i-column>
             <i-row>
-              <i-column>
-                <font-awesome-icon
-                  fixed-width
-                  :icon="
-                    getChargePointManualLock(id)
-                      ? ['fas', 'fa-lock']
-                      : ['fas', 'fa-lock-open']
-                  "
-                  :class="
-                    getChargePointManualLock(id)
-                      ? ['_color:danger']
-                      : '_color:success'
-                  "
-                  @click="toggleChargePointManualLock(id)"
-                />
+              <i-column class="_padding-left:0 _padding-right:0">
+                <i-button size="lg">
+                  <font-awesome-icon
+                    fixed-width
+                    :icon="
+                      getChargePointManualLock(id)
+                        ? ['fas', 'fa-lock']
+                        : ['fas', 'fa-lock-open']
+                    "
+                    :class="
+                      getChargePointManualLock(id)
+                        ? ['_color:danger']
+                        : '_color:success'
+                    "
+                    @click="toggleChargePointManualLock(id)"
+                  />
+                </i-button>
               </i-column>
-              <i-column class="_text-align:right">
+              <i-column class="_text-align:right _padding-left:0">
                 {{ getChargePointPower(id) }}
                 {{ getChargePointPhasesInUse(id) }}
                 {{ getChargePointSetCurrent(id) }}
               </i-column>
             </i-row>
             <i-row>
-              <i-column>
+              <i-column class="_padding-left:0">
                 <spark-line
                   color="var(--color--primary)"
                   :data="getChargePointPowerChartData(id)"
@@ -208,75 +238,93 @@ export default {
           </i-column>
           <i-column md="6">
             <i-row>
-              <i-column>
-                <font-awesome-icon fixed-width :icon="['fas', 'fa-car']" />
-                {{ getChargePointConnectedVehicleInfo(id).name }}
-              </i-column>
-              <i-column
-                v-if="
-                  getVehicleSocConfigured(getChargePointConnectedVehicleId(id))
-                "
-                class="_text-align:right"
-              >
-                <font-awesome-icon
-                  fixed-width
-                  :icon="['fas', 'fa-car-battery']"
-                />
-                {{ getChargePointConnectedVehicleSoc(id).soc }}%
-                <font-awesome-icon
-                  v-if="
-                    getVehicleFaultState(
-                      getChargePointConnectedVehicleId(id)
-                    ) != 0
-                  "
-                  fixed-width
-                  :icon="
-                    getVehicleFaultState(getChargePointConnectedVehicleId(id)) >
-                    0
-                      ? getVehicleFaultState(
+              <i-column class="_padding-right:0 _padding-left:0">
+                <i-select
+                  size="lg"
+                  :model-value="getChargePointConnectedVehicle(id)"
+                  :options="vehicleList"
+                  placeholder="Bitte auswählen.."
+                  @update:model-value="setChargePointConnectedVehicle(id, $event)"
+                >
+                  <template #prefix>
+                    <font-awesome-icon fixed-width :icon="['fas', 'fa-car']" />
+                  </template>
+                  <template #suffix
+                    v-if="
+                      getVehicleSocConfigured(getChargePointConnectedVehicleId(id))
+                    "
+                  >
+                    <font-awesome-icon
+                      fixed-width
+                      :icon="['fas', 'fa-car-battery']"
+                    />
+                    {{ getChargePointConnectedVehicleSoc(id).soc }}%
+                    <font-awesome-icon
+                      v-if="
+                        getVehicleFaultState(
                           getChargePointConnectedVehicleId(id)
-                        ) > 1
-                        ? ['fas', 'times-circle']
-                        : ['fas', 'exclamation-triangle']
-                      : []
-                  "
-                  :class="
-                    getVehicleFaultState(getChargePointConnectedVehicleId(id)) >
-                    0
-                      ? getVehicleFaultState(
-                          getChargePointConnectedVehicleId(id)
-                        ) > 1
-                        ? '_color:danger'
-                        : '_color:warning'
-                      : ''
-                  "
-                />
-              </i-column>
-            </i-row>
-            <i-row>
-              <i-column>
-                <spark-line
-                  color="var(--color--primary)"
-                  :socData="getVehicleSocChartData(getChargePointConnectedVehicleId(id))"
-                />
+                        ) != 0
+                      "
+                      fixed-width
+                      :icon="
+                        getVehicleFaultState(getChargePointConnectedVehicleId(id)) >
+                        0
+                          ? getVehicleFaultState(
+                              getChargePointConnectedVehicleId(id)
+                            ) > 1
+                            ? ['fas', 'times-circle']
+                            : ['fas', 'exclamation-triangle']
+                          : []
+                      "
+                      :class="
+                        getVehicleFaultState(getChargePointConnectedVehicleId(id)) >
+                        0
+                          ? getVehicleFaultState(
+                              getChargePointConnectedVehicleId(id)
+                            ) > 1
+                            ? '_color:danger'
+                            : '_color:warning'
+                          : ''
+                      "
+                    />
+                  </template>
+                </i-select>
               </i-column>
             </i-row>
             <!-- <i-row>
               <i-column>
+                <spark-line
+                  height="59"
+                  color="var(--color--primary)"
+                  :socData="getVehicleSocChartData(getChargePointConnectedVehicleId(id))"
+                />
+              </i-column>
+            </i-row> -->
+            <i-row class="_padding-top:1">
+              <i-column class="_padding-left:0 _padding-right:0">
                 <i-button
-                  block
-                  color="dark"
+                  size="lg"
                   @click="toggleChargePointSettings(id)"
                 >
                   <font-awesome-icon fixed-width :icon="['fas', 'fa-wrench']" />
                 </i-button>
               </i-column>
-            </i-row> -->
+            </i-row>
           </i-column>
         </i-row>
       </i-container>
     </dash-board-card>
   </div>
+  <!-- modals -->
+  <i-modal v-model="modalChargePointSettingsVisible">
+    <template #header>
+        Modal Header
+    </template>
+    This is the modal body. Useful information goes here.
+    <template #footer>
+        Modal Footer
+    </template>
+  </i-modal>
 </template>
 
 <style scoped>
@@ -287,6 +335,10 @@ export default {
 }
 .card {
   ----background: inherit !important;
-  ----body--color: var(--contrast-color-for-dark-background) !important;
+  ----body--color: var(----color) !important;
+}
+
+:deep(.select-wrapper .input-wrapper .input-suffix > .select-caret) {
+  display: none;
 }
 </style>
