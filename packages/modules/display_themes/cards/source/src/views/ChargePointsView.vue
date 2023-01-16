@@ -45,15 +45,6 @@ export default {
     chargePointIds() {
       return this.mqttStore.getObjectIds("cp");
     },
-    vehicleListDemo() {
-      return [
-          { id: 1, label: 'Richard Hendricks' },
-          { id: 2, label: 'Bertram Gilfoyle' },
-          { id: 3, label: 'Dinesh Chugtai' },
-          { id: 4, label: 'Jared Dunn' },
-          { id: 5, label: 'Erlich Bachman' }
-      ];
-    },
     vehicleList() {
       let topicList = this.mqttStore.getWildcardTopics("openWB/vehicle/+/name");
       var vehicleList = [];
