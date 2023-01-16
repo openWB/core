@@ -34,7 +34,7 @@ def create_device(device_config: Sample):
 
     try:
         client = ModbusTcpClient_(device_config.configuration.ip_address, port)
-    except:
+    except Exception:
         log.exception("Fehler in create_device")
     return ConfigurableDevice(
         device_config=device_config,
