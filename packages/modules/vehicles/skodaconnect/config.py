@@ -6,12 +6,12 @@ class SkodaConnectConfiguration:
                  user_id: Optional[str] = None,        # show in UI
                  password: Optional[str] = None,       # show in UI
                  vin: Optional[str] = None,            # show in UI
-                 refreshToken: Optional[dict] = None   # DON'T show in UI!
+                 refresh_token: Optional[dict] = None   # DON'T show in UI!
                  ):
         self.user_id = user_id
         self.password = password
         self.vin = vin
-        self.refreshToken = refreshToken
+        self.refresh_token = refresh_token
 
 
 class SkodaConnect:
