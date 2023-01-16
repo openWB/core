@@ -6,16 +6,8 @@ export const useMqttStore = defineStore("mqtt", {
     chartData: {},
   }),
   getters: {
-    getThemeConfiguration: (state) => {
-      if (
-        "openWB/optional/int_display/theme" in state.topics &&
-        state.topics["openWB/optional/int_display/theme"] !== undefined &&
-        "configuration" in state.topics["openWB/optional/int_display/theme"]
-      ) {
-        return state.topics["openWB/optional/int_display/theme"].configuration;
-      }
-      return undefined;
-    },
+    /* general getters */
+
     getWildcardIndexList: (state) => {
       return (baseTopic, isRegex = false) => {
         let baseTopicRegex = baseTopic;
@@ -84,44 +76,21 @@ export const useMqttStore = defineStore("mqtt", {
         return getId(state.topics["openWB/counter/get/hierarchy"]);
       };
     },
-    /**
-     * Parses the property "id" from the hierarchy root element.
-     * @returns id of the root counter component or undefined if missing
-     */
-    getGridId(state) {
-      let hierarchy = state.topics["openWB/counter/get/hierarchy"];
-      if (hierarchy !== undefined && Object.keys(hierarchy).length > 0) {
-        let index = Object.keys(
-          state.topics["openWB/counter/get/hierarchy"]
-        )[0];
-        console.debug(
-          "getGridId",
-          index,
-          state.topics["openWB/counter/get/hierarchy"][index]
-        );
-        if (
-          state.topics["openWB/counter/get/hierarchy"][index].type == "counter"
-        ) {
-          return state.topics["openWB/counter/get/hierarchy"][index].id;
-        }
-      }
-      return undefined;
-    },
     getValueBool: (state) => {
-      return (topic) => {
+      return (topic, defaultValue = false) => {
         let value = state.topics[topic];
         if (value !== undefined) {
           return value;
         }
-        return false;
+        return defaultValue;
       };
     },
     getValueString: (state) => {
-      return (topic, unit = "W", inverted = false) => {
+      return (topic, unit = "W", inverted = false, defaultString = "---") => {
         var unitPrefix = "";
         var value = state.topics[topic];
         if (value === undefined) {
-          return `--- ${unitPrefix}${unit}`;
+          return `${defaultString} ${unitPrefix}${unit}`;
         }
         if (inverted) {
           value *= -1;
@@ -145,6 +114,285 @@ export const useMqttStore = defineStore("mqtt", {
           }
         }
         return `${textValue} ${unitPrefix}${unit}`;
+      };
+    },
+
+    /* theme getters */
+
+    getThemeConfiguration: (state) => {
+      if (
+        "openWB/optional/int_display/theme" in state.topics &&
+        state.topics["openWB/optional/int_display/theme"] !== undefined &&
+        "configuration" in state.topics["openWB/optional/int_display/theme"]
+      ) {
+        return state.topics["openWB/optional/int_display/theme"].configuration;
+      }
+      return undefined;
+    },
+    getDashBoardEnabled(state) {
+      if (state.getThemeConfiguration) {
+        return state.getThemeConfiguration.enable_dashboard_view;
+      }
+      return true;
+    },
+    getChargePointsEnabled(state) {
+      if (state.getThemeConfiguration) {
+        return state.getThemeConfiguration.enable_charge_points_view;
+      }
+      return true;
+    },
+    getStateEnabled(state) {
+      if (state.getThemeConfiguration) {
+        return state.getThemeConfiguration.enable_status_view;
+      }
+      return true;
+    },
+    getGridCardEnabled(state) {
+      if (state.getThemeConfiguration) {
+        return state.getThemeConfiguration.enable_dashboard_card_grid;
+      }
+      return true;
+    },
+    getHomeCardEnabled(state) {
+      if (state.getThemeConfiguration) {
+        return state.getThemeConfiguration
+          .enable_dashboard_card_home_consumption;
+      }
+      return true;
+    },
+    getBatteryCardEnabled(state) {
+      if (state.getThemeConfiguration) {
+        return state.getThemeConfiguration.enable_dashboard_card_battery_sum;
+      }
+      return true;
+    },
+    getChargePointsCardEnabled(state) {
+      if (state.getThemeConfiguration) {
+        return state.getThemeConfiguration
+          .enable_dashboard_card_charge_point_sum;
+      }
+      return true;
+    },
+    getPvCardEnabled(state) {
+      if (state.getThemeConfiguration) {
+        return state.getThemeConfiguration.enable_dashboard_card_inverter_sum;
+      }
+      return true;
+    },
+    getLockChanges(state) {
+      if (state.getThemeConfiguration) {
+        return state.getThemeConfiguration.lock_changes;
+      }
+      return true;
+    },
+
+    /* devices and components getters */
+
+    /**
+     * Parses the property "id" from the hierarchy root element.
+     * @returns id of the root counter component or undefined if missing
+     */
+    getGridId(state) {
+      let hierarchy = state.topics["openWB/counter/get/hierarchy"];
+      if (hierarchy !== undefined && Object.keys(hierarchy).length > 0) {
+        let index = Object.keys(
+          state.topics["openWB/counter/get/hierarchy"]
+        )[0];
+        console.debug(
+          "getGridId",
+          index,
+          state.topics["openWB/counter/get/hierarchy"][index]
+        );
+        if (
+          state.topics["openWB/counter/get/hierarchy"][index].type == "counter"
+        ) {
+          return state.topics["openWB/counter/get/hierarchy"][index].id;
+        }
+      }
+      return undefined;
+    },
+    getGridPower(state) {
+      let gridId = state.getGridId;
+      if (gridId === undefined) {
+        return "---";
+      }
+      return state.getValueString(`openWB/counter/${gridId}/get/power`, "W");
+    },
+    getGridPowerChartData(state) {
+      let gridId = state.getGridId;
+      if (gridId === undefined) {
+        return [];
+      }
+      return state.chartData[`openWB/counter/${gridId}/get/power`];
+    },
+    getHomePower(state) {
+      return state.getValueString("openWB/counter/set/home_consumption", "W");
+    },
+    getHomePowerChartData(state) {
+      return state.chartData["openWB/counter/set/home_consumption"];
+    },
+    getBatteryConfigured(state) {
+      return state.getValueBool("openWB/bat/config/configured");
+    },
+    getBatteryPower(state) {
+      return state.getValueString("openWB/bat/get/power", "W");
+    },
+    getBatteryPowerChartData(state) {
+      return state.chartData["openWB/bat/get/power"];
+    },
+    getBatterySoc(state) {
+      return state.getValueString("openWB/bat/get/soc", "%");
+    },
+    getBatterySocChartData(state) {
+      return state.chartData["openWB/bat/get/soc"];
+    },
+    getChargePointSumPower(state) {
+      return state.getValueString("openWB/chargepoint/get/power", "W");
+    },
+    getChargePointSumPowerChartData(state) {
+      return state.chartData["openWB/chargepoint/get/power"];
+    },
+    getPvConfigured(state) {
+      return state.getValueBool("openWB/pv/config/configured");
+    },
+    getPvPower(state) {
+      return state.getValueString("openWB/pv/get/power", "W", true);
+    },
+    getPvPowerChartData(state) {
+      return state.chartData["openWB/pv/get/power"].map((point) => {
+        return point * -1;
+      });
+    },
+
+    /* charge point getters */
+
+    getChargePointIds(state) {
+      return state.getObjectIds("cp");
+    },
+    getChargePointName(state) {
+      return (chargePointId) => {
+        if (
+          state.topics[`openWB/chargepoint/${chargePointId}/config`] !==
+          undefined
+        ) {
+          return state.topics[`openWB/chargepoint/${chargePointId}/config`]
+            .name;
+        }
+        return "---";
+      };
+    },
+    getChargePointPower(state) {
+      return (chargePointId) => {
+        return state.getValueString(
+          `openWB/chargepoint/${chargePointId}/get/power`
+        );
+      };
+    },
+    getChargePointPowerChartData(state) {
+      return (chargePointId) => {
+        return state.chartData[`openWB/chargepoint/${chargePointId}/get/power`];
+      };
+    },
+    getChargePointConnectedVehicleConfig(state) {
+      return (chargePointId) => {
+        return state.topics[
+          `openWB/chargepoint/${chargePointId}/get/connected_vehicle/config`
+        ];
+      };
+    },
+    getChargePointConnectedVehicleChargeMode(state) {
+      return (chargePointId) => {
+        return state.translateChargeMode(
+          state.getChargePointConnectedVehicleConfig(chargePointId).chargemode
+        );
+      };
+    },
+    getChargePointConnectedVehiclePriority(state) {
+      return (chargePointId) => {
+        return state.getChargePointConnectedVehicleConfig(chargePointId)
+          .priority;
+      };
+    },
+    getChargePointSetCurrent(state) {
+      return (chargePointId) => {
+        return state.getValueString(
+          `openWB/chargepoint/${chargePointId}/set/current`,
+          "A"
+        );
+      };
+    },
+    getChargePointPhasesInUse(state) {
+      return (chargePointId) => {
+        const phaseSymbols = ["/", "\u2460", "\u2461", "\u2462"];
+        return phaseSymbols[
+          state.topics[`openWB/chargepoint/${chargePointId}/get/phases_in_use`]
+        ];
+      };
+    },
+    getChargePointPlugState(state) {
+      return (chargePointId) => {
+        return state.getValueBool(
+          `openWB/chargepoint/${chargePointId}/get/plug_state`
+        );
+      };
+    },
+    getChargePointChargeState(state) {
+      return (chargePointId) => {
+        return state.getValueBool(
+          `openWB/chargepoint/${chargePointId}/get/charge_state`
+        );
+      };
+    },
+    getChargePointManualLock(state) {
+      return (chargePointId) => {
+        return state.getValueBool(
+          `openWB/chargepoint/${chargePointId}/set/manual_lock`
+        );
+      };
+    },
+    getChargePointConnectedVehicleInfo(state) {
+      return (chargePointId) => {
+        return state.topics[
+          `openWB/chargepoint/${chargePointId}/get/connected_vehicle/info`
+        ];
+      };
+    },
+    getChargePointConnectedVehicleId(state) {
+      return (chargePointId) => {
+        return state.getChargePointConnectedVehicleInfo(chargePointId).id;
+      };
+    },
+    getChargePointConnectedVehicleName(state) {
+      return (chargePointId) => {
+        return state.topics[
+          `openWB/chargepoint/${chargePointId}/get/connected_vehicle/info`
+        ].name;
+      };
+    },
+    getChargePointConnectedVehicleSoc(state) {
+      return (chargePointId) => {
+        return state.topics[
+          `openWB/chargepoint/${chargePointId}/get/connected_vehicle/soc`
+        ];
+      };
+    },
+
+    /* vehicle getters */
+
+    getVehicleList(state) {
+      return state.getWildcardTopics("openWB/vehicle/+/name");
+    },
+    getVehicleSocConfigured(state) {
+      return (vehicleId) => {
+        return (
+          state.topics[`openWB/vehicle/${vehicleId}/soc_module/config`].type !=
+          null
+        );
+      };
+    },
+    getVehicleFaultState(state) {
+      return (vehicleId) => {
+        return state.topics[`openWB/vehicle/${vehicleId}/get/fault_state`];
       };
     },
   },
@@ -219,6 +467,25 @@ export const useMqttStore = defineStore("mqtt", {
     updateState(topic, value, objectPath = undefined) {
       console.debug("updateState:", topic, value, objectPath);
       this.updateTopic(topic, value, objectPath);
+    },
+    translateChargeMode(value) {
+      switch (value) {
+        case "instant_charging":
+          return "Sofort";
+        case "pv_charging":
+          return "PV";
+        case "scheduled_charging":
+          return "Zielladen";
+        case "time_charging":
+          return "Zeitladen";
+        case "standby":
+          return "Standby";
+        case "stop":
+          return "Stop";
+        default:
+          console.warn("unknown charge mode:", value);
+          return value;
+      }
     },
   },
 });

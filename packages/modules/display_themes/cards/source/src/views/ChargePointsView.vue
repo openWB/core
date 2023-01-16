@@ -17,6 +17,7 @@ import {
   faCarBattery as fasCarBattery,
   faTimesCircle as fasTimesCircle,
   faExclamationTriangle as fasExclamationTriangle,
+  faStar as fasStar,
 } from "@fortawesome/free-solid-svg-icons";
 /* add icons to the library */
 library.add(
@@ -29,7 +30,8 @@ library.add(
   fasCar,
   fasCarBattery,
   fasTimesCircle,
-  fasExclamationTriangle
+  fasExclamationTriangle,
+  fasStar
 );
 
 export default {
@@ -40,19 +42,20 @@ export default {
       modalChargePointSettingsVisible: false,
     };
   },
+  props: {
+    changesLocked: { required: false, type: Boolean, default: false },
+  },
   components: { DashBoardCard, SparkLine, FontAwesomeIcon },
   computed: {
-    chargePointIds() {
-      return this.mqttStore.getObjectIds("cp");
-    },
     vehicleList() {
-      let topicList = this.mqttStore.getWildcardTopics("openWB/vehicle/+/name");
+      let topicList = this.mqttStore.getVehicleList;
+      /* topicList is an object, but we need an array for out select input */
       var vehicleList = [];
       Object.keys(topicList).forEach((topic) => {
         let id = parseInt(
           topic.match(/(?:\/)([0-9]+)(?=\/)*/g)[0].replace(/[^0-9]+/g, "")
         );
-        vehicleList.push({id: id, label: topicList[topic]});
+        vehicleList.push({ id: id, label: topicList[topic] });
       });
       return vehicleList;
     },
@@ -60,104 +63,38 @@ export default {
   methods: {
     toggleChargePointSettings(id) {
       console.log(id);
+      if (this.changesLocked) {
+        console.debug("toggleChargePointSettings: changes locked!");
+        return;
+      }
       this.modalChargePointSettingsVisible = true;
     },
-    getChargePointName(id) {
-      if (
-        this.mqttStore.topics[`openWB/chargepoint/${id}/config`] !== undefined
-      ) {
-        return this.mqttStore.topics[
-          `openWB/chargepoint/${id}/config`
-        ].name.toString();
-      }
-      return "---";
-    },
-    getChargePointPower(id) {
-      return this.mqttStore.getValueString(
-        `openWB/chargepoint/${id}/get/power`
-      );
-    },
-    getChargePointPowerChartData(id) {
-      return this.mqttStore.chartData[`openWB/chargepoint/${id}/get/power`];
-    },
-    getVehicleSocChartData(vehicleId) {
-      return this.mqttStore.chartData[`openWB/vehicle/${vehicleId}/get/soc`];
-    },
-    getChargePointSetCurrent(id) {
-      return this.mqttStore.getValueString(
-        `openWB/chargepoint/${id}/set/current`,
-        "A"
-      );
-    },
-    getChargePointPhasesInUse(id) {
-      const phaseSymbols = ["/", "\u2460", "\u2461", "\u2462"];
-      return phaseSymbols[
-        this.mqttStore.topics[`openWB/chargepoint/${id}/get/phases_in_use`]
-      ];
-    },
-    getChargePointPlugState(id) {
-      return this.mqttStore.getValueBool(
-        `openWB/chargepoint/${id}/get/plug_state`
-      );
-    },
-    getChargePointChargeState(id) {
-      return this.mqttStore.getValueBool(
-        `openWB/chargepoint/${id}/get/charge_state`
-      );
-    },
-    getChargePointManualLock(id) {
-      return this.mqttStore.getValueBool(
-        `openWB/chargepoint/${id}/set/manual_lock`
-      );
-    },
     toggleChargePointManualLock(id) {
+      if (this.changesLocked) {
+        console.debug("toggleChargePointManualLock: changes locked!");
+        return;
+      }
       this.$root.sendTopicToBroker(
         `openWB/chargepoint/${id}/set/manual_lock`,
         !this.mqttStore.getValueBool(`openWB/chargepoint/${id}/set/manual_lock`)
       );
     },
-    getChargePointConnectedVehicleInfo(id) {
-      return this.mqttStore.topics[
-        `openWB/chargepoint/${id}/get/connected_vehicle/info`
-      ];
-    },
     getChargePointConnectedVehicle(id) {
+      /* we need an object for our select input */
       return {
-        id: this.getChargePointConnectedVehicleId(id),
-        label: this.getChargePointConnectedVehicleName(id),
+        id: this.mqttStore.getChargePointConnectedVehicleId(id),
+        label: this.mqttStore.getChargePointConnectedVehicleName(id),
       };
-    },
-    getChargePointConnectedVehicleId(id) {
-      return this.mqttStore.topics[
-        `openWB/chargepoint/${id}/get/connected_vehicle/info`
-      ].id;
-    },
-    getChargePointConnectedVehicleName(id) {
-      return this.mqttStore.topics[
-        `openWB/chargepoint/${id}/get/connected_vehicle/info`
-      ].name;
-    },
-    getChargePointConnectedVehicleSoc(id) {
-      return this.mqttStore.topics[
-        `openWB/chargepoint/${id}/get/connected_vehicle/soc`
-      ];
     },
     setChargePointConnectedVehicle(id, $event) {
       console.log("set", id, $event);
-      if ($event.id != this.getChargePointConnectedVehicleId(id)) {
-        console.log("vehicle changed");
+      if (this.changesLocked) {
+        console.debug("setChargePointConnectedVehicle: changes locked!");
+        return;
       }
-    },
-    getVehicleSocConfigured(vehicleId) {
-      return (
-        this.mqttStore.topics[`openWB/vehicle/${vehicleId}/soc_module/config`]
-          .type != null
-      );
-    },
-    getVehicleFaultState(vehicleId) {
-      return this.mqttStore.topics[
-        `openWB/vehicle/${vehicleId}/get/fault_state`
-      ];
+      if ($event.id != this.mqttStore.getChargePointConnectedVehicleId(id)) {
+        console.debug("vehicle changed");
+      }
     },
   },
 };
@@ -165,24 +102,28 @@ export default {
 
 <template>
   <div class="charge-points-card-wrapper">
-    <dash-board-card v-for="id in chargePointIds" :key="id" color="primary">
+    <dash-board-card
+      v-for="id in mqttStore.getChargePointIds"
+      :key="id"
+      color="primary"
+    >
       <template #headerLeft>
-        {{ getChargePointName(id) }}
+        {{ mqttStore.getChargePointName(id) }}
       </template>
       <template #headerRight>
         <i-badge size="lg">
           <font-awesome-icon
             fixed-width
             :icon="
-              getChargePointPlugState(id)
-                ? getChargePointChargeState(id)
+              mqttStore.getChargePointPlugState(id)
+                ? mqttStore.getChargePointChargeState(id)
                   ? ['fas', 'fa-plug-circle-bolt']
                   : ['fas', 'fa-plug-circle-check']
                 : ['fas', 'fa-plug-circle-xmark']
             "
             :class="
-              getChargePointPlugState(id)
-                ? getChargePointChargeState(id)
+              mqttStore.getChargePointPlugState(id)
+                ? mqttStore.getChargePointChargeState(id)
                   ? ['_color:success']
                   : '_color:warning'
                 : '_color:gray'
@@ -192,19 +133,24 @@ export default {
       </template>
       <i-container>
         <i-row>
+          <!-- charge point data on left side -->
           <i-column>
             <i-row>
               <i-column class="_padding-left:0 _padding-right:0">
-                <i-button size="lg">
+                <i-button
+                  size="lg"
+                  :disabled="changesLocked"
+                  :outline="changesLocked"
+                >
                   <font-awesome-icon
                     fixed-width
                     :icon="
-                      getChargePointManualLock(id)
+                      mqttStore.getChargePointManualLock(id)
                         ? ['fas', 'fa-lock']
                         : ['fas', 'fa-lock-open']
                     "
                     :class="
-                      getChargePointManualLock(id)
+                      mqttStore.getChargePointManualLock(id)
                         ? ['_color:danger']
                         : '_color:success'
                     "
@@ -213,65 +159,75 @@ export default {
                 </i-button>
               </i-column>
               <i-column class="_text-align:right _padding-left:0">
-                {{ getChargePointPower(id) }}
-                {{ getChargePointPhasesInUse(id) }}
-                {{ getChargePointSetCurrent(id) }}
+                {{ mqttStore.getChargePointPower(id) }}
+                {{ mqttStore.getChargePointPhasesInUse(id) }}
+                {{ mqttStore.getChargePointSetCurrent(id) }}
               </i-column>
             </i-row>
             <i-row>
               <i-column class="_padding-left:0">
                 <spark-line
                   color="var(--color--primary)"
-                  :data="getChargePointPowerChartData(id)"
+                  :data="mqttStore.getChargePointPowerChartData(id)"
                 />
               </i-column>
             </i-row>
           </i-column>
+          <!-- vehicle data on right side -->
           <i-column md="6">
             <i-row>
+              <!-- vehicle select and soc -->
               <i-column class="_padding-right:0 _padding-left:0">
                 <i-select
                   size="lg"
+                  :disabled="changesLocked"
                   :model-value="getChargePointConnectedVehicle(id)"
                   :options="vehicleList"
                   placeholder="Bitte auswählen.."
-                  @update:model-value="setChargePointConnectedVehicle(id, $event)"
+                  @update:model-value="
+                    setChargePointConnectedVehicle(id, $event)
+                  "
                 >
                   <template #prefix>
                     <font-awesome-icon fixed-width :icon="['fas', 'fa-car']" />
                   </template>
-                  <template #suffix
+                  <template
+                    #suffix
                     v-if="
-                      getVehicleSocConfigured(getChargePointConnectedVehicleId(id))
+                      mqttStore.getVehicleSocConfigured(
+                        mqttStore.getChargePointConnectedVehicleId(id)
+                      )
                     "
                   >
                     <font-awesome-icon
                       fixed-width
                       :icon="['fas', 'fa-car-battery']"
                     />
-                    {{ getChargePointConnectedVehicleSoc(id).soc }}%
+                    {{ mqttStore.getChargePointConnectedVehicleSoc(id).soc }}%
                     <font-awesome-icon
                       v-if="
-                        getVehicleFaultState(
-                          getChargePointConnectedVehicleId(id)
+                        mqttStore.getVehicleFaultState(
+                          mqttStore.getChargePointConnectedVehicleId(id)
                         ) != 0
                       "
                       fixed-width
                       :icon="
-                        getVehicleFaultState(getChargePointConnectedVehicleId(id)) >
-                        0
-                          ? getVehicleFaultState(
-                              getChargePointConnectedVehicleId(id)
+                        mqttStore.getVehicleFaultState(
+                          mqttStore.getChargePointConnectedVehicleId(id)
+                        ) > 0
+                          ? mqttStore.getVehicleFaultState(
+                              mqttStore.getChargePointConnectedVehicleId(id)
                             ) > 1
                             ? ['fas', 'times-circle']
                             : ['fas', 'exclamation-triangle']
                           : []
                       "
                       :class="
-                        getVehicleFaultState(getChargePointConnectedVehicleId(id)) >
-                        0
-                          ? getVehicleFaultState(
-                              getChargePointConnectedVehicleId(id)
+                        mqttStore.getVehicleFaultState(
+                          mqttStore.getChargePointConnectedVehicleId(id)
+                        ) > 0
+                          ? mqttStore.getVehicleFaultState(
+                              mqttStore.getChargePointConnectedVehicleId(id)
                             ) > 1
                             ? '_color:danger'
                             : '_color:warning'
@@ -282,21 +238,20 @@ export default {
                 </i-select>
               </i-column>
             </i-row>
-            <!-- <i-row>
-              <i-column>
-                <spark-line
-                  height="59"
-                  color="var(--color--primary)"
-                  :socData="getVehicleSocChartData(getChargePointConnectedVehicleId(id))"
+            <i-row class="_padding-top:1">
+              <!-- charge mode info -->
+              <i-column class="_padding-right:0 _padding-left:0">
+                {{ mqttStore.getChargePointConnectedVehicleChargeMode(id) }}
+                <font-awesome-icon
+                  v-if="mqttStore.getChargePointConnectedVehiclePriority(id)"
+                  fixed-width
+                  :icon="['fas', 'fa-star']"
                 />
               </i-column>
-            </i-row> -->
-            <i-row class="_padding-top:1">
+            </i-row>
+            <i-row v-if="!changesLocked" class="_padding-top:1">
               <i-column class="_padding-left:0 _padding-right:0">
-                <i-button
-                  size="lg"
-                  @click="toggleChargePointSettings(id)"
-                >
+                <i-button size="lg" @click="toggleChargePointSettings(id)">
                   <font-awesome-icon fixed-width :icon="['fas', 'fa-wrench']" />
                 </i-button>
               </i-column>
@@ -308,13 +263,9 @@ export default {
   </div>
   <!-- modals -->
   <i-modal v-model="modalChargePointSettingsVisible">
-    <template #header>
-        Modal Header
-    </template>
+    <template #header> Modal Header </template>
     This is the modal body. Useful information goes here.
-    <template #footer>
-        Modal Footer
-    </template>
+    <template #footer> Modal Footer </template>
   </i-modal>
 </template>
 

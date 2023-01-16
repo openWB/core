@@ -2,6 +2,16 @@
 import { RouterView } from "vue-router";
 import mqtt from "mqtt";
 
+/* fontawesome */
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import {
+  faLock as fasLock,
+  faLockOpen as fasLockOpen,
+} from "@fortawesome/free-solid-svg-icons";
+/* add icons to the library */
+library.add(fasLock, fasLockOpen);
+
 import DateTime from "@/components/DateTime.vue";
 import NavBar from "@/components/NavBar.vue";
 
@@ -13,6 +23,7 @@ export default {
     RouterView,
     DateTime,
     NavBar,
+    FontAwesomeIcon,
   },
   data() {
     return {
@@ -50,9 +61,9 @@ export default {
         "openWB/vehicle/+/name",
         "openWB/vehicle/+/soc_module/config",
         "openWB/vehicle/+/get/fault_state",
-        "openWB/vehicle/+/get/soc",
       ],
       mqttStore: useMqttStore(),
+      changesLocked: false,
     };
   },
   methods: {
@@ -133,6 +144,10 @@ export default {
       }
       this.doPublish(setTopic, payload);
     },
+    toggleChangesLock() {
+      console.log("toggleChangesLock");
+      this.changesLocked = !this.changesLocked;
+    },
   },
   created() {
     this.createConnection();
@@ -156,11 +171,26 @@ export default {
           </i-column>
         </i-row>
       </i-container>
-      <NavBar />
+      <i-button
+        v-if="mqttStore.getLockChanges"
+        @click="toggleChangesLock"
+        class="_padding-left:0 _padding-right:0 _margin-bottom:1"
+        size="lg"
+        block
+      >
+        <FontAwesomeIcon
+          :icon="this.changesLocked ? ['fas', 'fa-lock'] : ['fas', 'fa-lock-open']"
+          :class="this.changesLocked ? ['_color:danger'] : '_color:success'"
+        />
+      </i-button>
+      <NavBar
+        :changesLocked="changesLocked"
+        @toggleChangesLock="toggleChangesLock"
+      />
     </i-layout-aside>
 
     <i-layout-content>
-      <RouterView />
+      <RouterView :changesLocked="changesLocked" />
     </i-layout-content>
   </i-layout>
 </template>

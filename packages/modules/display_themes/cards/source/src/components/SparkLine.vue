@@ -31,9 +31,6 @@ export default {
     data: {
       required: false,
       type: Array,
-      default() {
-        return [];
-      },
     },
     socData: {
       required: false,
