@@ -1,6 +1,4 @@
 #!/usr/bin/env python3
-from typing import Dict, Union
-
 from dataclass_utils import dataclass_from_dict
 from modules.common import req
 from modules.common.component_state import InverterState
