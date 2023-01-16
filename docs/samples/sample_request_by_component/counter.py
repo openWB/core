@@ -12,7 +12,7 @@ from modules.devices.sample_request_by_component.config import SampleCounterSetu
 
 
 class SampleCounter:
-    def __init__(self, device_id: int, component_config: Union[Dict, SampleCounterSetup], ip_address: str) -> None:
+    def __init__(self, device_id: int, component_config: SampleCounterSetup, ip_address: str) -> None:
         self.__device_id = device_id
         self.component_config = dataclass_from_dict(SampleCounterSetup, component_config)
         self.ip_address = ip_address

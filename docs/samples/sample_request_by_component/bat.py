@@ -12,7 +12,7 @@ from modules.devices.sample_request_by_component.config import SampleBatSetup, S
 
 
 class SampleBat:
-    def __init__(self, device_id: int, component_config: Union[Dict, SampleBatSetup], ip_address: str) -> None:
+    def __init__(self, device_id: int, component_config: SampleBatSetup, ip_address: str) -> None:
         self.__device_id = device_id
         self.component_config = dataclass_from_dict(SampleBatSetup, component_config)
         self.ip_address = ip_address

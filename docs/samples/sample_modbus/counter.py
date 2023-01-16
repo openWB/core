@@ -12,7 +12,7 @@ from modules.devices.sample_modbus.config import SampleCounterSetup
 
 
 class SampleCounter:
-    def __init__(self, device_id: int, component_config: Union[Dict, SampleCounterSetup]) -> None:
+    def __init__(self, device_id: int, component_config: SampleCounterSetup) -> None:
         self.__device_id = device_id
         self.component_config = dataclass_from_dict(SampleCounterSetup, component_config)
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
