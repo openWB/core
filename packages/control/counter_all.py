@@ -83,16 +83,16 @@ class CounterAll:
                 log.error(
                     f"Ungültiger Hausverbrauch: {home_consumption}W, Berücksichtigte Komponenten neben EVU {elements}")
                 evu_counter_data = data.data.counter_data[self.get_evu_counter_str()].data
-                if evu_counter_data["get"]["fault_state"] == FaultStateLevel.NO_ERROR:
-                    evu_counter_data["get"]["fault_state"] = FaultStateLevel.WARNING.value
-                    evu_counter_data["get"][
-                        "fault_str"] = "Der Wert für den Hausverbrauch ist nicht plausibel (negativ). Bitte "\
-                        "die Leistungen der Komponenten und die Anordnung in der Hierarchie prüfen."
+                if evu_counter_data.get.fault_state == FaultStateLevel.NO_ERROR:
+                    evu_counter_data.get.fault_state = FaultStateLevel.WARNING.value
+                    evu_counter_data.get.fault_str = ("Der Wert für den Hausverbrauch ist nicht plausibel (negativ). "
+                                                      "Bitte die Leistungen der Komponenten und die Anordnung in der "
+                                                      "Hierarchie prüfen.")
                     evu_counter = self.get_id_evu_counter()
                     Pub().pub(f"openWB/set/counter/{evu_counter}/get/fault_state",
-                              evu_counter_data["get"]["fault_state"])
+                              evu_counter_data.get.fault_state)
                     Pub().pub(f"openWB/set/counter/{evu_counter}/get/fault_str",
-                              evu_counter_data["get"]["fault_str"])
+                              evu_counter_data.get.fault_str)
                 if self.data.set.invalid_home_consumption < 3:
                     self.data.set.invalid_home_consumption += 1
                     Pub().pub("openWB/set/counter/set/invalid_home_consumption",
@@ -120,12 +120,12 @@ class CounterAll:
             if element["type"] == ComponentType.CHARGEPOINT.value:
                 power += data.data.cp_data[f"cp{element['id']}"].data.get.power
             elif element["type"] == ComponentType.BAT.value:
-                power += data.data.bat_data[f"bat{element['id']}"].data["get"]["power"]
+                power += data.data.bat_data[f"bat{element['id']}"].data.get.power
             elif element["type"] == ComponentType.COUNTER.value:
-                power += data.data.counter_data[f"counter{element['id']}"].data["get"]["power"]
+                power += data.data.counter_data[f"counter{element['id']}"].data.get.power
             elif element["type"] == ComponentType.INVERTER.value:
-                power += data.data.pv_data[f"pv{element['id']}"].data["get"]["power"]
-        evu = data.data.counter_data[self.get_evu_counter_str()].data["get"]["power"]
+                power += data.data.pv_data[f"pv{element['id']}"].data.get.power
+        evu = data.data.counter_data[self.get_evu_counter_str()].data.get.power
         return evu - power, elements_to_sum_up
 
     def _add_hybrid_bat(self, id: int) -> List:
@@ -140,15 +140,15 @@ class CounterAll:
         """ berechnet die heute im Haus verbrauchte Energie.
         """
         try:
-            evu_imported = data.data.counter_data[self.get_evu_counter_str()].data["get"]["daily_imported"]
-            evu_exported = data.data.counter_data[self.get_evu_counter_str()].data["get"]["daily_exported"]
+            evu_imported = data.data.counter_data[self.get_evu_counter_str()].data.get.daily_imported
+            evu_exported = data.data.counter_data[self.get_evu_counter_str()].data.get.daily_exported
             if len(data.data.pv_data) > 1:
-                pv = data.data.pv_data["all"].data["get"]["daily_exported"]
+                pv = data.data.pv_all_data.data.get.daily_exported
             else:
                 pv = 0
             if len(data.data.bat_data) > 1:
-                bat_imported = data.data.bat_data["all"].data["get"]["daily_imported"]
-                bat_exported = data.data.bat_data["all"].data["get"]["daily_exported"]
+                bat_imported = data.data.bat_all_data.data.get.daily_imported
+                bat_exported = data.data.bat_all_data.data.get.daily_exported
             else:
                 bat_imported = 0
                 bat_exported = 0

@@ -166,7 +166,7 @@ class General:
         try:
             evu_counter = data.data.counter_all_data.get_evu_counter_str()
             if self.data.grid_protection_configured:
-                frequency = data.data.counter_data[evu_counter].data["get"]["frequency"] * 100
+                frequency = data.data.counter_data[evu_counter].data.get.frequency * 100
                 grid_protection_active = self.data.grid_protection_active
                 if not grid_protection_active:
                     if 4500 < frequency < 4920:
@@ -182,7 +182,7 @@ class General:
                         Pub().pub("openWB/set/general/grid_protection_active",
                                   self.data.grid_protection_active)
                         log.info("Netzschutz aktiv! Frequenz: " +
-                                 str(data.data.counter_data[evu_counter].data["get"]["frequency"])+"Hz")
+                                 str(data.data.counter_data[evu_counter].data.get.frequency)+"Hz")
                     if 5180 < frequency < 5300:
                         self.data.grid_protection_random_stop = 0
                         self.data.grid_protection_timestamp = None
@@ -194,14 +194,14 @@ class General:
                         Pub().pub("openWB/set/general/grid_protection_active",
                                   self.data.grid_protection_active)
                         log.info("Netzschutz aktiv! Frequenz: " +
-                                 str(data.data.counter_data[evu_counter].data["get"]["frequency"])+"Hz")
+                                 str(data.data.counter_data[evu_counter].data.get.frequency)+"Hz")
                 else:
                     if 4962 < frequency < 5100:
                         self.data.grid_protection_active = False
                         Pub().pub("openWB/set/general/grid_protection_active",
                                   self.data.grid_protection_active)
                         log.info("Netzfrequenz wieder im normalen Bereich. Frequenz: " +
-                                 str(data.data.counter_data[evu_counter].data["get"]["frequency"])+"Hz")
+                                 str(data.data.counter_data[evu_counter].data.get.frequency)+"Hz")
                         Pub().pub(
                             "openWB/set/general/grid_protection_timestamp", None)
                         Pub().pub(

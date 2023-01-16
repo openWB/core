@@ -26,7 +26,7 @@ def test_set_loadmanagement_state(fault_state: FaultStateLevel,
     connected_cps_mock = Mock(return_value=["cp3", "cp4"])
     monkeypatch.setattr(data.data.counter_all_data, "get_chargepoints_of_counter", connected_cps_mock)
     counter = Counter(0)
-    counter.data["get"]["fault_state"] = fault_state
+    counter.data.get.fault_state = fault_state
 
     # execution
     counter._set_loadmanagement_state()
@@ -53,7 +53,7 @@ def test_get_unbalanced_load_exceeding(raw_currents_left: List[float],
     get_evu_counter_mock = Mock(return_value="counter0")
     monkeypatch.setattr(data.data.counter_all_data, "get_evu_counter_str", get_evu_counter_mock)
     counter = Counter(0)
-    counter.data.update({"config": {"max_currents": [32]*3}})
+    counter.data.config.max_currents = [32]*3
     data.data.general_data.data.chargemode_config.unbalanced_load = True
 
     # execution
@@ -77,10 +77,11 @@ def test_set_current_left(hierarchy,
     get_entry_of_element_mock = Mock(return_value=hierarchy().data.get.hierarchy[0])
     monkeypatch.setattr(data.data.counter_all_data, "get_entry_of_element", get_entry_of_element_mock)
     counter = Counter(0)
-    counter.data.update({"config": {"max_currents": max_currents}, "get": {"currents": [55]*3}})
+    counter.data.config.max_currents = max_currents
+    counter.data.get.currents = [55]*3
 
     # execution
     counter._set_current_left()
 
     # evaluation
-    assert counter.data["set"]["raw_currents_left"] == expected_raw_currents_left
+    assert counter.data.set.raw_currents_left == expected_raw_currents_left

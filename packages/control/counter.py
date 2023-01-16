@@ -1,10 +1,14 @@
 """Zähler-Logik
 """
+from dataclasses import dataclass, field
 import logging
 import operator
+from typing import List
 
 from control import data
+from control.ev import Ev
 from control.chargepoint import Chargepoint
+from dataclass_utils.factories import currents_list_factory, voltages_list_factory
 from helpermodules import timecheck
 from helpermodules.phase_mapping import convert_cp_currents_to_evu_currents
 from helpermodules.pub import Pub
@@ -19,6 +23,58 @@ def get_counter_default_config():
             "max_total_power": 11000}
 
 
+@dataclass
+class Config:
+    max_currents: List[float] = field(default_factory=currents_list_factory)
+    max_total_power: float = 0
+
+
+def config_factory() -> Config:
+    return Config()
+
+
+@dataclass
+class Get:
+    powers: List[float] = field(default_factory=currents_list_factory)
+    currents: List[float] = field(default_factory=currents_list_factory)
+    voltages: List[float] = field(default_factory=voltages_list_factory)
+    power_factors: List[float] = field(default_factory=currents_list_factory)
+    unbalanced_load: float = 0
+    frequency: float = 0
+    daily_exported: float = 0
+    daily_imported: float = 0
+    imported: float = 0
+    exported: float = 0
+    fault_state: int = 0
+    fault_str: str = ""
+    power: float = 0
+
+
+def get_factory() -> Get:
+    return Get()
+
+
+@dataclass
+class Set:
+    reserved_surplus: float = 0
+    released_surplus: float = 0
+    raw_power_left: float = 0
+    raw_currents_left: List[float] = field(default_factory=currents_list_factory)
+    surplus_power_left: float = 0
+    state_str: str = ""
+
+
+def set_factory() -> Set:
+    return Set()
+
+
+@dataclass
+class CounterData:
+    config: Config = field(default_factory=config_factory)
+    get: Get = field(default_factory=get_factory)
+    set: Set = field(default_factory=set_factory)
+
+
 class Counter:
     """
     """
@@ -26,13 +82,7 @@ class Counter:
 
     def __init__(self, index):
         try:
-            self.data = {"set": {"reserved_surplus": 0,
-                                 "released_surplus": 0,
-                                 "raw_power_left": 0,
-                                 "surplus_power_left": 0},
-                         "get": {
-                "daily_exported": 0,
-                "daily_imported": 0}, "config": {}}
+            self.data = CounterData()
             self.num = index
         except Exception:
             log.exception("Fehler in der Zähler-Klasse von "+str(self.num))
@@ -43,8 +93,8 @@ class Counter:
             self._set_loadmanagement_state()
             self._set_current_left()
             self._set_power_left()
-            if self.data["get"]["fault_state"] == FaultStateLevel.ERROR:
-                self.data["get"]["power"] = 0
+            if self.data.get.fault_state == FaultStateLevel.ERROR:
+                self.data.get.power = 0
                 return
         except Exception:
             log.exception("Fehler in der Zähler-Klasse von "+str(self.num))
@@ -54,14 +104,14 @@ class Counter:
         # Wenn der Zähler keine Werte liefert, darf nicht geladen werden.
         connected_cps = data.data.counter_all_data.get_chargepoints_of_counter(f'counter{self.num}')
         for cp in connected_cps:
-            if self.data["get"]["fault_state"] == FaultStateLevel.ERROR:
+            if self.data.get.fault_state == FaultStateLevel.ERROR:
                 data.data.cp_data[cp].data.set.loadmanagement_available = False
             else:
                 data.data.cp_data[cp].data.set.loadmanagement_available = True
 
     # tested
     def _set_current_left(self) -> None:
-        currents_raw = self.data["get"]["currents"]
+        currents_raw = self.data.get.currents
         elements = data.data.counter_all_data.get_entry_of_element(self.num)["children"]
         for element in elements:
             if element["type"] == ComponentType.CHARGEPOINT.value:
@@ -73,23 +123,23 @@ class Counter:
                 except KeyError:
                     element_current = [max(chargepoint.data.get.currents)]*3
             elif element["type"] == ComponentType.COUNTER.value:
-                element_current = data.data.counter_data[f"counter{element['id']}"].data["get"]["currents"]
+                element_current = data.data.counter_data[f"counter{element['id']}"].data.get.currents
             else:
                 continue
             currents_raw = list(map(operator.sub, currents_raw, element_current))
-        currents_raw = list(map(operator.sub, self.data["config"]["max_currents"], currents_raw))
+        currents_raw = list(map(operator.sub, self.data.config.max_currents, currents_raw))
         # Puffer
         currents_raw = list(map(operator.sub, currents_raw, [1]*3))
         if min(currents_raw) < 0:
             log.debug(f"Verbleibende Ströme: {currents_raw}, Überbelastung wird durch Hausverbrauch verursacht")
             currents_raw = [max(currents_raw[i], 0) for i in range(0, 3)]
-        self.data["set"]["raw_currents_left"] = currents_raw
-        log.debug(f'Verbleibende Ströme an Zähler {self.num}: {self.data["set"]["raw_currents_left"]}')
+        self.data.set.raw_currents_left = currents_raw
+        log.debug(f'Verbleibende Ströme an Zähler {self.num}: {self.data.set.raw_currents_left}')
 
     # tested
     def get_unbalanced_load_exceeding(self, raw_currents_left):
         forecasted_currents = list(
-            map(operator.sub, self.data["config"]["max_currents"], raw_currents_left))
+            map(operator.sub, self.data.config.max_currents, raw_currents_left))
         max_exceeding = [0]*3
         if f'counter{self.num}' == data.data.counter_all_data.get_evu_counter_str():
             if data.data.general_data.data.chargemode_config.unbalanced_load:
@@ -102,58 +152,52 @@ class Counter:
 
     def _set_power_left(self):
         if f'counter{self.num}' == data.data.counter_all_data.get_evu_counter_str():
-            power_raw = self.data["get"]["power"]
+            power_raw = self.data.get.power
             elements = data.data.counter_all_data.get_entry_of_element(self.num)["children"]
             for element in elements:
                 if element["type"] == ComponentType.CHARGEPOINT.value:
                     element_power = data.data.cp_data[f"cp{element['id']}"].data.get.power
                 elif element["type"] == ComponentType.COUNTER.value:
-                    element_power = data.data.counter_data[f"counter{element['id']}"].data["get"]["power"]
+                    element_power = data.data.counter_data[f"counter{element['id']}"].data.get.power
                 else:
                     continue
                 power_raw -= element_power
-            self.data["set"]["raw_power_left"] = self.data["config"]["max_total_power"] - power_raw
-            log.debug(f'Verbleibende Leistung an Zähler {self.num}: {self.data["set"]["raw_power_left"]}')
+            self.data.set.raw_power_left = self.data.config.max_total_power - power_raw
+            log.debug(f'Verbleibende Leistung an Zähler {self.num}: {self.data.set.raw_power_left}')
         else:
-            self.data["set"]["raw_power_left"] = None
+            self.data.set.raw_power_left = None
 
     def update_values_left(self, diffs) -> None:
-        self.data["set"]["raw_currents_left"] = list(map(operator.sub, self.data["set"]["raw_currents_left"], diffs))
-        if self.data["set"]["raw_power_left"]:
-            self.data["set"]["raw_power_left"] -= sum(diffs) * 230
-        log.debug(f'Zähler {self.num}: {self.data["set"]["raw_currents_left"]}A verbleibende Ströme, '
-                  f'{self.data["set"]["raw_power_left"]}W verbleibende Leistung')
+        self.data.set.raw_currents_left = list(map(operator.sub, self.data.set.raw_currents_left, diffs))
+        if self.data.set.raw_power_left:
+            self.data.set.raw_power_left -= sum(diffs) * 230
+        log.debug(f'Zähler {self.num}: {self.data.set.raw_currents_left}A verbleibende Ströme, '
+                  f'{self.data.set.raw_power_left}W verbleibende Leistung')
 
     def update_surplus_values_left(self, diffs) -> None:
-        self.data["set"]["raw_currents_left"] = list(map(operator.sub, self.data["set"]["raw_currents_left"], diffs))
-        if self.data["set"]["surplus_power_left"]:
-            self.data["set"]["surplus_power_left"] -= sum(diffs) * 230
-        log.debug(f'Zähler {self.num}: {self.data["set"]["raw_currents_left"]}A verbleibende Ströme, '
-                  f'{self.data["set"]["surplus_power_left"]}W verbleibender Überschuss')
+        self.data.set.raw_currents_left = list(map(operator.sub, self.data.set.raw_currents_left, diffs))
+        if self.data.set.surplus_power_left:
+            self.data.set.surplus_power_left -= sum(diffs) * 230
+        log.debug(f'Zähler {self.num}: {self.data.set.raw_currents_left}A verbleibende Ströme, '
+                  f'{self.data.set.surplus_power_left}W verbleibender Überschuss')
 
     def put_stats(self):
         try:
             if f'counter{self.num}' == data.data.counter_all_data.get_evu_counter_str():
                 Pub().pub(f"openWB/set/counter/{self.num}/set/reserved_surplus",
-                          self.data["set"]["reserved_surplus"])
+                          self.data.set.reserved_surplus)
                 Pub().pub(f"openWB/set/counter/{self.num}/set/released_surplus",
-                          self.data["set"]["released_surplus"])
-                log.debug(f'{self.data["set"]["reserved_surplus"]}W reservierte EVU-Leistung, '
-                          f'{self.data["set"]["released_surplus"]}W freigegebene EVU-Leistung')
-        except Exception:
-            log.exception("Fehler in der Zähler-Klasse von "+str(self.num))
-
-    def print_stats(self):
-        try:
-            log.debug(str(self.data["set"]["consumption_left"])+"W verbleibende EVU-Bezugs-Leistung")
+                          self.data.set.released_surplus)
+                log.debug(f'{self.data.set.reserved_surplus}W reservierte EVU-Leistung, '
+                          f'{self.data.set.released_surplus}W freigegebene EVU-Leistung')
         except Exception:
             log.exception("Fehler in der Zähler-Klasse von "+str(self.num))
 
     def calc_surplus(self):
         evu_counter = data.data.counter_all_data.get_evu_counter()
-        bat_surplus = data.data.bat_data["all"].power_for_bat_charging()
-        raw_power_left = evu_counter.data["set"]["raw_power_left"]
-        max_power = evu_counter.data["config"]["max_total_power"]
+        bat_surplus = data.data.bat_all_data.power_for_bat_charging()
+        raw_power_left = evu_counter.data.set.raw_power_left
+        max_power = evu_counter.data.config.max_total_power
         surplus = raw_power_left - max_power + bat_surplus
         ranged_surplus = max(self._control_range(surplus), 0)
         log.debug(f"Überschuss zur PV-geführten Ladung: {ranged_surplus}W")
@@ -180,7 +224,7 @@ class Counter:
 
     def switch_on_threshold_reached(self, chargepoint: Chargepoint):
         try:
-            surplus = self.data["set"]["surplus_power_left"] - self.data["set"]["reserved_surplus"]
+            surplus = self.data.set.surplus_power_left - self.data.set.reserved_surplus
             message = None
             control_parameter = chargepoint.data.set.charging_ev_data.data.control_parameter
             required_power = (chargepoint.data.set.charging_ev_data.ev_template.data.
@@ -199,15 +243,15 @@ class Counter:
                             surplus + required_power >= feed_in_yield)):
                     # Einschaltschwelle wurde unterschritten, Timer zurücksetzen
                     timestamp_switch_on_off = None
-                    self.data["set"]["reserved_surplus"] -= pv_config.switch_on_threshold*control_parameter.phases
+                    self.data.set.reserved_surplus -= pv_config.switch_on_threshold*control_parameter.phases
                     message = self.SWITCH_ON_FALLEN_BELOW.format(pv_config.switch_on_threshold)
             else:
                 # Timer starten
                 if ((not feed_in_limit and surplus > pv_config.switch_on_threshold*control_parameter.phases) or
                         (feed_in_limit and surplus >= feed_in_yield and
-                            self.data["set"]["reserved_surplus"] == 0)):
+                            self.data.set.reserved_surplus == 0)):
                     timestamp_switch_on_off = timecheck.create_timestamp()
-                    self.data["set"]["reserved_surplus"] += pv_config.switch_on_threshold*control_parameter.phases
+                    self.data.set.reserved_surplus += pv_config.switch_on_threshold*control_parameter.phases
                     message = self.SWITCH_ON_WAITING.format(pv_config.switch_on_delay)
                 else:
                     # Einschaltschwelle nicht erreicht
@@ -247,7 +291,7 @@ class Counter:
                     # Timer abgelaufen
                     else:
                         control_parameter.timestamp_switch_on_off = None
-                        self.data["set"]["reserved_surplus"] -= pv_config.switch_on_threshold*control_parameter.phases
+                        self.data.set.reserved_surplus -= pv_config.switch_on_threshold*control_parameter.phases
                         msg = self.SWITCH_ON_EXPIRED.format(pv_config.switch_on_threshold)
                         Pub().pub(
                             "openWB/set/vehicle/" + str(chargepoint.data.set.charging_ev_data.num) +
@@ -280,7 +324,7 @@ class Counter:
                         control_parameter.timestamp_switch_on_off,
                         pv_config.switch_off_delay):
                     control_parameter.timestamp_switch_on_off = None
-                    self.data["set"]["released_surplus"] -= chargepoint.data.set.required_power
+                    self.data.set.released_surplus -= chargepoint.data.set.required_power
                     msg = self.SWITCH_OFF_STOP
                     Pub().pub(
                         "openWB/set/vehicle/" + str(chargepoint.data.set.charging_ev_data.num) +
@@ -309,26 +353,26 @@ class Counter:
             feed_in_yield = data.data.general_data.data.chargemode_config.pv_charging.feed_in_yield
         else:
             feed_in_yield = 0
-        switch_off_surplus = self.data["get"]["power"]
+        switch_off_surplus = self.data.get.power
         log.debug(f'LP{chargepoint.num} Switch-Off-Threshold prüfen: EVU {switch_off_surplus}W, freigegebener '
-                  f'Überschuss {self.data["set"]["released_surplus"]}W, Einspeisegrenze {feed_in_yield}W')
+                  f'Überschuss {self.data.set.released_surplus}W, Einspeisegrenze {feed_in_yield}W')
         # Wenn automatische Phasenumschaltung aktiv, die Umschaltung abwarten, bevor die Abschaltschwelle
         # greift.
 
-        power_in_use = switch_off_surplus - self.data["set"]["released_surplus"]
+        power_in_use = switch_off_surplus - self.data.set.released_surplus
         threshold = pv_config.switch_off_threshold + feed_in_yield
         log.debug(f"Relevante Leistung für Löschen der Abschaltschwelle: {power_in_use}W, Schwelle: {threshold}W")
         if control_parameter.timestamp_switch_on_off:
             if control_parameter.timestamp_auto_phase_switch:
                 timestamp_switch_on_off = None
-                self.data["set"]["released_surplus"] -= chargepoint.data.set.required_power
+                self.data.set.released_surplus -= chargepoint.data.set.required_power
                 log.info("Abschaltverzögerung gestoppt, da die Verzögerung für die Phasenumschaltung aktiv ist. " +
                          "Diese wird abgewartet, bevor die Abschaltverzögerung gestartet wird.")
             # Wurde die Abschaltschwelle erreicht?
             # Eigene Leistung aus der freigegebenen Leistung rausrechnen.
             if power_in_use + chargepoint.data.set.required_power < threshold:
                 timestamp_switch_on_off = None
-                self.data["set"]["released_surplus"] -= chargepoint.data.set.required_power
+                self.data.set.released_surplus -= chargepoint.data.set.required_power
                 msg = self.SWITCH_OFF_EXCEEDED
         else:
             if control_parameter.timestamp_auto_phase_switch is None:
@@ -347,7 +391,7 @@ class Counter:
                         else:
                             timestamp_switch_on_off = timecheck.create_timestamp()
                             # merken, dass ein LP verzögert wird, damit nicht zu viele LP verzögert werden.
-                            self.data["set"]["released_surplus"] += chargepoint.data.set.required_power
+                            self.data.set.released_surplus += chargepoint.data.set.required_power
                             msg = self.SWITCH_OFF_WAITING.format(pv_config.switch_off_delay)
                         # Die Abschaltschwelle wird immer noch überschritten und es sollten weitere LP abgeschaltet
                         # werden.
@@ -360,7 +404,7 @@ class Counter:
         chargepoint.set_state_and_log(msg)
         return charge
 
-    def reset_switch_on_off(self, chargepoint: Chargepoint, charging_ev):
+    def reset_switch_on_off(self, chargepoint: Chargepoint, charging_ev: Ev):
         """ Zeitstempel und reservierte Leistung löschen
 
         Parameter
@@ -380,11 +424,11 @@ class Counter:
                 # Leistung freigeben.
                 pv_config = data.data.general_data.data.chargemode_config.pv_charging
                 if not chargepoint.data.get.charge_state:
-                    evu_counter.data["set"][
-                        "reserved_surplus"] -= pv_config.switch_on_threshold * chargepoint.data.set.phases_to_use
+                    evu_counter.data.set.reserved_surplus -= (pv_config.switch_on_threshold
+                                                              * chargepoint.data.set.phases_to_use)
                 else:
-                    evu_counter.data["set"][
-                        "released_surplus"] -= pv_config.switch_on_threshold * charging_ev.data.control_parameter.phases
+                    evu_counter.data.set.released_surplus -= (pv_config.switch_on_threshold
+                                                              * charging_ev.data.control_parameter.phases)
         except Exception:
             log.exception("Fehler im allgemeinen PV-Modul")
 
@@ -394,8 +438,8 @@ class Counter:
         try:
             Pub().pub(f"openWB/set/counter/{self.num}/set/reserved_surplus", 0)
             Pub().pub(f"openWB/set/counter/{self.num}/set/released_surplus", 0)
-            self.data["set"]["reserved_surplus"] = 0
-            self.data["set"]["released_surplus"] = 0
+            self.data.set.reserved_surplus = 0
+            self.data.set.released_surplus = 0
         except Exception:
             log.exception("Fehler im allgemeinen PV-Modul")
 
@@ -403,6 +447,6 @@ class Counter:
 def limit_raw_power_left_to_surplus(surplus) -> None:
     for counter in data.data.counter_data.values():
         # Zwischenzähler werden nur nach Strömen begrenzt, daher kann hier die Leistung vom EVU-Zähler gesetzt werden
-        counter.data["set"]["surplus_power_left"] = surplus
+        counter.data.set.surplus_power_left = surplus
         log.debug(f'Zähler {counter.num}: Begrenzung der verbleibenden Leistung auf '
-                  f'{counter.data["set"]["surplus_power_left"]}W')
+                  f'{counter.data.set.surplus_power_left}W')

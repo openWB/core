@@ -70,19 +70,23 @@ class PurgeCounterState:
             self.incomplete_currents = False
 
             def add_current_power(element):
-                if element.data["get"].get("currents"):
-                    self.currents = list(map(add, self.currents, element.data["get"]["currents"]))
+                if element.data.get.currents is not None:
+                    if sum(element.data.get.currents) == 0 and element.data.get.power != 0:
+                        self.currents = [0, 0, 0]
+                        self.incomplete_currents = True
+                    else:
+                        self.currents = list(map(add, self.currents, element.data.get.currents))
                 else:
                     self.currents = [0, 0, 0]
                     self.incomplete_currents = True
-                self.power += element.data["get"]["power"]
+                self.power += element.data.get.power
 
             def add_imported_exported(element):
-                self.imported += element.data["get"]["imported"]
-                self.exported += element.data["get"]["exported"]
+                self.imported += element.data.get.imported
+                self.exported += element.data.get.exported
 
             def add_exported(element):
-                self.exported += element.data["get"]["exported"]
+                self.exported += element.data.get.exported
 
             counter_all = data.data.counter_all_data
             elements = counter_all.get_entry_of_element(self.delegate.delegate.num)["children"]
