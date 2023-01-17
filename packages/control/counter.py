@@ -353,7 +353,7 @@ class Counter:
             feed_in_yield = data.data.general_data.data.chargemode_config.pv_charging.feed_in_yield
         else:
             feed_in_yield = 0
-        switch_off_surplus = self.data.get.power
+        switch_off_surplus = self.data.get.power - data.data.bat_all_data.power_for_bat_charging()
         log.debug(f'LP{chargepoint.num} Switch-Off-Threshold prüfen: EVU {switch_off_surplus}W, freigegebener '
                   f'Überschuss {self.data.set.released_surplus}W, Einspeisegrenze {feed_in_yield}W')
         # Wenn automatische Phasenumschaltung aktiv, die Umschaltung abwarten, bevor die Abschaltschwelle
