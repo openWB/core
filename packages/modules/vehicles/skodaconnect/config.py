@@ -1,4 +1,5 @@
 from typing import Optional
+from dataclass_utils import asdict
 
 
 class SkodaConnectConfiguration:
@@ -22,3 +23,8 @@ class SkodaConnect:
         self.name = name
         self.type = type
         self.configuration = configuration or SkodaConnectConfiguration()
+
+    def as_dict(self) -> dict:
+        confDict = asdict(self)
+        confDict.pop('name')
+        return confDict

@@ -3,7 +3,6 @@
 import aiohttp
 import asyncio
 import logging
-from dataclass_utils import asdict
 from helpermodules.pub import Pub
 from modules.vehicles.skodaconnect.config import SkodaConnect, SkodaConnectConfiguration
 from skodaconnect import Connection
@@ -77,11 +76,9 @@ class SkodaConnectApi():
                 self.password,
                 self.vin,
                 tokens))
-        confDict = asdict(conf)
-        confDict.pop('name')
-        self._publish_refresh_tokens(tokens, confDict)
+        self._publish_refresh_tokens(conf.as_dict())
 
-    def _publish_refresh_tokens(self, tokens: str, config={}) -> None:
+    def _publish_refresh_tokens(self, config={}) -> None:
         try:
             Pub().pub("openWB/set/vehicle/" + self.vehicle + "/soc_module/config", config)
         except Exception as e:
