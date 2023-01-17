@@ -1,6 +1,4 @@
 #!/usr/bin/env python3
-from typing import Dict, Union
-
 from dataclass_utils import dataclass_from_dict
 from modules.common import req
 from modules.common.component_state import InverterState
@@ -12,7 +10,7 @@ from modules.devices.sample_request_by_component.config import SampleInverterSet
 
 
 class SampleInverter:
-    def __init__(self, device_id: int, component_config: Union[Dict, SampleInverterSetup], ip_address: str) -> None:
+    def __init__(self, device_id: int, component_config: SampleInverterSetup, ip_address: str) -> None:
         self.__device_id = device_id
         self.component_config = dataclass_from_dict(SampleInverterSetup, component_config)
         self.ip_address = ip_address
