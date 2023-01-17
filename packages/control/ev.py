@@ -218,6 +218,7 @@ class Ev:
             self.ev_template: EvTemplate = EvTemplate()
             self.charge_template: ChargeTemplate = ChargeTemplate(0)
             self.soc_module: AbstractSoc = None
+            self.chargemode_changed = False
             self.num = index
             self.data = EvData()
         except Exception:
@@ -355,17 +356,13 @@ class Ev:
             log.exception("Fehler im ev-Modul "+str(self.num))
             return False, "ein interner Fehler aufgetreten ist.", "stop", 0, self.data.control_parameter.phases
 
-    def check_if_mode_changed(self, chargemode_log_entry: str) -> bool:
-        """ prüft, ob sich etwas an den Parametern für die Regelung geändert hat,
-        sodass der LP neu in die Priorisierung eingeordnet werden muss und veröffentlicht die Regelparameter.
-        """
-        mode_changed = False
-
-        if self.data.control_parameter.chargemode.value != chargemode_log_entry and chargemode_log_entry != "_":
-            mode_changed = True
-
-        log.debug(f"Änderung des Lademodus :{mode_changed}")
-        return mode_changed
+    def set_chargemode_changed(self, submode: str) -> None:
+        if ((submode == "time_charging" and self.data.control_parameter.chargemode != Chargemode_enum.TIME_CHARGING) or
+                (self.data.control_parameter.chargemode != self.charge_template.data.chargemode.selected)):
+            self.chargemode_changed = True
+            log.debug("Änderung des Lademodus")
+        else:
+            self.chargemode_changed = False
 
     def set_control_parameter(self, submode, required_current):
         """ setzt die Regel-Parameter, die der Algorithmus verwendet.

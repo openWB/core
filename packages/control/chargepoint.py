@@ -824,18 +824,18 @@ class Chargepoint:
                     # Einhaltung des Minimal- und Maximalstroms prüfen
                     required_current = charging_ev.check_min_max_current(
                         required_current, charging_ev.data.control_parameter.phases)
+                    charging_ev.set_chargemode_changed(submode)
                     charging_ev.set_control_parameter(submode, required_current)
-                    mode_changed = charging_ev.check_if_mode_changed(self.data.set.log.chargemode_log_entry)
                     self.set_required_currents(required_current)
 
-                    if mode_changed:
+                    if charging_ev.chargemode_changed:
                         data.data.counter_all_data.get_evu_counter().reset_switch_on_off(
                             self, charging_ev)
                         charging_ev.reset_phase_switch()
                     message = message_ev if message_ev else message
                     # Ein Eintrag muss nur erstellt werden, wenn vorher schon geladen wurde und auch danach noch
                     # geladen werden soll.
-                    if mode_changed and self.data.get.charge_state and state:
+                    if charging_ev.chargemode_changed and self.data.get.charge_state and state:
                         chargelog.save_data(self, charging_ev)
 
                     # Wenn die Nachrichten gesendet wurden, EV wieder löschen, wenn das EV im Algorithmus nicht

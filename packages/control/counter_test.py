@@ -1,10 +1,13 @@
-from typing import List
+from dataclasses import dataclass
+from typing import List, Optional
 from unittest.mock import Mock
 import pytest
 
 from control import data
+from control.chargepoint import Chargepoint
 from control.conftest import hierarchy_hybrid, hierarchy_nested, hierarchy_standard
 from control.counter import Counter
+from control.ev import ChargeTemplate, Ev
 from control.general import General
 from modules.common.fault_state import FaultStateLevel
 
@@ -85,3 +88,61 @@ def test_set_current_left(hierarchy,
 
     # evaluation
     assert counter.data.set.raw_currents_left == expected_raw_currents_left
+
+
+@dataclass
+class Params:
+    name: str
+    feed_in_limit: bool
+    reserved_surplus: float
+    surplus: float
+    threshold: float
+    timestamp_switch_on_off: Optional[str]
+    expected_msg: Optional[str]
+    expected_timestamp_switch_on_off: Optional[str]
+    expected_reserved_surplus: float
+
+
+cases = [
+    Params("Einschaltschwelle wurde unterschritten, Timer zurücksetzen", False, 1500, 119,
+           1500, '05/16/2022, 08:40:50', Counter.SWITCH_ON_FALLEN_BELOW.format(1500), None, 0),
+    Params("Timer starten", False, 0, 1501, 1500, None, Counter.SWITCH_ON_WAITING.format(30),
+           '05/16/2022, 08:40:52', 1500),
+    Params("Einschaltschwelle nicht erreicht", False, 0, 1499, 1500,
+           None, Counter.SWITCH_ON_NOT_EXCEEDED.format(1500), None, 0),
+    Params("Einschaltschwelle läuft", False, 1500, 121, 1500,
+           '05/16/2022, 08:40:50', None, '05/16/2022, 08:40:50', 1500),
+    Params("Feed_in_limit, Einschaltschwelle wurde unterschritten, Timer zurücksetzen", True, 15000,
+           13619, 15000, '05/16/2022, 08:40:50', Counter.SWITCH_ON_FALLEN_BELOW.format(1500), None, 0),
+    Params("Feed_in_limit, Timer starten", True, 0, 15001, 15000, None,
+           Counter.SWITCH_ON_WAITING.format(30), '05/16/2022, 08:40:52', 15000),
+    Params("Feed_in_limit, Einschaltschwelle nicht erreicht", True, 0, 14999,
+           15000, None, Counter.SWITCH_ON_NOT_EXCEEDED.format(1500), None, 0),
+    Params("Feed_in_limit, Einschaltschwelle läuft", True, 1500, 15001,
+           15000, '05/16/2022, 08:40:50', None, '05/16/2022, 08:40:50', 1500),
+]
+
+
+@pytest.mark.parametrize("params", cases, ids=[c.name for c in cases])
+def test_get_charging_power_left(params: Params, caplog, general_data_fixture, monkeypatch):
+    # setup
+    c = Counter(0)
+    c.data.set.reserved_surplus = params.reserved_surplus
+    cp = Chargepoint(0, None)
+    ev = Ev(0)
+    ev.data.control_parameter.phases = 1
+    ev.data.control_parameter.timestamp_switch_on_off = params.timestamp_switch_on_off
+    ev.data.charge_template = ChargeTemplate(0)
+    ev.data.charge_template.data.chargemode.pv_charging.feed_in_limit = params.feed_in_limit
+    cp.data.set.charging_ev_data = ev
+    mock_calc_switch_on_power = Mock(return_value=[params.surplus, params.threshold])
+    monkeypatch.setattr(Counter, "calc_switch_on_power", mock_calc_switch_on_power)
+
+    # execution
+    c.switch_on_threshold_reached(cp)
+
+    # evaluation
+    assert c.data.set.reserved_surplus == params.expected_reserved_surplus
+    assert params.expected_msg is None or params.expected_msg in caplog.text
+    assert (cp.data.set.charging_ev_data.data.control_parameter.timestamp_switch_on_off ==
+            params.expected_timestamp_switch_on_off)
