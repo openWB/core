@@ -84,8 +84,8 @@ class api:
 
                 if self.su.keys_exist(self.data, 'charging', 'batteryStatus'):
                     log.debug("batteryStatus: \n" +
-                             json.dumps(self.data['charging']['batteryStatus'],
-                                        ensure_ascii=False, indent=4))
+                              json.dumps(self.data['charging']['batteryStatus'],
+                                         ensure_ascii=False, indent=4))
 
                 try:
                     self.soc = int(self.data['charging']['batteryStatus']['value']['currentSOC_pct'])
