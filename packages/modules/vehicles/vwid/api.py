@@ -78,7 +78,7 @@ class api:
             self.data = await self.w.get_status()
             if (self.data):
                 if self.su.keys_exist(self.data, 'userCapabilities', 'capabilitiesStatus', 'error'):
-                    log.error("server error: \n"
+                    log.error("Server Error: \n"
                               + json.dumps(self.data['userCapabilities']['capabilitiesStatus']['error'],
                                            ensure_ascii=False, indent=4))
 
