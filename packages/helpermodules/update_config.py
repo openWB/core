@@ -244,6 +244,7 @@ class UpdateConfig:
                    "^openWB/system/configurable/soc_modules$",
                    "^openWB/system/configurable/devices_components$",
                    "^openWB/system/configurable/chargepoints$",
+                   "^openWB/system/configurable/display_themes$",
                    "^openWB/system/mqtt/bridge/[0-9]+$",
                    "^openWB/system/current_branch",
                    "^openWB/system/current_commit",
@@ -309,14 +310,38 @@ class UpdateConfig:
         ("openWB/optional/int_display/pin_active", False),
         ("openWB/optional/int_display/pin_code", "0000"),
         ("openWB/optional/int_display/standby", 60),
-        ("openWB/optional/int_display/theme", {"name": None, "type": None, "configuration": {}}),
+        ("openWB/optional/int_display/theme", {
+            "name": "Cards", "type": "cards", "configuration": {
+                "lock_changes": False, "lock_changes_code": None, "enable_dashboard_view": True,
+                "enable_dashboard_card_grid": True, "enable_dashboard_card_home_consumption": True,
+                "enable_dashboard_card_battery_sum": True, "enable_dashboard_card_inverter_sum": True,
+                "enable_dashboard_card_charge_point_sum": True, "enable_charge_points_view": True,
+                "enable_status_view": True
+            }
+        }),
         ("openWB/optional/led/active", False),
         ("openWB/optional/rfid/active", False),
         ("openWB/system/dataprotection_acknowledged", False),
         ("openWB/system/debug_level", 30),
         ("openWB/system/device/module_update_completed", True),
         ("openWB/system/ip_address", "unknown"),
-        ("openWB/system/release_train", "master"))
+        ("openWB/system/release_train", "master"),
+        # ToDo: parse installed display themes
+        ("openWB/system/configurable/display_themes", [{
+            "value": "cards",
+            "text": "Cards",
+            "defaults": {
+                "name": "Cards",
+                "type": "cards",
+                "configuration": {
+                    "lock_changes": False, "lock_changes_code": None, "enable_dashboard_view": True,
+                    "enable_dashboard_card_grid": True, "enable_dashboard_card_home_consumption": True,
+                    "enable_dashboard_card_battery_sum": True, "enable_dashboard_card_inverter_sum": True,
+                    "enable_dashboard_card_charge_point_sum": True, "enable_charge_points_view": True,
+                    "enable_status_view": True
+                }
+            }
+        }]))
 
     def __init__(self) -> None:
         self.all_received_topics = {}

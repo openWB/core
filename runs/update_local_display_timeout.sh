@@ -1,5 +1,5 @@
 #!/bin/bash
-timeout=$(mosquitto_sub -p 1886 -t "openWB/optional/int_display/standby" -C 1 -W1)
+timeout=$(mosquitto_sub -p 1886 -t "openWB/optional/int_display/standby" -C 1 -W 1)
 if (($? == 0)); then
 	echo "new display timeout value: '$timeout'"
 else
