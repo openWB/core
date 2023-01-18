@@ -275,6 +275,7 @@ export default {
   grid-template-columns: repeat(auto-fill, minmax(36rem, 1fr));
   grid-gap: var(--spacing);
 }
+
 .card {
   ----background: inherit !important;
   ----body--color: var(----color) !important;

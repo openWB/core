@@ -24,6 +24,9 @@ library.add(
 
 export default {
   name: "DashboardView",
+  props: {
+    changesLocked: { required: false, type: Boolean, default: false },
+  },
   data() {
     return {
       mqttStore: useMqttStore(),
