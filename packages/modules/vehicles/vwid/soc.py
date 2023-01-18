@@ -26,10 +26,10 @@ class Soc(AbstractSoc):
 
     def update(self, charge_state: bool = False) -> None:
         with SingleComponentUpdateContext(self.component_info):
-            soc, range = api.fetch_soc(
+            soc, range, soc_ts = api.fetch_soc(
                 self.config,
                 self.vehicle)
-            log.info("Result: soc=" + str(soc)+", range=" + str(range))
+            log.info("Result: soc=" + str(soc)+", range=" + str(range) + "@" + soc_ts)
             if soc > 0 and range > 0.0:
                 self.store.set(CarState(soc, range))
             else:
