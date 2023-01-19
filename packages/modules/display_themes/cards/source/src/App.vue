@@ -179,7 +179,9 @@ export default {
         block
       >
         <FontAwesomeIcon
-          :icon="this.changesLocked ? ['fas', 'fa-lock'] : ['fas', 'fa-lock-open']"
+          :icon="
+            this.changesLocked ? ['fas', 'fa-lock'] : ['fas', 'fa-lock-open']
+          "
           :class="this.changesLocked ? ['_color:danger'] : '_color:success'"
         />
       </i-button>

@@ -324,9 +324,20 @@ export const useMqttStore = defineStore("mqtt", {
     getChargePointPhasesInUse(state) {
       return (chargePointId) => {
         const phaseSymbols = ["/", "\u2460", "\u2461", "\u2462"];
-        return phaseSymbols[
-          state.topics[`openWB/chargepoint/${chargePointId}/get/phases_in_use`]
-        ];
+        const phasesInUse =
+          state.topics[`openWB/chargepoint/${chargePointId}/get/phases_in_use`];
+        if (
+          phasesInUse !== undefined &&
+          phasesInUse >= 0 &&
+          phasesInUse < phaseSymbols.length
+        ) {
+          return phaseSymbols[
+            state.topics[
+              `openWB/chargepoint/${chargePointId}/get/phases_in_use`
+            ]
+          ];
+        }
+        return "?";
       };
     },
     getChargePointPlugState(state) {
@@ -417,7 +428,8 @@ export const useMqttStore = defineStore("mqtt", {
         (topic.endsWith("home_consumption") ||
           topic.endsWith("power") ||
           topic.endsWith("soc")) &&
-        payload !== undefined
+        payload !== undefined &&
+        payload !== null
       ) {
         if (this.chartData[topic] === undefined) {
           this.chartData[topic] = [];
