@@ -1,3 +1,4 @@
+from dataclasses import asdict
 import importlib
 import json
 import logging
@@ -13,7 +14,7 @@ from helpermodules import measurement_log
 from helpermodules.broker import InternalBrokerClient
 from helpermodules.pub import Pub
 from helpermodules.utils.topic_parser import decode_payload
-from control import bridge, chargelog, chargepoint, data, ev, counter, counter_all, pv
+from control import bat, bridge, chargelog, chargepoint, data, ev, counter, counter_all, pv
 from modules.common.component_type import ComponentType, special_to_general_type_mapping, type_to_topic_mapping
 import dataclass_utils
 
@@ -146,7 +147,7 @@ class Command:
         """
         new_id = self.max_id_hierarchy + 1
         log.info(f'Neuer Ladepunkt mit ID \'{new_id}\' wird hinzugefügt.')
-        chargepoint_default = chargepoint.get_chargepoint_default()
+        chargepoint_default = chargepoint.get_chargepoint_config_default()
         # chargepoint_default["id"] = new_id
         module = importlib.import_module(".chargepoints." + payload["data"]["type"] + ".chargepoint_module", "modules")
         chargepoint_default = {**chargepoint_default, **module.get_default_config()}
@@ -158,6 +159,7 @@ class Command:
                 new_id, ComponentType.CHARGEPOINT, evu_counter)
             Pub().pub(f'openWB/set/chargepoint/{new_id}/config', chargepoint_default)
             Pub().pub(f'openWB/set/chargepoint/{new_id}/set/manual_lock', False)
+            {Pub().pub("openWB/set/chargepoint/get/"+k, v) for (k, v) in asdict(chargepoint.Get()).items()}
             self.max_id_hierarchy = self.max_id_hierarchy + 1
             Pub().pub("openWB/set/command/max_id/hierarchy", self.max_id_hierarchy)
             if self.max_id_chargepoint_template == -1:
@@ -339,6 +341,9 @@ class Command:
     def addComponent(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem eine neue Komponente erstellt werden soll.
         """
+        def set_default(topic: str, defaults: dict):
+            for k, v in defaults.items():
+                Pub().pub(f'{topic}/{k}', v)
         new_id = self.max_id_hierarchy + 1
         component = importlib.import_module(
             ".devices."+payload["data"]["deviceType"]+"."+payload["data"]["type"], "modules")
@@ -363,14 +368,17 @@ class Command:
                 pub_error_user(payload, connection_id, "Bitte erst einen EVU-Zähler konfigurieren!")
                 return
         # Bei Zählern müssen noch Standardwerte veröffentlicht werden.
-        if general_type == ComponentType.COUNTER:
-            default_config = counter.get_counter_default_config()
-            for item in default_config:
-                Pub().pub(f'openWB/set/counter/{new_id}/config/{item}', default_config[item])
+        if general_type == ComponentType.BAT:
+            topic = f"openWB/bat/{new_id}"
+            set_default(f"{topic}/get", asdict(bat.Get()))
+        elif general_type == ComponentType.COUNTER:
+            topic = f"openWB/counter/{new_id}"
+            set_default(f"{topic}/config", counter.get_counter_default_config())
+            set_default(f"{topic}/get", asdict(counter.Get()))
         elif general_type == ComponentType.INVERTER:
-            default_config = pv.get_inverter_default_config()
-            for item in default_config:
-                Pub().pub(f'openWB/set/pv/{new_id}/config/{item}', default_config[item])
+            topic = f"openWB/pv/{new_id}"
+            set_default(f"{topic}/config", pv.get_inverter_default_config())
+            set_default(f"{topic}/get", asdict(pv.Get()))
         Pub().pub(f'openWB/set/system/device/{payload["data"]["deviceId"]}/component/{new_id}/config',
                   component_default)
         self.max_id_hierarchy = self.max_id_hierarchy + 1
