@@ -32,7 +32,6 @@ class Get:
     daily_exported: float = 0
     monthly_exported: float = 0
     yearly_exported: float = 0
-    imported: float = 0
     exported: float = 0
     fault_state: int = 0
     fault_str: str = ""

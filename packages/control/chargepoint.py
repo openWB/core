@@ -39,7 +39,7 @@ from modules.common.abstract_chargepoint import AbstractChargepoint
 from helpermodules.timecheck import create_timestamp
 
 
-def get_chargepoint_default() -> dict:
+def get_chargepoint_config_default() -> dict:
     return {
         "name": "Standard-Ladepunkt",
         "type": None,
@@ -50,6 +50,10 @@ def get_chargepoint_default() -> dict:
         "auto_phase_switch_hw": False,
         "control_pilot_interruption_hw": False
     }
+
+
+def get_chargepoint_get_default() -> Dict:
+    return asdict(Get)
 
 
 log = logging.getLogger(__name__)
@@ -164,6 +168,7 @@ class ConnectedConfig:
     current_plan: Optional[int] = 0
     ev_template: int = 0
     priority: bool = False
+    time_charging_in_use: bool = False
 
 
 def connected_config_factory() -> ConnectedConfig:
@@ -970,12 +975,15 @@ class Chargepoint:
                 current_plan = vehicle.data.control_parameter.current_plan
             else:
                 current_plan = None
-            config_obj = ConnectedConfig(charge_template=vehicle.charge_template.ct_num,
-                                         ev_template=vehicle.ev_template.et_num,
-                                         chargemode=vehicle.charge_template.data.chargemode.selected,
-                                         priority=vehicle.charge_template.data.prio,
-                                         current_plan=current_plan,
-                                         average_consumption=vehicle.ev_template.data.average_consump)
+            config_obj = ConnectedConfig(
+                charge_template=vehicle.charge_template.ct_num,
+                ev_template=vehicle.ev_template.et_num,
+                chargemode=vehicle.charge_template.data.chargemode.selected,
+                priority=vehicle.charge_template.data.prio,
+                current_plan=current_plan,
+                average_consumption=vehicle.ev_template.data.average_consump,
+                time_charging_in_use=True if (vehicle.data.control_parameter.submode ==
+                                              "time_charging") else False)
             # if soc_config_obj != self.data.get.connected_vehicle.soc_config:
             #     Pub().pub("openWB/chargepoint/"+str(self.cp_num) +
             #               "/get/connected_vehicle/soc_config", soc_config_obj)
