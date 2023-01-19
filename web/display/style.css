@@ -31,6 +31,10 @@ iframe {
 	height: 80vh;
 }
 
+#log {
+	overflow-x: auto;
+}
+
 .center {
 	display: block;
 	margin-left: auto;

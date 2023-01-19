@@ -60,11 +60,11 @@ function setIframeSource(host) {
 			}
 		};
 		request.ontimeout = function() {
-			console.log("onTimeout", this.readyState, this.status);
+			console.warn("onTimeout", this.readyState, this.status);
 			addLog(`check for theme '${theme}' timed out!`);
 		};
 		request.timeout = 2000;
-		console.log("checking url:", destination);
+		console.debug("checking url:", destination);
 		request.open("GET", destination, true);
 		request.send();
 	} else {
