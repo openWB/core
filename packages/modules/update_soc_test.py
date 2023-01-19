@@ -5,7 +5,7 @@ import pytest
 
 from control import data
 from control.chargepoint import Chargepoint, Get, Set
-from control.ev import Ev, EvTemplate
+from control.ev import Ev
 from modules.common.abstract_soc import SocUpdateData
 from modules.vehicles.tesla.soc import Soc
 from modules.update_soc import UpdateSoc
@@ -63,7 +63,7 @@ def test_get_threads(soc_module: Optional[Soc],
     ev.data.get.force_soc_update = force_soc_update
     data.data.ev_data["ev0"] = ev
     soc_interval_expired_mock = Mock(return_value=soc_interval_expired)
-    monkeypatch.setattr(EvTemplate, "soc_interval_expired", soc_interval_expired_mock)
+    monkeypatch.setattr(Ev, "soc_interval_expired", soc_interval_expired_mock)
     get_soc_update_data_mock = Mock(return_value=SocUpdateData())
     monkeypatch.setattr(UpdateSoc, "_get_soc_update_data", get_soc_update_data_mock)
     monkeypatch.setattr(UpdateSoc, "_reset_force_soc_update", Mock())
