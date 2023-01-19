@@ -18,7 +18,12 @@ import {
   faTimesCircle as fasTimesCircle,
   faExclamationTriangle as fasExclamationTriangle,
   faStar as fasStar,
+  faClock as fasClock,
 } from "@fortawesome/free-solid-svg-icons";
+import {
+  faStar as farStar,
+  faClock as farClock,
+} from "@fortawesome/free-regular-svg-icons";
 /* add icons to the library */
 library.add(
   fasPlugCircleXmark,
@@ -31,7 +36,10 @@ library.add(
   fasCarBattery,
   fasTimesCircle,
   fasExclamationTriangle,
-  fasStar
+  fasStar,
+  farStar,
+  fasClock,
+  farClock
 );
 
 export default {
@@ -87,7 +95,6 @@ export default {
       };
     },
     setChargePointConnectedVehicle(id, $event) {
-      console.log("set", id, $event);
       if (this.changesLocked) {
         console.debug("setChargePointConnectedVehicle: changes locked!");
         return;
@@ -238,21 +245,40 @@ export default {
                 </i-select>
               </i-column>
             </i-row>
-            <i-row class="_padding-top:1">
+            <i-row class="_padding-top:1 _display:flex">
               <!-- charge mode info -->
-              <i-column class="_padding-right:0 _padding-left:0">
-                {{ mqttStore.getChargePointConnectedVehicleChargeMode(id) }}
-                <font-awesome-icon
-                  v-if="mqttStore.getChargePointConnectedVehiclePriority(id)"
-                  fixed-width
-                  :icon="['fas', 'fa-star']"
-                />
+              <i-column class="_padding-left:0 _padding-right:0 _flex-grow:1">
+                <i-badge size="lg" class="charge-mode" :color="mqttStore.getChargePointConnectedVehicleChargeMode(id).class">
+                  {{ mqttStore.getChargePointConnectedVehicleChargeMode(id).name }}
+                </i-badge>
+              </i-column>
+              <i-column class="_flex-grow:0 _padding-right:0">
+                <i-badge size="lg">
+                  <font-awesome-icon
+                    fixed-width
+                    :icon="mqttStore.getChargePointConnectedVehiclePriority(id) ? ['fas', 'fa-star'] : ['far', 'fa-star']"
+                    :class="mqttStore.getChargePointConnectedVehiclePriority(id) ? '_color:warning' : ''"
+                  />
+                  <font-awesome-icon
+                    v-if="
+                      mqttStore.getChargePointConnectedVehicleTimeChargingActive(
+                        id
+                      )
+                    "
+                    fixed-width
+                    :icon="mqttStore.getChargePointConnectedVehicleTimeChargingRunning(id) ? ['fas', 'fa-clock'] : ['far', 'fa-clock']"
+                    :class="mqttStore.getChargePointConnectedVehicleTimeChargingRunning(id) ? '_color:success' : ''"
+                  />
+                </i-badge>
               </i-column>
             </i-row>
             <i-row v-if="!changesLocked" class="_padding-top:1">
               <i-column class="_padding-left:0 _padding-right:0">
-                <i-button size="lg" @click="toggleChargePointSettings(id)">
-                  <font-awesome-icon fixed-width :icon="['fas', 'fa-wrench']" />
+                <i-button block @click="toggleChargePointSettings(id)">
+                  <font-awesome-icon
+                    fixed-width
+                    :icon="['fas', 'fa-wrench']"
+                  />
                 </i-button>
               </i-column>
             </i-row>
@@ -283,5 +309,9 @@ export default {
 
 :deep(.select-wrapper .input-wrapper .input-suffix > .select-caret) {
   display: none;
+}
+
+.badge.charge-mode {
+  width: 100%;
 }
 </style>

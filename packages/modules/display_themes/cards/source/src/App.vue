@@ -61,6 +61,7 @@ export default {
         "openWB/vehicle/+/name",
         "openWB/vehicle/+/soc_module/config",
         "openWB/vehicle/+/get/fault_state",
+        "openWB/vehicle/template/charge_template/#",
       ],
       mqttStore: useMqttStore(),
       changesLocked: false,
