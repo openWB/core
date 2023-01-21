@@ -32,6 +32,8 @@
     "eslint": "^8.30.0",
     "eslint-plugin-vue": "^9.3.0",
     "jsdom": "^20.0.3",
+    "postcss": "^8.4.21",
+    "postcss-preset-env": "^7.8.3",
     "prettier": "^2.8.1",
     "rollup-plugin-node-polyfills": "^0.2.1",
     "sass": "^1.57.1",
