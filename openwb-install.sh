@@ -10,14 +10,8 @@ fi
 
 echo "installing openWB 2 into \"${OPENWBBASEDIR}\""
 
-echo "tweaking apt configuration..."
-if [ -d "/etc/apt/apt.conf.d" ]; then
-	sudo cp "${OPENWBBASEDIR}/data/config/apt/99openwb" "/etc/apt/apt.conf.d/"
-	echo "done"
-else
-	echo "path '/etc/apt/apt.conf.d' is missing! unsupported system!"
-fi
-"${OPENWBBASEDIR}/runs/install_packages.sh"
+# install packages by pre-downloading out script so we only have one file to maintain
+curl -s "https://raw.githubusercontent.com/openWB/core/master/runs/install_packages.sh" | bash -s
 
 echo "create group $OPENWB_GROUP"
 # Will do nothing if group already exists:
