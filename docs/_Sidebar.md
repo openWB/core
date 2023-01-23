@@ -1,7 +1,8 @@
 # openWB2-Wiki
 
 * [Home](https://github.com/openWB/core/wiki/Home)
-* [Erstkonfiguration](https://github.com/openWB/core/wiki/Erstkonfiguration)
+* [Tutorial: Erstkonfiguration](https://github.com/openWB/core/wiki/Tutorail:_Erstkonfiguration)
+* [Tutorial: Konfiguration Geräte und Komponenten](https://github.com/openWB/core/wiki/Tutorial:_Konfiguration_Geräte_und_Komponenten)
 * [Ladepunkte](https://github.com/openWB/core/wiki/Ladepunkte)
 * [Fahrzeuge](https://github.com/openWB/core/wiki/Fahrzeuge)
 * [Lastmanagement und kaskadierte Zähler](https://github.com/openWB/core/wiki/Lastmanagement-und-kaskadierte-Zähler)
