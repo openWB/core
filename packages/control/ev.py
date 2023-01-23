@@ -357,8 +357,9 @@ class Ev:
             return False, "ein interner Fehler aufgetreten ist.", "stop", 0, self.data.control_parameter.phases
 
     def set_chargemode_changed(self, submode: str) -> None:
-        if ((submode == "time_charging" and self.data.control_parameter.chargemode != Chargemode_enum.TIME_CHARGING) or
-                (self.data.control_parameter.chargemode != self.charge_template.data.chargemode.selected)):
+        if ((submode == "time_charging" and self.data.control_parameter.chargemode != "time_charging") or
+                (submode != "time_charging" and
+                 self.data.control_parameter.chargemode != self.charge_template.data.chargemode.selected)):
             self.chargemode_changed = True
             log.debug("Änderung des Lademodus")
         else:
