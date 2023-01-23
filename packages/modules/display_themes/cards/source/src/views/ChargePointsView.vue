@@ -248,16 +248,32 @@ export default {
             <i-row class="_padding-top:1 _display:flex">
               <!-- charge mode info -->
               <i-column class="_padding-left:0 _padding-right:0 _flex-grow:1">
-                <i-badge size="lg" class="charge-mode" :color="mqttStore.getChargePointConnectedVehicleChargeMode(id).class">
-                  {{ mqttStore.getChargePointConnectedVehicleChargeMode(id).name }}
+                <i-badge
+                  size="lg"
+                  class="charge-mode"
+                  :color="
+                    mqttStore.getChargePointConnectedVehicleChargeMode(id).class
+                  "
+                >
+                  {{
+                    mqttStore.getChargePointConnectedVehicleChargeMode(id).name
+                  }}
                 </i-badge>
               </i-column>
               <i-column class="_flex-grow:0 _padding-right:0">
                 <i-badge size="lg">
                   <font-awesome-icon
                     fixed-width
-                    :icon="mqttStore.getChargePointConnectedVehiclePriority(id) ? ['fas', 'fa-star'] : ['far', 'fa-star']"
-                    :class="mqttStore.getChargePointConnectedVehiclePriority(id) ? '_color:warning' : ''"
+                    :icon="
+                      mqttStore.getChargePointConnectedVehiclePriority(id)
+                        ? ['fas', 'fa-star']
+                        : ['far', 'fa-star']
+                    "
+                    :class="
+                      mqttStore.getChargePointConnectedVehiclePriority(id)
+                        ? '_color:warning'
+                        : ''
+                    "
                   />
                   <font-awesome-icon
                     v-if="
@@ -266,8 +282,20 @@ export default {
                       )
                     "
                     fixed-width
-                    :icon="mqttStore.getChargePointConnectedVehicleTimeChargingRunning(id) ? ['fas', 'fa-clock'] : ['far', 'fa-clock']"
-                    :class="mqttStore.getChargePointConnectedVehicleTimeChargingRunning(id) ? '_color:success' : ''"
+                    :icon="
+                      mqttStore.getChargePointConnectedVehicleTimeChargingRunning(
+                        id
+                      )
+                        ? ['fas', 'fa-clock']
+                        : ['far', 'fa-clock']
+                    "
+                    :class="
+                      mqttStore.getChargePointConnectedVehicleTimeChargingRunning(
+                        id
+                      )
+                        ? '_color:success'
+                        : ''
+                    "
                   />
                 </i-badge>
               </i-column>
@@ -275,10 +303,7 @@ export default {
             <i-row v-if="!changesLocked" class="_padding-top:1">
               <i-column class="_padding-left:0 _padding-right:0">
                 <i-button block @click="toggleChargePointSettings(id)">
-                  <font-awesome-icon
-                    fixed-width
-                    :icon="['fas', 'fa-wrench']"
-                  />
+                  <font-awesome-icon fixed-width :icon="['fas', 'fa-wrench']" />
                 </i-button>
               </i-column>
             </i-row>

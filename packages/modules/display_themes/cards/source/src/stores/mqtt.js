@@ -2,10 +2,27 @@ import { defineStore } from "pinia";
 
 export const useMqttStore = defineStore("mqtt", {
   state: () => ({
+    settings: {
+      parentChargePoint1: undefined,
+      parentChargePoint2: undefined,
+    },
     topics: {},
     chartData: {},
   }),
   getters: {
+    /* settings getters */
+
+    getChargePointFilter: (state) => {
+      let filter = [];
+      if (state.settings.parentChargePoint1 !== undefined) {
+        filter.push(state.settings.parentChargePoint1);
+      }
+      if (state.settings.parentChargePoint2 !== undefined) {
+        filter.push(state.settings.parentChargePoint2);
+      }
+      return filter;
+    },
+
     /* general getters */
 
     getWildcardIndexList: (state) => {
@@ -246,12 +263,6 @@ export const useMqttStore = defineStore("mqtt", {
     getBatterySocChartData(state) {
       return state.chartData["openWB/bat/get/soc"];
     },
-    getChargePointSumPower(state) {
-      return state.getValueString("openWB/chargepoint/get/power", "W");
-    },
-    getChargePointSumPowerChartData(state) {
-      return state.chartData["openWB/chargepoint/get/power"];
-    },
     getPvConfigured(state) {
       return state.getValueBool("openWB/pv/config/configured");
     },
@@ -266,8 +277,22 @@ export const useMqttStore = defineStore("mqtt", {
 
     /* charge point getters */
 
+    getChargePointSumPower(state) {
+      return state.getValueString("openWB/chargepoint/get/power", "W");
+    },
+    getChargePointSumPowerChartData(state) {
+      return state.chartData["openWB/chargepoint/get/power"];
+    },
     getChargePointIds(state) {
-      return state.getObjectIds("cp");
+      let chargePoints = state.getObjectIds("cp");
+      let filter = this.getChargePointFilter;
+      if (filter.length > 0) {
+        console.debug("charge points are filtered!", chargePoints, filter);
+        return chargePoints.filter((chargePoint) =>
+          filter.includes(chargePoint)
+        );
+      }
+      return chargePoints;
     },
     getChargePointName(state) {
       return (chargePointId) => {
@@ -418,7 +443,10 @@ export const useMqttStore = defineStore("mqtt", {
     },
     getChargePointConnectedVehicleTimeChargingRunning(state) {
       return (chargePointId) => {
-        let running = state.getChargePointConnectedVehicleConfig(chargePointId).time_charging_in_use;
+        let running =
+          state.getChargePointConnectedVehicleConfig(
+            chargePointId
+          ).time_charging_in_use;
         if (running !== undefined) {
           return running;
         }
@@ -446,6 +474,11 @@ export const useMqttStore = defineStore("mqtt", {
     },
   },
   actions: {
+    updateSetting(setting, value) {
+      if (setting in this.settings) {
+        this.settings[setting] = value;
+      }
+    },
     initTopic(topic, defaultValue = undefined) {
       if (topic.includes("#") || topic.includes("+")) {
         console.debug("skipping init of wildcard topic:", topic);

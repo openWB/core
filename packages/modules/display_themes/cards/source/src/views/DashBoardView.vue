@@ -89,14 +89,28 @@ export default {
     >
       <template #headerLeft>
         <font-awesome-icon fixed-width :icon="['fas', 'fa-charging-station']" />
-        Ladepunkte
+        {{
+          mqttStore.getChargePointIds.length == 1
+            ? mqttStore.getChargePointName(mqttStore.getChargePointIds[0])
+            : "Ladepunkte"
+        }}
       </template>
       <template #headerRight>
-        {{ mqttStore.getChargePointSumPower }}
+        {{
+          mqttStore.getChargePointIds.length == 1
+            ? mqttStore.getChargePointPower(mqttStore.getChargePointIds[0])
+            : mqttStore.getChargePointSumPower
+        }}
       </template>
       <spark-line
         color="var(--color--primary)"
-        :data="mqttStore.getChargePointSumPowerChartData"
+        :data="
+          mqttStore.getChargePointIds.length == 1
+            ? mqttStore.getChargePointPowerChartData(
+                mqttStore.getChargePointIds[0]
+              )
+            : mqttStore.getChargePointSumPowerChartData
+        "
       />
     </dash-board-card>
     <dash-board-card
