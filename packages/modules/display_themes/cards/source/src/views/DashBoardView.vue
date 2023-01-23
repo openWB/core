@@ -84,6 +84,23 @@ export default {
       />
     </dash-board-card>
     <dash-board-card
+      color="success"
+      v-if="mqttStore.getPvConfigured && mqttStore.getPvCardEnabled"
+    >
+      <template #headerLeft>
+        <font-awesome-icon fixed-width :icon="['fas', 'fa-solar-panel']" />
+        PV
+      </template>
+      <template #headerRight>
+        {{ mqttStore.getPvPower }}
+      </template>
+      <spark-line
+        color="var(--color--success)"
+        :data="mqttStore.getPvPowerChartData"
+        :inverted="true"
+      />
+    </dash-board-card>
+    <dash-board-card
       v-if="mqttStore.getChargePointsCardEnabled"
       color="primary"
     >
@@ -111,23 +128,6 @@ export default {
               )
             : mqttStore.getChargePointSumPowerChartData
         "
-      />
-    </dash-board-card>
-    <dash-board-card
-      color="success"
-      v-if="mqttStore.getPvConfigured && mqttStore.getPvCardEnabled"
-    >
-      <template #headerLeft>
-        <font-awesome-icon fixed-width :icon="['fas', 'fa-solar-panel']" />
-        PV
-      </template>
-      <template #headerRight>
-        {{ mqttStore.getPvPower }}
-      </template>
-      <spark-line
-        color="var(--color--success)"
-        :data="mqttStore.getPvPowerChartData"
-        :inverted="true"
       />
     </dash-board-card>
   </div>
