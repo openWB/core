@@ -318,26 +318,6 @@ export const useMqttStore = defineStore("mqtt", {
         return state.chartData[`openWB/chargepoint/${chargePointId}/get/power`];
       };
     },
-    getChargePointConnectedVehicleConfig(state) {
-      return (chargePointId) => {
-        return state.topics[
-          `openWB/chargepoint/${chargePointId}/get/connected_vehicle/config`
-        ];
-      };
-    },
-    getChargePointConnectedVehicleChargeMode(state) {
-      return (chargePointId) => {
-        return state.translateChargeMode(
-          state.getChargePointConnectedVehicleConfig(chargePointId).chargemode
-        );
-      };
-    },
-    getChargePointConnectedVehiclePriority(state) {
-      return (chargePointId) => {
-        return state.getChargePointConnectedVehicleConfig(chargePointId)
-          .priority;
-      };
-    },
     getChargePointSetCurrent(state) {
       return (chargePointId) => {
         return state.getValueString(
@@ -384,6 +364,39 @@ export const useMqttStore = defineStore("mqtt", {
         return state.getValueBool(
           `openWB/chargepoint/${chargePointId}/set/manual_lock`
         );
+      };
+    },
+    getChargePointVehicleChangePermitted(state) {
+      return (chargePointId) => {
+        if (Array.isArray(state.topics[
+          `openWB/chargepoint/${chargePointId}/set/change_ev_permitted`
+        ])) {
+          // topic payload is an array [bool, String]!
+          return state.topics[
+            `openWB/chargepoint/${chargePointId}/set/change_ev_permitted`
+          ][0];
+        }
+        return false;
+      };
+    },
+    getChargePointConnectedVehicleConfig(state) {
+      return (chargePointId) => {
+        return state.topics[
+          `openWB/chargepoint/${chargePointId}/get/connected_vehicle/config`
+        ];
+      };
+    },
+    getChargePointConnectedVehicleChargeMode(state) {
+      return (chargePointId) => {
+        return state.translateChargeMode(
+          state.getChargePointConnectedVehicleConfig(chargePointId).chargemode
+        );
+      };
+    },
+    getChargePointConnectedVehiclePriority(state) {
+      return (chargePointId) => {
+        return state.getChargePointConnectedVehicleConfig(chargePointId)
+          .priority;
       };
     },
     getChargePointConnectedVehicleInfo(state) {

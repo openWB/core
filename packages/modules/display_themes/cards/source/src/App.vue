@@ -56,6 +56,7 @@ export default {
         "openWB/chargepoint/+/get/phases_in_use",
         "openWB/chargepoint/+/set/current",
         "openWB/chargepoint/+/set/manual_lock",
+        "openWB/chargepoint/+/set/change_ev_permitted",
         "openWB/chargepoint/+/config",
         "openWB/chargepoint/+/get/connected_vehicle/+",
         "openWB/vehicle/+/name",

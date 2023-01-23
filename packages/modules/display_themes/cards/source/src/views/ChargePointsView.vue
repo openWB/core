@@ -187,7 +187,7 @@ export default {
               <i-column class="_padding-right:0 _padding-left:0">
                 <i-select
                   size="lg"
-                  :disabled="changesLocked"
+                  :disabled="changesLocked || !mqttStore.getChargePointVehicleChangePermitted(id)"
                   :model-value="getChargePointConnectedVehicle(id)"
                   :options="vehicleList"
                   placeholder="Bitte auswählen.."
