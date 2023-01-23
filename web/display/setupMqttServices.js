@@ -13,9 +13,11 @@ var topicsToSubscribe = {
 	"openWB/system/update_in_progress": false,
 	"openWB/general/extern": false,
 	"openWB/optional/int_display/theme": false,
-	// "openWB/isss/parentWB": false,
-	// "openWB/isss/parentCPlp1": false,
-	// "openWB/isss/parentCPlp2": false,
+}
+var isssTopicsToSubscribe = {
+	"openWB/isss/parentWB": false,
+	"openWB/isss/parentCPlp1": false,
+	"openWB/isss/parentCPlp2": false,
 };
 
 var data = {};
@@ -33,6 +35,9 @@ var options = {
 		console.debug("connected!");
 		retries = 0;
 		Object.keys(topicsToSubscribe).forEach((topic) => {
+			client.subscribe(topic, { qos: 0 });
+		});
+		Object.keys(isssTopicsToSubscribe).forEach((topic) => {
 			client.subscribe(topic, { qos: 0 });
 		});
 	},
@@ -62,7 +67,11 @@ client.onConnectionLost = function (responseObject) {
 };
 //Gets called whenever you receive a message
 client.onMessageArrived = function (message) {
-	topicsToSubscribe[message.destinationName] = true;
+	if (message.destinationName.includes("/isss/")){
+		isssTopicsToSubscribe[message.destinationName] = true;
+	} else {
+		topicsToSubscribe[message.destinationName] = true;
+	}
 	data[message.destinationName] = JSON.parse(message.payloadString);
 	handleMessage(message.destinationName, message.payloadString);
 };
@@ -86,5 +95,10 @@ function allTopicsReceived() {
 	Object.keys(topicsToSubscribe).forEach((topic) => {
 		ready &= topicsToSubscribe[topic];
 	});
+	if (data["openWB/general/extern"]) {
+		Object.keys(isssTopicsToSubscribe).forEach((topic) => {
+			ready &= isssTopicsToSubscribe[topic];
+		});
+	}
 	return ready;
 }

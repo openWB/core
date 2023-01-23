@@ -20,7 +20,7 @@ function reloadDisplay() {
 	}, 2000);
 }
 
-function setIframeSource(host) {
+function setIframeSource() {
 	if (allTopicsReceived()) {
 		if (!data["openWB/system/boot_done"]) {
 			addLog("backend still booting");
@@ -30,13 +30,13 @@ function setIframeSource(host) {
 			addLog("update in progress");
 			return;
 		}
-		const host = location.host;
+		let host = location.host;
 		var query = "";
-		// if (data["openWB/general/extern"]) {
-		// 	host = data["openWB/isss/parentWB"];
-		// 	query += `?parentCPlp1=${data["openWB/isss/parentCPlp1"]}`;
-		// 	query += `&parentCPlp2=${data["openWB/isss/parentCPlp2"]}`;
-		// }
+		if (data["openWB/general/extern"]) {
+			host = data["openWB/isss/parentWB"];
+			query += `?parentChargePoint1=${data["openWB/isss/parentCPlp1"]}`;
+			query += `&parentChargePoint2=${data["openWB/isss/parentCPlp2"]}`;
+		}
 		const theme = data["openWB/optional/int_display/theme"].type;
 		const destination = `${location.protocol}//${host}/openWB/web/display/themes/${theme}/${query}`;
 
@@ -47,7 +47,7 @@ function setIframeSource(host) {
 					addLog(`theme '${theme}' is valid`)
 					const iframe = document.getElementById("displayTarget");
 					if (destination != iframe.src) {
-						addLog(`all done, starting theme '${theme}'`);
+						addLog(`all done, starting theme '${theme}' with url '${destination}'`);
 						setTimeout(() => {
 							document.getElementById("notReady").classList.add("hide");
 							iframe.src = destination;
@@ -80,7 +80,7 @@ function handleMessage(topic, payload) {
 	addLog(`Topic: ${topic} Payload: ${payload}`);
 	// receives all topics and calls respective function to process them
 	if (topic.match(/^openwb\/system\//i)) { processSystemTopics(topic, payload); }
-	setIframeSource(location.host);
+	setIframeSource();
 }  // end handleMessage
 
 function processSystemTopics(topic, payload) {
