@@ -33,6 +33,11 @@ echo "#### running update ####" >"$LOGFILE"
 	fi
 	git -C "$OPENWBBASEDIR" reset --hard "$resetTarget" && echo "#### done"
 
+	# notify system
+	mosquitto_pub -p 1886 -t "openWB/system/update_in_progress" -r -m 'false'
+	mosquitto_pub -p 1886 -t "openWB/system/boot_done" -m 'false'
+	sleep 1
+
 	# now reboot system
 	echo "#### 4. rebooting system ####"
 	sudo reboot now &

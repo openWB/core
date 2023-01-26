@@ -34,6 +34,7 @@ chmod 666 "$LOGFILE"
 
 	echo "atreboot.sh started"
 	if [[ -f "${OPENWBBASEDIR}/ramdisk/bootdone" ]]; then
+		mosquitto_pub -p 1886 -t "openWB/system/boot_done" -r -m 'false'
 		rm "${OPENWBBASEDIR}/ramdisk/bootdone"
 	fi
 	(
@@ -303,5 +304,6 @@ chmod 666 "$LOGFILE"
 	echo "$(date +"%Y-%m-%d %H:%M:%S:")" "boot done :-)"
 	mosquitto_pub -p 1886 -t "openWB/system/update_in_progress" -r -m 'false'
 	mosquitto_pub -p 1886 -t "openWB/system/reloadDisplay" -m "1"
+	mosquitto_pub -p 1886 -t "openWB/system/boot_done" -m 'true'
 	touch "${OPENWBBASEDIR}/ramdisk/bootdone"
 } >>"$LOGFILE" 2>&1
