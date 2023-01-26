@@ -213,6 +213,7 @@ chmod 666 "$LOGFILE"
 	if versionMatch "${OPENWBBASEDIR}/data/config/openwb_local.conf" "/etc/mosquitto/conf_local.d/openwb_local.conf"; then
 		echo "mosquitto openwb_local.conf already up to date"
 	else
+		echo "updating mosquitto openwb_local.conf"
 		sudo cp -a "${OPENWBBASEDIR}/data/config/openwb_local.conf" "/etc/mosquitto/conf_local.d/"
 		restartService=1
 	fi
