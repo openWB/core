@@ -13,13 +13,11 @@ from modules.devices.siemens_sentron.config import SiemensSentronCounterSetup
 
 class SiemensSentronCounter:
     def __init__(self,
-                 device_id: int,
                  component_config: Union[Dict, SiemensSentronCounterSetup],
                  tcp_client: modbus.ModbusTcpClient_) -> None:
-        self.__device_id = device_id
         self.component_config = dataclass_from_dict(SiemensSentronCounterSetup, component_config)
         self.__tcp_client = tcp_client
-        self.__store = get_counter_value_store(self.component_config.id)
+        self.store = get_counter_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
 
     def update(self):
@@ -43,7 +41,7 @@ class SiemensSentronCounter:
             frequency=frequency,
             power_factors=power_factors
         )
-        self.__store.set(counter_state)
+        self.store.set(counter_state)
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=SiemensSentronCounterSetup)

@@ -29,16 +29,42 @@ chmod 666 "$LOGFILE"
 	if [ "$(id -u -n)" != "openwb" ]; then
 		echo "Re-running script ${BASH_SOURCE[0]} as user openwb"
 		exec sudo -u openwb bash "${BASH_SOURCE[0]}"
+		exit
 	fi
 
 	echo "atreboot.sh started"
 	if [[ -f "${OPENWBBASEDIR}/ramdisk/bootdone" ]]; then
+		mosquitto_pub -p 1886 -t "openWB/system/boot_done" -r -m 'false'
 		rm "${OPENWBBASEDIR}/ramdisk/bootdone"
 	fi
 	(
 		sleep 600
 		sudo kill "$$"
 	) &
+
+	# check for LAN/WLAN connection
+	echo "LAN/WLAN..."
+	connectCounter=0
+	while [[ ! $(ip route get 1) ]] && ((connectCounter < 30)); do
+		((connectCounter += 1))
+		sleep 1
+	done
+	if ((connectCounter <30)); then
+		# alpha image restricted to LAN only
+		myNetDevice=$(ip route get 1 | awk '{print $5;exit}')
+		echo "my primary interface: $myNetDevice"
+		sudo ifconfig "${myNetDevice}:0" 192.168.193.250 netmask 255.255.255.0 up
+		# get local ip
+		ip="\"$(ip route get 1 | awk '{print $7;exit}')\""
+		if [[ $ip == "\"\"" ]]; then
+			ip="\"unknown\""
+		fi
+		echo "my primary IP: $ip"
+		mosquitto_pub -t "openWB/system/ip_address" -p 1886 -r -m "$ip"
+	else
+		echo "ERROR: network not up after $connectCounter seconds!"
+		echo "unable to check required packages and add virtual network!"
+	fi
 
 	if [ -d "/etc/apt/apt.conf.d" ]; then
 		if versionMatch "${OPENWBBASEDIR}/data/config/apt/99openwb" "/etc/apt/apt.conf.d/99openwb"; then
@@ -96,11 +122,6 @@ chmod 666 "$LOGFILE"
 	# 	echo "deleting browser cache"
 	# 	rm -rf /home/pi/.cache/chromium
 	# fi
-
-	# check for LAN/WLAN connection
-	echo "LAN/WLAN..."
-	# alpha image restricted to LAN only
-	sudo ifconfig eth0:0 192.168.193.250 netmask 255.255.255.0 up
 
 	# check for apache configuration
 	echo "apache default site..."
@@ -193,6 +214,7 @@ chmod 666 "$LOGFILE"
 	if versionMatch "${OPENWBBASEDIR}/data/config/openwb_local.conf" "/etc/mosquitto/conf_local.d/openwb_local.conf"; then
 		echo "mosquitto openwb_local.conf already up to date"
 	else
+		echo "updating mosquitto openwb_local.conf"
 		sudo cp -a "${OPENWBBASEDIR}/data/config/openwb_local.conf" "/etc/mosquitto/conf_local.d/"
 		restartService=1
 	fi
@@ -257,14 +279,6 @@ chmod 666 "$LOGFILE"
 	# 	sed -i "s,@chromium-browser --incognito --disable-pinch --kiosk http://localhost/openWB/web/display/,@chromium-browser --incognito --disable-pinch --overscroll-history-navigation=0 --kiosk http://localhost/openWB/web/display/,g" /home/pi/.config/lxsession/LXDE-pi/autostart
 	# fi
 
-	# get local ip
-	ip="\"$(ip route get 1 | awk '{print $7;exit}')\""
-	if [[ $ip == "\"\"" ]]; then
-		ip="\"unknown\""
-	fi
-	echo "my IP: $ip"
-	mosquitto_pub -t "openWB/system/ip_address" -p 1886 -r -m "$ip"
-
 	# update current published versions
 	echo "load versions..."
 	"$OPENWBBASEDIR/runs/update_available_versions.sh"
@@ -290,5 +304,6 @@ chmod 666 "$LOGFILE"
 	echo "$(date +"%Y-%m-%d %H:%M:%S:")" "boot done :-)"
 	mosquitto_pub -p 1886 -t "openWB/system/update_in_progress" -r -m 'false'
 	mosquitto_pub -p 1886 -t "openWB/system/reloadDisplay" -m "1"
+	mosquitto_pub -p 1886 -t "openWB/system/boot_done" -m 'true'
 	touch "${OPENWBBASEDIR}/ramdisk/bootdone"
 } >>"$LOGFILE" 2>&1

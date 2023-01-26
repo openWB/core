@@ -7,6 +7,7 @@
 .ftp*
 .vscode/*
 __pycache__/
+node_modules/
 data/log/*
 data/charge_log/*
 data/daily_log/*

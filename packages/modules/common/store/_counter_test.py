@@ -7,10 +7,13 @@ import pytest
 
 
 from control import data
-from control.bat import Bat
+from control.bat import Bat, BatData
+from control.bat import Get as BatGet
 from control.chargepoint import Chargepoint
-from control.counter import Counter, CounterAll
-from control.pv import Pv
+from control.counter import Counter, CounterData, Get
+from control.counter_all import CounterAll
+from control.pv import Pv, PvData
+from control.pv import Get as PvGet
 from modules.common.component_state import CounterState
 from modules.common.store._counter import PurgeCounterState
 
@@ -36,8 +39,10 @@ def add_chargepoint(id: int):
 
 def mock_data_standard():
     add_chargepoint(3)
-    data.data.bat_data["inverter1"] = Mock(spec=Pv, data={"get": {"power": 5786, "exported": 200}})
-    data.data.bat_data["bat2"] = Mock(spec=Bat, data={"get": {"power": 223, "exported": 200, "imported": 100}})
+    data.data.bat_data["inverter1"] = Mock(spec=Pv, data=Mock(
+        spec=PvData, get=Mock(spec=PvGet, power=5786, exported=200)))
+    data.data.bat_data["bat2"] = Mock(spec=Bat, data=Mock(
+        spec=BatData, get=Mock(spec=BatGet, power=223, exported=200, imported=100)))
     data.data.counter_all_data.data.get.hierarchy = [{"id": 0, "type": "counter",
                                                       "children": [{"id": 3, "type": "cp", "children": []}]},
                                                      {"id": 1, "type": "inverter", "children": []},
@@ -48,7 +53,8 @@ def mock_data_nested():
     add_chargepoint(1)
     add_chargepoint(3)
     data.data.counter_data["counter2"] = Mock(
-        spec=Counter, data={"get": {"power": 13359, "exported": 0, "imported": 0, "currents": [19.36, 19.36, 19.36]}})
+        spec=Counter, data=Mock(spec=CounterData, get=Mock(
+            spec=Get, power=13359, exported=0, imported=0, currents=[19.36, 19.36, 19.36])))
     data.data.counter_all_data.data.get.hierarchy = [
         {"id": 0, "type": "counter",
          "children": [{"id": 1, "type": "cp", "children": []},

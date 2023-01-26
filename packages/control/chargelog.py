@@ -47,7 +47,7 @@ def collect_data(chargepoint):
                     if charging_ev.data.control_parameter.submode == "time_charging":
                         log_data.chargemode_log_entry = "time_charging"
                     else:
-                        log_data.chargemode_log_entry = charging_ev.data.control_parameter.chargemode
+                        log_data.chargemode_log_entry = charging_ev.data.control_parameter.chargemode.value
                 log_data.imported_since_mode_switch = chargepoint.data.get.imported - log_data.imported_at_mode_switch
                 log.debug(f"imported_since_mode_switch {log_data.imported_since_mode_switch} "
                           f"counter {chargepoint.data.get.imported}")
@@ -232,7 +232,6 @@ def get_log_data(request: Dict):
             duration = "00:00"
             range_charged = 0
             mode = 0
-            plugged = 0
             power = 0
             costs = 0
             for entry in log_data["entries"]:
@@ -240,7 +239,6 @@ def get_log_data(request: Dict):
                     duration, entry["time"]["time_charged"])
                 range_charged += entry["data"]["range_charged"]
                 mode += entry["data"]["imported_since_mode_switch"]
-                plugged += entry["data"]["imported_since_plugged"]
                 power += entry["data"]["power"]
                 costs += entry["data"]["costs"]
             power = power / len(log_data["entries"])
@@ -248,7 +246,6 @@ def get_log_data(request: Dict):
                 "time_charged": duration,
                 "range_charged": range_charged,
                 "imported_since_mode_switch": mode,
-                "imported_since_plugged": plugged,
                 "power": power,
                 "costs": costs,
             }

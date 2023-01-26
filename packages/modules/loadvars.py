@@ -1,13 +1,14 @@
 import logging
 import threading
-from typing import Any, List, Optional
+from typing import List
 
 from control import data
 from modules import ripple_control_receiver
+from modules.utils import ModuleUpdateCompletedContext
 from modules.common.abstract_device import AbstractDevice
 from modules.common.component_type import ComponentType, type_to_topic_mapping
 from modules.common.store import update_values
-from helpermodules import pub
+from modules.common.utils.component_parser import get_component_obj_by_id
 from helpermodules.utils import thread_handler
 
 log = logging.getLogger(__name__)
@@ -18,18 +19,19 @@ class Loadvars:
         self.event_module_update_completed = threading.Event()
 
     def get_values(self) -> None:
+        topic = "openWB/set/system/device/module_update_completed"
         try:
             not_finished_threads = self._set_values()
             levels = data.data.counter_all_data.get_list_of_elements_per_level()
             levels.reverse()
             for level in levels:
-                with ModuleUpdateCompletedContext(self.event_module_update_completed):
+                with ModuleUpdateCompletedContext(self.event_module_update_completed, topic):
                     self._update_values_of_level(level, not_finished_threads)
                 data.data.copy_module_data()
-            with ModuleUpdateCompletedContext(self.event_module_update_completed):
+            with ModuleUpdateCompletedContext(self.event_module_update_completed, topic):
                 thread_handler(self._get_general())
-            data.data.pv_data["all"].calc_power_for_all_components()
-            data.data.bat_data["all"].calc_power_for_all_components()
+            data.data.pv_all_data.calc_power_for_all_components()
+            data.data.bat_all_data.calc_power_for_all_components()
         except Exception:
             log.exception("Fehler im loadvars-Modul")
 
@@ -64,7 +66,7 @@ class Loadvars:
                             args=(chargepoint.chargepoint_module,),
                             name=f"cp{chargepoint.chargepoint_module.id}"))
                 else:
-                    component = self.__get_component_obj_by_id(element["id"], not_finished_threads)
+                    component = get_component_obj_by_id(element["id"], not_finished_threads)
                     if component is None:
                         continue
                     modules_threads.append(threading.Thread(target=update_values, args=(
@@ -82,20 +84,6 @@ class Loadvars:
                     return True
         return False
 
-    def __get_component_obj_by_id(self, id: int, not_finished_threads: List[str]) -> Optional[Any]:
-        for item in data.data.system_data.values():
-            if isinstance(item, AbstractDevice):
-                for t in not_finished_threads:
-                    if t == f"device{item.device_config.id}":
-                        log.error(f"Keine aktuellen Werte für Gerät {item.device_config.name}")
-                        return None
-                for comp in item.components.values():
-                    if comp.component_config.id == id:
-                        return comp
-        else:
-            log.error(f"Element {id} konnte keinem Gerät zugeordnet werden.")
-            return None
-
     def _get_general(self) -> List[threading.Thread]:
         threads = []  # type: List[threading.Thread]
         try:
@@ -107,20 +95,3 @@ class Loadvars:
             log.exception("Fehler im loadvars-Modul")
         finally:
             return threads
-
-
-class ModuleUpdateCompletedContext:
-    def __init__(self, event_module_update_completed: threading.Event):
-        self.event_module_update_completed = event_module_update_completed
-
-    def __enter__(self):
-        timeout = data.data.general_data.data.control_interval/2
-        if self.event_module_update_completed.wait(timeout) is False:
-            log.error(
-                "Modul-Daten wurden noch nicht vollständig empfangen. Timeout abgelaufen, fortsetzen der Regelung.")
-        return None
-
-    def __exit__(self, exception_type, exception, exception_traceback) -> bool:
-        self.event_module_update_completed.clear()
-        pub.Pub().pub("openWB/set/system/device/module_update_completed", True)
-        return True

@@ -4,10 +4,14 @@ from unittest.mock import Mock
 import pytest
 
 from control import data
-from control.bat import Bat
-from control.chargepoint import Chargepoint, ChargepointData, Get
-from control.counter import CounterAll
-from control.pv import Pv
+from control.bat import Bat, BatData
+from control.bat import Get as BatGet
+from control.chargepoint import Chargepoint, ChargepointData, Config, Get, Set
+from control.counter import CounterData
+from control.counter import Get as CounterGet
+from control.counter_all import CounterAll
+from control.pv import Pv, PvData
+from control.pv import Get as PvGet
 
 
 def hierarchy_standard() -> CounterAll:
@@ -81,10 +85,22 @@ def hierarchy_nested() -> CounterAll:
 def data_() -> None:
     data.data_init(Mock())
     data.data.cp_data = {
-        "cp3": Mock(spec=Chargepoint, data=Mock(spec=ChargepointData, get=Mock(spec=Get, power=2500))),
-        "cp4": Mock(spec=Chargepoint, data=Mock(spec=ChargepointData, get=Mock(spec=Get, power=2500))),
-        "cp5": Mock(spec=Chargepoint, data=Mock(spec=ChargepointData, get=Mock(spec=Get, power=2500)))}
-    data.data.bat_data.update({"bat2": Mock(spec=Bat, data={"get": {"power": -5000}})})
-    data.data.pv_data.update({"pv1": Mock(spec=Pv, data={"get": {"power": -10000}})})
-    data.data.counter_data.update({"counter0": Mock(spec=Counter, data={"get": {"power": 200}}),
-                                   "counter6": Mock(spec=Counter, data={"get": {"power": 5000}})})
+        "cp3": Mock(spec=Chargepoint, data=Mock(spec=ChargepointData,
+                                                config=Mock(spec=Config, phase_1=1),
+                                                get=Mock(spec=Get, currents=[30, 0, 0], power=6900),
+                                                set=Mock(spec=Set))),
+        "cp4": Mock(spec=Chargepoint, data=Mock(spec=ChargepointData,
+                                                config=Mock(spec=Config, phase_1=2),
+                                                get=Mock(spec=Get, currents=[0, 15, 15], power=6900),
+                                                set=Mock(spec=Set))),
+        "cp5": Mock(spec=Chargepoint, data=Mock(spec=ChargepointData,
+                                                config=Mock(spec=Config, phase_1=3),
+                                                get=Mock(spec=Get, currents=[10]*3, power=6900),
+                                                set=Mock(spec=Set)))}
+    data.data.bat_data.update({"bat2": Mock(spec=Bat, data=Mock(spec=BatData, get=Mock(spec=BatGet, power=-5000)))})
+    data.data.pv_data.update({"pv1": Mock(spec=Pv, data=Mock(spec=PvData, get=Mock(spec=PvGet, power=-10000)))})
+    data.data.counter_data.update({
+        "counter0": Mock(spec=Counter, data=Mock(spec=CounterData, get=Mock(
+            spec=CounterGet, currents=[40]*3, power=6200))),
+        "counter6": Mock(spec=Counter, data=Mock(spec=CounterData, get=Mock(
+            spec=CounterGet, currents=[25, 10, 25], power=13800)))})

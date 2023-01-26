@@ -1,4 +1,4 @@
-Um die Programmierung neuer Geräte zu erleichtern, findet Ihr unter _docs/samples_ drei Muster:
+Um die Programmierung neuer Geräte zu erleichtern, findet Ihr unter [docs/samples](https://github.com/openWB/core/tree/master/docs/samples?v30-12-2022) drei Muster:
 1. sample_modbus: Für Geräte, die per Modbus abgefragt werden. Dazu wird im Gerät ein Modbus-Client instanziiert, der dann an die Komponenten übergeben wird.
 2. sample_request_per_component: Für Geräte, die per Http-Request abgefragt werden (lokal oder übers Internet) und bei denen jede Komponente eine eigene URL hat.
 3. sample_request_per_device: Für Geräte, die per Http-Request abgefragt werden (lokal oder übers Internet) und bei denen alle Daten über eine URL abgefragt und dann je Komponente aus der Antwort geparst werden müssen.
@@ -14,6 +14,6 @@ Bei Hybrid-Systemen erfolgt die Verrechnung von Speicher-und PV-Leistung automat
 Das Speichern, Runden, Loggen und eine Plausibilitätsprüfung der Werte erfolgt zentral und muss daher nicht in jedem Modul implementiert werden.
 
 ### Kompatibilität mit 1.9
-Damit das Modul auch unter 1.9 lauffähig ist, müssen -wie bisher- die unter docs/legacy angegebenen Ordner erstellt werden und das Modul im UI hinzugefügt werden. Aufßerdem muss in der device.py die read_legacy-Funktion so implementiert werden, dass anhand des übergebenen Komponenten-Typs das Update der entsprechenden Komponente getriggert wird. Beim zentralen Speichern der ausgelesenen Werte wird automatisch erkannt, ob diese in die ramdisk (1.9) oder in den Broker (2.x) geschrieben werden müssen.
+Damit das Modul auch unter 1.9 lauffähig ist, müssen -wie bisher- die unter [docs/legacy](https://github.com/openWB/core/tree/master/docs/samples/legacy?v30-12-2022) angegebenen Ordner erstellt werden und das Modul im UI hinzugefügt werden. Aufßerdem muss in der device.py die read_legacy-Funktion so implementiert werden, dass anhand des übergebenen Komponenten-Typs das Update der entsprechenden Komponente getriggert wird. Beim zentralen Speichern der ausgelesenen Werte wird automatisch erkannt, ob diese in die ramdisk (1.9) oder in den Broker (2.x) geschrieben werden müssen.
 
 _Bei Fragen programmiert Ihr das Gerät erstmal, wie Ihr es versteht, und erstellt einen (Draft-)PR. Wir unterstützen Euch gerne per Review._

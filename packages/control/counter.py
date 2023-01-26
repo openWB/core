@@ -2,10 +2,15 @@
 """
 from dataclasses import dataclass, field
 import logging
-from typing import Callable, Dict, List, Tuple, Union
+import operator
+from typing import List, Tuple
 
 from control import data
-from dataclass_utils.factories import emtpy_list_factory
+from control.ev import Ev
+from control.chargepoint import Chargepoint
+from dataclass_utils.factories import currents_list_factory, voltages_list_factory
+from helpermodules import timecheck
+from helpermodules.phase_mapping import convert_cp_currents_to_evu_currents
 from helpermodules.pub import Pub
 from modules.common.component_type import ComponentType
 from modules.common.fault_state import FaultStateLevel
@@ -13,21 +18,50 @@ from modules.common.fault_state import FaultStateLevel
 log = logging.getLogger(__name__)
 
 
+def get_counter_default_config():
+    return {"max_currents": [16, 16, 16],
+            "max_total_power": 11000}
+
+
 @dataclass
-class Set:
-    loadmanagement_active: bool = False
-    home_consumption: float = 0
-    invalid_home_consumption: int = 0
-    daily_yield_home_consumption: float = 0
+class Config:
+    max_currents: List[float] = field(default_factory=currents_list_factory)
+    max_total_power: float = 0
+
+
+def config_factory() -> Config:
+    return Config()
 
 
 @dataclass
 class Get:
-    hierarchy: List = field(default_factory=emtpy_list_factory)
+    powers: List[float] = field(default_factory=currents_list_factory)
+    currents: List[float] = field(default_factory=currents_list_factory)
+    voltages: List[float] = field(default_factory=voltages_list_factory)
+    power_factors: List[float] = field(default_factory=currents_list_factory)
+    unbalanced_load: float = 0
+    frequency: float = 0
+    daily_exported: float = 0
+    daily_imported: float = 0
+    imported: float = 0
+    exported: float = 0
+    fault_state: int = 0
+    fault_str: str = ""
+    power: float = 0
 
 
 def get_factory() -> Get:
     return Get()
+
+
+@dataclass
+class Set:
+    reserved_surplus: float = 0
+    released_surplus: float = 0
+    raw_power_left: float = 0
+    raw_currents_left: List[float] = field(default_factory=currents_list_factory)
+    surplus_power_left: float = 0
+    state_str: str = ""
 
 
 def set_factory() -> Set:
@@ -35,369 +69,20 @@ def set_factory() -> Set:
 
 
 @dataclass
-class CounterAllData:
+class CounterData:
+    config: Config = field(default_factory=config_factory)
     get: Get = field(default_factory=get_factory)
     set: Set = field(default_factory=set_factory)
-
-
-class CounterAll:
-    """
-    """
-
-    def __init__(self):
-        self.data = CounterAllData()
-        # Hilfsvariablen für die rekursiven Funktionen
-        self.connected_counters = []
-        self.connected_chargepoints = []
-        self.childless = []
-
-    def get_evu_counter(self) -> str:
-        return f"counter{self.get_id_evu_counter()}"
-
-    def get_id_evu_counter(self) -> int:
-        try:
-            for item in self.data.get.hierarchy:
-                if ComponentType.COUNTER.value == item["type"]:
-                    return item['id']
-            else:
-                raise TypeError
-        except Exception:
-            log.error(
-                "Ohne Konfiguration eines EVU-Zählers an der Spitze der Hierarchie ist keine Regelung möglich.")
-            raise
-
-    def put_stats(self) -> None:
-        try:
-            Pub().pub("openWB/set/counter/set/loadmanagement_active", self.data.set.loadmanagement_active)
-        except Exception:
-            log.exception("Fehler in der allgemeinen Zähler-Klasse")
-
-    def set_home_consumption(self) -> None:
-        try:
-            home_consumption, elements = self._calc_home_consumption()
-            if home_consumption < 0:
-                log.error(
-                    f"Ungültiger Hausverbrauch: {home_consumption}W, Berücksichtigte Komponenten neben EVU {elements}")
-                evu_counter_data = data.data.counter_data[self.get_evu_counter()].data
-                if evu_counter_data["get"]["fault_state"] == FaultStateLevel.NO_ERROR:
-                    evu_counter_data["get"]["fault_state"] = FaultStateLevel.WARNING.value
-                    evu_counter_data["get"][
-                        "fault_str"] = "Der Wert für den Hausverbrauch ist nicht plausibel (negativ). Bitte "\
-                        "die Leistungen der Komponenten und die Anordnung in der Hierarchie prüfen."
-                    evu_counter = self.get_id_evu_counter()
-                    Pub().pub(f"openWB/set/counter/{evu_counter}/get/fault_state",
-                              evu_counter_data["get"]["fault_state"])
-                    Pub().pub(f"openWB/set/counter/{evu_counter}/get/fault_str",
-                              evu_counter_data["get"]["fault_str"])
-                if self.data.set.invalid_home_consumption < 3:
-                    self.data.set.invalid_home_consumption += 1
-                    Pub().pub("openWB/set/counter/set/invalid_home_consumption",
-                              self.data.set.invalid_home_consumption)
-                    return
-                else:
-                    home_consumption = 0
-            else:
-                self.data.set.invalid_home_consumption = 0
-                Pub().pub("openWB/set/counter/set/invalid_home_consumption",
-                          self.data.set.invalid_home_consumption)
-            self.data.set.home_consumption = home_consumption
-            Pub().pub("openWB/set/counter/set/home_consumption", self.data.set.home_consumption)
-        except Exception:
-            log.exception("Fehler in der allgemeinen Zähler-Klasse")
-
-    def _calc_home_consumption(self) -> Tuple[float, List]:
-        power = 0
-        elements = self.get_entry_of_element(self.get_id_evu_counter())["children"]
-        elements_to_sum_up = elements
-        for element in elements:
-            if element["type"] == ComponentType.INVERTER.value:
-                elements_to_sum_up.extend(self._add_hybrid_bat(element['id']))
-        for element in elements_to_sum_up:
-            if element["type"] == ComponentType.CHARGEPOINT.value:
-                power += data.data.cp_data[f"cp{element['id']}"].data.get.power
-            elif element["type"] == ComponentType.BAT.value:
-                power += data.data.bat_data[f"bat{element['id']}"].data["get"]["power"]
-            elif element["type"] == ComponentType.COUNTER.value:
-                power += data.data.counter_data[f"counter{element['id']}"].data["get"]["power"]
-            elif element["type"] == ComponentType.INVERTER.value:
-                power += data.data.pv_data[f"pv{element['id']}"].data["get"]["power"]
-        evu = data.data.counter_data[self.get_evu_counter()].data["get"]["power"]
-        return evu - power, elements_to_sum_up
-
-    def _add_hybrid_bat(self, id: int) -> List:
-        elements = []
-        inverter_children = self.get_entry_of_element(id)["children"]
-        for child in inverter_children:
-            if child["type"] == ComponentType.BAT.value:
-                elements.append(child)
-        return elements
-
-    def calc_daily_yield_home_consumption(self) -> None:
-        """ berechnet die heute im Haus verbrauchte Energie.
-        """
-        try:
-            evu_imported = data.data.counter_data[self.get_evu_counter()].data["get"]["daily_imported"]
-            evu_exported = data.data.counter_data[self.get_evu_counter()].data["get"]["daily_exported"]
-            if len(data.data.pv_data) > 1:
-                pv = data.data.pv_data["all"].data["get"]["daily_exported"]
-            else:
-                pv = 0
-            if len(data.data.bat_data) > 1:
-                bat_imported = data.data.bat_data["all"].data["get"]["daily_imported"]
-                bat_exported = data.data.bat_data["all"].data["get"]["daily_exported"]
-            else:
-                bat_imported = 0
-                bat_exported = 0
-            if len(data.data.cp_data) > 1:
-                cp_imported = data.data.cp_all_data.data.get.daily_imported
-                cp_exported = data.data.cp_all_data.data.get.daily_exported
-            else:
-                cp_imported, cp_exported = 0, 0
-            daily_yield_home_consumption = (evu_imported + pv - cp_imported + cp_exported + bat_exported
-                                            - bat_imported - evu_exported)
-            Pub().pub("openWB/set/counter/set/daily_yield_home_consumption", daily_yield_home_consumption)
-            self.data.set.daily_yield_home_consumption = daily_yield_home_consumption
-        except Exception:
-            log.exception("Fehler in der allgemeinen Zähler-Klasse")
-
-    # Hierarchie analysieren
-    def get_all_elements_without_children(self, id: int) -> List[Dict]:
-        self.childless.clear()
-        self.get_all_elements_without_children_recursive(self.get_entry_of_element(id))
-        return self.childless
-
-    def get_all_elements_without_children_recursive(self, child: Dict) -> None:
-        for child in child["children"]:
-            try:
-                if len(child["children"]) != 0:
-                    self.get_all_elements_without_children_recursive(child)
-                else:
-                    self.childless.append(child)
-            except Exception:
-                log.exception("Fehler in der allgemeinen Zähler-Klasse")
-
-    def get_chargepoints_of_counter(self, counter: str) -> List[str]:
-        """ gibt eine Liste der Ladepunkte, die in den folgenden Zweigen des Zählers sind, zurück.
-        """
-        self.connected_chargepoints.clear()
-        if counter == self.get_evu_counter():
-            counter_object = self.data.get.hierarchy[0]
-        else:
-            counter_object = self.__get_entry(
-                self.data.get.hierarchy[0],
-                int(counter[7:]),
-                self.__get_entry_of_element)
-        self._get_all_cp_connected_to_counter(counter_object)
-        return self.connected_chargepoints
-
-    def _get_all_cp_connected_to_counter(self, child: Dict) -> None:
-        """ Rekursive Funktion, die alle Ladepunkte ermittelt, die an den angegebenen Zähler angeschlossen sind.
-        """
-        # Alle Objekte der Ebene durchgehen
-        for child in child["children"]:
-            try:
-                if child["type"] == ComponentType.CHARGEPOINT.value:
-                    self.connected_chargepoints.append(f"cp{child['id']}")
-                # Wenn das Objekt noch Kinder hat, diese ebenfalls untersuchen.
-                elif len(child["children"]) != 0:
-                    self._get_all_cp_connected_to_counter(child)
-            except Exception:
-                log.exception("Fehler in der allgemeinen Zähler-Klasse")
-
-    def get_counters_to_check(self, num: int) -> List[str]:
-        """ ermittelt alle Zähler im Zweig des Ladepunkts.
-        """
-        self.connected_counters.clear()
-        self.__get_all_counter_in_branch(self.data.get.hierarchy[0], num)
-        return self.connected_counters
-
-    def get_entry_of_element(self, id_to_find: int) -> Dict:
-        item = self.__is_id_in_top_level(id_to_find)
-        if item:
-            return item
-        else:
-            return self.__get_entry(self.data.get.hierarchy[0], id_to_find, self.__get_entry_of_element)
-
-    def get_entry_of_parent(self, id_to_find: int) -> Dict:
-        if self.__is_id_in_top_level(id_to_find):
-            return {}
-        for child in self.data.get.hierarchy[0]["children"]:
-            if child["id"] == id_to_find:
-                return self.data.get.hierarchy[0]
-        else:
-            return self.__get_entry(self.data.get.hierarchy[0], id_to_find, self.__get_entry_of_parent)
-
-    def __is_id_in_top_level(self, id_to_find: int) -> Dict:
-        for item in self.data.get.hierarchy:
-            if item["id"] == id_to_find:
-                return item
-        else:
-            return {}
-
-    def __get_all_counter_in_branch(self, child: Dict, id_to_find: int) -> bool:
-        """ Rekursive Funktion, die alle Zweige durchgeht, bis der entsprechende Ladepunkt gefunden wird und dann alle
-        Zähler in diesem Pfad der Liste anhängt.
-        """
-        parent_id = child["id"]
-        for child in child["children"]:
-            if child["id"] == id_to_find:
-                self.connected_counters.append(f"counter{parent_id}")
-                return True
-            if len(child["children"]) != 0:
-                found = self.__get_all_counter_in_branch(child, id_to_find)
-                if found:
-                    self.connected_counters.append(f"counter{parent_id}")
-                    return True
-        else:
-            return False
-
-    def __get_entry(self, child: Dict, id_to_find: int, func: Callable[[Dict, int], bool]) -> Dict:
-        for child in child["children"]:
-            found = func(child, id_to_find)
-            if found:
-                return child
-            if len(child["children"]) != 0:
-                entry = self.__get_entry(child, id_to_find, func)
-                if entry:
-                    return entry
-        else:
-            return {}
-
-    def __get_entry_of_element(self, child: Dict, id_to_find: int) -> bool:
-        if child["id"] == id_to_find:
-            return True
-        else:
-            return False
-
-    def __get_entry_of_parent(self, child: Dict, id_to_find: int) -> bool:
-        for child2 in child["children"]:
-            if child2["id"] == id_to_find:
-                return True
-        else:
-            return False
-
-    def hierarchy_add_item_aside(self, new_id: int, new_type: ComponentType, id_to_find: int) -> None:
-        """ ruft die rekursive Funktion zum Hinzufügen eines Zählers oder Ladepunkts in die Zählerhierarchie auf
-        derselben Ebene wie das angegebene Element.
-        """
-        if self.__is_id_in_top_level(id_to_find):
-            self.data.get.hierarchy.append({"id": new_id, "type": new_type.value, "children": []})
-            Pub().pub("openWB/set/counter/get/hierarchy", self.data.get.hierarchy)
-        else:
-            if (self.__edit_element_in_hierarchy(
-                    self.data.get.hierarchy[0],
-                    id_to_find, self._add_item_aside, new_id, new_type) is False):
-                raise IndexError(f"Element {id_to_find} konnte nicht in der Hierarchie gefunden werden.")
-
-    def _add_item_aside(
-            self, child: Dict, current_entry: Dict, id_to_find: int, new_id: int, new_type: ComponentType) -> bool:
-        if id_to_find == child["id"]:
-            current_entry["children"].append({"id": new_id, "type": new_type.value, "children": []})
-            Pub().pub("openWB/set/counter/get/hierarchy", self.data.get.hierarchy)
-            return True
-        else:
-            return False
-
-    def hierarchy_remove_item(self, id_to_find: int, keep_children: bool = True) -> None:
-        """ruft die rekursive Funktion zum Löschen eines Elements. Je nach Flag werden die Kinder gelöscht oder auf die
-        Ebene des gelöschten Elements gehoben.
-        """
-        item = self.__is_id_in_top_level(id_to_find)
-        if item:
-            if keep_children:
-                self.data.get.hierarchy.extend(item["children"])
-            self.data.get.hierarchy.remove(item)
-            Pub().pub("openWB/set/counter/get/hierarchy", self.data.get.hierarchy)
-        else:
-            if (self.__edit_element_in_hierarchy(
-                    self.data.get.hierarchy[0],
-                    id_to_find, self._remove_item, keep_children) is False):
-                raise IndexError(f"Element {id_to_find} konnte nicht in der Hierarchie gefunden werden.")
-
-    def _remove_item(self, child: Dict, current_entry: Dict, id: str, keep_children: bool) -> bool:
-        if id == child["id"]:
-            if keep_children:
-                current_entry["children"].extend(child["children"])
-            current_entry["children"].remove(child)
-            Pub().pub("openWB/set/counter/get/hierarchy", self.data.get.hierarchy)
-            return True
-        else:
-            return False
-
-    def hierarchy_add_item_below(self, new_id: int, new_type: ComponentType, id_to_find: int) -> None:
-        """ruft die rekursive Funktion zum Hinzufügen eines Elements als Kind des angegebenen Elements.
-        """
-        item = self.__is_id_in_top_level(id_to_find)
-        if item:
-            item["children"].append({"id": new_id, "type": new_type.value, "children": []})
-            Pub().pub("openWB/set/counter/get/hierarchy", self.data.get.hierarchy)
-        else:
-            if (self.__edit_element_in_hierarchy(
-                    self.data.get.hierarchy[0],
-                    id_to_find, self._add_item_below, new_id, new_type) is False):
-                raise IndexError(f"Element {id_to_find} konnte nicht in der Hierarchie gefunden werden.")
-
-    def _add_item_below(
-            self, child: Dict, current_entry: Dict, id_to_find: int, new_id: int, new_type: ComponentType) -> bool:
-        if id_to_find == child["id"]:
-            child["children"].append({"id": new_id, "type": new_type.value, "children": []})
-            Pub().pub("openWB/set/counter/get/hierarchy", self.data.get.hierarchy)
-            return True
-        else:
-            return False
-
-    def __edit_element_in_hierarchy(self, current_entry: Dict, id_to_find: int, func: Callable, *args) -> bool:
-        for child in current_entry["children"]:
-            if func(child, current_entry, id_to_find, *args):
-                return True
-            else:
-                if len(child["children"]) != 0:
-                    if self.__edit_element_in_hierarchy(child, id_to_find, func, *args):
-                        return True
-        else:
-            return False
-
-    def get_list_of_elements_per_level(self) -> List[List[Dict[str, Union[int, str]]]]:
-        elements_per_level = []
-        for item in self.data.get.hierarchy:
-            list(zip(elements_per_level, self._get_list_of_elements_per_level(elements_per_level, item, 0)))
-        return elements_per_level
-
-    def _get_list_of_elements_per_level(self, elements_per_level: List, child: Dict, index: int) -> List:
-        try:
-            elements_per_level[index].extend([{"type": child["type"], "id": child["id"]}])
-        except IndexError:
-            elements_per_level.insert(index, [{"type": child["type"], "id": child["id"]}])
-        for child in child["children"]:
-            elements_per_level = self._get_list_of_elements_per_level(elements_per_level, child, index+1)
-        return elements_per_level
-
-
-def get_max_id_in_hierarchy(current_entry: List, max_id: int) -> int:
-    for item in current_entry:
-        if item["id"] > max_id:
-            max_id = item["id"]
-        if len(item["children"]) != 0:
-            max_id = get_max_id_in_hierarchy(item["children"], max_id)
-    else:
-        return max_id
-
-
-def get_counter_default_config():
-    return {"max_currents": [16, 16, 16],
-            "max_total_power": 11000}
 
 
 class Counter:
     """
     """
+    OFFSET_CURRENT = 1
 
     def __init__(self, index):
         try:
-            self.data = {"set": {},
-                         "get": {
-                "daily_exported": 0,
-                "daily_imported": 0}}
+            self.data = CounterData()
             self.num = index
         except Exception:
             log.exception("Fehler in der Zähler-Klasse von "+str(self.num))
@@ -405,50 +90,378 @@ class Counter:
     def setup_counter(self):
         # Zählvariablen vor dem Start der Regelung zurücksetzen
         try:
-            # Wenn der Zähler keine Werte liefert, darf nicht geladen werden.
-            connected_cps = data.data.counter_all_data.get_chargepoints_of_counter(f'counter{self.num}')
-            for cp in connected_cps:
-                if self.data["get"]["fault_state"] == FaultStateLevel.ERROR:
-                    data.data.cp_data[cp].data.set.loadmanagement_available = False
-                else:
-                    data.data.cp_data[cp].data.set.loadmanagement_available = True
-            if self.data["get"]["fault_state"] == FaultStateLevel.ERROR:
-                self.data["get"]["power"] = 0
+            self._set_loadmanagement_state()
+            self._set_current_left()
+            self._set_power_left()
+            if self.data.get.fault_state == FaultStateLevel.ERROR:
+                self.data.get.power = 0
                 return
-
-            # Nur beim EVU-Zähler wird auch die maximale Leistung geprüft.
-            if f'counter{self.num}' == data.data.counter_all_data.get_evu_counter():
-                # max Leistung
-                if self.data["get"]["power"] > 0:
-                    self.data["set"]["consumption_left"] = self.data["config"]["max_total_power"] \
-                        - self.data["get"]["power"]
-                else:
-                    self.data["set"]["consumption_left"] = self.data["config"]["max_total_power"]
-                log.debug(str(self.data["set"]["consumption_left"]) +
-                          "W EVU-Leistung, die noch bezogen werden kann.")
-            # Strom
-            try:
-                self.data["set"]["currents_used"] = self.data["get"]["currents"]
-            except KeyError:
-                log.warning(f"Zähler {self.num}: Einzelwerte für Zähler-Phasenströme unbekannt")
-                self.data["set"]["state_str"] = ("Das Lastmanagement regelt nur anhand der Gesamtleistung, da keine " +
-                                                 "Phasenströme ermittelt werden konnten.")
-                Pub().pub("openWB/set/counter/"+str(self.num) + "/set/state_str",
-                          self.data["set"]["state_str"])
         except Exception:
             log.exception("Fehler in der Zähler-Klasse von "+str(self.num))
+
+    # tested
+    def _set_loadmanagement_state(self) -> None:
+        # Wenn der Zähler keine Werte liefert, darf nicht geladen werden.
+        connected_cps = data.data.counter_all_data.get_chargepoints_of_counter(f'counter{self.num}')
+        for cp in connected_cps:
+            if self.data.get.fault_state == FaultStateLevel.ERROR:
+                data.data.cp_data[cp].data.set.loadmanagement_available = False
+            else:
+                data.data.cp_data[cp].data.set.loadmanagement_available = True
+
+    # tested
+    def _set_current_left(self) -> None:
+        currents_raw = self.data.get.currents
+        elements = data.data.counter_all_data.get_entry_of_element(self.num)["children"]
+        for element in elements:
+            if element["type"] == ComponentType.CHARGEPOINT.value:
+                chargepoint = data.data.cp_data[f"cp{element['id']}"]
+                try:
+                    element_current = convert_cp_currents_to_evu_currents(
+                        chargepoint.data.config.phase_1,
+                        chargepoint.data.get.currents)
+                except KeyError:
+                    element_current = [max(chargepoint.data.get.currents)]*3
+            elif element["type"] == ComponentType.COUNTER.value:
+                element_current = data.data.counter_data[f"counter{element['id']}"].data.get.currents
+            else:
+                continue
+            currents_raw = list(map(operator.sub, currents_raw, element_current))
+        currents_raw = list(map(operator.sub, self.data.config.max_currents, currents_raw))
+        # Puffer
+        currents_raw = list(map(operator.sub, currents_raw, [1]*3))
+        if min(currents_raw) < 0:
+            log.debug(f"Verbleibende Ströme: {currents_raw}, Überbelastung wird durch Hausverbrauch verursacht")
+            currents_raw = [max(currents_raw[i], 0) for i in range(0, 3)]
+        self.data.set.raw_currents_left = currents_raw
+        log.debug(f'Verbleibende Ströme an Zähler {self.num}: {self.data.set.raw_currents_left}')
+
+    # tested
+    def get_unbalanced_load_exceeding(self, raw_currents_left):
+        forecasted_currents = list(
+            map(operator.sub, self.data.config.max_currents, raw_currents_left))
+        max_exceeding = [0]*3
+        if f'counter{self.num}' == data.data.counter_all_data.get_evu_counter_str():
+            if data.data.general_data.data.chargemode_config.unbalanced_load:
+                unbalanced_load_range = (data.data.general_data.data.chargemode_config.unbalanced_load_limit
+                                         - self.OFFSET_CURRENT)
+                for i in range(0, 3):
+                    unbalanced_load = max(0, forecasted_currents[i]) - max(0, min(forecasted_currents))
+                    max_exceeding[i] = max(unbalanced_load - unbalanced_load_range, 0)
+        return max_exceeding
+
+    def _set_power_left(self):
+        if f'counter{self.num}' == data.data.counter_all_data.get_evu_counter_str():
+            power_raw = self.data.get.power
+            elements = data.data.counter_all_data.get_entry_of_element(self.num)["children"]
+            for element in elements:
+                if element["type"] == ComponentType.CHARGEPOINT.value:
+                    element_power = data.data.cp_data[f"cp{element['id']}"].data.get.power
+                elif element["type"] == ComponentType.COUNTER.value:
+                    element_power = data.data.counter_data[f"counter{element['id']}"].data.get.power
+                else:
+                    continue
+                power_raw -= element_power
+            self.data.set.raw_power_left = self.data.config.max_total_power - power_raw
+            log.debug(f'Verbleibende Leistung an Zähler {self.num}: {self.data.set.raw_power_left}')
+        else:
+            self.data.set.raw_power_left = None
+
+    def update_values_left(self, diffs) -> None:
+        self.data.set.raw_currents_left = list(map(operator.sub, self.data.set.raw_currents_left, diffs))
+        if self.data.set.raw_power_left:
+            self.data.set.raw_power_left -= sum(diffs) * 230
+        log.debug(f'Zähler {self.num}: {self.data.set.raw_currents_left}A verbleibende Ströme, '
+                  f'{self.data.set.raw_power_left}W verbleibende Leistung')
+
+    def update_surplus_values_left(self, diffs) -> None:
+        self.data.set.raw_currents_left = list(map(operator.sub, self.data.set.raw_currents_left, diffs))
+        if self.data.set.surplus_power_left:
+            self.data.set.surplus_power_left -= sum(diffs) * 230
+        log.debug(f'Zähler {self.num}: {self.data.set.raw_currents_left}A verbleibende Ströme, '
+                  f'{self.data.set.surplus_power_left}W verbleibender Überschuss')
 
     def put_stats(self):
         try:
-            if f'counter{self.num}' == data.data.counter_all_data.get_evu_counter():
-                Pub().pub("openWB/set/counter/"+str(self.num)+"/set/consumption_left",
-                          self.data["set"]["consumption_left"])
-                log.debug(str(self.data["set"]["consumption_left"])+"W verbleibende EVU-Bezugs-Leistung")
+            if f'counter{self.num}' == data.data.counter_all_data.get_evu_counter_str():
+                Pub().pub(f"openWB/set/counter/{self.num}/set/reserved_surplus",
+                          self.data.set.reserved_surplus)
+                Pub().pub(f"openWB/set/counter/{self.num}/set/released_surplus",
+                          self.data.set.released_surplus)
+                log.debug(f'{self.data.set.reserved_surplus}W reservierte EVU-Leistung, '
+                          f'{self.data.set.released_surplus}W freigegebene EVU-Leistung')
         except Exception:
             log.exception("Fehler in der Zähler-Klasse von "+str(self.num))
 
-    def print_stats(self):
+    def calc_surplus(self):
+        evu_counter = data.data.counter_all_data.get_evu_counter()
+        bat_surplus = data.data.bat_all_data.power_for_bat_charging()
+        raw_power_left = evu_counter.data.set.raw_power_left
+        max_power = evu_counter.data.config.max_total_power
+        surplus = raw_power_left - max_power + bat_surplus
+        ranged_surplus = max(self._control_range(surplus), 0)
+        log.debug(f"Überschuss zur PV-geführten Ladung: {ranged_surplus}W")
+        return ranged_surplus
+
+    def _control_range(self, surplus):
+        control_range_low = data.data.general_data.data.chargemode_config.pv_charging.control_range[0]
+        control_range_high = data.data.general_data.data.chargemode_config.pv_charging.control_range[1]
+        control_range_center = control_range_high - \
+            (control_range_high - control_range_low) / 2
+        if control_range_low < surplus < control_range_high:
+            available_power = 0
+        else:
+            available_power = surplus - control_range_center
+        return available_power
+
+    SWITCH_ON_FALLEN_BELOW = "Einschaltschwelle von {}W während der Einschaltverzögerung unterschritten."
+    SWITCH_ON_WAITING = "Die Ladung wird gestartet, sobald nach {}s die Einschaltverzögerung abgelaufen ist."
+    SWITCH_ON_NOT_EXCEEDED = ("Die Ladung kann nicht gestartet werden, da die Einschaltschwelle {}W nicht erreicht "
+                              "wird.")
+    SWITCH_ON_EXPIRED = "Einschaltschwelle von {}W für die Dauer der Einschaltverzögerung überschritten."
+    SWITCH_ON_NO_STOP = ("Die Ladung wurde aufgrund des EV-Profils ohne "
+                         " Einschaltverzögerung gestartet, um die Ladung nicht zu unterbrechen.")
+
+    def calc_switch_on_power(self, chargepoint: Chargepoint) -> Tuple[float, float]:
+        surplus = self.data.set.surplus_power_left - self.data.set.reserved_surplus
+        control_parameter = chargepoint.data.set.charging_ev_data.data.control_parameter
+        pv_config = data.data.general_data.data.chargemode_config.pv_charging
+
+        if chargepoint.data.set.charging_ev_data.charge_template.data.chargemode.pv_charging.feed_in_limit:
+            threshold = pv_config.feed_in_yield
+        else:
+            threshold = pv_config.switch_on_threshold*control_parameter.phases
+        return surplus, threshold
+
+    def switch_on_threshold_reached(self, chargepoint: Chargepoint):
         try:
-            log.debug(str(self.data["set"]["consumption_left"])+"W verbleibende EVU-Bezugs-Leistung")
+            message = None
+            control_parameter = chargepoint.data.set.charging_ev_data.data.control_parameter
+            feed_in_limit = chargepoint.data.set.charging_ev_data.charge_template.data.chargemode.pv_charging.\
+                feed_in_limit
+            pv_config = data.data.general_data.data.chargemode_config.pv_charging
+            timestamp_switch_on_off = control_parameter.timestamp_switch_on_off
+
+            surplus, threshold = self.calc_switch_on_power(chargepoint)
+            if control_parameter.timestamp_switch_on_off is not None:
+                # Wurde die Einschaltschwelle erreicht? Reservierte Leistung aus all_surplus rausrechnen,
+                # da diese Leistung ja schon reserviert wurde, als die Einschaltschwelle erreicht wurde.
+                required_power = (chargepoint.data.set.charging_ev_data.ev_template.data.
+                                  min_current * control_parameter.phases * 230)
+                if surplus + required_power <= threshold:
+                    # Einschaltschwelle wurde unterschritten, Timer zurücksetzen
+                    timestamp_switch_on_off = None
+                    self.data.set.reserved_surplus -= threshold
+                    message = self.SWITCH_ON_FALLEN_BELOW.format(pv_config.switch_on_threshold)
+            else:
+                # Timer starten
+                if (surplus >= threshold) and ((feed_in_limit and self.data.set.reserved_surplus == 0) or
+                                               not feed_in_limit):
+                    timestamp_switch_on_off = timecheck.create_timestamp()
+                    self.data.set.reserved_surplus += threshold
+                    message = self.SWITCH_ON_WAITING.format(pv_config.switch_on_delay)
+                else:
+                    # Einschaltschwelle nicht erreicht
+                    message = self.SWITCH_ON_NOT_EXCEEDED.format(pv_config.switch_on_threshold)
+
+            if timestamp_switch_on_off != control_parameter.timestamp_switch_on_off:
+                control_parameter.timestamp_switch_on_off = timestamp_switch_on_off
+                Pub().pub(f"openWB/set/vehicle/{chargepoint.data.set.charging_ev_data.num}/control_parameter/"
+                          f"timestamp_switch_on_off", timestamp_switch_on_off)
+            chargepoint.set_state_and_log(message)
         except Exception:
-            log.exception("Fehler in der Zähler-Klasse von "+str(self.num))
+            log.exception("Fehler im allgemeinen PV-Modul")
+            return 0, False
+
+    def switch_on_timer_expired(self, chargepoint: Chargepoint) -> bool:
+        """ prüft, ob die Einschaltschwelle erreicht wurde, reserviert Leistung und gibt diese frei
+        bzw. stoppt die Freigabe wenn die Ausschaltschwelle und -verzögerung erreicht wurde.
+
+        Erst wenn für eine bestimmte Zeit eine bestimmte Grenze über/unter-
+        schritten wurde, wird die Ladung gestartet/gestoppt. So wird häufiges starten/stoppen
+        vermieden. Die Grenzen aus den Einstellungen sind als Deltas zu verstehen, die absoluten
+        Schaltpunkte ergeben sich ggf noch aus der Einspeisegrenze.
+        """
+        try:
+            msg = None
+            expired = False
+            pv_config = data.data.general_data.data.chargemode_config.pv_charging
+            control_parameter = chargepoint.data.set.charging_ev_data.data.control_parameter
+            if (max(chargepoint.data.get.currents) == 0 or
+                    chargepoint.data.set.charging_ev_data.ev_template.data.prevent_charge_stop is False):
+                if control_parameter.timestamp_switch_on_off is not None:
+                    # Timer ist noch nicht abgelaufen
+                    if timecheck.check_timestamp(
+                            control_parameter.timestamp_switch_on_off,
+                            pv_config.switch_on_delay):
+                        msg = self.SWITCH_ON_WAITING.format(pv_config.switch_on_delay)
+                    # Timer abgelaufen
+                    else:
+                        control_parameter.timestamp_switch_on_off = None
+                        self.data.set.reserved_surplus -= pv_config.switch_on_threshold*control_parameter.phases
+                        msg = self.SWITCH_ON_EXPIRED.format(pv_config.switch_on_threshold)
+                        Pub().pub(
+                            "openWB/set/vehicle/" + str(chargepoint.data.set.charging_ev_data.num) +
+                            "/control_parameter/timestamp_switch_on_off", None)
+                        expired = True
+            else:
+                msg = self.SWITCH_ON_NO_STOP
+            chargepoint.set_state_and_log(msg)
+            return expired
+        except Exception:
+            log.exception("Fehler im allgemeinen PV-Modul")
+            return False
+
+    SWITCH_OFF_STOP = "Ladevorgang nach Ablauf der Abschaltverzögerung gestoppt."
+    SWITCH_OFF_WAITING = "Ladevorgang wird nach Ablauf der Abschaltverzögerung {}s gestoppt."
+    SWITCH_OFF_NO_STOP = "Stoppen des Ladevorgangs aufgrund des EV-Profils verhindert."
+    SWITCH_OFF_EXCEEDED = "Abschaltschwelle während der Verzögerung überschritten."
+    SWITCH_OFF_NOT_CHARGING = ("Da das EV nicht lädt und die Abschaltschwelle erreicht wird, "
+                               "wird die Ladefreigabe sofort entzogen.")
+
+    def switch_off_check_timer(self, chargepoint: Chargepoint) -> bool:
+        try:
+            expired = False
+            msg = None
+            pv_config = data.data.general_data.data.chargemode_config.pv_charging
+            control_parameter = chargepoint.data.set.charging_ev_data.data.control_parameter
+
+            if control_parameter.timestamp_switch_on_off is not None:
+                if not timecheck.check_timestamp(
+                        control_parameter.timestamp_switch_on_off,
+                        pv_config.switch_off_delay):
+                    control_parameter.timestamp_switch_on_off = None
+                    self.data.set.released_surplus -= chargepoint.data.set.required_power
+                    msg = self.SWITCH_OFF_STOP
+                    Pub().pub(
+                        "openWB/set/vehicle/" + str(chargepoint.data.set.charging_ev_data.num) +
+                        "/control_parameter/timestamp_switch_on_off", None)
+                    expired = True
+                else:
+                    msg = self.SWITCH_OFF_WAITING.format(pv_config.switch_off_delay)
+            chargepoint.set_state_and_log(msg)
+            return expired
+        except Exception:
+            log.exception("Fehler im allgemeinen PV-Modul")
+            return expired
+
+    def calc_switch_off_threshold(self, chargepoint: Chargepoint) -> Tuple[float, float]:
+        pv_config = data.data.general_data.data.chargemode_config.pv_charging
+        # Der EVU-Überschuss muss ggf um die Einspeisegrenze bereinigt werden.
+        if chargepoint.data.set.charging_ev_data.charge_template.data.chargemode.pv_charging.feed_in_limit:
+            feed_in_yield = data.data.general_data.data.chargemode_config.pv_charging.feed_in_yield
+        else:
+            feed_in_yield = 0
+        threshold = pv_config.switch_off_threshold + feed_in_yield
+        return threshold, feed_in_yield
+
+    def calc_switch_off(self, chargepoint: Chargepoint) -> Tuple[float, float]:
+        switch_off_power = (self.data.get.power - self.data.set.released_surplus
+                            - data.data.bat_all_data.power_for_bat_charging())
+        threshold, feed_in_yield = self.calc_switch_off_threshold(chargepoint)
+        log.debug(f'LP{chargepoint.num} Switch-Off-Threshold prüfen: {switch_off_power}W, Schwelle: {threshold}W, '
+                  f'freigegebener Überschuss {self.data.set.released_surplus}W, Einspeisegrenze {feed_in_yield}W')
+        return switch_off_power, threshold
+
+    def switch_off_check_threshold(self, chargepoint: Chargepoint) -> bool:
+        """ prüft, ob die Abschaltschwelle erreicht wurde und startet die Abschaltverzögerung.
+        Ist die Abschaltverzögerung bereits aktiv, wird geprüft, ob die Abschaltschwelle wieder
+        unterschritten wurde, sodass die Verzögerung wieder gestoppt wird.
+        """
+        charge = True
+        msg = None
+        control_parameter = chargepoint.data.set.charging_ev_data.data.control_parameter
+        timestamp_switch_on_off = control_parameter.timestamp_switch_on_off
+
+        power_in_use, threshold = self.calc_switch_off(chargepoint)
+        if control_parameter.timestamp_switch_on_off:
+            # Wenn automatische Phasenumschaltung aktiv, die Umschaltung abwarten, bevor die Abschaltschwelle
+            # greift.
+            if control_parameter.timestamp_auto_phase_switch:
+                timestamp_switch_on_off = None
+                self.data.set.released_surplus -= chargepoint.data.set.required_power
+                log.info("Abschaltverzögerung gestoppt, da die Verzögerung für die Phasenumschaltung aktiv ist. " +
+                         "Diese wird abgewartet, bevor die Abschaltverzögerung gestartet wird.")
+            # Wurde die Abschaltschwelle erreicht?
+            # Eigene Leistung aus der freigegebenen Leistung rausrechnen.
+            if power_in_use + chargepoint.data.set.required_power < threshold:
+                timestamp_switch_on_off = None
+                self.data.set.released_surplus -= chargepoint.data.set.required_power
+                msg = self.SWITCH_OFF_EXCEEDED
+        else:
+            if control_parameter.timestamp_auto_phase_switch is None:
+                # Wurde die Abschaltschwelle ggf. durch die Verzögerung anderer LP erreicht?
+                if power_in_use > threshold:
+                    if not chargepoint.data.set.charging_ev_data.ev_template.data.prevent_charge_stop:
+                        # EV, die ohnehin nicht laden, wird direkt die Ladefreigabe entzogen.
+                        # Würde man required_power vom released_evu_surplus subtrahieren, würden keine anderen EVs
+                        # abgeschaltet werden und nach der Abschaltverzögerung des nicht-ladeden EVs wäre die
+                        # Abschaltschwelle immer noch überschritten. Würde man die tatsächliche Leistung von
+                        # released_evu_surplus subtrahieren, würde released_evu_surplus nach Ablauf der Verzögerung
+                        # nicht 0 sein, wenn sich die Ladeleistung zwischendurch verändert hat.
+                        if chargepoint.data.get.charge_state is False:
+                            charge = False
+                            msg = self.SWITCH_OFF_NOT_CHARGING
+                        else:
+                            timestamp_switch_on_off = timecheck.create_timestamp()
+                            # merken, dass ein LP verzögert wird, damit nicht zu viele LP verzögert werden.
+                            self.data.set.released_surplus += chargepoint.data.set.required_power
+                            msg = self.SWITCH_OFF_WAITING.format(
+                                data.data.general_data.data.chargemode_config.pv_charging.switch_off_delay)
+                        # Die Abschaltschwelle wird immer noch überschritten und es sollten weitere LP abgeschaltet
+                        # werden.
+                    else:
+                        msg = self.SWITCH_OFF_NO_STOP
+        if timestamp_switch_on_off != control_parameter.timestamp_switch_on_off:
+            control_parameter.timestamp_switch_on_off = timestamp_switch_on_off
+            Pub().pub(f"openWB/set/vehicle/{chargepoint.data.set.charging_ev_data.num}/control_parameter/"
+                      f"timestamp_switch_on_off", timestamp_switch_on_off)
+        chargepoint.set_state_and_log(msg)
+        return charge
+
+    def reset_switch_on_off(self, chargepoint: Chargepoint, charging_ev: Ev):
+        """ Zeitstempel und reservierte Leistung löschen
+
+        Parameter
+        ---------
+        chargepoint: dict
+            Ladepunkt, für den die Werte zurückgesetzt werden sollen
+        charging_ev: dict
+            EV, das dem Ladepunkt zugeordnet ist
+        """
+        try:
+            if charging_ev.data.control_parameter.timestamp_switch_on_off is not None:
+                charging_ev.data.control_parameter.timestamp_switch_on_off = None
+                evu_counter = data.data.counter_all_data.get_evu_counter()
+                Pub().pub("openWB/set/vehicle/"+str(charging_ev.num) +
+                          "/control_parameter/timestamp_switch_on_off", None)
+                # Wenn bereits geladen wird, freigegebene Leistung freigeben. Wenn nicht geladen wird, reservierte
+                # Leistung freigeben.
+                pv_config = data.data.general_data.data.chargemode_config.pv_charging
+                if not chargepoint.data.get.charge_state:
+                    evu_counter.data.set.reserved_surplus -= (pv_config.switch_on_threshold
+                                                              * chargepoint.data.set.phases_to_use)
+                else:
+                    evu_counter.data.set.released_surplus -= (pv_config.switch_on_threshold
+                                                              * charging_ev.data.control_parameter.phases)
+        except Exception:
+            log.exception("Fehler im allgemeinen PV-Modul")
+
+    def reset_pv_data(self):
+        """ setzt die Daten zurück, die über mehrere Regelzyklen genutzt werden.
+        """
+        try:
+            Pub().pub(f"openWB/set/counter/{self.num}/set/reserved_surplus", 0)
+            Pub().pub(f"openWB/set/counter/{self.num}/set/released_surplus", 0)
+            self.data.set.reserved_surplus = 0
+            self.data.set.released_surplus = 0
+        except Exception:
+            log.exception("Fehler im allgemeinen PV-Modul")
+
+
+def limit_raw_power_left_to_surplus(surplus) -> None:
+    for counter in data.data.counter_data.values():
+        # Zwischenzähler werden nur nach Strömen begrenzt, daher kann hier die Leistung vom EVU-Zähler gesetzt werden
+        counter.data.set.surplus_power_left = surplus
+        log.debug(f'Zähler {counter.num}: Begrenzung der verbleibenden Leistung auf '
+                  f'{counter.data.set.surplus_power_left}W')
