@@ -83,8 +83,8 @@ def test_get_remaining_time(begin_hour: int, begin_min: int, end_hour: int, end_
 
 
 @pytest.mark.parametrize("time, selected, date, expected",
-                         [pytest.param("9:00", "once", ["2022-05-16", ], (-7852.0, False), id="once"),
-                          pytest.param("8:00", "once", ["2022-05-16", ], (-11452.0, True), id="once missed date"),
+                         [pytest.param("9:00", "once", "2022-05-16", (-7852.0, False), id="once"),
+                          pytest.param("8:00", "once", "2022-05-16", (-11452.0, True), id="once missed date"),
                           pytest.param("12:00", "daily", [], (2948.0, False), id="daily today"),
                           pytest.param("2:00", "daily", [], (53348.0, False), id="daily  missed today, use next day"),
                           pytest.param("8:05", "weekly", [True, False, False, False,

@@ -1,5 +1,4 @@
-<html>
-<head>
+<html><head>
 	<title>Home</title>
 	<meta http-equiv=Content-Type content=text/html; charset=utf-8 />
 	<meta http-equiv="Pragma" content="no-cache">
@@ -12,22 +11,22 @@
 	
 	window.setInterval(loadXMLDoc, 1000); 
 	
-	function loadXMLDoc()  
-	{  
-		var xmlhttp;  
+	function loadXMLDoc()
+	{
+		var xmlhttp;
 		var d1 = [];
 		var str = new Array();
-		if (window.XMLHttpRequest)  
-		{// code for IE7+, Firefox, Chrome, Opera, Safari  
-				xmlhttp=new XMLHttpRequest();  
-		}  
-		else  
-		{// code for IE6, IE5  
-			xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");  
-		}  
-		xmlhttp.onreadystatechange=function()  
-		{  
-			if (xmlhttp.readyState==4 && xmlhttp.status==200)  
+		if (window.XMLHttpRequest)
+		{// code for IE7+, Firefox, Chrome, Opera, Safari
+				xmlhttp=new XMLHttpRequest();
+		}
+		else
+		{// code for IE6, IE5
+			xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+		}
+		xmlhttp.onreadystatechange=function()
+		{
+			if (xmlhttp.readyState==4 && xmlhttp.status==200)
 			{
 				strs = xmlhttp.responseText.split(",");
 				for (i=0; i<strs.length; i++)
@@ -50,14 +49,14 @@
 					},
 					xaxes: [],
 					yaxes: [],
-  				label:"SOC"
+				label:"SOC"
 				}]);
-			}  
-		}  
+			}
+		}
 
-		xmlhttp.open("POST","/ajaxHome/",true);  
-		xmlhttp.send("display_date="+document.getElementById('display_date').value);  
-	}  
+		xmlhttp.open("POST","/ajaxHome/",true);
+		xmlhttp.send("display_date="+document.getElementById('display_date').value);
+	}
 
 	</script>
 </head>

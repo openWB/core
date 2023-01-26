@@ -128,7 +128,7 @@ def check_duration(plan: ScheduledChargingPlan, duration: float, buffer: int) ->
     end = datetime.datetime.strptime(plan.time, '%H:%M')
     remaining_time = None
     if plan.frequency.selected == "once":
-        endDate = datetime.datetime.strptime(plan.frequency.once[0], "%Y-%m-%d")
+        endDate = datetime.datetime.strptime(plan.frequency.once, "%Y-%m-%d")
         end = end.replace(endDate.year, endDate.month, endDate.day)
         remaining_time = _get_remaining_time(now, duration, end)
     elif plan.frequency.selected == "daily":

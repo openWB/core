@@ -29,7 +29,6 @@ class Soc(AbstractSoc):
             soc, range = api.fetch_soc(
                 self.config,
                 self.vehicle)
-            log.info("Result: soc=" + str(soc)+", range=" + str(range))
             if soc > 0 and range > 0.0:
                 self.store.set(CarState(soc, range))
             else:

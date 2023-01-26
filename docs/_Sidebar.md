@@ -9,3 +9,4 @@
   * [Hybrid-System aus Wechselrichter und Speicher](https://github.com/openWB/core/wiki/Hybrid-System-aus-Wechselrichter-und-Speicher)
 * [Wiki-Eintrag erstellen](https://github.com/openWB/core/wiki/Wiki-Eintrag_erstellen)
 * [Entwicklungsumgebung](https://github.com/openWB/core/wiki/Entwicklungsumgebung)
+* [Neues Gerät programmieren](https://github.com/openWB/core/wiki/Neues-Gerät-programmieren)
