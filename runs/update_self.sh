@@ -10,6 +10,9 @@ SELECTEDTAG=$2
 echo "#### running update ####" >"$LOGFILE"
 
 {
+	# notify system about running update
+	mosquitto_pub -p 1886 -t "openWB/system/update_in_progress" -r -m 'true'
+
 	# fetch new release from GitHub
 	echo "#### 1. fetching latest data from '$GITREMOTE' ####"
 	git -C "$OPENWBBASEDIR" fetch -v "$GITREMOTE" && echo "#### done"
