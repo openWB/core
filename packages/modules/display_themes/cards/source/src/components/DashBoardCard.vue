@@ -13,15 +13,18 @@ export default {
       <i-container>
         <i-row>
           <i-column>
-            <slot name="headerLeft" />
+            <slot name="headerLeft"></slot>
           </i-column>
-          <i-column v-if="$slots.headerRight" class="_text-align:right">
-            <slot name="headerRight" />
+          <i-column
+            v-if="$slots.headerRight"
+            class="_flex-grow:0 _text-align:right _white-space:nowrap"
+          >
+            <slot name="headerRight"></slot>
           </i-column>
         </i-row>
       </i-container>
     </template>
-    <slot />
+    <slot></slot>
   </i-card>
 </template>
 

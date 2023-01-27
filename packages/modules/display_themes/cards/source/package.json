@@ -15,7 +15,7 @@
     "@fortawesome/free-regular-svg-icons": "^6.2.1",
     "@fortawesome/free-solid-svg-icons": "^6.2.1",
     "@fortawesome/vue-fontawesome": "^3.0.2",
-    "@inkline/inkline": "^3.1.10",
+    "@inkline/inkline": "^3.2.0",
     "buffer": "^6.0.3",
     "events": "^3.3.0",
     "mqtt": "^4.3.7",

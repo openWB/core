@@ -1,30 +1,3 @@
-<template>
-  <svg
-    class="spark-line"
-    :viewBox="`0 0 ${width} ${height}`"
-    width="100%"
-    preserveAspectRatio="xMinYMin"
-  >
-    <path class="soc-path" v-if="socData" :d="socPath" />
-    <rect
-      v-for="bar in bars"
-      :key="bar.x"
-      :x="bar.x"
-      :y="bar.y"
-      :width="bar.width"
-      :height="bar.height"
-      :class="colorNegative && bar.negative ? 'negative' : ''"
-    />
-    <line
-      class="zero-line"
-      :x1="0"
-      :y1="zeroHeight"
-      :x2="width"
-      :y2="zeroHeight"
-    />
-  </svg>
-</template>
-
 <script>
 export default {
   props: {
@@ -143,6 +116,33 @@ export default {
   },
 };
 </script>
+
+<template>
+  <svg
+    class="spark-line"
+    :viewBox="`0 0 ${width} ${height}`"
+    width="100%"
+    preserveAspectRatio="xMinYMin"
+  >
+    <path class="soc-path" v-if="socData" :d="socPath" />
+    <rect
+      v-for="bar in bars"
+      :key="bar.x"
+      :x="bar.x"
+      :y="bar.y"
+      :width="bar.width"
+      :height="bar.height"
+      :class="colorNegative && bar.negative ? 'negative' : ''"
+    />
+    <line
+      class="zero-line"
+      :x1="0"
+      :y1="zeroHeight"
+      :x2="width"
+      :y2="zeroHeight"
+    />
+  </svg>
+</template>
 
 <style scoped>
 svg {
