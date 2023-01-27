@@ -13,9 +13,9 @@
 				// load mqtt library
 				'js/mqttws31.js',
 				// functions for processing messages
-				'display/processAllMqttMsg.js?ver=20230119',
+				'display/processAllMqttMsg.js?ver=20230127',
 				// functions performing mqtt and start mqtt-service
-				'display/setupMqttServices.js?ver=20230119',
+				'display/setupMqttServices.js?ver=20230127',
 			];
 
 			scriptsToLoad.forEach((src) => {
@@ -32,8 +32,7 @@
 	<div class="wrapper">
 		<div id="notReady">
 			<img src="img/openWB_logo_dark.png" class="center" />
-			<p>Lade Einstellungen...</p>
-			<pre id="log"></pre>
+			<p id="log">Lade Einstellungen...</p>
 		</div>
 		<iframe id="displayTarget" src="about:blank" class="hide" />
 	</div>

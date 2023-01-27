@@ -29,10 +29,15 @@ iframe {
 #notReady {
 	width: 80vw;
 	height: 80vh;
+	overflow-y: auto;
 }
 
 #log {
 	overflow-x: auto;
+	font-family: 'Courier New', Courier, monospace;
+	white-space: nowrap;
+	padding-bottom: 0;
+	margin-bottom: 0;
 }
 
 .center {

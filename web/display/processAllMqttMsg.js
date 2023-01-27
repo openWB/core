@@ -22,12 +22,18 @@ function reloadDisplay() {
 
 function setIframeSource() {
 	if (allTopicsReceived()) {
+		const startup = document.querySelector("#notReady");
+		const iframe = document.querySelector("#displayTarget");
 		if (!data["openWB/system/boot_done"]) {
 			addLog("backend still booting");
+			startup.classList.remove("hide");
+			iframe.classList.add("hide");
 			return;
 		}
 		if (data["openWB/system/update_in_progress"]) {
 			addLog("update in progress");
+			startup.classList.remove("hide");
+			iframe.classList.add("hide");
 			return;
 		}
 		let host = location.host;
@@ -41,25 +47,24 @@ function setIframeSource() {
 		const destination = `${location.protocol}//${host}/openWB/web/display/themes/${theme}/${query}`;
 
 		var request = new XMLHttpRequest();
-		request.onload = function() {
+		request.onload = function () {
 			if (this.readyState == 4) {
 				if (this.status == 200) {
 					addLog(`theme '${theme}' is valid`)
-					const iframe = document.getElementById("displayTarget");
 					if (destination != iframe.src) {
 						addLog(`all done, starting theme '${theme}' with url '${destination}'`);
-						setTimeout(() => {
-							document.getElementById("notReady").classList.add("hide");
-							iframe.src = destination;
-							iframe.classList.remove("hide");
-						}, 2000);
+						iframe.src = destination;
 					}
+					setTimeout(() => {
+						startup.classList.add("hide");
+						iframe.classList.remove("hide");
+					}, 2000);
 				} else {
 					addLog(`theme '${theme}' not found on server!`);
 				}
 			}
 		};
-		request.ontimeout = function() {
+		request.ontimeout = function () {
 			console.warn("onTimeout", this.readyState, this.status);
 			addLog(`check for theme '${theme}' timed out!`);
 		};
@@ -73,7 +78,9 @@ function setIframeSource() {
 }
 
 function addLog(message) {
-	document.getElementById("log").innerText += message + "\n";
+	const logElement = document.querySelector('#log');
+	logElement.insertAdjacentHTML("beforeend", "<br />");
+	logElement.insertAdjacentText("beforeend", message);
 }
 
 function handleMessage(topic, payload) {
