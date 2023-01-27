@@ -118,48 +118,68 @@ export default {
         </i-row>
         <i-row center class="_padding-bottom:1">
           <i-column class="_flex-grow:0">
-            <i-button size="lg" @click="addCodeDigit('1')">1</i-button>
+            <i-button size="lg" class="pinButton" @click="addCodeDigit('1')"
+              >1</i-button
+            >
           </i-column>
           <i-column class="_flex-grow:0">
-            <i-button size="lg" @click="addCodeDigit('2')">2</i-button>
+            <i-button size="lg" class="pinButton" @click="addCodeDigit('2')"
+              >2</i-button
+            >
           </i-column>
           <i-column class="_flex-grow:0">
-            <i-button size="lg" @click="addCodeDigit('3')">3</i-button>
-          </i-column>
-        </i-row>
-        <i-row center class="_padding-bottom:1">
-          <i-column class="_flex-grow:0">
-            <i-button size="lg" @click="addCodeDigit('4')">4</i-button>
-          </i-column>
-          <i-column class="_flex-grow:0">
-            <i-button size="lg" @click="addCodeDigit('5')">5</i-button>
-          </i-column>
-          <i-column class="_flex-grow:0">
-            <i-button size="lg" @click="addCodeDigit('6')">6</i-button>
+            <i-button size="lg" class="pinButton" @click="addCodeDigit('3')"
+              >3</i-button
+            >
           </i-column>
         </i-row>
         <i-row center class="_padding-bottom:1">
           <i-column class="_flex-grow:0">
-            <i-button size="lg" @click="addCodeDigit('7')">7</i-button>
+            <i-button size="lg" class="pinButton" @click="addCodeDigit('4')"
+              >4</i-button
+            >
           </i-column>
           <i-column class="_flex-grow:0">
-            <i-button size="lg" @click="addCodeDigit('8')">8</i-button>
+            <i-button size="lg" class="pinButton" @click="addCodeDigit('5')"
+              >5</i-button
+            >
           </i-column>
           <i-column class="_flex-grow:0">
-            <i-button size="lg" @click="addCodeDigit('9')">9</i-button>
+            <i-button size="lg" class="pinButton" @click="addCodeDigit('6')"
+              >6</i-button
+            >
+          </i-column>
+        </i-row>
+        <i-row center class="_padding-bottom:1">
+          <i-column class="_flex-grow:0">
+            <i-button size="lg" class="pinButton" @click="addCodeDigit('7')"
+              >7</i-button
+            >
+          </i-column>
+          <i-column class="_flex-grow:0">
+            <i-button size="lg" class="pinButton" @click="addCodeDigit('8')"
+              >8</i-button
+            >
+          </i-column>
+          <i-column class="_flex-grow:0">
+            <i-button size="lg" class="pinButton" @click="addCodeDigit('9')"
+              >9</i-button
+            >
           </i-column>
         </i-row>
         <i-row center>
           <i-column class="_flex-grow:0">
-            <i-button size="lg" @click="clearCode">
+            <i-button size="lg" class="pinButton" @click="clearCode">
               <FontAwesomeIcon fixed-width :icon="['fas', 'fa-eraser']" />
             </i-button>
           </i-column>
           <i-column class="_flex-grow:0">
-            <i-button size="lg" @click="addCodeDigit('0')">0</i-button>
+            <i-button size="lg" class="pinButton" @click="addCodeDigit('0')"
+              >0</i-button
+            >
           </i-column>
           <i-column class="_flex-grow:0">
-            <i-button size="lg" @click="removeCodeDigit">
+            <i-button size="lg" class="pinButton" @click="removeCodeDigit">
               <FontAwesomeIcon fixed-width :icon="['fas', 'fa-delete-left']" />
             </i-button>
           </i-column>
@@ -184,4 +204,9 @@ export default {
   </Teleport>
 </template>
 
-<style></style>
+<style scoped>
+.pinButton {
+  min-width: 3em;
+  min-height: 3em;
+}
+</style>
