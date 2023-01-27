@@ -35,7 +35,7 @@ echo "#### running update ####" >"$LOGFILE"
 
 	# notify system
 	mosquitto_pub -p 1886 -t "openWB/system/update_in_progress" -r -m 'false'
-	mosquitto_pub -p 1886 -t "openWB/system/boot_done" -m 'false'
+	mosquitto_pub -p 1886 -t "openWB/system/boot_done" -r -m 'false'
 	sleep 1
 
 	# now reboot system
