@@ -38,8 +38,17 @@ chmod 666 "$LOGFILE"
 		rm "${OPENWBBASEDIR}/ramdisk/bootdone"
 	fi
 	(
+		echo "watchdog for atreboot.sh on pid $$ started, waiting for 600s"
 		sleep 600
-		sudo kill "$$"
+		if sudo kill "$$"; then
+			echo "killed stalled atreboot.sh!"
+			mosquitto_pub -p 1886 -t "openWB/system/update_in_progress" -r -m 'false'
+			mosquitto_pub -p 1886 -t "openWB/system/boot_done" -r -m 'true'
+			mosquitto_pub -p 1886 -t "openWB/system/reloadDisplay" -m "1"
+			touch "${OPENWBBASEDIR}/ramdisk/bootdone"
+		else
+			echo "seems like atreboot.sh finished normally"
+		fi
 	) &
 
 	# check for LAN/WLAN connection
@@ -303,7 +312,7 @@ chmod 666 "$LOGFILE"
 	# all done, remove boot and update status
 	echo "$(date +"%Y-%m-%d %H:%M:%S:")" "boot done :-)"
 	mosquitto_pub -p 1886 -t "openWB/system/update_in_progress" -r -m 'false'
+	mosquitto_pub -p 1886 -t "openWB/system/boot_done" -r -m 'true'
 	mosquitto_pub -p 1886 -t "openWB/system/reloadDisplay" -m "1"
-	mosquitto_pub -p 1886 -t "openWB/system/boot_done" -m 'true'
 	touch "${OPENWBBASEDIR}/ramdisk/bootdone"
 } >>"$LOGFILE" 2>&1
