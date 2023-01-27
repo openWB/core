@@ -2,18 +2,9 @@
 import { RouterView } from "vue-router";
 import mqtt from "mqtt";
 
-/* fontawesome */
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import {
-  faLock as fasLock,
-  faLockOpen as fasLockOpen,
-} from "@fortawesome/free-solid-svg-icons";
-/* add icons to the library */
-library.add(fasLock, fasLockOpen);
-
 import DateTime from "@/components/DateTime.vue";
 import NavBar from "@/components/NavBar.vue";
+import LockNavItem from "@/components/LockNavItem.vue";
 
 import { useMqttStore } from "@/stores/mqtt.js";
 
@@ -23,7 +14,7 @@ export default {
     RouterView,
     DateTime,
     NavBar,
-    FontAwesomeIcon,
+    LockNavItem,
   },
   data() {
     return {
@@ -65,8 +56,14 @@ export default {
         "openWB/vehicle/template/charge_template/#",
       ],
       mqttStore: useMqttStore(),
-      changesLocked: false,
     };
+  },
+  computed: {
+    changesLocked() {
+      return (
+        this.mqttStore.getLockChanges && this.mqttStore.settings.changesLocked
+      );
+    },
   },
   methods: {
     /**
@@ -146,10 +143,6 @@ export default {
       }
       this.doPublish(setTopic, payload);
     },
-    toggleChangesLock() {
-      console.log("toggleChangesLock");
-      this.changesLocked = !this.changesLocked;
-    },
   },
   created() {
     this.createConnection();
@@ -181,24 +174,8 @@ export default {
           </i-column>
         </i-row>
       </i-container>
-      <i-button
-        v-if="mqttStore.getLockChanges"
-        @click="toggleChangesLock"
-        class="_padding-left:0 _padding-right:0 _margin-bottom:1"
-        size="lg"
-        block
-      >
-        <FontAwesomeIcon
-          :icon="
-            this.changesLocked ? ['fas', 'fa-lock'] : ['fas', 'fa-lock-open']
-          "
-          :class="this.changesLocked ? ['_color:danger'] : '_color:success'"
-        />
-      </i-button>
-      <NavBar
-        :changesLocked="changesLocked"
-        @toggleChangesLock="toggleChangesLock"
-      />
+      <LockNavItem />
+      <NavBar :changesLocked="changesLocked" />
     </i-layout-aside>
 
     <i-layout-content>

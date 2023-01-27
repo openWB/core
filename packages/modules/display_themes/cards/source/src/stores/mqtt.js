@@ -587,5 +587,14 @@ export const useMqttStore = defineStore("mqtt", {
           return mode;
       }
     },
+    checkChangesLockCode(code) {
+      if (
+        this.getThemeConfiguration &&
+        this.getThemeConfiguration.lock_changes_code == code
+      ) {
+        return true;
+      }
+      return false;
+    },
   },
 });
