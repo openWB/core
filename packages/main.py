@@ -20,7 +20,7 @@ from helpermodules import command
 from control import prepare
 from control import data
 from control import process
-from control import algorithm
+from control.algorithm import algorithm
 from helpermodules.utils import exit_after
 from modules import update_soc
 
@@ -30,7 +30,6 @@ log = logging.getLogger()
 
 class HandlerAlgorithm:
     def __init__(self):
-        self.heartbeat = False
         self.interval_counter = 1
         self.current_day = None
 
@@ -55,7 +54,7 @@ class HandlerAlgorithm:
                     prep.setup_algorithm()
                     control.calc_current()
                     proc.process_algorithm_results()
-                    data.data.graph_data["graph"].pub_graph_data()
+                    data.data.graph_data.pub_graph_data()
                     self.interval_counter = 1
                 else:
                     self.interval_counter = self.interval_counter + 1
@@ -86,11 +85,6 @@ class HandlerAlgorithm:
                 Thread(target=set.set_data, args=()).start()
             else:
                 set.heartbeat = False
-
-            if not soc.heartbeat:
-                log.error("Heartbeat für SoC-Abfrage nicht zurückgesetzt.")
-            else:
-                soc.heartbeat = False
 
             cleanup_logfiles()
             measurement_log.measurement_log_daily()
@@ -142,14 +136,14 @@ try:
     event_command_completed.set()
     event_subdata_initialized = threading.Event()
     prep = prepare.Prepare()
+    soc = update_soc.UpdateSoc()
     set = setdata.SetData(event_ev_template, event_charge_template,
                           event_cp_config, event_subdata_initialized)
     sub = subdata.SubData(event_ev_template, event_charge_template,
                           event_cp_config, loadvars_.event_module_update_completed,
                           event_copy_data, event_global_data_initialized, event_command_completed,
-                          event_subdata_initialized)
+                          event_subdata_initialized, soc.event_vehicle_update_completed)
     comm = command.Command(event_command_completed)
-    soc = update_soc.UpdateSoc()
     t_sub = Thread(target=sub.sub_topics, args=())
     t_set = Thread(target=set.set_data, args=())
     t_comm = Thread(target=comm.sub_commands, args=())

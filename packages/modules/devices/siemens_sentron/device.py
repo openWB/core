@@ -36,7 +36,7 @@ class Device(AbstractDevice):
             component_type].component_descriptor.configuration_factory, component_config)
         if component_type in self.COMPONENT_TYPE_TO_CLASS:
             self.components["component"+str(component_config.id)] = self.COMPONENT_TYPE_TO_CLASS[component_type](
-                self.device_config.id, component_config, self.client)
+                component_config, self.client)
         else:
             raise Exception(
                 "illegal component type " + component_type + ". Allowed values: " +

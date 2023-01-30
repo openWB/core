@@ -347,6 +347,8 @@ class SetData:
                 self._validate_value(msg, str)
             elif "openWB/set/vehicle/template" in msg.topic:
                 self._subprocess_vehicle_chargemode_topic(msg)
+            elif "openWB/set/vehicle/set/vehicle_update_completed" in msg.topic:
+                self._validate_value(msg, bool)
             elif "/soc_module/config" in msg.topic:
                 self._validate_value(msg, "json")
             elif "/get/fault_state" in msg.topic:
@@ -547,12 +549,6 @@ class SetData:
                 self._validate_value(msg, float, [(0, float("inf"))])
             elif "openWB/set/pv/get/power" in msg.topic:
                 self._validate_value(msg, float)
-            elif ("openWB/set/pv/set/overhang_power_left" in msg.topic or
-                    "openWB/set/pv/set/reserved_evu_overhang" in msg.topic or
-                    "openWB/set/pv/set/released_evu_overhang" in msg.topic):
-                self._validate_value(msg, float)
-            elif "openWB/set/pv/set/available_power" in msg.topic:
-                self._validate_value(msg, float)
             elif "/config/max_ac_out" in msg.topic:
                 self._validate_value(msg, int, [(0, float("inf"))])
             elif subdata.SubData.pv_data.get(f"pv{get_index(msg.topic)}"):
@@ -568,10 +564,10 @@ class SetData:
                 elif "/get/exported" in msg.topic:
                     self._validate_value(msg, float, [(0, float("inf"))])
                 elif "/get/power" in msg.topic:
-                    self._validate_value(msg, float, [(float("-inf"), 0)])
+                    self._validate_value(msg, float)
                 elif "/get/currents" in msg.topic:
                     self._validate_value(
-                        msg, float, [(float("-inf"), 0)], collection=list)
+                        msg, float, collection=list)
                 else:
                     self.__unknown_topic(msg)
             else:
@@ -806,6 +802,9 @@ class SetData:
                 elif "/get/power" in msg.topic:
                     self._validate_value(
                         msg, float, [(float("-inf"), float("inf"))])
+                elif ("/set/reserved_surplus" in msg.topic or
+                      "set/released_surplus" in msg.topic):
+                    self._validate_value(msg, float)
                 else:
                     self.__unknown_topic(msg)
             else:

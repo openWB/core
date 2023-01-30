@@ -75,7 +75,7 @@ def test_instant_charging(selected: str, current_soc: float, used_amount: float,
         pytest.param(0, 0, 100, (0, "stop", ChargeTemplate.PV_CHARGING_SOC_REACHED), id="max soc reached"),
         pytest.param(15, 0, 14, (10, "instant_charging", None), id="min soc not reached"),
         pytest.param(15, 8, 15, (8, "instant_charging", None), id="min current configured"),
-        pytest.param(15, 0, 15, (1, "pv_charging", None), id="bare pv charging"),
+        pytest.param(15, 0, 15, (6, "pv_charging", None), id="bare pv charging"),
     ])
 def test_pv_charging(min_soc: int, min_current: int, current_soc: float,
                      expected: Tuple[int, str, Optional[str]]):
@@ -85,7 +85,7 @@ def test_pv_charging(min_soc: int, min_current: int, current_soc: float,
     ct.data.chargemode.pv_charging.min_current = min_current
 
     # execution
-    ret = ct.pv_charging(current_soc)
+    ret = ct.pv_charging(current_soc, 6)
 
     # evaluation
     assert ret == expected
@@ -122,7 +122,7 @@ def test_scheduled_charging_recent_plan(params: Params, monkeypatch):
     monkeypatch.setattr(data.data.general_data, "get_phases_chargemode", get_phases_chargemode_mock)
     search_plan_mock = Mock(return_value=params.search_plan)
     monkeypatch.setattr(ChargeTemplate, "search_plan", search_plan_mock)
-    evt_data = Mock(spec=EvTemplateData, max_current_multi_phases=16, max_current_one_phase=32)
+    evt_data = Mock(spec=EvTemplateData, max_current_multi_phases=16, max_current_single_phase=32)
     evt = Mock(spec=EvTemplate, data=evt_data)
 
     # execution
@@ -187,23 +187,23 @@ def test_search_plan(check_duration_return1: Tuple[Optional[float], bool],
                      ChargeTemplate.SCHEDULED_CHARGING_NO_PLANS_CONFIGURED, 3), id="no plans configured"),
         pytest.param(SelectedPlan(), 90, 0, "soc", (0, "stop",
                      ChargeTemplate.SCHEDULED_CHARGING_REACHED_LIMIT_SOC, 1), id="reached limit soc"),
-        pytest.param(SelectedPlan(), 80, 0, "soc", (1, "pv_charging",
+        pytest.param(SelectedPlan(), 80, 0, "soc", (6, "pv_charging",
                      ChargeTemplate.SCHEDULED_CHARGING_REACHED_SCHEDULED_SOC, 1), id="reached scheduled soc"),
         pytest.param(SelectedPlan(phases=3), 0, 1000, "amount", (0, "stop",
                      ChargeTemplate.SCHEDULED_CHARGING_REACHED_AMOUNT, 3), id="reached amount"),
         pytest.param(SelectedPlan(remaining_time=299), 0, 999, "amount",
                      (14, "instant_charging", ChargeTemplate.SCHEDULED_CHARGING_IN_TIME.format(
-                         14, ChargeTemplate.SCHEDULED_CHARGING_LIMITED_BY_AMOUNT.format(1.0), "07:00"), 3),
+                         14, ChargeTemplate.SCHEDULED_CHARGING_LIMITED_BY_AMOUNT.format(1.0), "07:00"), 1),
                      id="in time, limited by amount"),
         pytest.param(SelectedPlan(remaining_time=299), 79, 0, "soc",
                      (14, "instant_charging", ChargeTemplate.SCHEDULED_CHARGING_IN_TIME.format(
-                         14, ChargeTemplate.SCHEDULED_CHARGING_LIMITED_BY_SOC.format(80), "07:00"), 3),
+                         14, ChargeTemplate.SCHEDULED_CHARGING_LIMITED_BY_SOC.format(80), "07:00"), 1),
                      id="in time, limited by soc"),
         pytest.param(SelectedPlan(remaining_time=0), 79, 0, "soc",
                      (16, "instant_charging", ChargeTemplate.SCHEDULED_CHARGING_MAX_CURRENT.format(16), 3),
                      id="too late, but didn't miss for today"),
         pytest.param(SelectedPlan(remaining_time=301), 79, 0, "soc",
-                     (1, "pv_charging", ChargeTemplate.SCHEDULED_CHARGING_USE_PV, 1), id="too early, use pv"),
+                     (6, "pv_charging", ChargeTemplate.SCHEDULED_CHARGING_USE_PV, 1), id="too early, use pv"),
     ])
 def test_scheduled_charging_calc_current(plan_data: SelectedPlan,
                                          soc: int,
@@ -218,7 +218,7 @@ def test_scheduled_charging_calc_current(plan_data: SelectedPlan,
     ct.data.chargemode.scheduled_charging.plans = {0: plan}
 
     # execution
-    ret = ct.scheduled_charging_calc_current(plan_data, soc, used_amount, 3)
+    ret = ct.scheduled_charging_calc_current(plan_data, soc, used_amount, 3, 6)
 
     # evaluation
     assert ret == expected

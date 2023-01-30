@@ -4,7 +4,7 @@ on: pull_request
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python 3.9
@@ -22,4 +22,4 @@ jobs:
           flake8_version: 5.0.4
       - name: Test with pytest
         run: |
-          PYTHONPATH=packages python -m pytest packages
+          PYTHONPATH=packages python -m pytest packages --log-cli-level=DEBUG

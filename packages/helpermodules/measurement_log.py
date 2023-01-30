@@ -143,27 +143,27 @@ def save_log(folder):
         try:
             if "counter" in counter:
                 counter_dict.update({counter:
-                                     {"imported": data.data.counter_data[counter].data["get"]["imported"],
-                                         "exported": data.data.counter_data[counter].data["get"]["exported"]}})
+                                     {"imported": data.data.counter_data[counter].data.get.imported,
+                                         "exported": data.data.counter_data[counter].data.get.exported}})
         except Exception:
             log.exception("Fehler im Werte-Logging-Modul für Zähler "+str(counter))
 
     pv_dict = {}
-    if data.data.pv_data["all"].data["config"]["configured"]:
+    if data.data.pv_all_data.data.config.configured:
         for pv in data.data.pv_data:
             try:
                 pv_dict.update(
-                    {pv: {"exported": data.data.pv_data[pv].data["get"]["exported"]}})
+                    {pv: {"exported": data.data.pv_data[pv].data.get.exported}})
             except Exception:
                 log.exception("Fehler im Werte-Logging-Modul für Wechselrichter "+str(pv))
 
     bat_dict = {}
-    if data.data.bat_data["all"].data["config"]["configured"]:
+    if data.data.bat_all_data.data.config.configured:
         for bat in data.data.bat_data:
             try:
-                bat_dict.update({bat: {"imported": data.data.bat_data[bat].data["get"]["imported"],
-                                       "exported": data.data.bat_data[bat].data["get"]["exported"],
-                                       "soc": data.data.bat_data[bat].data["get"]["soc"]}})
+                bat_dict.update({bat: {"imported": data.data.bat_data[bat].data.get.imported,
+                                       "exported": data.data.bat_data[bat].data.get.exported,
+                                       "soc": data.data.bat_data[bat].data.get.soc}})
             except Exception:
                 log.exception("Fehler im Werte-Logging-Modul für Speicher "+str(bat))
 
@@ -261,11 +261,8 @@ def update_daily_yields(totals):
 
 def update_module_yields(module: str, totals: Dict) -> None:
     def update_imported_exported(daily_imported: float, daily_exported: float) -> None:
-        if isinstance(module_data.data, Dict):
-            module_data.data["get"].update({"daily_imported": daily_imported, "daily_exported": daily_exported})
-        else:
-            module_data.data.get.daily_imported = daily_imported
-            module_data.data.get.daily_exported = daily_exported
+        module_data.data.get.daily_imported = daily_imported
+        module_data.data.get.daily_exported = daily_exported
         if module == "cp":
             topic = "chargepoint"
         else:
@@ -278,7 +275,7 @@ def update_module_yields(module: str, totals: Dict) -> None:
             Pub().pub(f"openWB/set/{topic}/get/daily_exported", daily_exported)
 
     def update_exported(daily_exported: float) -> None:
-        module_data.data["get"]["daily_exported"] = daily_exported
+        module_data.data.get.daily_exported = daily_exported
         if module in m:
             Pub().pub(f"openWB/set/pv/{module_data.num}/get/daily_exported", daily_exported)
         else:

@@ -1,5 +1,7 @@
-# bad integration test
-
+from modules.common.store._inverter import PurgeInverterState
+from modules.common.component_state import InverterState
+from control.counter_all import CounterAll
+from control.bat import Bat, BatData, Get
 from typing import List, NamedTuple
 from unittest.mock import Mock
 
@@ -7,10 +9,6 @@ import pytest
 
 
 from control import data
-from control.bat import Bat
-from control.counter import CounterAll
-from modules.common.component_state import InverterState
-from modules.common.store._inverter import PurgeInverterState
 
 
 @pytest.fixture(autouse=True)
@@ -35,7 +33,7 @@ HYBRID_HIERARCHY = [{"id": 0, "type": "counter",
 Params = NamedTuple("Params", [("name", str), ("hierarchy", List), ("expected_state", InverterState)])
 cases = [
     Params("standard", STANDARD_HIERARCHY, InverterState(power=-5786, exported=200)),
-    Params("hybrid", HYBRID_HIERARCHY, InverterState(power=-6009, exported=0))
+    Params("hybrid", HYBRID_HIERARCHY, InverterState(power=-6009, exported=300))
 ]
 
 
@@ -43,7 +41,8 @@ cases = [
 def test_fix_hybrid_values(params):
     # setup
     data.data.counter_all_data.data.get.hierarchy = params.hierarchy
-    data.data.bat_data["bat2"] = Mock(spec=Bat, data={"get": {"power": 223, "exported": 200, "imported": 100}})
+    data.data.bat_data["bat2"] = Mock(spec=Bat, data=Mock(
+        spec=BatData, get=Mock(spec=Get, currents=[0]*3, power=223, exported=100, imported=200)))
     purge = PurgeInverterState(delegate=Mock(delegate=Mock(num=1)))
 
     # execution

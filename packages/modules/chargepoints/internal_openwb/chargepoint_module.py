@@ -8,7 +8,7 @@ from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.component_state import ChargepointState
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusSerialClient_
-from modules.common.store import ramdisk_read, ramdisk_write
+from modules.common.store import ramdisk_read
 from modules.common import sdm
 from modules.common import evse
 from modules.common import b32
@@ -61,20 +61,20 @@ class ClientFactory:
             else:
                 raise Exception("Es konnte keines der Meter in "+str(meters)+" zugeordnet werden.")
 
-        meter_client = _check_meter(serial_client, meter_configuration_options[self.local_charge_point_num - 1])
-        evse_client = evse.Evse(self.local_charge_point_num, serial_client)
+        meter_client = _check_meter(serial_client, meter_configuration_options[self.local_charge_point_num])
+        evse_client = evse.Evse(self.local_charge_point_num + 1, serial_client)
         return meter_client, evse_client
 
     def get_pins_phase_switch(self, new_phases: int) -> Tuple[int, int]:
         # return gpio_cp, gpio_relay
-        if self.local_charge_point_num == 1:
+        if self.local_charge_point_num == 0:
             return 22, 29 if new_phases == 1 else 37
         else:
             return 15, 11 if new_phases == 1 else 13
 
     def get_pins_cp_interruption(self) -> int:
         # return gpio_cp, gpio_relay
-        if self.local_charge_point_num == 1:
+        if self.local_charge_point_num == 0:
             return 22
         else:
             return 15
@@ -88,7 +88,7 @@ class ChargepointModule(AbstractChargepoint):
         self.component_info = ComponentInfo(
             self.config.id,
             "Ladepunkt "+str(self.config.id), "chargepoint")
-        self.__store = get_chargepoint_value_store(self.config.id)
+        self.store = get_chargepoint_value_store(self.config.id)
         self.__client = ClientFactory(self.config.id, self.config.serial_client)
         self.old_plug_state = False
 
@@ -112,9 +112,6 @@ class ChargepointModule(AbstractChargepoint):
             self.__client.read_error = 0
 
             rfid = ramdisk_read("readtag")
-            # reset tag
-            if rfid != "0" and plug_state is False:
-                ramdisk_write("readtag", "0")
 
             if phase_switch_cp_active:
                 # Während des Threads wird die CP-Leitung unterbrochen, das EV soll aber als angesteckt betrachtet
@@ -158,7 +155,7 @@ class ChargepointModule(AbstractChargepoint):
             else:
                 raise FaultState.error(__name__ + " " + str(type(e)) + " " + str(e)) from e
 
-        self.__store.set(chargepoint_state)
+        self.store.set(chargepoint_state)
         return chargepoint_state, self.set_current_evse
 
     def perform_phase_switch(self, phases_to_use: int, duration: int) -> None:

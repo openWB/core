@@ -38,15 +38,15 @@ Um nun zu vermeiden, dass man dies unnötig häufig macht, empfiehlt es sich, un
 
 Fehler und Warnungen findet man im Tray von VSCode:
 
-![Flake8 Tray Symbole](VSCode-Tray-Flake8.png)
+<img src="VSCode-Tray-Flake8.png" width="80">
 
 In der Ausgabe im Reiter Probleme:
 
-![Flake8 Warnungen](VSCode-Problems-Flake8.png)
+<img src="VSCode-Problems-Flake8.png" width="400">
 
 Und auch inline direkt im Editor:
 
-![Inline Flake8](VSCode-Inline-Flake8.png)
+<img src="VSCode-Inline-Flake8.png" width="600">
 
 ## Bezeichnungen für eigene Variablen, Funktionen
 
@@ -61,4 +61,4 @@ Zu finden sind die Tests links im Navigationsbaum von VSCode. Bei der ersten Nut
 
 Um sich das Leben einfach zu machen, sollte man spätestens hier die Variante 'Remote-Development' wählen. Das stellt sicher, dass die notwendigen Module allesamt vorhanden sind.
 
-![PyTest in VSCode](VSCode-PyTest.png)
+<img src="VSCode-PyTest.png" width="400">

@@ -1,5 +1,6 @@
 """prüft, ob Zeitfenster aktuell sind
 """
+import copy
 import logging
 import datetime
 from typing import Dict, List, Optional, Tuple, TypeVar, Union
@@ -128,7 +129,7 @@ def check_duration(plan: ScheduledChargingPlan, duration: float, buffer: int) ->
     end = datetime.datetime.strptime(plan.time, '%H:%M')
     remaining_time = None
     if plan.frequency.selected == "once":
-        endDate = datetime.datetime.strptime(plan.frequency.once[0], "%Y-%m-%d")
+        endDate = datetime.datetime.strptime(plan.frequency.once, "%Y-%m-%d")
         end = end.replace(endDate.year, endDate.month, endDate.day)
         remaining_time = _get_remaining_time(now, duration, end)
     elif plan.frequency.selected == "daily":
@@ -140,9 +141,9 @@ def check_duration(plan: ScheduledChargingPlan, duration: float, buffer: int) ->
         if plan.frequency.weekly[now.weekday()]:
             remaining_time = _get_remaining_time(now, duration, end)
         # prüfen, ob für den nächsten Tag ein Termin ansteht und heute schon begonnen werden muss
-        if all(day == 0 for day in plan.frequency.weekly):
+        if not any(plan.frequency.weekly):
             raise ValueError("Es muss mindestens ein Tag ausgewählt werden.")
-        num_of_following_days = _get_next_charging_day(plan.frequency.weekly, now.weekday())
+        num_of_following_days = _get_next_charging_day(copy.deepcopy(plan.frequency.weekly), now.weekday())
         remaining_time, end = check_following_days(now, duration, end, remaining_time, buffer, num_of_following_days)
     else:
         raise TypeError(f'Unbekannte Häufigkeit {plan.frequency.selected}')
@@ -284,6 +285,10 @@ def create_timestamp_time() -> str:
         return stamp
     except Exception:
         raise
+
+
+def convert_to_unix_timestamp(timestamp: str) -> float:
+    return datetime.datetime.strptime(timestamp, "%m/%d/%Y, %H:%M:%S").timestamp()
 
 
 def get_difference_to_now(timestamp_begin: str) -> Tuple[str, int]:

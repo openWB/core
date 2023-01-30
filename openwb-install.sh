@@ -10,10 +10,8 @@ fi
 
 echo "installing openWB 2 into \"${OPENWBBASEDIR}\""
 
-echo "install required packages..."
-apt-get update
-apt-get -q -y install vim bc apache2 php php-gd php-curl php-xml php-json libapache2-mod-php jq git mosquitto mosquitto-clients socat python3-pip sshpass sudo ssl-cert
-echo "done"
+# install packages by pre-downloading out script so we only have one file to maintain
+curl -s "https://raw.githubusercontent.com/openWB/core/master/runs/install_packages.sh" | bash -s
 
 echo "create group $OPENWB_GROUP"
 # Will do nothing if group already exists:

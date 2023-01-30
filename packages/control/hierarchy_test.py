@@ -2,7 +2,7 @@ from typing import Dict, List, Optional, Union
 import pytest
 
 
-from control.counter import CounterAll, get_max_id_in_hierarchy
+from control.counter_all import CounterAll, get_max_id_in_hierarchy
 from modules.common.component_type import ComponentType
 
 

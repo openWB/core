@@ -308,7 +308,7 @@ class Api:
         self.method += " 1-get_status"
         if self.init:
             url = STATUS_URL + "/seqc/v0/vehicles/" + vin +\
-                   "/init-data?requestedData=BOTH&countryCode=DE&locale=de-DE"
+                "/init-data?requestedData=BOTH&countryCode=DE&locale=de-DE"
         else:
             url = STATUS_URL + "/seqc/v0/vehicles/" + vin + "/refresh-data"
             self.init = False
