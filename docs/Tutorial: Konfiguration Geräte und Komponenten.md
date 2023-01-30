@@ -23,10 +23,10 @@ Im Folgenden werden einige häufige und komplexe Konfigurationen vorgstellt. Das
 
 ### EVU-, Speicher- und PV-Kit
 Die drei Kits werden alle über eine eigene IP-Adresse abgefragt, da jedes Kit an einen eigenen RS485/TCP-Converter (Protoss) angeschlossen ist. Daher muss für jedes Kit ein separates Gerät mit Komponente angelegt werden.  
-*Abbildung 3 Geräte mit 1 Komponente*
+<img src="EVU-PV-Speicher-Kit.png" width="500">
 ### Speicher- und PV-Kit an EVU-Kit
 Die Kits werden alle über eine IP-Adresse abgefragt, da alle Kits an demselben RS485/TCP-Converter (Protoss) angeschlossen sind. Daher muss ein Gerät und für jedes Kit eine Komponente angelegt werden.  
-*Abbildung 1 Gerät mit 3 Komponenten*
+<img src="PV-Speicher an EVU-Kit.png" width="500">
 ### Solaredge (mehrere Wechselrichter)
 Bei Solaredge können in 1.9 eine Vielzahl von Kombinationen abgefragt werden. Im Folgenden ist aufgeführt, wie die einzelnen Eisntellungen in 2.x abgebildet werden müssen. Bitte auch die Hinweise in den Info-Boxen in der Bedienoberfläche beachten!
 * Zunächst ein Gerät vom Typ Solaredge anlegen. Dort trägst Du die Einstellungen, wie IP-Adresse und Port, ein.
@@ -37,5 +37,4 @@ Bei Solaredge können in 1.9 eine Vielzahl von Kombinationen abgefragt werden. I
 
 * Wenn Du in 1.9 eine IP-Adresse in `WR 2 IP` eingetragen hast, fügst Du ein weiteres Gerät mit dieser IP-Adresse hinzu und legst eine Komponente `SolarEdge Wechselrichter` an. Dies gilt nur, wenn die Wechselrichter nicht per Modbus miteinander verbunden sind!
 * Wenn Du in 1.9 unter PV-Modul 2 ebenfalls einen SolarEdge Wechselrichter konfiguriert hast, fügst Du ein weiteres Gerät mit dieser IP-Adresse hinzu und legst eine Komponente `SolarEdge Wechselrichter` an.
-
-*Abbildung SolarEdge Vollaustattung; ins Bild schreiben, wie die Einstellung in 1.9 heißt*
+<img src="SolarEdge 1.9 komplett.png" width="500">
