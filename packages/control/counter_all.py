@@ -142,17 +142,17 @@ class CounterAll:
         try:
             evu_imported = data.data.counter_data[self.get_evu_counter_str()].data.get.daily_imported
             evu_exported = data.data.counter_data[self.get_evu_counter_str()].data.get.daily_exported
-            if len(data.data.pv_data) > 1:
+            if data.data.pv_all_data.data.config.configured:
                 pv = data.data.pv_all_data.data.get.daily_exported
             else:
                 pv = 0
-            if len(data.data.bat_data) > 1:
+            if data.data.bat_all_data.data.config.configured:
                 bat_imported = data.data.bat_all_data.data.get.daily_imported
                 bat_exported = data.data.bat_all_data.data.get.daily_exported
             else:
                 bat_imported = 0
                 bat_exported = 0
-            if len(data.data.cp_data) > 1:
+            if len(data.data.cp_data) >= 1:
                 cp_imported = data.data.cp_all_data.data.get.daily_imported
                 cp_exported = data.data.cp_all_data.data.get.daily_exported
             else:
