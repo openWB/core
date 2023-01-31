@@ -50,3 +50,18 @@ def test_set_home_consumption(home_consumption: int,
     # evaluation
     assert c.data.set.invalid_home_consumption == expected_invalid_home_consumption
     assert c.data.set.home_consumption == expected_home_consumption
+
+
+@pytest.mark.parametrize("counter_all",
+                         [pytest.param(hierarchy_standard, id="standard"),
+                          pytest.param(hierarchy_hybrid, id="hybrid"),
+                             pytest.param(hierarchy_nested, id="nested")])
+def testcalc_daily_yield_home_consumption(counter_all: Callable[[], CounterAll], data_):
+    #
+    c = counter_all()
+
+    # execution
+    c.calc_daily_yield_home_consumption()
+
+    # evaluation
+    assert c.data.set.daily_yield_home_consumption == 14000

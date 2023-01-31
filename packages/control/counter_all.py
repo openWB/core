@@ -112,11 +112,7 @@ class CounterAll:
 
     def _calc_home_consumption(self) -> Tuple[float, List]:
         power = 0
-        elements = copy.deepcopy(self.get_entry_of_element(self.get_id_evu_counter())["children"])
-        elements_to_sum_up = elements
-        for element in elements:
-            if element["type"] == ComponentType.INVERTER.value:
-                elements_to_sum_up.extend(self._add_hybrid_bat(element['id']))
+        elements_to_sum_up = self._get_elements_for_home_consumption_calculation()
         for element in elements_to_sum_up:
             if element["type"] == ComponentType.CHARGEPOINT.value:
                 power += data.data.cp_data[f"cp{element['id']}"].data.get.power
@@ -137,31 +133,39 @@ class CounterAll:
                 elements.append(child)
         return elements
 
+    def _get_elements_for_home_consumption_calculation(self):
+        elements = copy.deepcopy(self.get_entry_of_element(self.get_id_evu_counter())["children"])
+        elements_to_sum_up = elements
+        for element in elements:
+            if element["type"] == ComponentType.INVERTER.value:
+                elements_to_sum_up.extend(self._add_hybrid_bat(element['id']))
+        return elements_to_sum_up
+
     def calc_daily_yield_home_consumption(self) -> None:
-        """ berechnet die heute im Haus verbrauchte Energie.
-        """
-        try:
-            evu_imported = data.data.counter_data[self.get_evu_counter_str()].data.get.daily_imported
-            evu_exported = data.data.counter_data[self.get_evu_counter_str()].data.get.daily_exported
-            if data.data.pv_all_data.data.config.configured:
-                pv = data.data.pv_all_data.data.get.daily_exported
-            else:
-                pv = 0
-            if data.data.bat_all_data.data.config.configured:
-                bat_imported = data.data.bat_all_data.data.get.daily_imported
-                bat_exported = data.data.bat_all_data.data.get.daily_exported
-            else:
-                bat_imported = 0
-                bat_exported = 0
-            if len(data.data.cp_data) >= 1:
-                cp_imported = data.data.cp_all_data.data.get.daily_imported
-                cp_exported = data.data.cp_all_data.data.get.daily_exported
-            else:
-                cp_imported, cp_exported = 0, 0
-            daily_yield_home_consumption = (evu_imported + pv - cp_imported + cp_exported + bat_exported
+        """ daily_yield_home_consumption = (evu_imported + pv - cp_imported + cp_exported + bat_exported
                                             - bat_imported - evu_exported)
-            Pub().pub("openWB/set/counter/set/daily_yield_home_consumption", daily_yield_home_consumption)
-            self.data.set.daily_yield_home_consumption = daily_yield_home_consumption
+        """
+        def sum_up_imported_exported(component):
+            self.daily_yield_home_consumption -= component.data.get.daily_imported
+            self.daily_yield_home_consumption += component.data.get.daily_exported
+        self.daily_yield_home_consumption = 0
+        try:
+            self.daily_yield_home_consumption += data.data.counter_data[self.get_evu_counter_str()
+                                                                        ].data.get.daily_imported
+            self.daily_yield_home_consumption -= data.data.counter_data[self.get_evu_counter_str()
+                                                                        ].data.get.daily_exported
+            elements_to_sum_up = self._get_elements_for_home_consumption_calculation()
+            for element in elements_to_sum_up:
+                if element["type"] == ComponentType.CHARGEPOINT.value:
+                    sum_up_imported_exported(data.data.cp_data[f"cp{element['id']}"])
+                elif element["type"] == ComponentType.BAT.value:
+                    sum_up_imported_exported(data.data.bat_data[f"bat{element['id']}"])
+                elif element["type"] == ComponentType.COUNTER.value:
+                    sum_up_imported_exported(data.data.counter_data[f"counter{element['id']}"])
+                elif element["type"] == ComponentType.INVERTER.value:
+                    self.daily_yield_home_consumption += data.data.pv_data[f"pv{element['id']}"].data.get.daily_exported
+            Pub().pub("openWB/set/counter/set/daily_yield_home_consumption", self.daily_yield_home_consumption)
+            self.data.set.daily_yield_home_consumption = self.daily_yield_home_consumption
         except Exception:
             log.exception("Fehler in der allgemeinen Zähler-Klasse")
 
