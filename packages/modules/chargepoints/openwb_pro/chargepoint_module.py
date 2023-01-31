@@ -56,8 +56,7 @@ class ChargepointModule(AbstractChargepoint):
         with SingleComponentUpdateContext(self.component_info):
             with self.__client_error_context:
                 ip_address = self.connection_module["configuration"]["ip_address"]
-                json_rsp = self.__session.get('http://'+ip_address+'/api2.php').json()
-                log.debug("openWB Pro "+str(self.id)+": "+str(json_rsp))
+                json_rsp = self.__session.get('http://'+ip_address+'/connect.php').json()
 
                 chargepoint_state = ChargepointState(
                     power=json_rsp["power_all"],
@@ -66,7 +65,8 @@ class ChargepointModule(AbstractChargepoint):
                     exported=json_rsp["exported"],
                     plug_state=json_rsp["plug_state"],
                     charge_state=json_rsp["charge_state"],
-                    phases_in_use=json_rsp["phases_in_use"]
+                    phases_in_use=json_rsp["phases_in_use"],
+                    rfid=json_rsp["vehicle_id"]
                 )
 
                 self.store.set(chargepoint_state)
@@ -76,7 +76,7 @@ class ChargepointModule(AbstractChargepoint):
         with SingleComponentUpdateContext(self.component_info, False):
             with self.__client_error_context:
                 ip_address = self.connection_module["configuration"]["ip_address"]
-                response = self.__session.get('http://'+ip_address+'/api2.php')
+                response = self.__session.get('http://'+ip_address+'/connect.php')
                 if response.json()["phases_target"] != phases_to_use:
                     ip_address = self.connection_module["configuration"]["ip_address"]
                     self.__session.post('http://'+ip_address+'/connect.php',
