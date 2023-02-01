@@ -99,6 +99,7 @@ export const useMqttStore = defineStore("mqtt", {
         if (value !== undefined) {
           return value;
         }
+        console.warn("topic not found! using default", topic, defaultValue);
         return defaultValue;
       };
     },
@@ -107,31 +108,41 @@ export const useMqttStore = defineStore("mqtt", {
         var unitPrefix = "";
         var value = state.topics[topic];
         if (value === undefined) {
-          return `${defaultString} ${unitPrefix}${unit}`;
-        }
-        if (inverted) {
-          value *= -1;
-        }
-        var textValue = value.toLocaleString(undefined, {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0,
-        });
-        if (value > 999 || value < -999) {
-          textValue = (value / 1000).toLocaleString(undefined, {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
+          console.warn("topic not found! using default", topic, defaultString);
+          textValue = defaultString;
+        } else {
+          if (inverted) {
+            value *= -1;
+          }
+          var textValue = value.toLocaleString(undefined, {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
           });
-          unitPrefix = "k";
-          if (value > 999999 || value < -999999) {
-            textValue = (value / 1000000).toLocaleString(undefined, {
+          if (value > 999 || value < -999) {
+            textValue = (value / 1000).toLocaleString(undefined, {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
             });
-            unitPrefix = "M";
+            unitPrefix = "k";
+            if (value > 999999 || value < -999999) {
+              textValue = (value / 1000000).toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              });
+              unitPrefix = "M";
+            }
           }
         }
         return `${textValue} ${unitPrefix}${unit}`;
       };
+    },
+    getChartData: (state) => {
+      return (topic) => {
+        if (state.chartData[topic] === undefined) {
+          return [];
+        }
+        return state.chartData[topic];
+      }
     },
 
     /* theme getters */
@@ -240,13 +251,13 @@ export const useMqttStore = defineStore("mqtt", {
       if (gridId === undefined) {
         return [];
       }
-      return state.chartData[`openWB/counter/${gridId}/get/power`];
+      return state.getChartData(`openWB/counter/${gridId}/get/power`);
     },
     getHomePower(state) {
       return state.getValueString("openWB/counter/set/home_consumption", "W");
     },
     getHomePowerChartData(state) {
-      return state.chartData["openWB/counter/set/home_consumption"];
+      return state.getChartData("openWB/counter/set/home_consumption");
     },
     getBatteryConfigured(state) {
       return state.getValueBool("openWB/bat/config/configured");
@@ -255,13 +266,13 @@ export const useMqttStore = defineStore("mqtt", {
       return state.getValueString("openWB/bat/get/power", "W");
     },
     getBatteryPowerChartData(state) {
-      return state.chartData["openWB/bat/get/power"];
+      return state.getChartData("openWB/bat/get/power");
     },
     getBatterySoc(state) {
       return state.getValueString("openWB/bat/get/soc", "%");
     },
     getBatterySocChartData(state) {
-      return state.chartData["openWB/bat/get/soc"];
+      return state.getChartData("openWB/bat/get/soc");
     },
     getPvConfigured(state) {
       return state.getValueBool("openWB/pv/config/configured");
@@ -270,7 +281,7 @@ export const useMqttStore = defineStore("mqtt", {
       return state.getValueString("openWB/pv/get/power", "W", true);
     },
     getPvPowerChartData(state) {
-      return state.chartData["openWB/pv/get/power"].map((point) => {
+      return state.getChartData("openWB/pv/get/power").map((point) => {
         return point * -1;
       });
     },
@@ -281,7 +292,7 @@ export const useMqttStore = defineStore("mqtt", {
       return state.getValueString("openWB/chargepoint/get/power", "W");
     },
     getChargePointSumPowerChartData(state) {
-      return state.chartData["openWB/chargepoint/get/power"];
+      return state.getChartData("openWB/chargepoint/get/power");
     },
     getChargePointIds(state) {
       let chargePoints = state.getObjectIds("cp");
@@ -315,7 +326,7 @@ export const useMqttStore = defineStore("mqtt", {
     },
     getChargePointPowerChartData(state) {
       return (chargePointId) => {
-        return state.chartData[`openWB/chargepoint/${chargePointId}/get/power`];
+        return state.getChartData(`openWB/chargepoint/${chargePointId}/get/power`);
       };
     },
     getChargePointSetCurrent(state) {
@@ -342,6 +353,7 @@ export const useMqttStore = defineStore("mqtt", {
             ]
           ];
         }
+        console.warn("topic not found!", `openWB/chargepoint/${chargePointId}/get/phases_in_use`);
         return "?";
       };
     },
@@ -380,7 +392,7 @@ export const useMqttStore = defineStore("mqtt", {
             `openWB/chargepoint/${chargePointId}/set/change_ev_permitted`
           ][0];
         }
-        return false;
+        return true;
       };
     },
     getChargePointConnectedVehicleConfig(state) {

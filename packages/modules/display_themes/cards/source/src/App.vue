@@ -150,11 +150,13 @@ export default {
   mounted() {
     // add ulr parameters to store
     let uri = window.location.search;
-    console.log("search", uri);
-    let params = new URLSearchParams(uri);
-    params.forEach((value, key) => {
-      this.mqttStore.updateSetting(key, parseInt(value));
-    });
+    if (uri != "") {
+      console.debug("search", uri);
+      let params = new URLSearchParams(uri);
+      params.forEach((value, key) => {
+        this.mqttStore.updateSetting(key, parseInt(value));
+      });
+    }
     // subscribe our topics
     this.doSubscribe(this.mqttTopicsToSubscribe);
   },

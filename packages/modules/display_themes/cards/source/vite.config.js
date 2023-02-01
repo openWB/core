@@ -3,7 +3,7 @@ import { fileURLToPath, URL } from "node:url";
 import { defineConfig } from "vite";
 import Vue from "@vitejs/plugin-vue";
 
-import nodePolyfills from "vite-plugin-node-stdlib-browser";
+import { nodePolyfills } from "vite-plugin-node-polyfills";
 import rollupNodePolyFill from "rollup-plugin-node-polyfills";
 
 // https://vitejs.dev/config/
@@ -24,7 +24,10 @@ export default defineConfig(({ command, mode }) => {
         environment: "jsdom",
       };
     } else {
-      myConfiguration.plugins.push(nodePolyfills());
+      myConfiguration.plugins.push(nodePolyfills({
+        // Whether to polyfill `node:` protocol imports.
+        protocolImports: true,
+      }));
       myConfiguration.server = {
         proxy: {
           "/ws": {
@@ -35,7 +38,10 @@ export default defineConfig(({ command, mode }) => {
       };
     }
   } else {
-    myConfiguration.plugins.push(nodePolyfills());
+    myConfiguration.plugins.push(nodePolyfills({
+      // Whether to polyfill `node:` protocol imports.
+      protocolImports: true,
+    }));
     myConfiguration.build = {
       rollupOptions: {
         plugins: [rollupNodePolyFill()],
