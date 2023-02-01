@@ -117,6 +117,8 @@ class SurplusControlled:
                     threshold = evu_counter.calc_switch_off_threshold(cp)[0]
                     if evu_counter.calc_surplus() - cp.data.set.required_power < threshold:
                         cp.data.set.charging_ev_data.data.control_parameter.required_currents = [0]*3
+                else:
+                    cp.data.set.charging_ev_data.data.control_parameter.required_currents = [0]*3
             else:
                 if cp.data.set.current != 0:
                     if evu_counter.switch_off_check_timer(cp):
