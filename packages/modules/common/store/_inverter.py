@@ -67,10 +67,7 @@ class PurgeInverterState:
                     bat_get = data.data.bat_data[bat].data.get
                     state.power -= bat_get.power
                     state.exported += bat_get.imported - bat_get.exported
-                    if state.currents:
-                        state.currents = list(map(add, state.currents, bat_get.currents))
-                    else:
-                        state.currents = [0.0]*3
+                    state.currents = None
             if state.dc_power is not None:
                 # Manche Systeme werden auch aus dem Netz geladen, um einen Mindest-SoC zu halten.
                 if state.dc_power == 0:
