@@ -4,13 +4,13 @@ from pathlib import Path
 import subprocess
 
 
-def filter_neg(name, record) -> bool:
+def filter_neg(name: str, record) -> bool:
     if name in record.threadName:
         return False
     return True
 
 
-def filter_pos(name, record) -> bool:
+def filter_pos(name: str, record) -> bool:
     if name in record.threadName:
         return True
     return False
