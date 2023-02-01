@@ -20,7 +20,7 @@ date_fmt = '%Y-%m-%d %H:%M:%S'
 # refreshToken_exp_days = 7    # 7 days before refreshToken expires a new refreshToken shall be stored
 initialToken = '1.2.3'
 
-log = logging.getLogger("soc."+__name__)
+log = logging.getLogger(__name__)
 
 # Constants
 BASE_URL = "https://id.mercedes-benz.com"
@@ -57,7 +57,7 @@ def nested_key_exists(element: dict, *keys: str) -> bool:
 class Api:
 
     def __init__(self, vehicle: int):
-        self.log = logging.getLogger("soc."+__name__)
+        self.log = logging.getLogger(__name__)
         self.storeFile = str(RAMDISK_PATH) + '/soc_smarteq_store_vh_' + str(vehicle)
         # LOGLEVEL = os.environ.get('LOGLEVEL', 'INFO').upper()
         # logging.basicConfig(level=LOGLEVEL)

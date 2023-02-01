@@ -15,7 +15,7 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.vehicles.tesla import api
 from modules.vehicles.tesla.config import TeslaSoc, TeslaSocConfiguration, TeslaSocToken
 
-log = logging.getLogger("soc."+__name__)
+log = logging.getLogger(__name__)
 
 
 class Soc(AbstractSoc):

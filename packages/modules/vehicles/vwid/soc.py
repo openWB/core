@@ -14,7 +14,7 @@ from modules.vehicles.vwid import api
 from modules.vehicles.vwid.config import VWId, VWIdConfiguration
 
 
-log = logging.getLogger("soc."+__name__)
+log = logging.getLogger(__name__)
 
 
 class Soc(AbstractSoc):

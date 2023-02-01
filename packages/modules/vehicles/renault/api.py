@@ -7,7 +7,7 @@ from modules.common.component_state import CarState
 from modules.common import req
 from modules.vehicles.renault.config import RenaultConfiguration
 
-log = logging.getLogger("soc."+__name__)
+log = logging.getLogger(__name__)
 
 GIGYA_ROOTURL = 'https://accounts.eu1.gigya.com'
 GIGYA_API = '3_7PLksOyBRkHv126x5WhHb-5pqC1qFR8pQjxSeLB6nhAnPERTUlwnYoznHSxwX668'

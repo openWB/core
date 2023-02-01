@@ -13,7 +13,7 @@ import urllib
 import logging
 from modules.common.store import RAMDISK_PATH
 
-log = logging.getLogger("soc."+__name__)
+log = logging.getLogger(__name__)
 
 # ---------------Constants-------------------------------------------
 auth_server = 'customer.bmwgroup.com'
@@ -105,7 +105,7 @@ def authStage1(username: str, password: str, code_challenge: str, state: str) ->
         headers = {
             'Content-Type': 'application/x-www-form-urlencoded',
             'User-Agent': userAgent
-            }
+        }
         scope = 'openid profile email offline_access smacc vehicle_data perseus dlm '
         scope = scope + 'svds cesim vsapi remote_services fupo authenticate_user'
         data = {

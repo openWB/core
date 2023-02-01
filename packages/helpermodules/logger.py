@@ -1,16 +1,17 @@
+import functools
 import logging
 from pathlib import Path
 import subprocess
 
 
-def filter_soc_neg(record) -> bool:
-    if "soc" in record.threadName:
+def filter_neg(name, record) -> bool:
+    if name in record.threadName:
         return False
     return True
 
 
-def filter_soc_pos(record) -> bool:
-    if "soc" in record.threadName:
+def filter_pos(name, record) -> bool:
+    if name in record.threadName:
         return True
     return False
 
@@ -21,7 +22,7 @@ def setup_logging() -> None:
     logging.basicConfig(filename=str(Path(__file__).resolve().parents[2] / 'ramdisk' / ('main.log')),
                         format=format_str_detailed,
                         level=logging.DEBUG)
-    logging.getLogger().handlers[0].addFilter(filter_soc_neg)
+    logging.getLogger().handlers[0].addFilter(functools.partial(filter_neg, "soc"))
 
     mqtt_log = logging.getLogger("mqtt")
     mqtt_log.propagate = False
@@ -29,18 +30,16 @@ def setup_logging() -> None:
     mqtt_file_handler.setFormatter(logging.Formatter(format_str_short))
     mqtt_log.addHandler(mqtt_file_handler)
 
-    soc_log = logging.getLogger("soc")
-    soc_log.propagate = True
-    soc_file_handler = logging.FileHandler(str(Path(__file__).resolve().parents[2] / 'ramdisk' / ('soc.log')))
-    soc_file_handler.setFormatter(logging.Formatter(format_str_detailed))
-    soc_file_handler.addFilter(filter_soc_pos)
-    soc_log.addHandler(soc_file_handler)
+    soc_log_handler = logging.FileHandler(str(Path(__file__).resolve().parents[2] / 'ramdisk' / ('soc.log')))
+    soc_log_handler.setFormatter(logging.Formatter(format_str_detailed))
+    soc_log_handler.addFilter(functools.partial(filter_pos, "soc"))
+    logging.getLogger().addHandler(soc_log_handler)
 
     urllib3_log = logging.getLogger("urllib3.connectionpool")
     urllib3_log.propagate = True
     urllib3_file_handler = logging.FileHandler(str(Path(__file__).resolve().parents[2] / 'ramdisk' / ('soc.log')))
     urllib3_file_handler.setFormatter(logging.Formatter(format_str_detailed))
-    urllib3_file_handler.addFilter(filter_soc_pos)
+    urllib3_file_handler.addFilter(functools.partial(filter_pos, "soc"))
     urllib3_log.addHandler(urllib3_file_handler)
 
     logging.getLogger("pymodbus").setLevel(logging.WARNING)

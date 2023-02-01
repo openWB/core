@@ -9,7 +9,7 @@ from modules.common import req
 from modules.common.fault_state import FaultState
 from modules.vehicles.tesla.config import TeslaSocToken
 
-log = logging.getLogger("soc."+__name__)
+log = logging.getLogger(__name__)
 
 # UA = "Mozilla/5.0 (Linux; Android 10; Pixel 3 Build/QQ2A.200305.002; wv) AppleWebKit/537.36 (KHTML, like Gecko)
 # Version/4.0 Chrome/85.0.4183.81 Mobile Safari/537.36"

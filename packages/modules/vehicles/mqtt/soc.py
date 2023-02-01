@@ -11,7 +11,7 @@ from modules.common.abstract_device import DeviceDescriptor
 from modules.common.abstract_soc import AbstractSoc, SocUpdateData
 from modules.common.component_context import SingleComponentUpdateContext
 
-log = logging.getLogger("soc."+__name__)
+log = logging.getLogger(__name__)
 
 
 class Soc(AbstractSoc):
