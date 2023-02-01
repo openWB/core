@@ -8,7 +8,9 @@ from control.bat import Bat, BatData
 from control.bat import Get as BatGet
 from control.chargepoint import Chargepoint, ChargepointData, Config, Get, Set
 from control.counter import CounterData
+from control.counter import Config as CounterConfig
 from control.counter import Get as CounterGet
+from control.counter import Set as CounterSet
 from control.counter_all import CounterAll
 from control.pv import Pv, PvData
 from control.pv import Get as PvGet
@@ -103,4 +105,6 @@ def data_() -> None:
         "counter0": Mock(spec=Counter, data=Mock(spec=CounterData, get=Mock(
             spec=CounterGet, currents=[40]*3, power=6200))),
         "counter6": Mock(spec=Counter, data=Mock(spec=CounterData, get=Mock(
-            spec=CounterGet, currents=[25, 10, 25], power=13800)))})
+            spec=CounterGet, currents=[25, 10, 25], power=13800),
+            config=Mock(spec=CounterConfig, max_currents=[32]*3),
+            set=Mock(spec=CounterSet, raw_currents_left=[7, 22, 7])))})
