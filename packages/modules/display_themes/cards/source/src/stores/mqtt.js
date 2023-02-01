@@ -142,7 +142,7 @@ export const useMqttStore = defineStore("mqtt", {
           return [];
         }
         return state.chartData[topic];
-      }
+      };
     },
 
     /* theme getters */
@@ -326,7 +326,9 @@ export const useMqttStore = defineStore("mqtt", {
     },
     getChargePointPowerChartData(state) {
       return (chargePointId) => {
-        return state.getChartData(`openWB/chargepoint/${chargePointId}/get/power`);
+        return state.getChartData(
+          `openWB/chargepoint/${chargePointId}/get/power`
+        );
       };
     },
     getChargePointSetCurrent(state) {
@@ -353,7 +355,10 @@ export const useMqttStore = defineStore("mqtt", {
             ]
           ];
         }
-        console.warn("topic not found!", `openWB/chargepoint/${chargePointId}/get/phases_in_use`);
+        console.warn(
+          "topic not found!",
+          `openWB/chargepoint/${chargePointId}/get/phases_in_use`
+        );
         return "?";
       };
     },

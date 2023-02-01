@@ -24,10 +24,12 @@ export default defineConfig(({ command, mode }) => {
         environment: "jsdom",
       };
     } else {
-      myConfiguration.plugins.push(nodePolyfills({
-        // Whether to polyfill `node:` protocol imports.
-        protocolImports: true,
-      }));
+      myConfiguration.plugins.push(
+        nodePolyfills({
+          // Whether to polyfill `node:` protocol imports.
+          protocolImports: true,
+        })
+      );
       myConfiguration.server = {
         proxy: {
           "/ws": {
@@ -38,10 +40,12 @@ export default defineConfig(({ command, mode }) => {
       };
     }
   } else {
-    myConfiguration.plugins.push(nodePolyfills({
-      // Whether to polyfill `node:` protocol imports.
-      protocolImports: true,
-    }));
+    myConfiguration.plugins.push(
+      nodePolyfills({
+        // Whether to polyfill `node:` protocol imports.
+        protocolImports: true,
+      })
+    );
     myConfiguration.build = {
       rollupOptions: {
         plugins: [rollupNodePolyFill()],
