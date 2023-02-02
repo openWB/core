@@ -782,7 +782,7 @@ class Chargepoint:
         except KeyError:
             control_parameter.required_currents = [required_current]*3
             self.set_state_and_log("Für eine korrekte Funktion des Lastmanagements muss der Anschluss der " +
-                                   f"Phasen für diesen Ladepunkt an die Phasen der EVU angegeben werden." +
+                                   "Phasen für diesen Ladepunkt an die Phasen der EVU angegeben werden." +
                                    " Andernfalls wird der benötigte Strom auf allen 3 Phasen vorgehalten, " +
                                    "was ggf eine unnötige Reduktion der Ladeleistung zur Folge hat.")
         self.data.set.required_power = sum(control_parameter.required_currents) * 230
