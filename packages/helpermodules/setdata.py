@@ -773,7 +773,7 @@ class SetData:
             elif "/config/max_currents" in msg.topic:
                 self._validate_value(msg, int, [(7, 1500)], collection=list)
             elif "/config/max_total_power" in msg.topic:
-                self._validate_value(msg, int, [(2000, 1000000)])
+                self._validate_value(msg, int, [(0,  float("inf"))])
             elif subdata.SubData.counter_data.get(f"counter{get_index(msg.topic)}"):
                 if ("/get/powers" in msg.topic or
                         "/get/currents" in msg.topic):
