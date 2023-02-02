@@ -123,7 +123,9 @@ class Counter:
                 except KeyError:
                     element_current = [max(chargepoint.data.get.currents)]*3
             elif element["type"] == ComponentType.COUNTER.value:
-                element_current = data.data.counter_data[f"counter{element['id']}"].data.get.currents
+                counter = data.data.counter_data[f"counter{element['id']}"]
+                element_current = list(map(operator.sub, counter.data.config.max_currents,
+                                       counter.data.set.raw_currents_left))
             else:
                 continue
             currents_raw = list(map(operator.sub, currents_raw, element_current))
@@ -153,15 +155,8 @@ class Counter:
     def _set_power_left(self):
         if f'counter{self.num}' == data.data.counter_all_data.get_evu_counter_str():
             power_raw = self.data.get.power
-            elements = data.data.counter_all_data.get_entry_of_element(self.num)["children"]
-            for element in elements:
-                if element["type"] == ComponentType.CHARGEPOINT.value:
-                    element_power = data.data.cp_data[f"cp{element['id']}"].data.get.power
-                elif element["type"] == ComponentType.COUNTER.value:
-                    element_power = data.data.counter_data[f"counter{element['id']}"].data.get.power
-                else:
-                    continue
-                power_raw -= element_power
+            for cp in data.data.cp_data.values():
+                power_raw -= cp.data.get.power
             self.data.set.raw_power_left = self.data.config.max_total_power - power_raw
             log.debug(f'Verbleibende Leistung an Zähler {self.num}: {self.data.set.raw_power_left}')
         else:
