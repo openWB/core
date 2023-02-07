@@ -19,7 +19,7 @@ log = logging.getLogger(__name__)
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 6
+    DATASTORE_VERSION = 7
     valid_topic = ["^openWB/bat/config/configured$",
                    "^openWB/bat/set/charging_power_left$",
                    "^openWB/bat/set/switch_on_soc_reached$",
@@ -540,3 +540,12 @@ class UpdateConfig:
                     updated_payload["max_current_multi_phases"] = 32
                     Pub().pub(topic.replace("openWB/", "openWB/set/"), updated_payload)
         Pub().pub("openWB/set/system/datastore_version", 6)
+
+    def upgrade_datastore_6(self) -> None:
+        for topic, payload in self.all_received_topics.items():
+            if re.search("openWB/chargepoint/template/[0-9]+$", topic) is not None:
+                payload = decode_payload(payload)
+                if "plans" in payload["autolock"]:
+                    payload["autolock"].pop("plans")
+                    Pub().pub(topic.replace("openWB/", "openWB/set/"), payload)
+        Pub().pub("openWB/set/system/datastore_version", 7)
