@@ -121,10 +121,8 @@ class SurplusControlled:
                     cp.data.set.charging_ev_data.data.control_parameter.required_currents = [0]*3
             else:
                 if cp.data.set.current != 0:
-                    if evu_counter.switch_off_check_timer(cp):
+                    if evu_counter.switch_off_check_timer(cp) or evu_counter.switch_off_check_threshold(cp) is False:
                         cp.data.set.charging_ev_data.data.control_parameter.required_currents = [0]*3
-                    else:
-                        evu_counter.switch_off_check_threshold(cp)
                 else:
                     # Wenn charge_state False und set_current > 0, will Auto nicht laden
                     if not evu_counter.switch_on_timer_expired(cp):
