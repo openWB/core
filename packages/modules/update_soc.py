@@ -13,7 +13,7 @@ from helpermodules.utils import thread_handler
 from modules.common.abstract_soc import SocUpdateData
 from modules.utils import ModuleUpdateCompletedContext
 
-log = logging.getLogger("soc."+__name__)
+log = logging.getLogger(__name__)
 
 
 class UpdateSoc:

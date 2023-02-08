@@ -13,7 +13,7 @@ from modules.vehicles.renault import api
 from modules.vehicles.renault.config import Renault, RenaultConfiguration
 
 
-log = logging.getLogger("soc."+__name__)
+log = logging.getLogger(__name__)
 
 
 class Soc(AbstractSoc):

@@ -5,7 +5,7 @@ from typing import Generic, TypeVar
 from modules.common.component_context import SingleComponentUpdateContext
 
 T = TypeVar("T")
-log = logging.getLogger("soc."+__name__)
+log = logging.getLogger(__name__)
 
 
 class ValueStore(Generic[T]):

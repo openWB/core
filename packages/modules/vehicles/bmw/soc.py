@@ -14,7 +14,7 @@ from modules.vehicles.bmw import api
 from modules.vehicles.bmw.config import BMW, BMWConfiguration
 
 
-log = logging.getLogger("soc."+__name__)
+log = logging.getLogger(__name__)
 
 
 class Soc(AbstractSoc):

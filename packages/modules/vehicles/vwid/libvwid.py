@@ -21,7 +21,7 @@ class vwid:
     def __init__(self, session):
         self.session = session
         self.headers = {}
-        self.log = logging.getLogger("soc."+__name__)
+        self.log = logging.getLogger(__name__)
         self.jobs_string = 'all'
 
     def form_from_response(self, text):
