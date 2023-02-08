@@ -1005,7 +1005,9 @@ class Chargepoint:
 
 
 def get_chargepoint_template_default():
-    return asdict(CpTemplateData())
+    default = asdict(CpTemplateData())
+    default["autolock"].pop("plans")
+    return default
 
 
 def get_autolock_plan_default():
