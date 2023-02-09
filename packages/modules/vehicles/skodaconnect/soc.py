@@ -27,11 +27,6 @@ class Soc(AbstractSoc):
     def update(self, charge_state: bool = False) -> None:
         with SingleComponentUpdateContext(self.component_info):
             soc, range = SkodaConnectApi(self.config, self.vehicle).fetch_soc()
-            log.info("Result: soc=" + str(soc)+", range=" + str(range))
-            if soc > 0 and range > 0.0:
-                self.store.set(CarState(soc, range))
-            else:
-                log.error("Result not stored: soc=" + str(soc)+", range=" + str(range))
 
 
 def skodaconnect_update(user_id: str, password: str, vin: str, refresh_token: str, charge_point: int):
