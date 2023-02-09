@@ -50,7 +50,7 @@ class UpdateSoc:
                         else:
                             ev.data.set.soc_error_counter = 0
                         Pub().pub(f"openWB/set/vehicle/{ev.num}/set/soc_error_counter", ev.data.set.soc_error_counter)
-                        if ev.data.set.soc_error_counter > 3:
+                        if ev.data.set.soc_error_counter >= 3:
                             log.debug(
                                 f"EV{ev.num}: Nach dreimaliger erfolgloser SoC-Abfrage wird ein SoC von 0% angenommen.")
                             Pub().pub(f"openWB/set/vehicle/{ev.num}/get/soc", 0)
