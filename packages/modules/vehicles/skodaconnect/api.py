@@ -27,8 +27,6 @@ class SkodaConnectApi():
         asyncio.set_event_loop(loop)
 
         soc, range = loop.run_until_complete(self._fetch_soc())
-        log.info(f"Battery level: {soc}")
-        log.info(f"Electric range: {range}")
         return soc, range
 
     async def _fetch_soc(self) -> Union[int, float]:
