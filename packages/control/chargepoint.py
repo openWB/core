@@ -813,6 +813,7 @@ class Chargepoint:
             # SoC nach Anstecken aktualisieren
             if self.data.get.plug_state is True and self.data.set.plug_state_prev is False:
                 Pub().pub(f"openWB/set/vehicle/{self.data.config.ev}/get/force_soc_update", True)
+                log.debug("SoC nach Anstecken")
             vehicle, message = self.prepare_cp()
             if vehicle != -1:
                 try:
@@ -916,6 +917,8 @@ class Chargepoint:
                 charging_ev.data.set.ev_template = charging_ev.ev_template
                 Pub().pub("openWB/set/vehicle/"+str(charging_ev.num) +
                           "/set/ev_template", asdict(charging_ev.data.set.ev_template.data))
+                Pub().pub(f"openWB/set/vehicle/{charging_ev.num}/get/force_soc_update", True)
+                log.debug("SoC nach EV-Wechsel")
             else:
                 # Altes EV beibehalten.
                 if self.data.set.charging_ev != -1:
