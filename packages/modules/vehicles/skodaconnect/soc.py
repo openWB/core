@@ -8,7 +8,6 @@ from modules.common import store
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.abstract_soc import AbstractSoc
 from modules.common.component_context import SingleComponentUpdateContext
-from modules.common.component_state import CarState
 from modules.common.fault_state import ComponentInfo
 from modules.vehicles.skodaconnect.api import SkodaConnectApi
 from modules.vehicles.skodaconnect.config import SkodaConnect, SkodaConnectConfiguration

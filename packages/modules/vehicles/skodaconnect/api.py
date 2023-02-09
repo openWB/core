@@ -31,8 +31,11 @@ class SkodaConnectApi():
 
     async def _fetch_soc(self) -> Union[int, float]:
         async with aiohttp.ClientSession(headers={'Connection': 'keep-alive'}) as session:
-            log.debug(f"Initiating new session to Skoda Connect with {self.user_id} as username")
+            soc = 0
+            range = 0.0
             login_success = False
+
+            log.debug(f"Initiating new session to Skoda Connect with {self.user_id} as username")
             try:
                 connection = Connection(session, self.user_id, self.password)
                 if self.refresh_token is not None:
@@ -53,18 +56,20 @@ class SkodaConnectApi():
                 log.debug('Fetching charging data.')
                 chargingState = await connection.getCharging(self.vin)
                 if chargingState:
-                    batteryState = chargingState.get('battery')
-                    soc = batteryState.get('stateOfChargeInPercent')
-                    log.debug(f"Battery level: {soc}")
-                    range = int(batteryState.get('cruisingRangeElectricInMeters'))/1000
-                    log.debug(f"Electric range: {range}")
+                    if 'error_description' in chargingState:
+                        log.error(f"Failed to fetch charging data: {chargingState.get('error_description')}")
+                    if 'battery' in chargingState:
+                        batteryState = chargingState.get('battery')
+                        soc = batteryState.get('stateOfChargeInPercent')
+                        log.debug(f"Battery level: {soc}")
+                        range = int(batteryState.get('cruisingRangeElectricInMeters'))/1000
+                        log.debug(f"Electric range: {range}")
                     if tokens:
                         self._persist_refresh_tokens(tokens)
-                    return soc, range
                 elif self.refresh_token is not None:
                     # token seems to be invalid
                     self._persist_refresh_tokens(None)
-            return 0, 0.0
+            return soc, range
 
     def _persist_refresh_tokens(self, tokens: dict) -> None:
         log.debug('Persist refresh tokens.')
