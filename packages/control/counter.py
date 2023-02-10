@@ -136,7 +136,7 @@ class Counter:
             log.debug(f"Verbleibende Ströme: {currents_raw}, Überbelastung wird durch Hausverbrauch verursacht")
             currents_raw = [max(currents_raw[i], 0) for i in range(0, 3)]
         self.data.set.raw_currents_left = currents_raw
-        log.info(f'Verbleibende Ströme an Zähler {self.num}: {self.data.set.raw_currents_left}')
+        log.info(f'Verbleibende Ströme an Zähler {self.num}: {self.data.set.raw_currents_left}A')
 
     # tested
     def get_unbalanced_load_exceeding(self, raw_currents_left):
@@ -158,7 +158,7 @@ class Counter:
             for cp in data.data.cp_data.values():
                 power_raw -= cp.data.get.power
             self.data.set.raw_power_left = self.data.config.max_total_power - power_raw
-            log.info(f'Verbleibende Leistung an Zähler {self.num}: {self.data.set.raw_power_left}')
+            log.info(f'Verbleibende Leistung an Zähler {self.num}: {self.data.set.raw_power_left}W')
         else:
             self.data.set.raw_power_left = None
 

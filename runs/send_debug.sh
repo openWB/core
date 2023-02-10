@@ -21,7 +21,7 @@ touch "$debugFile"
 	df -h
 	echo "############################ network ##############"
 	ifconfig
-	echo "############################ main.log ##############"
+	echo "############################ retained log ##############"
 	tail -500 "${RAMDISKDIR}/main.log"
 	echo "############################ info log ##############"
 	> "${RAMDISKDIR}/main.log"
@@ -33,7 +33,7 @@ touch "$debugFile"
 	mosquitto_pub -p 1886 -t "openWB/set/system/debug_level" -m "10"
 	sleep 60
 	tail -2500 "${RAMDISKDIR}/main.log"
-	echo "############################ mqtt ##############"
+	echo "############################ mqtt log ##############"
 	tail -1000 "${RAMDISKDIR}/mqtt.log"
 
 	for currentConfig in /etc/mosquitto/conf.d/99-bridge-*; do
@@ -43,7 +43,7 @@ touch "$debugFile"
 		fi
 	done
 
-	echo "############################ mqtt topics ##############"
+	echo "############################ broker ##############"
 	timeout 1 mosquitto_sub -v -t 'openWB/#'
 
 	# echo "############################ smarthome.log ##############"
