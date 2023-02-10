@@ -136,7 +136,7 @@ class Counter:
             log.debug(f"Verbleibende Ströme: {currents_raw}, Überbelastung wird durch Hausverbrauch verursacht")
             currents_raw = [max(currents_raw[i], 0) for i in range(0, 3)]
         self.data.set.raw_currents_left = currents_raw
-        log.debug(f'Verbleibende Ströme an Zähler {self.num}: {self.data.set.raw_currents_left}')
+        log.info(f'Verbleibende Ströme an Zähler {self.num}: {self.data.set.raw_currents_left}')
 
     # tested
     def get_unbalanced_load_exceeding(self, raw_currents_left):
@@ -158,7 +158,7 @@ class Counter:
             for cp in data.data.cp_data.values():
                 power_raw -= cp.data.get.power
             self.data.set.raw_power_left = self.data.config.max_total_power - power_raw
-            log.debug(f'Verbleibende Leistung an Zähler {self.num}: {self.data.set.raw_power_left}')
+            log.info(f'Verbleibende Leistung an Zähler {self.num}: {self.data.set.raw_power_left}')
         else:
             self.data.set.raw_power_left = None
 
@@ -183,8 +183,8 @@ class Counter:
                           self.data.set.reserved_surplus)
                 Pub().pub(f"openWB/set/counter/{self.num}/set/released_surplus",
                           self.data.set.released_surplus)
-                log.debug(f'{self.data.set.reserved_surplus}W reservierte EVU-Leistung, '
-                          f'{self.data.set.released_surplus}W freigegebene EVU-Leistung')
+                log.info(f'{self.data.set.reserved_surplus}W reservierte EVU-Leistung, '
+                         f'{self.data.set.released_surplus}W freigegebene EVU-Leistung')
         except Exception:
             log.exception("Fehler in der Zähler-Klasse von "+str(self.num))
 
@@ -195,7 +195,7 @@ class Counter:
         max_power = evu_counter.data.config.max_total_power
         surplus = raw_power_left - max_power + bat_surplus
         ranged_surplus = max(self._control_range(surplus), 0)
-        log.debug(f"Überschuss zur PV-geführten Ladung: {ranged_surplus}W")
+        log.info(f"Überschuss zur PV-geführten Ladung: {ranged_surplus}W")
         return ranged_surplus
 
     def _control_range(self, surplus):

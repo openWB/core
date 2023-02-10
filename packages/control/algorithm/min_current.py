@@ -15,7 +15,7 @@ class MinCurrent:
         for mode_tuple, counter in common.mode_and_counter_generator():
             preferenced_chargepoints = get_chargepoints_by_mode_and_counter(mode_tuple, f"counter{counter.num}")
             if preferenced_chargepoints:
-                log.debug(f"Mode-Tuple {mode_tuple}, Zähler {counter.num}")
+                log.info(f"Mode-Tuple {mode_tuple}, Zähler {counter.num}")
                 common.update_raw_data(preferenced_chargepoints, diff_to_zero=True)
                 while len(preferenced_chargepoints):
                     cp = preferenced_chargepoints[0]

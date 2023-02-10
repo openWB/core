@@ -864,7 +864,7 @@ class Chargepoint:
                                 data.data.counter_all_data.get_evu_counter().data.set.reserved_surplus == 0):
                             log.error("Reservierte Leistung kann nicht 0 sein.")
 
-                        log.debug(
+                        log.info(
                             f"LP {self.num}, EV: {self.data.set.charging_ev_data.data.name} (EV-Nr.{vehicle}): "
                             f"Theoretisch benötigter Strom {required_current}A, Lademodus "
                             f"{charging_ev.charge_template.data.chargemode.selected}, Submodus: "

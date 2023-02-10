@@ -38,7 +38,7 @@ class SurplusControlled:
              feed_in_yield: Optional[int],
              mode_tuple: Tuple[Optional[str], str, bool],
              counter: Counter) -> None:
-        log.debug(f"Mode-Tuple {mode_tuple}, Zähler {counter.num}")
+        log.info(f"Mode-Tuple {mode_tuple}, Zähler {counter.num}")
         common.update_raw_data(chargepoints, surplus=True)
         while len(chargepoints):
             cp = chargepoints[0]

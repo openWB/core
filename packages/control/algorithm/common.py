@@ -84,7 +84,7 @@ def set_current_counterdiff(diff: float, current: float, chargepoint: Chargepoin
                 data.data.counter_data[counter].update_values_left(diffs)
 
     chargepoint.data.set.current = current
-    log.debug(f"LP{chargepoint.num}: Stromstärke {current}A")
+    log.info(f"LP{chargepoint.num}: Stromstärke {current}A")
 
 # tested
 

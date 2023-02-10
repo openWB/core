@@ -1,7 +1,6 @@
 #!/bin/bash
 OPENWBBASEDIR=$(cd "$(dirname "$0")/../" && pwd)
 RAMDISKDIR="${OPENWBBASEDIR}/ramdisk"
-sleep 60
 
 debugFile="${RAMDISKDIR}/debug.log"
 touch "$debugFile"
@@ -23,6 +22,16 @@ touch "$debugFile"
 	echo "############################ network ##############"
 	ifconfig
 	echo "############################ main.log ##############"
+	tail -500 "${RAMDISKDIR}/main.log"
+	echo "############################ info log ##############"
+	> "${RAMDISKDIR}/main.log"
+	mosquitto_pub -p 1886 -t "openWB/set/system/debug_level" -m "20"
+	sleep 60
+	tail -1000 "${RAMDISKDIR}/main.log"
+	echo "############################ debug log ##############"
+	> "${RAMDISKDIR}/main.log"
+	mosquitto_pub -p 1886 -t "openWB/set/system/debug_level" -m "10"
+	sleep 60
 	tail -2500 "${RAMDISKDIR}/main.log"
 	echo "############################ mqtt ##############"
 	tail -1000 "${RAMDISKDIR}/mqtt.log"

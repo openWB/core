@@ -23,26 +23,26 @@ class Algorithm:
         """ Einstiegspunkt in den Regel-Algorithmus
         """
         try:
-            log.debug("# Algorithmus")
+            log.info("# Algorithmus")
             self.evu_counter = data.data.counter_all_data.get_evu_counter()
             self._check_auto_phase_switch_delay()
             self.surplus_controlled.check_submode_pv_charging()
             common.reset_current()
             common.reset_current_to_target_current()
-            log.debug("**Mindestrom setzen**")
+            log.info("**Mindestrom setzen**")
             self.min_current.set_min_current()
-            log.debug("**Sollstrom setzen**")
+            log.info("**Sollstrom setzen**")
             common.reset_current_to_target_current()
             self.additional_current.set_additional_current([0, 8])
             counter.limit_raw_power_left_to_surplus(self.evu_counter.calc_surplus())
             self.surplus_controlled.check_switch_on()
             if self.evu_counter.data.set.surplus_power_left > 0:
-                log.debug("**PV-geführten Strom setzen**")
+                log.info("**PV-geführten Strom setzen**")
                 common.reset_current_to_target_current()
                 self.surplus_controlled.set_required_current_to_max()
                 self.surplus_controlled.set_surplus_current([6, 12])
             else:
-                log.debug("**Keine Leistung für PV-geführtes Laden übrig.**")
+                log.info("**Keine Leistung für PV-geführtes Laden übrig.**")
             self.no_current.set_no_current()
         except Exception:
             log.exception("Fehler im Algorithmus-Modul")
