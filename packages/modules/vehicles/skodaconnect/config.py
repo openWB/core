@@ -26,5 +26,4 @@ class SkodaConnect:
 
     def as_dict(self) -> dict:
         confDict = asdict(self)
-        confDict.pop('name')
         return confDict
