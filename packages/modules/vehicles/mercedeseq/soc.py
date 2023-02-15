@@ -28,11 +28,12 @@ class Soc(AbstractSoc):
         #     pass
         # # elif self.config.configuration.code != None and self.config.configuration.token.access_token == None:
         #     # auth.py um Token abzuholen
-        
+
         # else:
         with SingleComponentUpdateContext(self.component_info):
-            soc, range = api.fetch_soc(self.config,self.vehicle)
+            soc, range = api.fetch_soc(self.config, self.vehicle)
             log.info("eq: vehicle="+str(self.vehicle) + ", return: soc=" + str(soc)+", range=" + str(range))
             self.store.set(CarState(soc, range))
+
 
 device_descriptor = DeviceDescriptor(configuration_factory=MercedesEQSoc)
