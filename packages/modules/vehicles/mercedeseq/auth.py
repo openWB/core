@@ -1,25 +1,31 @@
 #!/usr/bin/python3
 
-import requests, json, sys, time, os, html
+import requests
+import json
+import sys 
+import time
+import os 
+import html
+import paho.mqtt.subscribe as subscribe
+import paho.mqtt.publish as publish
 sys.path.append("../../../")
-from modules.common import store
-#from ....dataclass_utils import asdict, dataclass_from_dict
-#from ....modules.vehicles.mercedeseq.config import MercedesEQSocConfiguration
-#from ....helpermodules.pub import Pub
+#from dataclass_utils import dataclass_from_dict
+#from helpermodules.cli import run_using_positional_cli_args
+#from modules.common import store
+#from dataclass_utils import asdict, dataclass_from_dict
+#from modules.vehicles.mercedeseq.config import MercedesEQSocConfiguration
+#from helpermodules.pub import Pub
 
 
 #call parameters
 EVId = str(sys.argv[1]) 
-code        = str(sys.argv[2]) 
-#Debug       = int(os.environ.get('debug'))
-Debug       = 0
+code = str(sys.argv[2]) 
 
 moddir = '/var/www/html/openWB/packages/modules/vehicles/mercedeseq/'
 
-
 def printDebug(message, level):
     htmlmsg = html.escape(message)
-    if level <= Debug:
+    if level >= Debug:
         print("<p>" + htmlmsg + "</p>")
 
 
@@ -29,49 +35,50 @@ def printHtml(message):
 
 print("<html>")
 
-#config=dataclass_from_dict(MercedesEQSocConfiguration,config)
+msg = (subscribe.simple("openWB/system/debug_level", hostname="localhost"))
+Debug = int(str(msg.payload.decode("UTF-8")))
+printHtml("Debug: " + str(Debug))
+msg = subscribe.simple("openWB/vehicle/" + EVId + "/soc_module/config", hostname="localhost")
+conf=json.loads(msg.payload)
 
-client_id = ""
-client_secret = ""
-callback =""
-client_id = "b85c982a-c432-4ef5-8f59-2a34d1f066d8"
-client_secret = "vBKzbVeTIRuAZqxDsRawvwrFJqGZDSjYbOUlakaLugpetJTuUsTqcjQqAhcRdalH"
-callback = "http://192.168.178.89/openWB/packages/modules/vehicles/mercedeseq/callback_ev.php"
+
+client_id = conf['configuration']['client_id']
+client_secret = conf['configuration']['client_secret']
+callback = conf['configuration']['callbackurl']
+printDebug("ClientID:"+client_id[0:3] + "**********" + client_id[-3:0],10)
+printDebug("ClientSecret: " + client_secret[0:3] + "**********" + client_secret[-3:],10)
+printDebug("Callback:" + callback,10)
             
-
-#get last Character to identify the Chargepoint
-EVId = EVId[-1]
-
 tok_url  = "https://ssoalpha.dvb.corpinter.net/v1/token"
 
 data = {'grant_type': 'authorization_code', 'code': str(code), 'redirect_uri': callback}
-#call API to get Access/Refresh tokens
+# call API to get Access/Refresh tokens
 act = requests.post(tok_url, data=data, verify=True, allow_redirects=False, auth=(client_id, client_secret))
 
-printDebug(act.url,1)
+printDebug(act.url,20)
 
 if act.status_code == 200:
-  #valid Response
-  toks = json.loads(act.text)
-  access_token = toks['access_token']
-  refresh_token = toks['refresh_token']
-  expires_in = int(time.time())
+    # valid Response
+    toks = json.loads(act.text)
+    access_token = toks['access_token']
+    refresh_token = toks['refresh_token']
+    expires_in = int(time.time())
+    token_type = toks['token_type']
+    id_token = toks['id_token']
 
-	#write tokens to files
-
-  #PUB().pub("openWB/set/vehicle/"+str(EVId)+"soc_module/config",)
-  tokenfile=moddir + 'soc_eq_acc_ev' + str(EVId)
-  fd = open(tokenfile,'w')
-  json.dump({'expires_in' : expires_in, 'refresh_token' : refresh_token, 'access_token' : access_token}, fd)
-  fd.close()
-  if oct(os.stat(tokenfile).st_mode)[-3:] != "777":
-    os.chmod(tokenfile,0o777)
-  # ev = store.get_car_value_store(ChargePoint)
-
+    
+	# persist tokens 
+    conf['configuration']['token']['refresh_token'] = refresh_token
+    conf['configuration']['token']['access_token'] = access_token
+    conf['configuration']['token']['expires_in'] = expires_in
+    conf['configuration']['token']['id_token'] = id_token
+    conf['configuration']['token']['token_type'] = token_type
+    printDebug(str(conf),10)
+    publish.single("openWB/set/vehicle/" + EVId + "/soc_module/config",json.dumps(conf),retain=True,hostname="localhost")
 
 if act.status_code == 200:
-    printHtml( "Anmeldung erfolgreich!" )
-    print( "<a href=""javascript:window.close()"">Sie k&ouml;nnen das Fenster schlie&szlig;en.</a>" )
+    printHtml("Anmeldung erfolgreich!")
+    print("<a href=""javascript:window.close()"">Sie k&ouml;nnen das Fenster schlie&szlig;en.</a>")
 else: 
     printHtml("Anmeldung Fehlgeschlagen Code: " + str(act.status_code) + " " + act.text)
     printHtml("Code: "+ code + " EVId: " + EVId)
