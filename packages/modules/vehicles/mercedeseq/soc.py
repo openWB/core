@@ -1,12 +1,9 @@
-from typing import Union, List
-
+from typing import Union
 import logging
-
 from dataclass_utils import dataclass_from_dict
-# from helpermodules.cli import run_using_positional_cli_args
 from modules.common import store
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.abstract_soc import AbstractSoc, SocUpdateData
+from modules.common.abstract_soc import AbstractSoc
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.component_state import CarState
 from modules.common.fault_state import ComponentInfo
@@ -26,7 +23,7 @@ class Soc(AbstractSoc):
 
     def update(self, charge_state: bool = False) -> None:
         # # if self.config.configuration.code == None and self.config.configuration.token.access_token == None:
-        # if  self.config.configuration.token.access_token == None:    
+        # if  self.config.configuration.token.access_token == None:
         #     # error: "Bitte Link in der Konfig anklicken" triggert Aufruf der Callback-URL
         #     pass
         # # elif self.config.configuration.code != None and self.config.configuration.token.access_token == None:
