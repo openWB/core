@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import os, requests, json, time, sys, os
+import requests, json, time
 import logging
 from datetime import datetime, timezone
 from requests.exceptions import Timeout, RequestException
@@ -16,10 +16,7 @@ moduledir = '/var/www/html/openWB/packages/modules/vehicles/mercedeseq/'
 req_timeout=(30,30) #timeout for requests in seconds
 
 vehicle       = None
-
-
 Debug         = 2
-#myPid         = "4711"
 
 tok_url   = "https://ssoalpha.dvb.corpinter.net/v1/token"
 soc_url_pre_vin   = "https://api.mercedes-benz.com/vehicledata/v2/vehicles/"
