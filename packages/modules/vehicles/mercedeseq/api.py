@@ -127,12 +127,12 @@ def fetch_soc(config: MercedesEQSoc,
 
 
         # write HTTP reponse code to file
-        try:
-            fd = open(ramdiskdir + 'soc_eq_lastresp','w')
-            fd.write(str(ref.status_code))
-            fd.close()
-        except:
-            fd.close()
+        # try:
+        #     fd = open(ramdiskdir + 'soc_eq_lastresp','w')
+        #     fd.write(str(ref.status_code))
+        #     fd.close()
+        # except:
+        #     fd.close()
 
         if ref.status_code == 200:
             # valid response
