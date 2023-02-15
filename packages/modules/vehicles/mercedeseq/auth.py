@@ -15,6 +15,7 @@ code = str(sys.argv[2])
 
 moddir = '/var/www/html/openWB/packages/modules/vehicles/mercedeseq/'
 
+
 def printDebug(message, level):
     htmlmsg = html.escape(message)
     if level >= Debug:
