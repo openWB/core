@@ -41,7 +41,7 @@ callback = conf['configuration']['callbackurl']
 printDebug("ClientID:"+client_id[0:3] + "**********" + client_id[-3:0],10)
 printDebug("ClientSecret: " + client_secret[0:3] + "**********" + client_secret[-3:],10)
 printDebug("Callback:" + callback,10)
-            
+
 tok_url  = "https://ssoalpha.dvb.corpinter.net/v1/token"
 
 data = {'grant_type': 'authorization_code', 'code': str(code), 'redirect_uri': callback}
@@ -59,8 +59,7 @@ if act.status_code == 200:
     token_type = toks['token_type']
     id_token = toks['id_token']
 
-    
-	# persist tokens 
+	# persist tokens
     conf['configuration']['token']['refresh_token'] = refresh_token
     conf['configuration']['token']['access_token'] = access_token
     conf['configuration']['token']['expires_in'] = expires_in
@@ -72,7 +71,7 @@ if act.status_code == 200:
 if act.status_code == 200:
     printHtml("Anmeldung erfolgreich!")
     print("<a href=""javascript:window.close()"">Sie k&ouml;nnen das Fenster schlie&szlig;en.</a>")
-else: 
+else:
     printHtml("Anmeldung Fehlgeschlagen Code: " + str(act.status_code) + " " + act.text)
     printHtml("Code: "+ code + " EVId: " + EVId)
 print("</html>")
