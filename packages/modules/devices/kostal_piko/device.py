@@ -107,7 +107,7 @@ def read_legacy(component_type: str,
 
             dev.add_component(KostalPikoInverterSetup(
                 id=1, configuration=KostalPikoInverterConfiguration(bat_configured=True)))
-            inverter_power, _ = dev.components["component"+str(1)].get_values()
+            inverter_power, _ = dev.components["component"+str(1)].update()
 
             power = home_consumption + inverter_power
             imported, exported = sim_count(power, prefix="bezug")
