@@ -7,6 +7,8 @@ from requests.exceptions import Timeout, RequestException
 from json import JSONDecodeError
 from typing import Tuple
 from modules.vehicles.mercedeseq.config import MercedesEQSoc
+from paho.mqtt import subscribe as subscribe
+from paho.mqtt import publish as publish
 
 ramdiskdir = '/var/www/html/openWB/ramdisk/'
 moduledir = '/var/www/html/openWB/packages/modules/vehicles/mercedeseq/'
@@ -30,53 +32,50 @@ range = None
 timestamp = None
 
 def socDebugLog(message):
-    pass
-    #local_time = datetime.now(timezone.utc).astimezone()
-    #print(local_time.strftime(format = "%Y-%m-%d %H:%M:%S") +": EV" +vehicle + ": PID:"+ myPid + ": " + message)
-    log.debug(": EV" +str(vehicle) +  ": " + message)
+    log.debug(": " + message)
 
 
 def handleResponse(what, status_code, text):
     if status_code == 204:
-        # this is not an error code. Nothing to fetch so nothing to update and no reason to exit(1)  
+        # this is not an error code. Nothing to fetch so nothing to update and no reason to # exit(1)  
         socDebugLog(what + " Request Code: " + str(status_code) + " (no data is available for the resource)")
         socDebugLog(text)
     elif status_code == 400:
         socDebugLog(what + " Request fehlgeschlagen Code: " + str(status_code) + " (Bad Request)")
         socDebugLog(text)
-        exit(1)
+        # exit(1)
     elif status_code == 401:
         socDebugLog(what + " Request fehlgeschlagen Code: " + str(status_code) + " (Invalid or missing authorization in header)")
         socDebugLog(text)
-        exit(1)
+        # exit(1)
     elif status_code == 402:
         socDebugLog(what + " Request fehlgeschlagen Code: " + str(status_code) + " (Payment required)")
         socDebugLog(text)
-        exit(1)
+        # exit(1)
     elif status_code == 403:
         socDebugLog(what + " Request fehlgeschlagen Code: " + str(status_code) + " (Forbidden)")
         socDebugLog(text)
-        exit(1)
+        # exit(1)
     elif status_code == 404:
         socDebugLog(what + " Request fehlgeschlagen Code: " + str(status_code) + " (The requested resource was not found, e.g.: the selected vehicle could not be found)")
         socDebugLog(text)
-        exit(1)
+        # exit(1)
     elif status_code == 429:
         socDebugLog(what + " Request fehlgeschlagen Code: " + str(status_code) + " (The service received too many requests in a given amount of time)")
         socDebugLog(text)
-        exit(1)
+        # exit(1)
     elif status_code == 500:
         socDebugLog(what + " Request fehlgeschlagen Code: " + str(status_code) + " (The service received too many requests in a given amount of time)")
         socDebugLog(text)
-        exit(1)
+        # exit(1)
     elif status_code == 503:
         socDebugLog(what + " Request fehlgeschlagen Code: " + str(status_code) + " (The server is unable to service the request due to a temporary unavailability condition)")
         socDebugLog(text)
-        exit(1)
+        # exit(1)
     else:
         socDebugLog(what + " Request fehlgeschlagen unbekannter Code: " + str(status_code))
         socDebugLog(text)
-        exit(1)
+        # exit(1)
 
 
 def fetch_soc(config: MercedesEQSoc,
@@ -96,20 +95,31 @@ def fetch_soc(config: MercedesEQSoc,
     if Debug >= 2:
         socDebugLog("SOC URL: " + soc_url)
 
+    #get Access Token from Broker
+    access_token = config.configuration.token.access_token
+    refresh_token= config.configuration.token.refresh_token
+    expires_in= config.configuration.token.expires_in
+    if Debug >= 2:
+        socDebugLog("Conf Access Tok: " + access_token)
+        socDebugLog("Conf Refresh Tok: " + refresh_token)
+        socDebugLog("Conf Expires_in: " + str(expires_in))
+
+
     #Get Access token from file
 
-    fd = open(moduledir + 'soc_eq_acc_ev' + str(vehicle),'r')
+    """ fd = open(moduledir + 'soc_eq_acc_ev' + str(vehicle),'r')
     try:
         tok = json.load(fd)
         access_token = tok['access_token']
     except ValueError:
         socDebugLog("ERROR: Access Token not found. Please use Link 'HIER bei Mercedes Me' anmelden in EV Configuration")
-        exit(3)        
+        # exit(3)        
     refresh_token = tok['refresh_token']
     expires_in = tok['expires_in']
-    fd.close()
+    fd.close() """
 
-    socDebugLog("Token expires in: " +str((int(expires_in)-int(time.time())))+"s")
+    # socDebugLog("Token expires at: " +time.strftime( "%d.%m.%Y  %H:%M:%S",time.localtime(expires_in)))
+    socDebugLog("Token expires in: " +str(int(expires_in)-int(time.time()))+"s. at: " + time.strftime( "%d.%m.%Y  %H:%M:%S",time.localtime(expires_in)))
 
     if int(expires_in) < int(time.time()):
         #Access Token is exired
@@ -145,9 +155,18 @@ def fetch_soc(config: MercedesEQSoc,
 
             #write new tokens
   
-            fd = open(moduledir + 'soc_eq_acc_ev' + str(vehicle),'w')
-            json.dump({'expires_in' : expires_in, 'refresh_token' : refresh_token, 'access_token' : access_token, 'id_token' : id_token, 'token_type' : token_type}, fd)
-            fd.close()
+            #fd = open(moduledir + 'soc_eq_acc_ev' + str(vehicle),'w')
+            #json.dump({'expires_in' : expires_in, 'refresh_token' : refresh_token, 'access_token' : access_token, 'id_token' : id_token, 'token_type' : token_type}, fd)
+            #fd.close()
+            config.configuration.token.access_token = access_token
+            config.configuration.token.refresh_token = refresh_token
+            config.configuration.token.expires_in = expires_in
+            config.configuration.token.id_token = id_token
+            config.configuration.token.token_type = token_type
+            to_mqtt=json.dumps(config.__dict__, default=lambda o: o.__dict__)
+            socDebugLog("Config to MQTT:" +str(to_mqtt))
+            publish.single("openWB/set/vehicle/" + vehicle + "/soc_module/config",to_mqtt,retain=True,hostname="localhost")
+
         else:
             handleResponse("Refresh",ref.status_code,ref.text)
 
@@ -160,23 +179,21 @@ def fetch_soc(config: MercedesEQSoc,
 
     except Timeout:
         socDebugLog("Soc Request Timed Out")
-        exit(2)
-
+        
     except RequestException:
         socDebugLog("Soc Request Request Exception occured " + soc_url)
-        exit(2)
-
+        
     if Debug >= 1:
         socDebugLog("SOC Request: " + str(req_soc.status_code))
         socDebugLog("SOC Response: " + req_soc.text)
 
     #write HTTP reponse code to file
-    try:
-        fd = open(ramdiskdir + 'soc_eq_lastresp','w')
-        fd.write(str(req_soc.status_code))
-        fd.close()
-    except:
-        fd.close()
+    # try:
+    #     fd = open(ramdiskdir + 'soc_eq_lastresp','w')
+    #     fd.write(str(req_soc.status_code))
+    #     fd.close()
+    # except:
+    #     fd.close()
 
     if req_soc.status_code == 200:
         #valid Response
@@ -184,7 +201,7 @@ def fetch_soc(config: MercedesEQSoc,
             res = json.loads(req_soc.text)
         except JSONDecodeError:
             socDebugLog("Soc Response NO VALID JSON " + req_soc.text)
-            exit(2)
+            # # exit(2)
 
         #Extract SoC value and write to file
         for entry in res:
@@ -204,9 +221,6 @@ def fetch_soc(config: MercedesEQSoc,
             range = "0"
         socDebugLog("SOC: " + soc + " RANGE: " + range)
 
-        # fd = open(soc_file,'w')
-        # fd.write(str(soc))
-        # fd.close()
         return float(soc),float(range)
     else:
         handleResponse("SoC",req_soc.status_code,req_soc.text)

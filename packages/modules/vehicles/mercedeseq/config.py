@@ -1,10 +1,8 @@
 from typing import Optional
 
-# from modules.common.component_setup import ComponentSetup
-
 class MercedesEQSocToken:
     def __init__(self,
-                 refresh_token: str = "",
+                 refresh_token: str = "",  
                  access_token: str = "",
                  expires_in: int = 0,
                  id_token: str = "",
@@ -18,12 +16,16 @@ class MercedesEQSocToken:
 
 class MercedesEQSocConfiguration:
     def __init__(self, client_id: Optional[str] = None, client_secret: Optional[str] = None, vin: Optional[str] = None, callbackurl: Optional[str] = None, token: MercedesEQSocToken = None) -> None:
-        self.client_id = client_id
-        self.client_secret = client_secret
-        self.vin = vin
-        self.callbackurl = callbackurl
+        self.client_id = client_id          # show in UI
+        self.client_secret = client_secret  # show in UI
+        self.vin = vin                      # show in UI
+        self.callbackurl = callbackurl      # show in UI
         self.token = token or MercedesEQSocToken()
-
+        # Login Link must be built in UI like this example
+        # openWB ID of the current vehicle --> VEHICLEID
+        # client_id of this configuration --> CLIENT_ID
+        # callbackurl of this configuration --> CALLBACKURL (http://<IPorHOST>/openWB/packages/modules/vehicles/mercedeseq/callback_ev.php)
+        # https://ssoalpha.dvb.corpinter.net/v1/auth?response_type=code&state=<VEHICLEID>&client_id=<CLIENT_ID>&redirect_uri=<CALLBACURL>&scope=mb:vehicle:mbdata:evstatus%20offline_access%20openid
 
 class MercedesEQSoc:
     def __init__(self,
