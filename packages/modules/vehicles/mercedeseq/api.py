@@ -1,19 +1,21 @@
 #!/usr/bin/python3
 
-import requests, json, time
+import requests
+import json
+import time
 import logging
-from datetime import datetime, timezone
+# from datetime import datetime, timezone
 from requests.exceptions import Timeout, RequestException
 from json import JSONDecodeError
 from typing import Tuple
 from modules.vehicles.mercedeseq.config import MercedesEQSoc
-from paho.mqtt import subscribe as subscribe
+# from paho.mqtt import subscribe as subscribe
 from paho.mqtt import publish as publish
 
 ramdiskdir = '/var/www/html/openWB/ramdisk/'
 moduledir = '/var/www/html/openWB/packages/modules/vehicles/mercedeseq/'
 
-req_timeout=(30, 30) # timeout for requests in seconds
+req_timeout = (30, 30)  # timeout for requests in seconds
 
 vehicle = None
 Debug = 2
@@ -28,59 +30,60 @@ soc = None
 range = None
 timestamp = None
 
+
 def socDebugLog(message):
     log.debug(": " + message)
+
 
 def handleResponse(what, status_code, text):
     if status_code == 204:
         # this is not an error code. Nothing to fetch so nothing to update
-        socDebugLog(what + " Request Code: " + str(status_code) + 
+        socDebugLog(what + " Request Code: " + str(status_code) +
                     " (no data is available for the resource)")
         socDebugLog(text)
     elif status_code == 400:
-        socDebugLog(what + " Request fehlgeschlagen Code: " + str(status_code) + 
+        socDebugLog(what + " Request fehlgeschlagen Code: " + str(status_code) +
                     " (Bad Request)")
         socDebugLog(text)
 
     elif status_code == 401:
-        socDebugLog(what + " Request fehlgeschlagen Code: " + str(status_code) + 
+        socDebugLog(what + " Request fehlgeschlagen Code: " + str(status_code) +
                     " (Invalid or missing authorization in header)")
         socDebugLog(text)
 
     elif status_code == 402:
-        socDebugLog(what + " Request fehlgeschlagen Code: " + str(status_code) + 
+        socDebugLog(what + " Request fehlgeschlagen Code: " + str(status_code) +
                     " (Payment required)")
         socDebugLog(text)
 
     elif status_code == 403:
-        socDebugLog(what + " Request fehlgeschlagen Code: " + str(status_code) + 
+        socDebugLog(what + " Request fehlgeschlagen Code: " + str(status_code) +
                     " (Forbidden)")
         socDebugLog(text)
 
     elif status_code == 404:
-        socDebugLog(what + " Request fehlgeschlagen Code: " + str(status_code) + 
+        socDebugLog(what + " Request fehlgeschlagen Code: " + str(status_code) +
                     " (The requested resource was not found, e.g.: the selected vehicle could not be found)")
         socDebugLog(text)
 
     elif status_code == 429:
-        socDebugLog(what + " Request fehlgeschlagen Code: " + str(status_code) + 
+        socDebugLog(what + " Request fehlgeschlagen Code: " + str(status_code) +
                     " (The service received too many requests in a given amount of time)")
         socDebugLog(text)
 
     elif status_code == 500:
-        socDebugLog(what + " Request fehlgeschlagen Code: " + str(status_code) + 
+        socDebugLog(what + " Request fehlgeschlagen Code: " + str(status_code) +
                     " (The service received too many requests in a given amount of time)")
         socDebugLog(text)
 
     elif status_code == 503:
-        socDebugLog(what + " Request fehlgeschlagen Code: " + str(status_code) + 
+        socDebugLog(what + " Request fehlgeschlagen Code: " + str(status_code) +
                     " (The server is unable to service the request due to a temporary unavailability condition)")
         socDebugLog(text)
 
     else:
         socDebugLog(what + " Request fehlgeschlagen unbekannter Code: " + str(status_code))
         socDebugLog(text)
-
 
 
 def fetch_soc(config: MercedesEQSoc,
@@ -92,7 +95,7 @@ def fetch_soc(config: MercedesEQSoc,
     client_secret = config.configuration.client_secret
     vin = config.configuration.vin
     soc_url = soc_url_pre_vin + str(vin) + soc_url_post_vin
-    vehicle = vehicle_id 
+    vehicle = vehicle_id
     if Debug >= 1:
         socDebugLog("client: " + client_id)
 
@@ -109,8 +112,8 @@ def fetch_soc(config: MercedesEQSoc,
         socDebugLog("Conf Expires_in: " + str(expires_in))
 
     # socDebugLog("Token expires at: " +time.strftime( "%d.%m.%Y  %H:%M:%S",time.localtime(expires_in)))
-    socDebugLog("Token expires in: " + str(int(expires_in) - int(time.time())) + "s. at: " + 
-                time.strftime( "%d.%m.%Y  %H:%M:%S", time.localtime(expires_in)))
+    socDebugLog("Token expires in: " + str(int(expires_in) - int(time.time())) + "s. at: " +
+                time.strftime("%d.%m.%Y  %H:%M:%S", time.localtime(expires_in)))
 
     if int(expires_in) < int(time.time()):
         # Access Token is exired
@@ -124,7 +127,6 @@ def fetch_soc(config: MercedesEQSoc,
         if Debug >= 1:
             socDebugLog("Refresh Token Call:" + str(ref.status_code))
             socDebugLog("Refresh Token Text:" + str(ref.text))
-
 
         # write HTTP reponse code to file
         # try:
@@ -151,9 +153,9 @@ def fetch_soc(config: MercedesEQSoc,
             config.configuration.token.expires_in = expires_in
             config.configuration.token.id_token = id_token
             config.configuration.token.token_type = token_type
-            to_mqtt=json.dumps(config.__dict__, default = lambda o: o.__dict__)
+            to_mqtt=json.dumps(config.__dict__, default=lambda o: o.__dict__)
             socDebugLog("Config to MQTT:" + str(to_mqtt))
-            publish.single("openWB/set/vehicle/" + vehicle + "/soc_module/config", 
+            publish.single("openWB/set/vehicle/" + vehicle + "/soc_module/config",
                            to_mqtt, retain=True, hostname="localhost")
 
         else:
@@ -205,4 +207,3 @@ def fetch_soc(config: MercedesEQSoc,
     else:
         handleResponse("SoC", req_soc.status_code, req_soc.text)
         return 0, 0
- 
