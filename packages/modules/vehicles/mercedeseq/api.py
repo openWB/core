@@ -153,7 +153,7 @@ def fetch_soc(config: MercedesEQSoc,
             config.configuration.token.expires_in = expires_in
             config.configuration.token.id_token = id_token
             config.configuration.token.token_type = token_type
-            to_mqtt=json.dumps(config.__dict__, default=lambda o: o.__dict__)
+            to_mqtt = json.dumps(config.__dict__, default=lambda o: o.__dict__)
             socDebugLog("Config to MQTT:" + str(to_mqtt))
             publish.single("openWB/set/vehicle/" + vehicle + "/soc_module/config",
                            to_mqtt, retain=True, hostname="localhost")
