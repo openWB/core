@@ -2,17 +2,16 @@
 
 import requests
 import json
-import sys 
+import sys
 import time
-import os 
 import html
 import paho.mqtt.subscribe as subscribe
 import paho.mqtt.publish as publish
 sys.path.append("../../../")
 
-#call parameters
-EVId = str(sys.argv[1]) 
-code = str(sys.argv[2]) 
+# call parameters
+EVId = str(sys.argv[1])
+code = str(sys.argv[2])
 
 moddir = '/var/www/html/openWB/packages/modules/vehicles/mercedeseq/'
 
@@ -25,6 +24,7 @@ def printDebug(message, level):
 def printHtml(message):
     htmlmsg = html.escape(message)
     print("<p>" + htmlmsg + "</p>")
+
 
 print("<html>")
 
@@ -67,7 +67,7 @@ if act.status_code == 200:
     conf['configuration']['token']['id_token'] = id_token
     conf['configuration']['token']['token_type'] = token_type
     printDebug(str(conf),10)
-    publish.single("openWB/set/vehicle/" + EVId + "/soc_module/config",json.dumps(conf),retain=True,hostname="localhost")
+    publish.single("openWB/set/vehicle/" + EVId + "/soc_module/config", json.dumps(conf),retain=True, hostname="localhost")
 
 if act.status_code == 200:
     printHtml("Anmeldung erfolgreich!")
