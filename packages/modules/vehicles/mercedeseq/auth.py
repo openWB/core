@@ -9,13 +9,6 @@ import html
 import paho.mqtt.subscribe as subscribe
 import paho.mqtt.publish as publish
 sys.path.append("../../../")
-#from dataclass_utils import dataclass_from_dict
-#from helpermodules.cli import run_using_positional_cli_args
-#from modules.common import store
-#from dataclass_utils import asdict, dataclass_from_dict
-#from modules.vehicles.mercedeseq.config import MercedesEQSocConfiguration
-#from helpermodules.pub import Pub
-
 
 #call parameters
 EVId = str(sys.argv[1]) 
