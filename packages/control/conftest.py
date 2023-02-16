@@ -107,4 +107,4 @@ def data_() -> None:
         "counter6": Mock(spec=Counter, data=Mock(spec=CounterData, get=Mock(
             spec=CounterGet, currents=[25, 10, 25], power=13800),
             config=Mock(spec=CounterConfig, max_currents=[32]*3),
-            set=Mock(spec=CounterSet, raw_currents_left=[7, 22, 7])))})
+            set=Mock(spec=CounterSet, raw_currents_left=[31]*3)))})
