@@ -12,7 +12,6 @@ from dataclass_utils.factories import currents_list_factory, voltages_list_facto
 from helpermodules import timecheck
 from helpermodules.phase_mapping import convert_cp_currents_to_evu_currents
 from helpermodules.pub import Pub
-from modules.common.component_type import ComponentType
 from modules.common.fault_state import FaultStateLevel
 
 log = logging.getLogger(__name__)
@@ -112,22 +111,15 @@ class Counter:
     # tested
     def _set_current_left(self) -> None:
         currents_raw = self.data.get.currents
-        elements = data.data.counter_all_data.get_entry_of_element(self.num)["children"]
-        for element in elements:
-            if element["type"] == ComponentType.CHARGEPOINT.value:
-                chargepoint = data.data.cp_data[f"cp{element['id']}"]
-                try:
-                    element_current = convert_cp_currents_to_evu_currents(
-                        chargepoint.data.config.phase_1,
-                        chargepoint.data.get.currents)
-                except KeyError:
-                    element_current = [max(chargepoint.data.get.currents)]*3
-            elif element["type"] == ComponentType.COUNTER.value:
-                counter = data.data.counter_data[f"counter{element['id']}"]
-                element_current = list(map(operator.sub, counter.data.config.max_currents,
-                                       counter.data.set.raw_currents_left))
-            else:
-                continue
+        cp_keys = data.data.counter_all_data.get_chargepoints_of_counter(f"counter{self.num}")
+        for cp_key in cp_keys:
+            chargepoint = data.data.cp_data[cp_key]
+            try:
+                element_current = convert_cp_currents_to_evu_currents(
+                    chargepoint.data.config.phase_1,
+                    chargepoint.data.get.currents)
+            except KeyError:
+                element_current = [max(chargepoint.data.get.currents)]*3
             currents_raw = list(map(operator.sub, currents_raw, element_current))
         currents_raw = list(map(operator.sub, self.data.config.max_currents, currents_raw))
         # Puffer

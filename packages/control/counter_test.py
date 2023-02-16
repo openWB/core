@@ -5,7 +5,6 @@ import pytest
 
 from control import data
 from control.chargepoint import Chargepoint
-from control.conftest import hierarchy_hybrid, hierarchy_nested, hierarchy_standard
 from control.counter import Counter
 from control.ev import ChargeTemplate, Ev
 from control.general import General
@@ -66,19 +65,16 @@ def test_get_unbalanced_load_exceeding(raw_currents_left: List[float],
     assert max_exceeding == expected_max_exceeding
 
 
-@pytest.mark.parametrize("hierarchy, max_currents, expected_raw_currents_left",
-                         [pytest.param(hierarchy_standard, [40]*3, [39, 0, 9], id="Überbelastung"),
-                          (hierarchy_standard, [60]*3, [59, 14, 29]),
-                          (hierarchy_hybrid, [60]*3, [59, 14, 29]),
-                          (hierarchy_nested, [60]*3, [59, 14, 29])])
-def test_set_current_left(hierarchy,
-                          max_currents: List[float],
+@pytest.mark.parametrize("max_currents, expected_raw_currents_left",
+                         [pytest.param([40]*3, [39, 0, 9], id="Überbelastung"),
+                          ([60]*3, [59, 14, 29])])
+def test_set_current_left(max_currents: List[float],
                           expected_raw_currents_left: List[float],
                           monkeypatch,
                           data_):
     # setup
-    get_entry_of_element_mock = Mock(return_value=hierarchy().data.get.hierarchy[0])
-    monkeypatch.setattr(data.data.counter_all_data, "get_entry_of_element", get_entry_of_element_mock)
+    get_chargepoints_of_counter_mock = Mock(return_value=["cp3", "cp4", "cp5"])
+    monkeypatch.setattr(data.data.counter_all_data, "get_chargepoints_of_counter", get_chargepoints_of_counter_mock)
     counter = Counter(0)
     counter.data.config.max_currents = max_currents
     counter.data.get.currents = [55]*3
