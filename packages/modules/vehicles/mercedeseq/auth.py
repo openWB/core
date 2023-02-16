@@ -49,7 +49,8 @@ tok_url = "https://ssoalpha.dvb.corpinter.net/v1/token"
 data = {'grant_type': 'authorization_code', 'code': str(code), 'redirect_uri': callback}
 # call API to get Access/Refresh tokens
 act = requests.post(tok_url, data=data, verify=True, allow_redirects=False, auth=(client_id, client_secret))
-# act = req.get_http_session.post(tok_url, data=data, verify=True, allow_redirects=False, auth=(client_id, client_secret))
+# act = req.get_http_session.post(tok_url, data=data, verify=True,
+# allow_redirects=False, auth=(client_id, client_secret))
 
 printDebug(act.url, 20)
 
