@@ -8,6 +8,7 @@ import html
 import paho.mqtt.subscribe as subscribe
 import paho.mqtt.publish as publish
 sys.path.append("../../../")
+# from modules.common import req
 
 # call parameters
 ev_id = str(sys.argv[1])
@@ -18,7 +19,7 @@ moddir = '/var/www/html/openWB/packages/modules/vehicles/mercedeseq/'
 
 def printDebug(message, level):
     htmlmsg = html.escape(message)
-    if level >= Debug:
+    if level >= debug:
         print("<p>" + htmlmsg + "</p>")
 
 
@@ -30,8 +31,8 @@ def printHtml(message):
 print("<html>")
 
 msg = (subscribe.simple("openWB/system/debug_level", hostname="localhost"))
-Debug = int(str(msg.payload.decode("UTF-8")))
-printHtml("Debug: " + str(Debug))
+debug = int(str(msg.payload.decode("UTF-8")))
+printHtml("Debug: " + str(debug))
 msg = subscribe.simple("openWB/vehicle/" + ev_id + "/soc_module/config", hostname="localhost")
 conf = json.loads(msg.payload)
 
@@ -48,6 +49,7 @@ tok_url = "https://ssoalpha.dvb.corpinter.net/v1/token"
 data = {'grant_type': 'authorization_code', 'code': str(code), 'redirect_uri': callback}
 # call API to get Access/Refresh tokens
 act = requests.post(tok_url, data=data, verify=True, allow_redirects=False, auth=(client_id, client_secret))
+# act = req.get_http_session.post(tok_url, data=data, verify=True, allow_redirects=False, auth=(client_id, client_secret))
 
 printDebug(act.url, 20)
 
