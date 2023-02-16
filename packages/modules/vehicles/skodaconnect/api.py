@@ -3,6 +3,7 @@
 import aiohttp
 import asyncio
 import logging
+from dataclass_utils import asdict
 from helpermodules.pub import Pub
 from modules.vehicles.skodaconnect.config import SkodaConnect, SkodaConnectConfiguration
 from skodaconnect import Connection
@@ -79,7 +80,7 @@ class SkodaConnectApi():
                 self.password,
                 self.vin,
                 tokens))
-        self._publish_refresh_tokens(conf.as_dict())
+        self._publish_refresh_tokens(asdict(conf))
 
     def _publish_refresh_tokens(self, config={}) -> None:
         try:
