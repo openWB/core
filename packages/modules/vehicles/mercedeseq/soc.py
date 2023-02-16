@@ -32,7 +32,7 @@ class Soc(AbstractSoc):
         # else:
         with SingleComponentUpdateContext(self.component_info):
             soc, range = api.fetch_soc(self.config, self.vehicle)
-            log.info("eq: vehicle="+str(self.vehicle) + ", return: soc=" + str(soc)+", range=" + str(range))
+            # log.info("eq: vehicle="+str(self.vehicle) + ", return: soc=" + str(soc)+", range=" + str(range))
             self.store.set(CarState(soc, range))
 
 

@@ -10,7 +10,7 @@ import paho.mqtt.publish as publish
 sys.path.append("../../../")
 
 # call parameters
-EVId = str(sys.argv[1])
+ev_id = str(sys.argv[1])
 code = str(sys.argv[2])
 
 moddir = '/var/www/html/openWB/packages/modules/vehicles/mercedeseq/'
@@ -32,7 +32,7 @@ print("<html>")
 msg = (subscribe.simple("openWB/system/debug_level", hostname="localhost"))
 Debug = int(str(msg.payload.decode("UTF-8")))
 printHtml("Debug: " + str(Debug))
-msg = subscribe.simple("openWB/vehicle/" + EVId + "/soc_module/config", hostname="localhost")
+msg = subscribe.simple("openWB/vehicle/" + ev_id + "/soc_module/config", hostname="localhost")
 conf = json.loads(msg.payload)
 
 
@@ -67,7 +67,7 @@ if act.status_code == 200:
     conf['configuration']['token']['id_token'] = id_token
     conf['configuration']['token']['token_type'] = token_type
     printDebug(str(conf), 10)
-    publish.single("openWB/set/vehicle/" + EVId +
+    publish.single("openWB/set/vehicle/" + ev_id +
                    "/soc_module/config", json.dumps(conf), retain=True, hostname="localhost")
 
 if act.status_code == 200:
@@ -75,5 +75,5 @@ if act.status_code == 200:
     print("<a href=""javascript:window.close()"">Sie k&ouml;nnen das Fenster schlie&szlig;en.</a>")
 else:
     printHtml("Anmeldung Fehlgeschlagen Code: " + str(act.status_code) + " " + act.text)
-    printHtml("Code: " + code + " EVId: " + EVId)
+    printHtml("Code: " + code + " ev_id: " + ev_id)
 print("</html>")
