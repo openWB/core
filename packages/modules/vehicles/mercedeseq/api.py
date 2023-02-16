@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 
-import requests
 import json
 import time
 import logging
@@ -33,46 +32,46 @@ def handleResponse(what, status_code, text):
     if status_code == 204:
         # this is not an error code. Nothing to fetch so nothing to update
         log.error(what + " Request Code: " + str(status_code) +
-                    " (no data is available for the resource)")
+                  " (no data is available for the resource)")
         log.error(text)
     elif status_code == 400:
         log.error(what + " Request fehlgeschlagen Code: " + str(status_code) +
-                    " (Bad Request)")
+                  " (Bad Request)")
         log.error(text)
 
     elif status_code == 401:
         log.error(what + " Request fehlgeschlagen Code: " + str(status_code) +
-                    " (Invalid or missing authorization in header)")
+                  " (Invalid or missing authorization in header)")
         log.error(text)
 
     elif status_code == 402:
         log.error(what + " Request fehlgeschlagen Code: " + str(status_code) +
-                    " (Payment required)")
+                  " (Payment required)")
         log.error(text)
 
     elif status_code == 403:
         log.error(what + " Request fehlgeschlagen Code: " + str(status_code) +
-                    " (Forbidden)")
+                  " (Forbidden)")
         log.error(text)
 
     elif status_code == 404:
         log.error(what + " Request fehlgeschlagen Code: " + str(status_code) +
-                    " (The requested resource was not found, e.g.: the selected vehicle could not be found)")
+                  " (The requested resource was not found, e.g.: the selected vehicle could not be found)")
         log.error(text)
 
     elif status_code == 429:
         log.error(what + " Request fehlgeschlagen Code: " + str(status_code) +
-                    " (The service received too many requests in a given amount of time)")
+                  " (The service received too many requests in a given amount of time)")
         log.error(text)
 
     elif status_code == 500:
         log.error(what + " Request fehlgeschlagen Code: " + str(status_code) +
-                    " (The service received too many requests in a given amount of time)")
+                  " (The service received too many requests in a given amount of time)")
         log.error(text)
 
     elif status_code == 503:
         log.error(what + " Request fehlgeschlagen Code: " + str(status_code) +
-                    " (The server is unable to service the request due to a temporary unavailability condition)")
+                  " (The server is unable to service the request due to a temporary unavailability condition)")
         log.error(text)
 
     else:
@@ -101,7 +100,7 @@ def fetch_soc(config: MercedesEQSoc,
     log.debug("Conf Expires_in: " + str(expires_in))
 
     log.info("Token expires in: " + str(int(expires_in) - int(time.time())) + "s. at: " +
-                time.strftime("%d.%m.%Y  %H:%M:%S", time.localtime(expires_in)))
+             time.strftime("%d.%m.%Y  %H:%M:%S", time.localtime(expires_in)))
 
     if int(expires_in) < int(time.time()):
         # Access Token is exired
@@ -109,13 +108,12 @@ def fetch_soc(config: MercedesEQSoc,
 
         # get new Access Token with referesh token
         data = {'grant_type': 'refresh_token', 'refresh_token': refresh_token}
-        
+
         ref = req.get_http_session().post(tok_url, data=data, verify=True, allow_redirects=False,
                                           auth=(client_id, client_secret), timeout=req_timeout)
 
-
         # write HTTP reponse code to file
-        
+
         if ref.status_code == 200:
             # valid response
             tok = json.loads(ref.text)
@@ -143,7 +141,7 @@ def fetch_soc(config: MercedesEQSoc,
 
     # call API for SoC
     header = {'authorization': 'Bearer ' + access_token}
-    
+
     try:
         req_soc = req.get_http_session().get(soc_url, headers=header, verify=True)
     except Timeout:
@@ -174,7 +172,7 @@ def fetch_soc(config: MercedesEQSoc,
         if not range:
             log.error("RangeElectric Value not filled " + req_soc.text)
             range = "0"
-        
+
         return float(soc), float(range)
     else:
         handleResponse("SoC", req_soc.status_code, req_soc.text)
