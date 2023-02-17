@@ -1,13 +1,13 @@
 #!/usr/bin/python3
 
-sys.path.append("../../../")
-from modules.common import req
 import json
 import sys
 import time
 import html
 import paho.mqtt.subscribe as subscribe
 import paho.mqtt.publish as publish
+sys.path.append("../../../")
+from modules.common import req
 
 # call parameters
 ev_id = str(sys.argv[1])
