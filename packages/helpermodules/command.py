@@ -131,7 +131,7 @@ class Command:
         Pub().pub("openWB/set/command/max_id/device", self.max_id_device)
         pub_user_message(
             payload, connection_id,
-            f'Neues Device vom Typ \'{payload["data"]["type"]}\' mit ID \'{new_id}\' hinzugefügt.',
+            f'Neues Gerät vom Typ \'{payload["data"]["type"]}\' mit ID \'{new_id}\' hinzugefügt.',
             MessageType.SUCCESS)
 
     def removeDevice(self, connection_id: str, payload: dict) -> None:
