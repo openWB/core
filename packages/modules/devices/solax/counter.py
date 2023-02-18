@@ -54,7 +54,7 @@ class SolaxCounter:
                         round(powers[2] / voltages[2], 1)]
             exported, imported = [value * 10
                                   for value in self.__tcp_client.read_input_registers(
-                                      0x0048, [ModbusDataType.UINT_32] * 2, 
+                                      0x0048, [ModbusDataType.UINT_32] * 2,
                                       wordorder=Endian.Little, unit=self.__modbus_id
                                   )]
 
