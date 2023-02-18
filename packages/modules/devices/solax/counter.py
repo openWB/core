@@ -27,18 +27,32 @@ class SolaxCounter:
 
     def update(self):
         with self.__tcp_client:
-            power = self.__tcp_client.read_input_registers(70, ModbusDataType.INT_32, wordorder=Endian.Little,
+            power = self.__tcp_client.read_input_registers(0x0046, ModbusDataType.INT_32, wordorder=Endian.Little,
                                                            unit=self.__modbus_id) * -1
-            frequency = self.__tcp_client.read_input_registers(7, ModbusDataType.UINT_16, unit=self.__modbus_id) / 100
+            frequency = self.__tcp_client.read_input_registers(0x0007, ModbusDataType.UINT_16, unit=self.__modbus_id) / 100
             try:
                 powers = [-value for value in self.__tcp_client.read_input_registers(
-                    130, [ModbusDataType.INT_32] * 3, wordorder=Endian.Little, unit=self.__modbus_id
+                    0x0082, [ModbusDataType.INT_32] * 3, wordorder=Endian.Little, unit=self.__modbus_id
                 )]
             except Exception:
                 powers = None
+            try:
+                voltages = [self.__tcp_client.read_input_registers(
+                    0x006A, ModbusDataType.UINT_16, unit=self.__modbus_id
+                ) / 10, self.__tcp_client.read_input_registers(
+                    0x006E, ModbusDataType.UINT_16, unit=self.__modbus_id
+                ) / 10, self.__tcp_client.read_input_registers(
+                    0x0072, ModbusDataType.UINT_16, unit=self.__modbus_id
+                ) / 10]
+                for voltage in voltages:
+                    if (voltage == 0):
+                        voltage = 230
+            except Exception:
+                voltages = [230, 230, 230]
+            currents = [round(powers[0]/voltages[0],1), round(powers[1]/voltages[1],1) ,round(powers[2]/voltages[2],1)]
             exported, imported = [value * 10
                                   for value in self.__tcp_client.read_input_registers(
-                                      72, [ModbusDataType.UINT_32] * 2, wordorder=Endian.Little, unit=self.__modbus_id
+                                      0x0048, [ModbusDataType.UINT_32] * 2, wordorder=Endian.Little, unit=self.__modbus_id
                                   )]
 
         counter_state = CounterState(
@@ -46,7 +60,9 @@ class SolaxCounter:
             exported=exported,
             power=power,
             powers=powers,
-            frequency=frequency
+            frequency=frequency,
+            voltages=voltages,
+            currents=currents
         )
         self.store.set(counter_state)
 
