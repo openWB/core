@@ -102,8 +102,10 @@ if ($configuration == "" || $configuration->active != true) {
 	}
 	debugPrint("Client ID: " . $configuration->remote->client_id);
 
-	if (!isset($configuration->remote->try_private) || ($configuration->remote->try_private !== true)){
-		$configuration->remote->try_private = false;
+	if (isset($configuration->remote->try_private) && ($configuration->remote->try_private == true)){
+		$configuration->remote->try_private = "true";
+	} else {
+		$configuration->remote->try_private = "false";
 	}
 	debugPrint("try_private: " . $configuration->remote->try_private);
 
