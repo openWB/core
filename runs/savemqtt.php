@@ -3,7 +3,7 @@ $debug = false;
 
 $bridgePrefix = "99-bridge-openwb";
 // generate a random integer for our clientID
-$randomnr = rand();
+$random_number = rand();
 $mosquittoConfDir = "/etc/mosquitto/conf_local.d/";
 
 if ($argc > 2) {
@@ -20,22 +20,31 @@ function debugPrint($message){
 	}
 }
 
+function removeConfigFile($fileName){
+	if (file_exists($fileName)) {
+		debugPrint("Konfigurationsdatei '$fileName' wird gelöscht.");
+		exec("sudo rm $fileName");
+		return 0;
+	} else {
+		return 1;
+	}
+}
+
 function cleanAndExit($message){
-	exit($message . "\n");
+	echo $message;
+	exit(1);
 }
 
 debugPrint("Bridge Id: '$bridgeId'");
 
-$bridgeFileName = "${bridgePrefix}-${bridgeId}.conf";
+$bridgeFileName = $bridgePrefix . "-" . $bridgeId . ".conf";
 debugPrint("Bridge root file name: '{$bridgeFileName}'");
 
 if ($configuration == "" || $configuration->active != true) {
 	// empty configuration tells us to delete the config file
 	// also remove file if not active
-	if (file_exists($mosquittoConfDir . $bridgeFileName)) {
-		debugPrint("Konfigurationsdatei gefunden: '$mosquittoConfDir$bridgeFileName'");
-		exec("sudo rm $mosquittoConfDir$bridgeFileName");
-	} else {
+	$result = removeConfigFile($mosquittoConfDir . $bridgeFileName);
+	if ($result != 0 && $configuration->active == true) {
 		cleanAndExit("Keine Konfigurationsdatei für die Brücke mit ID $bridgeId gefunden: '$mosquittoConfDir$bridgeFileName'");
 	}
 } else {
@@ -102,8 +111,10 @@ if ($configuration == "" || $configuration->active != true) {
 	}
 	debugPrint("Client ID: " . $configuration->remote->client_id);
 
-	if (!isset($configuration->remote->try_private) || ($configuration->remote->try_private !== true)){
-		$configuration->remote->try_private = false;
+	if (isset($configuration->remote->try_private) && ($configuration->remote->try_private == true)){
+		$configuration->remote->try_private = "true";
+	} else {
+		$configuration->remote->try_private = "false";
 	}
 	debugPrint("try_private: " . $configuration->remote->try_private);
 
@@ -120,7 +131,7 @@ if ($configuration == "" || $configuration->active != true) {
 	}
 
 	if (!$configuration->data_transfer->status && !$configuration->data_transfer->graph && !$configuration->data_transfer->configuration) {
-		cleanAndExit("Es macht keinen Sinn eine MQTT-Brücke zu konfigurieren welche weder Daten publiziert noch Konfigurationen empfängt. Bitte mindestens eine Checkbox bei 'Zum entfernten Server weiterleiten' oder 'Konfiguration der openWB durch entfernten Server ermöglichen' aktivieren.");
+		cleanAndExit("Es macht keinen Sinn eine MQTT-Brücke zu konfigurieren, welche weder Daten publiziert noch Konfigurationen empfängt. Bitte mindestens eine Option bei 'Datenübertragung' aktivieren.");
 	}
 
 	//
@@ -226,7 +237,7 @@ if ($configuration == "" || $configuration->active != true) {
 	# Client ID that appears in remote MQTT server's log data.
 	# Setting it might simplify debugging.
 	# Commenting uses a random ID and thus gives more privacy.
-	remote_clientid {$configuration->remote->client_id}-{$randomnr}
+	remote_clientid {$configuration->remote->client_id}-{$random_number}
 
 	# MQTT protocol to use - ideally leave at latest version (mqttv311).
 	# Only change if remote doesn't support mqtt protocol version 3.11.

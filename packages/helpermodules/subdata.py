@@ -8,6 +8,7 @@ import threading
 from typing import Dict
 import re
 import subprocess
+import paho.mqtt.client as mqtt
 
 from control import bat_all, bat, pv_all
 from control import chargepoint
@@ -18,6 +19,7 @@ from control import general
 from helpermodules import graph
 from helpermodules.abstract_plans import AutolockPlan
 from helpermodules.broker import InternalBrokerClient
+from helpermodules.messaging import MessageType, pub_system_message
 from helpermodules.utils.topic_parser import decode_payload, get_index, get_second_index
 from control import optional
 from helpermodules.pub import Pub
@@ -81,7 +83,7 @@ class SubData:
     def disconnect(self) -> None:
         self.internal_broker_client.disconnect()
 
-    def on_connect(self, client, userdata, flags, rc):
+    def on_connect(self, client: mqtt.Client, userdata, flags: dict, rc: int):
         """ connect to broker and subscribe to set topics
         """
         client.subscribe("openWB/vehicle/#", 2)
@@ -100,8 +102,8 @@ class SubData:
         client.subscribe("openWB/system/device/+/config", 2)
         Pub().pub("openWB/system/subdata_initialized", True)
 
-    def on_message(self, client, userdata, msg):
-        """ wartet auf eingehende Topics.
+    def on_message(self, client: mqtt.Client, userdata, msg: mqtt.MQTTMessage):
+        """ wait for incoming topics.
         """
         mqtt_log.debug("Topic: "+str(msg.topic) +
                        ", Payload: "+str(msg.payload.decode("utf-8")))
@@ -136,11 +138,11 @@ class SubData:
         else:
             log.warning("unknown subdata-topic: "+str(msg.topic))
 
-    def set_json_payload(self, dict: Dict, msg) -> None:
+    def set_json_payload(self, dict: Dict, msg: mqtt.MQTTMessage) -> None:
         """ dekodiert das JSON-Objekt und setzt diesen für den Value in das übergebene Dictionary, als Key wird der
         Name nach dem letzten / verwendet.
 
-         Parameters
+        Parameter
         ----------
         dict : dictionary
             Dictionary, in dem der Wert abgelegt wird
@@ -160,12 +162,13 @@ class SubData:
         except Exception:
             log.exception("Fehler im subdata-Modul")
 
-    def set_json_payload_class(self, class_obj, msg):
+    def set_json_payload_class(self, class_obj: Dict, msg: mqtt.MQTTMessage):
         """ dekodiert das JSON-Objekt und setzt diesen für den Value in das übergebene Dictionary, als Key wird der
         Name nach dem letzten / verwendet.
-        Parameters
+
+        Parameter
         ----------
-        dict : dictionary
+        class_obj : dictionary
             Dictionary, in dem der Wert abgelegt wird
         msg :
             enthält den Payload als json-Objekt
@@ -192,16 +195,14 @@ class SubData:
         except Exception:
             log.exception("Fehler im subdata-Modul")
 
-    def process_vehicle_topic(self, var, msg):
+    def process_vehicle_topic(self, var: Dict[str, ev.Ev], msg: mqtt.MQTTMessage):
         """ Handler für die EV-Topics
 
-         Parameters
+        Parameter
         ----------
-        client : (unused)
-            vorgegebener Parameter
-        userdata : (unused)
-            vorgegebener Parameter
-        msg:
+        var : Dictionary
+            enthält aktuelle Daten
+        msg :
             enthält Topic und Payload
         """
         try:
@@ -244,16 +245,14 @@ class SubData:
         except Exception:
             log.exception("Fehler im subdata-Modul")
 
-    def process_vehicle_charge_template_topic(self, var, msg):
+    def process_vehicle_charge_template_topic(self, var: Dict[str, ev.ChargeTemplate], msg: mqtt.MQTTMessage):
         """ Handler für die EV-Topics
 
-         Parameters
+        Parameter
         ----------
-        client : (unused)
-            vorgegebener Parameter
-        userdata : (unused)
-            vorgegebener Parameter
-        msg:
+        var : Dictionary
+            enthält aktuelle Daten
+        msg :
             enthält Topic und Payload
         """
         try:
@@ -300,16 +299,14 @@ class SubData:
         except Exception:
             log.exception("Fehler im subdata-Modul")
 
-    def process_vehicle_ev_template_topic(self, var, msg):
+    def process_vehicle_ev_template_topic(self, var: Dict[str, ev.EvTemplate], msg: mqtt.MQTTMessage):
         """ Handler für die EV-Topics
 
-         Parameters
+        Parameter
         ----------
-        client : (unused)
-            vorgegebener Parameter
-        userdata : (unused)
-            vorgegebener Parameter
-        msg:
+        var : Dictionary
+            enthält aktuelle Daten
+        msg :
             enthält Topic und Payload
         """
         try:
@@ -326,16 +323,14 @@ class SubData:
         except Exception:
             log.exception("Fehler im subdata-Modul")
 
-    def process_chargepoint_topic(self, var, msg):
+    def process_chargepoint_topic(self, var: Dict[str, chargepoint.Chargepoint], msg: mqtt.MQTTMessage):
         """ Handler für die Ladepunkt-Topics
 
-         Parameters
+        Parameter
         ----------
-        client : (unused)
-            vorgegebener Parameter
-        userdata : (unused)
-            vorgegebener Parameter
-        msg:
+        var : Dictionary
+            enthält aktuelle Daten
+        msg :
             enthält Topic und Payload
         """
         try:
@@ -383,16 +378,14 @@ class SubData:
         except Exception:
             log.exception("Fehler im subdata-Modul")
 
-    def process_chargepoint_template_topic(self, var, msg):
+    def process_chargepoint_template_topic(self, var: Dict[str, chargepoint.CpTemplate], msg: mqtt.MQTTMessage):
         """ Handler für die Ladepunkt-Topics
 
-         Parameters
+        Parameter
         ----------
-        client : (unused)
-            vorgegebener Parameter
-        userdata : (unused)
-            vorgegebener Parameter
-        msg:
+        var : Dictionary
+            enthält aktuelle Daten
+        msg :
             enthält Topic und Payload
         """
         try:
@@ -417,16 +410,14 @@ class SubData:
         except Exception:
             log.exception("Fehler im subdata-Modul")
 
-    def process_pv_topic(self, var, msg):
+    def process_pv_topic(self, var: Dict[str, pv.Pv], msg: mqtt.MQTTMessage):
         """ Handler für die PV-Topics
 
-         Parameters
+        Parameter
         ----------
-        client : (unused)
-            vorgegebener Parameter
-        userdata : (unused)
-            vorgegebener Parameter
-        msg:
+        var : Dictionary
+            enthält aktuelle Daten
+        msg :
             enthält Topic und Payload
         """
         try:
@@ -452,16 +443,14 @@ class SubData:
         except Exception:
             log.exception("Fehler im subdata-Modul")
 
-    def process_bat_topic(self, var, msg):
+    def process_bat_topic(self, var: Dict[str, bat.Bat], msg: mqtt.MQTTMessage):
         """ Handler für die Hausspeicher-Hardware_Topics
 
-         Parameters
+        Parameter
         ----------
-        client : (unused)
-            vorgegebener Parameter
-        userdata : (unused)
-            vorgegebener Parameter
-        msg:
+        var : Dictionary
+            enthält aktuelle Daten
+        msg :
             enthält Topic und Payload
         """
         try:
@@ -489,16 +478,14 @@ class SubData:
         except Exception:
             log.exception("Fehler im subdata-Modul")
 
-    def process_general_topic(self, var, msg):
+    def process_general_topic(self, var: general.General, msg: mqtt.MQTTMessage):
         """ Handler für die Allgemeinen-Topics
 
-         Parameters
+        Parameter
         ----------
-        client : (unused)
-            vorgegebener Parameter
-        userdata : (unused)
-            vorgegebener Parameter
-        msg:
+        var : Dictionary
+            enthält aktuelle Daten
+        msg :
             enthält Topic und Payload
         """
         try:
@@ -523,16 +510,14 @@ class SubData:
         except Exception:
             log.exception("Fehler im subdata-Modul")
 
-    def process_optional_topic(self, var, msg):
+    def process_optional_topic(self, var: optional.Optional, msg: mqtt.MQTTMessage):
         """ Handler für die Optionalen-Topics
 
-         Parameters
+        Parameter
         ----------
-        client : (unused)
-            vorgegebener Parameter
-        userdata : (unused)
-            vorgegebener Parameter
-        msg:
+        var : Dictionary
+            enthält aktuelle Daten
+        msg :
             enthält Topic und Payload
         """
         try:
@@ -555,16 +540,14 @@ class SubData:
         except Exception:
             log.exception("Fehler im subdata-Modul")
 
-    def process_counter_topic(self, var, msg):
+    def process_counter_topic(self, var: Dict[str, counter.Counter], msg: mqtt.MQTTMessage):
         """ Handler für die Zähler-Topics
 
-         Parameters
+        Parameter
         ----------
-        client : (unused)
-            vorgegebener Parameter
-        userdata : (unused)
-            vorgegebener Parameter
-        msg:
+        var : Dictionary
+            enthält aktuelle Daten
+        msg :
             enthält Topic und Payload
         """
         try:
@@ -590,16 +573,14 @@ class SubData:
         except Exception:
             log.exception("Fehler im subdata-Modul")
 
-    def process_system_topic(self, client, var, msg):
-        """Handler für die System-Topics
+    def process_system_topic(self, client: mqtt.Client, var: dict, msg: mqtt.MQTTMessage):
+        """ Handler für die System-Topics
 
-         Parameters
+        Parameter
         ----------
-        client : (unused)
-            vorgegebener Parameter
-        userdata : (unused)
-            vorgegebener Parameter
-        msg:
+        var : Dictionary
+            enthält aktuelle Daten
+        msg :
             enthält Topic und Payload
         """
         try:
@@ -658,7 +639,12 @@ class SubData:
             elif "mqtt" and "bridge" in msg.topic:
                 index = get_index(msg.topic)
                 parent_file = Path(__file__).resolve().parents[2]
-                subprocess.call(["php", "-f", str(parent_file / "runs" / "savemqtt.php"), index, msg.payload])
+                result = subprocess.run(
+                    ["php", "-f", str(parent_file / "runs" / "savemqtt.php"), index, msg.payload],
+                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+                if len(result.stdout) > 0:
+                    pub_system_message(msg.payload, result.stdout,
+                                       MessageType.SUCCESS if result.returncode == 0 else MessageType.ERROR)
             elif "GetRemoteSupport" in msg.topic:
                 payload = decode_payload(msg.payload)
                 splitted = payload.split(";")
@@ -684,16 +670,14 @@ class SubData:
         except Exception:
             log.exception("Fehler im subdata-Modul")
 
-    def process_graph_topic(self, var, msg):
+    def process_graph_topic(self, var: graph.Graph, msg: mqtt.MQTTMessage):
         """ Handler für die Graph-Topics
 
-         Parameters
+        Parameter
         ----------
-        client : (unused)
-            vorgegebener Parameter
-        userdata : (unused)
-            vorgegebener Parameter
-        msg:
+        var : Dictionary
+            enthält aktuelle Daten
+        msg :
             enthält Topic und Payload
         """
         try:
