@@ -27,7 +27,8 @@ BASE_URL = "https://id.mercedes-benz.com"
 OAUTH_URL = BASE_URL + "/as/authorization.oauth2"
 LOGIN_URL = BASE_URL + "/ciam/auth/login"
 TOKEN_URL = BASE_URL + "/as/token.oauth2"
-STATUS_URL = "https://oneapp.microservice.smart.com"
+# STATUS_URL = "https://oneapp.microservice.smart.com"
+STATUS_URL = "https://oneapp.microservice.smart.mercedes-benz.com"
 REDIRECT_URI = STATUS_URL
 SCOPE = "openid+profile+email+phone+ciam-uid+offline_access"
 CLIENT_ID = "70d89501-938c-4bec-82d0-6abb550b0825"
@@ -35,6 +36,8 @@ GUID = "280C6B55-F179-4428-88B6-E0CCF5C22A7C"
 ACCEPT_LANGUAGE = "de-de"
 
 TOKENS_REFRESH_THRESHOLD = 3600
+SSL_VERIFY_AUTH = True
+SSL_VERIFY_STATUS = True
 
 
 # helper functions
@@ -126,7 +129,7 @@ class Api:
         }
 
         try:
-            response = self.session.get(url, headers=headers)
+            response = self.session.get(url, headers=headers, verify=SSL_VERIFY_AUTH)
 
             soup = bs4.BeautifulSoup(response.text, 'html.parser')
 
@@ -160,7 +163,7 @@ class Api:
                            'rememberMe': 'true'})
 
         try:
-            response = self.session.post(url, headers=headers, data=data)
+            response = self.session.post(url, headers=headers, data=data, verify=SSL_VERIFY_AUTH)
             self.log.debug("login: status_code = " + str(response.status_code))
             if response.status_code >= 400:
                 self.log.error("login: failed, status_code = " + str(response.status_code) +
@@ -190,7 +193,7 @@ class Api:
         data = json.dumps({'token': self.token})
 
         try:
-            response = self.session.post(url, headers=headers, data=data)
+            response = self.session.post(url, headers=headers, data=data, verify=SSL_VERIFY_AUTH)
             code = response.url.split('?')[1].split('=')[1]
             self.log.debug("get_code: code=" + code)
         except Exception:
@@ -220,7 +223,7 @@ class Api:
                "&redirect_uri=" + REDIRECT_URI + "&client_id=" + CLIENT_ID
 
         try:
-            response = self.session.post(url, headers=headers, data=data)
+            response = self.session.post(url, headers=headers, data=data, verify=SSL_VERIFY_AUTH)
 
             Tokens = json.loads(response.text)
             if not Tokens['access_token']:
@@ -250,7 +253,7 @@ class Api:
             response = self.session.post(url,
                                          headers=headers,
                                          data=data,
-                                         verify=True,
+                                         verify=SSL_VERIFY_AUTH,
                                          allow_redirects=False,
                                          timeout=(30, 30))
 
@@ -324,7 +327,7 @@ class Api:
         }
 
         try:
-            response = self.session.get(url, headers=headers)
+            response = self.session.get(url, headers=headers, verify=SSL_VERIFY_STATUS)
             res = json.loads(response.text)
             res_json = json.dumps(res, indent=4)
             if (nested_key_exists(res, 'precond', 'data', 'soc', 'value') and
