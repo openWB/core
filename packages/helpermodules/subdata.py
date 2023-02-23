@@ -18,6 +18,7 @@ from control import general
 from helpermodules import graph
 from helpermodules.abstract_plans import AutolockPlan
 from helpermodules.broker import InternalBrokerClient
+from helpermodules.messaging import MessageType, pub_system_message
 from helpermodules.utils.topic_parser import decode_payload, get_index, get_second_index
 from control import optional
 from helpermodules.pub import Pub
@@ -658,7 +659,12 @@ class SubData:
             elif "mqtt" and "bridge" in msg.topic:
                 index = get_index(msg.topic)
                 parent_file = Path(__file__).resolve().parents[2]
-                subprocess.call(["php", "-f", str(parent_file / "runs" / "savemqtt.php"), index, msg.payload])
+                result = subprocess.run(
+                    ["php", "-f", str(parent_file / "runs" / "savemqtt.php"), index, msg.payload],
+                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+                if len(result.stdout) > 0:
+                    pub_system_message(msg.payload, result.stdout,
+                                       MessageType.SUCCESS if result.returncode == 0 else MessageType.ERROR)
             elif "GetRemoteSupport" in msg.topic:
                 payload = decode_payload(msg.payload)
                 splitted = payload.split(";")
