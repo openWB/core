@@ -45,9 +45,12 @@ class SolaxCounter:
                 ) / 10, self.__tcp_client.read_input_registers(
                     0x0072, ModbusDataType.UINT_16, unit=self.__modbus_id
                 ) / 10]
-                for voltage in voltages:
-                    if (voltage == 0):
-                        voltage = 230
+                if voltages[0] < 1:
+                    voltages[0] = 230
+                if voltages[1] < 1:
+                    voltages[1] = 230
+                if voltages[2] < 1:
+                    voltages[2] = 230
             except Exception:
                 voltages = [230, 230, 230]
             currents = [round(powers[0] / voltages[0], 1), round(powers[1] / voltages[1], 1),
