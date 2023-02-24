@@ -7,7 +7,7 @@ import html
 import paho.mqtt.subscribe as subscribe
 import paho.mqtt.publish as publish
 sys.path.append("../../../")
-from modules.common import req
+from modules.common import req  # noqa: E402
 
 # call parameters
 ev_id = str(sys.argv[1])
