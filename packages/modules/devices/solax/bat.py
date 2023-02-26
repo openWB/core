@@ -31,9 +31,9 @@ class SolaxBat:
             power = self.__tcp_client.read_input_registers(0x0016, ModbusDataType.INT_16, unit=self.__modbus_id)
             soc = self.__tcp_client.read_input_registers(0x001C, ModbusDataType.UINT_16, unit=self.__modbus_id)
             imported = self.__tcp_client.read_input_registers(
-                0x001D, ModbusDataType.UINT_16, unit=self.__modbus_id) * 100
-            exported = self.__tcp_client.read_input_registers(
                 0x0021, ModbusDataType.UINT_16, unit=self.__modbus_id) * 100
+            exported = self.__tcp_client.read_input_registers(
+                0x001D, ModbusDataType.UINT_16, unit=self.__modbus_id) * 100
 
         bat_state = BatState(
             power=power,
