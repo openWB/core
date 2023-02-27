@@ -1,5 +1,6 @@
 """Zähler-Logik
 """
+import copy
 from dataclasses import dataclass, field
 import logging
 from typing import Callable, Dict, List, Tuple, Union
@@ -111,7 +112,7 @@ class CounterAll:
 
     def _calc_home_consumption(self) -> Tuple[float, List]:
         power = 0
-        elements = self.get_entry_of_element(self.get_id_evu_counter())["children"]
+        elements = copy.deepcopy(self.get_entry_of_element(self.get_id_evu_counter())["children"])
         elements_to_sum_up = elements
         for element in elements:
             if element["type"] == ComponentType.INVERTER.value:
