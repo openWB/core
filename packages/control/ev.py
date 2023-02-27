@@ -119,7 +119,7 @@ class EvTemplateData:
     min_current: int = 6
     max_current_single_phase: int = 32
     battery_capacity: float = 82
-    nominal_difference: int = 2
+    nominal_difference: float = 0.5
 
 
 def ev_template_data_factory() -> EvTemplateData:
