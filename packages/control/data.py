@@ -302,23 +302,23 @@ class Data:
 
     def print_all(self):
         self._print_dictionaries(self._bat_data)
-        log.debug(f"bat_all_data\n{self._bat_all_data.data}")
-        log.debug(f"cp_all_data\n{self._cp_all_data.data}")
+        log.info(f"bat_all_data\n{self._bat_all_data.data}")
+        log.info(f"cp_all_data\n{self._cp_all_data.data}")
         self._print_dictionaries(self._cp_data)
         self._print_dictionaries(self._cp_template_data)
         self._print_dictionaries(self._counter_data)
-        log.debug(f"counter_all_data\n{self._counter_all_data.data}")
+        log.info(f"counter_all_data\n{self._counter_all_data.data}")
         self._print_dictionaries(self._ev_charge_template_data)
         self._print_dictionaries(self._ev_data)
         self._print_dictionaries(self._ev_template_data)
-        log.debug(f"general_data\n{self._general_data.data}")
-        log.debug(f"graph_data\n{self._graph_data.data}")
-        log.debug(f"optional_data\n{self._optional_data.data}")
+        log.info(f"general_data\n{self._general_data.data}")
+        log.info(f"graph_data\n{self._graph_data.data}")
+        log.info(f"optional_data\n{self._optional_data.data}")
         self._print_dictionaries(self._pv_data)
-        log.debug(f"pv_all_data\n{self._pv_all_data.data}")
+        log.info(f"pv_all_data\n{self._pv_all_data.data}")
         self._print_dictionaries(self._system_data)
         self._print_device_config(self._system_data)
-        log.debug("\n")
+        log.info("\n")
 
     def _print_dictionaries(self, data):
         """ gibt zu Debug-Zwecken für jeden Key im übergebenen Dictionary das Dictionary aus.
@@ -331,12 +331,12 @@ class Data:
             try:
                 if not isinstance(data[key], dict):
                     try:
-                        log.debug(key+"\n"+str(data[key].data))
+                        log.info(key+"\n"+str(data[key].data))
                     except AttributeError:
                         # Devices haben kein data-Dict
                         pass
                 else:
-                    log.debug(key+"\n"+"Klasse fehlt")
+                    log.info(key+"\n"+"Klasse fehlt")
             except Exception:
                 log.exception("Fehler im Data-Modul")
 
@@ -344,9 +344,9 @@ class Data:
         for key, value in data.items():
             try:
                 if isinstance(value, AbstractDevice):
-                    log.debug(f"{key}\n{dataclass_utils.asdict(value.device_config)}")
+                    log.info(f"{key}\n{dataclass_utils.asdict(value.device_config)}")
                     for comp_key, comp_value in value.components.items():
-                        log.debug(f"{comp_key}\n{dataclass_utils.asdict(comp_value.component_config)}")
+                        log.info(f"{comp_key}\n{dataclass_utils.asdict(comp_value.component_config)}")
             except Exception:
                 log.exception("Fehler im Data-Modul")
 

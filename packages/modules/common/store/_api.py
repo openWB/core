@@ -27,7 +27,7 @@ class LoggingValueStore(Generic[T], ValueStore[T]):
         self.delegate.set(state)
 
     def update(self) -> None:
-        log.debug("Saving %s", self.delegate.state)
+        log.info("Saving %s", self.delegate.state)
         self.delegate.update()
 
 
