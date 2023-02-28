@@ -10,7 +10,7 @@ RAMDISK_PATH = BASE_PATH / "ramdisk"
 
 logging.basicConfig(
     filename=str(RAMDISK_PATH / "remote_support.log"),
-    level=logging.DEBUG, format='%(asctime)s: %(message)s'
+    level=logging.INFO, format='%(asctime)s: %(message)s'
 )
 log = logging.getLogger("RemoteSupport")
 
@@ -34,13 +34,13 @@ def on_message(client: mqtt.Client, userdata, msg: mqtt.MQTTMessage):
     """handle incoming messages"""
     payload = msg.payload.decode("utf-8")
     if msg.topic == "openWB/set/system/GetRemoteSupport" and len(payload) >= 1:
-        log.info("Topic: %s, Message: %s", msg.topic, payload)
+        log.debug("Topic: %s, Message: %s", msg.topic, payload)
 
         if payload == 'stop':
             log.info("stop remote support: " + str(BASE_PATH / "runs" / "remoteSupport" / "stopRemoteSupport.sh"))
             subprocess.run([str(BASE_PATH / "runs" / "remoteSupport" / "stopRemoteSupport.sh")])
         elif re.match(r'^[A-Za-z0-9]+;[1-9][0-9]+(;[a-zA-Z0-9]+)?$', payload):
-            log.info("token file: " + str(RAMDISK_PATH / "remote_support.token"))
+            log.debug("token file: " + str(RAMDISK_PATH / "remote_support.token"))
             with open(str(RAMDISK_PATH / "remote_support.token"), "w") as file:
                 file.write(payload)
             log.info("init remote support: " + str(BASE_PATH / "runs" / "remoteSupport" / "initRemoteSupport.sh"))
