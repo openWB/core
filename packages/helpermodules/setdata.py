@@ -757,7 +757,8 @@ class SetData:
             enthält Topic und Payload
         """
         try:
-            if "openWB/set/counter/set/loadmanagement_active" in msg.topic:
+            if ("openWB/set/counter/config/reserve_for_not_charging" in msg.topic or
+                    "openWB/set/counter/set/loadmanagement_active" in msg.topic):
                 self._validate_value(msg, bool)
             elif "openWB/set/counter/set/invalid_home_consumption" in msg.topic:
                 self._validate_value(msg, int, [(0, 3)])

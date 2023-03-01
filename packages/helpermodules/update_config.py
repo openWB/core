@@ -12,7 +12,7 @@ from helpermodules.broker import InternalBrokerClient
 from helpermodules.pub import Pub
 from helpermodules.utils.topic_parser import decode_payload, get_index, get_second_index
 from helpermodules import measurement_log
-from control import chargepoint
+from control import chargepoint, counter_all
 from control import ev
 
 log = logging.getLogger(__name__)
@@ -89,6 +89,7 @@ class UpdateConfig:
                    "^openWB/command/[A-Za-z0-9_]+/error$",
                    "^openWB/command/todo$",
 
+                   "^openWB/counter/config/reserve_for_not_charging$",
                    "^openWB/counter/get/hierarchy$",
                    "^openWB/counter/set/invalid_home_consumption$",
                    "^openWB/counter/set/home_consumption$",
@@ -253,6 +254,7 @@ class UpdateConfig:
         ("openWB/chargepoint/get/power", 0),
         ("openWB/chargepoint/template/0", chargepoint.get_chargepoint_template_default()),
         ("openWB/counter/get/hierarchy", []),
+        ("openWB/counter/config/reserve_for_not_charging", counter_all.Config().reserve_for_not_charging),
         ("openWB/vehicle/0/name", ev.EvData().name),
         ("openWB/vehicle/0/charge_template", ev.Ev(0).charge_template.ct_num),
         ("openWB/vehicle/0/soc_module/config", {"type": None, "configuration": {}}),
