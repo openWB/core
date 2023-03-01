@@ -80,7 +80,7 @@ def test_instant_charging(selected: str, current_soc: float, used_amount: float,
         pytest.param(15, 8, 15, SwitchOnBatState.CHARGE_FROM_BAT,
                      (8, "instant_charging", None), id="min current configured"),
         pytest.param(15, 8, 15, SwitchOnBatState.SWITCH_OFF_SOC_REACHED, (0, "stop",
-                     SwitchOnBatState.SWITCH_OFF_SOC_REACHED), id="min current, bat reached switch off soc"),
+                     SwitchOnBatState.SWITCH_OFF_SOC_REACHED.value), id="min current, bat reached switch off soc"),
         pytest.param(15, 0, 15, SwitchOnBatState.CHARGE_FROM_BAT, (6, "pv_charging", None), id="bare pv charging"),
     ])
 def test_pv_charging(min_soc: int, min_current: int, current_soc: float, switch_on_soc_state: SwitchOnBatState,
