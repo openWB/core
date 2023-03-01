@@ -220,6 +220,7 @@ class UpdateConfig:
                    "^openWB/vehicle/[0-9]+/control_parameter/used_amount_instant_charging$",
                    "^openWB/vehicle/[0-9]+/control_parameter/phases$",
                    "^openWB/vehicle/[0-9]+/set/ev_template$",
+                   "^openWB/vehicle/[0-9]+/set/soc_error_counter$",
 
                    "^openWB/system/boot_done$",
                    "^openWB/system/dataprotection_acknowledged$",

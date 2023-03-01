@@ -30,9 +30,8 @@ class UpdateSoc:
                 threads_update, threads_store = self._get_threads()
                 thread_handler(threads_update)
             with ModuleUpdateCompletedContext(self.event_vehicle_update_completed, topic):
-                threads_store, threads_failed = self._filter_failed_store_threads(threads_store)
+                # threads_store = self._filter_failed_store_threads(threads_store)
                 thread_handler(threads_store)
-                self._reset_failed_soc_request(threads_failed)
         except Exception:
             log.exception("Fehler im update_soc-Modul")
 
@@ -44,9 +43,18 @@ class UpdateSoc:
             try:
                 if ev.soc_module is not None:
                     soc_update_data = self._get_soc_update_data(ev.num)
-                    if (ev.ev_template.soc_interval_expired(soc_update_data.charge_state, ev.data.get.soc_timestamp) or
-                            ev.data.get.force_soc_update):
+                    if (ev.soc_interval_expired(soc_update_data.charge_state) or ev.data.get.force_soc_update):
                         self._reset_force_soc_update(ev)
+                        if ev.data.get.fault_state == 2:
+                            ev.data.set.soc_error_counter += 1
+                        else:
+                            ev.data.set.soc_error_counter = 0
+                        Pub().pub(f"openWB/set/vehicle/{ev.num}/set/soc_error_counter", ev.data.set.soc_error_counter)
+                        if ev.data.set.soc_error_counter >= 3:
+                            log.debug(
+                                f"EV{ev.num}: Nach dreimaliger erfolgloser SoC-Abfrage wird ein SoC von 0% angenommen.")
+                            Pub().pub(f"openWB/set/vehicle/{ev.num}/get/soc", 0)
+                            Pub().pub(f"openWB/set/vehicle/{ev.num}/get/range", 0)
                         # Es wird ein Zeitstempel gesetzt, unabhängig ob die Abfrage erfolgreich war, da einige
                         # Hersteller bei zu häufigen Abfragen Accounts sperren.
                         Pub().pub(f"openWB/set/vehicle/{ev.num}/get/soc_timestamp", timecheck.create_timestamp())
@@ -74,9 +82,8 @@ class UpdateSoc:
             charge_state = False
         return SocUpdateData(charge_state=charge_state)
 
-    def _filter_failed_store_threads(self, threads_store: List[Thread]) -> Tuple[List[Thread], List[Thread]]:
+    def _filter_failed_store_threads(self, threads_store: List[Thread]) -> List[Thread]:
         ev_data = copy.deepcopy(subdata.SubData.ev_data)
-        threads_failed = []
         # Alle Autos durchgehen, deren SoC gerade aktualisiert wurde
         for ev_thread in threads_store:
             try:
@@ -84,20 +91,7 @@ class UpdateSoc:
                 if ev.soc_module is not None:
                     if hasattr(ev.soc_module, "store"):
                         if ev.data.get.fault_state == 2:
-                            threads_failed.append(ev_thread)
                             threads_store.remove(ev_thread)
             except Exception:
                 log.exception("Fehler im update_soc-Modul")
-        return threads_store, threads_failed
-
-    def _reset_failed_soc_request(self, threads_failed: List[Thread]) -> None:
-        ev_data = copy.deepcopy(subdata.SubData.ev_data)
-        # Alle Autos durchgehen, deren SoC gerade aktualisiert wurde
-        for ev_thread in threads_failed:
-            try:
-                ev = ev_data[f"ev{ev_thread.getName()[6:]}"]
-                log.debug(f"Zurücksetzen des SoC für EV{ev.num}, da ein Fehler vorliegt.")
-                Pub().pub(f"openWB/set/vehicle/{ev.num}/get/soc", 0)
-                Pub().pub(f"openWB/set/vehicle/{ev.num}/get/range", 0)
-            except Exception:
-                log.exception("Fehler im update_soc-Modul")
+        return threads_store

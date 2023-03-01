@@ -150,22 +150,6 @@ class EvTemplate:
     data: EvTemplateData = field(default_factory=ev_template_data_factory)
     et_num: int = 0
 
-    def soc_interval_expired(self, charge_state: bool, soc_timestamp: str) -> bool:
-        request_soc = False
-        if soc_timestamp == "":
-            # Initiale Abfrage
-            request_soc = True
-        else:
-            if charge_state is True:
-                interval = 5
-            else:
-                interval = 720
-            # Zeitstempel prüfen, ob wieder abgefragt werden muss.
-            if timecheck.check_timestamp(soc_timestamp, interval*60-5) is False:
-                # Zeit ist abgelaufen
-                request_soc = True
-        return request_soc
-
 
 def ev_template_factory() -> EvTemplate:
     return EvTemplate()
@@ -174,6 +158,7 @@ def ev_template_factory() -> EvTemplate:
 @dataclass
 class Set:
     ev_template: EvTemplate = field(default_factory=ev_template_factory)
+    soc_error_counter: int = 0
 
 
 def set_factory() -> Set:
@@ -255,6 +240,22 @@ class Ev:
             self.data.control_parameter.current_plan = None
         except Exception:
             log.exception("Fehler im ev-Modul "+str(self.num))
+
+    def soc_interval_expired(self, charge_state: bool) -> bool:
+        request_soc = False
+        if self.data.get.soc_timestamp == "":
+            # Initiale Abfrage
+            request_soc = True
+        else:
+            if charge_state is True or (self.data.set.soc_error_counter < 3 and self.data.get.fault_state == 2):
+                interval = 5
+            else:
+                interval = 720
+            # Zeitstempel prüfen, ob wieder abgefragt werden muss.
+            if timecheck.check_timestamp(self.data.get.soc_timestamp, interval*60-5) is False:
+                # Zeit ist abgelaufen
+                request_soc = True
+        return request_soc
 
     def get_required_current(self,
                              charged_since_mode_switch: float,

@@ -2,7 +2,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from control.ev import EvTemplate
+from control.ev import Ev
 from helpermodules import timecheck
 
 
@@ -20,12 +20,13 @@ def test_soc_interval_expired(check_timestamp: bool,
                               expected_request_soc: bool,
                               monkeypatch):
     # setup
-    et = EvTemplate()
+    ev = Ev(0)
+    ev.data.get.soc_timestamp = soc_timestamp
     check_timestamp_mock = Mock(return_value=check_timestamp)
     monkeypatch.setattr(timecheck, "check_timestamp", check_timestamp_mock)
 
     # execution
-    request_soc = et.soc_interval_expired(charge_state, soc_timestamp)
+    request_soc = ev.soc_interval_expired(charge_state)
 
     # evaluation
     assert request_soc == expected_request_soc
