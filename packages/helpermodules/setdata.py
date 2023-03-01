@@ -368,6 +368,8 @@ class SetData:
                 self._validate_value(msg, float, [(0, 100)])
             elif "/get/range" in msg.topic:
                 self._validate_value(msg, float, [(0, 1000)])
+            elif "/get/ev_timestamp" in msg.topic:
+                self._validate_value(msg, str)
             elif "/get/force_soc_update" in msg.topic:
                 self._validate_value(msg, bool)
             elif "/control_parameter/required_current" in msg.topic:
@@ -564,10 +566,10 @@ class SetData:
                 elif "/get/exported" in msg.topic:
                     self._validate_value(msg, float, [(0, float("inf"))])
                 elif "/get/power" in msg.topic:
-                    self._validate_value(msg, float)
+                    self._validate_value(msg, float, [(float("-inf"), 0)])
                 elif "/get/currents" in msg.topic:
                     self._validate_value(
-                        msg, float, collection=list)
+                        msg, float, [(float("-inf"), 0)], collection=list)
                 else:
                     self.__unknown_topic(msg)
             else:
