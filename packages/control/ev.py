@@ -674,11 +674,13 @@ class ChargeTemplate:
                     return min_current, "pv_charging", message
                 else:
                     # Min PV
-                    if (data.data.bat_all_data.data.config.configured is True and
-                            data.data.bat_all_data.data.set.switch_on_soc_state == SwitchOnBatState.CHARGE_FROM_BAT):
-                        return pv_charging.min_current, "instant_charging", message
+                    if data.data.bat_all_data.data.config.configured is True:
+                        if data.data.bat_all_data.data.set.switch_on_soc_state == SwitchOnBatState.CHARGE_FROM_BAT:
+                            return pv_charging.min_current, "instant_charging", message
+                        else:
+                            return 0, "stop", data.data.bat_all_data.data.set.switch_on_soc_state.value
                     else:
-                        return 0, "stop", data.data.bat_all_data.data.set.switch_on_soc_state
+                        return pv_charging.min_current, "instant_charging", message
             else:
                 return 0, "stop", self.PV_CHARGING_SOC_REACHED
         except Exception:
