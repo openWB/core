@@ -10,9 +10,6 @@ from modules.vehicles.mercedeseq.config import MercedesEQSoc
 from modules.common import req
 from paho.mqtt import publish as publish
 
-ramdiskdir = '/var/www/html/openWB/ramdisk/'
-moduledir = '/var/www/html/openWB/packages/modules/vehicles/mercedeseq/'
-
 req_timeout = (30, 30)  # timeout for requests in seconds
 
 vehicle = None
