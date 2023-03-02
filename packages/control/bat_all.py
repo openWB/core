@@ -144,13 +144,7 @@ class BatAll:
         """
         try:
             if self.data.config.configured is True:
-                # Speicher lädt
-                if self.data.get.power > 0:
-                    self._get_charging_power_left()
-                # Speicher wird entladen -> Wert wird ebenfalls benötigt, um zu prüfen, ob Abschaltschwelle erreicht
-                # wird.
-                else:
-                    self.data.set.charging_power_left = self.data.get.power
+                self._get_charging_power_left()
                 self._get_switch_on_state()
                 log.info(
                     str(self.data.set.charging_power_left)+"W verbliebende Speicher-Leistung")
