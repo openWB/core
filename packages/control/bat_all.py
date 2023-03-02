@@ -164,16 +164,21 @@ class BatAll:
             if not config.bat_prio:
                 self.data.set.charging_power_left = self.data.get.power
                 log.debug(f' Verbleibende Speicher-Leistung: {self.data.set.charging_power_left}W')
-                # Ladeleistungs-Reserve
-                self.data.set.charging_power_left -= config.charging_power_reserve
-                log.debug(f'Ladeleistungs-Reserve ({config.charging_power_reserve}W) subtrahieren: '
-                          f'{self.data.set.charging_power_left}')
+                if self.data.get.soc < 100:
+                    if config.charging_power_reserve != 0:
+                        # Ladeleistungs-Reserve
+                        self.data.set.charging_power_left -= config.charging_power_reserve
+                        log.debug(f'Ladeleistungs-Reserve ({config.charging_power_reserve}W) subtrahieren: '
+                                  f'{self.data.set.charging_power_left}')
+                    else:
+                        log.debug("Keine Ladeleistungs-Reserve für den Speicher vorhalten, da dieser bereits voll" +
+                                  " geladen ist.")
             # Wenn der Speicher Vorrang hat, darf die erlaubte Entlade-Leistung zum Laden der EV genutzt werden, wenn
             # der Soc über dem minimalen Entlade-Soc liegt.
             else:
                 if self.data.get.soc > config.rundown_soc:
                     self.data.set.charging_power_left = config.rundown_power - data.data.cp_all_data.data.get.power
-                    log.debug(f"Erlaubte Entlade-Leistung nutzen ({config.rundown_power}W, davon bisher ungeutzt "
+                    log.debug(f"Erlaubte Entlade-Leistung nutzen ({config.rundown_power}W, davon bisher ungenutzt "
                               f"{self.data.set.charging_power_left}W)")
                 else:
                     # 50 W Überschuss übrig lassen, die sich der Speicher dann nehmen kann. Wenn der Speicher
@@ -186,34 +191,38 @@ class BatAll:
         try:
             config = data.data.general_data.data.chargemode_config.pv_charging
             # Laderegelung wurde freigegeben.
-            if self.data.set.switch_on_soc_reached:
-                # Wenn kein Ausschalt-Soc konfiguriert wurde, wird der Speicher komplett entladen.
-                if ((config.switch_off_soc != 0 and config.switch_off_soc < self.data.get.soc) or
-                        (config.switch_off_soc == 0 and 0 < self.data.get.soc)):
-                    if config.switch_off_soc != 0:
-                        self.data.set.switch_on_soc_state = SwitchOnBatState.CHARGE_FROM_BAT
-                    else:
-                        self.data.set.switch_on_soc_state = SwitchOnBatState.REACH_ONLY_SWITCH_ON_SOC
-                else:
-                    self.data.set.switch_on_soc_reached = False
-                    self.data.set.switch_on_soc_state = SwitchOnBatState.SWITCH_OFF_SOC_REACHED
+            if config.switch_off_soc == 0 and config.switch_on_soc == 0:
+                self.data.set.switch_on_soc_state = SwitchOnBatState.CHARGE_FROM_BAT
+                self.data.set.switch_on_soc_reached = True
             else:
-                # Laderegelung wurde noch nicht freigegeben
-                if config.switch_on_soc != 0:
-                    if config.switch_on_soc <= self.data.get.soc:
-                        self.data.set.switch_on_soc_reached = True
-                        self.data.set.switch_on_soc_state = SwitchOnBatState.CHARGE_FROM_BAT
+                if self.data.set.switch_on_soc_reached:
+                    # Wenn kein Ausschalt-Soc konfiguriert wurde, wird der Speicher komplett entladen.
+                    if ((config.switch_off_soc != 0 and config.switch_off_soc < self.data.get.soc) or
+                            (config.switch_off_soc == 0 and 0 < self.data.get.soc)):
+                        if config.switch_off_soc != 0:
+                            self.data.set.switch_on_soc_state = SwitchOnBatState.CHARGE_FROM_BAT
+                        else:
+                            self.data.set.switch_on_soc_state = SwitchOnBatState.REACH_ONLY_SWITCH_ON_SOC
                     else:
-                        self.data.set.switch_on_soc_state = SwitchOnBatState.SWITCH_ON_SOC_NOT_REACHED
+                        self.data.set.switch_on_soc_reached = False
+                        self.data.set.switch_on_soc_state = SwitchOnBatState.SWITCH_OFF_SOC_REACHED
                 else:
-                    # Kein Einschalt-Soc; Nutzung, wenn Soc über Ausschalt-Soc liegt.
-                    if config.switch_off_soc != 0:
-                        if config.switch_off_soc < self.data.get.soc:
+                    # Laderegelung wurde noch nicht freigegeben
+                    if config.switch_on_soc != 0:
+                        if config.switch_on_soc <= self.data.get.soc:
                             self.data.set.switch_on_soc_reached = True
                             self.data.set.switch_on_soc_state = SwitchOnBatState.CHARGE_FROM_BAT
                         else:
-                            self.data.set.switch_on_soc_reached = False
-                            self.data.set.switch_on_soc_state = SwitchOnBatState.SWITCH_OFF_SOC_REACHED
+                            self.data.set.switch_on_soc_state = SwitchOnBatState.SWITCH_ON_SOC_NOT_REACHED
+                    else:
+                        # Kein Einschalt-Soc; Nutzung, wenn Soc über Ausschalt-Soc liegt.
+                        if config.switch_off_soc != 0:
+                            if config.switch_off_soc < self.data.get.soc:
+                                self.data.set.switch_on_soc_reached = True
+                                self.data.set.switch_on_soc_state = SwitchOnBatState.CHARGE_FROM_BAT
+                            else:
+                                self.data.set.switch_on_soc_reached = False
+                                self.data.set.switch_on_soc_state = SwitchOnBatState.SWITCH_OFF_SOC_REACHED
         except Exception:
             log.exception("Fehler im Bat-Modul")
 

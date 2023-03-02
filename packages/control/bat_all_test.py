@@ -27,8 +27,11 @@ class Params:
 cases = [
     Params("Speicher-Vorrang ohne Ladeleistungsreserve", PvCharging(bat_prio=False, charging_power_reserve=0),
            100, 500),
+    Params("Speicher-Vorrang mit Ladeleistungsreserve, Speicher voll",
+           PvCharging(bat_prio=False, charging_power_reserve=200),
+           100, 500),
     Params("Speicher-Vorrang mit Ladeleistungsreserve", PvCharging(bat_prio=False, charging_power_reserve=200),
-           100, 300),
+           99, 300),
     Params("EV-Vorrang mit erlaubter Entladeleistung", PvCharging(bat_prio=True), 51, 1000),
     Params("EV-Vorrang ohne erlaubte Entladeleistung", PvCharging(bat_prio=True), 50, -50),
 ]
@@ -65,7 +68,9 @@ def test_get_charging_power_left(params: Params, caplog, data_fixture):
      pytest.param(60, False, 60, 40, SwitchOnBatState.CHARGE_FROM_BAT, True,
                   id="Laderegelung nicht freigegeben, Einschalt-SoC erreicht"),
      pytest.param(59, False, 60, 40, SwitchOnBatState.SWITCH_ON_SOC_NOT_REACHED, False,
-                  id="Laderegelung nicht freigegeben, Einschalt-SoC nicht erreicht")]
+                  id="Laderegelung nicht freigegeben, Einschalt-SoC nicht erreicht"),
+     pytest.param(59, False, 0, 0, SwitchOnBatState.CHARGE_FROM_BAT, True,
+                  id="Ein/Ausschalt-SoC nicht konfiguriert")]
 
 )
 def test_get_switch_on_state(soc: float,
