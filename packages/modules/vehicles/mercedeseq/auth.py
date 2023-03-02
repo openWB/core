@@ -13,8 +13,6 @@ from modules.common import req  # noqa: E402
 ev_id = str(sys.argv[1])
 code = str(sys.argv[2])
 
-moddir = '/var/www/html/openWB/packages/modules/vehicles/mercedeseq/'
-
 
 def printDebug(message, level):
     htmlmsg = html.escape(message)
@@ -27,10 +25,10 @@ def printHtml(message):
     print("<p>" + htmlmsg + "</p>")
 
 
-print("<html>")
+print("<html><body>")
 
-msg = (subscribe.simple("openWB/system/debug_level", hostname="localhost"))
-debug = int(str(msg.payload.decode("UTF-8")))
+msg = subscribe.simple("openWB/system/debug_level", hostname="localhost")
+debug = int(msg.payload.decode("UTF-8"))
 printHtml("Debug: " + str(debug))
 msg = subscribe.simple("openWB/vehicle/" + ev_id + "/soc_module/config", hostname="localhost")
 conf = json.loads(msg.payload)
@@ -71,10 +69,9 @@ if act.status_code == 200:
     publish.single("openWB/set/vehicle/" + ev_id +
                    "/soc_module/config", json.dumps(conf), retain=True, hostname="localhost")
 
-if act.status_code == 200:
     printHtml("Anmeldung erfolgreich!")
     print("<a href=""javascript:window.close()"">Sie k&ouml;nnen das Fenster schlie&szlig;en.</a>")
 else:
     printHtml("Anmeldung Fehlgeschlagen Code: " + str(act.status_code) + " " + act.text)
     printHtml("Code: " + code + " ev_id: " + ev_id)
-print("</html>")
+print("</body></html>")
