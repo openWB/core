@@ -10,6 +10,7 @@ class Stasmota(Sbase):
         # setting
         super().__init__()
         self._old_measuretype0 = 'none'
+        log.debug('__init__ Stasmota excuted')
 
     def getwatt(self, uberschuss: int, uberschussoffset: int) -> None:
         self.prewatt(uberschuss, uberschussoffset)

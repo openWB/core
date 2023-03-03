@@ -181,8 +181,8 @@ class AVMHomeAutomation:
                 prefix = "[INFO] "
             if level == LOGLEVELERROR:
                 prefix = "[ERROR] "
-            print('%s: (%s) AVM (actor: %s) %s%s' %
-                  (time_string, self.devicenumber, self.switchname, prefix, message), file=f)
+            log.debug('%s: (%s) AVM (actor: %s) %s%s' %
+                      (time_string, self.devicenumber, self.switchname, prefix, message), file=f)
             f.close()
         except IOError:
             pass
@@ -367,7 +367,7 @@ class AVMHomeAutomation:
             f1.close()
         except IOError as e:
             self.logMessage(LOGLEVELERROR, "error writing power result %s" % (e))
-            print(answer)  # dump answer to stdout if file cannot be written
+            log.debug(answer)  # dump answer to stdout if file cannot be written
         except Exception:
             exc_type, exc_obj, exc_tb = sys.exc_info()
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]

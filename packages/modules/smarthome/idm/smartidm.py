@@ -11,6 +11,7 @@ class Sidm(Sbase):
         super().__init__()
         self._device_idmnav = '2'
         self.device_nummer = 0
+        log.debug('__init__ Sidm executed')
 
     def updatepar(self, input_param: Dict[str, str]) -> None:
         super().updatepar(input_param)

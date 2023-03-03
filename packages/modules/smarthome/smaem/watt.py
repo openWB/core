@@ -44,7 +44,7 @@ from speedwiredecoder import decode_speedwire
 
 def abortprogram(signal, frame):
     # Housekeeping -> nothing to cleanup
-    print('STRG + C = end program')
+    log.debug('STRG + C = end program')
     sys.exit(0)
 
 
@@ -75,7 +75,7 @@ try:
     mreq = struct.pack("4s4s", socket.inet_aton(MCAST_GRP), socket.inet_aton(ipbind))
     sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
 except BaseException:
-    print('Module SMAEM: Could not connect to multicast group or bind to given interface')
+    log.debug('Module SMAEM: Could not connect to multicast group or bind to given interface')
     sys.exit(1)
 
 if os.path.isfile(timefile):

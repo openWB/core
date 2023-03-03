@@ -8,7 +8,7 @@ class Sviessmann(Sbase):
     def __init__(self) -> None:
         # setting
         super().__init__()
-        print('__init__ Sviessmann executed')
+        log.debug('__init__ Sviessmann executed')
 
     def getwatt(self, uberschuss: int, uberschussoffset: int) -> None:
         self.prewatt(uberschuss, uberschussoffset)

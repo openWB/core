@@ -24,14 +24,14 @@ if os.path.isfile(file_string):
     f = open(file_string, 'a')
 else:
     f = open(file_string, 'w')
-print('%s devicenr %s ipadr %s ueberschuss %6d try to connect (modbus)' %
-      (time_string, devicenumber, ipadr, uberschuss), file=f)
+log.debug('%s devicenr %s ipadr %s ueberschuss %6d try to connect (modbus)' %
+          (time_string, devicenumber, ipadr, uberschuss), file=f)
 client = ModbusTcpClient(ipadr, port=502)
 rq = client.write_coil(16, False, unit=1)
-print(rq, file=f)
+log.debug(rq, file=f)
 client.close()
-print('%s devicenr %s ipadr %s Einmalige Warmwasseraufbereitung deaktiviert CO-17 = 0 ' %
-      (time_string, devicenumber, ipadr), file=f)
+log.debug('%s devicenr %s ipadr %s Einmalige Warmwasseraufbereitung deaktiviert CO-17 = 0 ' %
+          (time_string, devicenumber, ipadr), file=f)
 f.close()
 pvmodus = 0
 f = open(file_stringpv, 'w')
