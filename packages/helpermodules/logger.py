@@ -30,6 +30,12 @@ def setup_logging() -> None:
     mqtt_file_handler.setFormatter(logging.Formatter(format_str_short))
     mqtt_log.addHandler(mqtt_file_handler)
 
+    smarthome_log_handler = logging.FileHandler(
+        str(Path(__file__).resolve().parents[2] / 'ramdisk' / ('smarthome.log')))
+    smarthome_log_handler.setFormatter(logging.Formatter(format_str_short))
+    smarthome_log_handler.addFilter(functools.partial(filter_pos, "smarthome"))
+    logging.getLogger().addHandler(smarthome_log_handler)
+
     soc_log_handler = logging.FileHandler(str(Path(__file__).resolve().parents[2] / 'ramdisk' / ('soc.log')))
     soc_log_handler.setFormatter(logging.Formatter(format_str_detailed))
     soc_log_handler.addFilter(functools.partial(filter_pos, "soc"))

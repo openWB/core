@@ -23,6 +23,7 @@ from control import process
 from control.algorithm import algorithm
 from helpermodules.utils import exit_after
 from modules import update_soc
+from smarthome.smarthome import smarthome_handler
 
 logger.setup_logging()
 log = logging.getLogger()
@@ -108,6 +109,7 @@ class HandlerAlgorithm:
 
 def schedule_jobs():
     [schedule.every().minute.at(f":{i:02d}").do(handler.handler10Sec) for i in range(0, 60, 10)]
+    [schedule.every().minute.at(f":{i:02d}").do(smarthome_handler) for i in range(0, 60, 5)]
     [schedule.every().minute.at(f":{i:02d}").do(soc.update) for i in range(0, 60, 10)]
     [schedule.every().hour.at(f":{i:02d}").do(handler.handler5Min) for i in range(0, 60, 5)]
     schedule.every().day.at("00:00:00").do(handler.handler_midnight)

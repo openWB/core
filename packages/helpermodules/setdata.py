@@ -795,7 +795,8 @@ class SetData:
             elif "openWB/set/counter/set/invalid_home_consumption" in msg.topic:
                 self._validate_value(msg, int, [(0, 3)])
             elif ("openWB/set/counter/set/home_consumption" in msg.topic or
-                    "openWB/set/counter/set/daily_yield_home_consumption" in msg.topic):
+                  "openWB/set/counter/set/daily_yield_home_consumption" in msg.topic or
+                  "openWB/set/counter/set/disengageable_smarthome_power" in msg.topic):
                 self._validate_value(msg, float, [(0, float("inf"))])
             elif "openWB/set/counter/get/hierarchy" in msg.topic:
                 self._validate_value(msg, None)

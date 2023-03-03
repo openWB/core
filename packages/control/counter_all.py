@@ -30,6 +30,7 @@ class Set:
     home_consumption: float = 0
     invalid_home_consumption: int = 0
     daily_yield_home_consumption: float = 0
+    disengageable_smarthome_power: float = 0
 
 
 @dataclass
