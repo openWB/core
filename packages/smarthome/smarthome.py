@@ -95,13 +95,12 @@ def loadregelvars():
                     + str(e))
         wattbezug = 0
     uberschuss = wattbezug + speicherleistung
-    # deprecated? wird nicht gesetzt
-    # try:
-    #     with open(bp+'/ramdisk/smarthomehandlermaxbatterypower', 'r') as value:
-    #         maxspeicher = int(value.read())
-    # except Exception as e:
-    #     log.warning("Fehler beim Auslesen der Ramdisk " +
-    #                 "(smarthomehandlermaxbatterypower): " + str(e))
+    try:
+        with open(bp+'/ramdisk/smarthomehandlermaxbatterypower', 'r') as value:
+            maxspeicher = int(value.read())
+    except Exception as e:
+        log.warning("Fehler beim Auslesen der Ramdisk " +
+                    "(smarthomehandlermaxbatterypower): " + str(e))
     maxspeicher = 0
     uberschussoffset = wattbezug + speicherleistung - maxspeicher
     log.info("EVU Bezug(-)/Einspeisung(+): " + str(wattbezug) +
@@ -111,28 +110,34 @@ def loadregelvars():
     log.info("Speicher Entladung(-)/Ladung(+): " +
              str(speicherleistung) + " SpeicherSoC: " + str(speichersoc))
 
-# deprecated?
-    # for i in range(1, (numberOfSupportedDevices+1)):
-    #     try:
-    #         with open(bp+'/ramdisk/smarthome_device_manual_'
-    #                   + str(i), 'r') as value:
-    #             for mydevice in mydevices:
-    #                 if (str(i) == str(mydevice.device_nummer)):
-    #                     mydevice.device_manual = int(value.read())
-    #     except Exception:
-    #         pass
-    #     try:
-    #         with open(bp+'/ramdisk/smarthome_device_manual_control_'
-    #                   + str(i), 'r') as value:
-    #             for mydevice in mydevices:
-    #                 if (str(i) == str(mydevice.device_nummer)):
-    #                     mydevice.device_manual_control = int(value.read())
-    #     except Exception:
-    #         pass
+    reread = 0
+    try:
+        with open(bp+'/ramdisk/rereadsmarthomedevices', 'r') as value:
+            reread = int(value.read())
+    except Exception:
+        reread = 1
+    if (reread == 1):
+        with open(bp+'/ramdisk/rereadsmarthomedevices', 'w') as f:
+            f.write(str(0))
+        readmq()
 
-    # deprecated
-    # reread
-    readmq()
+    for i in range(1, (numberOfSupportedDevices+1)):
+        try:
+            with open(bp+'/ramdisk/smarthome_device_manual_'
+                      + str(i), 'r') as value:
+                for mydevice in mydevices:
+                    if (str(i) == str(mydevice.device_nummer)):
+                        mydevice.device_manual = int(value.read())
+        except Exception:
+            pass
+        try:
+            with open(bp+'/ramdisk/smarthome_device_manual_control_'
+                      + str(i), 'r') as value:
+                for mydevice in mydevices:
+                    if (str(i) == str(mydevice.device_nummer)):
+                        mydevice.device_manual_control = int(value.read())
+        except Exception:
+            pass
 
 
 def getdevicevalues():
