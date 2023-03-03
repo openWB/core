@@ -5,6 +5,8 @@ import time
 import json
 import urllib.request
 from smarthome.smartret import writeret
+import logging
+log = logging.getLogger(__name__)
 
 
 def totalPowerFromShellyJson(answer, workchan: int) -> int:

@@ -38,7 +38,8 @@ import signal
 import socket
 import struct
 from speedwiredecoder import decode_speedwire
-
+import logging
+log = logging.getLogger(__name__)
 # clean exit
 
 
