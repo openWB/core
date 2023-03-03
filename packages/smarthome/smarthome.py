@@ -1,4 +1,21 @@
 #!/usr/bin/python3
+from modules.smarthome.ratiotherm.smartratiotherm import Sratiotherm
+from modules.smarthome.viessmann.smartviessmann import Sviessmann
+from modules.smarthome.tasmota.smarttasmota import Stasmota
+from modules.smarthome.lambda_.smartlambda import Slambda
+from modules.smarthome.vampair.smartvampair import Svampair
+from modules.smarthome.stiebel.smartstiebel import Sstiebel
+from modules.smarthome.shelly.smartshelly import Sshelly
+from modules.smarthome.mystrom.smartmystrom import Smystrom
+from modules.smarthome.mqtt.smartmqtt import Smqtt
+from modules.smarthome.http.smarthttp import Shttp
+from modules.smarthome.idm.smartidm import Sidm
+from modules.smarthome.elwa.smartelwa import Selwa
+from modules.smarthome.nxdacxx.smartnxdacxx import Snxdacxx
+from modules.smarthome.acthor.smartacthor import Sacthor
+from modules.smarthome.avmhomeautomation.smartavm import Savm
+from smarthome.smartbase import Sbase
+from threading import Thread
 import paho.mqtt.client as mqtt
 import time
 import re
@@ -6,30 +23,12 @@ import os
 import logging
 import math
 from helpermodules.subdata import SubData
-from smarthome.global0 import log, log_config
-from smarthome.smartbase import Sbase
-from modules.smarthome.avmhomeautomation.smartavm import Savm
-from modules.smarthome.acthor.smartacthor import Sacthor
-from modules.smarthome.nxdacxx.smartnxdacxx import Snxdacxx
-from modules.smarthome.elwa.smartelwa import Selwa
-from modules.smarthome.idm.smartidm import Sidm
-from modules.smarthome.http.smarthttp import Shttp
-from modules.smarthome.mqtt.smartmqtt import Smqtt
-from modules.smarthome.mystrom.smartmystrom import Smystrom
-from modules.smarthome.shelly.smartshelly import Sshelly
-from modules.smarthome.stiebel.smartstiebel import Sstiebel
-from modules.smarthome.vampair.smartvampair import Svampair
-from modules.smarthome.lambda_.smartlambda import Slambda
-from modules.smarthome.tasmota.smarttasmota import Stasmota
-from modules.smarthome.viessmann.smartviessmann import Sviessmann
-from modules.smarthome.ratiotherm.smartratiotherm import Sratiotherm
+log = logging.getLogger(__name__)
 
 mqtt_cache = {}
 mydevices = []
 bp = '/var/www/html/openWB'
 numberOfSupportedDevices = 9  # limit number of smarthome devices
-
-log = logging.getLogger("smarthome")
 
 
 def on_connect(client, userdata, flags, rc):
@@ -53,13 +52,13 @@ def on_message(client, userdata, msg):
     if (("/" in keyword) or (int(devicenumb) < 1) or
        (int(devicenumb) > numberOfSupportedDevices)):
         # falsches topic
-        log_config.warning("(" + str(devicenumb) + ") skipped Key " +
-                           str(keyword) + " Msg " + str(msg.topic) +
-                           " Value " + str(value))
+        log.warning("(" + str(devicenumb) + ") skipped Key " +
+                    str(keyword) + " Msg " + str(msg.topic) +
+                    " Value " + str(value))
     else:
         # richtig  topic
-        log_config.info("(" + str(devicenumb) + ") Key " +
-                        str(keyword) + " Value " + str(value))
+        log.info("(" + str(devicenumb) + ") Key " +
+                 str(keyword) + " Value " + str(value))
         parammqtt.append([devicenumb, keyword, value])
 
 # Lese aus der Ramdisk Regelrelevante Werte ein
@@ -343,7 +342,6 @@ def update_devices():
 def readmq():
     global parammqtt
     global mydevices
-    log_config.info("Config reRead start")
     log.info("Config reRead start")
     parammqtt = []
     client = mqtt.Client("openWB-mqttsmarthome")
@@ -359,7 +357,6 @@ def readmq():
             client.disconnect()
             break
     update_devices()
-    log_config.info("Config reRead done")
     log.info("Config reRead done")
 
 
@@ -401,43 +398,46 @@ def resetmaxeinschaltdauerfunc():
 
 
 def smarthome_handler():
-    try:
-        #        update_devices()
-        mqtt_man = {}
-        sendmess = 0
-        loadregelvars()
-        resetmaxeinschaltdauerfunc()
-        getdevicevalues()
-        conditions()
-        # do the manual stuff
-        for i in range(1, (numberOfSupportedDevices+1)):
-            for mydevice in mydevices:
-                if (str(i) == str(mydevice.device_nummer)):
-                    if (mydevice.device_manual == 1):
-                        if (mydevice.device_manual_control == 0):
-                            if (mydevice.relais == 1):
-                                mydevice.turndevicerelais(0, 0, 1)
-                        if (mydevice.device_manual_control == 1):
-                            if (mydevice.relais == 0):
-                                mydevice.turndevicerelais(1, 0, 1)
-                        mydevice.c_mantime_f = 'Y'
-                        mydevice.c_mantime = time.time()
-                        log.info("(" + str(i) + ") " +
-                                 mydevice.device_name +
-                                 " manueller Modus aktiviert, keine Regelung")
-        for i in range(1, (numberOfSupportedDevices+1)):
-            pref = 'openWB/config/set/SmartHome/Devices/' + str(i) + '/'
-            for mydevice in mydevices:
-                if (str(i) == str(mydevice.device_nummer)):
-                    mydevice.updatebutton()
-                    if (mydevice.btchange == 1):
-                        sendmess = 1
-                        mqtt_man[pref + 'mode'] = mydevice.newdevice_manual
-                    if (mydevice.btchange == 2):
-                        sendmess = 1
-                        workman = mydevice.newdevice_manual_control
-                        mqtt_man[pref + 'device_manual_control'] = workman
-        if (sendmess == 1):
-            sendmq(mqtt_man)
-    except Exception:
-        log.exception("Fehler im Smarthome-Handler")
+    def handler():
+        try:
+            #        update_devices()
+            mqtt_man = {}
+            sendmess = 0
+            loadregelvars()
+            resetmaxeinschaltdauerfunc()
+            getdevicevalues()
+            conditions()
+            # do the manual stuff
+            for i in range(1, (numberOfSupportedDevices+1)):
+                for mydevice in mydevices:
+                    if (str(i) == str(mydevice.device_nummer)):
+                        if (mydevice.device_manual == 1):
+                            if (mydevice.device_manual_control == 0):
+                                if (mydevice.relais == 1):
+                                    mydevice.turndevicerelais(0, 0, 1)
+                            if (mydevice.device_manual_control == 1):
+                                if (mydevice.relais == 0):
+                                    mydevice.turndevicerelais(1, 0, 1)
+                            mydevice.c_mantime_f = 'Y'
+                            mydevice.c_mantime = time.time()
+                            log.info("(" + str(i) + ") " +
+                                     mydevice.device_name +
+                                     " manueller Modus aktiviert, keine Regelung")
+            for i in range(1, (numberOfSupportedDevices+1)):
+                pref = 'openWB/config/set/SmartHome/Devices/' + str(i) + '/'
+                for mydevice in mydevices:
+                    if (str(i) == str(mydevice.device_nummer)):
+                        mydevice.updatebutton()
+                        if (mydevice.btchange == 1):
+                            sendmess = 1
+                            mqtt_man[pref + 'mode'] = mydevice.newdevice_manual
+                        if (mydevice.btchange == 2):
+                            sendmess = 1
+                            workman = mydevice.newdevice_manual_control
+                            mqtt_man[pref + 'device_manual_control'] = workman
+            if (sendmess == 1):
+                sendmq(mqtt_man)
+        except Exception:
+            log.exception("Fehler im Smarthome-Handler")
+    # run as thread for logging reasons
+    Thread(target=handler, args=(), name="smarthome").start()

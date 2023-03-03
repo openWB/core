@@ -1,6 +1,6 @@
 #!/usr/bin/python3
-from smarthome.smartbase import Sbase, Slhttp
 from typing import Dict
+from smarthome.smartbase import Sbase, Slhttp
 import logging
 log = logging.getLogger(__name__)
 
