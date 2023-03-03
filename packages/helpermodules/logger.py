@@ -24,6 +24,7 @@ def setup_logging() -> None:
                         level=logging.DEBUG)
     logging.getLogger().handlers[0].addFilter(functools.partial(filter_neg, "soc"))
     logging.getLogger().handlers[0].addFilter(functools.partial(filter_neg, "Internal Chargepoint"))
+    logging.getLogger().handlers[0].addFilter(functools.partial(filter_neg, "smarthome"))
 
     mqtt_log = logging.getLogger("mqtt")
     mqtt_log.propagate = False
