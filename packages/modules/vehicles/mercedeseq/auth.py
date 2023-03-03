@@ -10,22 +10,21 @@ sys.path.append("../../../")
 from modules.common import req  # noqa: E402
 
 # call parameters
-ev_id = str(sys.argv[1])
-code = str(sys.argv[2])
+ev_id = sys.argv[1]
+code = sys.argv[2]
+callback = sys.argv[3]
 
 
 def printDebug(message, level):
-    htmlmsg = html.escape(message)
+    html_message = html.escape(message)
     if level >= debug:
-        print("<p>" + htmlmsg + "</p>")
+        print("<p>" + html_message + "</p>")
 
 
 def printHtml(message):
-    htmlmsg = html.escape(message)
-    print("<p>" + htmlmsg + "</p>")
+    html_message = html.escape(message)
+    print("<p>" + html_message + "</p>")
 
-
-print("<html><body>")
 
 msg = subscribe.simple("openWB/system/debug_level", hostname="localhost")
 debug = int(msg.payload.decode("UTF-8"))
@@ -36,7 +35,7 @@ conf = json.loads(msg.payload)
 
 client_id = conf['configuration']['client_id']
 client_secret = conf['configuration']['client_secret']
-callback = conf['configuration']['callbackurl']
+
 printDebug("ClientID:"+client_id[0:3] + "**********" + client_id[-3:0], 10)
 printDebug("ClientSecret: " + client_secret[0:3] + "**********" + client_secret[-3:], 10)
 printDebug("Callback:" + callback, 10)
@@ -52,12 +51,12 @@ printDebug(act.url, 20)
 
 if act.status_code == 200:
     # valid Response
-    toks = json.loads(act.text)
-    access_token = toks['access_token']
-    refresh_token = toks['refresh_token']
+    tokens = json.loads(act.text)
+    access_token = tokens['access_token']
+    refresh_token = tokens['refresh_token']
     expires_in = int(time.time())
-    token_type = toks['token_type']
-    id_token = toks['id_token']
+    token_type = tokens['token_type']
+    id_token = tokens['id_token']
 
     # persist tokens
     conf['configuration']['token']['refresh_token'] = refresh_token
@@ -70,8 +69,7 @@ if act.status_code == 200:
                    "/soc_module/config", json.dumps(conf), retain=True, hostname="localhost")
 
     printHtml("Anmeldung erfolgreich!")
-    print("<a href=""javascript:window.close()"">Sie k&ouml;nnen das Fenster schlie&szlig;en.</a>")
+    print("<a href=""javascript:window.close()"">Sie können das Fenster schließen.</a>")
 else:
     printHtml("Anmeldung Fehlgeschlagen Code: " + str(act.status_code) + " " + act.text)
     printHtml("Code: " + code + " ev_id: " + ev_id)
-print("</body></html>")

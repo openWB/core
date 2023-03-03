@@ -8,7 +8,7 @@ from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.component_state import CarState
 from modules.common.fault_state import ComponentInfo
 from modules.vehicles.mercedeseq.config import MercedesEQSoc
-from modules.vehicles.mercedeseq import api
+import modules.vehicles.mercedeseq.api as api
 
 
 log = logging.getLogger("soc."+__name__)
@@ -24,7 +24,7 @@ class Soc(AbstractSoc):
     def update(self, charge_state: bool = False) -> None:
         # # if self.config.configuration.code == None and self.config.configuration.token.access_token == None:
         # if  self.config.configuration.token.access_token == None:
-        #     # error: "Bitte Link in der Konfig anklicken" triggert Aufruf der Callback-URL
+        #     # error: "Bitte Link in der Konfiguration anklicken" triggert Aufruf der Callback-URL
         #     pass
         # # elif self.config.configuration.code != None and self.config.configuration.token.access_token == None:
         #     # auth.py um Token abzuholen
