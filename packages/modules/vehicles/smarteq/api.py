@@ -130,7 +130,6 @@ class Api:
 
         try:
             response = self.session.get(url, headers=headers, verify=SSL_VERIFY_AUTH)
-
             soup = bs4.BeautifulSoup(response.text, 'html.parser')
 
             for cd in soup.findAll(text=True):
@@ -224,7 +223,6 @@ class Api:
 
         try:
             response = self.session.post(url, headers=headers, data=data, verify=SSL_VERIFY_AUTH)
-
             Tokens = json.loads(response.text)
             if not Tokens['access_token']:
                 self.log.warn("get_tokens: no access_token found")
