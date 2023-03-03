@@ -94,6 +94,7 @@ class UpdateConfig:
 
                    "^openWB/counter/config/reserve_for_not_charging$",
                    "^openWB/counter/get/hierarchy$",
+                   "^openWB/counter/set/disengageable_smarthome_power$",
                    "^openWB/counter/set/invalid_home_consumption$",
                    "^openWB/counter/set/home_consumption$",
                    "^openWB/counter/set/daily_yield_home_consumption$",
@@ -234,6 +235,14 @@ class UpdateConfig:
                    "^openWB/vehicle/[0-9]+/control_parameter/state$",
                    "^openWB/vehicle/[0-9]+/set/ev_template$",
                    "^openWB/vehicle/[0-9]+/set/soc_error_counter$",
+
+                   "^openWB/config/get/SmartHome/Devices/[0-9]+/device_measureid$",
+                   "^openWB/config/get/SmartHome/Devices/[0-9]+/device_measureip$",
+                   "^openWB/config/get/SmartHome/Devices/[0-9]+/device_measureType$",
+                   "^openWB/config/get/SmartHome/Devices/[0-9]+/device_differentMeasurement$",
+                   "^openWB/config/get/SmartHome/Devices/[0-9]+/device_type$",
+                   "^openWB/config/get/SmartHome/Devices/[0-9]+/device_name$",
+                   "^openWB/config/get/SmartHome/Devices/[0-9]+/device_configured$",
 
                    "^openWB/system/boot_done$",
                    "^openWB/system/dataprotection_acknowledged$",

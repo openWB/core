@@ -135,7 +135,6 @@ class AVMHomeAutomation:
     # an authentication to obtain a new session ID if neccessary. A session ID
     # is assumed to be recent enough if it has been obtained ramdisk less than
     # 5 minutes ago in which case it is reused.
-
     def connect(self):
         should_authenticate = True
         ownInfo = self.cachedOwnInfo()
@@ -250,7 +249,6 @@ class AVMHomeAutomation:
     # values (if more recent than 5 seconds), or by fetching the info from the FRITZ!Box.
     # The main purpose of this cache is to skip looking up the AIN via network
     # every time.
-
     def readOrBuildDeviceInfoCache(self):
         self.logMessage(LOGLEVELDEBUG, "start of readOrBuildDeviceInfoCache")
         should_fetch = True
