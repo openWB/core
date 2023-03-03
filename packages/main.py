@@ -121,7 +121,12 @@ try:
     data.data_init(loadvars_.event_module_update_completed)
     update_config.UpdateConfig().update()
     configuration.pub_configurable()
-    readmq()
+
+    # run as thread for logging reasons
+    t_smarthome = Thread(target=readmq, args=(), name="smarthome")
+    t_smarthome.start()
+    t_smarthome.join()
+
     proc = process.Process()
     control = algorithm.Algorithm()
     handler = HandlerAlgorithm()

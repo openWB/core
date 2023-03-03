@@ -76,31 +76,29 @@ def loadregelvars():
     global mydevices
     try:
         if len(SubData.bat_data) > 1:
-            speicherleistung = SubData.bat_data["all"].data["get"]["power"]
-            speichersoc = SubData.bat_data["all"].data["get"]["soc"]
+            speicherleistung = SubData.bat_data["all"].data.get.power
+            speichersoc = SubData.bat_data["all"].data.get.soc
         else:
             speicherleistung = 0
             speichersoc = 100
-    except Exception as e:
-        log.warning("Fehler beim Auslesen der Ramdisk " +
-                    "(speichervorhanden,speicherleistung,speichersoc): " +
-                    str(e))
+    except Exception:
+        log.exception("Fehler beim Auslesen der Ramdisk " +
+                      "(speichervorhanden,speicherleistung,speichersoc): ")
         speichervorhanden = 0
         speicherleistung = 0
         speichersoc = 100
     try:
-        wattbezug = SubData.counter_data[SubData.counter_all_data.get_evu_counter()].data["get"]["power"] * -1
-    except Exception as e:
-        log.warning("Fehler beim Auslesen der Ramdisk (wattbezug):"
-                    + str(e))
+        wattbezug = SubData.counter_data[f"counter{SubData.counter_all_data.get_id_evu_counter()}"].data.get.power * -1
+    except Exception:
+        log.exception("Fehler beim Auslesen der Ramdisk (wattbezug):")
         wattbezug = 0
     uberschuss = wattbezug + speicherleistung
     try:
         with open(bp+'/ramdisk/smarthomehandlermaxbatterypower', 'r') as value:
             maxspeicher = int(value.read())
-    except Exception as e:
-        log.warning("Fehler beim Auslesen der Ramdisk " +
-                    "(smarthomehandlermaxbatterypower): " + str(e))
+    except Exception:
+        log.exception("Fehler beim Auslesen der Ramdisk " +
+                      "(smarthomehandlermaxbatterypower): ")
     maxspeicher = 0
     uberschussoffset = wattbezug + speicherleistung - maxspeicher
     log.info("EVU Bezug(-)/Einspeisung(+): " + str(wattbezug) +
