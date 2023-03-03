@@ -18,7 +18,8 @@
 """
 
 import binascii
-
+import logging
+log = logging.getLogger(__name__)
 # unit definitions with scaling
 sma_units = {
     "W":    10,

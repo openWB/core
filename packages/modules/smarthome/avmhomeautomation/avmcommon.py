@@ -7,6 +7,8 @@ import urllib.request
 import hashlib
 import credentials
 import xml.etree.ElementTree as ET
+import logging
+log = logging.getLogger(__name__)
 
 INVALID_SESSIONID = "0000000000000000"
 CACHEFILE = "/var/www/html/openWB/ramdisk/smarthome_avmautomation_cache"
