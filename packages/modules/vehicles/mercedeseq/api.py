@@ -100,16 +100,16 @@ def fetch_soc(config: MercedesEQSoc,
              time.strftime("%d.%m.%Y  %H:%M:%S", time.localtime(expires_in)))
 
     if int(expires_in) < int(time.time()):
-        # Access Token is exired
+        # Access Token is expired
         log.info("Acc Token Expired")
 
-        # get new Access Token with referesh token
+        # get new Access Token with refresh token
         data = {'grant_type': 'refresh_token', 'refresh_token': refresh_token}
 
         ref = req.get_http_session().post(tok_url, data=data, verify=True, allow_redirects=False,
                                           auth=(client_id, client_secret), timeout=req_timeout)
 
-        # write HTTP reponse code to file
+        # write HTTP response code to file
 
         if ref.status_code == 200:
             # valid response
@@ -142,9 +142,9 @@ def fetch_soc(config: MercedesEQSoc,
     try:
         req_soc = req.get_http_session().get(soc_url, headers=header, verify=True)
     except Timeout:
-        log.ecxeption("Soc Request Timed Out")
+        log.exception("Soc Request Timed Out")
     except RequestException:
-        log.exception("Soc Request Request Exception occured " + soc_url)
+        log.exception("Soc Request Request Exception occurred " + soc_url)
 
     if req_soc.status_code == 200:
         # valid Response
