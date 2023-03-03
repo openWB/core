@@ -1,9 +1,8 @@
 from dataclasses import dataclass
-from typing import Optional
 from unittest.mock import Mock
 import pytest
 
-from control.bat_all import BatAll
+from control.bat_all import BatAll, SwitchOnBatState
 from control import data
 from control.chargepoint import AllChargepointData, AllChargepoints, AllGet
 from control.general import General, PvCharging
@@ -22,41 +21,19 @@ class Params:
     name: str
     config: PvCharging
     soc: float
-    switch_on_soc_reached: bool
     expected_charging_power_left: float
-    expected_msg: Optional[str]
-    expected_switch_on_soc_reached: bool
 
 
 cases = [
-    Params("Laderegelung nicht freigegeben, Einschalt-SoC konfiguriert", PvCharging(bat_prio=False,
-           charging_power_reserve=0), 61, False, 500, f'Laderegelung wurde {BatAll.REACH_SWITCH_ON_SOC[0]}', True),
-    Params("Laderegelung nicht freigegeben, Einschalt-SoC konfiguriert", PvCharging(bat_prio=False,
-           charging_power_reserve=0), 60, False, 0, f'Laderegelung wurde {BatAll.REACH_SWITCH_ON_SOC[1]}', False),
-    Params("Laderegelung nicht freigegeben, nur Ausschalt-SoC konfiguriert",
-           PvCharging(bat_prio=False, charging_power_reserve=0, switch_on_soc=0),
-           41, False, 500, f'Laderegelung wurde {BatAll.REACH_SWITCH_OFF_SOC[0]}', True),
-    Params("Laderegelung nicht freigegeben, nur Ausschalt-SoC konfiguriert",
-           PvCharging(bat_prio=False, charging_power_reserve=0, switch_on_soc=0),
-           40, False, 0, f'Laderegelung wurde {BatAll.REACH_SWITCH_OFF_SOC[1]}', False),
-    Params("Laderegelung nicht freigegeben, kein Ein&Ausschalt-SoC konfiguriert", PvCharging(bat_prio=False,
-           charging_power_reserve=0, switch_on_soc=0, switch_off_soc=0), 40, False, 500, None, False),
-    Params("Laderegelung freigegeben, ", PvCharging(bat_prio=False, charging_power_reserve=0),
-           41, True, 500, f'Laderegelung wurde {BatAll.REACH_SWITCH_OFF_SOC[0]}', True),
-    Params("Laderegelung freigegeben, ", PvCharging(bat_prio=False, charging_power_reserve=0),
-           40, True, 0, f'Laderegelung wurde {BatAll.REACH_SWITCH_OFF_SOC[1]}', False),
-    Params("Laderegelung freigegeben, kein Ausschalt-Soc konfiguriert",
-           PvCharging(bat_prio=False, charging_power_reserve=0, switch_off_soc=0),
-           41, True, 500, f'Laderegelung wurde {BatAll.REACH_ONLY_SWITCH_ON_SOC[0]}', True),
-    Params("Laderegelung freigegeben, kein Ausschalt-Soc konfiguriert",
-           PvCharging(bat_prio=False, charging_power_reserve=0, switch_off_soc=0),
-           0, True, 0, f'Laderegelung wurde {BatAll.REACH_ONLY_SWITCH_ON_SOC[1]}', False),
-    Params("Laderegelung nicht freigegeben, Einschalt-SoC konfiguriert, Ladeleistungsreserve",
-           PvCharging(bat_prio=False),
-           61, False, 300, f'Laderegelung wurde {BatAll.REACH_SWITCH_ON_SOC[0]}', True),
-    Params("EV-Vorrang", PvCharging(bat_prio=True), 51, False, 1000,
-           "Erlaubte Entlade-Leistung nutzen (1000W, davon bisher ungeutzt 1000W)", False),
-    Params("EV-Vorrang", PvCharging(bat_prio=True), 50, False, -50, None, False),
+    Params("Speicher-Vorrang ohne Ladeleistungsreserve", PvCharging(bat_prio=False, charging_power_reserve=0),
+           100, 500),
+    Params("Speicher-Vorrang mit Ladeleistungsreserve, Speicher voll",
+           PvCharging(bat_prio=False, charging_power_reserve=200),
+           100, 500),
+    Params("Speicher-Vorrang mit Ladeleistungsreserve", PvCharging(bat_prio=False, charging_power_reserve=200),
+           99, 300),
+    Params("EV-Vorrang mit erlaubter Entladeleistung", PvCharging(bat_prio=True), 51, 1000),
+    Params("EV-Vorrang ohne erlaubte Entladeleistung", PvCharging(bat_prio=True), 50, -50),
 ]
 
 
@@ -64,7 +41,6 @@ cases = [
 def test_get_charging_power_left(params: Params, caplog, data_fixture):
     # setup
     b = BatAll()
-    b.data.set.switch_on_soc_reached = params.switch_on_soc_reached
     b.data.get.power = 500
     b.data.get.soc = params.soc
     data.data.general_data.data.chargemode_config.pv_charging = params.config
@@ -74,5 +50,45 @@ def test_get_charging_power_left(params: Params, caplog, data_fixture):
 
     # evaluation
     assert b.data.set.charging_power_left == params.expected_charging_power_left
-    assert params.expected_msg is None or params.expected_msg in caplog.text
-    assert b.data.set.switch_on_soc_reached == params.expected_switch_on_soc_reached
+
+
+@pytest.mark.parametrize(
+    "soc, switch_on_soc_reached, switch_on_soc, switch_off_soc," +
+    "expected_switch_on_soc_state, expected_switch_on_soc_reached",
+    [pytest.param(41, True, 60, 40, SwitchOnBatState.CHARGE_FROM_BAT, True,
+                  id="Laderegelung freigegeben, Ausschalt-SoC nicht erreicht"),
+     pytest.param(60, True, 60, 0, SwitchOnBatState.REACH_ONLY_SWITCH_ON_SOC, True,
+                  id="Laderegelung freigegeben, Ausschalt-SoC nicht konfiguriert"),
+     pytest.param(40, True, 60, 40, SwitchOnBatState.SWITCH_OFF_SOC_REACHED, False,
+                  id="Laderegelung freigegeben, Ausschalt-SoC erreicht"),
+     pytest.param(40, False, 0, 40, SwitchOnBatState.SWITCH_OFF_SOC_REACHED, False,
+                  id="Laderegelung nicht freigegeben, Einschalt-SoC nicht konfiguriert, Ausschalt-SoC erreicht"),
+     pytest.param(41, False, 0, 40, SwitchOnBatState.CHARGE_FROM_BAT, True,
+                  id="Laderegelung nicht freigegeben, Einschalt-SoC nicht konfiguriert, Ausschalt-SoC nicht erreicht"),
+     pytest.param(60, False, 60, 40, SwitchOnBatState.CHARGE_FROM_BAT, True,
+                  id="Laderegelung nicht freigegeben, Einschalt-SoC erreicht"),
+     pytest.param(59, False, 60, 40, SwitchOnBatState.SWITCH_ON_SOC_NOT_REACHED, False,
+                  id="Laderegelung nicht freigegeben, Einschalt-SoC nicht erreicht"),
+     pytest.param(59, False, 0, 0, SwitchOnBatState.CHARGE_FROM_BAT, True,
+                  id="Ein/Ausschalt-SoC nicht konfiguriert")]
+
+)
+def test_get_switch_on_state(soc: float,
+                             switch_on_soc_reached: bool,
+                             switch_on_soc: int,
+                             switch_off_soc: int,
+                             expected_switch_on_soc_state: SwitchOnBatState,
+                             expected_switch_on_soc_reached: bool):
+    # setup
+    b = BatAll()
+    b.data.get.soc = soc
+    b.data.set.switch_on_soc_reached = switch_on_soc_reached
+    data.data.general_data.data.chargemode_config.pv_charging.switch_on_soc = switch_on_soc
+    data.data.general_data.data.chargemode_config.pv_charging.switch_off_soc = switch_off_soc
+
+    # execution
+    b._get_switch_on_state()
+
+    # evaluation
+    assert b.data.set.switch_on_soc_reached == expected_switch_on_soc_reached
+    assert b.data.set.switch_on_soc_state == expected_switch_on_soc_state

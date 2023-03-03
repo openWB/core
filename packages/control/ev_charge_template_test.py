@@ -5,6 +5,7 @@ import pytest
 
 from control import data
 from control import optional
+from control.bat_all import SwitchOnBatState
 from control.ev import ChargeTemplate, EvTemplate, EvTemplateData, SelectedPlan
 from control.general import General
 from helpermodules import timecheck
@@ -70,19 +71,26 @@ def test_instant_charging(selected: str, current_soc: float, used_amount: float,
 
 
 @pytest.mark.parametrize(
-    "min_soc, min_current, current_soc, expected",
+    "min_soc, min_current, current_soc, switch_on_soc_state, expected",
     [
-        pytest.param(0, 0, 100, (0, "stop", ChargeTemplate.PV_CHARGING_SOC_REACHED), id="max soc reached"),
-        pytest.param(15, 0, 14, (10, "instant_charging", None), id="min soc not reached"),
-        pytest.param(15, 8, 15, (8, "instant_charging", None), id="min current configured"),
-        pytest.param(15, 0, 15, (6, "pv_charging", None), id="bare pv charging"),
+        pytest.param(0, 0, 100, SwitchOnBatState.CHARGE_FROM_BAT, (0, "stop",
+                     ChargeTemplate.PV_CHARGING_SOC_REACHED), id="max soc reached"),
+        pytest.param(15, 0, 14, SwitchOnBatState.CHARGE_FROM_BAT,
+                     (10, "instant_charging", None), id="min soc not reached"),
+        pytest.param(15, 8, 15, SwitchOnBatState.CHARGE_FROM_BAT,
+                     (8, "instant_charging", None), id="min current configured"),
+        pytest.param(15, 8, 15, SwitchOnBatState.SWITCH_OFF_SOC_REACHED, (0, "stop",
+                     SwitchOnBatState.SWITCH_OFF_SOC_REACHED.value), id="min current, bat reached switch off soc"),
+        pytest.param(15, 0, 15, SwitchOnBatState.CHARGE_FROM_BAT, (6, "pv_charging", None), id="bare pv charging"),
     ])
-def test_pv_charging(min_soc: int, min_current: int, current_soc: float,
+def test_pv_charging(min_soc: int, min_current: int, current_soc: float, switch_on_soc_state: SwitchOnBatState,
                      expected: Tuple[int, str, Optional[str]]):
     # setup
     ct = ChargeTemplate(0)
     ct.data.chargemode.pv_charging.min_soc = min_soc
     ct.data.chargemode.pv_charging.min_current = min_current
+    data.data.bat_all_data.data.set.switch_on_soc_state = switch_on_soc_state
+    data.data.bat_all_data.data.config.configured = True
 
     # execution
     ret = ct.pv_charging(current_soc, 6)

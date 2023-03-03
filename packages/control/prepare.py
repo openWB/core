@@ -18,6 +18,7 @@ class Prepare:
         """ bereitet die Daten für den Algorithmus vor und startet diesen.
         """
         try:
+            data.data.bat_all_data.setup_bat()
             levels = data.data.counter_all_data.get_list_of_elements_per_level()
             for level in reversed(levels):
                 for element in level:
@@ -27,7 +28,6 @@ class Prepare:
                 cp.update(data.data.ev_data)
             data.data.cp_all_data.get_cp_sum()
             data.data.cp_all_data.no_charge()
-            data.data.bat_all_data.setup_bat()
             data.data.counter_all_data.set_home_consumption()
         except Exception:
             log.exception("Fehler im Prepare-Modul")
