@@ -25,7 +25,7 @@ from helpermodules.utils import exit_after
 from modules import update_soc
 from modules.internal_chargepoint_handler.internal_chargepoint_handler import GeneralInternalChargepointHandler
 from modules.internal_chargepoint_handler.rfid import RfidReader
-from smarthome.smarthome import smarthome_handler
+from smarthome.smarthome import readmq, smarthome_handler
 
 logger.setup_logging()
 log = logging.getLogger()
@@ -142,6 +142,7 @@ try:
     data.data_init(loadvars_.event_module_update_completed)
     update_config.UpdateConfig().update()
     configuration.pub_configurable()
+    readmq()
     proc = process.Process()
     control = algorithm.Algorithm()
     handler = HandlerAlgorithm()
