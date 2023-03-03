@@ -24,10 +24,10 @@ if os.path.isfile(file_string):
     pass
 else:
     with open(file_string, 'w') as f:
-        print('lambda start log', file=f)
+        log.debug('lambda start log', file=f)
 with open(file_string, 'a') as f:
-    print('%s devicenr %s ipadr %s ueberschuss %6d try to connect (modbus)'
-          % (time_string, devicenumber, ipadr, uberschuss), file=f)
+    log.debug('%s devicenr %s ipadr %s ueberschuss %6d try to connect (modbus)'
+              % (time_string, devicenumber, ipadr, uberschuss), file=f)
 client = ModbusTcpClient(ipadr, port=502)
 start = 103
 resp = client.read_holding_registers(start, 2)
@@ -35,8 +35,8 @@ value1 = resp.registers[0]
 all = format(value1, '04x')
 aktpower = int(struct.unpack('>h', codecs.decode(all, 'hex'))[0])
 with open(file_string, 'a') as f:
-    print('%s devicenr %s ipadr %s Akt Leistung  %6d'
-          % (time_string, devicenumber, ipadr, aktpower), file=f)
+    log.debug('%s devicenr %s ipadr %s Akt Leistung  %6d'
+              % (time_string, devicenumber, ipadr, aktpower), file=f)
 pvmodus = 0
 if os.path.isfile(file_stringpv):
     with open(file_stringpv, 'r') as f:

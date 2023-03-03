@@ -42,7 +42,7 @@ if os.path.isfile(file_string):
     f = open(file_string, 'a')
 else:
     f = open(file_string, 'w')
-print('%s devicenr %s ueberschuss %6d /ReqRelay = 1' % (time_string, devicenumber, uberschuss), file=f)
+log.debug('%s devicenr %s ueberschuss %6d /ReqRelay = 1' % (time_string, devicenumber, uberschuss), file=f)
 f.close()
 f = open(file_stringpv, 'w')
 f.write(str(1))

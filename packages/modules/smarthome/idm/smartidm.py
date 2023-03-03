@@ -12,6 +12,7 @@ class Sidm(Sbase):
         self._smart_paramadd = {}
         self._device_idmnav = '2'
         self.device_nummer = 0
+        log.debug('__init__ Sidm executed')
 
     def updatepar(self, input_param):
         super().updatepar(input_param)

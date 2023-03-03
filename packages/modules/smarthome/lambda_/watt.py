@@ -92,14 +92,14 @@ if count5 == 0:
             pass
         else:
             with open(file_string, 'w') as f:
-                print('lambda start log', file=f)
+                log.debug('lambda start log', file=f)
         with open(file_string, 'a') as f:
-            print('%s Nr %s ipadr %s ueberschuss %6d Akt Leistung %6d'
-                  % (time_string, devicenumber, ipadr, uberschuss, aktpower),
-                  file=f)
-            print('%s Nr %s ipadr %s neupower %6d pvmodus %1d modbusw %1d'
-                  % (time_string, devicenumber, ipadr, neupower, pvmodus,
-                     modbuswrite), file=f)
+            log.debug('%s Nr %s ipadr %s ueberschuss %6d Akt Leistung %6d'
+                      % (time_string, devicenumber, ipadr, uberschuss, aktpower),
+                      file=f)
+            log.debug('%s Nr %s ipadr %s neupower %6d pvmodus %1d modbusw %1d'
+                      % (time_string, devicenumber, ipadr, neupower, pvmodus,
+                         modbuswrite), file=f)
     # modbus write
     if modbuswrite == 1:
         # andernfalls absturz bei negativen Zahlen
@@ -110,9 +110,9 @@ if count5 == 0:
         client.write_registers(102, [pay[0]])
         if count1 < 3:
             with open(file_string, 'a') as f:
-                print('%s devicenr %s ipadr %s written %6d %#4X' %
-                      (time_string, devicenumber, ipadr, pay[0], pay[0]),
-                      file=f)
+                log.debug('%s devicenr %s ipadr %s written %6d %#4X' %
+                          (time_string, devicenumber, ipadr, pay[0], pay[0]),
+                          file=f)
 else:
     if pvmodus == 99:
         pvmodus = 0

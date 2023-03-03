@@ -78,18 +78,18 @@ if count5 == 0:
             pass
         else:
             with open(file_string, 'w') as f:
-                print('vampair start log', file=f)
+                log.debug('vampair start log', file=f)
         with open(file_string, 'a') as f:
-            print('%s Nr %s ipadr %s ueberschuss %6d Akt Leistung %6d'
-                  % (time_string, devicenumber, ipadr, uberschuss, aktpower),
-                  file=f)
-            print('%s Nr %s ipadr %s ueberschuss %6d pvmodus %1d modbusw %1d'
-                  % (time_string, devicenumber, ipadr, neupower, pvmodus,
-                     modbuswrite), file=f)
+            log.debug('%s Nr %s ipadr %s ueberschuss %6d Akt Leistung %6d'
+                      % (time_string, devicenumber, ipadr, uberschuss, aktpower),
+                      file=f)
+            log.debug('%s Nr %s ipadr %s ueberschuss %6d pvmodus %1d modbusw %1d'
+                      % (time_string, devicenumber, ipadr, neupower, pvmodus,
+                         modbuswrite), file=f)
     # modbus write
     if modbuswrite == 1:
         client.write_registers(33409, [neupower], unit=1)
         if count1 < 3:
             with open(file_string, 'a') as f:
-                print('%s devicenr %s ipadr %s device written by modbus ' %
-                      (time_string, devicenumber, ipadr), file=f)
+                log.debug('%s devicenr %s ipadr %s device written by modbus ' %
+                          (time_string, devicenumber, ipadr), file=f)

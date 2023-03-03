@@ -43,7 +43,7 @@ if os.path.isfile(file_string):
     f = open(file_string, 'a')
 else:
     f = open(file_string, 'w')
-print('%s devicenr %s ueberschuss %6d /ReqRelay = 0' % (time_string, devicenumber, uberschuss), file=f)
+log.debug('%s devicenr %s ueberschuss %6d /ReqRelay = 0' % (time_string, devicenumber, uberschuss), file=f)
 f.close()
 pvmodus = 0
 f = open(file_stringpv, 'w')

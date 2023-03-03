@@ -13,6 +13,7 @@ class Slbase(Sbase0):
         #
         # setting
         super().__init__()
+        log.debug('__init__ Slbase executed')
         self.device_nummer = 0
         self.device_name = 'none'
         self.device_type = 'none'
@@ -155,11 +156,15 @@ class Slbase(Sbase0):
                          + "Slbase überlesen " + key +
                          " " + value)
 
+    def __del__(self) -> None:
+        log.debug('__del__ Slbase executed ')
+
 
 class Slmqtt(Slbase):
     def __init__(self) -> None:
         # setting
         super().__init__()
+        log.debug('__init__ Slmqtt excuted')
 
     def getwattread(self) -> None:
         self._watt(self._device_ip)
@@ -188,6 +193,7 @@ class Slshelly(Slbase):
     def __init__(self) -> None:
         # setting
         super().__init__()
+        log.debug('__init__ Slshelly excuted')
 
     def getwattread(self) -> None:
         self._watt(self._device_ip, self._device_chan,  self._device_shauth,
@@ -239,6 +245,7 @@ class Slavm(Slbase):
     def __init__(self) -> None:
         # setting
         super().__init__()
+        log.debug('__init__ Slavm excuted')
 
     def getwattread(self) -> None:
         self._watt(self._device_ip, self._device_actor,
@@ -274,6 +281,7 @@ class Sltasmota(Slbase):
     def __init__(self) -> None:
         # setting
         super().__init__()
+        log.debug('__init__ Sltasmota excuted')
 
     def getwattread(self) -> None:
         self._watt(self._device_ip)
@@ -301,6 +309,7 @@ class Slhttp(Slbase):
     def __init__(self) -> None:
         # setting
         super().__init__()
+        log.debug('__init__ Slhttp excuted')
 
     def getwattread(self) -> None:
         self._watt(self._device_leistungurl, 'none',
@@ -334,6 +343,7 @@ class Slmystrom(Slbase):
     def __init__(self) -> None:
         # setting
         super().__init__()
+        log.debug('__init__ Slmystrom excuted')
 
     def getwattread(self) -> None:
         self._watt(self._device_ip)
@@ -368,6 +378,7 @@ class Slsmaem(Slbase):
     def __init__(self) -> None:
         # setting
         super().__init__()
+        log.debug('__init__ Slsmaem excuted')
 
     def sepwattread(self) -> Tuple[int, int]:
         argumentList = ['python3', self._prefixpy + 'smaem/watt.py',
@@ -391,6 +402,7 @@ class Slwe514(Slbase):
     def __init__(self) -> None:
         # setting
         super().__init__()
+        log.debug('__init__ Slwe514 excuted')
 
     def sepwattread(self) -> Tuple[int, int]:
         argumentList = ['python3', self._prefixpy + 'we514/watt.py',
@@ -413,6 +425,7 @@ class Sljson(Slbase):
     def __init__(self) -> None:
         # setting
         super().__init__()
+        log.debug('__init__ Sljson excuted')
 
     def sepwattread(self) -> Tuple[int, int]:
         argumentList = ['python3', self._prefixpy + 'json/watt.py',
@@ -436,6 +449,7 @@ class Slfronius(Slbase):
     def __init__(self) -> None:
         # setting
         super().__init__()
+        log.debug('__init__ Slfronius excuted')
 
     def sepwattread(self) -> Tuple[int, int]:
         argumentList = ['python3', self._prefixpy + 'fronius/watt.py',
@@ -458,6 +472,7 @@ class Sllovato(Slbase):
     def __init__(self) -> None:
         # setting
         super().__init__()
+        log.debug('__init__ Sllovato excuted')
 
     def sepwattread(self) -> Tuple[int, int]:
         try:
@@ -478,6 +493,7 @@ class Slsdm630(Slbase):
     def __init__(self) -> None:
         # setting
         super().__init__()
+        log.debug('__init__ Slsdm630 excuted')
 
     def sepwattread(self) -> Tuple[int, int]:
         try:
@@ -499,6 +515,7 @@ class Slsdm120(Slbase):
     def __init__(self) -> None:
         # setting
         super().__init__()
+        log.debug('__init__ Slsdm120 excuted')
 
     def sepwattread(self) -> Tuple[int, int]:
         try:
