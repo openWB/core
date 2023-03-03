@@ -1,10 +1,9 @@
-from smarthome.smartbase0 import Sbase0
-from typing import Dict, Tuple
-from modules.common import modbus
-from modules.common import sdm
-from modules.common import lovato
-
 import subprocess
+from modules.common import lovato
+from modules.common import sdm
+from modules.common import modbus
+from typing import Dict, Tuple
+from smarthome.smartbase0 import Sbase0
 import logging
 log = logging.getLogger(__name__)
 

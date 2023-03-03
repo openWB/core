@@ -1,6 +1,6 @@
 #!/usr/bin/python3
-from smarthome.smartbase import Sbase, Sltasmota
 import subprocess
+from smarthome.smartbase import Sbase, Sltasmota
 import logging
 log = logging.getLogger(__name__)
 

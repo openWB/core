@@ -1,7 +1,7 @@
 #!/usr/bin/python3
-from smarthome.smartbase import Sbase
-from typing import Dict
 import subprocess
+from typing import Dict
+from smarthome.smartbase import Sbase
 import logging
 log = logging.getLogger(__name__)
 
