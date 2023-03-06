@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 import logging
 import re
-import subprocess
+from subprocess import Popen
 from pathlib import Path
 import paho.mqtt.client as mqtt
 
 BASE_PATH = Path(__file__).resolve().parents[2]
 RAMDISK_PATH = BASE_PATH / "ramdisk"
+REMOTE_SUPPORT_TOPIC = "openWB/set/system/RemoteSupportTest"
+ssh_tunnel: Popen = None
 
 logging.basicConfig(
     filename=str(RAMDISK_PATH / "remote_support.log"),
@@ -27,24 +29,37 @@ def get_serial():
 def on_connect(client: mqtt.Client, userdata, flags: dict, rc: int):
     """connect to broker and subscribe to set topics"""
     log.info("Connected")
-    client.subscribe("openWB/set/system/GetRemoteSupport", 2)
+    client.subscribe(REMOTE_SUPPORT_TOPIC, 2)
 
 
 def on_message(client: mqtt.Client, userdata, msg: mqtt.MQTTMessage):
     """handle incoming messages"""
+    global ssh_tunnel
     payload = msg.payload.decode("utf-8")
-    if msg.topic == "openWB/set/system/GetRemoteSupport" and len(payload) >= 1:
+    if msg.topic == REMOTE_SUPPORT_TOPIC and len(payload) >= 1:
         log.debug("Topic: %s, Message: %s", msg.topic, payload)
 
         if payload == 'stop':
-            log.info("stop remote support: " + str(BASE_PATH / "runs" / "remoteSupport" / "stopRemoteSupport.sh"))
-            subprocess.run([str(BASE_PATH / "runs" / "remoteSupport" / "stopRemoteSupport.sh")])
-        elif re.match(r'^[A-Za-z0-9]+;[1-9][0-9]+(;[a-zA-Z0-9]+)?$', payload):
-            log.debug("token file: " + str(RAMDISK_PATH / "remote_support.token"))
-            with open(str(RAMDISK_PATH / "remote_support.token"), "w") as file:
-                file.write(payload)
-            log.info("init remote support: " + str(BASE_PATH / "runs" / "remoteSupport" / "initRemoteSupport.sh"))
-            subprocess.run([str(BASE_PATH / "runs" / "remoteSupport" / "initRemoteSupport.sh")])
+            if ssh_tunnel is None:
+                log.error("received stop tunnel message but ssh tunnel is not running")
+            else:
+                log.info("stop remote support")
+                ssh_tunnel.terminate()
+                ssh_tunnel.wait(timeout=3)
+                ssh_tunnel = None
+        elif re.match(r'^[A-Za-z0-9]+(;[1-9][0-9]+(;[a-zA-Z0-9]+)?)?$', payload):
+            if ssh_tunnel is not None:
+                log.error("received start tunnel message but ssh tunnel is already running")
+            else:
+                splitted = payload.split(";")
+                token = splitted[0]
+                port = splitted[1] if len(splitted) > 1 else "2223"
+                user = splitted[2] if len(splitted) > 2 else "getsupport"
+                log.info("start remote support")
+                ssh_tunnel = Popen(["sshpass", "-p", token, "ssh", "-tt", "-o", "StrictHostKeyChecking=no",
+                                               "-o", "ServerAliveInterval 60", "-R", f"{port}:localhost:22",
+                                               f"{user}@remotesupport.openwb.de"])
+                log.info(f"ssh tunnel running with pid {ssh_tunnel.pid}")
         else:
             log.info("unknown message: " + payload)
         # clear topic
