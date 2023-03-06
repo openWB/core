@@ -140,7 +140,7 @@ class Counter:
                 unbalanced_load_range = (data.data.general_data.data.chargemode_config.unbalanced_load_limit
                                          - self.OFFSET_CURRENT)
                 for i in range(0, 3):
-                    unbalanced_load = max(0, forecasted_currents[i]) - max(0, min(forecasted_currents))
+                    unbalanced_load = forecasted_currents[i] - min(forecasted_currents)
                     max_exceeding[i] = max(unbalanced_load - unbalanced_load_range, 0)
         return max_exceeding
 
