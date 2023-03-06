@@ -647,18 +647,15 @@ class SubData:
                 if len(result.stdout) > 0:
                     pub_system_message(msg.payload, result.stdout,
                                        MessageType.SUCCESS if result.returncode == 0 else MessageType.ERROR)
-            # moved to separate handler
-            # elif "GetRemoteSupport" in msg.topic:
-            #     payload = decode_payload(msg.payload)
-            #     splitted = payload.split(";")
-            #     token = splitted[0]
-            #     port = splitted[1]
-            #     if len(splitted) == 3:
-            #         user = splitted[2]
-            #     else:
-            #         user = "getsupport"
-            #     subprocess.run([str(Path(__file__).resolve().parents[2] / "runs" / "start_remote_support.sh"),
-            #                     token, port, user])
+            # will be moved to separate handler!
+            elif "GetRemoteSupport" in msg.topic:
+                payload = decode_payload(msg.payload)
+                splitted = payload.split(";")
+                token = splitted[0]
+                port = splitted[1] if len(splitted) > 1 else "2223"
+                user = splitted[2] if len(splitted) > 2 else "getsupport"
+                subprocess.run([str(Path(__file__).resolve().parents[2] / "runs" / "start_remote_support.sh"),
+                                token, port, user])
             else:
                 if "module_update_completed" in msg.topic:
                     self.event_module_update_completed.set()
