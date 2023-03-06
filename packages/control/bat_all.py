@@ -124,7 +124,7 @@ class BatAll:
                 # Bei einem Hybrid-System darf die Summe aus Batterie-Ladeleistung, die für den Algorithmus verwendet
                 # werden soll und PV-Leistung nicht größer als die max Ausgangsleistung des WR sein.
                 if parent_data.config.max_ac_out > 0:
-                    max_bat_power = parent_data.config.max_ac_out*-1 - parent_data.get.power
+                    max_bat_power = parent_data.config.max_ac_out + parent_data.get.power
                     if battery.data.get.power > max_bat_power:
                         if battery.data.get.fault_state == FaultStateLevel.NO_ERROR:
                             battery.data.get.fault_state = FaultStateLevel.WARNING.value
@@ -170,9 +170,9 @@ class BatAll:
                         self.data.set.charging_power_left -= config.charging_power_reserve
                         log.debug(f'Ladeleistungs-Reserve ({config.charging_power_reserve}W) subtrahieren: '
                                   f'{self.data.set.charging_power_left}')
-                    else:
-                        log.debug("Keine Ladeleistungs-Reserve für den Speicher vorhalten, da dieser bereits voll" +
-                                  " geladen ist.")
+                else:
+                    log.debug("Keine Ladeleistungs-Reserve für den Speicher vorhalten, da dieser bereits voll" +
+                              " geladen ist.")
             # Wenn der Speicher Vorrang hat, darf die erlaubte Entlade-Leistung zum Laden der EV genutzt werden, wenn
             # der Soc über dem minimalen Entlade-Soc liegt.
             else:
@@ -181,9 +181,10 @@ class BatAll:
                     log.debug(f"Erlaubte Entlade-Leistung nutzen ({config.rundown_power}W, davon bisher ungenutzt "
                               f"{self.data.set.charging_power_left}W)")
                 else:
+                    # Wenn der Speicher entladen wird, darf diese Leistung nicht zum Laden der Fahrzeuge genutzt werden.
                     # 50 W Überschuss übrig lassen, die sich der Speicher dann nehmen kann. Wenn der Speicher
-                    # schneller regelt, als die LP, würde sonst der Speicher reduziert werden.
-                    self.data.set.charging_power_left = -50
+                    # schneller regelt als die LP, würde sonst der Speicher reduziert werden.
+                    self.data.set.charging_power_left = min(0, self.data.get.power) - 50
         except Exception:
             log.exception("Fehler im Bat-Modul")
 
