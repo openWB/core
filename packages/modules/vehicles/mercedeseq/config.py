@@ -3,11 +3,11 @@ from typing import Optional
 
 class MercedesEQSocToken:
     def __init__(self,
-                 refresh_token: str = "",
-                 access_token: str = "",
+                 refresh_token: Optional[str] = None,
+                 access_token: Optional[str] = None,
                  expires_in: int = 0,
-                 id_token: str = "",
-                 token_type: str = "") -> None:
+                 id_token: Optional[str] = None,
+                 token_type: Optional[str] = None) -> None:
         self.refresh_token = refresh_token
         self.access_token = access_token
         self.expires_in = expires_in
