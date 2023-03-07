@@ -102,6 +102,24 @@ chmod 666 "$LOGFILE"
 		sudo reboot now &
 	fi
 
+	if [ ! -f "/etc/systemd/system/openwbRemoteSupport.service" ]; then
+		echo "openwbRemoteSupport service missing, installing service"
+		sudo cp "${OPENWBBASEDIR}/data/config/openwbRemoteSupport.service" "/etc/systemd/system/openwbRemoteSupport.service"
+		sudo systemctl daemon-reload
+		sudo systemctl enable openwbRemoteSupport
+		sudo systemctl start openwbRemoteSupport
+	else
+		if versionMatch "${OPENWBBASEDIR}/data/config/openwbRemoteSupport.service" "/etc/systemd/system/openwbRemoteSupport.service"; then
+			echo "openwbRemoteSupport.service already up to date"
+		else
+			echo "updating openwbRemoteSupport.service"
+			sudo cp "${OPENWBBASEDIR}/data/config/openwbRemoteSupport.service" "/etc/systemd/system/openwbRemoteSupport.service"
+			sudo systemctl daemon-reload
+			sudo systemctl enable openwbRemoteSupport
+			sudo systemctl restart openwbRemoteSupport
+		fi
+	fi
+
 	# check for pending restore
 	if [[ -f "${OPENWBBASEDIR}/data/restore/run_on_boot" ]]; then
 		echo "pending restore detected, executing restore"

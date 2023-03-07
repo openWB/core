@@ -84,22 +84,24 @@ class SubData:
         self.internal_broker_client.disconnect()
 
     def on_connect(self, client: mqtt.Client, userdata, flags: dict, rc: int):
-        """ connect to broker and subscribe to set topics
+        """ subscribe topics
         """
-        client.subscribe("openWB/vehicle/#", 2)
-        client.subscribe("openWB/chargepoint/#", 2)
-        client.subscribe("openWB/pv/#", 2)
-        client.subscribe("openWB/bat/#", 2)
-        client.subscribe("openWB/general/#", 2)
-        client.subscribe("openWB/graph/#", 2)
-        client.subscribe("openWB/optional/#", 2)
-        client.subscribe("openWB/counter/#", 2)
-        client.subscribe("openWB/command/command_completed", 2)
-        # Nicht mit wildcard abonnieren, damit nicht die Komponenten vor den Devices empfangen werden.
-        client.subscribe("openWB/system/+", 2)
-        client.subscribe("openWB/system/device/module_update_completed", 2)
-        client.subscribe("openWB/system/mqtt/bridge/+", 2)
-        client.subscribe("openWB/system/device/+/config", 2)
+        client.subscribe([
+            ("openWB/vehicle/#", 2),
+            ("openWB/chargepoint/#", 2),
+            ("openWB/pv/#", 2),
+            ("openWB/bat/#", 2),
+            ("openWB/general/#", 2),
+            ("openWB/graph/#", 2),
+            ("openWB/optional/#", 2),
+            ("openWB/counter/#", 2),
+            ("openWB/command/command_completed", 2),
+            # Nicht mit hash # abonnieren, damit nicht die Komponenten vor den Devices empfangen werden!
+            ("openWB/system/+", 2),
+            ("openWB/system/device/module_update_completed", 2),
+            ("openWB/system/mqtt/bridge/+", 2),
+            ("openWB/system/device/+/config", 2),
+        ])
         Pub().pub("openWB/system/subdata_initialized", True)
 
     def on_message(self, client: mqtt.Client, userdata, msg: mqtt.MQTTMessage):
@@ -647,15 +649,13 @@ class SubData:
                 if len(result.stdout) > 0:
                     pub_system_message(msg.payload, result.stdout,
                                        MessageType.SUCCESS if result.returncode == 0 else MessageType.ERROR)
+            # will be moved to separate handler!
             elif "GetRemoteSupport" in msg.topic:
                 payload = decode_payload(msg.payload)
                 splitted = payload.split(";")
                 token = splitted[0]
-                port = splitted[1]
-                if len(splitted) == 3:
-                    user = splitted[2]
-                else:
-                    user = "getsupport"
+                port = splitted[1] if len(splitted) > 1 else "2223"
+                user = splitted[2] if len(splitted) > 2 else "getsupport"
                 subprocess.run([str(Path(__file__).resolve().parents[2] / "runs" / "start_remote_support.sh"),
                                 token, port, user])
             else:
