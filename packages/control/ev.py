@@ -396,53 +396,36 @@ class Ev:
         except Exception:
             log.exception("Fehler im ev-Modul "+str(self.num))
 
-    def check_min_max_current(self, required_current, phases, pv=False):
+    def check_min_max_current(
+            self, required_current: float, phases: int, pv: bool = False) -> Tuple[float, Optional[str]]:
         """ prüft, ob der gesetzte Ladestrom über dem Mindest-Ladestrom und unter dem Maximal-Ladestrom des EVs liegt.
         Falls nicht, wird der Ladestrom auf den Mindest-Ladestrom bzw. den Maximal-Ladestrom des EV gesetzt.
         Wenn PV-Laden aktiv ist, darf die Stromstärke nicht unter den PV-Mindeststrom gesetzt werden.
-
-        Parameter
-        ---------
-        required_current: float
-            Strom, der vom Lademodus benötigt wird
-
-        phases: int
-            Anzahl Phasen, mit denen geladen werden soll
-
-        pv: bool
-            Lademodus PV-Laden
-
-        Return
-        ------
-        float: Strom, mit dem das EV laden darf
         """
-        try:
-            required_current_prev = required_current
-            # Überprüfung bei 0 (automatische Umschaltung) erfolgt nach der Prüfung der Phasenumschaltung, wenn fest
-            # steht, mit vielen Phasen geladen werden soll.
-            if phases != 0:
-                # EV soll/darf nicht laden
-                if required_current != 0:
-                    if not pv:
-                        min_current = self.ev_template.data.min_current
+        msg = None
+        # Überprüfung bei 0 (automatische Umschaltung) erfolgt nach der Prüfung der Phasenumschaltung, wenn fest
+        # steht, mit vielen Phasen geladen werden soll.
+        if phases != 0:
+            # EV soll/darf nicht laden
+            if required_current != 0:
+                if not pv:
+                    min_current = self.ev_template.data.min_current
+                else:
+                    min_current = self.data.control_parameter.required_current
+                if required_current < min_current:
+                    required_current = min_current
+                    msg = ("Die Einstellungen in der Fahrzeug-Vorlage beschränken den Strom auf "
+                           f"mindestens {required_current} A.")
+                else:
+                    if phases == 1:
+                        max_current = self.ev_template.data.max_current_single_phase
                     else:
-                        min_current = self.data.control_parameter.required_current
-                    if required_current < min_current:
-                        required_current = min_current
-                    else:
-                        if phases == 1:
-                            max_current = self.ev_template.data.max_current_single_phase
-                        else:
-                            max_current = self.ev_template.data.max_current_multi_phases
-                        if required_current > max_current:
-                            required_current = max_current
-            if required_current != required_current_prev:
-                log.debug("Anpassen der Sollstromstärke an EV-Vorgaben. Sollstromstärke: " +
-                          str(required_current_prev)+" neue Sollstromstärke: "+str(required_current))
-            return required_current
-        except Exception:
-            log.exception("Fehler im ev-Modul "+str(self.num))
-            return 0
+                        max_current = self.ev_template.data.max_current_multi_phases
+                    if required_current > max_current:
+                        required_current = max_current
+                        msg = ("Die Einstellungen in der Fahrzeug-Vorlage beschränken den Strom auf "
+                               f"maximal {required_current} A.")
+        return required_current, msg
 
     def auto_phase_switch(self,
                           cp_num: int,
