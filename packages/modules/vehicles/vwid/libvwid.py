@@ -21,7 +21,7 @@ class vwid:
     def __init__(self, session):
         self.session = session
         self.headers = {}
-        self.log = logging.getLogger(__name__)
+        self.log = logging.getLogger("soc."+__name__)
         self.jobs_string = 'all'
 
     def form_from_response(self, text):
@@ -68,8 +68,8 @@ class vwid:
 
             return (form, action)
 
-        except KeyError:
-            self.log.error("Missing fields in response from VW API")
+        except KeyError as exc:
+            self.log.error(f"Missing fields in response from VW API ({exc})")
             return False
 
     def set_vin(self, vin):
@@ -95,7 +95,7 @@ class vwid:
 
         response = await self.session.get(LOGIN_BASE + '/authorize', params=payload)
         if response.status >= 400:
-            self.log.error("Non-2xx response")
+            self.log.error(f"Authorize: Non-2xx response ({response.status})")
             # Non 2xx response, failed
             return False
 
@@ -104,7 +104,7 @@ class vwid:
         form['email'] = self.username
         response = await self.session.post(LOGIN_HANDLER_BASE+action, data=form)
         if response.status >= 400:
-            self.log.error("Email fail")
+            self.log.error("Email: Non-2xx response")
             return False
 
         # Fill form with password
@@ -120,8 +120,8 @@ class vwid:
                 # Get terms and conditions page
                 url = LOGIN_HANDLER_BASE + url
                 response = await self.session.get(url, data=form, allow_redirects=False)
-
                 (form, action) = self.form_from_response(await response.read())
+
                 url = LOGIN_HANDLER_BASE + action
                 response = await self.session.post(url, data=form, allow_redirects=False)
 
@@ -162,7 +162,7 @@ class vwid:
         }
         response = await self.session.post(LOGIN_BASE + '/login/v1', json=payload)
         if response.status >= 400:
-            self.log.error("Login failed")
+            self.log.error("Login: Non-2xx response")
             # Non 2xx response, failed
             return False
         self.tokens = await response.json()
