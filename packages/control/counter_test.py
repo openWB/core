@@ -42,9 +42,9 @@ def test_set_loadmanagement_state(fault_state: FaultStateLevel,
                          [pytest.param([32, 32, 15], [0]*3, id="not exceeded"),
                           pytest.param([32, 35, 18], [0]*3, id="not exceeded with export"),
                           pytest.param([38, 55, 39], [0]*3, id="not exceeded with export two phases"),
-                          pytest.param([32, 32, 13], [0, 0, 2], id="exceeded on one phase"),
-                          pytest.param([29, 11, 8], [0, 1, 4], id="exceeded on two phases"),
-                          pytest.param([35, 11, 8], [0, 7, 10], id="exceeded on two phases with export")])
+                          pytest.param([32, 32, 13], [0, 0, 1], id="exceeded on one phase"),
+                          pytest.param([29, 11, 8], [0, 0, 3], id="exceeded on two phases"),
+                          pytest.param([35, 11, 8], [0, 6, 9], id="exceeded on two phases with export")])
 def test_get_unbalanced_load_exceeding(raw_currents_left: List[float],
                                        expected_max_exceeding: List[float],
                                        monkeypatch,
@@ -64,8 +64,8 @@ def test_get_unbalanced_load_exceeding(raw_currents_left: List[float],
 
 
 @pytest.mark.parametrize("max_currents, expected_raw_currents_left",
-                         [pytest.param([40]*3, [39, 0, 9], id="Überbelastung"),
-                          ([60]*3, [59, 14, 29])])
+                         [pytest.param([40]*3, [40, 0, 10], id="Überbelastung"),
+                          ([60]*3, [60, 15, 30])])
 def test_set_current_left(max_currents: List[float],
                           expected_raw_currents_left: List[float],
                           monkeypatch,

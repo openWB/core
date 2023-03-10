@@ -75,10 +75,6 @@ class CounterData:
 
 
 class Counter:
-    """
-    """
-    OFFSET_CURRENT = 1
-
     def __init__(self, index):
         try:
             self.data = CounterData()
@@ -122,8 +118,6 @@ class Counter:
                 element_current = [max(chargepoint.data.get.currents)]*3
             currents_raw = list(map(operator.sub, currents_raw, element_current))
         currents_raw = list(map(operator.sub, self.data.config.max_currents, currents_raw))
-        # Puffer
-        currents_raw = list(map(operator.sub, currents_raw, [1]*3))
         if min(currents_raw) < 0:
             log.debug(f"Verbleibende Ströme: {currents_raw}, Überbelastung wird durch Hausverbrauch verursacht")
             currents_raw = [max(currents_raw[i], 0) for i in range(0, 3)]
@@ -137,13 +131,12 @@ class Counter:
         verfügbaren Strom (geringster vorhandener Strom) kann nicht beeinflusst werden, daher wird diese als Basis
         für die Berechnung verwendet."""
         max_exceeding = [0.0]*3
-        if f'counter{self.num}' == data.data.counter_all_data.get_evu_counter_str():
-            if data.data.general_data.data.chargemode_config.unbalanced_load:
-                unbalanced_load_range = (data.data.general_data.data.chargemode_config.unbalanced_load_limit
-                                         - self.OFFSET_CURRENT)
-                for i in range(0, 3):
-                    unbalanced_load = max(raw_currents_left) - raw_currents_left[i]
-                    max_exceeding[i] = max(unbalanced_load - unbalanced_load_range, 0)
+        if (f'counter{self.num}' == data.data.counter_all_data.get_evu_counter_str() and
+                data.data.general_data.data.chargemode_config.unbalanced_load):
+            for i in range(0, 3):
+                unbalanced_load = max(raw_currents_left) - raw_currents_left[i]
+                max_exceeding[i] = max(
+                    unbalanced_load - data.data.general_data.data.chargemode_config.unbalanced_load_limit, 0)
         return max_exceeding
 
     def _set_power_left(self) -> None:
