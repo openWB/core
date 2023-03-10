@@ -131,10 +131,12 @@ class Counter:
         log.info(f'Verbleibende Ströme an Zähler {self.num}: {self.data.set.raw_currents_left}A')
 
     # tested
-    def get_unbalanced_load_exceeding(self, raw_currents_left):
+    def get_unbalanced_load_exceeding(self, raw_currents_left: List[float]) -> List[float]:
+        """gibt eine Liste zurück, die für jede Phase angibt, um wie viel Ampere die Schieflast überschritten wurde.
+        So können gezielt Fahrzuege reduziert werden, die auf dieser/n Phase(n) laden."""
         forecasted_currents = list(
             map(operator.sub, self.data.config.max_currents, raw_currents_left))
-        max_exceeding = [0]*3
+        max_exceeding = [0.0]*3
         if f'counter{self.num}' == data.data.counter_all_data.get_evu_counter_str():
             if data.data.general_data.data.chargemode_config.unbalanced_load:
                 unbalanced_load_range = (data.data.general_data.data.chargemode_config.unbalanced_load_limit
@@ -144,7 +146,7 @@ class Counter:
                     max_exceeding[i] = max(unbalanced_load - unbalanced_load_range, 0)
         return max_exceeding
 
-    def _set_power_left(self):
+    def _set_power_left(self) -> None:
         if f'counter{self.num}' == data.data.counter_all_data.get_evu_counter_str():
             power_raw = self.data.get.power
             for cp in data.data.cp_data.values():
