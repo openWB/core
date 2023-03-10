@@ -133,7 +133,7 @@ class Counter:
     # tested
     def get_unbalanced_load_exceeding(self, raw_currents_left: List[float]) -> List[float]:
         """gibt eine Liste zurück, die für jede Phase angibt, um wie viel Ampere die Schieflast überschritten wurde.
-        So können gezielt Fahrzuege reduziert werden, die auf dieser/n Phase(n) laden."""
+        So können gezielt Fahrzeuge reduziert werden, die auf dieser/n Phase(n) laden."""
         forecasted_currents = list(
             map(operator.sub, self.data.config.max_currents, raw_currents_left))
         max_exceeding = [0.0]*3
