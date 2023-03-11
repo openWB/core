@@ -1,0 +1,12 @@
+# openwb-version:1
+[Unit]
+Description="Remote Support Handler openWB 2.0"
+
+[Service]
+User=openwb
+WorkingDirectory=/var/www/html/openWB
+ExecStart=/var/www/html/openWB/runs/remoteSupport/remoteSupport.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
