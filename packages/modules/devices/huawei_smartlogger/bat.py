@@ -26,8 +26,8 @@ class Huawei_SmartloggerBat:
 
     def update(self) -> None:
         modbus_id = self.component_config.configuration.modbus_id
-        power = self.__tcp_client.read_holding_registers(37765, ModbusDataType.INT_32, unit=self.__modbus_id)
-        soc = self.__tcp_client.read_holding_registers(37760, ModbusDataType.INT_16, unit=self.__modbus_id) / 10
+        power = self.__tcp_client.read_holding_registers(37765, ModbusDataType.INT_32, unit=modbus_id)
+        soc = self.__tcp_client.read_holding_registers(37760, ModbusDataType.INT_16, unit=modbus_id) / 10
 
         imported, exported = self.sim_counter.sim_count(power)
         bat_state = BatState(
@@ -37,6 +37,5 @@ class Huawei_SmartloggerBat:
             exported=exported
         )
         self.store.set(bat_state)
-
-
+        
 component_descriptor = ComponentDescriptor(configuration_factory=Huawei_SmartloggerBatSetup)

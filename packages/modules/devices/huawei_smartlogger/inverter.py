@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 import logging
-from typing import Dict, Union
-
 from dataclass_utils import dataclass_from_dict
 from modules.common import modbus
 from modules.common.component_state import InverterState
@@ -16,10 +14,7 @@ log = logging.getLogger(__name__)
 
 
 class Huawei_SmartloggerInverter:
-    def __init__(self, 
-                 device_id: int,
-                 component_config: Huawei_SmartloggerInverterSetup,
-                 tcp_client: modbus.ModbusTcpClient_) -> None:
+    def __init__(self,device_id: int,component_config: Huawei_SmartloggerInverterSetup,tcp_client: modbus.ModbusTcpClient_) -> None:
         self.__device_id = device_id
         self.component_config = dataclass_from_dict(Huawei_SmartloggerInverterSetup, component_config)
         self.client = tcp_client
@@ -29,13 +24,11 @@ class Huawei_SmartloggerInverter:
 
     def update(self) -> None:
         modbus_id=self.component_config.configuration.modbus_id
-        power = self.client.read_holding_registers(32080, ModbusDataType.INT_32, unit=modbus_id) *-1
-        exported = self.sim_counter.sim_count(power)
-        #dc_power = self.client.read_holding_registers(32064, ModbusDataType.INT_32, unit=modbus_id)
+        power = self.client.read_holding_registers(32080, ModbusDataType.INT_32, unit=modbus_id) * -1
+        exported = self.client.read_holding_registers(32106, ModbusDataType.INT_32, unit=modbus_id) * 10
         inverter_state = InverterState(
             power=power,
             exported=exported
-            #dc_power=dc_power
         )
         self.store.set(inverter_state)
 

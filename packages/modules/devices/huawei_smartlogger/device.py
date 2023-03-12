@@ -49,10 +49,7 @@ class Device(AbstractDevice):
             component_type].component_descriptor.configuration_factory, component_config)
         if component_type in self.COMPONENT_TYPE_TO_CLASS:
             self.components["component"+str(component_config.id)] = (
-                self.COMPONENT_TYPE_TO_CLASS[component_type](
-                self.device_config.id, 
-                component_config,self.client
-                ))
+                self.COMPONENT_TYPE_TO_CLASS[component_type](self.device_config.id, component_config,self.client))
         else:
             raise Exception(
                 "illegal component type " + component_type + ". Allowed values: " +
@@ -80,10 +77,7 @@ COMPONENT_TYPE_TO_MODULE = {
 }
 
 
-def read_legacy(component_type: str,
-                ip_address: str, 
-                modbus_id: Optional[int] = 1,
-                num: Optional[int] = None) -> None:
+def read_legacy(component_type: str, ip_address: str,modbus_id: Optional[int] = 1, num: Optional[int] = None) -> None:
 
     device_config = Huawei_Smartlogger()
     device_config.configuration.ip_address = ip_address
@@ -92,9 +86,7 @@ def read_legacy(component_type: str,
     if component_type in COMPONENT_TYPE_TO_MODULE:
         component_config = COMPONENT_TYPE_TO_MODULE[component_type].component_descriptor.configuration_factory()
     else:
-        raise Exception(
-            "illegal component type " + component_type + ". Allowed values: " +
-            ','.join(COMPONENT_TYPE_TO_MODULE.keys())
+        raise Exception( "illegal component type " + component_type + ". Allowed values: " +','.join(COMPONENT_TYPE_TO_MODULE.keys())
         )
     component_config.id = num
     component_config.configuration.modbus_id=modbus_id
