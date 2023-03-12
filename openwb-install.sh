@@ -116,10 +116,16 @@ echo "installing python requirements..."
 sudo -u "$OPENWB_USER" pip install -r "${OPENWBBASEDIR}/requirements.txt"
 
 echo "installing openwb2 system service..."
-ln -s "${OPENWBBASEDIR}/data/config/openwb2.service" /etc/systemd/system/openwb2.service
+cp "${OPENWBBASEDIR}/data/config/openwb2.service" /etc/systemd/system/openwb2.service
 systemctl daemon-reload
 systemctl enable openwb2
 systemctl start openwb2
+
+echo "installing openwb2 remote support service..."
+cp "${OPENWBBASEDIR}/data/config/openwbRemoteSupport.service" /etc/systemd/system/openwbRemoteSupport.service
+systemctl daemon-reload
+systemctl enable openwbRemoteSupport
+systemctl start openwbRemoteSupport
 
 echo "installation finished, now running atreboot.sh..."
 "${OPENWBBASEDIR}/runs/atreboot.sh"

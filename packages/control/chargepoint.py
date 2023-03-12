@@ -728,6 +728,19 @@ class Chargepoint:
             Pub().pub("openWB/set/vehicle/"+str(charging_ev.num)+"/control_parameter/phases", phases)
         return phases
 
+    def check_min_max_current(self, required_current: float, phases: int, pv: bool = False) -> float:
+        required_current_prev = required_current
+        required_current, msg = self.data.set.charging_ev_data.check_min_max_current(required_current, phases, pv)
+        if phases == 1:
+            required_current = min(required_current, self.template.data.max_current_single_phase)
+        else:
+            required_current = min(required_current, self.template.data.max_current_multi_phases)
+        if required_current != required_current_prev and msg is None:
+            msg = ("Die Einstellungen in der Ladepunkt-Vorlage beschränken den Strom auf "
+                   f"maximal {required_current} A.")
+        self.set_state_and_log(msg)
+        return required_current
+
     def __link_rfid_to_cp(self) -> None:
         """ Wenn der Tag einem EV zugeordnet worden ist, wird der Tag unter set/rfid abgelegt und muss der Timer
         zurückgesetzt werden.
@@ -828,7 +841,7 @@ class Chargepoint:
                     phases = self.set_phases(phases)
                     self._pub_connected_vehicle(charging_ev)
                     # Einhaltung des Minimal- und Maximalstroms prüfen
-                    required_current = charging_ev.check_min_max_current(
+                    required_current = self.check_min_max_current(
                         required_current, charging_ev.data.control_parameter.phases)
                     charging_ev.set_chargemode_changed(submode)
                     charging_ev.set_control_parameter(submode, required_current)

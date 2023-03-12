@@ -79,7 +79,7 @@ class Algorithm:
                             cp.data.get.state_str = message
                         # Nachdem im Automatikmodus die Anzahl Phasen bekannt ist, Einhaltung des Maximalstroms
                         # prüfen.
-                        required_current = charging_ev.check_min_max_current(current, control_parameter.phases)
+                        required_current = cp.check_min_max_current(current, control_parameter.phases)
                         charging_ev.data.control_parameter.required_current = required_current
                         Pub().pub("openWB/set/vehicle/"+str(charging_ev.num) +
                                   "/control_parameter/required_current", required_current)

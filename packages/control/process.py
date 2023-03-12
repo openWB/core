@@ -77,7 +77,7 @@ class Process:
         current = round(chargepoint.data.set.current, 2)
         # Zur Sicherheit - nach dem der Algorithmus abgeschlossen ist - nochmal die Einhaltung der Stromstärken
         # prüfen.
-        current = charging_ev.check_min_max_current(current, charging_ev.data.control_parameter.phases)
+        current = chargepoint.check_min_max_current(current, charging_ev.data.control_parameter.phases)
 
         # Wenn bei einem EV, das keine Umschaltung verträgt, vor dem ersten Laden noch umgeschaltet wird, darf kein
         # Strom gesetzt werden.
