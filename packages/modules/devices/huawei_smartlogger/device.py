@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 import logging
-from typing import Iterable, Optional, Union, List,Dict
-
-
+from typing import Optional, Union, List, Dict
 from dataclass_utils import dataclass_from_dict
 from helpermodules.cli import run_using_positional_cli_args
 from modules.common.abstract_device import AbstractDevice, DeviceDescriptor
@@ -31,7 +29,7 @@ class Device(AbstractDevice):
         try:
             self.device_config = dataclass_from_dict(Huawei_Smartlogger, device_config)
             ip_address = self.device_config.configuration.ip_address
-            self.port=502
+            self.port = 502
             self.client = modbus.ModbusTcpClient_(ip_address, 502)
             self.client.delegate.connect()
         except Exception:
@@ -77,16 +75,20 @@ COMPONENT_TYPE_TO_MODULE = {
 }
 
 
-def read_legacy(component_type: str, ip_address: str,modbus_id: Optional[int] = 1, num: Optional[int] = None) -> None:
+def read_legacy(component_type: str, 
+                ip_address: str, 
+                modbus_id: Optional[int] = 1, 
+                num: Optional[int] = None) -> None:
 
     device_config = Huawei_Smartlogger()
     device_config.configuration.ip_address = ip_address
     dev = Device(device_config)
-    
+
     if component_type in COMPONENT_TYPE_TO_MODULE:
         component_config = COMPONENT_TYPE_TO_MODULE[component_type].component_descriptor.configuration_factory()
     else:
-        raise Exception( "illegal component type " + component_type + ". Allowed values: " +','.join(COMPONENT_TYPE_TO_MODULE.keys())
+        raise Exception("illegal component type " + component_type + ". Allowed values: " +
+                        ','.join(COMPONENT_TYPE_TO_MODULE.keys())
         )
     component_config.id = num
     component_config.configuration.modbus_id=modbus_id
@@ -98,5 +100,6 @@ def read_legacy(component_type: str, ip_address: str,modbus_id: Optional[int] = 
 
 def main(argv: List[str]):
     run_using_positional_cli_args(read_legacy, argv)
+
 
 device_descriptor = DeviceDescriptor(configuration_factory=Huawei_Smartlogger)

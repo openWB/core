@@ -2,10 +2,12 @@ from typing import Optional
 from helpermodules.auto_str import auto_str
 from modules.common.component_setup import ComponentSetup
 
+
 @auto_str
 class Huawei_SmartloggerConfiguration:
-    def __init__(self,ip_address: Optional[str] = None):
+    def __init__(self, ip_address: Optional[str] = None):
         self.ip_address = ip_address
+
 
 @auto_str
 class Huawei_Smartlogger:
@@ -19,11 +21,14 @@ class Huawei_Smartlogger:
         self.id = id
         self.configuration = configuration or Huawei_SmartloggerConfiguration()
 
+
 @auto_str
 class Huawei_SmartloggerBatConfiguration:
     def __init__(self,modbus_id:int=4):
-        self.modbus_id=modbus_id
+        self.modbus_id = modbus_id
         pass
+
+
 @auto_str
 class Huawei_SmartloggerBatSetup(ComponentSetup[Huawei_SmartloggerBatConfiguration]):
     def __init__(self,
@@ -33,11 +38,14 @@ class Huawei_SmartloggerBatSetup(ComponentSetup[Huawei_SmartloggerBatConfigurati
                  configuration: Huawei_SmartloggerBatConfiguration = None) -> None:
         super().__init__(name, type, id, configuration or Huawei_SmartloggerBatConfiguration())
 
+
 @auto_str      
 class Huawei_SmartloggerCounterConfiguration:
-    def __init__(self,modbus_id:int=3):
-        self.modbus_id=modbus_id
+    def __init__(self, modbus_id: int = 3):
+        self.modbus_id = modbus_id
         pass
+
+
 @auto_str
 class Huawei_SmartloggerCounterSetup(ComponentSetup[Huawei_SmartloggerCounterConfiguration]):
     def __init__(self,
@@ -47,11 +55,14 @@ class Huawei_SmartloggerCounterSetup(ComponentSetup[Huawei_SmartloggerCounterCon
                  configuration: Huawei_SmartloggerCounterConfiguration = None) -> None:
         super().__init__(name, type, id, configuration or Huawei_SmartloggerCounterConfiguration())
 
+
 @auto_str
 class Huawei_SmartloggerInverterConfiguration:
-    def __init__(self,modbus_id:int=1):
-        self.modbus_id=modbus_id
+    def __init__(self, modbus_id: int = 1):
+        self.modbus_id = modbus_id
         pass
+
+
 @auto_str
 class Huawei_SmartloggerInverterSetup(ComponentSetup[Huawei_SmartloggerInverterConfiguration]):
     def __init__(self,

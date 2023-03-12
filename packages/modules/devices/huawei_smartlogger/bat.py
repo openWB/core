@@ -37,5 +37,5 @@ class Huawei_SmartloggerBat:
             exported=exported
         )
         self.store.set(bat_state)
-        
+
 component_descriptor = ComponentDescriptor(configuration_factory=Huawei_SmartloggerBatSetup)
