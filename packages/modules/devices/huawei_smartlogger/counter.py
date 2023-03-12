@@ -11,8 +11,8 @@ from modules.devices.huawei_smartlogger.config import Huawei_SmartloggerCounterS
 
 
 class Huawei_SmartloggerCounter:
-    def __init__(self,device_id: int, 
-                 component_config: Huawei_SmartloggerCounterSetup, 
+    def __init__(self,device_id: int,
+                 component_config: Huawei_SmartloggerCounterSetup,
                  tcp_client: modbus.ModbusTcpClient_) -> None:
         self.__device_id = device_id
         self.component_config = dataclass_from_dict(Huawei_SmartloggerCounterSetup, component_config)
@@ -20,6 +20,7 @@ class Huawei_SmartloggerCounter:
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.store = get_counter_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
+
 
     def update(self):
         modbus_id = self.component_config.configuration.modbus_id

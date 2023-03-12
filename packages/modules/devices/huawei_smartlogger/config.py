@@ -24,7 +24,7 @@ class Huawei_Smartlogger:
 
 @auto_str
 class Huawei_SmartloggerBatConfiguration:
-    def __init__(self,modbus_id:int=4):
+    def __init__(self, modbus_id: int = 4):
         self.modbus_id = modbus_id
         pass
 
@@ -39,7 +39,7 @@ class Huawei_SmartloggerBatSetup(ComponentSetup[Huawei_SmartloggerBatConfigurati
         super().__init__(name, type, id, configuration or Huawei_SmartloggerBatConfiguration())
 
 
-@auto_str      
+@auto_str  
 class Huawei_SmartloggerCounterConfiguration:
     def __init__(self, modbus_id: int = 3):
         self.modbus_id = modbus_id

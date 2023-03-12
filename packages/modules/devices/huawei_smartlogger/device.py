@@ -9,7 +9,9 @@ from modules.common import modbus
 from modules.devices.huawei_smartlogger import counter
 from modules.devices.huawei_smartlogger import inverter
 from modules.devices.huawei_smartlogger import bat
-from modules.devices.huawei_smartlogger.config import Huawei_Smartlogger, Huawei_SmartloggerBatSetup,Huawei_SmartloggerCounterSetup, Huawei_SmartloggerInverterSetup
+from modules.devices.huawei_smartlogger.config import Huawei_Smartlogger, Huawei_SmartloggerBatSetup
+from modules.devices.huawei_smartlogger.config import Huawei_SmartloggerCounterSetup, Huawei_SmartloggerInverterSetup
+
 
 log = logging.getLogger(__name__)
 
@@ -47,7 +49,7 @@ class Device(AbstractDevice):
             component_type].component_descriptor.configuration_factory, component_config)
         if component_type in self.COMPONENT_TYPE_TO_CLASS:
             self.components["component"+str(component_config.id)] = (
-                self.COMPONENT_TYPE_TO_CLASS[component_type](self.device_config.id, component_config,self.client))
+                self.COMPONENT_TYPE_TO_CLASS[component_type](self.device_config.id, component_config, self.client))
         else:
             raise Exception(
                 "illegal component type " + component_type + ". Allowed values: " +
@@ -75,9 +77,9 @@ COMPONENT_TYPE_TO_MODULE = {
 }
 
 
-def read_legacy(component_type: str, 
-                ip_address: str, 
-                modbus_id: Optional[int] = 1, 
+def read_legacy(component_type: str,
+                ip_address: str,
+                modbus_id: Optional[int] = 1,
                 num: Optional[int] = None) -> None:
 
     device_config = Huawei_Smartlogger()

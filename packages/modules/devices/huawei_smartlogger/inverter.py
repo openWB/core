@@ -14,9 +14,9 @@ log = logging.getLogger(__name__)
 
 
 class Huawei_SmartloggerInverter:
-    def __init__(self, 
-                 device_id: int, 
-                 component_config: Huawei_SmartloggerInverterSetup, 
+    def __init__(self,
+                 device_id: int,
+                 component_config: Huawei_SmartloggerInverterSetup,
                  tcp_client: modbus.ModbusTcpClient_) -> None:
         self.__device_id = device_id
         self.component_config = dataclass_from_dict(Huawei_SmartloggerInverterSetup, component_config)
@@ -24,6 +24,7 @@ class Huawei_SmartloggerInverter:
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
         self.store = get_inverter_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
+
 
     def update(self) -> None:
         modbus_id = self.component_config.configuration.modbus_id
