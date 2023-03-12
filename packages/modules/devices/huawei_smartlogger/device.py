@@ -95,7 +95,7 @@ def read_legacy(component_type: str,
     component_config.id = num
     component_config.configuration.modbus_id = modbus_id
     dev.add_component(component_config)
-    
+
     log.debug('Huawei Smartlogger IP-Adresse: ' + ip_address)
     log.debug('Huawei Device Modbus-ID: ' + str(modbus_id))
     dev.update()
