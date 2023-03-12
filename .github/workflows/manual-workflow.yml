@@ -1,0 +1,25 @@
+name: manual Workflow
+
+on: [workflow_dispatch]
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.9"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 pytest paho-mqtt requests-mock jq pyjwt==2.6.0 bs4 pkce
+      - name: Flake8 with annotations
+        uses: TrueBrain/actions-flake8@v2.1
+        with:
+          path: packages
+          flake8_version: 5.0.4
+      - name: Test with pytest
+        run: |
+          PYTHONPATH=packages python -m pytest packages --log-cli-level=DEBUG
