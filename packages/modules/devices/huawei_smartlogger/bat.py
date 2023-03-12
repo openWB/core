@@ -24,7 +24,6 @@ class Huawei_SmartloggerBat:
         self.store = get_bat_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
 
-
     def update(self) -> None:
         modbus_id = self.component_config.configuration.modbus_id
         power = self.__tcp_client.read_holding_registers(37765, ModbusDataType.INT_32, unit=modbus_id)

@@ -93,12 +93,13 @@ def read_legacy(component_type: str,
                         ','.join(COMPONENT_TYPE_TO_MODULE.keys())
         )
     component_config.id = num
-    component_config.configuration.modbus_id=modbus_id
+    component_config.configuration.modbus_id = modbus_id
     dev.add_component(component_config)
     
     log.debug('Huawei Smartlogger IP-Adresse: ' + ip_address)
     log.debug('Huawei Device Modbus-ID: ' + str(modbus_id))
     dev.update()
+
 
 def main(argv: List[str]):
     run_using_positional_cli_args(read_legacy, argv)
