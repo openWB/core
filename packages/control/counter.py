@@ -198,7 +198,7 @@ class Counter:
         if control_range_low < surplus < control_range_high:
             available_power = 0
         else:
-            available_power = surplus - control_range_center
+            available_power = surplus + control_range_center
         return available_power
 
     SWITCH_ON_FALLEN_BELOW = "Einschaltschwelle von {}W während der Einschaltverzögerung unterschritten."

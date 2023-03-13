@@ -142,3 +142,19 @@ def test_get_charging_power_left(params: Params, caplog, general_data_fixture, m
     assert params.expected_msg is None or params.expected_msg in caplog.text
     assert (cp.data.set.charging_ev_data.data.control_parameter.timestamp_switch_on_off ==
             params.expected_timestamp_switch_on_off)
+
+
+@pytest.mark.parametrize("control_range, expected_available_power",
+                         [pytest.param([0, 230], 1115, id="Bezug"),
+                          pytest.param([-230, 0], 885, id="Einspeisung")],
+                         )
+def test_control_range(control_range, expected_available_power, general_data_fixture):
+    # setup
+    data.data.general_data.data.chargemode_config.pv_charging.control_range = control_range
+    c = Counter(0)
+
+    # execution
+    available_power = c._control_range(1000)
+
+    # evaluation
+    assert available_power == expected_available_power
