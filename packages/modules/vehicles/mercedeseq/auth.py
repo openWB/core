@@ -56,7 +56,8 @@ if act.status_code == 200:
     tokens = json.loads(act.text)
     access_token = tokens['access_token']
     refresh_token = tokens['refresh_token']
-    expires_in = int(time.time())
+    # expires_in = int(time.time())
+    expires_in = tokens['expires_in'] - 60 + int(time.time())
     token_type = tokens['token_type']
     id_token = tokens['id_token']
 
