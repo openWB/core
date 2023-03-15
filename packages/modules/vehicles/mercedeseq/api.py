@@ -92,8 +92,10 @@ def fetch_soc(config: MercedesEQSoc,
     access_token = config.configuration.token.access_token
     refresh_token = config.configuration.token.refresh_token
     expires_in = config.configuration.token.expires_in
-    log.debug("Conf Access Tok: " + access_token)
-    log.debug("Conf Refresh Tok: " + refresh_token)
+    if access_token is not None:
+        log.debug("Conf Access Tok: " + access_token)
+    if refresh_token is not None:
+        log.debug("Conf Refresh Tok: " + refresh_token)
     log.debug("Conf Expires_in: " + str(expires_in))
 
     log.info("Token expires in: " + str(int(expires_in) - int(time.time())) + "s. at: " +
