@@ -170,7 +170,7 @@ chmod 666 "$LOGFILE"
 
 	default_target=$(systemctl get-default)
 	display_active=$(mosquitto_sub -p 1886 -t "openWB/optional/int_display/active" -C 1 -W 1)
-	if (($? == 0 && display_active == "true")); then
+	if (($? == 0)) && [[ $display_active == "true" ]]; then
 		if [[ $default_target == "graphical.target" ]]; then
 			echo "graphical target already configured"
 		else
