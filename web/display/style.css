@@ -1,3 +1,9 @@
+/* prevent scroll gestures */
+body,
+html {
+	overscroll-behavior: none;
+}
+
 body,
 html,
 iframe {

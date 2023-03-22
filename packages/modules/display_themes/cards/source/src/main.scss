@@ -4,3 +4,8 @@
 :root {
   --spacing: 0.5rem;
 }
+
+/* prevent touch gestures */
+html, body {
+  overscroll-behavior: none;
+}
