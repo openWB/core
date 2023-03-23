@@ -148,7 +148,7 @@ export default {
     this.createConnection();
   },
   mounted() {
-    // add ulr parameters to store
+    // add url parameters to store
     let uri = window.location.search;
     if (uri != "") {
       console.debug("search", uri);
