@@ -30,10 +30,12 @@ log = logging.getLogger(__name__)
 
 
 class SwitchOnBatState(Enum):
-    SWITCH_ON_SOC_NOT_REACHED = "Laderegelung wurde nicht freigegeben, da Einschalt-SoC nicht erreicht."
-    SWITCH_OFF_SOC_REACHED = "Laderegelung wurde nicht freigegeben, da Ausschalt-SoC erreicht oder Speicher leer."
-    REACH_ONLY_SWITCH_ON_SOC = "Laderegelung wurde freigegeben, da der Speicher komplett entladen werden darf."
-    CHARGE_FROM_BAT = "Laderegelung wurde freigegeben."
+    SWITCH_ON_SOC_NOT_REACHED = "Die Laderegelung wurde nicht freigegeben, da der Einschalt-SoC des Speichers nicht "\
+        "erreicht wurde."
+    SWITCH_OFF_SOC_REACHED = "Die Laderegelung wurde nicht freigegeben, da der Ausschalt-SoC des Speichers erreicht "\
+        "wurde oder der Speicher leer ist."
+    REACH_ONLY_SWITCH_ON_SOC = "Die Laderegelung wurde freigegeben, da der Speicher komplett entladen werden darf."
+    CHARGE_FROM_BAT = "Die Laderegelung wurde freigegeben."
 
 
 @dataclass
