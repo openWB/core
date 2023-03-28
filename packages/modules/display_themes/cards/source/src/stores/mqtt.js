@@ -409,15 +409,21 @@ export const useMqttStore = defineStore("mqtt", {
     },
     getChargePointConnectedVehicleChargeMode(state) {
       return (chargePointId) => {
-        return state.translateChargeMode(
-          state.getChargePointConnectedVehicleConfig(chargePointId).chargemode
-        );
+        if (state.getChargePointConnectedVehicleConfig(chargePointId)) {
+          return state.translateChargeMode(
+            state.getChargePointConnectedVehicleConfig(chargePointId).chargemode
+          );
+        }
+        return undefined;
       };
     },
     getChargePointConnectedVehiclePriority(state) {
       return (chargePointId) => {
-        return state.getChargePointConnectedVehicleConfig(chargePointId)
-          .priority;
+        if (state.getChargePointConnectedVehicleConfig(chargePointId)) {
+          return state.getChargePointConnectedVehicleConfig(chargePointId)
+            .priority;
+        }
+        return undefined;
       };
     },
     getChargePointConnectedVehicleInfo(state) {
@@ -429,13 +435,19 @@ export const useMqttStore = defineStore("mqtt", {
     },
     getChargePointConnectedVehicleId(state) {
       return (chargePointId) => {
-        return state.getChargePointConnectedVehicleInfo(chargePointId).id;
+        if (state.getChargePointConnectedVehicleInfo(chargePointId)) {
+          return state.getChargePointConnectedVehicleInfo(chargePointId).id;
+        }
+        return undefined;
       };
     },
     getChargePointConnectedVehicleChargeTemplateIndex(state) {
       return (chargePointId) => {
-        return state.getChargePointConnectedVehicleConfig(chargePointId)
-          .charge_template;
+        if (state.getChargePointConnectedVehicleConfig(chargePointId)) {
+          return state.getChargePointConnectedVehicleConfig(chargePointId)
+            .charge_template;
+        }
+        return undefined;
       };
     },
     getChargePointConnectedVehicleChargeTemplate(state) {
@@ -451,15 +463,25 @@ export const useMqttStore = defineStore("mqtt", {
     },
     getChargePointConnectedVehicleEvTemplate(state) {
       return (chargePointId) => {
-        return state.getChargePointConnectedVehicleConfig(chargePointId)
-          .ev_template;
+        if (state.getChargePointConnectedVehicleConfig(chargePointId)) {
+          return state.getChargePointConnectedVehicleConfig(chargePointId)
+            .ev_template;
+        }
+        return undefined;
       };
     },
     getChargePointConnectedVehicleName(state) {
       return (chargePointId) => {
-        return state.topics[
-          `openWB/chargepoint/${chargePointId}/get/connected_vehicle/info`
-        ].name;
+        if (
+          state.topics[
+            `openWB/chargepoint/${chargePointId}/get/connected_vehicle/info`
+          ]
+        ) {
+          return state.topics[
+            `openWB/chargepoint/${chargePointId}/get/connected_vehicle/info`
+          ].name;
+        }
+        return undefined;
       };
     },
     getChargePointConnectedVehicleSoc(state) {
@@ -471,8 +493,12 @@ export const useMqttStore = defineStore("mqtt", {
     },
     getChargePointConnectedVehicleTimeChargingActive(state) {
       return (chargePointId) => {
-        return state.getChargePointConnectedVehicleChargeTemplate(chargePointId)
-          .time_charging.active;
+        if (state.getChargePointConnectedVehicleChargeTemplate(chargePointId)) {
+          return state.getChargePointConnectedVehicleChargeTemplate(
+            chargePointId
+          ).time_charging.active;
+        }
+        return undefined;
       };
     },
     getChargePointConnectedVehicleTimeChargingRunning(state) {
@@ -485,6 +511,26 @@ export const useMqttStore = defineStore("mqtt", {
           return running;
         }
         return false;
+      };
+    },
+    getChargePointConnectedVehicleInstantChargingCurrent(state) {
+      return (chargePointId) => {
+        if (state.getChargePointConnectedVehicleChargeTemplate(chargePointId)) {
+          return state.getChargePointConnectedVehicleChargeTemplate(
+            chargePointId
+          ).chargemode.instant_charging.current;
+        }
+        return undefined;
+      };
+    },
+    getChargePointConnectedVehicleInstantChargingLimit(state) {
+      return (chargePointId) => {
+        if (state.getChargePointConnectedVehicleChargeTemplate(chargePointId)) {
+          return state.getChargePointConnectedVehicleChargeTemplate(
+            chargePointId
+          ).chargemode.instant_charging.limit;
+        }
+        return { selected: undefined };
       };
     },
 
@@ -503,7 +549,10 @@ export const useMqttStore = defineStore("mqtt", {
     },
     getVehicleFaultState(state) {
       return (vehicleId) => {
-        return state.topics[`openWB/vehicle/${vehicleId}/get/fault_state`];
+        if (state.topics[`openWB/vehicle/${vehicleId}/get/fault_state`]) {
+          return state.topics[`openWB/vehicle/${vehicleId}/get/fault_state`];
+        }
+        return 0;
       };
     },
   },
@@ -585,23 +634,37 @@ export const useMqttStore = defineStore("mqtt", {
       console.debug("updateState:", topic, value, objectPath);
       this.updateTopic(topic, value, objectPath);
     },
+    chargeModeList() {
+      var chargeModes = [
+        { id: "instant_charging" },
+        { id: "pv_charging" },
+        { id: "scheduled_charging" },
+        { id: "standby" },
+        { id: "stop" },
+      ];
+      chargeModes.forEach((mode) => {
+        mode.label = this.translateChargeMode(mode.id).label;
+        mode.class = this.translateChargeMode(mode.id).class;
+      });
+      return chargeModes;
+    },
     translateChargeMode(mode) {
       switch (mode) {
         case "instant_charging":
-          return { mode: mode, name: "Sofort", class: "danger" };
+          return { mode: mode, label: "Sofort", class: "danger" };
         case "pv_charging":
-          return { mode: mode, name: "PV", class: "success" };
+          return { mode: mode, label: "PV", class: "success" };
         case "scheduled_charging":
-          return { mode: mode, name: "Zielladen", class: "primary" };
+          return { mode: mode, label: "Zielladen", class: "primary" };
         case "time_charging":
-          return { mode: mode, name: "Zeitladen", class: "warning" };
+          return { mode: mode, label: "Zeitladen", class: "warning" };
         case "standby":
-          return { mode: mode, name: "Standby", class: "secondary" };
+          return { mode: mode, label: "Standby", class: "secondary" };
         case "stop":
-          return { mode: mode, name: "Stop", class: "dark" };
+          return { mode: mode, label: "Stop", class: "dark" };
         default:
           console.warn("unknown charge mode:", mode);
-          return mode;
+          return { mode: mode, label: mode, class: mode };
       }
     },
     checkChangesLockCode(code) {
