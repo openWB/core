@@ -20,7 +20,7 @@ log = logging.getLogger(__name__)
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 7
+    DATASTORE_VERSION = 8
     valid_topic = ["^openWB/bat/config/configured$",
                    "^openWB/bat/set/charging_power_left$",
                    "^openWB/bat/set/switch_on_soc_reached$",
@@ -221,6 +221,7 @@ class UpdateConfig:
                    "^openWB/vehicle/[0-9]+/control_parameter/timestamp_switch_on_off$",
                    "^openWB/vehicle/[0-9]+/control_parameter/used_amount_instant_charging$",
                    "^openWB/vehicle/[0-9]+/control_parameter/phases$",
+                   "^openWB/vehicle/[0-9]+/control_parameter/state$",
                    "^openWB/vehicle/[0-9]+/set/ev_template$",
                    "^openWB/vehicle/[0-9]+/set/soc_error_counter$",
 
@@ -553,3 +554,12 @@ class UpdateConfig:
                     payload["autolock"].pop("plans")
                     Pub().pub(topic.replace("openWB/", "openWB/set/"), payload)
         Pub().pub("openWB/set/system/datastore_version", 7)
+
+    def upgrade_datastore_7(self) -> None:
+        for topic, payload in self.all_received_topics.items():
+            if re.search("openWB/vehicle/template/ev_template/[0-9]+$", topic) is not None:
+                payload = decode_payload(payload)
+                if "keep_charge_active_duration" not in payload:
+                    payload["keep_charge_active_duration"] = ev.EvTemplateData().keep_charge_active_duration
+                    Pub().pub(topic.replace("openWB/", "openWB/set/"), payload)
+        Pub().pub("openWB/set/system/datastore_version", 8)

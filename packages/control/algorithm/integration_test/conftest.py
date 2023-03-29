@@ -11,6 +11,7 @@ from control.counter_all import CounterAll
 from control.counter import Counter
 from control.ev import Ev
 from control.pv import Pv
+from control.state_machine import StateMachine
 from test_utils.default_hierarchies import NESTED_HIERARCHY
 
 
@@ -27,6 +28,7 @@ def data_() -> None:
         data.data.cp_data[f"cp{i}"].data.set.charging_ev_data = Ev(i)
         data.data.cp_data[f"cp{i}"].data.get.plug_state = True
         data.data.cp_data[f"cp{i}"].data.set.plug_time = f"12/01/2022, 15:0{i}:11"
+        data.data.cp_data[f"cp{i}"].data.set.charging_ev_data.ev_template.data.nominal_difference = 2
     data.data.cp_data["cp3"].data.set.charging_ev_data.ev_template.data.min_current = 10
     data.data.bat_data.update({"bat2": Bat(2), "all": BatAll()})
     data.data.pv_data.update({"pv1": Pv(1)})
@@ -60,5 +62,7 @@ def assert_expected_current(params: ParamsExpectedSetCurrent):
 @pytest.fixture()
 def all_cp_not_charging():
     for i in range(3, 6):
+        charging_ev_data = data.data.cp_data[f"cp{i}"].data.set.charging_ev_data
         data.data.cp_data[f"cp{i}"].data.get.currents = [0]*3
         data.data.cp_data[f"cp{i}"].data.get.charge_state = False
+        charging_ev_data.data.control_parameter.state = StateMachine.NO_CHARGING_ALLOWED
