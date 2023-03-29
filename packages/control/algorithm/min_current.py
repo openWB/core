@@ -1,5 +1,4 @@
 import logging
-from control import data
 
 from control.algorithm import common
 from control.loadmanagement import Loadmanagement
@@ -25,8 +24,7 @@ class MinCurrent:
                         available_currents, limit = Loadmanagement().get_available_currents(missing_currents, counter)
                         available_for_cp = common.available_current_for_cp(
                             cp, counts, available_currents, missing_currents)
-                        if (data.data.counter_all_data.data.config.reserve_for_not_charging is False and
-                                (max(cp.data.get.currents) == 0)):
+                        if common.consider_not_charging_chargepoint_in_loadmanagement(cp):
                             cp.data.set.current = cp.data.set.charging_ev_data.ev_template.data.min_current
                             log.debug(
                                 f"LP{cp.num}: Stromstärke {cp.data.set.charging_ev_data.ev_template.data.min_current}"
