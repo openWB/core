@@ -97,17 +97,16 @@ class BatAll:
                 self.data.get.daily_exported = 0
                 self.data.get.daily_imported = 0
                 for battery in data.data.bat_data.values():
-                    if isinstance(battery, Bat):
-                        try:
-                            self.data.get.power += self.__max_bat_power_hybrid_system(battery)
-                            self.data.get.imported += battery.data.get.imported
-                            self.data.get.exported += battery.data.get.exported
-                            self.data.get.daily_exported += battery.data.get.daily_exported
-                            self.data.get.daily_imported += battery.data.get.daily_imported
-                            soc_sum += battery.data.get.soc
-                            soc_count += 1
-                        except Exception:
-                            log.exception(f"Fehler im Bat-Modul {battery.num}")
+                    try:
+                        self.data.get.power += battery.data.get.power
+                        self.data.get.imported += battery.data.get.imported
+                        self.data.get.exported += battery.data.get.exported
+                        self.data.get.daily_exported += battery.data.get.daily_exported
+                        self.data.get.daily_imported += battery.data.get.daily_imported
+                        soc_sum += battery.data.get.soc
+                        soc_count += 1
+                    except Exception:
+                        log.exception(f"Fehler im Bat-Modul {battery.num}")
                 self.data.get.soc = int(soc_sum / soc_count)
                 # Alle Summentopics im Dict publishen
                 {Pub().pub("openWB/set/bat/get/"+k, v) for (k, v) in asdict(self.data.get).items()}
@@ -118,7 +117,7 @@ class BatAll:
         except Exception:
             log.exception("Fehler im Bat-Modul")
 
-    def __max_bat_power_hybrid_system(self, battery: Bat) -> float:
+    def _max_bat_power_hybrid_system(self, battery: Bat) -> float:
         if battery.data.get.power > 0:
             parent = data.data.counter_all_data.get_entry_of_parent(battery.num)
             if parent.get("type") == "inverter":
@@ -148,8 +147,7 @@ class BatAll:
             if self.data.config.configured is True:
                 self._get_charging_power_left()
                 self._get_switch_on_state()
-                log.info(
-                    str(self.data.set.charging_power_left)+"W verbliebende Speicher-Leistung")
+                log.info(f"{self.data.set.charging_power_left}W verbliebende Speicher-Leistung")
             else:
                 self.data.set.charging_power_left = 0
                 self.data.get.power = 0
@@ -162,9 +160,15 @@ class BatAll:
         """ ermittelt die Lade-Leistung des Speichers, die zum Laden der EV verwendet werden darf.
         """
         try:
+            available_power = 0
+            for battery in data.data.bat_data.values():
+                try:
+                    available_power += self._max_bat_power_hybrid_system(battery)
+                except Exception:
+                    log.exception(f"Fehler im Bat-Modul {battery.num}")
             config = data.data.general_data.data.chargemode_config.pv_charging
             if not config.bat_prio:
-                self.data.set.charging_power_left = self.data.get.power
+                self.data.set.charging_power_left = available_power
                 log.debug(f' Verbleibende Speicher-Leistung: {self.data.set.charging_power_left}W')
                 if self.data.get.soc < 100:
                     if config.charging_power_reserve != 0:
@@ -186,7 +190,7 @@ class BatAll:
                     # Wenn der Speicher entladen wird, darf diese Leistung nicht zum Laden der Fahrzeuge genutzt werden.
                     # 50 W Überschuss übrig lassen, die sich der Speicher dann nehmen kann. Wenn der Speicher
                     # schneller regelt als die LP, würde sonst der Speicher reduziert werden.
-                    self.data.set.charging_power_left = min(0, self.data.get.power) - 50
+                    self.data.set.charging_power_left = min(0, available_power) - 50
         except Exception:
             log.exception("Fehler im Bat-Modul")
 
