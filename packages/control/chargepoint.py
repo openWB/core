@@ -1183,7 +1183,18 @@ class ChargepointStateUpdate:
         while self.event_update_state.wait():
             try:
                 self.event_copy_data.clear()
-                cp = copy.deepcopy(self.chargepoint)
+                # Workaround, da mit Python3.9/pymodbus2.5 eine pymodbus-Instanz nicht mehr kopiert werden kann.
+                # Bei einer Neukonfiguration eines Device/Komponente wird dieses Neuinitialisiert. Nur bei Komponenten
+                # mit simcount werden Werte aktualisiert, diese sollten jedoch nur einmal nach dem Auslesen aktualisiert
+                # werden, sodass die Nutzung einer Referenz vorerst funktioniert.
+                # Verwendung der Referenz führt bei der Pro zu Instabilität.
+                try:
+                    cp = copy.deepcopy(self.chargepoint)
+                except TypeError:
+                    cp = Chargepoint(self.chargepoint.num, None)
+                    cp.set_current_prev = copy.deepcopy(self.chargepoint.set_current_prev)
+                    cp.data = copy.deepcopy(self.chargepoint.data)
+                    cp.chargepoint_module = self.chargepoint.chargepoint_module
                 cp.template = copy.deepcopy(self.cp_template_data[f"cpt{self.chargepoint.data.config.template}"])
                 ev_list = {}
                 for ev in self.ev_data:
