@@ -533,6 +533,56 @@ export const useMqttStore = defineStore("mqtt", {
         return { selected: undefined };
       };
     },
+    getChargePointConnectedVehiclePvChargingFeedInLimit(state) {
+      return (chargePointId) => {
+        if (state.getChargePointConnectedVehicleChargeTemplate(chargePointId)) {
+          return state.getChargePointConnectedVehicleChargeTemplate(
+            chargePointId
+          ).chargemode.pv_charging.feed_in_limit;
+        }
+        return undefined;
+      };
+    },
+    getChargePointConnectedVehiclePvChargingMinCurrent(state) {
+      return (chargePointId) => {
+        if (state.getChargePointConnectedVehicleChargeTemplate(chargePointId)) {
+          return state.getChargePointConnectedVehicleChargeTemplate(
+            chargePointId
+          ).chargemode.pv_charging.min_current;
+        }
+        return undefined;
+      };
+    },
+    getChargePointConnectedVehiclePvChargingMinSoc(state) {
+      return (chargePointId) => {
+        if (state.getChargePointConnectedVehicleChargeTemplate(chargePointId)) {
+          return state.getChargePointConnectedVehicleChargeTemplate(
+            chargePointId
+          ).chargemode.pv_charging.min_soc;
+        }
+        return undefined;
+      };
+    },
+    getChargePointConnectedVehiclePvChargingMinSocCurrent(state) {
+      return (chargePointId) => {
+        if (state.getChargePointConnectedVehicleChargeTemplate(chargePointId)) {
+          return state.getChargePointConnectedVehicleChargeTemplate(
+            chargePointId
+          ).chargemode.pv_charging.min_soc_current;
+        }
+        return undefined;
+      };
+    },
+    getChargePointConnectedVehiclePvChargingMaxSoc(state) {
+      return (chargePointId) => {
+        if (state.getChargePointConnectedVehicleChargeTemplate(chargePointId)) {
+          return state.getChargePointConnectedVehicleChargeTemplate(
+            chargePointId
+          ).chargemode.pv_charging.max_soc;
+        }
+        return undefined;
+      };
+    },
 
     /* vehicle getters */
 
