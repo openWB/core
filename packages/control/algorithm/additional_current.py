@@ -23,7 +23,7 @@ class AdditionalCurrent:
                 get_chargepoints_by_mode_and_counter(mode_tuple, f"counter{counter.num}"))
             if preferenced_chargepoints:
                 common.update_raw_data(preferenced_chargepoints)
-                log.info(f"Mode-Tuple {mode_tuple}, Zähler {counter.num}")
+                log.info(f"Mode-Tuple {mode_tuple[0]} - {mode_tuple[1]} - {mode_tuple[2]}, Zähler {counter.num}")
                 while len(preferenced_chargepoints):
                     cp = preferenced_chargepoints[0]
                     missing_currents, counts = common.get_missing_currents_left(preferenced_chargepoints)
