@@ -1,6 +1,9 @@
+import logging
 from typing import List, Optional
 
 from helpermodules.auto_str import auto_str
+
+log = logging.getLogger(__name__)
 
 
 @auto_str
@@ -88,7 +91,8 @@ class InverterState:
         if currents is None:
             currents = [0.0]*3
         else:
-            currents = [currents[i]*-1 if currents[i] > 0 else currents[i] for i in range(0, 3)]
+            if not((sum(currents) < 0 and power < 0) or (sum(currents) > 0 and power > 0)):
+                log.debug("currents sign wrong "+str(currents))
         self.currents = currents
         self.power = power
         self.exported = exported
