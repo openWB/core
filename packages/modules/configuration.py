@@ -125,10 +125,11 @@ def _pub_configurable_chargepoints() -> None:
                     # Soll (vorerst) nicht auswählbar sein
                     continue
                 dev_defaults = importlib.import_module(
-                    f".chargepoints.{path.parts[-2]}.chargepoint_module", "modules").get_default_config()
+                    f".chargepoints.{path.parts[-2]}.chargepoint_module",
+                    "modules").chargepoint_descriptor.configuration_factory()
                 chargepoints.append({
-                    "value": dev_defaults["connection_module"]["type"],
-                    "text": dev_defaults["connection_module"]["name"]
+                    "value": dev_defaults.type,
+                    "text": dev_defaults.name
                 })
             except Exception:
                 log.exception("Fehler im configuration-Modul")

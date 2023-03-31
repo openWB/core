@@ -48,7 +48,7 @@ class Loadvars:
         for cp in data.data.cp_data.values():
             try:
                 modules_threads.append(threading.Thread(target=cp.chargepoint_module.get_values,
-                                       args=(), name=f"cp{cp.chargepoint_module.id}"))
+                                       args=(), name=f"cp{cp.chargepoint_module.config.id}"))
             except Exception:
                 log.exception(f"Fehler im loadvars-Modul bei Element {cp.num}")
         return thread_handler(modules_threads)
@@ -64,7 +64,7 @@ class Loadvars:
                         modules_threads.append(threading.Thread(
                             target=update_values,
                             args=(chargepoint.chargepoint_module,),
-                            name=f"cp{chargepoint.chargepoint_module.id}"))
+                            name=f"cp{chargepoint.chargepoint_module.config.id}"))
                 else:
                     component = get_component_obj_by_id(element["id"], not_finished_threads)
                     if component is None:

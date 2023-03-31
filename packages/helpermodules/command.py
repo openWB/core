@@ -156,9 +156,9 @@ class Command:
         chargepoint_default = chargepoint.get_chargepoint_config_default()
         # chargepoint_default["id"] = new_id
         module = importlib.import_module(".chargepoints." + payload["data"]["type"] + ".chargepoint_module", "modules")
-        chargepoint_default = {**chargepoint_default, **module.get_default_config()}
+        chargepoint_default.update(dataclass_utils.asdict(
+            module.chargepoint_descriptor.configuration_factory()).items())
         chargepoint_default["id"] = new_id
-        chargepoint_default["type"] = payload["data"]["type"]
         try:
             evu_counter = data.data.counter_all_data.get_id_evu_counter()
             data.data.counter_all_data.hierarchy_add_item_below(

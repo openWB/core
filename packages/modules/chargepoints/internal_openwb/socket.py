@@ -3,22 +3,13 @@ import functools
 import logging
 import RPi.GPIO as GPIO
 import time
-from typing import Callable, Dict, Tuple
+from typing import Callable, Tuple
 
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.component_state import ChargepointState
 from modules.chargepoints.internal_openwb.chargepoint_module import ChargepointModule, InternalOpenWB
 
 log = logging.getLogger(__name__)
-
-
-def get_default_config() -> Dict:
-    return {"id": 0,
-            "connection_module": {
-                "type": "internal_openwb",
-                "configuration": {}
-            },
-            "power_module": {}}
 
 
 class RateLimiter:

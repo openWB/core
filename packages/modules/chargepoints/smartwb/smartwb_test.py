@@ -3,6 +3,7 @@ from unittest.mock import Mock
 
 import pytest
 import requests_mock
+from modules.chargepoints.smartwb.config import SmartWB, SmartWBConfiguration
 
 
 from modules.common.component_state import ChargepointState
@@ -131,9 +132,7 @@ class TestSmartWb:
 
     @pytest.fixture
     def cp(self) -> chargepoint_module.ChargepointModule:
-        cp_config = chargepoint_module.get_default_config()
-        cp_config["connection_module"]["configuration"]["ip_address"] = "1.1.1.1"
-        return chargepoint_module.ChargepointModule(0, cp_config["connection_module"], cp_config["power_module"])
+        return chargepoint_module.ChargepointModule(SmartWB(configuration=SmartWBConfiguration(ip_address="1.1.1.1")))
 
     @pytest.mark.parametrize("params", [
         Params("smartWB V1", SAMPLE_V1, SAMPLE_CP_STATE_V1),

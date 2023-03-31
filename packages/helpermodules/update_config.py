@@ -22,7 +22,7 @@ log = logging.getLogger(__name__)
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 8
+    DATASTORE_VERSION = 9
     valid_topic = ["^openWB/bat/config/configured$",
                    "^openWB/bat/set/charging_power_left$",
                    "^openWB/bat/set/switch_on_soc_reached$",
@@ -587,3 +587,15 @@ class UpdateConfig:
                     payload["keep_charge_active_duration"] = ev.EvTemplateData().keep_charge_active_duration
                     Pub().pub(topic.replace("openWB/", "openWB/set/"), payload)
         Pub().pub("openWB/set/system/datastore_version", 8)
+
+    def upgrade_datastore_8(self) -> None:
+        for topic, payload in self.all_received_topics.items():
+            if re.search("openWB/chargepoint/[0-9]+/config$", topic) is not None:
+                payload = decode_payload(payload)
+                if "connection_module" in payload:
+                    updated_payload = payload
+                    updated_payload["configuration"] = payload["connection_module"]["configuration"]
+                    updated_payload.pop("connection_module")
+                    updated_payload.pop("power_module")
+                    Pub().pub(topic.replace("openWB/", "openWB/set/"), payload)
+        Pub().pub("openWB/set/system/datastore_version", 9)

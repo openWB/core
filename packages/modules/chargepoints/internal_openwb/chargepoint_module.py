@@ -1,9 +1,10 @@
 import logging
 import RPi.GPIO as GPIO
 import time
-from typing import Dict, List, NamedTuple, Optional, Tuple, Union
+from typing import List, NamedTuple, Tuple, Union
 
 from modules.common.abstract_chargepoint import AbstractChargepoint
+from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.component_state import ChargepointState
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -15,17 +16,6 @@ from modules.common import b23
 from modules.common.store import get_chargepoint_value_store
 
 log = logging.getLogger(__name__)
-
-
-def get_default_config() -> Dict:
-    return {"id": 0,
-            "serial_client": None,  # type: Optional[ModbusSerialClient_]
-            "connection_module": {
-                "client": None  # type: Optional[CONNECTION_MODULES]
-            },
-            "power_module": {
-                "client": None  # type: Optional[evse.Evse]
-            }}
 
 
 CONNECTION_MODULES = Union[sdm.Sdm630, b23.B23]
@@ -181,3 +171,6 @@ class ChargepointModule(AbstractChargepoint):
         GPIO.output(gpio_cp, GPIO.HIGH)
         time.sleep(duration)
         GPIO.output(gpio_cp, GPIO.LOW)
+
+
+chargepoint_descriptor = DeviceDescriptor(configuration_factory=InternalOpenWB)

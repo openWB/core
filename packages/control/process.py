@@ -118,4 +118,4 @@ class Process:
     def _start_charging(self, chargepoint: chargepoint.Chargepoint) -> threading.Thread:
         return threading.Thread(target=chargepoint.chargepoint_module.set_current,
                                 args=(chargepoint.data.set.current,),
-                                name=f"cp{chargepoint.chargepoint_module.id}")
+                                name=f"cp{chargepoint.chargepoint_module.config.id}")

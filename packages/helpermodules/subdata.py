@@ -372,13 +372,11 @@ class SubData:
                         config = json.loads(
                             str(msg.payload.decode("utf-8")))
                         if (var["cp"+index].chargepoint.chargepoint_module is None or
-                                config["connection_module"] != var[
-                                    "cp"+index].chargepoint.chargepoint_module.connection_module or
-                                config["power_module"] != var["cp"+index].chargepoint.chargepoint_module.power_module):
+                                config["type"] != var["cp"+index].chargepoint.chargepoint_module.config.type):
                             mod = importlib.import_module(
-                                ".chargepoints."+config["connection_module"]["type"]+".chargepoint_module", "modules")
-                            var["cp"+index].chargepoint.chargepoint_module = mod.ChargepointModule(
-                                config["id"], config["connection_module"], config["power_module"])
+                                ".chargepoints."+config["type"]+".chargepoint_module", "modules")
+                            config = dataclass_from_dict(mod.chargepoint_descriptor.configuration_factory, config)
+                            var["cp"+index].chargepoint.chargepoint_module = mod.ChargepointModule(config)
                         self.set_json_payload_class(var["cp"+index].chargepoint.data.config, msg)
                         self.event_cp_config.set()
             elif re.search("/chargepoint/get/", msg.topic) is not None:
