@@ -91,7 +91,7 @@ class InverterState:
         if currents is None:
             currents = [0.0]*3
         else:
-            if not((sum(currents) < 0 and power < 0) or (sum(currents) > 0 and power > 0)):
+            if not ((sum(currents) < 0 and power < 0) or (sum(currents) > 0 and power > 0)):
                 log.debug("currents sign wrong "+str(currents))
         self.currents = currents
         self.power = power
