@@ -39,14 +39,12 @@ def test_set_loadmanagement_state(fault_state: FaultStateLevel,
 
 
 @pytest.mark.parametrize("raw_currents_left, expected_max_exceeding",
-                         [pytest.param([32, 32, 15], [0]*3, id="unbalanced load limit not exceeded"),
-                          pytest.param([32, 35, 15], [0]*3, id="unbalanced load limit not exceeded with export"),
-                          pytest.param([32, 55, 33], [0]*3,
-                                       id="unbalanced load limit not exceeded with export two phases"),
-                          pytest.param([32, 32, 13], [0, 0, 2], id="unbalanced load limit exceeded on one phase"),
-                          pytest.param([29, 11, 8], [0, 1, 4], id="unbalanced load limit exceeded on two phases"),
-                          pytest.param([35, 11, 8], [0, 4, 7],
-                          id="unbalanced load limit exceeded on two phases with export")])
+                         [pytest.param([32, 32, 15], [0]*3, id="not exceeded"),
+                          pytest.param([32, 35, 18], [0]*3, id="not exceeded with export"),
+                          pytest.param([38, 55, 39], [0]*3, id="not exceeded with export two phases"),
+                          pytest.param([32, 32, 13], [0, 0, 1], id="exceeded on one phase"),
+                          pytest.param([29, 11, 8], [0, 0, 3], id="exceeded on two phases"),
+                          pytest.param([35, 11, 8], [0, 6, 9], id="exceeded on two phases with export")])
 def test_get_unbalanced_load_exceeding(raw_currents_left: List[float],
                                        expected_max_exceeding: List[float],
                                        monkeypatch,
@@ -66,8 +64,8 @@ def test_get_unbalanced_load_exceeding(raw_currents_left: List[float],
 
 
 @pytest.mark.parametrize("max_currents, expected_raw_currents_left",
-                         [pytest.param([40]*3, [39, 0, 9], id="Überbelastung"),
-                          ([60]*3, [59, 14, 29])])
+                         [pytest.param([40]*3, [40, 0, 10], id="Überbelastung"),
+                          ([60]*3, [60, 15, 30])])
 def test_set_current_left(max_currents: List[float],
                           expected_raw_currents_left: List[float],
                           monkeypatch,
@@ -142,3 +140,19 @@ def test_get_charging_power_left(params: Params, caplog, general_data_fixture, m
     assert params.expected_msg is None or params.expected_msg in caplog.text
     assert (cp.data.set.charging_ev_data.data.control_parameter.timestamp_switch_on_off ==
             params.expected_timestamp_switch_on_off)
+
+
+@pytest.mark.parametrize("control_range, expected_available_power",
+                         [pytest.param([0, 230], 1115, id="Bezug"),
+                          pytest.param([-230, 0], 885, id="Einspeisung")],
+                         )
+def test_control_range(control_range, expected_available_power, general_data_fixture):
+    # setup
+    data.data.general_data.data.chargemode_config.pv_charging.control_range = control_range
+    c = Counter(0)
+
+    # execution
+    available_power = c._control_range(1000)
+
+    # evaluation
+    assert available_power == expected_available_power
