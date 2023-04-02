@@ -149,3 +149,26 @@ def test_get_missing_currents_left(required_currents_1: List[float],
 
     # assertion
     assert currents == expected_currents
+
+
+@pytest.mark.parametrize(
+    "reserve_for_not_charging, get_currents, expected_considered",
+    [
+        pytest.param(True, [0]*3, False, id="reserve_for_not_charging active"),
+        pytest.param(True, [6]*3, False, id="reserve_for_not_charging active"),
+        pytest.param(False, [0]*3, True, id="not charging"),
+        pytest.param(False, [6]*3, False, id="charging"),
+    ])
+def test_consider_not_charging_chargepoint_in_loadmanagement(reserve_for_not_charging: bool,
+                                                             get_currents: List[float],
+                                                             expected_considered: bool):
+    # setup
+    cp = Chargepoint(4, None)
+    cp.data.get.currents = get_currents
+    data.data.counter_all_data.data.config.reserve_for_not_charging = reserve_for_not_charging
+
+    # evaluation
+    considered = common.consider_not_charging_chargepoint_in_loadmanagement(cp)
+
+    # assertion
+    assert considered == expected_considered

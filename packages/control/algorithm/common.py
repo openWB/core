@@ -126,6 +126,8 @@ def update_raw_data(preferenced_chargepoints: List[Chargepoint],
     """alle CP, die schon einen Sollstrom haben, wieder rausrechnen, da dieser neu gesetzt wird
         und die neue Differenz bei den Zählern eingetragen wird."""
     for chargepoint in preferenced_chargepoints:
+        if consider_not_charging_chargepoint_in_loadmanagement(chargepoint):
+            continue
         charging_ev_data = chargepoint.data.set.charging_ev_data
         required_currents = charging_ev_data.data.control_parameter.required_currents
         max_target_set_current = max(chargepoint.data.set.target_current, chargepoint.data.set.current)
@@ -148,6 +150,11 @@ def update_raw_data(preferenced_chargepoints: List[Chargepoint],
                 data.data.counter_data[counter].update_surplus_values_left(diffs)
             else:
                 data.data.counter_data[counter].update_values_left(diffs)
+
+
+def consider_not_charging_chargepoint_in_loadmanagement(cp: Chargepoint) -> bool:
+    # tested
+    return data.data.counter_all_data.data.config.reserve_for_not_charging is False and max(cp.data.get.currents) == 0
 
 # tested
 

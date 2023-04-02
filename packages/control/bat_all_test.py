@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from unittest.mock import Mock
 import pytest
+from control.bat import Bat
 
 from control.bat_all import BatAll, SwitchOnBatState
 from control import data
@@ -38,18 +39,23 @@ cases = [
 
 
 @pytest.mark.parametrize("params", cases, ids=[c.name for c in cases])
-def test_get_charging_power_left(params: Params, caplog, data_fixture):
+def test_get_charging_power_left(params: Params, caplog, data_fixture, monkeypatch):
     # setup
-    b = BatAll()
+    b_all = BatAll()
+    b_all.data.get.power = 500
+    b_all.data.get.soc = params.soc
+    b = Bat(0)
     b.data.get.power = 500
-    b.data.get.soc = params.soc
+    data.data.bat_data["bat0"] = b
     data.data.general_data.data.chargemode_config.pv_charging = params.config
+    mock__max_bat_power_hybrid_system = Mock(return_value=500)
+    monkeypatch.setattr(BatAll, "_max_bat_power_hybrid_system", mock__max_bat_power_hybrid_system)
 
     # execution
-    b._get_charging_power_left()
+    b_all._get_charging_power_left()
 
     # evaluation
-    assert b.data.set.charging_power_left == params.expected_charging_power_left
+    assert b_all.data.set.charging_power_left == params.expected_charging_power_left
 
 
 @pytest.mark.parametrize(
