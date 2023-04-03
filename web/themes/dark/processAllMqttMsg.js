@@ -589,15 +589,20 @@ function processPvMessages(mqttTopic, mqttPayload) {
 		var unit = 'W';
 		var unitPrefix = '';
 		var pvWatt = parseInt(mqttPayload, 10);
+		if (pvWatt > 0) {
+			$('.pv-sum-power-production').addClass('hide');
+			$('.pv-sum-power-consumption').removeClass('hide');
+		} else {
+			$('.pv-sum-power-consumption').addClass('hide');
+			$('.pv-sum-power-production').removeClass('hide');
+		}
 		if (isNaN(pvWatt)) {
 			pvWatt = 0;
 		}
-		if (pvWatt <= 0) {
-			// production is negative for calculations so adjust for display
-			pvWatt *= -1;
-		}
+		// production should be displayed positive, consumption negative
+		pvWatt *= -1;
 		// adjust and add unit
-		if (pvWatt > 999) {
+		if (Math.abs(pvWatt) > 999) {
 			pvWatt = (pvWatt / 1000).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 			unitPrefix = 'k'
 		} else {
@@ -671,13 +676,20 @@ function processChargePointMessages(mqttTopic, mqttPayload) {
 		if (isNaN(powerAllLp)) {
 			powerAllLp = 0;
 		}
-		if (powerAllLp > 999) {
+		if (Math.abs(powerAllLp) > 999) {
 			powerAllLp = (powerAllLp / 1000).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 			unitPrefix = 'k';
 		} else {
 			powerAllLp = powerAllLp.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 		}
 		$('.charge-point-sum-power').text(powerAllLp + ' ' + unitPrefix + unit);
+		if (powerAllLp < 0) {
+			$('.charge-point-sum-power-charging').addClass('hide');
+			$('.charge-point-sum-power-discharging').removeClass('hide');
+		} else {
+			$('.charge-point-sum-power-discharging').addClass('hide');
+			$('.charge-point-sum-power-charging').removeClass('hide');
+		}
 	} else if (mqttTopic == 'openWB/chargepoint/get/daily_imported') {
 		var unit = "Wh";
 		var unitPrefix = "";
