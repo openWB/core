@@ -52,7 +52,7 @@ class SubData:
     bat_data: Dict[str, bat.Bat] = {}
     general_data = general.General()
     optional_data = optional.Optional()
-    system_data = system.System()
+    system_data = {"system": system.System()}
     graph_data = graph.Graph()
 
     def __init__(self,
