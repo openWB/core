@@ -26,9 +26,15 @@ class SolaxInverter:
 
     def update(self) -> None:
         with self.__tcp_client:
-            power_temp = self.__tcp_client.read_input_registers(10, [ModbusDataType.UINT_16] * 2, unit=self.__modbus_id)
-            power = sum(power_temp) * -1
-            exported = self.__tcp_client.read_input_registers(82, ModbusDataType.UINT_32, wordorder=Endian.Little,
+            power_string1 = (self.__tcp_client.read_input_registers(
+                0x0003, ModbusDataType.INT_16, unit=self.__modbus_id) / 10) * \
+                (self.__tcp_client.read_input_registers(0x0005, ModbusDataType.INT_16, unit=self.__modbus_id) / 10)
+            power_string2 = (self.__tcp_client.read_input_registers(
+                0x0004, ModbusDataType.INT_16, unit=self.__modbus_id) / 10) * \
+                (self.__tcp_client.read_input_registers(0x0006, ModbusDataType.INT_16, unit=self.__modbus_id) / 10)
+            power = -int(power_string1 + power_string2)
+
+            exported = self.__tcp_client.read_input_registers(0x0094, ModbusDataType.UINT_32, wordorder=Endian.Little,
                                                               unit=self.__modbus_id) * 100
 
         inverter_state = InverterState(

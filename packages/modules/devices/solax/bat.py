@@ -28,10 +28,13 @@ class SolaxBat:
 
     def update(self) -> None:
         with self.__tcp_client:
-            power = self.__tcp_client.read_input_registers(22, ModbusDataType.INT_16, unit=self.__modbus_id)
-            soc = self.__tcp_client.read_input_registers(28, ModbusDataType.UINT_16, unit=self.__modbus_id)
+            power = self.__tcp_client.read_input_registers(0x0016, ModbusDataType.INT_16, unit=self.__modbus_id)
+            soc = self.__tcp_client.read_input_registers(0x001C, ModbusDataType.UINT_16, unit=self.__modbus_id)
+            imported = self.__tcp_client.read_input_registers(
+                0x0021, ModbusDataType.UINT_16, unit=self.__modbus_id) * 100
+            exported = self.__tcp_client.read_input_registers(
+                0x001D, ModbusDataType.UINT_16, unit=self.__modbus_id) * 100
 
-        imported, exported = self.sim_counter.sim_count(power)
         bat_state = BatState(
             power=power,
             soc=soc,
