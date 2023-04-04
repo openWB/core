@@ -8,7 +8,7 @@
 	<?php
 	//Callback procedure for mercedes SoC API EV
 	if ($_GET["code"]) {
-		$command = $_SERVER['DOCUMENT_ROOT'] . "/openWB/packages/modules/vehicles/mercedeseq/auth.py";
+		$command = "PYTHONPATH=\"" . $_SERVER['DOCUMENT_ROOT'] . "/openWB/packages\" python3 " . $_SERVER['DOCUMENT_ROOT'] . "/openWB/packages/modules/vehicles/mercedeseq/auth.py";
 
 		$state = escapeshellarg($_GET['state']);
 		$code = escapeshellarg($_GET['code']);

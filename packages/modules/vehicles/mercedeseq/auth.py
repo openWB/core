@@ -1,15 +1,12 @@
 #!/usr/bin/python3
 
 import json
-import pathlib
 import sys
 import time
 import html
 import paho.mqtt.subscribe as subscribe
 import paho.mqtt.publish as publish
-
-sys.path.append(str(pathlib.Path(__file__).resolve().parents[3]))
-from modules.common import req  # noqa: E402
+from modules.common import req
 
 # call parameters
 ev_id = sys.argv[1]
