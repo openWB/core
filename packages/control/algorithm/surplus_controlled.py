@@ -2,7 +2,6 @@ import logging
 from typing import List, Optional, Tuple
 
 from control import data
-from control import state_machine
 from control.algorithm import common
 from control.loadmanagement import LimitingValue, Loadmanagement
 from control.counter import Counter
@@ -10,7 +9,7 @@ from control.chargepoint import Chargepoint
 from control.algorithm.filter_chargepoints import (get_chargepoints_by_mode, get_chargepoints_by_mode_and_counter,
                                                    get_preferenced_chargepoint_charging, get_chargepoints_pv_charging,
                                                    get_chargepoints_surplus_controlled)
-from control.state_machine import StateMachine
+from control.chargepoint_state import ChargepointState, CHARGING_STATES
 from modules.common.utils.component_parser import get_component_name_by_id
 
 log = logging.getLogger(__name__)
@@ -116,7 +115,7 @@ class SurplusControlled:
         for cp in get_chargepoints_pv_charging():
             control_parameter = cp.data.set.charging_ev_data.data.control_parameter
             if cp.data.set.charging_ev_data.chargemode_changed:
-                if control_parameter.state == StateMachine.CHARGING_ALLOWED:
+                if control_parameter.state == ChargepointState.CHARGING_ALLOWED:
                     if cp.data.set.charging_ev_data.ev_template.data.prevent_charge_stop is False:
                         threshold = evu_counter.calc_switch_off_threshold(cp)[0]
                         if evu_counter.calc_surplus() - cp.data.set.required_power < threshold:
@@ -124,20 +123,20 @@ class SurplusControlled:
                 else:
                     control_parameter.required_currents = [0]*3
             else:
-                if (control_parameter.state == StateMachine.CHARGING_ALLOWED or
-                        control_parameter.state == StateMachine.SWITCH_OFF_DELAY):
+                if (control_parameter.state == ChargepointState.CHARGING_ALLOWED or
+                        control_parameter.state == ChargepointState.SWITCH_OFF_DELAY):
                     evu_counter.switch_off_check_threshold(cp)
-                if control_parameter.state == StateMachine.SWITCH_OFF_DELAY:
+                if control_parameter.state == ChargepointState.SWITCH_OFF_DELAY:
                     evu_counter.switch_off_check_timer(cp)
-                if control_parameter.state == StateMachine.SWITCH_ON_DELAY:
+                if control_parameter.state == ChargepointState.SWITCH_ON_DELAY:
                     # Wenn charge_state False und set_current > 0, will Auto nicht laden
                     evu_counter.switch_on_timer_expired(cp)
-                if control_parameter.state not in state_machine.CHARGING_STATES:
+                if control_parameter.state not in CHARGING_STATES:
                     control_parameter.required_currents = [0]*3
 
     def check_switch_on(self) -> None:
         for cp in get_chargepoints_pv_charging():
-            if cp.data.set.charging_ev_data.data.control_parameter.state == StateMachine.NO_CHARGING_ALLOWED:
+            if cp.data.set.charging_ev_data.data.control_parameter.state == ChargepointState.NO_CHARGING_ALLOWED:
                 data.data.counter_all_data.get_evu_counter().switch_on_threshold_reached(cp)
 
     def set_required_current_to_max(self) -> None:

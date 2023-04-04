@@ -8,7 +8,7 @@ from typing import List, Tuple
 from control import data
 from control.ev import Ev
 from control.chargepoint import Chargepoint
-from control.state_machine import StateMachine
+from control.chargepoint_state import ChargepointState
 from dataclass_utils.factories import currents_list_factory, voltages_list_factory
 from helpermodules import timecheck
 from helpermodules.phase_mapping import convert_cp_currents_to_evu_currents
@@ -224,7 +224,7 @@ class Counter:
             timestamp_switch_on_off = control_parameter.timestamp_switch_on_off
 
             surplus, threshold = self.calc_switch_on_power(chargepoint)
-            if control_parameter.state == StateMachine.SWITCH_ON_DELAY:
+            if control_parameter.state == ChargepointState.SWITCH_ON_DELAY:
                 # Wurde die Einschaltschwelle erreicht? Reservierte Leistung aus all_surplus rausrechnen,
                 # da diese Leistung ja schon reserviert wurde, als die Einschaltschwelle erreicht wurde.
                 required_power = (chargepoint.data.set.charging_ev_data.ev_template.data.
@@ -234,7 +234,7 @@ class Counter:
                     timestamp_switch_on_off = None
                     self.data.set.reserved_surplus -= threshold
                     message = self.SWITCH_ON_FALLEN_BELOW.format(pv_config.switch_on_threshold)
-                    control_parameter.state = StateMachine.CHARGING_ALLOWED
+                    control_parameter.state = ChargepointState.CHARGING_ALLOWED
             else:
                 # Timer starten
                 if (surplus >= threshold) and ((feed_in_limit and self.data.set.reserved_surplus == 0) or
@@ -242,7 +242,7 @@ class Counter:
                     timestamp_switch_on_off = timecheck.create_timestamp()
                     self.data.set.reserved_surplus += threshold
                     message = self.SWITCH_ON_WAITING.format(pv_config.switch_on_delay)
-                    control_parameter.state = StateMachine.SWITCH_ON_DELAY
+                    control_parameter.state = ChargepointState.SWITCH_ON_DELAY
                 else:
                     # Einschaltschwelle nicht erreicht
                     message = self.SWITCH_ON_NOT_EXCEEDED.format(pv_config.switch_on_threshold)
@@ -280,7 +280,7 @@ class Counter:
                 Pub().pub(
                     "openWB/set/vehicle/" + str(chargepoint.data.set.charging_ev_data.num) +
                     "/control_parameter/timestamp_switch_on_off", None)
-                control_parameter.state = StateMachine.CHARGING_ALLOWED
+                control_parameter.state = ChargepointState.CHARGING_ALLOWED
             chargepoint.set_state_and_log(msg)
         except Exception:
             log.exception("Fehler im allgemeinen PV-Modul")
@@ -308,7 +308,7 @@ class Counter:
                     Pub().pub(
                         "openWB/set/vehicle/" + str(chargepoint.data.set.charging_ev_data.num) +
                         "/control_parameter/timestamp_switch_on_off", None)
-                    control_parameter.state = StateMachine.NO_CHARGING_ALLOWED
+                    control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
                 else:
                     msg = self.SWITCH_OFF_WAITING.format(pv_config.switch_off_delay)
             chargepoint.set_state_and_log(msg)
@@ -345,10 +345,10 @@ class Counter:
         timestamp_switch_on_off = control_parameter.timestamp_switch_on_off
 
         power_in_use, threshold = self.calc_switch_off(chargepoint)
-        if control_parameter.state == StateMachine.SWITCH_OFF_DELAY:
+        if control_parameter.state == ChargepointState.SWITCH_OFF_DELAY:
             # Wenn automatische Phasenumschaltung aktiv, die Umschaltung abwarten, bevor die Abschaltschwelle
             # greift.
-            if control_parameter.state == StateMachine.PHASE_SWITCH_DELAY:
+            if control_parameter.state == ChargepointState.PHASE_SWITCH_DELAY:
                 timestamp_switch_on_off = None
                 self.data.set.released_surplus -= chargepoint.data.set.required_power
                 log.info("Abschaltverzögerung gestoppt, da die Verzögerung für die Phasenumschaltung aktiv ist. " +
@@ -359,7 +359,7 @@ class Counter:
                 timestamp_switch_on_off = None
                 self.data.set.released_surplus -= chargepoint.data.set.required_power
                 msg = self.SWITCH_OFF_EXCEEDED
-                control_parameter.state = StateMachine.CHARGING_ALLOWED
+                control_parameter.state = ChargepointState.CHARGING_ALLOWED
         else:
             # Wurde die Abschaltschwelle ggf. durch die Verzögerung anderer LP erreicht?
             min_current = (charging_ev_data.ev_template.data.min_current
@@ -375,14 +375,14 @@ class Counter:
                     if chargepoint.data.get.charge_state is False:
                         charge = False
                         msg = self.SWITCH_OFF_NOT_CHARGING
-                        control_parameter.state = StateMachine.NO_CHARGING_ALLOWED
+                        control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
                     else:
                         timestamp_switch_on_off = timecheck.create_timestamp()
                         # merken, dass ein LP verzögert wird, damit nicht zu viele LP verzögert werden.
                         self.data.set.released_surplus += chargepoint.data.set.required_power
                         msg = self.SWITCH_OFF_WAITING.format(
                             data.data.general_data.data.chargemode_config.pv_charging.switch_off_delay)
-                        control_parameter.state = StateMachine.SWITCH_OFF_DELAY
+                        control_parameter.state = ChargepointState.SWITCH_OFF_DELAY
                     # Die Abschaltschwelle wird immer noch überschritten und es sollten weitere LP abgeschaltet
                     # werden.
                 else:

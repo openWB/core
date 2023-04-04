@@ -11,7 +11,7 @@ from control.counter_all import CounterAll
 from control.counter import Counter
 from control.ev import Ev
 from control.pv import Pv
-from control.state_machine import StateMachine
+from control.chargepoint_state import ChargepointState
 from test_utils.default_hierarchies import NESTED_HIERARCHY
 
 
@@ -65,4 +65,4 @@ def all_cp_not_charging():
         charging_ev_data = data.data.cp_data[f"cp{i}"].data.set.charging_ev_data
         data.data.cp_data[f"cp{i}"].data.get.currents = [0]*3
         data.data.cp_data[f"cp{i}"].data.get.charge_state = False
-        charging_ev_data.data.control_parameter.state = StateMachine.NO_CHARGING_ALLOWED
+        charging_ev_data.data.control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED

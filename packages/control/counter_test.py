@@ -8,7 +8,7 @@ from control.chargepoint import Chargepoint
 from control.counter import Counter
 from control.ev import ChargeTemplate, Ev
 from control.general import General
-from control.state_machine import StateMachine
+from control.chargepoint_state import ChargepointState
 from modules.common.fault_state import FaultStateLevel
 
 
@@ -93,7 +93,7 @@ class Params:
     surplus: float
     threshold: float
     timestamp_switch_on_off: Optional[str]
-    state: StateMachine
+    state: ChargepointState
     expected_msg: Optional[str]
     expected_timestamp_switch_on_off: Optional[str]
     expected_reserved_surplus: float
@@ -101,23 +101,23 @@ class Params:
 
 cases = [
     Params("Einschaltschwelle wurde unterschritten, Timer zurücksetzen", False, 1500, 119,
-           1500, '05/16/2022, 08:40:50', StateMachine.SWITCH_ON_DELAY,
+           1500, '05/16/2022, 08:40:50', ChargepointState.SWITCH_ON_DELAY,
            Counter.SWITCH_ON_FALLEN_BELOW.format(1500), None, 0),
-    Params("Timer starten", False, 0, 1501, 1500, None, StateMachine.NO_CHARGING_ALLOWED,
+    Params("Timer starten", False, 0, 1501, 1500, None, ChargepointState.NO_CHARGING_ALLOWED,
            Counter.SWITCH_ON_WAITING.format(30), '05/16/2022, 08:40:52', 1500),
     Params("Einschaltschwelle nicht erreicht", False, 0, 1499, 1500,
-           None, StateMachine.NO_CHARGING_ALLOWED, Counter.SWITCH_ON_NOT_EXCEEDED.format(1500), None, 0),
+           None, ChargepointState.NO_CHARGING_ALLOWED, Counter.SWITCH_ON_NOT_EXCEEDED.format(1500), None, 0),
     Params("Einschaltschwelle läuft", False, 1500, 121, 1500,
-           '05/16/2022, 08:40:50', StateMachine.SWITCH_ON_DELAY, None, '05/16/2022, 08:40:50', 1500),
+           '05/16/2022, 08:40:50', ChargepointState.SWITCH_ON_DELAY, None, '05/16/2022, 08:40:50', 1500),
     Params("Feed_in_limit, Einschaltschwelle wurde unterschritten, Timer zurücksetzen", True, 15000,
-           13619, 15000, '05/16/2022, 08:40:50', StateMachine.SWITCH_ON_DELAY,
+           13619, 15000, '05/16/2022, 08:40:50', ChargepointState.SWITCH_ON_DELAY,
            Counter.SWITCH_ON_FALLEN_BELOW.format(1500), None, 0),
-    Params("Feed_in_limit, Timer starten", True, 0, 15001, 15000, None, StateMachine.NO_CHARGING_ALLOWED,
+    Params("Feed_in_limit, Timer starten", True, 0, 15001, 15000, None, ChargepointState.NO_CHARGING_ALLOWED,
            Counter.SWITCH_ON_WAITING.format(30), '05/16/2022, 08:40:52', 15000),
     Params("Feed_in_limit, Einschaltschwelle nicht erreicht", True, 0, 14999,
-           15000, None, StateMachine.NO_CHARGING_ALLOWED, Counter.SWITCH_ON_NOT_EXCEEDED.format(1500), None, 0),
+           15000, None, ChargepointState.NO_CHARGING_ALLOWED, Counter.SWITCH_ON_NOT_EXCEEDED.format(1500), None, 0),
     Params("Feed_in_limit, Einschaltschwelle läuft", True, 1500, 15001,
-           15000, '05/16/2022, 08:40:50', StateMachine.SWITCH_ON_DELAY, None, '05/16/2022, 08:40:50', 1500),
+           15000, '05/16/2022, 08:40:50', ChargepointState.SWITCH_ON_DELAY, None, '05/16/2022, 08:40:50', 1500),
 ]
 
 

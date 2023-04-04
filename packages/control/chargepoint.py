@@ -29,7 +29,7 @@ from control import data
 from control import ev as ev_module
 from control.ev import Ev
 from control import phase_switch
-from control.state_machine import StateMachine
+from control.chargepoint_state import ChargepointState
 from dataclass_utils.factories import (empty_dict_factory, emtpy_list_factory, currents_list_factory,
                                        voltages_list_factory)
 from helpermodules.abstract_plans import AutolockPlan
@@ -102,10 +102,10 @@ class AllChargepoints:
                             chargepoint.data.set.charging_ev == -1 or
                             # Kein EV, das auf das Ablaufen der Einschalt- oder Phasenumschaltverzögerung wartet
                             (chargepoint.data.set.charging_ev != -1 and
-                                control_parameter.state != StateMachine.PERFORMING_PHASE_SWITCH is None and
-                                control_parameter.state != StateMachine.PHASE_SWITCH_DELAY and
-                                control_parameter.state != StateMachine.SWITCH_OFF_DELAY and
-                                control_parameter.state != StateMachine.SWITCH_ON_DELAY)):
+                                control_parameter.state != ChargepointState.PERFORMING_PHASE_SWITCH and
+                                control_parameter.state != ChargepointState.PHASE_SWITCH_DELAY and
+                                control_parameter.state != ChargepointState.SWITCH_OFF_DELAY and
+                                control_parameter.state != ChargepointState.SWITCH_ON_DELAY)):
                         continue
                     else:
                         break
@@ -571,8 +571,8 @@ class Chargepoint:
     def _is_phase_switch_required(self, charging_ev: Ev) -> bool:
         # Manche EVs brauchen nach der Umschaltung mehrere Zyklen, bis sie mit den drei Phasen laden. Dann darf
         # nicht zwischendurch eine neue Umschaltung getriggert werden.
-        if (self.data.set.charging_ev_data.data.control_parameter.state == StateMachine.CHARGING_ALLOWED or
-                self.data.set.charging_ev_data.data.control_parameter.state == StateMachine.PHASE_SWITCH_DELAY_EXPIRED):
+        if (charging_ev.data.control_parameter.state == ChargepointState.CHARGING_ALLOWED or
+                charging_ev.data.control_parameter.state == ChargepointState.PHASE_SWITCH_DELAY_EXPIRED):
             # Nach Ablauf der Laden aktiv halten Zeit, sollte mit der vorgegebenen Phasenzahl geladen werden.
             if ((self.data.set.phases_to_use != self.data.get.phases_in_use or
                 # Vorgegebene Phasenzahl hat sich geändert
@@ -589,7 +589,7 @@ class Chargepoint:
             evu_counter = data.data.counter_all_data.get_evu_counter()
             charging_ev = self.data.set.charging_ev_data
             # Umschaltung im Gange
-            if charging_ev.data.control_parameter.state == StateMachine.PERFORMING_PHASE_SWITCH:
+            if charging_ev.data.control_parameter.state == ChargepointState.PERFORMING_PHASE_SWITCH:
                 phase_switch_pause = charging_ev.ev_template.data.phase_switch_pause
                 # Umschaltung abgeschlossen
                 if not timecheck.check_timestamp(
@@ -606,7 +606,7 @@ class Chargepoint:
                     elif self.data.set.phases_to_use == 1:
                         evu_counter.data.set.reserved_surplus -= charging_ev.ev_template. \
                             data.max_current_single_phase * 230
-                    charging_ev.data.control_parameter.state = StateMachine.WAIT_FOR_USING_PHASES
+                    charging_ev.data.control_parameter.state = ChargepointState.WAIT_FOR_USING_PHASES
                 else:
                     # Wenn eine Umschaltung im Gange ist, muss erst gewartet werden, bis diese fertig ist.
                     if self.data.set.phases_to_use == 3:
@@ -617,9 +617,9 @@ class Chargepoint:
                         raise ValueError(str(self.data.set.phases_to_use)+" ist keine gültige Phasenzahl (1/3).")
                     self.set_state_and_log(message)
                 return
-            if charging_ev.data.control_parameter.state == StateMachine.WAIT_FOR_USING_PHASES:
+            if charging_ev.data.control_parameter.state == ChargepointState.WAIT_FOR_USING_PHASES:
                 if phase_switch.phase_switch_thread_alive(self.num) is False:
-                    charging_ev.data.control_parameter.state = StateMachine.CHARGING_ALLOWED
+                    charging_ev.data.control_parameter.state = ChargepointState.CHARGING_ALLOWED
             # Wenn noch kein Eintrag im Protokoll erstellt wurde, wurde noch nicht geladen und die Phase kann noch
             # umgeschaltet werden.
             if (not charging_ev.ev_template.data.prevent_phase_switch or
@@ -631,8 +631,8 @@ class Chargepoint:
                     self.data.set.phases_to_use = charging_ev.data.control_parameter.phases
                 if self._is_phase_switch_required(charging_ev):
                     # Wenn die Umschaltverzögerung aktiv ist, darf nicht umgeschaltet werden.
-                    if (charging_ev.data.control_parameter.state != StateMachine.PERFORMING_PHASE_SWITCH and
-                            charging_ev.data.control_parameter.state != StateMachine.WAIT_FOR_USING_PHASES):
+                    if (charging_ev.data.control_parameter.state != ChargepointState.PERFORMING_PHASE_SWITCH and
+                            charging_ev.data.control_parameter.state != ChargepointState.WAIT_FOR_USING_PHASES):
                         if self.cp_ev_support_phase_switch():
                             log.debug(
                                 f"Lp {self.num}: Ladung aktiv halten "
@@ -642,7 +642,7 @@ class Chargepoint:
                                       str(self.data.set.phases_to_use) +
                                       "control_parameter phases " +
                                       str(charging_ev.data.control_parameter.phases))
-                            charging_ev.data.control_parameter.state = StateMachine.PERFORMING_PHASE_SWITCH
+                            charging_ev.data.control_parameter.state = ChargepointState.PERFORMING_PHASE_SWITCH
                             # 1 -> 3
                             if charging_ev.data.control_parameter.phases == 3:
                                 message = "Umschaltung von 1 auf 3 Phasen."
@@ -699,7 +699,7 @@ class Chargepoint:
                 else:
                     phases = self.data.set.phases_to_use
             log.debug(f"Phasenzahl Lademodus: {phases}")
-        elif charging_ev.data.control_parameter.state == StateMachine.PERFORMING_PHASE_SWITCH:
+        elif charging_ev.data.control_parameter.state == ChargepointState.PERFORMING_PHASE_SWITCH:
             phases = self.data.set.phases_to_use
             log.debug(f"Umschaltung wird durchgeführt, Phasenzahl nicht ändern {phases}")
         else:
@@ -890,7 +890,7 @@ class Chargepoint:
                                   f'{charging_ev.charge_template.data.chargemode.selected}, Submodus: '
                                   f'{charging_ev.data.control_parameter.submode}')
                     else:
-                        if (charging_ev.data.control_parameter.state == StateMachine.SWITCH_ON_DELAY and
+                        if (charging_ev.data.control_parameter.state == ChargepointState.SWITCH_ON_DELAY and
                                 data.data.counter_all_data.get_evu_counter().data.set.reserved_surplus == 0):
                             log.error("Reservierte Leistung kann nicht 0 sein.")
 

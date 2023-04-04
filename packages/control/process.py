@@ -7,7 +7,7 @@ from typing import List
 from control import chargelog
 from control import chargepoint
 from control import data
-from control.state_machine import StateMachine
+from control.chargepoint_state import ChargepointState
 from helpermodules.pub import Pub
 
 log = logging.getLogger(__name__)
@@ -32,8 +32,8 @@ class Process:
                         cp.initiate_control_pilot_interruption()
                         cp.initiate_phase_switch()
                         self._update_state(cp)
-                        if control_parameter.state == StateMachine.NO_CHARGING_ALLOWED and cp.data.set.current != 0:
-                            control_parameter.state = StateMachine.CHARGING_ALLOWED
+                        if control_parameter.state == ChargepointState.NO_CHARGING_ALLOWED and cp.data.set.current != 0:
+                            control_parameter.state = ChargepointState.CHARGING_ALLOWED
                     else:
                         # LP, an denen nicht geladen werden darf
                         if cp.data.set.charging_ev_prev != -1:
@@ -43,7 +43,7 @@ class Process:
                                 immediately=False)
                         cp.data.set.current = 0
                         Pub().pub("openWB/set/chargepoint/"+str(cp.num)+"/set/current", 0)
-                        control_parameter.state = StateMachine.NO_CHARGING_ALLOWED
+                        control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
                     if cp.data.get.state_str is not None:
                         Pub().pub("openWB/set/chargepoint/"+str(cp.num)+"/get/state_str",
                                   cp.data.get.state_str)
@@ -92,11 +92,11 @@ class Process:
         # Strom gesetzt werden.
         if (charging_ev.ev_template.data.prevent_phase_switch and
                 chargepoint.data.set.log.imported_since_plugged == 0 and
-                charging_ev.data.control_parameter.state == StateMachine.PERFORMING_PHASE_SWITCH):
+                charging_ev.data.control_parameter.state == ChargepointState.PERFORMING_PHASE_SWITCH):
             current = 0
 
         # Unstimmige Werte loggen
-        if (charging_ev.data.control_parameter.state == StateMachine.SWITCH_ON_DELAY and
+        if (charging_ev.data.control_parameter.state == ChargepointState.SWITCH_ON_DELAY and
                 data.data.counter_all_data.get_evu_counter().data.set.reserved_surplus == 0):
             log.error("Reservierte Leistung kann am Algorithmus-Ende nicht 0 sein.")
         if (chargepoint.data.set.charging_ev_data.ev_template.data.prevent_phase_switch and
@@ -107,13 +107,13 @@ class Process:
 
         # Wenn ein EV zugeordnet ist und die Phasenumschaltung aktiv ist, darf kein Strom gesetzt werden.
         if (charging_ev.data.control_parameter.timestamp_perform_phase_switch is not None or
-                charging_ev.data.control_parameter.state == StateMachine.PERFORMING_PHASE_SWITCH):
+                charging_ev.data.control_parameter.state == ChargepointState.PERFORMING_PHASE_SWITCH):
             current = 0
 
         chargepoint.data.set.current = current
         Pub().pub("openWB/set/chargepoint/"+str(chargepoint.num)+"/set/current", current)
         log.info(f"LP{chargepoint.num}: set current {current} A, "
-                 f"state {StateMachine(charging_ev.data.control_parameter.state).name}")
+                 f"state {ChargepointState(charging_ev.data.control_parameter.state).name}")
 
     def _start_charging(self, chargepoint: chargepoint.Chargepoint) -> threading.Thread:
         return threading.Thread(target=chargepoint.chargepoint_module.set_current,

@@ -12,10 +12,9 @@ import traceback
 from typing import List, Dict, Optional, Tuple
 
 from control import data
-from control import state_machine
 from control.bat_all import SwitchOnBatState
 from control.chargemode import Chargemode as Chargemode_enum
-from control.state_machine import StateMachine
+from control.chargepoint_state import ChargepointState, PHASE_SWITCH_STATES
 from dataclass_utils.factories import currents_list_factory, empty_dict_factory, emtpy_list_factory
 from helpermodules.abstract_plans import Limit, limit_factory, ScheduledChargingPlan, TimeChargingPlan
 from helpermodules.pub import Pub
@@ -144,7 +143,7 @@ class ControlParameter:
     used_amount_instant_charging: float = 0
     imported_at_plan_start: float = 0
     current_plan: Optional[str] = None
-    state: StateMachine = StateMachine.NO_CHARGING_ALLOWED
+    state: ChargepointState = ChargepointState.NO_CHARGING_ALLOWED
 
 
 @dataclass
@@ -236,7 +235,7 @@ class Ev:
             Pub().pub("openWB/set/vehicle/"+str(self.num) +
                       "/control_parameter/current_plan", None)
             Pub().pub("openWB/set/vehicle/"+str(self.num) +
-                      "/control_parameter/state", StateMachine.NO_CHARGING_ALLOWED)
+                      "/control_parameter/state", ChargepointState.NO_CHARGING_ALLOWED)
             self.data.control_parameter.required_current = 0
             self.data.control_parameter.timestamp_auto_phase_switch = None
             self.data.control_parameter.timestamp_perform_phase_switch = None
@@ -245,7 +244,7 @@ class Ev:
             self.data.control_parameter.used_amount_instant_charging = 0
             self.data.control_parameter.imported_at_plan_start = 0
             self.data.control_parameter.current_plan = None
-            self.data.control_parameter.state = StateMachine.NO_CHARGING_ALLOWED
+            self.data.control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
         except Exception:
             log.exception("Fehler im ev-Modul "+str(self.num))
 
@@ -478,7 +477,7 @@ class Ev:
             f'{required_power}W')
         # Wenn gerade umgeschaltet wird, darf kein Timer gestartet werden.
         if not self.ev_template.data.prevent_phase_switch:
-            if self.data.control_parameter.state not in state_machine.PHASE_SWITCH_STATES:
+            if self.data.control_parameter.state not in PHASE_SWITCH_STATES:
                 condition_1_to_3 = (max(get_currents) > max_current and
                                     all_surplus > self.ev_template.data.min_current * max_phases_ev * 230
                                     - get_power and
@@ -492,7 +491,7 @@ class Ev:
                     data.data.counter_all_data.get_evu_counter(
                     ).data.set.reserved_surplus += max(0, required_power)
                     message = f'{direction_str} Phasen für {delay/60} Min aktiv.'
-                    self.data.control_parameter.state = StateMachine.PHASE_SWITCH_DELAY
+                    self.data.control_parameter.state = ChargepointState.PHASE_SWITCH_DELAY
             else:
                 condition_1_to_3 = max(get_currents) > max_current and all_surplus > 0 and phases_in_use == 1
                 condition_3_to_1 = max(get_currents) < min_current and phases_in_use > 1
@@ -507,13 +506,13 @@ class Ev:
                         phases_to_use = new_phase
                         current = new_current
                         log.debug("Phasenumschaltung kann nun durchgeführt werden.")
-                        self.data.control_parameter.state = StateMachine.PHASE_SWITCH_DELAY_EXPIRED
+                        self.data.control_parameter.state = ChargepointState.PHASE_SWITCH_DELAY_EXPIRED
                 else:
                     timestamp_auto_phase_switch = None
                     data.data.counter_all_data.get_evu_counter(
                     ).data.set.reserved_surplus -= max(0, required_power)
                     message = f"{direction_str} Phasen abgebrochen."
-                    self.data.control_parameter.state = StateMachine.CHARGING_ALLOWED
+                    self.data.control_parameter.state = ChargepointState.CHARGING_ALLOWED
 
         if message:
             log.info(f"LP {cp_num}: {message}")
