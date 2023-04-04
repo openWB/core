@@ -7,6 +7,7 @@ import re
 import subprocess
 import time
 from typing import List
+from paho.mqtt.client import Client as MqttClient, MQTTMessage
 
 from helpermodules.broker import InternalBrokerClient
 from helpermodules.pub import Pub
@@ -331,12 +332,12 @@ class UpdateConfig:
         except Exception:
             log.exception("Fehler beim Prüfen des Brokers.")
 
-    def on_connect(self, client, userdata, flags, rc):
+    def on_connect(self, client: MqttClient, userdata, flags: dict, rc: int):
         """ connect to broker and subscribe to set topics
         """
         client.subscribe("openWB/#", 2)
 
-    def on_message(self, client, userdata, msg):
+    def on_message(self, client: MqttClient, userdata, msg: MQTTMessage):
         self.all_received_topics.update({msg.topic: msg.payload})
 
     def __remove_outdated_topics(self):
@@ -351,7 +352,7 @@ class UpdateConfig:
                 log.debug("Ungültiges Topic zum Startzeitpunkt: "+str(topic))
 
     def _remove_invalid_topics(self):
-        # remove all chargepoints without config. This data comes from deleted chargepoints that are still sent to an
+        # remove all charge points without config. This data comes from deleted charge points that are still sent to an
         # invalid CP number.
         for topic in self.all_received_topics.keys():
             if re.search("/chargepoint/[0-9]+/", topic) is not None:
