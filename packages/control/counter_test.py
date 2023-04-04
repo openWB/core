@@ -8,6 +8,7 @@ from control.chargepoint import Chargepoint
 from control.counter import Counter
 from control.ev import ChargeTemplate, Ev
 from control.general import General
+from control.chargepoint_state import ChargepointState
 from modules.common.fault_state import FaultStateLevel
 
 
@@ -92,6 +93,7 @@ class Params:
     surplus: float
     threshold: float
     timestamp_switch_on_off: Optional[str]
+    state: ChargepointState
     expected_msg: Optional[str]
     expected_timestamp_switch_on_off: Optional[str]
     expected_reserved_surplus: float
@@ -99,32 +101,35 @@ class Params:
 
 cases = [
     Params("Einschaltschwelle wurde unterschritten, Timer zurücksetzen", False, 1500, 119,
-           1500, '05/16/2022, 08:40:50', Counter.SWITCH_ON_FALLEN_BELOW.format(1500), None, 0),
-    Params("Timer starten", False, 0, 1501, 1500, None, Counter.SWITCH_ON_WAITING.format(30),
-           '05/16/2022, 08:40:52', 1500),
+           1500, '05/16/2022, 08:40:50', ChargepointState.SWITCH_ON_DELAY,
+           Counter.SWITCH_ON_FALLEN_BELOW.format(1500), None, 0),
+    Params("Timer starten", False, 0, 1501, 1500, None, ChargepointState.NO_CHARGING_ALLOWED,
+           Counter.SWITCH_ON_WAITING.format(30), '05/16/2022, 08:40:52', 1500),
     Params("Einschaltschwelle nicht erreicht", False, 0, 1499, 1500,
-           None, Counter.SWITCH_ON_NOT_EXCEEDED.format(1500), None, 0),
+           None, ChargepointState.NO_CHARGING_ALLOWED, Counter.SWITCH_ON_NOT_EXCEEDED.format(1500), None, 0),
     Params("Einschaltschwelle läuft", False, 1500, 121, 1500,
-           '05/16/2022, 08:40:50', None, '05/16/2022, 08:40:50', 1500),
+           '05/16/2022, 08:40:50', ChargepointState.SWITCH_ON_DELAY, None, '05/16/2022, 08:40:50', 1500),
     Params("Feed_in_limit, Einschaltschwelle wurde unterschritten, Timer zurücksetzen", True, 15000,
-           13619, 15000, '05/16/2022, 08:40:50', Counter.SWITCH_ON_FALLEN_BELOW.format(1500), None, 0),
-    Params("Feed_in_limit, Timer starten", True, 0, 15001, 15000, None,
+           13619, 15000, '05/16/2022, 08:40:50', ChargepointState.SWITCH_ON_DELAY,
+           Counter.SWITCH_ON_FALLEN_BELOW.format(1500), None, 0),
+    Params("Feed_in_limit, Timer starten", True, 0, 15001, 15000, None, ChargepointState.NO_CHARGING_ALLOWED,
            Counter.SWITCH_ON_WAITING.format(30), '05/16/2022, 08:40:52', 15000),
     Params("Feed_in_limit, Einschaltschwelle nicht erreicht", True, 0, 14999,
-           15000, None, Counter.SWITCH_ON_NOT_EXCEEDED.format(1500), None, 0),
+           15000, None, ChargepointState.NO_CHARGING_ALLOWED, Counter.SWITCH_ON_NOT_EXCEEDED.format(1500), None, 0),
     Params("Feed_in_limit, Einschaltschwelle läuft", True, 1500, 15001,
-           15000, '05/16/2022, 08:40:50', None, '05/16/2022, 08:40:50', 1500),
+           15000, '05/16/2022, 08:40:50', ChargepointState.SWITCH_ON_DELAY, None, '05/16/2022, 08:40:50', 1500),
 ]
 
 
 @pytest.mark.parametrize("params", cases, ids=[c.name for c in cases])
-def test_get_charging_power_left(params: Params, caplog, general_data_fixture, monkeypatch):
+def test_switch_on_threshold_reached(params: Params, caplog, general_data_fixture, monkeypatch):
     # setup
     c = Counter(0)
     c.data.set.reserved_surplus = params.reserved_surplus
     cp = Chargepoint(0, None)
     ev = Ev(0)
     ev.data.control_parameter.phases = 1
+    ev.data.control_parameter.state = params.state
     ev.data.control_parameter.timestamp_switch_on_off = params.timestamp_switch_on_off
     ev.data.charge_template = ChargeTemplate(0)
     ev.data.charge_template.data.chargemode.pv_charging.feed_in_limit = params.feed_in_limit

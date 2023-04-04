@@ -392,6 +392,8 @@ class SetData:
             elif ("/control_parameter/used_amount_instant_charging" in msg.topic or
                     "/control_parameter/imported_at_plan_start" in msg.topic):
                 self._validate_value(msg, float, [(0, float("inf"))])
+            elif "/control_parameter/state" in msg.topic:
+                self._validate_value(msg, int, [(0, 7)])
             else:
                 self.__unknown_topic(msg)
         except Exception:
