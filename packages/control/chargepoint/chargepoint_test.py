@@ -2,7 +2,8 @@ from typing import List
 from unittest.mock import Mock
 import pytest
 
-from control.chargepoint import Chargepoint, CpTemplate
+from control.chargepoint.chargepoint import Chargepoint
+from control.chargepoint.chargepoint_template import CpTemplate
 from control.ev import Ev
 
 

@@ -2,7 +2,8 @@ from unittest.mock import Mock
 
 import pytest
 
-from control.chargepoint import Chargepoint, ChargepointStateUpdate
+from control.chargepoint.chargepoint import Chargepoint
+from control.chargepoint.chargepoint_state_update import ChargepointStateUpdate
 import dataclass_utils
 from helpermodules.command import Command
 from helpermodules.subdata import SubData

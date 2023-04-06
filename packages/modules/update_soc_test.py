@@ -4,7 +4,7 @@ from unittest.mock import Mock
 import pytest
 
 from control import data
-from control.chargepoint import Chargepoint, Get, Log, Set
+from control.chargepoint.chargepoint import Chargepoint, Get, Log, Set
 from control.ev import Ev, EvTemplate, EvTemplateData
 from modules.common.abstract_soc import SocUpdateData
 from modules.vehicles.tesla.soc import Soc

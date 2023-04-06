@@ -4,7 +4,7 @@ from typing import List, Optional, Tuple
 
 from control import data
 from control.algorithm import common
-from control.chargepoint import Chargepoint
+from control.chargepoint.chargepoint import Chargepoint
 from helpermodules.timecheck import convert_to_unix_timestamp
 
 log = logging.getLogger(__name__)

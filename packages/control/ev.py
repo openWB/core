@@ -14,7 +14,7 @@ from typing import List, Dict, Optional, Tuple
 from control import data
 from control.bat_all import SwitchOnBatState
 from control.chargemode import Chargemode as Chargemode_enum
-from control.chargepoint_state import ChargepointState, PHASE_SWITCH_STATES
+from control.chargepoint.chargepoint_state import ChargepointState, PHASE_SWITCH_STATES
 from dataclass_utils.factories import currents_list_factory, empty_dict_factory, empty_list_factory
 from helpermodules.abstract_plans import Limit, limit_factory, ScheduledChargingPlan, TimeChargingPlan
 from helpermodules.pub import Pub

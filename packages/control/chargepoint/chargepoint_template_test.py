@@ -3,7 +3,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from control.chargepoint import Autolock, CpTemplate, CpTemplateData
+from control.chargepoint.chargepoint_template import Autolock, CpTemplate, CpTemplateData
 from helpermodules import timecheck
 
 template_params = NamedTuple("template_params", [("name", str),

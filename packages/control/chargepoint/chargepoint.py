@@ -14,11 +14,9 @@ angesteckt wird, wird der Tag verworfen. Ebenso wenn kein EV gefunden wird.
 Tag-Liste: Tags, mit denen der Ladepunkt freigeschaltet werden kann. Ist diese leer, kann mit jedem Tag der Ladepunkt
 freigeschaltet werden.
 """
-import copy
 from dataclasses import asdict, dataclass, field
 import dataclasses
 import logging
-from threading import Thread
 import threading
 import traceback
 from typing import Dict, List, Optional, Tuple
@@ -26,14 +24,12 @@ from typing import Dict, List, Optional, Tuple
 from control import chargelog
 from control import cp_interruption
 from control import data
-from control import ev as ev_module
 from control.chargemode import Chargemode
+from control.chargepoint.chargepoint_template import CpTemplate
 from control.ev import Ev
 from control import phase_switch
-from control.chargepoint_state import ChargepointState
-from dataclass_utils.factories import (empty_dict_factory, empty_list_factory, currents_list_factory,
-                                       voltages_list_factory)
-from helpermodules.abstract_plans import AutolockPlan
+from control.chargepoint.chargepoint_state import ChargepointState
+from dataclass_utils.factories import empty_dict_factory, currents_list_factory, voltages_list_factory
 from helpermodules.phase_mapping import convert_single_evu_phase_to_cp_phase
 from helpermodules.pub import Pub
 from helpermodules import timecheck
@@ -59,86 +55,6 @@ def get_chargepoint_get_default() -> Dict:
 
 
 log = logging.getLogger(__name__)
-
-
-@dataclass
-class AllGet:
-    daily_imported: float = 0
-    daily_exported: float = 0
-    power: float = 0
-    imported: float = 0
-    exported: float = 0
-
-
-def all_get_factory() -> AllGet:
-    return AllGet()
-
-
-@dataclass
-class AllChargepointData:
-    get: AllGet = field(default_factory=all_get_factory)
-
-
-def all_chargepoint_data_factory() -> AllChargepointData:
-    return AllChargepointData()
-
-
-@dataclass
-class AllChargepoints:
-    data: AllChargepointData = field(default_factory=all_chargepoint_data_factory)
-
-    def no_charge(self):
-        """ Wenn keine EV angesteckt sind oder keine Verzögerungen aktiv sind, werden die Algorithmus-Werte
-        zurückgesetzt.
-        (dient der Robustheit)
-        """
-        try:
-            for cp in data.data.cp_data:
-                try:
-                    chargepoint = data.data.cp_data[cp]
-                    # Kein EV angesteckt
-                    control_parameter = chargepoint.data.set.charging_ev_data.data.control_parameter
-                    if (not chargepoint.data.get.plug_state or
-                            # Kein EV, das Laden soll
-                            chargepoint.data.set.charging_ev == -1 or
-                            # Kein EV, das auf das Ablaufen der Einschalt- oder Phasenumschaltverzögerung wartet
-                            (chargepoint.data.set.charging_ev != -1 and
-                                control_parameter.state != ChargepointState.PERFORMING_PHASE_SWITCH and
-                                control_parameter.state != ChargepointState.PHASE_SWITCH_DELAY and
-                                control_parameter.state != ChargepointState.SWITCH_OFF_DELAY and
-                                control_parameter.state != ChargepointState.SWITCH_ON_DELAY)):
-                        continue
-                    else:
-                        break
-                except Exception:
-                    log.exception("Fehler in der allgemeinen Ladepunkt-Klasse für Ladepunkt "+cp)
-            else:
-                data.data.counter_all_data.get_evu_counter().reset_pv_data()
-        except Exception:
-            log.exception("Fehler in der allgemeinen Ladepunkt-Klasse")
-
-    def get_cp_sum(self):
-        """ ermittelt die aktuelle Leistung und Zählerstand von allen Ladepunkten.
-        """
-        imported, exported, power = 0, 0, 0
-        try:
-            for cp in data.data.cp_data:
-                try:
-                    if "cp" in cp:
-                        chargepoint = data.data.cp_data[cp]
-                        power = power + chargepoint.data.get.power
-                        imported = imported + chargepoint.data.get.imported
-                        exported = exported + chargepoint.data.get.exported
-                except Exception:
-                    log.exception("Fehler in der allgemeinen Ladepunkt-Klasse für Ladepunkt "+cp)
-            self.data.get.power = power
-            Pub().pub("openWB/set/chargepoint/get/power", power)
-            self.data.get.imported = imported
-            Pub().pub("openWB/set/chargepoint/get/imported", imported)
-            self.data.get.exported = exported
-            Pub().pub("openWB/set/chargepoint/get/exported", exported)
-        except Exception:
-            log.exception("Fehler in der allgemeinen Ladepunkt-Klasse")
 
 
 @dataclass
@@ -1061,152 +977,3 @@ class Chargepoint:
     def cp_ev_support_phase_switch(self) -> bool:
         return (self.data.config.auto_phase_switch_hw and
                 self.data.set.charging_ev_data.ev_template.data.prevent_phase_switch is False)
-
-
-def get_chargepoint_template_default():
-    default = asdict(CpTemplateData())
-    default["autolock"].pop("plans")
-    return default
-
-
-def get_autolock_plan_default():
-    return asdict(AutolockPlan())
-
-
-@dataclass
-class Autolock:
-    active: bool = False
-    plans: Dict[int, AutolockPlan] = field(default_factory=empty_dict_factory)
-    wait_for_charging_end: bool = False
-
-
-def autolock_factory():
-    return Autolock()
-
-
-@dataclass
-class CpTemplateData:
-    autolock: Autolock = field(default_factory=autolock_factory)
-    id: int = 0
-    max_current_multi_phases: int = 32
-    max_current_single_phase: int = 32
-    name: str = "Standard Ladepunkt-Vorlage"
-    rfid_enabling: bool = False
-    valid_tags: List = field(default_factory=empty_list_factory)
-
-
-class CpTemplate:
-    """ Vorlage für einen Ladepunkt.
-    """
-
-    def __init__(self):
-        self.data: CpTemplateData = CpTemplateData()
-
-    def is_locked_by_autolock(self, charge_state: bool) -> bool:
-        if self.data.autolock.active:
-            if self.data.autolock.plans:
-                if timecheck.check_plans_timeframe(self.data.autolock.plans) is not None:
-                    if self.data.autolock.wait_for_charging_end:
-                        return False if charge_state else True
-                    else:
-                        return True
-                else:
-                    return False
-            else:
-                log.info("Keine Sperrung durch Autolock, weil keine Zeitpläne konfiguriert sind.")
-                return False
-        else:
-            return False
-
-    def get_ev(self, rfid, assigned_ev):
-        """ermittelt das dem Ladepunkt zugeordnete EV
-
-        Parameter
-        ---------
-        rfid: str
-            Tag, der einem EV zugeordnet werden soll.
-        assigned_ev: int
-            dem Ladepunkt fest zugeordnetes EV
-        Return
-        ------
-        num: int
-            Nummer des zugeordneten EVs, -1 wenn keins zugeordnet werden konnte.
-        message: str
-            Status-Text
-        """
-        num = -1
-        message = None
-        try:
-            if data.data.optional_data.data.rfid.active and rfid is not None:
-                vehicle = ev_module.get_ev_to_rfid(rfid)
-                if vehicle is None:
-                    num = -1
-                    message = "Keine Ladung, da dem RFID-Tag " + str(rfid)+" kein EV-Profil zugeordnet werden kann."
-                else:
-                    num = vehicle
-            else:
-                num = assigned_ev
-
-            return num, message
-        except Exception:
-            log.exception(
-                "Fehler in der Ladepunkt-Template Klasse")
-            return num, "Keine Ladung, da ein interner Fehler aufgetreten ist: " + traceback.format_exc()
-
-
-class ChargepointStateUpdate:
-    def __init__(self,
-                 index: int,
-                 event_copy_data: threading.Event,
-                 event_global_data_initialized: threading.Event,
-                 cp_template_data: Dict,
-                 ev_data: Dict,
-                 ev_charge_template_data: Dict,
-                 ev_template_data: Dict) -> None:
-        self.event_update_state = threading.Event()
-        self.event_copy_data = event_copy_data
-        self.event_global_data_initialized = event_global_data_initialized
-        self.chargepoint: Chargepoint = Chargepoint(index, self.event_update_state)
-        self.cp_template_data = cp_template_data
-        self.ev_data = ev_data
-        self.ev_charge_template_data = ev_charge_template_data
-        self.ev_template_data = ev_template_data
-        Thread(target=self.update, args=()).start()
-
-    def update(self):
-        self.event_global_data_initialized.wait()
-        while self.event_update_state.wait():
-            try:
-                self.event_copy_data.clear()
-                # Workaround, da mit Python3.9/pymodbus2.5 eine pymodbus-Instanz nicht mehr kopiert werden kann.
-                # Bei einer Neukonfiguration eines Device/Komponente wird dieses Neuinitialisiert. Nur bei Komponenten
-                # mit simcount werden Werte aktualisiert, diese sollten jedoch nur einmal nach dem Auslesen aktualisiert
-                # werden, sodass die Nutzung einer Referenz vorerst funktioniert.
-                # Verwendung der Referenz führt bei der Pro zu Instabilität.
-                try:
-                    cp = copy.deepcopy(self.chargepoint)
-                except TypeError:
-                    cp = Chargepoint(self.chargepoint.num, None)
-                    cp.set_current_prev = copy.deepcopy(self.chargepoint.set_current_prev)
-                    cp.data = copy.deepcopy(self.chargepoint.data)
-                    cp.chargepoint_module = self.chargepoint.chargepoint_module
-                cp.template = copy.deepcopy(self.cp_template_data[f"cpt{self.chargepoint.data.config.template}"])
-                ev_list = {}
-                for ev in self.ev_data:
-                    ev_list[ev] = copy.deepcopy(self.ev_data[ev])
-                for vehicle in ev_list:
-                    try:
-                        ev_list[vehicle].charge_template = copy.deepcopy(self.ev_charge_template_data["ct" + str(
-                            ev_list[vehicle].data.charge_template)])
-                        # zuerst das aktuelle Template laden
-                        ev_list[vehicle].ev_template = copy.deepcopy(self.ev_template_data["et" + str(
-                            ev_list[vehicle].data.ev_template)])
-                    except Exception:
-                        log.exception("Fehler im Prepare-Modul für EV "+str(vehicle))
-                self.event_copy_data.set()
-                cp.update_ev(ev_list)
-                self.event_update_state.clear()
-            except Exception:
-                log.exception("Fehler ChargepointStateUpdate")
-                self.event_copy_data.set()
-                self.event_update_state.clear()

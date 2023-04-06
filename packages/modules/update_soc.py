@@ -4,7 +4,7 @@ import copy
 from threading import Event, Thread
 
 from control import data
-from control.chargepoint import AllChargepoints
+from control.chargepoint.chargepoint_all import AllChargepoints
 from control.ev import Ev
 from helpermodules import subdata
 from helpermodules import timecheck

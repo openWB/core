@@ -4,7 +4,7 @@ import pytest
 
 from control.algorithm import surplus_controlled
 from control.algorithm.surplus_controlled import SurplusControlled
-from control.chargepoint import Chargepoint, ChargepointData, Get, Set
+from control.chargepoint.chargepoint import Chargepoint, ChargepointData, Get, Set
 from control.ev import ChargeTemplate, Ev
 
 

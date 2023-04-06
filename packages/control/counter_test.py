@@ -4,11 +4,11 @@ from unittest.mock import Mock
 import pytest
 
 from control import data
-from control.chargepoint import Chargepoint
+from control.chargepoint.chargepoint import Chargepoint
 from control.counter import Counter
 from control.ev import ChargeTemplate, Ev
 from control.general import General
-from control.chargepoint_state import ChargepointState
+from control.chargepoint.chargepoint_state import ChargepointState
 from modules.common.fault_state import FaultStateLevel
 
 

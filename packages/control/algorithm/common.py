@@ -3,7 +3,7 @@ from typing import Iterable, List, Optional, Tuple
 
 from control import data
 from control.chargemode import Chargemode
-from control.chargepoint import Chargepoint
+from control.chargepoint.chargepoint import Chargepoint
 from control.counter import Counter
 from modules.common.component_type import ComponentType
 
