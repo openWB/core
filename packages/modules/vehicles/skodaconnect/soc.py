@@ -8,6 +8,7 @@ from modules.common import store
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.abstract_soc import AbstractSoc
 from modules.common.component_context import SingleComponentUpdateContext
+from modules.common.component_state import CarState
 from modules.common.fault_state import ComponentInfo
 from modules.vehicles.skodaconnect.api import SkodaConnectApi
 from modules.vehicles.skodaconnect.config import SkodaConnect, SkodaConnectConfiguration
@@ -26,6 +27,7 @@ class Soc(AbstractSoc):
     def update(self, charge_state: bool = False) -> None:
         with SingleComponentUpdateContext(self.component_info):
             soc, range = SkodaConnectApi(self.config, self.vehicle).fetch_soc()
+            self.store.set(CarState(soc, range))
 
 
 def skodaconnect_update(user_id: str, password: str, vin: str, refresh_token: str, charge_point: int):
