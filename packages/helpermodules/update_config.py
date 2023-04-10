@@ -7,6 +7,7 @@ import re
 import subprocess
 import time
 from typing import List
+from paho.mqtt.client import Client as MqttClient, MQTTMessage
 
 from helpermodules.broker import InternalBrokerClient
 from helpermodules.pub import Pub
@@ -19,7 +20,7 @@ log = logging.getLogger(__name__)
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 7
+    DATASTORE_VERSION = 8
     valid_topic = ["^openWB/bat/config/configured$",
                    "^openWB/bat/set/charging_power_left$",
                    "^openWB/bat/set/switch_on_soc_reached$",
@@ -220,6 +221,7 @@ class UpdateConfig:
                    "^openWB/vehicle/[0-9]+/control_parameter/timestamp_switch_on_off$",
                    "^openWB/vehicle/[0-9]+/control_parameter/used_amount_instant_charging$",
                    "^openWB/vehicle/[0-9]+/control_parameter/phases$",
+                   "^openWB/vehicle/[0-9]+/control_parameter/state$",
                    "^openWB/vehicle/[0-9]+/set/ev_template$",
                    "^openWB/vehicle/[0-9]+/set/soc_error_counter$",
 
@@ -331,12 +333,12 @@ class UpdateConfig:
         except Exception:
             log.exception("Fehler beim Prüfen des Brokers.")
 
-    def on_connect(self, client, userdata, flags, rc):
+    def on_connect(self, client: MqttClient, userdata, flags: dict, rc: int):
         """ connect to broker and subscribe to set topics
         """
         client.subscribe("openWB/#", 2)
 
-    def on_message(self, client, userdata, msg):
+    def on_message(self, client: MqttClient, userdata, msg: MQTTMessage):
         self.all_received_topics.update({msg.topic: msg.payload})
 
     def __remove_outdated_topics(self):
@@ -351,7 +353,7 @@ class UpdateConfig:
                 log.debug("Ungültiges Topic zum Startzeitpunkt: "+str(topic))
 
     def _remove_invalid_topics(self):
-        # remove all chargepoints without config. This data comes from deleted chargepoints that are still sent to an
+        # remove all charge points without config. This data comes from deleted charge points that are still sent to an
         # invalid CP number.
         for topic in self.all_received_topics.keys():
             if re.search("/chargepoint/[0-9]+/", topic) is not None:
@@ -552,3 +554,12 @@ class UpdateConfig:
                     payload["autolock"].pop("plans")
                     Pub().pub(topic.replace("openWB/", "openWB/set/"), payload)
         Pub().pub("openWB/set/system/datastore_version", 7)
+
+    def upgrade_datastore_7(self) -> None:
+        for topic, payload in self.all_received_topics.items():
+            if re.search("openWB/vehicle/template/ev_template/[0-9]+$", topic) is not None:
+                payload = decode_payload(payload)
+                if "keep_charge_active_duration" not in payload:
+                    payload["keep_charge_active_duration"] = ev.EvTemplateData().keep_charge_active_duration
+                    Pub().pub(topic.replace("openWB/", "openWB/set/"), payload)
+        Pub().pub("openWB/set/system/datastore_version", 8)
