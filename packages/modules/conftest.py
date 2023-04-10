@@ -13,6 +13,8 @@ sys.modules['lxml'] = type(sys)('lxml')
 sys.modules['lxml.html'] = type(sys)('lxml.html')
 sys.modules['bs4'] = type(sys)('bs4')
 sys.modules['pkce'] = type(sys)('pkce')
+sys.modules['skodaconnect'] = type(sys)('skodaconnect')
+sys.modules['skodaconnect.Connection'] = type(sys)('skodaconnect.Connection')
 
 module = type(sys)('pymodbus.client.sync')
 module.ModbusSerialClient = Mock()

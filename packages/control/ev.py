@@ -14,6 +14,7 @@ from typing import List, Dict, Optional, Tuple
 from control import data
 from control.bat_all import SwitchOnBatState
 from control.chargemode import Chargemode as Chargemode_enum
+from control.chargepoint_state import ChargepointState, PHASE_SWITCH_STATES
 from dataclass_utils.factories import currents_list_factory, empty_dict_factory, emtpy_list_factory
 from helpermodules.abstract_plans import Limit, limit_factory, ScheduledChargingPlan, TimeChargingPlan
 from helpermodules.pub import Pub
@@ -121,6 +122,7 @@ class EvTemplateData:
     max_current_single_phase: int = 32
     battery_capacity: float = 82
     nominal_difference: float = 0.5
+    keep_charge_active_duration: int = 40
 
 
 def ev_template_data_factory() -> EvTemplateData:
@@ -141,6 +143,7 @@ class ControlParameter:
     used_amount_instant_charging: float = 0
     imported_at_plan_start: float = 0
     current_plan: Optional[str] = None
+    state: ChargepointState = ChargepointState.NO_CHARGING_ALLOWED
 
 
 @dataclass
@@ -231,6 +234,8 @@ class Ev:
                       "/control_parameter/imported_at_plan_start", 0)
             Pub().pub("openWB/set/vehicle/"+str(self.num) +
                       "/control_parameter/current_plan", None)
+            Pub().pub("openWB/set/vehicle/"+str(self.num) +
+                      "/control_parameter/state", ChargepointState.NO_CHARGING_ALLOWED)
             self.data.control_parameter.required_current = 0
             self.data.control_parameter.timestamp_auto_phase_switch = None
             self.data.control_parameter.timestamp_perform_phase_switch = None
@@ -239,6 +244,7 @@ class Ev:
             self.data.control_parameter.used_amount_instant_charging = 0
             self.data.control_parameter.imported_at_plan_start = 0
             self.data.control_parameter.current_plan = None
+            self.data.control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
         except Exception:
             log.exception("Fehler im ev-Modul "+str(self.num))
 
@@ -435,7 +441,7 @@ class Ev:
         message = None
         current = self.data.control_parameter.required_current
         # Manche EV laden mit 6.1A bei 6A Sollstrom
-        min_current = self.ev_template.data.min_current + 1
+        min_current = self.ev_template.data.min_current + self.ev_template.data.nominal_difference
         max_current = (min(self.ev_template.data.max_current_single_phase, max_current_cp)
                        - self.ev_template.data.nominal_difference)
         timestamp_auto_phase_switch = self.data.control_parameter.timestamp_auto_phase_switch
@@ -470,9 +476,8 @@ class Ev:
             f'Genutzter Strom: {max(get_currents)}A, Überschuss: {all_surplus}W, benötigte neue Leistung: '
             f'{required_power}W')
         # Wenn gerade umgeschaltet wird, darf kein Timer gestartet werden.
-        if (not self.ev_template.data.prevent_phase_switch and
-                self.data.control_parameter.timestamp_perform_phase_switch is None):
-            if timestamp_auto_phase_switch is None:
+        if not self.ev_template.data.prevent_phase_switch:
+            if self.data.control_parameter.state not in PHASE_SWITCH_STATES:
                 condition_1_to_3 = (max(get_currents) > max_current and
                                     all_surplus > self.ev_template.data.min_current * max_phases_ev * 230
                                     - get_power and
@@ -486,6 +491,7 @@ class Ev:
                     data.data.counter_all_data.get_evu_counter(
                     ).data.set.reserved_surplus += max(0, required_power)
                     message = f'{direction_str} Phasen für {delay/60} Min aktiv.'
+                    self.data.control_parameter.state = ChargepointState.PHASE_SWITCH_DELAY
             else:
                 condition_1_to_3 = max(get_currents) > max_current and all_surplus > 0 and phases_in_use == 1
                 condition_3_to_1 = max(get_currents) < min_current and phases_in_use > 1
@@ -500,11 +506,13 @@ class Ev:
                         phases_to_use = new_phase
                         current = new_current
                         log.debug("Phasenumschaltung kann nun durchgeführt werden.")
+                        self.data.control_parameter.state = ChargepointState.PHASE_SWITCH_DELAY_EXPIRED
                 else:
                     timestamp_auto_phase_switch = None
                     data.data.counter_all_data.get_evu_counter(
                     ).data.set.reserved_surplus -= max(0, required_power)
                     message = f"{direction_str} Phasen abgebrochen."
+                    self.data.control_parameter.state = ChargepointState.CHARGING_ALLOWED
 
         if message:
             log.info(f"LP {cp_num}: {message}")

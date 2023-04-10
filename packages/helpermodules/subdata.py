@@ -52,7 +52,7 @@ class SubData:
     bat_data: Dict[str, bat.Bat] = {}
     general_data = general.General()
     optional_data = optional.Optional()
-    system_data = {}
+    system_data = {"system": system.System()}
     graph_data = graph.Graph()
 
     def __init__(self,
@@ -588,12 +588,6 @@ class SubData:
             enthält Topic und Payload
         """
         try:
-            if "system" not in var:
-                if decode_payload(msg.payload) == "":
-                    if "system" in var:
-                        var.pop("system")
-                else:
-                    var["system"] = system.System()
             if re.search("/device/[0-9]+/config$", msg.topic) is not None:
                 index = get_index(msg.topic)
                 if decode_payload(msg.payload) == "":
@@ -641,14 +635,18 @@ class SubData:
                     var["device"+index].add_component(config)
                     client.subscribe(f"openWB/system/device/{index}/component/{index_second}/simulation", 2)
             elif "mqtt" and "bridge" in msg.topic:
-                index = get_index(msg.topic)
-                parent_file = Path(__file__).resolve().parents[2]
-                result = subprocess.run(
-                    ["php", "-f", str(parent_file / "runs" / "savemqtt.php"), index, msg.payload],
-                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
-                if len(result.stdout) > 0:
-                    pub_system_message(msg.payload, result.stdout,
-                                       MessageType.SUCCESS if result.returncode == 0 else MessageType.ERROR)
+                # do not reconfigure mqtt bridges if topic is received on startup
+                if self.event_subdata_initialized.is_set():
+                    index = get_index(msg.topic)
+                    parent_file = Path(__file__).resolve().parents[2]
+                    result = subprocess.run(
+                        ["php", "-f", str(parent_file / "runs" / "save_mqtt.php"), index, msg.payload],
+                        stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+                    if len(result.stdout) > 0:
+                        pub_system_message(msg.payload, result.stdout,
+                                           MessageType.SUCCESS if result.returncode == 0 else MessageType.ERROR)
+                else:
+                    log.debug("skipping mqtt bridge message on startup")
             # will be moved to separate handler!
             elif "GetRemoteSupport" in msg.topic:
                 payload = decode_payload(msg.payload)
