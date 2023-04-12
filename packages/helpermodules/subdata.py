@@ -64,7 +64,9 @@ class SubData:
                  event_global_data_initialized: threading.Event,
                  event_command_completed: threading.Event,
                  event_subdata_initialized: threading.Event,
-                 event_vehicle_update_completed: threading.Event):
+                 event_vehicle_update_completed: threading.Event,
+                 event_scheduled_charging_plan: threading.Event,
+                 event_time_charging_plan: threading.Event,):
         self.event_ev_template = event_ev_template
         self.event_charge_template = event_charge_template
         self.event_cp_config = event_cp_config
@@ -74,6 +76,8 @@ class SubData:
         self.event_command_completed = event_command_completed
         self.event_subdata_initialized = event_subdata_initialized
         self.event_vehicle_update_completed = event_vehicle_update_completed
+        self.event_scheduled_charging_plan = event_scheduled_charging_plan
+        self.event_time_charging_plan = event_time_charging_plan
         self.heartbeat = False
 
     def sub_topics(self):
@@ -208,9 +212,9 @@ class SubData:
             enthält Topic und Payload
         """
         try:
-            index = get_index(msg.topic)
             if "openWB/vehicle/set/vehicle_update_completed" in msg.topic:
                 self.event_vehicle_update_completed.set()
+                index = get_index(msg.topic)
             elif re.search("/vehicle/[0-9]+/", msg.topic) is not None:
                 if decode_payload(msg.payload) == "":
                     if re.search("/vehicle/[0-9]+/soc_module/config$", msg.topic) is not None:
@@ -278,6 +282,7 @@ class SubData:
                     else:
                         var["ct"+index].data.chargemode.scheduled_charging.plans[
                             index_second] = dataclass_from_dict(ev.ScheduledChargingPlan, decode_payload(msg.payload))
+                    self.event_scheduled_charging_plan.set()
                 elif re.search("/vehicle/template/charge_template/[0-9]+/time_charging/plans/[0-9]+$",
                                msg.topic) is not None:
                     index_second = get_second_index(msg.topic)
@@ -290,6 +295,7 @@ class SubData:
                     else:
                         var["ct"+index].data.time_charging.plans[
                             index_second] = dataclass_from_dict(ev.TimeChargingPlan, decode_payload(msg.payload))
+                    self.event_time_charging_plan.set()
                 else:
                     # Pläne unverändert übernehmen
                     scheduled_charging_plans = var["ct" + index].data.chargemode.scheduled_charging.plans
