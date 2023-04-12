@@ -24,8 +24,8 @@ def test_get_index_fail():
 @pytest.mark.parametrize(
     "topic, expected_index_position",
     [
-        ("openWB/set/vehicle/template/charge_template/0/chargemode/scheduled_charging/plans/1/active", 44),
-        ("openWB/set/vehicle/template/charge_template/0", 44),
+        ("openWB/set/vehicle/template/charge_template/0/chargemode/scheduled_charging/plans/1/active", 45),
+        ("openWB/set/vehicle/template/charge_template/0", 45),
     ])
 def test_get_index_position(topic, expected_index_position):
     # setup & execution
