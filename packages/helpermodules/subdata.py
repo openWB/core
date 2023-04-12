@@ -214,8 +214,8 @@ class SubData:
         try:
             if "openWB/vehicle/set/vehicle_update_completed" in msg.topic:
                 self.event_vehicle_update_completed.set()
-                index = get_index(msg.topic)
             elif re.search("/vehicle/[0-9]+/", msg.topic) is not None:
+                index = get_index(msg.topic)
                 if decode_payload(msg.payload) == "":
                     if re.search("/vehicle/[0-9]+/soc_module/config$", msg.topic) is not None:
                         var["ev"+index].soc_module = None
