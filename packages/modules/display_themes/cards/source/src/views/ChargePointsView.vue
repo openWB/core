@@ -15,10 +15,15 @@ import {
   faLockOpen as fasLockOpen,
   faCar as fasCar,
   faCarBattery as fasCarBattery,
+  faEdit as fasEdit,
   faTimesCircle as fasTimesCircle,
   faExclamationTriangle as fasExclamationTriangle,
   faStar as fasStar,
   faClock as fasClock,
+  faBolt as fasBolt,
+  faCalendarDay as fasCalendarDay,
+  faCalendarWeek as fasCalendarWeek,
+  faCalendarAlt as fasCalendarAlt,
 } from "@fortawesome/free-solid-svg-icons";
 import {
   faStar as farStar,
@@ -34,12 +39,17 @@ library.add(
   fasLockOpen,
   fasCar,
   fasCarBattery,
+  fasEdit,
   fasTimesCircle,
   fasExclamationTriangle,
   fasStar,
   farStar,
   fasClock,
-  farClock
+  farClock,
+  fasBolt,
+  fasCalendarDay,
+  fasCalendarWeek,
+  fasCalendarAlt
 );
 
 export default {
@@ -73,7 +83,7 @@ export default {
   methods: {
     toggleChargePointSettings(id) {
       // reset selected tab if selecting different charge point
-      if (this.modalChargePointSettingsId != id){
+      if (this.modalChargePointSettingsId != id) {
         this.modalActiveTab = "tab-general";
       }
       this.modalChargePointSettingsId = id;
@@ -83,6 +93,17 @@ export default {
       this.$root.sendTopicToBroker(
         `openWB/chargepoint/${id}/set/manual_lock`,
         !this.mqttStore.getValueBool(`openWB/chargepoint/${id}/set/manual_lock`)
+      );
+    },
+    handleSocClick(id) {
+      let vehicle_id = this.mqttStore.getChargePointConnectedVehicleId(id);
+      if (this.mqttStore.getVehicleSocIsManual(vehicle_id)) {
+        console.log("ToDo: manual SoC input");
+        return;
+      }
+      this.$root.sendTopicToBroker(
+        `openWB/set/vehicle/${vehicle_id}/get/force_soc_update`,
+        1
       );
     },
     setChargePointConnectedVehicle(id, event) {
@@ -106,9 +127,7 @@ export default {
       }
     },
     setChargePointConnectedVehiclePriority(id, event) {
-      if (
-        event != this.mqttStore.getChargePointConnectedVehiclePriority(id)
-      ) {
+      if (event != this.mqttStore.getChargePointConnectedVehiclePriority(id)) {
         var template_id =
           this.mqttStore.getChargePointConnectedVehicleChargeTemplateIndex(id);
         this.$root.sendTopicToBroker(
@@ -193,7 +212,8 @@ export default {
     },
     setChargePointConnectedVehiclePvChargingFeedInLimit(id, event) {
       if (
-        event != this.mqttStore.getChargePointConnectedVehiclePvChargingFeedInLimit(id)
+        event !=
+        this.mqttStore.getChargePointConnectedVehiclePvChargingFeedInLimit(id)
       ) {
         var template_id =
           this.mqttStore.getChargePointConnectedVehicleChargeTemplateIndex(id);
@@ -204,9 +224,10 @@ export default {
       }
     },
     setChargePointConnectedVehiclePvChargingMinCurrent(id, event) {
-      let previous_value = this.mqttStore.getChargePointConnectedVehiclePvChargingMinCurrent(id);
+      let previous_value =
+        this.mqttStore.getChargePointConnectedVehiclePvChargingMinCurrent(id);
       let new_value = parseInt(event);
-      if (new_value != previous_value && ! isNaN(new_value)) {
+      if (new_value != previous_value && !isNaN(new_value)) {
         // check value: 0, 6..32
         if (previous_value == 0 && new_value > 0) {
           new_value = Math.max(new_value, 6);
@@ -223,11 +244,10 @@ export default {
       }
     },
     setChargePointConnectedVehiclePvChargingMinSoc(id, soc) {
+      let previous_value =
+        this.mqttStore.getChargePointConnectedVehiclePvChargingMinSoc(id);
       let new_value = parseInt(soc);
-      if (
-        new_value !=
-          this.mqttStore.getChargePointConnectedVehiclePvChargingMinSoc(id)
-      ) {
+      if (new_value != previous_value && !isNaN(new_value)) {
         var template_id =
           this.mqttStore.getChargePointConnectedVehicleChargeTemplateIndex(id);
         this.$root.sendTopicToBroker(
@@ -237,9 +257,12 @@ export default {
       }
     },
     setChargePointConnectedVehiclePvChargingMinSocCurrent(id, event) {
-      let previous_value = this.mqttStore.getChargePointConnectedVehiclePvChargingMinSocCurrent(id);
+      let previous_value =
+        this.mqttStore.getChargePointConnectedVehiclePvChargingMinSocCurrent(
+          id
+        );
       let new_value = parseInt(event);
-      if (new_value != previous_value) {
+      if (new_value != previous_value && !isNaN(new_value)) {
         var template_id =
           this.mqttStore.getChargePointConnectedVehicleChargeTemplateIndex(id);
         this.$root.sendTopicToBroker(
@@ -249,11 +272,10 @@ export default {
       }
     },
     setChargePointConnectedVehiclePvChargingMaxSoc(id, soc) {
+      let previous_value =
+        this.mqttStore.getChargePointConnectedVehiclePvChargingMaxSoc(id);
       let new_value = parseInt(soc);
-      if (
-        new_value !=
-          this.mqttStore.getChargePointConnectedVehiclePvChargingMaxSoc(id)
-      ) {
+      if (new_value != previous_value && !isNaN(new_value)) {
         var template_id =
           this.mqttStore.getChargePointConnectedVehicleChargeTemplateIndex(id);
         this.$root.sendTopicToBroker(
@@ -261,6 +283,15 @@ export default {
           new_value
         );
       }
+    },
+    setChargePointConnectedVehicleScheduledChargingPlanActive(
+      plan_key,
+      active
+    ) {
+      this.$root.sendTopicToBroker(`${plan_key}/active`, active);
+    },
+    setChargePointConnectedVehicleTimeChargingPlanActive(plan_key, active) {
+      this.$root.sendTopicToBroker(`${plan_key}/active`, active);
     },
   },
 };
@@ -360,7 +391,7 @@ export default {
                 "
                 class="_flex-grow:0 _padding-right:0 _padding-left:1"
               >
-                <i-badge size="lg">
+                <i-button size="sm" @click="handleSocClick(id)">
                   <span
                     v-if="
                       mqttStore.getVehicleSocConfigured(
@@ -370,7 +401,13 @@ export default {
                   >
                     <font-awesome-icon
                       fixed-width
-                      :icon="['fas', 'fa-car-battery']"
+                      :icon="
+                        mqttStore.getVehicleSocIsManual(
+                          mqttStore.getChargePointConnectedVehicleId(id)
+                        )
+                          ? ['fas', 'fa-edit']
+                          : ['fas', 'fa-car-battery']
+                      "
                     />
                     {{ mqttStore.getChargePointConnectedVehicleSoc(id).soc }}%
                   </span>
@@ -404,7 +441,7 @@ export default {
                         : ''
                     "
                   />
-                </i-badge>
+                </i-button>
               </i-column>
             </i-row>
             <!-- charge mode info -->
@@ -505,7 +542,9 @@ export default {
                 )
               "
               :model-value="
-                mqttStore.getChargePointConnectedVehicleInfo(modalChargePointSettingsId)
+                mqttStore.getChargePointConnectedVehicleInfo(
+                  modalChargePointSettingsId
+                )
               "
               label="name"
               :options="vehicleList"
@@ -765,7 +804,7 @@ export default {
             />
           </i-form-group>
           <i-form-group>
-            <i-form-label>Minimal Stromstärke</i-form-label>
+            <i-form-label>Mindeststrom</i-form-label>
             <i-number-input
               size="lg"
               class="_text-align:right"
@@ -788,7 +827,7 @@ export default {
             </i-number-input>
           </i-form-group>
           <i-form-group>
-            <i-form-label>Minimal SoC</i-form-label>
+            <i-form-label>Mindest-SoC</i-form-label>
             <i-number-input
               size="lg"
               class="_text-align:right"
@@ -812,7 +851,7 @@ export default {
             </i-number-input>
           </i-form-group>
           <i-form-group>
-            <i-form-label>Minimal SoC Stromstärke</i-form-label>
+            <i-form-label>Mindest-SoC Strom</i-form-label>
             <i-number-input
               size="lg"
               class="_text-align:right"
@@ -835,7 +874,7 @@ export default {
             </i-number-input>
           </i-form-group>
           <i-form-group>
-            <i-form-label>Maximal SoC</i-form-label>
+            <i-form-label>SoC-Limit</i-form-label>
             <i-number-input
               size="lg"
               class="_text-align:right"
@@ -862,15 +901,137 @@ export default {
       </i-tab>
       <i-tab name="tab-scheduled-charging">
         <i-form>
-          <i-form-group>
-            <i-form-label> </i-form-label>
+          <i-form-group
+            v-for="(
+              plan, planKey
+            ) in mqttStore.getChargePointConnectedVehicleScheduledChargingPlans(
+              modalChargePointSettingsId
+            )"
+            :key="planKey"
+          >
+            <i-container>
+              <i-row>
+                <i-form-label>{{ plan.name }}</i-form-label>
+              </i-row>
+              <i-row>
+                <i-button
+                  size="lg"
+                  block
+                  :color="plan.active ? 'success' : 'danger'"
+                  @click="
+                    setChargePointConnectedVehicleScheduledChargingPlanActive(
+                      planKey,
+                      !plan.active
+                    )
+                  "
+                >
+                  <span v-if="plan.frequency.selected == 'once'">
+                    <font-awesome-icon
+                      fixed-width
+                      :icon="['fas', 'calendar-day']"
+                    />
+                    {{ mqttStore.formatDate(plan.frequency.once) }}
+                  </span>
+                  <span v-if="plan.frequency.selected == 'daily'">
+                    <font-awesome-icon
+                      fixed-width
+                      :icon="['fas', 'calendar-week']"
+                    />
+                    täglich
+                  </span>
+                  <span v-if="plan.frequency.selected == 'weekly'">
+                    <font-awesome-icon
+                      fixed-width
+                      :icon="['fas', 'calendar-alt']"
+                    />
+                    {{
+                      mqttStore.formatWeeklyScheduleDays(plan.frequency.weekly)
+                    }}
+                  </span>
+                  <font-awesome-icon fixed-width :icon="['fas', 'clock']" />
+                  {{ plan.time }}
+                  <span v-if="plan.limit.selected == 'soc'">
+                    <font-awesome-icon
+                      fixed-width
+                      :icon="['fas', 'car-battery']"
+                    />
+                    {{ plan.limit.soc_scheduled }}&nbsp;%
+                  </span>
+                  <span v-if="plan.limit.selected == 'amount'">
+                    <font-awesome-icon fixed-width :icon="['fas', 'bolt']" />
+                    {{ plan.limit.amount / 1000 }}&nbsp;kWh
+                  </span>
+                </i-button>
+              </i-row>
+            </i-container>
           </i-form-group>
         </i-form>
       </i-tab>
       <i-tab name="tab-time-charging">
         <i-form>
-          <i-form-group>
-            <i-form-label> </i-form-label>
+          <i-form-group
+            v-for="(
+              plan, planKey
+            ) in mqttStore.getChargePointConnectedVehicleTimeChargingPlans(
+              modalChargePointSettingsId
+            )"
+            :key="planKey"
+          >
+            <i-container>
+              <i-row>
+                <i-form-label>{{ plan.name }}</i-form-label>
+              </i-row>
+              <i-row>
+                <i-button
+                  size="lg"
+                  block
+                  :color="plan.active ? 'success' : 'danger'"
+                  @click="
+                    setChargePointConnectedVehicleTimeChargingPlanActive(
+                      planKey,
+                      !plan.active
+                    )
+                  "
+                >
+                  <span v-if="plan.frequency.selected == 'once'">
+                    <font-awesome-icon
+                      fixed-width
+                      :icon="['fas', 'calendar-day']"
+                    />
+                    {{ mqttStore.formatDateRange(plan.frequency.once) }}
+                  </span>
+                  <span v-if="plan.frequency.selected == 'daily'">
+                    <font-awesome-icon
+                      fixed-width
+                      :icon="['fas', 'calendar-week']"
+                    />
+                    täglich
+                  </span>
+                  <span v-if="plan.frequency.selected == 'weekly'">
+                    <font-awesome-icon
+                      fixed-width
+                      :icon="['fas', 'calendar-alt']"
+                    />
+                    {{
+                      mqttStore.formatWeeklyScheduleDays(plan.frequency.weekly)
+                    }}
+                  </span>
+                  <font-awesome-icon fixed-width :icon="['fas', 'clock']" />
+                  {{ plan.time.join("-") }}
+                  <span v-if="plan.limit.selected == 'soc'">
+                    <font-awesome-icon
+                      fixed-width
+                      :icon="['fas', 'car-battery']"
+                    />
+                    {{ plan.limit.soc }}&nbsp;%
+                  </span>
+                  <span v-if="plan.limit.selected == 'amount'">
+                    <font-awesome-icon fixed-width :icon="['fas', 'bolt']" />
+                    {{ plan.limit.amount / 1000 }}&nbsp;kWh
+                  </span>
+                </i-button>
+              </i-row>
+            </i-container>
           </i-form-group>
         </i-form>
       </i-tab>

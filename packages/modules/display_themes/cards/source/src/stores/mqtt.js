@@ -583,6 +583,28 @@ export const useMqttStore = defineStore("mqtt", {
         return undefined;
       };
     },
+    getChargePointConnectedVehicleScheduledChargingPlans(state) {
+      return (chargePointId) => {
+        let chargeTemplateId =
+          state.getChargePointConnectedVehicleChargeTemplateIndex(
+            chargePointId
+          );
+        return state.getWildcardTopics(
+          `openWB/vehicle/template/charge_template/${chargeTemplateId}/chargemode/scheduled_charging/plans/+`
+        );
+      };
+    },
+    getChargePointConnectedVehicleTimeChargingPlans(state) {
+      return (chargePointId) => {
+        let chargeTemplateId =
+          state.getChargePointConnectedVehicleChargeTemplateIndex(
+            chargePointId
+          );
+        return state.getWildcardTopics(
+          `openWB/vehicle/template/charge_template/${chargeTemplateId}/time_charging/plans/+`
+        );
+      };
+    },
 
     /* vehicle getters */
 
@@ -594,6 +616,14 @@ export const useMqttStore = defineStore("mqtt", {
         return (
           state.topics[`openWB/vehicle/${vehicleId}/soc_module/config`].type !=
           null
+        );
+      };
+    },
+    getVehicleSocIsManual(state) {
+      return (vehicleId) => {
+        return (
+          state.topics[`openWB/vehicle/${vehicleId}/soc_module/config`].type ==
+          "manual"
         );
       };
     },
@@ -725,6 +755,42 @@ export const useMqttStore = defineStore("mqtt", {
         return true;
       }
       return false;
+    },
+    formatDate(
+      dateString,
+      format = { year: "numeric", month: "2-digit", day: "2-digit" }
+    ) {
+      let date = new Date(dateString);
+      return date.toLocaleDateString(undefined, format);
+    },
+    formatDateRange(dateArray, separator = "-") {
+      const endFormat = { year: "numeric", month: "2-digit", day: "2-digit" };
+      let beginFormat = { day: "2-digit" }; // always display day
+      const beginDate = new Date(dateArray[0]);
+      const endDate = new Date(dateArray[1]);
+      if (beginDate.getFullYear() == endDate.getFullYear()) {
+        if (beginDate.getMonth() != endDate.getMonth()) {
+          // add display of month if different and year is identical
+          beginFormat.month = endFormat.month;
+        }
+      } else {
+        // display full date if year is different
+        beginFormat = endFormat;
+      }
+      return `${this.formatDate(
+        dateArray[0],
+        beginFormat
+      )}${separator}${this.formatDate(dateArray[1], endFormat)}`;
+    },
+    formatWeeklyScheduleDays(weekDays) {
+      const days = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
+      let planDays = [];
+      weekDays.forEach(function (dayValue, index) {
+        if (dayValue == true) {
+          planDays.push(days[index]);
+        }
+      });
+      return planDays.join(",");
     },
   },
 });
