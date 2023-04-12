@@ -16,7 +16,7 @@ def get_index_position(topic: str) -> int:
     regex = re.search(r"\d", topic)
     if regex is None:
         raise Exception(f"Couldn't find index in {topic}")
-    return regex.start()
+    return regex.end()
 
 
 def get_second_index(topic: str) -> str:
