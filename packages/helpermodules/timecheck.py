@@ -233,16 +233,12 @@ def check_timestamp(timestamp: str, duration: int) -> bool:
     True: Zeit ist noch nicht abgelaufen
     False: Zeit ist abgelaufen
     """
-    try:
-        stamp = datetime.datetime.strptime(timestamp, "%m/%d/%Y, %H:%M:%S")
-        now = datetime.datetime.today()
-        delta = datetime.timedelta(seconds=duration)
-        if (now - delta) > stamp:
-            return False
-        else:
-            return True
-    except Exception:
-        log.exception("Fehler im System-Modul")
+    stamp = datetime.datetime.strptime(timestamp, "%m/%d/%Y, %H:%M:%S")
+    now = datetime.datetime.today()
+    delta = datetime.timedelta(seconds=duration)
+    if (now - delta) > stamp:
+        return False
+    else:
         return True
 
 

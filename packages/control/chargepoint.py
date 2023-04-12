@@ -592,9 +592,17 @@ class Chargepoint:
             if charging_ev.data.control_parameter.state == ChargepointState.PERFORMING_PHASE_SWITCH:
                 phase_switch_pause = charging_ev.ev_template.data.phase_switch_pause
                 # Umschaltung abgeschlossen
-                if not timecheck.check_timestamp(
+                try:
+                    timestamp_not_expired = timecheck.check_timestamp(
                         charging_ev.data.control_parameter.timestamp_perform_phase_switch,
-                        6 + phase_switch_pause - 1):
+                        6 + phase_switch_pause - 1)
+                except TypeError:
+                    # so wird in jedem Fall die erforderliche Zeit abgewartet
+                    charging_ev.data.control_parameter.timestamp_perform_phase_switch = create_timestamp()
+                    Pub().pub("openWB/set/vehicle/"+str(charging_ev.num) +
+                              "/control_parameter/timestamp_perform_phase_switch",
+                              charging_ev.data.control_parameter.timestamp_perform_phase_switch)
+                if not timestamp_not_expired:
                     log.debug("phase switch running")
                     charging_ev.data.control_parameter.timestamp_perform_phase_switch = None
                     Pub().pub("openWB/set/vehicle/" + str(charging_ev.num) +
@@ -642,7 +650,6 @@ class Chargepoint:
                                       str(self.data.set.phases_to_use) +
                                       "control_parameter phases " +
                                       str(charging_ev.data.control_parameter.phases))
-                            charging_ev.data.control_parameter.state = ChargepointState.PERFORMING_PHASE_SWITCH
                             # 1 -> 3
                             if charging_ev.data.control_parameter.phases == 3:
                                 message = "Umschaltung von 1 auf 3 Phasen."
@@ -664,6 +671,7 @@ class Chargepoint:
                                 Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/phases_to_use",
                                           charging_ev.data.control_parameter.phases)
                                 self.data.set.phases_to_use = charging_ev.data.control_parameter.phases
+                            charging_ev.data.control_parameter.state = ChargepointState.PERFORMING_PHASE_SWITCH
                         else:
                             log.error(
                                 "Phasenumschaltung an Ladepunkt" + str(self.num) +
