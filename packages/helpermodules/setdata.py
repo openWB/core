@@ -667,7 +667,7 @@ class SetData:
         """
         try:
             if "openWB/set/general/extern_display_mode" in msg.topic:
-                self._validate_value(msg, "json")
+                self._validate_value(msg, str)
             elif "openWB/set/general/extern" in msg.topic:
                 self._validate_value(msg, bool)
             elif "openWB/set/general/control_interval" in msg.topic:

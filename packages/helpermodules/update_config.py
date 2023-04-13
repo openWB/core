@@ -291,7 +291,7 @@ class UpdateConfig:
         ("openWB/general/chargemode_config/unbalanced_load_limit", 18),
         ("openWB/general/control_interval", 10),
         ("openWB/general/extern", False),
-        ("openWB/general/extern_display_mode", dataclass_utils.asdict(CardsDisplayTheme())),
+        ("openWB/general/extern_display_mode", "local"),
         ("openWB/general/external_buttons_hw", False),
         ("openWB/general/grid_protection_configured", True),
         ("openWB/general/notifications/selected", "none"),
@@ -312,15 +312,7 @@ class UpdateConfig:
         ("openWB/optional/int_display/pin_active", False),
         ("openWB/optional/int_display/pin_code", "0000"),
         ("openWB/optional/int_display/standby", 60),
-        ("openWB/optional/int_display/theme", {
-            "name": "Cards", "type": "cards", "configuration": {
-                "lock_changes": False, "lock_changes_code": None, "enable_dashboard_view": True,
-                "enable_dashboard_card_grid": True, "enable_dashboard_card_home_consumption": True,
-                "enable_dashboard_card_battery_sum": True, "enable_dashboard_card_inverter_sum": True,
-                "enable_dashboard_card_charge_point_sum": True, "enable_charge_points_view": True,
-                "enable_status_view": True
-            }
-        }),
+        ("openWB/optional/int_display/theme", dataclass_utils.asdict(CardsDisplayTheme())),
         ("openWB/optional/led/active", False),
         ("openWB/optional/rfid/active", False),
         ("openWB/system/dataprotection_acknowledged", False),

@@ -8,7 +8,6 @@ from typing import List, Optional
 from control import data
 from helpermodules.pub import Pub
 from helpermodules import timecheck
-from modules.display_themes.cards.config import CardsDisplayTheme
 
 log = logging.getLogger(__name__)
 
@@ -115,7 +114,7 @@ def ripple_control_receiver_factory() -> RippleControlReceiver:
 class GeneralData:
     chargemode_config: ChargemodeConfig = field(default_factory=chargemode_config_factory)
     control_interval: int = 10
-    extern_display_mode: CardsDisplayTheme = CardsDisplayTheme()
+    extern_display_mode: str = "local"
     extern: bool = False
     external_buttons_hw: bool = False
     grid_protection_active: bool = False
