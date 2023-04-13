@@ -24,8 +24,8 @@ export default {
     >
       Ladepunkte
     </nav-item>
-    <nav-item v-if="mqttStore.getStateEnabled" :to="{ name: 'status' }">
+    <!-- <nav-item v-if="mqttStore.getStateEnabled" :to="{ name: 'status' }">
       Status
-    </nav-item>
+    </nav-item> -->
   </i-nav>
 </template>
