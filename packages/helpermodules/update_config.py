@@ -8,6 +8,7 @@ import subprocess
 import time
 from typing import List
 from paho.mqtt.client import Client as MqttClient, MQTTMessage
+import dataclass_utils
 
 from helpermodules.broker import InternalBrokerClient
 from helpermodules.pub import Pub
@@ -15,6 +16,7 @@ from helpermodules.utils.topic_parser import decode_payload, get_index, get_seco
 from helpermodules import measurement_log
 from control import chargepoint, counter_all
 from control import ev
+from modules.display_themes.cards.config import CardsDisplayTheme
 
 log = logging.getLogger(__name__)
 
@@ -289,7 +291,7 @@ class UpdateConfig:
         ("openWB/general/chargemode_config/unbalanced_load_limit", 18),
         ("openWB/general/control_interval", 10),
         ("openWB/general/extern", False),
-        ("openWB/general/extern_display_mode", "local"),
+        ("openWB/general/extern_display_mode", dataclass_utils.asdict(CardsDisplayTheme())),
         ("openWB/general/external_buttons_hw", False),
         ("openWB/general/grid_protection_configured", True),
         ("openWB/general/notifications/selected", "none"),
@@ -326,22 +328,7 @@ class UpdateConfig:
         ("openWB/system/device/module_update_completed", True),
         ("openWB/system/ip_address", "unknown"),
         ("openWB/system/release_train", "master"),
-        # ToDo: parse installed display themes
-        ("openWB/system/configurable/display_themes", [{
-            "value": "cards",
-            "text": "Cards",
-            "defaults": {
-                "name": "Cards",
-                "type": "cards",
-                "configuration": {
-                    "lock_changes": False, "lock_changes_code": None, "enable_dashboard_view": True,
-                    "enable_dashboard_card_grid": True, "enable_dashboard_card_home_consumption": True,
-                    "enable_dashboard_card_battery_sum": True, "enable_dashboard_card_inverter_sum": True,
-                    "enable_dashboard_card_charge_point_sum": True, "enable_charge_points_view": True,
-                    "enable_status_view": True
-                }
-            }
-        }]))
+    )
 
     def __init__(self) -> None:
         self.all_received_topics = {}

@@ -1,6 +1,10 @@
 from typing import Optional
+from helpermodules.auto_str import auto_str
+
+from modules.common.abstract_device import DeviceDescriptor
 
 
+@auto_str
 class CardsDisplayThemeConfiguration:
     def __init__(self,
                  lock_changes: bool = False,
@@ -29,6 +33,7 @@ class CardsDisplayThemeConfiguration:
         self.enable_status_view = enable_status_view
 
 
+@auto_str
 class CardsDisplayTheme:
     def __init__(self,
                  name: str = "Cards",
@@ -37,3 +42,6 @@ class CardsDisplayTheme:
         self.name = name
         self.type = type
         self.configuration = configuration or CardsDisplayThemeConfiguration()
+
+
+theme_descriptor = DeviceDescriptor(configuration_factory=CardsDisplayTheme)
