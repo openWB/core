@@ -2,6 +2,7 @@
 import { useMqttStore } from "@/stores/mqtt.js";
 import DashBoardCard from "@/components/DashBoardCard.vue";
 import SparkLine from "@/components/SparkLine.vue";
+import ExtendedNumberInput from "@/components/ExtendedNumberInput.vue";
 
 /* fontawesome */
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -65,7 +66,12 @@ export default {
   props: {
     changesLocked: { required: false, type: Boolean, default: false },
   },
-  components: { DashBoardCard, SparkLine, FontAwesomeIcon },
+  components: {
+    DashBoardCard,
+    SparkLine,
+    ExtendedNumberInput,
+    FontAwesomeIcon,
+  },
   computed: {
     vehicleList() {
       let topicList = this.mqttStore.getVehicleList;
@@ -228,13 +234,6 @@ export default {
         this.mqttStore.getChargePointConnectedVehiclePvChargingMinCurrent(id);
       let new_value = parseInt(event);
       if (new_value != previous_value && !isNaN(new_value)) {
-        // check value: 0, 6..32
-        if (previous_value == 0 && new_value > 0) {
-          new_value = Math.max(new_value, 6);
-        }
-        if (previous_value != 0 && new_value < 6) {
-          new_value = 0;
-        }
         var template_id =
           this.mqttStore.getChargePointConnectedVehicleChargeTemplateIndex(id);
         this.$root.sendTopicToBroker(
@@ -512,7 +511,7 @@ export default {
     </dash-board-card>
   </div>
   <!-- modals -->
-  <i-modal v-model="modalChargePointSettingsVisible">
+  <i-modal v-model="modalChargePointSettingsVisible" size="lg">
     <template #header>
       Einstellungen für Ladepunkt "{{
         mqttStore.getChargePointName(modalChargePointSettingsId)
@@ -631,10 +630,8 @@ export default {
         <i-form>
           <i-form-group>
             <i-form-label>Stromstärke</i-form-label>
-            <i-number-input
-              size="lg"
-              class="_text-align:right"
-              id="instant-charging-current"
+            <extended-number-input
+              unit="A"
               :min="6"
               :max="32"
               :model-value="
@@ -648,9 +645,7 @@ export default {
                   $event
                 )
               "
-            >
-              <template #suffix>A</template>
-            </i-number-input>
+            />
           </i-form-group>
           <i-form-group>
             <i-form-label>Begrenzung</i-form-label>
@@ -731,9 +726,8 @@ export default {
             "
           >
             <i-form-label>Max. SoC</i-form-label>
-            <i-number-input
-              size="lg"
-              class="_text-align:right"
+            <extended-number-input
+              unit="%"
               :min="5"
               :max="100"
               :step="5"
@@ -748,9 +742,7 @@ export default {
                   $event
                 )
               "
-            >
-              <template #suffix>%</template>
-            </i-number-input>
+            />
           </i-form-group>
           <i-form-group
             v-if="
@@ -760,9 +752,8 @@ export default {
             "
           >
             <i-form-label>Max. Energie</i-form-label>
-            <i-number-input
-              size="lg"
-              class="_text-align:right"
+            <extended-number-input
+              unit="kWh"
               :min="1"
               :max="100"
               :model-value="
@@ -776,9 +767,7 @@ export default {
                   $event * 1000
                 )
               "
-            >
-              <template #suffix>kWh</template>
-            </i-number-input>
+            />
           </i-form-group>
         </i-form>
       </i-tab>
@@ -805,12 +794,22 @@ export default {
           </i-form-group>
           <i-form-group>
             <i-form-label>Mindeststrom</i-form-label>
-            <i-number-input
-              size="lg"
-              class="_text-align:right"
-              id="pv-min-current"
-              :min="6"
-              :max="32"
+            <extended-number-input
+              unit="A"
+              :labels="[
+                { label: 'Aus', value: 0 },
+                { label: 6, value: 6 },
+                { label: 7, value: 7 },
+                { label: 8, value: 8 },
+                { label: 9, value: 9 },
+                { label: 10, value: 10 },
+                { label: 11, value: 11 },
+                { label: 12, value: 12 },
+                { label: 13, value: 13 },
+                { label: 14, value: 14 },
+                { label: 15, value: 15 },
+                { label: 16, value: 16 },
+              ]"
               :model-value="
                 mqttStore.getChargePointConnectedVehiclePvChargingMinCurrent(
                   modalChargePointSettingsId
@@ -822,19 +821,34 @@ export default {
                   $event
                 )
               "
-            >
-              <template #suffix>A</template>
-            </i-number-input>
+            />
           </i-form-group>
           <i-form-group>
             <i-form-label>Mindest-SoC</i-form-label>
-            <i-number-input
-              size="lg"
-              class="_text-align:right"
-              id="pv-min-soc"
-              :min="0"
-              :max="95"
-              :step="5"
+            <extended-number-input
+              unit="%"
+              :labels="[
+                { label: 'Aus', value: 0 },
+                { label: 5, value: 5 },
+                { label: 10, value: 10 },
+                { label: 15, value: 15 },
+                { label: 20, value: 20 },
+                { label: 25, value: 25 },
+                { label: 30, value: 30 },
+                { label: 35, value: 35 },
+                { label: 40, value: 40 },
+                { label: 45, value: 45 },
+                { label: 50, value: 50 },
+                { label: 55, value: 55 },
+                { label: 60, value: 60 },
+                { label: 65, value: 65 },
+                { label: 70, value: 70 },
+                { label: 75, value: 75 },
+                { label: 80, value: 80 },
+                { label: 85, value: 85 },
+                { label: 90, value: 90 },
+                { label: 95, value: 95 },
+              ]"
               :model-value="
                 mqttStore.getChargePointConnectedVehiclePvChargingMinSoc(
                   modalChargePointSettingsId
@@ -846,18 +860,14 @@ export default {
                   $event
                 )
               "
-            >
-              <template #suffix>%</template>
-            </i-number-input>
+            />
           </i-form-group>
           <i-form-group>
             <i-form-label>Mindest-SoC Strom</i-form-label>
-            <i-number-input
-              size="lg"
-              class="_text-align:right"
-              id="pv-min-soc-current"
+            <extended-number-input
               :min="6"
               :max="32"
+              unit="A"
               :model-value="
                 mqttStore.getChargePointConnectedVehiclePvChargingMinSocCurrent(
                   modalChargePointSettingsId
@@ -869,19 +879,35 @@ export default {
                   $event
                 )
               "
-            >
-              <template #suffix>A</template>
-            </i-number-input>
+            />
           </i-form-group>
           <i-form-group>
             <i-form-label>SoC-Limit</i-form-label>
-            <i-number-input
-              size="lg"
-              class="_text-align:right"
-              id="pv-max-soc"
-              :min="5"
-              :max="100"
-              :step="5"
+            <extended-number-input
+              unit="%"
+              :labels="[
+                { label: 5, value: 5 },
+                { label: 10, value: 10 },
+                { label: 15, value: 15 },
+                { label: 20, value: 20 },
+                { label: 25, value: 25 },
+                { label: 30, value: 30 },
+                { label: 35, value: 35 },
+                { label: 40, value: 40 },
+                { label: 45, value: 45 },
+                { label: 50, value: 50 },
+                { label: 55, value: 55 },
+                { label: 60, value: 60 },
+                { label: 65, value: 65 },
+                { label: 70, value: 70 },
+                { label: 75, value: 75 },
+                { label: 80, value: 80 },
+                { label: 85, value: 85 },
+                { label: 90, value: 90 },
+                { label: 95, value: 95 },
+                { label: 100, value: 100 },
+                { label: 'Aus', value: 101 },
+              ]"
               :model-value="
                 mqttStore.getChargePointConnectedVehiclePvChargingMaxSoc(
                   modalChargePointSettingsId
@@ -893,9 +919,7 @@ export default {
                   $event
                 )
               "
-            >
-              <template #suffix>%</template>
-            </i-number-input>
+            />
           </i-form-group>
         </i-form>
       </i-tab>
@@ -1059,8 +1083,8 @@ export default {
 }
 
 :deep(.tab) {
-  min-height: 75vh;
-  max-height: 75vh;
+  min-height: 72vh;
+  max-height: 72vh;
   overflow-y: scroll;
 }
 
