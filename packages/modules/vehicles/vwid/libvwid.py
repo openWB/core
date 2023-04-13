@@ -21,7 +21,7 @@ class vwid:
     def __init__(self, session):
         self.session = session
         self.headers = {}
-        self.log = logging.getLogger("soc."+__name__)
+        self.log = logging.getLogger(__name__)
         self.jobs_string = 'all'
 
     def form_from_response(self, text):
@@ -68,8 +68,8 @@ class vwid:
 
             return (form, action)
 
-        except KeyError as exc:
-            self.log.error(f"Missing fields in response from VW API ({exc})")
+        except KeyError:
+            self.log.exception("Missing fields in response from VW API")
             return False
 
     def set_vin(self, vin):
