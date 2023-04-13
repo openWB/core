@@ -576,10 +576,19 @@ class Chargepoint:
             # Nach Ablauf der Laden aktiv halten Zeit, sollte mit der vorgegebenen Phasenzahl geladen werden.
             if ((self.data.set.phases_to_use != self.data.get.phases_in_use or
                 # Vorgegebene Phasenzahl hat sich geändert
-                    self.data.set.phases_to_use != charging_ev.data.control_parameter.phases) and
-                    # Wenn ein Sollstrom vorgegeben ist, muss das Auto auch laden, damit umgeschaltet wird
+                 self.data.set.phases_to_use != charging_ev.data.control_parameter.phases) and
+                # Wenn ein Sollstrom vorgegeben ist, muss das Auto auch laden, damit umgeschaltet wird, sonst
+                # wird zB bei automatischer Umschaltung ständig versucht auf 1 Phase zurück zu schalten, wenn
+                # das Auto bei 3 Phasen voll ist.
                     ((self.data.set.current != 0 and self.data.get.power != 0) or self.data.set.current == 0)):
                 return True
+        if (charging_ev.data.control_parameter.state == ChargepointState.NO_CHARGING_ALLOWED and
+            (self.data.set.phases_to_use != self.data.get.phases_in_use or
+                # Vorgegebene Phasenzahl hat sich geändert
+             self.data.set.phases_to_use != charging_ev.data.control_parameter.phases) and
+                # Wenn der Ladevorgang gestartet wird, muss vor dem ersten Laden umgeschaltet werden.
+                self.data.set.current != 0):
+            return True
         return False
 
     def initiate_phase_switch(self):
