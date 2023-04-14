@@ -6,14 +6,14 @@ from typing import Any
 def get_index(topic: str) -> str:
     """extrahiert den Index aus einem Topic (Zahl zwischen zwei // oder am Stringende)
     """
-    regex = re.search(r"\d", topic)
+    regex = re.search('(?!/)([0-9]*)(?=/|$)', topic)
     if regex is None:
         raise Exception(f"Couldn't find index in {topic}")
     return regex.group()
 
 
 def get_index_position(topic: str) -> int:
-    regex = re.search(r"\d", topic)
+    regex = re.search('(?!/)([0-9]*)(?=/|$)', topic)
     if regex is None:
         raise Exception(f"Couldn't find index in {topic}")
     return regex.end()
