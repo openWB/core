@@ -148,6 +148,9 @@ chmod 666 "$LOGFILE"
 
 	# display setup
 	echo "display setup..."
+	if [ ! -d "/home/openwb/.config/lxsession/LXDE" ]; then
+		mkdir --parents "/home/openwb/.config/lxsession/LXDE"
+	fi
 	if versionMatch "${OPENWBBASEDIR}/data/config/display/lightdm-autologin-greeter.conf" "/etc/lightdm/lightdm.conf.d/lightdm-autologin-greeter.conf"; then
 		echo "autologin configured"
 	else
