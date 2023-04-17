@@ -580,7 +580,9 @@ class Chargepoint:
                 # Wenn ein Sollstrom vorgegeben ist, muss das Auto auch laden, damit umgeschaltet wird, sonst
                 # wird zB bei automatischer Umschaltung ständig versucht auf 1 Phase zurück zu schalten, wenn
                 # das Auto bei 3 Phasen voll ist.
-                    ((self.data.set.current != 0 and self.data.get.power != 0) or self.data.set.current == 0)):
+                    ((self.data.set.current != 0 and self.data.get.power != 0) or
+                     (self.data.set.current != 0 and self.set_current_prev == 0) or
+                     self.data.set.current == 0)):
                 return True
         if (charging_ev.data.control_parameter.state == ChargepointState.NO_CHARGING_ALLOWED and
             (self.data.set.phases_to_use != self.data.get.phases_in_use or
