@@ -359,9 +359,12 @@ class UpdateConfig:
     def _remove_invalid_topics(self):
         # remove all charge points without config. This data comes from deleted charge points that are still sent to an
         # invalid CP number.
-        for topic in self.all_received_topics.keys():
+        for topic, payload in self.all_received_topics.items():
             if re.search("/chargepoint/[0-9]+/", topic) is not None:
                 if f"openWB/chargepoint/{get_index(topic)}/config" not in self.all_received_topics.keys():
+                    Pub().pub(topic, "")
+            if re.search("/int_display/theme$", topic) is not None:
+                if isinstance(decode_payload(payload), str):
                     Pub().pub(topic, "")
 
     def __pub_missing_defaults(self):
