@@ -166,37 +166,7 @@ chmod 666 "$LOGFILE"
 		echo "updating lxde session autostart"
 		cp "${OPENWBBASEDIR}/data/config/display/lxdeautostart" "/home/openwb/.config/lxsession/LXDE/autostart"
 	fi
-	"${OPENWBBASEDIR}/runs/update_local_display_timeout.sh"
-
-	default_target=$(systemctl get-default)
-	display_active=$(mosquitto_sub -p 1886 -t "openWB/optional/int_display/active" -C 1 -W 1)
-	if (($? == 0)) && [[ $display_active == "true" ]]; then
-		if [[ $default_target == "graphical.target" ]]; then
-			echo "graphical target already configured"
-		else
-			echo "setting graphical target as default"
-			sudo systemctl set-default graphical.target
-		fi
-		if systemctl status lightdm.service; then
-			echo "lightdm already running"
-		else
-			echo "lightdm not running, starting service"
-			sudo systemctl start lightdm.service
-		fi
-	else
-		if [[ $default_target == "multi-user.target" ]]; then
-			echo "multi-user target already configured"
-		else
-			echo "setting multi-user target as default"
-			sudo systemctl set-default multi-user.target
-		fi
-		if systemctl status lightdm.service; then
-			echo "lightdm not running"
-		else
-			echo "lightdm running, stopping service"
-			sudo systemctl stop lightdm.service
-		fi
-	fi
+	"${OPENWBBASEDIR}/runs/update_local_display.sh"
 
 	# check for apache configuration
 	echo "apache default site..."

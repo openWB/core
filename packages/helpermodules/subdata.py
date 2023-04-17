@@ -536,6 +536,10 @@ class SubData:
                     self.set_json_payload_class(var.data.rfid, msg)
                 elif re.search("/optional/int_display/", msg.topic) is not None:
                     self.set_json_payload_class(var.data.int_display, msg)
+                    if re.search("/(standby|active)$", msg.topic) is not None:
+                        subprocess.run([
+                            str(Path(__file__).resolve().parents[2] / "runs" / "update_local_display.sh")
+                            ])
                 elif re.search("/optional/et/", msg.topic) is not None:
                     if re.search("/optional/et/get/", msg.topic) is not None:
                         self.set_json_payload_class(var.data.et.get, msg)
