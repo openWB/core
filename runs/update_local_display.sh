@@ -1,4 +1,5 @@
 #!/bin/bash
+OPENWBBASEDIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 
 # update display standby timeout
 if timeout=$(mosquitto_sub -p 1886 -t "openWB/optional/int_display/standby" -C 1 -W 1); then
