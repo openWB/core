@@ -357,15 +357,22 @@ class UpdateConfig:
                 log.debug("Ungültiges Topic zum Startzeitpunkt: "+str(topic))
 
     def _remove_invalid_topics(self):
-        # remove all charge points without config. This data comes from deleted charge points that are still sent to an
-        # invalid CP number.
+        # deleting list items while in iteration throws runtime error, so we collect all topics to delete
+        topics_to_delete = []
         for topic, payload in self.all_received_topics.items():
+            # remove all charge points without config. This data comes from deleted charge points that are still sent
+            # to an invalid CP number.
             if re.search("/chargepoint/[0-9]+/", topic) is not None:
                 if f"openWB/chargepoint/{get_index(topic)}/config" not in self.all_received_topics.keys():
                     Pub().pub(topic, "")
+            # remove invalid string type value of display theme
             if re.search("/int_display/theme$", topic) is not None:
                 if isinstance(decode_payload(payload), str):
                     Pub().pub(topic, "")
+                    topics_to_delete.append(topic)
+        # delete topics to allow setting new defaults afterwards
+        for topic in topics_to_delete:
+            del self.all_received_topics[topic]
 
     def __pub_missing_defaults(self):
         # zwingend erforderliche Standardwerte setzen
