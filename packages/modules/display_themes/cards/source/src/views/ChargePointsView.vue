@@ -19,6 +19,7 @@ import {
   faEdit as fasEdit,
   faTimesCircle as fasTimesCircle,
   faExclamationTriangle as fasExclamationTriangle,
+  faInfoCircle as fasInfoCircle,
   faStar as fasStar,
   faClock as fasClock,
   faBolt as fasBolt,
@@ -43,6 +44,7 @@ library.add(
   fasEdit,
   fasTimesCircle,
   fasExclamationTriangle,
+  fasInfoCircle,
   fasStar,
   farStar,
   fasClock,
@@ -924,7 +926,21 @@ export default {
         </i-form>
       </i-tab>
       <i-tab name="tab-scheduled-charging">
-        <i-form>
+        <i-alert
+          v-if="
+            Object.keys(
+              mqttStore.getChargePointConnectedVehicleScheduledChargingPlans(
+                modalChargePointSettingsId
+              )
+            ).length === 0
+          "
+        >
+          <template #icon>
+            <font-awesome-icon fixed-width :icon="['fas', 'fa-info-circle']" />
+          </template>
+          Es wurden noch keine Zeitpläne für das Zielladen eingerichtet.
+        </i-alert>
+        <i-form v-else>
           <i-form-group
             v-for="(
               plan, planKey
@@ -992,7 +1008,21 @@ export default {
         </i-form>
       </i-tab>
       <i-tab name="tab-time-charging">
-        <i-form>
+        <i-alert
+          v-if="
+            Object.keys(
+              mqttStore.getChargePointConnectedVehicleTimeChargingPlans(
+                modalChargePointSettingsId
+              )
+            ).length === 0
+          "
+        >
+          <template #icon>
+            <font-awesome-icon fixed-width :icon="['fas', 'fa-circle-info']" />
+          </template>
+          Es wurden noch keine Zeitpläne für das Zeitladen eingerichtet.
+        </i-alert>
+        <i-form v-else>
           <i-form-group
             v-for="(
               plan, planKey
@@ -1078,6 +1108,7 @@ export default {
 :deep(.toggle .toggle-label::before) {
   border-color: var(--color--dark-45);
 }
+
 .badge.full-width {
   width: 100%;
 }
