@@ -12,7 +12,7 @@ log = logging.getLogger(__name__)
 GIGYA_ROOTURL = 'https://accounts.eu1.gigya.com'
 GIGYA_API = '3_7PLksOyBRkHv126x5WhHb-5pqC1qFR8pQjxSeLB6nhAnPERTUlwnYoznHSxwX668'
 KAMEREON_ROOTURL = 'https://api-wired-prod-1-euw1.wrd-aws.com'
-KAMEREON_API_KEY = 'VAX7XYKGfa92yMvXculCkEFyfZbuM7Ss'
+KAMEREON_API_KEY = 'YjkKtHmGfaceeuExUDKGxrLZGGvtVS0J'
 
 
 def fetch_soc(config: RenaultConfiguration) -> CarState:
