@@ -160,6 +160,13 @@ class UpdateConfig:
                    "^openWB/graph/alllivevaluesJson",
                    "^openWB/graph/lastlivevaluesJson$",
 
+                   "^openWB/internal_chargepoint/global_data$",
+                   "^openWB/internal_chargepoint/global_config$",
+                   "^openWB/internal_chargepoint/[0-1]/data/cp_interruption_duration$",
+                   "^openWB/internal_chargepoint/[0-1]/data/set_current$",
+                   "^openWB/internal_chargepoint/[0-1]/data/phases_to_use$",
+                   "^openWB/internal_chargepoint/[0-1]/data/parent_cp$",
+
                    "^openWB/set/log/request",
                    "^openWB/set/log/data",
 
@@ -247,6 +254,7 @@ class UpdateConfig:
                    "^openWB/system/configurable/devices_components$",
                    "^openWB/system/configurable/chargepoints$",
                    "^openWB/system/configurable/display_themes$",
+                   "^openWB/system/configurable/chargepoints_internal$",
                    "^openWB/system/mqtt/bridge/[0-9]+$",
                    "^openWB/system/current_branch",
                    "^openWB/system/current_commit",
@@ -594,7 +602,10 @@ class UpdateConfig:
                 payload = decode_payload(payload)
                 if "connection_module" in payload:
                     updated_payload = payload
-                    updated_payload["configuration"] = payload["connection_module"]["configuration"]
+                    try:
+                        updated_payload["configuration"] = payload["connection_module"]["configuration"]
+                    except KeyError:
+                        updated_payload["configuration"] = {}
                     updated_payload.pop("connection_module")
                     updated_payload.pop("power_module")
                     Pub().pub(topic.replace("openWB/", "openWB/set/"), payload)

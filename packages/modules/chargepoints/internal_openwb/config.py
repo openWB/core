@@ -1,6 +1,17 @@
+from enum import Enum
+
+
+class InternalChargepointMode(Enum):
+    SOCKET = "socket"
+    DUO = "duo"
+    SERIES = "series"
+
+
 class InternalOpenWBConfiguration:
-    def __init__(self):
-        pass
+    def __init__(self, mode: str = InternalChargepointMode.SERIES.value, duo_num: int = 1):
+        self.mode = mode
+        self.ip_address = "localhost"
+        self.duo_num = duo_num
 
 
 class InternalOpenWB:

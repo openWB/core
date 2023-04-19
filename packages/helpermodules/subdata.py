@@ -1,7 +1,6 @@
 """ Modul, um die Daten vom Broker zu erhalten.
 """
 import importlib
-import json
 import logging
 from pathlib import Path
 import threading
@@ -27,6 +26,8 @@ from helpermodules import system
 from control import pv
 from dataclass_utils import dataclass_from_dict
 from modules.common.simcount.simcounter_state import SimCounterState
+from modules.internal_chargepoint_handler.internal_chargepoint_handler_config import (
+    GlobalHandlerData, InternalChargepointHandlerData, RfidData)
 
 log = logging.getLogger(__name__)
 mqtt_log = logging.getLogger("mqtt")
@@ -51,6 +52,11 @@ class SubData:
     bat_all_data = bat_all.BatAll()
     bat_data: Dict[str, bat.Bat] = {}
     general_data = general.General()
+    internal_chargepoint_data: Dict[str, InternalChargepointHandlerData] = {
+        "cp0": InternalChargepointHandlerData(),
+        "cp1": InternalChargepointHandlerData(),
+        "global_data": GlobalHandlerData(),
+        "rfid_data": RfidData()}
     optional_data = optional.Optional()
     system_data = {"system": system.System()}
     graph_data = graph.Graph()
@@ -66,7 +72,10 @@ class SubData:
                  event_subdata_initialized: threading.Event,
                  event_vehicle_update_completed: threading.Event,
                  event_scheduled_charging_plan: threading.Event,
-                 event_time_charging_plan: threading.Event,):
+                 event_time_charging_plan: threading.Event,
+                 event_start_internal_chargepoint: threading.Event,
+                 event_stop_internal_chargepoint: threading.Event,
+                 event_jobs_running: threading.Event):
         self.event_ev_template = event_ev_template
         self.event_charge_template = event_charge_template
         self.event_cp_config = event_cp_config
@@ -78,6 +87,9 @@ class SubData:
         self.event_vehicle_update_completed = event_vehicle_update_completed
         self.event_scheduled_charging_plan = event_scheduled_charging_plan
         self.event_time_charging_plan = event_time_charging_plan
+        self.event_start_internal_chargepoint = event_start_internal_chargepoint
+        self.event_stop_internal_chargepoint = event_stop_internal_chargepoint
+        self.event_jobs_running = event_jobs_running
         self.heartbeat = False
 
     def sub_topics(self):
@@ -100,6 +112,7 @@ class SubData:
             ("openWB/optional/#", 2),
             ("openWB/counter/#", 2),
             ("openWB/command/command_completed", 2),
+            ("openWB/internal_chargepoint/#", 2),
             # Nicht mit hash # abonnieren, damit nicht die Komponenten vor den Devices empfangen werden!
             ("openWB/system/+", 2),
             ("openWB/system/device/module_update_completed", 2),
@@ -133,6 +146,8 @@ class SubData:
             self.process_general_topic(self.general_data, msg)
         elif "openWB/graph/" in msg.topic:
             self.process_graph_topic(self.graph_data, msg)
+        elif "openWB/internal_chargepoint/" in msg.topic:
+            self.process_internal_chargepoint_topic(client, self.internal_chargepoint_data, msg)
         elif "openWB/optional/" in msg.topic:
             self.process_optional_topic(self.optional_data, msg)
         elif "openWB/counter/" in msg.topic:
@@ -345,8 +360,11 @@ class SubData:
             if re.search("/chargepoint/[0-9]+/", msg.topic) is not None:
                 index = get_index(msg.topic)
                 if decode_payload(msg.payload) == "":
+                    log.debug("Stop des Handlers für den internen Ladepunkt.")
+                    self.event_stop_internal_chargepoint.set()
                     if "cp"+index in var:
                         var.pop("cp"+index)
+                        self.set_internal_chargepoint_configured()
                 else:
                     if "cp"+index not in var:
                         var["cp"+index] = chargepoint.ChargepointStateUpdate(
@@ -369,20 +387,28 @@ class SubData:
                         elif re.search("/chargepoint/[0-9]+/get/", msg.topic) is not None:
                             self.set_json_payload_class(var["cp"+index].chargepoint.data.get, msg)
                     elif re.search("/chargepoint/[0-9]+/config$", msg.topic) is not None:
-                        config = json.loads(
-                            str(msg.payload.decode("utf-8")))
-                        if (var["cp"+index].chargepoint.chargepoint_module is None or
-                                config["type"] != var["cp"+index].chargepoint.chargepoint_module.config.type):
-                            mod = importlib.import_module(
-                                ".chargepoints."+config["type"]+".chargepoint_module", "modules")
-                            config = dataclass_from_dict(mod.chargepoint_descriptor.configuration_factory, config)
-                            var["cp"+index].chargepoint.chargepoint_module = mod.ChargepointModule(config)
-                        self.set_json_payload_class(var["cp"+index].chargepoint.data.config, msg)
-                        self.event_cp_config.set()
+                        self.process_chargepoint_config_topic(var, msg)
             elif re.search("/chargepoint/get/", msg.topic) is not None:
                 self.set_json_payload_class(self.cp_all_data.data.get, msg)
         except Exception:
             log.exception("Fehler im subdata-Modul")
+
+    def process_chargepoint_config_topic(self, var: Dict[str, chargepoint.CpTemplate], msg: mqtt.MQTTMessage):
+        index = get_index(msg.topic)
+        payload = decode_payload(msg.payload)
+        if (var["cp"+index].chargepoint.chargepoint_module is None or
+                payload != var["cp"+index].chargepoint.chargepoint_module.config):
+            mod = importlib.import_module(
+                ".chargepoints."+payload["type"]+".chargepoint_module", "modules")
+            config = dataclass_from_dict(mod.chargepoint_descriptor.configuration_factory, payload)
+            var["cp"+index].chargepoint.chargepoint_module = mod.ChargepointModule(config)
+            self.set_internal_chargepoint_configured()
+        if payload["type"] == "internal_openwb":
+            log.debug("Neustart des Handlers für den internen Ladepunkt.")
+            self.event_stop_internal_chargepoint.set()
+            self.event_start_internal_chargepoint.set()
+        self.set_json_payload_class(var["cp"+index].chargepoint.data.config, msg)
+        self.event_cp_config.set()
 
     def process_chargepoint_template_topic(self, var: Dict[str, chargepoint.CpTemplate], msg: mqtt.MQTTMessage):
         """ Handler für die Ladepunkt-Topics
@@ -511,6 +537,13 @@ class SubData:
                         self.set_json_payload_class(var.data.chargemode_config.standby, msg)
                     else:
                         self.set_json_payload_class(var.data.chargemode_config, msg)
+                elif "openWB/general/extern" == msg.topic:
+                    if decode_payload(msg.payload) is False:
+                        self.event_jobs_running.set()
+                    else:
+                        # 5 Min Handler bis auf Heartbeat, Cleanup, ... beenden
+                        self.event_jobs_running.clear()
+                    self.set_json_payload_class(var.data, msg)
                 else:
                     self.set_json_payload_class(var.data, msg)
         except Exception:
@@ -538,7 +571,7 @@ class SubData:
                         # some topics require an update of the display manager
                         subprocess.run([
                             str(Path(__file__).resolve().parents[2] / "runs" / "update_local_display.sh")
-                            ])
+                        ])
                 elif re.search("/optional/et/", msg.topic) is not None:
                     if re.search("/optional/et/get/", msg.topic) is not None:
                         self.set_json_payload_class(var.data.et.get, msg)
@@ -694,3 +727,35 @@ class SubData:
                 self.set_json_payload_class(var.data.config, msg)
         except Exception:
             log.exception("Fehler im subdata-Modul")
+
+    def process_internal_chargepoint_topic(self, client, var, msg):
+        try:
+            if re.search("/internal_chargepoint/[0-1]/data/parent_cp", msg.topic) is not None:
+                index = get_index(msg.topic)
+                if decode_payload(msg.payload) != var[f"cp{index}"].parent_cp:
+                    log.debug("Neustart des Handlers für den internen Ladepunkt.")
+                    self.event_stop_internal_chargepoint.set()
+                    self.event_start_internal_chargepoint.set()
+                self.set_json_payload_class(var[f"cp{index}"], msg)
+            elif re.search("/internal_chargepoint/[0-1]/", msg.topic) is not None:
+                index = get_index(msg.topic)
+                self.set_json_payload_class(var[f"cp{index}"], msg)
+            elif "internal_chargepoint/global_data" in msg.topic:
+                self.set_json_payload_class(var["global_data"], msg)
+                if decode_payload(msg.payload)["parent_ip"] != var["global_data"].parent_ip:
+                    log.debug("Neustart des Handlers für den internen Ladepunkt.")
+                    self.event_stop_internal_chargepoint.set()
+                    self.event_start_internal_chargepoint.set()
+            elif "internal_chargepoint/last_tag" in msg.topic:
+                self.set_json_payload_class(var["rfid_data"], msg)
+        except Exception:
+            log.exception("Fehler im subdata-Modul")
+
+    def set_internal_chargepoint_configured(self):
+        for cp in self.cp_data.values():
+            if cp.chargepoint.chargepoint_module.config.type == "internal_openwb":
+                internal_configured = True
+                break
+        else:
+            internal_configured = False
+        self.internal_chargepoint_data["global_data"].configured = internal_configured

@@ -5,7 +5,7 @@ import logging
 import subprocess
 import threading
 import time
-from typing import List
+from typing import Dict, List, Optional
 import re
 import traceback
 from pathlib import Path
@@ -15,8 +15,11 @@ from helpermodules import measurement_log
 from helpermodules.broker import InternalBrokerClient
 from helpermodules.messaging import MessageType, pub_user_message, pub_error_global
 from helpermodules.pub import Pub
+from helpermodules.subdata import SubData
 from helpermodules.utils.topic_parser import decode_payload
 from control import bat, bridge, chargelog, chargepoint, data, ev, counter, counter_all, pv
+from modules.chargepoints.internal_openwb.chargepoint_module import ChargepointModule
+from modules.chargepoints.internal_openwb.config import InternalChargepointMode
 from modules.common.component_type import ComponentType, special_to_general_type_mapping, type_to_topic_mapping
 import dataclass_utils
 
@@ -42,12 +45,12 @@ class Command:
     def __init__(self, event_command_completed: threading.Event):
         try:
             self.event_command_completed = event_command_completed
-            self.__get_max_ids()
-            self.__get_max_id_by_json_object("hierarchy", "counter/get/hierarchy/", -1)
+            self._get_max_ids()
+            self._get_max_id_by_json_object("hierarchy", "counter/get/hierarchy/", -1)
         except Exception:
             log.exception("Fehler im Command-Modul")
 
-    def __get_max_ids(self) -> None:
+    def _get_max_ids(self) -> None:
         """ ermittelt die maximale ID vom Broker """
         try:
             received_topics = ProcessBrokerBranch("").get_max_id()
@@ -68,7 +71,7 @@ class Command:
         except Exception:
             log.exception("Fehler im Command-Modul")
 
-    def __get_max_id_by_json_object(self, id_topic: str, topic: str, default: int) -> None:
+    def _get_max_id_by_json_object(self, id_topic: str, topic: str, default: int) -> None:
         """ ermittelt die maximale ID vom Broker """
         try:
             hierarchy = ProcessBrokerBranch(topic).get_payload()
@@ -151,19 +154,8 @@ class Command:
     def addChargepoint(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem ein neuer Chargepoint erstellt werden soll.
         """
-        new_id = self.max_id_hierarchy + 1
-        log.info(f'Neuer Ladepunkt mit ID \'{new_id}\' wird hinzugefügt.')
-        chargepoint_default = chargepoint.get_chargepoint_config_default()
-        # chargepoint_default["id"] = new_id
-        module = importlib.import_module(".chargepoints." + payload["data"]["type"] + ".chargepoint_module", "modules")
-        chargepoint_default.update(dataclass_utils.asdict(
-            module.chargepoint_descriptor.configuration_factory()).items())
-        chargepoint_default["id"] = new_id
-        try:
-            evu_counter = data.data.counter_all_data.get_id_evu_counter()
-            data.data.counter_all_data.hierarchy_add_item_below(
-                new_id, ComponentType.CHARGEPOINT, evu_counter)
-            Pub().pub(f'openWB/chargepoint/{new_id}/config', chargepoint_default)
+        def setup_added_chargepoint():
+            Pub().pub(f'openWB/chargepoint/{new_id}/config', chargepoint_config)
             Pub().pub(f'openWB/chargepoint/{new_id}/set/manual_lock', False)
             Pub().pub(f'openWB/chargepoint/{new_id}/set/change_ev_permitted', False)
             {Pub().pub(f"openWB/chargepoint/{new_id}/get/"+k, v) for (k, v) in asdict(chargepoint.Get()).items()}
@@ -175,8 +167,73 @@ class Command:
                 self.addVehicle("addChargepoint", {})
             pub_user_message(payload, connection_id, f'Neuer Ladepunkt mit ID \'{new_id}\' wurde erstellt.',
                              MessageType.SUCCESS)
+        new_id = self.max_id_hierarchy + 1
+        log.info(f'Neuer Ladepunkt mit ID \'{new_id}\' wird hinzugefügt.')
+        chargepoint_config = chargepoint.get_chargepoint_config_default()
+        # chargepoint_default["id"] = new_id
+        module = importlib.import_module(".chargepoints." + payload["data"]["type"] + ".chargepoint_module", "modules")
+        chargepoint_config.update(dataclass_utils.asdict(
+            module.chargepoint_descriptor.configuration_factory()).items())
+        check_num_msg = self._check_max_num_of_internal_chargepoints(chargepoint_config)
+        if check_num_msg is not None:
+            pub_user_message(
+                payload, connection_id, f"{check_num_msg} Wenn Sie weitere Ladepunkte anbinden wollen, müssen Sie "
+                "diese als externe Ladepunkte anbinden. Die externen Ladepunkte in den Betriebsmodus 'NurLadepunkt'"
+                " versetzen.", MessageType.ERROR)
+            return
+        chargepoint_config["id"] = new_id
+        try:
+            evu_counter = data.data.counter_all_data.get_id_evu_counter()
+            data.data.counter_all_data.hierarchy_add_item_below(
+                new_id, ComponentType.CHARGEPOINT, evu_counter)
+            setup_added_chargepoint()
         except (TypeError, IndexError):
-            pub_user_message(payload, connection_id, "Bitte zuerst einen EVU-Zähler konfigurieren!", MessageType.ERROR)
+            if chargepoint_config["type"] == 'internal_openwb' and SubData.general_data.data.extern:
+                # es gibt noch keinen EVU-Zähler
+                hierarchy = ([{
+                              "id": new_id,
+                              "type": ComponentType.CHARGEPOINT.value,
+                              "children": []
+                              }] +
+                             data.data.counter_all_data.data.get.hierarchy)
+                Pub().pub("openWB/set/counter/get/hierarchy", hierarchy)
+                data.data.counter_all_data.data.get.hierarchy = hierarchy
+                setup_added_chargepoint()
+            else:
+                pub_user_message(payload, connection_id,
+                                 "Bitte zuerst einen EVU-Zähler konfigurieren oder in den NurLadepunkt-Modus "
+                                 "umschalten, wenn die openWB als externer Ladepunkt betrieben werden soll.",
+                                 MessageType.ERROR)
+
+    MAX_NUM_OF_DUOS_REACHED = ("Es können maximal zwei interne Ladepunkte für eine openWB Series 1/2 Duo konfiguriert "
+                               "werden.")
+    MAX_NUM_REACHED = ("Es kann maximal ein interner Ladepunkt für eine openWB Series 1/2 Buchse, Custom, "
+                       "Standard oder Standard+ konfiguriert werden. Wenn ein zweiter Ladepunkt für eine "
+                       "Duo hinzugefügt werden soll, muss auch für den ersten Ladepunkt Bauart 'Duo' "
+                       "gewählt werden.")
+
+    def _check_max_num_of_internal_chargepoints(self, config: Dict) -> Optional[str]:
+        if config["type"] == 'internal_openwb':
+            count_series_socket = 0
+            count_duo = 0
+            for cp in SubData.cp_data.values():
+                if isinstance(cp.chargepoint.chargepoint_module, ChargepointModule):
+                    if (cp.chargepoint.chargepoint_module.config.configuration.mode ==
+                            InternalChargepointMode.DUO.value):
+                        count_duo += 1
+                    else:
+                        count_series_socket += 1
+            if count_series_socket == 0 and count_duo == 0:
+                return None
+            elif count_duo == 1:
+                # Wenn es genau eine Duo gibt, darf noch ein LP hinzugefügt werden.
+                return None
+            elif count_duo >= 1:
+                return self.MAX_NUM_OF_DUOS_REACHED
+            else:
+                return self.MAX_NUM_REACHED
+        else:
+            return None
 
     def removeChargepoint(self, connection_id: str, payload: dict) -> None:
         """ löscht ein Chargepoint.
@@ -489,7 +546,7 @@ class Command:
     def sendDebug(self, connection_id: str, payload: dict) -> None:
         pub_user_message(payload, connection_id, "Systembericht wird erstellt...", MessageType.INFO)
         parent_file = Path(__file__).resolve().parents[2]
-        previous_log_level = data.data.system_data["system"].data["debug_level"]
+        previous_log_level = SubData.system_data["system"].data["debug_level"]
         subprocess.run([str(parent_file / "runs" / "send_debug.sh"),
                         json.dumps(payload["data"])])
         Pub().pub("openWB/set/system/debug_level", previous_log_level)

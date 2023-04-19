@@ -23,6 +23,8 @@ from control import process
 from control.algorithm import algorithm
 from helpermodules.utils import exit_after
 from modules import update_soc
+from modules.internal_chargepoint_handler.internal_chargepoint_handler import GeneralInternalChargepointHandler
+from modules.internal_chargepoint_handler.rfid import RfidReader
 
 logger.setup_logging()
 log = logging.getLogger()
@@ -66,6 +68,20 @@ class HandlerAlgorithm:
             log.exception("Fehler im Main-Modul")
 
     @exit_after(10)
+    def handler5MinAlgorithm(self):
+        """ Handler, der alle 5 Minuten aufgerufen wird und die Heartbeats der Threads überprüft und die Aufgaben
+        ausführt, die nur alle 5 Minuten ausgeführt werden müssen.
+        """
+        try:
+            measurement_log.measurement_log_daily()
+            data.data.general_data.grid_protection()
+            data.data.optional_data.et_get_prices()
+        except KeyboardInterrupt:
+            log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())
+        except Exception:
+            log.exception("Fehler im Main-Modul")
+
+    @exit_after(10)
     def handler5Min(self):
         """ Handler, der alle 5 Minuten aufgerufen wird und die Heartbeats der Threads überprüft und die Aufgaben
         ausführt, die nur alle 5 Minuten ausgeführt werden müssen.
@@ -86,11 +102,15 @@ class HandlerAlgorithm:
             else:
                 set.heartbeat = False
 
+            if sub.internal_chargepoint_data["global_data"].configured:
+                if not general_internal_chargepoint_handler.internal_chargepoint_handler.heartbeat:
+                    log.error("Heartbeat für Internen Ladepunkt nicht zurückgesetzt.")
+                    general_internal_chargepoint_handler.event_start.set()
+                else:
+                    general_internal_chargepoint_handler.internal_chargepoint_handler.heartbeat = False
+
             cleanup_logfiles()
-            measurement_log.measurement_log_daily()
-            data.data.general_data.grid_protection()
-            data.data.optional_data.et_get_prices()
-            data.data.system_data["system"].update_ip_address()
+            sub.system_data["system"].update_ip_address()
         except KeyboardInterrupt:
             log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())
         except Exception:
@@ -107,10 +127,11 @@ class HandlerAlgorithm:
 
 
 def schedule_jobs():
-    [schedule.every().minute.at(f":{i:02d}").do(handler.handler10Sec) for i in range(0, 60, 10)]
-    [schedule.every().minute.at(f":{i:02d}").do(soc.update) for i in range(0, 60, 10)]
+    [schedule.every().minute.at(f":{i:02d}").do(handler.handler10Sec).tag("algorithm") for i in range(0, 60, 10)]
+    [schedule.every().minute.at(f":{i:02d}").do(soc.update).tag("algorithm") for i in range(0, 60, 10)]
     [schedule.every().hour.at(f":{i:02d}").do(handler.handler5Min) for i in range(0, 60, 5)]
-    schedule.every().day.at("00:00:00").do(handler.handler_midnight)
+    [schedule.every().hour.at(f":{i:02d}").do(handler.handler5MinAlgorithm).tag("algorithm") for i in range(1, 60, 5)]
+    schedule.every().day.at("00:00:00").do(handler.handler_midnight).tag("algorithm")
 
 
 try:
@@ -123,6 +144,9 @@ try:
     control = algorithm.Algorithm()
     handler = HandlerAlgorithm()
     prep = prepare.Prepare()
+    general_internal_chargepoint_handler = GeneralInternalChargepointHandler()
+    rfid0 = RfidReader("event0")
+    rfid1 = RfidReader("event1")
     event_ev_template = threading.Event()
     event_ev_template.set()
     event_charge_template = threading.Event()
@@ -139,6 +163,8 @@ try:
     event_command_completed = threading.Event()
     event_command_completed.set()
     event_subdata_initialized = threading.Event()
+    event_jobs_running = threading.Event()
+    event_jobs_running.set()
     prep = prepare.Prepare()
     soc = update_soc.UpdateSoc()
     set = setdata.SetData(event_ev_template, event_charge_template,
@@ -148,15 +174,27 @@ try:
                           event_cp_config, loadvars_.event_module_update_completed,
                           event_copy_data, event_global_data_initialized, event_command_completed,
                           event_subdata_initialized, soc.event_vehicle_update_completed,
-                          event_scheduled_charging_plan, event_time_charging_plan)
+                          event_scheduled_charging_plan, event_time_charging_plan,
+                          general_internal_chargepoint_handler.event_start,
+                          general_internal_chargepoint_handler.event_stop,
+                          event_jobs_running)
     comm = command.Command(event_command_completed)
     t_sub = Thread(target=sub.sub_topics, args=())
     t_set = Thread(target=set.set_data, args=())
     t_comm = Thread(target=comm.sub_commands, args=())
+    t_internal_chargepoint = Thread(target=general_internal_chargepoint_handler.handler,
+                                    args=(), name="Internal Chargepoint")
+    if hasattr(rfid0, "input_device"):
+        t_rfid0 = Thread(target=rfid0.loop, args=(), name="Internal Chargepoint")
+        t_rfid0.start()
+    if hasattr(rfid1, "input_device"):
+        t_rfid1 = Thread(target=rfid1.loop, args=(), name="Internal Chargepoint")
+        t_rfid1.start()
 
     t_sub.start()
     t_set.start()
     t_comm.start()
+    t_internal_chargepoint.start()
     # Warten, damit subdata Zeit hat, alle Topics auf dem Broker zu empfangen.
     time.sleep(5)
     schedule_jobs()
@@ -165,6 +203,10 @@ except Exception:
 
 while True:
     try:
+        if event_jobs_running.is_set() and len(schedule.get_jobs("algorithm")) == 0:
+            schedule_jobs()
+        elif event_jobs_running.is_set() is False and len(schedule.get_jobs("algorithm")) > 0:
+            schedule.clear("algorithm")
         schedule.run_pending()
         time.sleep(1)
     except Exception:
