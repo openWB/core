@@ -15,7 +15,7 @@ from control import data
 from control.bat_all import SwitchOnBatState
 from control.chargemode import Chargemode as Chargemode_enum
 from control.chargepoint_state import ChargepointState, PHASE_SWITCH_STATES
-from dataclass_utils.factories import currents_list_factory, empty_dict_factory, emtpy_list_factory
+from dataclass_utils.factories import currents_list_factory, empty_dict_factory, empty_list_factory
 from helpermodules.abstract_plans import Limit, limit_factory, ScheduledChargingPlan, TimeChargingPlan
 from helpermodules.pub import Pub
 from helpermodules import timecheck
@@ -40,7 +40,7 @@ def get_charge_template_default() -> dict:
     ct_default["time_charging"].pop("plans")
     return ct_default
 
-# Avoid anti-pattern: mtuable default arguments
+# Avoid anti-pattern: mutable default arguments
 
 
 @dataclass
@@ -194,7 +194,7 @@ class EvData:
     charge_template: int = 0
     ev_template: int = 0
     name: str = "Standard-Fahrzeug"
-    tag_id: List[str] = field(default_factory=emtpy_list_factory)
+    tag_id: List[str] = field(default_factory=empty_list_factory)
     get: Get = field(default_factory=get_factory)
 
 
@@ -531,7 +531,7 @@ class Ev:
             self.data.control_parameter.timestamp_auto_phase_switch = None
             Pub().pub("openWB/set/vehicle/"+str(self.num) +
                       "/control_parameter/timestamp_auto_phase_switch", None)
-            # Wenn der Timer läuft, ist den Control-Paranetern die alte Phasenzahl hinterlegt.
+            # Wenn der Timer läuft, ist den Control-Parametern die alte Phasenzahl hinterlegt.
             if self.data.control_parameter.phases == 3:
                 reserved = self.ev_template.data.max_current_single_phase * \
                     230 - self.data.control_parameter.required_current * 3 * 230

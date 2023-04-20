@@ -30,7 +30,7 @@ from control import ev as ev_module
 from control.ev import Ev
 from control import phase_switch
 from control.chargepoint_state import ChargepointState
-from dataclass_utils.factories import (empty_dict_factory, emtpy_list_factory, currents_list_factory,
+from dataclass_utils.factories import (empty_dict_factory, empty_list_factory, currents_list_factory,
                                        voltages_list_factory)
 from helpermodules.abstract_plans import AutolockPlan
 from helpermodules.phase_mapping import convert_single_evu_phase_to_cp_phase
@@ -345,7 +345,7 @@ class Chargepoint:
             # set current aus dem vorherigen Zyklus, um zu wissen, ob am Ende des Zyklus die Ladung freigegeben wird
             # (für Control-Pilot-Unterbrechung)
             self.set_current_prev = 0.0
-            # bestehende Daten auf dem Broker nicht zurücksetzen, daher nicht publishen
+            # bestehende Daten auf dem Broker nicht zurücksetzen, daher nicht veröffentlichen
             self.data: ChargepointData = ChargepointData()
             self.data.set_event(event)
         except Exception:
@@ -1085,7 +1085,7 @@ class CpTemplateData:
     max_current_single_phase: int = 32
     name: str = "Standard Ladepunkt-Vorlage"
     rfid_enabling: bool = False
-    valid_tags: List = field(default_factory=emtpy_list_factory)
+    valid_tags: List = field(default_factory=empty_list_factory)
 
 
 class CpTemplate:

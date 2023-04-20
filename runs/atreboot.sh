@@ -51,6 +51,17 @@ chmod 666 "$LOGFILE"
 		fi
 	) &
 
+	# check group membership
+	echo "Group membership..."
+	for group in "input" "dialout"; do
+		if ! groups openwb | grep --quiet "$group"; then
+			sudo usermod -G "$group" -a openwb
+			echo "added openwb to group '$group'"
+		fi
+	done
+	echo -n "Final group membership: "
+	groups openwb
+
 	# check for LAN/WLAN connection
 	echo "LAN/WLAN..."
 	connectCounter=0
