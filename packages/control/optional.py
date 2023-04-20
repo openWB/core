@@ -5,7 +5,7 @@ import logging
 from math import ceil  # Aufrunden
 from typing import Dict, List
 
-from dataclass_utils.factories import empty_dict_factory, emtpy_list_factory
+from dataclass_utils.factories import empty_dict_factory, empty_list_factory
 
 log = logging.getLogger(__name__)
 
@@ -13,7 +13,7 @@ log = logging.getLogger(__name__)
 @dataclass
 class EtGet:
     price: float = 0
-    price_list: List = field(default_factory=emtpy_list_factory)
+    price_list: List = field(default_factory=empty_list_factory)
 
 
 def get_factory() -> EtGet:
