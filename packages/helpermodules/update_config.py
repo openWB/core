@@ -8,6 +8,7 @@ import subprocess
 import time
 from typing import List
 from paho.mqtt.client import Client as MqttClient, MQTTMessage
+import dataclass_utils
 
 from helpermodules.broker import InternalBrokerClient
 from helpermodules.pub import Pub
@@ -15,6 +16,7 @@ from helpermodules.utils.topic_parser import decode_payload, get_index, get_seco
 from helpermodules import measurement_log
 from control import chargepoint, counter_all
 from control import ev
+from modules.display_themes.cards.config import CardsDisplayTheme
 
 log = logging.getLogger(__name__)
 
@@ -244,6 +246,7 @@ class UpdateConfig:
                    "^openWB/system/configurable/soc_modules$",
                    "^openWB/system/configurable/devices_components$",
                    "^openWB/system/configurable/chargepoints$",
+                   "^openWB/system/configurable/display_themes$",
                    "^openWB/system/mqtt/bridge/[0-9]+$",
                    "^openWB/system/current_branch",
                    "^openWB/system/current_commit",
@@ -309,14 +312,29 @@ class UpdateConfig:
         ("openWB/optional/int_display/pin_active", False),
         ("openWB/optional/int_display/pin_code", "0000"),
         ("openWB/optional/int_display/standby", 60),
-        ("openWB/optional/int_display/theme", "cards"),
+        ("openWB/optional/int_display/theme", dataclass_utils.asdict(CardsDisplayTheme())),
         ("openWB/optional/led/active", False),
         ("openWB/optional/rfid/active", False),
         ("openWB/system/dataprotection_acknowledged", False),
         ("openWB/system/debug_level", 30),
         ("openWB/system/device/module_update_completed", True),
         ("openWB/system/ip_address", "unknown"),
-        ("openWB/system/release_train", "master"))
+        ("openWB/system/release_train", "master"),
+    )
+    invalid_topic = (
+        # Tuple: (Regex, callable)
+        # "callable" must resolve to True if topic has to be deleted
+        # "callable" parameters:
+        # topic: current topic to validate
+        # payload: current payload to validate if needed
+        # received_topics: dict of all received topics if needed
+        (
+            "/chargepoint/[0-9]+/",
+            lambda topic, payload, received_topics:
+            f"openWB/chargepoint/{get_index(topic)}/config" not in received_topics.keys()
+        ),
+        ("/int_display/theme$", lambda topic, payload, received_topics: isinstance(decode_payload(payload), str))
+    )
 
     def __init__(self) -> None:
         self.all_received_topics = {}
@@ -353,19 +371,25 @@ class UpdateConfig:
                 log.debug("Ungültiges Topic zum Startzeitpunkt: "+str(topic))
 
     def _remove_invalid_topics(self):
-        # remove all charge points without config. This data comes from deleted charge points that are still sent to an
-        # invalid CP number.
-        for topic in self.all_received_topics.keys():
-            if re.search("/chargepoint/[0-9]+/", topic) is not None:
-                if f"openWB/chargepoint/{get_index(topic)}/config" not in self.all_received_topics.keys():
-                    Pub().pub(topic, "")
+        # deleting list items while in iteration throws runtime error, so we collect all topics to delete
+        topics_to_delete = []
+        for topic, payload in self.all_received_topics.items():
+            for invalid_topic_regex, invalid_topic_check in self.invalid_topic:
+                if (re.search(invalid_topic_regex, topic) is not None and
+                        invalid_topic_check(topic, payload, self.all_received_topics)):
+                    log.debug(f"Ungültiges Topic '{topic}': {str(payload)}")
+                    topics_to_delete.append(topic)
+        # delete topics to allow setting new defaults afterwards
+        for topic in topics_to_delete:
+            Pub().pub(topic, "")
+            del self.all_received_topics[topic]
 
     def __pub_missing_defaults(self):
         # zwingend erforderliche Standardwerte setzen
-        for topic in self.default_topic:
-            if topic[0] not in self.all_received_topics.keys():
-                log.debug("Setzte Topic '%s' auf Standardwert '%s'" % (topic[0], str(topic[1])))
-                Pub().pub(topic[0].replace("openWB/", "openWB/set/"), topic[1])
+        for topic, default_payload in self.default_topic:
+            if topic not in self.all_received_topics.keys():
+                log.debug(f"Setzte Topic '{topic}' auf Standardwert '{str(default_payload)}'")
+                Pub().pub(topic.replace("openWB/", "openWB/set/"), default_payload)
 
     def __update_version(self):
         with open("/var/www/html/openWB/web/version", "r") as f:

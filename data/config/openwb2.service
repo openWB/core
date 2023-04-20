@@ -1,4 +1,4 @@
-# openwb-version:1
+# openwb-version:2
 [Unit]
 Description="Regelung openWB 2.0"
 
@@ -8,6 +8,8 @@ WorkingDirectory=/var/www/html/openWB
 ExecStartPre=-/var/www/html/openWB/runs/atreboot.sh
 ExecStart=/var/www/html/openWB/packages/main.py
 Restart=always
+# extend timeout to 15min for long running atreboot
+TimeoutStartSec=900
 
 [Install]
 WantedBy=multi-user.target

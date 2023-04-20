@@ -312,6 +312,7 @@ class Data:
         self._print_dictionaries(self._ev_data)
         self._print_dictionaries(self._ev_template_data)
         log.info(f"general_data\n{self._general_data.data}")
+        log.info(f"general_data-display\n{self._general_data.data.extern_display_mode}")
         log.info(f"graph_data\n{self._graph_data.data}")
         log.info(f"optional_data\n{self._optional_data.data}")
         self._print_dictionaries(self._pv_data)

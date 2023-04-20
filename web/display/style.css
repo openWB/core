@@ -1,0 +1,53 @@
+/* prevent scroll gestures */
+body,
+html {
+	overscroll-behavior: none;
+}
+
+body,
+html,
+iframe {
+	border: 0;
+	margin: 0;
+	padding: 0;
+	background-color: black;
+	color: white;
+	font-family: Open Sans;
+}
+
+.wrapper {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	width: 100vw;
+	height: 100vh;
+}
+
+iframe {
+	width: 100%;
+	height: 100%;
+}
+
+.hide {
+	display: none;
+}
+
+#notReady {
+	width: 80vw;
+	height: 80vh;
+	overflow-y: auto;
+}
+
+#log {
+	overflow-x: auto;
+	font-family: 'Courier New', Courier, monospace;
+	white-space: nowrap;
+	padding-bottom: 0;
+	margin-bottom: 0;
+}
+
+.center {
+	display: block;
+	margin-left: auto;
+	margin-right: auto;
+}

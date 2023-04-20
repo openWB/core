@@ -10,9 +10,34 @@ log = logging.getLogger(__name__)
 def pub_configurable():
     """ published eine Liste mit allen konfigurierbaren SoC-Modulen sowie allen Devices mit den möglichen Komponenten.
     """
+    _pub_configurable_display_themes()
     _pub_configurable_soc_modules()
     _pub_configurable_devices_components()
     _pub_configurable_chargepoints()
+
+
+def _pub_configurable_display_themes() -> None:
+    try:
+        themes_modules = []
+        path_list = Path(_get_packages_path()/"modules"/"display_themes").glob('**/config.py')
+        for path in path_list:
+            try:
+                if path.name.endswith("_test.py"):
+                    # Tests überspringen
+                    continue
+                dev_defaults = importlib.import_module(
+                    f".display_themes.{path.parts[-2]}.config", "modules").theme_descriptor.configuration_factory()
+                themes_modules.append({
+                    "value": dev_defaults.type,
+                    "text": dev_defaults.name,
+                    "defaults": dataclass_utils.asdict(dev_defaults)
+                })
+            except Exception:
+                log.exception("Fehler im configuration-Modul")
+        themes_modules = sorted(themes_modules, key=lambda d: d['text'].upper())
+        Pub().pub("openWB/set/system/configurable/display_themes", themes_modules)
+    except Exception:
+        log.exception("Fehler im configuration-Modul")
 
 
 def _pub_configurable_soc_modules() -> None:
