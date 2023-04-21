@@ -51,6 +51,17 @@ chmod 666 "$LOGFILE"
 		fi
 	) &
 
+	# check group membership
+	echo "Group membership..."
+	for group in "input" "dialout"; do
+		if ! groups openwb | grep --quiet "$group"; then
+			sudo usermod -G "$group" -a openwb
+			echo "added openwb to group '$group'"
+		fi
+	done
+	echo -n "Final group membership: "
+	groups openwb
+
 	# check for LAN/WLAN connection
 	echo "LAN/WLAN..."
 	connectCounter=0
@@ -102,6 +113,24 @@ chmod 666 "$LOGFILE"
 		sudo reboot now &
 	fi
 
+	if [ ! -f "/etc/systemd/system/openwbRemoteSupport.service" ]; then
+		echo "openwbRemoteSupport service missing, installing service"
+		sudo cp "${OPENWBBASEDIR}/data/config/openwbRemoteSupport.service" "/etc/systemd/system/openwbRemoteSupport.service"
+		sudo systemctl daemon-reload
+		sudo systemctl enable openwbRemoteSupport
+		sudo systemctl start openwbRemoteSupport
+	else
+		if versionMatch "${OPENWBBASEDIR}/data/config/openwbRemoteSupport.service" "/etc/systemd/system/openwbRemoteSupport.service"; then
+			echo "openwbRemoteSupport.service already up to date"
+		else
+			echo "updating openwbRemoteSupport.service"
+			sudo cp "${OPENWBBASEDIR}/data/config/openwbRemoteSupport.service" "/etc/systemd/system/openwbRemoteSupport.service"
+			sudo systemctl daemon-reload
+			sudo systemctl enable openwbRemoteSupport
+			sudo systemctl restart openwbRemoteSupport
+		fi
+	fi
+
 	# check for pending restore
 	if [[ -f "${OPENWBBASEDIR}/data/restore/run_on_boot" ]]; then
 		echo "pending restore detected, executing restore"
@@ -117,20 +146,30 @@ chmod 666 "$LOGFILE"
 	echo "cleaning obsolete python cache folders..."
 	"$OPENWBBASEDIR/runs/cleanPythonCache.sh"
 
-	# check if display is configured and setup timeout
-	# if (( displayaktiv == 1 )); then
-	# 	echo "display..."
-	# 	if ! grep -Fq "pinch" /home/pi/.config/lxsession/LXDE-pi/autostart
-	# 	then
-	# 		echo "not found"
-	# 		echo "@xscreensaver -no-splash" > /home/pi/.config/lxsession/LXDE-pi/autostart
-	# 		echo "@point-rpi" >> /home/pi/.config/lxsession/LXDE-pi/autostart
-	# 		echo "@xset s 600" >> /home/pi/.config/lxsession/LXDE-pi/autostart
-	# 		echo "@chromium-browser --incognito --disable-pinch --kiosk http://localhost/openWB/web/display/" >> /home/pi/.config/lxsession/LXDE-pi/autostart
-	# 	fi
-	# 	echo "deleting browser cache"
-	# 	rm -rf /home/pi/.cache/chromium
-	# fi
+	# display setup
+	echo "display setup..."
+	if [ ! -d "/home/openwb/.config/lxsession/LXDE" ]; then
+		mkdir --parents "/home/openwb/.config/lxsession/LXDE"
+	fi
+	if versionMatch "${OPENWBBASEDIR}/data/config/display/lightdm-autologin-greeter.conf" "/etc/lightdm/lightdm.conf.d/lightdm-autologin-greeter.conf"; then
+		echo "autologin configured"
+	else
+		echo "updating autologin"
+		sudo cp "${OPENWBBASEDIR}/data/config/display/lightdm-autologin-greeter.conf" "/etc/lightdm/lightdm.conf.d/lightdm-autologin-greeter.conf"
+	fi
+	if versionMatch "${OPENWBBASEDIR}/data/config/display/lightdm-hide-mouse-cursor.conf" "/etc/lightdm/lightdm.conf.d/lightdm-hide-mouse-cursor.conf"; then
+		echo "mouse cursor configured"
+	else
+		echo "updating mouse cursor configuration"
+		sudo cp "${OPENWBBASEDIR}/data/config/display/lightdm-hide-mouse-cursor.conf" "/etc/lightdm/lightdm.conf.d/lightdm-hide-mouse-cursor.conf"
+	fi
+	if versionMatch "${OPENWBBASEDIR}/data/config/display/lxdeautostart" "/home/openwb/.config/lxsession/LXDE/autostart"; then
+		echo "lxde session autostart already configured"
+	else
+		echo "updating lxde session autostart"
+		cp "${OPENWBBASEDIR}/data/config/display/lxdeautostart" "/home/openwb/.config/lxsession/LXDE/autostart"
+	fi
+	"${OPENWBBASEDIR}/runs/update_local_display.sh"
 
 	# check for apache configuration
 	echo "apache default site..."

@@ -1,5 +1,4 @@
 import logging
-from operator import add
 
 from control import data
 from helpermodules import compatibility
@@ -56,6 +55,8 @@ class PurgeInverterState:
 
     def fix_hybrid_values(self, state: InverterState) -> InverterState:
         children = data.data.counter_all_data.get_entry_of_element(self.delegate.delegate.num)["children"]
+        power = state.power
+        exported = state.exported
         if len(children):
             hybrid = []
             for c in children:
@@ -65,17 +66,13 @@ class PurgeInverterState:
             if len(hybrid):
                 for bat in hybrid:
                     bat_get = data.data.bat_data[bat].data.get
-                    state.power -= bat_get.power
-                    state.exported += bat_get.imported - bat_get.exported
-                    if state.currents:
-                        state.currents = list(map(add, state.currents, bat_get.currents))
-                    else:
-                        state.currents = [0.0]*3
+                    power -= bat_get.power
+                    exported += bat_get.imported - bat_get.exported
             if state.dc_power is not None:
                 # Manche Systeme werden auch aus dem Netz geladen, um einen Mindest-SoC zu halten.
                 if state.dc_power == 0:
-                    state.power = 0
-        return state
+                    power = 0
+        return InverterState(power=power, exported=exported)
 
 
 def get_inverter_value_store(component_num: int) -> PurgeInverterState:

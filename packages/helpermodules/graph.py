@@ -54,8 +54,7 @@ class Graph:
                     dataline.update({f"cp{cp.num}-power": _convert_to_kW(cp.data.get.power)})
             for ev in data.data.ev_data.values():
                 if ev.soc_module:
-                    if ev.data.get.fault_state < FaultStateLevel.ERROR:
-                        dataline.update({f"ev{ev.num}-soc": ev.data.get.soc})
+                    dataline.update({f"ev{ev.num}-soc": ev.data.get.soc})
             if data.data.bat_all_data.data.config.configured:
                 dataline.update({"bat-all-power": _convert_to_kW(data.data.bat_all_data.data.get.power)})
                 dataline.update({"bat-all-soc": data.data.bat_all_data.data.get.soc})

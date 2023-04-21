@@ -1,4 +1,4 @@
-from typing import Type, TypeVar, Generic
+from typing import Generic, Optional, Type, TypeVar
 
 import pytest
 
@@ -27,6 +27,12 @@ class Base(Generic[T]):
 class Extends(Base[str]):
     def __init__(self, a: str):
         super().__init__(a)
+
+
+class Optionals:
+    def __init__(self, a: str, o: Optional[dict] = None):
+        self.a = a
+        self.o = o
 
 
 def test_from_dict_simple():
@@ -86,3 +92,21 @@ def test_from_dict_fails_on_invalid_properties(type: Type[T], invalid_parameter:
         dataclass_from_dict(type, {"invalid": "dict"})
     assert str(e.value) == "Cannot determine value for parameter " + invalid_parameter + \
            ": not given in {'invalid': 'dict'} and no default value specified"
+
+
+def test_from_dict_wit_optional():
+    # execution
+    actual = dataclass_from_dict(Optionals, {"a": "aValue", "o": {"b": "bValue"}})
+
+    # evaluation
+    assert actual.a == "aValue"
+    assert actual.o == {"b": "bValue"}
+
+
+def test_from_dict_without_optional():
+    # execution
+    actual = dataclass_from_dict(Optionals, {"a": "aValue"})
+
+    # evaluation
+    assert actual.a == "aValue"
+    assert actual.o is None

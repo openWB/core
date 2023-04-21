@@ -13,7 +13,7 @@ from modules.common.fault_state import ComponentInfo
 from modules.vehicles.http.config import HttpSocSetup, HttpSocConfiguration
 
 
-log = logging.getLogger("soc."+__name__)
+log = logging.getLogger(__name__)
 
 
 class Soc(AbstractSoc):

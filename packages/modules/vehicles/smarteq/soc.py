@@ -14,7 +14,7 @@ from modules.vehicles.smarteq import api
 from modules.vehicles.smarteq.config import SmartEQ, SmartEQConfiguration
 
 
-log = logging.getLogger("soc."+__name__)
+log = logging.getLogger(__name__)
 
 
 class Soc(AbstractSoc):

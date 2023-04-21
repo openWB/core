@@ -18,7 +18,7 @@ SAMPLE_COUNTER_STATE = CounterState(
 SAMPLE_INVERTER_STATE = InverterState(
     exported=2,
     power=3,
-    currents=[-7, -8, -9],
+    currents=[7, 8, 9],
 )
 SAMPLE_USER = "some username"
 SAMPLE_PASSWORD = "some password"

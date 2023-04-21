@@ -1486,9 +1486,8 @@
 							publish("0", "openWB/config/set/SmartHome/Device" + dev + "/device_manual_control");
 							$(this).removeClass('lpEnabledStyle').removeClass('lpDisabledStyle').addClass('lpWaitingStyle');
 						} else {
-							publish("1", "openWB/config/set/SmartHome/Device" + dev + "/device_manual_control");
+							publish("1", "openWB/config/set/SmartHome/Devices/" + dev + "/device_manual_control");
 							$(this).removeClass('lpEnabledStyle').removeClass('lpDisabledStyle').addClass('lpWaitingStyle');
-
 						}
 					}
 				}

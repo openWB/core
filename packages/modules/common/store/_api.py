@@ -5,7 +5,7 @@ from typing import Generic, TypeVar
 from modules.common.component_context import SingleComponentUpdateContext
 
 T = TypeVar("T")
-log = logging.getLogger("soc."+__name__)
+log = logging.getLogger(__name__)
 
 
 class ValueStore(Generic[T]):
@@ -27,7 +27,7 @@ class LoggingValueStore(Generic[T], ValueStore[T]):
         self.delegate.set(state)
 
     def update(self) -> None:
-        log.debug("Saving %s", self.delegate.state)
+        log.info("Saving %s", self.delegate.state)
         self.delegate.update()
 
 

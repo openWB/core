@@ -1,5 +1,6 @@
 from typing import Dict, List, Optional, Union
 import pytest
+from control.conftest import hierarchy_hybrid
 
 
 from control.counter_all import CounterAll, get_max_id_in_hierarchy
@@ -79,7 +80,20 @@ cases_add_item_below = [
         [{'id': 0, 'type': "counter", 'children': [
             {'id': 2, 'type': "cp", 'children': [
                 {'id': 1, 'type': "inverter", 'children': []}]}]},
-         {"id": 7, "type": "inverter", "children": []}])
+         {"id": 7, "type": "inverter", "children": []}]),
+    ParamsAdd(
+        "add_below_hybrid", hierarchy_hybrid(),
+        7, ComponentType.CHARGEPOINT, 0,
+        [{"id": 0, "type": "counter",
+          "children": [
+              {"id": 3, "type": "cp", "children": []},
+              {"id": 4, "type": "cp", "children": []},
+              {"id": 5, "type": "cp", "children": []},
+              {"id": 1, "type": "inverter",
+               "children": [
+                   {"id": 2, "type": "bat", "children": []}]},
+              {"id": 7, "type": "cp", "children": []}]},
+         {"id": 6, "type": "counter", "children": []}])
 ]
 
 

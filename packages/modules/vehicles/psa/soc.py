@@ -14,7 +14,7 @@ from modules.vehicles.psa import api
 from modules.vehicles.psa.config import PSA, PSAConfiguration
 
 
-log = logging.getLogger("soc."+__name__)
+log = logging.getLogger(__name__)
 
 
 class Soc(AbstractSoc):

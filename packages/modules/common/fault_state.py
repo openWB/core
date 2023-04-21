@@ -8,7 +8,7 @@ from helpermodules import compatibility, exceptions, pub
 from modules.common import component_type
 from modules.common.component_setup import ComponentSetup
 
-log = logging.getLogger("soc."+__name__)
+log = logging.getLogger(__name__)
 
 
 class FaultStateLevel(IntEnum):

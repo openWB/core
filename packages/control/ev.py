@@ -12,8 +12,10 @@ import traceback
 from typing import List, Dict, Optional, Tuple
 
 from control import data
+from control.bat_all import SwitchOnBatState
 from control.chargemode import Chargemode as Chargemode_enum
-from dataclass_utils.factories import currents_list_factory, empty_dict_factory, emtpy_list_factory
+from control.chargepoint_state import ChargepointState, PHASE_SWITCH_STATES
+from dataclass_utils.factories import currents_list_factory, empty_dict_factory, empty_list_factory
 from helpermodules.abstract_plans import Limit, limit_factory, ScheduledChargingPlan, TimeChargingPlan
 from helpermodules.pub import Pub
 from helpermodules import timecheck
@@ -38,7 +40,7 @@ def get_charge_template_default() -> dict:
     ct_default["time_charging"].pop("plans")
     return ct_default
 
-# Avoid anti-pattern: mtuable default arguments
+# Avoid anti-pattern: mutable default arguments
 
 
 @dataclass
@@ -119,7 +121,8 @@ class EvTemplateData:
     min_current: int = 6
     max_current_single_phase: int = 32
     battery_capacity: float = 82
-    nominal_difference: int = 2
+    nominal_difference: float = 0.5
+    keep_charge_active_duration: int = 40
 
 
 def ev_template_data_factory() -> EvTemplateData:
@@ -140,6 +143,7 @@ class ControlParameter:
     used_amount_instant_charging: float = 0
     imported_at_plan_start: float = 0
     current_plan: Optional[str] = None
+    state: ChargepointState = ChargepointState.NO_CHARGING_ALLOWED
 
 
 @dataclass
@@ -150,22 +154,6 @@ class EvTemplate:
     data: EvTemplateData = field(default_factory=ev_template_data_factory)
     et_num: int = 0
 
-    def soc_interval_expired(self, charge_state: bool, soc_timestamp: str) -> bool:
-        request_soc = False
-        if soc_timestamp == "":
-            # Initiale Abfrage
-            request_soc = True
-        else:
-            if charge_state is True:
-                interval = 5
-            else:
-                interval = 720
-            # Zeitstempel prüfen, ob wieder abgefragt werden muss.
-            if timecheck.check_timestamp(soc_timestamp, interval*60-5) is False:
-                # Zeit ist abgelaufen
-                request_soc = True
-        return request_soc
-
 
 def ev_template_factory() -> EvTemplate:
     return EvTemplate()
@@ -174,6 +162,7 @@ def ev_template_factory() -> EvTemplate:
 @dataclass
 class Set:
     ev_template: EvTemplate = field(default_factory=ev_template_factory)
+    soc_error_counter: int = 0
 
 
 def set_factory() -> Set:
@@ -205,7 +194,7 @@ class EvData:
     charge_template: int = 0
     ev_template: int = 0
     name: str = "Standard-Fahrzeug"
-    tag_id: List[str] = field(default_factory=emtpy_list_factory)
+    tag_id: List[str] = field(default_factory=empty_list_factory)
     get: Get = field(default_factory=get_factory)
 
 
@@ -245,6 +234,8 @@ class Ev:
                       "/control_parameter/imported_at_plan_start", 0)
             Pub().pub("openWB/set/vehicle/"+str(self.num) +
                       "/control_parameter/current_plan", None)
+            Pub().pub("openWB/set/vehicle/"+str(self.num) +
+                      "/control_parameter/state", ChargepointState.NO_CHARGING_ALLOWED)
             self.data.control_parameter.required_current = 0
             self.data.control_parameter.timestamp_auto_phase_switch = None
             self.data.control_parameter.timestamp_perform_phase_switch = None
@@ -253,8 +244,25 @@ class Ev:
             self.data.control_parameter.used_amount_instant_charging = 0
             self.data.control_parameter.imported_at_plan_start = 0
             self.data.control_parameter.current_plan = None
+            self.data.control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
         except Exception:
             log.exception("Fehler im ev-Modul "+str(self.num))
+
+    def soc_interval_expired(self, charge_state: bool) -> bool:
+        request_soc = False
+        if self.data.get.soc_timestamp == "":
+            # Initiale Abfrage
+            request_soc = True
+        else:
+            if charge_state is True or (self.data.set.soc_error_counter < 3 and self.data.get.fault_state == 2):
+                interval = 5
+            else:
+                interval = 720
+            # Zeitstempel prüfen, ob wieder abgefragt werden muss.
+            if timecheck.check_timestamp(self.data.get.soc_timestamp, interval*60-5) is False:
+                # Zeit ist abgelaufen
+                request_soc = True
+        return request_soc
 
     def get_required_current(self,
                              charged_since_mode_switch: float,
@@ -394,53 +402,36 @@ class Ev:
         except Exception:
             log.exception("Fehler im ev-Modul "+str(self.num))
 
-    def check_min_max_current(self, required_current, phases, pv=False):
+    def check_min_max_current(
+            self, required_current: float, phases: int, pv: bool = False) -> Tuple[float, Optional[str]]:
         """ prüft, ob der gesetzte Ladestrom über dem Mindest-Ladestrom und unter dem Maximal-Ladestrom des EVs liegt.
         Falls nicht, wird der Ladestrom auf den Mindest-Ladestrom bzw. den Maximal-Ladestrom des EV gesetzt.
         Wenn PV-Laden aktiv ist, darf die Stromstärke nicht unter den PV-Mindeststrom gesetzt werden.
-
-        Parameter
-        ---------
-        required_current: float
-            Strom, der vom Lademodus benötigt wird
-
-        phases: int
-            Anzahl Phasen, mit denen geladen werden soll
-
-        pv: bool
-            Lademodus PV-Laden
-
-        Return
-        ------
-        float: Strom, mit dem das EV laden darf
         """
-        try:
-            required_current_prev = required_current
-            # Überprüfung bei 0 (automatische Umschaltung) erfolgt nach der Prüfung der Phasenumschaltung, wenn fest
-            # steht, mit vielen Phasen geladen werden soll.
-            if phases != 0:
-                # EV soll/darf nicht laden
-                if required_current != 0:
-                    if not pv:
-                        min_current = self.ev_template.data.min_current
+        msg = None
+        # Überprüfung bei 0 (automatische Umschaltung) erfolgt nach der Prüfung der Phasenumschaltung, wenn fest
+        # steht, mit vielen Phasen geladen werden soll.
+        if phases != 0:
+            # EV soll/darf nicht laden
+            if required_current != 0:
+                if not pv:
+                    min_current = self.ev_template.data.min_current
+                else:
+                    min_current = self.data.control_parameter.required_current
+                if required_current < min_current:
+                    required_current = min_current
+                    msg = ("Die Einstellungen in der Fahrzeug-Vorlage beschränken den Strom auf "
+                           f"mindestens {required_current} A.")
+                else:
+                    if phases == 1:
+                        max_current = self.ev_template.data.max_current_single_phase
                     else:
-                        min_current = self.data.control_parameter.required_current
-                    if required_current < min_current:
-                        required_current = min_current
-                    else:
-                        if phases == 1:
-                            max_current = self.ev_template.data.max_current_single_phase
-                        else:
-                            max_current = self.ev_template.data.max_current_multi_phases
-                        if required_current > max_current:
-                            required_current = max_current
-            if required_current != required_current_prev:
-                log.debug("Anpassen der Sollstromstärke an EV-Vorgaben. Sollstromstärke: " +
-                          str(required_current_prev)+" neue Sollstromstärke: "+str(required_current))
-            return required_current
-        except Exception:
-            log.exception("Fehler im ev-Modul "+str(self.num))
-            return 0
+                        max_current = self.ev_template.data.max_current_multi_phases
+                    if required_current > max_current:
+                        required_current = max_current
+                        msg = ("Die Einstellungen in der Fahrzeug-Vorlage beschränken den Strom auf "
+                               f"maximal {required_current} A.")
+        return required_current, msg
 
     def auto_phase_switch(self,
                           cp_num: int,
@@ -450,7 +441,7 @@ class Ev:
         message = None
         current = self.data.control_parameter.required_current
         # Manche EV laden mit 6.1A bei 6A Sollstrom
-        min_current = self.ev_template.data.min_current + 1
+        min_current = self.ev_template.data.min_current + self.ev_template.data.nominal_difference
         max_current = (min(self.ev_template.data.max_current_single_phase, max_current_cp)
                        - self.ev_template.data.nominal_difference)
         timestamp_auto_phase_switch = self.data.control_parameter.timestamp_auto_phase_switch
@@ -485,9 +476,8 @@ class Ev:
             f'Genutzter Strom: {max(get_currents)}A, Überschuss: {all_surplus}W, benötigte neue Leistung: '
             f'{required_power}W')
         # Wenn gerade umgeschaltet wird, darf kein Timer gestartet werden.
-        if (not self.ev_template.data.prevent_phase_switch and
-                self.data.control_parameter.timestamp_perform_phase_switch is None):
-            if timestamp_auto_phase_switch is None:
+        if not self.ev_template.data.prevent_phase_switch:
+            if self.data.control_parameter.state not in PHASE_SWITCH_STATES:
                 condition_1_to_3 = (max(get_currents) > max_current and
                                     all_surplus > self.ev_template.data.min_current * max_phases_ev * 230
                                     - get_power and
@@ -501,6 +491,7 @@ class Ev:
                     data.data.counter_all_data.get_evu_counter(
                     ).data.set.reserved_surplus += max(0, required_power)
                     message = f'{direction_str} Phasen für {delay/60} Min aktiv.'
+                    self.data.control_parameter.state = ChargepointState.PHASE_SWITCH_DELAY
             else:
                 condition_1_to_3 = max(get_currents) > max_current and all_surplus > 0 and phases_in_use == 1
                 condition_3_to_1 = max(get_currents) < min_current and phases_in_use > 1
@@ -515,11 +506,13 @@ class Ev:
                         phases_to_use = new_phase
                         current = new_current
                         log.debug("Phasenumschaltung kann nun durchgeführt werden.")
+                        self.data.control_parameter.state = ChargepointState.PHASE_SWITCH_DELAY_EXPIRED
                 else:
                     timestamp_auto_phase_switch = None
                     data.data.counter_all_data.get_evu_counter(
                     ).data.set.reserved_surplus -= max(0, required_power)
                     message = f"{direction_str} Phasen abgebrochen."
+                    self.data.control_parameter.state = ChargepointState.CHARGING_ALLOWED
 
         if message:
             log.info(f"LP {cp_num}: {message}")
@@ -538,7 +531,7 @@ class Ev:
             self.data.control_parameter.timestamp_auto_phase_switch = None
             Pub().pub("openWB/set/vehicle/"+str(self.num) +
                       "/control_parameter/timestamp_auto_phase_switch", None)
-            # Wenn der Timer läuft, ist den Control-Paranetern die alte Phasenzahl hinterlegt.
+            # Wenn der Timer läuft, ist den Control-Parametern die alte Phasenzahl hinterlegt.
             if self.data.control_parameter.phases == 3:
                 reserved = self.ev_template.data.max_current_single_phase * \
                     230 - self.data.control_parameter.required_current * 3 * 230
@@ -672,7 +665,13 @@ class ChargeTemplate:
                     return min_current, "pv_charging", message
                 else:
                     # Min PV
-                    return pv_charging.min_current, "instant_charging", message
+                    if data.data.bat_all_data.data.config.configured is True:
+                        if data.data.bat_all_data.data.set.switch_on_soc_state == SwitchOnBatState.CHARGE_FROM_BAT:
+                            return pv_charging.min_current, "instant_charging", message
+                        else:
+                            return 0, "stop", data.data.bat_all_data.data.set.switch_on_soc_state.value
+                    else:
+                        return pv_charging.min_current, "instant_charging", message
             else:
                 return 0, "stop", self.PV_CHARGING_SOC_REACHED
         except Exception:

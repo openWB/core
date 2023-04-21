@@ -10,6 +10,7 @@ from control import data
 from control.algorithm.algorithm import Algorithm
 from control.algorithm.algorithm import data as algorithm_data
 from control.chargepoint import CpTemplate
+from control.chargepoint_state import ChargepointState
 from dataclass_utils.factories import currents_list_factory
 
 
@@ -43,6 +44,7 @@ def all_cp_charging_3p():
             charging_ev_data.data.control_parameter.required_currents) * 230
         data.data.cp_data[f"cp{i}"].data.config.auto_phase_switch_hw = True
         data.data.cp_data[f"cp{i}"].template = CpTemplate()
+        charging_ev_data.data.control_parameter.state = ChargepointState.CHARGING_ALLOWED
 
 
 @pytest.fixture()
@@ -56,6 +58,7 @@ def all_cp_pv_charging_1p():
         charging_ev_data.data.control_parameter.chargemode = Chargemode.PV_CHARGING
         charging_ev_data.data.control_parameter.submode = Chargemode.PV_CHARGING
         charging_ev_data.data.control_parameter.phases = 1
+        charging_ev_data.data.control_parameter.state = ChargepointState.CHARGING_ALLOWED
         data.data.cp_data[f"cp{i}"].data.get.charge_state = True
         data.data.cp_data[f"cp{i}"].data.set.current = charging_ev_data.ev_template.data.min_current
         data.data.cp_data[f"cp{i}"].data.set.required_power = sum(
@@ -129,7 +132,7 @@ def test_start_pv_delay(all_cp_pv_charging_3p, all_cp_not_charging, monkeypatch)
     assert data.data.cp_data[
         "cp5"].data.set.charging_ev_data.data.control_parameter.timestamp_switch_on_off is None
     assert data.data.counter_data["counter0"].data.set.raw_power_left == 31200
-    assert data.data.counter_data["counter0"].data.set.surplus_power_left == 9085
+    assert data.data.counter_data["counter0"].data.set.surplus_power_left == 9315
     assert data.data.counter_data["counter0"].data.set.reserved_surplus == 9000
 
 
@@ -143,7 +146,11 @@ def test_pv_delay_expired(all_cp_pv_charging_3p, all_cp_not_charging, monkeypatc
     data.data.cp_data[
         "cp3"].data.set.charging_ev_data.data.control_parameter.timestamp_switch_on_off = "05/16/2022, 08:39:45"
     data.data.cp_data[
+        "cp3"].data.set.charging_ev_data.data.control_parameter.state = ChargepointState.SWITCH_ON_DELAY
+    data.data.cp_data[
         "cp4"].data.set.charging_ev_data.data.control_parameter.timestamp_switch_on_off = "05/16/2022, 08:40:52"
+    data.data.cp_data[
+        "cp4"].data.set.charging_ev_data.data.control_parameter.state = ChargepointState.SWITCH_ON_DELAY
     data.data.cp_data[
         "cp5"].data.set.charging_ev_data.data.control_parameter.timestamp_switch_on_off = None
     mockget_component_name_by_id = Mock(return_value="Garage")
@@ -163,7 +170,7 @@ def test_pv_delay_expired(all_cp_pv_charging_3p, all_cp_not_charging, monkeypatc
     assert data.data.cp_data[
         "cp5"].data.set.charging_ev_data.data.control_parameter.timestamp_switch_on_off is None
     assert data.data.counter_data["counter0"].data.set.raw_power_left == 24300
-    assert data.data.counter_data["counter0"].data.set.surplus_power_left == 2185
+    assert data.data.counter_data["counter0"].data.set.surplus_power_left == 2415
     assert data.data.counter_data["counter0"].data.set.reserved_surplus == 4500
 
 
@@ -177,7 +184,7 @@ cases_limit = [
                   expected_current_cp4=8,
                   expected_current_cp5=8,
                   expected_raw_power_left=34820,
-                  expected_surplus_power_left=5805.0,
+                  expected_surplus_power_left=6035.0,
                   expected_reserved_surplus=0,
                   expected_released_surplus=0),
     ParamsSurplus(name="reduce current",
@@ -185,11 +192,11 @@ cases_limit = [
                   raw_power_left=38560,
                   raw_currents_left_counter0=[40]*3,
                   raw_currents_left_counter6=[16]*3,
-                  expected_current_cp3=10.61111111111111,
-                  expected_current_cp4=6.611111111111112,
-                  expected_current_cp5=6.611111111111111,
+                  expected_current_cp3=10.722222222222221,
+                  expected_current_cp4=6.722222222222222,
+                  expected_current_cp5=6.722222222222223,
                   expected_raw_power_left=23380,
-                  expected_surplus_power_left=1.7053025658242404e-13,
+                  expected_surplus_power_left=-2.2737367544323206e-13,
                   expected_reserved_surplus=0,
                   expected_released_surplus=0),
     ParamsSurplus(name="switch off delay for two of three charging",
@@ -251,7 +258,7 @@ cases_phase_switch = [
                       expected_current_cp4=6,
                       expected_current_cp5=6,
                       expected_raw_power_left=37520.0,
-                      expected_surplus_power_left=10345.0,
+                      expected_surplus_power_left=10575.0,
                       expected_reserved_surplus=0,
                       expected_released_surplus=0)
 ]
@@ -266,6 +273,8 @@ def test_phase_switch(all_cp_pv_charging_3p, all_cp_charging_3p, monkeypatch):
     monkeypatch.setattr(surplus_controlled, "get_component_name_by_id", mockget_component_name_by_id)
     mockget_get_phases_chargemode = Mock(return_value=0)
     monkeypatch.setattr(algorithm_data.data.general_data, "get_phases_chargemode", mockget_get_phases_chargemode)
+    data.data.cp_data[
+        "cp3"].data.set.charging_ev_data.data.control_parameter.state = ChargepointState.CHARGING_ALLOWED
 
     # execution
     Algorithm().calc_current()

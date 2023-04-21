@@ -12,7 +12,8 @@ ALL_RECEIVED_TOPICS = {
     'openWB/chargepoint/get/power': b'0',
     'openWB/chargepoint/template/0': (b'{"autolock": {"active": false, "plans": {}, "wait_for_charging_end": false}, '
                                       b'"name": "Standard Ladepunkt-Vorlage", "rfid_enabling": false, '
-                                      b'"valid_tags": [], "id": 0}')}
+                                      b'"valid_tags": [], "id": 0}'),
+    'openWB/optional/int_display/theme': b'"cards"'}
 
 
 def test_remove_invalid_topics(mock_pub):
@@ -24,5 +25,6 @@ def test_remove_invalid_topics(mock_pub):
     update_config._remove_invalid_topics()
 
     # evaluation
-    assert len(mock_pub.method_calls) == 1
+    assert len(mock_pub.method_calls) == 2
     assert mock_pub.method_calls[0][1][0] == 'openWB/chargepoint/5/get/voltages'
+    assert mock_pub.method_calls[1][1][0] == 'openWB/optional/int_display/theme'

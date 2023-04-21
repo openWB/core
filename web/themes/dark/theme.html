@@ -204,6 +204,8 @@
 				<div class="card border-success fill-height">
 					<div class="card-header bg-success collapsed" data-toggle="collapse" data-target="#cardPV">
 						<i class="fas fa-solar-panel"></i>
+						<i class="pv-sum-power-consumption fas fa-angle-double-left hide"></i>
+						<i class="pv-sum-power-production fas fa-angle-double-right hide"></i>
 						<span class="pv-sum-power">-- W</span>
 						<span class="collPlus"></span>
 					</div>
@@ -229,10 +231,9 @@
 			<div class="grid-configured col-sm">
 				<div class="card border-danger fill-height">
 					<div class="card-header bg-danger collapsed" data-toggle="collapse" data-target="#cardGrid">
-						<i class="fas fa-home"></i>
-						<i class="grid-exporting fas fa-angle-double-right hide"></i>
-						<i class="grid-importing fas fa-angle-double-left hide"></i>
 						<img src="img/icons/electric-tower.svg" alt="electric tower" style="width: 1.1em;">
+						<i class="grid-exporting fas fa-angle-double-left hide"></i>
+						<i class="grid-importing fas fa-angle-double-right hide"></i>
 						<span class="et-configured hide">
 							<i class="et-blocked fas fa-coins hide"></i>
 							<i class="et-not-blocked fas fa-coins text-success hide"></i>
@@ -331,6 +332,8 @@
 					<div class="card-header bg-primary collapsed" data-toggle="collapse"
 						data-target="#cardChargePointSum">
 						<i class="fas fa-charging-station"></i>
+						<i class="charge-point-sum-power-charging fas fa-angle-double-left hide"></i>
+						<i class="charge-point-sum-power-discharging fas fa-angle-double-right hide"></i>
 						<span class="charge-point-sum-power">-- W</span>
 						<span class="collPlus"></span>
 					</div>

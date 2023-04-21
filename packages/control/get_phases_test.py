@@ -88,6 +88,7 @@ def test_get_phases_by_selected_chargemode(monkeypatch, cp: Chargepoint, params:
     cp.data.config.auto_phase_switch_hw = params.auto_phase_switch_hw
     cp.data.get.charge_state = params.charge_state
     cp.data.set.phases_to_use = params.phases_in_use
+    cp.data.get.phases_in_use = params.phases_in_use
     cp.data.set.log.imported_since_plugged = params.imported_since_plugged
     charging_ev_data = cp.data.set.charging_ev_data
     charging_ev_data.ev_template.data.prevent_phase_switch = params.prevent_phase_switch

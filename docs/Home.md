@@ -2,7 +2,7 @@
 
 In openWB2 sind Ladepunkte, Module und Fahrzeuge flexibel konfigurierbar. In diesem Wiki wird das zugrundeliegende Konzept und das Zusammenspiel der verschiedenen Einstellungen erläutert. Details zu den einzelnen Einstellungen erhält man durch Klick auf das Fragezeichen neben der Einstellung direkt im User Interface.
 
-Die ersten Schritte in openWB 2 sind [hier](https://github.com/openWB/core/wiki/Erstkonfiguration) erklärt.
+Die ersten Schritte in openWB 2 sind [hier](https://openwb.de/main/?page_id=973) erklärt. Eine Anleitung zum Anbinden von Wechselrichtern, Speichern und Zählern findet Ihr [hier](https://openwb.de/main/?page_id=970).
 
 Die Einstellungsseiten und Konfigurationsmöglichkeiten wurden im Vergleich zu 1.9 grundlegend überarbeitet.
 Eine Übersicht über die wichtigsten Features findet Ihr [hier](https://openwb.de/forum/viewtopic.php?f=3&t=3170).

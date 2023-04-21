@@ -17,7 +17,7 @@ ts_fmt = '%Y-%m-%dT%H:%M:%S'
 refreshToken_exp_days = 7    # 7 days before refreshToken expires a new refreshToken shall be stored
 initialToken = '1.2.3'
 
-log = logging.getLogger("soc."+__name__)
+log = logging.getLogger(__name__)
 
 
 def utc2local(utc):
@@ -135,9 +135,9 @@ class api:
                     confDict.pop('name')
                     confDict['configuration'] = conf.configuration.__dict__
                     self.su.write_token_mqtt(
-                                             "openWB/set/vehicle/" + vehicle + "/soc_module/config",
-                                             self.refreshTokenNew,
-                                             conf.__dict__)
+                        "openWB/set/vehicle/" + vehicle + "/soc_module/config",
+                        self.refreshTokenNew,
+                        conf.__dict__)
 
                 if (self.w.tokens['accessToken'] != self.accessTokenOld):  # modified accessToken?
                     self.su.write_token_file(self.accessTokenFile, self.w.tokens['accessToken'])

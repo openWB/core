@@ -20,7 +20,7 @@ class KostalPikoInverter:
         self.store = get_inverter_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
 
-    def get_values(self) -> Tuple[float, float]:
+    def update(self) -> Tuple[float, float]:
         # Die Differenz der Einträge entspricht nicht der Batterieleistung.
         if self.component_config.configuration.bat_configured:
             params = (('dxsEntries', ['33556736', '251658753)']),)
@@ -33,10 +33,12 @@ class KostalPikoInverter:
 
         exported = float(resp["dxsEntries"][1]["value"]) * 1000
 
-        self.store.set(InverterState(
+        inverter = InverterState(
             exported=exported,
             power=power
-        ))
+        )
+        self.store.set(inverter)
+        return inverter
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=KostalPikoInverterSetup)

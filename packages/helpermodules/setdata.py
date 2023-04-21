@@ -6,12 +6,14 @@ import dataclasses
 import threading
 from typing import List, Optional, Tuple
 import re
+import paho.mqtt.client as mqtt
 
 import logging
 from helpermodules import subdata
 from helpermodules.broker import InternalBrokerClient
 from helpermodules.pub import Pub
-from helpermodules.utils.topic_parser import decode_payload, get_index
+from helpermodules.utils.topic_parser import (decode_payload, get_index, get_index_position, get_second_index,
+                                              get_second_index_position)
 from helpermodules.update_config import UpdateConfig
 import dataclass_utils
 
@@ -24,28 +26,32 @@ class SetData:
                  event_ev_template: threading.Event,
                  event_charge_template: threading.Event,
                  event_cp_config: threading.Event,
+                 event_scheduled_charging_plan: threading.Event,
+                 event_time_charging_plan: threading.Event,
                  event_subdata_initialized: threading.Event):
         self.event_ev_template = event_ev_template
         self.event_charge_template = event_charge_template
         self.event_cp_config = event_cp_config
+        self.event_scheduled_charging_plan = event_scheduled_charging_plan
+        self.event_time_charging_plan = event_time_charging_plan
         self.event_subdata_initialized = event_subdata_initialized
         self.heartbeat = False
 
     def set_data(self):
         self.internal_broker_client = InternalBrokerClient("mqttset", self.on_connect, self.on_message)
         self.event_subdata_initialized.wait()
-        log.debug("Subdata initialisation completed. Starting setdata loop to broker.")
+        log.debug("Subdata initialization completed. Starting setdata loop to broker.")
         self.internal_broker_client.start_infinite_loop()
 
     def disconnect(self) -> None:
         self.internal_broker_client.disconnect()
 
-    def on_connect(self, client, userdata, flags, rc):
+    def on_connect(self, client: mqtt.Client, userdata, flags: dict, rc: int):
         """ connect to broker and subscribe to set topics
         """
         client.subscribe("openWB/set/#", 2)
 
-    def on_message(self, client, userdata, msg):
+    def on_message(self, client: mqtt.Client, userdata, msg: mqtt.MQTTMessage):
         """ ruft die Funktion auf, um das Topic zu verarbeiten. Wenn die Topics mit Locking verarbeitet werden,
         wird gewartet, bis das Locking aufgehoben wird.
 
@@ -88,7 +94,8 @@ class SetData:
             elif "openWB/set/command/" in msg.topic:
                 self.process_command_topic(msg)
 
-    def _validate_value(self, msg, data_type, ranges=[], collection=None, pub_json=False, retain: bool = True):
+    def _validate_value(self, msg: mqtt.MQTTMessage, data_type, ranges=[], collection=None, pub_json=False,
+                        retain: bool = True):
         """ prüft, ob der Wert vom angegebenen Typ ist.
 
         Parameter
@@ -132,14 +139,31 @@ class SetData:
                 else:
                     # aktuelles json-Objekt liegt in subdata
                     index = get_index(msg.topic)
-                    if "charge_template" in msg.topic:
+                    if "time_charging" in msg.topic and "plans" in msg.topic:
+                        index_second = get_second_index(msg.topic)
+                        event = self.event_time_charging_plan
+                        try:
+                            template = dataclasses.asdict(copy.deepcopy(
+                                subdata.SubData.ev_charge_template_data[
+                                    "ct"+index].data.time_charging.plans[index_second]))
+                        except IndexError:
+                            template = {}
+                    elif "scheduled_charging" in msg.topic and "plans" in msg.topic:
+                        index_second = get_second_index(msg.topic)
+                        event = self.event_scheduled_charging_plan
+                        try:
+                            template = dataclasses.asdict(copy.deepcopy(
+                                subdata.SubData.ev_charge_template_data[
+                                    "ct"+index].data.chargemode.scheduled_charging.plans[index_second]))
+                        except IndexError:
+                            template = {}
+                    elif "charge_template" in msg.topic:
                         event = self.event_charge_template
                         if "ct"+str(index) in subdata.SubData.ev_charge_template_data:
                             template = dataclass_utils.asdict(copy.deepcopy(
                                 subdata.SubData.ev_charge_template_data["ct"+str(index)].data))
-                            # Wenn eine Einzeleinstellung empfangen wird, muss das gesamte Template gepublished werden
-                            # (pub_json=True), allerdings ohne Pläne. Diese sind in einem Extra-Topic und werden immer
-                            # als komplettes json empfangen (mit pub_json=False).
+                            # Wenn eine Einzeleinstellung empfangen wird, muss das gesamte Template veröffentlicht
+                            # werden (pub_json=True), allerdings ohne Pläne. Diese sind in einem Extra-Topic.
                             try:
                                 template["chargemode"]["scheduled_charging"].pop("plans")
                             except KeyError:
@@ -169,16 +193,17 @@ class SetData:
                     # Wert, der aktualisiert werden soll, erstellen/finden und updaten
                     if event == self.event_cp_config:
                         key_list = msg.topic.split("/")[5:]
+                    elif event == self.event_scheduled_charging_plan or event == self.event_time_charging_plan:
+                        key_list = msg.topic.split("/")[-1:]
                     else:
                         key_list = msg.topic.split("/")[6:]
                     self._change_key(template, key_list, value)
                     # publish
-                    regex = re.search('(?!/)([0-9]*)(?=/|$)', msg.topic)
-                    if regex is None:
-                        raise Exception(f"Couldn't find index in {msg.topic}")
-                    index_pos = regex.end()
+                    index_pos = get_index_position(msg.topic)
                     if event == self.event_cp_config:
                         topic = msg.topic[:index_pos]+"/config"
+                    elif event == self.event_scheduled_charging_plan or event == self.event_time_charging_plan:
+                        topic = msg.topic[:get_second_index_position(msg.topic)]
                     else:
                         topic = msg.topic[:index_pos]
                     topic = topic.replace('set/', '', 1)
@@ -213,7 +238,7 @@ class SetData:
             key_list.pop(0)
             self._change_key(next_level[next_key], key_list, value)
 
-    def _validate_collection_value(self, msg, data_type, ranges=None, collection=None):
+    def _validate_collection_value(self, msg: mqtt.MQTTMessage, data_type, ranges=None, collection=None):
         """ prüft, ob die Liste vom angegebenen Typ ist und ob Minimal- und Maximalwert eingehalten werden.
 
         Parameter
@@ -251,7 +276,8 @@ class SetData:
         except Exception:
             log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 
-    def _validate_min_max_value(self, value, msg, data_type, ranges: Optional[List[Tuple[int, float]]] = None):
+    def _validate_min_max_value(self, value, msg: mqtt.MQTTMessage, data_type,
+                                ranges: Optional[List[Tuple[int, float]]] = None):
         """ prüft, ob der Payload Minimal- und Maximalwert einhält.
 
         Parameter
@@ -312,7 +338,7 @@ class SetData:
         except Exception:
             log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 
-    def _validate_bool_value(self, value, msg):
+    def _validate_bool_value(self, value, msg: mqtt.MQTTMessage):
         if isinstance(value, bool):
             return True, value
         else:
@@ -322,7 +348,7 @@ class SetData:
                 log.error(f"Payload ungültig: Topic {msg.topic}, Payload {value} sollte ein Boolean oder 0/1 sein.")
                 return False, value
 
-    def __unknown_topic(self, msg) -> None:
+    def __unknown_topic(self, msg: mqtt.MQTTMessage) -> None:
         try:
             if msg.payload:
                 log.error(f"Unbekanntes set-Topic: {msg.topic}, {decode_payload(msg.payload)}")
@@ -334,7 +360,7 @@ class SetData:
         except Exception:
             log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 
-    def process_vehicle_topic(self, msg):
+    def process_vehicle_topic(self, msg: mqtt.MQTTMessage):
         """ Handler für die EV-Topics
 
          Parameters
@@ -349,6 +375,8 @@ class SetData:
                 self._subprocess_vehicle_chargemode_topic(msg)
             elif "openWB/set/vehicle/set/vehicle_update_completed" in msg.topic:
                 self._validate_value(msg, bool)
+            elif "/set/soc_error_counter" in msg.topic:
+                self._validate_value(msg, int, [(0, float("inf"))])
             elif "/soc_module/config" in msg.topic:
                 self._validate_value(msg, "json")
             elif "/get/fault_state" in msg.topic:
@@ -387,12 +415,14 @@ class SetData:
             elif ("/control_parameter/used_amount_instant_charging" in msg.topic or
                     "/control_parameter/imported_at_plan_start" in msg.topic):
                 self._validate_value(msg, float, [(0, float("inf"))])
+            elif "/control_parameter/state" in msg.topic:
+                self._validate_value(msg, int, [(0, 7)])
             else:
                 self.__unknown_topic(msg)
         except Exception:
             log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 
-    def _subprocess_vehicle_chargemode_topic(self, msg):
+    def _subprocess_vehicle_chargemode_topic(self, msg: mqtt.MQTTMessage):
         """ Handler für die EV-Chargemode-Template-Topics
         Parameters
         ----------
@@ -428,11 +458,15 @@ class SetData:
                     self._validate_value(msg, int, [(6, 32)], pub_json=True)
                 elif "/chargemode/pv_charging/max_soc" in msg.topic:
                     self._validate_value(msg, int, [(0, 101)], pub_json=True)
+                elif "/chargemode/scheduled_charging/plans/" in msg.topic and "/active" in msg.topic:
+                    self._validate_value(msg, bool, pub_json=True)
                 elif "/chargemode/scheduled_charging/plans" in msg.topic:
                     self._validate_value(msg, "json")
                 elif "/chargemode/scheduled_charging" in msg.topic:
                     self._validate_value(msg, "json", pub_json=True)
                 elif "/time_charging/active" in msg.topic:
+                    self._validate_value(msg, bool, pub_json=True)
+                elif "/time_charging/plans/" in msg.topic and "/active" in msg.topic:
                     self._validate_value(msg, bool, pub_json=True)
                 elif "/time_charging/plans" in msg.topic:
                     self._validate_value(msg, "json")
@@ -445,7 +479,7 @@ class SetData:
         except Exception:
             log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 
-    def process_chargepoint_topic(self, msg):
+    def process_chargepoint_topic(self, msg: mqtt.MQTTMessage):
         """ Handler für die Ladepunkt-Topics
 
          Parameters
@@ -529,7 +563,7 @@ class SetData:
         except Exception:
             log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 
-    def process_pv_topic(self, msg):
+    def process_pv_topic(self, msg: mqtt.MQTTMessage):
         """ Handler für die PV-Topics
 
          Parameters
@@ -575,7 +609,7 @@ class SetData:
         except Exception:
             log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 
-    def process_bat_topic(self, msg):
+    def process_bat_topic(self, msg: mqtt.MQTTMessage):
         """ Handler für die Hausspeicher-Topics
 
          Parameters
@@ -622,7 +656,7 @@ class SetData:
         except Exception:
             log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 
-    def process_general_topic(self, msg):
+    def process_general_topic(self, msg: mqtt.MQTTMessage):
         """ Handler für die Allgemeinen-Topics
 
          Parameters
@@ -698,7 +732,7 @@ class SetData:
         except Exception:
             log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 
-    def process_optional_topic(self, msg):
+    def process_optional_topic(self, msg: mqtt.MQTTMessage):
         """ Handler für die Optionalen-Topics
 
          Parameters
@@ -737,7 +771,7 @@ class SetData:
             elif "openWB/set/optional/int_display/standby" in msg.topic:
                 self._validate_value(msg, int, [(0, 300)])
             elif "openWB/set/optional/int_display/theme" in msg.topic:
-                self._validate_value(msg, str)
+                self._validate_value(msg, "json")
             elif "openWB/set/optional/led/active" in msg.topic:
                 self._validate_value(msg, bool)
             else:
@@ -745,7 +779,7 @@ class SetData:
         except Exception:
             log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 
-    def process_counter_topic(self, msg):
+    def process_counter_topic(self, msg: mqtt.MQTTMessage):
         """ Handler für die Zähler-Topics
 
          Parameters
@@ -755,7 +789,8 @@ class SetData:
             enthält Topic und Payload
         """
         try:
-            if "openWB/set/counter/set/loadmanagement_active" in msg.topic:
+            if ("openWB/set/counter/config/reserve_for_not_charging" in msg.topic or
+                    "openWB/set/counter/set/loadmanagement_active" in msg.topic):
                 self._validate_value(msg, bool)
             elif "openWB/set/counter/set/invalid_home_consumption" in msg.topic:
                 self._validate_value(msg, int, [(0, 3)])
@@ -773,7 +808,7 @@ class SetData:
             elif "/config/max_currents" in msg.topic:
                 self._validate_value(msg, int, [(7, 1500)], collection=list)
             elif "/config/max_total_power" in msg.topic:
-                self._validate_value(msg, int, [(2000, 1000000)])
+                self._validate_value(msg, int, [(0,  float("inf"))])
             elif subdata.SubData.counter_data.get(f"counter{get_index(msg.topic)}"):
                 if ("/get/powers" in msg.topic or
                         "/get/currents" in msg.topic):
@@ -812,7 +847,7 @@ class SetData:
         except Exception:
             log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 
-    def process_log_topic(self, msg):
+    def process_log_topic(self, msg: mqtt.MQTTMessage):
         """Handler für die Log-Topics
 
          Parameters
@@ -831,7 +866,7 @@ class SetData:
         except Exception:
             log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 
-    def process_graph_topic(self, msg):
+    def process_graph_topic(self, msg: mqtt.MQTTMessage):
         """Handler für die Graph-Topics
 
          Parameters
@@ -851,7 +886,7 @@ class SetData:
         except Exception:
             log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 
-    def process_system_topic(self, msg):
+    def process_system_topic(self, msg: mqtt.MQTTMessage):
         """Handler für die System-Topics
 
          Parameters
@@ -915,7 +950,7 @@ class SetData:
         except Exception:
             log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 
-    def process_command_topic(self, msg):
+    def process_command_topic(self, msg: mqtt.MQTTMessage):
         """Handler für die Befehl-Topics
 
          Parameters
