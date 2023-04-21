@@ -38,8 +38,8 @@ chmod 666 "$LOGFILE"
 		rm "${OPENWBBASEDIR}/ramdisk/bootdone"
 	fi
 	(
-		echo "watchdog for atreboot.sh on pid $$ started, waiting for 600s"
-		sleep 600
+		echo "watchdog for atreboot.sh on pid $$ started, waiting for 900s"
+		sleep 900
 		if sudo kill "$$"; then
 			echo "killed stalled atreboot.sh!"
 			mosquitto_pub -p 1886 -t "openWB/system/update_in_progress" -r -m 'false'
