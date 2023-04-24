@@ -2,15 +2,15 @@
 import sys
 import os
 import logging
-from smarthome.smartlog import initlog
 from smarthome.smartret import writeret
+
+log = logging.getLogger("stiebel")
+
 devicenumber = int(sys.argv[1])
 ipadr = str(sys.argv[2])
 uberschuss = int(sys.argv[3])
-initlog("stiebel", devicenumber)
-log = logging.getLogger("stiebel")
 file_stringpv = '/var/www/html/openWB/ramdisk/smarthome_device_' + str(devicenumber) + '_pv'
-# pv modus
+# PV-Modus
 pvmodus = 0
 if os.path.isfile(file_stringpv):
     with open(file_stringpv, 'r') as f:

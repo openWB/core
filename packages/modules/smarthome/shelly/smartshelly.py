@@ -2,6 +2,7 @@
 from smarthome.smartbase import Sbase, Slshelly
 from typing import Dict
 import logging
+
 log = logging.getLogger(__name__)
 
 

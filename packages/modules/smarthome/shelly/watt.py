@@ -6,6 +6,7 @@ import json
 import urllib.request
 from smarthome.smartret import writeret
 import logging
+
 log = logging.getLogger(__name__)
 
 

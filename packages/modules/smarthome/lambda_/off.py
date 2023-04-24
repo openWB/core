@@ -4,11 +4,11 @@ import os
 import time
 import struct
 import codecs
-
 from pymodbus.client.sync import ModbusTcpClient
-
 import logging
+
 log = logging.getLogger(__name__)
+bp = '/var/www/html/openWB/ramdisk/smarthome_device_'
 
 named_tuple = time.localtime()  # getstruct_time
 time_string = time.strftime("%m/%d/%Y, %H:%M:%S lambda off.py", named_tuple)
@@ -18,7 +18,6 @@ uberschuss = int(sys.argv[3])
 uberschussvz = str(sys.argv[4])
 if (uberschussvz == 'UN'):
     uberschuss = uberschuss * -1
-bp = '/var/www/html/openWB/ramdisk/smarthome_device_'
 # standard
 file_string = bp + str(devicenumber) + '_lambda.log'
 file_stringpv = bp + str(devicenumber) + '_pv'
@@ -44,8 +43,8 @@ pvmodus = 0
 if os.path.isfile(file_stringpv):
     with open(file_stringpv, 'r') as f:
         pvmodus = int(f.read())
-# wenn vorher pvmodus an, dann watt.py
-# signaliseren einmalig 0 ueberschuss zu schicken
+# wenn vorher PV-Modus an, dann watt.py
+# signalisieren einmalig 0 ueberschuss zu schicken
 if pvmodus == 1:
     pvmodus = 99
 with open(file_stringpv, 'w') as f:

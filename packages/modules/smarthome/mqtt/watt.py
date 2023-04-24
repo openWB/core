@@ -5,7 +5,8 @@ import time
 import json
 import paho.mqtt.client as mqtt
 import re
-numberOfSupportedDevices = 9  # limit number of smarthome devices
+
+numberOfSupportedDevices = 9  # limit number of smart home devices
 
 
 def on_connect(client, userdata, flags, rc):
@@ -55,7 +56,7 @@ client.publish("openWB/LegacySmartHome/set/Devices/"+str(devicenumber) +
 client.loop(timeout=2.0)
 client.disconnect()
 file_stringpv = '/var/www/html/openWB/ramdisk/smarthome_device_' + str(devicenumber) + '_pv'
-# pv modus
+# PV-Modus
 pvmodus = 0
 if os.path.isfile(file_stringpv):
     f = open(file_stringpv, 'r')

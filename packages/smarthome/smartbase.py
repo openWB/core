@@ -895,7 +895,7 @@ class Sbase(Sbase0):
                      + "ung auf Einschalt oder Ausschaltschwelle ")
             return
         # Device mit Anlauferkennung (mehrfach pro tag)
-        # welches im PV Modus ist ?
+        # welches im pv-modus ist ?
         if ((self.devstatus == 10) and (self._device_startupmuldetection == 1)
            and (self._device_startupdetection == 1)
            and (int(self.oncountnor) > 0)):

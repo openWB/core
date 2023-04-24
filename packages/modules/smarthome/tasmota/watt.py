@@ -3,6 +3,7 @@ import sys
 import time
 import json
 import urllib.request
+
 named_tuple = time.localtime()  # getstruct_time
 time_string = time.strftime("%m/%d/%Y, %H:%M:%S tasmota watty.py", named_tuple)
 devicenumber = str(sys.argv[1])
