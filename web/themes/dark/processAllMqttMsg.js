@@ -1531,7 +1531,7 @@ function processETProviderMessages(mqttTopic, mqttPayload) {
 // 	}
 // }
 // function processSmartHomeDevicesMessages(mqttTopic, mqttPayload) {
-// 	// processes mqttTopic for topic openWB/SmartHomeDevices - actual values only!
+// 	// processes mqttTopic for topic openWB/LegacySmartHomertHomeDevices - actual values only!
 // 	// called by handleMessage
 // 	processPreloader(mqttTopic);
 // 	if ( mqttTopic.match( /^openwb\/SmartHome\/Devices\/[1-9][0-9]*\/Watt$/i ) ) {
@@ -1653,7 +1653,7 @@ function processETProviderMessages(mqttTopic, mqttPayload) {
 // }
 
 function processSmartHomeDevicesConfigMessages(mqttTopic, mqttPayload) {
-	// processes mqttTopic for topic openWB/config/get/SmartHome/Devices - config variables (Name / configured only!), actual Variables in processSmartHomeDevices
+	// processes mqttTopic for topic openWB/LegacySmartHome/config/get/Devices - config variables (Name / configured only!), actual Variables in processSmartHomeDevices
 	// called by handleMessage
 	processPreloader(mqttTopic);
 	if (mqttTopic.match(/^openwb\/config\/get\/SmartHome\/Devices\/[1-9][0-9]*\/device_configured$/i)) {

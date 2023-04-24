@@ -10,18 +10,18 @@ numberOfSupportedDevices = 9  # limit number of smarthome devices
 
 def on_connect(client, userdata, flags, rc):
     global devicenumber
-    client.subscribe("openWB/SmartHome/set/Devices/"+devicenumber + "/#", 2)
+    client.subscribe("openWB/LegacySmartHome/set/Devices/"+devicenumber + "/#", 2)
 
 
 def on_message(client, userdata, msg):
     global numberOfSupportedDevices
     global aktpower
     global powerc
-    if (("openWB/SmartHome/set/Device" in msg.topic) and ("Aktpower" in msg.topic)):
+    if (("openWB/LegacySmartHome/set/Device" in msg.topic) and ("Aktpower" in msg.topic)):
         devicenumb = re.sub(r'\D', '', msg.topic)
         if (1 <= int(devicenumb) <= numberOfSupportedDevices):
             aktpower = int(msg.payload)
-    if (("openWB/SmartHome/set/Device" in msg.topic) and ("Powerc" in msg.topic)):
+    if (("openWB/LegacySmartHome/set/Device" in msg.topic) and ("Powerc" in msg.topic)):
         devicenumb = re.sub(r'\D', '', msg.topic)
         if (1 <= int(devicenumb) <= numberOfSupportedDevices):
             powerc = int(msg.payload)
@@ -50,7 +50,7 @@ while True:
     elapsedTime = time.time() - startTime
     if elapsedTime > waitTime:
         break
-client.publish("openWB/SmartHome/set/Devices/"+str(devicenumber) +
+client.publish("openWB/LegacySmartHome/set/Devices/"+str(devicenumber) +
                "/Ueberschuss", payload=str(uberschuss), qos=0, retain=True)
 client.loop(timeout=2.0)
 client.disconnect()

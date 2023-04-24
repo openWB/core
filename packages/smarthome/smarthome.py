@@ -28,25 +28,25 @@ log = logging.getLogger(__name__)
 mqtt_cache = {}
 mydevices = []
 bp = '/var/www/html/openWB'
-numberOfSupportedDevices = 9  # limit number of smarthome devices
+numberOfSupportedDevices = 9  # limit number of SmartHome devices
 
 
 def on_connect(client, userdata, flags, rc):
-    client.subscribe("openWB/config/get/SmartHome/Devices/#", 2)
-    client.subscribe("openWB/SmartHome/Devices/#", 2)
+    client.subscribe("openWB/LegacySmartHome/config/get/Devices/#", 2)
+    client.subscribe("openWB/LegacySmartHome/Devices/#", 2)
 
 
 def on_message(client, userdata, msg):
     # wenn exception hier wird mit nächster msg weitergemacht
-    # macht paho unter phyton 3 immer so
+    # macht paho unter python 3 immer so
     global parammqtt
     devicenumb = re.sub(r'\D', '', msg.topic)
     input = msg.payload.decode("utf-8")
-    if ("openWB/config/get/SmartHome/Devices" in msg.topic):
-        keyword = re.sub('openWB/config/get/SmartHome/Devices/'
+    if ("openWB/LegacySmartHome/config/get/Devices" in msg.topic):
+        keyword = re.sub('openWB/LegacySmartHome/config/get/Devices/'
                          + str(devicenumb) + '/', '', msg.topic)
-    if ("openWB/SmartHome/Devices" in msg.topic):
-        keyword = re.sub('openWB/SmartHome/Devices/'
+    if ("openWB/LegacySmartHome/Devices" in msg.topic):
+        keyword = re.sub('openWB/LegacySmartHome/Devices/'
                          + str(devicenumb) + '/', '', msg.topic)
     value = str(input)
     if (("/" in keyword) or (int(devicenumb) < 1) or
@@ -204,12 +204,12 @@ def getdevicevalues():
              str('%.2d' % nurss) +
              " in Total sec " + str(Sbase.nureinschaltinsec)
              )
-    mqtt_all['openWB/SmartHome/Status/maxspeicherladung'] = maxspeicher
+    mqtt_all['openWB/LegacySmartHome/Status/maxspeicherladung'] = maxspeicher
     mqtt_all['openWB/set/counter/set/disengageable_smarthome_power'] = totalwatt
-    mqtt_all['openWB/SmartHome/Status/wattnichtschalt'] = totalwattot
-    mqtt_all['openWB/SmartHome/Status/wattnichtHaus'] = totalminhaus
-    mqtt_all['openWB/SmartHome/Status/uberschuss'] = uberschuss
-    mqtt_all['openWB/SmartHome/Status/uberschussoffset'] = uberschussoffset
+    mqtt_all['openWB/LegacySmartHome/Status/wattnichtschalt'] = totalwattot
+    mqtt_all['openWB/LegacySmartHome/Status/wattnichtHaus'] = totalminhaus
+    mqtt_all['openWB/LegacySmartHome/Status/uberschuss'] = uberschuss
+    mqtt_all['openWB/LegacySmartHome/Status/uberschussoffset'] = uberschussoffset
     sendmq(mqtt_all)
 
 
@@ -374,7 +374,7 @@ def resetmaxeinschaltdauerfunc():
             for i in range(1, (numberOfSupportedDevices+1)):
                 for mydevice in mydevices:
                     if (str(i) == str(mydevice.device_nummer)):
-                        pref = 'openWB/SmartHome/Devices/' + str(i) + '/'
+                        pref = 'openWB/LegacySmartHome/Devices/' + str(i) + '/'
                         mydevice.runningtime = 0
                         mqtt_reset[pref + 'RunningTimeToday'] = '0'
                         log.info("(" + str(i) +
