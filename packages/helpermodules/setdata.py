@@ -11,7 +11,7 @@ import paho.mqtt.client as mqtt
 import logging
 from helpermodules import subdata
 from helpermodules.broker import InternalBrokerClient
-from helpermodules.pub import Pub
+from helpermodules.pub import Pub, pub_single
 from helpermodules.utils.topic_parser import (decode_payload, get_index, get_index_position, get_second_index,
                                               get_second_index_position)
 from helpermodules.update_config import UpdateConfig
@@ -95,6 +95,8 @@ class SetData:
                 self.process_command_topic(msg)
             elif "openWB/set/internal_chargepoint/" in msg.topic:
                 self.process_internal_chargepoint_topic(msg)
+            elif "openWB/set/LegacySmartHome/" in msg.topic:
+                self.process_legacy_smart_home_topic(msg)
 
     def _validate_value(self, msg: mqtt.MQTTMessage, data_type, ranges=[], collection=None, pub_json=False,
                         retain: bool = True):
@@ -1002,5 +1004,24 @@ class SetData:
                 self._validate_value(msg, str)
             else:
                 self._validate_value(msg, "json")
+        except Exception:
+            log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
+
+    def process_legacy_smart_home_topic(self, msg):
+        """Handler für die alten SmartHome-Topics
+
+         Parameters
+        ----------
+        msg:
+            enthält Topic und Payload
+        """
+        try:
+            if "openWB/set/LegacySmartHome/config" in msg.topic:
+                pub_single(msg.topic.replace('openWB/set/', 'openWB/', 1), msg.payload.decode("utf-8"),
+                           retain=True, no_json=True, port=1886)
+                pub_single(msg.topic, "", no_json=True, port=1886)
+
+            else:
+                self.__unknown_topic(msg)
         except Exception:
             log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")

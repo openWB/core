@@ -10,7 +10,7 @@ numberOfSupportedDevices = 9  # limit number of smarthome devices
 
 
 def on_connect(client, userdata, flags, rc):
-    client.subscribe("openWB/SmartHome/set/Devices/#", 2)
+    client.subscribe("openWB/LegacySmartHome/set/Devices/#", 2)
 
 
 def on_message(client, userdata, msg):
@@ -31,9 +31,9 @@ while True:
     elapsedTime = time.time() - startTime
     if elapsedTime > waitTime:
         break
-client.publish("openWB/SmartHome/set/Devices/"+str(devicenumber)+"/ReqRelay", "0", qos=0, retain=True)
+client.publish("openWB/LegacySmartHome/set/Devices/"+str(devicenumber)+"/ReqRelay", "0", qos=0, retain=True)
 client.loop(timeout=2.0)
-client.publish("openWB/SmartHome/set/Devices/"+str(devicenumber) +
+client.publish("openWB/LegacySmartHome/set/Devices/"+str(devicenumber) +
                "/Ueberschuss", payload=str(uberschuss), qos=0, retain=True)
 client.loop(timeout=2.0)
 client.disconnect()

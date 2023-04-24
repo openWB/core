@@ -170,8 +170,7 @@ class Sbase(Sbase0):
         else:
             self.relais = 0
         self.mqtt_param = {}
-        #  pref = 'openWB/SmartHome/Devices/' + str(self.device_nummer) + '/'
-        pref = '/' + str(self.device_nummer) + '/'
+        pref = 'openWB/LegacySmartHome/Devices/' + str(self.device_nummer) + '/'
         self.mqtt_param[pref + 'RelayStatus'] = str(self.relais)
         if (self.c_mantime_f == 'Y') and (self.device_manual != 1):
             # nach Ausschalten manueller Modus mindestens 30 Sek +
@@ -399,8 +398,7 @@ class Sbase(Sbase0):
                          + "Sbase überlesen " + key +
                          " " + value)
         self._first_run = 0
-        #  pref = 'openWB/SmartHome/Devices/' + str(self.device_nummer) + '/'
-        pref = '/' + str(self.device_nummer) + '/'
+        pref = 'openWB/LegacySmartHome/Devices/' + str(self.device_nummer) + '/'
         self.mqtt_param_del[pref + 'RelayStatus'] = '0'
         self.mqtt_param_del[pref + 'Watt'] = '0'
         self.mqtt_param_del[pref + 'oncountnor'] = '0'
