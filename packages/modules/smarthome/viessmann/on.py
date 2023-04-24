@@ -4,7 +4,9 @@ import os
 import time
 from pymodbus.client.sync import ModbusTcpClient
 import logging
+
 log = logging.getLogger(__name__)
+
 named_tuple = time.localtime()  # getstruct_time
 time_string = time.strftime("%m/%d/%Y, %H:%M:%S viessmann on.py", named_tuple)
 devicenumber = str(sys.argv[1])
@@ -14,12 +16,12 @@ uberschuss = int(sys.argv[3])
 # lesen
 # own log
 # Anzeige und Einstellung der Komfortfunktion "Einmalige Warmwasserbereitung"
-# ausserhalb des Zeitprogrammes:
+# ausserhalb des Zeitprogramms:
 # 0: "Einmalige Warmwasserbereitung" AUS
 # 1: "Einmalige Warmwasserbereitung" EIN
 # Fuer die "Einmalige Warmwasserbereitung" wird der Warmwassertemperatur-Sollwert 2 genutzt.
 # CO-17
-# coiss read write bolean
+# coils read write boolean
 # register start 00000
 #
 file_string = '/var/www/html/openWB/ramdisk/smarthome_device_' + str(devicenumber) + '_viessmann.log'

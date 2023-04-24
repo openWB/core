@@ -1,16 +1,16 @@
 #!/usr/bin/python3
 import sys
 import logging
-from smarthome.smartlog import initlog
 from pymodbus.client.sync import ModbusTcpClient
+
+log = logging.getLogger("DAC")
+bp = '/var/www/html/openWB/ramdisk/smarthome_device_'
+
 devicenumber = int(sys.argv[1])
 ipadr = str(sys.argv[2])
 uberschuss = int(sys.argv[3])
 port = int(sys.argv[4])
 dactyp = int(sys.argv[5])
-initlog("DAC", devicenumber)
-log = logging.getLogger("DAC")
-bp = '/var/www/html/openWB/ramdisk/smarthome_device_'
 file_stringpv = bp + str(devicenumber) + '_pv'
 file_stringcount = bp + str(devicenumber) + '_count'
 file_stringcount5 = bp + str(devicenumber) + '_count5'

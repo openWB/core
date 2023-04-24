@@ -4,17 +4,17 @@ import os
 import time
 import struct
 import codecs
-
 from pymodbus.client.sync import ModbusTcpClient
 import logging
+
 log = logging.getLogger(__name__)
+bp = '/var/www/html/openWB/ramdisk/smarthome_device_'
 
 named_tuple = time.localtime()  # getstruct_time
 time_string = time.strftime("%m/%d/%Y, %H:%M:%S vampair on.py", named_tuple)
 devicenumber = str(sys.argv[1])
 ipadr = str(sys.argv[2])
 uberschuss = int(sys.argv[3])
-bp = '/var/www/html/openWB/ramdisk/smarthome_device_'
 # standard
 # lesen
 # own log

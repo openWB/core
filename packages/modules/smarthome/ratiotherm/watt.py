@@ -4,18 +4,18 @@ import os
 from pymodbus.payload import BinaryPayloadBuilder, Endian
 from pymodbus.client.sync import ModbusTcpClient
 import logging
-from smarthome.smartlog import initlog
 from smarthome.smartret import writeret
+
+log = logging.getLogger("ratiotherm")
+bp = '/var/www/html/openWB/ramdisk/smarthome_device_'
+
 devicenumber = int(sys.argv[1])
 ipadr = str(sys.argv[2])
 uberschuss = int(sys.argv[3])
 forcesend = int(sys.argv[4])
-initlog("ratiotherm", devicenumber)
-log = logging.getLogger("ratiotherm")
 # forcesend = 0 default acthor time period applies
 # forcesend = 1 default overwritten send now
 # forcesend = 9 default overwritten no send
-bp = '/var/www/html/openWB/ramdisk/smarthome_device_'
 file_stringpv = bp + str(devicenumber) + '_pv'
 file_stringcount = bp + str(devicenumber) + '_count'
 file_stringcount5 = bp + str(devicenumber) + '_count5'
@@ -35,7 +35,7 @@ if count5 > 3:
     count5 = 0
 with open(file_stringcount5, 'w') as f:
     f.write(str(count5))
-# pv modus
+# PV-Modus
 pvmodus = 0
 if os.path.isfile(file_stringpv):
     with open(file_stringpv, 'r') as f:
@@ -52,7 +52,7 @@ if count5 == 0:
         count1 = 0
     with open(file_stringcount, 'w') as f:
         f.write(str(count1))
-    # logik nur schicken bei pvmodus
+    # Logik nur schicken bei PV-Modus
     if pvmodus == 1:
         modbuswrite = 1
     neupower = uberschuss
@@ -60,9 +60,9 @@ if count5 == 0:
         neupower = 0
     if neupower > 32767:
         neupower = 32767
-    # wurde ratiotherm gerade ausgeschaltet ?    (pvmodus == 99 ?)
-    # dann 0 schicken wenn kein pvmodus mehr
-    # und pv modus ausschalten
+    # wurde ratiotherm gerade ausgeschaltet ?    (PV-Modus == 99 ?)
+    # dann 0 schicken wenn kein PV-Modus mehr
+    # und PV-Modus ausschalten
     if pvmodus == 99:
         modbuswrite = 1
         neupower = 0
@@ -76,7 +76,7 @@ if count5 == 0:
                  % (devicenumber, ipadr, neupower, pvmodus, modbuswrite))
     # modbus write
     if modbuswrite == 1:
-        # andernfalls absturz bei negativen Zahlen
+        # andernfalls Absturz bei negativen Zahlen
         builder = BinaryPayloadBuilder(byteorder=Endian.Big)
         builder.reset()
         builder.add_16bit_int(neupower)

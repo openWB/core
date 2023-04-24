@@ -4,9 +4,9 @@ import os
 import time
 import paho.mqtt.client as mqtt
 import logging
-log = logging.getLogger(__name__)
 
-numberOfSupportedDevices = 9  # limit number of smarthome devices
+log = logging.getLogger(__name__)
+numberOfSupportedDevices = 9  # limit number of smart home devices
 
 
 def on_connect(client, userdata, flags, rc):
