@@ -56,6 +56,7 @@ export default {
         "openWB/vehicle/template/charge_template/#",
       ],
       mqttStore: useMqttStore(),
+      chartInterval: "",
     };
   },
   computed: {
@@ -159,9 +160,14 @@ export default {
     }
     // subscribe our topics
     this.doSubscribe(this.mqttTopicsToSubscribe);
+    // timer for chart data
+    this.chartInterval = setInterval(this.mqttStore.updateChartData, 5000);
   },
   beforeUnmount() {
+    // unsubscribe our topics
     this.doUnsubscribe(this.mqttTopicsToSubscribe);
+    // clear timer for chart data
+    clearInterval(this.chartInterval);
   },
 };
 </script>

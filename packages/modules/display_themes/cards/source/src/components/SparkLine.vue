@@ -86,7 +86,7 @@ export default {
       return undefined;
     },
     socPath() {
-      if (this.socCoordinates) {
+      if (this.socCoordinates && this.socCoordinates.length > 0) {
         let firstPoint = this.socCoordinates.slice(0, 1)[0];
         let lastPoint = this.socCoordinates.slice(-1)[0];
         var path = `M 0,${this.height}`; // start in lower left corner
