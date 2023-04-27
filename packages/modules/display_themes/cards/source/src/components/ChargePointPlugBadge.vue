@@ -15,7 +15,7 @@ library.add(fasPlugCircleXmark, fasPlugCircleCheck, fasPlugCircleBolt);
 export default {
   name: "ChargePointStateBadge",
   props: {
-    chargePointId: { required: true, type: Number },
+    chargePointId: { required: true, type: Array },
   },
   data() {
     return {
@@ -25,10 +25,18 @@ export default {
   components: { FontAwesomeIcon },
   computed: {
     plugState() {
-      return this.mqttStore.getChargePointPlugState(this.chargePointId);
+      var connected = false;
+      this.chargePointId.forEach((id) => {
+        connected |= this.mqttStore.getChargePointPlugState(id);
+      });
+      return connected;
     },
     chargeState() {
-      return this.mqttStore.getChargePointChargeState(this.chargePointId);
+      var charging = false;
+      this.chargePointId.forEach((id) => {
+        charging |= this.mqttStore.getChargePointChargeState(id);
+      });
+      return charging;
     },
     stateIcon() {
       if (this.plugState) {

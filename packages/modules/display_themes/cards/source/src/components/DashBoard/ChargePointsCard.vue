@@ -44,10 +44,7 @@ export default {
           ? mqttStore.getChargePointPower(mqttStore.getChargePointIds[0])
           : mqttStore.getChargePointSumPower
       }}
-      <charge-point-plug-badge
-        v-if="mqttStore.getChargePointIds.length == 1"
-        :chargePointId="mqttStore.getChargePointIds[0]"
-      />
+      <charge-point-plug-badge :chargePointId="mqttStore.getChargePointIds" />
     </template>
     <spark-line
       color="var(--color--primary)"

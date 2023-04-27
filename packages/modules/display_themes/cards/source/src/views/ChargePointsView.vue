@@ -307,7 +307,7 @@ export default {
         {{ mqttStore.getChargePointName(id) }}
       </template>
       <template #headerRight>
-        <charge-point-plug-badge :chargePointId="id" />
+        <charge-point-plug-badge :chargePointId="[id]" />
       </template>
       <i-container>
         <i-row>
