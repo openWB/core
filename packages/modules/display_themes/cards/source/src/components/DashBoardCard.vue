@@ -36,4 +36,9 @@ export default {
   padding-left: 0;
   padding-right: 0;
 }
+
+.card {
+  ----background: inherit !important;
+  ----body--color: var(--contrast-color-for-dark-background) !important;
+}
 </style>

@@ -2,6 +2,8 @@
 import { useMqttStore } from "@/stores/mqtt.js";
 import DashBoardCard from "@/components/DashBoardCard.vue";
 import SparkLine from "@/components/SparkLine.vue";
+import ChargePointPlugBadge from "@/components/ChargePointPlugBadge.vue";
+import ChargePointLockButton from "@/components/ChargePointLockButton.vue";
 import ExtendedNumberInput from "@/components/ExtendedNumberInput.vue";
 
 /* fontawesome */
@@ -71,6 +73,8 @@ export default {
   components: {
     DashBoardCard,
     SparkLine,
+    ChargePointPlugBadge,
+    ChargePointLockButton,
     ExtendedNumberInput,
     FontAwesomeIcon,
   },
@@ -96,12 +100,6 @@ export default {
       }
       this.modalChargePointSettingsId = id;
       this.modalChargePointSettingsVisible = true;
-    },
-    toggleChargePointManualLock(id) {
-      this.$root.sendTopicToBroker(
-        `openWB/chargepoint/${id}/set/manual_lock`,
-        !this.mqttStore.getValueBool(`openWB/chargepoint/${id}/set/manual_lock`)
-      );
     },
     handleSocClick(id) {
       let vehicle_id = this.mqttStore.getChargePointConnectedVehicleId(id);
@@ -309,25 +307,7 @@ export default {
         {{ mqttStore.getChargePointName(id) }}
       </template>
       <template #headerRight>
-        <i-badge size="lg">
-          <font-awesome-icon
-            fixed-width
-            :icon="
-              mqttStore.getChargePointPlugState(id)
-                ? mqttStore.getChargePointChargeState(id)
-                  ? ['fas', 'fa-plug-circle-bolt']
-                  : ['fas', 'fa-plug-circle-check']
-                : ['fas', 'fa-plug-circle-xmark']
-            "
-            :class="
-              mqttStore.getChargePointPlugState(id)
-                ? mqttStore.getChargePointChargeState(id)
-                  ? ['_color:success']
-                  : '_color:warning'
-                : '_color:gray'
-            "
-          />
-        </i-badge>
+        <charge-point-plug-badge :chargePointId="id" />
       </template>
       <i-container>
         <i-row>
@@ -335,26 +315,10 @@ export default {
           <i-column>
             <i-row>
               <i-column class="_padding-left:0 _padding-right:0">
-                <i-button
-                  size="lg"
-                  :disabled="changesLocked"
-                  :outline="changesLocked"
-                >
-                  <font-awesome-icon
-                    fixed-width
-                    :icon="
-                      mqttStore.getChargePointManualLock(id)
-                        ? ['fas', 'fa-lock']
-                        : ['fas', 'fa-lock-open']
-                    "
-                    :class="
-                      mqttStore.getChargePointManualLock(id)
-                        ? ['_color:danger']
-                        : '_color:success'
-                    "
-                    @click="toggleChargePointManualLock(id)"
-                  />
-                </i-button>
+                <charge-point-lock-button
+                  :chargePointId="id"
+                  :changesLocked="changesLocked"
+                />
               </i-column>
               <i-column class="_text-align:right _padding-left:0">
                 {{ mqttStore.getChargePointPower(id) }}
