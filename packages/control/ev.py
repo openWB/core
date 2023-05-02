@@ -460,15 +460,15 @@ class Ev:
         if phases_in_use == 1:
             direction_str = "Umschaltverzögerung von 1 auf 3"
             delay = pv_config.phase_switch_delay * 60
-            required_power = self.ev_template.data.min_current * max_phases_ev * \
-                230 - self.ev_template.data.max_current_single_phase * 230
+            required_power = (self.ev_template.data.max_current_single_phase * 230 -
+                              self.ev_template.data.min_current * max_phases_ev * 230)
             new_phase = 3
             new_current = self.ev_template.data.min_current
         else:
             direction_str = "Umschaltverzögerung von 3 auf 1"
             delay = (16 - pv_config.phase_switch_delay) * 60
-            required_power = self.ev_template.data.max_current_single_phase * \
-                230 - self.ev_template.data.min_current * max_phases_ev * 230
+            required_power = (self.ev_template.data.min_current * max_phases_ev * 230 -
+                              self.ev_template.data.max_current_single_phase * 230)
             new_phase = 1
             new_current = self.ev_template.data.max_current_single_phase
 
@@ -477,12 +477,12 @@ class Ev:
             f'{required_power}W')
         # Wenn gerade umgeschaltet wird, darf kein Timer gestartet werden.
         if not self.ev_template.data.prevent_phase_switch:
+            condition_1_to_3 = (max(get_currents) > max_current and
+                                all_surplus > self.ev_template.data.min_current * max_phases_ev * 230
+                                - get_power and
+                                phases_in_use == 1)
+            condition_3_to_1 = max(get_currents) < min_current and all_surplus <= 0 and phases_in_use > 1
             if self.data.control_parameter.state not in PHASE_SWITCH_STATES:
-                condition_1_to_3 = (max(get_currents) > max_current and
-                                    all_surplus > self.ev_template.data.min_current * max_phases_ev * 230
-                                    - get_power and
-                                    phases_in_use == 1)
-                condition_3_to_1 = max(get_currents) < min_current and all_surplus <= 0 and phases_in_use > 1
                 if condition_3_to_1 or condition_1_to_3:
                     # Umschaltverzögerung starten
                     timestamp_auto_phase_switch = timecheck.create_timestamp()
@@ -493,8 +493,6 @@ class Ev:
                     message = f'{direction_str} Phasen für {delay/60} Min aktiv.'
                     self.data.control_parameter.state = ChargepointState.PHASE_SWITCH_DELAY
             else:
-                condition_1_to_3 = max(get_currents) > max_current and all_surplus > 0 and phases_in_use == 1
-                condition_3_to_1 = max(get_currents) < min_current and phases_in_use > 1
                 if condition_3_to_1 or condition_1_to_3:
                     # Timer laufen lassen
                     if timecheck.check_timestamp(timestamp_auto_phase_switch, delay):
