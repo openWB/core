@@ -313,7 +313,11 @@ class Ev:
                 else:
                     name = None
                 required_current, submode, message, phases = self.charge_template.scheduled_charging_calc_current(
-                    plan_data, self.data.get.soc, used_amount, max_phases, self.ev_template.data.min_current)
+                    plan_data,
+                    self.data.get.soc,
+                    used_amount, max_phases,
+                    self.data.control_parameter.phases,
+                    self.ev_template.data.min_current)
                 self.data.control_parameter.current_plan = name
                 Pub().pub(f"openWB/set/vehicle/{self.num}/control_parameter/current_plan", name)
 
@@ -777,6 +781,7 @@ class ChargeTemplate:
                                         soc: int,
                                         used_amount: float,
                                         max_phases: int,
+                                        control_parameter_phases: int,
                                         min_current: int) -> Tuple[float, str, str, int]:
         current = 0
         mode = "stop"
@@ -792,6 +797,9 @@ class ChargeTemplate:
             message = self.SCHEDULED_CHARGING_REACHED_SCHEDULED_SOC
             current = min_current
             mode = "pv_charging"
+            # bei Überschuss-Laden mit der Phasenzahl aus den control_parameter laden,
+            # um die Umschaltung zu berücksichtigen.
+            phases = control_parameter_phases
         elif limit.selected == "amount" and used_amount >= limit.amount:
             message = self.SCHEDULED_CHARGING_REACHED_AMOUNT
         elif 0 < plan_data.remaining_time < 300:  # 5 Min vor spätestem Ladestart
@@ -825,10 +833,12 @@ class ChargeTemplate:
                                "ist. Falls vorhanden, wird mit EVU-Überschuss geladen.")
                     current = min_current
                     mode = "pv_charging"
+                    phases = control_parameter_phases
             else:
                 message = self.SCHEDULED_CHARGING_USE_PV
                 current = min_current
                 mode = "pv_charging"
+                phases = control_parameter_phases
         return current, mode, message, phases
 
     def standby(self) -> Tuple[int, str, str]:
