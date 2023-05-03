@@ -1257,14 +1257,19 @@ $numDevices = 9;
 			<?php } ?>
 
 			function visibility_housebatteryConfigured( data ) {
-				if ( data == 1 ) {
+				if ( data == "true" ) {
 					showSection('.device-option-housebattery');
 				} else {
 					hideSection('.device-option-housebattery');
 				}
 			}
 
-			function visibiltycheck(elementId, mqttpayload) {
+			function visibiltycheck(section, elementId, mqttpayload) {
+				if ( section == "bat") {
+					if ( elementId == 'configured' ) {
+						visibility_housebatteryConfigured( mqttpayload );
+					}
+				} else {
 				<?php for( $devicenum = 1; $devicenum <= $numDevices; $devicenum++ ) { ?>
 					if ( elementId == 'device_configuredDevices<?php echo $devicenum; ?>') {
 						visibility_device_configuredDevices<?php echo $devicenum; ?>( mqttpayload );
@@ -1306,10 +1311,7 @@ $numDevices = 9;
 						visibility_device_nameDevices<?php echo $devicenum; ?>( mqttpayload );
 					}
 				<?php } ?>
-
-				if ( elementId == 'boolHouseBatteryConfigured' ) {
-						visibility_housebatteryConfigured( mqttpayload );
-					}
+				}
 			}
 
 			$(function() {

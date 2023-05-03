@@ -12,7 +12,7 @@ function checkAllSaved(topic, value) {
      * @requires global var:changedValues - is declared with proxy in helperFunctions.js
      */
     topic = topic.replace(/^openWB\//, 'openWB/set/');
-    if ( changedValues.hasOwnProperty(topic) && changedValues[topic] == value ) {
+    if (changedValues.hasOwnProperty(topic) && changedValues[topic] == value) {
         // received topic-value-pair equals one that was send before
         delete changedValues[topic];  // delete it
         // proxy will initiate redirect to main page if array is now empty
@@ -27,13 +27,13 @@ function processMessages(mqttmsg, mqttpayload) {
      * @requires function:setInputValue - is declared in pvconfig.html
      * @requires function:setToggleBtnGroup  - is declared in pvconfig.html
      */
-    console.log("new message: "+mqttmsg+": "+mqttpayload);
+    console.log("new message: " + mqttmsg + ": " + mqttpayload);
     checkAllSaved(mqttmsg, mqttpayload);
     // last part of topic after /
-    var topicIdentifier = mqttmsg.substring(mqttmsg.lastIndexOf('/')+1);
+    var topicIdentifier = mqttmsg.substring(mqttmsg.lastIndexOf('/') + 1);
     // check if topic contains subgroup like /lp/1/
-    var topicSubGroup = mqttmsg.match( /(\w+)\/(\d\d?)\// );
-    if ( topicSubGroup != null ) {
+    var topicSubGroup = mqttmsg.match(/(\w+)\/(\d\d?)\//);
+    if (topicSubGroup != null) {
         // topic might be for one of several subgroups
         // topicSubGroup[0]=complete subgroup, [1]=suffix=first part between //, [1]=index=second part between //
         var suffix = topicSubGroup[1].charAt(0).toUpperCase() + topicSubGroup[1].slice(1);  // capitalize suffix
@@ -46,13 +46,13 @@ function processMessages(mqttmsg, mqttpayload) {
     // Could be a main on / off switch, check visibility func on main settings page
     visibiltycheck(elementId, mqttpayload);
     var element = $('#' + elementId);
-    if ( element.attr('type') == 'number' || element.attr('type') == 'text' || element.attr('type') == 'url' || element.attr('type') == 'password' || element.attr('type') == 'range' ) {
+    if (element.attr('type') == 'number' || element.attr('type') == 'text' || element.attr('type') == 'url' || element.attr('type') == 'password' || element.attr('type') == 'range') {
         originalValues[mqttmsg] = mqttpayload;
         setInputValue(elementId, mqttpayload);
-    } else if ( element.hasClass('btn-group-toggle') ) {
+    } else if (element.hasClass('btn-group-toggle')) {
         originalValues[mqttmsg] = mqttpayload;
         setToggleBtnGroup(elementId, mqttpayload);
-    } else if ( element.is('select') ) {
+    } else if (element.is('select')) {
         originalValues[mqttmsg] = mqttpayload;
         setInputValue(elementId, mqttpayload);
     } else {
