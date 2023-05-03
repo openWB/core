@@ -17,9 +17,9 @@ from modules.devices.discovergy.config import (
 log = logging.getLogger(__name__)
 
 
-def create_device(device_config: DiscovergyConfiguration):
+def create_device(device_config: Discovergy):
     session = get_http_session()
-    session.auth = (device_config.user, device_config.password)
+    session.auth = (device_config.configuration.user, device_config.configuration.password)
     return ConfigurableDevice(
         device_config=device_config,
         component_factory=ComponentFactoryByType(counter=counter.create_component, inverter=inverter.create_component),
@@ -29,7 +29,7 @@ def create_device(device_config: DiscovergyConfiguration):
 
 def read_legacy(user: str, password: str, meter_id_counter: str, meter_id_inverter: str):
     log.debug("Beginning update")
-    device = create_device(DiscovergyConfiguration(user=user, password=password))
+    device = create_device(Discovergy(configuration=DiscovergyConfiguration(user=user, password=password)))
     if meter_id_counter:
         device.add_component(DiscovergyCounterSetup(
             id=None, configuration=DiscovergyCounterConfiguration(meter_id=meter_id_counter)
