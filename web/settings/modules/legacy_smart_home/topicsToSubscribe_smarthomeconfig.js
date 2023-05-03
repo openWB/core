@@ -10,7 +10,7 @@
 
 var topicsToSubscribe = [
 	// global settings
-	["openWB/housebattery/boolHouseBatteryConfigured", 0],
+	["openWB/bat/config/configured", 0],
 	["openWB/LegacySmartHome/config/get/logLevel", 0],
 	["openWB/LegacySmartHome/config/get/maxBatteryPower", 0],
 	// SmartHome configuration
@@ -84,5 +84,4 @@ var topicsToSubscribe = [
 	["openWB/LegacySmartHome/config/get/Devices/+/device_shauth", 0],
 	["openWB/LegacySmartHome/config/get/Devices/+/device_measureshauth", 0],
 	["openWB/LegacySmartHome/config/get/Devices/+/device_measuresmaage", 0]
-
 ];
