@@ -27,6 +27,7 @@ from control import chargelog
 from control import cp_interruption
 from control import data
 from control import ev as ev_module
+from control.chargemode import Chargemode
 from control.ev import Ev
 from control import phase_switch
 from control.chargepoint_state import ChargepointState
@@ -1050,6 +1051,21 @@ class Chargepoint:
                           "/get/connected_vehicle/config", dataclasses.asdict(config_obj))
         except Exception:
             log.exception("Fehler im Prepare-Modul")
+
+    def cp_ev_chargemode_support_phase_switch(self) -> bool:
+        charging_ev = self.data.set.charging_ev_data
+        control_parameter = charging_ev.data.control_parameter
+        pv_auto_switch = (control_parameter.chargemode == Chargemode.PV_CHARGING and
+                          data.data.general_data.get_phases_chargemode(Chargemode.PV_CHARGING.value) == 0)
+        scheduled_auto_switch = (
+            control_parameter.chargemode == Chargemode.SCHEDULED_CHARGING and
+            control_parameter.submode == Chargemode.PV_CHARGING and
+            data.data.general_data.get_phases_chargemode(Chargemode.SCHEDULED_CHARGING.value) == 0)
+        return (self.cp_ev_support_phase_switch() and
+                self.data.get.charge_state and
+                (pv_auto_switch or scheduled_auto_switch) and
+                control_parameter.state == ChargepointState.CHARGING_ALLOWED or
+                control_parameter.state == ChargepointState.PHASE_SWITCH_DELAY)
 
     def cp_ev_support_phase_switch(self) -> bool:
         return (self.data.config.auto_phase_switch_hw and
