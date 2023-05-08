@@ -534,16 +534,16 @@ class Ev:
             Pub().pub("openWB/set/vehicle/"+str(self.num) +
                       "/control_parameter/timestamp_auto_phase_switch", None)
             # Wenn der Timer läuft, ist den Control-Parametern die alte Phasenzahl hinterlegt.
-            if self.data.control_parameter.phases == 3:
-                reserved = self.ev_template.data.max_current_single_phase * \
-                    230 - self.data.control_parameter.required_current * 3 * 230
+            if self.data.control_parameter.phases == 1:
+                reserved = self.data.control_parameter.required_current * \
+                    3 * 230 - self.ev_template.data.max_current_single_phase * 230
                 data.data.counter_all_data.get_evu_counter().data.set.reserved_surplus -= reserved
                 log.debug(
                     "Zurücksetzen der reservierten Leistung für die Phasenumschaltung. reservierte Leistung: " +
                     str(data.data.counter_all_data.get_evu_counter().data.set.reserved_surplus))
             else:
-                reserved = self.data.control_parameter.required_current * \
-                    3 * 230 - self.ev_template.data.max_current_single_phase * 230
+                reserved = self.ev_template.data.max_current_single_phase * \
+                    230 - self.data.control_parameter.required_current * 3 * 230
                 data.data.counter_all_data.get_evu_counter().data.set.reserved_surplus -= reserved
                 log.debug(
                     "Zurücksetzen der reservierten Leistung für die Phasenumschaltung. reservierte Leistung: " +

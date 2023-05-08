@@ -620,21 +620,19 @@ class Chargepoint:
                     Pub().pub("openWB/set/vehicle/" + str(charging_ev.num) +
                               "/control_parameter/timestamp_perform_phase_switch", None)
                     # Aktuelle Ladeleistung und Differenz wieder freigeben.
-                    if self.data.set.phases_to_use == 3:
-                        evu_counter.data.set.reserved_surplus -= charging_ev. \
-                            ev_template.data.max_current_single_phase * 3 * 230
-                    elif self.data.set.phases_to_use == 1:
+                    if self.data.set.phases_to_use == 1:
                         evu_counter.data.set.reserved_surplus -= charging_ev.ev_template. \
                             data.max_current_single_phase * 230
+                    else:
+                        evu_counter.data.set.reserved_surplus -= charging_ev. \
+                            ev_template.data.max_current_single_phase * 3 * 230
                     charging_ev.data.control_parameter.state = ChargepointState.WAIT_FOR_USING_PHASES
                 else:
                     # Wenn eine Umschaltung im Gange ist, muss erst gewartet werden, bis diese fertig ist.
-                    if self.data.set.phases_to_use == 3:
-                        message = "Umschaltung von 1 auf 3 Phasen."
-                    elif self.data.set.phases_to_use == 1:
+                    if self.data.set.phases_to_use == 1:
                         message = "Umschaltung von 3 auf 1 Phase."
                     else:
-                        raise ValueError(str(self.data.set.phases_to_use)+" ist keine gültige Phasenzahl (1/3).")
+                        message = "Umschaltung von 1 auf 3 Phasen."
                     self.set_state_and_log(message)
                 return
             if charging_ev.data.control_parameter.state == ChargepointState.WAIT_FOR_USING_PHASES:
@@ -662,17 +660,16 @@ class Chargepoint:
                                       str(self.data.set.phases_to_use) +
                                       "control_parameter phases " +
                                       str(charging_ev.data.control_parameter.phases))
-                            # 1 -> 3
-                            if charging_ev.data.control_parameter.phases == 3:
-                                message = "Umschaltung von 1 auf 3 Phasen."
-                                # Ladeleistung reservieren, da während der Umschaltung die Ladung pausiert wird.
-                                evu_counter.data.set.reserved_surplus += charging_ev. \
-                                    ev_template.data.max_current_single_phase * 3 * 230
-                            else:
+                            if charging_ev.data.control_parameter.phases == 1:
                                 message = "Umschaltung von 3 auf 1 Phase."
                                 # Ladeleistung reservieren, da während der Umschaltung die Ladung pausiert wird.
                                 evu_counter.data.set.reserved_surplus += charging_ev. \
                                     ev_template.data.max_current_single_phase * 230
+                            else:
+                                message = "Umschaltung von 1 auf 3 Phasen."
+                                # Ladeleistung reservieren, da während der Umschaltung die Ladung pausiert wird.
+                                evu_counter.data.set.reserved_surplus += charging_ev. \
+                                    ev_template.data.max_current_single_phase * 3 * 230
                             # Timestamp für die Durchführungsdauer
                             charging_ev.data.control_parameter.timestamp_perform_phase_switch = create_timestamp()
                             Pub().pub("openWB/set/vehicle/"+str(charging_ev.num) +
