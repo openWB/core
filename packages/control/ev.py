@@ -459,8 +459,8 @@ class Ev:
             feed_in_yield = 0
         evu_counter = data.data.counter_all_data.get_evu_counter()
         # verbleibender EVU-Überschuss unter Berücksichtigung der Einspeisegrenze und Speicherleistung
-        all_surplus = -(evu_counter.data.get.power + evu_counter.data.set.released_surplus -
-                        evu_counter.data.set.reserved_surplus + feed_in_yield)
+        all_surplus = (evu_counter.calc_surplus() - evu_counter.data.set.released_surplus +
+                       evu_counter.data.set.reserved_surplus - feed_in_yield)
         if phases_in_use == 1:
             direction_str = "Umschaltverzögerung von 1 auf 3"
             delay = pv_config.phase_switch_delay * 60
