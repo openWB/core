@@ -246,7 +246,7 @@ class Counter:
                     timestamp_switch_on_off = None
                     self.data.set.reserved_surplus -= threshold
                     message = self.SWITCH_ON_FALLEN_BELOW.format(pv_config.switch_on_threshold)
-                    control_parameter.state = ChargepointState.CHARGING_ALLOWED
+                    control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
             else:
                 # Timer starten
                 if (surplus >= threshold) and ((feed_in_limit and self.data.set.reserved_surplus == 0) or
