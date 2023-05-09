@@ -80,7 +80,7 @@ class ChargepointModule(AbstractChargepoint):
                 if response.json()["phases_target"] != phases_to_use:
                     ip_address = self.connection_module["configuration"]["ip_address"]
                     self.__session.post('http://'+ip_address+'/connect.php',
-                                        data={'phasetarget': str(phases_to_use)})
+                                        data={'phasetarget': str(1 if phases_to_use == 1 else 3)})
                     time.sleep(duration)
 
     def clear_rfid(self) -> None:
