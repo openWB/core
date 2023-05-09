@@ -118,27 +118,41 @@ class BatAll:
             log.exception("Fehler im Bat-Modul")
 
     def _max_bat_power_hybrid_system(self, battery: Bat) -> float:
-        if battery.data.get.power > 0:
-            parent = data.data.counter_all_data.get_entry_of_parent(battery.num)
-            if parent.get("type") == "inverter":
-                parent_data = data.data.pv_data[f"pv{parent['id']}"].data
-                # Bei einem Hybrid-System darf die Summe aus Batterie-Ladeleistung, die für den Algorithmus verwendet
-                # werden soll und PV-Leistung nicht größer als die max Ausgangsleistung des WR sein.
-                if parent_data.config.max_ac_out > 0:
-                    max_bat_power = parent_data.config.max_ac_out + parent_data.get.power
-                    if battery.data.get.power > max_bat_power:
-                        if battery.data.get.fault_state == FaultStateLevel.NO_ERROR:
-                            battery.data.get.fault_state = FaultStateLevel.WARNING.value
-                            battery.data.get.fault_str = ("Die maximale Entladeleistung des Wechselrichters" +
-                                                          " ist erreicht.")
-                            Pub().pub(f"openWB/set/bat/{battery.num}/get/fault_state",
-                                      battery.data.get.fault_state)
-                            Pub().pub(f"openWB/set/bat/{battery.num}/get/fault_str",
-                                      battery.data.get.fault_str)
-                        log.warning(
-                            f"Bat {battery.num}: Die maximale Entladeleistung des Wechselrichters ist erreicht.")
-                    return max(battery.data.get.power, max_bat_power)
-        return battery.data.get.power
+        # tested
+        parent = data.data.counter_all_data.get_entry_of_parent(battery.num)
+        if parent.get("type") == "inverter":
+            parent_data = data.data.pv_data[f"pv{parent['id']}"].data
+            # Bei einem Hybrid-System darf die Summe aus Batterie-Ladeleistung, die für den Algorithmus verwendet
+            # werden soll und PV-Leistung nicht größer als die max Ausgangsleistung des WR sein.
+            if parent_data.config.max_ac_out > 0:
+                max_bat_discharge_power = parent_data.config.max_ac_out + parent_data.get.power
+                return max_bat_discharge_power
+            else:
+                battery.data.get.fault_state = FaultStateLevel.ERROR.value
+                battery.data.get.fault_str = ("Maximale Entladeleistung des Wechselrichters" +
+                                              " mus bei einem Hybrid-System konfiguriert werden.")
+                Pub().pub(f"openWB/set/bat/{battery.num}/get/fault_state",
+                          battery.data.get.fault_state)
+                Pub().pub(f"openWB/set/bat/{battery.num}/get/fault_str",
+                          battery.data.get.fault_str)
+                raise ValueError("Maximale Entladeleistung des Wechselrichters" +
+                                 " mus bei einem Hybrid-System konfiguriert werden.")
+        else:
+            # Kein Hybrid-WR
+            # Maximal die Speicher-Leistung als Entladeleistung nutzen, um nicht unnötig Bezug zu erzeugen.
+            return abs(battery.data.get.power) + 50
+
+    def _limit_rundown_power(self, rundown_power):
+        available_power = 0
+        for battery in data.data.bat_data.values():
+            try:
+                available_power += self._max_bat_power_hybrid_system(battery)
+            except Exception:
+                log.exception(f"Fehler im Bat-Modul {battery.num}")
+        if rundown_power > available_power:
+            log.debug(
+                f"Verbleibende Speicher-Leistung durch maximale Ausgangsleistung auf {available_power}W begrenzt.")
+        return min(rundown_power, available_power)
 
     def setup_bat(self):
         """ prüft, ob mind ein Speicher vorhanden ist und berechnet die Summentopics.
@@ -147,7 +161,7 @@ class BatAll:
             if self.data.config.configured is True:
                 self._get_charging_power_left()
                 self._get_switch_on_state()
-                log.info(f"{self.data.set.charging_power_left}W verbliebende Speicher-Leistung")
+                log.info(f"{self.data.set.charging_power_left}W verbleibende Speicher-Leistung")
             else:
                 self.data.set.charging_power_left = 0
                 self.data.get.power = 0
@@ -160,37 +174,34 @@ class BatAll:
         """ ermittelt die Lade-Leistung des Speichers, die zum Laden der EV verwendet werden darf.
         """
         try:
-            available_power = 0
-            for battery in data.data.bat_data.values():
-                try:
-                    available_power += self._max_bat_power_hybrid_system(battery)
-                except Exception:
-                    log.exception(f"Fehler im Bat-Modul {battery.num}")
             config = data.data.general_data.data.chargemode_config.pv_charging
-            if not config.bat_prio:
-                self.data.set.charging_power_left = available_power
-                log.debug(f' Verbleibende Speicher-Leistung: {self.data.set.charging_power_left}W')
-                if self.data.get.soc < 100:
-                    if config.charging_power_reserve != 0:
-                        # Ladeleistungs-Reserve
-                        self.data.set.charging_power_left -= config.charging_power_reserve
-                        log.debug(f'Ladeleistungs-Reserve ({config.charging_power_reserve}W) subtrahieren: '
-                                  f'{self.data.set.charging_power_left}')
-                else:
-                    log.debug("Keine Ladeleistungs-Reserve für den Speicher vorhalten, da dieser bereits voll" +
-                              " geladen ist.")
-            # Wenn der Speicher Vorrang hat, darf die erlaubte Entlade-Leistung zum Laden der EV genutzt werden, wenn
-            # der Soc über dem minimalen Entlade-Soc liegt.
-            else:
+            self.data.set.charging_power_left = self.data.get.power
+            if config.bat_prio:
+                # Speicher-Vorrang
+                # Wenn der Speicher Vorrang hat, darf die erlaubte Entlade-Leistung zum Laden der EV genutzt werden,
+                # wenn der Soc über dem minimalen Entlade-Soc liegt. Dazu wird Bezug generiert, damit der Speicher
+                # entlädt. Dabei darf ein Hybridspeicher noch nicht am Limit sein.
                 if self.data.get.soc > config.rundown_soc:
-                    self.data.set.charging_power_left = config.rundown_power - data.data.cp_all_data.data.get.power
-                    log.debug(f"Erlaubte Entlade-Leistung nutzen ({config.rundown_power}W, davon bisher ungenutzt "
-                              f"{self.data.set.charging_power_left}W)")
+                    self.data.set.charging_power_left = config.rundown_power
+                    log.debug(f"Erlaubte Entlade-Leistung nutzen {config.rundown_power}W")
+                    self.data.set.charging_power_left = self._limit_rundown_power(
+                        config.rundown_power)
                 else:
                     # Wenn der Speicher entladen wird, darf diese Leistung nicht zum Laden der Fahrzeuge genutzt werden.
                     # 50 W Überschuss übrig lassen, die sich der Speicher dann nehmen kann. Wenn der Speicher
                     # schneller regelt als die LP, würde sonst der Speicher reduziert werden.
-                    self.data.set.charging_power_left = min(0, available_power) - 50
+                    self.data.set.charging_power_left = min(0, self.data.get.power) - 50
+            else:
+                # Fahrzeug-Vorrang
+                log.debug(f'Verbleibende Speicher-Leistung: {self.data.set.charging_power_left}W')
+                if config.charging_power_reserve != 0:
+                    if self.data.get.soc < 100:
+                        self.data.set.charging_power_left -= config.charging_power_reserve
+                        log.debug(f'Reservierte Ladeleistung ({config.charging_power_reserve}W) subtrahieren: '
+                                  f'{self.data.set.charging_power_left}')
+                    else:
+                        log.debug("Keine reservierte Ladeleistung für den Speicher vorhalten, da dieser bereits voll" +
+                                  " geladen ist.")
         except Exception:
             log.exception("Fehler im Bat-Modul")
 

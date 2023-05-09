@@ -10,7 +10,7 @@ fi
 
 echo "installing openWB 2 into \"${OPENWBBASEDIR}\""
 
-# install packages by pre-downloading out script so we only have one file to maintain
+# install packages by pre-downloading our script so we only have one file to maintain
 curl -s "https://raw.githubusercontent.com/openWB/core/master/runs/install_packages.sh" | bash -s
 
 echo "create group $OPENWB_GROUP"

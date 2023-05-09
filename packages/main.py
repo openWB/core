@@ -129,6 +129,10 @@ try:
     event_charge_template.set()
     event_cp_config = threading.Event()
     event_cp_config.set()
+    event_scheduled_charging_plan = threading.Event()
+    event_scheduled_charging_plan.set()
+    event_time_charging_plan = threading.Event()
+    event_time_charging_plan.set()
     event_copy_data = threading.Event()  # set: Kopieren abgeschlossen, reset: es wird kopiert
     event_copy_data.set()
     event_global_data_initialized = threading.Event()
@@ -138,11 +142,13 @@ try:
     prep = prepare.Prepare()
     soc = update_soc.UpdateSoc()
     set = setdata.SetData(event_ev_template, event_charge_template,
-                          event_cp_config, event_subdata_initialized)
+                          event_cp_config, event_scheduled_charging_plan, event_time_charging_plan,
+                          event_subdata_initialized)
     sub = subdata.SubData(event_ev_template, event_charge_template,
                           event_cp_config, loadvars_.event_module_update_completed,
                           event_copy_data, event_global_data_initialized, event_command_completed,
-                          event_subdata_initialized, soc.event_vehicle_update_completed)
+                          event_subdata_initialized, soc.event_vehicle_update_completed,
+                          event_scheduled_charging_plan, event_time_charging_plan)
     comm = command.Command(event_command_completed)
     t_sub = Thread(target=sub.sub_topics, args=())
     t_set = Thread(target=set.set_data, args=())

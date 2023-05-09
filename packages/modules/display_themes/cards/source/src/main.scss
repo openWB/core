@@ -1,0 +1,40 @@
+@import '@inkline/inkline/css/variables';
+@import '@inkline/inkline/css/mixins';
+
+:root {
+  --spacing: 0.5rem;
+}
+
+/* prevent touch gestures */
+html, body {
+  overscroll-behavior: none;
+}
+
+/* style scrollbar */
+body {
+  overflow-y: overlay;
+}
+
+/* Firefox */
+html,
+body {
+  scrollbar-width: thin;
+  scrollbar-color: color('primary-70') transparent;
+}
+
+/* width */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+/* Track */
+// ::-webkit-scrollbar-track {
+//   box-shadow: inset 0 0 2px grey;
+//   border-radius: 2px;
+// }
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+  background: color('primary-70');
+  border-radius: 2px;
+}

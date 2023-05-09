@@ -4,7 +4,7 @@ import pytest
 
 from modules.common.component_state import CounterState
 from modules.common.component_state import InverterState
-from modules.devices.discovergy import counter, inverter, utils
+from modules.devices.discovergy import api, counter, inverter
 from modules.devices.discovergy.device import read_legacy
 
 SAMPLE_COUNTER_STATE = CounterState(
@@ -34,7 +34,7 @@ class TestDiscovergyDevice:
         self.mock_get_last_reading = Mock(return_value=SAMPLE_COUNTER_STATE)
         monkeypatch.setattr(counter, 'get_counter_value_store', Mock(return_value=self.mock_counter_value_store))
         monkeypatch.setattr(inverter, 'get_inverter_value_store', Mock(return_value=self.mock_inverter_value_store))
-        monkeypatch.setattr(utils, 'get_last_reading', self.mock_get_last_reading)
+        monkeypatch.setattr(api, 'get_last_reading', self.mock_get_last_reading)
 
     def test_read_legacy_reads_counter(self, monkeypatch):
         # execution

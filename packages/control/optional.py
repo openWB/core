@@ -5,7 +5,8 @@ import logging
 from math import ceil  # Aufrunden
 from typing import Dict, List
 
-from dataclass_utils.factories import empty_dict_factory, emtpy_list_factory
+from dataclass_utils.factories import empty_dict_factory, empty_list_factory
+from modules.display_themes.cards.config import CardsDisplayTheme
 
 log = logging.getLogger(__name__)
 
@@ -13,7 +14,7 @@ log = logging.getLogger(__name__)
 @dataclass
 class EtGet:
     price: float = 0
-    price_list: List = field(default_factory=emtpy_list_factory)
+    price_list: List = field(default_factory=empty_list_factory)
 
 
 def get_factory() -> EtGet:
@@ -48,7 +49,7 @@ class InternalDisplay:
     pin_active: bool = False
     pin_code: str = "0000"
     standby: int = 60
-    theme: str = "cards"
+    theme: CardsDisplayTheme = CardsDisplayTheme()
 
 
 def int_display_factory() -> InternalDisplay:

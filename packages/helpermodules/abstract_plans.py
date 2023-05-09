@@ -38,7 +38,7 @@ def frequency_factory() -> Frequency:
 
 @dataclass
 class ScheduledLimit:
-    selected: str = "none"
+    selected: str = "amount"
     amount: int = 1000
     soc_limit: int = 90
     soc_scheduled: int = 80
