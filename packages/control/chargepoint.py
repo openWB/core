@@ -259,8 +259,7 @@ class Set:
 
 @dataclass
 class Config:
-    connection_module: Dict = field(default_factory=empty_dict_factory)
-    power_module: Dict = field(default_factory=empty_dict_factory)
+    configuration: Dict = field(default_factory=empty_dict_factory)
     ev: int = 0
     name: str = "Standard-Ladepunkt"
     type: Optional[str] = None
