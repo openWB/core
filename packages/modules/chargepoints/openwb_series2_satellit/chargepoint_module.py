@@ -1,7 +1,9 @@
 #!/usr/bin/python3
-import asyncio
+# import asyncio
 import logging
-import telnetlib3
+# import telnetlib3
+import telnetlib
+# import time
 from typing import Optional
 
 from modules.chargepoints.openwb_series2_satellit.config import OpenWBseries2Satellit
@@ -34,28 +36,58 @@ class ChargepointModule(AbstractChargepoint):
             self._validate_version()
 
     def _validate_version(self):
-        loop = asyncio.get_event_loop()
-        coro = telnetlib3.open_connection(self.config.configuration.ip_address, 8898, shell=self._shell)
-        reader, writer = loop.run_until_complete(coro)
-        loop.run_until_complete(writer.protocol.waiter_closed)
-
-    async def _shell(self, reader: telnetlib3.TelnetReader, writer):
-        for i in range(0, 3):
-            try:
-                outp = await asyncio.wait_for(reader.readline(), timeout=3)
-            except asyncio.exceptions.TimeoutError:
-                raise FaultState.error(
-                    "Firmware des openWB Satellit ist nicht mit openWB 2 kompatibel. Bitte den Support kontaktieren.")
-            if not outp:
-                # End of File
-                break
+        # telnetlib ist ab Python 3.11 deprecated
+        try:
+            with telnetlib.Telnet(self.config.configuration.ip_address, 8898) as client:
+                answer = client.read_until(bytearray("openWB Satellit 2.0", 'utf-8'), 2)
+            parsed_answer = answer.decode("utf-8").split("\r\n")[-1]
             for version in self.VALID_VERSIONS:
-                if version in outp:
+                if version in parsed_answer:
                     self.version = True
-                    return
-        else:
-            self.version = False
-            raise ValueError
+                    log.debug("Firmware des openWB satellit ist mit openWB software2 kompatibel.")
+                else:
+                    self.version = False
+                    raise ValueError
+        except (ConnectionRefusedError, ValueError):
+            raise FaultState.error(
+                "Firmware des openWB satellit ist nicht mit openWB software2 kompatibel. "
+                "Bitte den Support kontaktieren.")
+        # Verbindungen werden nicht geschlossen
+        # def get_or_create_eventloop() -> asyncio.AbstractEventLoop:
+        #     try:
+        #         return asyncio.get_event_loop()
+        #     except RuntimeError:
+        #         loop = asyncio.new_event_loop()
+        #         asyncio.set_event_loop(loop)
+        #         return asyncio.get_event_loop()
+        # loop = get_or_create_eventloop()
+        # coro = telnetlib3.open_connection(self.config.configuration.ip_address, 8898, shell=self._shell)
+        # reader, writer = loop.run_until_complete(coro)
+        # loop.run_until_complete(writer.protocol.waiter_closed)
+        # time.sleep(2)
+        # writer.close()
+        # reader.close()
+
+    # async def _shell(self, reader: telnetlib3.TelnetReader, writer: telnetlib3.TelnetWriter):
+    #     for i in range(0, 3):
+    #         try:
+    #             outp = await asyncio.wait_for(reader.readline(), timeout=3)
+    #         except asyncio.exceptions.TimeoutError:
+    #             # writer.close()
+    #             raise FaultState.error(
+    #                 "Firmware des openWB satellit ist nicht mit openWB software2 kompatibel. "
+    #                 "Bitte den Support kontaktieren.")
+    #         if not outp:
+    #             # End of File
+    #             break
+    #         for version in self.VALID_VERSIONS:
+    #             if version in outp:
+    #                 self.version = True
+    #                 log.debug("Firmware des openWB satellit ist mit openWB software2 kompatibel.")
+    #                 return
+    #     else:
+    #         self.version = False
+    #         raise ValueError
 
     def _counter_client_factory(self, client: modbus.ModbusTcpClient_) -> Sdm630:
         if self.config.configuration.counter_type == "sdm630":
