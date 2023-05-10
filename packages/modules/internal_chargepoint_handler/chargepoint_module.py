@@ -94,6 +94,7 @@ class ChargepointModule(AbstractChargepoint):
         else:
             if self.__client.evse_client.is_precise_current_active() is False:
                 self.__client.evse_client.activate_precise_current()
+            time.sleep(0.1)
             self._precise_current = self.__client.evse_client.is_precise_current_active()
 
     def set_current(self, current: float) -> None:
