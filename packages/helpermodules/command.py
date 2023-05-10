@@ -632,7 +632,7 @@ class Command:
             pub_user_message(payload, connection_id, "Update gestartet.", MessageType.INFO)
             subprocess.run([
                 str(parent_file / "runs" / "update_self.sh"),
-                data.data._system_data["system"].data["current_branch"]])
+                SubData.system_data["system"].data["current_branch"]])
 
     def systemFetchVersions(self, connection_id: str, payload: dict) -> None:
         log.info("Fetch versions requested")
