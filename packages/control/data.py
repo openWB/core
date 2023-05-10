@@ -392,7 +392,19 @@ class Data:
     def __copy_cp_data(self) -> None:
         self.cp_data.clear()
         for cp in SubData.cp_data:
-            self.cp_data[cp] = copy.deepcopy(SubData.cp_data[cp].chargepoint)
+            # Workaround, da mit Python3.9/pymodbus2.5 eine pymodbus-Instanz nicht mehr kopiert werden kann.
+            # Bei einer Neukonfiguration eines Device/Komponente wird dieses Neuinitialisiert. Nur bei Komponenten
+            # mit simcount werden Werte aktualisiert, diese sollten jedoch nur einmal nach dem Auslesen aktualisiert
+            # werden, sodass die Nutzung einer Referenz vorerst funktioniert.
+            # Verwendung der Referenz führt bei der Pro zu Instabilität.
+            try:
+                self.cp_data[cp] = copy.deepcopy(SubData.cp_data[cp].chargepoint)
+            except TypeError:
+                self.cp_data[cp] = Chargepoint(SubData.cp_data[cp].chargepoint.num, None)
+                self.cp_data[cp].template = copy.deepcopy(SubData.cp_data[cp].chargepoint.template)
+                self.cp_data[cp].set_current_prev = copy.deepcopy(SubData.cp_data[cp].chargepoint.set_current_prev)
+                self.cp_data[cp].data = copy.deepcopy(SubData.cp_data[cp].chargepoint.data)
+                self.cp_data[cp].chargepoint_module = SubData.cp_data[cp].chargepoint.chargepoint_module
         self.cp_all_data = copy.deepcopy(SubData.cp_all_data)
         self.cp_template_data = copy.deepcopy(SubData.cp_template_data)
         for chargepoint in self.cp_data:
