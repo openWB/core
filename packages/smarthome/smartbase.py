@@ -1,13 +1,13 @@
 #!/usr/bin/python3
-from datetime import datetime, timezone
-from smarthome.smartbut import Sbshelly
-from smarthome.smartmeas import Slhttp, Slavm, Slmystrom
-from smarthome.smartmeas import Sljson, Slsmaem, Slshelly, Sltasmota, Slmqtt
-from smarthome.smartmeas import Slsdm630, Sllovato, Slsdm120, Slwe514, Slfronius
-from smarthome.smartbase0 import Sbase0
 import time
 import os
 from typing import Dict, Tuple, Any
+from smarthome.smartbase0 import Sbase0
+from smarthome.smartmeas import Slsdm630, Sllovato, Slsdm120, Slwe514, Slfronius
+from smarthome.smartmeas import Sljson, Slsmaem, Slshelly, Sltasmota, Slmqtt
+from smarthome.smartmeas import Slhttp, Slavm, Slmystrom
+from smarthome.smartbut import Sbshelly
+from datetime import datetime, timezone
 import logging
 log = logging.getLogger(__name__)
 
@@ -27,7 +27,6 @@ class Sbase(Sbase0):
     def __init__(self) -> None:
         # setting
         super().__init__()
-        log.debug('__init__ Sbase executed')
         self.mqtt_param = {}  # type: Dict[str, str]
         self.mqtt_param_del = {}  # type: Dict[str, str]
         self.device_name = 'none'
@@ -128,9 +127,6 @@ class Sbase(Sbase0):
         self.btchange = 0
         self._mydevicemeasure = 'none'  # type: Any
 
-    def __del__(self) -> None:
-        log.debug('__del__ Sbase executed ')
-
     def prewatt(self, uberschuss: int, uberschussoffset: int) -> None:
         self._uberschuss = uberschuss
         self._uberschussoffset = uberschussoffset
@@ -170,7 +166,8 @@ class Sbase(Sbase0):
         else:
             self.relais = 0
         self.mqtt_param = {}
-        pref = 'openWB/LegacySmartHome/Devices/' + str(self.device_nummer) + '/'
+        #  pref = 'openWB/SmartHome/Devices/' + str(self.device_nummer) + '/'
+        pref = '/' + str(self.device_nummer) + '/'
         self.mqtt_param[pref + 'RelayStatus'] = str(self.relais)
         if (self.c_mantime_f == 'Y') and (self.device_manual != 1):
             # nach Ausschalten manueller Modus mindestens 30 Sek +
@@ -280,7 +277,7 @@ class Sbase(Sbase0):
             elif (key == 'device_mineinschaltdauer'):
                 self._device_mineinschaltdauer = valueint * 60
             elif (key == 'device_mindayeinschaltdauer'):
-                self._device_mineinschaltdauer = valueint * 60
+                self._device_mindayeinschaltdauer = valueint * 60
             elif (key == 'device_maxeinschaltdauer'):
                 self._device_maxeinschaltdauer = valueint * 60
             elif (key == 'device_homeConsumtion'):
@@ -398,7 +395,8 @@ class Sbase(Sbase0):
                          + "Sbase überlesen " + key +
                          " " + value)
         self._first_run = 0
-        pref = 'openWB/LegacySmartHome/Devices/' + str(self.device_nummer) + '/'
+        #  pref = 'openWB/SmartHome/Devices/' + str(self.device_nummer) + '/'
+        pref = '/' + str(self.device_nummer) + '/'
         self.mqtt_param_del[pref + 'RelayStatus'] = '0'
         self.mqtt_param_del[pref + 'Watt'] = '0'
         self.mqtt_param_del[pref + 'oncountnor'] = '0'
@@ -895,7 +893,7 @@ class Sbase(Sbase0):
                      + "ung auf Einschalt oder Ausschaltschwelle ")
             return
         # Device mit Anlauferkennung (mehrfach pro tag)
-        # welches im pv-modus ist ?
+        # welches im PV Modus ist ?
         if ((self.devstatus == 10) and (self._device_startupmuldetection == 1)
            and (self._device_startupdetection == 1)
            and (int(self.oncountnor) > 0)):
