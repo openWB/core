@@ -305,7 +305,7 @@ class UpdateConfig:
                    "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_type$",
                    "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_updatesec$",
                    "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_username$",
-	
+
                    "^openWB/system/boot_done$",
                    "^openWB/system/dataprotection_acknowledged$",
                    "^openWB/system/debug_level$",

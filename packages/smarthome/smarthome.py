@@ -31,7 +31,7 @@ def smarthome_handler() -> None:
                     speichersoc = 100
             except Exception:
                 log.exception("Fehler beim Auslesen der Ramdisk " +
-                            "(speichervorhanden,speicherleistung,speichersoc): ")
+                              "(speichervorhanden,speicherleistung,speichersoc): ")
                 speicherleistung = 0
                 speichersoc = 100
             watt = SubData.counter_data[f"counter{SubData.counter_all_data.get_id_evu_counter()}"].data.get.power * -1
