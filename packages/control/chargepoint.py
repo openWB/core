@@ -714,7 +714,11 @@ class Chargepoint:
                         self.data.config.auto_phase_switch_hw):
                     phases = 1
                 else:
-                    phases = self.data.set.phases_to_use
+                    if self.data.set.phases_to_use != 0:
+                        phases = self.data.set.phases_to_use
+                    else:
+                        # phases_target
+                        phases = self.data.config.connected_phases
             log.debug(f"Phasenzahl Lademodus: {phases}")
         elif charging_ev.data.control_parameter.state == ChargepointState.PERFORMING_PHASE_SWITCH:
             phases = self.data.set.phases_to_use
