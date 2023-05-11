@@ -847,16 +847,7 @@ class Chargepoint:
             vehicle = self.template.get_ev(self.data.get.rfid or self.data.set.rfid, self.data.config.ev)[0]
         else:
             vehicle = -1
-        if vehicle != -1:
-            charging_ev = self._get_charging_ev(vehicle, ev_list)
-        else:
-            # Wenn kein EV zur Ladung zugeordnet wird, auf hinterlegtes EV zurückgreifen.
-            try:
-                charging_ev = ev_list[f"ev{self.data.config.ev}"]
-            except KeyError:
-                log.error(f"EV {self.data.config.ev} konnte nicht gefunden werden, daher wird das Standardfahrzeug" +
-                          " verwendet.")
-                charging_ev = ev_list["ev0"]
+        charging_ev = self._get_charging_ev(vehicle, ev_list)
         self._pub_connected_vehicle(charging_ev)
 
     def update(self, ev_list: Dict[str, Ev]) -> None:
