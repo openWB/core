@@ -18,6 +18,8 @@ mqttport = 1886
 
 bp = '/var/www/html/openWB'
 
+def readmq() -> None:
+    logging.getLogger("smarthome").setLevel(logging.DEBUG)
 
 def smarthome_handler() -> None:
     def handler() -> None:
