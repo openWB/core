@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import logging
 from enum import IntEnum
+import time
 from typing import Optional, Tuple
 
 from modules.common import modbus
@@ -65,6 +66,8 @@ class Evse:
         log.debug("Bit zur Angabe der Ströme in 0,1A-Schritten wird gesetzt.")
         value = self.client.read_holding_registers(2005, ModbusDataType.UINT_16, unit=self.id)
         self.client.delegate.write_registers(2005, value ^ self.PRECISE_CURRENT_BIT, unit=self.id)
+        # Zeit zum Verarbeiten geben
+        time.sleep(1)
 
     def set_current(self, current: int) -> None:
         self.client.delegate.write_registers(1000, current, unit=self.id)
