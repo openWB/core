@@ -37,9 +37,16 @@ else
 fi
 
 if rotation=$(mosquitto_sub -p 1886 -t "openWB/optional/int_display/rotation" -C 1 -W 1); then
-	rotationValue=$((rotation / 90))
+	rotationValue=$(((rotation / 90 + 4) % 4))  # this allows negative rotation angles
+	current_rotation=$(grep "^lcd_rotate=[0-3]$" /boot/config.txt | grep -o "[0-3]$")
+	echo "current display rotation: $current_rotation"
 	echo "new display rotation: '$rotation' -> $rotationValue"
-	sudo sed -i "s/^lcd_rotate=[0-3]$/lcd_rotate=${rotationValue}/" "/boot/config.txt"
+	if ((current_rotation != rotationValue)); then
+		echo "updating..."
+		sudo sed -i "s/^lcd_rotate=[0-3]$/lcd_rotate=${rotationValue}/" "/boot/config.txt"
+	else
+		echo "no update necessary"
+	fi
 else
 	echo "failed getting configured display rotation! skipping update of boot settings"
 fi
