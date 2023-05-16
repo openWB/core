@@ -1,8 +1,5 @@
 /**
  * Functions to provide services for MQTT
- *
- * @author Kevin Wieland
- * @author Michael Ortenstein
  */
 
 // these topics will be subscribed
@@ -15,6 +12,7 @@ var topicsToSubscribe = {
 	"openWB/optional/int_display/theme": false,
 }
 var isssTopicsToSubscribe = {
+	"openWB/general/extern_display_mode": false,
 	"openWB/isss/parentWB": false,
 	"openWB/isss/parentCPlp1": false,
 	"openWB/isss/parentCPlp2": false,
@@ -23,14 +21,14 @@ var isssTopicsToSubscribe = {
 var data = {};
 var retries = 0;
 
-//Connect Options
+// Connect Options
 var isSSL = location.protocol == 'https:';
 var port = parseInt(location.port) || (location.protocol == "https:" ? 443 : 80);
 
 var options = {
 	timeout: 5,
 	useSSL: isSSL,
-	//Gets Called if the connection has been established
+	// Gets Called if the connection has been established
 	onSuccess: function () {
 		console.debug("connected!");
 		retries = 0;
@@ -41,7 +39,7 @@ var options = {
 			client.subscribe(topic, { qos: 0 });
 		});
 	},
-	//Gets Called if the connection could not be established
+	// Gets Called if the connection could not be established
 	onFailure: function (message) {
 		console.error("error connecting to broker!");
 		setTimeout(() => {
@@ -58,16 +56,19 @@ console.debug("connecting...");
 client.connect(options);
 timeOfLastMqttMessage = Date.now();
 
-//Gets  called if the websocket/mqtt connection gets disconnected for any reason
+// Gets called if the websocket/mqtt connection gets disconnected for any reason
 client.onConnectionLost = function (responseObject) {
 	console.debug("reconnecting...");
 	setTimeout(() => {
 		client.connect(options);
 	}, 2000);
 };
-//Gets called whenever you receive a message
+// Gets called whenever you receive a message
 client.onMessageArrived = function (message) {
-	if (message.destinationName.includes("/isss/")){
+	if (
+		message.destinationName.includes("/isss/") ||
+		message.destinationName.includes("/general/extern_display_mode")
+	){
 		isssTopicsToSubscribe[message.destinationName] = true;
 	} else {
 		topicsToSubscribe[message.destinationName] = true;

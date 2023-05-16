@@ -1,15 +1,11 @@
 /**
  * Functions to update graph and gui values via MQTT-messages
- *
- * @author Kevin Wieland
- * @author Michael Ortenstein
- * @author Lutz Bender
  */
 
+/** @function reloadDisplay
+ * triggers a reload of the current page
+ */
 function reloadDisplay() {
-	/** @function reloadDisplay
-	 * triggers a reload of the current page
-	 */
 	// wait some seconds to allow other instances receive this message
 	setTimeout(() => {
 		publish("0", "openWB/set/system/reloadDisplay");
@@ -39,6 +35,9 @@ function setIframeSource() {
 		let host = location.host;
 		var query = "";
 		if (data["openWB/general/extern"]) {
+			if (data["openWB/general/extern_display_mode"] == "local") {
+				addLog("Local display in extern mode not yet supported! fallback to main");
+			}
 			host = data["openWB/isss/parentWB"];
 			query += `?parentChargePoint1=${data["openWB/isss/parentCPlp1"]}`;
 			query += `&parentChargePoint2=${data["openWB/isss/parentCPlp2"]}`;
