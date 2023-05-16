@@ -768,6 +768,8 @@ class SetData:
                 self._validate_value(msg, "json")
             elif "openWB/set/optional/rfid/active" in msg.topic:
                 self._validate_value(msg, bool)
+            elif "openWB/set/optional/int_display/rotation" in msg.topic:
+                self._validate_value(msg, int, [(0, 0), (90, 90), (180, 180), (270, 270)])
             elif "openWB/set/optional/int_display/active" in msg.topic:
                 self._validate_value(msg, bool)
             elif "openWB/set/optional/int_display/on_if_plugged_in" in msg.topic:
