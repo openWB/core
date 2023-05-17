@@ -1,10 +1,10 @@
 #!/usr/bin/python3
 from smarthome.smartcommon import mainloop, initparam
-import time
 import logging
 from threading import Thread
 from helpermodules.subdata import SubData
-log = logging.getLogger(__name__)
+log = logging.getLogger()
+
 #
 #  openwb 2.0 spec
 mqttcg = 'openWB/LegacySmartHome/config/get/'
@@ -21,6 +21,7 @@ bp = '/var/www/html/openWB'
 
 def readmq() -> None:
     logging.getLogger("smarthome").setLevel(logging.DEBUG)
+    log.info("*** Smarthome openWB readmq Start ***")
 
 
 def smarthome_handler() -> None:
@@ -40,10 +41,9 @@ def smarthome_handler() -> None:
                 speichersoc = 100
             watt = SubData.counter_data[f"counter{SubData.counter_all_data.get_id_evu_counter()}"].data.get.power * -1
             mainloop(watt, speicherleistung, speichersoc)
-            time.sleep(5)
+            #  time.sleep(5)
         except Exception:
             log.exception("Fehler im Smarthome-Handler")
     # run as thread for logging reasons
-    log.info("*** Smarthome openWB 2.0 Start ***")
     initparam(mqttcg, mqttcs, mqttsdevstat, mqttsglobstat, mqtttopicdisengageable, ramdiskwrite, mqttport)
     Thread(target=handler, args=(), name="smarthome").start()
