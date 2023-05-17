@@ -105,6 +105,7 @@ class ChargepointModule(AbstractChargepoint):
 
     def get_values(self, phase_switch_cp_active: bool, last_tag: str) -> Tuple[ChargepointState, float]:
         try:
+            self._check_hardware()
             _, power = self.__client.meter_client.get_power()
             if power < self.PLUG_STANDBY_POWER_THRESHOLD:
                 power = 0
@@ -163,6 +164,15 @@ class ChargepointModule(AbstractChargepoint):
         self.store.set(chargepoint_state)
         self.store.update()
         return chargepoint_state, self.set_current_evse
+
+    def _check_hardware(self):
+        if self.__client.meter_client is None and self.__client.evse_client is None:
+            raise Exception("Auslesen von Zähler UND Evse nicht möglich. Vermutlich ist der USB-Adapter defekt.")
+        if self.__client.meter_client is None:
+            raise Exception("Der Zähler antwortet nicht. Vermutlich ist der Zähler falsch konfiguriert oder defekt.")
+        if self.__client.evse_client is None:
+            raise Exception(
+                "Auslesen der EVSE nicht möglich. Vermutlich ist die EVSE defekt oder hat eine unbekannte Modbus-ID.")
 
     def perform_phase_switch(self, phases_to_use: int, duration: int) -> None:
         gpio_cp, gpio_relay = self.__client.get_pins_phase_switch(phases_to_use)
