@@ -89,6 +89,7 @@ class ChargepointModule(AbstractChargepoint):
         self.__client = ClientFactory(self.config.id, self.config.serial_client)
         time.sleep(0.1)
         version = self.__client.evse_client.get_firmware_version()
+        self._check_hardware()
         if version < 17:
             self._precise_current = False
         else:
@@ -105,7 +106,6 @@ class ChargepointModule(AbstractChargepoint):
 
     def get_values(self, phase_switch_cp_active: bool, last_tag: str) -> Tuple[ChargepointState, float]:
         try:
-            self._check_hardware()
             _, power = self.__client.meter_client.get_power()
             if power < self.PLUG_STANDBY_POWER_THRESHOLD:
                 power = 0
