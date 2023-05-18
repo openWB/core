@@ -1,8 +1,6 @@
 #!/usr/bin/python3
-import subprocess
 from smarthome.smartbase import Sbase
 import logging
-
 log = logging.getLogger(__name__)
 
 
@@ -11,7 +9,6 @@ class Sratiotherm(Sbase):
         # setting
         super().__init__()
         self._dynregel = 1
-        log.debug('__init__ Sratiotherm executed')
 
     def getwatt(self, uberschuss: int, uberschussoffset: int) -> None:
         self.prewatt(uberschuss, uberschussoffset)
@@ -21,8 +18,7 @@ class Sratiotherm(Sbase):
                         str(self.devuberschuss),
                         str(forcesend)]
         try:
-            self.proc = subprocess.Popen(argumentList)
-            self.proc.communicate()
+            self.callpro(argumentList)
             self.answer = self.readret()
             self.newwatt = int(self.answer['power'])
             self.newwattk = int(self.answer['powerc'])
@@ -45,8 +41,7 @@ class Sratiotherm(Sbase):
                         str(self.device_nummer), str(self._device_ip),
                         str(self.devuberschuss)]
         try:
-            self.proc = subprocess.Popen(argumentList)
-            self.proc.communicate()
+            self.callpro(argumentList)
         except Exception as e1:
             log.warning("(" + str(self.device_nummer) +
                         ") on / off  %s %d %s Fehlermeldung: %s "
