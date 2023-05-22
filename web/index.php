@@ -64,13 +64,17 @@ if ($isExtern) {
 // check if theme cookie exists and theme is installed
 // else set standard theme
 if (!(isset($_COOKIE["openWBTheme"]) === true) || !(is_dir("themes/" . $_COOKIE["openWBTheme"]) === true)) {
-	$_COOKIE["openWBTheme"] = "standard";
+	$_COOKIE["openWBTheme"] = "standard_legacy";
 }
 // expand expiring-date to now + 2 years
 $expire = time() + (60 * 60 * 24 * 365 * 2);
 setcookie("openWBTheme", $_COOKIE["openWBTheme"], $expire, "/openWB/");
 if (file_exists($_SERVER["DOCUMENT_ROOT"] . BASE_WEB_PATH . "themes/" . $_COOKIE["openWBTheme"] . "/theme.php")) {
-	include  $_SERVER["DOCUMENT_ROOT"] . BASE_WEB_PATH . "themes/" . $_COOKIE["openWBTheme"] . "/theme.php";
+	$target = "themes/" . $_COOKIE["openWBTheme"] . "/theme.php";
+} elseif( file_exists($_SERVER['DOCUMENT_ROOT'] . '/openWB/web/themes/' . $_COOKIE['openWBTheme'] . '/theme.html') ) {
+	 $target = "themes/" . $_COOKIE["openWBTheme"] . "/theme.html";
 } else {
-	include  $_SERVER["DOCUMENT_ROOT"] . BASE_WEB_PATH . "themes/" . $_COOKIE["openWBTheme"] . "/theme.html";
+	$target = "themes/".$_COOKIE["openWBTheme"]."/index.html";
 }
+redirect($target);
+
