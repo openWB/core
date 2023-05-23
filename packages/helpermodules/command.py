@@ -563,6 +563,10 @@ class Command:
         Pub().pub(f'openWB/set/log/monthly/{payload["data"]["month"]}',
                   measurement_log.get_monthly_log(payload["data"]["month"]))
 
+    def getYearlyLog(self, connection_id: str, payload: dict) -> None:
+        Pub().pub(f'openWB/set/log/yearly/{payload["data"]["year"]}',
+                  measurement_log.get_yearly_log(payload["data"]["year"]))
+
     def initCloud(self, connection_id: str, payload: dict) -> None:
         parent_file = Path(__file__).resolve().parents[2]
         try:

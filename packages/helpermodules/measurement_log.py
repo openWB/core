@@ -251,17 +251,18 @@ def get_monthly_log(date: str):
         pass
     return []
 
+
 def get_yearly_log(date: str):
     entries = []
-    for month in range(1,13):
-        print(Path(__file__).resolve().parents[2]/"data"/"monthly_log"/f"{date}{month:02}.json")
+    for month in range(1, 13):
         try:
-            with open(Path(__file__).resolve().parents[2]/"data"/"monthly_log"/f"{date}{month:02}.json", "r") as jsonFile:
+            with open(Path(__file__).resolve().parents[2]/"data"/"monthly_log"/f"{date}{month:02}.json",
+                      "r") as jsonFile:
                 content = json.load(jsonFile)["totals"]
-                content.update({"date": month})
+                content.update({"date": f"{date}{month}"})
                 entries.append(content)
         except FileNotFoundError:
-            pass
+            log.debug(f"Kein Monatslog für Monat {month} gefunden.")
     return {"entries": entries, "totals": get_totals(entries)}
 
 
