@@ -1,5 +1,3 @@
-
-
 from decimal import Decimal
 import json
 import logging
@@ -206,27 +204,35 @@ def save_log(folder):
     return content["totals"]
 
 
-def get_totals(entries: List) -> Dict:
-    totals = {"cp": {}, "counter": {}, "pv": {}, "bat": {}}
-    prev_entry = {}
+def get_totals(entries: List, sum_up_diffs: bool = False) -> Dict:
+    # beim Jahreslog werden die Summen aus den Monatssummen berechnet, bei allen anderen aus den absoluten Zählerwerten
+    totals: Dict[str, Dict] = {"cp": {}, "counter": {}, "pv": {}, "bat": {}}
+    prev_entry: Dict = {}
     for group in totals.keys():
         for entry in entries:
             for module in entry[group]:
                 if not prev_entry or module not in totals[group]:
-                    totals[group][module] = {"exported": 0} if group == "pv" else {"imported": 0, "exported": 0}
+                    if sum_up_diffs:
+                        totals[group][module] = entry[group][module]
+                    else:
+                        totals[group][module] = {"exported": 0} if group == "pv" else {"imported": 0, "exported": 0}
                 else:
                     for key, value in entry[group][module].items():
                         if key != "soc":
-                            try:
-                                prev_value = prev_entry[group][module][key]
-                            # Wenn ein Modul neu hinzugefügt wurde, das es mit dieser ID schonmal gab, werden die Werte
-                            # zusammen addiert.
-                            except KeyError:
-                                prev_value = entry[group][module][key]
-                            # avoid floating point issues with using Decimal
-                            value = (Decimal(str(value))
-                                     - Decimal(str(prev_value))
-                                     + Decimal(str(totals[group][module][key])))
+                            if sum_up_diffs:
+                                value = (Decimal(str(value))
+                                         + Decimal(str(totals[group][module][key])))
+                            else:
+                                try:
+                                    prev_value = prev_entry[group][module][key]
+                                # Wenn ein Modul neu hinzugefügt wurde, das es mit dieser ID schonmal gab, werden die
+                                # Werte zusammen addiert.
+                                except KeyError:
+                                    prev_value = entry[group][module][key]
+                                # avoid floating point issues with using Decimal
+                                value = (Decimal(str(value))
+                                         - Decimal(str(prev_value))
+                                         + Decimal(str(totals[group][module][key])))
                             value = f'{value: f}'
                             # remove trailing zeros
                             totals[group][module][key] = float(value) if "." in value else int(value)
@@ -258,12 +264,13 @@ def get_yearly_log(date: str):
         try:
             with open(Path(__file__).resolve().parents[2]/"data"/"monthly_log"/f"{date}{month:02}.json",
                       "r") as jsonFile:
-                content = json.load(jsonFile)["totals"]
+                content = json.load(jsonFile)
+                content = content["totals"]
                 content.update({"date": f"{date}{month}"})
                 entries.append(content)
         except FileNotFoundError:
             log.debug(f"Kein Monatslog für Monat {month} gefunden.")
-    return {"entries": entries, "totals": get_totals(entries)}
+    return {"entries": entries, "totals": get_totals(entries, sum_up_diffs=True)}
 
 
 def update_daily_yields(totals):
