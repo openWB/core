@@ -21,8 +21,8 @@ class KostalSem:
 
 
 class KostalSemCounterConfiguration:
-    def __init__(self, meter_id: Optional[str] = None):
-        self.meter_id = meter_id
+    def __init__(self):
+        pass
 
 
 class KostalSemCounterSetup(ComponentSetup[KostalSemCounterConfiguration]):
