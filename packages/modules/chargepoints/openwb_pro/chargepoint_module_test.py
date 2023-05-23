@@ -1,6 +1,7 @@
 from unittest.mock import Mock
 
 import requests_mock
+from modules.chargepoints.openwb_pro.config import OpenWBPro, OpenWBProConfiguration
 
 
 from modules.common.component_state import ChargepointState
@@ -17,13 +18,7 @@ def test_openwb_pro(monkeypatch, requests_mock: requests_mock.mock):
     requests_mock.post(f'http://{SAMPLE_IP}/connect.php')
     requests_mock.get(f'http://{SAMPLE_IP}/connect.php', json=SAMPLE)
 
-    cp = chargepoint_module.ChargepointModule(0, {
-        "type": "openwb_pro",
-        "name": "openWB Pro",
-        "configuration": {
-                "ip_address": SAMPLE_IP
-        }
-    }, {})
+    cp = chargepoint_module.ChargepointModule(OpenWBPro(configuration=OpenWBProConfiguration(ip_address=SAMPLE_IP)))
 
     # execution
     cp.get_values()

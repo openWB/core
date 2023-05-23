@@ -51,6 +51,22 @@ chmod 666 "$LOGFILE"
 		fi
 	) &
 
+	boot_config_source="$OPENWBBASEDIR/web/files/boot_config.txt"
+	boot_config_target="/boot/config.txt"
+	echo "checking init in $boot_config_target..."
+	if versionMatch "$boot_config_source" "$boot_config_target"; then
+		echo "already up to date"
+	else
+		echo "openwb section not found or outdated"
+		pattern_begin=$(grep -m 1 '#' "$boot_config_source")
+		pattern_end=$(grep '#' "$boot_config_source" | tail -n 1)
+		sudo sed -i "/$pattern_begin/,/$pattern_end/d" "$boot_config_target"
+		echo "adding init to $boot_config_target..."
+		sudo tee -a "$boot_config_target" <"$boot_config_source" >/dev/null
+		echo "done"
+		echo "new configuration active after next boot"
+	fi
+
 	# check group membership
 	echo "Group membership..."
 	for group in "input" "dialout"; do

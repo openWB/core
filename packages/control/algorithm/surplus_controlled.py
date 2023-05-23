@@ -121,7 +121,7 @@ class SurplusControlled:
                     if (cp.data.set.charging_ev_data.ev_template.data.prevent_charge_stop is False and
                             phase_switch_neccessary() is False):
                         threshold = evu_counter.calc_switch_off_threshold(cp)[0]
-                        if evu_counter.calc_surplus() - cp.data.set.required_power < threshold:
+                        if evu_counter.calc_raw_surplus() - cp.data.set.required_power < threshold:
                             control_parameter.required_currents = [0]*3
                 else:
                     control_parameter.required_currents = [0]*3
@@ -140,7 +140,8 @@ class SurplusControlled:
 
     def check_switch_on(self) -> None:
         for cp in get_chargepoints_pv_charging():
-            if cp.data.set.charging_ev_data.data.control_parameter.state == ChargepointState.NO_CHARGING_ALLOWED:
+            if (cp.data.set.charging_ev_data.data.control_parameter.state == ChargepointState.NO_CHARGING_ALLOWED or
+                    cp.data.set.charging_ev_data.data.control_parameter.state == ChargepointState.SWITCH_ON_DELAY):
                 data.data.counter_all_data.get_evu_counter().switch_on_threshold_reached(cp)
 
     def set_required_current_to_max(self) -> None:

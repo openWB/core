@@ -22,7 +22,7 @@ log = logging.getLogger(__name__)
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 8
+    DATASTORE_VERSION = 9
     valid_topic = ["^openWB/bat/config/configured$",
                    "^openWB/bat/set/charging_power_left$",
                    "^openWB/bat/set/switch_on_soc_reached$",
@@ -161,6 +161,13 @@ class UpdateConfig:
                    "^openWB/graph/alllivevaluesJson",
                    "^openWB/graph/lastlivevaluesJson$",
 
+                   "^openWB/internal_chargepoint/global_data$",
+                   "^openWB/internal_chargepoint/global_config$",
+                   "^openWB/internal_chargepoint/[0-1]/data/cp_interruption_duration$",
+                   "^openWB/internal_chargepoint/[0-1]/data/set_current$",
+                   "^openWB/internal_chargepoint/[0-1]/data/phases_to_use$",
+                   "^openWB/internal_chargepoint/[0-1]/data/parent_cp$",
+
                    "^openWB/set/log/request",
                    "^openWB/set/log/data",
 
@@ -175,6 +182,7 @@ class UpdateConfig:
                    "^openWB/optional/int_display/pin_active$",
                    "^openWB/optional/int_display/pin_code$",
                    "^openWB/optional/int_display/standby$",
+                   "^openWB/optional/int_display/rotation$",
                    "^openWB/optional/int_display/theme$",
                    "^openWB/optional/led/active$",
                    "^openWB/optional/rfid/active$",
@@ -257,6 +265,7 @@ class UpdateConfig:
                    "^openWB/system/configurable/devices_components$",
                    "^openWB/system/configurable/chargepoints$",
                    "^openWB/system/configurable/display_themes$",
+                   "^openWB/system/configurable/chargepoints_internal$",
                    "^openWB/system/mqtt/bridge/[0-9]+$",
                    "^openWB/system/current_branch",
                    "^openWB/system/current_commit",
@@ -322,6 +331,7 @@ class UpdateConfig:
         ("openWB/optional/int_display/pin_active", False),
         ("openWB/optional/int_display/pin_code", "0000"),
         ("openWB/optional/int_display/standby", 60),
+        ("openWB/optional/int_display/rotation", 0),
         ("openWB/optional/int_display/theme", dataclass_utils.asdict(CardsDisplayTheme())),
         ("openWB/optional/led/active", False),
         ("openWB/optional/rfid/active", False),
@@ -597,3 +607,18 @@ class UpdateConfig:
                     payload["keep_charge_active_duration"] = ev.EvTemplateData().keep_charge_active_duration
                     Pub().pub(topic.replace("openWB/", "openWB/set/"), payload)
         Pub().pub("openWB/set/system/datastore_version", 8)
+
+    def upgrade_datastore_8(self) -> None:
+        for topic, payload in self.all_received_topics.items():
+            if re.search("openWB/chargepoint/[0-9]+/config$", topic) is not None:
+                payload = decode_payload(payload)
+                if "connection_module" in payload:
+                    updated_payload = payload
+                    try:
+                        updated_payload["configuration"] = payload["connection_module"]["configuration"]
+                    except KeyError:
+                        updated_payload["configuration"] = {}
+                    updated_payload.pop("connection_module")
+                    updated_payload.pop("power_module")
+                    Pub().pub(topic.replace("openWB/", "openWB/set/"), payload)
+        Pub().pub("openWB/set/system/datastore_version", 9)

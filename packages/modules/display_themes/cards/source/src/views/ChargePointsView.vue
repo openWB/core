@@ -326,7 +326,7 @@ export default {
                 {{ mqttStore.getChargePointSetCurrent(id) }}
               </i-column>
             </i-row>
-            <i-row>
+            <i-row class="_padding-top:1">
               <i-column class="_padding-left:0">
                 <spark-line
                   color="var(--color--primary)"

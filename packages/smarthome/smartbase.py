@@ -280,7 +280,7 @@ class Sbase(Sbase0):
             elif (key == 'device_mineinschaltdauer'):
                 self._device_mineinschaltdauer = valueint * 60
             elif (key == 'device_mindayeinschaltdauer'):
-                self._device_mineinschaltdauer = valueint * 60
+                self._device_mindayeinschaltdauer = valueint * 60
             elif (key == 'device_maxeinschaltdauer'):
                 self._device_maxeinschaltdauer = valueint * 60
             elif (key == 'device_homeConsumtion'):

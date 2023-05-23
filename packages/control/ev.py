@@ -459,8 +459,8 @@ class Ev:
             feed_in_yield = 0
         evu_counter = data.data.counter_all_data.get_evu_counter()
         # verbleibender EVU-Überschuss unter Berücksichtigung der Einspeisegrenze und Speicherleistung
-        all_surplus = -(evu_counter.data.get.power + evu_counter.data.set.released_surplus -
-                        evu_counter.data.set.reserved_surplus + feed_in_yield)
+        all_surplus = (evu_counter.calc_surplus() - evu_counter.data.set.released_surplus +
+                       evu_counter.data.set.reserved_surplus - feed_in_yield)
         if phases_in_use == 1:
             direction_str = "Umschaltverzögerung von 1 auf 3"
             delay = pv_config.phase_switch_delay * 60
@@ -534,16 +534,16 @@ class Ev:
             Pub().pub("openWB/set/vehicle/"+str(self.num) +
                       "/control_parameter/timestamp_auto_phase_switch", None)
             # Wenn der Timer läuft, ist den Control-Parametern die alte Phasenzahl hinterlegt.
-            if self.data.control_parameter.phases == 3:
-                reserved = self.ev_template.data.max_current_single_phase * \
-                    230 - self.data.control_parameter.required_current * 3 * 230
+            if self.data.control_parameter.phases == 1:
+                reserved = self.data.control_parameter.required_current * \
+                    3 * 230 - self.ev_template.data.max_current_single_phase * 230
                 data.data.counter_all_data.get_evu_counter().data.set.reserved_surplus -= reserved
                 log.debug(
                     "Zurücksetzen der reservierten Leistung für die Phasenumschaltung. reservierte Leistung: " +
                     str(data.data.counter_all_data.get_evu_counter().data.set.reserved_surplus))
             else:
-                reserved = self.data.control_parameter.required_current * \
-                    3 * 230 - self.ev_template.data.max_current_single_phase * 230
+                reserved = self.ev_template.data.max_current_single_phase * \
+                    230 - self.data.control_parameter.required_current * 3 * 230
                 data.data.counter_all_data.get_evu_counter().data.set.reserved_surplus -= reserved
                 log.debug(
                     "Zurücksetzen der reservierten Leistung für die Phasenumschaltung. reservierte Leistung: " +
