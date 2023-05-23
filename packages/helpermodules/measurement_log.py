@@ -266,7 +266,7 @@ def get_yearly_log(date: str):
                       "r") as jsonFile:
                 content = json.load(jsonFile)
                 content = content["totals"]
-                content.update({"date": f"{date}{month}"})
+                content.update({"date": f"{date}{month:02}"})
                 entries.append(content)
         except FileNotFoundError:
             log.debug(f"Kein Monatslog für Monat {month} gefunden.")
