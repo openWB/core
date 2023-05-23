@@ -236,15 +236,14 @@ class Counter:
             timestamp_switch_on_off = control_parameter.timestamp_switch_on_off
 
             surplus, threshold = self.calc_switch_on_power(chargepoint)
+            power_to_reserve = pv_config.switch_on_threshold*control_parameter.phases
             if control_parameter.state == ChargepointState.SWITCH_ON_DELAY:
                 # Wurde die Einschaltschwelle erreicht? Reservierte Leistung aus all_surplus rausrechnen,
                 # da diese Leistung ja schon reserviert wurde, als die Einschaltschwelle erreicht wurde.
-                required_power = (chargepoint.data.set.charging_ev_data.ev_template.data.
-                                  min_current * control_parameter.phases * 230)
-                if surplus + required_power <= threshold:
+                if surplus + power_to_reserve <= threshold:
                     # Einschaltschwelle wurde unterschritten, Timer zurücksetzen
                     timestamp_switch_on_off = None
-                    self.data.set.reserved_surplus -= threshold
+                    self.data.set.reserved_surplus -= power_to_reserve
                     message = self.SWITCH_ON_FALLEN_BELOW.format(pv_config.switch_on_threshold)
                     control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
             else:
@@ -252,7 +251,7 @@ class Counter:
                 if (surplus >= threshold) and ((feed_in_limit and self.data.set.reserved_surplus == 0) or
                                                not feed_in_limit):
                     timestamp_switch_on_off = timecheck.create_timestamp()
-                    self.data.set.reserved_surplus += threshold
+                    self.data.set.reserved_surplus += power_to_reserve
                     message = self.SWITCH_ON_WAITING.format(pv_config.switch_on_delay)
                     control_parameter.state = ChargepointState.SWITCH_ON_DELAY
                 else:
@@ -332,7 +331,7 @@ class Counter:
         pv_config = data.data.general_data.data.chargemode_config.pv_charging
         # Der EVU-Überschuss muss ggf um die Einspeisegrenze bereinigt werden.
         if chargepoint.data.set.charging_ev_data.charge_template.data.chargemode.pv_charging.feed_in_limit:
-            feed_in_yield = data.data.general_data.data.chargemode_config.pv_charging.feed_in_yield
+            feed_in_yield = -data.data.general_data.data.chargemode_config.pv_charging.feed_in_yield
         else:
             feed_in_yield = 0
         threshold = pv_config.switch_off_threshold + feed_in_yield
