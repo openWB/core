@@ -63,11 +63,22 @@ class Evse:
             return False
 
     def activate_precise_current(self) -> None:
-        log.debug("Bit zur Angabe der Ströme in 0,1A-Schritten wird gesetzt.")
         value = self.client.read_holding_registers(2005, ModbusDataType.UINT_16, unit=self.id)
-        self.client.delegate.write_registers(2005, value ^ self.PRECISE_CURRENT_BIT, unit=self.id)
-        # Zeit zum Verarbeiten geben
-        time.sleep(1)
+        if value & self.PRECISE_CURRENT_BIT:
+            return
+        else:
+            log.debug("Bit zur Angabe der Ströme in 0,1A-Schritten wird gesetzt.")
+            self.client.delegate.write_registers(2005, value ^ self.PRECISE_CURRENT_BIT, unit=self.id)
+            # Zeit zum Verarbeiten geben
+            time.sleep(1)
+
+    def deactivate_precise_current(self) -> None:
+        value = self.client.read_holding_registers(2005, ModbusDataType.UINT_16, unit=self.id)
+        if value & self.PRECISE_CURRENT_BIT:
+            log.debug("Bit zur Angabe der Ströme in 0,1A-Schritten wird zurueckgesetzt.")
+            self.client.delegate.write_registers(2005, value ^ self.PRECISE_CURRENT_BIT, unit=self.id)
+        else:
+            return
 
     def set_current(self, current: int) -> None:
         self.client.delegate.write_registers(1000, current, unit=self.id)
