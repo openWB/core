@@ -34,9 +34,9 @@ $numDevices = 9;
 		<header>
 			<!-- Fixed navbar -->
 			<nav class="navbar navbar-expand-sm bg-dark navbar-dark fixed-top">
-				<div class="navbar-brand">
-					openWB
-				</div>
+				<a class="navbar-brand" href="./">
+					<span>openWB</span>
+				</a>
 			</nav>
 		</header>
 

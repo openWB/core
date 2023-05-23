@@ -20,13 +20,15 @@ function togglePasswordInput(inputQuery, iconQuery = undefined) {
 		newIcon = "fa-unlock";
 		oldIcon = "fa-lock";
 	}
-	inputElements.each(function (index, element) {
-		element.type = newType;
-	});
+	inputElements.each(
+		function( index, element ) {
+			element.type = newType;
+		}
+	);
 	if (iconQuery !== undefined) {
 		$(iconQuery).removeClass(oldIcon).addClass(newIcon);
 	}
-}
+};
 
 /**
  * checks if the two input elements value match
@@ -35,30 +37,30 @@ function togglePasswordInput(inputQuery, iconQuery = undefined) {
 function checkPasswordMatch(inputQuery) {
 	var inputElements = $(inputQuery);
 	if (inputElements[0].value != inputElements[1].value) {
-		inputElements[1].setCustomValidity(
-			"Die Passwörter müssen identisch sein."
-		);
+		inputElements[1].setCustomValidity('Die Passwörter müssen identisch sein.');
 	} else {
 		// input is valid -- reset the error message
-		inputElements[1].setCustomValidity("");
+		inputElements[1].setCustomValidity('');
 	}
 }
 
 /**
  * hideSection
  * add class 'hide' to element with selector 'section' in JQuery syntax
- **/
-function hideSection(section) {
-	$(section).addClass("hide");
+ * disables all contained input and select elements if 'disableChildren' is not set to false
+**/
+function hideSection(section, disableChildren=true) {
+	$(section).addClass('hide');
 	updateFormFieldVisibility();
 }
 
 /**
  * showSection
  * remove class 'hide' from element with selector 'section' in JQuery syntax
- **/
-function showSection(section) {
-	$(section).removeClass("hide");
+ * enables all contained input and select elements if 'enableChildren' is not set to false
+**/
+function showSection(section, enableChildren=true) {
+	$(section).removeClass('hide');
 	updateFormFieldVisibility();
 }
 
@@ -66,17 +68,17 @@ function showSection(section) {
  * updateFormFields
  * checks every input and select element for a parent with class 'hide'
  * if there is a match, disable this element
- **/
+**/
 function updateFormFieldVisibility() {
-	$("input").each(function () {
-		if ($(this).closest(".hide").length == 0) {
+	$('input').each(function() {
+		if( $(this).closest('.hide').length == 0 ) {
 			$(this).prop("disabled", false);
 		} else {
 			$(this).prop("disabled", true);
 		}
 	});
-	$("select").each(function () {
-		if ($(this).closest(".hide").length == 0) {
+	$('select').each(function() {
+		if( $(this).closest('.hide').length == 0 ) {
 			$(this).prop("disabled", false);
 		} else {
 			$(this).prop("disabled", true);
@@ -84,27 +86,25 @@ function updateFormFieldVisibility() {
 	});
 }
 
-var originalValues = {}; // holds all topics and its values received by mqtt as objects before possible changes made by user
+var originalValues = {};  // holds all topics and its values received by mqtt as objects before possible changes made by user
 
 var changedValuesHandler = {
-	deleteProperty: function (obj, key, value) {
+	deleteProperty: function(obj, key, value) {
 		delete obj[key];
 		// if array is empty after delete, all send topics have been received with correct value
 		// so redirect to main page
 		// array is only filled by function getChangedValues!
-		console.log(
-			"num changed values left: " + Object.keys(changedValues).length
-		);
-		if (Object.keys(changedValues).length === 0) {
+		console.log("num changed values left: "+Object.keys(changedValues).length);
+		if ( Object.keys(changedValues).length === 0 ) {
 			console.log("done");
-			$("#saveSettingsBtn").prop("disabled", false);
-			$("#modalDefaultsBtn").prop("disabled", false);
-			$("#savedValuesInfoModal").modal();
+			$('#saveSettingsBtn').prop('disabled', false);
+			$('#modalDefaultsBtn').prop('disabled', false);
+			$('#savedValuesInfoModal').modal();
 		} else {
 			return true;
 		}
-	},
-};
+	}
+}
 
 var changedValues = new Proxy({}, changedValuesHandler);
 
@@ -114,13 +114,13 @@ function updateLabel(elementId) {
 	 * @param {string} elementId - the id of the element
 	 * @requires class:valueLabel assigned to the attached label
 	 */
-	var element = $("#" + elementId);
-	var label = $('label[for="' + element.attr("id") + '"].valueLabel');
-	if (label.length == 1) {
-		var suffix = label.attr("suffix");
+	var element = $('#' + elementId);
+	var label = $('label[for="' + element.attr('id') + '"].valueLabel');
+	if ( label.length == 1 ) {
+		var suffix = label.attr('suffix');
 		var text = element.val();
-		if (suffix != "") {
-			text += " " + suffix;
+		if ( suffix != '' ) {
+			text += ' ' + suffix;
 		}
 		label.text(text);
 	}
@@ -134,24 +134,25 @@ function setInputValue(elementId, value) {
 	 * if the element has data-attribute 'signcheckbox' the checkbox with the id of the attribute
 	 * will represent negative numbers by being checked
 	 */
-	var element = $("#" + elementId);
-	if (!isNaN(value)) {
-		var signCheckboxName = element.data("signcheckbox");
-		var signCheckbox = $("#" + signCheckboxName);
-		if (signCheckbox.length == 1) {
+	if ( !isNaN(value) ) {
+		var element = $('#' + elementId);
+		var signCheckboxName = element.data('signcheckbox');
+		var signCheckbox = $('#' + signCheckboxName);
+		if ( signCheckbox.length == 1 ) {
 			// checkbox exists
-			if (value < 0) {
-				signCheckbox.prop("checked", true);
+			if ( value < 0 ) {
+				signCheckbox.prop('checked', true);
 				value *= -1;
 			} else {
-				signCheckbox.prop("checked", false);
+				signCheckbox.prop('checked', false);
 			}
 		}
 		element.val(value);
-		if (element.attr("type") == "range") {
+		if ( element.attr('type') == 'range' ) {
 			updateLabel(elementId);
 		}
 	} else {
+		var element = $('#' + elementId);
 		element.val(value);
 	}
 }
@@ -163,20 +164,13 @@ function setToggleBtnGroup(groupId, option) {
 	 * @param {string} option - the option the group buttons will be set to
 	 * @requires data-attribute 'option' (unique for group) assigned to every radio-btn
 	 */
-	$("input[name=" + groupId + '][data-option="' + option + '"]').prop(
-		"checked",
-		true
-	);
-	$("input[name=" + groupId + '][data-option="' + option + '"]')
-		.closest("label")
-		.addClass("active");
+	$('input[name=' + groupId + '][data-option="' + option + '"]').prop('checked', true);
+	$('input[name=' + groupId + '][data-option="' + option + '"]').closest('label').addClass('active');
 	// and uncheck all others
-	$("input[name=" + groupId + '][data-option!="' + option + '"]').each(
-		function () {
-			$(this).prop("checked", false);
-			$(this).closest("label").removeClass("active");
-		}
-	);
+	$('input[name=' + groupId + '][data-option!="' + option + '"]').each(function() {
+		$(this).prop('checked', false);
+		$(this).closest('label').removeClass('active');
+	});
 }
 
 function sendValues() {
@@ -189,34 +183,33 @@ function sendValues() {
 	 * @requires global variable 'toBeSendValues'
 	 * @requires modal with id 'noValuesChangedInfoModal'
 	 */
-	if (!(Object.keys(changedValues).length === 0)) {
+	if ( !(Object.keys(changedValues).length === 0) ) {
 		// there are changed values
 		// so first disable buttons on page
-		$("#saveSettingsBtn").prop("disabled", true);
-		$("#modalDefaultsBtn").prop("disabled", true);
+		$('#saveSettingsBtn').prop('disabled', true);
+		$('#modalDefaultsBtn').prop('disabled', true);
 		// delay in ms between publishes
 		var interval = 200;
 		// then send changed values
 
-		Object.keys(changedValues).forEach(function (topic, index) {
+		Object.keys(changedValues).forEach(function(topic, index) {
 			var value = this[topic].toString();
 			setTimeout(function () {
-				console.log(
-					"publishing changed value: " + topic + ": " + value
-				);
+				console.log("publishing changed value: "+topic+": "+value);
 				// as all empty messages are not processed by mqttsub.py, we have to send something useful
-				if (value.length == 0) {
+				if ( value.length == 0 ) {
 					publish("none", topic);
 					// delete empty values as we will never get an answer
-					console.log("deleting empty changedValue: " + topic);
+					console.log("deleting empty changedValue: "+topic)
 					delete changedValues[topic];
 				} else {
 					publish(value, topic);
 				}
 			}, index * interval);
 		}, changedValues);
+
 	} else {
-		$("#noValuesChangedInfoModal").modal();
+		$('#noValuesChangedInfoModal').modal();
 	}
 }
 
@@ -228,52 +221,40 @@ function getChangedValues() {
 	 * @property {string} value - the value
 	 * @return {topic-value-pair} - the changed values and their topics
 	 */
-	$(
-		'.btn-group-toggle, input[type="number"]:not(:disabled), input[type="text"]:not(:disabled), input[type="url"]:not(:disabled), input[type="password"]:not(:disabled), input[type="range"]:not(:disabled), select:not(:disabled)'
-	).each(function () {
-		var topicPrefix = $(this).data("topicprefix");
-		var topicSubGroup = $(this).data("topicsubgroup");
-		var topicIdentifier, value;
-		if (typeof topicSubGroup == "undefined") {
+	$('.btn-group-toggle, input[type="number"]:not(:disabled), input[type="text"]:not(:disabled), input[type="url"]:not(:disabled), input[type="password"]:not(:disabled), input[type="range"]:not(:disabled), select:not(:disabled)').each(function() {
+		var topicPrefix = $(this).data('topicprefix');
+		var topicSubGroup = $(this).data('topicsubgroup');
+		if ( typeof topicSubGroup == 'undefined' ) {
 			// if no data-attribute for subgroup like /lp/1/ exists
 			// topicIdentifier is the unique element id
-			topicSubGroup = "";
-			topicIdentifier = $(this).attr("id");
+			topicSubGroup = '';
+			var topicIdentifier = $(this).attr('id');
 		} else {
 			// if data-attribute for subgroup like /lp/1/ exists
 			// topicIdentifier is the non-unique element name
-			topicIdentifier = $(this).attr("name");
+			var topicIdentifier = $(this).attr('name');
 		}
-		if ($(this).hasClass("btn-group-toggle")) {
-			if (
-				$('input[name="' + $(this).attr("id") + '"]:checked').attr(
-					"disabled"
-				) != "disabled"
-			) {
-				value = $(
-					'input[name="' + $(this).attr("id") + '"]:checked'
-				).data("option");
+		if ( $(this).hasClass('btn-group-toggle') ) {
+			if ( $('input[name="' + $(this).attr('id') + '"]:checked').attr('disabled') != 'disabled' ) {
+				var value = $('input[name="' + $(this).attr('id') + '"]:checked').data('option');
 			}
 		} else {
-			value = $(this).val();
-			if (
-				$(this).attr("type") == "number" ||
-				$(this).attr("type") == "text"
-			) {
+			var value = $(this).val();
+			if ( $(this).attr('type') == 'number' || $(this).attr('type') == 'text' ) {
 				// check if sign checkbox exists and adjust value accordingly
-				var signCheckboxName = $(this).data("signcheckbox");
-				var signCheckbox = $("#" + signCheckboxName);
-				if (signCheckbox.is(":checked") && !isNaN(value)) {
+				var signCheckboxName = $(this).data('signcheckbox');
+				var signCheckbox = $('#' + signCheckboxName);
+				if ( signCheckbox.is(':checked') && !isNaN(value) ) {
 					// checkbox exists and is checked
 					value *= -1;
 				}
 			}
 		}
 		var topic = topicPrefix + topicSubGroup + topicIdentifier;
-		if (value != undefined && originalValues[topic] != value) {
-			topic = topic.replace(/^openWB\//, "openWB/set/");
+		if ( ( value != undefined ) && ( originalValues[topic] != value ) ) {
+			topic = topic.replace(/^openWB\//, 'openWB/set/');
 			changedValues[topic] = value;
-			console.log("ChangedValue found: " + topic + ": " + value);
+			console.log("ChangedValue found: "+topic+": "+value);
 		}
 	});
 }
@@ -282,20 +263,18 @@ function setToDefaults() {
 	/** @function setToDefaults
 	 * sets all inputs and button-groups to their default value
 	 */
-	$('input[type="number"], input[type="text"], input[type="range"]').each(
-		function () {
-			// first all number-field and range sliders
-			var defaultValue = $(this).data("default");
-			if (typeof defaultValue !== "undefined") {
-				setInputValue($(this).attr("id"), defaultValue);
-			}
+	$('input[type="number"], input[type="text"], input[type="range"]').each(function() {
+		// first all number-field and range sliders
+		var defaultValue = $(this).data('default');
+		if ( typeof defaultValue !== 'undefined' ) {
+			setInputValue($(this).attr('id'), defaultValue);
 		}
-	);
-	$(".btn-group-toggle").each(function () {
+	});
+	$('.btn-group-toggle').each(function() {
 		// then all toggle btn-groups
-		var defaultValue = $(this).data("default");
-		if (typeof defaultValue !== "undefined") {
-			setToggleBtnGroup($(this).attr("id"), defaultValue);
+		var defaultValue = $(this).data('default');
+		if ( typeof defaultValue !== 'undefined' ) {
+			setToggleBtnGroup($(this).attr('id'), defaultValue);
 		}
 	});
 }
@@ -306,17 +285,11 @@ function formatToNaturalNumber(element) {
 	 * @param {object} element - the input element
 	 * @requires max value set up for input field properly
 	 */
-	if (element.value.length > 0) {
-		element.value = parseInt(
-			element.value.replace(/[^0-9.-]/g, "").replace(/(\..*)\./g, "$1")
-		);
+	if ( element.value.length > 0 ) {
+		element.value = parseInt(element.value.replace(/[^0-9.-]/g,'').replace(/(\..*)\./g, '$1'));
 	}
-	var max = $(element).attr("max");
-	if (
-		typeof max !== "undefined" &&
-		!isNaN(max) &&
-		parseInt(element.value) > max
-	) {
+	var max = $(element).attr('max');
+	if ( typeof max !== 'undefined' && !isNaN(max) && parseInt(element.value) > max ) {
 		element.value = max;
 	}
 }
