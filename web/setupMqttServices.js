@@ -31,6 +31,7 @@ var options = {
 	onSuccess: function () {
 		console.debug("connected!");
 		retries = 0;
+		updateProgress();
 		Object.keys(topicsToSubscribe).forEach((topic) => {
 			client.subscribe(topic, { qos: 0 });
 		});
@@ -51,10 +52,6 @@ var client_uid = Math.random().toString(36).replace(/[^a-z]+/g, "").substring(0,
 console.debug(`connecting to broker on ${location.hostname}:${port} as client "${client_uid}"`);
 var client = new Messaging.Client(location.hostname, port, client_uid);
 
-console.debug("connecting...");
-client.connect(options);
-timeOfLastMqttMessage = Date.now();
-
 // Gets called if the websocket/mqtt connection gets disconnected for any reason
 client.onConnectionLost = function (responseObject) {
 	console.debug("reconnecting...");
@@ -62,9 +59,11 @@ client.onConnectionLost = function (responseObject) {
 		client.connect(options);
 	}, 2000);
 };
+
 // Gets called whenever you receive a message
 client.onMessageArrived = function (message) {
-	if (message.destinationName.includes("/isss/")){
+	updateProgress();
+	if (message.destinationName.includes("/isss/")) {
 		isssTopicsToSubscribe[message.destinationName] = true;
 	} else {
 		topicsToSubscribe[message.destinationName] = true;
@@ -72,6 +71,10 @@ client.onMessageArrived = function (message) {
 	data[message.destinationName] = JSON.parse(message.payloadString);
 	handleMessage(message.destinationName, message.payloadString);
 };
+
+console.debug("connecting...");
+client.connect(options);
+timeOfLastMqttMessage = Date.now();
 
 //Creates a new Messaging.Message Object and sends it
 function publish(payload, topic) {
@@ -87,15 +90,35 @@ function publish(payload, topic) {
 	client.send(message);
 }
 
-function allTopicsReceived() {
-	var ready = true;
+function totalTopicCount() {
+	var counter = Object.keys(topicsToSubscribe).length;
+	if (data["openWB/general/extern"]) {
+		counter += Object.keys(isssTopicsToSubscribe).length;
+	}
+	return counter;
+}
+
+function missingTopics() {
+	var counter = 0;
 	Object.keys(topicsToSubscribe).forEach((topic) => {
-		ready &= topicsToSubscribe[topic];
+		if (!topicsToSubscribe[topic]) {
+			counter++;
+		};
 	});
 	if (data["openWB/general/extern"]) {
 		Object.keys(isssTopicsToSubscribe).forEach((topic) => {
-			ready &= isssTopicsToSubscribe[topic];
+			if (!isssTopicsToSubscribe[topic]) {
+				counter++;
+			};
 		});
 	}
-	return ready;
+	return counter;
+}
+
+function allTopicsReceived() {
+	return (missingTopics() == 0);
+}
+
+function updateProgress() {
+	document.querySelector(".progress-value").style.width = `${(totalTopicCount() - missingTopics()) / totalTopicCount() * 100}%`;
 }

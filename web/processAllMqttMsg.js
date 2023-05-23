@@ -41,7 +41,7 @@ function setIframeSource() {
 					setTimeout(() => {
 						startup.classList.add("hide");
 						iframe.classList.remove("hide");
-					}, 2000);
+					}, 250);
 				} else {
 					addLog(`theme '${theme}' not found on server!`);
 				}
@@ -72,6 +72,16 @@ function handleMessage(topic, payload) {
 		document.querySelector("#isss").classList.remove("hide");
 	} else {
 		document.querySelector("#isss").classList.add("hide");
+	}
+	if (!data["openWB/system/boot_done"]) {
+		document.querySelector("#boot").classList.remove("hide");
+	} else {
+		document.querySelector("#boot").classList.add("hide");
+	}
+	if (data["openWB/system/update_in_progress"]) {
+		document.querySelector("#update").classList.remove("hide");
+	} else {
+		document.querySelector("#update").classList.add("hide");
 	}
 	setIframeSource();
 }  // end handleMessage

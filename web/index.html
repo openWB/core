@@ -32,12 +32,23 @@
 <body>
 	<div class="wrapper">
 		<div id="notReady">
-			<img src="img/openWB_logo_dark.png" class="center" />
+			<div id="logo">
+				<img src="img/openWB_logo_dark.png" />
+				<div class="progress">
+					<div class="progress-value"></div>
+				</div>
+			</div>
 			<p id="log">Lade Einstellungen...</p>
 			<div id="info">
 				<p id="isss" class="hide">
 					Diese openWB ist nur als Ladepunkt konfiguriert. Alle Einstellungen erfolgen über die Haupt openWB.<br />
 					Die Betriebsart dieser openWB kann in den <a href="settings/">Einstellungen</a> geändert werden.
+				</p>
+				<p id="boot" class="hide">
+					Der Startvorgang ist noch nicht abgeschlossen.
+				</p>
+				<p id="update" class="hide">
+					Es wird gerade ein Update ausgeführt.
 				</p>
 				<p id="general">
 					Bei Problemen mit der Startseite können Sie direkt die <a href="settings/">Einstellungen</a> öffnen.

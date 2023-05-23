@@ -42,6 +42,34 @@ iframe {
 	padding-top: 10vh;
 }
 
+#logo {
+	display: flex;
+	flex-direction: column;
+	align-content: center;
+	flex-wrap: wrap;
+}
+
+.progress {
+	margin-top: 0.75em;
+	width: auto;
+	height: 1em;
+	background: rgba(255,255,255,0.1);
+	justify-content: flex-start;
+	border-radius: 100px;
+	align-items: center;
+	position: relative;
+	padding: 0 5px;
+	display: flex;
+}
+
+.progress-value {
+	border-radius: 0.25em;
+	background: #fff;
+	height: 0.5em;
+	width: 0;
+	box-shadow: 0px 0px 12px 2px white;
+}
+
 #log {
 	flex-grow: 1;
 	overflow-x: auto;
@@ -49,12 +77,6 @@ iframe {
 	white-space: nowrap;
 	padding-bottom: 0;
 	margin-bottom: 0;
-}
-
-.center {
-	display: block;
-	margin-left: auto;
-	margin-right: auto;
 }
 
 #info p {
