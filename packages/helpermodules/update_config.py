@@ -161,6 +161,13 @@ class UpdateConfig:
                    "^openWB/graph/alllivevaluesJson",
                    "^openWB/graph/lastlivevaluesJson$",
 
+                   "^openWB/internal_chargepoint/global_data$",
+                   "^openWB/internal_chargepoint/global_config$",
+                   "^openWB/internal_chargepoint/[0-1]/data/cp_interruption_duration$",
+                   "^openWB/internal_chargepoint/[0-1]/data/set_current$",
+                   "^openWB/internal_chargepoint/[0-1]/data/phases_to_use$",
+                   "^openWB/internal_chargepoint/[0-1]/data/parent_cp$",
+
                    "^openWB/set/log/request",
                    "^openWB/set/log/data",
 
@@ -175,6 +182,7 @@ class UpdateConfig:
                    "^openWB/optional/int_display/pin_active$",
                    "^openWB/optional/int_display/pin_code$",
                    "^openWB/optional/int_display/standby$",
+                   "^openWB/optional/int_display/rotation$",
                    "^openWB/optional/int_display/theme$",
                    "^openWB/optional/led/active$",
                    "^openWB/optional/rfid/active$",
@@ -326,6 +334,7 @@ class UpdateConfig:
                    "^openWB/system/configurable/devices_components$",
                    "^openWB/system/configurable/chargepoints$",
                    "^openWB/system/configurable/display_themes$",
+                   "^openWB/system/configurable/chargepoints_internal$",
                    "^openWB/system/mqtt/bridge/[0-9]+$",
                    "^openWB/system/current_branch",
                    "^openWB/system/current_commit",
@@ -391,6 +400,7 @@ class UpdateConfig:
         ("openWB/optional/int_display/pin_active", False),
         ("openWB/optional/int_display/pin_code", "0000"),
         ("openWB/optional/int_display/standby", 60),
+        ("openWB/optional/int_display/rotation", 0),
         ("openWB/optional/int_display/theme", dataclass_utils.asdict(CardsDisplayTheme())),
         ("openWB/optional/led/active", False),
         ("openWB/optional/rfid/active", False),
