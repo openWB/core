@@ -34,9 +34,9 @@ $numDevices = 9;
 		<header>
 			<!-- Fixed navbar -->
 			<nav class="navbar navbar-expand-sm bg-dark navbar-dark fixed-top">
-				<a class="navbar-brand" href="./">
-					<span>openWB</span>
-				</a>
+				<div class="navbar-brand">
+					openWB
+				</div>
 			</nav>
 		</header>
 
@@ -330,9 +330,9 @@ $numDevices = 9;
 												Die hier angegebene URL wird aufgerufen, um die aktuelle Leistung des Geräts zu erhalten.<br>
 												<span class="text-info">Wenn in der URL ein Prozentzeichen "%" enthalten ist, muss dieses durch ein weiteres "%" ergänzt werden ("%" -> "%%"), da ansonsten die Daten nicht gespeichert werden können.</span><br>
 												Falls keine URL vorhanden ist, kann eine der folgenden angegeben werden:<br>
-												127.0.0.1/openWB/modules/smarthome/http/dummyurl.php. Diese URL gibt immer den Wert 0 zurück.(Device immer aus)<br>
-												127.0.0.1/openWB/modules/smarthome/http/dummyurl1.php?d=nummerdevice. Diese URL gibt den Wert 0 oder 100 zurück. Je nachdem ob das Smarthomedevice gerade läuft<br>
-												127.0.0.1/openWB/modules/smarthome/http/dummyurl2.php. Diese URL gibt immer den Wert 100 zurück. (Device immer an)<br>
+												127.0.0.1/openWB/packages/modules/smarthome/http/dummyurl.php. Diese URL gibt immer den Wert 0 zurück.(Device immer aus)<br>
+												127.0.0.1/openWB/packages/modules/smarthome/http/dummyurl1.php?d=nummerdevice. Diese URL gibt den Wert 0 oder 100 zurück. Je nachdem ob das Smarthomedevice gerade läuft<br>
+												127.0.0.1/openWB/packages/modules/smarthome/http/dummyurl2.php. Diese URL gibt immer den Wert 100 zurück. (Device immer an)<br>
 												In der URL kann ein Parameter angegeben werden, der den aktuellen Überschuss an das Gerät übermittelt. Hierzu ist folgender Platzhalter in der URL zu verwenden (inklusive der spitzen Klammern):<br>
 												<span class="text-info">&lt;openwb-ueberschuss&gt;</span>
 											</span>
@@ -465,6 +465,13 @@ $numDevices = 9;
 											<div class="col">
 												<input id="device_mineinschaltdauerDevices<?php echo $devicenum; ?>" name="device_mineinschaltdauer" class="form-control naturalNumber" type="number" inputmode="decimal" required min="0" max="10000" data-default="0" value="0" data-topicprefix="openWB/LegacySmartHome/config/get/" data-topicsubgroup="Devices/<?php echo $devicenum; ?>/">
 												<span class="form-text small">Parameter in Minuten, wie lange das Gerät nach Einschalten mindestens aktiviert bleibt.</span>
+											</div>
+										</div>
+										<div class="form-row mb-1">
+											<label for="device_mindayeinschaltdauerDevices<?php echo $devicenum; ?>" class="col-md-4 col-form-label">Mindesteinschaltdauer pro Tag</label>
+											<div class="col">
+												<input id="device_mindayeinschaltdauerDevices<?php echo $devicenum; ?>" name="device_mindayeinschaltdauer" class="form-control naturalNumber" type="number" inputmode="decimal" required min="0" max="10000" data-default="0" value="0" data-topicprefix="openWB/LegacySmartHome/config/get/" data-topicsubgroup="Devices/<?php echo $devicenum; ?>/">
+												<span class="form-text small">Parameter in Minuten, wie lange das Gerät pro Tag mindestens aktiviert bleibt. Siehe auch "Spätestens fertig um"</span>
 											</div>
 										</div>
 										<div class="form-row mb-1">
