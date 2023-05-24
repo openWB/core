@@ -120,5 +120,5 @@ function allTopicsReceived() {
 }
 
 function updateProgress() {
-	document.querySelector(".progress-value").style.width = `${(totalTopicCount() - missingTopics()) / totalTopicCount() * 100}%`;
+	document.getElementById("progress-value").style.width = `${(totalTopicCount() - missingTopics()) / totalTopicCount() * 100}%`;
 }

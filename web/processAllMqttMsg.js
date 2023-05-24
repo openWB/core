@@ -4,8 +4,8 @@
 
 function setIframeSource() {
 	if (allTopicsReceived()) {
-		const startup = document.querySelector("#notReady");
-		const iframe = document.querySelector("#themeTarget");
+		const startup = document.getElementById("notReady");
+		const iframe = document.getElementById("themeTarget");
 		if (!data["openWB/system/boot_done"]) {
 			addLog("backend still booting");
 			startup.classList.remove("hide");
@@ -61,7 +61,7 @@ function setIframeSource() {
 }
 
 function addLog(message) {
-	const logElement = document.querySelector('#log');
+	const logElement = document.getElementById('log');
 	logElement.insertAdjacentHTML("beforeend", "<br />");
 	logElement.insertAdjacentText("beforeend", message);
 }
@@ -69,19 +69,19 @@ function addLog(message) {
 function handleMessage(topic, payload) {
 	addLog(`Topic: ${topic} Payload: ${payload}`);
 	if (data["openWB/general/extern"]) {
-		document.querySelector("#isss").classList.remove("hide");
+		document.getElementById("isss").classList.remove("hide");
 	} else {
-		document.querySelector("#isss").classList.add("hide");
+		document.getElementById("isss").classList.add("hide");
 	}
 	if (!data["openWB/system/boot_done"]) {
-		document.querySelector("#boot").classList.remove("hide");
+		document.getElementById("boot").classList.remove("hide");
 	} else {
-		document.querySelector("#boot").classList.add("hide");
+		document.getElementById("boot").classList.add("hide");
 	}
 	if (data["openWB/system/update_in_progress"]) {
-		document.querySelector("#update").classList.remove("hide");
+		document.getElementById("update").classList.remove("hide");
 	} else {
-		document.querySelector("#update").classList.add("hide");
+		document.getElementById("update").classList.add("hide");
 	}
 	setIframeSource();
 }  // end handleMessage
