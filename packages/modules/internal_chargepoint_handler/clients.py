@@ -34,17 +34,19 @@ class ClientFactory:
     def __init__(self, local_charge_point_num: int, serial_client: ModbusSerialClient_) -> None:
         self.local_charge_point_num = local_charge_point_num
         self.evse_client = self.__evse_factory(serial_client)
-        self.meter_client = self.find_meter_client(serial_client,
-                                                   CP0_METERS if self.local_charge_point_num == 0 else CP1_METERS)
+        self.meter_client = self.find_meter_client(CP0_METERS if self.local_charge_point_num == 0 else CP1_METERS,
+                                                   serial_client)
         self.read_error = 0
 
     def __evse_factory(self, serial_client: ModbusSerialClient_) -> evse.Evse:
         for modbus_id in EVSE_ID:
             try:
                 evse_client = evse.Evse(modbus_id, serial_client)
-                if evse_client.get_firmware_version() > EVSE_MIN_FIRMWARE:
-                    log.error("Modbus-ID der EVSE an LP"+str(self.local_charge_point_num)+": "+str(modbus_id))
-                    return evse_client
+                with serial_client:
+                    if evse_client.get_firmware_version() > EVSE_MIN_FIRMWARE:
+                        log.debug(serial_client)
+                        log.error("Modbus-ID der EVSE an LP"+str(self.local_charge_point_num)+": "+str(modbus_id))
+                        return evse_client
             except Exception:
                 pass
         else:
@@ -57,10 +59,11 @@ class ClientFactory:
                 meter_client = meter_type(modbus_id, serial_client)
                 with serial_client:
                     if meter_client.get_voltages()[0] > 200:
-                        log.error("Verbauter Zähler: "+str(meter_type))
+                        log.error("Verbauter Zähler: "+str(meter_type)+" mit Modbus-ID: "+str(modbus_id))
                         return meter_client
             except Exception:
-                pass
+                log.debug(serial_client)
+                log.debug(f"Zähler {meter_type} mit Modbus-ID:{modbus_id} antwortet nicht.")
         else:
             return None
 
@@ -82,9 +85,10 @@ class ClientFactory:
 def serial_client_factory(local_charge_point_num: int,
                           created_client: Optional[ModbusSerialClient_] = None) -> ModbusSerialClient_:
     tty_devices = list(Path("/dev/serial/by-id").glob("*"))
-    log.debug(str(tty_devices))
-    resolved_devices = [str(file.resolve()) for file in tty_devices]
-    log.debug(str(resolved_devices))
+    log.debug("tty_devices"+str(tty_devices))
+    # resolved_devices = [str(file.resolve()) for file in tty_devices]
+    resolved_devices = BUS_SOURCES
+    log.debug("resolved_devices"+str(resolved_devices))
     counter = len(resolved_devices)
     if counter == 1 and resolved_devices[0] in BUS_SOURCES:
         if local_charge_point_num == 0:
@@ -108,5 +112,5 @@ def serial_client_factory(local_charge_point_num: int,
                 detected_device = ClientFactory.find_meter_client(meters, serial_client)
                 if detected_device:
                     break
-        log.error("LP"+str(local_charge_point_num)+" Device: "+str(detected_device))
-        return ModbusSerialClient_(detected_device)
+        log.error("LP"+str(local_charge_point_num)+" Device: "+str(device))
+        return serial_client

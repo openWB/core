@@ -138,7 +138,7 @@ class InternalChargepointHandler:
             self.cp0 = HandlerChargepoint(self.cp0_serial_client, 0, mode, global_data, parent_cp0)
             if mode == InternalChargepointMode.DUO.value:
                 log.debug("Zweiter Ladepunkt für Duo konfiguriert.")
-                self.cp1_serial_client = serial_client_factory(0, self.cp0_serial_client)
+                self.cp1_serial_client = serial_client_factory(1, self.cp0_serial_client)
                 self.cp1 = HandlerChargepoint(self.cp1_serial_client, 1, mode, global_data, parent_cp1)
             else:
                 self.cp1 = None
