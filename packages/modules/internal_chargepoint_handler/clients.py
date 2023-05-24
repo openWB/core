@@ -84,10 +84,9 @@ class ClientFactory:
 
 def serial_client_factory(local_charge_point_num: int,
                           created_client: Optional[ModbusSerialClient_] = None) -> ModbusSerialClient_:
-    tty_devices = list(Path("/dev/serial/by-id").glob("*"))
+    tty_devices = list(Path("/dev/serial/by-path").glob("*"))
     log.debug("tty_devices"+str(tty_devices))
-    # resolved_devices = [str(file.resolve()) for file in tty_devices]
-    resolved_devices = BUS_SOURCES
+    resolved_devices = [str(file.resolve()) for file in tty_devices]
     log.debug("resolved_devices"+str(resolved_devices))
     counter = len(resolved_devices)
     if counter == 1 and resolved_devices[0] in BUS_SOURCES:
