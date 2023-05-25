@@ -12,8 +12,8 @@ class CardsWebThemeConfiguration:
 @auto_str
 class CardsWebTheme:
     def __init__(self,
-                 name: str = "Standard",
-                 type: str = "standard",
+                 name: str = "Cards",
+                 type: str = "cards",
                  configuration: CardsWebThemeConfiguration = None) -> None:
         self.name = name
         self.type = type
