@@ -19,7 +19,7 @@ export default defineConfig(({ command, mode }) => {
   };
   if (command === "serve") {
     if (mode === "test") {
-      myConfiguration.test = {
+      myConfiguration["test"] = {
         globals: true,
         environment: "jsdom",
       };
@@ -52,6 +52,9 @@ export default defineConfig(({ command, mode }) => {
         output: {
           manualChunks(id) {
             if (id.includes("node_modules")) {
+              if (id.includes("inkline")) {
+                return "vendor-inkline";
+              }
               if (id.includes("fortawesome")) {
                 return "vendor-fortawesome";
               }

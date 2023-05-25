@@ -11,8 +11,16 @@
     "build-dev": "vite build --mode=development --out-dir=../web/ --emptyOutDir"
   },
   "dependencies": {
-    "primeicons": "^6.0.1",
-    "primevue": "^3.23.0",
+    "@fortawesome/fontawesome-svg-core": "^6.2.1",
+    "@fortawesome/free-regular-svg-icons": "^6.2.1",
+    "@fortawesome/free-solid-svg-icons": "^6.2.1",
+    "@fortawesome/vue-fontawesome": "^3.0.2",
+    "@inkline/inkline": "^3.2.0",
+    "buffer": "^6.0.3",
+    "events": "^3.3.0",
+    "mqtt": "^4.3.7",
+    "node-stdlib-browser": "^1.2.0",
+    "pinia": "^2.0.28",
     "vue": "^3.2.45",
     "vue-router": "^4.1.6"
   },

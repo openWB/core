@@ -1,20 +1,17 @@
-import { createApp } from "vue";
-import { createPinia } from "pinia";
+import { createApp } from 'vue'
+import App from './App.vue'
+import PrimeVue from 'primevue/config';
+import Button from 'primevue/button';
 
-import App from "./App.vue";
-import router from "./router";
-
-import { Inkline, components } from "@inkline/inkline";
-import "@inkline/inkline/inkline.scss";
-import "./main.scss";
+import '@/assets/main.css'
+// import 'primevue/resources/themes/lara-light-teal/theme.css';
+import 'primevue/resources/themes/bootstrap4-dark-blue/theme.css';
+import 'primevue/resources/primevue.min.css';
+import 'primeicons/primeicons.css';
 
 const app = createApp(App);
+app.use(PrimeVue);
 
-app.use(createPinia());
-app.use(router);
-app.use(Inkline, {
-  colorMode: "dark",
-  components,
-});
+app.component('Button', Button);
 
-app.mount("#app");
+app.mount('#app');
