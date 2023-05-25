@@ -13,14 +13,16 @@ if ($argc > 2) {
 	cleanAndExit("No id [1] and configuration [2] provided!");
 }
 
-function debugPrint($message){
+function debugPrint($message)
+{
 	global $debug;
-	if( $debug ){
+	if ($debug) {
 		echo $message . "\n";
 	}
 }
 
-function removeConfigFile($fileName){
+function removeConfigFile($fileName)
+{
 	if (file_exists($fileName)) {
 		debugPrint("Konfigurationsdatei '$fileName' wird gelöscht.");
 		exec("sudo rm $fileName");
@@ -30,7 +32,8 @@ function removeConfigFile($fileName){
 	}
 }
 
-function cleanAndExit($message){
+function cleanAndExit($message)
+{
 	echo $message;
 	exit(1);
 }
@@ -52,7 +55,7 @@ if ($configuration == "" || $configuration->active != true) {
 	if ($configuration->name == "") {
 		cleanAndExit("Bitte eine eindeutige Bezeichnung für die Verbindung vergeben.");
 	}
-	if(!preg_match('/^[a-zA-Z0-9]+$/', $configuration->name)) {
+	if (!preg_match('/^[a-zA-Z0-9]+$/', $configuration->name)) {
 		cleanAndExit("Der Bezeichner für die Bridge ('" . htmlentities($configuration->name) . "') enthält ungültige Zeichen. Nur a-z, A-Z, 0-9 sind erlaubt.");
 	}
 	debugPrint("Bridge to configure: '{$configuration->name}'");
@@ -64,7 +67,7 @@ if ($configuration == "" || $configuration->active != true) {
 	debugPrint("Bridge file name for new config: '$fileToUseForNewConfig'");
 
 	if (!isset($configuration->remote->host) || empty($configuration->remote->host)) {
-		cleanAndExit ("Die Address oder der Namen des entfernten MQTT-Servers ('" . htmlentities($configuration->remote->host) . "') ist ungültig oder nicht vorhanden.");
+		cleanAndExit("Die Address oder der Namen des entfernten MQTT-Servers ('" . htmlentities($configuration->remote->host) . "') ist ungültig oder nicht vorhanden.");
 	}
 	debugPrint("HostOrAddress {$configuration->remote->host}");
 
@@ -106,32 +109,36 @@ if ($configuration == "" || $configuration->active != true) {
 		$tls_version_string = "# " . $tls_version_string;
 	}
 
-	if (!isset($configuration->remote->client_id) || ($configuration->remote->client_id !== "")){
+	if (!isset($configuration->remote->client_id) || ($configuration->remote->client_id !== "")) {
 		$configuration->remote->client_id = "openWB-$bridgeId";
 	}
 	debugPrint("Client ID: " . $configuration->remote->client_id);
 
-	if (isset($configuration->remote->try_private) && ($configuration->remote->try_private == true)){
+	if (isset($configuration->remote->try_private) && ($configuration->remote->try_private == true)) {
 		$configuration->remote->try_private = "true";
 	} else {
 		$configuration->remote->try_private = "false";
 	}
 	debugPrint("try_private: " . $configuration->remote->try_private);
 
-	if (!isset($configuration->data_transfer->status) || ($configuration->data_transfer->status !== true)){
+	if (!isset($configuration->data_transfer->status) || ($configuration->data_transfer->status !== true)) {
 		$configuration->data_transfer->status = false;
 	};
 
-	if (!isset($configuration->data_transfer->graph) || ($configuration->data_transfer->graph !== true)){
+	if (!isset($configuration->data_transfer->graph) || ($configuration->data_transfer->graph !== true)) {
 		$configuration->data_transfer->graph = false;
 	}
 
-	if (!isset($configuration->data_transfer->configuration) || ($configuration->data_transfer->configuration !== true)){
+	if (!isset($configuration->data_transfer->configuration) || ($configuration->data_transfer->configuration !== true)) {
 		$configuration->data_transfer->configuration = false;
 	}
 
 	if (!$configuration->data_transfer->status && !$configuration->data_transfer->graph && !$configuration->data_transfer->configuration) {
 		cleanAndExit("Es macht keinen Sinn eine MQTT-Brücke zu konfigurieren, welche weder Daten publiziert noch Konfigurationen empfängt. Bitte mindestens eine Option bei 'Datenübertragung' aktivieren.");
+	}
+
+	if (!isset($configuration->remote->partner) || ($configuration->remote->partner !== true)) {
+		$configuration->remote->partner = false;
 	}
 
 	//
@@ -143,7 +150,9 @@ if ($configuration == "" || $configuration->active != true) {
 	}
 	debugPrint("Opened '$fileToUseForNewConfig' and now writing configuration to it");
 
-	fwrite($configFile, <<<EOS
+	fwrite(
+		$configFile,
+		<<<EOS
 	# bridge to {$configuration->remote->host}:{$configuration->remote->port}
 	#
 
@@ -162,7 +171,9 @@ if ($configuration == "" || $configuration->active != true) {
 	);
 
 	if ($configuration->data_transfer->status) {
-		fwrite($configFile, <<<EOS
+		fwrite(
+			$configFile,
+			<<<EOS
 	# export general data to remote
 	topic openWB/general/# out 2 "" {$configuration->remote->prefix}
 
@@ -192,7 +203,9 @@ if ($configuration == "" || $configuration->active != true) {
 	}
 
 	if ($configuration->data_transfer->graph) {
-		fwrite($configFile, <<<EOS
+		fwrite(
+			$configFile,
+			<<<EOS
 	# export graph data to remote
 	topic openWB/graph/# out 2 "" {$configuration->remote->prefix}
 
@@ -200,25 +213,45 @@ if ($configuration == "" || $configuration->active != true) {
 		);
 	}
 
-	fwrite($configFile, <<<EOS
+	fwrite(
+		$configFile,
+		<<<EOS
 
 	##################################################################################################
 	## Below choose what to subscribe on  the remote MQTT server in order to receive setting data   ##
 	## You may comment everything in order to not allow any MQTT remote configuration of the openWB ##
 	##################################################################################################
 
+	# always allow triggering remote support
+	topic openWB-remote/support both 2 "" {$configuration->remote->prefix}
+
 	EOS
 	);
 
+	if ($configuration->remote->partner) {
+		fwrite(
+			$configFile,
+			<<<EOS
+	# allow partner access
+	topic openWB-remote/partner both 2 "" {$configuration->remote->prefix}
+
+	EOS
+		);
+	}
+
 	if ($configuration->data_transfer->configuration) {
-		fwrite($configFile, <<<EOS
+		fwrite(
+			$configFile,
+			<<<EOS
 	topic openWB/set/# both 2 "" {$configuration->remote->prefix}
 
 	EOS
 		);
 	}
 
-	fwrite($configFile, <<<EOS
+	fwrite(
+		$configFile,
+		<<<EOS
 
 	##############################
 	## Remote server settings   ##
@@ -291,4 +324,3 @@ if (!$debug) {
 	// restart or reload of broker in normal operation has several side effects and should be avoided!
 	// exec("sudo service mosquitto restart");
 }
-?>
