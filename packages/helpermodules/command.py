@@ -590,7 +590,7 @@ class Command:
         cloud_config["remote"]["username"] = payload["data"]["username"]
         cloud_config["remote"]["password"] = payload["data"]["password"]
         cloud_config["remote"]["prefix"] = payload["data"]["username"] + "/"
-        cloud_config["remote"]["partner"] = payload["data"]["partner"]
+        cloud_config["access"]["partner"] = payload["data"]["partner"]
         self.addMqttBridge(connection_id, payload, cloud_config)
         pub_user_message(payload, connection_id, "Verbindung zur Cloud wurde angelegt.", MessageType.SUCCESS)
 

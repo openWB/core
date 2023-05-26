@@ -137,8 +137,8 @@ if ($configuration == "" || $configuration->active != true) {
 		cleanAndExit("Es macht keinen Sinn eine MQTT-Brücke zu konfigurieren, welche weder Daten publiziert noch Konfigurationen empfängt. Bitte mindestens eine Option bei 'Datenübertragung' aktivieren.");
 	}
 
-	if (!isset($configuration->remote->partner) || ($configuration->remote->partner !== true)) {
-		$configuration->remote->partner = false;
+	if (!isset($configuration->access->partner) || ($configuration->access->partner !== true)) {
+		$configuration->access->partner = false;
 	}
 
 	//
@@ -206,6 +206,7 @@ if ($configuration == "" || $configuration->active != true) {
 		fwrite(
 			$configFile,
 			<<<EOS
+
 	# export graph data to remote
 	topic openWB/graph/# out 2 "" {$configuration->remote->prefix}
 
@@ -228,10 +229,11 @@ if ($configuration == "" || $configuration->active != true) {
 	EOS
 	);
 
-	if ($configuration->remote->partner) {
+	if ($configuration->access->partner) {
 		fwrite(
 			$configFile,
 			<<<EOS
+
 	# allow partner access
 	topic openWB-remote/partner both 2 "" {$configuration->remote->prefix}
 
@@ -243,6 +245,8 @@ if ($configuration == "" || $configuration->active != true) {
 		fwrite(
 			$configFile,
 			<<<EOS
+
+	# allow configuration
 	topic openWB/set/# both 2 "" {$configuration->remote->prefix}
 
 	EOS
