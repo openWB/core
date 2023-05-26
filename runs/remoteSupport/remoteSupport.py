@@ -40,60 +40,61 @@ def on_message(client: mqtt.Client, userdata, msg: mqtt.MQTTMessage):
     global support_tunnel
     global partner_tunnel
     payload = msg.payload.decode("utf-8")
-    log.debug("Topic: %s, Message: %s", msg.topic, payload)
-    if msg.topic == REMOTE_SUPPORT_TOPIC and len(payload) >= 1:
-        if payload == 'stop':
-            if support_tunnel is None:
-                log.error("received stop tunnel message but tunnel is not running")
-            else:
-                log.info("stop remote support")
-                support_tunnel.terminate()
-                support_tunnel.wait(timeout=3)
-                support_tunnel = None
-        elif re.match(r'^[A-Za-z0-9]+(;[1-9][0-9]+(;[a-zA-Z0-9]+)?)?$', payload):
-            if support_tunnel is not None:
-                log.error("received start tunnel message but tunnel is already running")
-            else:
-                splitted = payload.split(";")
-                token = splitted[0]
-                port = splitted[1] if len(splitted) > 1 else "2223"
-                user = splitted[2] if len(splitted) > 2 else "getsupport"
-                log.info("start remote support")
-                support_tunnel = Popen(["sshpass", "-p", token, "ssh", "-tt", "-o", "StrictHostKeyChecking=no",
-                                        "-o", "ServerAliveInterval 60", "-R", f"{port}:localhost:22",
-                                        f"{user}@remotesupport.openwb.de"])
-                log.info(f"tunnel running with pid {support_tunnel.pid}")
-        else:
-            log.info("unknown message: " + payload)
-    elif msg.topic == REMOTE_PARTNER_TOPIC and len(payload) >= 1:
-        if payload == 'stop':
-            if partner_tunnel is None:
-                log.error("received stop tunnel message but tunnel is not running")
-            else:
-                log.info("stop partner support")
-                partner_tunnel.terminate()
-                partner_tunnel.wait(timeout=3)
-                partner_tunnel = None
-        elif re.match(r'^[A-Za-z0-9]+(;[1-9][0-9]+(;[a-zA-Z0-9]+)?)?$', payload):
-            if partner_tunnel is not None:
-                log.error("received start tunnel message but tunnel is already running")
-            else:
-                splitted = payload.split(";")
-                if len(splitted) != 3:
-                    log.error("invalid number of settings received!")
+    if len(payload) > 0:
+        log.debug("Topic: %s, Message: %s", msg.topic, payload)
+        if msg.topic == REMOTE_SUPPORT_TOPIC:
+            if payload == 'stop':
+                if support_tunnel is None:
+                    log.error("received stop tunnel message but tunnel is not running")
                 else:
+                    log.info("stop remote support")
+                    support_tunnel.terminate()
+                    support_tunnel.wait(timeout=3)
+                    support_tunnel = None
+            elif re.match(r'^[A-Za-z0-9]+(;[1-9][0-9]+(;[a-zA-Z0-9]+)?)?$', payload):
+                if support_tunnel is not None:
+                    log.error("received start tunnel message but tunnel is already running")
+                else:
+                    splitted = payload.split(";")
                     token = splitted[0]
-                    port = splitted[1]
-                    user = splitted[2]
-                    log.info("start partner support")
-                    partner_tunnel = Popen(["sshpass", "-p", token, "ssh", "-tt", "-o", "StrictHostKeyChecking=no",
-                                            "-o", "ServerAliveInterval 60", "-R", f"{port}:localhost:80",
-                                            f"{user}@partner.openwb.de"])
-                    log.info(f"tunnel running with pid {partner_tunnel.pid}")
-        else:
-            log.info("unknown message: " + payload)
-    # clear topic
-    client.publish(msg.topic, "", qos=2, retain=True)
+                    port = splitted[1] if len(splitted) > 1 else "2223"
+                    user = splitted[2] if len(splitted) > 2 else "getsupport"
+                    log.info("start remote support")
+                    support_tunnel = Popen(["sshpass", "-p", token, "ssh", "-tt", "-o", "StrictHostKeyChecking=no",
+                                            "-o", "ServerAliveInterval 60", "-R", f"{port}:localhost:22",
+                                            f"{user}@remotesupport.openwb.de"])
+                    log.info(f"tunnel running with pid {support_tunnel.pid}")
+            else:
+                log.info("unknown message: " + payload)
+        elif msg.topic == REMOTE_PARTNER_TOPIC:
+            if payload == 'stop':
+                if partner_tunnel is None:
+                    log.error("received stop tunnel message but tunnel is not running")
+                else:
+                    log.info("stop partner support")
+                    partner_tunnel.terminate()
+                    partner_tunnel.wait(timeout=3)
+                    partner_tunnel = None
+            elif re.match(r'^[A-Za-z0-9]+(;[1-9][0-9]+(;[a-zA-Z0-9]+)?)?$', payload):
+                if partner_tunnel is not None:
+                    log.error("received start tunnel message but tunnel is already running")
+                else:
+                    splitted = payload.split(";")
+                    if len(splitted) != 3:
+                        log.error("invalid number of settings received!")
+                    else:
+                        token = splitted[0]
+                        port = splitted[1]
+                        user = splitted[2]
+                        log.info("start partner support")
+                        partner_tunnel = Popen(["sshpass", "-p", token, "ssh", "-tt", "-o", "StrictHostKeyChecking=no",
+                                                "-o", "ServerAliveInterval 60", "-R", f"{port}:localhost:80",
+                                                f"{user}@partner.openwb.de"])
+                        log.info(f"tunnel running with pid {partner_tunnel.pid}")
+            else:
+                log.info("unknown message: " + payload)
+        # clear topic
+        client.publish(msg.topic, "", qos=2, retain=True)
 
 
 mqtt_broker_host = "localhost"
