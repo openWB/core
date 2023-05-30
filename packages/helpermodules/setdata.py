@@ -869,7 +869,8 @@ class SetData:
         try:
             if ("openWB/set/log/" and "data" in msg.topic or
                     "openWB/set/log/daily" in msg.topic or
-                    "openWB/set/log/monthly" in msg.topic):
+                    "openWB/set/log/monthly" in msg.topic or
+                    "openWB/set/log/yearly" in msg.topic):
                 self._validate_value(msg, "json", retain=False)
             else:
                 self.__unknown_topic(msg)
