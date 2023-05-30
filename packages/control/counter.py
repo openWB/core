@@ -329,9 +329,14 @@ class Counter:
 
     def calc_switch_off_threshold(self, chargepoint: Chargepoint) -> Tuple[float, float]:
         pv_config = data.data.general_data.data.chargemode_config.pv_charging
-        # Der EVU-Überschuss muss ggf um die Einspeisegrenze bereinigt werden.
+        charging_ev_data = chargepoint.data.set.charging_ev_data
+        control_parameter = charging_ev_data.data.control_parameter
         if chargepoint.data.set.charging_ev_data.charge_template.data.chargemode.pv_charging.feed_in_limit:
-            feed_in_yield = -data.data.general_data.data.chargemode_config.pv_charging.feed_in_yield
+            # Der EVU-Überschuss muss ggf um die Einspeisegrenze bereinigt werden.
+            # Wnn die Leistung nicht Einspeisegrenze + Einschaltschwelle erreicht, darf die Ladung nicht pulsieren.
+            # Abschaltschwelle um Einschaltschwelle reduzieren.
+            feed_in_yield = (-data.data.general_data.data.chargemode_config.pv_charging.feed_in_yield
+                             + pv_config.switch_on_threshold*control_parameter.phases)
         else:
             feed_in_yield = 0
         threshold = pv_config.switch_off_threshold + feed_in_yield
