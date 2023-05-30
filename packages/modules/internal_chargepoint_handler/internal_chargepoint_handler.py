@@ -42,7 +42,8 @@ class UpdateValues:
             # iterate over counterstate
             vars_old_counter_state = vars(self.old_chargepoint_state)
             for key, value in vars(chargepoint_state).items():
-                if value != vars_old_counter_state[key]:
+                # Zählerstatus immer publishen für Ladelog-Einträge
+                if value != vars_old_counter_state[key] or key == "imported":
                     self._pub_values_to_2(key, value)
         else:
             # Bei Neustart alles publishen
