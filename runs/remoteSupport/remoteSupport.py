@@ -51,7 +51,7 @@ def on_message(client: mqtt.Client, userdata, msg: mqtt.MQTTMessage):
                     support_tunnel.terminate()
                     support_tunnel.wait(timeout=3)
                     support_tunnel = None
-            elif re.match(r'^[A-Za-z0-9]+(;[1-9][0-9]+(;[a-zA-Z0-9]+)?)?$', payload):
+            elif re.match(r'^([^;]+)(?:;([1-9][0-9]+)(?:;([a-zA-Z0-9]+))?)?$', payload):
                 if support_tunnel is not None:
                     log.error("received start tunnel message but tunnel is already running")
                 else:
@@ -75,7 +75,7 @@ def on_message(client: mqtt.Client, userdata, msg: mqtt.MQTTMessage):
                     partner_tunnel.terminate()
                     partner_tunnel.wait(timeout=3)
                     partner_tunnel = None
-            elif re.match(r'^[A-Za-z0-9]+(;[1-9][0-9]+(;[a-zA-Z0-9]+)?)?$', payload):
+            elif re.match(r'^([^;]+)(?:;([1-9][0-9]+)(?:;([a-zA-Z0-9]+))?)?$', payload):
                 if partner_tunnel is not None:
                     log.error("received start tunnel message but tunnel is already running")
                 else:
