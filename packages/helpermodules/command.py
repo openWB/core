@@ -14,6 +14,7 @@ import paho.mqtt.client as mqtt
 from helpermodules import measurement_log
 from helpermodules.broker import InternalBrokerClient
 from helpermodules.messaging import MessageType, pub_user_message, pub_error_global
+from helpermodules.parse_send_debug import parse_send_debug_data
 from helpermodules.pub import Pub
 from helpermodules.subdata import SubData
 from helpermodules.utils.topic_parser import decode_payload
@@ -548,7 +549,7 @@ class Command:
         parent_file = Path(__file__).resolve().parents[2]
         previous_log_level = SubData.system_data["system"].data["debug_level"]
         subprocess.run([str(parent_file / "runs" / "send_debug.sh"),
-                        json.dumps(payload["data"])])
+                        json.dumps(payload["data"]), parse_send_debug_data()])
         Pub().pub("openWB/set/system/debug_level", previous_log_level)
         pub_user_message(payload, connection_id, "Systembericht wurde versandt.", MessageType.SUCCESS)
 
