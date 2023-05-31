@@ -36,6 +36,7 @@ class ClientFactory:
         self.evse_client = self.__evse_factory(serial_client)
         self.meter_client = self.find_meter_client(CP0_METERS if self.local_charge_point_num == 0 else CP1_METERS,
                                                    serial_client)
+        self._check_hardware()
         self.read_error = 0
 
     def __evse_factory(self, serial_client: ModbusSerialClient_) -> evse.Evse:
@@ -66,6 +67,15 @@ class ClientFactory:
                 log.debug(f"Zähler {meter_type} mit Modbus-ID:{modbus_id} antwortet nicht.")
         else:
             return None
+
+    def _check_hardware(self):
+        if self.meter_client is None and self.evse_client is None:
+            raise Exception("Auslesen von Zähler UND Evse nicht möglich. Vermutlich ist der USB-Adapter defekt.")
+        if self.meter_client is None:
+            raise Exception("Der Zähler antwortet nicht. Vermutlich ist der Zähler falsch konfiguriert oder defekt.")
+        if self.evse_client is None:
+            raise Exception(
+                "Auslesen der EVSE nicht möglich. Vermutlich ist die EVSE defekt oder hat eine unbekannte Modbus-ID.")
 
     def get_pins_phase_switch(self, new_phases: int) -> Tuple[int, int]:
         # return gpio_cp, gpio_relay
