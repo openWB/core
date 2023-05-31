@@ -32,7 +32,6 @@ class ChargepointModule(AbstractChargepoint):
         self.__client = ClientFactory(self.config.id, self.config.serial_client)
         time.sleep(0.1)
         version = self.__client.evse_client.get_firmware_version()
-        self._check_hardware()
         if version < 17:
             self._precise_current = False
         else:
@@ -107,15 +106,6 @@ class ChargepointModule(AbstractChargepoint):
         self.store.set(chargepoint_state)
         self.store.update()
         return chargepoint_state, self.set_current_evse
-
-    def _check_hardware(self):
-        if self.__client.meter_client is None and self.__client.evse_client is None:
-            raise Exception("Auslesen von Zähler UND Evse nicht möglich. Vermutlich ist der USB-Adapter defekt.")
-        if self.__client.meter_client is None:
-            raise Exception("Der Zähler antwortet nicht. Vermutlich ist der Zähler falsch konfiguriert oder defekt.")
-        if self.__client.evse_client is None:
-            raise Exception(
-                "Auslesen der EVSE nicht möglich. Vermutlich ist die EVSE defekt oder hat eine unbekannte Modbus-ID.")
 
     def perform_phase_switch(self, phases_to_use: int, duration: int) -> None:
         gpio_cp, gpio_relay = self.__client.get_pins_phase_switch(phases_to_use)
