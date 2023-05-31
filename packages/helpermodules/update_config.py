@@ -22,7 +22,7 @@ log = logging.getLogger(__name__)
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 9
+    DATASTORE_VERSION = 10
     valid_topic = ["^openWB/bat/config/configured$",
                    "^openWB/bat/set/charging_power_left$",
                    "^openWB/bat/set/switch_on_soc_reached$",
@@ -515,6 +515,7 @@ class UpdateConfig:
 
         def get_decoded_value(name: str) -> float:
             return decode_payload(self.all_received_topics[f"{simulation_topic}/{name}"])
+
         for topic in self.all_received_topics.keys():
             if re.search("^openWB/system/device/[0-9]+/component/[0-9]+/config$", topic) is not None:
                 simulation_topic = (f"openWB/system/device/{get_index(topic)}/component/"
@@ -612,3 +613,13 @@ class UpdateConfig:
                     updated_payload.pop("power_module")
                     Pub().pub(topic.replace("openWB/", "openWB/set/"), payload)
         Pub().pub("openWB/set/system/datastore_version", 9)
+
+    def upgrade_datastore_9(self) -> None:
+        for topic, payload in self.all_received_topics.items():
+            if re.search("^openWB/system/mqtt/bridge/[0-9]+$", topic) is not None:
+                payload = decode_payload(payload)
+                if payload["name"] == "openWBCloud" and "access" not in payload:
+                    payload["access"] = {"partner": False}
+                    log.debug("cloud bridge configuration upgraded")
+                    Pub().pub(topic, payload)
+        Pub().pub("openWB/system/datastore_version", 10)
