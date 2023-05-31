@@ -15,6 +15,7 @@ from modules.common.store._util import get_rounding_function_by_digits
 from modules.common.component_state import ChargepointState
 from modules.common.modbus import ModbusSerialClient_
 from modules.internal_chargepoint_handler import chargepoint_module
+from modules.internal_chargepoint_handler.clients import serial_client_factory
 from modules.internal_chargepoint_handler.socket import Socket
 from modules.internal_chargepoint_handler.chargepoint_module import ClientConfig
 from modules.internal_chargepoint_handler.internal_chargepoint_handler_config import (
@@ -41,7 +42,8 @@ class UpdateValues:
             # iterate over counterstate
             vars_old_counter_state = vars(self.old_chargepoint_state)
             for key, value in vars(chargepoint_state).items():
-                if value != vars_old_counter_state[key]:
+                # Zählerstatus immer publishen für Ladelog-Einträge
+                if value != vars_old_counter_state[key] or key == "imported":
                     self._pub_values_to_2(key, value)
         else:
             # Bei Neustart alles publishen
@@ -133,13 +135,15 @@ class InternalChargepointHandler:
         with SingleComponentUpdateContext(ComponentInfo(parent_cp0, "Interner Ladepunkt 1", "vehicle",
                                                         parent_hostname=global_data.parent_ip)):
             # Allgemeine Fehlermeldungen an LP 1:
-            self.serial_client = ModbusSerialClient_(self.detect_modbus_usb_port())
-            self.cp0 = HandlerChargepoint(self.serial_client, 0, mode, global_data, parent_cp0)
+            self.cp0_serial_client = serial_client_factory(0)
+            self.cp0 = HandlerChargepoint(self.cp0_serial_client, 0, mode, global_data, parent_cp0)
             if mode == InternalChargepointMode.DUO.value:
                 log.debug("Zweiter Ladepunkt für Duo konfiguriert.")
-                self.cp1 = HandlerChargepoint(self.serial_client, 1, mode, global_data, parent_cp1)
+                self.cp1_serial_client = serial_client_factory(1, self.cp0_serial_client)
+                self.cp1 = HandlerChargepoint(self.cp1_serial_client, 1, mode, global_data, parent_cp1)
             else:
                 self.cp1 = None
+                self.cp1_serial_client = None
             self.init_gpio()
 
     def init_gpio(self) -> None:
@@ -157,21 +161,28 @@ class InternalChargepointHandler:
         GPIO.setup(19, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
     def loop(self) -> None:
+        def _loop():
+            while True:
+                self.heartbeat = True
+                if self.event_stop.is_set():
+                    break
+                log.debug("***Start***")
+                data = copy.deepcopy(SubData.internal_chargepoint_data)
+                log.debug(data)
+                log.setLevel(SubData.system_data["system"].data["debug_level"])
+                self.cp0.update(data["global_data"], data["cp0"], data["rfid_data"])
+                if self.cp1:
+                    self.cp1.update(data["global_data"], data["cp1"], data["rfid_data"])
+                time.sleep(1.1)
         with SingleComponentUpdateContext(self.cp0.module.component_info):
             # Allgemeine Fehlermeldungen an LP 1:
-            with self.serial_client:
-                while True:
-                    self.heartbeat = True
-                    if self.event_stop.is_set():
-                        break
-                    log.debug("***Start***")
-                    data = copy.deepcopy(SubData.internal_chargepoint_data)
-                    log.debug(data)
-                    log.setLevel(SubData.system_data["system"].data["debug_level"])
-                    self.cp0.update(data["global_data"], data["cp0"], data["rfid_data"])
-                    if self.cp1:
-                        self.cp1.update(data["global_data"], data["cp1"], data["rfid_data"])
-                    time.sleep(1.1)
+            if self.cp1_serial_client is None:
+                with self.cp0_serial_client:
+                    _loop()
+            else:
+                with self.cp0_serial_client:
+                    with self.cp1_serial_client:
+                        _loop()
 
     def detect_modbus_usb_port(self) -> str:
         """guess USB/modbus device name"""
