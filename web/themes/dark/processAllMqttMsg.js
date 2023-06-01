@@ -1319,8 +1319,35 @@ function processSmartHomeDeviceMessages(mqttTopic, mqttPayload) {
 		element.text(mqttPayload);
 	}
 	else if (mqttTopic.match(/^openWB\/LegacySmartHome\/Devices\/[1-9][0-9]*\/Watt$/i)) {
-		// device name
-		var element = deviceElement.find('.nameDevice');  // now get parents child element
-		element.text(mqttPayload);
+		// device power
+		var element = deviceElement.find('.actualPowerDevice');  // now get parents child element
+		element.html(mqttPayload + "&nbsp;W");
+	}
+	else if (mqttTopic.match(/^openWB\/LegacySmartHome\/Devices\/[1-9][0-9]*\/RunningTimeToday$/i)) {
+		// device running time
+		var element = deviceElement.find('.actualRunningTimeDevice');  // now get parents child element
+		newValue = (mqttPayload / 3600) + "h&nbsp;" + (mqttPayload % 3600) / 60 + "m&nbsp;" + mqttPayload % 60 + "s";
+		element.html(newValue);
+	}
+	else if (mqttTopic.match(/^openWB\/LegacySmartHome\/Devices\/[1-9][0-9]*\/RelayStatus$/i)) {
+		// device relay status
+		console.log("relay status", mqttTopic, mqttPayload);
+	}
+	else if (mqttTopic.match(/^openWB\/LegacySmartHome\/Devices\/[1-9][0-9]*\/Status$/i)) {
+		// device status
+		console.log("status", mqttTopic, mqttPayload);
+	}
+	else if (mqttTopic.match(/^openWB\/LegacySmartHome\/Devices\/[1-9][0-9]*\/DailyYieldKwh$/i)) {
+		// device daily yield
+		console.log("daily yield", mqttTopic, mqttPayload);
+	}
+	else if (mqttTopic.match(/^openWB\/LegacySmartHome\/Devices\/[1-9][0-9]*\/mode$/i)) {
+		// device mode
+		console.log("mode", mqttTopic, mqttPayload);
+		// .actualModeDevice
+	}
+	else if (mqttTopic.match(/^openWB\/LegacySmartHome\/Devices\/[1-9][0-9]*\/TemperatureSensor[0-2]$/i)) {
+		// device temperature sensor
+		console.log("temperature sensor", mqttTopic, mqttPayload);
 	}
 }

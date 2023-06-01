@@ -29,6 +29,14 @@ var topicsToSubscribe = [
 	// data for all devices
 	["openWB/LegacySmartHome/config/get/Devices/+/device_name", 1],
 	["openWB/LegacySmartHome/Devices/+/Watt", 1],
+	["openWB/LegacySmartHome/Devices/+/RunningTimeToday", 1],
+	["openWB/LegacySmartHome/Devices/+/RelayStatus", 1],
+	["openWB/LegacySmartHome/Devices/+/Status", 1],
+	["openWB/LegacySmartHome/Devices/+/DailyYieldKwh", 1],
+	["openWB/LegacySmartHome/Devices/+/mode", 1],
+	["openWB/LegacySmartHome/Devices/+/TemperatureSensor0", 1],
+	["openWB/LegacySmartHome/Devices/+/TemperatureSensor1", 1],
+	["openWB/LegacySmartHome/Devices/+/TemperatureSensor2", 1],
 ];
 
 // holds number of topics flagged 1 initially
