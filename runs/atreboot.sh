@@ -364,21 +364,6 @@ chmod 666 "$LOGFILE"
 	# fi
 	# sudo /usr/sbin/apachectl -k graceful
 
-	for i in $(seq 1 9);
-	do
-		configured=$(timeout 1 mosquitto_sub -p 1886 -C 1 -t "openWB/LegacySmartHome/config/get/Devices/$i/device_configured")
-		if ! [[ "$configured" == 0 || "$configured" == 1 ]]; then
-			mosquitto_pub -p 1886 -r -t "openWB/LegacySmartHome/config/get/Devices/$i/device_configured" -m "0"
-		fi
-	done
-
-	mosquitto_pub -r -t openWB/LegacySmartHome/Devices/1/TemperatureSensor0 -m ""
-	mosquitto_pub -r -t openWB/LegacySmartHome/Devices/1/TemperatureSensor1 -m ""
-	mosquitto_pub -r -t openWB/LegacySmartHome/Devices/1/TemperatureSensor2 -m ""
-	mosquitto_pub -r -t openWB/LegacySmartHome/Devices/2/TemperatureSensor0 -m ""
-	mosquitto_pub -r -t openWB/LegacySmartHome/Devices/2/TemperatureSensor1 -m ""
-	mosquitto_pub -r -t openWB/LegacySmartHome/Devices/2/TemperatureSensor2 -m ""
-
 	# all done, remove boot and update status
 	echo "$(date +"%Y-%m-%d %H:%M:%S:")" "boot done :-)"
 	mosquitto_pub -p 1886 -t "openWB/system/update_in_progress" -r -m 'false'
