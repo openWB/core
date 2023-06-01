@@ -60,9 +60,9 @@ def on_message(client: mqtt.Client, userdata, msg: mqtt.MQTTMessage):
                     port = splitted[1] if len(splitted) > 1 else "2223"
                     user = splitted[2] if len(splitted) > 2 else "getsupport"
                     log.info("start remote support")
-                    support_tunnel = Popen(["sshpass", "-p", token, "ssh", "-tt", "-o", "StrictHostKeyChecking=no",
-                                            "-o", "ServerAliveInterval 60", "-R", f"{port}:localhost:22",
-                                            f"{user}@remotesupport.openwb.de"])
+                    support_tunnel = Popen(["sshpass", "-p", token, "ssh", "-N", "-tt", "-o",
+                                            "StrictHostKeyChecking=no", "-o", "ServerAliveInterval 60", "-R",
+                                            f"{port}:localhost:22", f"{user}@remotesupport.openwb.de"])
                     log.info(f"tunnel running with pid {support_tunnel.pid}")
             else:
                 log.info("unknown message: " + payload)
@@ -87,9 +87,9 @@ def on_message(client: mqtt.Client, userdata, msg: mqtt.MQTTMessage):
                         port = splitted[1]
                         user = splitted[2]
                         log.info("start partner support")
-                        partner_tunnel = Popen(["sshpass", "-p", token, "ssh", "-tt", "-o", "StrictHostKeyChecking=no",
-                                                "-o", "ServerAliveInterval 60", "-R", f"{port}:localhost:80",
-                                                f"{user}@partner.openwb.de"])
+                        partner_tunnel = Popen(["sshpass", "-p", token, "ssh", "-N", "-tt", "-o",
+                                                "StrictHostKeyChecking=no", "-o", "ServerAliveInterval 60", "-R",
+                                                f"{port}:localhost:80", f"{user}@partner.openwb.de"])
                         log.info(f"tunnel running with pid {partner_tunnel.pid}")
             else:
                 log.info("unknown message: " + payload)
