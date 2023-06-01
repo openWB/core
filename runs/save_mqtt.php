@@ -133,9 +133,9 @@ if ($configuration == "" || $configuration->active != true) {
 		$configuration->data_transfer->configuration = false;
 	}
 
-	if (!$configuration->data_transfer->status && !$configuration->data_transfer->graph && !$configuration->data_transfer->configuration) {
-		cleanAndExit("Es macht keinen Sinn eine MQTT-Brücke zu konfigurieren, welche weder Daten publiziert noch Konfigurationen empfängt. Bitte mindestens eine Option bei 'Datenübertragung' aktivieren.");
-	}
+	// if (!$configuration->data_transfer->status && !$configuration->data_transfer->graph && !$configuration->data_transfer->configuration) {
+	// 	cleanAndExit("Es macht keinen Sinn eine MQTT-Brücke zu konfigurieren, welche weder Daten publiziert noch Konfigurationen empfängt. Bitte mindestens eine Option bei 'Datenübertragung' aktivieren.");
+	// }
 
 	if (!isset($configuration->access->partner) || ($configuration->access->partner !== true)) {
 		$configuration->access->partner = false;
