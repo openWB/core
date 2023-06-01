@@ -434,12 +434,11 @@ class Command:
         except (TypeError, IndexError):
             if general_type == ComponentType.COUNTER:
                 # es gibt noch keinen EVU-Zähler
-                hierarchy = ([{
-                              "id": new_id,
-                              "type": ComponentType.COUNTER.value,
-                              "children": []
-                              }] +
-                             data.data.counter_all_data.data.get.hierarchy)
+                hierarchy = [{
+                    "id": new_id,
+                    "type": ComponentType.COUNTER.value,
+                    "children": data.data.counter_all_data.data.get.hierarchy
+                }]
                 Pub().pub("openWB/set/counter/get/hierarchy", hierarchy)
                 data.data.counter_all_data.data.get.hierarchy = hierarchy
             else:
