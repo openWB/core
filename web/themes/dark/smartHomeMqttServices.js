@@ -27,15 +27,8 @@ var topicsToSubscribeFirst = [
 // add any other topics here
 var topicsToSubscribe = [
 	// data for all devices
-	["openWB/LegacySmartHome/config/get/Devices/1/device_name", 1],
-	["openWB/LegacySmartHome/config/get/Devices/2/device_name", 1],
-	["openWB/LegacySmartHome/config/get/Devices/3/device_name", 1],
-	["openWB/LegacySmartHome/config/get/Devices/4/device_name", 1],
-	["openWB/LegacySmartHome/config/get/Devices/5/device_name", 1],
-	["openWB/LegacySmartHome/config/get/Devices/6/device_name", 1],
-	["openWB/LegacySmartHome/config/get/Devices/7/device_name", 1],
-	["openWB/LegacySmartHome/config/get/Devices/8/device_name", 1],
-	["openWB/LegacySmartHome/config/get/Devices/9/device_name", 1],
+	["openWB/LegacySmartHome/config/get/Devices/+/device_name", 1],
+	["openWB/LegacySmartHome/Devices/+/Watt", 1],
 ];
 
 // holds number of topics flagged 1 initially

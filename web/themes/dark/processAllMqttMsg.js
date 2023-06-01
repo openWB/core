@@ -1303,33 +1303,24 @@ function processETProviderMessages(mqttTopic, mqttPayload) {
 }
 
 function processSmartHomeDeviceMessages(mqttTopic, mqttPayload) {
-	// processes mqttTopic for topic openWB/LegacySmartHome/config/get/Devices - config variables (Name / configured only!), actual Variables in processSmartHomeDevices
-	// called by handleMessage
 	processPreloader(mqttTopic);
+	var deviceIndex = getIndex(mqttTopic);  // extract number between two / /
+	var deviceElement = $('.smarthome-device-card[data-smart-home-device="' + deviceIndex + '"]');  // get device card
 	if (mqttTopic.match(/^openWB\/LegacySmartHome\/config\/get\/Devices\/[1-9][0-9]*\/device_configured$/i)) {
-		console.info("configured", mqttTopic, mqttPayload);
-		// device configured
-		var deviceIndex = getIndex(mqttTopic);  // extract number between two / /
-		console.info("index", deviceIndex);
-		var infoElement = $('.smarthome-device-card[data-smart-home-device="' + deviceIndex + '"]');  // get device card
-		console.info("davice element", infoElement);
 		if (mqttPayload == 1) {
-			infoElement.removeClass('hide');
+			deviceElement.removeClass('hide');
 		} else {
-			infoElement.addClass('hide');
+			deviceElement.addClass('hide');
 		}
-		// var visibleRows = $('.smartHome[data-dev]').not('.hide');  // show/hide complete block depending on visible rows within
-		// if (visibleRows.length > 0) {
-		// 	$('.smartHome').removeClass('hide');
-		// } else {
-		// 	$('.smartHome').addClass('hide');
-		// }
 	}
 	else if (mqttTopic.match(/^openWB\/LegacySmartHome\/config\/get\/Devices\/[1-9][0-9]*\/device_name$/i)) {
 		// device name
-		var deviceIndex = getIndex(mqttTopic);  // extract number between two / /
-		var parent = $('.smarthome-device-card[data-smart-home-device="' + deviceIndex + '"]');  // get device card
-		var element = parent.find('.nameDevice');  // now get parents child element
+		var element = deviceElement.find('.nameDevice');  // now get parents child element
+		element.text(mqttPayload);
+	}
+	else if (mqttTopic.match(/^openWB\/LegacySmartHome\/Devices\/[1-9][0-9]*\/Watt$/i)) {
+		// device name
+		var element = deviceElement.find('.nameDevice');  // now get parents child element
 		element.text(mqttPayload);
 	}
 }
