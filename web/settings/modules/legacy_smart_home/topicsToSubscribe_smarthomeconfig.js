@@ -83,6 +83,5 @@ var topicsToSubscribe = [
 	["openWB/LegacySmartHome/config/get/Devices/+/device_shpassword", 0],
 	["openWB/LegacySmartHome/config/get/Devices/+/device_shauth", 0],
 	["openWB/LegacySmartHome/config/get/Devices/+/device_measureshauth", 0],
-	["openWB/LegacySmartHome/config/get/Devices/+/device_mindayeinschaltdauer", 0],	
 	["openWB/LegacySmartHome/config/get/Devices/+/device_measuresmaage", 0]
 ];
