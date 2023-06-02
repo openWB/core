@@ -132,32 +132,6 @@
 
 	<div class="container regularTextSize">
 
-		<!-- device temperatures -->
-
-		<div class="row justify-content-center text-center text-black hide">
-			<div class="bg-lightblue col-4 SmartHomeTemp hide" data-smart-home-device="1" data-smart-home-temperature="0">
-				<span class="actualTemp0Device">1/0</span>
-			</div>
-			<div class="bg-lightblue col-4 SmartHomeTemp hide" data-smart-home-device="1" data-smart-home-temperature="1">
-				<span class="actualTemp1Device">1/1</span>
-			</div>
-			<div class="bg-lightblue col-4 SmartHomeTemp hide" data-smart-home-device="1" data-smart-home-temperature="2">
-				<span class="actualTemp2Device">1/2</span>
-			</div>
-		</div>
-	
-		<div class="row justify-content-center text-center text-black hide">
-			<div class="bg-lightblue col-4 SmartHomeTemp hide" data-smart-home-device="2" data-smart-home-temperature="0">
-				<span class="actualTemp0Device">2/0</span>
-			</div>
-			<div class="bg-lightblue col-4 SmartHomeTemp hide" data-smart-home-device="2" data-smart-home-temperature="1">
-				<span class="actualTemp1Device">2/1</span>
-			</div>
-			<div class="bg-lightblue col-4 SmartHomeTemp hide" data-smart-home-device="2" data-smart-home-temperature="2">
-				<span class="actualTemp2Device">2/2</span>
-			</div>
-		</div>
-
 		<!-- SmartHome info header -->
 		<div class="card text-grey">
 			<div class="card-header bg-darkgrey font-weight-bold">
@@ -183,7 +157,7 @@
 			<div class="card-header bg-lightgrey">
 				<div class="form-row">
 					<div class="col-3">
-						<span class="cursor-pointer font-weight-bold lpEnabledStyle enableDevice nameDevice">Device 1</span>
+						<span class="cursor-pointer font-weight-bold charge-point-enabled enableDevice nameDevice">Device 1</span>
 					</div>
 					<div class="col-3">
 						<span class="actualPowerDevice">lade Daten</span><span class="actualDailyYieldDevice"></span>
@@ -193,6 +167,20 @@
 					</div>
 					<div class="col-3">
 						<span class="actualRunningTimeDevice">lade Daten</span>
+					</div>
+				</div>
+			</div>
+			<!-- device temperatures -->
+			<div class="card-body SmartHomeTemp hide">
+				<div class="row justify-content-center text-center text-black">
+					<div class="col-4 hide" data-smart-home-temperature="0">
+						<span class="temperature">1/0</span>
+					</div>
+					<div class="col-4 hide" data-smart-home-temperature="1">
+						<span class="temperature">1/1</span>
+					</div>
+					<div class="col-4 hide" data-smart-home-temperature="2">
+						<span class="temperature">1/2</span>
 					</div>
 				</div>
 			</div>
@@ -203,7 +191,7 @@
 			<div class="card-header bg-lightgrey">
 				<div class="form-row">
 					<div class="col-3">
-						<span class="cursor-pointer font-weight-bold lpEnabledStyle enableDevice nameDevice">Device 2</span>
+						<span class="cursor-pointer font-weight-bold charge-point-enabled enableDevice nameDevice">Device 2</span>
 					</div>
 					<div class="col-3">
 						<span class="actualPowerDevice">lade Daten</span><span class="actualDailyYieldDevice"></span>
@@ -216,6 +204,20 @@
 					</div>
 				</div>
 			</div>
+			<!-- device temperatures -->
+			<div class="card-body SmartHomeTemp hide">
+				<div class="row justify-content-center text-center text-black">
+					<div class="col-4 hide" data-smart-home-temperature="0">
+						<span class="temperature">2/0</span>
+					</div>
+					<div class="col-4 hide" data-smart-home-temperature="1">
+						<span class="temperature">2/1</span>
+					</div>
+					<div class="col-4 hide" data-smart-home-temperature="2">
+						<span class="temperature">2/2</span>
+					</div>
+				</div>
+			</div>
 		</div><!-- SmartHome Device 2 -->
 
 		<!-- SmartHome Device 3 -->
@@ -223,7 +225,7 @@
 			<div class="card-header bg-lightgrey">
 				<div class="form-row">
 					<div class="col-3">
-						<span class="cursor-pointer font-weight-bold lpEnabledStyle enableDevice nameDevice">Device 3</span>
+						<span class="cursor-pointer font-weight-bold charge-point-enabled enableDevice nameDevice">Device 3</span>
 					</div>
 					<div class="col-3">
 						<span class="actualPowerDevice">lade Daten</span><span class="actualDailyYieldDevice"></span>
@@ -243,7 +245,7 @@
 			<div class="card-header bg-lightgrey">
 				<div class="form-row">
 					<div class="col-3">
-						<span class="cursor-pointer font-weight-bold lpEnabledStyle enableDevice nameDevice">Device 4</span>
+						<span class="cursor-pointer font-weight-bold charge-point-enabled enableDevice nameDevice">Device 4</span>
 					</div>
 					<div class="col-3">
 						<span class="actualPowerDevice">lade Daten</span><span class="actualDailyYieldDevice"></span>
@@ -263,7 +265,7 @@
 			<div class="card-header bg-lightgrey">
 				<div class="form-row">
 					<div class="col-3">
-						<span class="cursor-pointer font-weight-bold lpEnabledStyle enableDevice nameDevice">Device 5</span>
+						<span class="cursor-pointer font-weight-bold charge-point-enabled enableDevice nameDevice">Device 5</span>
 					</div>
 					<div class="col-3">
 						<span class="actualPowerDevice">lade Daten</span><span class="actualDailyYieldDevice"></span>
@@ -283,7 +285,7 @@
 			<div class="card-header bg-lightgrey">
 				<div class="form-row">
 					<div class="col-3">
-						<span class="cursor-pointer font-weight-bold lpEnabledStyle enableDevice nameDevice">Device 6</span>
+						<span class="cursor-pointer font-weight-bold charge-point-enabled enableDevice nameDevice">Device 6</span>
 					</div>
 					<div class="col-3">
 						<span class="actualPowerDevice">lade Daten</span><span class="actualDailyYieldDevice"></span>
@@ -303,7 +305,7 @@
 			<div class="card-header bg-lightgrey">
 				<div class="form-row">
 					<div class="col-3">
-						<span class="cursor-pointer font-weight-bold lpEnabledStyle enableDevice nameDevice">Device 7</span>
+						<span class="cursor-pointer font-weight-bold charge-point-enabled enableDevice nameDevice">Device 7</span>
 					</div>
 					<div class="col-3">
 						<span class="actualPowerDevice">lade Daten</span><span class="actualDailyYieldDevice"></span>
@@ -323,7 +325,7 @@
 			<div class="card-header bg-lightgrey">
 				<div class="form-row">
 					<div class="col-3">
-						<span class="cursor-pointer font-weight-bold lpEnabledStyle enableDevice nameDevice">Device 8</span>
+						<span class="cursor-pointer font-weight-bold charge-point-enabled enableDevice nameDevice">Device 8</span>
 					</div>
 					<div class="col-3">
 						<span class="actualPowerDevice">lade Daten</span><span class="actualDailyYieldDevice"></span>
@@ -343,7 +345,7 @@
 			<div class="card-header bg-lightgrey">
 				<div class="form-row">
 					<div class="col-3">
-						<span class="cursor-pointer font-weight-bold lpEnabledStyle enableDevice nameDevice">Device 9</span>
+						<span class="cursor-pointer font-weight-bold charge-point-enabled enableDevice nameDevice">Device 9</span>
 					</div>
 					<div class="col-3">
 						<span class="actualPowerDevice">lade Daten</span><span class="actualDailyYieldDevice"></span>
@@ -463,6 +465,38 @@
 				script.src = src;
 				script.async = false;
 				document.body.appendChild(script);
+			});
+
+			$('.enableDevice').click(function(event){
+				console.log(this);
+				// send mqtt set to enable/disable Device after click
+				var deviceIndex = parseInt($(this).closest('[data-smart-home-device]').data('smart-home-device'));  // get attribute device-# of parent element
+				console.log(deviceIndex);
+				var isLocked = $(this).hasClass("locked");
+				if (isLocked) {
+					if (!isNaN(deviceIndex) && deviceIndex > 0 && deviceIndex < 10) {
+						var isEnabled = $(this).hasClass("charge-point-enabled")
+						if (isEnabled) {
+							publish(0, "openWB/LegacySmartHome/config/set/Devices/" + deviceIndex + "/device_manual_control");
+							$(this).removeClass('charge-point-enabled').removeClass('charge-point-disabled').addClass('charge-point-waiting');
+						} else {
+							publish(1, "openWB/LegacySmartHome/config/set/Devices/" + deviceIndex + "/device_manual_control");
+							$(this).removeClass('charge-point-enabled').removeClass('charge-point-disabled').addClass('charge-point-waiting');
+						}
+					}
+				}
+			});
+
+			$('.changeSHMode').click(function(event){
+				console.log(this);
+				// send mqtt set to enable/disable Device after click
+				var deviceIndex = parseInt($(this).closest('[data-smart-home-device]').data('smart-home-device'));  // get attribute device-# of parent element
+				console.log(deviceIndex);
+				if ($(this).text() == "Automatik") {
+					publish(1, "openWB/LegacySmartHome/config/set/Devices/" + deviceIndex + "/mode");
+				} else {
+					publish(0, "openWB/LegacySmartHome/config/set/Devices/" + deviceIndex + "/mode");
+				}
 			});
 
 			// register an event listener for changes in visibility

@@ -1312,42 +1312,137 @@ function processSmartHomeDeviceMessages(mqttTopic, mqttPayload) {
 		} else {
 			deviceElement.addClass('hide');
 		}
+		// var visibleRows = $('.smartHome [data-smart-home-device]').not('.hide');  // show/hide complete block depending on visible rows within
+		// if ( visibleRows.length > 0 ) {
+		// 	$('.smartHome').removeClass('hide');
+		// } else {
+		// 	$('.smartHome').addClass('hide');
+		// }
 	}
 	else if (mqttTopic.match(/^openWB\/LegacySmartHome\/config\/get\/Devices\/[1-9][0-9]*\/device_name$/i)) {
 		// device name
 		var element = deviceElement.find('.nameDevice');  // now get parents child element
 		element.text(mqttPayload);
+		// window['d'+index+'name']=mqttPayload; // store name for chart
+	}
+	else if (mqttTopic.match(/^openWB\/LegacySmartHome\/config\/get\/Devices\/[1-9][0-9]*\/mode$/i)) {
+		// device mode
+		console.log("mode", mqttTopic, mqttPayload);
+		var modeElement = deviceElement.find('.actualModeDevice');  // now get parents respective child element
+		console.log(modeElement);
+		var actualMode = "";
+		if (mqttPayload == 0) {
+			actualMode = "Automatik"
+		} else if (mqttPayload == 1){
+			actualMode = "Manuell"
+		} else {
+			console.warn("unknown mode", mqttPayload);
+		}
+		modeElement.text(actualMode);
+		var nameElement = deviceElement.find('.nameDevice');
+		if (mqttPayload == 1) {
+			nameElement.addClass('cursor-pointer').addClass('locked');
+		} else {
+			nameElement.removeClass('cursor-pointer').removeClass('locked');
+		}
 	}
 	else if (mqttTopic.match(/^openWB\/LegacySmartHome\/Devices\/[1-9][0-9]*\/Watt$/i)) {
 		// device power
 		var element = deviceElement.find('.actualPowerDevice');  // now get parents child element
-		element.html(mqttPayload + "&nbsp;W");
+		var actualPower = parseInt(mqttPayload, 10);
+		if ( isNaN(actualPower) ) {
+			actualPower = 0;
+		}
+		if (actualPower > 999) {
+			actualPower = (actualPower / 1000).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+			actualPower += '&nbsp;kW';
+		} else {
+			actualPower += '&nbsp;W';
+		}
+		element.html(actualPower);
 	}
 	else if (mqttTopic.match(/^openWB\/LegacySmartHome\/Devices\/[1-9][0-9]*\/RunningTimeToday$/i)) {
 		// device running time
 		var element = deviceElement.find('.actualRunningTimeDevice');  // now get parents child element
-		newValue = (mqttPayload / 3600) + "h&nbsp;" + (mqttPayload % 3600) / 60 + "m&nbsp;" + mqttPayload % 60 + "s";
-		element.html(newValue);
+		var runningTime = parseInt(mqttPayload, 10);
+		if ( isNaN(runningTime) ) {
+			runningTime = 0;
+		}
+		var seconds = runningTime % 60;
+		var minutes = ((runningTime - seconds) % 3600) / 60;
+		var hours = (runningTime - seconds - minutes * 60) / 3600;
+		console.log(hours, minutes, seconds);
+		var runningTimeText = seconds + "s";
+		if (runningTime >= 60) {
+			runningTimeText = minutes + "m&nbsp;" + runningTimeText;
+		}
+		if (runningTime >= 3600) {
+			runningTimeText = hours + "h&nbsp;" + runningTimeText;
+		}
+		element.html(runningTimeText);
 	}
 	else if (mqttTopic.match(/^openWB\/LegacySmartHome\/Devices\/[1-9][0-9]*\/RelayStatus$/i)) {
 		// device relay status
 		console.log("relay status", mqttTopic, mqttPayload);
 	}
 	else if (mqttTopic.match(/^openWB\/LegacySmartHome\/Devices\/[1-9][0-9]*\/Status$/i)) {
-		// device status
-		console.log("status", mqttTopic, mqttPayload);
+		// device state
+		var element = deviceElement.find('.nameDevice');  // now get parents child element
+		// 10 device on (manual or automatic)
+		if ( mqttPayload == 10 ) {
+			element.removeClass('charge-point-enabled').removeClass('text-blue').removeClass('text-white').removeClass('charge-point-waiting').addClass('charge-point-disabled');
+		// 11 device off (manual or automatic)
+		} else if ( mqttPayload == 11 ) {
+			element.removeClass('charge-point-disabled').removeClass('text-blue').removeClass('text-white').removeClass('charge-point-waiting').addClass('charge-point-enabled');
+		// 20 startup detection active
+		} else if ( mqttPayload == 20) {
+			element.removeClass('charge-point-disabled').removeClass('charge-point-enabled').removeClass('text-white').removeClass('charge-point-waiting').addClass('text-blue');
+		// 30 finish time running
+		} else if (mqttPayload == 30) {
+			element.removeClass('charge-point-disabled').removeClass('charge-point-enabled').removeClass('text-blue').removeClass('charge-point-waiting').addClass('text-white');
+		} else {
+			console.warn("unknown state message", mqttTopic, mqttPayload);
+		}
 	}
 	else if (mqttTopic.match(/^openWB\/LegacySmartHome\/Devices\/[1-9][0-9]*\/DailyYieldKwh$/i)) {
 		// device daily yield
 		console.log("daily yield", mqttTopic, mqttPayload);
-	}
-	else if (mqttTopic.match(/^openWB\/LegacySmartHome\/Devices\/[1-9][0-9]*\/mode$/i)) {
-		// device mode
-		console.log("mode", mqttTopic, mqttPayload);
-		// .actualModeDevice
+		var element = deviceElement.find('.actualDailyYieldDevice');  // now get parents respective child element
+		var actualDailyYield = parseFloat(mqttPayload);
+		if ( isNaN(actualDailyYield) ) {
+			actualDailyYield = 0;
+		}
+		if ( actualDailyYield >= 0 ) {
+			var actualDailyYieldStr = '&nbsp;(' + actualDailyYield.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + '&nbsp;kWh)';
+			element.html(actualDailyYieldStr);
+		} else {
+			element.text("");
+		}
 	}
 	else if (mqttTopic.match(/^openWB\/LegacySmartHome\/Devices\/[1-9][0-9]*\/TemperatureSensor[0-2]$/i)) {
 		// device temperature sensor
-		console.log("temperature sensor", mqttTopic, mqttPayload);
+		var sensorIndex = mqttTopic.match(/(?:\/TemperatureSensor)([0-2]+)$/g)[0].replace(/[^0-9]+/g, '');
+		console.log("temperature sensor", mqttTopic, mqttPayload, deviceIndex, sensorIndex);
+		var deviceTemperatureElement = deviceElement.find('.SmartHomeTemp');
+		var sensorElement = deviceTemperatureElement.find('[data-smart-home-temperature="' + sensorIndex + '"]');
+		var sensorValueElement = sensorElement.find('.temperature');
+		console.log(deviceTemperatureElement, sensorElement, sensorValueElement);
+		var actualTemp = parseFloat(mqttPayload);
+		if ( isNaN(actualTemp) ) {
+			actualTemp = 999;
+		}
+		if (actualTemp > 200) {
+			sensorValueElement.text(''); // display only something if we got a value
+			sensorElement.addClass('hide');
+		} else {
+			sensorValueElement.text('Temp' + sensorIndex + ' ' + actualTemp.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+			sensorElement.removeClass('hide');
+		}
+		var visibleRows = deviceTemperatureElement.find('[data-smart-home-temperature]').not('.hide');  // show/hide complete block depending on visible rows within
+		if ( visibleRows.length > 0 ) {
+			deviceTemperatureElement.removeClass('hide');
+		} else {
+			deviceTemperatureElement.addClass('hide');
+		}
 	}
 }
