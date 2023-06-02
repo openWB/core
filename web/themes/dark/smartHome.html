@@ -410,12 +410,12 @@
 					// debug output
 					topicsToSubscribeFirst.forEach((item, i) => {
 						if (item[1] == 0) {
-							console.log('not received: ' + item[0]);
+							console.warn('not received: ' + item[0]);
 						}
 					});
 					topicsToSubscribe.forEach((item, i) => {
 						if (item[1] == 0) {
-							console.log('not received: ' + item[0]);
+							console.warn('not received: ' + item[0]);
 						}
 					});
 
@@ -468,10 +468,8 @@
 			});
 
 			$('.enableDevice').click(function(event){
-				console.log(this);
 				// send mqtt set to enable/disable Device after click
 				var deviceIndex = parseInt($(this).closest('[data-smart-home-device]').data('smart-home-device'));  // get attribute device-# of parent element
-				console.log(deviceIndex);
 				var isLocked = $(this).hasClass("locked");
 				if (isLocked) {
 					if (!isNaN(deviceIndex) && deviceIndex > 0 && deviceIndex < 10) {
@@ -488,10 +486,8 @@
 			});
 
 			$('.changeSHMode').click(function(event){
-				console.log(this);
 				// send mqtt set to enable/disable Device after click
 				var deviceIndex = parseInt($(this).closest('[data-smart-home-device]').data('smart-home-device'));  // get attribute device-# of parent element
-				console.log(deviceIndex);
 				if ($(this).text() == "Automatik") {
 					publish(1, "openWB/LegacySmartHome/config/set/Devices/" + deviceIndex + "/mode");
 				} else {

@@ -31,7 +31,6 @@ var topicsToSubscribe = [
 	["openWB/LegacySmartHome/config/get/Devices/+/mode", 1],
 	["openWB/LegacySmartHome/Devices/+/Watt", 1],
 	["openWB/LegacySmartHome/Devices/+/RunningTimeToday", 1],
-	["openWB/LegacySmartHome/Devices/+/RelayStatus", 1],
 	["openWB/LegacySmartHome/Devices/+/Status", 1],
 	["openWB/LegacySmartHome/Devices/+/DailyYieldKwh", 1],
 	["openWB/LegacySmartHome/Devices/+/TemperatureSensor0", 1],

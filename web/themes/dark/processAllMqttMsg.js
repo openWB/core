@@ -342,7 +342,6 @@ function refreshVehicleSoc(vehicleIndex) {
 
 function handleMessage(mqttTopic, mqttPayload) {
 	// receives all messages and calls respective function to process them
-	console.info("new message: "+mqttTopic+": "+mqttPayload);
 	processPreloader(mqttTopic);
 	if (mqttTopic.match(/^openwb\/counter\/[0-9]+\//i)) { processCounterMessages(mqttTopic, mqttPayload) }
 	else if (mqttTopic.match(/^openwb\/counter\//i)) { processGlobalCounterMessages(mqttTopic, mqttPayload); }
@@ -1312,12 +1311,6 @@ function processSmartHomeDeviceMessages(mqttTopic, mqttPayload) {
 		} else {
 			deviceElement.addClass('hide');
 		}
-		// var visibleRows = $('.smartHome [data-smart-home-device]').not('.hide');  // show/hide complete block depending on visible rows within
-		// if ( visibleRows.length > 0 ) {
-		// 	$('.smartHome').removeClass('hide');
-		// } else {
-		// 	$('.smartHome').addClass('hide');
-		// }
 	}
 	else if (mqttTopic.match(/^openWB\/LegacySmartHome\/config\/get\/Devices\/[1-9][0-9]*\/device_name$/i)) {
 		// device name
@@ -1327,9 +1320,7 @@ function processSmartHomeDeviceMessages(mqttTopic, mqttPayload) {
 	}
 	else if (mqttTopic.match(/^openWB\/LegacySmartHome\/config\/get\/Devices\/[1-9][0-9]*\/mode$/i)) {
 		// device mode
-		console.log("mode", mqttTopic, mqttPayload);
 		var modeElement = deviceElement.find('.actualModeDevice');  // now get parents respective child element
-		console.log(modeElement);
 		var actualMode = "";
 		if (mqttPayload == 0) {
 			actualMode = "Automatik"
@@ -1371,7 +1362,6 @@ function processSmartHomeDeviceMessages(mqttTopic, mqttPayload) {
 		var seconds = runningTime % 60;
 		var minutes = ((runningTime - seconds) % 3600) / 60;
 		var hours = (runningTime - seconds - minutes * 60) / 3600;
-		console.log(hours, minutes, seconds);
 		var runningTimeText = seconds + "s";
 		if (runningTime >= 60) {
 			runningTimeText = minutes + "m&nbsp;" + runningTimeText;
@@ -1380,10 +1370,6 @@ function processSmartHomeDeviceMessages(mqttTopic, mqttPayload) {
 			runningTimeText = hours + "h&nbsp;" + runningTimeText;
 		}
 		element.html(runningTimeText);
-	}
-	else if (mqttTopic.match(/^openWB\/LegacySmartHome\/Devices\/[1-9][0-9]*\/RelayStatus$/i)) {
-		// device relay status
-		console.log("relay status", mqttTopic, mqttPayload);
 	}
 	else if (mqttTopic.match(/^openWB\/LegacySmartHome\/Devices\/[1-9][0-9]*\/Status$/i)) {
 		// device state
@@ -1406,7 +1392,6 @@ function processSmartHomeDeviceMessages(mqttTopic, mqttPayload) {
 	}
 	else if (mqttTopic.match(/^openWB\/LegacySmartHome\/Devices\/[1-9][0-9]*\/DailyYieldKwh$/i)) {
 		// device daily yield
-		console.log("daily yield", mqttTopic, mqttPayload);
 		var element = deviceElement.find('.actualDailyYieldDevice');  // now get parents respective child element
 		var actualDailyYield = parseFloat(mqttPayload);
 		if ( isNaN(actualDailyYield) ) {
@@ -1422,11 +1407,9 @@ function processSmartHomeDeviceMessages(mqttTopic, mqttPayload) {
 	else if (mqttTopic.match(/^openWB\/LegacySmartHome\/Devices\/[1-9][0-9]*\/TemperatureSensor[0-2]$/i)) {
 		// device temperature sensor
 		var sensorIndex = mqttTopic.match(/(?:\/TemperatureSensor)([0-2]+)$/g)[0].replace(/[^0-9]+/g, '');
-		console.log("temperature sensor", mqttTopic, mqttPayload, deviceIndex, sensorIndex);
 		var deviceTemperatureElement = deviceElement.find('.SmartHomeTemp');
 		var sensorElement = deviceTemperatureElement.find('[data-smart-home-temperature="' + sensorIndex + '"]');
 		var sensorValueElement = sensorElement.find('.temperature');
-		console.log(deviceTemperatureElement, sensorElement, sensorValueElement);
 		var actualTemp = parseFloat(mqttPayload);
 		if ( isNaN(actualTemp) ) {
 			actualTemp = 999;
