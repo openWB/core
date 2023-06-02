@@ -1,6 +1,6 @@
 #!/usr/bin/python3
-from smarthome.smartbase import Sbase, Slhttp
 from typing import Dict
+from smarthome.smartbase import Sbase, Slhttp
 import logging
 log = logging.getLogger(__name__)
 
@@ -12,6 +12,8 @@ class Shttp(Sbase):
         self._old_measuretype0 = 'none'
         self._device_einschalturl = 'none'
         self._device_ausschalturl = 'none'
+
+        log.debug('__init__ Shttp excuted')
 
     def getwatt(self, uberschuss: int, uberschussoffset: int) -> None:
         self.prewatt(uberschuss, uberschussoffset)

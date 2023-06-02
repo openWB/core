@@ -22,7 +22,7 @@ log = logging.getLogger(__name__)
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 9
+    DATASTORE_VERSION = 10
     valid_topic = ["^openWB/bat/config/configured$",
                    "^openWB/bat/set/charging_power_left$",
                    "^openWB/bat/set/switch_on_soc_reached$",
@@ -236,14 +236,84 @@ class UpdateConfig:
                    "^openWB/vehicle/[0-9]+/set/ev_template$",
                    "^openWB/vehicle/[0-9]+/set/soc_error_counter$",
 
-                   "^openWB/LegacySmartHome/config/get/loglevel$",
+                   "^openWB/LegacySmartHome/config/get/logLevel$",
+                   "^openWB/LegacySmartHome/config/get/maxBatteryPower$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_actor$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_acthortype$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_acthorpower$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_ausschaltschwelle$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_ausschalturl$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_ausschaltverzoegerung$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_configured$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_canSwitch$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_einschalturl$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_chan$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_dacport$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_deactivateper$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_deactivateWhileEvCharging$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_differentMeasurement$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_einschaltschwelle$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_einschaltverzoegerung$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_endTime$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_finishTime$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_homeConsumtion$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_idmnav$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_ip$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_lambdaueb$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_leistungurl$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_manwatt$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_maxeinschaltdauer$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_mindayeinschaltdauer$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_mineinschaltdauer$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_measchan$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_measureavmusername$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_measureavmpassword$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_measureavmactor$",
                    "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_measureid$",
                    "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_measureip$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_measuresmaage$"
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_measuresmaser$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_measurePortSdm$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_measureshauth$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_measureshusername$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_measureshpassword$",
                    "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_measureType$",
-                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_differentMeasurement$",
-                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_type$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_measureurl$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_measureurlc$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_measurejsonurl$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_measurejsonpower$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_measurejsoncounter$",
                    "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_name$",
-                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_configured$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_nxdacxxtype$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_nxdacxxueb$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_nonewatt$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_offTime$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_onTime$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_onuntilTime$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_password$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_pbip$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_pbtype$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_setauto$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_shusername$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_shpassword$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_shauth$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_startTime$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_startupDetection$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_standbyPower$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_standbyDuration$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_startupMulDetection$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_stateurl$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_speichersocbeforestart$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_speichersocbeforestop$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_temperatur_configured$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_type$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_updatesec$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_username$",
+                   "^openWB/LegacySmartHome/Devices/[0-9]+/WHImported_temp$",
+                   "^openWB/LegacySmartHome/Devices/[0-9]+/RunningTimeToday$",
+                   "^openWB/LegacySmartHome/Devices/[0-9]+/oncountnor$",
+                   "^openWB/LegacySmartHome/Devices/[0-9]+/OnCntStandby$",
+                   "^openWB/LegacySmartHome/Devices/[1-2]+/TemperatureSensor[0-2]$",
 
                    "^openWB/system/boot_done$",
                    "^openWB/system/dataprotection_acknowledged$",
@@ -340,6 +410,16 @@ class UpdateConfig:
         ("openWB/system/device/module_update_completed", True),
         ("openWB/system/ip_address", "unknown"),
         ("openWB/system/release_train", "master"),
+
+        ("openWB/LegacySmartHome/config/get/Devices/1/device_configured", 0),
+        ("openWB/LegacySmartHome/config/get/Devices/2/device_configured", 0),
+        ("openWB/LegacySmartHome/config/get/Devices/3/device_configured", 0),
+        ("openWB/LegacySmartHome/config/get/Devices/4/device_configured", 0),
+        ("openWB/LegacySmartHome/config/get/Devices/5/device_configured", 0),
+        ("openWB/LegacySmartHome/config/get/Devices/6/device_configured", 0),
+        ("openWB/LegacySmartHome/config/get/Devices/7/device_configured", 0),
+        ("openWB/LegacySmartHome/config/get/Devices/8/device_configured", 0),
+        ("openWB/LegacySmartHome/config/get/Devices/9/device_configured", 0),
     )
     invalid_topic = (
         # Tuple: (Regex, callable)
@@ -525,6 +605,7 @@ class UpdateConfig:
 
         def get_decoded_value(name: str) -> float:
             return decode_payload(self.all_received_topics[f"{simulation_topic}/{name}"])
+
         for topic in self.all_received_topics.keys():
             if re.search("^openWB/system/device/[0-9]+/component/[0-9]+/config$", topic) is not None:
                 simulation_topic = (f"openWB/system/device/{get_index(topic)}/component/"
@@ -622,3 +703,13 @@ class UpdateConfig:
                     updated_payload.pop("power_module")
                     Pub().pub(topic.replace("openWB/", "openWB/set/"), payload)
         Pub().pub("openWB/set/system/datastore_version", 9)
+
+    def upgrade_datastore_9(self) -> None:
+        for topic, payload in self.all_received_topics.items():
+            if re.search("^openWB/system/mqtt/bridge/[0-9]+$", topic) is not None:
+                payload = decode_payload(payload)
+                if payload["name"] == "openWBCloud" and "access" not in payload:
+                    payload["access"] = {"partner": False}
+                    log.debug("cloud bridge configuration upgraded")
+                    Pub().pub(topic, payload)
+        Pub().pub("openWB/system/datastore_version", 10)

@@ -51,7 +51,7 @@ chmod 666 "$LOGFILE"
 		fi
 	) &
 
-	boot_config_source="$OPENWBBASEDIR/web/files/boot_config.txt"
+	boot_config_source="${OPENWBBASEDIR}/data/config/boot_config.txt"
 	boot_config_target="/boot/config.txt"
 	echo "checking init in $boot_config_target..."
 	if versionMatch "$boot_config_source" "$boot_config_target"; then

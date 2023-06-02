@@ -22,9 +22,9 @@ def setup_logging() -> None:
     logging.basicConfig(filename=str(Path(__file__).resolve().parents[2] / 'ramdisk' / ('main.log')),
                         format=format_str_detailed,
                         level=logging.DEBUG)
+    logging.getLogger().handlers[0].addFilter(functools.partial(filter_neg, "soc"))
     logging.getLogger().handlers[0].addFilter(functools.partial(filter_neg, "Internal Chargepoint"))
     logging.getLogger().handlers[0].addFilter(functools.partial(filter_neg, "smarthome"))
-    logging.getLogger().handlers[0].addFilter(functools.partial(filter_neg, "soc"))
 
     mqtt_log = logging.getLogger("mqtt")
     mqtt_log.propagate = False

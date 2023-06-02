@@ -563,6 +563,10 @@ class Command:
         Pub().pub(f'openWB/set/log/monthly/{payload["data"]["month"]}',
                   measurement_log.get_monthly_log(payload["data"]["month"]))
 
+    def getYearlyLog(self, connection_id: str, payload: dict) -> None:
+        Pub().pub(f'openWB/set/log/yearly/{payload["data"]["year"]}',
+                  measurement_log.get_yearly_log(payload["data"]["year"]))
+
     def initCloud(self, connection_id: str, payload: dict) -> None:
         parent_file = Path(__file__).resolve().parents[2]
         try:
@@ -574,6 +578,7 @@ class Command:
             connect_payload = {
                 "data": result_dict
             }
+            connect_payload["data"]["partner"] = payload["data"]["partner"]
             self.connectCloud(connection_id, connect_payload)
             pub_user_message(payload, connection_id, "Verbindung zur Cloud wurde eingerichtet.", MessageType.SUCCESS)
         except subprocess.CalledProcessError as error:
@@ -585,6 +590,7 @@ class Command:
         cloud_config["remote"]["username"] = payload["data"]["username"]
         cloud_config["remote"]["password"] = payload["data"]["password"]
         cloud_config["remote"]["prefix"] = payload["data"]["username"] + "/"
+        cloud_config["access"]["partner"] = payload["data"]["partner"]
         self.addMqttBridge(connection_id, payload, cloud_config)
         pub_user_message(payload, connection_id, "Verbindung zur Cloud wurde angelegt.", MessageType.SUCCESS)
 
