@@ -2,6 +2,7 @@
 from smarthome.smartbase import Sbase
 from typing import Dict
 import logging
+
 log = logging.getLogger(__name__)
 
 
@@ -9,6 +10,7 @@ class Snxdacxx(Sbase):
     def __init__(self) -> None:
         # setting
         super().__init__()
+        log.debug('__init__ Snxdacxx executed')
         self._smart_paramadd = {}  # type: dict [str,str]
         self._device_nxdacxxueb = 0
         self._device_nxdacxxtype = 0

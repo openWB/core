@@ -2,6 +2,7 @@
 from smarthome.smartbase import Sbase, Slmqtt
 from typing import Dict
 import logging
+
 log = logging.getLogger(__name__)
 
 
@@ -10,6 +11,7 @@ class Smqtt(Sbase):
         # setting
         super().__init__()
         self._old_measuretype0 = 'none'
+        log.debug('__init__ Smqtt executed')
 
     def getwatt(self, uberschuss: int, uberschussoffset: int) -> None:
         self.prewatt(uberschuss, uberschussoffset)

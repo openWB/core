@@ -130,17 +130,17 @@ body>.container {
 	display: none;
 }
 
-.chargepoint-enabled {
+.charge-point-enabled {
 	color: #006515;
 	text-decoration: none;
 }
 
-.lpWaitingStyle {
+.charge-point-waiting {
 	color: #ffdb00;
 	text-decoration: none;
 }
 
-.chargepoint-disabled {
+.charge-point-disabled {
 	color: #A30000;
 	text-decoration: line-through;
 }
@@ -407,7 +407,6 @@ h3 {
 	--counterCol: rgba(255, 127, 127, 0.7);
 	--counterBgCol: rgba(255, 127, 127, 0.3);
 	--pvCol: rgba(0, 255, 0, 0.7);
-	;
 	--pvBgCol: rgba(10, 255, 13, 0.3);
 	--batteryCol: rgba(255, 153, 13, 0.7);
 	--batteryBgCol: rgba(200, 255, 13, 0.3);

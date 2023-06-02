@@ -5,14 +5,17 @@ import time
 import json
 import struct
 import codecs
-
 from pymodbus.client.sync import ModbusTcpClient
+import logging
+
+log = logging.getLogger(__name__)
+bp = '/var/www/html/openWB/ramdisk/smarthome_device_'
+
 named_tuple = time.localtime()  # getstruct_time
 time_string = time.strftime("%m/%d/%Y, %H:%M:%S vampair watty.py", named_tuple)
 devicenumber = str(sys.argv[1])
 ipadr = str(sys.argv[2])
 uberschuss = int(sys.argv[3])
-bp = '/var/www/html/openWB/ramdisk/smarthome_device_'
 file_string = bp + str(devicenumber) + '_vampair.log'
 file_stringpv = bp + str(devicenumber) + '_pv'
 file_stringcount = bp + str(devicenumber) + '_count'
@@ -27,7 +30,7 @@ if count5 > 6:
 with open(file_stringcount5, 'w') as f:
     f.write(str(count5))
 if count5 == 0:
-    # pv modus
+    # PV-Modus
     pvmodus = 0
     if os.path.isfile(file_stringpv):
         with open(file_stringpv, 'r') as f:
@@ -49,7 +52,7 @@ if count5 == 0:
     value1 = resp.registers[0]
     all = format(value1, '04x')
     aktpower = int(struct.unpack('>h', codecs.decode(all, 'hex'))[0])
-    # logik nur schicken bei pvmodus
+    # Logik nur schicken bei PV-Modus
     modbuswrite = 0
     if pvmodus == 1:
         modbuswrite = 1
@@ -58,9 +61,9 @@ if count5 == 0:
         neupower = -32767
     if neupower > 32767:
         neupower = 32767
-    # wurde vampair gerade ausgeschaltet ?    (pvmodus == 99 ?)
-    # dann 0 schicken wenn kein pvmodus mehr
-    # und pv modus ausschalten
+    # wurde vampair gerade ausgeschaltet ?    (PV-Modus == 99 ?)
+    # dann 0 schicken wenn kein PV-Modus mehr
+    # und PV-Modus ausschalten
     if pvmodus == 99:
         modbuswrite = 1
         neupower = 0
@@ -78,18 +81,18 @@ if count5 == 0:
             pass
         else:
             with open(file_string, 'w') as f:
-                print('vampair start log', file=f)
+                log.debug('vampair start log', file=f)
         with open(file_string, 'a') as f:
-            print('%s Nr %s ipadr %s ueberschuss %6d Akt Leistung %6d'
-                  % (time_string, devicenumber, ipadr, uberschuss, aktpower),
-                  file=f)
-            print('%s Nr %s ipadr %s ueberschuss %6d pvmodus %1d modbusw %1d'
-                  % (time_string, devicenumber, ipadr, neupower, pvmodus,
-                     modbuswrite), file=f)
+            log.debug('%s Nr %s ipadr %s ueberschuss %6d Akt Leistung %6d'
+                      % (time_string, devicenumber, ipadr, uberschuss, aktpower),
+                      file=f)
+            log.debug('%s Nr %s ipadr %s ueberschuss %6d pvmodus %1d modbusw %1d'
+                      % (time_string, devicenumber, ipadr, neupower, pvmodus,
+                         modbuswrite), file=f)
     # modbus write
     if modbuswrite == 1:
         client.write_registers(33409, [neupower], unit=1)
         if count1 < 3:
             with open(file_string, 'a') as f:
-                print('%s devicenr %s ipadr %s device written by modbus ' %
-                      (time_string, devicenumber, ipadr), file=f)
+                log.debug('%s devicenr %s ipadr %s device written by modbus ' %
+                          (time_string, devicenumber, ipadr), file=f)

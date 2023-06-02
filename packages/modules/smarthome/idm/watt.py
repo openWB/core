@@ -33,7 +33,7 @@ if count5 > 6:
 with open(file_stringcount5, 'w') as f:
     f.write(str(count5))
 if count5 == 0:
-    # pv modus
+    # PV-Modus
     pvmodus = 0
     if os.path.isfile(file_stringpv):
         with open(file_stringpv, 'r') as f:
@@ -58,19 +58,19 @@ if count5 == 0:
     raw = struct.pack('>HH', rr.getRegister(1), rr.getRegister(0))
     lkw = float(struct.unpack('>f', raw)[0])
     aktpower = int(lkw*1000)
-    # logik nur schicken bei pvmodus
+    # Logik nur schicken bei PV-Modus
     modbuswrite = 0
     if pvmodus == 1:
         modbuswrite = 1
-    # Nur positiven Uberschuss schicken, nicht aktuelle Leistung
+    # Nur positiven Überschuss schicken, nicht aktuelle Leistung
     neupower = uberschuss
     if neupower < 0:
         neupower = 0
     if neupower > 40000:
         neupower = 40000
-    # wurde IDM gerade ausgeschaltet ?    (pvmodus == 99 ?)
-    # dann 0 schicken wenn kein pvmodus mehr
-    # und pv modus ausschalten
+    # wurde IDM gerade ausgeschaltet ?    (PV-Modus == 99 ?)
+    # dann 0 schicken wenn kein PV-Modus mehr
+    # und PV-Modus ausschalten
     if pvmodus == 99:
         modbuswrite = 1
         neupower = 0

@@ -25,6 +25,7 @@ from helpermodules.utils import exit_after
 from modules import update_soc
 from modules.internal_chargepoint_handler.internal_chargepoint_handler import GeneralInternalChargepointHandler
 from modules.internal_chargepoint_handler.rfid import RfidReader
+from smarthome.smarthome import readmq, smarthome_handler
 
 logger.setup_logging()
 log = logging.getLogger()
@@ -129,6 +130,7 @@ class HandlerAlgorithm:
 def schedule_jobs():
     [schedule.every().minute.at(f":{i:02d}").do(handler.handler10Sec).tag("algorithm") for i in range(0, 60, 10)]
     [schedule.every().minute.at(f":{i:02d}").do(soc.update).tag("algorithm") for i in range(0, 60, 10)]
+    [schedule.every().minute.at(f":{i:02d}").do(smarthome_handler).tag("smarthome") for i in range(0, 60, 5)]
     [schedule.every().hour.at(f":{i:02d}").do(handler.handler5Min) for i in range(0, 60, 5)]
     [schedule.every().hour.at(f":{i:02d}").do(handler.handler5MinAlgorithm).tag("algorithm") for i in range(1, 60, 5)]
     schedule.every().day.at("00:00:00").do(handler.handler_midnight).tag("algorithm")
@@ -140,6 +142,12 @@ try:
     data.data_init(loadvars_.event_module_update_completed)
     update_config.UpdateConfig().update()
     configuration.pub_configurable()
+
+    # run as thread for logging reasons
+    t_smarthome = Thread(target=readmq, args=(), name="smarthome")
+    t_smarthome.start()
+    t_smarthome.join()
+
     proc = process.Process()
     control = algorithm.Algorithm()
     handler = HandlerAlgorithm()

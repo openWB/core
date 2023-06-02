@@ -7,6 +7,8 @@ import urllib.request
 import hashlib
 import credentials
 import xml.etree.ElementTree as ET
+import logging
+log = logging.getLogger(__name__)
 
 INVALID_SESSIONID = "0000000000000000"
 CACHEFILE = "/var/www/html/openWB/ramdisk/smarthome_avmautomation_cache"
@@ -16,7 +18,7 @@ LOGLEVELERROR = 2
 
 
 class AVMHomeAutomation:
-    # Parse configuration from command line arguments as proviced by /runs/smarthomehandler.py
+    # Parse configuration from command line arguments as provided by /runs/smarthomehandler.py
     def __init__(self):
         self.devicenumber = str(sys.argv[1])
         self.host = str(sys.argv[2])  # IP or hostname (e.g. "fritz.box")
@@ -132,10 +134,9 @@ class AVMHomeAutomation:
         self.logMessage(LOGLEVELERROR, errorMessage)
 
     # connect checks the currently known session ID for validity and performs
-    # an authentication to obtain a new session ID if neccessary. A session ID
+    # an authentication to obtain a new session ID if necessary. A session ID
     # is assumed to be recent enough if it has been obtained ramdisk less than
     # 5 minutes ago in which case it is reused.
-
     def connect(self):
         should_authenticate = True
         ownInfo = self.cachedOwnInfo()
@@ -182,15 +183,15 @@ class AVMHomeAutomation:
                 prefix = "[INFO] "
             if level == LOGLEVELERROR:
                 prefix = "[ERROR] "
-            print('%s: (%s) AVM (actor: %s) %s%s' %
-                  (time_string, self.devicenumber, self.switchname, prefix, message), file=f)
+            log.debug('%s: (%s) AVM (actor: %s) %s%s' %
+                      (time_string, self.devicenumber, self.switchname, prefix, message), file=f)
             f.close()
         except IOError:
             pass
 
     # getDevicesDict returns a dictionary that maps defined actor names to its
     # unique hardware ID (called "AIN": "Actuator Identification Number") and
-    # current values for the power, voltage, integraded energy, temperature (not
+    # current values for the power, voltage, integrated energy, temperature (not
     # for group actors).
 
     def getDevicesDict(self):
@@ -250,7 +251,6 @@ class AVMHomeAutomation:
     # values (if more recent than 5 seconds), or by fetching the info from the FRITZ!Box.
     # The main purpose of this cache is to skip looking up the AIN via network
     # every time.
-
     def readOrBuildDeviceInfoCache(self):
         self.logMessage(LOGLEVELDEBUG, "start of readOrBuildDeviceInfoCache")
         should_fetch = True
@@ -285,9 +285,8 @@ class AVMHomeAutomation:
 
         self.logMessage(LOGLEVELDEBUG, "end of readOrBuildDeviceInfoCache")
 
-    # switchDevice sets the relais of the AVM Home Automation actor
+    # switchDevice sets the relays of the AVM Home Automation actor
     # state parameter: true -> on, false -> off
-
     def switchDevice(self, state):
         if self.sessionID == INVALID_SESSIONID:
             self.logMessage(LOGLEVELERROR, "Kann ohne valide Anmeldung nicht schalten.")
@@ -319,10 +318,9 @@ class AVMHomeAutomation:
         urllib.request.urlopen(commandURL, timeout=5)
         self.logMessage(LOGLEVELDEBUG, "end of switchDevice")
 
-    # getActualPowerForce returns current observed power and the state of the switch relais.
-    # The JSON answer is either written to the according smarthome device return file
+    # getActualPowerForce returns current observed power and the state of the switch relays.
+    # The JSON answer is either written to the according smart home device return file
     # or dumped to stdout if no such file exists (for local development)
-
     def getActualPower(self):
         if self.sessionID == INVALID_SESSIONID:
             self.logMessage(LOGLEVELERROR, "Kann ohne valide Anmeldung keine neuen Daten holen.")
@@ -369,7 +367,7 @@ class AVMHomeAutomation:
             f1.close()
         except IOError as e:
             self.logMessage(LOGLEVELERROR, "error writing power result %s" % (e))
-            print(answer)  # dump answer to stdout if file cannot be written
+            log.debug(answer)  # dump answer to stdout if file cannot be written
         except Exception:
             exc_type, exc_obj, exc_tb = sys.exc_info()
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]

@@ -2,6 +2,7 @@
 from smarthome.smartbase import Sbase, Slshelly
 from typing import Dict
 import logging
+
 log = logging.getLogger(__name__)
 
 
@@ -13,6 +14,7 @@ class Sshelly(Sbase):
         self._device_shpassword = 'none'
         self._device_shusername = 'none'
         self._device_shauth = 0
+        log.debug('__init__ Sshelly excuted')
 
     def getwatt(self, uberschuss: int, uberschussoffset: int) -> None:
         self.prewatt(uberschuss, uberschussoffset)

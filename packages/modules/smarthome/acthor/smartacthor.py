@@ -9,6 +9,7 @@ class Sacthor(Sbase):
     def __init__(self) -> None:
         # setting
         super().__init__()
+        log.debug('__init__ Sacthor executed')
         self._smart_paramadd = {}  # type: Dict[str, str]
         self._device_acthortype = 'none'
         self._device_acthorpower = 'none'

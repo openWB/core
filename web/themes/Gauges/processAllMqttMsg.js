@@ -896,7 +896,7 @@ function processHookMessages(mqttmsg, mqttpayload) {
 }
 
 function processSmartHomeDevicesMessages(mqttmsg, mqttpayload) {
-	// processes mqttmsg for topic openWB/SmartHomeDevices - actual values only!
+	// processes mqttmsg for topic openWB/LegacySmartHomeDevices - actual values only!
 	// called by handlevar
 	processPreloader(mqttmsg);
 	if ( mqttmsg.match( /^openwb\/SmartHome\/Devices\/[1-9][0-9]*\/Watt$/i ) ) {
@@ -1018,7 +1018,7 @@ function processSmartHomeDevicesMessages(mqttmsg, mqttpayload) {
 }
 
 function processSmartHomeDevicesConfigMessages(mqttmsg, mqttpayload) {
-	// processes mqttmsg for topic openWB/config/get/SmartHome/Devices - config variables (Name / configured only!), actual Variables in proccessSMartHomeDevices
+	// processes mqttmsg for topic openWB/LegacySmartHome/config/get/Devices - config variables (Name / configured only!), actual Variables in proccessSMartHomeDevices
 	// called by handlevar
 	processPreloader(mqttmsg);
 	if ( mqttmsg.match( /^openwb\/config\/get\/SmartHome\/Devices\/[1-9][0-9]*\/device_configured$/i ) ) {

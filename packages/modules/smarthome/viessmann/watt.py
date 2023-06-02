@@ -3,13 +3,14 @@ import sys
 import os
 import time
 import json
+
 named_tuple = time.localtime()  # getstruct_time
 time_string = time.strftime("%m/%d/%Y, %H:%M:%S viessmann watty.py", named_tuple)
 devicenumber = str(sys.argv[1])
 ipadr = str(sys.argv[2])
 uberschuss = int(sys.argv[3])
 file_stringpv = '/var/www/html/openWB/ramdisk/smarthome_device_' + str(devicenumber) + '_pv'
-# pv modus
+# PV-Modus
 pvmodus = 0
 if os.path.isfile(file_stringpv):
     f = open(file_stringpv, 'r')

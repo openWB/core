@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 from smarthome.smartbase import Sbase
 import logging
+
 log = logging.getLogger(__name__)
 
 
@@ -8,6 +9,7 @@ class Sstiebel(Sbase):
     def __init__(self) -> None:
         # setting
         super().__init__()
+        log.debug('__init__ Sstiebel executed')
 
     def getwatt(self, uberschuss: int, uberschussoffset: int) -> None:
         self.prewatt(uberschuss, uberschussoffset)
