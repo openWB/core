@@ -1,25 +1,24 @@
 #!/usr/bin/python3
 from smarthome.smartbase import Sbase
-from smarthome.global0 import log
-import subprocess
+import logging
+log = logging.getLogger(__name__)
 
 
 class Slambda(Sbase):
-    def __init__(self):
+    def __init__(self) -> None:
         # setting
         super().__init__()
-        print('__init__ Slambda executed')
+        log.debug('__init__ Slambda executed')
 
-    def getwatt(self, uberschuss, uberschussoffset):
+    def getwatt(self, uberschuss: int, uberschussoffset: int) -> None:
         self.prewatt(uberschuss, uberschussoffset)
         forcesend = self.checkbefsend()
-        argumentList = ['python3', self._prefixpy + 'lambda/watt.py',
+        argumentList = ['python3', self._prefixpy + 'lambda_/watt.py',
                         str(self.device_nummer), str(self._device_ip),
                         str(self.devuberschuss), str(self.device_lambdaueb),
                         str(forcesend)]
         try:
-            self.proc = subprocess.Popen(argumentList)
-            self.proc.communicate()
+            self.callpro(argumentList)
             self.answer = self.readret()
             self.newwatt = int(self.answer['power'])
             self.newwattk = int(self.answer['powerc'])
@@ -32,18 +31,17 @@ class Slambda(Sbase):
                            str(self._device_ip), str(e1)))
         self.postwatt()
 
-    def turndevicerelais(self, zustand, ueberschussberechnung, updatecnt):
+    def turndevicerelais(self, zustand: int, ueberschussberechnung: int, updatecnt: int) -> None:
         self.preturn(zustand, ueberschussberechnung, updatecnt)
         if (zustand == 1):
             pname = "/on.py"
         else:
             pname = "/off.py"
-        argumentList = ['python3', self._prefixpy + 'lambda' + pname,
+        argumentList = ['python3', self._prefixpy + 'lambda_' + pname,
                         str(self.device_nummer), str(self._device_ip),
                         str(self.devuberschuss), str(self.device_lambdaueb)]
         try:
-            self.proc = subprocess.Popen(argumentList)
-            self.proc.communicate()
+            self.callpro(argumentList)
         except Exception as e1:
             log.warning("(" + str(self.device_nummer) +
                         ") on / off  %s %d %s Fehlermeldung: %s "

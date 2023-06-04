@@ -31,7 +31,7 @@ class Pub:
         return getattr(self.instance, name)
 
 
-def pub_single(topic, payload, hostname="localhost", no_json=False):
+def pub_single(topic, payload, hostname="localhost", port=1883, no_json=False, retain=True):
     """ published eine einzelne Nachricht an einen Host, der nicht der localhost ist.
 
         Parameter
@@ -46,6 +46,6 @@ def pub_single(topic, payload, hostname="localhost", no_json=False):
         Kompatibilität mit ISSS, die ramdisk verwenden.
     """
     if no_json:
-        publish.single(topic, payload, hostname=hostname, retain=True)
+        publish.single(topic, payload, hostname=hostname, port=port, retain=retain)
     else:
-        publish.single(topic, json.dumps(payload), hostname=hostname, retain=True)
+        publish.single(topic, json.dumps(payload), hostname=hostname, port=port, retain=retain)

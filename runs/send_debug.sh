@@ -24,15 +24,15 @@ touch "$debugFile"
 	echo "############################ retained log ##############"
 	tail -500 "${RAMDISKDIR}/main.log"
 	echo "############################ info log ##############"
-	> "${RAMDISKDIR}/main.log"
 	mosquitto_pub -p 1886 -t "openWB/set/system/debug_level" -m "20"
 	sleep 60
 	tail -1000 "${RAMDISKDIR}/main.log"
 	echo "############################ debug log ##############"
-	> "${RAMDISKDIR}/main.log"
 	mosquitto_pub -p 1886 -t "openWB/set/system/debug_level" -m "10"
 	sleep 60
 	tail -2500 "${RAMDISKDIR}/main.log"
+	echo "############################ internal chargepoint log ##############"
+	tail -1000 "${RAMDISKDIR}/internal_chargepoint.log"
 	echo "############################ mqtt log ##############"
 	tail -1000 "${RAMDISKDIR}/mqtt.log"
 
@@ -50,10 +50,10 @@ touch "$debugFile"
 	# tail -200 "${RAMDISKDIR}/smarthome.log"
 } >>"$debugFile"
 
-echo "***** uploading debuglog..." >>"$RAMDISKDIR/main.log"
+echo "***** uploading debug log..." >>"$RAMDISKDIR/main.log"
 curl --upload "$debugFile" "https://openwb.de/tools/debug2.php?debugemail=$debugEmail"
 
 echo "***** cleanup..." >>"$RAMDISKDIR/main.log"
 rm "$debugFile"
 
-echo "***** debuglog end" >>"$RAMDISKDIR/main.log"
+echo "***** debug log end" >>"$RAMDISKDIR/main.log"

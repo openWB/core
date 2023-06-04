@@ -7,8 +7,6 @@ from control.algorithm.additional_current import AdditionalCurrent
 from control.algorithm.min_current import MinCurrent
 from control.algorithm.no_current import NoCurrent
 from control.algorithm.surplus_controlled import SurplusControlled
-from control.chargemode import Chargemode
-from control.chargepoint_state import ChargepointState
 from helpermodules.pub import Pub
 log = logging.getLogger(__name__)
 
@@ -35,7 +33,7 @@ class Algorithm:
             log.info("**Sollstrom setzen**")
             common.reset_current_to_target_current()
             self.additional_current.set_additional_current([0, 8])
-            counter.limit_raw_power_left_to_surplus(self.evu_counter.calc_surplus())
+            counter.limit_raw_power_left_to_surplus(self.evu_counter.calc_raw_surplus())
             self.surplus_controlled.check_switch_on()
             if self.evu_counter.data.set.surplus_power_left > 0:
                 log.info("**PV-geführten Strom setzen**")
@@ -58,16 +56,7 @@ class Algorithm:
                 if cp.data.set.charging_ev != -1:
                     charging_ev = cp.data.set.charging_ev_data
                     control_parameter = charging_ev.data.control_parameter
-                    pv_auto_switch = (control_parameter.chargemode == Chargemode.PV_CHARGING and
-                                      data.data.general_data.get_phases_chargemode(Chargemode.PV_CHARGING.value) == 0)
-                    scheduled_auto_switch = (
-                        control_parameter.chargemode == Chargemode.SCHEDULED_CHARGING and
-                        control_parameter.submode == Chargemode.PV_CHARGING and
-                        data.data.general_data.get_phases_chargemode(Chargemode.SCHEDULED_CHARGING.value) == 0)
-                    if (cp.cp_ev_support_phase_switch() and cp.data.get.charge_state and
-                            (pv_auto_switch or scheduled_auto_switch) and
-                            control_parameter.state == ChargepointState.CHARGING_ALLOWED or
-                            control_parameter.state == ChargepointState.PHASE_SWITCH_DELAY):
+                    if cp.cp_ev_chargemode_support_phase_switch():
                         # Gibt die Stromstärke und Phasen zurück, mit denen nach der Umschaltung geladen werden
                         # soll. Falls keine Umschaltung erforderlich ist, werden Strom und Phasen, die übergeben
                         # wurden, wieder zurückgegeben.

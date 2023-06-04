@@ -7,7 +7,7 @@ from typing import Callable, Dict, List, Tuple, Union
 
 from control import data
 from control.counter import Counter
-from dataclass_utils.factories import emtpy_list_factory
+from dataclass_utils.factories import empty_list_factory
 from helpermodules.pub import Pub
 from modules.common.component_type import ComponentType
 from modules.common.fault_state import FaultStateLevel
@@ -30,11 +30,12 @@ class Set:
     home_consumption: float = 0
     invalid_home_consumption: int = 0
     daily_yield_home_consumption: float = 0
+    disengageable_smarthome_power: float = 0
 
 
 @dataclass
 class Get:
-    hierarchy: List = field(default_factory=emtpy_list_factory)
+    hierarchy: List = field(default_factory=empty_list_factory)
 
 
 def get_factory() -> Get:

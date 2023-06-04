@@ -3,8 +3,11 @@ import sys
 import os
 from pymodbus.client.sync import ModbusTcpClient
 import logging
-from smarthome.smartlog import initlog
 from smarthome.smartret import writeret
+
+log = logging.getLogger("DAC")
+bp = '/var/www/html/openWB/ramdisk/smarthome_device_'
+
 devicenumber = int(sys.argv[1])
 ipadr = str(sys.argv[2])
 uberschuss = int(sys.argv[3])
@@ -12,12 +15,9 @@ maxpower = int(sys.argv[4])
 forcesend = int(sys.argv[5])
 port = int(sys.argv[6])
 dactyp = int(sys.argv[7])
-initlog("DAC", devicenumber)
-log = logging.getLogger("DAC")
 # forcesend = 0 default time period applies
 # forcesend = 1 default overwritten send now
 # forcesend = 9 default overwritten no send
-bp = '/var/www/html/openWB/ramdisk/smarthome_device_'
 file_stringpv = bp + str(devicenumber) + '_pv'
 file_stringcount = bp + str(devicenumber) + '_count'
 file_stringcount5 = bp + str(devicenumber) + '_count5'
@@ -54,20 +54,20 @@ if count5 == 0:
         with open(file_stringcount, 'r') as f:
             count1 = int(f.read())
     count1 = count1+1
-    # wurde  gerade ausgeschaltet ?    (pvmodus == 99 ?)
-    # dann 0 schicken wenn kein pvmodus mehr
-    # und pv modus ausschalten
+    # wurde  gerade ausgeschaltet ?    (PV-Modus == 99 ?)
+    # dann 0 schicken wenn kein PV-Modus mehr
+    # und PV-Modus ausschalten
     if pvmodus == 99:
         modbuswrite = 1
         pvmodus = 0
         neupower = 0
         with open(file_stringpv, 'w') as f:
             f.write(str(pvmodus))
-    # sonst wenn pv modus lauft , ueberschuss schicken
+    # sonst wenn PV-Modus lauft , ueberschuss schicken
     else:
         if pvmodus == 1:
             modbuswrite = 1
-    # logschreiben
+    # log schreiben
     if count1 > 80:
         count1 = 0
     if count1 < 3:
@@ -90,7 +90,7 @@ if count5 == 0:
             volt = int((neupower * 4095) / maxpower)
             if volt < 370:
                 volt = 370
-            #  ausgabe nicht kleiner 0,9V sonst Leistungsregelung der WP aus
+            #  Ausgabe nicht kleiner 0,9V sonst Leistungsregelung der WP aus
             rq = client.write_register(0, volt, unit=1)
         else:
             pass

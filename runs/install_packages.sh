@@ -7,5 +7,7 @@ sudo apt-get -q -y install \
 	php php-gd php-curl php-xml php-json \
 	git \
 	mosquitto mosquitto-clients \
-	python3-pip
+	python3-pip \
+	xserver-xorg x11-xserver-utils openbox-lxde-session lightdm lightdm-autologin-greeter accountsservice \
+	chromium chromium-l10n
 echo "done"
