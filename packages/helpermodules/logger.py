@@ -23,6 +23,8 @@ def setup_logging() -> None:
                         format=format_str_detailed,
                         level=logging.DEBUG)
     logging.getLogger().handlers[0].addFilter(functools.partial(filter_neg, "soc"))
+    logging.getLogger().handlers[0].addFilter(functools.partial(filter_neg, "Internal Chargepoint"))
+    logging.getLogger().handlers[0].addFilter(functools.partial(filter_neg, "smarthome"))
 
     mqtt_log = logging.getLogger("mqtt")
     mqtt_log.propagate = False
@@ -30,10 +32,22 @@ def setup_logging() -> None:
     mqtt_file_handler.setFormatter(logging.Formatter(format_str_short))
     mqtt_log.addHandler(mqtt_file_handler)
 
+    smarthome_log_handler = logging.FileHandler(
+        str(Path(__file__).resolve().parents[2] / 'ramdisk' / ('smarthome.log')))
+    smarthome_log_handler.setFormatter(logging.Formatter(format_str_short))
+    smarthome_log_handler.addFilter(functools.partial(filter_pos, "smarthome"))
+    logging.getLogger().addHandler(smarthome_log_handler)
+
     soc_log_handler = logging.FileHandler(str(Path(__file__).resolve().parents[2] / 'ramdisk' / ('soc.log')))
     soc_log_handler.setFormatter(logging.Formatter(format_str_detailed))
     soc_log_handler.addFilter(functools.partial(filter_pos, "soc"))
     logging.getLogger().addHandler(soc_log_handler)
+
+    internal_chargepoint_log_handler = logging.FileHandler(
+        str(Path(__file__).resolve().parents[2] / 'ramdisk' / ('internal_chargepoint.log')))
+    internal_chargepoint_log_handler.setFormatter(logging.Formatter(format_str_detailed))
+    internal_chargepoint_log_handler.addFilter(functools.partial(filter_pos, "Internal Chargepoint"))
+    logging.getLogger().addHandler(internal_chargepoint_log_handler)
 
     urllib3_log = logging.getLogger("urllib3.connectionpool")
     urllib3_log.propagate = True

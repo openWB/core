@@ -45,5 +45,8 @@ def get_cloud_config() -> Dict:
             "status": True,
             "graph": True,
             "configuration": True
+        },
+        "access": {
+            "partner": False
         }
     }

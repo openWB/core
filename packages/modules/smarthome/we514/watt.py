@@ -1,11 +1,11 @@
 #!/usr/bin/python3
-from pymodbus.transaction import ModbusRtuFramer
-from pymodbus.client.sync import ModbusTcpClient
 import sys
 import json
+from pymodbus.transaction import ModbusRtuFramer
+from pymodbus.client.sync import ModbusTcpClient
 
 # get variables from arguments
-devicenumber = str(sys.argv[1])  # Smarthome device number
+devicenumber = str(sys.argv[1])  # SmartHome device number
 SERVER_HOST = str(sys.argv[2])  # IP of server to connect to
 MODBUS_DEVICEID = int(sys.argv[3])  # Modbus device ID
 

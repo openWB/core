@@ -31,6 +31,8 @@ touch "$debugFile"
 	mosquitto_pub -p 1886 -t "openWB/set/system/debug_level" -m "10"
 	sleep 60
 	tail -2500 "${RAMDISKDIR}/main.log"
+	echo "############################ internal chargepoint log ##############"
+	tail -1000 "${RAMDISKDIR}/internal_chargepoint.log"
 	echo "############################ mqtt log ##############"
 	tail -1000 "${RAMDISKDIR}/mqtt.log"
 

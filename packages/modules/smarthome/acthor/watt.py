@@ -5,9 +5,11 @@ import struct
 import codecs
 import logging
 from pymodbus.client.sync import ModbusTcpClient
-from smarthome.smartlog import initlog
 from smarthome.smartret import writeret
+
+log = logging.getLogger("acthor")
 bp = '/var/www/html/openWB/ramdisk/smarthome_device_'
+
 devicenumber = int(sys.argv[1])
 ipadr = str(sys.argv[2])
 uberschuss = int(sys.argv[3])
@@ -17,8 +19,6 @@ forcesend = int(sys.argv[6])
 # forcesend = 0 default time period applies
 # forcesend = 1 default overwritten send now
 # forcesend = 9 default overwritten no send
-initlog("acthor", devicenumber)
-log = logging.getLogger("acthor")
 file_stringpv = bp + str(devicenumber) + '_pv'
 file_stringcount = bp + str(devicenumber) + '_count'
 file_stringcount5 = bp + str(devicenumber) + '_count5'
@@ -111,20 +111,20 @@ if count5 == 0:
     # 9 Betrieb
     # >=200 Fehlerzustand Leistungsteil
     neupower = neupowertarget
-    # wurde Thor gerade ausgeschaltet ?    (pvmodus == 99 ?)
-    # dann 0 schicken wenn kein pvmodus mehr
-    # und pv modus ausschalten
+    # wurde Thor gerade ausgeschaltet ?    (PV-Modus == 99 ?)
+    # dann 0 schicken wenn kein PV-Modus mehr
+    # und PV-Modus ausschalten
     if pvmodus == 99:
         modbuswrite = 1
         neupower = 0
         pvmodus = 0
         with open(file_stringpv, 'w') as f:
             f.write(str(pvmodus))
-    # sonst wenn pv modus lauft , ueberschuss schicken
+    # sonst wenn PV-Modus lauft , ueberschuss schicken
     else:
         if pvmodus == 1:
             modbuswrite = 1
-    # logschreiben
+    # log schreiben
     if count1 > 80:
         count1 = 0
     with open(file_stringcount, 'w') as f:

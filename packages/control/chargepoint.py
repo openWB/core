@@ -259,8 +259,7 @@ class Set:
 
 @dataclass
 class Config:
-    connection_module: Dict = field(default_factory=empty_dict_factory)
-    power_module: Dict = field(default_factory=empty_dict_factory)
+    configuration: Dict = field(default_factory=empty_dict_factory)
     ev: int = 0
     name: str = "Standard-Ladepunkt"
     type: Optional[str] = None
@@ -715,7 +714,11 @@ class Chargepoint:
                         self.data.config.auto_phase_switch_hw):
                     phases = 1
                 else:
-                    phases = self.data.set.phases_to_use
+                    if self.data.set.phases_to_use != 0:
+                        phases = self.data.set.phases_to_use
+                    else:
+                        # phases_target
+                        phases = self.data.config.connected_phases
             log.debug(f"Phasenzahl Lademodus: {phases}")
         elif charging_ev.data.control_parameter.state == ChargepointState.PERFORMING_PHASE_SWITCH:
             phases = self.data.set.phases_to_use
@@ -844,16 +847,7 @@ class Chargepoint:
             vehicle = self.template.get_ev(self.data.get.rfid or self.data.set.rfid, self.data.config.ev)[0]
         else:
             vehicle = -1
-        if vehicle != -1:
-            charging_ev = self._get_charging_ev(vehicle, ev_list)
-        else:
-            # Wenn kein EV zur Ladung zugeordnet wird, auf hinterlegtes EV zurückgreifen.
-            try:
-                charging_ev = ev_list[f"ev{self.data.config.ev}"]
-            except KeyError:
-                log.error(f"EV {self.data.config.ev} konnte nicht gefunden werden, daher wird das Standardfahrzeug" +
-                          " verwendet.")
-                charging_ev = ev_list["ev0"]
+        charging_ev = self._get_charging_ev(vehicle, ev_list)
         self._pub_connected_vehicle(charging_ev)
 
     def update(self, ev_list: Dict[str, Ev]) -> None:
@@ -1184,7 +1178,18 @@ class ChargepointStateUpdate:
         while self.event_update_state.wait():
             try:
                 self.event_copy_data.clear()
-                cp = copy.deepcopy(self.chargepoint)
+                # Workaround, da mit Python3.9/pymodbus2.5 eine pymodbus-Instanz nicht mehr kopiert werden kann.
+                # Bei einer Neukonfiguration eines Device/Komponente wird dieses Neuinitialisiert. Nur bei Komponenten
+                # mit simcount werden Werte aktualisiert, diese sollten jedoch nur einmal nach dem Auslesen aktualisiert
+                # werden, sodass die Nutzung einer Referenz vorerst funktioniert.
+                # Verwendung der Referenz führt bei der Pro zu Instabilität.
+                try:
+                    cp = copy.deepcopy(self.chargepoint)
+                except TypeError:
+                    cp = Chargepoint(self.chargepoint.num, None)
+                    cp.set_current_prev = copy.deepcopy(self.chargepoint.set_current_prev)
+                    cp.data = copy.deepcopy(self.chargepoint.data)
+                    cp.chargepoint_module = self.chargepoint.chargepoint_module
                 cp.template = copy.deepcopy(self.cp_template_data[f"cpt{self.chargepoint.data.config.template}"])
                 ev_list = {}
                 for ev in self.ev_data:

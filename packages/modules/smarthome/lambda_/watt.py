@@ -7,6 +7,11 @@ import struct
 import codecs
 from pymodbus.payload import BinaryPayloadBuilder, Endian
 from pymodbus.client.sync import ModbusTcpClient
+import logging
+
+log = logging.getLogger(__name__)
+bp = '/var/www/html/openWB/ramdisk/smarthome_device_'
+
 named_tuple = time.localtime()  # getstruct_time
 time_string = time.strftime("%m/%d/%Y, %H:%M:%S lambda watty.py", named_tuple)
 devicenumber = str(sys.argv[1])
@@ -19,7 +24,6 @@ forcesend = int(sys.argv[5])
 # forcesend = 9 default overwritten no send
 if (uberschussvz == 'UN'):
     uberschuss = uberschuss * -1
-bp = '/var/www/html/openWB/ramdisk/smarthome_device_'
 file_string = bp + str(devicenumber) + '_lambda.log'
 file_stringpv = bp + str(devicenumber) + '_pv'
 file_stringcount = bp + str(devicenumber) + '_count'
@@ -40,7 +44,7 @@ if count5 > 3:
     count5 = 0
 with open(file_stringcount5, 'w') as f:
     f.write(str(count5))
-# pv modus
+# PV-Modus
 pvmodus = 0
 if os.path.isfile(file_stringpv):
     with open(file_stringpv, 'r') as f:
@@ -64,7 +68,7 @@ if count5 == 0:
         count1 = 0
     with open(file_stringcount, 'w') as f:
         f.write(str(count1))
-    # logik nur schicken bei pvmodus
+    # Logik nur schicken bei PV-Modus
     if pvmodus == 1:
         modbuswrite = 1
     neupower = uberschuss
@@ -78,9 +82,9 @@ if count5 == 0:
             neupower = -32767
         if neupower > 32767:
             neupower = 32767
-    # wurde lambda gerade ausgeschaltet ?    (pvmodus == 99 ?)
-    # dann 0 schicken wenn kein pvmodus mehr
-    # und pv modus ausschalten
+    # wurde lambda gerade ausgeschaltet ?    (PV-Modus == 99 ?)
+    # dann 0 schicken wenn kein PV-Modus mehr
+    # und PV-Modus ausschalten
     if pvmodus == 99:
         modbuswrite = 1
         neupower = 0
@@ -92,17 +96,17 @@ if count5 == 0:
             pass
         else:
             with open(file_string, 'w') as f:
-                print('lambda start log', file=f)
+                log.debug('lambda start log', file=f)
         with open(file_string, 'a') as f:
-            print('%s Nr %s ipadr %s ueberschuss %6d Akt Leistung %6d'
-                  % (time_string, devicenumber, ipadr, uberschuss, aktpower),
-                  file=f)
-            print('%s Nr %s ipadr %s neupower %6d pvmodus %1d modbusw %1d'
-                  % (time_string, devicenumber, ipadr, neupower, pvmodus,
-                     modbuswrite), file=f)
+            log.debug('%s Nr %s ipadr %s ueberschuss %6d Akt Leistung %6d'
+                      % (time_string, devicenumber, ipadr, uberschuss, aktpower),
+                      file=f)
+            log.debug('%s Nr %s ipadr %s neupower %6d pvmodus %1d modbusw %1d'
+                      % (time_string, devicenumber, ipadr, neupower, pvmodus,
+                         modbuswrite), file=f)
     # modbus write
     if modbuswrite == 1:
-        # andernfalls absturz bei negativen Zahlen
+        # andernfalls Absturz bei negativen Zahlen
         builder = BinaryPayloadBuilder(byteorder=Endian.Big)
         builder.reset()
         builder.add_16bit_int(neupower)
@@ -110,9 +114,9 @@ if count5 == 0:
         client.write_registers(102, [pay[0]])
         if count1 < 3:
             with open(file_string, 'a') as f:
-                print('%s devicenr %s ipadr %s written %6d %#4X' %
-                      (time_string, devicenumber, ipadr, pay[0], pay[0]),
-                      file=f)
+                log.debug('%s devicenr %s ipadr %s written %6d %#4X' %
+                          (time_string, devicenumber, ipadr, pay[0], pay[0]),
+                          file=f)
 else:
     if pvmodus == 99:
         pvmodus = 0

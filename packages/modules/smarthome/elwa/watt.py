@@ -5,8 +5,11 @@ import struct
 import codecs
 from pymodbus.client.sync import ModbusTcpClient
 import logging
-from smarthome.smartlog import initlog
 from smarthome.smartret import writeret
+
+log = logging.getLogger("elwa")
+bp = '/var/www/html/openWB/ramdisk/smarthome_device_'
+
 devicenumber = int(sys.argv[1])
 ipadr = str(sys.argv[2])
 uberschuss = int(sys.argv[3])
@@ -14,13 +17,10 @@ forcesend = int(sys.argv[4])
 # forcesend = 0 default time period applies
 # forcesend = 1 default overwritten send now
 # forcesend = 9 default overwritten no send
-initlog("elwa", devicenumber)
-log = logging.getLogger("elwa")
-bp = '/var/www/html/openWB/ramdisk/smarthome_device_'
 file_stringpv = bp + str(devicenumber) + '_pv'
 file_stringcount = bp + str(devicenumber) + '_count'
 file_stringcount5 = bp + str(devicenumber) + '_count5'
-# pv modus
+# PV-Modus
 pvmodus = 0
 modbuswrite = 0
 neupower = 0
@@ -103,14 +103,14 @@ if count5 == 0:
     else:
         # solar heizen dran ?
         if status == 2:
-            # dann 0 schicken wenn kein pvmodus mehr
+            # dann 0 schicken wenn kein PV-Modus mehr
             if pvmodus == 0:
                 modbuswrite = 1
                 neupower = 0
-                # sonst wenn pv modus lauft , ueberschuss schicken
+                # sonst wenn PV-Modus lauft , ueberschuss schicken
             else:
                 modbuswrite = 1
-                # wenn nicht solarheizen und nicht bost heat, auch ueberschuss schicken wenn pv modus lauft
+                # wenn nicht solarheizen und nicht boost heat, auch ueberschuss schicken wenn PV-Modus lauft
         else:
             if pvmodus == 1:
                 modbuswrite = 1

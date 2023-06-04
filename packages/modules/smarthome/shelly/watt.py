@@ -5,6 +5,9 @@ import time
 import json
 import urllib.request
 from smarthome.smartret import writeret
+import logging
+
+log = logging.getLogger(__name__)
 
 
 def totalPowerFromShellyJson(answer, workchan: int) -> int:
@@ -99,8 +102,9 @@ try:
               str(ipadr) + '_shelly', 'w') as f:
         f.write(str(answer))
 except Exception:
-    print("shelly/watt.py ERROR failed to connect to device on " +
-          ipadr)
+    log.debug("failed to connect to device on " +
+              ipadr + ", setting all values to 0")
+#  answer.update(a_dictionary)
 #  Versuche Werte aus der Antwort zu extrahieren.
 try:
     if (gen == "1"):

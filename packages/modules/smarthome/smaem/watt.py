@@ -6,9 +6,9 @@
 #
 # Here we only use a SMA EnergyMeter as SmartHome Device
 # Only two values are returned:
-# pconsume = current power consumation in Watt
-# pconsumecounter = cumulated value of power consumation in kWh
-# endless loop (until ctrl+c) displays measurement from SMA Energymeter
+# pconsume = current power consumption in Watt
+# pconsumecounter = cumulated value of power consumption in kWh
+# endless loop (until ctrl+c) displays measurement from SMA Energy Meter
 #
 #  this software is released under GNU General Public License, version 2.
 #  This program is free software;
@@ -23,7 +23,7 @@
 #
 # 2018-12-22 Tommi2Day small enhancements
 # 2019-08-13 datenschuft run without config
-# 2020-01-04 datenschuft changes to tun with speedwiredecoder
+# 2020-01-04 datenschuft changes to run with speedwiredecoder
 # 2020-01-13 Kevin Wieland changes to run with openWB
 # 2020-02-03 theHolgi added phase-wise load and power factor
 # 2021-09-01 Markus Giessen adoption for usage as Smart Home Device for energy metering
@@ -38,13 +38,15 @@ import signal
 import socket
 import struct
 from speedwiredecoder import decode_speedwire
+import logging
+
+log = logging.getLogger(__name__)
+
 
 # clean exit
-
-
 def abortprogram(signal, frame):
     # Housekeeping -> nothing to cleanup
-    print('STRG + C = end program')
+    log.debug('STRG + C = end program')
     sys.exit(0)
 
 
@@ -75,7 +77,7 @@ try:
     mreq = struct.pack("4s4s", socket.inet_aton(MCAST_GRP), socket.inet_aton(ipbind))
     sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
 except BaseException:
-    print('Module SMAEM: Could not connect to multicast group or bind to given interface')
+    log.debug('Module SMAEM: Could not connect to multicast group or bind to given interface')
     sys.exit(1)
 
 if os.path.isfile(timefile):
@@ -90,7 +92,7 @@ else:
 # Therefore we have to do a special processing for this scenario.
 # We also have to take care if there are more than one EnergyMeter in the network sending, that's why we
 # check the modification time in scenario 2.
-# Without this check we would generate a ret-file everytime we receive data from a not desired EnergyMeter.
+# Without this check we would generate a ret-file every time we receive data from a not desired EnergyMeter.
 emparts = {}
 sock_data = sock.recv(608)
 
@@ -152,12 +154,12 @@ elif ((os.path.isfile(returnfile)) and
     sys.exit("Module SMAEM: No data received but we have historical data which is younger than " +
              str(secondssincelastmetering) + " seconds.")
 else:
-    # Our EnergyMeter is not sending right now and it didn't send any data since boottime
+    # Our EnergyMeter is not sending right now and it didn't send any data since boot time
     # In this case we do nothing and we don't create a "fake" returnfile (as we don't know the value for wattc)
     # This will cause error messages in /var/www/html/openWB/ramdisk/smarthome.log:
     # This will cause error messages in /var/www/html/openWB/ramdisk/smarthome.log:
     # This will cause error messages in /var/www/html/openWB/ramdisk/smarthome.log:
-    # Module SMAEM: No data received and no historical data since boottime
+    # Module SMAEM: No data received and no historical data since boot time
     # Leistungsmessung smaem [...] Fehlermeldung: [Errno 2] No such file or directory:
     # '/var/www/html/openWB/ramdisk/smarthome_device_ret1'
     debugfile.write(str(datetime.datetime.now()) + ': 4 - No data received and no historical data since boottime\n')
