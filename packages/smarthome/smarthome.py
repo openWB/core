@@ -29,8 +29,8 @@ def smarthome_handler() -> None:
         try:
             try:
                 if len(SubData.bat_data) > 1:
-                    speicherleistung = SubData.bat_data["all"].data.get.power
-                    speichersoc = SubData.bat_data["all"].data.get.soc
+                    speicherleistung = int(SubData.bat_data["all"].data.get.power)
+                    speichersoc = int(SubData.bat_data["all"].data.get.soc)
                 else:
                     speicherleistung = 0
                     speichersoc = 100
@@ -40,7 +40,8 @@ def smarthome_handler() -> None:
                 speicherleistung = 0
                 speichersoc = 100
             watt = SubData.counter_data[f"counter{SubData.counter_all_data.get_id_evu_counter()}"].data.get.power * -1
-            mainloop(watt, speicherleistung, speichersoc)
+            wattint = int(watt)
+            mainloop(wattint, speicherleistung, speichersoc)
             #  time.sleep(5)
         except Exception:
             log.exception("Fehler im Smarthome-Handler")
