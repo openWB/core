@@ -441,14 +441,14 @@ class Command:
                 return
         # Bei Zählern müssen noch Standardwerte veröffentlicht werden.
         if general_type == ComponentType.BAT:
-            topic = f"openWB/bat/{new_id}"
+            topic = f"openWB/set/bat/{new_id}"
             set_default(f"{topic}/get", asdict(bat.Get()))
         elif general_type == ComponentType.COUNTER:
-            topic = f"openWB/counter/{new_id}"
+            topic = f"openWB/set/counter/{new_id}"
             set_default(f"{topic}/config", counter.get_counter_default_config())
             set_default(f"{topic}/get", asdict(counter.Get()))
         elif general_type == ComponentType.INVERTER:
-            topic = f"openWB/pv/{new_id}"
+            topic = f"openWB/set/pv/{new_id}"
             set_default(f"{topic}/config", pv.get_inverter_default_config())
             set_default(f"{topic}/get", asdict(pv.Get()))
         Pub().pub(f'openWB/set/system/device/{payload["data"]["deviceId"]}/component/{new_id}/config',

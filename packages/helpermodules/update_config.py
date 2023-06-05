@@ -401,7 +401,7 @@ class UpdateConfig:
         ("openWB/optional/int_display/pin_active", False),
         ("openWB/optional/int_display/pin_code", "0000"),
         ("openWB/optional/int_display/standby", 60),
-        ("openWB/optional/int_display/rotation", 0),
+        ("openWB/optional/int_display/rotation", 180),
         ("openWB/optional/int_display/theme", dataclass_utils.asdict(CardsDisplayTheme())),
         ("openWB/optional/led/active", False),
         ("openWB/optional/rfid/active", False),
