@@ -475,10 +475,10 @@
 					if (!isNaN(deviceIndex) && deviceIndex > 0 && deviceIndex < 10) {
 						var isEnabled = $(this).hasClass("charge-point-enabled")
 						if (isEnabled) {
-							publish(0, "openWB/LegacySmartHome/config/set/Devices/" + deviceIndex + "/device_manual_control");
+							publish(0, "openWB/set/LegacySmartHome/config/set/Devices/" + deviceIndex + "/device_manual_control");
 							$(this).removeClass('charge-point-enabled').removeClass('charge-point-disabled').addClass('charge-point-waiting');
 						} else {
-							publish(1, "openWB/LegacySmartHome/config/set/Devices/" + deviceIndex + "/device_manual_control");
+							publish(1, "openWB/set/LegacySmartHome/config/set/Devices/" + deviceIndex + "/device_manual_control");
 							$(this).removeClass('charge-point-enabled').removeClass('charge-point-disabled').addClass('charge-point-waiting');
 						}
 					}
@@ -489,9 +489,9 @@
 				// send mqtt set to enable/disable Device after click
 				var deviceIndex = parseInt($(this).closest('[data-smart-home-device]').data('smart-home-device'));  // get attribute device-# of parent element
 				if ($(this).text() == "Automatik") {
-					publish(1, "openWB/LegacySmartHome/config/set/Devices/" + deviceIndex + "/mode");
+					publish(1, "openWB/set/LegacySmartHome/config/set/Devices/" + deviceIndex + "/mode");
 				} else {
-					publish(0, "openWB/LegacySmartHome/config/set/Devices/" + deviceIndex + "/mode");
+					publish(0, "openWB/set/LegacySmartHome/config/set/Devices/" + deviceIndex + "/mode");
 				}
 			});
 
