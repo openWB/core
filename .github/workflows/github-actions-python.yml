@@ -18,8 +18,9 @@ jobs:
       - name: Flake8 with annotations
         uses: TrueBrain/actions-flake8@v2.1
         with:
-          path: packages
+          path: packages | runs
           flake8_version: 5.0.4
       - name: Test with pytest
         run: |
           PYTHONPATH=packages python -m pytest packages --log-cli-level=DEBUG
+          PYTHONPATH=runs python -m pytest packages --log-cli-level=DEBUG
