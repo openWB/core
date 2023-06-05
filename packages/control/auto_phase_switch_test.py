@@ -123,7 +123,7 @@ cases = [
 
 @pytest.mark.parametrize("params", cases, ids=[c.name for c in cases])
 def test_auto_phase_switch(monkeypatch, vehicle: Ev, params: Params):
-    #setup
+    # setup
     mock_evu = Mock(spec=Counter, data=Mock(spec=CounterData,
                                             set=Mock(spec=Set, reserved_surplus=params.reserved_evu_overhang,
                                                      released_surplus=0)))
