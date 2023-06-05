@@ -15,7 +15,7 @@ from modules.chargepoints.internal_openwb.chargepoint_module import ChargepointM
 
 @pytest.fixture
 def subdata_fixture() -> None:
-    SubData(*([Mock()]*13))
+    SubData(*([Mock()]*14))
     SubData.cp_data = {"cp0":  Mock(spec=ChargepointStateUpdate, chargepoint=Mock(
         spec=Chargepoint, chargepoint_module=Mock(spec=ChargepointModulePro)))}
 
