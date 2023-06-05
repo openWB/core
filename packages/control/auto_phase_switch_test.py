@@ -72,7 +72,7 @@ cases = [
            get_power=3450, state=ChargepointState.CHARGING_ALLOWED, expected_phases_to_use=1, expected_current=6,
            expected_state=ChargepointState.CHARGING_ALLOWED),
     Params("1to3, enough power, timer not expired", max_current_single_phase=16,
-           timestamp_auto_phase_switch="05/16/2022, 08:35:52", phases_to_use=1, required_current=6,
+           timestamp_auto_phase_switch="05/16/2022, 08:35:5", phases_to_use=1, required_current=6,
            evu_surplus=1200, reserved_evu_overhang=460, get_currents=[15.6, 0, 0], get_power=3450,
            state=ChargepointState.PHASE_SWITCH_DELAY, expected_phases_to_use=1, expected_current=6,
            expected_message="Umschaltverzögerung von 1 auf 3 Phasen für 7.0 Min aktiv.",
