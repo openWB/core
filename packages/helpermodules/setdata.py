@@ -3,6 +3,7 @@
 
 import copy
 import dataclasses
+from pathlib import Path
 import threading
 from typing import List, Optional, Tuple
 import re
@@ -1017,11 +1018,22 @@ class SetData:
         """
         try:
             if "openWB/set/LegacySmartHome/config" in msg.topic:
+                index = get_index()
                 pub_single(msg.topic.replace('openWB/set/', 'openWB/', 1), msg.payload.decode("utf-8"),
                            retain=True, no_json=True, port=1886)
                 pub_single(msg.topic, "", no_json=True, port=1886)
-
+                with open(self._get_ramdisk_path()/"rereadsmarthomedevices", 'w') as f:
+                    f.write(str(1))
+                if f"openWB/LegacySmartHome/config/set/Devices/{index}/mode" in msg.topic:
+                    with open(self._get_ramdisk_path()/f"smarthome_device_manual_{index}", 'w') as f:
+                        f.write(str(1))
+                if f"openWB/LegacySmartHome/config/set/Devices/{index}/device_manual_control" in msg.topic:
+                    with open(self._get_ramdisk_path()/f"smarthome_device_manual_control_{index}", 'w') as f:
+                        f.write(str(1))
             else:
                 self.__unknown_topic(msg)
         except Exception:
             log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
+
+    def _get_ramdisk_path(self) -> Path:
+        return Path(__file__).resolve().parents[2]/"ramdisk"
