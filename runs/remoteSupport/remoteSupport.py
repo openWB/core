@@ -101,7 +101,7 @@ def on_message(client: mqtt.Client, userdata, msg: mqtt.MQTTMessage):
                         log.info(f"tunnel running with pid {partner_tunnel.pid}")
             else:
                 log.info("unknown message: " + payload)
-        #clear topic
+        # clear topic
         client.publish(msg.topic, "", qos=2, retain=True)
 
 
