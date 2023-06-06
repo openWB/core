@@ -261,6 +261,7 @@ class UpdateConfig:
                    "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_ip$",
                    "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_lambdaueb$",
                    "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_leistungurl$",
+                   "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_manual_control$",
                    "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_manwatt$",
                    "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_maxeinschaltdauer$",
                    "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_mindayeinschaltdauer$",
@@ -309,6 +310,7 @@ class UpdateConfig:
                    "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_type$",
                    "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_updatesec$",
                    "^openWB/LegacySmartHome/config/get/Devices/[0-9]+/device_username$",
+                   "^openWB/LegacySmartHome/config/set/Devices/[0-9]+/mode$",
                    "^openWB/LegacySmartHome/Devices/[0-9]+/WHImported_temp$",
                    "^openWB/LegacySmartHome/Devices/[0-9]+/RunningTimeToday$",
                    "^openWB/LegacySmartHome/Devices/[0-9]+/oncountnor$",
@@ -410,16 +412,6 @@ class UpdateConfig:
         ("openWB/system/device/module_update_completed", True),
         ("openWB/system/ip_address", "unknown"),
         ("openWB/system/release_train", "master"),
-
-        ("openWB/LegacySmartHome/config/get/Devices/1/device_configured", 0),
-        ("openWB/LegacySmartHome/config/get/Devices/2/device_configured", 0),
-        ("openWB/LegacySmartHome/config/get/Devices/3/device_configured", 0),
-        ("openWB/LegacySmartHome/config/get/Devices/4/device_configured", 0),
-        ("openWB/LegacySmartHome/config/get/Devices/5/device_configured", 0),
-        ("openWB/LegacySmartHome/config/get/Devices/6/device_configured", 0),
-        ("openWB/LegacySmartHome/config/get/Devices/7/device_configured", 0),
-        ("openWB/LegacySmartHome/config/get/Devices/8/device_configured", 0),
-        ("openWB/LegacySmartHome/config/get/Devices/9/device_configured", 0),
     )
     invalid_topic = (
         # Tuple: (Regex, callable)

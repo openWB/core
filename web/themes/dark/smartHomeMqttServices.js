@@ -28,7 +28,7 @@ var topicsToSubscribeFirst = [
 var topicsToSubscribe = [
 	// data for all devices
 	["openWB/LegacySmartHome/config/get/Devices/+/device_name", 1],
-	["openWB/LegacySmartHome/config/get/Devices/+/mode", 1],
+	["openWB/LegacySmartHome/config/set/Devices/+/mode", 1],
 	["openWB/LegacySmartHome/Devices/+/Watt", 1],
 	["openWB/LegacySmartHome/Devices/+/RunningTimeToday", 1],
 	["openWB/LegacySmartHome/Devices/+/Status", 1],

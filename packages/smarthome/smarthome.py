@@ -29,8 +29,8 @@ def smarthome_handler() -> None:
         try:
             try:
                 if len(SubData.bat_data) > 1:
-                    speicherleistung = int(SubData.bat_data["all"].data.get.power)
-                    speichersoc = int(SubData.bat_data["all"].data.get.soc)
+                    speicherleistung = int(SubData.bat_all_data.data.get.power)
+                    speichersoc = int(SubData.bat_all_data.data.get.soc)
                 else:
                     speicherleistung = 0
                     speichersoc = 100
