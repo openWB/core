@@ -1026,10 +1026,10 @@ class SetData:
                     f.write(str(1))
                 if f"openWB/set/LegacySmartHome/config/set/Devices/{index}/mode" in msg.topic:
                     with open(self._get_ramdisk_path()/f"smarthome_device_manual_{index}", 'w') as f:
-                        f.write(msg.payload)
+                        f.write(str(decode_payload(msg.payload)))
                 if f"openWB/set/LegacySmartHome/config/set/Devices/{index}/device_manual_control" in msg.topic:
                     with open(self._get_ramdisk_path()/f"smarthome_device_manual_control_{index}", 'w') as f:
-                        f.write(msg.payload)
+                        f.write(str(decode_payload(msg.payload)))
             else:
                 self.__unknown_topic(msg)
         except Exception:
