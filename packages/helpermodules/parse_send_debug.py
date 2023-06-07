@@ -24,9 +24,12 @@ def parse_send_debug_data():
                     elif "inverter" in comp_value.component_config.type:
                         component_data = data.data.pv_data[f"pv{comp_value.component_config.id}"]
                     if "bat" in comp_value.component_config.type or "inverter" in comp_value.component_config.type:
-                        parsed_data += f"Leistung: {component_data.data.get.power/1000}kWh, Fehlerstatus: {component_data.data.get.fault_str}\n"
+                        parsed_data += (f"Leistung: {component_data.data.get.power/1000}kWh, "
+                                        f"Fehlerstatus: {component_data.data.get.fault_str}\n")
                     else:
-                        parsed_data += f"Leistung: {component_data.data.get.power/1000}kWh, Ströme: {component_data.data.get.currents}A, Fehlerstatus: {component_data.data.get.fault_str}\n"
+                        parsed_data += (f"Leistung: {component_data.data.get.power/1000}kWh, Ströme: "
+                                        f"{component_data.data.get.currents}A, Fehlerstatus: "
+                                        f"{component_data.data.get.fault_str}\n")
         except Exception:
             log.exception("Fehler beim Parsen der Daten für das Support-Ticket")
 
@@ -34,7 +37,12 @@ def parse_send_debug_data():
     parsed_data += f"Ladeleistung aller Ladepunkte {data.data.cp_all_data.data.get.power / 1000}kWh\n"
     for cp in data.data.cp_data.values():
         try:
-            parsed_data += f"LP{cp.num}: Steckerstatus: {cp.data.get.plug_state}, Leistung: {cp.data.get.power/1000}kWh, {cp.data.get.currents}A, Lademodus: {cp.data.set.charging_ev_data.data.control_parameter.chargemode}, Submode: {cp.data.set.charging_ev_data.data.control_parameter.submode}, Sollstrom: {cp.data.set.current}A, Status: {cp.data.get.state_str}, Fehlerstatus: {cp.data.get.fault_str}\n"
+            parsed_data += (f"LP{cp.num}: Steckerstatus: {cp.data.get.plug_state}, Leistung: "
+                            f"{cp.data.get.power/1000}kWh, {cp.data.get.currents}A, Lademodus: "
+                            f"{cp.data.set.charging_ev_data.data.control_parameter.chargemode}, Submode: "
+                            f"{cp.data.set.charging_ev_data.data.control_parameter.submode}, Sollstrom: "
+                            f"{cp.data.set.current}A, Status: {cp.data.get.state_str}, "
+                            f"Fehlerstatus: {cp.data.get.fault_str}\n")
         except Exception:
             log.exception("Fehler beim Parsen der Daten für das Support-Ticket")
 
