@@ -39,7 +39,7 @@ class SubData:
     """
 
     # Instanzen
-    cp_data: Dict[str, chargepoint.Chargepoint] = {}
+    cp_data: Dict[str, chargepoint.ChargepointStateUpdate] = {}
     cp_all_data = chargepoint.AllChargepoints()
     cp_template_data: Dict[str, chargepoint.CpTemplate] = {}
     pv_data: Dict[str, pv.Pv] = {}
