@@ -5,6 +5,9 @@ import time
 import json
 import urllib.request
 from smarthome.smartret import writeret
+import logging
+
+log = logging.getLogger(__name__)
 
 
 def totalPowerFromShellyJson(answer, workchan: int) -> int:
@@ -51,13 +54,16 @@ temp2 = '0.0'
 aktpower = 0
 relais = 0
 gen = '1'
+model = '???'
 # lesen endpoint, gen bestimmem. gen 1 hat unter Umstaenden keinen Eintrag
 fbase = '/var/www/html/openWB/ramdisk/smarthome_device_ret.'
 fname = fbase + str(ipadr) + '_shelly_info'
-fnameg = fbase + str(ipadr) + '_shelly_infog'
+fnameg = fbase + str(ipadr) + '_shelly_infogv1'
 if os.path.isfile(fnameg):
     with open(fnameg, 'r') as f:
-        gen = str(f.read())
+        jsonin = json.loads(f.read())
+        gen = str(jsonin['gen'])
+        model = str(jsonin['model'])
 else:
     aread = urllib.request.urlopen("http://" + str(ipadr) + "/shelly",
                                    timeout=3).read().decode("utf-8")
@@ -66,8 +72,13 @@ else:
         json.dump(agen, f)
     if 'gen' in agen:
         gen = str(int(agen['gen']))
+    if 'model' in agen:
+        model = str(agen['model'])
+    elif 'type' in agen:
+        model = str(agen['type'])
+    jsontype = {"gen": str(gen), "model": str(model)}
     with open(fnameg, 'w') as f:
-        f.write(str(gen))
+        f.write(json.dumps(jsontype))
 # Versuche Daten von Shelly abzurufen.
 try:
     # print("Shelly " + str(shaut) + user + pw)
@@ -91,8 +102,9 @@ try:
               str(ipadr) + '_shelly', 'w') as f:
         f.write(str(answer))
 except Exception:
-    print("shelly/watt.py ERROR failed to connect to device on " +
-          ipadr)
+    log.debug("failed to connect to device on " +
+              ipadr + ", setting all values to 0")
+#  answer.update(a_dictionary)
 #  Versuche Werte aus der Antwort zu extrahieren.
 try:
     if (gen == "1"):
@@ -103,7 +115,17 @@ try:
         else:
             workchan = chan
         sw = 'switch:' + str(workchan)
-        aktpower = int(answer[sw]['apower'])
+        if ("SPEM-003CE" in model):
+            if (workchan == 1):
+                aktpower = int(answer['em:0']['a_act_power'])
+            elif (workchan == 2):
+                aktpower = int(answer['em:0']['b_act_power'])
+            elif (workchan == 3):
+                aktpower = int(answer['em:0']['c_act_power'])
+            else:
+                aktpower = int(answer['em:0']['total_act_power'])
+        else:
+            aktpower = int(answer[sw]['apower'])
 except Exception:
     pass
 
@@ -121,17 +143,26 @@ except Exception:
     pass
 
 try:
-    temp0 = str(answer['ext_temperature']['0']['tC'])
+    if gen == "1":
+        temp0 = str(answer['ext_temperature']['0']['tC'])
+    else:
+        temp0 = str(answer['temperature:100']['tC'])
 except Exception:
     pass
 
 try:
-    temp1 = str(answer['ext_temperature']['1']['tC'])
+    if gen == "1":
+        temp1 = str(answer['ext_temperature']['1']['tC'])
+    else:
+        temp1 = str(answer['temperature:101']['tC'])
 except Exception:
     pass
 
 try:
-    temp2 = str(answer['ext_temperature']['2']['tC'])
+    if gen == "1":
+        temp2 = str(answer['ext_temperature']['2']['tC'])
+    else:
+        temp2 = str(answer['temperature:102']['tC'])
 except Exception:
     pass
 answer = '{"power":' + str(aktpower) + ',"powerc":' + str(powerc)

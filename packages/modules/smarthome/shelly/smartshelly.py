@@ -1,8 +1,8 @@
 #!/usr/bin/python3
 from smarthome.smartbase import Sbase, Slshelly
 from typing import Dict
-import subprocess
 import logging
+
 log = logging.getLogger(__name__)
 
 
@@ -14,6 +14,7 @@ class Sshelly(Sbase):
         self._device_shpassword = 'none'
         self._device_shusername = 'none'
         self._device_shauth = 0
+        log.debug('__init__ Sshelly excuted')
 
     def getwatt(self, uberschuss: int, uberschussoffset: int) -> None:
         self.prewatt(uberschuss, uberschussoffset)
@@ -72,8 +73,7 @@ class Sshelly(Sbase):
                         self._device_shusername,
                         self._device_shpassword]
         try:
-            self.proc = subprocess.Popen(argumentList)
-            self.proc.communicate()
+            self.callpro(argumentList)
         except Exception as e1:
             log.warning("(" + str(self.device_nummer) +
                         ") on / off %s %d %s Fehlermeldung: %s "

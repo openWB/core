@@ -657,21 +657,6 @@ export const useMqttStore = defineStore("mqtt", {
     addTopic(topic, payload) {
       console.debug("addTopic", topic, payload);
       this.topics[topic] = payload;
-      // collect data for spark lines
-      if (
-        (topic.endsWith("home_consumption") ||
-          topic.endsWith("power") ||
-          topic.endsWith("soc")) &&
-        payload !== undefined &&
-        payload !== null
-      ) {
-        if (this.chartData[topic] === undefined) {
-          this.chartData[topic] = [];
-        }
-        this.chartData[topic].push(payload);
-        // limit memory usage and truncate chart data
-        this.chartData[topic].slice(-128);
-      }
     },
     removeTopic(topic) {
       if (topic.includes("#") || topic.includes("+")) {
@@ -708,6 +693,25 @@ export const useMqttStore = defineStore("mqtt", {
         }
       } else {
         console.debug("topic not found: ", topic);
+      }
+    },
+    updateChartData() {
+      // collect data for spark lines
+      for (const [topic, payload] of Object.entries(this.topics)) {
+        if (
+          topic.endsWith("home_consumption") ||
+          topic.endsWith("power") ||
+          topic.endsWith("soc")
+        ) {
+          if (this.chartData[topic] === undefined) {
+            this.chartData[topic] = [];
+          }
+          if (payload !== undefined && payload !== null) {
+            this.chartData[topic].push(payload);
+            // limit memory usage and truncate chart data
+            this.chartData[topic].slice(-128);
+          }
+        }
       }
     },
     updateState(topic, value, objectPath = undefined) {

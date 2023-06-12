@@ -1,7 +1,7 @@
 
-from typing import Dict
-
+from modules.chargepoints.smartwb.config import SmartWB
 from modules.common.abstract_chargepoint import AbstractChargepoint
+from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_context import ErrorCounterContext, SingleComponentUpdateContext
 from modules.common.fault_state import ComponentInfo
 from modules.common.store import get_chargepoint_value_store
@@ -9,29 +9,12 @@ from modules.common.component_state import ChargepointState
 from modules.common import req
 
 
-def get_default_config() -> Dict:
-    return {
-        "id": 0,
-        "connection_module": {
-            "type": "smartwb",
-            "name": "smartWB / EVSE-Wifi (>= v1.x.x/v2.x.x)",
-            "configuration": {
-                    "ip_address": None,
-                    "timeout": 2
-            }
-        },
-        "power_module": {}
-    }
-
-
 class ChargepointModule(AbstractChargepoint):
-    def __init__(self, id: int, connection_module: dict, power_module: dict) -> None:
-        self.id = id
-        self.connection_module = connection_module
-        self.power_module = power_module
-        self.store = get_chargepoint_value_store(self.id)
+    def __init__(self, config: SmartWB) -> None:
+        self.config = config
+        self.store = get_chargepoint_value_store(self.config.id)
         self.component_info = ComponentInfo(
-            self.id,
+            self.config.id,
             "Ladepunkt", "chargepoint")
         self.__client_error_context = ErrorCounterContext(
             "Anhaltender Fehler beim Auslesen des Ladepunkts. Soll-Stromstärke wird zurückgesetzt.")
@@ -42,8 +25,8 @@ class ChargepointModule(AbstractChargepoint):
             current = 0
         with SingleComponentUpdateContext(self.component_info, False):
             with self.__client_error_context:
-                ip_address = self.connection_module["configuration"]["ip_address"]
-                timeout = self.connection_module["configuration"]["timeout"]
+                ip_address = self.config.configuration.ip_address
+                timeout = self.config.configuration.timeout
                 # Stromvorgabe in Hundertstel Ampere
                 params = (('current', int(current*100)),)
                 req.get_http_session().get('http://'+ip_address+'/setCurrent', params=params, timeout=(timeout, None))
@@ -51,8 +34,8 @@ class ChargepointModule(AbstractChargepoint):
     def get_values(self) -> None:
         with SingleComponentUpdateContext(self.component_info):
             with self.__client_error_context:
-                ip_address = self.connection_module["configuration"]["ip_address"]
-                timeout = self.connection_module["configuration"]["timeout"]
+                ip_address = self.config.configuration.ip_address
+                timeout = self.config.configuration.timeout
                 response = req.get_http_session().get('http://'+ip_address+'/getParameters', timeout=timeout)
                 json_rsp = response.json()["list"][0]
 
@@ -101,6 +84,9 @@ class ChargepointModule(AbstractChargepoint):
     def clear_rfid(self) -> None:
         with SingleComponentUpdateContext(self.component_info):
             with self.__client_error_context:
-                ip_address = self.connection_module["configuration"]["ip_address"]
-                timeout = self.connection_module["configuration"]["timeout"]
+                ip_address = self.config.configuration.ip_address
+                timeout = self.config.configuration.timeout
                 req.get_http_session().get('http://'+ip_address+'/clearRfid', timeout=(timeout, None))
+
+
+chargepoint_descriptor = DeviceDescriptor(configuration_factory=SmartWB)

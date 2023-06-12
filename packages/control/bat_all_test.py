@@ -116,21 +116,25 @@ def test_limit_rundown_power(return_max_bat_power_hybrid_system, expected_power,
 class Params:
     name: str
     config: PvCharging
+    power: float
     soc: float
     expected_charging_power_left: float
 
 
 cases = [
-    Params("EV-Vorrang ohne Ladeleistungsreserve", PvCharging(bat_prio=False, charging_power_reserve=0),
+    Params("lädt, EV-Vorrang ohne Ladeleistungsreserve", PvCharging(bat_prio=False, charging_power_reserve=0), 500,
            100, 500),
-    Params("EV-Vorrang mit Ladeleistungsreserve, Speicher voll",
-           PvCharging(bat_prio=False, charging_power_reserve=200),
+    Params("lädt, EV-Vorrang mit Ladeleistungsreserve, Speicher voll",
+           PvCharging(bat_prio=False, charging_power_reserve=200), 500,
            100, 500),
-    Params("EV-Vorrang mit Ladeleistungsreserve", PvCharging(bat_prio=False, charging_power_reserve=200),
+    Params("lädt, EV-Vorrang mit Ladeleistungsreserve", PvCharging(bat_prio=False, charging_power_reserve=200), 500,
            99, 300),
-    Params("Speicher-Vorrang mit erlaubter Entladeleistung", PvCharging(bat_prio=True), 51, 500),
-    Params("Speicher-Vorrang ohne erlaubte Entladeleistung, Minimal-SoC überschritten",
-           PvCharging(bat_prio=True), 50, -50),
+    Params("lädt, Speicher-Vorrang mit erlaubter Entladeleistung", PvCharging(bat_prio=True), 500, 51, 500),
+    Params("lädt, Speicher-Vorrang ohne erlaubte Entladeleistung, Minimal-SoC unterschritten",
+           PvCharging(bat_prio=True), 500, 50, -50),
+    Params("entlädt mit mehr als Entladeleistung, Speicher-Vorrang mit erlaubter Entladeleistung",
+           PvCharging(bat_prio=True), -2500, 51, -1500),
+    Params("entlädt, Speicher-Vorrang mit erlaubter Entladeleistung", PvCharging(bat_prio=True), -600, 51, 500),
 ]
 
 
@@ -138,10 +142,10 @@ cases = [
 def test_get_charging_power_left(params: Params, caplog, data_fixture, monkeypatch):
     # setup
     b_all = BatAll()
-    b_all.data.get.power = 500
+    b_all.data.get.power = params.power
     b_all.data.get.soc = params.soc
     b = Bat(0)
-    b.data.get.power = 500
+    b.data.get.power = params.power
     data.data.bat_data["bat0"] = b
     data.data.general_data.data.chargemode_config.pv_charging = params.config
     mock__max_bat_power_hybrid_system = Mock(return_value=500)

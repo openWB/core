@@ -3,6 +3,7 @@
 
 import copy
 import dataclasses
+from pathlib import Path
 import threading
 from typing import List, Optional, Tuple
 import re
@@ -11,7 +12,7 @@ import paho.mqtt.client as mqtt
 import logging
 from helpermodules import subdata
 from helpermodules.broker import InternalBrokerClient
-from helpermodules.pub import Pub
+from helpermodules.pub import Pub, pub_single
 from helpermodules.utils.topic_parser import (decode_payload, get_index, get_index_position, get_second_index,
                                               get_second_index_position)
 from helpermodules.update_config import UpdateConfig
@@ -93,6 +94,10 @@ class SetData:
                 self.process_system_topic(msg)
             elif "openWB/set/command/" in msg.topic:
                 self.process_command_topic(msg)
+            elif "openWB/set/internal_chargepoint/" in msg.topic:
+                self.process_internal_chargepoint_topic(msg)
+            elif "openWB/set/LegacySmartHome/" in msg.topic:
+                self.process_legacy_smart_home_topic(msg)
 
     def _validate_value(self, msg: mqtt.MQTTMessage, data_type, ranges=[], collection=None, pub_json=False,
                         retain: bool = True):
@@ -527,41 +532,47 @@ class SetData:
                 elif "/config/ev" in msg.topic:
                     self._validate_value(
                         msg, int, [(0, float("inf"))], pub_json=True)
-                elif ("/get/voltages" in msg.topic):
-                    self._validate_value(
-                        msg, float, [(0, 500)], collection=list)
-                elif ("/get/currents" in msg.topic):
-                    self._validate_value(
-                        msg, float, collection=list)
-                elif ("/get/power_factors" in msg.topic):
-                    self._validate_value(
-                        msg, float, [(-1, 1)], collection=list)
-                elif ("/get/daily_imported" in msg.topic or
-                        "/get/daily_exported" in msg.topic or
-                        "/get/power" in msg.topic or
-                        "/get/imported" in msg.topic or
-                        "/get/exported" in msg.topic):
-                    self._validate_value(msg, float, [(0, float("inf"))])
-                elif "/get/phases_in_use" in msg.topic:
-                    self._validate_value(msg, int, [(0, 3)])
-                elif ("/get/charge_state" in msg.topic or
-                        "/get/plug_state" in msg.topic):
-                    self._validate_value(msg, bool)
-                elif "/get/fault_state" in msg.topic:
-                    self._validate_value(msg, int, [(0, 2)])
-                elif ("/get/fault_str" in msg.topic or
-                        "/get/state_str" in msg.topic or
-                        "/get/heartbeat" in msg.topic):
-                    self._validate_value(msg, str)
-                elif ("/get/rfid" in msg.topic or
-                        "/get/rfid_timestamp" in msg.topic):
-                    self._validate_value(msg, str)
+                elif "get" in msg.topic:
+                    self.process_chargepoint_get_topics(msg)
                 else:
                     self.__unknown_topic(msg)
             else:
                 log.warning(f"Kein Ladepunkt {get_index(msg.topic)} mit gültiger Konfiguration gefunden.")
         except Exception:
             log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
+
+    def process_chargepoint_get_topics(self, msg):
+        if ("/get/voltages" in msg.topic):
+            self._validate_value(
+                msg, float, [(0, 500)], collection=list)
+        elif ("/get/currents" in msg.topic):
+            self._validate_value(
+                msg, float, collection=list)
+        elif ("/get/power_factors" in msg.topic):
+            self._validate_value(
+                msg, float, [(-1, 1)], collection=list)
+        elif ("/get/daily_imported" in msg.topic or
+                "/get/daily_exported" in msg.topic or
+                "/get/power" in msg.topic or
+                "/get/imported" in msg.topic or
+                "/get/exported" in msg.topic):
+            self._validate_value(msg, float, [(0, float("inf"))])
+        elif "/get/phases_in_use" in msg.topic:
+            self._validate_value(msg, int, [(0, 3)])
+        elif ("/get/charge_state" in msg.topic or
+                "/get/plug_state" in msg.topic):
+            self._validate_value(msg, bool)
+        elif "/get/fault_state" in msg.topic:
+            self._validate_value(msg, int, [(0, 2)])
+        elif ("/get/fault_str" in msg.topic or
+                "/get/state_str" in msg.topic or
+                "/get/heartbeat" in msg.topic):
+            self._validate_value(msg, str)
+        elif ("/get/rfid" in msg.topic or
+                "/get/rfid_timestamp" in msg.topic):
+            self._validate_value(msg, str)
+        else:
+            self.__unknown_topic(msg)
 
     def process_pv_topic(self, msg: mqtt.MQTTMessage):
         """ Handler für die PV-Topics
@@ -760,6 +771,8 @@ class SetData:
                 self._validate_value(msg, "json")
             elif "openWB/set/optional/rfid/active" in msg.topic:
                 self._validate_value(msg, bool)
+            elif "openWB/set/optional/int_display/rotation" in msg.topic:
+                self._validate_value(msg, int, [(0, 0), (90, 90), (180, 180), (270, 270)])
             elif "openWB/set/optional/int_display/active" in msg.topic:
                 self._validate_value(msg, bool)
             elif "openWB/set/optional/int_display/on_if_plugged_in" in msg.topic:
@@ -795,7 +808,8 @@ class SetData:
             elif "openWB/set/counter/set/invalid_home_consumption" in msg.topic:
                 self._validate_value(msg, int, [(0, 3)])
             elif ("openWB/set/counter/set/home_consumption" in msg.topic or
-                    "openWB/set/counter/set/daily_yield_home_consumption" in msg.topic):
+                  "openWB/set/counter/set/daily_yield_home_consumption" in msg.topic or
+                  "openWB/set/counter/set/disengageable_smarthome_power" in msg.topic):
                 self._validate_value(msg, float, [(0, float("inf"))])
             elif "openWB/set/counter/get/hierarchy" in msg.topic:
                 self._validate_value(msg, None)
@@ -859,7 +873,8 @@ class SetData:
         try:
             if ("openWB/set/log/" and "data" in msg.topic or
                     "openWB/set/log/daily" in msg.topic or
-                    "openWB/set/log/monthly" in msg.topic):
+                    "openWB/set/log/monthly" in msg.topic or
+                    "openWB/set/log/yearly" in msg.topic):
                 self._validate_value(msg, "json", retain=False)
             else:
                 self.__unknown_topic(msg)
@@ -904,6 +919,8 @@ class SetData:
                 self._validate_value(msg, bool)
             elif "openWB/set/system/version" in msg.topic:
                 self._validate_value(msg, str)
+            elif "openWB/set/system/time" in msg.topic:
+                self._validate_value(msg, int)
             elif "openWB/set/system/datastore_version" in msg.topic:
                 self._validate_value(msg, int, [(0, UpdateConfig.DATASTORE_VERSION)])
             elif "openWB/set/system/GetRemoteSupport" in msg.topic:
@@ -973,3 +990,52 @@ class SetData:
                 self.__unknown_topic(msg)
         except Exception:
             log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
+
+    def process_internal_chargepoint_topic(self, msg):
+        try:
+            if "data/cp_interruption_duration" in msg.topic:
+                self._validate_value(msg, int, [(0, float("inf"))])
+            elif "data/parent_cp" in msg.topic:
+                self._validate_value(msg, str)
+            elif "data/set_current" in msg.topic:
+                self._validate_value(msg, float, [(0, 0), (6, 32)])
+            elif "data/phases_to_use" in msg.topic:
+                self._validate_value(msg, int, [(1, 3)])
+            elif "get" in msg.topic:
+                self.process_chargepoint_get_topics(msg)
+            elif "last_tag" in msg.topic:
+                self._validate_value(msg, str)
+            else:
+                self._validate_value(msg, "json")
+        except Exception:
+            log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
+
+    def process_legacy_smart_home_topic(self, msg):
+        """Handler für die alten SmartHome-Topics
+
+         Parameters
+        ----------
+        msg:
+            enthält Topic und Payload
+        """
+        try:
+            if "openWB/set/LegacySmartHome/config" in msg.topic:
+                index = get_index(msg.topic)
+                pub_single(msg.topic.replace('openWB/set/', 'openWB/', 1), msg.payload.decode("utf-8"),
+                           retain=True, no_json=True, port=1886)
+                pub_single(msg.topic, "", no_json=True, port=1886)
+                with open(self._get_ramdisk_path()/"rereadsmarthomedevices", 'w') as f:
+                    f.write(str(1))
+                if f"openWB/set/LegacySmartHome/config/set/Devices/{index}/mode" in msg.topic:
+                    with open(self._get_ramdisk_path()/f"smarthome_device_manual_{index}", 'w') as f:
+                        f.write(str(decode_payload(msg.payload)))
+                if f"openWB/set/LegacySmartHome/config/set/Devices/{index}/device_manual_control" in msg.topic:
+                    with open(self._get_ramdisk_path()/f"smarthome_device_manual_control_{index}", 'w') as f:
+                        f.write(str(decode_payload(msg.payload)))
+            else:
+                self.__unknown_topic(msg)
+        except Exception:
+            log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
+
+    def _get_ramdisk_path(self) -> Path:
+        return Path(__file__).resolve().parents[2]/"ramdisk"

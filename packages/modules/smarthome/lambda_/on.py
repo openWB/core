@@ -4,8 +4,12 @@ import os
 import time
 import struct
 import codecs
-
 from pymodbus.client.sync import ModbusTcpClient
+import logging
+
+log = logging.getLogger(__name__)
+bp = '/var/www/html/openWB/ramdisk/smarthome_device_'
+
 named_tuple = time.localtime()  # getstruct_time
 time_string = time.strftime("%m/%d/%Y, %H:%M:%S lambda on.py", named_tuple)
 devicenumber = str(sys.argv[1])
@@ -14,7 +18,6 @@ uberschuss = int(sys.argv[3])
 uberschussvz = str(sys.argv[4])
 if (uberschussvz == 'UN'):
     uberschuss = uberschuss * -1
-bp = '/var/www/html/openWB/ramdisk/smarthome_device_'
 # standard
 # lesen
 # own log
@@ -25,10 +28,10 @@ if os.path.isfile(file_string):
     pass
 else:
     with open(file_string, 'w') as f:
-        print('lambda start log', file=f)
+        log.debug('lambda start log', file=f)
 with open(file_string, 'a') as f:
-    print('%s devicenr %s ipadr %s ueberschuss %6d try to connect (modbus)'
-          % (time_string, devicenumber, ipadr, uberschuss), file=f)
+    log.debug('%s devicenr %s ipadr %s ueberschuss %6d try to connect (modbus)'
+              % (time_string, devicenumber, ipadr, uberschuss), file=f)
 client = ModbusTcpClient(ipadr, port=502)
 start = 103
 resp = client.read_holding_registers(start, 2)
@@ -36,8 +39,8 @@ value1 = resp.registers[0]
 all = format(value1, '04x')
 aktpower = int(struct.unpack('>h', codecs.decode(all, 'hex'))[0])
 with open(file_string, 'a') as f:
-    print('%s devicenr %s ipadr %s Akt Leistung  %6d ' %
-          (time_string, devicenumber, ipadr, aktpower), file=f)
+    log.debug('%s devicenr %s ipadr %s Akt Leistung  %6d ' %
+              (time_string, devicenumber, ipadr, aktpower), file=f)
 with open(file_stringpv, 'w') as f:
     f.write(str(1))
 count1 = 999

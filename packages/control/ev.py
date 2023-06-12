@@ -313,7 +313,11 @@ class Ev:
                 else:
                     name = None
                 required_current, submode, message, phases = self.charge_template.scheduled_charging_calc_current(
-                    plan_data, self.data.get.soc, used_amount, max_phases, self.ev_template.data.min_current)
+                    plan_data,
+                    self.data.get.soc,
+                    used_amount, max_phases,
+                    self.data.control_parameter.phases,
+                    self.ev_template.data.min_current)
                 self.data.control_parameter.current_plan = name
                 Pub().pub(f"openWB/set/vehicle/{self.num}/control_parameter/current_plan", name)
 
@@ -455,20 +459,20 @@ class Ev:
             feed_in_yield = 0
         evu_counter = data.data.counter_all_data.get_evu_counter()
         # verbleibender EVU-Überschuss unter Berücksichtigung der Einspeisegrenze und Speicherleistung
-        all_surplus = -(evu_counter.data.get.power + evu_counter.data.set.released_surplus -
-                        evu_counter.data.set.reserved_surplus + feed_in_yield)
+        all_surplus = (evu_counter.calc_surplus() - evu_counter.data.set.released_surplus +
+                       evu_counter.data.set.reserved_surplus - feed_in_yield)
         if phases_in_use == 1:
             direction_str = "Umschaltverzögerung von 1 auf 3"
             delay = pv_config.phase_switch_delay * 60
-            required_power = self.ev_template.data.min_current * max_phases_ev * \
-                230 - self.ev_template.data.max_current_single_phase * 230
+            required_power = (self.ev_template.data.max_current_single_phase * 230 -
+                              self.ev_template.data.min_current * max_phases_ev * 230)
             new_phase = 3
             new_current = self.ev_template.data.min_current
         else:
             direction_str = "Umschaltverzögerung von 3 auf 1"
             delay = (16 - pv_config.phase_switch_delay) * 60
-            required_power = self.ev_template.data.max_current_single_phase * \
-                230 - self.ev_template.data.min_current * max_phases_ev * 230
+            required_power = (self.ev_template.data.min_current * max_phases_ev * 230 -
+                              self.ev_template.data.max_current_single_phase * 230)
             new_phase = 1
             new_current = self.ev_template.data.max_current_single_phase
 
@@ -477,12 +481,12 @@ class Ev:
             f'{required_power}W')
         # Wenn gerade umgeschaltet wird, darf kein Timer gestartet werden.
         if not self.ev_template.data.prevent_phase_switch:
+            condition_1_to_3 = (max(get_currents) > max_current and
+                                all_surplus > self.ev_template.data.min_current * max_phases_ev * 230
+                                - get_power and
+                                phases_in_use == 1)
+            condition_3_to_1 = max(get_currents) < min_current and all_surplus <= 0 and phases_in_use > 1
             if self.data.control_parameter.state not in PHASE_SWITCH_STATES:
-                condition_1_to_3 = (max(get_currents) > max_current and
-                                    all_surplus > self.ev_template.data.min_current * max_phases_ev * 230
-                                    - get_power and
-                                    phases_in_use == 1)
-                condition_3_to_1 = max(get_currents) < min_current and all_surplus <= 0 and phases_in_use > 1
                 if condition_3_to_1 or condition_1_to_3:
                     # Umschaltverzögerung starten
                     timestamp_auto_phase_switch = timecheck.create_timestamp()
@@ -493,8 +497,6 @@ class Ev:
                     message = f'{direction_str} Phasen für {delay/60} Min aktiv.'
                     self.data.control_parameter.state = ChargepointState.PHASE_SWITCH_DELAY
             else:
-                condition_1_to_3 = max(get_currents) > max_current and all_surplus > 0 and phases_in_use == 1
-                condition_3_to_1 = max(get_currents) < min_current and phases_in_use > 1
                 if condition_3_to_1 or condition_1_to_3:
                     # Timer laufen lassen
                     if timecheck.check_timestamp(timestamp_auto_phase_switch, delay):
@@ -532,16 +534,16 @@ class Ev:
             Pub().pub("openWB/set/vehicle/"+str(self.num) +
                       "/control_parameter/timestamp_auto_phase_switch", None)
             # Wenn der Timer läuft, ist den Control-Parametern die alte Phasenzahl hinterlegt.
-            if self.data.control_parameter.phases == 3:
-                reserved = self.ev_template.data.max_current_single_phase * \
-                    230 - self.data.control_parameter.required_current * 3 * 230
+            if self.data.control_parameter.phases == 1:
+                reserved = self.data.control_parameter.required_current * \
+                    3 * 230 - self.ev_template.data.max_current_single_phase * 230
                 data.data.counter_all_data.get_evu_counter().data.set.reserved_surplus -= reserved
                 log.debug(
                     "Zurücksetzen der reservierten Leistung für die Phasenumschaltung. reservierte Leistung: " +
                     str(data.data.counter_all_data.get_evu_counter().data.set.reserved_surplus))
             else:
-                reserved = self.data.control_parameter.required_current * \
-                    3 * 230 - self.ev_template.data.max_current_single_phase * 230
+                reserved = self.ev_template.data.max_current_single_phase * \
+                    230 - self.data.control_parameter.required_current * 3 * 230
                 data.data.counter_all_data.get_evu_counter().data.set.reserved_surplus -= reserved
                 log.debug(
                     "Zurücksetzen der reservierten Leistung für die Phasenumschaltung. reservierte Leistung: " +
@@ -779,6 +781,7 @@ class ChargeTemplate:
                                         soc: int,
                                         used_amount: float,
                                         max_phases: int,
+                                        control_parameter_phases: int,
                                         min_current: int) -> Tuple[float, str, str, int]:
         current = 0
         mode = "stop"
@@ -794,6 +797,9 @@ class ChargeTemplate:
             message = self.SCHEDULED_CHARGING_REACHED_SCHEDULED_SOC
             current = min_current
             mode = "pv_charging"
+            # bei Überschuss-Laden mit der Phasenzahl aus den control_parameter laden,
+            # um die Umschaltung zu berücksichtigen.
+            phases = control_parameter_phases
         elif limit.selected == "amount" and used_amount >= limit.amount:
             message = self.SCHEDULED_CHARGING_REACHED_AMOUNT
         elif 0 < plan_data.remaining_time < 300:  # 5 Min vor spätestem Ladestart
@@ -827,10 +833,12 @@ class ChargeTemplate:
                                "ist. Falls vorhanden, wird mit EVU-Überschuss geladen.")
                     current = min_current
                     mode = "pv_charging"
+                    phases = control_parameter_phases
             else:
                 message = self.SCHEDULED_CHARGING_USE_PV
                 current = min_current
                 mode = "pv_charging"
+                phases = control_parameter_phases
         return current, mode, message, phases
 
     def standby(self) -> Tuple[int, str, str]:

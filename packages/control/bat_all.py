@@ -182,10 +182,14 @@ class BatAll:
                 # wenn der Soc über dem minimalen Entlade-Soc liegt. Dazu wird Bezug generiert, damit der Speicher
                 # entlädt. Dabei darf ein Hybridspeicher noch nicht am Limit sein.
                 if self.data.get.soc > config.rundown_soc:
-                    self.data.set.charging_power_left = config.rundown_power
-                    log.debug(f"Erlaubte Entlade-Leistung nutzen {config.rundown_power}W")
-                    self.data.set.charging_power_left = self._limit_rundown_power(
-                        config.rundown_power)
+                    if self.data.get.power * -1 > config.rundown_power:
+                        # Wenn der Speicher mit mehr als der erlaubten Entladeleistung entladen wird, muss das vom
+                        # Überschuss subtrahiert werden.
+                        self.data.set.charging_power_left = config.rundown_power + self.data.get.power
+                    else:
+                        self.data.set.charging_power_left = self._limit_rundown_power(
+                            config.rundown_power)
+                    log.debug(f"Erlaubte Entlade-Leistung nutzen {self.data.set.charging_power_left}W")
                 else:
                     # Wenn der Speicher entladen wird, darf diese Leistung nicht zum Laden der Fahrzeuge genutzt werden.
                     # 50 W Überschuss übrig lassen, die sich der Speicher dann nehmen kann. Wenn der Speicher

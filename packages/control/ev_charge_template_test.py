@@ -196,7 +196,7 @@ def test_search_plan(check_duration_return1: Tuple[Optional[float], bool],
         pytest.param(SelectedPlan(), 90, 0, "soc", (0, "stop",
                      ChargeTemplate.SCHEDULED_CHARGING_REACHED_LIMIT_SOC, 1), id="reached limit soc"),
         pytest.param(SelectedPlan(), 80, 0, "soc", (6, "pv_charging",
-                     ChargeTemplate.SCHEDULED_CHARGING_REACHED_SCHEDULED_SOC, 1), id="reached scheduled soc"),
+                     ChargeTemplate.SCHEDULED_CHARGING_REACHED_SCHEDULED_SOC, 3), id="reached scheduled soc"),
         pytest.param(SelectedPlan(phases=3), 0, 1000, "amount", (0, "stop",
                      ChargeTemplate.SCHEDULED_CHARGING_REACHED_AMOUNT, 3), id="reached amount"),
         pytest.param(SelectedPlan(remaining_time=299), 0, 999, "amount",
@@ -211,7 +211,7 @@ def test_search_plan(check_duration_return1: Tuple[Optional[float], bool],
                      (16, "instant_charging", ChargeTemplate.SCHEDULED_CHARGING_MAX_CURRENT.format(16), 3),
                      id="too late, but didn't miss for today"),
         pytest.param(SelectedPlan(remaining_time=301), 79, 0, "soc",
-                     (6, "pv_charging", ChargeTemplate.SCHEDULED_CHARGING_USE_PV, 1), id="too early, use pv"),
+                     (6, "pv_charging", ChargeTemplate.SCHEDULED_CHARGING_USE_PV, 3), id="too early, use pv"),
     ])
 def test_scheduled_charging_calc_current(plan_data: SelectedPlan,
                                          soc: int,
@@ -226,7 +226,7 @@ def test_scheduled_charging_calc_current(plan_data: SelectedPlan,
     ct.data.chargemode.scheduled_charging.plans = {0: plan}
 
     # execution
-    ret = ct.scheduled_charging_calc_current(plan_data, soc, used_amount, 3, 6)
+    ret = ct.scheduled_charging_calc_current(plan_data, soc, used_amount, 3, 3, 6)
 
     # evaluation
     assert ret == expected

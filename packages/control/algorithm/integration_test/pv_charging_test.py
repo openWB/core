@@ -147,6 +147,7 @@ def test_pv_delay_expired(all_cp_pv_charging_3p, all_cp_not_charging, monkeypatc
         "cp3"].data.set.charging_ev_data.data.control_parameter.timestamp_switch_on_off = "05/16/2022, 08:39:45"
     data.data.cp_data[
         "cp3"].data.set.charging_ev_data.data.control_parameter.state = ChargepointState.SWITCH_ON_DELAY
+    # nicht genug Überschuss für beide
     data.data.cp_data[
         "cp4"].data.set.charging_ev_data.data.control_parameter.timestamp_switch_on_off = "05/16/2022, 08:40:52"
     data.data.cp_data[
@@ -166,12 +167,12 @@ def test_pv_delay_expired(all_cp_pv_charging_3p, all_cp_not_charging, monkeypatc
     assert data.data.cp_data[
         "cp3"].data.set.charging_ev_data.data.control_parameter.timestamp_switch_on_off is None
     assert data.data.cp_data[
-        "cp4"].data.set.charging_ev_data.data.control_parameter.timestamp_switch_on_off == "05/16/2022, 08:40:52"
+        "cp4"].data.set.charging_ev_data.data.control_parameter.timestamp_switch_on_off is None
     assert data.data.cp_data[
         "cp5"].data.set.charging_ev_data.data.control_parameter.timestamp_switch_on_off is None
     assert data.data.counter_data["counter0"].data.set.raw_power_left == 24300
     assert data.data.counter_data["counter0"].data.set.surplus_power_left == 2415
-    assert data.data.counter_data["counter0"].data.set.reserved_surplus == 4500
+    assert data.data.counter_data["counter0"].data.set.reserved_surplus == 0
 
 
 cases_limit = [
@@ -245,8 +246,8 @@ cases_phase_switch = [
                       expected_current_cp5=6,
                       expected_raw_power_left=17400,
                       expected_surplus_power_left=0,
-                      expected_reserved_surplus=460,
-                      expected_released_surplus=4140),
+                      expected_reserved_surplus=0,
+                      expected_released_surplus=0),
     ParamsPhaseSwitch(name="phase switch 1p->3p",
                       raw_power_left=42580,
                       raw_currents_left_counter0=[40]*3,
@@ -259,7 +260,7 @@ cases_phase_switch = [
                       expected_current_cp5=6,
                       expected_raw_power_left=37520.0,
                       expected_surplus_power_left=10575.0,
-                      expected_reserved_surplus=0,
+                      expected_reserved_surplus=460,
                       expected_released_surplus=0)
 ]
 
