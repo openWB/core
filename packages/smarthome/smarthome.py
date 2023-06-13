@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+import threading
 from smarthome.smartcommon import mainloop, initparam
 import logging
 from threading import Thread
@@ -29,8 +30,8 @@ def smarthome_handler() -> None:
         try:
             try:
                 if len(SubData.bat_data) > 1:
-                    speicherleistung = SubData.bat_data["all"].data.get.power
-                    speichersoc = SubData.bat_data["all"].data.get.soc
+                    speicherleistung = int(SubData.bat_all_data.data.get.power)
+                    speichersoc = int(SubData.bat_all_data.data.get.soc)
                 else:
                     speicherleistung = 0
                     speichersoc = 100
@@ -40,10 +41,14 @@ def smarthome_handler() -> None:
                 speicherleistung = 0
                 speichersoc = 100
             watt = SubData.counter_data[f"counter{SubData.counter_all_data.get_id_evu_counter()}"].data.get.power * -1
-            mainloop(watt, speicherleistung, speichersoc)
-            #  time.sleep(5)
+            wattint = int(watt)
+            mainloop(wattint, speicherleistung, speichersoc)
         except Exception:
             log.exception("Fehler im Smarthome-Handler")
     # run as thread for logging reasons
     initparam(mqttcg, mqttcs, mqttsdevstat, mqttsglobstat, mqtttopicdisengageable, ramdiskwrite, mqttport)
+    for thread in threading.enumerate():
+        if thread.name == "smarthome":
+            log.debug("Don't start multiple instances of smarthome thread.")
+            return
     Thread(target=handler, args=(), name="smarthome").start()

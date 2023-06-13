@@ -7,10 +7,11 @@ import time
 import threading
 import traceback
 from threading import Thread
+from helpermodules.pub import Pub
 
 from modules import loadvars
 from modules import configuration
-from helpermodules import update_config
+from helpermodules import timecheck, update_config
 from helpermodules import subdata
 from helpermodules import setdata
 from helpermodules import measurement_log
@@ -62,6 +63,7 @@ class HandlerAlgorithm:
                 else:
                     self.interval_counter = self.interval_counter + 1
             log.info("# ***Start*** ")
+            Pub().pub("openWB/set/system/time", timecheck.create_timestamp_unix())
             handler_with_control_interval()
         except KeyboardInterrupt:
             log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())
@@ -130,7 +132,7 @@ class HandlerAlgorithm:
 def schedule_jobs():
     [schedule.every().minute.at(f":{i:02d}").do(handler.handler10Sec).tag("algorithm") for i in range(0, 60, 10)]
     [schedule.every().minute.at(f":{i:02d}").do(soc.update).tag("algorithm") for i in range(0, 60, 10)]
-    [schedule.every().minute.at(f":{i:02d}").do(smarthome_handler).tag("smarthome") for i in range(0, 60, 5)]
+    [schedule.every().minute.at(f":{i:02d}").do(smarthome_handler).tag("algorithm") for i in range(0, 60, 5)]
     [schedule.every().hour.at(f":{i:02d}").do(handler.handler5Min) for i in range(0, 60, 5)]
     [schedule.every().hour.at(f":{i:02d}").do(handler.handler5MinAlgorithm).tag("algorithm") for i in range(1, 60, 5)]
     schedule.every().day.at("00:00:00").do(handler.handler_midnight).tag("algorithm")

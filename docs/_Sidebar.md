@@ -11,3 +11,5 @@
   * [Wiki-Eintrag erstellen](https://github.com/openWB/core/wiki/Wiki-Eintrag_erstellen)
   * [Entwicklungsumgebung](https://github.com/openWB/core/wiki/Entwicklungsumgebung)
   * [Neues Gerät programmieren](https://github.com/openWB/core/wiki/Neues-Gerät-programmieren)
+* Konfiguration
+  * [Hierarchie mit Solar-Log Zähler](https://github.com/openWB/core/wiki/Solar-Log)

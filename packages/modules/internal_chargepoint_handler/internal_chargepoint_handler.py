@@ -249,13 +249,9 @@ class GeneralInternalChargepointHandler:
                 # wait a moment to subscribe all data
                 time.sleep(2)
                 data = copy.deepcopy(SubData.internal_chargepoint_data)
-                cp_data = {}
-                for cp in SubData.cp_data:
-                    cp_data[cp] = copy.deepcopy(SubData.cp_data[cp].chargepoint)
-
-                for cp in cp_data.values():
-                    if cp.chargepoint_module.config.type == "internal_openwb":
-                        mode = cp.chargepoint_module.config.configuration.mode
+                for cp in SubData.cp_data.values():
+                    if cp.chargepoint.chargepoint_module.config.type == "internal_openwb":
+                        mode = cp.chargepoint.chargepoint_module.config.configuration.mode
 
                 try:
                     self.internal_chargepoint_handler = InternalChargepointHandler(

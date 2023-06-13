@@ -37,6 +37,18 @@ def on_connect(client: mqtt.Client, userdata, flags: dict, rc: int):
 
 def on_message(client: mqtt.Client, userdata, msg: mqtt.MQTTMessage):
     """handle incoming messages"""
+    def is_tunnel_closed(tunnel: Popen) -> bool:
+        start = False
+        if tunnel is not None:
+            if tunnel.poll() is None:
+                start = True
+                log.info("tunnel was closed by server")
+            else:
+                log.error("received start tunnel message but tunnel is already running")
+        else:
+            start = True
+        return start
+
     global support_tunnel
     global partner_tunnel
     payload = msg.payload.decode("utf-8")
@@ -52,9 +64,7 @@ def on_message(client: mqtt.Client, userdata, msg: mqtt.MQTTMessage):
                     support_tunnel.wait(timeout=3)
                     support_tunnel = None
             elif re.match(r'^([^;]+)(?:;([1-9][0-9]+)(?:;([a-zA-Z0-9]+))?)?$', payload):
-                if support_tunnel is not None:
-                    log.error("received start tunnel message but tunnel is already running")
-                else:
+                if is_tunnel_closed(support_tunnel):
                     splitted = payload.split(";")
                     token = splitted[0]
                     port = splitted[1] if len(splitted) > 1 else "2223"
@@ -76,9 +86,7 @@ def on_message(client: mqtt.Client, userdata, msg: mqtt.MQTTMessage):
                     partner_tunnel.wait(timeout=3)
                     partner_tunnel = None
             elif re.match(r'^([^;]+)(?:;([1-9][0-9]+)(?:;([a-zA-Z0-9]+))?)?$', payload):
-                if partner_tunnel is not None:
-                    log.error("received start tunnel message but tunnel is already running")
-                else:
+                if is_tunnel_closed(partner_tunnel):
                     splitted = payload.split(";")
                     if len(splitted) != 3:
                         log.error("invalid number of settings received!")
