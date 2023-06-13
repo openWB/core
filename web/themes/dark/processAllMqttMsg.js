@@ -1318,7 +1318,7 @@ function processSmartHomeDeviceMessages(mqttTopic, mqttPayload) {
 		element.text(mqttPayload);
 		// window['d'+index+'name']=mqttPayload; // store name for chart
 	}
-	else if (mqttTopic.match(/^openWB\/LegacySmartHome\/config\/get\/Devices\/[1-9][0-9]*\/mode$/i)) {
+	else if (mqttTopic.match(/^openWB\/LegacySmartHome\/config\/set\/Devices\/[1-9][0-9]*\/mode$/i)) {
 		// device mode
 		var modeElement = deviceElement.find('.actualModeDevice');  // now get parents respective child element
 		var actualMode = "";

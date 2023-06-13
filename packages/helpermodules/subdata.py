@@ -39,7 +39,7 @@ class SubData:
     """
 
     # Instanzen
-    cp_data: Dict[str, chargepoint.Chargepoint] = {}
+    cp_data: Dict[str, chargepoint.ChargepointStateUpdate] = {}
     cp_all_data = chargepoint.AllChargepoints()
     cp_template_data: Dict[str, chargepoint.CpTemplate] = {}
     pv_data: Dict[str, pv.Pv] = {}
@@ -701,7 +701,8 @@ class SubData:
             else:
                 if "module_update_completed" in msg.topic:
                     self.event_module_update_completed.set()
-                elif "openWB/system/available_branches" == msg.topic:
+                elif ("openWB/system/available_branches" == msg.topic or
+                      "openWB/system/time" == msg.topic):
                     # Logged in update.log, not used in data.data and removed due to readability purposes of main.log.
                     return
                 elif "openWB/system/subdata_initialized" == msg.topic:

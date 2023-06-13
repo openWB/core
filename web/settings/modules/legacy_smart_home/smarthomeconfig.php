@@ -92,6 +92,7 @@ $numDevices = 9;
 											<option value="mystrom" data-option="mystrom">MyStrom</option>
 											<option value="viessmann" data-option="viessmann">Viessmann</option>
 											<option value="mqtt" data-option="mqtt">Mqtt</option>
+											<option value="askoheat" data-option="askoheat">Askoheat</option>
 										</select>
 										<span class="form-text small device<?php echo $devicenum; ?>-option device<?php echo $devicenum; ?>-option-none hide">
 											Dieser Gerätetyp wird nicht in die Regelung eingebunden und es können keine Schalthandlungen ausgeführt oder Sensoren eingelesen werden. Es ist jedoch eine separate Leistungsmessung möglich, um reine Verbraucher zu erfassen.
@@ -102,7 +103,7 @@ $numDevices = 9;
 											Wenn die Einschaltbedingung erreicht ist wird alle 30 Sekunden der gerechnete Überschuss übertragen.
 											Mit dem Parameter Updategerät kann eine abweichende Sekundenzahl angegeben werden.<br>
 											Wenn die Ausschaltbedingung erreicht ist wird einmalig 0 als Überschuss übertragen.
-											Die Ausschaltschwelle/ Ausschaltverzögerung in OpenWB ist sinnvoll zu wählen (z.B. 500 / 3) um die Regelung von Acthor nicht zu stören.
+											Die Ausschaltschwelle/ Ausschaltverzögerung in openWB ist sinnvoll zu wählen (z.B. 500 / 3) um die Regelung von Acthor nicht zu stören.
 											Wenn Acthor als Gerät 1 oder 2 definiert ist, wird die Warmwassertemperatur als Temp1 angezeigt (Modbusadresse 1001). Ebenso wird Temp2 (Modbusadresse 1030) und Temp3 (Modbusadresse 1031) angezeigt (falls angeschlossen).
 										</span>
 										<span class="form-text small device<?php echo $devicenum; ?>-option device<?php echo $devicenum; ?>-option-lambda hide">
@@ -111,7 +112,7 @@ $numDevices = 9;
 											Wenn die Einschaltbedingung erreicht ist wird alle 30 Sekunden der gerechnete Überschuss übertragen.
 											Mit dem Parameter Updategerät kann eine abweichende Sekundenzahl angegeben werden.<br>
 											Wenn die Ausschaltbedingung erreicht ist wird einmalig 0 als Überschuss übertragen.<br>
-											Die Ausschaltschwelle/ Ausschaltverzögerung in OpenWB ist sinnvoll zu wählen (z.B. 500 / 3) um die Regelung von Lambda nicht zu stören.
+											Die Ausschaltschwelle/ Ausschaltverzögerung in openWB ist sinnvoll zu wählen (z.B. 500 / 3) um die Regelung von Lambda nicht zu stören.
 										</span>
 										<span class="form-text small device<?php echo $devicenum; ?>-option device<?php echo $devicenum; ?>-option-mqtt hide">
 											Generisches MQTT modul<br>
@@ -149,16 +150,25 @@ $numDevices = 9;
 											Wenn die Einschaltbedingung erreicht ist wird alle 30 Sekunden der gerechnete Überschuss übertragen.
 											Mit dem Parameter Updategerät kann eine abweichende Sekundenzahl angegeben werden.
 											Wenn die Ausschaltbedingung erreicht ist wird einmalig 0 als Überschuss übertragen.
-											Die Ausschaltschwelle/ Ausschaltverzögerung in OpenWB ist sinnvoll zu wählen (z.B. 500 / 3) um die Regelung von Elwa nicht zu stören.
-											Die Warmwassersicherstellung in Elwa kann genutzt werden. OpenWB erkennt dieses am Status und überträgt dann keinen Überschuss.
+											Die Ausschaltschwelle/ Ausschaltverzögerung in openWB ist sinnvoll zu wählen (z.B. 500 / 3) um die Regelung von Elwa nicht zu stören.
+											Die Warmwassersicherstellung in Elwa kann genutzt werden. openWB erkennt dieses am Status und überträgt dann keinen Überschuss.
 											Wenn Elwa als Gerät 1 oder 2 definiert ist, wird die Warmwassertemperatur als Temp1 angezeigt (Modbusadresse 1001).
 										</span>
+										<span class="form-text small device<?php echo $devicenum; ?>-option device<?php echo $devicenum; ?>-option-askoheat hide">
+											Heizstab Askoheat+ der Firma ASKOMA AG<br>
+											Im web Frontend vom Heizstab muss unter Expertsetup / Setup 3 eine Statische IP Adresse und der Modbus TCP Port 502 (nicht 520) erfasst werden.
+											Wenn die Einschaltbedingung erreicht ist wird alle 30 Sekunden der gerechnete Überschuss übertragen.
+											Mit dem Parameter Updategerät kann eine abweichende Sekundenzahl angegeben werden.
+											Wenn die Ausschaltbedingung erreicht ist wird einmalig 0 als Überschuss übertragen.
+											Die Ausschaltschwelle/ Ausschaltverzögerung in OpenWB ist sinnvoll zu wählen (z.B. 500 / 3) um die Regelung von Askoheat+ nicht zu stören.
+											Wenn Askoheat+ als Gerät 1 oder 2 definiert ist, wird die Temperatur von internen Sensort als Temp1 angezeigt (Modbusadresse 638).
+										</span>										
 										<span class="form-text small device<?php echo $devicenum; ?>-option device<?php echo $devicenum; ?>-option-idm hide">
 											Wärmepumpe der Firma IDM mit Navigatorregelung 1.7/2.0<br>
 											Im Web Frontend muss unter "Heizungsbauerebene / Konfiguration / PV-Signal": Auswahl "Gebäudeleittechnik / Smartfox" und unter "Heizungsbauerebene / Gebäudeleittechnik" der Parameter "Modbus TCP = Ein" und unter "Einstellungen / Photovoltaik" der Parameter "PV Überschuss = 0" gesetzt werden
 											Wenn die Einschaltbedingung erreicht ist wird alle 30 Sekunden der gerechnete Überschuss übertragen
 											Wenn die Ausschaltbedingung erreicht ist wird einmalig 0 als Überschuss übertragen.
-											Die Ausschaltschwelle/ Ausschaltverzögerung in OpenWB ist sinnvoll zu wählen (z.B. 500 / 3) um die Regelung von IDM nicht zu stören.
+											Die Ausschaltschwelle/ Ausschaltverzögerung in openWB ist sinnvoll zu wählen (z.B. 500 / 3) um die Regelung von IDM nicht zu stören.
 										</span>
 										<span class="form-text small device<?php echo $devicenum; ?>-option device<?php echo $devicenum; ?>-option-stiebel hide">
 											Wärmepumpe der Firma Stiebel mit ISG (Servicewelt über Modbus) und SG Ready Eingang.<br>
@@ -330,9 +340,9 @@ $numDevices = 9;
 												Die hier angegebene URL wird aufgerufen, um die aktuelle Leistung des Geräts zu erhalten.<br>
 												<span class="text-info">Wenn in der URL ein Prozentzeichen "%" enthalten ist, muss dieses durch ein weiteres "%" ergänzt werden ("%" -> "%%"), da ansonsten die Daten nicht gespeichert werden können.</span><br>
 												Falls keine URL vorhanden ist, kann eine der folgenden angegeben werden:<br>
-												127.0.0.1/openWB/modules/smarthome/http/dummyurl.php. Diese URL gibt immer den Wert 0 zurück.(Device immer aus)<br>
-												127.0.0.1/openWB/modules/smarthome/http/dummyurl1.php?d=nummerdevice. Diese URL gibt den Wert 0 oder 100 zurück. Je nachdem ob das Smarthomedevice gerade läuft<br>
-												127.0.0.1/openWB/modules/smarthome/http/dummyurl2.php. Diese URL gibt immer den Wert 100 zurück. (Device immer an)<br>
+												127.0.0.1/openWB/packages/modules/smarthome/http/dummyurl.php. Diese URL gibt immer den Wert 0 zurück.(Device immer aus)<br>
+												127.0.0.1/openWB/packages/modules/smarthome/http/dummyurl1.php?d=nummerdevice. Diese URL gibt den Wert 0 oder 100 zurück. Je nachdem ob das Smarthomedevice gerade läuft<br>
+												127.0.0.1/openWB/packages/modules/smarthome/http/dummyurl2.php. Diese URL gibt immer den Wert 100 zurück. (Device immer an)<br>
 												In der URL kann ein Parameter angegeben werden, der den aktuellen Überschuss an das Gerät übermittelt. Hierzu ist folgender Platzhalter in der URL zu verwenden (inklusive der spitzen Klammern):<br>
 												<span class="text-info">&lt;openwb-ueberschuss&gt;</span>
 											</span>
@@ -465,6 +475,13 @@ $numDevices = 9;
 											<div class="col">
 												<input id="device_mineinschaltdauerDevices<?php echo $devicenum; ?>" name="device_mineinschaltdauer" class="form-control naturalNumber" type="number" inputmode="decimal" required min="0" max="10000" data-default="0" value="0" data-topicprefix="openWB/LegacySmartHome/config/get/" data-topicsubgroup="Devices/<?php echo $devicenum; ?>/">
 												<span class="form-text small">Parameter in Minuten, wie lange das Gerät nach Einschalten mindestens aktiviert bleibt.</span>
+											</div>
+										</div>
+										<div class="form-row mb-1">
+											<label for="device_mindayeinschaltdauerDevices<?php echo $devicenum; ?>" class="col-md-4 col-form-label">Mindesteinschaltdauer pro Tag</label>
+											<div class="col">
+												<input id="device_mindayeinschaltdauerDevices<?php echo $devicenum; ?>" name="device_mindayeinschaltdauer" class="form-control naturalNumber" type="number" inputmode="decimal" required min="0" max="10000" data-default="0" value="0" data-topicprefix="openWB/LegacySmartHome/config/get/" data-topicsubgroup="Devices/<?php echo $devicenum; ?>/">
+												<span class="form-text small">Parameter in Minuten, wie lange das Gerät pro Tag mindestens aktiviert bleibt. Siehe auch "Spätestens fertig um"</span>
 											</div>
 										</div>
 										<div class="form-row mb-1">
