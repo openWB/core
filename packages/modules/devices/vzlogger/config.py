@@ -24,7 +24,7 @@ class VZLogger:
 
 @auto_str
 class VZLoggerCounterConfiguration:
-    def __init__(self, line_power: int = 0, line_exported: int = 1, line_imported: int = 2):
+    def __init__(self, line_power: int = 0, line_exported: Optional[int] = None, line_imported: Optional[int] = None):
         self.line_power = line_power
         self.line_exported = line_exported
         self.line_imported = line_imported
@@ -42,7 +42,7 @@ class VZLoggerCounterSetup(ComponentSetup[VZLoggerCounterConfiguration]):
 
 @auto_str
 class VZLoggerInverterConfiguration:
-    def __init__(self, line_power: int = 0, line_exported: int = 1):
+    def __init__(self, line_power: int = 0, line_exported: Optional[int] = None):
         self.line_power = line_power
         self.line_exported = line_exported
 
