@@ -41,7 +41,7 @@ class HandlerAlgorithm:
         """ führt den Algorithmus durch.
         """
         try:
-            @exit_after(data.data.general_data.data.control_interval)
+            # @exit_after(data.data.general_data.data.control_interval)
             def handler_with_control_interval():
                 if (data.data.general_data.data.control_interval / 10) == self.interval_counter:
                     data.data.copy_data()
@@ -167,6 +167,8 @@ try:
     event_scheduled_charging_plan.set()
     event_time_charging_plan = threading.Event()
     event_time_charging_plan.set()
+    event_soc = threading.Event()
+    event_soc.set()
     event_copy_data = threading.Event()  # set: Kopieren abgeschlossen, reset: es wird kopiert
     event_copy_data.set()
     event_global_data_initialized = threading.Event()
@@ -178,7 +180,7 @@ try:
     prep = prepare.Prepare()
     soc = update_soc.UpdateSoc()
     set = setdata.SetData(event_ev_template, event_charge_template,
-                          event_cp_config, event_scheduled_charging_plan, event_time_charging_plan,
+                          event_cp_config, event_scheduled_charging_plan, event_time_charging_plan, event_soc,
                           event_subdata_initialized)
     sub = subdata.SubData(event_ev_template, event_charge_template,
                           event_cp_config, loadvars_.event_module_update_completed,
@@ -187,6 +189,7 @@ try:
                           event_scheduled_charging_plan, event_time_charging_plan,
                           general_internal_chargepoint_handler.event_start,
                           general_internal_chargepoint_handler.event_stop,
+                          event_soc,
                           event_jobs_running)
     comm = command.Command(event_command_completed)
     t_sub = Thread(target=sub.sub_topics, args=())

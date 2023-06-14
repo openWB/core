@@ -75,6 +75,7 @@ class SubData:
                  event_time_charging_plan: threading.Event,
                  event_start_internal_chargepoint: threading.Event,
                  event_stop_internal_chargepoint: threading.Event,
+                 event_soc: threading.Event,
                  event_jobs_running: threading.Event):
         self.event_ev_template = event_ev_template
         self.event_charge_template = event_charge_template
@@ -89,6 +90,7 @@ class SubData:
         self.event_time_charging_plan = event_time_charging_plan
         self.event_start_internal_chargepoint = event_start_internal_chargepoint
         self.event_stop_internal_chargepoint = event_stop_internal_chargepoint
+        self.event_soc = event_soc
         self.event_jobs_running = event_jobs_running
         self.heartbeat = False
 
@@ -257,7 +259,9 @@ class SubData:
                             var["ev"+index].soc_module = None
                         else:
                             mod = importlib.import_module(".vehicles."+config["type"]+".soc", "modules")
+                            config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config)
                             var["ev"+index].soc_module = mod.Soc(config, index)
+                        self.event_soc.set()
                     elif re.search("/vehicle/[0-9]+/control_parameter/", msg.topic) is not None:
                         self.set_json_payload_class(
                             var["ev"+index].data.control_parameter, msg)

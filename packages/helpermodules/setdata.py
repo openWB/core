@@ -29,12 +29,14 @@ class SetData:
                  event_cp_config: threading.Event,
                  event_scheduled_charging_plan: threading.Event,
                  event_time_charging_plan: threading.Event,
+                 event_soc: threading.Event,
                  event_subdata_initialized: threading.Event):
         self.event_ev_template = event_ev_template
         self.event_charge_template = event_charge_template
         self.event_cp_config = event_cp_config
         self.event_scheduled_charging_plan = event_scheduled_charging_plan
         self.event_time_charging_plan = event_time_charging_plan
+        self.event_soc = event_soc
         self.event_subdata_initialized = event_subdata_initialized
         self.heartbeat = False
 
@@ -193,12 +195,20 @@ class SetData:
                                 subdata.SubData.cp_data["cp"+str(index)].chargepoint.data.config)
                         else:
                             template = {}
+                    elif "soc_module/configuration/soc_start" in msg.topic:
+                        event = self.event_soc
+                        if "ev"+str(index) in subdata.SubData.ev_data:
+                            template = dataclass_utils.asdict(
+                                subdata.SubData.ev_data["ev"+str(index)].soc_module.soc_config)
+                        else:
+                            template = {}
                     else:
                         raise ValueError("Zu "+msg.topic+" konnte kein passendes json-Objekt gefunden werden.")
                     # Wert, der aktualisiert werden soll, erstellen/finden und updaten
-                    if event == self.event_cp_config:
+                    if event == self.event_cp_config or event == self.event_soc:
                         key_list = msg.topic.split("/")[5:]
-                    elif event == self.event_scheduled_charging_plan or event == self.event_time_charging_plan:
+                    elif (event == self.event_scheduled_charging_plan or
+                          event == self.event_time_charging_plan):
                         key_list = msg.topic.split("/")[-1:]
                     else:
                         key_list = msg.topic.split("/")[6:]
@@ -209,6 +219,8 @@ class SetData:
                         topic = msg.topic[:index_pos]+"/config"
                     elif event == self.event_scheduled_charging_plan or event == self.event_time_charging_plan:
                         topic = msg.topic[:get_second_index_position(msg.topic)]
+                    elif event == self.event_soc:
+                        topic = msg.topic[:index_pos]+"/soc_module/config"
                     else:
                         topic = msg.topic[:index_pos]
                     topic = topic.replace('set/', '', 1)
@@ -382,6 +394,8 @@ class SetData:
                 self._validate_value(msg, bool)
             elif "/set/soc_error_counter" in msg.topic:
                 self._validate_value(msg, int, [(0, float("inf"))])
+            elif "/soc_module/configuration/soc_start" in msg.topic:
+                self._validate_value(msg, float, [(0, 100)], pub_json=True)
             elif "/soc_module/config" in msg.topic:
                 self._validate_value(msg, "json")
             elif "/get/fault_state" in msg.topic:
