@@ -117,10 +117,10 @@ class EvTemplateData:
     prevent_charge_stop: bool = False
     control_pilot_interruption: bool = False
     control_pilot_interruption_duration: int = 4
-    average_consump: float = 17
+    average_consump: float = 17000
     min_current: int = 6
     max_current_single_phase: int = 32
-    battery_capacity: float = 82
+    battery_capacity: float = 82000
     nominal_difference: float = 0.5
     keep_charge_active_duration: int = 40
 

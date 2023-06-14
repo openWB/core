@@ -22,7 +22,7 @@ log = logging.getLogger(__name__)
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 10
+    DATASTORE_VERSION = 11
     valid_topic = ["^openWB/bat/config/configured$",
                    "^openWB/bat/set/charging_power_left$",
                    "^openWB/bat/set/switch_on_soc_reached$",
@@ -705,3 +705,13 @@ class UpdateConfig:
                     log.debug("cloud bridge configuration upgraded")
                     Pub().pub(topic, payload)
         Pub().pub("openWB/system/datastore_version", 10)
+
+    def upgrade_datastore_10(self) -> None:
+        for topic, payload in self.all_received_topics.items():
+            if re.search("openWB/vehicle/template/ev_template/[0-9]+$", topic) is not None:
+                payload = decode_payload(payload)
+                updated_payload = payload
+                updated_payload["battery_capacity"] = payload["battery_capacity"] * 1000
+                updated_payload["average_consump"] = payload["average_consump"] * 1000
+                Pub().pub(topic, payload)
+        Pub().pub("openWB/system/datastore_version", 11)
