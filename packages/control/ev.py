@@ -756,7 +756,7 @@ class ChargeTemplate:
                            used_amount: float,
                            phases: int) -> float:
         if plan.limit.selected == "soc":
-            missing_amount = ((plan.limit.soc_scheduled - soc) / 100) * battery_capacity * 1000
+            missing_amount = ((plan.limit.soc_scheduled - soc) / 100) * battery_capacity
         else:
             missing_amount = plan.limit.amount - used_amount
         duration = missing_amount/(plan.current * phases*230)
