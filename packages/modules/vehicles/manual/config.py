@@ -1,5 +1,5 @@
 class ManualSocConfiguration:
-    def __init__(self, efficiency: int = 90, soc_start: float = 0) -> None:
+    def __init__(self, efficiency: float = 0.9, soc_start: float = 0) -> None:
         self.efficiency = efficiency
         self.soc_start = soc_start  # don't show in UI
 
