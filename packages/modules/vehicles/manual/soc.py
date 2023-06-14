@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import json
 import logging
 
 from modules.common import store

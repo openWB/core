@@ -4,8 +4,8 @@ from unittest.mock import Mock
 import pytest
 
 from control import data
-from control.chargepoint import Chargepoint, Get, Set
-from control.ev import Ev
+from control.chargepoint import Chargepoint, Get, Log, Set
+from control.ev import Ev, EvTemplate, EvTemplateData
 from modules.common.abstract_soc import SocUpdateData
 from modules.vehicles.tesla.soc import Soc
 from modules.update_soc import UpdateSoc
@@ -14,12 +14,16 @@ from modules.update_soc import UpdateSoc
 @pytest.fixture(autouse=True)
 def mock_data() -> None:
     data.data_init(Mock())
-    data.data.cp_data["cp0"] = Mock(spec=Chargepoint,
-                                    id=id,
-                                    chargepoint_module=Mock(),
-                                    data=Mock(
-                                        get=Mock(spec=Get),
-                                        set=Mock(spec=Set)))
+    data.data.cp_data["cp0"] = Mock(
+        spec=Chargepoint,
+        id=id,
+        chargepoint_module=Mock(),
+        data=Mock(
+            get=Mock(spec=Get),
+            set=Mock(spec=Set,
+                     log=Mock(spec=Log),
+                     charging_ev_data=Mock(spec=Ev,
+                                           ev_template=Mock(spec=EvTemplate, data=Mock(spec=EvTemplateData))))))
 
 
 @pytest.mark.parametrize(
