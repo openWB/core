@@ -10,11 +10,11 @@ def calc_soc(soc_update_data: SocUpdateData, efficiency: int, soc_start: float, 
     battery_soc_gain = (energy_battery_gain / battery_capacity) * 100
     soc = soc_start + battery_soc_gain
     log.debug(
-        "SoC-Gain: ((%g kWh Charged * %g%% efficiency) / %g kWh battery-size) * 100= %.1f%%",
-        soc_update_data.imported_since_plugged/1000, battery_capacity/1000, efficiency, battery_soc_gain
+        f"SoC-Gain: (({soc_update_data.imported_since_plugged/1000}kWh charged * {efficiency}% efficiency) / "
+        f"{battery_capacity/1000}kWh battery-size) * 100 = {battery_soc_gain}%",
     )
-    log.debug("%g%% + %g kWh = %g%%", soc_start, energy_battery_gain / 1000, soc)
+    log.debug(f"{soc_start}% + {energy_battery_gain / 1000}kWh = {soc}%")
     if soc > 100:
-        log.warning("Calculated SoC of %g%% exceeds maximum and is limited to 100%%! Check your settings!", soc)
+        log.warning(f"Calculated SoC of {soc}% exceeds maximum and is limited to 100%! Check your settings!")
         soc = 100
     return soc
