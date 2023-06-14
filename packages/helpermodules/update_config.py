@@ -318,6 +318,7 @@ class UpdateConfig:
                    "^openWB/LegacySmartHome/Devices/[1-2]+/TemperatureSensor[0-2]$",
 
                    "^openWB/system/boot_done$",
+                   "^openWB/system/cloud_backup$",
                    "^openWB/system/dataprotection_acknowledged$",
                    "^openWB/system/debug_level$",
                    "^openWB/system/lastlivevaluesJson$",
@@ -407,6 +408,7 @@ class UpdateConfig:
         ("openWB/optional/int_display/theme", dataclass_utils.asdict(CardsDisplayTheme())),
         ("openWB/optional/led/active", False),
         ("openWB/optional/rfid/active", False),
+        ("openWB/system/cloud_backup", {"ip_address": None, "password": None, "user": None}),
         ("openWB/system/dataprotection_acknowledged", False),
         ("openWB/system/debug_level", 30),
         ("openWB/system/device/module_update_completed", True),

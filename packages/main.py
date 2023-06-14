@@ -123,6 +123,7 @@ class HandlerAlgorithm:
     def handler_midnight(self):
         try:
             measurement_log.save_log("monthly")
+            data.data.system_data["system"].create_backup_and_send_to_cloud()
         except KeyboardInterrupt:
             log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())
         except Exception:
