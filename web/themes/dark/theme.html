@@ -872,8 +872,7 @@
 				}
 
 				function submitSocForm() {
-					var parentChargePoint = $(this).closest('[data-cp]');
-					var ev = parseInt(parentChargePoint.find('.charge-point-vehicle-data[data-ev]').data('ev'));
+					var ev = $('#socModal').find('.ev-soc').text();
 					var manualSoc = $("#manualSocBox").val();
 					// console.log("SoC for CP"+currentCp+": "+manualSoc);
 					publish(manualSoc, "openWB/set/vehicle/" + ev + "/soc_module/configuration/soc_start");
@@ -1141,7 +1140,7 @@
 						if (isNaN(currentSoc)) {
 							currentSoc = 0;
 						}
-						$('#socModal').find('.charge-point-soc').text(cp);
+						$('#socModal').find('.ev-soc').text(ev);
 						$("#manualSocBox").val(currentSoc);
 						$('#socModal').modal("show");
 					} else {
