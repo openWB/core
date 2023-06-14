@@ -89,7 +89,7 @@ def save_data(chargepoint, charging_ev, immediately: bool = True, reset: bool = 
         # Daten vor dem Speichern nochmal aktualisieren, auch wenn nicht mehr geladen wird.
         log_data.imported_since_plugged = chargepoint.data.get.imported - log_data.imported_at_plugtime
         log_data.imported_since_mode_switch = chargepoint.data.get.imported - log_data.imported_at_mode_switch
-        log_data.range_charged = log_data.imported_since_mode_switch / charging_ev.ev_template.data.average_consump * 100
+        log_data.range_charged = log_data.imported_since_mode_switch / charging_ev.ev_template.data.average_consump*100
         log_data.time_charged, duration = timecheck.get_difference_to_now(log_data.timestamp_start_charging)
         power = 0
         if duration > 0:
