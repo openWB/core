@@ -872,8 +872,8 @@
 				}
 
 				function submitSocForm() {
-					var ev = $('#socModal').find('.ev-soc').text();
-					var manualSoc = $("#manualSocBox").val();
+					var ev = $('#socModal').find('.charge-point-soc').text();
+					var manualSoc = parseFloat($("#manualSocBox").val());
 					// console.log("SoC for CP"+currentCp+": "+manualSoc);
 					publish(manualSoc, "openWB/set/vehicle/" + ev + "/soc_module/configuration/soc_start");
 					// reset input after publishing
@@ -1140,7 +1140,7 @@
 						if (isNaN(currentSoc)) {
 							currentSoc = 0;
 						}
-						$('#socModal').find('.ev-soc').text(ev);
+						$('#socModal').find('.charge-point-soc').text(ev);
 						$("#manualSocBox").val(currentSoc);
 						$('#socModal').modal("show");
 					} else {
