@@ -5,11 +5,12 @@ import os
 import subprocess
 import time
 from pathlib import Path
+from typing import Optional
 
 
 from helpermodules import pub
 from control import data
-from modules.common import req
+from modules.common.configurable_backup_cloud import ConfigurableBackupCloud
 
 log = logging.getLogger(__name__)
 
@@ -18,9 +19,9 @@ class System:
     def __init__(self):
         """
         """
-        self.data = {"cloud_backup": {"ip_address": None, "password": None, "user": None},
-                     "update_in_progress": False,
+        self.data = {"update_in_progress": False,
                      "perform_update": False}
+        self.backup_cloud: Optional[ConfigurableBackupCloud] = None
 
     def perform_update(self):
         """ markiert ein aktives Update, triggert das Update auf dem Master und den externen WBs.
@@ -75,19 +76,15 @@ class System:
             pub.Pub().pub("openWB/set/system/ip_address", new_ip)
 
     def create_backup_and_send_to_cloud(self):
-        cloud_backup = self.data["cloud_backup"]
-        if cloud_backup["ip_address"] is not None:
-            backup_filename = self.create_backup()
-            with open(self._get_parent_file()/'data'/'backup'/backup_filename, 'rb') as f:
-                data = f.read()
-            req.get_http_session().put(
-                f'{cloud_backup["ip_address"]}/public.php/webdav/{backup_filename}',
-                headers={'X-Requested-With': 'XMLHttpRequest', },
-                data=data,
-                auth=(cloud_backup["user"], '' if cloud_backup["password"] is None else cloud_backup["password"]),
-            )
-            log.debug(f'Sicherung erstellt und unter {cloud_backup["ip_address"]}/public.php/webdav/'
-                      f'{backup_filename} hochgeladen.')
+        try:
+            if self.backup_cloud is not None:
+                backup_filename = self.create_backup()
+                with open(self._get_parent_file()/'data'/'backup'/backup_filename, 'rb') as f:
+                    data = f.read()
+                self.backup_cloud.update(backup_filename, data)
+                log.debug('Nächtliche Sicherung erstellt und hochgeladen.')
+        except Exception as e:
+            raise e
 
     def create_backup(self) -> str:
         result = subprocess.run([str(self._get_parent_file() / "runs" / "backup.sh"), "1"], stdout=subprocess.PIPE)
