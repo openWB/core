@@ -7,8 +7,8 @@ from typing import List, Tuple
 
 from control import data
 from control.ev import Ev
-from control.chargepoint import Chargepoint
-from control.chargepoint_state import ChargepointState
+from control.chargepoint.chargepoint import Chargepoint
+from control.chargepoint.chargepoint_state import ChargepointState
 from dataclass_utils.factories import currents_list_factory, voltages_list_factory
 from helpermodules import timecheck
 from helpermodules.phase_mapping import convert_cp_currents_to_evu_currents

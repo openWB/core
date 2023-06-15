@@ -3,9 +3,8 @@ from unittest.mock import Mock
 from typing import Optional
 import pytest
 
-
-from control import chargepoint
-from control.chargepoint import Chargepoint, CpTemplate
+from control.chargepoint.chargepoint import Chargepoint
+from control.chargepoint.chargepoint_template import CpTemplate, get_chargepoint_template_default
 from control.ev import Ev
 from control.general import General
 from control import data
@@ -15,7 +14,7 @@ from control import data
 def cp() -> Chargepoint:
     chargep = Chargepoint(0, None)
     chargep.template = CpTemplate()
-    chargep.template.data = chargepoint.get_chargepoint_template_default()
+    chargep.template.data = get_chargepoint_template_default()
     chargep.data.set.charging_ev_data = Ev(0)
     return chargep
 

@@ -9,7 +9,7 @@ from control.bat_all import BatAll
 from control.general import General
 from control.ev import Ev
 from control import data
-from control.chargepoint_state import ChargepointState
+from control.chargepoint.chargepoint_state import ChargepointState
 
 
 @pytest.fixture

@@ -10,11 +10,14 @@ import subprocess
 import paho.mqtt.client as mqtt
 
 from control import bat_all, bat, pv_all
-from control import chargepoint
+from control.chargepoint import chargepoint
 from control import counter
 from control import counter_all
 from control import ev
 from control import general
+from control.chargepoint.chargepoint_all import AllChargepoints
+from control.chargepoint.chargepoint_state_update import ChargepointStateUpdate
+from control.chargepoint.chargepoint_template import CpTemplate, CpTemplateData
 from helpermodules import graph
 from helpermodules.abstract_plans import AutolockPlan
 from helpermodules.broker import InternalBrokerClient
@@ -39,9 +42,9 @@ class SubData:
     """
 
     # Instanzen
-    cp_data: Dict[str, chargepoint.ChargepointStateUpdate] = {}
-    cp_all_data = chargepoint.AllChargepoints()
-    cp_template_data: Dict[str, chargepoint.CpTemplate] = {}
+    cp_data: Dict[str, ChargepointStateUpdate] = {}
+    cp_all_data = AllChargepoints()
+    cp_template_data: Dict[str, CpTemplate] = {}
     pv_data: Dict[str, pv.Pv] = {}
     pv_all_data = pv_all.PvAll()
     ev_data: Dict[str, ev.Ev] = {}
@@ -371,7 +374,7 @@ class SubData:
                         self.set_internal_chargepoint_configured()
                 else:
                     if "cp"+index not in var:
-                        var["cp"+index] = chargepoint.ChargepointStateUpdate(
+                        var["cp"+index] = ChargepointStateUpdate(
                             int(index),
                             self.event_copy_data,
                             self.event_global_data_initialized,
@@ -439,9 +442,9 @@ class SubData:
                     var.pop("cpt"+index)
                 else:
                     if "cpt"+index not in var:
-                        var["cpt"+index] = chargepoint.CpTemplate()
+                        var["cpt"+index] = CpTemplate()
                     autolock_plans = var["cpt"+index].data.autolock.plans
-                    var["cpt"+index].data = dataclass_from_dict(chargepoint.CpTemplateData, payload)
+                    var["cpt"+index].data = dataclass_from_dict(CpTemplateData, payload)
                     var["cpt"+index].data.autolock.plans = autolock_plans
         except Exception:
             log.exception("Fehler im subdata-Modul")

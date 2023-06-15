@@ -5,9 +5,9 @@ import threading
 from typing import List
 
 from control import chargelog
-from control import chargepoint
+from control.chargepoint import chargepoint
 from control import data
-from control.chargepoint_state import ChargepointState
+from control.chargepoint.chargepoint_state import ChargepointState
 from helpermodules.pub import Pub
 
 log = logging.getLogger(__name__)
