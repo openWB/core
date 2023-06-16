@@ -30,14 +30,12 @@ class ChargepointModule(AbstractChargepoint):
         self.old_plug_state = False
         self.old_phases_in_use = 0
         self.__client = ClientFactory(self.config.id, self.config.serial_client)
-        time.sleep(0.1)
         version = self.__client.evse_client.get_firmware_version()
         if version < 17:
             self._precise_current = False
         else:
             if self.__client.evse_client.is_precise_current_active() is False:
                 self.__client.evse_client.activate_precise_current()
-            time.sleep(0.1)
             self._precise_current = self.__client.evse_client.is_precise_current_active()
 
     def set_current(self, current: float) -> None:
