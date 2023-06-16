@@ -529,6 +529,9 @@ class Chargepoint:
                     Pub().pub("openWB/set/vehicle/"+str(charging_ev.num) +
                               "/control_parameter/timestamp_perform_phase_switch",
                               charging_ev.data.control_parameter.timestamp_perform_phase_switch)
+                    timestamp_not_expired = timecheck.check_timestamp(
+                        charging_ev.data.control_parameter.timestamp_perform_phase_switch,
+                        6 + phase_switch_pause - 1)
                 if not timestamp_not_expired:
                     log.debug("phase switch running")
                     charging_ev.data.control_parameter.timestamp_perform_phase_switch = None
