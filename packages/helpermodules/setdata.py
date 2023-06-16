@@ -1015,6 +1015,8 @@ class SetData:
                 self._validate_value(msg, float, [(0, 0), (6, 32)])
             elif "data/phases_to_use" in msg.topic:
                 self._validate_value(msg, int, [(1, 3)])
+            elif "data/trigger_phase_switch" in msg.topic:
+                self._validate_value(msg, bool)
             elif "get" in msg.topic:
                 self.process_chargepoint_get_topics(msg)
             elif "last_tag" in msg.topic:
