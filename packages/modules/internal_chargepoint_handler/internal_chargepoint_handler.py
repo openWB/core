@@ -175,7 +175,10 @@ class InternalChargepointHandler:
                 time.sleep(1.1)
         with SingleComponentUpdateContext(self.cp0.module.component_info):
             # Allgemeine Fehlermeldungen an LP 1:
-            if self.cp0_client_handler.serial_client == self.cp1_client_handler.serial_client:
+            if self.cp1_client_handler is None:
+                with self.cp0_client_handler:
+                    _loop()
+            elif self.cp0_client_handler.serial_client == self.cp1_client_handler.serial_client:
                 with self.cp0_client_handler:
                     _loop()
             else:
