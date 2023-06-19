@@ -13,9 +13,8 @@ from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.fault_state import ComponentInfo
 from modules.common.store._util import get_rounding_function_by_digits
 from modules.common.component_state import ChargepointState
-from modules.common.modbus import ModbusSerialClient_
 from modules.internal_chargepoint_handler import chargepoint_module
-from modules.internal_chargepoint_handler.clients import client_factory
+from modules.internal_chargepoint_handler.clients import ClientHandler, client_factory
 from modules.internal_chargepoint_handler.socket import Socket
 from modules.internal_chargepoint_handler.internal_chargepoint_handler_config import (
     GlobalHandlerData, InternalChargepointHandlerData, RfidData)
@@ -88,12 +87,12 @@ class UpdateState:
 
         if self.phase_switch_thread:
             if self.phase_switch_thread.is_alive():
-                log.debug("Thread zur Phasenumschaltung an LP"+str(self.cp_module.config.id) +
+                log.debug("Thread zur Phasenumschaltung an LP"+str(self.cp_module.local_charge_point_num) +
                           " noch aktiv. Es muss erst gewartet werden, bis die Phasenumschaltung abgeschlossen ist.")
                 return
         if self.cp_interruption_thread:
             if self.cp_interruption_thread.is_alive():
-                log.debug("Thread zur CP-Unterbrechung an LP"+str(self.cp_module.config.id) +
+                log.debug("Thread zur CP-Unterbrechung an LP"+str(self.cp_module.local_charge_point_num) +
                           " noch aktiv. Es muss erst gewartet werden, bis die CP-Unterbrechung abgeschlossen ist.")
                 return
         self.cp_module.set_current(set_current)
@@ -109,14 +108,15 @@ class UpdateState:
         self.phase_switch_thread = threading.Thread(
             target=self.cp_module.perform_phase_switch, args=(phases_to_use, 5))
         self.phase_switch_thread.start()
-        log.debug("Thread zur Phasenumschaltung an LP"+str(self.cp_module.config.id)+" gestartet.")
+        log.debug("Thread zur Phasenumschaltung an LP"+str(self.cp_module.local_charge_point_num)+" gestartet.")
 
     def __thread_cp_interruption(self, duration: int) -> None:
         self.cp_interruption_thread = threading.Thread(
             target=self.cp_module.perform_cp_interruption, args=(duration,))
         self.cp_interruption_thread.start()
-        log.debug("Thread zur CP-Unterbrechung an LP"+str(self.cp_module.config.id)+" gestartet.")
-        Pub().pub(f"openWB/internal_chargepoint/{self.cp_module.config.id}/data/cp_interruption_duration", 0)
+        log.debug("Thread zur CP-Unterbrechung an LP"+str(self.cp_module.local_charge_point_num)+" gestartet.")
+        Pub().pub(
+            f"openWB/internal_chargepoint/{self.cp_module.local_charge_point_num}/data/cp_interruption_duration", 0)
 
 
 class InternalChargepointHandler:
@@ -176,20 +176,20 @@ class InternalChargepointHandler:
         with SingleComponentUpdateContext(self.cp0.module.component_info):
             # Allgemeine Fehlermeldungen an LP 1:
             if self.cp1_client_handler is None:
-                with self.cp0_client_handler:
+                with self.cp0_client_handler.serial_client:
                     _loop()
             elif self.cp0_client_handler.serial_client == self.cp1_client_handler.serial_client:
-                with self.cp0_client_handler:
+                with self.cp0_client_handler.serial_client:
                     _loop()
             else:
                 with self.cp0_client_handler:
-                    with self.cp1_client_handler:
+                    with self.cp1_client_handler.serial_client:
                         _loop()
 
 
 class HandlerChargepoint:
     def __init__(self,
-                 client_handler: ModbusSerialClient_,
+                 client_handler: ClientHandler,
                  local_charge_point_num: int,
                  mode: InternalChargepointMode,
                  global_data: GlobalHandlerData,
