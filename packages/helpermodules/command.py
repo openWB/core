@@ -663,6 +663,15 @@ class Command:
                              f'Backup-Status: {result.returncode}<br />Meldung: {result.stdout.decode("utf-8")}',
                              MessageType.ERROR)
 
+    def createCloudBackup(self, connection_id: str, payload: dict) -> None:
+        if SubData.system_data["system"].backup_cloud is not None:
+            pub_user_message(payload, connection_id, "Backup wird erstellt...", MessageType.INFO)
+            SubData.system_data["system"].create_backup_and_send_to_cloud()
+            pub_user_message(payload, connection_id, "Backup erfolgreich erstellt.<br />", MessageType.SUCCESS)
+        else:
+            pub_user_message(payload, connection_id,
+                             "Es ist keine Backup-Cloud konfiguriert.<br />", MessageType.WARNING)
+
     def restoreBackup(self, connection_id: str, payload: dict) -> None:
         parent_file = Path(__file__).resolve().parents[2]
         result = subprocess.run(

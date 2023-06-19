@@ -1,6 +1,7 @@
 import importlib
 import logging
 from pathlib import Path
+from typing import Dict, List
 
 import dataclass_utils
 from helpermodules.pub import Pub
@@ -10,10 +11,44 @@ log = logging.getLogger(__name__)
 def pub_configurable():
     """ published eine Liste mit allen konfigurierbaren SoC-Modulen sowie allen Devices mit den möglichen Komponenten.
     """
+    _pub_configurable_backup_clouds()
     _pub_configurable_display_themes()
     _pub_configurable_soc_modules()
     _pub_configurable_devices_components()
     _pub_configurable_chargepoints()
+
+
+def _pub_configurable_backup_clouds() -> None:
+    try:
+        backup_clouds: List[Dict] = [
+            {
+                "value": None,
+                "text": "keine Backup-Cloud",
+                "defaults": {
+                    "type": None,
+                    "configuration": {}
+                }
+            }]
+        path_list = Path(_get_packages_path()/"modules"/"backup_clouds").glob('**/backup_cloud.py')
+        for path in path_list:
+            try:
+                if path.name.endswith("_test.py"):
+                    # Tests überspringen
+                    continue
+                dev_defaults = importlib.import_module(
+                    f".backup_clouds.{path.parts[-2]}.backup_cloud",
+                    "modules").device_descriptor.configuration_factory()
+                backup_clouds.append({
+                    "value": dev_defaults.type,
+                    "text": dev_defaults.name,
+                    "defaults": dataclass_utils.asdict(dev_defaults)
+                })
+            except Exception:
+                log.exception("Fehler im configuration-Modul")
+        backup_clouds = sorted(backup_clouds, key=lambda d: d['text'].upper())
+        Pub().pub("openWB/set/system/configurable/backup_clouds", backup_clouds)
+    except Exception:
+        log.exception("Fehler im configuration-Modul")
 
 
 def _pub_configurable_display_themes() -> None:
@@ -42,7 +77,7 @@ def _pub_configurable_display_themes() -> None:
 
 def _pub_configurable_soc_modules() -> None:
     try:
-        soc_modules = [
+        soc_modules: List[Dict] = [
             {
                 "value": None,
                 "text": "kein Modul",
@@ -93,7 +128,7 @@ def _pub_configurable_devices_components() -> None:
         for path in path_list:
             try:
                 device = path.parts[-2]
-                component = []
+                component: List = []
                 add_components(device, "*bat*")
                 add_components(device, "*counter*")
                 add_components(device, "*inverter*")

@@ -120,6 +120,7 @@ class SubData:
             ("openWB/internal_chargepoint/#", 2),
             # Nicht mit hash # abonnieren, damit nicht die Komponenten vor den Devices empfangen werden!
             ("openWB/system/+", 2),
+            ("openWB/system/backup_cloud/#", 2),
             ("openWB/system/device/module_update_completed", 2),
             ("openWB/system/mqtt/bridge/+", 2),
             ("openWB/system/device/+/config", 2),
@@ -705,6 +706,14 @@ class SubData:
                 user = splitted[2] if len(splitted) > 2 else "getsupport"
                 subprocess.run([str(Path(__file__).resolve().parents[2] / "runs" / "start_remote_support.sh"),
                                 token, port, user])
+            elif "openWB/system/backup_cloud/config" in msg.topic:
+                config_dict = decode_payload(msg.payload)
+                if config_dict["type"] is None:
+                    var["system"].backup_cloud = None
+                else:
+                    mod = importlib.import_module(".backup_clouds."+config_dict["type"]+".backup_cloud", "modules")
+                    config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config_dict)
+                    var["system"].backup_cloud = mod.create_backup_cloud(config)
             else:
                 if "module_update_completed" in msg.topic:
                     self.event_module_update_completed.set()
