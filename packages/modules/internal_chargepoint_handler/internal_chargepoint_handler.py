@@ -176,14 +176,14 @@ class InternalChargepointHandler:
         with SingleComponentUpdateContext(self.cp0.module.component_info):
             # Allgemeine Fehlermeldungen an LP 1:
             if self.cp1_client_handler is None:
-                with self.cp0_client_handler:
+                with self.cp0_client_handler.serial_client:
                     _loop()
             elif self.cp0_client_handler.serial_client == self.cp1_client_handler.serial_client:
-                with self.cp0_client_handler:
+                with self.cp0_client_handler.serial_client:
                     _loop()
             else:
                 with self.cp0_client_handler:
-                    with self.cp1_client_handler:
+                    with self.cp1_client_handler.serial_client:
                         _loop()
 
 
