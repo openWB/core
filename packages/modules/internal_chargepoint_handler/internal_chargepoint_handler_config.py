@@ -16,6 +16,7 @@ class InternalChargepointHandlerData:
     parent_cp: Optional[int] = None
     phases_to_use: int = 0
     set_current: float = 0
+    trigger_phase_switch: bool = False
 
 
 @dataclass

@@ -5,6 +5,7 @@ import threading
 import time
 from typing import Optional
 from helpermodules import timecheck
+from helpermodules import pub
 
 from helpermodules.pub import Pub, pub_single
 from helpermodules.subdata import SubData
@@ -71,7 +72,7 @@ class UpdateValues:
 
 class UpdateState:
     def __init__(self, cp_module: chargepoint_module.ChargepointModule) -> None:
-        self.old_phases_to_use = 3
+        self.old_phases_to_use = 0
         self.old_set_current = 0
         self.phase_switch_thread = None  # type: Optional[threading.Thread]
         self.cp_interruption_thread = None  # type: Optional[threading.Thread]
@@ -96,10 +97,10 @@ class UpdateState:
                           " noch aktiv. Es muss erst gewartet werden, bis die CP-Unterbrechung abgeschlossen ist.")
                 return
         self.cp_module.set_current(set_current)
-        if self.old_phases_to_use != data.phases_to_use and data.phases_to_use != 0:
+        if data.trigger_phase_switch:
             log.debug("Switch Phases from "+str(self.old_phases_to_use) + " to " + str(data.phases_to_use))
             self.__thread_phase_switch(data.phases_to_use)
-            self.old_phases_to_use = data.phases_to_use
+            pub.pub_single("openWB/set/internal_chargepoint/0/data/trigger_phase_switch", False)
 
         if data.cp_interruption_duration > 0:
             self.__thread_cp_interruption(data.cp_interruption_duration)
