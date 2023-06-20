@@ -433,6 +433,9 @@ class Chargepoint:
         self.data.set.energy_to_charge = 0
         Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/energy_to_charge", 0)
 
+    def reset_values_at_start(self):
+        self.data.set.loadmanagement_available = True
+
     def remember_previous_values(self):
         self.data.set.plug_state_prev = self.data.get.plug_state
         Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/plug_state_prev", self.data.set.plug_state_prev)

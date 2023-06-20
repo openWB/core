@@ -2,10 +2,11 @@ import time
 
 from control import data
 from helpermodules import pub, timecheck
+from helpermodules.utils.error_counter import ErrorCounterContext
 from modules.chargepoints.external_openwb.config import OpenWBSeries
 from modules.common.abstract_chargepoint import AbstractChargepoint
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.component_context import ErrorCounterContext, SingleComponentUpdateContext
+from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.fault_state import ComponentInfo
 
 

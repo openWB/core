@@ -2,7 +2,7 @@ import logging
 from pathlib import Path
 from typing import List, NamedTuple, Optional, Tuple, Union
 
-from modules.common.modbus import ModbusSerialClient_
+from modules.common.modbus import ModbusSerialClient_, ModbusTcpClient_
 from modules.common import mpm3pm, sdm
 from modules.common import evse
 from modules.common import b23
@@ -27,13 +27,16 @@ EVSE_MIN_FIRMWARE = 7
 
 
 class ClientHandler:
-    def __init__(self, local_charge_point_num: int, serial_client: ModbusSerialClient_, evse_ids: List[int]) -> None:
-        self.serial_client = serial_client
+    def __init__(self,
+                 local_charge_point_num: int,
+                 client: Union[ModbusSerialClient_, ModbusTcpClient_],
+                 evse_ids: List[int]) -> None:
+        self.client = client
         self.local_charge_point_num = local_charge_point_num
-        self.evse_client = self.__evse_factory(serial_client, evse_ids)
+        self.evse_client = self.__evse_factory(client, evse_ids)
         self.meter_client = self.find_meter_client(CP0_METERS if self.local_charge_point_num == 0 else CP1_METERS,
-                                                   serial_client)
-        self._check_hardware()
+                                                   client)
+        self.check_hardware()
         self.read_error = 0
 
     def __evse_factory(self, serial_client: ModbusSerialClient_, evse_ids: List[int]) -> evse.Evse:
@@ -64,15 +67,38 @@ class ClientHandler:
                 log.debug(f"Zähler {meter_type} mit Modbus-ID:{modbus_id} antwortet nicht.")
         else:
             return None
+    OPEN_TICKET = " Bitte nehme über die Support-Funktion in den Einstellungen Kontakt mit uns auf."
 
-    def _check_hardware(self):
-        if self.meter_client is None and self.evse_client is None:
-            raise Exception("Auslesen von Zähler UND Evse nicht möglich. Vermutlich ist der USB-Adapter defekt.")
-        if self.meter_client is None:
-            raise Exception("Der Zähler antwortet nicht. Vermutlich ist der Zähler falsch konfiguriert oder defekt.")
-        if self.evse_client is None:
+    def check_hardware(self):
+        try:
+            if self.evse_client.get_firmware_version() > EVSE_MIN_FIRMWARE:
+                evse_check = True
+            else:
+                evse_check = False
+        except Exception:
+            evse_check = False
+        try:
+            if self.meter_client.get_voltages()[0] > 200:
+                meter_check = True
+            else:
+                meter_check = False
+        except Exception:
+            meter_check = False
+        if meter_check is False and evse_check is False:
+            if isinstance(self.client, ModbusSerialClient_):
+                raise Exception("Auslesen von Zähler UND Evse nicht möglich. Vermutlich ist der USB-Adapter defekt." +
+                                self.OPEN_TICKET)
+            else:
+                raise Exception(
+                    "Auslesen von Zähler UND Evse nicht möglich. Vermutlich ist der Protoss defekt oder falsch " +
+                    "konfiguiert." + self.OPEN_TICKET)
+        if meter_check is False:
+            raise Exception("Der Zähler antwortet nicht. Vermutlich ist der Zähler falsch konfiguriert oder defekt."
+                            + self.OPEN_TICKET)
+        if evse_check is False:
             raise Exception(
-                "Auslesen der EVSE nicht möglich. Vermutlich ist die EVSE defekt oder hat eine unbekannte Modbus-ID.")
+                "Auslesen der EVSE nicht möglich. Vermutlich ist die EVSE defekt oder hat eine unbekannte Modbus-ID."
+                + self.OPEN_TICKET)
 
     def get_pins_phase_switch(self, new_phases: int) -> Tuple[int, int]:
         # return gpio_cp, gpio_relay
@@ -104,7 +130,7 @@ def client_factory(local_charge_point_num: int,
         else:
             # Don't create two clients for one source!
             log.error("LP1 gleiches Device wie LP0")
-            serial_client = created_client_handler.serial_client
+            serial_client = created_client_handler.client
             evse_ids = EVSE_ID_ONE_BUS_CP1
     elif counter > 1:
         log.error("found "+str(counter)+" possible usb devices: "+str(resolved_devices))
