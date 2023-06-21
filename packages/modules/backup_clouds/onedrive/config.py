@@ -10,7 +10,7 @@ class OneDriveBackupCloudConfiguration:
 class OneDriveBackupCloud:
     def __init__(self,
                  name: str = "OneDrive",
-                 type: str = "OneDrive",
+                 type: str = "onedrive",
                  configuration: OneDriveBackupCloudConfiguration = None) -> None:
         self.name = name
         self.type = type
