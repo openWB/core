@@ -8,9 +8,9 @@ touch "$debugFile"
 	echo "$1" | jq -r .message
 	debugEmail=$(echo "$1" | jq -r .email)
 	echo "$debugEmail"
-	echo "Seriennummer(Kunde): $1" | jq -r .serialNumber
-	echo "Komponenten: $1" | jq -r .installedComponents
-	echo "Fahrzeuge: $1" | jq -r .vehicles
+	echo "${1}" | jq -r .serialNumber
+	echo "${1}" | jq -r .installedComponents
+	echo "${1}" | jq -r .vehicles
 	echo "############################ version ##############"
 	cat "${OPENWBBASEDIR}/web/version"
 	cat "${OPENWBBASEDIR}/web/lastcommit"
@@ -52,10 +52,10 @@ touch "$debugFile"
 	# tail -200 "${RAMDISKDIR}/smarthome.log"
 } >>"$debugFile"
 
-echo "***** uploading debug log..." >>"$RAMDISKDIR/main.log"
-curl --upload "$debugFile" "https://openwb.de/tools/debug2.php?debugemail=$debugEmail"
+# echo "***** uploading debug log..." >>"$RAMDISKDIR/main.log"
+# curl --upload "$debugFile" "https://openwb.de/tools/debug2.php?debugemail=$debugEmail"
 
-echo "***** cleanup..." >>"$RAMDISKDIR/main.log"
-rm "$debugFile"
+# echo "***** cleanup..." >>"$RAMDISKDIR/main.log"
+# rm "$debugFile"
 
-echo "***** debug log end" >>"$RAMDISKDIR/main.log"
+# echo "***** debug log end" >>"$RAMDISKDIR/main.log"
