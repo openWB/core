@@ -703,11 +703,19 @@ class Chargepoint:
         zurückgesetzt werden.
         """
         rfid = self.data.get.rfid
-        self.data.set.rfid = rfid
-        Pub().pub("openWB/chargepoint/"+str(self.num)+"/set/rfid", rfid)
+        cp2_num = self.find_duo_partner()
+        # Tag wird diesem LP der Duo zugewiesen oder es ist keine Duo
+        if not (cp2_num is not None and
+                self.data.get.rfid == data.data.cp_data[f"cp{cp2_num}"].data.get.rfid and
+                data.data.cp_data[f"cp{cp2_num}"].data.get.plug_state and
+                timecheck.get_difference(self.data.set.plug_time,
+                                         data.data.cp_data[f"cp{cp2_num}"].data.set.plug_time) < 0):
+            self.data.set.rfid = rfid
+            Pub().pub("openWB/chargepoint/"+str(self.num)+"/set/rfid", rfid)
+            self.chargepoint_module.clear_rfid()
+
         self.data.get.rfid = None
         Pub().pub("openWB/chargepoint/"+str(self.num)+"/get/rfid", None)
-        self.chargepoint_module.clear_rfid()
         self.data.get.rfid_timestamp = None
         Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid_timestamp", None)
 
@@ -719,29 +727,42 @@ class Chargepoint:
         if self.data.get.rfid is not None:
             if data.data.optional_data.data.rfid.active:
                 rfid = self.data.get.rfid
-                if rfid in self.template.data.valid_tags or len(self.template.data.valid_tags) == 0:
-                    if self.data.get.rfid_timestamp is None:
-                        self.data.get.rfid_timestamp = timecheck.create_timestamp()
-                        Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid_timestamp",
-                                  self.data.get.rfid_timestamp)
+                if self.data.get.rfid_timestamp is None:
+                    self.data.get.rfid_timestamp = timecheck.create_timestamp()
+                    Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid_timestamp",
+                              self.data.get.rfid_timestamp)
+                    return
+                else:
+                    if (timecheck.check_timestamp(self.data.get.rfid_timestamp, 300) or
+                            self.data.get.plug_state is True):
                         return
                     else:
-                        if (timecheck.check_timestamp(self.data.get.rfid_timestamp, 300) or
-                                self.data.get.plug_state is True):
-                            return
-                        else:
-                            self.data.get.rfid_timestamp = None
+                        self.data.get.rfid_timestamp = None
+                        if rfid in self.template.data.valid_tags or len(self.template.data.valid_tags) == 0:
                             Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid_timestamp", None)
                             msg = "Es ist in den letzten 5 Minuten kein EV angesteckt worden, dem " \
                                 f"der RFID-Tag/Code {rfid} zugeordnet werden kann. Daher wird dieser verworfen."
-                else:
-                    msg = f"Der Tag {rfid} ist an diesem Ladepunkt nicht gültig."
+                        else:
+                            msg = f"Der Tag {rfid} ist an diesem Ladepunkt nicht gültig."
             else:
                 msg = "RFID ist nicht aktiviert."
             self.data.get.rfid = None
             Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid", None)
             self.chargepoint_module.clear_rfid()
             self.set_state_and_log(msg)
+
+    def find_duo_partner(self) -> Optional[int]:
+        try:
+            # Wurde ein zweiter Ladepunkt an einer Duo konfiguriert?
+            if self.data.config.type == "external_openwb" or self.data.config.type == "internal_openwb":
+                for cp2 in data.data.cp_data.values():
+                    if (cp2.num != self.num and
+                            self.data.config.configuration.ip_address == cp2.data.config.configuration.ip_address):
+                        return cp2.num
+            return None
+        except Exception:
+            log.exception("Fehler in der allgemeinen Ladepunkt-Klasse")
+            return None
 
     def set_required_currents(self, required_current: float) -> None:
         control_parameter = self.data.set.charging_ev_data.data.control_parameter
