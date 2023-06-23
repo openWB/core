@@ -859,6 +859,8 @@ class SetData:
                         msg, float, [(0, float("inf"))])
                 elif "/get/fault_state" in msg.topic:
                     self._validate_value(msg, int, [(0, 2)])
+                elif "/set/error_counter" in msg.topic:
+                    self._validate_value(msg, int, [(0, float("inf"))])
                 elif ("/get/fault_str" in msg.topic or
                       "/set/state_str" in msg.topic):
                     self._validate_value(msg, str)

@@ -30,6 +30,7 @@ def test_set_loadmanagement_state(fault_state: FaultStateLevel,
     monkeypatch.setattr(data.data.counter_all_data, "get_chargepoints_of_counter", connected_cps_mock)
     counter = Counter(0)
     counter.data.get.fault_state = fault_state
+    counter.data.set.error_counter = 2
 
     # execution
     counter._set_loadmanagement_state()
