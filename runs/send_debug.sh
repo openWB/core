@@ -8,9 +8,9 @@ touch "$debugFile"
 	echo "$1" | jq -r .message
 	debugEmail=$(echo "$1" | jq -r .email)
 	echo "$debugEmail"
-	echo "Seriennummer(Kunde): $1" | jq -r .serialNumber
-	echo "Komponenten: $1" | jq -r .installedComponents
-	echo "Fahrzeuge: $1" | jq -r .vehicles
+	echo "${1}" | jq -r .serialNumber
+	echo "${1}" | jq -r .installedComponents
+	echo "${1}" | jq -r .vehicles
 	echo "############################ version ##############"
 	cat "${OPENWBBASEDIR}/web/version"
 	cat "${OPENWBBASEDIR}/web/lastcommit"
