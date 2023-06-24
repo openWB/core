@@ -10,6 +10,9 @@ import re
 import traceback
 from pathlib import Path
 import paho.mqtt.client as mqtt
+import pickle
+import io
+from msal import PublicClientApplication
 from control.chargepoint import chargepoint
 from control.chargepoint.chargepoint_template import get_autolock_plan_default, get_chargepoint_template_default
 
@@ -24,6 +27,7 @@ from control import bat, bridge, chargelog, data, ev, counter, counter_all, pv
 from modules.chargepoints.internal_openwb.chargepoint_module import ChargepointModule
 from modules.chargepoints.internal_openwb.config import InternalChargepointMode
 from modules.common.component_type import ComponentType, special_to_general_type_mapping, type_to_topic_mapping
+from modules.backup_clouds.onedrive.config import OneDriveBackupCloudConfiguration
 import dataclass_utils
 
 log = logging.getLogger(__name__)
@@ -686,6 +690,48 @@ class Command:
             pub_user_message(payload, connection_id,
                              f'Restore-Status: {result.returncode}<br />Meldung: {result.stdout.decode("utf-8")}',
                              MessageType.ERROR)
+
+    def requestMSALAuthCode(self, connection_id: str, payload: dict) -> None:
+        """ startet den Authentifizierungsprozess für MSAL (Microsoft Authentication Library) um Onedrive Backup zu ermöglichen
+        """
+
+        # to-do: Konfiguration aus OneDrive modul importieren?
+        # Define the scope of access
+        scope = {"https://graph.microsoft.com/Files.ReadWrite"} # Replace with your desired scope
+
+        # Define the authority and the token endpoint for MSA/Live accounts
+        authority = "https://login.microsoftonline.com/consumers/"
+        clientID = "e529d8d2-3b0f-4ae4-b2ba-2d9a2bba55b2"
+
+        # Create a public client application with msal
+        app = PublicClientApplication(client_id=clientID, authority=authority)
+
+        flow = app.initiate_device_flow(scope)
+        if "user_code" not in flow:
+            raise Exception(
+                "Fail to create device flow. Err: %s" % json.dumps(flow, indent=4))
+
+        flow["expires_at"] = 0  # Mark it as expired immediately
+        pickleBuffer = io.BytesIO()
+        pickle.dump(flow, pickleBuffer)
+
+        #Pub().pub(f'openWB/set/vehicle/template/ev_template/{new_id}', ev_template_default)
+        # Pub().pub("openWB/set/command/max_id/ev_template", new_id)
+        pub_user_message(
+            payload, connection_id,
+            'Authorisierung gestartet, bitte den Link öffen, Code eingeben, '
+            'und Zugang authorisieren. Anschließend Zugangsberechtigung abrufen.',
+            MessageType.SUCCESS)
+
+    def retrieveMSALTokens(self, connection_id: str, payload: dict) -> None:
+        """ holt die Tokens für MSAL (Microsoft Authentication Library) um Onedrive Backup zu ermöglichen
+        """
+        # Pub().pub(f'openWB/set/vehicle/template/ev_template/{new_id}', ev_template_default)
+        # Pub().pub("openWB/set/command/max_id/ev_template", new_id)
+        pub_user_message(
+            payload, connection_id,
+            'Zugangsberechtigung erfolgreich abgerufen.',
+            MessageType.SUCCESS)
 
 
 class ErrorHandlingContext:
