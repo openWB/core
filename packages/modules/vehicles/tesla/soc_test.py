@@ -6,7 +6,7 @@ from modules.common import store
 from modules.common.abstract_soc import SocUpdateData
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.vehicles.tesla import api
-from modules.vehicles.tesla.soc import Soc
+from modules.vehicles.tesla.soc import create_vehicle
 from modules.vehicles.tesla.config import TeslaSoc, TeslaSocConfiguration, TeslaSocToken
 
 
@@ -27,7 +27,7 @@ class TestTesla:
 
     def test_update_updates_value_store_no_chargepoint(self, monkeypatch):
         # execution
-        Soc(TeslaSoc(configuration=TeslaSocConfiguration(
+        create_vehicle(TeslaSoc(configuration=TeslaSocConfiguration(
             tesla_ev_num=0, token=self.token)), 0).update(SocUpdateData())
 
         # evaluation
@@ -39,7 +39,7 @@ class TestTesla:
 
     def test_update_updates_value_store_not_charging(self, monkeypatch):
         # execution
-        Soc(TeslaSoc(configuration=TeslaSocConfiguration(
+        create_vehicle(TeslaSoc(configuration=TeslaSocConfiguration(
             tesla_ev_num=0, token=self.token)), 0).update(SocUpdateData())
 
         # evaluation
@@ -55,7 +55,7 @@ class TestTesla:
         self.mock_request_soc_range.side_effect = dummy_error
 
         # execution
-        Soc(TeslaSoc(configuration=TeslaSocConfiguration(
+        create_vehicle(TeslaSoc(configuration=TeslaSocConfiguration(
             tesla_ev_num=0, token=self.token)), 0).update(SocUpdateData())
 
         # evaluation

@@ -2,10 +2,11 @@ import time
 
 from control import data
 from helpermodules import pub, timecheck
+from helpermodules.utils.error_counter import ErrorCounterContext
 from modules.chargepoints.external_openwb.config import OpenWBSeries
 from modules.common.abstract_chargepoint import AbstractChargepoint
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.component_context import ErrorCounterContext, SingleComponentUpdateContext
+from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.fault_state import ComponentInfo
 
 
@@ -62,6 +63,8 @@ class ChargepointModule(AbstractChargepoint):
             with self.__client_error_context:
                 pub.pub_single("openWB/set/internal_chargepoint/0/data/phases_to_use", phases_to_use,
                                self.config.configuration.ip_address)
+                pub.pub_single("openWB/set/internal_chargepoint/0/data/trigger_phase_switch", True,
+                               self.config.configuration.ip_address)
                 pub.pub_single("openWB/set/isss/U1p3p", phases_to_use,
                                self.config.configuration.ip_address)
                 time.sleep(6+duration-1)
@@ -85,6 +88,7 @@ class ChargepointModule(AbstractChargepoint):
             with self.__client_error_context:
                 ip_address = self.config.configuration.ip_address
                 pub.pub_single("openWB/set/isss/ClearRfid", 1, hostname=ip_address)
+                pub.pub_single("openWB/set/internal_chargepoint/last_tag", None, hostname=ip_address)
 
 
 chargepoint_descriptor = DeviceDescriptor(configuration_factory=OpenWBSeries)

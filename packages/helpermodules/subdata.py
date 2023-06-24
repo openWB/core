@@ -10,11 +10,14 @@ import subprocess
 import paho.mqtt.client as mqtt
 
 from control import bat_all, bat, pv_all
-from control import chargepoint
+from control.chargepoint import chargepoint
 from control import counter
 from control import counter_all
 from control import ev
 from control import general
+from control.chargepoint.chargepoint_all import AllChargepoints
+from control.chargepoint.chargepoint_state_update import ChargepointStateUpdate
+from control.chargepoint.chargepoint_template import CpTemplate, CpTemplateData
 from helpermodules import graph
 from helpermodules.abstract_plans import AutolockPlan
 from helpermodules.broker import InternalBrokerClient
@@ -39,9 +42,9 @@ class SubData:
     """
 
     # Instanzen
-    cp_data: Dict[str, chargepoint.ChargepointStateUpdate] = {}
-    cp_all_data = chargepoint.AllChargepoints()
-    cp_template_data: Dict[str, chargepoint.CpTemplate] = {}
+    cp_data: Dict[str, ChargepointStateUpdate] = {}
+    cp_all_data = AllChargepoints()
+    cp_template_data: Dict[str, CpTemplate] = {}
     pv_data: Dict[str, pv.Pv] = {}
     pv_all_data = pv_all.PvAll()
     ev_data: Dict[str, ev.Ev] = {}
@@ -75,6 +78,7 @@ class SubData:
                  event_time_charging_plan: threading.Event,
                  event_start_internal_chargepoint: threading.Event,
                  event_stop_internal_chargepoint: threading.Event,
+                 event_soc: threading.Event,
                  event_jobs_running: threading.Event):
         self.event_ev_template = event_ev_template
         self.event_charge_template = event_charge_template
@@ -89,6 +93,7 @@ class SubData:
         self.event_time_charging_plan = event_time_charging_plan
         self.event_start_internal_chargepoint = event_start_internal_chargepoint
         self.event_stop_internal_chargepoint = event_stop_internal_chargepoint
+        self.event_soc = event_soc
         self.event_jobs_running = event_jobs_running
         self.heartbeat = False
 
@@ -115,6 +120,7 @@ class SubData:
             ("openWB/internal_chargepoint/#", 2),
             # Nicht mit hash # abonnieren, damit nicht die Komponenten vor den Devices empfangen werden!
             ("openWB/system/+", 2),
+            ("openWB/system/backup_cloud/#", 2),
             ("openWB/system/device/module_update_completed", 2),
             ("openWB/system/mqtt/bridge/+", 2),
             ("openWB/system/device/+/config", 2),
@@ -257,7 +263,10 @@ class SubData:
                             var["ev"+index].soc_module = None
                         else:
                             mod = importlib.import_module(".vehicles."+config["type"]+".soc", "modules")
-                            var["ev"+index].soc_module = mod.Soc(config, index)
+                            config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config)
+                            var["ev"+index].soc_module = (mod.Soc if hasattr(mod, "Soc")
+                                                          else mod.create_vehicle)(config, index)
+                        self.event_soc.set()
                     elif re.search("/vehicle/[0-9]+/control_parameter/", msg.topic) is not None:
                         self.set_json_payload_class(
                             var["ev"+index].data.control_parameter, msg)
@@ -367,7 +376,7 @@ class SubData:
                         self.set_internal_chargepoint_configured()
                 else:
                     if "cp"+index not in var:
-                        var["cp"+index] = chargepoint.ChargepointStateUpdate(
+                        var["cp"+index] = ChargepointStateUpdate(
                             int(index),
                             self.event_copy_data,
                             self.event_global_data_initialized,
@@ -435,9 +444,9 @@ class SubData:
                     var.pop("cpt"+index)
                 else:
                     if "cpt"+index not in var:
-                        var["cpt"+index] = chargepoint.CpTemplate()
+                        var["cpt"+index] = CpTemplate()
                     autolock_plans = var["cpt"+index].data.autolock.plans
-                    var["cpt"+index].data = dataclass_from_dict(chargepoint.CpTemplateData, payload)
+                    var["cpt"+index].data = dataclass_from_dict(CpTemplateData, payload)
                     var["cpt"+index].data.autolock.plans = autolock_plans
         except Exception:
             log.exception("Fehler im subdata-Modul")
@@ -698,6 +707,14 @@ class SubData:
                 user = splitted[2] if len(splitted) > 2 else "getsupport"
                 subprocess.run([str(Path(__file__).resolve().parents[2] / "runs" / "start_remote_support.sh"),
                                 token, port, user])
+            elif "openWB/system/backup_cloud/config" in msg.topic:
+                config_dict = decode_payload(msg.payload)
+                if config_dict["type"] is None:
+                    var["system"].backup_cloud = None
+                else:
+                    mod = importlib.import_module(".backup_clouds."+config_dict["type"]+".backup_cloud", "modules")
+                    config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config_dict)
+                    var["system"].backup_cloud = mod.create_backup_cloud(config)
             else:
                 if "module_update_completed" in msg.topic:
                     self.event_module_update_completed.set()

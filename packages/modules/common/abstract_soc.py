@@ -5,6 +5,8 @@ from dataclasses import dataclass
 @dataclass
 class SocUpdateData:
     charge_state: bool = False
+    imported_since_plugged: float = 0
+    battery_capacity: float = 82
 
 
 class AbstractSoc:

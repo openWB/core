@@ -1,11 +1,12 @@
 
 import logging
 import time
-from modules.chargepoints.openwb_pro.config import OpenWBPro
 
+from helpermodules.utils.error_counter import ErrorCounterContext
+from modules.chargepoints.openwb_pro.config import OpenWBPro
 from modules.common.abstract_chargepoint import AbstractChargepoint
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.component_context import ErrorCounterContext, SingleComponentUpdateContext
+from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.fault_state import ComponentInfo
 from modules.common.store import get_chargepoint_value_store
 from modules.common.component_state import ChargepointState

@@ -9,12 +9,13 @@ import time
 from typing import List
 from paho.mqtt.client import Client as MqttClient, MQTTMessage
 import dataclass_utils
+from control.chargepoint.chargepoint_template import get_chargepoint_template_default
 
 from helpermodules.broker import InternalBrokerClient
 from helpermodules.pub import Pub
 from helpermodules.utils.topic_parser import decode_payload, get_index, get_second_index
 from helpermodules import measurement_log
-from control import chargepoint, counter_all
+from control import counter_all
 from control import ev
 from modules.display_themes.cards.config import CardsDisplayTheme
 
@@ -22,7 +23,7 @@ log = logging.getLogger(__name__)
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 10
+    DATASTORE_VERSION = 12
     valid_topic = ["^openWB/bat/config/configured$",
                    "^openWB/bat/set/charging_power_left$",
                    "^openWB/bat/set/switch_on_soc_reached$",
@@ -318,6 +319,7 @@ class UpdateConfig:
                    "^openWB/LegacySmartHome/Devices/[1-2]+/TemperatureSensor[0-2]$",
 
                    "^openWB/system/boot_done$",
+                   "^openWB/system/backup_cloud/config$",
                    "^openWB/system/dataprotection_acknowledged$",
                    "^openWB/system/debug_level$",
                    "^openWB/system/lastlivevaluesJson$",
@@ -348,7 +350,7 @@ class UpdateConfig:
                    ]
     default_topic = (
         ("openWB/chargepoint/get/power", 0),
-        ("openWB/chargepoint/template/0", chargepoint.get_chargepoint_template_default()),
+        ("openWB/chargepoint/template/0", get_chargepoint_template_default()),
         ("openWB/counter/get/hierarchy", []),
         ("openWB/counter/config/reserve_for_not_charging", counter_all.Config().reserve_for_not_charging),
         ("openWB/vehicle/0/name", ev.EvData().name),
@@ -407,6 +409,7 @@ class UpdateConfig:
         ("openWB/optional/int_display/theme", dataclass_utils.asdict(CardsDisplayTheme())),
         ("openWB/optional/led/active", False),
         ("openWB/optional/rfid/active", False),
+        ("openWB/system/backup_cloud/config", {"type": None, "configuration": {}}),
         ("openWB/system/dataprotection_acknowledged", False),
         ("openWB/system/debug_level", 30),
         ("openWB/system/device/module_update_completed", True),
@@ -705,3 +708,23 @@ class UpdateConfig:
                     log.debug("cloud bridge configuration upgraded")
                     Pub().pub(topic, payload)
         Pub().pub("openWB/system/datastore_version", 10)
+
+    def upgrade_datastore_10(self) -> None:
+        for topic, payload in self.all_received_topics.items():
+            if re.search("openWB/vehicle/template/ev_template/[0-9]+$", topic) is not None:
+                payload = decode_payload(payload)
+                updated_payload = payload
+                updated_payload["battery_capacity"] = payload["battery_capacity"] * 1000
+                updated_payload["average_consump"] = payload["average_consump"] * 1000
+                Pub().pub(topic, payload)
+        Pub().pub("openWB/system/datastore_version", 11)
+
+    def upgrade_datastore_11(self) -> None:
+        for topic, payload in self.all_received_topics.items():
+            if re.search("openWB/chargepoint/[0-9]+/config$", topic) is not None:
+                payload = decode_payload(payload)
+                if payload["type"] == "openwb_series2_satellit":
+                    if "duo_num" not in payload["configuration"]:
+                        payload["configuration"].update({"duo_num": 1})
+                    Pub().pub(topic.replace("openWB/", "openWB/set/"), payload)
+        Pub().pub("openWB/set/system/datastore_version", 12)

@@ -6,12 +6,12 @@ import pytest
 from control import data
 from control.bat import Bat
 from control.bat_all import BatAll
-from control.chargepoint import Chargepoint
+from control.chargepoint.chargepoint import Chargepoint
 from control.counter_all import CounterAll
 from control.counter import Counter
 from control.ev import Ev
 from control.pv import Pv
-from control.chargepoint_state import ChargepointState
+from control.chargepoint.chargepoint_state import ChargepointState
 from test_utils.default_hierarchies import NESTED_HIERARCHY
 
 

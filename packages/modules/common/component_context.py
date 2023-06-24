@@ -83,28 +83,3 @@ class MultiComponentUpdateContext:
             else:
                 return
         fault_state.store_error(component_info)
-
-
-class ErrorCounterContext:
-    def __init__(self, exceeded_msg: str):
-        self.__error_counter = 0
-        self.__exceeded_msg = exceeded_msg
-
-    def __enter__(self):
-        return None
-
-    def __exit__(self, exception_type, exception, exception_traceback) -> bool:
-        if exception:
-            self.__error_counter += 1
-            raise exception
-        return True
-
-    def error_counter_exceeded(self) -> bool:
-        if self.__error_counter > 5:
-            log.error(self.__exceeded_msg)
-            return True
-        else:
-            return False
-
-    def reset_error_counter(self):
-        self.__error_counter = 0

@@ -9,7 +9,7 @@ import pytest
 from control import data
 from control.bat import Bat, BatData
 from control.bat import Get as BatGet
-from control.chargepoint import Chargepoint
+from control.chargepoint.chargepoint import Chargepoint
 from control.counter import Counter, CounterData, Get
 from control.counter_all import CounterAll
 from control.pv import Pv, PvData

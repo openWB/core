@@ -210,7 +210,7 @@ $numDevices = 9;
 												</label>
 											</div>
 										</div>
-										<span class="form-text small">Wenn diese Option aktiviert wird, wird für den Shelly eine Userid und ein Password verlangt. Läuft momentan nur für shell ohne plus.</span>
+										<span class="form-text small">Wenn diese Option aktiviert wird, wird für den Shelly eine Userid und ein Password verlangt. Läuft momentan nur für Shelly ohne plus.</span>
 									</div>
 									<div class="device<?php echo $devicenum; ?>shauth hide">
 										<div class="form-row mb-1">
@@ -881,7 +881,7 @@ $numDevices = 9;
 													</label>
 												</div>
 											</div>
-											<span class="form-text small">Wenn diese Option aktiviert wird, wird für den Shelly eine Userid und ein Password verlangt.Läuft momentan nur für shell ohne plus.</span>
+											<span class="form-text small">Wenn diese Option aktiviert wird, wird für den Shelly eine Userid und ein Password verlangt.Läuft momentan nur für Shelly ohne plus.</span>
 										</div>
 										<div class="device<?php echo $devicenum; ?>measureshauth hide">
 											<div class="form-row mb-1">

@@ -4,7 +4,7 @@ import copy
 from threading import Event, Thread
 
 from control import data
-from control.chargepoint import AllChargepoints
+from control.chargepoint.chargepoint_all import AllChargepoints
 from control.ev import Ev
 from helpermodules import subdata
 from helpermodules import timecheck
@@ -77,10 +77,16 @@ class UpdateSoc:
             if not isinstance(cp, AllChargepoints):
                 if cp.data.set.charging_ev == ev_num:
                     charge_state = cp.data.get.charge_state
+                    imported_since_plugged = cp.data.set.log.imported_since_plugged
+                    battery_capacity = cp.data.set.charging_ev_data.ev_template.data.battery_capacity
                     break
         else:
             charge_state = False
-        return SocUpdateData(charge_state=charge_state)
+            imported_since_plugged = 0
+            battery_capacity = 0
+        return SocUpdateData(charge_state=charge_state,
+                             imported_since_plugged=imported_since_plugged,
+                             battery_capacity=battery_capacity)
 
     def _filter_failed_store_threads(self, threads_store: List[Thread]) -> List[Thread]:
         ev_data = copy.deepcopy(subdata.SubData.ev_data)

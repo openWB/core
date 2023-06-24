@@ -10,6 +10,8 @@ import re
 import traceback
 from pathlib import Path
 import paho.mqtt.client as mqtt
+from control.chargepoint import chargepoint
+from control.chargepoint.chargepoint_template import get_autolock_plan_default, get_chargepoint_template_default
 
 from helpermodules import measurement_log
 from helpermodules.broker import InternalBrokerClient
@@ -18,7 +20,7 @@ from helpermodules.parse_send_debug import parse_send_debug_data
 from helpermodules.pub import Pub
 from helpermodules.subdata import SubData
 from helpermodules.utils.topic_parser import decode_payload
-from control import bat, bridge, chargelog, chargepoint, data, ev, counter, counter_all, pv
+from control import bat, bridge, chargelog, data, ev, counter, counter_all, pv
 from modules.chargepoints.internal_openwb.chargepoint_module import ChargepointModule
 from modules.chargepoints.internal_openwb.config import InternalChargepointMode
 from modules.common.component_type import ComponentType, special_to_general_type_mapping, type_to_topic_mapping
@@ -253,7 +255,7 @@ class Command:
         """ sendet das Topic, zu dem eine neue Ladepunkt-Vorlage erstellt werden soll.
         """
         new_id = self.max_id_chargepoint_template + 1
-        default = chargepoint.get_chargepoint_template_default()
+        default = get_chargepoint_template_default()
         default["id"] = new_id
         Pub().pub(f'openWB/set/chargepoint/template/{new_id}', default)
         self.max_id_chargepoint_template = self.max_id_chargepoint_template + 1
@@ -285,7 +287,7 @@ class Command:
         """ sendet das Topic, zu dem ein neuer Zielladen-Plan erstellt werden soll.
         """
         new_id = self.max_id_autolock_plan + 1
-        default = chargepoint.get_autolock_plan_default()
+        default = get_autolock_plan_default()
         Pub().pub(f'openWB/set/chargepoint/template/{payload["data"]["template"]}/autolock/{new_id}',
                   default)
         self.max_id_autolock_plan = new_id
@@ -660,6 +662,15 @@ class Command:
             pub_user_message(payload, connection_id,
                              f'Backup-Status: {result.returncode}<br />Meldung: {result.stdout.decode("utf-8")}',
                              MessageType.ERROR)
+
+    def createCloudBackup(self, connection_id: str, payload: dict) -> None:
+        if SubData.system_data["system"].backup_cloud is not None:
+            pub_user_message(payload, connection_id, "Backup wird erstellt...", MessageType.INFO)
+            SubData.system_data["system"].create_backup_and_send_to_cloud()
+            pub_user_message(payload, connection_id, "Backup erfolgreich erstellt.<br />", MessageType.SUCCESS)
+        else:
+            pub_user_message(payload, connection_id,
+                             "Es ist keine Backup-Cloud konfiguriert.<br />", MessageType.WARNING)
 
     def restoreBackup(self, connection_id: str, payload: dict) -> None:
         parent_file = Path(__file__).resolve().parents[2]
