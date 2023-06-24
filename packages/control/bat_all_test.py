@@ -5,7 +5,7 @@ from control.bat import Bat
 
 from control.bat_all import BatAll, SwitchOnBatState
 from control import data
-from control.chargepoint import AllChargepointData, AllChargepoints, AllGet
+from control.chargepoint.chargepoint_all import AllChargepointData, AllChargepoints, AllGet
 from control.general import General, PvCharging
 from control.pv import Config, Get, Pv, PvData
 

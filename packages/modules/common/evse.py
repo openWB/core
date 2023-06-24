@@ -34,6 +34,7 @@ class Evse:
         self.id = modbus_id
 
     def get_plug_charge_state(self) -> Tuple[bool, bool, float]:
+        time.sleep(0.1)
         set_current, _, state_number = self.client.read_holding_registers(
             1000, [ModbusDataType.UINT_16]*3, unit=self.id)
         # remove leading zeors
@@ -49,11 +50,13 @@ class Evse:
         return plugged, charging, set_current
 
     def get_firmware_version(self) -> bool:
+        time.sleep(0.1)
         version = self.client.read_holding_registers(1005, ModbusDataType.UINT_16, unit=self.id)
         log.debug("FW-Version: "+str(version))
         return version
 
     def is_precise_current_active(self) -> bool:
+        time.sleep(0.1)
         value = self.client.read_holding_registers(2005, ModbusDataType.UINT_16, unit=self.id)
         if value & self.PRECISE_CURRENT_BIT:
             log.debug("Angabe der Ströme in 0,1A-Schritten ist aktiviert.")
@@ -63,6 +66,7 @@ class Evse:
             return False
 
     def activate_precise_current(self) -> None:
+        time.sleep(0.1)
         value = self.client.read_holding_registers(2005, ModbusDataType.UINT_16, unit=self.id)
         if value & self.PRECISE_CURRENT_BIT:
             return
@@ -73,6 +77,7 @@ class Evse:
             time.sleep(1)
 
     def deactivate_precise_current(self) -> None:
+        time.sleep(0.1)
         value = self.client.read_holding_registers(2005, ModbusDataType.UINT_16, unit=self.id)
         if value & self.PRECISE_CURRENT_BIT:
             log.debug("Bit zur Angabe der Ströme in 0,1A-Schritten wird zurueckgesetzt.")
@@ -81,4 +86,5 @@ class Evse:
             return
 
     def set_current(self, current: int) -> None:
+        time.sleep(0.1)
         self.client.delegate.write_registers(1000, current, unit=self.id)

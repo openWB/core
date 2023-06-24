@@ -7,8 +7,8 @@ from typing import List, Tuple
 
 from control import data
 from control.ev import Ev
-from control.chargepoint import Chargepoint
-from control.chargepoint_state import ChargepointState
+from control.chargepoint.chargepoint import Chargepoint
+from control.chargepoint.chargepoint_state import ChargepointState
 from dataclass_utils.factories import currents_list_factory, voltages_list_factory
 from helpermodules import timecheck
 from helpermodules.phase_mapping import convert_cp_currents_to_evu_currents
@@ -56,6 +56,7 @@ def get_factory() -> Get:
 
 @dataclass
 class Set:
+    error_counter: int = 0
     reserved_surplus: float = 0
     released_surplus: float = 0
     raw_power_left: float = 0
@@ -76,6 +77,8 @@ class CounterData:
 
 
 class Counter:
+    MAX_EVU_ERRORS = 2
+
     def __init__(self, index):
         try:
             self.data = CounterData()
@@ -99,13 +102,22 @@ class Counter:
     def _set_loadmanagement_state(self) -> None:
         # Wenn der Zähler keine Werte liefert, darf nicht geladen werden.
         connected_cps = data.data.counter_all_data.get_chargepoints_of_counter(f'counter{self.num}')
+        loadmanagement_available = True
+        if self.data.get.fault_state == FaultStateLevel.ERROR:
+            self.data.set.error_counter += 1
+            if self.data.set.error_counter >= self.MAX_EVU_ERRORS:
+                loadmanagement_available = False
+        else:
+            self.data.set.error_counter = 0
         for cp in connected_cps:
-            if self.data.get.fault_state == FaultStateLevel.ERROR:
-                data.data.cp_data[cp].data.set.loadmanagement_available = False
-            else:
-                data.data.cp_data[cp].data.set.loadmanagement_available = True
+            # Wird zu Beginn des Zyklus auf True gesetzt, wenn es einmal auf False gesetzt wird, darf es nicht wieder
+            # auf True gesetzt werden.
+            if loadmanagement_available is False:
+                data.data.cp_data[cp].data.set.loadmanagement_available = loadmanagement_available
+        Pub().pub(f"openWB/set/counter/{self.num}/set/error_counter", self.data.set.error_counter)
 
     # tested
+
     def _set_current_left(self) -> None:
         currents_raw = self.data.get.currents
         cp_keys = data.data.counter_all_data.get_chargepoints_of_counter(f"counter{self.num}")

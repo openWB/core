@@ -2,7 +2,7 @@ from unittest.mock import Mock
 import pytest
 
 from control.algorithm import additional_current
-from control.chargepoint import Chargepoint, ChargepointData, Set
+from control.chargepoint.chargepoint import Chargepoint, ChargepointData, Set
 from control.ev import ChargeTemplate, Ev
 from control.loadmanagement import LimitingValue
 

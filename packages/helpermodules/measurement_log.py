@@ -9,7 +9,7 @@ from control import data
 from helpermodules.pub import Pub
 from helpermodules import timecheck
 from control.bat import Bat
-from control.chargepoint import Chargepoint
+from control.chargepoint.chargepoint import Chargepoint
 from control.counter import Counter
 from control.ev import Ev
 from control.pv import Pv

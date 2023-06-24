@@ -1,8 +1,10 @@
 import threading
 import pytest
+from control.chargepoint import chargepoint
 
 from helpermodules import measurement_log
-from control import bat_all, chargepoint, counter, pv_all, pv
+from control.chargepoint.chargepoint_all import AllChargepoints
+from control import bat_all, counter, pv_all, pv
 from control import data
 
 
@@ -19,7 +21,7 @@ def data_module() -> None:
     data.data_init(threading.Event())
     data.data.bat_data.update({"all": bat_all.BatAll(), "bat2": bat_all.Bat(2)})
     data.data.counter_data.update({"counter0": counter.Counter(0)})
-    data.data.cp_all_data = chargepoint.AllChargepoints()
+    data.data.cp_all_data = AllChargepoints()
     data.data.cp_data.update({"cp4": chargepoint.Chargepoint(
         4, None), "cp5": chargepoint.Chargepoint(5, None), "cp6": chargepoint.Chargepoint(6, None)})
     data.data.pv_data.update({"all": pv_all.PvAll(), "pv1": pv.Pv(1)})

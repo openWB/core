@@ -8,14 +8,14 @@ touch "$debugFile"
 	echo "$1" | jq -r .message
 	debugEmail=$(echo "$1" | jq -r .email)
 	echo "$debugEmail"
-	echo "$1" | jq -r .serialNumber
-	echo "$1" | jq -r .installedComponents
-	echo "$1" | jq -r .vehicles
+	echo "${1}" | jq -r .serialNumber
+	echo "${1}" | jq -r .installedComponents
+	echo "${1}" | jq -r .vehicles
 	echo "############################ version ##############"
 	cat "${OPENWBBASEDIR}/web/version"
 	cat "${OPENWBBASEDIR}/web/lastcommit"
 	echo "############################ configuration and state ##############"
-	echo "$2"
+	echo "${2}"
 	echo "############################ system ###############"
 	uptime
 	free

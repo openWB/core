@@ -4,7 +4,7 @@ from typing import List
 from control.algorithm import common
 from control.loadmanagement import LimitingValue, Loadmanagement
 from control.counter import Counter
-from control.chargepoint import Chargepoint
+from control.chargepoint.chargepoint import Chargepoint
 from control.algorithm.filter_chargepoints import (get_chargepoints_by_mode, get_chargepoints_by_mode_and_counter,
                                                    get_preferenced_chargepoint_charging)
 from modules.common.utils.component_parser import get_component_name_by_id
