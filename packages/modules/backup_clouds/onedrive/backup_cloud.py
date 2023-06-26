@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 import logging
 import msal
-import atexit
 import os
 import json
 from msdrive import OneDrive
+import paho.mqtt.publish as publish
 from modules.backup_clouds.onedrive.config import OneDriveBackupCloud, OneDriveBackupCloudConfiguration
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.configurable_backup_cloud import ConfigurableBackupCloud
@@ -15,22 +15,24 @@ import base64
 log = logging.getLogger(__name__)
 
 
+def save_tokencache(config: OneDriveBackupCloudConfiguration, cache: str) -> None:
+    # encode cache to base64 and save to config
+    log.debug("saving updated tokencache to config")
+    cache_bytes = cache.encode("ascii")
+    cache_base64_bytes = base64.b64encode(cache_bytes)
+    cache_base64_string = cache_base64_bytes.decode("ascii")
+    config.persistent_tokencache = cache_base64_string
+    publish.single("openWB/system/backup_cloud/config", json.dumps(config), retain=True, hostname="localhost")
+
+
 def get_tokens(config: OneDriveBackupCloudConfiguration) -> dict:
     result = None
     cache = msal.SerializableTokenCache()
 
-    '''    # to-do: add write to config after update
-    if os.path.exists("/var/www/html/openWB/packages/modules/backup_clouds/onedrive/my_cache.bin"):  # to do: read from config
-        log.debug("reading token cache from file")
-        cache.deserialize(open("/var/www/html/openWB/packages/modules/backup_clouds/onedrive/my_cache.bin", "r").read())
-    else:
-        log.debug("token cache not found")
-    atexit.register(lambda: open("my_cache.bin", "w").write(cache.serialize())  # to-do: write to config
-                    if cache.has_state_changed else None
-                    )'''
-
     if config.persistent_tokencache:
         cache.deserialize(base64.b64decode(config.persistent_tokencache))
+    else:
+        raise Exception("No tokencache found, please re-configure and re-authorize access Cloud backup settings.")
 
     # Create a public client application with msal
     log.debug("creating MSAL public client application")
@@ -43,35 +45,19 @@ def get_tokens(config: OneDriveBackupCloudConfiguration) -> dict:
         log.debug("selected account " + str(chosen["username"]))
         # Now let's try to find a token in cache for this account
         result = app.acquire_token_silent(scopes=config.scope, account=chosen)
+    else:
+        raise Exception("No matching account found,please re-configure and re-authorize access Cloud backup settings.")
 
     log.debug("done acquring tokens")
     if not result:  # We have no token for this account, so the end user shall sign-in
-        # to-do: stop execution if no authcode is provided, log error
+        raise Exception("No token found, please re-configure and re-authorize access Cloud backup settings.")
 
-        flow = app.initiate_device_flow(config.scope)
-
-        if "user_code" not in flow:
-            raise ValueError(
-                "Fail to create device flow. Err: %s" % json.dumps(flow, indent=4))
-
-        log.debug(flow["message"])  # to-do: present to user, open in browser and ask to sign in
-
-        # Ideally you should wait here, in order to save some unnecessary polling
-        # input("Press Enter after signing in from another device to proceed, CTRL+C to abort.")
-
-        result = app.acquire_token_by_device_flow(flow)  # By default it will block
-        # You can follow this instruction to shorten the block time
-        #    https://msal-python.readthedocs.io/en/latest/#msal.PublicClientApplication.acquire_token_by_device_flow
-        # or you may even turn off the blocking behavior,
-        # and then keep calling acquire_token_by_device_flow(flow) in your own customized loop
-
-    # Check if the token was obtained successfully
     if "access_token" in result:
-        # Print the access token
-        print(result["access_token"])
+        log.debug("access token retrieved")
+        save_tokencache(config=config, cache=cache.serialize())
     else:
         # Print the error
-        print(result.get("error"), result.get("error_description"))
+        raise Exception("Error retrieving access token", result.get("error"), result.get("error_description"))
     return result
 
 
