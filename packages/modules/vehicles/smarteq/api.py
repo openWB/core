@@ -4,6 +4,7 @@ import logging
 from typing import Union
 import asyncio
 import json
+from modules.common.component_state import CarState
 from modules.common.store import RAMDISK_PATH
 from modules.vehicles.smarteq.config import SmartEQ
 # import requests
@@ -423,7 +424,7 @@ class Api:
         return soc, range
 
 
-def fetch_soc(conf: SmartEQ, vehicle: int) -> Union[int, float]:
+def fetch_soc(conf: SmartEQ, vehicle: int) -> CarState:
 
     # prepare and call async method
     loop = asyncio.new_event_loop()
@@ -433,4 +434,4 @@ def fetch_soc(conf: SmartEQ, vehicle: int) -> Union[int, float]:
     a = Api(vehicle)
     soc, range = loop.run_until_complete(a._fetch_soc(conf, vehicle))
 
-    return soc, range
+    return CarState(soc, range)
