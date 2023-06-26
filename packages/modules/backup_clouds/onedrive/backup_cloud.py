@@ -15,14 +15,25 @@ import base64
 log = logging.getLogger(__name__)
 
 
+def encode_str_base64(string: str) -> str:
+    string_bytes = string.encode("ascii")
+    string_base64_bytes = base64.b64encode(string_bytes)
+    string_base64_string = string_base64_bytes.decode("ascii")
+    return string_base64_string
+
+
 def save_tokencache(config: OneDriveBackupCloudConfiguration, cache: str) -> None:
     # encode cache to base64 and save to config
     log.debug("saving updated tokencache to config")
-    cache_bytes = cache.encode("ascii")
-    cache_base64_bytes = base64.b64encode(cache_bytes)
-    cache_base64_string = cache_base64_bytes.decode("ascii")
-    config.persistent_tokencache = cache_base64_string
-    publish.single("openWB/system/backup_cloud/config", json.dumps(config), retain=True, hostname="localhost")
+    config.persistent_tokencache = encode_str_base64(cache)
+
+    # construct full configuartion object for cloud backup
+    backupcloud = OneDriveBackupCloud()
+    backupcloud.configuration = config
+    backupcloud_to_mqtt = json.dumps(backupcloud.__dict__, default=lambda o: o.__dict__)
+    log.debug("Config to MQTT:" + str(backupcloud_to_mqtt))
+
+    publish.single("openWB/system/backup_cloud/config", to_mqtt, retain=True, hostname="localhost")
 
 
 def get_tokens(config: OneDriveBackupCloudConfiguration) -> dict:
