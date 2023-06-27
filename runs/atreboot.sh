@@ -32,6 +32,16 @@ chmod 666 "$LOGFILE"
 		exit
 	fi
 
+	# check for pending factory reset
+	if [[ -f "${OPENWBBASEDIR}/data/restore/factory_reset" ]]; then
+		echo "pending factory_reset detected, executing factory_reset"
+		# remove flag to prevent a boot loop on failure
+		rm "${OPENWBBASEDIR}/data/restore/factory_reset"
+		sudo "${OPENWBBASEDIR}/runs/factory_reset.sh" "clearall"
+	else
+		echo "no restore pending, normal startup"
+	fi
+
 	echo "atreboot.sh started"
 	if [[ -f "${OPENWBBASEDIR}/ramdisk/bootdone" ]]; then
 		mosquitto_pub -p 1886 -t "openWB/system/boot_done" -r -m 'false'
