@@ -695,6 +695,7 @@ class Command:
                          MessageType.INFO)
         self.systemReboot(connection_id, payload)
 
+
 class ErrorHandlingContext:
     def __init__(self, payload: dict, connection_id: str):
         self.payload = payload
