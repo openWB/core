@@ -129,7 +129,7 @@ class HandlerAlgorithm:
         except Exception:
             log.exception("Fehler im Main-Modul")
 
-    @exit_after(10)
+    @exit_after(300)
     def handler_random_nightly(self):
         try:
             data.data.system_data["system"].create_backup_and_send_to_cloud()
