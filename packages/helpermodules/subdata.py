@@ -264,8 +264,7 @@ class SubData:
                         else:
                             mod = importlib.import_module(".vehicles."+config["type"]+".soc", "modules")
                             config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config)
-                            var["ev"+index].soc_module = (mod.Soc if hasattr(mod, "Soc")
-                                                          else mod.create_vehicle)(config, index)
+                            var["ev"+index].soc_module = mod.create_vehicle(config, index)
                         self.event_soc.set()
                     elif re.search("/vehicle/[0-9]+/control_parameter/", msg.topic) is not None:
                         self.set_json_payload_class(

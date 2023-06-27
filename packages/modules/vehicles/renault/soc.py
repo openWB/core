@@ -1,14 +1,13 @@
-from typing import Union, List
+from typing import List
 
 import logging
 
-from dataclass_utils import dataclass_from_dict
 from helpermodules.cli import run_using_positional_cli_args
 from modules.common import store
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.abstract_soc import AbstractSoc, SocUpdateData
-from modules.common.component_context import SingleComponentUpdateContext
-from modules.common.fault_state import ComponentInfo
+from modules.common.abstract_soc import SocUpdateData
+from modules.common.component_state import CarState
+from modules.common.configurable_vehicle import ConfigurableVehicle
 from modules.vehicles.renault import api
 from modules.vehicles.renault.config import Renault, RenaultConfiguration
 
@@ -16,22 +15,16 @@ from modules.vehicles.renault.config import Renault, RenaultConfiguration
 log = logging.getLogger(__name__)
 
 
-class Soc(AbstractSoc):
-    def __init__(self, device_config: Union[dict, Renault], vehicle: int):
-        self.config = dataclass_from_dict(Renault, device_config)
-        self.vehicle = vehicle
-        self.store = store.get_car_value_store(self.vehicle)
-        self.component_info = ComponentInfo(self.vehicle, self.config.name, "vehicle")
-
-    def update(self, soc_update_data: SocUpdateData) -> None:
-        with SingleComponentUpdateContext(self.component_info):
-            self.store.set(api.fetch_soc(self.config.configuration))
+def create_vehicle(vehicle_config: Renault, vehicle: int):
+    def updater(soc_update_data: SocUpdateData) -> CarState:
+        return api.fetch_soc(vehicle_config.configuration)
+    return ConfigurableVehicle(vehicle_config=vehicle_config, component_updater=updater, vehicle=vehicle)
 
 
 def renault_update(user_id: str, password: str, location: str, country: str, vin: str, charge_point: int):
     log.debug("renault: user_id=" + user_id + "vin=" + vin + "charge_point=" + str(charge_point))
-    Soc(Renault(configuration=RenaultConfiguration(charge_point, user_id, password, location, country, vin)),
-        charge_point).update(SocUpdateData())
+    store.get_car_value_store(charge_point).store.set(api.fetch_soc(
+        RenaultConfiguration(charge_point, user_id, password, location, country, vin)))
 
 
 def main(argv: List[str]):
