@@ -99,6 +99,7 @@ class ChargepointModule(AbstractChargepoint):
                 )
                 FaultState.error(__name__ + " " + str(type(e)) + " " + str(e)).store_error(self.component_info)
             else:
+                self.__client.check_hardware()
                 raise FaultState.error(__name__ + " " + str(type(e)) + " " + str(e)) from e
 
         self.store.set(chargepoint_state)
