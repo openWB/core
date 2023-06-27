@@ -611,7 +611,7 @@ class Command:
         subprocess.run([str(parent_file / "runs" / "reboot.sh")])
 
     def systemShutdown(self, connection_id: str, payload: dict) -> None:
-        pub_user_message(payload, connection_id, "OpenWB wird heruntergefahren.", MessageType.INFO)
+        pub_user_message(payload, connection_id, "openWB wird heruntergefahren.", MessageType.INFO)
         parent_file = Path(__file__).resolve().parents[2]
         subprocess.run([str(parent_file / "runs" / "shutdown.sh")])
 
@@ -679,7 +679,7 @@ class Command:
             stdout=subprocess.PIPE)
         if result.returncode == 0:
             pub_user_message(payload, connection_id,
-                             "Wiederherstellung wurde vorbereitet. OpenWB wird jetzt zum Abschluss neu gestartet.",
+                             "Wiederherstellung wurde vorbereitet. openWB wird jetzt zum Abschluss neu gestartet.",
                              MessageType.INFO)
             self.systemReboot(connection_id, payload)
         else:
