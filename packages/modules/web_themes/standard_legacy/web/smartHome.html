@@ -403,6 +403,9 @@
 				countTopicsReceived = countTopicsReceived - countTopicsNotForPreloader;
 				var countTopicsToBeReceived = topicsToSubscribeFirst.length + topicsToSubscribe.length - countTopicsNotForPreloader;
 				var percentageReceived = (countTopicsReceived / countTopicsToBeReceived * 100).toFixed(0);
+				if (isNaN(percentageReceived)) {
+					percentageReceived = 100;
+				}
 				var timeBetweenTwoMessages = Date.now() - timeOfLastMqttMessage;
 				if (timeBetweenTwoMessages > 3000) {
 					// latest after 3 sec without new messages
