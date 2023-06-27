@@ -330,7 +330,7 @@ if ($configuration == "" || $configuration->active != true) {
 }
 
 if (!$debug) {
-	echo "Bitte die OpenWB neu starten, damit die Änderungen übernommen werden.\n";
+	echo "Bitte die openWB neu starten, damit die Änderungen übernommen werden.\n";
 	// restart or reload of broker in normal operation has several side effects and should be avoided!
 	// exec("sudo service mosquitto restart");
 }
