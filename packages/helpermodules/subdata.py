@@ -139,7 +139,7 @@ class SubData:
         elif "openWB/vehicle/template/ev_template/" in msg.topic:
             self.process_vehicle_ev_template_topic(self.ev_template_data, msg)
         elif "openWB/vehicle/" in msg.topic:
-            self.process_vehicle_topic(self.ev_data, msg)
+            self.process_vehicle_topic(client, self.ev_data, msg)
         elif "openWB/chargepoint/template/" in msg.topic:
             self.process_chargepoint_template_topic(self.cp_template_data, msg)
         elif "openWB/chargepoint/" in msg.topic:
@@ -222,7 +222,7 @@ class SubData:
         except Exception:
             log.exception("Fehler im subdata-Modul")
 
-    def process_vehicle_topic(self, var: Dict[str, ev.Ev], msg: mqtt.MQTTMessage):
+    def process_vehicle_topic(self, client: mqtt.Client, var: Dict[str, ev.Ev], msg: mqtt.MQTTMessage):
         """ Handler für die EV-Topics
 
         Parameter
@@ -257,6 +257,8 @@ class SubData:
                             decode_payload(msg.payload))
                     elif re.search("/vehicle/[0-9]+/set", msg.topic) is not None:
                         self.set_json_payload_class(var["ev"+index].data.set, msg)
+                    elif re.search("/vehicle/[0-9]+/soc_module/interval_config", msg.topic) is not None:
+                        self.set_json_payload_class(var["ev"+index].soc_module.interval_config, msg)
                     elif re.search("/vehicle/[0-9]+/soc_module/config$", msg.topic) is not None:
                         config = decode_payload(msg.payload)
                         if config["type"] is None:
@@ -265,6 +267,7 @@ class SubData:
                             mod = importlib.import_module(".vehicles."+config["type"]+".soc", "modules")
                             config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config)
                             var["ev"+index].soc_module = mod.create_vehicle(config, index)
+                            client.subscribe(f"/vehicle/{index}/soc_module/interval_config", 2)
                         self.event_soc.set()
                     elif re.search("/vehicle/[0-9]+/control_parameter/", msg.topic) is not None:
                         self.set_json_payload_class(

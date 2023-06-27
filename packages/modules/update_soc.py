@@ -43,7 +43,7 @@ class UpdateSoc:
             try:
                 if ev.soc_module is not None:
                     soc_update_data = self._get_soc_update_data(ev.num)
-                    if (ev.soc_interval_expired(soc_update_data.charge_state) or ev.data.get.force_soc_update):
+                    if (ev.soc_interval_expired(soc_update_data) or ev.data.get.force_soc_update):
                         self._reset_force_soc_update(ev)
                         if ev.data.get.fault_state == 2:
                             ev.data.set.soc_error_counter += 1
@@ -76,15 +76,18 @@ class UpdateSoc:
         for cp in list(data.data.cp_data.values()):
             if not isinstance(cp, AllChargepoints):
                 if cp.data.set.charging_ev == ev_num:
+                    plug_state = cp.data.get.plug_state
                     charge_state = cp.data.get.charge_state
                     imported_since_plugged = cp.data.set.log.imported_since_plugged
                     battery_capacity = cp.data.set.charging_ev_data.ev_template.data.battery_capacity
                     break
         else:
+            plug_state = False
             charge_state = False
             imported_since_plugged = 0
             battery_capacity = 0
-        return SocUpdateData(charge_state=charge_state,
+        return SocUpdateData(plug_state=plug_state,
+                             charge_state=charge_state,
                              imported_since_plugged=imported_since_plugged,
                              battery_capacity=battery_capacity)
 

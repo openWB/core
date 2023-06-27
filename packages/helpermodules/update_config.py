@@ -17,13 +17,14 @@ from helpermodules.utils.topic_parser import decode_payload, get_index, get_seco
 from helpermodules import measurement_log
 from control import counter_all
 from control import ev
+from modules.common.configurable_vehicle import IntervalConfig
 from modules.display_themes.cards.config import CardsDisplayTheme
 
 log = logging.getLogger(__name__)
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 12
+    DATASTORE_VERSION = 13
     valid_topic = ["^openWB/bat/config/configured$",
                    "^openWB/bat/set/charging_power_left$",
                    "^openWB/bat/set/switch_on_soc_reached$",
@@ -213,6 +214,7 @@ class UpdateConfig:
                    "^openWB/vehicle/[0-9]+/ev_template$",
                    "^openWB/vehicle/[0-9]+/name$",
                    "^openWB/vehicle/[0-9]+/soc_module/config$",
+                   "^openWB/vehicle/[0-9]+/soc_module/interval_config$",
                    "^openWB/vehicle/[0-9]+/tag_id$",
                    "^openWB/vehicle/[0-9]+/get/fault_state$",
                    "^openWB/vehicle/[0-9]+/get/fault_str$",
@@ -356,6 +358,7 @@ class UpdateConfig:
         ("openWB/vehicle/0/name", ev.EvData().name),
         ("openWB/vehicle/0/charge_template", ev.Ev(0).charge_template.ct_num),
         ("openWB/vehicle/0/soc_module/config", {"type": None, "configuration": {}}),
+        ("openWB/vehicle/0/soc_module/interval_config", dataclass_utils.asdict(IntervalConfig())),
         ("openWB/vehicle/0/ev_template", ev.Ev(0).ev_template.et_num),
         ("openWB/vehicle/0/tag_id", ev.Ev(0).data.tag_id),
         ("openWB/vehicle/0/get/soc", ev.Ev(0).data.get.soc),
@@ -716,7 +719,7 @@ class UpdateConfig:
                 updated_payload = payload
                 updated_payload["battery_capacity"] = payload["battery_capacity"] * 1000
                 updated_payload["average_consump"] = payload["average_consump"] * 1000
-                Pub().pub(topic, payload)
+                Pub().pub(topic, updated_payload)
         Pub().pub("openWB/system/datastore_version", 11)
 
     def upgrade_datastore_11(self) -> None:
@@ -728,3 +731,12 @@ class UpdateConfig:
                         payload["configuration"].update({"duo_num": 1})
                     Pub().pub(topic.replace("openWB/", "openWB/set/"), payload)
         Pub().pub("openWB/set/system/datastore_version", 12)
+
+    def upgrade_datastore_12(self) -> None:
+        for topic, payload in self.all_received_topics.items():
+            if re.search("openWB/vehicle/[0-9]+/soc_module/config", topic) is not None:
+                payload = decode_payload(payload)
+                index = get_index(topic)
+                Pub().pub(f"openWB/set/vehicle/{index}/soc_module/interval_config",
+                          dataclass_utils.asdict(IntervalConfig()))
+        Pub().pub("openWB/system/datastore_version", 13)

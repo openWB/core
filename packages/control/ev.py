@@ -19,7 +19,8 @@ from dataclass_utils.factories import currents_list_factory, empty_dict_factory,
 from helpermodules.abstract_plans import Limit, limit_factory, ScheduledChargingPlan, TimeChargingPlan
 from helpermodules.pub import Pub
 from helpermodules import timecheck
-from modules.common.abstract_soc import AbstractSoc
+from modules.common.abstract_soc import SocUpdateData
+from modules.common.configurable_vehicle import ConfigurableVehicle
 
 log = logging.getLogger(__name__)
 
@@ -206,7 +207,7 @@ class Ev:
         try:
             self.ev_template: EvTemplate = EvTemplate()
             self.charge_template: ChargeTemplate = ChargeTemplate(0)
-            self.soc_module: AbstractSoc = None
+            self.soc_module: ConfigurableVehicle = None
             self.chargemode_changed = False
             self.num = index
             self.data = EvData()
@@ -248,20 +249,22 @@ class Ev:
         except Exception:
             log.exception("Fehler im ev-Modul "+str(self.num))
 
-    def soc_interval_expired(self, charge_state: bool) -> bool:
+    def soc_interval_expired(self, soc_update_data: SocUpdateData) -> bool:
         request_soc = False
         if self.data.get.soc_timestamp == "":
             # Initiale Abfrage
             request_soc = True
         else:
-            if charge_state is True or (self.data.set.soc_error_counter < 3 and self.data.get.fault_state == 2):
-                interval = 5
-            else:
-                interval = 720
-            # Zeitstempel prüfen, ob wieder abgefragt werden muss.
-            if timecheck.check_timestamp(self.data.get.soc_timestamp, interval*60-5) is False:
-                # Zeit ist abgelaufen
-                request_soc = True
+            if soc_update_data.plug_state is True or self.soc_module.interval_config.request_only_plugged is False:
+                if (soc_update_data.charge_state is True or
+                        (self.data.set.soc_error_counter < 3 and self.data.get.fault_state == 2)):
+                    interval = self.soc_module.interval_config.request_interval_charging
+                else:
+                    interval = self.soc_module.interval_config.request_interval_not_charging
+                # Zeitstempel prüfen, ob wieder abgefragt werden muss.
+                if timecheck.check_timestamp(self.data.get.soc_timestamp, interval*60-5) is False:
+                    # Zeit ist abgelaufen
+                    request_soc = True
         return request_soc
 
     def get_required_current(self,
