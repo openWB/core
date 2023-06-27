@@ -17,7 +17,6 @@ from helpermodules import subdata
 from helpermodules import setdata
 from helpermodules import measurement_log
 from helpermodules import logger
-from helpermodules.logger import cleanup_logfiles
 from helpermodules import command
 from control import prepare
 from control import data
@@ -112,7 +111,6 @@ class HandlerAlgorithm:
                 else:
                     general_internal_chargepoint_handler.internal_chargepoint_handler.heartbeat = False
 
-            cleanup_logfiles()
             sub.system_data["system"].update_ip_address()
         except KeyboardInterrupt:
             log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())
