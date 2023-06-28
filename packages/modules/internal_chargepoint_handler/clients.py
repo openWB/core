@@ -39,32 +39,32 @@ class ClientHandler:
         self.check_hardware()
         self.read_error = 0
 
-    def __evse_factory(self, serial_client: ModbusSerialClient_, evse_ids: List[int]) -> evse.Evse:
+    def __evse_factory(self, client: Union[ModbusSerialClient_, ModbusTcpClient_], evse_ids: List[int]) -> evse.Evse:
         for modbus_id in evse_ids:
-            try:
-                evse_client = evse.Evse(modbus_id, serial_client)
-                with serial_client:
+            evse_client = evse.Evse(modbus_id, client)
+            with client:
+                try:
                     if evse_client.get_firmware_version() > EVSE_MIN_FIRMWARE:
-                        log.debug(serial_client)
+                        log.debug(client)
                         log.error("Modbus-ID der EVSE an LP"+str(self.local_charge_point_num)+": "+str(modbus_id))
                         return evse_client
-            except Exception:
-                pass
+                except Exception:
+                    pass
         else:
             return None
 
     @staticmethod
-    def find_meter_client(meters: List[meter_config], serial_client: ModbusSerialClient_) -> METERS:
+    def find_meter_client(meters: List[meter_config], client: Union[ModbusSerialClient_, ModbusTcpClient_]) -> METERS:
         for meter_type, modbus_id in meters:
-            try:
-                meter_client = meter_type(modbus_id, serial_client)
-                with serial_client:
+            meter_client = meter_type(modbus_id, client)
+            with client:
+                try:
                     if meter_client.get_voltages()[0] > 200:
                         log.error("Verbauter Zähler: "+str(meter_type)+" mit Modbus-ID: "+str(modbus_id))
                         return meter_client
-            except Exception:
-                log.debug(serial_client)
-                log.debug(f"Zähler {meter_type} mit Modbus-ID:{modbus_id} antwortet nicht.")
+                except Exception:
+                    log.debug(client)
+                    log.debug(f"Zähler {meter_type} mit Modbus-ID:{modbus_id} antwortet nicht.")
         else:
             return None
     OPEN_TICKET = " Bitte nehme über die Support-Funktion in den Einstellungen Kontakt mit uns auf."
