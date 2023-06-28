@@ -8,6 +8,7 @@ FORMAT_STR_DETAILED = '%(asctime)s - {%(name)s:%(lineno)s} - {%(levelname)s:%(th
 FORMAT_STR_SHORT = '%(asctime)s - %(message)s'
 RAMDISK_PATH = str(Path(__file__).resolve().parents[2]) + '/ramdisk/'
 
+
 def filter_neg(name: str, record) -> bool:
     if name in record.threadName:
         return False
