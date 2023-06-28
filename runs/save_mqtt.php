@@ -172,8 +172,10 @@ if ($configuration == "" || $configuration->active != true) {
 
 
 	// Keine Daten außer Uhrzeit an den Server senden, solange die Cloud nicht implementiert ist.
+	// allow partner access
 	fwrite($configFile, <<<EOS
 		topic openWB/system/time out 2 "" {$configuration->remote->prefix}
+		topic openWB-remote/partner both 2 "" {$configuration->remote->prefix}
 		EOS
 	);
 	// if ($configuration->data_transfer->status) {
@@ -239,9 +241,6 @@ if ($configuration == "" || $configuration->active != true) {
 	// 	fwrite(
 	// 		$configFile,
 	// 		<<<EOS
-
-	// # allow partner access
-	// topic openWB-remote/partner both 2 "" {$configuration->remote->prefix}
 
 	// EOS
 	// 	);
