@@ -4,7 +4,7 @@ from typing import Optional
 class OneDriveBackupCloudConfiguration:
     def __init__(self, backuppath: str = "/openWB/Backup/",
                  persistent_tokencache: Optional[str] = None,
-                 url: Optional[str] = None,
+                 authurl: Optional[str] = None,
                  authcode: Optional[str] = None,
                  scope: Optional[list] = ["https://graph.microsoft.com/Files.ReadWrite"],
                  authority: Optional[str] = "https://login.microsoftonline.com/consumers/",
@@ -12,7 +12,7 @@ class OneDriveBackupCloudConfiguration:
                  flow: Optional[str] = None) -> None:
         self.backuppath = backuppath
         self.persistent_tokencache = persistent_tokencache
-        self.url = url
+        self.authurl = authurl
         self.authcode = authcode
         self.scope = scope
         self.authority = authority

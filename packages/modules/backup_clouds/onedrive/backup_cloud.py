@@ -28,12 +28,24 @@ def save_tokencache(config: OneDriveBackupCloudConfiguration, cache: str) -> Non
     config.persistent_tokencache = encode_str_base64(cache)
 
     # construct full configuartion object for cloud backup
-    backupcloud = OneDriveBackupCloud()
+    backupcloud = OneDriveBackupCloud()  
     backupcloud.configuration = config
     backupcloud_to_mqtt = json.dumps(backupcloud.__dict__, default=lambda o: o.__dict__)
     log.debug("Config to MQTT:" + str(backupcloud_to_mqtt))
 
-    publish.single("openWB/system/backup_cloud/config", to_mqtt, retain=True, hostname="localhost")
+    publish.single("openWB/set/system/backup_cloud/config", backupcloud_to_mqtt, retain=True, hostname="localhost")
+
+
+'''def create_msal_app(config: OneDriveBackupCloudConfiguration) -> msal.PublicClientApplication:
+    cache = msal.SerializableTokenCache()
+    if config.persistent_tokencache:
+        cache.deserialize(base64.b64decode(config.persistent_tokencache))
+    else:
+        raise Exception("No tokencache found, please re-configure and re-authorize access Cloud backup settings.")
+    return msal.PublicClientApplication(
+        config.clientID, authority=config.authority,
+        token_cache=msal.SerializableTokenCache())
+'''
 
 
 def get_tokens(config: OneDriveBackupCloudConfiguration) -> dict:
@@ -48,6 +60,7 @@ def get_tokens(config: OneDriveBackupCloudConfiguration) -> dict:
     # Create a public client application with msal
     log.debug("creating MSAL public client application")
     app = msal.PublicClientApplication(client_id=config.clientID, authority=config.authority, token_cache=cache)
+    # app = create_msal_app(config)
 
     log.debug("getting accounts")
     accounts = app.get_accounts()

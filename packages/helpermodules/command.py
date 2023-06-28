@@ -10,25 +10,26 @@ import re
 import traceback
 from pathlib import Path
 import paho.mqtt.client as mqtt
+import paho.mqtt.publish as publish
 import pickle
-import io
 from msal import PublicClientApplication
 from control.chargepoint import chargepoint
 from control.chargepoint.chargepoint_template import get_autolock_plan_default, get_chargepoint_template_default
+import msal
 
 from helpermodules import measurement_log
 from helpermodules.broker import InternalBrokerClient
 from helpermodules.messaging import MessageType, pub_user_message, pub_error_global
 from helpermodules.parse_send_debug import parse_send_debug_data
-from helpermodules.pub import Pub
+from helpermodules.pub import Pub, pub_single
 from helpermodules.subdata import SubData
 from helpermodules.utils.topic_parser import decode_payload
 from control import bat, bridge, chargelog, data, ev, counter, counter_all, pv
 from modules.chargepoints.internal_openwb.chargepoint_module import ChargepointModule
 from modules.chargepoints.internal_openwb.config import InternalChargepointMode
 from modules.common.component_type import ComponentType, special_to_general_type_mapping, type_to_topic_mapping
-from modules.backup_clouds.onedrive.config import OneDriveBackupCloudConfiguration
 import dataclass_utils
+from modules.backup_clouds.onedrive.backup_cloud import save_tokencache
 
 log = logging.getLogger(__name__)
 
@@ -692,31 +693,39 @@ class Command:
                              MessageType.ERROR)
 
     def requestMSALAuthCode(self, connection_id: str, payload: dict) -> None:
-        """ startet den Authentifizierungsprozess für MSAL (Microsoft Authentication Library) um Onedrive Backup zu ermöglichen
-        """
+        """ startet den Authentifizierungsprozess für MSAL (Microsoft Authentication Library) für Onedrive Backup"""
+        
+        cloudbackupconfig = SubData.system_data["system"].backup_cloud
 
-        # to-do: Konfiguration aus OneDrive modul importieren?
-        # Define the scope of access
-        scope = {"https://graph.microsoft.com/Files.ReadWrite"} # Replace with your desired scope
-
-        # Define the authority and the token endpoint for MSA/Live accounts
-        authority = "https://login.microsoftonline.com/consumers/"
-        clientID = "e529d8d2-3b0f-4ae4-b2ba-2d9a2bba55b2"
-
+        if cloudbackupconfig is None:
+            pub_user_message(payload, connection_id,
+                             "Es ist keine Backup-Cloud konfiguriert. Bitte Konfiguration speichern "
+                             "und erneut versuchen.<br />", MessageType.WARNING)
+            return
+        
         # Create a public client application with msal
-        app = PublicClientApplication(client_id=clientID, authority=authority)
+        client_id = cloudbackupconfig.config.configuration.clientID
+        authority = cloudbackupconfig.config.configuration.authority
+        app = PublicClientApplication(client_id=client_id, authority=authority)
 
-        flow = app.initiate_device_flow(scope)
+        # create device flow to obtain auth code
+        flow = app.initiate_device_flow(cloudbackupconfig.config.configuration.scope)
         if "user_code" not in flow:
             raise Exception(
                 "Fail to create device flow. Err: %s" % json.dumps(flow, indent=4))
 
-        flow["expires_at"] = 0  # Mark it as expired immediately
-        pickleBuffer = io.BytesIO()
-        pickle.dump(flow, pickleBuffer)
+        flow["expires_at"] = 0  # Mark it as expired immediately to prevent
+        pickleString = str(pickle.dumps(flow), encoding='latin1')
 
-        #Pub().pub(f'openWB/set/vehicle/template/ev_template/{new_id}', ev_template_default)
-        # Pub().pub("openWB/set/command/max_id/ev_template", new_id)
+        cloudbackupconfig.config.configuration.flow = str(pickleString)
+        cloudbackupconfig.config.configuration.authcode = flow["user_code"]
+        cloudbackupconfig.config.configuration.authurl = flow["verification_uri"]
+        cloudbackupconfig_to_mqtt = json.dumps(cloudbackupconfig.config.__dict__, default=lambda o: o.__dict__)
+
+        publish.single(
+            "openWB/set/system/backup_cloud/config", cloudbackupconfig_to_mqtt, retain=True, hostname="localhost"
+            )
+
         pub_user_message(
             payload, connection_id,
             'Authorisierung gestartet, bitte den Link öffen, Code eingeben, '
@@ -726,8 +735,51 @@ class Command:
     def retrieveMSALTokens(self, connection_id: str, payload: dict) -> None:
         """ holt die Tokens für MSAL (Microsoft Authentication Library) um Onedrive Backup zu ermöglichen
         """
-        # Pub().pub(f'openWB/set/vehicle/template/ev_template/{new_id}', ev_template_default)
-        # Pub().pub("openWB/set/command/max_id/ev_template", new_id)
+        cloudbackupconfig = SubData.system_data["system"].backup_cloud
+
+        if cloudbackupconfig is None:
+            pub_user_message(payload, connection_id,
+                             "Es ist keine Backup-Cloud konfiguriert. Bitte Konfiguration speichern "
+                             "und erneut versuchen.<br />", MessageType.WARNING)
+            return
+
+        # Create a public client application with msal
+        result = None
+        cache = msal.SerializableTokenCache()
+        client_id = cloudbackupconfig.config.configuration.clientID
+        authority = cloudbackupconfig.config.configuration.authority
+        app = PublicClientApplication(client_id=client_id, authority=authority, token_cache=cache)
+
+        t = cloudbackupconfig.config.configuration.flow
+        if t is None:
+            pub_user_message(payload, connection_id,
+                             "Es ist keine Backup-Cloud konfiguriert. Bitte Konfiguration speichern "
+                             "und erneut versuchen.<br />", MessageType.WARNING)
+            return
+        flow = pickle.loads(bytes(t, encoding='latin1'))
+
+        result = app.acquire_token_by_device_flow(flow)
+        # https://msal-python.readthedocs.io/en/latest/#msal.PublicClientApplication.acquire_token_by_device_flow
+        # https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-device-code
+        # Check if the token was obtained successfully
+        if "access_token" in result:
+            log.debug("retrieved access token")
+
+            # Tokens retrieved, remove auth codes as they are single use only.
+            cloudbackupconfig.config.flow = None
+            cloudbackupconfig.config.authcode = None
+            cloudbackupconfig.config.authurl = None
+
+            # save tokens
+            save_tokencache(config=cloudbackupconfig.config.configuration, cache=cache.serialize())
+
+        else:
+            pub_user_message(payload, connection_id,
+                             "Es konnten keine Tokens abgerufen werden: %s <br> %s"
+                             % (result.get("error"), result.get("error_description")), MessageType.WARNING
+                             )
+            return
+
         pub_user_message(
             payload, connection_id,
             'Zugangsberechtigung erfolgreich abgerufen.',
