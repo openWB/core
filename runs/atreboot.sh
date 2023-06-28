@@ -39,7 +39,7 @@ chmod 666 "$LOGFILE"
 		rm "${OPENWBBASEDIR}/data/restore/factory_reset"
 		sudo "${OPENWBBASEDIR}/runs/factory_reset.sh" "clearall"
 	else
-		echo "no restore pending, normal startup"
+		echo "no factory reset pending, normal startup"
 	fi
 
 	echo "atreboot.sh started"
