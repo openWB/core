@@ -12,6 +12,8 @@ case "$1" in
 		timeout 3 mosquitto_sub -t '#' --remove-retained --retained-only
 		echo "deleting retained message store of internal mosquitto..."
 		timeout 3 mosquitto_sub -t '#' --remove-retained --retained-only -p 1886
+		echo "deleting log data"
+		rm -r ./data/charge_log/* ./data/daily_log/* ./data/log/* ./data/monthly_log/*
 		echo "all done";;
 	*)
 		echo "please pass \"clearall\" as parameter if you really want to reset all data stored in the internal and external broker"
