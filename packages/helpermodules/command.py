@@ -21,7 +21,7 @@ from helpermodules import measurement_log
 from helpermodules.broker import InternalBrokerClient
 from helpermodules.messaging import MessageType, pub_user_message, pub_error_global
 from helpermodules.parse_send_debug import parse_send_debug_data
-from helpermodules.pub import Pub, pub_single
+from helpermodules.pub import Pub
 from helpermodules.subdata import SubData
 from helpermodules.utils.topic_parser import decode_payload
 from control import bat, bridge, chargelog, data, ev, counter, counter_all, pv
@@ -694,7 +694,7 @@ class Command:
 
     def requestMSALAuthCode(self, connection_id: str, payload: dict) -> None:
         """ startet den Authentifizierungsprozess für MSAL (Microsoft Authentication Library) für Onedrive Backup"""
-        
+
         cloudbackupconfig = SubData.system_data["system"].backup_cloud
 
         if cloudbackupconfig is None:
@@ -702,7 +702,7 @@ class Command:
                              "Es ist keine Backup-Cloud konfiguriert. Bitte Konfiguration speichern "
                              "und erneut versuchen.<br />", MessageType.WARNING)
             return
-        
+
         # Create a public client application with msal
         client_id = cloudbackupconfig.config.configuration.clientID
         authority = cloudbackupconfig.config.configuration.authority
