@@ -689,6 +689,14 @@ class Command:
                              f'Restore-Status: {result.returncode}<br />Meldung: {result.stdout.decode("utf-8")}',
                              MessageType.ERROR)
 
+    def factoryReset(self, connection_id: str, payload: dict) -> None:
+        Path(Path(__file__).resolve().parents[2] / 'data' / 'restore' / 'factory_reset').touch()
+        pub_user_message(payload, connection_id,
+                         ("Zurücksetzen auf Werkseinstellungen wurde vorbereitet."
+                          " openWB wird jetzt zum Abschluss neu gestartet."),
+                         MessageType.INFO)
+        self.systemReboot(connection_id, payload)
+
 
 class ErrorHandlingContext:
     def __init__(self, payload: dict, connection_id: str):
