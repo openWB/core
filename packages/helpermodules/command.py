@@ -704,9 +704,10 @@ class Command:
             return
 
         # Create a public client application with msal
-        client_id = cloudbackupconfig.config.configuration.clientID
-        authority = cloudbackupconfig.config.configuration.authority
-        app = PublicClientApplication(client_id=client_id, authority=authority)
+        app = PublicClientApplication(
+            client_id=cloudbackupconfig.config.configuration.clientID,
+            authority=cloudbackupconfig.config.configuration.authority
+            )
 
         # create device flow to obtain auth code
         flow = app.initiate_device_flow(cloudbackupconfig.config.configuration.scope)
@@ -746,9 +747,8 @@ class Command:
         # Create a public client application with msal
         result = None
         cache = msal.SerializableTokenCache()
-        client_id = cloudbackupconfig.config.configuration.clientID
-        authority = cloudbackupconfig.config.configuration.authority
-        app = PublicClientApplication(client_id=client_id, authority=authority, token_cache=cache)
+        app = PublicClientApplication(client_id=cloudbackupconfig.config.configuration.clientID,
+                                      authority=cloudbackupconfig.config.configuration.authority, token_cache=cache)
 
         t = cloudbackupconfig.config.configuration.flow
         if t is None:

@@ -28,7 +28,7 @@ def save_tokencache(config: OneDriveBackupCloudConfiguration, cache: str) -> Non
     config.persistent_tokencache = encode_str_base64(cache)
 
     # construct full configuartion object for cloud backup
-    backupcloud = OneDriveBackupCloud()  
+    backupcloud = OneDriveBackupCloud()
     backupcloud.configuration = config
     backupcloud_to_mqtt = json.dumps(backupcloud.__dict__, default=lambda o: o.__dict__)
     log.debug("Config to MQTT:" + str(backupcloud_to_mqtt))
