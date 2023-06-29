@@ -132,7 +132,7 @@ class InternalChargepointHandler:
         self.event_start = event_start
         self.event_stop = event_stop
         self.heartbeat = False
-        with SingleComponentUpdateContext(ComponentInfo(parent_cp0, "Interner Ladepunkt 1", "vehicle",
+        with SingleComponentUpdateContext(ComponentInfo(parent_cp0, "Interner Ladepunkt 0", "vehicle",
                                                         parent_hostname=global_data.parent_ip)):
             # Allgemeine Fehlermeldungen an LP 1:
             self.cp0_client_handler = client_factory(0)
