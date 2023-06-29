@@ -728,6 +728,8 @@ class SubData:
                     if decode_payload(msg.payload) != "":
                         Pub().pub("openWB/system/subdata_initialized", "")
                         self.event_subdata_initialized.set()
+                elif "openWB/system/debug_level" == msg.topic:
+                    logging.getLogger().setLevel(decode_payload(msg.payload))
                 self.set_json_payload(var["system"].data, msg)
         except Exception:
             log.exception("Fehler im subdata-Modul")

@@ -46,7 +46,6 @@ class HandlerAlgorithm:
             def handler_with_control_interval():
                 if (data.data.general_data.data.control_interval / 10) == self.interval_counter:
                     data.data.copy_data()
-                    log.setLevel(data.data.system_data["system"].data["debug_level"])
                     loadvars_.get_values()
                     data.data.copy_data()
                     self.heartbeat = True
