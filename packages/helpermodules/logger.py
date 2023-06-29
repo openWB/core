@@ -4,6 +4,7 @@ from pathlib import Path
 import subprocess
 import typing_extensions
 
+
 def filter_neg(name: str, record) -> bool:
     if name in record.threadName:
         return False
