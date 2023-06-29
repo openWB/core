@@ -176,6 +176,7 @@ if ($configuration == "" || $configuration->active != true) {
 	fwrite($configFile, <<<EOS
 		topic openWB/system/time out 2 "" {$configuration->remote->prefix}
 		topic openWB-remote/support both 2 "" {$configuration->remote->prefix}
+		
 		EOS
 	);
 
@@ -185,6 +186,7 @@ if ($configuration == "" || $configuration->active != true) {
 			$configFile,
 			<<<EOS
 	topic openWB-remote/partner both 2 "" {$configuration->remote->prefix}
+	
 	EOS
 		);
 	}
