@@ -4,10 +4,11 @@ RAMDISKDIR="${OPENWBBASEDIR}/ramdisk"
 
 
 function merge_log_files(){
-	if [[ -f "${RAMDISKDIR}/${1}.log.1" ]]; then
-		cat "${RAMDISKDIR}/${1}.log.1" "${RAMDISKDIR}/${1}.log" | tail -n $2
+	LOGPATH=${3:-$RAMDISKDIR}
+	if [[ -f "${LOGPATH}/${1}.log.1" ]]; then
+		cat "${LOGPATH}/${1}.log.1" "${LOGPATH}/${1}.log" | tail -n $2
 	else
-		tail -$2 "${RAMDISKDIR}/${1}.log"
+		tail -n $2 "${LOGPATH}/${1}.log"
 	fi
 }
 
