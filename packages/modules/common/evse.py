@@ -3,6 +3,7 @@ import logging
 from enum import IntEnum
 import time
 from typing import Optional, Tuple
+from helpermodules.logger import ModifyLoglevelContext
 
 from modules.common import modbus
 from modules.common.fault_state import FaultState
@@ -52,18 +53,20 @@ class Evse:
     def get_firmware_version(self) -> bool:
         time.sleep(0.1)
         version = self.client.read_holding_registers(1005, ModbusDataType.UINT_16, unit=self.id)
-        log.error("FW-Version: "+str(version))
+        with ModifyLoglevelContext(log, logging.DEBUG):
+            log.debug("FW-Version: "+str(version))
         return version
 
     def is_precise_current_active(self) -> bool:
         time.sleep(0.1)
         value = self.client.read_holding_registers(2005, ModbusDataType.UINT_16, unit=self.id)
-        if value & self.PRECISE_CURRENT_BIT:
-            log.error("Angabe der Ströme in 0,01A-Schritten ist aktiviert.")
-            return True
-        else:
-            log.error("Angabe der Ströme in 0,01A-Schritten ist nicht aktiviert.")
-            return False
+        with ModifyLoglevelContext(log, logging.DEBUG):
+            if value & self.PRECISE_CURRENT_BIT:
+                log.debug("Angabe der Ströme in 0,01A-Schritten ist aktiviert.")
+                return True
+            else:
+                log.debug("Angabe der Ströme in 0,01A-Schritten ist nicht aktiviert.")
+                return False
 
     def activate_precise_current(self) -> None:
         time.sleep(0.1)
@@ -71,7 +74,8 @@ class Evse:
         if value & self.PRECISE_CURRENT_BIT:
             return
         else:
-            log.error("Bit zur Angabe der Ströme in 0,1A-Schritten wird gesetzt.")
+            with ModifyLoglevelContext(log, logging.DEBUG):
+                log.debug("Bit zur Angabe der Ströme in 0,1A-Schritten wird gesetzt.")
             self.client.delegate.write_registers(2005, value ^ self.PRECISE_CURRENT_BIT, unit=self.id)
             # Zeit zum Verarbeiten geben
             time.sleep(1)
@@ -80,7 +84,8 @@ class Evse:
         time.sleep(0.1)
         value = self.client.read_holding_registers(2005, ModbusDataType.UINT_16, unit=self.id)
         if value & self.PRECISE_CURRENT_BIT:
-            log.error("Bit zur Angabe der Ströme in 0,1A-Schritten wird zurueckgesetzt.")
+            with ModifyLoglevelContext(log, logging.DEBUG):
+                log.debug("Bit zur Angabe der Ströme in 0,1A-Schritten wird zurueckgesetzt.")
             self.client.delegate.write_registers(2005, value ^ self.PRECISE_CURRENT_BIT, unit=self.id)
         else:
             return

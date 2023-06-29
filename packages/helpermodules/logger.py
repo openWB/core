@@ -2,6 +2,10 @@ import functools
 import logging
 from pathlib import Path
 import subprocess
+import typing_extensions
+from control import data
+
+from helpermodules.pub import Pub
 
 
 def filter_neg(name: str, record) -> bool:
@@ -72,3 +76,18 @@ def cleanup_logfiles():
 
 def _get_parent_path() -> Path:
     return Path(__file__).resolve().parents[2]
+
+
+class ModifyLoglevelContext:
+    def __init__(self, logger: logging.Logger, new_loglevel: int):
+        self.logger = logger
+        self.new_loglevel = new_loglevel
+
+    def __enter__(self):
+        self.previous_logelvel = data.data.system_data["system"].data["debug_level"]
+        self.logger.setLevel(self.new_loglevel)
+
+    def __exit__(self, exception_type, exception, exception_traceback) -> typing_extensions.Literal[False]:
+        Pub().pub("openWB/set/system/debug_level", self.previous_logelvel)
+        # no exception handling
+        return False
