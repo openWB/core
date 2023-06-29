@@ -691,11 +691,12 @@ class Command:
                              MessageType.ERROR)
 
     def requestMSALAuthCode(self, connection_id: str, payload: dict) -> None:
+        ''' fordert einen Authentifizierungscode für MSAL (Microsoft Authentication Library) an um Onedrive Backup zu ermöglichen'''
         cloudbackupconfig = SubData.system_data["system"].backup_cloud
         if cloudbackupconfig is None:
             pub_user_message(payload, connection_id,
-                                "Es ist keine Backup-Cloud konfiguriert. Bitte Konfiguration speichern "
-                                "und erneut versuchen.<br />", MessageType.WARNING)
+                             "Es ist keine Backup-Cloud konfiguriert. Bitte Konfiguration speichern "
+                             "und erneut versuchen.<br />", MessageType.WARNING)
             return
         result = generateMSALAuthCode(cloudbackupconfig.config)
         pub_user_message(payload, connection_id, result["message"], result["MessageType"])
@@ -704,13 +705,11 @@ class Command:
         """ holt die Tokens für MSAL (Microsoft Authentication Library) um Onedrive Backup zu ermöglichen
         """
         cloudbackupconfig = SubData.system_data["system"].backup_cloud
-
         if cloudbackupconfig is None:
             pub_user_message(payload, connection_id,
                              "Es ist keine Backup-Cloud konfiguriert. Bitte Konfiguration speichern "
                              "und erneut versuchen.<br />", MessageType.WARNING)
             return
-
         result = retrieveMSALTokens(cloudbackupconfig.config)
         pub_user_message(payload, connection_id, result["message"], result["MessageType"])
 
