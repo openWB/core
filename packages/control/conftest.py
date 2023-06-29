@@ -91,17 +91,17 @@ def data_() -> None:
                                                 config=Mock(spec=Config, phase_1=1),
                                                 get=Mock(spec=Get, currents=[30, 0, 0], power=6900,
                                                          daily_imported=10000, daily_exported=0),
-                                                set=Mock(spec=Set))),
+                                                set=Mock(spec=Set, loadmanagement_available=True))),
         "cp4": Mock(spec=Chargepoint, data=Mock(spec=ChargepointData,
                                                 config=Mock(spec=Config, phase_1=2),
                                                 get=Mock(spec=Get, currents=[0, 15, 15], power=6900,
                                                          daily_imported=10000, daily_exported=0),
-                                                set=Mock(spec=Set))),
+                                                set=Mock(spec=Set, loadmanagement_available=True))),
         "cp5": Mock(spec=Chargepoint, data=Mock(spec=ChargepointData,
                                                 config=Mock(spec=Config, phase_1=3),
                                                 get=Mock(spec=Get, currents=[10]*3, power=6900,
                                                          daily_imported=10000, daily_exported=0),
-                                                set=Mock(spec=Set)))}
+                                                set=Mock(spec=Set, loadmanagement_available=True)))}
     data.data.bat_data.update({"bat2": Mock(spec=Bat, data=Mock(spec=BatData, get=Mock(
         spec=BatGet, power=-5000, daily_imported=7000, daily_exported=3000)))})
     data.data.pv_data.update({"pv1": Mock(spec=Pv, data=Mock(

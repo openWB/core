@@ -172,8 +172,10 @@ if ($configuration == "" || $configuration->active != true) {
 
 
 	// Keine Daten außer Uhrzeit an den Server senden, solange die Cloud nicht implementiert ist.
+	// allow partner access
 	fwrite($configFile, <<<EOS
 		topic openWB/system/time out 2 "" {$configuration->remote->prefix}
+		topic openWB-remote/partner both 2 "" {$configuration->remote->prefix}
 		EOS
 	);
 	// if ($configuration->data_transfer->status) {
@@ -239,9 +241,6 @@ if ($configuration == "" || $configuration->active != true) {
 	// 	fwrite(
 	// 		$configFile,
 	// 		<<<EOS
-
-	// # allow partner access
-	// topic openWB-remote/partner both 2 "" {$configuration->remote->prefix}
 
 	// EOS
 	// 	);
@@ -330,7 +329,7 @@ if ($configuration == "" || $configuration->active != true) {
 }
 
 if (!$debug) {
-	echo "Bitte die OpenWB neu starten, damit die Änderungen übernommen werden.\n";
+	echo "Bitte die openWB neu starten, damit die Änderungen übernommen werden.\n";
 	// restart or reload of broker in normal operation has several side effects and should be avoided!
 	// exec("sudo service mosquitto restart");
 }

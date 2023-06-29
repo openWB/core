@@ -396,7 +396,8 @@ class SetData:
                 self._validate_value(msg, int, [(0, float("inf"))])
             elif "/soc_module/configuration/soc_start" in msg.topic:
                 self._validate_value(msg, float, [(0, 100)], pub_json=True)
-            elif "/soc_module/config" in msg.topic:
+            elif ("/soc_module/config" in msg.topic or
+                  "/soc_module/interval_config" in msg.topic):
                 self._validate_value(msg, "json")
             elif "/get/fault_state" in msg.topic:
                 self._validate_value(msg, int, [(0, 2)])
@@ -859,6 +860,8 @@ class SetData:
                         msg, float, [(0, float("inf"))])
                 elif "/get/fault_state" in msg.topic:
                     self._validate_value(msg, int, [(0, 2)])
+                elif "/set/error_counter" in msg.topic:
+                    self._validate_value(msg, int, [(0, float("inf"))])
                 elif ("/get/fault_str" in msg.topic or
                       "/set/state_str" in msg.topic):
                     self._validate_value(msg, str)

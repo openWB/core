@@ -2,14 +2,15 @@ from typing import Optional
 
 
 class OpenWBseries2SatellitConfiguration:
-    def __init__(self, ip_address: Optional[str] = None, counter_type: str = "sdm630"):
+    def __init__(self, ip_address: Optional[str] = None, duo_num: int = 1, counter_type: str = "sdm630"):
         self.ip_address = ip_address
+        self.duo_num = duo_num
         self.counter_type = counter_type
 
 
 class OpenWBseries2Satellit:
     def __init__(self,
-                 name: str = "openWB series2 satellit",
+                 name: str = "openWB series2 satellit, openWB series2 satellit Duo",
                  type: str = "openwb_series2_satellit",
                  id: int = 0,
                  configuration: OpenWBseries2SatellitConfiguration = None) -> None:

@@ -13,6 +13,8 @@ Bei Hybrid-Systemen erfolgt die Verrechnung von Speicher-und PV-Leistung automat
 
 Das Speichern, Runden, Loggen und eine Plausibilitätsprüfung der Werte erfolgt zentral und muss daher nicht in jedem Modul implementiert werden.
 
+Wenn keine Einstellungsseiten in vue hinterlegt sind, sind die Einstellungen als json-Objekt editierbar.
+
 ### Kompatibilität mit 1.9
 Damit das Modul auch unter 1.9 lauffähig ist, müssen -wie bisher- die unter [docs/legacy](https://github.com/openWB/core/tree/master/docs/samples/legacy?v30-12-2022) angegebenen Ordner erstellt werden und das Modul im UI hinzugefügt werden. Aufßerdem muss in der device.py die read_legacy-Funktion so implementiert werden, dass anhand des übergebenen Komponenten-Typs das Update der entsprechenden Komponente getriggert wird. Beim zentralen Speichern der ausgelesenen Werte wird automatisch erkannt, ob diese in die ramdisk (1.9) oder in den Broker (2.x) geschrieben werden müssen.
 

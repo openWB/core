@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-from typing import Union
 import os
 import base64
 import json
@@ -11,6 +10,7 @@ import getpass
 import urllib
 
 import logging
+from modules.common.component_state import CarState
 from modules.common.store import RAMDISK_PATH
 
 log = logging.getLogger(__name__)
@@ -265,7 +265,7 @@ def requestData(token: str, vin: str) -> dict:
     return response
 
 
-def fetch_soc(user_id: str, password: str, vin: str, vehicle: int) -> Union[int, float]:
+def fetch_soc(user_id: str, password: str, vin: str, vehicle: int) -> CarState:
 
     try:
         token = requestToken(user_id, password)
@@ -276,4 +276,4 @@ def fetch_soc(user_id: str, password: str, vin: str, vehicle: int) -> Union[int,
     except Exception as err:
         log.error("bmw.fetch_soc: requestData Error, vehicle: " + str(vehicle) + f" {err=}, {type(err)=}")
         raise
-    return soc, range
+    return CarState(soc, range)

@@ -27,6 +27,7 @@ from modules.chargepoints.internal_openwb.chargepoint_module import ChargepointM
 from modules.chargepoints.internal_openwb.config import InternalChargepointMode
 from modules.common.component_type import ComponentType, special_to_general_type_mapping, type_to_topic_mapping
 import dataclass_utils
+from modules.common.configurable_vehicle import IntervalConfig
 
 
 log = logging.getLogger(__name__)
@@ -514,6 +515,7 @@ class Command:
         for default in vehicle_default:
             Pub().pub(f"openWB/set/vehicle/{new_id}/{default}", vehicle_default[default])
         Pub().pub(f"openWB/set/vehicle/{new_id}/soc_module/config", {"type": None, "configuration": {}})
+        Pub().pub(f"openWB/set/vehicle/{new_id}/soc_module/interval_config", dataclass_utils.asdict(IntervalConfig()))
         self.max_id_vehicle = self.max_id_vehicle + 1
         Pub().pub("openWB/set/command/max_id/vehicle", self.max_id_vehicle)
         # Default-Mäßig werden die Templates 0 zugewiesen, wenn diese noch nicht existieren -> anlegen
@@ -614,7 +616,7 @@ class Command:
         subprocess.run([str(parent_file / "runs" / "reboot.sh")])
 
     def systemShutdown(self, connection_id: str, payload: dict) -> None:
-        pub_user_message(payload, connection_id, "OpenWB wird heruntergefahren.", MessageType.INFO)
+        pub_user_message(payload, connection_id, "openWB wird heruntergefahren.", MessageType.INFO)
         parent_file = Path(__file__).resolve().parents[2]
         subprocess.run([str(parent_file / "runs" / "shutdown.sh")])
 
@@ -682,7 +684,7 @@ class Command:
             stdout=subprocess.PIPE)
         if result.returncode == 0:
             pub_user_message(payload, connection_id,
-                             "Wiederherstellung wurde vorbereitet. OpenWB wird jetzt zum Abschluss neu gestartet.",
+                             "Wiederherstellung wurde vorbereitet. openWB wird jetzt zum Abschluss neu gestartet.",
                              MessageType.INFO)
             self.systemReboot(connection_id, payload)
         else:
@@ -712,6 +714,14 @@ class Command:
             return
         result = retrieveMSALTokens(cloudbackupconfig.config)
         pub_user_message(payload, connection_id, result["message"], result["MessageType"])
+
+    def factoryReset(self, connection_id: str, payload: dict) -> None:
+        Path(Path(__file__).resolve().parents[2] / 'data' / 'restore' / 'factory_reset').touch()
+        pub_user_message(payload, connection_id,
+                         ("Zurücksetzen auf Werkseinstellungen wurde vorbereitet."
+                          " openWB wird jetzt zum Abschluss neu gestartet."),
+                         MessageType.INFO)
+        self.systemReboot(connection_id, payload)
 
 
 class ErrorHandlingContext:
