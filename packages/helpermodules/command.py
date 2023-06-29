@@ -693,7 +693,8 @@ class Command:
                              MessageType.ERROR)
 
     def requestMSALAuthCode(self, connection_id: str, payload: dict) -> None:
-        ''' fordert einen Authentifizierungscode für MSAL (Microsoft Authentication Library) an um Onedrive Backup zu ermöglichen'''
+        ''' fordert einen Authentifizierungscode für MSAL (Microsoft Authentication Library)
+        an um Onedrive Backup zu ermöglichen'''
         cloudbackupconfig = SubData.system_data["system"].backup_cloud
         if cloudbackupconfig is None:
             pub_user_message(payload, connection_id,
