@@ -3,10 +3,6 @@ import logging
 from pathlib import Path
 import subprocess
 import typing_extensions
-from control import data
-
-from helpermodules.pub import Pub
-
 
 def filter_neg(name: str, record) -> bool:
     if name in record.threadName:
