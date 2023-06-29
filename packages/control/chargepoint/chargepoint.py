@@ -623,8 +623,10 @@ class Chargepoint:
             mode = charging_ev.charge_template.data.chargemode.selected
         chargemode = data.data.general_data.get_phases_chargemode(mode)
 
-        if (chargemode == 0 and (self.data.set.phases_to_use == self.data.get.phases_in_use or
-                                 self.data.get.phases_in_use == 0)):
+        if chargemode is None:
+            phases = self.data.get.phases_in_use
+        elif (chargemode == 0 and (self.data.set.phases_to_use == self.data.get.phases_in_use or
+                                   self.data.get.phases_in_use == 0)):
             # Wenn die Lademodus-Phasen 0 sind, wird die bisher genutzte Phasenzahl weiter genutzt,
             # bis der Algorithmus eine Umschaltung vorgibt, zB weil der gewählte Lademodus eine
             # andere Phasenzahl benötigt oder bei PV-Laden die automatische Umschaltung aktiv ist.
@@ -788,10 +790,11 @@ class Chargepoint:
         charging_possible = self.is_charging_possible()[0]
         if charging_possible:
             vehicle = self.template.get_ev(self.data.get.rfid or self.data.set.rfid, self.data.config.ev)[0]
+            charging_ev = self._get_charging_ev(vehicle, ev_list)
+            self._pub_connected_vehicle(charging_ev)
         else:
             vehicle = -1
-        charging_ev = self._get_charging_ev(vehicle, ev_list)
-        self._pub_connected_vehicle(charging_ev)
+            self._pub_configured_ev(ev_list)
 
     def update(self, ev_list: Dict[str, Ev]) -> None:
         try:
@@ -861,17 +864,20 @@ class Chargepoint:
                     log.exception("Fehler im Prepare-Modul für Ladepunkt "+str(self.num))
                     ev_list[f"ev{vehicle}"].data.control_parameter.submode = "stop"
             else:
-                # Wenn kein EV zur Ladung zugeordnet wird, auf hinterlegtes EV zurückgreifen.
-                try:
-                    self._pub_connected_vehicle(ev_list[f"ev{self.data.config.ev}"])
-                except KeyError:
-                    log.error(f"EV {self.data.config.ev} konnte nicht gefunden werden, daher wird das " +
-                              "Standardfahrzeug verwendet.")
-                    self._pub_connected_vehicle(ev_list["ev0"])
+                self._pub_configured_ev(ev_list)
             if message is not None and self.data.get.state_str is None:
                 self.set_state_and_log(message)
         except Exception:
             log.exception(f"Fehler bei Ladepunkt {self.num}")
+
+    def _pub_configured_ev(self, ev_list: Dict[str, Ev]) -> None:
+        # Wenn kein EV zur Ladung zugeordnet wird, auf hinterlegtes EV zurückgreifen.
+        try:
+            self._pub_connected_vehicle(ev_list[f"ev{self.data.config.ev}"])
+        except KeyError:
+            log.error(f"EV {self.data.config.ev} konnte nicht gefunden werden, daher wird das " +
+                      "Standardfahrzeug verwendet.")
+            self._pub_connected_vehicle(ev_list["ev0"])
 
     def _get_charging_ev(self, vehicle: int, ev_list: Dict[str, Ev]) -> Ev:
         try:

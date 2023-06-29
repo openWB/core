@@ -155,8 +155,6 @@ class UpdateConfig:
                    "^openWB/general/chargemode_config/pv_charging/charging_power_reserve$",
                    "^openWB/general/chargemode_config/scheduled_charging/phases_to_use$",
                    "^openWB/general/chargemode_config/instant_charging/phases_to_use$",
-                   "^openWB/general/chargemode_config/standby/phases_to_use$",
-                   "^openWB/general/chargemode_config/stop/phases_to_use$",
                    "^openWB/general/chargemode_config/time_charging/phases_to_use$",
 
                    "^openWB/graph/config/duration$",
@@ -380,8 +378,6 @@ class UpdateConfig:
         ("openWB/general/chargemode_config/pv_charging/phase_switch_delay", 7),
         ("openWB/general/chargemode_config/pv_charging/phases_to_use", 1),
         ("openWB/general/chargemode_config/scheduled_charging/phases_to_use", 0),
-        ("openWB/general/chargemode_config/standby/phases_to_use", 1),
-        ("openWB/general/chargemode_config/stop/phases_to_use", 1),
         ("openWB/general/chargemode_config/time_charging/phases_to_use", 1),
         ("openWB/general/chargemode_config/unbalanced_load", False),
         ("openWB/general/chargemode_config/unbalanced_load_limit", 18),
