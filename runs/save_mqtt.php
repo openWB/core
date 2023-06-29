@@ -241,8 +241,6 @@ if ($configuration == "" || $configuration->active != true) {
 	// ## You may comment everything in order to not allow any MQTT remote configuration of the openWB ##
 	// ##################################################################################################
 
-	// 
-
 	// EOS
 	// );
 
