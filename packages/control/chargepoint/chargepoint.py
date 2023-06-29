@@ -623,8 +623,10 @@ class Chargepoint:
             mode = charging_ev.charge_template.data.chargemode.selected
         chargemode = data.data.general_data.get_phases_chargemode(mode)
 
-        if (chargemode == 0 and (self.data.set.phases_to_use == self.data.get.phases_in_use or
-                                 self.data.get.phases_in_use == 0)):
+        if chargemode is None:
+            phases = self.data.get.phases_in_use
+        elif (chargemode == 0 and (self.data.set.phases_to_use == self.data.get.phases_in_use or
+                                   self.data.get.phases_in_use == 0)):
             # Wenn die Lademodus-Phasen 0 sind, wird die bisher genutzte Phasenzahl weiter genutzt,
             # bis der Algorithmus eine Umschaltung vorgibt, zB weil der gewählte Lademodus eine
             # andere Phasenzahl benötigt oder bei PV-Laden die automatische Umschaltung aktiv ist.
