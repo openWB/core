@@ -12,13 +12,23 @@ OPENWBBASEDIR=$(cd "$(dirname "$0")/../" && pwd)
 LOGFILE="$OPENWBBASEDIR/data/log/uuid.log"
 MMCPATH="/sys/block/mmcblk0/device"
 HOMEPATH="/home/$(whoami)"
+MAXTIMEDIFF=$((7 * 24 * 60 * 60)) # one week
 
-# create log file and first header line if not existing
 if [ ! -e "$LOGFILE" ]; then
-	echo "Timestamp;openWB Serial Number;processor name;processor id;mac addr;ip addr;openWB Version;mmc serial number;mmc manufacturing date;Kernel" >"$LOGFILE"
+	# create log file and header
+	echo "Date Time;Timestamp;openWB Serial Number;processor name;processor id;mac addr;ip addr;openWB Version;mmc serial number;mmc manufacturing date;Kernel" >"$LOGFILE"
+else
+	# check file size and truncate
+	lines=$(wc -l "$LOGFILE" | cut -d " " -f 1)
+	if ((lines > 500)); then
+		head -n 1 "$LOGFILE" >"${LOGFILE}.tmp"
+		tail -n 400 "$LOGFILE" >>"${LOGFILE}.tmp"
+		mv "${LOGFILE}.tmp" "$LOGFILE"
+	fi
 fi
 
-# generate unix time stamp in seconds till 1970/01/01
+# generate unix time stamp and human readable date time
+dateTime=$(date +"%Y-%m-%d %H:%M:%S")
 now=$(date +%s)
 
 # try to read serial
@@ -61,7 +71,11 @@ fi
 # kernel revision
 kernel=$(uname -r)
 
-# todo??
-# log update through: reboot, sw-update, os-update? (last field)
-
-echo "$now;$owbSerial;$cpuName;$cpuId;$ethMac;$ipAddresses;$owbVersion;$mmcSerial;$mmcManufacturing;$kernel" >>"$LOGFILE"
+# check for changes and time since last entry
+newData="$owbSerial;$cpuName;$cpuId;$ethMac;$ipAddresses;$owbVersion;$mmcSerial;$mmcManufacturing;$kernel"
+oldData=$(tail -n 1 "$LOGFILE" | cut -d ";" -f 3-)
+oldTimestamp=$(tail -n 1 "$LOGFILE" | cut -d ";" -f 2)
+if [[ $newData != "$oldData" ]] || ((now - oldTimestamp > MAXTIMEDIFF)); then
+	# store collected data in log file
+	echo "$dateTime;$now;$newData" >>"$LOGFILE"
+fi
