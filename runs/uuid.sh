@@ -9,7 +9,7 @@
 
 ## define vars first
 OPENWBBASEDIR=$(cd "$(dirname "$0")/../" && pwd)
-LOGFILE="$OPENWBBASEDIR/data/log/uuid.log"
+LOGFILE="$OPENWBBASEDIR/data/log/uuid"
 MMCPATH="/sys/block/mmcblk0/device"
 HOMEPATH="/home/$(whoami)"
 MAXTIMEDIFF=$((7 * 24 * 60 * 60)) # one week
