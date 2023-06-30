@@ -933,7 +933,8 @@ class SetData:
             elif ("openWB/set/system/perform_update" in msg.topic or
                     "openWB/set/system/wizard_done" in msg.topic or
                     "openWB/set/system/update_in_progress" in msg.topic or
-                    "openWB/set/system/dataprotection_acknowledged" in msg.topic):
+                    "openWB/set/system/dataprotection_acknowledged" in msg.topic or
+                    "openWB/set/system/usage_terms_acknowledged" in msg.topic):
                 self._validate_value(msg, bool)
             elif "openWB/set/system/version" in msg.topic:
                 self._validate_value(msg, str)
