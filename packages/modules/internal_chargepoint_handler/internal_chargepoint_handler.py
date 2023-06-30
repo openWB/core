@@ -183,7 +183,7 @@ class InternalChargepointHandler:
                 with self.cp0_client_handler.client:
                     _loop()
             else:
-                with self.cp0_client_handler:
+                with self.cp0_client_handler.client:
                     with self.cp1_client_handler.client:
                         _loop()
 
