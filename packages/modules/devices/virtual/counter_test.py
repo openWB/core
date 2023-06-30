@@ -5,7 +5,7 @@ from unittest.mock import Mock
 import pytest
 
 from control import data
-from control.chargepoint import Chargepoint
+from control.chargepoint.chargepoint import Chargepoint
 from control.counter_all import CounterAll
 from modules.common.component_state import CounterState
 from modules.devices.virtual import counter

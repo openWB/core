@@ -2,7 +2,7 @@ import logging
 from typing import List
 
 from control.algorithm.common import CHARGEMODES
-from control.chargepoint import Chargepoint
+from control.chargepoint.chargepoint import Chargepoint
 from control.algorithm.filter_chargepoints import get_chargepoints_by_mode
 
 log = logging.getLogger(__name__)

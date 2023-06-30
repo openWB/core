@@ -30,8 +30,11 @@ class Loadvars:
                 data.data.copy_module_data()
             with ModuleUpdateCompletedContext(self.event_module_update_completed, topic):
                 thread_handler(self._get_general())
-            data.data.pv_all_data.calc_power_for_all_components()
-            data.data.bat_all_data.calc_power_for_all_components()
+            with ModuleUpdateCompletedContext(self.event_module_update_completed, topic):
+                data.data.pv_all_data.calc_power_for_all_components()
+                data.data.bat_all_data.calc_power_for_all_components()
+            if self.event_module_update_completed.wait(data.data.general_data.data.control_interval/2) is False:
+                log.error("Daten wurden noch nicht vollständig empfangen. Timeout abgelaufen, fortsetzen der Regelung.")
         except Exception:
             log.exception("Fehler im loadvars-Modul")
 

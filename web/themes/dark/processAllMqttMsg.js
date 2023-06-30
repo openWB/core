@@ -783,11 +783,8 @@ function processChargePointMessages(mqttTopic, mqttPayload) {
 		element.text(energyCharged.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' kWh');
 		var rangeChargedElement = parent.find('.charge-point-range-since-plugged'); // now get parents child element
 		var consumption = parseFloat($(rangeChargedElement).data('consumption'));
-		var rangeCharged = '';
-		if (!isNaN(consumption) && consumption > 0) {
-			rangeCharged = (energyCharged / consumption) * 100;
-			rangeCharged = ' / ' + rangeCharged.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' km';
-		}
+		var rangeCharged = parseFloat(logData.range_charged);
+		rangeCharged = ' / ' + rangeCharged.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' km';
 		$(rangeChargedElement).text(rangeCharged);
 	} else if (mqttTopic.match(/^openwb\/chargepoint\/[0-9]+\/get\/plug_state$/i)) {
 		// status ev plugged in or not

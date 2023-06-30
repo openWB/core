@@ -5,7 +5,7 @@ import pytest
 
 from control import data
 from control.algorithm import common
-from control.chargepoint import Chargepoint
+from control.chargepoint.chargepoint import Chargepoint
 from control.ev import Ev
 from control.counter import Counter
 from control.counter_all import CounterAll

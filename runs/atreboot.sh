@@ -32,6 +32,16 @@ chmod 666 "$LOGFILE"
 		exit
 	fi
 
+	# check for pending factory reset
+	if [[ -f "${OPENWBBASEDIR}/data/restore/factory_reset" ]]; then
+		echo "pending factory_reset detected, executing factory_reset"
+		# remove flag to prevent a boot loop on failure
+		rm "${OPENWBBASEDIR}/data/restore/factory_reset"
+		sudo "${OPENWBBASEDIR}/runs/factory_reset.sh" "clearall"
+	else
+		echo "no factory reset pending, normal startup"
+	fi
+
 	echo "atreboot.sh started"
 	if [[ -f "${OPENWBBASEDIR}/ramdisk/bootdone" ]]; then
 		mosquitto_pub -p 1886 -t "openWB/system/boot_done" -r -m 'false'
@@ -296,11 +306,8 @@ chmod 666 "$LOGFILE"
 	pip3 install -r "${OPENWBBASEDIR}/requirements.txt"
 	echo "done"
 
-	# update version
-	# echo "version..."
-	# uuid=$(</sys/class/net/eth0/address)
-	# owbv=$(<"${OPENWBBASEDIR}/web/version")
-	# curl --connect-timeout 10 -d "update="$releasetrain$uuid"vers"$owbv"" -H "Content-Type: application/x-www-form-urlencoded" -X POST https://openwb.de/tools/update.php
+	# collect some hardware info
+	"${OPENWBBASEDIR}/runs/uuid.sh"
 
 	# check for slave config and start handler
 	# alpha image restricted to standalone installation!

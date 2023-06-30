@@ -2,6 +2,7 @@
 """Starten der benötigten Prozesse
 """
 import logging
+from random import randrange
 import schedule
 import time
 import threading
@@ -16,7 +17,6 @@ from helpermodules import subdata
 from helpermodules import setdata
 from helpermodules import measurement_log
 from helpermodules import logger
-from helpermodules.logger import cleanup_logfiles
 from helpermodules import command
 from control import prepare
 from control import data
@@ -45,7 +45,6 @@ class HandlerAlgorithm:
             def handler_with_control_interval():
                 if (data.data.general_data.data.control_interval / 10) == self.interval_counter:
                     data.data.copy_data()
-                    log.setLevel(data.data.system_data["system"].data["debug_level"])
                     loadvars_.get_values()
                     data.data.copy_data()
                     self.heartbeat = True
@@ -112,7 +111,6 @@ class HandlerAlgorithm:
                 else:
                     general_internal_chargepoint_handler.internal_chargepoint_handler.heartbeat = False
 
-            cleanup_logfiles()
             sub.system_data["system"].update_ip_address()
         except KeyboardInterrupt:
             log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())
@@ -128,6 +126,15 @@ class HandlerAlgorithm:
         except Exception:
             log.exception("Fehler im Main-Modul")
 
+    @exit_after(10)
+    def handler_random_nightly(self):
+        try:
+            data.data.system_data["system"].create_backup_and_send_to_cloud()
+        except KeyboardInterrupt:
+            log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())
+        except Exception:
+            log.exception("Fehler im Main-Modul")
+
 
 def schedule_jobs():
     [schedule.every().minute.at(f":{i:02d}").do(handler.handler10Sec).tag("algorithm") for i in range(0, 60, 10)]
@@ -136,6 +143,8 @@ def schedule_jobs():
     [schedule.every().hour.at(f":{i:02d}").do(handler.handler5Min) for i in range(0, 60, 5)]
     [schedule.every().hour.at(f":{i:02d}").do(handler.handler5MinAlgorithm).tag("algorithm") for i in range(1, 60, 5)]
     schedule.every().day.at("00:00:00").do(handler.handler_midnight).tag("algorithm")
+    schedule.every().day.at(f"0{randrange(0, 5)}:{randrange(0, 59):02d}:{randrange(0, 59):02d}").do(
+        handler.handler_random_nightly)
 
 
 try:
@@ -167,6 +176,8 @@ try:
     event_scheduled_charging_plan.set()
     event_time_charging_plan = threading.Event()
     event_time_charging_plan.set()
+    event_soc = threading.Event()
+    event_soc.set()
     event_copy_data = threading.Event()  # set: Kopieren abgeschlossen, reset: es wird kopiert
     event_copy_data.set()
     event_global_data_initialized = threading.Event()
@@ -178,7 +189,7 @@ try:
     prep = prepare.Prepare()
     soc = update_soc.UpdateSoc()
     set = setdata.SetData(event_ev_template, event_charge_template,
-                          event_cp_config, event_scheduled_charging_plan, event_time_charging_plan,
+                          event_cp_config, event_scheduled_charging_plan, event_time_charging_plan, event_soc,
                           event_subdata_initialized)
     sub = subdata.SubData(event_ev_template, event_charge_template,
                           event_cp_config, loadvars_.event_module_update_completed,
@@ -187,6 +198,7 @@ try:
                           event_scheduled_charging_plan, event_time_charging_plan,
                           general_internal_chargepoint_handler.event_start,
                           general_internal_chargepoint_handler.event_stop,
+                          event_soc,
                           event_jobs_running)
     comm = command.Command(event_command_completed)
     t_sub = Thread(target=sub.sub_topics, args=())

@@ -10,6 +10,8 @@ import re
 import traceback
 from pathlib import Path
 import paho.mqtt.client as mqtt
+from control.chargepoint import chargepoint
+from control.chargepoint.chargepoint_template import get_autolock_plan_default, get_chargepoint_template_default
 
 from helpermodules import measurement_log
 from helpermodules.broker import InternalBrokerClient
@@ -18,11 +20,12 @@ from helpermodules.parse_send_debug import parse_send_debug_data
 from helpermodules.pub import Pub
 from helpermodules.subdata import SubData
 from helpermodules.utils.topic_parser import decode_payload
-from control import bat, bridge, chargelog, chargepoint, data, ev, counter, counter_all, pv
+from control import bat, bridge, chargelog, data, ev, counter, counter_all, pv
 from modules.chargepoints.internal_openwb.chargepoint_module import ChargepointModule
 from modules.chargepoints.internal_openwb.config import InternalChargepointMode
 from modules.common.component_type import ComponentType, special_to_general_type_mapping, type_to_topic_mapping
 import dataclass_utils
+from modules.common.configurable_vehicle import IntervalConfig
 
 log = logging.getLogger(__name__)
 
@@ -253,7 +256,7 @@ class Command:
         """ sendet das Topic, zu dem eine neue Ladepunkt-Vorlage erstellt werden soll.
         """
         new_id = self.max_id_chargepoint_template + 1
-        default = chargepoint.get_chargepoint_template_default()
+        default = get_chargepoint_template_default()
         default["id"] = new_id
         Pub().pub(f'openWB/set/chargepoint/template/{new_id}', default)
         self.max_id_chargepoint_template = self.max_id_chargepoint_template + 1
@@ -285,7 +288,7 @@ class Command:
         """ sendet das Topic, zu dem ein neuer Zielladen-Plan erstellt werden soll.
         """
         new_id = self.max_id_autolock_plan + 1
-        default = chargepoint.get_autolock_plan_default()
+        default = get_autolock_plan_default()
         Pub().pub(f'openWB/set/chargepoint/template/{payload["data"]["template"]}/autolock/{new_id}',
                   default)
         self.max_id_autolock_plan = new_id
@@ -509,6 +512,7 @@ class Command:
         for default in vehicle_default:
             Pub().pub(f"openWB/set/vehicle/{new_id}/{default}", vehicle_default[default])
         Pub().pub(f"openWB/set/vehicle/{new_id}/soc_module/config", {"type": None, "configuration": {}})
+        Pub().pub(f"openWB/set/vehicle/{new_id}/soc_module/interval_config", dataclass_utils.asdict(IntervalConfig()))
         self.max_id_vehicle = self.max_id_vehicle + 1
         Pub().pub("openWB/set/command/max_id/vehicle", self.max_id_vehicle)
         # Default-Mäßig werden die Templates 0 zugewiesen, wenn diese noch nicht existieren -> anlegen
@@ -609,7 +613,7 @@ class Command:
         subprocess.run([str(parent_file / "runs" / "reboot.sh")])
 
     def systemShutdown(self, connection_id: str, payload: dict) -> None:
-        pub_user_message(payload, connection_id, "OpenWB wird heruntergefahren.", MessageType.INFO)
+        pub_user_message(payload, connection_id, "openWB wird heruntergefahren.", MessageType.INFO)
         parent_file = Path(__file__).resolve().parents[2]
         subprocess.run([str(parent_file / "runs" / "shutdown.sh")])
 
@@ -661,6 +665,15 @@ class Command:
                              f'Backup-Status: {result.returncode}<br />Meldung: {result.stdout.decode("utf-8")}',
                              MessageType.ERROR)
 
+    def createCloudBackup(self, connection_id: str, payload: dict) -> None:
+        if SubData.system_data["system"].backup_cloud is not None:
+            pub_user_message(payload, connection_id, "Backup wird erstellt...", MessageType.INFO)
+            SubData.system_data["system"].create_backup_and_send_to_cloud()
+            pub_user_message(payload, connection_id, "Backup erfolgreich erstellt.<br />", MessageType.SUCCESS)
+        else:
+            pub_user_message(payload, connection_id,
+                             "Es ist keine Backup-Cloud konfiguriert.<br />", MessageType.WARNING)
+
     def restoreBackup(self, connection_id: str, payload: dict) -> None:
         parent_file = Path(__file__).resolve().parents[2]
         result = subprocess.run(
@@ -668,13 +681,21 @@ class Command:
             stdout=subprocess.PIPE)
         if result.returncode == 0:
             pub_user_message(payload, connection_id,
-                             "Wiederherstellung wurde vorbereitet. OpenWB wird jetzt zum Abschluss neu gestartet.",
+                             "Wiederherstellung wurde vorbereitet. openWB wird jetzt zum Abschluss neu gestartet.",
                              MessageType.INFO)
             self.systemReboot(connection_id, payload)
         else:
             pub_user_message(payload, connection_id,
                              f'Restore-Status: {result.returncode}<br />Meldung: {result.stdout.decode("utf-8")}',
                              MessageType.ERROR)
+
+    def factoryReset(self, connection_id: str, payload: dict) -> None:
+        Path(Path(__file__).resolve().parents[2] / 'data' / 'restore' / 'factory_reset').touch()
+        pub_user_message(payload, connection_id,
+                         ("Zurücksetzen auf Werkseinstellungen wurde vorbereitet."
+                          " openWB wird jetzt zum Abschluss neu gestartet."),
+                         MessageType.INFO)
+        self.systemReboot(connection_id, payload)
 
 
 class ErrorHandlingContext:

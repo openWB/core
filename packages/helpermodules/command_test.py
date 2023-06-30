@@ -2,7 +2,8 @@ from unittest.mock import Mock
 
 import pytest
 
-from control.chargepoint import Chargepoint, ChargepointStateUpdate
+from control.chargepoint.chargepoint import Chargepoint
+from control.chargepoint.chargepoint_state_update import ChargepointStateUpdate
 import dataclass_utils
 from helpermodules.command import Command
 from helpermodules.subdata import SubData
@@ -15,7 +16,7 @@ from modules.chargepoints.internal_openwb.chargepoint_module import ChargepointM
 
 @pytest.fixture
 def subdata_fixture() -> None:
-    SubData(*([Mock()]*14))
+    SubData(*([Mock()]*15))
     SubData.cp_data = {"cp0":  Mock(spec=ChargepointStateUpdate, chargepoint=Mock(
         spec=Chargepoint, chargepoint_module=Mock(spec=ChargepointModulePro)))}
 

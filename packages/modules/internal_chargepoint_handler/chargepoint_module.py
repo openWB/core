@@ -8,7 +8,7 @@ from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.component_state import ChargepointState
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.store import get_internal_chargepoint_value_store
-from modules.internal_chargepoint_handler.clients import ClientConfig, ClientFactory
+from modules.internal_chargepoint_handler.clients import ClientHandler
 
 log = logging.getLogger(__name__)
 
@@ -21,23 +21,21 @@ except ImportError:
 class ChargepointModule(AbstractChargepoint):
     PLUG_STANDBY_POWER_THRESHOLD = 10
 
-    def __init__(self, config: ClientConfig, parent_hostname: str) -> None:
-        self.config = config
+    def __init__(self, local_charge_point_num: int, client_handler: ClientHandler, parent_hostname: str) -> None:
+        self.local_charge_point_num = local_charge_point_num
         self.component_info = ComponentInfo(
-            self.config.id,
-            "Ladepunkt "+str(self.config.id), "internal_chargepoint", parent_hostname)
-        self.store = get_internal_chargepoint_value_store(self.config.id)
+            local_charge_point_num,
+            "Ladepunkt "+str(local_charge_point_num), "internal_chargepoint", parent_hostname)
+        self.store = get_internal_chargepoint_value_store(local_charge_point_num)
         self.old_plug_state = False
         self.old_phases_in_use = 0
-        self.__client = ClientFactory(self.config.id, self.config.serial_client)
-        time.sleep(0.1)
+        self.__client = client_handler
         version = self.__client.evse_client.get_firmware_version()
         if version < 17:
             self._precise_current = False
         else:
             if self.__client.evse_client.is_precise_current_active() is False:
                 self.__client.evse_client.activate_precise_current()
-            time.sleep(0.1)
             self._precise_current = self.__client.evse_client.is_precise_current_active()
 
     def set_current(self, current: float) -> None:
@@ -101,6 +99,7 @@ class ChargepointModule(AbstractChargepoint):
                 )
                 FaultState.error(__name__ + " " + str(type(e)) + " " + str(e)).store_error(self.component_info)
             else:
+                self.__client.check_hardware()
                 raise FaultState.error(__name__ + " " + str(type(e)) + " " + str(e)) from e
 
         self.store.set(chargepoint_state)

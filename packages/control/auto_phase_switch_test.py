@@ -9,7 +9,7 @@ from control.bat_all import BatAll
 from control.general import General
 from control.ev import Ev
 from control import data
-from control.chargepoint_state import ChargepointState
+from control.chargepoint.chargepoint_state import ChargepointState
 
 
 @pytest.fixture
@@ -82,7 +82,7 @@ cases = [
            timestamp_auto_phase_switch="05/16/2022, 08:35:52", phases_to_use=1, required_current=6,
            evu_surplus=0, reserved_evu_overhang=460, get_currents=[15.6, 0, 0], get_power=3450,
            state=ChargepointState.PHASE_SWITCH_DELAY, expected_phases_to_use=1, expected_current=6,
-           expected_message="Umschaltverzögerung von 1 auf 3 Phasen abgebrochen.",
+           expected_message=f"Umschaltverzögerung von 1 auf 3 Phasen abgebrochen{Ev.NOT_ENOUGH_POWER}",
            expected_timestamp_auto_phase_switch="05/16/2022, 08:40:52",
            expected_state=ChargepointState.CHARGING_ALLOWED),
     Params("1to3, enough power, timer expired", max_current_single_phase=16,
@@ -110,7 +110,7 @@ cases = [
            timestamp_auto_phase_switch="05/16/2022, 08:35:52", phases_to_use=3, required_current=6,
            evu_surplus=860, reserved_evu_overhang=0, get_currents=[4.5, 4.4, 5.8],
            get_power=3381, state=ChargepointState.PHASE_SWITCH_DELAY, expected_phases_to_use=3, expected_current=6,
-           expected_message="Umschaltverzögerung von 3 auf 1 Phasen abgebrochen.",
+           expected_message=f"Umschaltverzögerung von 3 auf 1 Phasen abgebrochen{Ev.ENOUGH_POWER}",
            expected_timestamp_auto_phase_switch="05/16/2022, 08:40:52",
            expected_state=ChargepointState.CHARGING_ALLOWED),
     Params("3to1, not enough power, timer expired", max_current_single_phase=16,
