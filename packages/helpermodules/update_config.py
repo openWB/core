@@ -724,7 +724,7 @@ class UpdateConfig:
                 payload = decode_payload(payload)
                 if payload["type"] == "openwb_series2_satellit":
                     if "duo_num" not in payload["configuration"]:
-                        payload["configuration"].update({"duo_num": 1})
+                        payload["configuration"].update({"duo_num": 0})
                     Pub().pub(topic.replace("openWB/", "openWB/set/"), payload)
         Pub().pub("openWB/set/system/datastore_version", 12)
 
