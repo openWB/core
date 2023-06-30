@@ -107,13 +107,15 @@ class UpdateState:
 
     def __thread_phase_switch(self, phases_to_use: int) -> None:
         self.phase_switch_thread = threading.Thread(
-            target=self.cp_module.perform_phase_switch, args=(phases_to_use, 5))
+            target=self.cp_module.perform_phase_switch, args=(phases_to_use, 5),
+            name=f"perform phase switch {self.cp_module.local_charge_point_num}")
         self.phase_switch_thread.start()
         log.debug("Thread zur Phasenumschaltung an LP"+str(self.cp_module.local_charge_point_num)+" gestartet.")
 
     def __thread_cp_interruption(self, duration: int) -> None:
         self.cp_interruption_thread = threading.Thread(
-            target=self.cp_module.perform_cp_interruption, args=(duration,))
+            target=self.cp_module.perform_cp_interruption, args=(duration,),
+            name=f"perform cp interruption cp{self.cp_module.local_charge_point_num}")
         self.cp_interruption_thread.start()
         log.debug("Thread zur CP-Unterbrechung an LP"+str(self.cp_module.local_charge_point_num)+" gestartet.")
         Pub().pub(

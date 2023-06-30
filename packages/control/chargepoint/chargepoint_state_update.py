@@ -27,7 +27,7 @@ class ChargepointStateUpdate:
         self.ev_data = ev_data
         self.ev_charge_template_data = ev_charge_template_data
         self.ev_template_data = ev_template_data
-        Thread(target=self.update, args=()).start()
+        Thread(target=self.update, args=(), name=f"ChargepointStateUpdate cp {index}").start()
 
     def update(self):
         self.event_global_data_initialized.wait()
