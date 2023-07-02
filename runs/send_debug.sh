@@ -57,6 +57,8 @@ touch "$debugFile"
 	df -h
 	echo "############################ network ##############"
 	ifconfig
+	echo "############################ uuids ##############"
+	cat "${OPENWBBASEDIR}/data/log/uuid.log"
 	# echo "############################ smarthome.log ##############"
 	# merge_log_files "smarthome" 200
 } >>"$debugFile"

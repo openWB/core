@@ -306,11 +306,8 @@ chmod 666 "$LOGFILE"
 	pip3 install -r "${OPENWBBASEDIR}/requirements.txt"
 	echo "done"
 
-	# update version
-	# echo "version..."
-	# uuid=$(</sys/class/net/eth0/address)
-	# owbv=$(<"${OPENWBBASEDIR}/web/version")
-	# curl --connect-timeout 10 -d "update="$releasetrain$uuid"vers"$owbv"" -H "Content-Type: application/x-www-form-urlencoded" -X POST https://openwb.de/tools/update.php
+	# collect some hardware info
+	"${OPENWBBASEDIR}/runs/uuid.sh"
 
 	# check for slave config and start handler
 	# alpha image restricted to standalone installation!
