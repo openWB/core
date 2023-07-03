@@ -258,7 +258,8 @@ class SubData:
                     elif re.search("/vehicle/[0-9]+/set", msg.topic) is not None:
                         self.set_json_payload_class(var["ev"+index].data.set, msg)
                     elif re.search("/vehicle/[0-9]+/soc_module/interval_config", msg.topic) is not None:
-                        self.set_json_payload_class(var["ev"+index].soc_module.interval_config, msg)
+                        if var["ev"+index].soc_module is not None:
+                            self.set_json_payload_class(var["ev"+index].soc_module.interval_config, msg)
                     elif re.search("/vehicle/[0-9]+/soc_module/config$", msg.topic) is not None:
                         config = decode_payload(msg.payload)
                         if config["type"] is None:
