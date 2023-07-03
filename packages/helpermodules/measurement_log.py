@@ -274,7 +274,7 @@ def get_yearly_log(date: str):
 
 
 def update_daily_yields(totals):
-    """ publisht die Tageserträge für Ladepunkte, Zähler, PV und Speicher.
+    """ veröffentlicht die Tageserträge für Ladepunkte, Zähler, PV und Speicher.
     """
     [update_module_yields(type, totals) for type in ("bat", "counter", "cp", "pv")]
     data.data.counter_all_data.calc_daily_yield_home_consumption()

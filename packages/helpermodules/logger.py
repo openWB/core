@@ -73,10 +73,10 @@ class ModifyLoglevelContext:
         self.new_loglevel = new_loglevel
 
     def __enter__(self):
-        self.previous_logelvel = self.logger.level
+        self.previous_loglevel = self.logger.level
         self.logger.setLevel(self.new_loglevel)
 
     def __exit__(self, exception_type, exception, exception_traceback) -> typing_extensions.Literal[False]:
-        self.logger.setLevel(self.previous_logelvel)
+        self.logger.setLevel(self.previous_loglevel)
         # no exception handling
         return False
