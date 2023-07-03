@@ -61,9 +61,9 @@ class ChargepointModule(AbstractChargepoint):
     def switch_phases(self, phases_to_use: int, duration: int) -> None:
         with SingleComponentUpdateContext(self.component_info, False):
             with self.__client_error_context:
-                pub.pub_single("openWB/set/internal_chargepoint/0/data/phases_to_use", phases_to_use,
+                pub.pub_single(f"openWB/set/internal_chargepoint/{self.config.id}/data/phases_to_use", phases_to_use,
                                self.config.configuration.ip_address)
-                pub.pub_single("openWB/set/internal_chargepoint/0/data/trigger_phase_switch", True,
+                pub.pub_single(f"openWB/set/internal_chargepoint/{self.config.id}/data/trigger_phase_switch", True,
                                self.config.configuration.ip_address)
                 pub.pub_single("openWB/set/isss/U1p3p", phases_to_use,
                                self.config.configuration.ip_address)
