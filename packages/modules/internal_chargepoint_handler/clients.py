@@ -90,8 +90,8 @@ class ClientHandler:
                                 self.OPEN_TICKET)
             else:
                 raise Exception(
-                    "Auslesen von Zähler UND Evse nicht möglich. Vermutlich ist der Protoss defekt oder falsch " +
-                    "konfiguiert." + self.OPEN_TICKET)
+                    "Auslesen von Zähler UND Evse nicht möglich. Vermutlich ist der Protos defekt oder falsch " +
+                    "konfiguriert." + self.OPEN_TICKET)
         if meter_check is False:
             raise Exception("Der Zähler antwortet nicht. Vermutlich ist der Zähler falsch konfiguriert oder defekt."
                             + self.OPEN_TICKET)
