@@ -8,7 +8,7 @@ class InternalChargepointMode(Enum):
 
 
 class InternalOpenWBConfiguration:
-    def __init__(self, mode: str = InternalChargepointMode.SERIES.value, duo_num: int = 1):
+    def __init__(self, mode: str = InternalChargepointMode.SERIES.value, duo_num: int = 0):
         self.mode = mode
         self.ip_address = "localhost"
         self.duo_num = duo_num

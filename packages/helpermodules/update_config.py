@@ -24,7 +24,7 @@ log = logging.getLogger(__name__)
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 13
+    DATASTORE_VERSION = 14
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -739,3 +739,13 @@ class UpdateConfig:
                 Pub().pub(f"openWB/set/vehicle/{index}/soc_module/interval_config",
                           dataclass_utils.asdict(IntervalConfig()))
         Pub().pub("openWB/system/datastore_version", 13)
+
+    def upgrade_datastore_13(self) -> None:
+        for topic, payload in self.all_received_topics.items():
+            if re.search("openWB/chargepoint/[0-9]+/config$", topic) is not None:
+                updated_payload = decode_payload(payload)
+                payload = decode_payload(payload)
+                if payload["type"] == "internal_openwb" or payload["type"] == "external_openwb":
+                    updated_payload["configuration"]["duo_num"] = payload["configuration"]["duo_num"] - 1
+                    Pub().pub(topic.replace("openWB/", "openWB/set/"), updated_payload)
+        Pub().pub("openWB/set/system/datastore_version", 14)
