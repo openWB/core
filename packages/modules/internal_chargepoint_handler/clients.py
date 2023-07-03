@@ -10,7 +10,7 @@ from modules.common import b23
 log = logging.getLogger(__name__)
 
 
-BUS_SOURCES = ["/dev/ttyUSB0", "/dev/ttyUSB1", "/dev/ttyACM0", "/dev/serial0"]
+BUS_SOURCES = ("/dev/ttyUSB0", "/dev/ttyUSB1", "/dev/ttyACM0", "/dev/serial0")
 
 METERS = Union[mpm3pm.Mpm3pm, sdm.Sdm630, b23.B23]
 meter_config = NamedTuple("meter_config", [('type', METERS), ('modbus_id', int)])
@@ -122,7 +122,14 @@ def client_factory(local_charge_point_num: int,
     resolved_devices = [str(file.resolve()) for file in tty_devices]
     log.debug("resolved_devices"+str(resolved_devices))
     counter = len(resolved_devices)
-    if counter == 1 and resolved_devices[0] in BUS_SOURCES:
+    if counter == 0:
+        # Wenn kein USB-Gerät gefunden wird, wird der Modbus-Anschluss der AddOn-Platine genutzt (/dev/serial0)
+        serial_client = ModbusSerialClient_("/dev/serial0")
+        if local_charge_point_num == 0:
+            evse_ids = EVSE_ID_CP0
+        else:
+            evse_ids = EVSE_ID_ONE_BUS_CP1
+    elif counter == 1 and resolved_devices[0] in BUS_SOURCES:
         if local_charge_point_num == 0:
             log.error("LP0 Device: "+str(resolved_devices[0]))
             serial_client = ModbusSerialClient_(resolved_devices[0])
