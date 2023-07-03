@@ -24,7 +24,7 @@ log = logging.getLogger(__name__)
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 14
+    DATASTORE_VERSION = 15
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -749,3 +749,13 @@ class UpdateConfig:
                     updated_payload["configuration"]["duo_num"] = payload["configuration"]["duo_num"] - 1
                     Pub().pub(topic.replace("openWB/", "openWB/set/"), updated_payload)
         Pub().pub("openWB/set/system/datastore_version", 14)
+
+    def upgrade_datastore_14(self) -> None:
+        for topic, payload in self.all_received_topics.items():
+            if re.search("openWB/system/device/[0-9]+/config", topic) is not None:
+                payload = decode_payload(payload)
+                if payload.type == "solar_watt":
+                    payload.configuration.ip_address = payload.configuration.ip_adress
+                    payload.configuration.pop("ip_adress")
+                Pub().pub(topic.replace("openWB/", "openWB/set/"), payload)
+        Pub().pub("openWB/system/datastore_version", 15)
