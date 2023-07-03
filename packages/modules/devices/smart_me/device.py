@@ -40,7 +40,7 @@ def read_legacy(component_type: str, user: str, password: str, id_address: str) 
         device.add_component(SmartMeCounterSetup(id=None, configuration=SmartMeCounterConfiguration(id=id)))
     else:
         device.add_component(SmartMeInverterSetup(id=1, configuration=SmartMeInverterConfiguration(id=id)))
-    log.debug('Smartfox user: ' + user + ", password: " + password + ", id: " + id_address)
+    log.debug('Smart-me user: ' + user + ", password: " + password + ", id: " + id_address)
     device.update()
 
 

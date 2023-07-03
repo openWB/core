@@ -22,7 +22,7 @@ def create_device(device_config: SolarLog):
         return SolarLogInverter(device_config.id, component_config)
 
     def update_components(components: Union[SolarLogCounter, SolarLogInverter]):
-        response = req.get_http_session().post('http://'+device_config.ip_adress+'/getjp',
+        response = req.get_http_session().post('http://'+device_config.configuration.ip_address+'/getjp',
                                                data=json.dumps({"801": {"170": None}}), timeout=5).json()
         for component in components:
             component.update(response)
@@ -54,8 +54,8 @@ def read_legacy(component_type: str, ip_address: str, note_bat: Optional[int] = 
                                                    data=json.dumps({"801": {"170": None}}), timeout=5).json()
             inverter.update(response)
             power = counter.get_power(response)
-            pvwatt = int(float(response["801"]["170"]["101"]))
-            power = power - pvwatt
+            pv_power = int(float(response["801"]["170"]["101"]))
+            power = power - pv_power
 
             if note_bat == 1:
                 with open("ramdisk/speicherleistung", "r") as f:

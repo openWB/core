@@ -57,7 +57,8 @@ class Loadvars:
         return thread_handler(modules_threads)
 
     def _update_values_of_level(self, elements, not_finished_threads: List[str]) -> None:
-        """Threads, um von der niedrigsten Ebene der Hierarchie Werte ggf. miteinander zu verrechnen und zu publishen"""
+        """Threads, um von der niedrigsten Ebene der Hierarchie Werte ggf. miteinander zu verrechnen und zu
+        veröffentlichen"""
         modules_threads: List[threading.Thread] = []
         for element in elements:
             try:

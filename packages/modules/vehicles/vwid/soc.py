@@ -28,7 +28,7 @@ def create_vehicle(vehicle_config: VWId, vehicle: int):
 
 
 def vwid_update(user_id: str, password: str, vin: str, refreshToken: str, charge_point: int):
-    log.debug("vwid: userid="+user_id+"vin="+vin+"charge_point="+str(charge_point))
+    log.debug("vwid: user_id="+user_id+"vin="+vin+"charge_point="+str(charge_point))
     store.get_car_value_store(charge_point).store.set(
         fetch(None, VWId(configuration=VWIdConfiguration(user_id, password, vin, refreshToken)), charge_point))
 
