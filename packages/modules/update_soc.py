@@ -85,7 +85,7 @@ class UpdateSoc:
             plug_state = False
             charge_state = False
             imported_since_plugged = 0
-            battery_capacity = 0
+            battery_capacity = data.data.ev_data[f"ev{ev_num}"].ev_template.data.battery_capacity
         return SocUpdateData(plug_state=plug_state,
                              charge_state=charge_state,
                              imported_since_plugged=imported_since_plugged,

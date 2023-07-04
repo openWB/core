@@ -199,7 +199,7 @@ class SetData:
                         event = self.event_soc
                         if "ev"+str(index) in subdata.SubData.ev_data:
                             template = dataclass_utils.asdict(
-                                subdata.SubData.ev_data["ev"+str(index)].soc_module.soc_config)
+                                subdata.SubData.ev_data["ev"+str(index)].soc_module.vehicle_config)
                         else:
                             template = {}
                     else:
