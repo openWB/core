@@ -340,7 +340,7 @@ class Ev:
                     message = tmp_message
             if (required_current == 0) or (required_current is None):
                 if self.charge_template.data.chargemode.selected == "instant_charging":
-                    # Wenn der Submode auf stop gestellt wird, wird auch die Energiemenge seit Moduswechsel
+                    # Wenn der Submode auf stop gestellt wird, wird auch die Energiemenge seit Wechsel des Modus
                     # zurückgesetzt, dann darf nicht die Energiemenge erneute geladen werden.
                     if (self.charge_template.data.chargemode.instant_charging.limit.selected == "amount" and
                             charged_since_mode_switch > self.data.control_parameter.used_amount_instant_charging):

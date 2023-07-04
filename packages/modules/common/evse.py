@@ -38,7 +38,7 @@ class Evse:
         time.sleep(0.1)
         set_current, _, state_number = self.client.read_holding_registers(
             1000, [ModbusDataType.UINT_16]*3, unit=self.id)
-        # remove leading zeors
+        # remove leading zeros
         set_current = int(set_current)
         log.debug("Gesetzte Stromstärke EVSE: "+str(set_current) +
                   ", Status: "+str(state_number)+", Modbus-ID: "+str(self.id))

@@ -22,7 +22,7 @@ def subdata_fixture() -> None:
 
 
 @pytest.mark.parametrize(
-    "additonal_cp_mode, config, expected_msg",
+    "additional_cp_mode, config, expected_msg",
     [
         pytest.param(None, OpenWBSeries(), None, id="Series hinzufügen"),
         pytest.param(None, InternalOpenWB(), None, id="Erste Duo hinzufügen"),
@@ -36,15 +36,15 @@ def subdata_fixture() -> None:
                      id="Zweite Series hinzufügen"),
     ]
 )
-def test_check_max_num_of_internal_chargepoints(additonal_cp_mode, config, expected_msg, subdata_fixture, monkeypatch):
+def test_check_max_num_of_internal_chargepoints(additional_cp_mode, config, expected_msg, subdata_fixture, monkeypatch):
     # setup
     monkeypatch.setattr(Command, "_get_max_ids", Mock())
     monkeypatch.setattr(Command, "_get_max_id_by_json_object", Mock())
-    if additonal_cp_mode:
+    if additional_cp_mode:
         SubData.cp_data.update(
             {"cp1": Mock(spec=ChargepointStateUpdate, chargepoint=Mock(
                 spec=Chargepoint, chargepoint_module=Mock(spec=ChargepointModuleInternal, config=InternalOpenWB(
-                    configuration=InternalOpenWBConfiguration(mode=additonal_cp_mode)))))})
+                    configuration=InternalOpenWBConfiguration(mode=additional_cp_mode)))))})
 
     # execution
     msg = Command(Mock())._check_max_num_of_internal_chargepoints(dataclass_utils.asdict(config))

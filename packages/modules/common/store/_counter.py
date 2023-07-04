@@ -58,7 +58,7 @@ class PurgeCounterState:
 
     def update(self) -> None:
         state = self.calc_virtual(self.delegate.delegate.state)
-        self.delegate.delegate.set(state)  # Logging in update methode
+        self.delegate.delegate.set(state)  # Logging in update Methode
         self.delegate.update()
 
     def calc_virtual(self, state: CounterState) -> CounterState:

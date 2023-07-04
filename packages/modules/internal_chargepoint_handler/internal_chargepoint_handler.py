@@ -38,18 +38,18 @@ class UpdateValues:
 
     def update_values(self, chargepoint_state: ChargepointState, heartbeat_expired: bool) -> None:
         if self.old_chargepoint_state:
-            # iterate over counterstate
+            # iterate over counter state
             vars_old_counter_state = vars(self.old_chargepoint_state)
             for key, value in vars(chargepoint_state).items():
-                # Zählerstatus immer publishen für Ladelog-Einträge
+                # Zählerstatus immer veröffentlichen für Ladelog-Einträge
                 if value != vars_old_counter_state[key] or key == "imported":
                     self._pub_values_to_2(key, value)
         else:
-            # Bei Neustart alles publishen
+            # Bei Neustart alles veröffentlichen
             for key, value in vars(chargepoint_state).items():
                 self._pub_values_to_2(key, value)
         if heartbeat_expired is False:
-            # Nur wenn eine Verbindung zum Master besteht, die gepublishden Werte speichern.
+            # Nur wenn eine Verbindung zum Master besteht, die veröffentlichten Werte speichern.
             self.old_chargepoint_state = chargepoint_state
 
     def _pub_values_to_2(self, topic: str, value) -> None:

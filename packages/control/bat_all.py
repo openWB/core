@@ -108,7 +108,7 @@ class BatAll:
                     except Exception:
                         log.exception(f"Fehler im Bat-Modul {battery.num}")
                 self.data.get.soc = int(soc_sum / soc_count)
-                # Alle Summentopics im Dict publishen
+                # Alle Summen-Topics im Dict veröffentlichen
                 {Pub().pub("openWB/set/bat/get/"+k, v) for (k, v) in asdict(self.data.get).items()}
             else:
                 self.data.config.configured = False
@@ -155,7 +155,7 @@ class BatAll:
         return min(rundown_power, available_power)
 
     def setup_bat(self):
-        """ prüft, ob mind ein Speicher vorhanden ist und berechnet die Summentopics.
+        """ prüft, ob mind ein Speicher vorhanden ist und berechnet die Summen-Topics.
         """
         try:
             if self.data.config.configured is True:
