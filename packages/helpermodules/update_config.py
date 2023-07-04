@@ -65,7 +65,6 @@ class UpdateConfig:
         "^openWB/chargepoint/[0-9]+/get/power$",
         "^openWB/chargepoint/[0-9]+/get/voltages$",
         "^openWB/chargepoint/[0-9]+/get/state_str$",
-        "^openWB/chargepoint/[0-9]+/get/connected_vehicle/soc_config$",
         "^openWB/chargepoint/[0-9]+/get/connected_vehicle/soc$",
         "^openWB/chargepoint/[0-9]+/get/connected_vehicle/info$",
         "^openWB/chargepoint/[0-9]+/get/connected_vehicle/config$",

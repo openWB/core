@@ -107,7 +107,6 @@ class ConnectedVehicle:
     config: ConnectedConfig = field(default_factory=connected_config_factory)
     info: ConnectedInfo = field(default_factory=connected_info_factory)
     soc: ConnectedSoc = field(default_factory=connected_soc_factory)
-    # soc_config: ConnectedSocConfig = ConnectedSocConfig()
 
 
 @dataclass
@@ -947,10 +946,6 @@ class Chargepoint:
             LP-Nummer
         """
         try:
-            # soc_config_obj = {
-            #     # "configured": vehicle.data["soc"]["config"]["configured"],
-            #     # "manual": vehicle.data["soc"]["config"]["manual"]
-            # }
             soc_obj = ConnectedSoc(
                 range_charged=self.data.set.log.range_charged,
                 range_unit=data.data.general_data.data.range_unit,
@@ -977,9 +972,6 @@ class Chargepoint:
                 average_consumption=vehicle.ev_template.data.average_consump,
                 time_charging_in_use=True if (vehicle.data.control_parameter.submode ==
                                               "time_charging") else False)
-            # if soc_config_obj != self.data.get.connected_vehicle.soc_config:
-            #     Pub().pub("openWB/chargepoint/"+str(self.cp_num) +
-            #               "/get/connected_vehicle/soc_config", soc_config_obj)
             if soc_obj != self.data.get.connected_vehicle.soc:
                 Pub().pub("openWB/chargepoint/"+str(self.num) +
                           "/get/connected_vehicle/soc", dataclasses.asdict(soc_obj))

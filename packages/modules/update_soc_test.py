@@ -24,6 +24,10 @@ def mock_data() -> None:
                      log=Mock(spec=Log),
                      charging_ev_data=Mock(spec=Ev,
                                            ev_template=Mock(spec=EvTemplate, data=Mock(spec=EvTemplateData))))))
+    data.data.ev_data["ev0"] = Mock(
+        spec=Ev,
+        ev_template=Mock(
+            spec=EvTemplate, data=Mock(spec=EvTemplateData, battery_capacity=82000)))
 
 
 @pytest.mark.parametrize(
