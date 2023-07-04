@@ -22,7 +22,7 @@ def create_device(device_config: Discovergy):
         return counter.DiscovergyCounter(component_config)
 
     def create_inverter_component(component_config: DiscovergyInverterSetup):
-        return inverter.DiscovergInverter(component_config)
+        return inverter.DiscovergyInverter(component_config)
 
     session = get_http_session()
     session.auth = (device_config.configuration.user, device_config.configuration.password)
