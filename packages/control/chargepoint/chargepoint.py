@@ -345,21 +345,19 @@ class Chargepoint:
         return state, message
 
     def _is_manual_lock_inactive(self) -> Tuple[bool, Optional[str]]:
-        """ prüft, dass der Ladepunkt nicht manuell gesperrt wurde.
-        """
         if (self.data.set.manual_lock is False or
                 (self.template.data.rfid_enabling and
                     (self.data.get.rfid is not None or self.data.set.rfid is not None))):
+            if self.data.set.manual_lock:
+                Pub().pub(f"openWB/set/chargepoint/{self.num}/set/manual_lock", False)
             charging_possible = True
             message = None
         else:
             charging_possible = False
-            message = "Keine Ladung, da der Ladepunkt manuell gesperrt wurde."
+            message = "Keine Ladung, da der Ladepunkt gesperrt wurde."
         return charging_possible, message
 
     def _is_ev_plugged(self) -> Tuple[bool, Optional[str]]:
-        """ prüft, ob ein EV angesteckt ist
-        """
         state = self.data.get.plug_state
         if not state:
             message = "Keine Ladung, da kein Auto angesteckt ist."
