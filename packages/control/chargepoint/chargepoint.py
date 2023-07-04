@@ -315,9 +315,10 @@ class Chargepoint:
             message = None
         else:
             state = False
-            message = ("Ladepunkt gesperrt, da keine Werte vom EVU-Zähler empfangen wurden und deshalb kein "
-                       "Lastmanagement durchgeführt werden kann. Falls Sie dennoch laden möchten, können Sie als "
-                       "EVU-Zähler 'Virtuell' auswählen und einen konstanten Hausverbrauch angeben.")
+            message = ("Ladepunkt gesperrt, da keine Werte vom EVU- oder Zwischenzähler-Zähler empfangen wurden und "
+                       "deshalb kein Lastmanagement durchgeführt werden kann. Bitte schaue auf der Status-Seite nach "
+                       "Fehlermeldungen bei den Zählern. Falls Du dennoch laden möchtest, kannst Du als "
+                       "Gerät 'Virtuelles Gerät' mit einer Komponente 'Virtueller Zähler' verwenden.")
         return state, message
 
     def _is_autolock_inactive(self) -> Tuple[bool, Optional[str]]:
