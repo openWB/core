@@ -31,6 +31,7 @@ from dataclass_utils import dataclass_from_dict
 from modules.common.simcount.simcounter_state import SimCounterState
 from modules.internal_chargepoint_handler.internal_chargepoint_handler_config import (
     GlobalHandlerData, InternalChargepointHandlerData, RfidData)
+from modules.vehicles.manual.config import ManualSoc
 
 log = logging.getLogger(__name__)
 mqtt_log = logging.getLogger("mqtt")
@@ -267,6 +268,12 @@ class SubData:
                         else:
                             mod = importlib.import_module(".vehicles."+config["type"]+".soc", "modules")
                             config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config)
+                            if var["ev"+index].soc_module:
+                                if (isinstance(config, ManualSoc) and
+                                        (isinstance(var["ev"+index].soc_module.vehicle_config, ManualSoc))):
+                                    if (config.configuration.soc_start !=
+                                            var["ev"+index].soc_module.vehicle_config.configuration.soc_start):
+                                        Pub().pub(f"openWB/vehicle/{index}/get/force_soc_update", True)
                             var["ev"+index].soc_module = mod.create_vehicle(config, index)
                             client.subscribe(f"/vehicle/{index}/soc_module/interval_config", 2)
                         self.event_soc.set()
