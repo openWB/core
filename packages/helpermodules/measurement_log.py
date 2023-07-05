@@ -3,9 +3,12 @@ import json
 import logging
 import pathlib
 from pathlib import Path
+import re
+from paho.mqtt.client import Client as MqttClient, MQTTMessage
 from typing import Dict, List
 
 from control import data
+from helpermodules.broker import InternalBrokerClient
 from helpermodules.pub import Pub
 from helpermodules import timecheck
 from control.bat import Bat
@@ -13,6 +16,7 @@ from control.chargepoint.chargepoint import Chargepoint
 from control.counter import Counter
 from control.ev import Ev
 from control.pv import Pv
+from helpermodules.utils.topic_parser import decode_payload, get_index
 
 log = logging.getLogger(__name__)
 
@@ -78,8 +82,8 @@ def save_log(folder):
                 }
                 ... (dynamisch, je nach konfigurierter Anzahl)
             }
-            "smarthome_devices": {
-                "device1": {
+            "sh": {
+                "sh1": {
                     "counter": Wh,
                     wenn konfiguriert:
                     "temp1": int in °C,
@@ -172,7 +176,8 @@ def save_log(folder):
         "ev": ev_dict,
         "counter": counter_dict,
         "pv": pv_dict,
-        "bat": bat_dict
+        "bat": bat_dict,
+        "sh": LegacySmarthomeLogdata().update()
     }
 
     # json-Objekt in Datei einfügen
@@ -206,7 +211,7 @@ def save_log(folder):
 
 def get_totals(entries: List, sum_up_diffs: bool = False) -> Dict:
     # beim Jahreslog werden die Summen aus den Monatssummen berechnet, bei allen anderen aus den absoluten Zählerwerten
-    totals: Dict[str, Dict] = {"cp": {}, "counter": {}, "pv": {}, "bat": {}}
+    totals: Dict[str, Dict] = {"cp": {}, "counter": {}, "pv": {}, "bat": {}, "sh": {}}
     prev_entry: Dict = {}
     for group in totals.keys():
         for entry in entries:
@@ -314,3 +319,36 @@ def update_module_yields(module: str, totals: Dict) -> None:
         if module == "cp" and m == "all":
             module_data = data.data.cp_all_data
             update_imported_exported(totals[module][m]["imported"], totals[module][m]["exported"])
+
+
+class LegacySmarthomeLogdata:
+    def __init__(self) -> None:
+        self.all_received_topics: Dict = {}
+
+    def update(self):
+        sh_dict = {}
+        try:
+            InternalBrokerClient("smarthome-logging", self.on_connect, self.on_message).start_finite_loop()
+            for topic, payload in self.all_received_topics.items():
+                if re.search("openWB/LegacySmartHome/config/get/Devices/[1-9]/device_configured", topic) is not None:
+                    if decode_payload(payload) == 1:
+                        index = get_index(topic)
+                        sh_dict.update({f"sh{index}": {}})
+                        for topic, payload in self.all_received_topics.items():
+                            if f"openWB/LegacySmartHome/Devices/{index}/Wh" == topic:
+                                sh_dict[f"sh{index}"].update({"imported": decode_payload(payload)})
+                            for sensor_id in range(0, 3):
+                                if f"openWB/LegacySmartHome/Devices/{index}/TemperatureSensor{sensor_id}" == topic:
+                                    sh_dict[f"sh{index}"].update({f"temp{sensor_id}": decode_payload(payload)})
+        except Exception:
+            log.exception("Fehler im Werte-Logging-Modul für Smarthome")
+        finally:
+            return sh_dict
+
+    def on_connect(self, client: MqttClient, userdata, flags: dict, rc: int):
+        """ connect to broker and subscribe to set topics
+        """
+        client.subscribe("openWB/LegacySmartHome/#", 2)
+
+    def on_message(self, client: MqttClient, userdata, msg: MQTTMessage):
+        self.all_received_topics.update({msg.topic: msg.payload})
