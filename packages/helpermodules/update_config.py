@@ -755,7 +755,7 @@ class UpdateConfig:
             if re.search("openWB/system/device/[0-9]+/config", topic) is not None:
                 payload = decode_payload(payload)
                 if payload.type == "solar_watt":
-                    payload.configuration.ip_address = payload.configuration.ip_adress
+                    payload["configuration"]["ip_address"] = payload["configuration"]["ip_adress"]
                     payload.configuration.pop("ip_adress")
                 Pub().pub(topic.replace("openWB/", "openWB/set/"), payload)
         Pub().pub("openWB/system/datastore_version", 15)
