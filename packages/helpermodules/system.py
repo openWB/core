@@ -3,6 +3,7 @@
 import logging
 import os
 import subprocess
+import threading
 import time
 from pathlib import Path
 from typing import Optional
@@ -76,15 +77,22 @@ class System:
             pub.Pub().pub("openWB/set/system/ip_address", new_ip)
 
     def create_backup_and_send_to_cloud(self):
-        try:
-            if self.backup_cloud is not None:
-                backup_filename = self.create_backup()
-                with open(self._get_parent_file()/'data'/'backup'/backup_filename, 'rb') as f:
-                    data = f.read()
-                self.backup_cloud.update(backup_filename, data)
-                log.debug('Nächtliche Sicherung erstellt und hochgeladen.')
-        except Exception as e:
-            raise e
+        def create():
+            try:
+                if self.backup_cloud is not None:
+                    backup_filename = self.create_backup()
+                    with open(self._get_parent_file()/'data'/'backup'/backup_filename, 'rb') as f:
+                        data = f.read()
+                    self.backup_cloud.update(backup_filename, data)
+                    log.debug('Nächtliche Sicherung erstellt und hochgeladen.')
+            except Exception as e:
+                raise e
+
+        for thread in threading.enumerate():
+            if thread.name == "cloud backup":
+                log.debug("Don't start multiple instances of cloud backup thread.")
+                return
+        threading.Thread(target=create, args=(), name="cloud backup").start()
 
     def create_backup(self) -> str:
         result = subprocess.run([str(self._get_parent_file() / "runs" / "backup.sh"), "1"], stdout=subprocess.PIPE)
