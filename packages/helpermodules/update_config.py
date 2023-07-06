@@ -770,6 +770,7 @@ class UpdateConfig:
                     for e in content["entries"]:
                         e.update({"sh": {}})
                     content["totals"].update({"sh": {}})
+                    content["names"] = measurement_log.get_names(content["totals"], {})
                     jsonFile.seek(0)
                     json.dump(content, jsonFile)
                     jsonFile.truncate()

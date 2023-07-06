@@ -86,7 +86,8 @@ def save_log(folder):
             }
             "sh": {
                 "sh1": {
-                    "counter": Wh,
+                    "exported": Wh,
+                    "imported": Wh,
                     wenn konfiguriert:
                     "temp1": int in °C,
                     "temp2": int in °C,
@@ -108,7 +109,7 @@ def save_log(folder):
         },
         "names": {
             "counter0": "Mein EVU-Zähler",
-            "bat1": "Mein toller Speicher",
+            "bat2": "Mein toller Speicher",
             ...
         }
     }
