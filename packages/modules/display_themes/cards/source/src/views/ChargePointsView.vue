@@ -5,6 +5,7 @@ import SparkLine from "@/components/SparkLine.vue";
 import ChargePointPlugBadge from "@/components/ChargePointPlugBadge.vue";
 import ChargePointLockButton from "@/components/ChargePointLockButton.vue";
 import ExtendedNumberInput from "@/components/ExtendedNumberInput.vue";
+import ManualSocInput from "@/components/ChargePoints/ManualSocInput.vue";
 
 /* fontawesome */
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -63,8 +64,10 @@ export default {
     return {
       mqttStore: useMqttStore(),
       modalChargePointSettingsVisible: false,
-      modalChargePointSettingsId: 0,
+      modalChargePointId: 0,
+      modalVehicleId: 0,
       modalActiveTab: "tab-general",
+      modalManualSocInputVisible: false,
     };
   },
   props: {
@@ -76,6 +79,7 @@ export default {
     ChargePointPlugBadge,
     ChargePointLockButton,
     ExtendedNumberInput,
+    ManualSocInput,
     FontAwesomeIcon,
   },
   computed: {
@@ -95,16 +99,17 @@ export default {
   methods: {
     toggleChargePointSettings(id) {
       // reset selected tab if selecting different charge point
-      if (this.modalChargePointSettingsId != id) {
+      if (this.modalChargePointId != id) {
         this.modalActiveTab = "tab-general";
       }
-      this.modalChargePointSettingsId = id;
+      this.modalChargePointId = id;
       this.modalChargePointSettingsVisible = true;
     },
     handleSocClick(id) {
       let vehicle_id = this.mqttStore.getChargePointConnectedVehicleId(id);
       if (this.mqttStore.getVehicleSocIsManual(vehicle_id)) {
-        console.log("ToDo: manual SoC input");
+        this.modalVehicleId = vehicle_id;
+        this.modalManualSocInputVisible = true;
         return;
       }
       this.$root.sendTopicToBroker(
@@ -356,7 +361,11 @@ export default {
                 "
                 class="_flex-grow:0 _padding-right:0 _padding-left:1"
               >
-                <i-button size="sm" @click="handleSocClick(id)">
+                <i-button
+                  size="sm"
+                  :disabled="changesLocked"
+                  @click="handleSocClick(id)"
+                >
                   <span
                     v-if="
                       mqttStore.getVehicleSocConfigured(
@@ -477,10 +486,11 @@ export default {
     </dash-board-card>
   </div>
   <!-- modals -->
+  <!-- charge point settings -->
   <i-modal v-model="modalChargePointSettingsVisible" size="lg">
     <template #header>
       Einstellungen für Ladepunkt "{{
-        mqttStore.getChargePointName(modalChargePointSettingsId)
+        mqttStore.getChargePointName(modalChargePointId)
       }}"
     </template>
     <i-tabs v-model="modalActiveTab" stretch>
@@ -503,22 +513,17 @@ export default {
               size="lg"
               :disabled="
                 !mqttStore.getChargePointVehicleChangePermitted(
-                  modalChargePointSettingsId
+                  modalChargePointId
                 )
               "
               :model-value="
-                mqttStore.getChargePointConnectedVehicleInfo(
-                  modalChargePointSettingsId
-                )
+                mqttStore.getChargePointConnectedVehicleInfo(modalChargePointId)
               "
               label="name"
               :options="vehicleList"
               placeholder="Bitte auswählen.."
               @update:model-value="
-                setChargePointConnectedVehicle(
-                  modalChargePointSettingsId,
-                  $event
-                )
+                setChargePointConnectedVehicle(modalChargePointId, $event)
               "
             />
           </i-form-group>
@@ -528,13 +533,13 @@ export default {
               size="lg"
               :model-value="
                 mqttStore.getChargePointConnectedVehicleChargeMode(
-                  modalChargePointSettingsId
+                  modalChargePointId
                 )
               "
               placeholder="Bitte auswählen.."
               @update:model-value="
                 setChargePointConnectedVehicleChargeMode(
-                  modalChargePointSettingsId,
+                  modalChargePointId,
                   $event
                 )
               "
@@ -558,12 +563,12 @@ export default {
                 size="lg"
                 :model-value="
                   mqttStore.getChargePointConnectedVehiclePriority(
-                    modalChargePointSettingsId
+                    modalChargePointId
                   )
                 "
                 @update:model-value="
                   setChargePointConnectedVehiclePriority(
-                    modalChargePointSettingsId,
+                    modalChargePointId,
                     $event
                   )
                 "
@@ -578,12 +583,12 @@ export default {
                 size="lg"
                 :model-value="
                   mqttStore.getChargePointConnectedVehicleTimeChargingActive(
-                    modalChargePointSettingsId
+                    modalChargePointId
                   )
                 "
                 @update:model-value="
                   setChargePointConnectedVehicleTimeChargingActive(
-                    modalChargePointSettingsId,
+                    modalChargePointId,
                     $event
                   )
                 "
@@ -602,12 +607,12 @@ export default {
               :max="32"
               :model-value="
                 mqttStore.getChargePointConnectedVehicleInstantChargingCurrent(
-                  modalChargePointSettingsId
+                  modalChargePointId
                 )
               "
               @update:model-value="
                 setChargePointConnectedVehicleInstantChargingCurrent(
-                  modalChargePointSettingsId,
+                  modalChargePointId,
                   $event
                 )
               "
@@ -619,19 +624,19 @@ export default {
               <i-button
                 :color="
                   mqttStore.getChargePointConnectedVehicleInstantChargingLimit(
-                    modalChargePointSettingsId
+                    modalChargePointId
                   ).selected == 'none'
                     ? 'primary'
                     : ''
                 "
                 :active="
                   mqttStore.getChargePointConnectedVehicleInstantChargingLimit(
-                    modalChargePointSettingsId
+                    modalChargePointId
                   ).selected == 'none'
                 "
                 @click="
                   setChargePointConnectedVehicleInstantChargingLimit(
-                    modalChargePointSettingsId,
+                    modalChargePointId,
                     'none'
                   )
                 "
@@ -641,19 +646,19 @@ export default {
               <i-button
                 :color="
                   mqttStore.getChargePointConnectedVehicleInstantChargingLimit(
-                    modalChargePointSettingsId
+                    modalChargePointId
                   ).selected == 'soc'
                     ? 'primary'
                     : ''
                 "
                 :active="
                   mqttStore.getChargePointConnectedVehicleInstantChargingLimit(
-                    modalChargePointSettingsId
+                    modalChargePointId
                   ).selected == 'soc'
                 "
                 @click="
                   setChargePointConnectedVehicleInstantChargingLimit(
-                    modalChargePointSettingsId,
+                    modalChargePointId,
                     'soc'
                   )
                 "
@@ -663,19 +668,19 @@ export default {
               <i-button
                 :color="
                   mqttStore.getChargePointConnectedVehicleInstantChargingLimit(
-                    modalChargePointSettingsId
+                    modalChargePointId
                   ).selected == 'amount'
                     ? 'primary'
                     : ''
                 "
                 :active="
                   mqttStore.getChargePointConnectedVehicleInstantChargingLimit(
-                    modalChargePointSettingsId
+                    modalChargePointId
                   ).selected == 'amount'
                 "
                 @click="
                   setChargePointConnectedVehicleInstantChargingLimit(
-                    modalChargePointSettingsId,
+                    modalChargePointId,
                     'amount'
                   )
                 "
@@ -687,7 +692,7 @@ export default {
           <i-form-group
             v-if="
               mqttStore.getChargePointConnectedVehicleInstantChargingLimit(
-                modalChargePointSettingsId
+                modalChargePointId
               ).selected == 'soc'
             "
           >
@@ -699,12 +704,12 @@ export default {
               :step="5"
               :model-value="
                 mqttStore.getChargePointConnectedVehicleInstantChargingLimit(
-                  modalChargePointSettingsId
+                  modalChargePointId
                 ).soc
               "
               @update:model-value="
                 setChargePointConnectedVehicleInstantChargingLimitSoc(
-                  modalChargePointSettingsId,
+                  modalChargePointId,
                   $event
                 )
               "
@@ -713,7 +718,7 @@ export default {
           <i-form-group
             v-if="
               mqttStore.getChargePointConnectedVehicleInstantChargingLimit(
-                modalChargePointSettingsId
+                modalChargePointId
               ).selected == 'amount'
             "
           >
@@ -724,12 +729,12 @@ export default {
               :max="100"
               :model-value="
                 mqttStore.getChargePointConnectedVehicleInstantChargingLimit(
-                  modalChargePointSettingsId
+                  modalChargePointId
                 ).amount / 1000
               "
               @update:model-value="
                 setChargePointConnectedVehicleInstantChargingLimitAmount(
-                  modalChargePointSettingsId,
+                  modalChargePointId,
                   $event * 1000
                 )
               "
@@ -747,12 +752,12 @@ export default {
               size="lg"
               :model-value="
                 mqttStore.getChargePointConnectedVehiclePvChargingFeedInLimit(
-                  modalChargePointSettingsId
+                  modalChargePointId
                 )
               "
               @update:model-value="
                 setChargePointConnectedVehiclePvChargingFeedInLimit(
-                  modalChargePointSettingsId,
+                  modalChargePointId,
                   $event
                 )
               "
@@ -778,12 +783,12 @@ export default {
               ]"
               :model-value="
                 mqttStore.getChargePointConnectedVehiclePvChargingMinCurrent(
-                  modalChargePointSettingsId
+                  modalChargePointId
                 )
               "
               @update:model-value="
                 setChargePointConnectedVehiclePvChargingMinCurrent(
-                  modalChargePointSettingsId,
+                  modalChargePointId,
                   $event
                 )
               "
@@ -817,12 +822,12 @@ export default {
               ]"
               :model-value="
                 mqttStore.getChargePointConnectedVehiclePvChargingMinSoc(
-                  modalChargePointSettingsId
+                  modalChargePointId
                 )
               "
               @update:model-value="
                 setChargePointConnectedVehiclePvChargingMinSoc(
-                  modalChargePointSettingsId,
+                  modalChargePointId,
                   $event
                 )
               "
@@ -836,12 +841,12 @@ export default {
               unit="A"
               :model-value="
                 mqttStore.getChargePointConnectedVehiclePvChargingMinSocCurrent(
-                  modalChargePointSettingsId
+                  modalChargePointId
                 )
               "
               @update:model-value="
                 setChargePointConnectedVehiclePvChargingMinSocCurrent(
-                  modalChargePointSettingsId,
+                  modalChargePointId,
                   $event
                 )
               "
@@ -876,12 +881,12 @@ export default {
               ]"
               :model-value="
                 mqttStore.getChargePointConnectedVehiclePvChargingMaxSoc(
-                  modalChargePointSettingsId
+                  modalChargePointId
                 )
               "
               @update:model-value="
                 setChargePointConnectedVehiclePvChargingMaxSoc(
-                  modalChargePointSettingsId,
+                  modalChargePointId,
                   $event
                 )
               "
@@ -894,7 +899,7 @@ export default {
           v-if="
             Object.keys(
               mqttStore.getChargePointConnectedVehicleScheduledChargingPlans(
-                modalChargePointSettingsId
+                modalChargePointId
               )
             ).length === 0
           "
@@ -909,7 +914,7 @@ export default {
             v-for="(
               plan, planKey
             ) in mqttStore.getChargePointConnectedVehicleScheduledChargingPlans(
-              modalChargePointSettingsId
+              modalChargePointId
             )"
             :key="planKey"
           >
@@ -976,7 +981,7 @@ export default {
           v-if="
             Object.keys(
               mqttStore.getChargePointConnectedVehicleTimeChargingPlans(
-                modalChargePointSettingsId
+                modalChargePointId
               )
             ).length === 0
           "
@@ -991,7 +996,7 @@ export default {
             v-for="(
               plan, planKey
             ) in mqttStore.getChargePointConnectedVehicleTimeChargingPlans(
-              modalChargePointSettingsId
+              modalChargePointId
             )"
             :key="planKey"
           >
@@ -1055,6 +1060,13 @@ export default {
       </i-tab>
     </i-tabs>
   </i-modal>
+  <!-- end charge point settings modal-->
+  <!-- manual soc input -->
+  <manual-soc-input
+    :vehicleId="modalVehicleId"
+    v-model="modalManualSocInputVisible"
+  />
+  <!-- end manual soc input -->
 </template>
 
 <style scoped>
