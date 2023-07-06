@@ -346,8 +346,6 @@ class LegacySmarthomeLogdata:
             return sh_dict
 
     def on_connect(self, client: MqttClient, userdata, flags: dict, rc: int):
-        """ connect to broker and subscribe to set topics
-        """
         client.subscribe("openWB/LegacySmartHome/#", 2)
 
     def on_message(self, client: MqttClient, userdata, msg: MQTTMessage):
