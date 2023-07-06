@@ -50,7 +50,7 @@ class Process:
                     else:
                         Pub().pub(
                             f"openWB/set/chargepoint/{cp.num}/get/state_str",
-                            "Ladung freigeschaltet... (bei Problemen: Prüfe bitte zuerst in den Einstellungen"
+                            "Ladevorgang wurde gestartet... (bei Problemen: Prüfe bitte zuerst in den Einstellungen"
                             " 'Ladeeinstellungen' und 'Konfiguration'.)")
                     modules_threads.append(self._start_charging(cp))
                 except Exception:
