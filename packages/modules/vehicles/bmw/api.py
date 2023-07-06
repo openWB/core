@@ -246,10 +246,11 @@ def requestData(token: str, vin: str) -> dict:
             log.error("bmw.requestData: Unknown VIN, must start with WB or WM")
             raise RuntimeError
 
-        url = 'https://' + api_server + '/eadrax-vcs/v2/vehicles/' + vin + '/state'
+        url = 'https://' + api_server + '/eadrax-vcs/v4/vehicles/state'
         headers = {
             'User-Agent': 'Dart/2.14 (dart:io)',
             'x-user-agent': 'android(SP1A.210812.016.C1);' + brand + ';2.5.2(14945);row',
+            'bmw-vin': vin,
             'Authorization': (token["token_type"] + " " + token["access_token"])}
         body = getHTTP(url, headers)
         response = json.loads(body)
