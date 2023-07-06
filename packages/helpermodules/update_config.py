@@ -754,7 +754,7 @@ class UpdateConfig:
         for topic, payload in self.all_received_topics.items():
             if re.search("openWB/system/device/[0-9]+/config", topic) is not None:
                 payload = decode_payload(payload)
-                if payload.type == "solar_watt":
+                if payload["type"] == "solar_watt":
                     payload["configuration"]["ip_address"] = payload["configuration"]["ip_adress"]
                     payload.configuration.pop("ip_adress")
                 Pub().pub(topic.replace("openWB/", "openWB/set/"), payload)
