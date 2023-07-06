@@ -223,7 +223,7 @@ def get_totals(entries: List, sum_up_diffs: bool = False) -> Dict:
                         totals[group][module] = {"exported": 0} if group == "pv" else {"imported": 0, "exported": 0}
                 else:
                     for key, value in entry[group][module].items():
-                        if key != "soc":
+                        if key != "soc" and "temp" not in key:
                             if sum_up_diffs:
                                 value = (Decimal(str(value))
                                          + Decimal(str(totals[group][module][key])))
@@ -336,7 +336,7 @@ class LegacySmarthomeLogdata:
                         sh_dict.update({f"sh{index}": {}})
                         for topic, payload in self.all_received_topics.items():
                             if f"openWB/LegacySmartHome/Devices/{index}/Wh" == topic:
-                                sh_dict[f"sh{index}"].update({"imported": decode_payload(payload)})
+                                sh_dict[f"sh{index}"].update({"imported": decode_payload(payload), "exported": 0})
                             for sensor_id in range(0, 3):
                                 if f"openWB/LegacySmartHome/Devices/{index}/TemperatureSensor{sensor_id}" == topic:
                                     sh_dict[f"sh{index}"].update({f"temp{sensor_id}": decode_payload(payload)})

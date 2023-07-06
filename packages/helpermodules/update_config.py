@@ -767,27 +767,13 @@ class UpdateConfig:
             with open(file, "r+") as jsonFile:
                 try:
                     content = json.load(jsonFile)
-                    if isinstance(content, List):
-                        try:
-                            new_content = {"entries": content, "totals": measurement_log.get_totals(content)}
-                            jsonFile.seek(0)
-                            json.dump(new_content, jsonFile)
-                            jsonFile.truncate()
-                            log.debug(f"Format der Logdatei {file} aktualisiert.")
-                        except Exception:
-                            log.exception(f"Logfile {file} entspricht nicht dem Dateiformat von Alpha 3.")
-                except json.decoder.JSONDecodeError:
-                    log.exception(
-                        f"Logfile {file} konnte nicht konvertiert werden, da es keine gültigen json-Daten enthält.")
-            with open(file, "r+") as jsonFile:
-                try:
-                    content = json.load(jsonFile)
                     for e in content["entries"]:
                         e.update({"sh": {}})
                     content["totals"].update({"sh": {}})
                     jsonFile.seek(0)
                     json.dump(content, jsonFile)
                     jsonFile.truncate()
+                    log.debug(f"Format der Logdatei {file} aktualisiert.")
                 except Exception:
                     log.exception(f"Logfile {file} konnte nicht konvertiert werden.")
-        # Pub().pub("openWB/system/datastore_version", 16)
+        Pub().pub("openWB/system/datastore_version", 16)
