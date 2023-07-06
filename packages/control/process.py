@@ -49,7 +49,9 @@ class Process:
                                   cp.data.get.state_str)
                     else:
                         Pub().pub(
-                            f"openWB/set/chargepoint/{cp.num}/get/state_str", "Ladevorgang läuft...")
+                            f"openWB/set/chargepoint/{cp.num}/get/state_str",
+                            "Ladung freigeschaltet... (bei Problemen: Prüfe bitte zuerst in den Einstellungen"
+                            " 'Ladeeinstellungen' und 'Konfiguration'.)")
                     modules_threads.append(self._start_charging(cp))
                 except Exception:
                     log.exception("Fehler im Process-Modul für Ladepunkt "+str(cp))
