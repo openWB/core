@@ -4,8 +4,9 @@ import logging
 import pathlib
 from pathlib import Path
 import re
+import string
 from paho.mqtt.client import Client as MqttClient, MQTTMessage
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 from control import data
 from helpermodules.broker import InternalBrokerClient
@@ -17,6 +18,7 @@ from control.counter import Counter
 from control.ev import Ev
 from control.pv import Pv
 from helpermodules.utils.topic_parser import decode_payload, get_index
+from modules.common.utils.component_parser import get_component_name_by_id
 
 log = logging.getLogger(__name__)
 
@@ -103,6 +105,11 @@ def save_log(folder):
                     'cp5': {'exported': 0, 'imported': 0},
                     'cp6': {'exported': 0, 'imported': 64}},
             'pv': {'all': {'imported': 251}, 'pv1': {'imported': 247}}}
+        },
+        "names": {
+            "counter0": "Mein EVU-Zähler",
+            "bat1": "Mein toller Speicher",
+            ...
         }
     }
 
@@ -169,6 +176,8 @@ def save_log(folder):
             except Exception:
                 log.exception("Fehler im Werte-Logging-Modul für Speicher "+str(bat))
 
+    sh_dict, sh_names = LegacySmarthomeLogdata().update()
+
     new_entry = {
         "timestamp": current_timestamp,
         "date": date,
@@ -177,7 +186,7 @@ def save_log(folder):
         "counter": counter_dict,
         "pv": pv_dict,
         "bat": bat_dict,
-        "sh": LegacySmarthomeLogdata().update()
+        "sh": sh_dict
     }
 
     # json-Objekt in Datei einfügen
@@ -204,6 +213,7 @@ def save_log(folder):
     entries = content["entries"]
     entries.append(new_entry)
     content["totals"] = get_totals(entries)
+    content["names"] = get_names(content["totals"], sh_names)
     with open(filepath, "w") as jsonFile:
         json.dump(content, jsonFile)
     return content["totals"]
@@ -243,6 +253,23 @@ def get_totals(entries: List, sum_up_diffs: bool = False) -> Dict:
                             totals[group][module][key] = float(value) if "." in value else int(value)
             prev_entry = entry
     return totals
+
+
+def get_names(totals: Dict, sh_names: Dict) -> Dict:
+    names = sh_names
+    for group in totals.items():
+        if group[0] == "sh":
+            continue
+        for entry in group[1]:
+            try:
+                if "cp" in entry:
+                    names.update({entry: data.data.cp_data[entry].data.config.name})
+                elif "all" != entry:
+                    id = entry.strip(string.ascii_letters)
+                    names.update({entry: get_component_name_by_id(int(id))})
+            except (ValueError, KeyError):
+                names.update({entry: entry})
+    return names
 
 
 def get_daily_log(date: str):
@@ -325,8 +352,9 @@ class LegacySmarthomeLogdata:
     def __init__(self) -> None:
         self.all_received_topics: Dict = {}
 
-    def update(self):
-        sh_dict = {}
+    def update(self) -> Tuple[Dict, Dict]:
+        sh_dict: Dict = {}
+        sh_names: Dict = {}
         try:
             InternalBrokerClient("smarthome-logging", self.on_connect, self.on_message).start_finite_loop()
             for topic, payload in self.all_received_topics.items():
@@ -340,10 +368,13 @@ class LegacySmarthomeLogdata:
                             for sensor_id in range(0, 3):
                                 if f"openWB/LegacySmartHome/Devices/{index}/TemperatureSensor{sensor_id}" == topic:
                                     sh_dict[f"sh{index}"].update({f"temp{sensor_id}": decode_payload(payload)})
+                        for topic, payload in self.all_received_topics.items():
+                            if f"openWB/LegacySmartHome/config/get/Devices/{index}/device_name" == topic:
+                                sh_names.update({f"sh{index}": decode_payload(payload)})
         except Exception:
             log.exception("Fehler im Werte-Logging-Modul für Smarthome")
         finally:
-            return sh_dict
+            return sh_dict, sh_names
 
     def on_connect(self, client: MqttClient, userdata, flags: dict, rc: int):
         client.subscribe("openWB/LegacySmartHome/#", 2)
