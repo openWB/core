@@ -127,6 +127,7 @@ class UpdateConfig:
         "^openWB/general/extern_display_mode$",
         "^openWB/general/control_interval$",
         "^openWB/general/external_buttons_hw$",
+        "^openWB/general/web_theme$",
         "^openWB/general/grid_protection_configured$",
         "^openWB/general/grid_protection_active$",
         "^openWB/general/mqtt_bridge$",

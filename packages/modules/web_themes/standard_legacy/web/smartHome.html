@@ -7,7 +7,6 @@
 
 	<title>openWB - SmartHome</title>
 	<meta charset="UTF-8">
-	<base href="/openWB/web/">
 	<meta name="viewport"
 		content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
 	<meta name="apple-mobile-web-app-capable" content="yes">
@@ -97,7 +96,7 @@
 		}
 		var themeCookie = getCookie('openWBTheme');
 		// include special Theme style
-		$('head').append('<link rel="stylesheet" href="themes/' + themeCookie + '/style.css?v=20221122">');
+		$('head').append('<link rel="stylesheet" href="style.css?v=20221122">');
 	</script>
 </head>
 
@@ -366,7 +365,7 @@
 
 		// load navbar, be careful: it loads asynchronous
 		$.get(
-			{ url: "themes/navbar.html", cache: false },
+			{ url: "navbar.html", cache: false },
 			function (data) {
 				$("#nav-placeholder").replaceWith(data);
 			}
@@ -457,11 +456,11 @@
 				// load mqtt library
 				'js/mqttws31.js',
 				// some helper functions
-				'themes/dark/helperFunctions.js?ver=20221117',
+				'helperFunctions.js?ver=20221117',
 				// functions for processing messages
-				'themes/dark/processAllMqttMsg.js?ver=20230606',
+				'processAllMqttMsg.js?ver=20230606',
 				// functions performing mqtt and start mqtt-service
-				'themes/dark/smartHomeMqttServices.js?ver=20230606',
+				'smartHomeMqttServices.js?ver=20230606',
 			];
 			scriptsToLoad.forEach(function (src) {
 				var script = document.createElement('script');
