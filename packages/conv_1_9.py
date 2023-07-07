@@ -6,16 +6,33 @@ Falls nötig, ohne Abhängigkeit zur sonstigen 2.x-Implementierung.
 import csv
 import datetime
 import json
+import logging
 import os
 import pathlib
-from typing import Dict
+import shutil
+import tarfile
+from typing import Callable, Dict, Union
+
+
+from dataclass_utils import dataclass_from_dict
+from helpermodules.conv_1_9.id_mapping import MapId
+from helpermodules.measurement_log import get_totals
 
 try:
-    from .. import data
+    from .control import data
 except Exception:
     pass
 
-from modules.common.store._util import get_rounding_function_by_digits
+log = logging.getLogger(__name__)
+
+
+def get_rounding_function_by_digits(digits: Union[int, None]) -> Callable:
+    if digits is None:
+        return lambda value: value
+    elif digits == 0:
+        return int
+    else:
+        return lambda value: round(value, digits)
 
 
 class StreamArray(list):
@@ -46,41 +63,67 @@ class StreamArray(list):
 
 
 class Conversion:
-    def __init__(self, id_map) -> None:
-        self.id_map = id_map
+    BACKUP_DATA_PATH = "./data/backup/conversion/var/www/html/openWB/web/logging/data"
+
+    def __init__(self, id_map: Dict, backup_name: str) -> None:
+        self.id_map = dataclass_from_dict(MapId, id_map)
+        self.backup_name = backup_name
+
+    def convert(self):
+        self.extract_files("ladelog")
+        self.extract_files("daily")
+        self.extract_files("monthly")
+        self.convert_csv_to_json_chargelog()
+        self.convert_csv_to_json_measurement_log("daily")
+        self.convert_csv_to_json_measurement_log("monthly")
+        # shutil.rmtree("./data/backup/conversion")
 
     def map_to_new_ids(self, old_id: str) -> int:
         return getattr(self.id_map, old_id)
 
+    def _file_to_extract_generator(self, members, log_folder_name: str):
+        for tarinfo in members:
+            if tarinfo.name.startswith(f"var/www/html/openWB/web/logging/data/{log_folder_name}"):
+                yield tarinfo
+
+    def extract_files(self, log_folder_name: str):
+        with tarfile.open(f'./data/backup/conversion/{self.backup_name}') as tar:
+            tar.extractall(members=self._file_to_extract_generator(
+                tar, log_folder_name), path="./data/backup/conversion")
+
     def convert_csv_to_json_chargelog(self):
         """ konvertiert die alten Ladelog-Dateien in das neue Format für 2.x.
         """
-        logfiles = os.listdir("/var/www/html/openWB/web/logging/data/ladelog")
-        for file in logfiles:
+        for old_file_name in os.listdir(f"{self.BACKUP_DATA_PATH}/ladelog"):
             try:
-                pathlib.Path('./data/monthly_log').mkdir(mode=0o755,
-                                                         parents=True, exist_ok=True)
-                filepath = "./data/monthly_log/"+file[:-4]+".json"
-                pathlib.Path(filepath).touch(exist_ok=True)
-                with open(filepath, 'w') as f:
-                    generator_handle = self._chargelogfile_entry_generator_func(file)
-                    stream_array = StreamArray(generator_handle)
-                    for entry in json.JSONEncoder().iterencode(stream_array):
-                        f.write(entry)
+                new_entries = self._chargelogfile_entries(old_file_name)
+
+                pathlib.Path('./charge_log').mkdir(mode=0o755,
+                                                   parents=True, exist_ok=True)
+                filepath = f"./data/charge_log/{old_file_name[:-4]}.json"
+                try:
+                    with open(filepath, "r") as jsonFile:
+                        content = json.load(jsonFile)
+                except FileNotFoundError:
+                    with open(filepath, "w+") as jsonFile:
+                        json.dump([], jsonFile)
+                    with open(filepath, "r") as jsonFile:
+                        content = json.load(jsonFile)
+                new_entries.extend(content)
+                with open(filepath, "w") as jsonFile:
+                    json.dump(new_entries, jsonFile)
             except Exception:
-                pass
+                log.exception(f"Fehler beim Konvertieren des Ladelogs vom {old_file_name}")
 
-    def _chargelogfile_entry_generator_func(self, file: str):
-        """ Generator-Funktion, die einen Eintrag aus dem Ladelog konvertiert.
-        """
-
+    def _chargelogfile_entries(self, file: str):
         def conv_1_9_datetimes(datetime_str):
             """ konvertiert Datum-Uhrzeit alt: %d.%m.%y-%H:%M 05.03.21-11:16; neu: %m/%d/%Y, %H:%M 08/04/2021, 15:50
             """
             str_date = datetime.datetime.strptime(datetime_str, '%d.%m.%y-%H:%M')
             return datetime.datetime.strftime(str_date, "%m/%d/%Y, %H:%M")
 
-        with open('/var/www/html/openWB/web/logging/data/ladelog/'+file) as csv_file:
+        entries = []
+        with open(f"{self.BACKUP_DATA_PATH}/ladelog/{file}") as csv_file:
             csv_reader = csv.reader(csv_file, delimiter=',')
             for row in csv_reader:
                 try:
@@ -88,14 +131,14 @@ class Conversion:
                         # Lademodus anpassen
                         if row[7] == "0":
                             chargemode = "instant_charging"
-                        elif row[7] == "1":
-                            chargemode = "pv_charging"
-                        elif row[7] == "2":
+                        elif row[7] == "1" or row[7] == "2":
                             chargemode = "pv_charging"
                         elif row[7] == "3":
                             chargemode = "stop"
                         elif row[7] == "4":
                             chargemode = "standby"
+                        elif row[7] == "7":
+                            chargemode = "scheduled_charging"
                         else:
                             raise ValueError(
                                 str(row[7])+" ist kein bekannter Lademodus.")
@@ -148,33 +191,41 @@ class Conversion:
                                 "costs": get_rounding_function_by_digits(2)(costs)
                             }
                         }
-                    else:
-                        new_entry = {}
-                    yield new_entry
-
+                        entries.append(new_entry)
                 except Exception:
-                    pass
+                    log.exception(f"Fehler beim Konvertieren des Ladelogs vom {file}, Reihe {row}")
+        return entries
 
     def convert_csv_to_json_measurement_log(self, folder: str):
         """ konvertiert die alten Tages- und Monatslog-Dateien in das neue Format für 2.x.
         """
-        logfiles = os.listdir("/var/www/html/openWB/web/logging/data/"+folder)
-        for file in logfiles:
+        for old_file_name in os.listdir(f"{self.BACKUP_DATA_PATH}/{folder}"):
             try:
-                pathlib.Path('./data/'+folder+'_log').mkdir(mode=0o755,
-                                                            parents=True, exist_ok=True)
-                filepath = "./data/"+folder+"_log/"+file[:-4]+".json"
-                pathlib.Path(filepath).touch(exist_ok=True)
-                with open(filepath, 'w') as f:
-                    if folder == "daily":
-                        generator_handle = self._dailylog_entry_generator_func(file)
-                    else:
-                        generator_handle = self._monthlylog_entry_generator_func(file)
-                    stream_array = StreamArray(generator_handle)
-                    for entry in json.JSONEncoder().iterencode(stream_array):
-                        f.write(entry)
+                if folder == "daily":
+                    new_entries = self._dailylog_entry(old_file_name)
+                else:
+                    new_entries = self._monthlylog_entry(old_file_name)
+
+                pathlib.Path(f'./data/{folder}_log').mkdir(mode=0o755,
+                                                           parents=True, exist_ok=True)
+                filepath = f"./data/{folder}_log/"+old_file_name[:-4]+".json"
+                try:
+                    with open(filepath, "r") as jsonFile:
+                        content = json.load(jsonFile)
+                except FileNotFoundError:
+                    with open(filepath, "w+") as jsonFile:
+                        json.dump({"entries": [], "totals": {}}, jsonFile)
+                    with open(filepath, "r") as jsonFile:
+                        content = json.load(jsonFile)
+                entries = content["entries"]
+                new_entries.extend(entries)
+                content["totals"] = get_totals(new_entries)
+                content["entries"] = new_entries
+
+                with open(filepath, "w") as jsonFile:
+                    json.dump(content, jsonFile)
             except Exception:
-                pass
+                log.exception(f"Fehler beim Konvertieren des Logogs vom {old_file_name}")
 
     DAILY_LOG_CP_ROW_IDS = [4, 5, 6, 15, 16, 17, 18, 19]
     DAILY_LOG_EV_ROW_IDS = [21, 22]
@@ -182,7 +233,7 @@ class Conversion:
     DAILY_LOG_SH_ROW_IDS = [(26, 23, 24, 25), (27, 36, 37, 38)]  # Geräte 3-10
     DAILY_LOG_CONSUMER_ROW_IDS = [(10, 11), (12, 13)]
 
-    def _dailylog_entry_generator_func(self, file: str):
+    def _dailylog_entry(self, file: str):
         """ Generator-Funktion, die einen Eintrag aus dem Tageslog konvertiert.
         alte Spaltenbelegung:
         date, $bezug,$einspeisung,$pv,$ll1,$ll2,$ll3,$llg,$speicheri,$speichere,$verbraucher1,$verbrauchere1
@@ -190,7 +241,8 @@ class Conversion:
         $verbrauchere2,$verbraucher3,$ll4,$ll5,$ll6,$ll7,$ll8,$speichersoc,$soc,$soc1,$temp1,$temp2,$temp3,$d1,$d2,$d3,$d4,
         $d5,$d6,$d7,$d8,$d9,$d10,$temp4,$temp5,$temp6
         """
-        with open('/var/www/html/openWB/web/logging/data/daily/'+file) as csv_file:
+        entries = []
+        with open(f"{self.BACKUP_DATA_PATH}/daily/{file}") as csv_file:
             csv_reader = csv.reader(csv_file, delimiter=',')
             for row in csv_reader:
                 try:
@@ -202,21 +254,21 @@ class Conversion:
                             "counter": {},
                             "pv": {},
                             "bat": {},
-                            "smarthome_devices": {}
+                            "sh": {}
                         }
                         new_entry["cp"].update({"all": {"imported": row[7], }})
                         for i in range(1, 9):
                             new_entry_id = self.map_to_new_ids(f"cp{i}")
                             if new_entry_id is not None:
                                 new_entry["cp"].update(
-                                    {f"cp{new_entry_id}": {"imported": row[self.DAILY_LOG_CP_ROW_IDS[i] - 1],
+                                    {f"cp{new_entry_id}": {"imported": row[self.DAILY_LOG_CP_ROW_IDS[i - 1]],
                                                            "exported": 0}})
                         for i in range(1, 2):
                             new_entry_id = self.map_to_new_ids(f"ev{i}")
                             if new_entry_id is not None:
                                 new_entry["ev"].update(
-                                    {f"ev{new_entry_id}": {"soc": row[self.DAILY_LOG_EV_ROW_IDS[i] - 1]}})
-                        new_entry["counter"].update({f"counter{self.map_to_new_ids('counter0')}": {
+                                    {f"ev{new_entry_id}": {"soc": row[self.DAILY_LOG_EV_ROW_IDS[i - 1]]}})
+                        new_entry["counter"].update({f"counter{self.map_to_new_ids('evu')}": {
                             "imported": row[1],
                             "exported": row[2]
                         }})
@@ -231,10 +283,10 @@ class Conversion:
                             if new_entry_id is not None:
                                 new_entry["sh"].update(
                                     {f"sh{new_entry_id}": {
-                                        "imported": row[self.DAILY_LOG_SH_TEMP_ROW_IDS[i][0] - 1],
-                                        "temp0": row[self.DAILY_LOG_SH_TEMP_ROW_IDS[i][1] - 1],
-                                        "temp1": row[self.DAILY_LOG_SH_TEMP_ROW_IDS[i][2] - 1],
-                                        "temp2": row[self.DAILY_LOG_SH_TEMP_ROW_IDS[i][3] - 1],
+                                        "imported": row[self.DAILY_LOG_SH_TEMP_ROW_IDS[i - 1][0]],
+                                        "temp0": row[self.DAILY_LOG_SH_TEMP_ROW_IDS[i - 1][1]],
+                                        "temp1": row[self.DAILY_LOG_SH_TEMP_ROW_IDS[i - 1][2]],
+                                        "temp2": row[self.DAILY_LOG_SH_TEMP_ROW_IDS[i - 1][3]],
                                         "exported": 0
                                     }})
                         for i in range(3, 11):
@@ -250,26 +302,26 @@ class Conversion:
                             if new_entry_id is not None:
                                 new_entry["sh"].update(
                                     {f"consumer{new_entry_id}": {
-                                        "imported": row[self.DAILY_LOG_CONSUMER_ROW_IDS[i][0] - 1],
-                                        "exported": row[self.DAILY_LOG_CONSUMER_ROW_IDS[i][1] - 1]
+                                        "imported": row[self.DAILY_LOG_CONSUMER_ROW_IDS[i - 1][0]],
+                                        "exported": row[self.DAILY_LOG_CONSUMER_ROW_IDS[i - 1][1]]
                                     }})
                         new_entry["sh"].update({"consumer3": {"imported": row[14]}})
-                    else:
-                        new_entry = {}
-                    yield new_entry
+                        entries.append(new_entry)
                 except Exception:
-                    pass
+                    log.exception(f"Fehler beim Konvertieren des Tageslogs vom {file}, Reihe {row}")
+        return entries
 
     MONTHLY_LOG_CP_ROW_IDS = [4, 5, 6, 12, 13, 14, 15, 16]
     MONTHLY_LOG_CONSUMER_ROW_IDS = [(8, 9), (10, 11)]
 
-    def _monthlylog_entry_generator_func(self, file: str):
+    def _monthlylog_entry(self, file: str):
         """ Generator-Funktion, die einen Eintrag aus dem Tageslog konvertiert.
         alte Spaltenbelegung: date,$bezug,$einspeisung,$pv,$ll1,$ll2,$ll3,$llg,$verbraucher1iwh,$verbraucher1ewh,
         $verbraucher2iwh,$verbraucher2ewh,$ll4,$ll5,$ll6,$ll7,$ll8,$speicherikwh,$speicherekwh,$d1,$d2,$d3,$d4,
         $d5,$d6,$d7,$d8,$d9,$d10
         """
-        with open('/var/www/html/openWB/web/logging/data/monthly/'+file) as csv_file:
+        entries = []
+        with open(f"{self.BACKUP_DATA_PATH}/monthly/{file}") as csv_file:
             csv_reader = csv.reader(csv_file, delimiter=',')
             for row in csv_reader:
                 try:
@@ -281,16 +333,16 @@ class Conversion:
                             "counter": {},
                             "pv": {},
                             "bat": {},
-                            "smarthome_devices": {}
+                            "sh": {}
                         }
                         new_entry["cp"].update({"all": {"imported": row[7], }})
                         for i in range(1, 9):
                             new_entry_id = self.map_to_new_ids(f"cp{i}")
                             if new_entry_id is not None:
                                 new_entry["cp"].update(
-                                    {f"cp{new_entry_id}": {"imported": row[self.MONTHLY_LOG_CP_ROW_IDS[i] - 1],
+                                    {f"cp{new_entry_id}": {"imported": row[self.MONTHLY_LOG_CP_ROW_IDS[i - 1]],
                                                            "exported": 0}})
-                        new_entry["counter"].update({f"counter{self.map_to_new_ids('counter0')}": {
+                        new_entry["counter"].update({f"counter{self.map_to_new_ids('evu')}": {
                             "imported": row[1],
                             "exported": row[2]
                         }})
@@ -312,14 +364,13 @@ class Conversion:
                             if new_entry_id is not None:
                                 new_entry["sh"].update(
                                     {f"consumer{new_entry_id}": {
-                                        "imported": row[self.MONTHLY_LOG_CONSUMER_ROW_IDS[i][0] - 1],
-                                        "exported": row[self.MONTHLY_LOG_CONSUMER_ROW_IDS[i][1] - 1]
+                                        "imported": row[self.MONTHLY_LOG_CONSUMER_ROW_IDS[i - 1][0]],
+                                        "exported": row[self.MONTHLY_LOG_CONSUMER_ROW_IDS[i - 1][1]]
                                     }})
-                    else:
-                        new_entry = {}
-                    yield new_entry
+                        entries.append(new_entry)
                 except Exception:
-                    pass
+                    log.exception(f"Fehler beim Konvertieren des Monatslogs vom {file}, Reihe {row}")
+        return entries
 
-# convert_csv_to_json_measurement_log("monthly")
-# convert_csv_to_json_measurement_log("daily")
+
+Conversion(MapId(), "openWB_backup_2023-07-06_16-28-57.tar.gz").convert()
