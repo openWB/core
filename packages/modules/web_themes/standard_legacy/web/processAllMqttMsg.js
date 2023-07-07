@@ -13,22 +13,6 @@ var timeChargePlan = {};
 var vehicleSoc = {};
 var evuCounterIndex = undefined;
 
-// function getCol(matrix, col){
-// 	var column = [];
-// 	for(var i=0; i<matrix.length; i++){
-// 		column.push(matrix[i][col]);
-// 	}
-// 	return column;
-// }
-
-// function convertToKw(dataColum) {
-// 	var convertedDataColumn = [];
-// 	dataColum.forEach((value) => {
-// 		convertedDataColumn.push(value / 1000);
-// 	});
-// 	return convertedDataColumn;
-// }
-
 function getIndex(topic) {
 	// get occurrence of numbers between / / in topic
 	// since this is supposed to be the index like in openwb/lp/4/w
@@ -358,7 +342,6 @@ function refreshVehicleSoc(vehicleIndex) {
 
 function handleMessage(mqttTopic, mqttPayload) {
 	// receives all messages and calls respective function to process them
-	// console.info("new message: "+mqttTopic+": "+mqttPayload);
 	processPreloader(mqttTopic);
 	if (mqttTopic.match(/^openwb\/counter\/[0-9]+\//i)) { processCounterMessages(mqttTopic, mqttPayload) }
 	else if (mqttTopic.match(/^openwb\/counter\//i)) { processGlobalCounterMessages(mqttTopic, mqttPayload); }
@@ -369,12 +352,11 @@ function handleMessage(mqttTopic, mqttPayload) {
 	else if (mqttTopic.match(/^openwb\/general\/chargemode_config\/pv_charging\//i)) { processPvConfigMessages(mqttTopic, mqttPayload); }
 	else if (mqttTopic.match(/^openwb\/graph\//i)) { processGraphMessages(mqttTopic, mqttPayload); }
 	else if (mqttTopic.match(/^openwb\/optional\/et\//i)) { processETProviderMessages(mqttTopic, mqttPayload); }
+	else if (mqttTopic.match(/^openwb\/LegacySmartHome\//i)) { processSmartHomeDeviceMessages(mqttTopic, mqttPayload); }
 	// else if ( mqttTopic.match( /^openwb\/global\//i) ) { processGlobalMessages(mqttTopic, mqttPayload); }
 	// else if ( mqttTopic.match( /^openwb\/system\//i) ) { processSystemMessages(mqttTopic, mqttPayload); }
 	// else if ( mqttTopic.match( /^openwb\/verbraucher\//i) ) { processVerbraucherMessages(mqttTopic, mqttPayload); }
 	// else if ( mqttTopic.match( /^openwb\/hook\//i) ) { processHookMessages(mqttTopic, mqttPayload); }
-	// else if ( mqttTopic.match( /^openwb\/SmartHome\/Devices\//i) ) { processSmartHomeDevicesMessages(mqttTopic, mqttPayload); }
-	// else if ( mqttTopic.match( /^openwb\/config\/get\/SmartHome\/Devices\//i) ) { processSmartHomeDevicesConfigMessages(mqttTopic, mqttPayload); }
 	// else if ( mqttTopic.match( /^openwb\/config\/get\/sofort\/lp\//i) ) { processSofortConfigMessages(mqttTopic, mqttPayload); }
 } // end handleMessage
 
@@ -801,11 +783,8 @@ function processChargePointMessages(mqttTopic, mqttPayload) {
 		element.text(energyCharged.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' kWh');
 		var rangeChargedElement = parent.find('.charge-point-range-since-plugged'); // now get parents child element
 		var consumption = parseFloat($(rangeChargedElement).data('consumption'));
-		var rangeCharged = '';
-		if (!isNaN(consumption) && consumption > 0) {
-			rangeCharged = (energyCharged / consumption) * 100;
-			rangeCharged = ' / ' + rangeCharged.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' km';
-		}
+		var rangeCharged = parseFloat(logData.range_charged);
+		rangeCharged = ' / ' + rangeCharged.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' km';
 		$(rangeChargedElement).text(rangeCharged);
 	} else if (mqttTopic.match(/^openwb\/chargepoint\/[0-9]+\/get\/plug_state$/i)) {
 		// status ev plugged in or not
@@ -1319,388 +1298,131 @@ function processETProviderMessages(mqttTopic, mqttPayload) {
 	// }
 }
 
-// function processSofortConfigMessages(mqttTopic, mqttPayload) {
-// 	// processes mqttTopic for topic openWB/config/get/sofort/
-// 	// called by handleMessage
-// 	var elementId = mqttTopic.replace('openWB/config/get/sofort/', '');
-// 	var element = $('#' + $.escapeSelector(elementId));
-// 	if ( element.attr('type') == 'range' ) {
-// 		setInputValue(elementId, mqttPayload);
-// 	} else if ( element.hasClass('btn-group-toggle') ) {
-// 		setToggleBtnGroup(elementId, mqttPayload);
-// 	}
-// }
-
-// function processGlobalMessages(mqttTopic, mqttPayload) {
-// 	// processes mqttTopic for topic openWB/global
-// 	// called by handleMessage
-// 	if ( mqttTopic == 'openWB/global/WHouseConsumption' ) {
-// 		var powerHouse = parseInt(mqttPayload, 10);
-// 		if ( isNaN(powerHouse) ) {
-// 			powerHouse = 0;
-// 		}
-// 		if ( powerHouse > 999 ) {
-// 			powerHouse = (powerHouse / 1000).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' kW';
-// 		} else {
-// 			powerHouse += ' W';
-// 		}
-// 		$('#hausverbrauch').text(powerHouse);
-// 	}
-// 	else if ( mqttTopic == 'openWB/global/strLastmanagementActive' ) {
-// 		if ( mqttPayload.length >= 5 ) {
-// 			// if there is info-text in payload for topic, show the text
-// 			$('#lastregelungaktiv').text(mqttPayload);
-// 		} else {
-// 			// if there is no text, show nothing (hides row)
-// 			$('#lastregelungaktiv').text('');
-// 		}
-// 	}
-// 	else if ( mqttTopic == 'openWB/global/ChargeMode' ) {
-// 		// set modal button colors depending on charge mode
-// 		// set visibility of divs
-// 		// set visibility of priority icon depending on charge mode
-// 		// (priority icon is encapsulated in another element hidden/shown by house battery configured or not)
-// 		switch (mqttPayload) {
-// 			case '0':
-// 				// mode sofort
-// 				$('#chargeModeSelectBtnText').text('Sofortladen');  // text btn mainpage
-// 				$('.chargeModeBtn').removeClass('btn-success');  // changes to select btns in modal
-// 				$('#chargeModeSofortBtn').addClass('btn-success');
-// 				$('#targetChargingProgress').removeClass('hide');  // visibility of divs for special settings
-// 				$('#sofortladenEinstellungen').removeClass('hide');
-// 				$('#priorityEvBatteryIcon').addClass('hide');  // visibility of priority icon
-// 				$('#minundpvladenEinstellungen').addClass('hide');
-
-// 				break;
-// 			case '1':
-// 				// mode min+pv
-// 				$('#chargeModeSelectBtnText').text('Min+PV-Laden');
-// 				$('.chargeModeBtn').removeClass('btn-success');
-// 				$('#chargeModeMinPVBtn').addClass('btn-success');
-// 				$('#targetChargingProgress').addClass('hide');
-// 				$('#sofortladenEinstellungen').addClass('hide');
-// 				$('#priorityEvBatteryIcon').addClass('hide');
-// 				$('#minundpvladenEinstellungen').removeClass('hide');
-
-// 				break;
-// 			case '2':
-// 				// mode pv
-// 				$('#chargeModeSelectBtnText').text('PV-Laden');
-// 				$('.chargeModeBtn').removeClass('btn-success');
-// 				$('#chargeModePVBtn').addClass('btn-success');
-// 				$('#targetChargingProgress').addClass('hide');
-// 				$('#sofortladenEinstellungen').addClass('hide');
-// 				$('#priorityEvBatteryIcon').removeClass('hide');
-// 				$('#minundpvladenEinstellungen').addClass('hide');
-
-// 				break;
-// 			case '3':
-// 				// mode stop
-// 				$('#chargeModeSelectBtnText').text('Stop');
-// 				$('.chargeModeBtn').removeClass('btn-success');
-// 				$('#chargeModeStopBtn').addClass('btn-success');
-// 				$('#targetChargingProgress').addClass('hide');
-// 				$('#sofortladenEinstellungen').addClass('hide');
-// 				$('#priorityEvBatteryIcon').addClass('hide');
-// 				$('#minundpvladenEinstellungen').addClass('hide');
-
-// 				break;
-// 			case '4':
-// 				// mode standby
-// 				$('#chargeModeSelectBtnText').text('Standby');
-// 				$('.chargeModeBtn').removeClass('btn-success');
-// 				$('#chargeModeStdbyBtn').addClass('btn-success');
-// 				$('#targetChargingProgress').addClass('hide');
-// 				$('#sofortladenEinstellungen').addClass('hide');
-// 				$('#priorityEvBatteryIcon').addClass('hide');
-// 				$('#minundpvladenEinstellungen').addClass('hide');
-// 		}
-// 	}
-// 	else if ( mqttTopic == 'openWB/global/DailyYieldAllChargePointsKwh') {
-// 		var llaDailyYield = parseFloat(mqttPayload);
-// 		if ( isNaN(llaDailyYield) ) {
-// 			llaDailyYield = 0;
-// 		}
-// 		if ( llaDailyYield >= 0 ) {
-// 			var llaDailyYieldStr = ' (' + llaDailyYield.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' kWh)';
-// 			$('#lladailyyield').text(llaDailyYieldStr);
-// 		} else {
-// 			$('#lladailyyield').text("");
-// 		}
-
-// 	}
-// 	else if ( mqttTopic == 'openWB/global/DailyYieldHausverbrauchKwh') {
-// 		var hausverbrauchDailyYield = parseFloat(mqttPayload);
-// 		if ( isNaN(hausverbrauchDailyYield) ) {
-// 			hausverbrauchDailyYield = 0;
-// 		}
-// 		if ( hausverbrauchDailyYield >= 0 ) {
-// 			var hausverbrauchDailyYieldStr = ' (' + hausverbrauchDailyYield.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' kWh)';
-// 			$('#hausverbrauchdailyyield').text(hausverbrauchDailyYieldStr);
-// 		} else {
-// 			$('#hausverbrauchdailyyield').text("");
-// 		}
-
-// 	}
-// }
-
-// function processSystemMessages(mqttTopic, mqttPayload) {
-// 	// processes mqttTopic for topic openWB/system
-// 	// called by handleMessage
-// 	// console.log("received system msg: " + mqttTopic + ": " + mqttPayload);
-// 	if ( mqttTopic == 'openWB/system/Timestamp') {
-// 		var dateObject = new Date(mqttPayload * 1000);  // Unix timestamp to date-object
-// 		var time = '&nbsp;';
-// 		var date = '&nbsp;';
-// 		if ( dateObject instanceof Date && !isNaN(dateObject.valueOf()) ) {
-// 			// timestamp is valid date so process
-// 			var HH = String(dateObject.getHours()).padStart(2, '0');
-// 			var MM = String(dateObject.getMinutes()).padStart(2, '0');
-// 			time = HH + ':'  + MM;
-// 			var dd = String(dateObject.getDate()).padStart(2, '0');  // format with leading zeros
-// 			var mm = String(dateObject.getMonth() + 1).padStart(2, '0'); //January is 0 so add +1!
-// 			var dayOfWeek = dateObject.toLocaleDateString('de-DE', { weekday: 'short'});
-// 			date = dayOfWeek + ', ' + dd + '.' + mm + '.' + dateObject.getFullYear();
-// 		}
-// 		$('#time').text(time);
-// 		$('#date').text(date);
-// 	}
-// }
-
-// function processVerbraucherMessages(mqttTopic, mqttPayload) {
-// 	// processes mqttTopic for topic openWB/Verbraucher
-// 	// called by handleMessage
-// 	var index = getIndex(mqttTopic);  // extract number between two / /
-// 	if ( mqttTopic.match( /^openwb\/Verbraucher\/[1-2]\/Configured$/i ) ) {
-// 		if ( mqttPayload == 1 ) {
-// 			// if at least one device is configured, show info-div
-// 			$('#verbraucher').removeClass("hide");
-// 			// now show info-div for this device
-// 			$('#verbraucher'+index).removeClass("hide");
-// 		} else {
-// 			$('#verbraucher'+index).addClass("hide");
-// 		}
-// 	} else if ( mqttTopic.match( /^openwb\/Verbraucher\/[1-2]\/Name$/i ) ) {
-// 		if ( mqttPayload != "Name" ){
-// 			$('#verbraucher'+index+'name').text(mqttPayload);
-// 		}
-// 	} else if ( mqttTopic.match( /^openwb\/Verbraucher\/[1-2]\/Watt$/i ) ) {
-// 		var unit = ' W';
-// 		var verbraucherwatt = parseInt(mqttPayload, 10);
-// 		if ( isNaN(verbraucherwatt) ) {
-// 			verbraucherwatt = 0;
-// 		}
-// 		if ( verbraucherwatt > 999 ) {
-// 			verbraucherwatt = (verbraucherwatt / 1000).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-// 			unit = ' kW';
-// 		}
-// 		$('#verbraucher'+index+'leistung').text(verbraucherwatt + unit);
-// 	} else if ( mqttTopic.match( /^openwb\/Verbraucher\/[1-2]\/DailyYieldImportkWh$/i ) ) {
-// 		var verbraucherDailyYield = parseFloat(mqttPayload);
-// 		if ( isNaN(verbraucherDailyYield) ) {
-// 			verbraucherDailyYield = 0;
-// 		}
-// 		if ( verbraucherDailyYield >= 0 ) {
-// 			var verbraucherDailyYieldStr = ' (' + verbraucherDailyYield.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' kWh)';
-// 			$('#verbraucher'+index+'dailyyield').text(verbraucherDailyYieldStr);
-// 		} else {
-// 			$('#verbraucher'+index+'dailyyield').text("");
-// 		}
-
-// 	}
-// }
-
-// function processHookMessages(mqttTopic, mqttPayload) {
-// 	// processes mqttTopic for topic openWB/hook
-// 	// called by handleMessage
-// 	if ( mqttTopic.match( /^openwb\/hook\/[1-9][0-9]*\/boolhookstatus$/i ) ) {
-// 		var index = getIndex(mqttTopic);  // extract number between two / /
-// 		if ( mqttPayload == 1 ) {
-// 			$('#hook' + index).removeClass("bg-danger").addClass("bg-success");
-// 		} else {
-// 			$('#hook' + index).removeClass("bg-success").addClass("bg-danger");
-// 		}
-// 	}
-// 	else if ( mqttTopic.match( /^openwb\/hook\/[1-9][0-9]*\/boolhookconfigured$/i ) ) {
-// 		var index = getIndex(mqttTopic);  // extract number between two / /
-// 		if ( mqttPayload == 1 ) {
-// 			$('#hook' + index).removeClass('hide');
-// 		} else {
-// 			$('#hook' + index).addClass('hide');
-// 		}
-// 	}
-// }
-// function processSmartHomeDevicesMessages(mqttTopic, mqttPayload) {
-// 	// processes mqttTopic for topic openWB/SmartHomeDevices - actual values only!
-// 	// called by handleMessage
-// 	processPreloader(mqttTopic);
-// 	if ( mqttTopic.match( /^openwb\/SmartHome\/Devices\/[1-9][0-9]*\/Watt$/i ) ) {
-// 		var index = getIndex(mqttTopic);  // extract number between two / /
-// 		var parent = $('[data-dev="' + index + '"]');  // get parent row element for SH Device
-// 		var element = parent.find('.actualPowerDevice');  // now get parents respective child element
-// 		var actualPower = parseInt(mqttPayload, 10);
-// 		if ( isNaN(actualPower) ) {
-// 			actualPower = 0;
-// 		}
-// 		if (actualPower > 999) {
-// 			actualPower = (actualPower / 1000).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-// 			actualPower += ' kW';
-// 		} else {
-// 			actualPower += ' W';
-// 		}
-// 		element.text(actualPower);
-// 	}
-// 	else if ( mqttTopic.match( /^openwb\/SmartHome\/Devices\/[1-9][0-9]*\/DailyYieldKwh$/i ) ) {
-// 		var index = getIndex(mqttTopic);  // extract number between two / /
-// 		var parent = $('[data-dev="' + index + '"]');  // get parent row element for SH Device
-// 		var element = parent.find('.actualDailyYieldDevice');  // now get parents respective child element
-// 		var actualDailyYield = parseFloat(mqttPayload);
-// 		if ( isNaN(actualDailyYield) ) {
-// 			siiDailyYield = 0;
-// 		}
-// 		if ( actualDailyYield >= 0 ) {
-// 			var actualDailyYieldStr = ' (' + actualDailyYield.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' kWh)';
-// 			element.text(actualDailyYieldStr);
-// 		} else {
-// 			element.text("");
-// 		}
-// 	}
-// 	else if ( mqttTopic.match( /^openwb\/SmartHome\/Devices\/[1-9][0-9]*\/RunningTimeToday$/i ) ) {
-// 		var index = getIndex(mqttTopic);  // extract number between two / /
-// 		var parent = $('[data-dev="' + index + '"]');  // get parent row element for SH Device
-// 		var element = parent.find('.actualRunningTimeDevice');  // now get parents respective child element
-// 		var actualPower = parseInt(mqttPayload, 10);
-// 		if ( isNaN(actualPower) ) {
-// 			actualPower = 0;
-// 		}
-// 		if (actualPower < 3600) {
-// 			actualPower = (actualPower / 60).toFixed(0);
-// 			actualPower += ' Min';
-// 		} else {
-// 			rest = (actualPower % 3600 / 60).toFixed(0);
-// 			ganz = Math.floor(actualPower / 3600);
-// 			actualPower = ganz + ' H ' + rest +' Min';
-// 		}
-// 		element.text(actualPower);
-// 	}
-// 	else if ( mqttTopic.match( /^openwb\/SmartHome\/Devices\/[1-9][0-9]*\/RelayStatus$/i ) ) {
-// 		var index = getIndex(mqttTopic);  // extract number between two / /
-// 		$('.nameDevice').each(function() {  // check all elements of class '.nameLp'
-// 			var dev = $(this).closest('[data-dev]').data('dev');  // get attribute lp from parent
-// 			if ( dev == index ) {
-// 				if ( $(this).hasClass('enableDevice') ) {
-// 					// but only apply styles to element in charge point info data block
-// 					if ( mqttPayload == 0 ) {
-// 						$(this).removeClass('lpEnabledStyle').removeClass('lpWaitingStyle').addClass('lpDisabledStyle');
-// 					} else {
-// 						$(this).removeClass('lpDisabledStyle').removeClass('lpWaitingStyle').addClass('lpEnabledStyle');
-// 					}
-// 				}
-// 			}
-// 		});
-// 	}
-// 	else if ( mqttTopic.match( /^openwb\/SmartHome\/Devices\/[1-9][0-9]*\/TemperatureSensor0$/i ) ) {
-// 		var index = getIndex(mqttTopic);  // extract number between two / /
-// 		var parent = $('.SmartHomeTemp[data-dev="' + index + '"]');  // get parent row element for SH Device
-// 		var element = parent.find('.actualTemp0Device');  // now get parents respective child element
-// 		var actualTemp = parseFloat(mqttPayload);
-// 		if ( isNaN(actualTemp) ) {
-// 			StringTemp = '';
-// 			parent.addClass('hide');
-// 		} else {
-// 			if (actualTemp > 200) {
-// 				StringTemp = ''; // display only something if we got a value
-// 				parent.addClass('hide');
-// 			} else {
-// 				StringTemp = 'Temp1 ' + actualTemp.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}); // make complete string to display
-// 				parent.removeClass('hide');
-// 			}
-// 		}
-// 		element.text(StringTemp);
-// 	}
-// 	else if ( mqttTopic.match( /^openwb\/SmartHome\/Devices\/[1-9][0-9]*\/TemperatureSensor1$/i ) ) {
-// 		var index = getIndex(mqttTopic);  // extract number between two / /
-// 		var parent = $('.SmartHomeTemp[data-dev="' + index + '"]');  // get parent row element for charge point
-// 		var element = parent.find('.actualTemp1Device');  // now get parents respective child element
-// 		var actualTemp = parseFloat(mqttPayload);
-// 		if ( isNaN(actualTemp) ) {
-// 			StringTemp = '';
-// 		} else {
-// 			if (actualTemp > 200) {
-// 				StringTemp = ''; // display only something if we got a value
-// 			} else {
-// 				StringTemp = 'Temp2 ' + actualTemp.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}); // make complete string to display
-// 			}
-// 		}
-// 		element.text(StringTemp);
-// 	}
-// 	else if ( mqttTopic.match( /^openwb\/SmartHome\/Devices\/[1-9][0-9]*\/TemperatureSensor2$/i ) ) {
-// 		var index = getIndex(mqttTopic);  // extract number between two / /
-// 		var parent = $('.SmartHomeTemp[data-dev="' + index + '"]');  // get parent row element for charge point
-// 		var element = parent.find('.actualTemp2Device');  // now get parents respective child element
-// 		var actualTemp = parseFloat(mqttPayload);
-// 		if ( isNaN(actualTemp) ) {
-// 			StringTemp = '';
-// 		} else {
-// 			if (actualTemp > 200) {
-// 				StringTemp = ''; // display only something if we got a value
-// 			} else {
-// 				StringTemp = 'Temp3 ' + actualTemp.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}); // make complete string to display
-// 			}
-// 		}
-// 		element.text(StringTemp);
-// 	}
-// }
-
-function processSmartHomeDevicesConfigMessages(mqttTopic, mqttPayload) {
-	// processes mqttTopic for topic openWB/config/get/SmartHome/Devices - config variables (Name / configured only!), actual Variables in processSmartHomeDevices
-	// called by handleMessage
+function processSmartHomeDeviceMessages(mqttTopic, mqttPayload) {
 	processPreloader(mqttTopic);
-	if (mqttTopic.match(/^openwb\/config\/get\/SmartHome\/Devices\/[1-9][0-9]*\/device_configured$/i)) {
-		// respective SH Device configured
-		var index = getIndex(mqttTopic);  // extract number between two / /
-		var infoElement = $('[data-dev="' + index + '"]');  // get row of SH Device
+	var deviceIndex = getIndex(mqttTopic);  // extract number between two / /
+	var deviceElement = $('.smarthome-device-card[data-smart-home-device="' + deviceIndex + '"]');  // get device card
+	if (mqttTopic.match(/^openWB\/LegacySmartHome\/config\/get\/Devices\/[1-9][0-9]*\/device_configured$/i)) {
 		if (mqttPayload == 1) {
-			infoElement.removeClass('hide');
+			deviceElement.removeClass('hide');
 		} else {
-			infoElement.addClass('hide');
-		}
-		var visibleRows = $('.smartHome [data-dev]').not('.hide');  // show/hide complete block depending on visible rows within
-		if (visibleRows.length > 0) {
-			$('.smartHome').removeClass('hide');
-		} else {
-			$('.smartHome').addClass('hide');
+			deviceElement.addClass('hide');
 		}
 	}
-	else if (mqttTopic.match(/^openwb\/config\/get\/SmartHome\/Devices\/[1-9][0-9]*\/mode$/i)) {
-		var index = getIndex(mqttTopic);  // extract number between two / /
-		var parent = $('[data-dev="' + index + '"]');  // get parent row element for SH Device
-		var element = parent.find('.actualModeDevice');  // now get parents respective child element
+	else if (mqttTopic.match(/^openWB\/LegacySmartHome\/config\/get\/Devices\/[1-9][0-9]*\/device_name$/i)) {
+		// device name
+		var element = deviceElement.find('.nameDevice');  // now get parents child element
+		element.text(mqttPayload);
+		// window['d'+index+'name']=mqttPayload; // store name for chart
+	}
+	else if (mqttTopic.match(/^openWB\/LegacySmartHome\/config\/set\/Devices\/[1-9][0-9]*\/mode$/i)) {
+		// device mode
+		var modeElement = deviceElement.find('.actualModeDevice');  // now get parents respective child element
+		var actualMode = "";
 		if (mqttPayload == 0) {
 			actualMode = "Automatik"
-		} else {
+		} else if (mqttPayload == 1){
 			actualMode = "Manuell"
+		} else {
+			console.warn("unknown mode", mqttPayload);
 		}
-		element.text(actualMode);
-		$('.nameDevice').each(function () {  // check all elements of class '.nameDevice'
-			var dev = $(this).closest('[data-dev]').data('dev');  // get attribute Device from parent
-			if (dev == index) {
-				if ($(this).hasClass('enableDevice')) {
-					// but only apply styles to element in charge point info data block
-					if (mqttPayload == 1) {
-						$(this).addClass('cursor-pointer').addClass('locked');
-					} else {
-						$(this).removeClass('cursor-pointer').removeClass('locked');
-					}
-				}
-			}
-		});
+		modeElement.text(actualMode);
+		var nameElement = deviceElement.find('.nameDevice');
+		if (mqttPayload == 1) {
+			nameElement.addClass('cursor-pointer').addClass('locked');
+		} else {
+			nameElement.removeClass('cursor-pointer').removeClass('locked');
+		}
 	}
-	else if (mqttTopic.match(/^openWB\/config\/get\/SmartHome\/Devices\/[1-9][0-9]*\/device_name$/i)) {
-		var index = getIndex(mqttTopic);  // extract number between two / /
-		var parent = $('[data-dev="' + index + '"]');  // get parent row element for SH Device
-		var element = parent.find('.nameDevice');  // now get parents respective child element
-		element.text(mqttPayload);
-		window['d' + index + 'name'] = mqttPayload;
+	else if (mqttTopic.match(/^openWB\/LegacySmartHome\/Devices\/[1-9][0-9]*\/Watt$/i)) {
+		// device power
+		var element = deviceElement.find('.actualPowerDevice');  // now get parents child element
+		var actualPower = parseInt(mqttPayload, 10);
+		if ( isNaN(actualPower) ) {
+			actualPower = 0;
+		}
+		if (actualPower > 999) {
+			actualPower = (actualPower / 1000).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+			actualPower += '&nbsp;kW';
+		} else {
+			actualPower += '&nbsp;W';
+		}
+		element.html(actualPower);
+	}
+	else if (mqttTopic.match(/^openWB\/LegacySmartHome\/Devices\/[1-9][0-9]*\/RunningTimeToday$/i)) {
+		// device running time
+		var element = deviceElement.find('.actualRunningTimeDevice');  // now get parents child element
+		var runningTime = parseInt(mqttPayload, 10);
+		if ( isNaN(runningTime) ) {
+			runningTime = 0;
+		}
+		var seconds = runningTime % 60;
+		var minutes = ((runningTime - seconds) % 3600) / 60;
+		var hours = (runningTime - seconds - minutes * 60) / 3600;
+		var runningTimeText = seconds + "s";
+		if (runningTime >= 60) {
+			runningTimeText = minutes + "m&nbsp;" + runningTimeText;
+		}
+		if (runningTime >= 3600) {
+			runningTimeText = hours + "h&nbsp;" + runningTimeText;
+		}
+		element.html(runningTimeText);
+	}
+	else if (mqttTopic.match(/^openWB\/LegacySmartHome\/Devices\/[1-9][0-9]*\/Status$/i)) {
+		// device state
+		var element = deviceElement.find('.nameDevice');  // now get parents child element
+		// 10 device on (manual or automatic)
+		if ( mqttPayload == 10 ) {
+			element.removeClass('charge-point-enabled').removeClass('text-blue').removeClass('text-white').removeClass('charge-point-waiting').addClass('charge-point-disabled');
+		// 11 device off (manual or automatic)
+		} else if ( mqttPayload == 11 ) {
+			element.removeClass('charge-point-disabled').removeClass('text-blue').removeClass('text-white').removeClass('charge-point-waiting').addClass('charge-point-enabled');
+		// 20 startup detection active
+		} else if ( mqttPayload == 20) {
+			element.removeClass('charge-point-disabled').removeClass('charge-point-enabled').removeClass('text-white').removeClass('charge-point-waiting').addClass('text-blue');
+		// 30 finish time running
+		} else if (mqttPayload == 30) {
+			element.removeClass('charge-point-disabled').removeClass('charge-point-enabled').removeClass('text-blue').removeClass('charge-point-waiting').addClass('text-white');
+		} else {
+			console.warn("unknown state message", mqttTopic, mqttPayload);
+		}
+	}
+	else if (mqttTopic.match(/^openWB\/LegacySmartHome\/Devices\/[1-9][0-9]*\/DailyYieldKwh$/i)) {
+		// device daily yield
+		var element = deviceElement.find('.actualDailyYieldDevice');  // now get parents respective child element
+		var actualDailyYield = parseFloat(mqttPayload);
+		if ( isNaN(actualDailyYield) ) {
+			actualDailyYield = 0;
+		}
+		if ( actualDailyYield >= 0 ) {
+			var actualDailyYieldStr = '&nbsp;(' + actualDailyYield.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + '&nbsp;kWh)';
+			element.html(actualDailyYieldStr);
+		} else {
+			element.text("");
+		}
+	}
+	else if (mqttTopic.match(/^openWB\/LegacySmartHome\/Devices\/[1-9][0-9]*\/TemperatureSensor[0-2]$/i)) {
+		// device temperature sensor
+		var sensorIndex = mqttTopic.match(/(?:\/TemperatureSensor)([0-2]+)$/g)[0].replace(/[^0-9]+/g, '');
+		var deviceTemperatureElement = deviceElement.find('.SmartHomeTemp');
+		var sensorElement = deviceTemperatureElement.find('[data-smart-home-temperature="' + sensorIndex + '"]');
+		var sensorValueElement = sensorElement.find('.temperature');
+		var actualTemp = parseFloat(mqttPayload);
+		if ( isNaN(actualTemp) ) {
+			actualTemp = 999;
+		}
+		if (actualTemp > 200) {
+			sensorValueElement.text(''); // display only something if we got a value
+			sensorElement.addClass('hide');
+		} else {
+			sensorValueElement.text('Temp' + sensorIndex + ' ' + actualTemp.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+			sensorElement.removeClass('hide');
+		}
+		var visibleRows = deviceTemperatureElement.find('[data-smart-home-temperature]').not('.hide');  // show/hide complete block depending on visible rows within
+		if ( visibleRows.length > 0 ) {
+			deviceTemperatureElement.removeClass('hide');
+		} else {
+			deviceTemperatureElement.addClass('hide');
+		}
 	}
 }

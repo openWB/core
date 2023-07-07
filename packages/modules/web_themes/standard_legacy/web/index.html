@@ -825,7 +825,7 @@
 				<div class="modal-content">
 					<!-- modal header -->
 					<div class="modal-header bg-warning">
-						<h4 class="modal-title text-dark">Manuelle SoC-Eingabe - Ladepunkt <span
+						<h4 class="modal-title text-dark">SoC-Eingabe - Fahrzeug <span
 								class="charge-point-soc"></span></h4>
 					</div>
 					<!-- modal body -->
@@ -836,7 +836,7 @@
 									class="btn btn-block btn-secondary">-</button>
 							</div>
 							<div class="col-5 py-1">
-								<div class="input-group">
+								<div class="input-group input-group-lg">
 									<input id="manualSocBox" type="number" min="0" max="100" step="1" value="0"
 										name="socBox" class="form-control text-right">
 									<div class="input-group-append">
@@ -872,10 +872,10 @@
 				}
 
 				function submitSocForm() {
-					var currentCp = $('#socModal').find('.charge-point-soc').text();
-					var manualSoc = $("#manualSocBox").val();
+					var ev = $('#socModal').find('.charge-point-soc').text();
+					var manualSoc = parseFloat($("#manualSocBox").val());
 					// console.log("SoC for CP"+currentCp+": "+manualSoc);
-					publish(manualSoc, "openWB/set/lp/" + currentCp + "/manualSoc");
+					publish(manualSoc, "openWB/set/vehicle/" + ev + "/soc_module/configuration/soc_start");
 					// reset input after publishing
 					clearSocForm();
 				};
@@ -1002,12 +1002,12 @@
 					// debug output
 					topicsToSubscribeFirst.forEach((item, i) => {
 						if (item[1] == 0) {
-							console.log('not received: ' + item[0]);
+							console.warn('not received: ' + item[0]);
 						}
 					});
 					topicsToSubscribe.forEach((item, i) => {
 						if (item[1] == 0) {
-							console.log('not received: ' + item[0]);
+							console.warn('not received: ' + item[0]);
 						}
 					});
 
@@ -1088,7 +1088,7 @@
 					topic = topic.replace('<et>', et);
 					topic = topic.replace('<sched>', schedule);
 					if (topic.includes('/NaN/')) {
-						console.log('missing cp, ev, ct, cpt, et or sched data');
+						console.error('missing cp, ev, ct, cpt, et or sched data');
 					} else {
 						if ($(this).prop('checked')) {
 							publish(true, topic);
@@ -1100,7 +1100,7 @@
 						}
 					}
 				} else {
-					console.log("checkbox without topic changed");
+					console.warn("checkbox without topic changed");
 				}
 			});
 
@@ -1121,7 +1121,7 @@
 					topic = topic.replace('<cpt>', cpt);
 					topic = topic.replace('<et>', et);
 					if (topic.includes('/NaN/')) {
-						console.log('missing cp, ev, ct, cpt, or et data');
+						console.error('missing cp, ev, ct, cpt, or et data');
 					} else {
 						publish(parseInt($(this).val()), topic);
 					}
@@ -1140,7 +1140,7 @@
 						if (isNaN(currentSoc)) {
 							currentSoc = 0;
 						}
-						$('#socModal').find('.charge-point-soc').text(cp);
+						$('#socModal').find('.charge-point-soc').text(ev);
 						$("#manualSocBox").val(currentSoc);
 						$('#socModal').modal("show");
 					} else {
@@ -1178,7 +1178,7 @@
 				var option = $(this).find('input[type="radio"]:checked').data('option').toString();
 				var topic = $(this).data('topic').replace('/<ct>/', '/' + ct + '/');
 				if (topic.includes('/NaN/')) {
-					console.log('missing ct data');
+					console.error('missing ct data');
 				} else {
 					publish(option, topic);
 					// show/hide respective option-values and progress
