@@ -24,7 +24,7 @@ log = logging.getLogger(__name__)
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 13
+    DATASTORE_VERSION = 16
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -65,7 +65,6 @@ class UpdateConfig:
         "^openWB/chargepoint/[0-9]+/get/power$",
         "^openWB/chargepoint/[0-9]+/get/voltages$",
         "^openWB/chargepoint/[0-9]+/get/state_str$",
-        "^openWB/chargepoint/[0-9]+/get/connected_vehicle/soc_config$",
         "^openWB/chargepoint/[0-9]+/get/connected_vehicle/soc$",
         "^openWB/chargepoint/[0-9]+/get/connected_vehicle/info$",
         "^openWB/chargepoint/[0-9]+/get/connected_vehicle/config$",
@@ -500,7 +499,7 @@ class UpdateConfig:
             try:
                 getattr(self, f"upgrade_datastore_{version}")()
             except AttributeError:
-                log.error("missing upgrade function! $version$")
+                log.error(f"missing upgrade function! {version}")
 
     def upgrade_datastore_0(self) -> None:
         # prevent_switch_stop auf zwei Einstellungen prevent_phase_switch und prevent_charge_stop aufteilen
@@ -740,3 +739,42 @@ class UpdateConfig:
                 Pub().pub(f"openWB/set/vehicle/{index}/soc_module/interval_config",
                           dataclass_utils.asdict(IntervalConfig()))
         Pub().pub("openWB/system/datastore_version", 13)
+
+    def upgrade_datastore_13(self) -> None:
+        for topic, payload in self.all_received_topics.items():
+            if re.search("openWB/chargepoint/[0-9]+/config$", topic) is not None:
+                updated_payload = decode_payload(payload)
+                payload = decode_payload(payload)
+                if payload["type"] == "internal_openwb" or payload["type"] == "external_openwb":
+                    updated_payload["configuration"]["duo_num"] = payload["configuration"]["duo_num"] - 1
+                    Pub().pub(topic.replace("openWB/", "openWB/set/"), updated_payload)
+        Pub().pub("openWB/set/system/datastore_version", 14)
+
+    def upgrade_datastore_14(self) -> None:
+        for topic, payload in self.all_received_topics.items():
+            if re.search("openWB/system/device/[0-9]+/config", topic) is not None:
+                payload = decode_payload(payload)
+                if payload["type"] == "solar_watt":
+                    payload["configuration"]["ip_address"] = payload["configuration"]["ip_adress"]
+                    payload.configuration.pop("ip_adress")
+                Pub().pub(topic.replace("openWB/", "openWB/set/"), payload)
+        Pub().pub("openWB/system/datastore_version", 15)
+
+    def upgrade_datastore_15(self) -> None:
+        files = glob.glob("/var/www/html/openWB/data/daily_log/*")
+        files.extend(glob.glob("/var/www/html/openWB/data/monthly_log/*"))
+        for file in files:
+            with open(file, "r+") as jsonFile:
+                try:
+                    content = json.load(jsonFile)
+                    for e in content["entries"]:
+                        e.update({"sh": {}})
+                    content["totals"].update({"sh": {}})
+                    content["names"] = measurement_log.get_names(content["totals"], {})
+                    jsonFile.seek(0)
+                    json.dump(content, jsonFile)
+                    jsonFile.truncate()
+                    log.debug(f"Format der Logdatei {file} aktualisiert.")
+                except Exception:
+                    log.exception(f"Logfile {file} konnte nicht konvertiert werden.")
+        Pub().pub("openWB/system/datastore_version", 16)

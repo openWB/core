@@ -65,7 +65,7 @@ def read_legacy(id: int,
         tesla_ev_num=tesla_ev_num, token=dataclass_from_dict(TeslaSocToken, token))), id)
     soc.update(SocUpdateData(charge_state=charge_state))
     with open(token_file, "w") as f:
-        f.write(json.dumps(asdict(soc.soc_config.configuration.token)))
+        f.write(json.dumps(asdict(soc.vehicle_config.configuration.token)))
 
 
 def main(argv: List[str]):

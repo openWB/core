@@ -32,7 +32,7 @@ class api:
         self.su = socUtils()
         pass
 
-    # async method, called from sync fetch_soc, required because libvwid expects  async enviroment
+    # async method, called from sync fetch_soc, required because libvwid expects async environment
     async def _fetch_soc(self,
                          conf: VWId,
                          vehicle: int) -> Union[int, float, str]:

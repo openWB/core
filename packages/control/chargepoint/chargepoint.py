@@ -107,7 +107,6 @@ class ConnectedVehicle:
     config: ConnectedConfig = field(default_factory=connected_config_factory)
     info: ConnectedInfo = field(default_factory=connected_info_factory)
     soc: ConnectedSoc = field(default_factory=connected_soc_factory)
-    # soc_config: ConnectedSocConfig = ConnectedSocConfig()
 
 
 @dataclass
@@ -316,9 +315,10 @@ class Chargepoint:
             message = None
         else:
             state = False
-            message = ("Ladepunkt gesperrt, da keine Werte vom EVU-Zähler empfangen wurden und deshalb kein "
-                       "Lastmanagement durchgeführt werden kann. Falls Sie dennoch laden möchten, können Sie als "
-                       "EVU-Zähler 'Virtuell' auswählen und einen konstanten Hausverbrauch angeben.")
+            message = ("Ladepunkt gesperrt, da keine Werte vom EVU- oder Zwischenzähler-Zähler empfangen wurden und "
+                       "deshalb kein Lastmanagement durchgeführt werden kann. Bitte schaue auf der Status-Seite nach "
+                       "Fehlermeldungen bei den Zählern. Falls Du dennoch laden möchtest, kannst Du als "
+                       "Gerät 'Virtuelles Gerät' mit einer Komponente 'Virtueller Zähler' verwenden.")
         return state, message
 
     def _is_autolock_inactive(self) -> Tuple[bool, Optional[str]]:
@@ -346,21 +346,19 @@ class Chargepoint:
         return state, message
 
     def _is_manual_lock_inactive(self) -> Tuple[bool, Optional[str]]:
-        """ prüft, dass der Ladepunkt nicht manuell gesperrt wurde.
-        """
         if (self.data.set.manual_lock is False or
                 (self.template.data.rfid_enabling and
                     (self.data.get.rfid is not None or self.data.set.rfid is not None))):
+            if self.data.set.manual_lock:
+                Pub().pub(f"openWB/set/chargepoint/{self.num}/set/manual_lock", False)
             charging_possible = True
             message = None
         else:
             charging_possible = False
-            message = "Keine Ladung, da der Ladepunkt manuell gesperrt wurde."
+            message = "Keine Ladung, da der Ladepunkt gesperrt wurde."
         return charging_possible, message
 
     def _is_ev_plugged(self) -> Tuple[bool, Optional[str]]:
-        """ prüft, ob ein EV angesteckt ist
-        """
         state = self.data.get.plug_state
         if not state:
             message = "Keine Ladung, da kein Auto angesteckt ist."
@@ -947,10 +945,6 @@ class Chargepoint:
             LP-Nummer
         """
         try:
-            # soc_config_obj = {
-            #     # "configured": vehicle.data["soc"]["config"]["configured"],
-            #     # "manual": vehicle.data["soc"]["config"]["manual"]
-            # }
             soc_obj = ConnectedSoc(
                 range_charged=self.data.set.log.range_charged,
                 range_unit=data.data.general_data.data.range_unit,
@@ -977,9 +971,6 @@ class Chargepoint:
                 average_consumption=vehicle.ev_template.data.average_consump,
                 time_charging_in_use=True if (vehicle.data.control_parameter.submode ==
                                               "time_charging") else False)
-            # if soc_config_obj != self.data.get.connected_vehicle.soc_config:
-            #     Pub().pub("openWB/chargepoint/"+str(self.cp_num) +
-            #               "/get/connected_vehicle/soc_config", soc_config_obj)
             if soc_obj != self.data.get.connected_vehicle.soc:
                 Pub().pub("openWB/chargepoint/"+str(self.num) +
                           "/get/connected_vehicle/soc", dataclasses.asdict(soc_obj))

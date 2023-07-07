@@ -58,7 +58,7 @@ class PurgeCounterState:
 
     def update(self) -> None:
         state = self.calc_virtual(self.delegate.delegate.state)
-        self.delegate.delegate.set(state)  # Logging in update methode
+        self.delegate.delegate.set(state)  # Logging in update Methode
         self.delegate.update()
 
     def calc_virtual(self, state: CounterState) -> CounterState:
@@ -101,7 +101,8 @@ class PurgeCounterState:
                                                      chargepoint.data.get.currents)))
                     except KeyError:
                         raise FaultState.error(f"Für den virtuellen Zähler muss der Anschluss der Phasen von Ladepunkt"
-                                               f" {chargepoint.num} an die Phasen der EVU angegeben werden.")
+                                               f" {chargepoint.data.config.name} an die Phasen der EVU angegeben "
+                                               "werden.")
 
                     self.power += chargepoint.data.get.power
                     self.imported += chargepoint.data.get.imported

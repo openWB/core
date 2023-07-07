@@ -29,7 +29,10 @@ export default {
 </script>
 
 <template>
-  <dash-board-card color="primary">
+  <dash-board-card
+    v-if="mqttStore.getChargePointIds.length > 0"
+    color="primary"
+  >
     <template #headerLeft>
       <font-awesome-icon fixed-width :icon="['fas', 'fa-charging-station']" />
       {{

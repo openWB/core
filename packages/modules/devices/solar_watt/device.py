@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 
 def update(components: Dict[str, Union[SolarWattBat, SolarWattCounter, SolarWattInverter]],
            energy_manager: bool,
-           ip_adress: Optional[str] = None
+           ip_address: Optional[str] = None
            ):
     def request(url: str) -> Dict:
         response = req.get_http_session().get(url, timeout=3).json()
@@ -27,13 +27,13 @@ def update(components: Dict[str, Union[SolarWattBat, SolarWattCounter, SolarWatt
 
     energy_manager_response = None
     if energy_manager:
-        energy_manager_response = request('http://'+ip_adress + '/rest/kiwigrid/wizard/devices')
+        energy_manager_response = request('http://'+ip_address + '/rest/kiwigrid/wizard/devices')
     else:
-        gateway_response = request('http://'+ip_adress+':8080/')
+        gateway_response = request('http://'+ip_address+':8080/')
     for component in components.values():
         if isinstance(component, SolarWattInverter):
             if energy_manager_response is None:
-                energy_manager_response = request('http://'+ip_adress + '/rest/kiwigrid/wizard/devices')
+                energy_manager_response = request('http://'+ip_address + '/rest/kiwigrid/wizard/devices')
             component.update(energy_manager_response)
         else:
             if energy_manager:
@@ -53,7 +53,7 @@ def create_device(device_config: SolarWatt):
         return SolarWattInverter(device_config.id, component_config)
 
     def update_components(components: Dict[str, Union[SolarWattBat, SolarWattCounter, SolarWattInverter]]):
-        update(components, device_config.configuration.energy_manager, device_config.configuration.ip_adress)
+        update(components, device_config.configuration.energy_manager, device_config.configuration.ip_address)
 
     return ConfigurableDevice(
         device_config=device_config,
