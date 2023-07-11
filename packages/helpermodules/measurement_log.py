@@ -235,6 +235,9 @@ def get_totals(entries: List, sum_up_diffs: bool = False) -> Dict:
                 else:
                     for key, value in entry[group][module].items():
                         if key != "soc" and "temp" not in key:
+                            if value == "":
+                                # Manchmal fehlen Werte im alten Log
+                                value = 0
                             if sum_up_diffs:
                                 value = (Decimal(str(value))
                                          + Decimal(str(totals[group][module][key])))
@@ -245,6 +248,9 @@ def get_totals(entries: List, sum_up_diffs: bool = False) -> Dict:
                                 # Werte zusammen addiert.
                                 except KeyError:
                                     prev_value = entry[group][module][key]
+                                if prev_value == "":
+                                    # Manchmal fehlen Werte im alten Log
+                                    prev_value = 0
                                 # avoid floating point issues with using Decimal
                                 value = (Decimal(str(value))
                                          - Decimal(str(prev_value))
@@ -268,7 +274,7 @@ def get_names(totals: Dict, sh_names: Dict) -> Dict:
                 elif "all" != entry:
                     id = entry.strip(string.ascii_letters)
                     names.update({entry: get_component_name_by_id(int(id))})
-            except (ValueError, KeyError):
+            except (ValueError, KeyError, AttributeError):
                 names.update({entry: entry})
     return names
 

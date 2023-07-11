@@ -16,7 +16,8 @@ from typing import Callable, Dict, Union
 
 from dataclass_utils import dataclass_from_dict
 from helpermodules.conv_1_9.id_mapping import MapId
-from helpermodules.measurement_log import get_totals
+from helpermodules.measurement_log import get_names, get_totals
+from helpermodules.pub import Pub
 
 try:
     from .control import data
@@ -76,6 +77,7 @@ class Conversion:
         self.convert_csv_to_json_chargelog()
         self.convert_csv_to_json_measurement_log("daily")
         self.convert_csv_to_json_measurement_log("monthly")
+        self.move_serial_number_clouddata()
         # shutil.rmtree("./data/backup/conversion")
 
     def map_to_new_ids(self, old_id: str) -> int:
@@ -221,7 +223,7 @@ class Conversion:
                 new_entries.extend(entries)
                 content["totals"] = get_totals(new_entries)
                 content["entries"] = new_entries
-
+                content["names"] = get_names(content["totals"], {})
                 with open(filepath, "w") as jsonFile:
                     json.dump(content, jsonFile)
             except Exception:
@@ -272,7 +274,7 @@ class Conversion:
                             "imported": row[1],
                             "exported": row[2]
                         }})
-                        new_entry["pv"].update({"all": {"imported": row[3]}})
+                        new_entry["pv"].update({"all": {"exported": row[3]}})
                         new_entry["bat"].update({"all": {
                             "imported": row[8],
                             "exported": row[9],
@@ -346,7 +348,7 @@ class Conversion:
                             "imported": row[1],
                             "exported": row[2]
                         }})
-                        new_entry["pv"].update({"all": {"imported": row[3]}})
+                        new_entry["pv"].update({"all": {"exported": row[3]}})
                         new_entry["bat"].update({"all": {
                             "imported": row[17],
                             "exported": row[18],
@@ -371,6 +373,38 @@ class Conversion:
                 except Exception:
                     log.exception(f"Fehler beim Konvertieren des Monatslogs vom {file}, Reihe {row}")
         return entries
+
+    def move_serial_number_clouddata(self):
+        def strip_openwb_conf_entry(entry: str, key: str) -> str:
+            value = entry.lstrip(f"{key}=")
+            return value.rstrip("\n")
+        with tarfile.open(f'./data/backup/conversion/{self.backup_name}') as tar:
+            tar.extract(member="var/www/html/openWB/openwb.conf", path="./data/backup/conversion")
+        with open("./data/backup/conversion/var/www/html/openWB/openwb.conf", "r") as file:
+            serial_number = ""
+            openwb_conf = file.readlines()
+            for line in openwb_conf:
+                if "snn" in line:
+                    serial_number = strip_openwb_conf_entry(line, "snn")
+                    break
+            else:
+                log.debug("Keine Seriennummer gefunden.")
+        with open("/home/openwb/snumber", "w") as file:
+            file.write(f"snumber={serial_number}")
+
+        with open("./data/backup/conversion/var/www/html/openWB/openwb.conf", "r") as file:
+            clouduser = ""
+            cloudpw = ""
+            openwb_conf = file.readlines()
+            for line in openwb_conf:
+                if "clouduser" in line:
+                    clouduser = strip_openwb_conf_entry(line, "clouduser")
+                elif "cloudpw" in line:
+                    cloudpw = strip_openwb_conf_entry(line, "cloudpw")
+            if clouduser == "":
+                log.debug("Keine Cloudzugangsdaten gefunden.")
+        Pub().pub("openWB/set/command/conversion/todo",
+                  {"command": "connectCloud", "data": {"username": clouduser, "password": cloudpw, "partner": 0}})
 
 
 Conversion(MapId(), "openWB_backup_2023-07-06_16-28-57.tar.gz").convert()
