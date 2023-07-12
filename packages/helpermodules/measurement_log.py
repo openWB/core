@@ -105,7 +105,9 @@ def save_log(folder):
                     'cp4': {'exported': 0, 'imported': 85},
                     'cp5': {'exported': 0, 'imported': 0},
                     'cp6': {'exported': 0, 'imported': 64}},
-            'pv': {'all': {'imported': 251}, 'pv1': {'imported': 247}}}
+            'ev': {'ev1': {}},
+            'pv': {'all': {'imported': 251}, 'pv1': {'imported': 247}}},
+            'sh': { 'sh1': {'exported': 123, 'imported': 123}}
         },
         "names": {
             "counter0": "Mein EVU-Zähler",
@@ -208,7 +210,7 @@ def save_log(folder):
             content = json.load(jsonFile)
     except FileNotFoundError:
         with open(filepath, "w") as jsonFile:
-            json.dump({"entries": [], "totals": {}}, jsonFile)
+            json.dump({"entries": [], "totals": {}, "names": {}}, jsonFile)
         with open(filepath, "r") as jsonFile:
             content = json.load(jsonFile)
     entries = content["entries"]
@@ -312,15 +314,15 @@ def get_monthly_log(date: str):
     return []
 
 
-def get_yearly_log(date: str):
+def get_yearly_log(year: str):
     entries = []
     for month in range(1, 13):
         try:
-            with open(Path(__file__).resolve().parents[2]/"data"/"monthly_log"/f"{date}{month:02}.json",
+            with open(Path(__file__).resolve().parents[2]/"data"/"monthly_log"/f"{year}{month:02}.json",
                       "r") as jsonFile:
                 content = json.load(jsonFile)
                 content = content["totals"]
-                content.update({"date": f"{date}{month:02}"})
+                content.update({"date": f"{year}{month:02}"})
                 entries.append(content)
         except FileNotFoundError:
             log.debug(f"Kein Monats-Log für Monat {month} gefunden.")
