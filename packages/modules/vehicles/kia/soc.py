@@ -26,7 +26,7 @@ def create_vehicle(vehicle_config: KIA, vehicle: int):
     return ConfigurableVehicle(vehicle_config=vehicle_config, component_updater=updater, vehicle=vehicle)
 
 
-def kia_update(user_id: str, password: str, vin: str, charge_point: int):
+def kia_update(user_id: str, password: str, pin: str, vin: str, charge_point: int):
     vehicle_config = KIA(configuration=KIAConfiguration(charge_point, user_id, password, pin, vin))
     store.get_car_value_store(charge_point).store.set(api.fetch_soc(
         vehicle_config.configuration.user_id,

@@ -3,8 +3,8 @@ from typing import Optional
 
 class KIAConfiguration:
     def __init__(self, user_id: Optional[str] = None, password: Optional[str] = None,
-        pin: Optional[str] = None, vin: Optional[str] = None):
-        
+                 pin: Optional[str] = None, vin: Optional[str] = None):
+
         self.user_id = user_id
         self.password = password
         self.pin = pin
