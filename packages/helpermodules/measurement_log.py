@@ -299,7 +299,16 @@ def get_names(totals: Dict, sh_names: Dict) -> Dict:
 def get_daily_log(date: str):
     try:
         with open(str(Path(__file__).resolve().parents[2] / "data"/"daily_log"/(date+".json")), "r") as jsonFile:
-            return json.load(jsonFile)
+            log_data = json.load(jsonFile)
+            try:
+                next_date = timecheck.get_relative_date_string(date, day_offset=1)
+                with open(str(Path(__file__).resolve().parents[2] / "data"/"daily_log"/(next_date+".json")),
+                          "r") as nextJsonFile:
+                    next_log_data = json.load(nextJsonFile)
+                    log_data["entries"].append(next_log_data["entries"][0])
+            except FileNotFoundError:
+                pass
+            return log_data
     except FileNotFoundError:
         pass
     return []
@@ -308,7 +317,16 @@ def get_daily_log(date: str):
 def get_monthly_log(date: str):
     try:
         with open(str(Path(__file__).resolve().parents[2] / "data"/"monthly_log"/(date+".json")), "r") as jsonFile:
-            return json.load(jsonFile)
+            log_data = json.load(jsonFile)
+            try:
+                next_date = timecheck.get_relative_date_string(date, month_offset=1)
+                with open(str(Path(__file__).resolve().parents[2] / "data"/"monthly_log"/(next_date+".json")),
+                          "r") as nextJsonFile:
+                    next_log_data = json.load(nextJsonFile)
+                    log_data["entries"].append(next_log_data["entries"][0])
+            except FileNotFoundError:
+                pass
+            return log_data
     except FileNotFoundError:
         pass
     return []
