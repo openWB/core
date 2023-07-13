@@ -334,16 +334,20 @@ def get_monthly_log(date: str):
 
 def get_yearly_log(year: str):
     entries = []
+    dates = []
     for month in range(1, 13):
+        dates.append(f"{year}{month:02}")
+    dates.append(f"{int(year)+1}01")
+    for date in dates:
         try:
-            with open(Path(__file__).resolve().parents[2]/"data"/"monthly_log"/f"{year}{month:02}.json",
+            with open(Path(__file__).resolve().parents[2]/"data"/"monthly_log"/f"{date}.json",
                       "r") as jsonFile:
                 content = json.load(jsonFile)
                 content = content["totals"]
-                content.update({"date": f"{year}{month:02}"})
+                content.update({"date": date, "timestamp": timecheck.convert_YYYYMM_to_unix_timestamp(date)})
                 entries.append(content)
         except FileNotFoundError:
-            log.debug(f"Kein Monats-Log für Monat {month} gefunden.")
+            log.debug(f"Kein Log für Monat {date} gefunden.")
     return {"entries": entries, "totals": get_totals(entries, sum_up_diffs=True)}
 
 

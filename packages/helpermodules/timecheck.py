@@ -284,6 +284,10 @@ def create_timestamp_time() -> str:
         raise
 
 
+def convert_YYYYMM_to_unix_timestamp(date: str) -> float:
+    return datetime.datetime.strptime(date, "%Y%m").timestamp()
+
+
 def convert_to_unix_timestamp(timestamp: str) -> float:
     return datetime.datetime.strptime(timestamp, "%m/%d/%Y, %H:%M:%S").timestamp()
 
