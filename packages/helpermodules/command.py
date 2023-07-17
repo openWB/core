@@ -182,7 +182,7 @@ class Command:
         if check_num_msg is not None:
             pub_user_message(
                 payload, connection_id, f"{check_num_msg} Wenn Sie weitere Ladepunkte anbinden wollen, müssen Sie "
-                "diese als externe Ladepunkte anbinden. Die externen Ladepunkte in den Betriebsmodus 'NurLadepunkt'"
+                "diese als externe Ladepunkte anbinden. Die externen Ladepunkte in den Steuerungsmodus 'secondary'"
                 " versetzen.", MessageType.ERROR)
             return
         chargepoint_config["id"] = new_id
@@ -205,7 +205,7 @@ class Command:
                 setup_added_chargepoint()
             else:
                 pub_user_message(payload, connection_id,
-                                 "Bitte zuerst einen EVU-Zähler konfigurieren oder in den NurLadepunkt-Modus "
+                                 "Bitte zuerst einen EVU-Zähler konfigurieren oder in den Steuerungsmodus 'secondary' "
                                  "umschalten, wenn die openWB als externer Ladepunkt betrieben werden soll.",
                                  MessageType.ERROR)
 
