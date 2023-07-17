@@ -1,4 +1,5 @@
 import logging
+import time
 from pathlib import Path
 from typing import List, NamedTuple, Optional, Tuple, Union
 
@@ -78,6 +79,7 @@ class ClientHandler:
         except Exception:
             evse_check = False
         try:
+            time.sleep(0.1)
             if self.meter_client.get_voltages()[0] > 200:
                 meter_check = True
             else:
