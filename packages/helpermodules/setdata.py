@@ -930,7 +930,8 @@ class SetData:
             if ("openWB/set/system/lastlivevaluesJson" in msg.topic or
                     "openWB/set/system/backup_cloud/config" in msg.topic):
                 self._validate_value(msg, "json")
-            elif ("openWB/set/system/perform_update" in msg.topic or
+            elif ("openWB/set/system/boot_done" in msg.topic or
+                    "openWB/set/system/perform_update" in msg.topic or
                     "openWB/set/system/wizard_done" in msg.topic or
                     "openWB/set/system/update_in_progress" in msg.topic or
                     "openWB/set/system/dataprotection_acknowledged" in msg.topic or
