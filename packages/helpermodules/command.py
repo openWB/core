@@ -15,6 +15,7 @@ from control.chargepoint.chargepoint_template import get_autolock_plan_default, 
 
 from helpermodules import measurement_log
 from helpermodules.broker import InternalBrokerClient
+from helpermodules.data_migration.data_migration import MigrateData
 from helpermodules.messaging import MessageType, pub_user_message, pub_error_global
 from helpermodules.parse_send_debug import parse_send_debug_data
 from helpermodules.pub import Pub
@@ -701,6 +702,13 @@ class Command:
                           " openWB wird jetzt zum Abschluss neu gestartet."),
                          MessageType.INFO)
         self.systemReboot(connection_id, payload)
+
+    def dataMigration(self, connection_id: str, payload: dict) -> None:
+        pub_user_message(payload, connection_id, "Datenübernahme gestartet.", MessageType.INFO)
+        migrate_data = MigrateData(payload)
+        migrate_data.validate_ids()
+        migrate_data.migrate()
+        pub_user_message(payload, connection_id, "Datenübernahme abgeschlossen.", MessageType.INFO)
 
 
 class ErrorHandlingContext:

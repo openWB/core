@@ -1,9 +1,10 @@
-""" Konvertierungsmodul von 1.9x nach 2.x
+""" Konvertierungsmodul von 1.9x nach software2
 Konvertiert die Lade- und Tageslog-Dateien von csv nach json.
-Falls nötig, ohne Abhängigkeit zur sonstigen 2.x-Implementierung.
+Falls nötig, ohne Abhängigkeit zur sonstigen software2-Implementierung.
 """
 
 import csv
+from dataclasses import asdict
 import datetime
 import json
 import logging
@@ -15,12 +16,12 @@ from typing import Callable, Dict, Union
 
 
 from dataclass_utils import dataclass_from_dict
-from helpermodules.conv_1_9.id_mapping import MapId
+from helpermodules.data_migration.id_mapping import MapId
 from helpermodules.measurement_log import get_names, get_totals
 from helpermodules.pub import Pub
 
 try:
-    from .control import data
+    from ...control import data
 except Exception:
     pass
 
@@ -63,14 +64,13 @@ class StreamArray(list):
         return self._len
 
 
-class Conversion:
-    BACKUP_DATA_PATH = "./data/backup/conversion/var/www/html/openWB/web/logging/data"
+class MigrateData:
+    BACKUP_DATA_PATH = "./data/data_migration/var/www/html/openWB/web/logging/data"
 
-    def __init__(self, id_map: Dict, backup_name: str) -> None:
+    def __init__(self, id_map: Dict) -> None:
         self.id_map = dataclass_from_dict(MapId, id_map)
-        self.backup_name = backup_name
 
-    def convert(self):
+    def migrate(self):
         self.extract_files("ladelog")
         self.extract_files("daily")
         self.extract_files("monthly")
@@ -78,7 +78,8 @@ class Conversion:
         self.convert_csv_to_json_measurement_log("daily")
         self.convert_csv_to_json_measurement_log("monthly")
         self.move_serial_number_clouddata()
-        # shutil.rmtree("./data/backup/conversion")
+        shutil.rmtree("./data/data_migration/var")
+        os.remove("./data/data_migration/data_migration.tar.gz")
 
     def map_to_new_ids(self, old_id: str) -> int:
         return getattr(self.id_map, old_id)
@@ -89,9 +90,9 @@ class Conversion:
                 yield tarinfo
 
     def extract_files(self, log_folder_name: str):
-        with tarfile.open(f'./data/backup/conversion/{self.backup_name}') as tar:
+        with tarfile.open('./data/data_migration/data_migration.tar.gz') as tar:
             tar.extractall(members=self._file_to_extract_generator(
-                tar, log_folder_name), path="./data/backup/conversion")
+                tar, log_folder_name), path="./data/data_migration")
 
     def convert_csv_to_json_chargelog(self):
         """ konvertiert die alten Ladelog-Dateien in das neue Format für 2.x.
@@ -118,6 +119,9 @@ class Conversion:
                 log.exception(f"Fehler beim Konvertieren des Ladelogs vom {old_file_name}")
 
     def _chargelogfile_entries(self, file: str):
+        """ alte Spaltenbelegung
+        $start,$jetzt,$gelr,$bishergeladen,$ladegeschw,$ladedauertext,$chargePointNumber,$lademoduslogvalue,$rfid,$kosten
+        """
         def conv_1_9_datetimes(datetime_str):
             """ konvertiert Datum-Uhrzeit alt: %d.%m.%y-%H:%M 05.03.21-11:16; neu: %m/%d/%Y, %H:%M 08/04/2021, 15:50
             """
@@ -160,10 +164,6 @@ class Conversion:
                         else:
                             raise ValueError(str(duration_list) +
                                              " hat kein bekanntes Format.")
-                        try:
-                            costs = data.data.general_data.data.price_kwh * row[3]
-                        except Exception:
-                            costs = 0
                         new_entry = {
                             "chargepoint":
                             {
@@ -187,10 +187,10 @@ class Conversion:
                             "data":
                             {
                                 "range_charged": float(row[2]),
-                                "imported_since_mode_switch": 0,
-                                "imported_since_plugged": float(row[3]),
+                                "imported_since_mode_switch": float(row[3]),
+                                "imported_since_plugged": 0,
                                 "power": float(row[4]),
-                                "costs": get_rounding_function_by_digits(2)(costs)
+                                "costs": float(row[9])
                             }
                         }
                         entries.append(new_entry)
@@ -265,7 +265,7 @@ class Conversion:
                                 new_entry["cp"].update(
                                     {f"cp{new_entry_id}": {"imported": row[self.DAILY_LOG_CP_ROW_IDS[i - 1]],
                                                            "exported": 0}})
-                        for i in range(1, 2):
+                        for i in range(1, 3):
                             new_entry_id = self.map_to_new_ids(f"ev{i}")
                             if new_entry_id is not None:
                                 new_entry["ev"].update(
@@ -274,12 +274,18 @@ class Conversion:
                             "imported": row[1],
                             "exported": row[2]
                         }})
-                        new_entry["pv"].update({"all": {"exported": row[3]}})
-                        new_entry["bat"].update({"all": {
-                            "imported": row[8],
-                            "exported": row[9],
-                            "soc": row[20]
-                        }})
+                        if self.id_map.pv1 is not None or self.id_map.pv2 is not None:
+                            new_entry["pv"].update({"all": {"exported": row[3]}})
+                        if self.id_map.bat is not None:
+                            new_entry["bat"].update({"all": {
+                                "imported": row[8],
+                                "exported": row[9],
+                                "soc": row[20]
+                            }, f"bat{self.map_to_new_ids('bat')}": {
+                                "imported": row[8],
+                                "exported": row[9],
+                                "soc": row[20]
+                            }})
                         for i in range(1, 3):
                             new_entry_id = self.map_to_new_ids(f"sh{i}")
                             if new_entry_id is not None:
@@ -299,15 +305,17 @@ class Conversion:
                                         "imported": row[25 + i],  # Row starts at 28 for device 3
                                         "exported": 0
                                     }})
-                        for i in range(1, 2):
+                        for i in range(1, 3):
                             new_entry_id = self.map_to_new_ids(f"consumer{i}")
                             if new_entry_id is not None:
-                                new_entry["sh"].update(
-                                    {f"consumer{new_entry_id}": {
+                                new_entry["counter"].update(
+                                    {f"counter{new_entry_id}": {
                                         "imported": row[self.DAILY_LOG_CONSUMER_ROW_IDS[i - 1][0]],
                                         "exported": row[self.DAILY_LOG_CONSUMER_ROW_IDS[i - 1][1]]
                                     }})
-                        new_entry["sh"].update({"consumer3": {"imported": row[14]}})
+                        if self.id_map.consumer3 is not None:
+                            new_entry["counter"].update({f"counter{self.map_to_new_ids('consumer3')}":
+                                                        {"imported": row[14], "exported": 0}})
                         entries.append(new_entry)
                 except Exception:
                     log.exception(f"Fehler beim Konvertieren des Tageslogs vom {file}, Reihe {row}")
@@ -348,11 +356,17 @@ class Conversion:
                             "imported": row[1],
                             "exported": row[2]
                         }})
-                        new_entry["pv"].update({"all": {"exported": row[3]}})
-                        new_entry["bat"].update({"all": {
-                            "imported": row[17],
-                            "exported": row[18],
-                        }})
+                        if self.id_map.pv1 is not None or self.id_map.pv2 is not None:
+                            new_entry["pv"].update({"all": {"exported": row[3]}})
+                        if self.id_map.bat is not None:
+                            new_entry["bat"].update({"all": {
+                                "imported": row[17],
+                                "exported": row[18],
+                            },
+                            f"bat{self.map_to_new_ids('bat')}": {
+                                "imported": row[17],
+                                "exported": row[18],
+                            }})
                         for i in range(1, 11):
                             new_entry_id = self.map_to_new_ids(f"sh{i}")
                             if new_entry_id is not None:
@@ -361,11 +375,11 @@ class Conversion:
                                         "imported": row[18 + i],  # Row starts at 19 for device 1
                                         "exported": 0
                                     }})
-                        for i in range(1, 2):
+                        for i in range(1, 3):
                             new_entry_id = self.map_to_new_ids(f"consumer{i}")
                             if new_entry_id is not None:
-                                new_entry["sh"].update(
-                                    {f"consumer{new_entry_id}": {
+                                new_entry["counter"].update(
+                                    {f"counter{new_entry_id}": {
                                         "imported": row[self.MONTHLY_LOG_CONSUMER_ROW_IDS[i - 1][0]],
                                         "exported": row[self.MONTHLY_LOG_CONSUMER_ROW_IDS[i - 1][1]]
                                     }})
@@ -378,9 +392,9 @@ class Conversion:
         def strip_openwb_conf_entry(entry: str, key: str) -> str:
             value = entry.lstrip(f"{key}=")
             return value.rstrip("\n")
-        with tarfile.open(f'./data/backup/conversion/{self.backup_name}') as tar:
-            tar.extract(member="var/www/html/openWB/openwb.conf", path="./data/backup/conversion")
-        with open("./data/backup/conversion/var/www/html/openWB/openwb.conf", "r") as file:
+        with tarfile.open('./data/data_migration/data_migration.tar.gz') as tar:
+            tar.extract(member="var/www/html/openWB/openwb.conf", path="./data/data_migration")
+        with open("./data/data_migration/var/www/html/openWB/openwb.conf", "r") as file:
             serial_number = ""
             openwb_conf = file.readlines()
             for line in openwb_conf:
@@ -392,7 +406,7 @@ class Conversion:
         with open("/home/openwb/snumber", "w") as file:
             file.write(f"snumber={serial_number}")
 
-        with open("./data/backup/conversion/var/www/html/openWB/openwb.conf", "r") as file:
+        with open("./data/data_migration/var/www/html/openWB/openwb.conf", "r") as file:
             clouduser = ""
             cloudpw = ""
             openwb_conf = file.readlines()
@@ -403,8 +417,30 @@ class Conversion:
                     cloudpw = strip_openwb_conf_entry(line, "cloudpw")
             if clouduser == "":
                 log.debug("Keine Cloudzugangsdaten gefunden.")
-        Pub().pub("openWB/set/command/conversion/todo",
+        Pub().pub("openWB/set/command/data_migration/todo",
                   {"command": "connectCloud", "data": {"username": clouduser, "password": cloudpw, "partner": 0}})
 
+    NOT_CONFIGURED = " wurde in openWB software2 nicht konfiguriert."
 
-Conversion(MapId(), "openWB_backup_2023-07-06_16-28-57.tar.gz").convert()
+    def validate_ids(self):
+        for key, id in asdict(self.id_map).items():
+            if "cp" in key:
+                if data.data.cp_data.get(f"cp{id}") is None:
+                    raise ValueError(f"Die Ladepunkt-ID {id}{self.NOT_CONFIGURED}")
+            elif "evu" in key or "consumer" in key:
+                if data.data.counter_data.get(f"counter{id}") is None:
+                    raise ValueError(f"Die Zähler-ID {id}{self.NOT_CONFIGURED}")
+            elif "pv" in key:
+                if data.data.pv_data.get(f"pv{id}") is None:
+                    raise ValueError(f"Die Wechselrichter-ID {id}{self.NOT_CONFIGURED}")
+            elif "bat" in key:
+                if data.data.bat_data.get(f"bat{id}") is None:
+                    raise ValueError(f"Die Speicher-ID {id}{self.NOT_CONFIGURED}")
+            elif "sh" in key:
+                if data.data.bat_data.get(f"sh{id}") is None:
+                    raise ValueError(f"Die Smarthome-ID {id}{self.NOT_CONFIGURED}")
+
+
+migrate_data = MigrateData(MapId())
+#migrate_data.validate_ids()
+migrate_data.migrate()
