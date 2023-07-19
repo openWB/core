@@ -46,6 +46,17 @@ def type_topic_mapping_comp(component_type: str) -> str:
         raise Exception("Unbekannter Komponenten-Typ: " + component_type)
 
 
+def component_type_to_readable_text(component_type: ComponentType):
+    if component_type == ComponentType.BAT:
+        return "Speicher"
+    elif component_type == ComponentType.COUNTER:
+        return "Zähler"
+    elif component_type == ComponentType.CHARGEPOINT:
+        return "Ladepunkt"
+    elif component_type == ComponentType.INVERTER:
+        return "Wechselrichter"
+
+
 class ComponentDescriptor:
     def __init__(self, configuration_factory: Type):
         self.configuration_factory = configuration_factory

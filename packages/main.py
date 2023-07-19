@@ -219,6 +219,7 @@ try:
     t_internal_chargepoint.start()
     # Warten, damit subdata Zeit hat, alle Topics auf dem Broker zu empfangen.
     time.sleep(5)
+    sub.counter_all_data.validate_hierarchy()
     schedule_jobs()
 except Exception:
     log.exception("Fehler im Main-Modul")

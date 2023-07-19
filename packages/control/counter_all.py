@@ -3,13 +3,16 @@
 import copy
 from dataclasses import dataclass, field
 import logging
+import re
 from typing import Callable, Dict, List, Tuple, Union
 
 from control import data
 from control.counter import Counter
 from dataclass_utils.factories import empty_list_factory
+from helpermodules.messaging import MessageType, pub_system_message
 from helpermodules.pub import Pub
-from modules.common.component_type import ComponentType
+from helpermodules.subdata import SubData
+from modules.common.component_type import ComponentType, component_type_to_readable_text
 from modules.common.fault_state import FaultStateLevel
 
 log = logging.getLogger(__name__)
@@ -391,6 +394,53 @@ class CounterAll:
         for child in child["children"]:
             elements_per_level = self._get_list_of_elements_per_level(elements_per_level, child, index+1)
         return elements_per_level
+
+    def validate_hierarchy(self):
+        self._delete_obsolete_entries()
+        self._add_missing_entries()
+        Pub().pub("openWB/set/counter/get/hierarchy", self.data.get.hierarchy)
+
+    def _delete_obsolete_entries(self):
+        def check_and_remove(name, type_name: ComponentType, data_structure):
+            if element["type"] == type_name.value:
+                if f"{name}{element['id']}" not in data_structure:
+                    self.hierarchy_remove_item(element["id"])
+                    pub_system_message({}, f"{component_type_to_readable_text(type_name)} mit ID {element['id']} wurde"
+                                       " aus der Hierachie entfernt, da keine gültige Konfiguration gefunden wurde.",
+                                       MessageType.WARNING)
+
+        for level in self.get_list_of_elements_per_level():
+            for element in level:
+                check_and_remove("bat", ComponentType.BAT, SubData.bat_data)
+                check_and_remove("counter", ComponentType.COUNTER, SubData.counter_data)
+                check_and_remove("cp", ComponentType.CHARGEPOINT, SubData.cp_data)
+                check_and_remove("pv", ComponentType.INVERTER, SubData.pv_data)
+
+    def _add_missing_entries(self):
+        def check_and_add(type_name: ComponentType, data_structure):
+            for entry in data_structure:
+                break_flag = False
+                re_result = re.search("[0-9]+", entry)
+                if re_result is not None:
+                    entry_num = int(re_result.group())
+                for level in self.get_list_of_elements_per_level():
+                    for element in level:
+                        if entry_num == element["id"] and element["type"] == type_name.value:
+                            break_flag = True
+                            break
+                    if break_flag:
+                        break
+                else:
+                    self.hierarchy_add_item_below(entry_num, type_name, self.get_evu_counter())
+                    pub_system_message({}, f"{component_type_to_readable_text(type_name)} mit ID {element['id']} wurde"
+                                       " in der Hierachie hinzugefügt, da kein Eintrag in der Hierachie gefunden "
+                                       "wurde. Bitte prüfe die Anordnung der Komponenten in der Hierachie.",
+                                       MessageType.WARNING)
+
+        check_and_add(ComponentType.BAT, SubData.bat_data)
+        check_and_add(ComponentType.COUNTER, SubData.counter_data)
+        check_and_add(ComponentType.CHARGEPOINT, SubData.cp_data)
+        check_and_add(ComponentType.INVERTER, SubData.pv_data)
 
 
 def get_max_id_in_hierarchy(current_entry: List, max_id: int) -> int:
