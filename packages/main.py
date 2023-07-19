@@ -2,6 +2,7 @@
 """Starten der benötigten Prozesse
 """
 import logging
+from pathlib import Path
 from random import randrange
 import schedule
 import time
@@ -219,6 +220,8 @@ try:
     t_internal_chargepoint.start()
     # Warten, damit subdata Zeit hat, alle Topics auf dem Broker zu empfangen.
     time.sleep(5)
+    Pub().pub("openWB/set/system/boot_done", True)
+    Path(Path(__file__).resolve().parents[1]/"ramdisk"/"bootdone").touch()
     schedule_jobs()
 except Exception:
     log.exception("Fehler im Main-Modul")
