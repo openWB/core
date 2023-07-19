@@ -359,14 +359,16 @@ class MigrateData:
                         if self.id_map.pv1 is not None or self.id_map.pv2 is not None:
                             new_entry["pv"].update({"all": {"exported": row[3]}})
                         if self.id_map.bat is not None:
-                            new_entry["bat"].update({"all": {
-                                "imported": row[17],
-                                "exported": row[18],
-                            },
-                            f"bat{self.map_to_new_ids('bat')}": {
-                                "imported": row[17],
-                                "exported": row[18],
-                            }})
+                            new_entry["bat"].update({
+                                "all": {
+                                    "imported": row[17],
+                                    "exported": row[18],
+                                },
+                                f"bat{self.map_to_new_ids('bat')}": {
+                                    "imported": row[17],
+                                    "exported": row[18],
+                                }
+                            })
                         for i in range(1, 11):
                             new_entry_id = self.map_to_new_ids(f"sh{i}")
                             if new_entry_id is not None:
@@ -442,5 +444,5 @@ class MigrateData:
 
 
 migrate_data = MigrateData(MapId())
-#migrate_data.validate_ids()
+# migrate_data.validate_ids()
 migrate_data.migrate()

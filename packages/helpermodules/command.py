@@ -708,7 +708,7 @@ class Command:
         migrate_data = MigrateData(payload)
         migrate_data.validate_ids()
         migrate_data.migrate()
-        pub_user_message(payload, connection_id, "Datenübernahme abgeschlossen.", MessageType.INFO)
+        pub_user_message(payload, connection_id, "Datenübernahme abgeschlossen.", MessageType.SUCCESS)
 
 
 class ErrorHandlingContext:
