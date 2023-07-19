@@ -6,8 +6,11 @@ Falls nötig, ohne Abhängigkeit zur sonstigen software2-Implementierung.
 import csv
 from dataclasses import asdict
 import datetime
+from functools import reduce
+from itertools import groupby
 import json
 import logging
+from operator import itemgetter
 import os
 import pathlib
 import shutil
@@ -17,7 +20,7 @@ from typing import Callable, Dict, Union
 
 from dataclass_utils import dataclass_from_dict
 from helpermodules.data_migration.id_mapping import MapId
-from helpermodules.measurement_log import get_names, get_totals
+from helpermodules.measurement_log import LegacySmarthomeLogdata, get_names, get_totals
 from helpermodules.pub import Pub
 
 try:
@@ -220,10 +223,11 @@ class MigrateData:
                     with open(filepath, "r") as jsonFile:
                         content = json.load(jsonFile)
                 entries = content["entries"]
-                new_entries.extend(entries)
-                content["totals"] = get_totals(new_entries)
-                content["entries"] = new_entries
-                content["names"] = get_names(content["totals"], {})
+                merger = self.merge_list_of_records('date')
+                merged_entries = merger(new_entries + entries)
+                content["totals"] = get_totals(merged_entries)
+                content["entries"] = merged_entries
+                content["names"] = get_names(content["totals"], LegacySmarthomeLogdata().update()[0])
                 with open(filepath, "w") as jsonFile:
                     json.dump(content, jsonFile)
             except Exception:
@@ -258,24 +262,29 @@ class MigrateData:
                             "bat": {},
                             "sh": {}
                         }
-                        new_entry["cp"].update({"all": {"imported": row[7], }})
+                        cp_detail_entry = False
                         for i in range(1, 9):
                             new_entry_id = self.map_to_new_ids(f"cp{i}")
                             if new_entry_id is not None:
+                                cp_detail_entry = True
                                 new_entry["cp"].update(
                                     {f"cp{new_entry_id}": {"imported": row[self.DAILY_LOG_CP_ROW_IDS[i - 1]],
                                                            "exported": 0}})
+                        if cp_detail_entry:
+                            new_entry["cp"].update({"all": {"imported": row[7], }})
                         for i in range(1, 3):
                             new_entry_id = self.map_to_new_ids(f"ev{i}")
                             if new_entry_id is not None:
                                 new_entry["ev"].update(
                                     {f"ev{new_entry_id}": {"soc": row[self.DAILY_LOG_EV_ROW_IDS[i - 1]]}})
-                        new_entry["counter"].update({f"counter{self.map_to_new_ids('evu')}": {
-                            "imported": row[1],
-                            "exported": row[2]
-                        }})
-                        if self.id_map.pv1 is not None or self.id_map.pv2 is not None:
-                            new_entry["pv"].update({"all": {"exported": row[3]}})
+                        if self.id_map.evu is not None:
+                            new_entry["counter"].update({f"counter{self.map_to_new_ids('evu')}": {
+                                "imported": row[1],
+                                "exported": row[2]
+                            }})
+                        if self.id_map.pv is not None:
+                            new_entry["pv"].update({"all": {"exported": row[3]},
+                                                    f"pv{self.map_to_new_ids('pv')}": {"exported": row[3]}})
                         if self.id_map.bat is not None:
                             new_entry["bat"].update({"all": {
                                 "imported": row[8],
@@ -345,19 +354,24 @@ class MigrateData:
                             "bat": {},
                             "sh": {}
                         }
-                        new_entry["cp"].update({"all": {"imported": row[7], }})
+                        cp_detail_entry = False
                         for i in range(1, 9):
                             new_entry_id = self.map_to_new_ids(f"cp{i}")
                             if new_entry_id is not None:
+                                cp_detail_entry = True
                                 new_entry["cp"].update(
                                     {f"cp{new_entry_id}": {"imported": row[self.MONTHLY_LOG_CP_ROW_IDS[i - 1]],
                                                            "exported": 0}})
-                        new_entry["counter"].update({f"counter{self.map_to_new_ids('evu')}": {
-                            "imported": row[1],
-                            "exported": row[2]
-                        }})
-                        if self.id_map.pv1 is not None or self.id_map.pv2 is not None:
-                            new_entry["pv"].update({"all": {"exported": row[3]}})
+                        if cp_detail_entry:
+                            new_entry["cp"].update({"all": {"imported": row[7], }})
+                        if self.id_map.evu is not None:
+                            new_entry["counter"].update({f"counter{self.map_to_new_ids('evu')}": {
+                                "imported": row[1],
+                                "exported": row[2]
+                            }})
+                        if self.id_map.pv is not None:
+                            new_entry["pv"].update({"all": {"exported": row[3]},
+                                                    f"pv{self.map_to_new_ids('pv')}": {"exported": row[3]}})
                         if self.id_map.bat is not None:
                             new_entry["bat"].update({
                                 "all": {
@@ -441,6 +455,27 @@ class MigrateData:
             elif "sh" in key:
                 if data.data.bat_data.get(f"sh{id}") is None:
                     raise ValueError(f"Die Smarthome-ID {id}{self.NOT_CONFIGURED}")
+
+    def _merge_records_by(self, key):
+        """Returns a function that merges two records rec_a and rec_b.
+        The records are assumed to have the same value for rec_a[key]
+        and rec_b[key].
+        """
+        return lambda rec_a, rec_b: {
+            k: rec_a[k] if k == key else rec_a[k]
+            for k in rec_a
+        }
+
+    def merge_list_of_records(self, key):
+        """https://codereview.stackexchange.com/a/85822
+        Returns a function that merges a list of records, grouped by
+        the specified key, with values combined using the specified
+        binary operator."""
+        keyprop = itemgetter(key)
+        return lambda lst: [
+            reduce(self._merge_records_by(key), records)
+            for _, records in groupby(sorted(lst, key=keyprop), keyprop)
+        ]
 
 
 migrate_data = MigrateData(MapId())
