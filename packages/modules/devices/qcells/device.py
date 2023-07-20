@@ -31,10 +31,10 @@ def create_device(device_config: QCells):
                               device_config.configuration.modbus_id)
 
     def update_components(components: Iterable[Union[QCellsBat, QCellsCounter, QCellsInverter]]):
-        with client as c:
+        with client:
             for component in components:
                 with SingleComponentUpdateContext(component.component_info):
-                    component.update(c)
+                    component.update()
 
     try:
         client = ModbusTcpClient_(device_config.configuration.ip_address, 502)
