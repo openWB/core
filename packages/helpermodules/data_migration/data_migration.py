@@ -410,12 +410,12 @@ class MigrateData:
             openwb_conf = file.readlines()
             for line in openwb_conf:
                 if "snn" in line:
-                    serial_number = strip_openwb_conf_entry(line, "snn")
+                    serial_number = strip_openwb_conf_entry(line, "snnumber=")
                     break
             else:
                 log.debug("Keine Seriennummer gefunden.")
-        with open("/home/openwb/snumber", "w") as file:
-            file.write(f"snumber={serial_number}")
+        with open("/home/openwb/snnumber", "w") as file:
+            file.write(f"snnumber={serial_number}")
 
         with open("./data/data_migration/var/www/html/openWB/openwb.conf", "r") as file:
             clouduser = ""
