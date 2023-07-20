@@ -401,7 +401,7 @@ class MigrateData:
 
     def move_serial_number_clouddata(self):
         def strip_openwb_conf_entry(entry: str, key: str) -> str:
-            value = entry.lstrip(f"{key}=")
+            value = entry.replace(f"{key}=", "")
             return value.rstrip("\n")
         with tarfile.open('./data/data_migration/data_migration.tar.gz') as tar:
             tar.extract(member="var/www/html/openWB/openwb.conf", path="./data/data_migration")
@@ -410,7 +410,7 @@ class MigrateData:
             openwb_conf = file.readlines()
             for line in openwb_conf:
                 if "snn" in line:
-                    serial_number = strip_openwb_conf_entry(line, "snnumber=")
+                    serial_number = strip_openwb_conf_entry(line, "snnumber")
                     break
             else:
                 log.debug("Keine Seriennummer gefunden.")
