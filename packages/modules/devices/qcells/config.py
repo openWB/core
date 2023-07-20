@@ -4,7 +4,7 @@ from modules.common.component_setup import ComponentSetup
 
 
 class QCellsConfiguration:
-    def __init__(self, modbus_id: int = 1, ip_address: Optional[str] = None,):
+    def __init__(self, modbus_id: int = 1, ip_address: Optional[str] = None):
         self.modbus_id = modbus_id
         self.ip_address = ip_address
 

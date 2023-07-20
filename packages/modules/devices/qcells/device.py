@@ -17,24 +17,21 @@ log = logging.getLogger(__name__)
 def create_device(device_config: QCells):
     def create_bat_component(component_config: QCellsBatSetup):
         return QCellsBat(component_config,
-                         device_config.configuration.ip_address,
                          device_config.configuration.modbus_id)
 
     def create_counter_component(component_config: QCellsCounterSetup):
         return QCellsCounter(component_config,
-                             device_config.configuration.ip_address,
                              device_config.configuration.modbus_id)
 
     def create_inverter_component(component_config: QCellsInverterSetup):
         return QCellsInverter(component_config,
-                              device_config.configuration.ip_address,
                               device_config.configuration.modbus_id)
 
     def update_components(components: Iterable[Union[QCellsBat, QCellsCounter, QCellsInverter]]):
-        with client:
+        with client as c:
             for component in components:
                 with SingleComponentUpdateContext(component.component_info):
-                    component.update()
+                    component.update(c)
 
     try:
         client = ModbusTcpClient_(device_config.configuration.ip_address, 502)
