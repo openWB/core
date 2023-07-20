@@ -705,7 +705,7 @@ class Command:
 
     def dataMigration(self, connection_id: str, payload: dict) -> None:
         pub_user_message(payload, connection_id, "Datenübernahme gestartet.", MessageType.INFO)
-        migrate_data = MigrateData(payload)
+        migrate_data = MigrateData(payload["data"])
         migrate_data.validate_ids()
         migrate_data.migrate()
         pub_user_message(payload, connection_id, "Datenübernahme abgeschlossen.", MessageType.SUCCESS)

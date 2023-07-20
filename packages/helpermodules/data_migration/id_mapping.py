@@ -13,8 +13,7 @@ class MapId:
     cp7: Optional[int] = None
     cp8: Optional[int] = None
     evu: Optional[int] = None
-    pv1: Optional[int] = None
-    pv2: Optional[int] = None
+    pvAll: Optional[int] = None
     bat: Optional[int] = None
     consumer1: Optional[int] = None
     consumer2: Optional[int] = None

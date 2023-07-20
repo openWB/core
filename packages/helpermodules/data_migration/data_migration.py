@@ -17,16 +17,11 @@ import shutil
 import tarfile
 from typing import Callable, Dict, Union
 
-
+from control import data
 from dataclass_utils import dataclass_from_dict
 from helpermodules.data_migration.id_mapping import MapId
 from helpermodules.measurement_log import LegacySmarthomeLogdata, get_names, get_totals
 from helpermodules.pub import Pub
-
-try:
-    from ...control import data
-except Exception:
-    pass
 
 log = logging.getLogger(__name__)
 
@@ -227,7 +222,7 @@ class MigrateData:
                 merged_entries = merger(new_entries + entries)
                 content["totals"] = get_totals(merged_entries)
                 content["entries"] = merged_entries
-                content["names"] = get_names(content["totals"], LegacySmarthomeLogdata().update()[0])
+                content["names"] = get_names(content["totals"], LegacySmarthomeLogdata().update()[1])
                 with open(filepath, "w") as jsonFile:
                     json.dump(content, jsonFile)
             except Exception:
@@ -282,9 +277,9 @@ class MigrateData:
                                 "imported": row[1],
                                 "exported": row[2]
                             }})
-                        if self.id_map.pv is not None:
+                        if self.id_map.pvAll is not None:
                             new_entry["pv"].update({"all": {"exported": row[3]},
-                                                    f"pv{self.map_to_new_ids('pv')}": {"exported": row[3]}})
+                                                    f"pv{self.map_to_new_ids('pvAll')}": {"exported": row[3]}})
                         if self.id_map.bat is not None:
                             new_entry["bat"].update({"all": {
                                 "imported": row[8],
@@ -369,9 +364,9 @@ class MigrateData:
                                 "imported": row[1],
                                 "exported": row[2]
                             }})
-                        if self.id_map.pv is not None:
+                        if self.id_map.pvAll is not None:
                             new_entry["pv"].update({"all": {"exported": row[3]},
-                                                    f"pv{self.map_to_new_ids('pv')}": {"exported": row[3]}})
+                                                    f"pv{self.map_to_new_ids('pvAll')}": {"exported": row[3]}})
                         if self.id_map.bat is not None:
                             new_entry["bat"].update({
                                 "all": {
@@ -440,21 +435,19 @@ class MigrateData:
 
     def validate_ids(self):
         for key, id in asdict(self.id_map).items():
-            if "cp" in key:
-                if data.data.cp_data.get(f"cp{id}") is None:
-                    raise ValueError(f"Die Ladepunkt-ID {id}{self.NOT_CONFIGURED}")
-            elif "evu" in key or "consumer" in key:
-                if data.data.counter_data.get(f"counter{id}") is None:
-                    raise ValueError(f"Die Zähler-ID {id}{self.NOT_CONFIGURED}")
-            elif "pv" in key:
-                if data.data.pv_data.get(f"pv{id}") is None:
-                    raise ValueError(f"Die Wechselrichter-ID {id}{self.NOT_CONFIGURED}")
-            elif "bat" in key:
-                if data.data.bat_data.get(f"bat{id}") is None:
-                    raise ValueError(f"Die Speicher-ID {id}{self.NOT_CONFIGURED}")
-            elif "sh" in key:
-                if data.data.bat_data.get(f"sh{id}") is None:
-                    raise ValueError(f"Die Smarthome-ID {id}{self.NOT_CONFIGURED}")
+            if id is not None:
+                if "cp" in key:
+                    if data.data.cp_data.get(f"cp{id}") is None:
+                        raise ValueError(f"Die Ladepunkt-ID {id}{self.NOT_CONFIGURED}")
+                elif "evu" in key or "consumer" in key:
+                    if data.data.counter_data.get(f"counter{id}") is None:
+                        raise ValueError(f"Die Zähler-ID {id}{self.NOT_CONFIGURED}")
+                elif "pv" in key:
+                    if data.data.pv_data.get(f"pv{id}") is None:
+                        raise ValueError(f"Die Wechselrichter-ID {id}{self.NOT_CONFIGURED}")
+                elif "bat" in key:
+                    if data.data.bat_data.get(f"bat{id}") is None:
+                        raise ValueError(f"Die Speicher-ID {id}{self.NOT_CONFIGURED}")
 
     def _merge_records_by(self, key):
         """Returns a function that merges two records rec_a and rec_b.
@@ -476,8 +469,3 @@ class MigrateData:
             reduce(self._merge_records_by(key), records)
             for _, records in groupby(sorted(lst, key=keyprop), keyprop)
         ]
-
-
-migrate_data = MigrateData(MapId())
-# migrate_data.validate_ids()
-migrate_data.migrate()
