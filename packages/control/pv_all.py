@@ -1,5 +1,5 @@
 """PV-Logik
-Die Leistung, die die PV-Module liefern, kann nicht komplett für das Laden und Smarthome verwendet werden.
+Die Leistung, die die PV-Module liefern, kann nicht komplett für das Laden und SmartHome verwendet werden.
 Davon ab geht z.B. noch der Hausverbrauch. Für das Laden mit PV kann deshalb nur der Strom verwendet werden,
 der sonst in das Netz eingespeist werden würde.
 """
@@ -68,7 +68,7 @@ class PvAll:
                             self.data.get.yearly_exported += module_data.get.yearly_exported
                     except Exception:
                         log.exception("Fehler im allgemeinen PV-Modul für "+str(module))
-                # Alle Summentopics im Dict publishen
+                # Alle Summen-Topics im Dict veröffentlichen
                 {Pub().pub("openWB/set/pv/get/"+k, v) for (k, v) in asdict(self.data.get).items()}
                 self.data.config.configured = True
                 Pub().pub("openWB/set/pv/config/configured", self.data.config.configured)

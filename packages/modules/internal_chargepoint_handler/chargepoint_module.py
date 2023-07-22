@@ -64,7 +64,7 @@ class ChargepointModule(AbstractChargepoint):
 
             if phase_switch_cp_active:
                 # Während des Threads wird die CP-Leitung unterbrochen, das EV soll aber als angesteckt betrachtet
-                # werden. In 1.9 war das kein Problem, da währendessen keine Werte von der EVSE abgefragt wurden.
+                # werden. In 1.9 war das kein Problem, da währenddessen keine Werte von der EVSE abgefragt wurden.
                 log.debug(
                     "Plug_state %s beibehalten, da CP-Unterbrechung oder Phasenumschaltung aktiv.", self.old_plug_state
                 )
@@ -89,7 +89,7 @@ class ChargepointModule(AbstractChargepoint):
             self.__client.read_error += 1
             if self.__client.read_error > 5:
                 log.exception(
-                    "Anhaltender Fehler beim Auslesen der EVSE. Lade- und Steckerstatus werden zurückgesetzt.")
+                    "Anhaltender Fehler beim Auslesen der EVSE. Lade- und Stecker-Status werden zurückgesetzt.")
                 plug_state = False
                 charge_state = False
                 chargepoint_state = ChargepointState(
@@ -99,6 +99,7 @@ class ChargepointModule(AbstractChargepoint):
                 )
                 FaultState.error(__name__ + " " + str(type(e)) + " " + str(e)).store_error(self.component_info)
             else:
+                self.__client.check_hardware()
                 raise FaultState.error(__name__ + " " + str(type(e)) + " " + str(e)) from e
 
         self.store.set(chargepoint_state)

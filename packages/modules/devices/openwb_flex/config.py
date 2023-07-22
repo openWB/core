@@ -14,7 +14,7 @@ class FlexConfiguration:
 
 class Flex:
     def __init__(self,
-                 name: str = "OpenWB-Kit flex",
+                 name: str = "openWB-Kit flex",
                  type: str = "openwb_flex",
                  id: int = 0,
                  configuration: FlexConfiguration = None) -> None:

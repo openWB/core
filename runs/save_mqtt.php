@@ -172,10 +172,24 @@ if ($configuration == "" || $configuration->active != true) {
 
 
 	// Keine Daten außer Uhrzeit an den Server senden, solange die Cloud nicht implementiert ist.
+	// always allow triggering remote support
 	fwrite($configFile, <<<EOS
 		topic openWB/system/time out 2 "" {$configuration->remote->prefix}
+		topic openWB-remote/support both 2 "" {$configuration->remote->prefix}
+		
 		EOS
 	);
+
+	// allow partner access
+	if ($configuration->access->partner) {
+		fwrite(
+			$configFile,
+			<<<EOS
+	topic openWB-remote/partner both 2 "" {$configuration->remote->prefix}
+	
+	EOS
+		);
+	}
 	// if ($configuration->data_transfer->status) {
 	// 	fwrite(
 	// 		$configFile,
@@ -229,23 +243,8 @@ if ($configuration == "" || $configuration->active != true) {
 	// ## You may comment everything in order to not allow any MQTT remote configuration of the openWB ##
 	// ##################################################################################################
 
-	// # always allow triggering remote support
-	// topic openWB-remote/support both 2 "" {$configuration->remote->prefix}
-
 	// EOS
 	// );
-
-	// if ($configuration->access->partner) {
-	// 	fwrite(
-	// 		$configFile,
-	// 		<<<EOS
-
-	// # allow partner access
-	// topic openWB-remote/partner both 2 "" {$configuration->remote->prefix}
-
-	// EOS
-	// 	);
-	// }
 
 	// if ($configuration->data_transfer->configuration) {
 	// 	fwrite(
@@ -330,7 +329,7 @@ if ($configuration == "" || $configuration->active != true) {
 }
 
 if (!$debug) {
-	echo "Bitte die OpenWB neu starten, damit die Änderungen übernommen werden.\n";
+	echo "Bitte die openWB neu starten, damit die Änderungen übernommen werden.\n";
 	// restart or reload of broker in normal operation has several side effects and should be avoided!
 	// exec("sudo service mosquitto restart");
 }

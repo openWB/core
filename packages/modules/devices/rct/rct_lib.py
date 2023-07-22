@@ -259,7 +259,7 @@ class Frame:
 
         self.statisticRxDropped += 1
 
-    # create a formated text string for all elements in frame.idList
+    # create a formatted text string for all elements in frame.idList
     def format_list(self, access_time):
         fmt = ""
         for item in self.idList:
@@ -297,7 +297,7 @@ class Frame:
                 else:
                     buf += struct.pack('>B', length)  # 1 byte for length
 
-                # just for completness but PLANT frames are not used in send direction
+                # just for completeness but PLANT frames are not used in send direction
                 if self.frame_type == FRAME_TYPE_PLANT:
                     buf += struct.pack('>I', self.address)                    # 4 bytes
 

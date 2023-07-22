@@ -1,4 +1,5 @@
 import threading
+from unittest.mock import Mock
 import pytest
 from control.chargepoint import chargepoint
 
@@ -6,14 +7,6 @@ from helpermodules import measurement_log
 from control.chargepoint.chargepoint_all import AllChargepoints
 from control import bat_all, counter, pv_all, pv
 from control import data
-
-
-def test_get_totals():
-    # execution
-    totals = measurement_log.get_totals(SAMPLE)
-
-    # evaluation
-    assert totals == TOTALS
 
 
 @pytest.fixture(autouse=True)
@@ -25,6 +18,25 @@ def data_module() -> None:
     data.data.cp_data.update({"cp4": chargepoint.Chargepoint(
         4, None), "cp5": chargepoint.Chargepoint(5, None), "cp6": chargepoint.Chargepoint(6, None)})
     data.data.pv_data.update({"all": pv_all.PvAll(), "pv1": pv.Pv(1)})
+
+
+def test_get_totals(monkeypatch):
+    # execution
+    totals = measurement_log.get_totals(SAMPLE)
+
+    # evaluation
+    assert totals == TOTALS
+
+
+def test_get_names(monkeypatch):
+    # setup
+    component_names_mock = Mock(side_effect=["Speicher", "Zähler", "Wechselrichter"])
+    monkeypatch.setattr(measurement_log, "get_component_name_by_id", component_names_mock)
+    # execution
+    names = measurement_log.get_names(TOTALS, {"sh1": "Smarthome1"})
+
+    # evaluation
+    assert names == NAMES
 
 
 def test_get_daily_yields(mock_pub):
@@ -72,6 +84,7 @@ SAMPLE = [{'bat': {'all': {'exported': 0, 'imported': 58.774, 'soc': 51},
            'date': '13:41',
            'ev': {'ev0': {'soc': 0}},
            'pv': {'all': {'exported': 88}, 'pv1': {'exported': 92}},
+           "sh": {},
            'timestamp': 1654861269},
           {'bat': {'all': {'exported': 0, 'imported': 146.108, 'soc': 53},
                    'bat2': {'exported': 0, 'imported': 149.099, 'soc': 53}},
@@ -83,6 +96,7 @@ SAMPLE = [{'bat': {'all': {'exported': 0, 'imported': 58.774, 'soc': 51},
            'date': '13:46',
            'ev': {'ev0': {'soc': 4}},
            'pv': {'all': {'exported': 214}, 'pv1': {'exported': 214}},
+           "sh": {"sh1": {"temp0": 300, "temp1": 300, "temp2": 300, "imported": 100, "exported": 0}},
            'timestamp': 1654861569},
           {'bat': {'all': {'exported': 0, 'imported': 234.308, 'soc': 55},
                    'bat2': {'exported': 0, 'imported': 234.308, 'soc': 55}},
@@ -96,6 +110,7 @@ SAMPLE = [{'bat': {'all': {'exported': 0, 'imported': 58.774, 'soc': 51},
            'date': '13:51',
            'ev': {'ev0': {'soc': 6}},
            'pv': {'all': {'exported': 339}, 'pv1': {'exported': 339}},
+           "sh": {"sh1": {"temp0": 300, "temp1": 300, "temp2": 300, "imported": 200, "exported": 0}},
            'timestamp': 1654861869},
           {'bat': {'all': {'exported': 0, 'imported': 234.308, 'soc': 55},
                    'bat2': {'exported': 0, 'imported': 234.308, 'soc': 55}},
@@ -107,6 +122,7 @@ SAMPLE = [{'bat': {'all': {'exported': 0, 'imported': 58.774, 'soc': 51},
            'date': '13:51',
            'ev': {'ev0': {'soc': 6}},
            'pv': {'all': {'exported': 339}, 'pv1': {'exported': 339}},
+           "sh": {"sh1": {"temp0": 300, "temp1": 300, "temp2": 300, "imported": 400, "exported": 0}},
            'timestamp': 1654862069}]
 
 TOTALS = {'bat': {'all': {'exported': 0, 'imported': 175.534},
@@ -117,4 +133,14 @@ TOTALS = {'bat': {'all': {'exported': 0, 'imported': 175.534},
                  'cp4': {'exported': 0, 'imported': 85},
                  'cp5': {'exported': 0, 'imported': 0},
                  'cp6': {'exported': 0, 'imported': 2}},
-          'pv': {'all': {'exported': 251}, 'pv1': {'exported': 247}}}
+          'pv': {'all': {'exported': 251}, 'pv1': {'exported': 247}},
+          "sh": {"sh1": {"imported": 300, "exported": 0}}}
+
+NAMES = {'bat2': "Speicher",
+         'counter0': "Zähler",
+         'cp3': "cp3",
+         'cp4': "Standard-Ladepunkt",
+         'cp5': "Standard-Ladepunkt",
+         'cp6': "Standard-Ladepunkt",
+         'pv1': "Wechselrichter",
+         "sh1": "Smarthome1"}

@@ -1,15 +1,13 @@
-from typing import Union, List
+from typing import List
 
 import logging
 
-from dataclass_utils import dataclass_from_dict
 from helpermodules.cli import run_using_positional_cli_args
 from modules.common import store
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.abstract_soc import AbstractSoc
-from modules.common.component_context import SingleComponentUpdateContext
+from modules.common.abstract_soc import SocUpdateData
 from modules.common.component_state import CarState
-from modules.common.fault_state import ComponentInfo
+from modules.common.configurable_vehicle import ConfigurableVehicle
 from modules.vehicles.vwid import api
 from modules.vehicles.vwid.config import VWId, VWIdConfiguration
 
@@ -17,28 +15,22 @@ from modules.vehicles.vwid.config import VWId, VWIdConfiguration
 log = logging.getLogger(__name__)
 
 
-class Soc(AbstractSoc):
-    def __init__(self, device_config: Union[dict, VWId], vehicle: int):
-        self.config = dataclass_from_dict(VWId, device_config)
-        self.vehicle = vehicle
-        self.store = store.get_car_value_store(self.vehicle)
-        self.component_info = ComponentInfo(self.vehicle, self.config.name, "vehicle")
+def fetch(soc_update_data: SocUpdateData, config: VWId, vehicle: int) -> CarState:
+    soc, range, soc_ts = api.fetch_soc(config, vehicle)
+    log.info("Result: soc=" + str(soc)+", range=" + str(range) + "@" + soc_ts)
+    return CarState(soc, range)
 
-    def update(self, charge_state: bool = False) -> None:
-        with SingleComponentUpdateContext(self.component_info):
-            soc, range, soc_ts = api.fetch_soc(
-                self.config,
-                self.vehicle)
-            log.info("Result: soc=" + str(soc)+", range=" + str(range) + "@" + soc_ts)
-            if soc > 0 and range > 0.0:
-                self.store.set(CarState(soc, range))
-            else:
-                log.error("Result not stored: soc=" + str(soc)+", range=" + str(range))
+
+def create_vehicle(vehicle_config: VWId, vehicle: int):
+    def updater(soc_update_data: SocUpdateData) -> CarState:
+        return fetch(soc_update_data, vehicle_config, vehicle)
+    return ConfigurableVehicle(vehicle_config=vehicle_config, component_updater=updater, vehicle=vehicle)
 
 
 def vwid_update(user_id: str, password: str, vin: str, refreshToken: str, charge_point: int):
-    log.debug("vwid: userid="+user_id+"vin="+vin+"charge_point="+str(charge_point))
-    Soc(VWId(configuration=VWIdConfiguration(user_id, password, vin, refreshToken)), charge_point).update(False)
+    log.debug("vwid: user_id="+user_id+"vin="+vin+"charge_point="+str(charge_point))
+    store.get_car_value_store(charge_point).store.set(
+        fetch(None, VWId(configuration=VWIdConfiguration(user_id, password, vin, refreshToken)), charge_point))
 
 
 def main(argv: List[str]):

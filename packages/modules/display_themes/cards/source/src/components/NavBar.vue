@@ -19,7 +19,10 @@ export default {
       Übersicht
     </nav-item>
     <nav-item
-      v-if="mqttStore.getChargePointsEnabled"
+      v-if="
+        mqttStore.getChargePointsEnabled &&
+        mqttStore.getChargePointIds.length > 0
+      "
       :to="{ name: 'charge-points' }"
     >
       Ladepunkte

@@ -35,7 +35,7 @@ class ChargepointStateUpdate:
             try:
                 self.event_copy_data.clear()
                 # Workaround, da mit Python3.9/pymodbus2.5 eine pymodbus-Instanz nicht mehr kopiert werden kann.
-                # Bei einer Neukonfiguration eines Device/Komponente wird dieses Neuinitialisiert. Nur bei Komponenten
+                # Bei einer Neukonfiguration eines Device/Komponente wird dieses neu initialisiert. Nur bei Komponenten
                 # mit simcount werden Werte aktualisiert, diese sollten jedoch nur einmal nach dem Auslesen aktualisiert
                 # werden, sodass die Nutzung einer Referenz vorerst funktioniert.
                 # Verwendung der Referenz führt bei der Pro zu Instabilität.
