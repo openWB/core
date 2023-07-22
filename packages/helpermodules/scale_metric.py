@@ -1,4 +1,4 @@
-"""Module for metric conversions according to SI prefices
+"""Module for metric conversions according to SI prefixes
 """
 
 from typing import Union

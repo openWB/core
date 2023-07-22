@@ -5,7 +5,7 @@ from modules.common.component_setup import ComponentSetup
 
 class SolarWattConfiguration:
     def __init__(self, ip_address: Optional[str] = None, energy_manager: bool = True):
-        self.ip_adress = ip_address
+        self.ip_address = ip_address
         self.energy_manager = energy_manager
 
 

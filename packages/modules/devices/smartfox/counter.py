@@ -46,7 +46,7 @@ class SmartfoxCounter:
         # Version ermitteln
         self.root = ET.fromstring(response)
 
-        # Powerfaktor ist nach dem Firmwareupgrade auf EM2 00.01.03.06 (04-2021)
+        # Leistungsfaktor ist nach dem Firmwareupgrade auf EM2 00.01.03.06 (04-2021)
         # nicht mehr in der values.xml daher fix auf 1
 
         self.store.set(CounterState(

@@ -10,7 +10,7 @@ class NextcloudBackupCloudConfiguration:
 
 class NextcloudBackupCloud:
     def __init__(self,
-                 name: str = "Nextcloud",
+                 name: str = "NextCloud",
                  type: str = "nextcloud",
                  configuration: NextcloudBackupCloudConfiguration = None) -> None:
         self.name = name

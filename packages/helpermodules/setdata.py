@@ -199,7 +199,7 @@ class SetData:
                         event = self.event_soc
                         if "ev"+str(index) in subdata.SubData.ev_data:
                             template = dataclass_utils.asdict(
-                                subdata.SubData.ev_data["ev"+str(index)].soc_module.soc_config)
+                                subdata.SubData.ev_data["ev"+str(index)].soc_module.vehicle_config)
                         else:
                             template = {}
                     else:
@@ -396,7 +396,8 @@ class SetData:
                 self._validate_value(msg, int, [(0, float("inf"))])
             elif "/soc_module/configuration/soc_start" in msg.topic:
                 self._validate_value(msg, float, [(0, 100)], pub_json=True)
-            elif "/soc_module/config" in msg.topic:
+            elif ("/soc_module/config" in msg.topic or
+                  "/soc_module/interval_config" in msg.topic):
                 self._validate_value(msg, "json")
             elif "/get/fault_state" in msg.topic:
                 self._validate_value(msg, int, [(0, 2)])
@@ -929,10 +930,12 @@ class SetData:
             if ("openWB/set/system/lastlivevaluesJson" in msg.topic or
                     "openWB/set/system/backup_cloud/config" in msg.topic):
                 self._validate_value(msg, "json")
-            elif ("openWB/set/system/perform_update" in msg.topic or
+            elif ("openWB/set/system/boot_done" in msg.topic or
+                    "openWB/set/system/perform_update" in msg.topic or
                     "openWB/set/system/wizard_done" in msg.topic or
                     "openWB/set/system/update_in_progress" in msg.topic or
-                    "openWB/set/system/dataprotection_acknowledged" in msg.topic):
+                    "openWB/set/system/dataprotection_acknowledged" in msg.topic or
+                    "openWB/set/system/usage_terms_acknowledged" in msg.topic):
                 self._validate_value(msg, bool)
             elif "openWB/set/system/version" in msg.topic:
                 self._validate_value(msg, str)

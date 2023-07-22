@@ -4,6 +4,9 @@ import pytest
 
 from control.ev import Ev
 from helpermodules import timecheck
+from modules.common.abstract_soc import SocUpdateData
+from modules.vehicles.mqtt.config import MqttSocSetup
+from modules.vehicles.mqtt.soc import create_vehicle
 
 
 @pytest.mark.parametrize(
@@ -21,12 +24,13 @@ def test_soc_interval_expired(check_timestamp: bool,
                               monkeypatch):
     # setup
     ev = Ev(0)
+    ev.soc_module = create_vehicle(MqttSocSetup(), 0)
     ev.data.get.soc_timestamp = soc_timestamp
     check_timestamp_mock = Mock(return_value=check_timestamp)
     monkeypatch.setattr(timecheck, "check_timestamp", check_timestamp_mock)
 
     # execution
-    request_soc = ev.soc_interval_expired(charge_state)
+    request_soc = ev.soc_interval_expired(SocUpdateData(charge_state=charge_state))
 
     # evaluation
     assert request_soc == expected_request_soc

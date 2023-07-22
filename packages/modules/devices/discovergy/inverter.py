@@ -8,7 +8,7 @@ from modules.devices.discovergy import api
 from modules.devices.discovergy.config import DiscovergyInverterSetup
 
 
-class DiscovergInverter:
+class DiscovergyInverter:
     def __init__(self, component_config: DiscovergyInverterSetup) -> None:
         self.component_config = component_config
         self.store = get_inverter_value_store(self.component_config.id)

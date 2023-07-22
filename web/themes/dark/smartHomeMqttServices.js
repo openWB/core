@@ -13,15 +13,15 @@
 // add topics here which should be subscribed before any other topics
 var topicsToSubscribeFirst = [
 	// check which devices are configured
-	["openWB/LegacySmartHome/config/get/Devices/1/device_configured", 0],
-	["openWB/LegacySmartHome/config/get/Devices/2/device_configured", 0],
-	["openWB/LegacySmartHome/config/get/Devices/3/device_configured", 0],
-	["openWB/LegacySmartHome/config/get/Devices/4/device_configured", 0],
-	["openWB/LegacySmartHome/config/get/Devices/5/device_configured", 0],
-	["openWB/LegacySmartHome/config/get/Devices/6/device_configured", 0],
-	["openWB/LegacySmartHome/config/get/Devices/7/device_configured", 0],
-	["openWB/LegacySmartHome/config/get/Devices/8/device_configured", 0],
-	["openWB/LegacySmartHome/config/get/Devices/9/device_configured", 0]
+	["openWB/LegacySmartHome/config/get/Devices/1/device_configured", 1],
+	["openWB/LegacySmartHome/config/get/Devices/2/device_configured", 1],
+	["openWB/LegacySmartHome/config/get/Devices/3/device_configured", 1],
+	["openWB/LegacySmartHome/config/get/Devices/4/device_configured", 1],
+	["openWB/LegacySmartHome/config/get/Devices/5/device_configured", 1],
+	["openWB/LegacySmartHome/config/get/Devices/6/device_configured", 1],
+	["openWB/LegacySmartHome/config/get/Devices/7/device_configured", 1],
+	["openWB/LegacySmartHome/config/get/Devices/8/device_configured", 1],
+	["openWB/LegacySmartHome/config/get/Devices/9/device_configured", 1]
 ];
 
 // add any other topics here
