@@ -15,12 +15,14 @@ import os
 import pathlib
 import shutil
 import tarfile
-from typing import Callable, Dict, Union
+from threading import Thread
+from typing import Callable, Dict, List, Union
 
 from control import data
 from dataclass_utils import dataclass_from_dict
 from helpermodules.data_migration.id_mapping import MapId
 from helpermodules.measurement_log import LegacySmarthomeLogdata, get_names, get_totals
+from helpermodules.utils import thread_handler
 from helpermodules.pub import Pub
 
 log = logging.getLogger(__name__)
@@ -72,9 +74,9 @@ class MigrateData:
         self.extract_files("ladelog")
         self.extract_files("daily")
         self.extract_files("monthly")
-        self.convert_csv_to_json_chargelog()
-        self.convert_csv_to_json_measurement_log("daily")
-        self.convert_csv_to_json_measurement_log("monthly")
+        thread_handler(self.convert_csv_to_json_chargelog(), None)
+        thread_handler(self.convert_csv_to_json_measurement_log("daily"), None)
+        thread_handler(self.convert_csv_to_json_measurement_log("monthly"), None)
         self.move_serial_number_clouddata()
         shutil.rmtree("./data/data_migration/var")
         os.remove("./data/data_migration/data_migration.tar.gz")
@@ -92,10 +94,10 @@ class MigrateData:
             tar.extractall(members=self._file_to_extract_generator(
                 tar, log_folder_name), path="./data/data_migration")
 
-    def convert_csv_to_json_chargelog(self):
+    def convert_csv_to_json_chargelog(self) -> List[Thread]:
         """ konvertiert die alten Ladelog-Dateien in das neue Format für 2.x.
         """
-        for old_file_name in os.listdir(f"{self.BACKUP_DATA_PATH}/ladelog"):
+        def convert(old_file_name: str) -> None:
             try:
                 new_entries = self._chargelogfile_entries(old_file_name)
 
@@ -115,6 +117,11 @@ class MigrateData:
                     json.dump(new_entries, jsonFile)
             except Exception:
                 log.exception(f"Fehler beim Konvertieren des Ladelogs vom {old_file_name}")
+
+        threads: List[Thread] = []
+        for old_file_name in os.listdir(f"{self.BACKUP_DATA_PATH}/ladelog"):
+            threads.append(Thread(target=convert, args=[old_file_name, ], name=f"chargelog {old_file_name}"))
+        return threads
 
     def _chargelogfile_entries(self, file: str):
         """ alte Spaltenbelegung
@@ -196,10 +203,10 @@ class MigrateData:
                     log.exception(f"Fehler beim Konvertieren des Ladelogs vom {file}, Reihe {row}")
         return entries
 
-    def convert_csv_to_json_measurement_log(self, folder: str):
+    def convert_csv_to_json_measurement_log(self, folder: str) -> List[Thread]:
         """ konvertiert die alten Tages- und Monatslog-Dateien in das neue Format für 2.x.
         """
-        for old_file_name in os.listdir(f"{self.BACKUP_DATA_PATH}/{folder}"):
+        def convert(old_file_name: str) -> None:
             try:
                 if folder == "daily":
                     new_entries = self._dailylog_entry(old_file_name)
@@ -228,6 +235,11 @@ class MigrateData:
             except Exception:
                 log.exception(f"Fehler beim Konvertieren des Logs vom {old_file_name}")
 
+        threads: List[Thread] = []
+        for old_file_name in os.listdir(f"{self.BACKUP_DATA_PATH}/{folder}"):
+            threads.append(Thread(target=convert, args=[old_file_name, ], name=f"convert {folder} {old_file_name}"))
+        return threads
+
     DAILY_LOG_CP_ROW_IDS = [4, 5, 6, 15, 16, 17, 18, 19]
     DAILY_LOG_EV_ROW_IDS = [21, 22]
     DAILY_LOG_SH_TEMP_ROW_IDS = [(26, 23, 24, 25), (27, 36, 37, 38)]
@@ -248,8 +260,10 @@ class MigrateData:
             for row in csv_reader:
                 try:
                     if len(row) != 0:
+                        time = row[0][:2]+":"+row[0][-2:]
                         new_entry: Dict = {
-                            "date": row[0][:2]+":"+row[0][-2:],
+                            "timestamp": datetime.datetime.strptime(f"{file[:-4]} {time}", "%Y%m%d %H:%M").timestamp(),
+                            "date": time,
                             "cp": {},
                             "ev": {},
                             "counter": {},
@@ -341,6 +355,7 @@ class MigrateData:
                 try:
                     if len(row) != 0:
                         new_entry: Dict = {
+                            "timestamp": datetime.datetime.strptime(f"{row[0]}", "%Y%m%d").timestamp(),
                             "date": row[0],
                             "cp": {},
                             "ev": {},
@@ -399,7 +414,7 @@ class MigrateData:
                     log.exception(f"Fehler beim Konvertieren des Monatslogs vom {file}, Reihe {row}")
         return entries
 
-    def move_serial_number_clouddata(self):
+    def move_serial_number_clouddata(self) -> None:
         def strip_openwb_conf_entry(entry: str, key: str) -> str:
             value = entry.replace(f"{key}=", "")
             return value.rstrip("\n")
@@ -433,7 +448,7 @@ class MigrateData:
 
     NOT_CONFIGURED = " wurde in openWB software2 nicht konfiguriert."
 
-    def validate_ids(self):
+    def validate_ids(self) -> None:
         for key, id in asdict(self.id_map).items():
             if id is not None:
                 if "cp" in key:

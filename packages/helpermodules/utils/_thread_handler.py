@@ -1,19 +1,18 @@
 import logging
 import threading
-from typing import List
+from typing import List, Optional
 
-from control import data
 log = logging.getLogger(__name__)
 
 
-def thread_handler(threads: List[threading.Thread]) -> List[str]:
+def thread_handler(threads: List[threading.Thread], timeout: Optional[int]) -> List[str]:
     # Start them all
     for thread in threads:
         thread.start()
 
     # Wait for all to complete
     for thread in threads:
-        thread.join(timeout=data.data.general_data.data.control_interval/3)
+        thread.join(timeout=timeout)
 
     not_finished_threads = []
     for thread in threads:
