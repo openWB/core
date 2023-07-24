@@ -24,7 +24,7 @@ log = logging.getLogger(__name__)
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 17
+    DATASTORE_VERSION = 18
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -793,3 +793,21 @@ class UpdateConfig:
                                 payload["configuration"].update({"position_evu": False})
                             Pub().pub(topic.replace("openWB/", "openWB/set/"), payload)
         Pub().pub("openWB/system/datastore_version", 17)
+
+    def upgrade_datastore_17(self) -> None:
+        for topic_device, payload in self.all_received_topics.items():
+            if re.search("openWB/system/device/[0-9]+/config", topic_device) is not None:
+                payload_device = decode_payload(payload)
+                index = get_index(topic_device)
+                if payload_device["type"] == "solarmax":
+                    for topic_component, payload_component in self.all_received_topics.items():
+                        if re.search(f"^openWB/system/device/{index}/component/[0-9]+/config$",
+                                     topic_component) is not None:
+                            payload_inverter = decode_payload(payload_component)
+                            if payload_inverter["type"] == "inverter":
+                                payload_inverter["configuration"]["modbus_id"] = payload_device["configuration"][
+                                    "modbus_id"]
+                                payload_device["configuration"].pop("modbus_id")
+                            Pub().pub(topic_device.replace("openWB/", "openWB/set/"), payload_device)
+                            Pub().pub(topic_component.replace("openWB/", "openWB/set/"), payload_inverter)
+        Pub().pub("openWB/system/datastore_version", 18)
