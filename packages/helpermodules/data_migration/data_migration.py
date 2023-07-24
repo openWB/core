@@ -226,7 +226,7 @@ class MigrateData:
                 with open(filepath, "w") as jsonFile:
                     json.dump(content, jsonFile)
             except Exception:
-                log.exception(f"Fehler beim Konvertieren des Logogs vom {old_file_name}")
+                log.exception(f"Fehler beim Konvertieren des Logs vom {old_file_name}")
 
     DAILY_LOG_CP_ROW_IDS = [4, 5, 6, 15, 16, 17, 18, 19]
     DAILY_LOG_EV_ROW_IDS = [21, 22]
@@ -409,7 +409,7 @@ class MigrateData:
             serial_number = ""
             openwb_conf = file.readlines()
             for line in openwb_conf:
-                if "snn" in line:
+                if "snnumber" in line:
                     serial_number = strip_openwb_conf_entry(line, "snnumber")
                     break
             else:
