@@ -600,7 +600,7 @@ class Command:
             self.max_id_mqtt_bridge = self.max_id_mqtt_bridge + 1
             Pub().pub("openWB/set/command/max_id/mqtt_bridge", self.max_id_mqtt_bridge)
             pub_user_message(payload, connection_id,
-                             f'Neue Bridge mit ID \'{new_id}\' hinzugefügt.', MessageType.SUCCESS)
+                             f'Neue Brücke mit ID \'{new_id}\' hinzugefügt.', MessageType.SUCCESS)
 
     def removeMqttBridge(self, connection_id: str, payload: dict) -> None:
         if self.max_id_mqtt_bridge >= payload["data"]["bridge"]:
