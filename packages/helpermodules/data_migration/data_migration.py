@@ -1,5 +1,5 @@
 """ Konvertierungsmodul von 1.9x nach software2
-Konvertiert die Lade- und Tageslog-Dateien von csv nach json.
+Konvertiert die Lade- und Tages-Log-Dateien von csv nach json.
 Falls nötig, ohne Abhängigkeit zur sonstigen software2-Implementierung.
 """
 
@@ -77,7 +77,7 @@ class MigrateData:
         thread_handler(self.convert_csv_to_json_chargelog(), None)
         thread_handler(self.convert_csv_to_json_measurement_log("daily"), None)
         thread_handler(self.convert_csv_to_json_measurement_log("monthly"), None)
-        self.move_serial_number_clouddata()
+        self.move_serial_number_cloud_data()
         shutil.rmtree("./data/data_migration/var")
         os.remove("./data/data_migration/data_migration.tar.gz")
 
@@ -95,7 +95,7 @@ class MigrateData:
                 tar, log_folder_name), path="./data/data_migration")
 
     def convert_csv_to_json_chargelog(self) -> List[Thread]:
-        """ konvertiert die alten Ladelog-Dateien in das neue Format für 2.x.
+        """ konvertiert die alten Lade-Log-Dateien in das neue Format für 2.x.
         """
         def convert(old_file_name: str) -> None:
             try:
@@ -111,7 +111,7 @@ class MigrateData:
                 with open(filepath, "w") as jsonFile:
                     json.dump(new_entries, jsonFile)
             except Exception:
-                log.exception(f"Fehler beim Konvertieren des Ladelogs vom {old_file_name}")
+                log.exception(f"Fehler beim Konvertieren des Lade-Logs vom {old_file_name}")
 
         pathlib.Path('./data/charge_log').mkdir(mode=0o755, parents=True, exist_ok=True)
         threads: List[Thread] = []
@@ -121,7 +121,16 @@ class MigrateData:
 
     def _charge_log_file_entries(self, file: str):
         """ alte Spaltenbelegung
-        $start,$jetzt,$gelr,$bishergeladen,$ladegeschw,$ladedauertext,$chargePointNumber,$lademoduslogvalue,$rfid,$kosten
+        0: Start als Text "dd.mm.yyy-hh:mm"
+        1: Ende als Text "dd.mm.yyy-hh:mm"
+        2: Reichweite in km
+        3: Energie in kWh
+        4: durchschnittliche Leistung in W
+        5: Dauer als Text "xx H yy Min"
+        6: Ladepunktnummer
+        7: Lademodus als Zahl
+        8: RFID Token
+        9: Kosten
         """
         def conv_1_9_datetimes(datetime_str):
             """ konvertiert Datum-Uhrzeit alt: %d.%m.%y-%H:%M 05.03.21-11:16; neu: %m/%d/%Y, %H:%M 08/04/2021, 15:50
@@ -170,14 +179,15 @@ class MigrateData:
                             vehicle_name = data.data.ev_data[f"ev{vehicle_id}"].data.name
                         else:
                             vehicle_name = None
-                        if data.data.cp_data.get(f"cp{self.map_to_new_ids(f'cp{row[6]}')}") is not None:
-                            cp_name = data.data.cp_data[f"cp{self.map_to_new_ids(f'cp{row[6]}')}"].data.config.name
+                        old_cp = row[6].strip()  # sometimes we have trailing spaces
+                        if data.data.cp_data.get(f"cp{self.map_to_new_ids(f'cp{old_cp}')}") is not None:
+                            cp_name = data.data.cp_data[f"cp{self.map_to_new_ids(f'cp{old_cp}')}"].data.config.name
                         else:
                             cp_name = None
                         new_entry = {
                             "chargepoint":
                             {
-                                "id": self.map_to_new_ids(f"cp{row[6]}"),
+                                "id": self.map_to_new_ids(f"cp{old_cp}"),
                                 "name": cp_name,
                             },
                             "vehicle":
@@ -205,11 +215,11 @@ class MigrateData:
                         }
                         entries.append(new_entry)
                 except Exception:
-                    log.exception(f"Fehler beim Konvertieren des Ladelogs vom {file}, Reihe {row}")
+                    log.exception(f"Fehler beim Konvertieren des Lade-Logs vom {file}, Reihe {row}")
         return entries
 
     def convert_csv_to_json_measurement_log(self, folder: str) -> List[Thread]:
-        """ konvertiert die alten Tages- und Monatslog-Dateien in das neue Format für 2.x.
+        """ konvertiert die alten Tages- und Monats-Log-Dateien in das neue Format für 2.x.
         """
         def convert(old_file_name: str) -> None:
             try:
@@ -341,7 +351,7 @@ class MigrateData:
                                                         {"imported": row[14], "exported": 0}})
                         entries.append(new_entry)
                 except Exception:
-                    log.exception(f"Fehler beim Konvertieren des Tageslogs vom {file}, Reihe {row}")
+                    log.exception(f"Fehler beim Konvertieren des Tages-Logs vom {file}, Reihe {row}")
         return entries
 
     MONTHLY_LOG_CP_ROW_IDS = [4, 5, 6, 12, 13, 14, 15, 16]
@@ -416,10 +426,10 @@ class MigrateData:
                                     }})
                         entries.append(new_entry)
                 except Exception:
-                    log.exception(f"Fehler beim Konvertieren des Monatslogs vom {file}, Reihe {row}")
+                    log.exception(f"Fehler beim Konvertieren des Monats-Logs vom {file}, Reihe {row}")
         return entries
 
-    def move_serial_number_clouddata(self) -> None:
+    def move_serial_number_cloud_data(self) -> None:
         def strip_openwb_conf_entry(entry: str, key: str) -> str:
             value = entry.replace(f"{key}=", "")
             return value.rstrip("\n")
@@ -438,18 +448,18 @@ class MigrateData:
             file.write(f"snnumber={serial_number}")
 
         with open("./data/data_migration/var/www/html/openWB/openwb.conf", "r") as file:
-            clouduser = ""
-            cloudpw = ""
+            cloud_user = ""
+            cloud_pw = ""
             openwb_conf = file.readlines()
             for line in openwb_conf:
                 if "clouduser" in line:
-                    clouduser = strip_openwb_conf_entry(line, "clouduser")
+                    cloud_user = strip_openwb_conf_entry(line, "clouduser")
                 elif "cloudpw" in line:
-                    cloudpw = strip_openwb_conf_entry(line, "cloudpw")
-            if clouduser == "":
-                log.debug("Keine Cloudzugangsdaten gefunden.")
+                    cloud_pw = strip_openwb_conf_entry(line, "cloudpw")
+            if cloud_user == "":
+                log.debug("Keine Cloud-Zugangsdaten gefunden.")
         Pub().pub("openWB/set/command/data_migration/todo",
-                  {"command": "connectCloud", "data": {"username": clouduser, "password": cloudpw, "partner": 0}})
+                  {"command": "connectCloud", "data": {"username": cloud_user, "password": cloud_pw, "partner": 0}})
 
     NOT_CONFIGURED = " wurde in openWB software2 nicht konfiguriert."
 
@@ -484,8 +494,8 @@ class MigrateData:
         Returns a function that merges a list of records, grouped by
         the specified key, with values combined using the specified
         binary operator."""
-        keyprop = itemgetter(key)
+        key_prop = itemgetter(key)
         return lambda lst: [
             reduce(self._merge_records_by(key), records)
-            for _, records in groupby(sorted(lst, key=keyprop), keyprop)
+            for _, records in groupby(sorted(lst, key=key_prop), key_prop)
         ]
