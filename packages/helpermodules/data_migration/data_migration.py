@@ -101,8 +101,7 @@ class MigrateData:
             try:
                 new_entries = self._chargelogfile_entries(old_file_name)
 
-                pathlib.Path('./charge_log').mkdir(mode=0o755,
-                                                   parents=True, exist_ok=True)
+                pathlib.Path('./data/charge_log').mkdir(mode=0o755, parents=True, exist_ok=True)
                 filepath = f"./data/charge_log/{old_file_name[:-4]}.json"
                 try:
                     with open(filepath, "r") as jsonFile:
@@ -192,7 +191,7 @@ class MigrateData:
                             "data":
                             {
                                 "range_charged": float(row[2]),
-                                "imported_since_mode_switch": float(row[3]),
+                                "imported_since_mode_switch": float(row[3]) * 1000,
                                 "imported_since_plugged": 0,
                                 "power": float(row[4]),
                                 "costs": float(row[9])
