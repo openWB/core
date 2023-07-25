@@ -21,7 +21,7 @@ from typing import Callable, Dict, List, Union
 from control import data, ev
 from dataclass_utils import dataclass_from_dict
 from helpermodules.data_migration.id_mapping import MapId
-from helpermodules.measurement_log import LegacySmarthomeLogdata, get_names, get_totals
+from helpermodules.measurement_log import LegacySmartHomeLogData, get_names, get_totals, string_to_float, string_to_int
 from helpermodules.utils import thread_handler
 from helpermodules.pub import Pub
 
@@ -228,9 +228,9 @@ class MigrateData:
         def convert(old_file_name: str) -> None:
             try:
                 if folder == "daily":
-                    new_entries = self._dailylog_entry(old_file_name)
+                    new_entries = self._daily_log_entry(old_file_name)
                 else:
-                    new_entries = self._monthlylog_entry(old_file_name)
+                    new_entries = self._monthly_log_entry(old_file_name)
 
                 pathlib.Path(f'./data/{folder}_log').mkdir(mode=0o755,
                                                            parents=True, exist_ok=True)
@@ -248,7 +248,7 @@ class MigrateData:
                 merged_entries = merger(new_entries + entries)
                 content["totals"] = get_totals(merged_entries)
                 content["entries"] = merged_entries
-                content["names"] = get_names(content["totals"], LegacySmarthomeLogdata().update()[1])
+                content["names"] = get_names(content["totals"], LegacySmartHomeLogData().update()[1])
                 with open(filepath, "w") as jsonFile:
                     json.dump(content, jsonFile)
             except Exception:
@@ -259,20 +259,37 @@ class MigrateData:
             threads.append(Thread(target=convert, args=[old_file_name, ], name=f"convert {folder} {old_file_name}"))
         return threads
 
-    DAILY_LOG_CP_ROW_IDS = [4, 5, 6, 15, 16, 17, 18, 19]
-    DAILY_LOG_EV_ROW_IDS = [21, 22]
-    DAILY_LOG_SH_TEMP_ROW_IDS = [(26, 23, 24, 25), (27, 36, 37, 38)]
-    DAILY_LOG_SH_ROW_IDS = [(26, 23, 24, 25), (27, 36, 37, 38)]  # Geräte 3-10
-    DAILY_LOG_CONSUMER_ROW_IDS = [(10, 11), (12, 13)]
-
-    def _dailylog_entry(self, file: str):
-        """ Generator-Funktion, die einen Eintrag aus dem Tageslog konvertiert.
+    def _daily_log_entry(self, file: str):
+        """ Generator-Funktion, die einen Eintrag aus dem Tages-Log konvertiert.
         alte Spaltenbelegung:
-        date, $bezug,$einspeisung,$pv,$ll1,$ll2,$ll3,$llg,$speicheri,$speichere,$verbraucher1,$verbrauchere1
-        $verbraucher2,
-        $verbrauchere2,$verbraucher3,$ll4,$ll5,$ll6,$ll7,$ll8,$speichersoc,$soc,$soc1,$temp1,$temp2,$temp3,$d1,$d2,$d3,$d4,
-        $d5,$d6,$d7,$d8,$d9,$d10,$temp4,$temp5,$temp6
+            15, 23 oder 39 Felder! Wurde in 1.9 nie vereinheitlicht!
+        Allgemein:
+            0: Datum "HHMM"
+        EVU:
+            1-2: Bezug, Einspeisung
+        PV:
+            3: PV Gesamt
+        LP:
+            4-6: LP1, LP2, LP3
+            7: Gesamt
+            15-19: LP4, LP5, LP6, LP7, LP8
+            21-22: SoC LP1, SoC LP2
+        Speicher:
+            8-9: Ladung, Entladung
+            20: SoC
+        Verbraucher:
+            10-14: VB1 Import, VB1 Export, VB2 Import, VB2 Export, VB3 Import
+        SmartHome 2.0:
+            23-25: Gerät1 Temp1, Gerät2 Temp2, Gerät1 Temp3
+            26-35: Gerät1, Gerät2, Gerät3, Gerät4, Gerät5, Gerät6, Gerät7, Gerät8, Gerät9, Gerät10
+            36-38: Gerät2 Temp1, Gerät2 Temp2, Gerät2 Temp3
         """
+        DAILY_LOG_CP_ROW_IDS = [4, 5, 6, 15, 16, 17, 18, 19]
+        DAILY_LOG_EV_ROW_IDS = [21, 22]
+        DAILY_LOG_SH_TEMP_ROW_IDS = [(26, 23, 24, 25), (27, 36, 37, 38)]  # Geräte 1-2 mit Temperaturen 1-3
+        DAILY_LOG_SH_ROW_IDS = [28, 29, 30, 31, 32, 33, 34, 35]  # Geräte 3-10
+        DAILY_LOG_CONSUMER_ROW_IDS = [(10, 11), (12, 13), (14, None)]
+
         entries = []
         with open(f"{self.BACKUP_DATA_PATH}/daily/{file}") as csv_file:
             csv_reader = csv.reader(csv_file, delimiter=',')
@@ -291,82 +308,112 @@ class MigrateData:
                             "sh": {}
                         }
                         cp_detail_entry = False
-                        for i in range(1, 9):
-                            new_entry_id = self.map_to_new_ids(f"cp{i}")
-                            if new_entry_id is not None:
-                                cp_detail_entry = True
-                                new_entry["cp"].update(
-                                    {f"cp{new_entry_id}": {"imported": row[self.DAILY_LOG_CP_ROW_IDS[i - 1]],
-                                                           "exported": 0}})
+                        for i in range(0, len(DAILY_LOG_CP_ROW_IDS)):
+                            if len(row) > DAILY_LOG_CP_ROW_IDS[i]:
+                                new_entry_id = self.map_to_new_ids(f"cp{i+1}")
+                                if new_entry_id is not None:
+                                    cp_detail_entry = True
+                                    new_entry["cp"].update(
+                                        {f"cp{new_entry_id}": {
+                                            "imported": string_to_float(row[DAILY_LOG_CP_ROW_IDS[i]]),
+                                            "exported": 0
+                                        }})
                         if cp_detail_entry:
-                            new_entry["cp"].update({"all": {"imported": row[7], }})
-                        for i in range(1, 3):
-                            new_entry_id = self.map_to_new_ids(f"ev{i}")
-                            if new_entry_id is not None:
-                                new_entry["ev"].update(
-                                    {f"ev{new_entry_id}": {"soc": row[self.DAILY_LOG_EV_ROW_IDS[i - 1]]}})
+                            new_entry["cp"].update({"all": {"imported": string_to_float(row[7]), }})
+                        for i in range(0, len(DAILY_LOG_EV_ROW_IDS)):
+                            if len(row) > DAILY_LOG_EV_ROW_IDS[i]:
+                                new_entry_id = self.map_to_new_ids(f"ev{i+1}")
+                                if new_entry_id is not None:
+                                    new_entry["ev"].update(
+                                        {f"ev{new_entry_id}": {
+                                            "soc": string_to_int(row[DAILY_LOG_EV_ROW_IDS[i]])
+                                        }})
                         if self.id_map.evu is not None:
                             new_entry["counter"].update({f"counter{self.map_to_new_ids('evu')}": {
-                                "imported": row[1],
-                                "exported": row[2]
+                                "imported": string_to_float(row[1]),
+                                "exported": string_to_float(row[2])
                             }})
                         if self.id_map.pvAll is not None:
-                            new_entry["pv"].update({"all": {"exported": row[3]},
-                                                    f"pv{self.map_to_new_ids('pvAll')}": {"exported": row[3]}})
+                            new_entry["pv"].update(
+                                {"all": {"exported": string_to_float(row[3])},
+                                 f"pv{self.map_to_new_ids('pvAll')}": {
+                                    "exported": string_to_float(row[3])}}
+                            )
                         if self.id_map.bat is not None:
                             new_entry["bat"].update({"all": {
-                                "imported": row[8],
-                                "exported": row[9],
-                                "soc": row[20]
+                                "imported": string_to_float(row[8]),
+                                "exported": string_to_float(row[9]),
+                                "soc": string_to_int(row[20]) if len(row) >= 23 else 0
                             }, f"bat{self.map_to_new_ids('bat')}": {
-                                "imported": row[8],
-                                "exported": row[9],
-                                "soc": row[20]
+                                "imported": string_to_float(row[8]),
+                                "exported": string_to_float(row[9]),
+                                "soc": string_to_int(row[20]) if len(row) >= 23 else 0
                             }})
-                        for i in range(1, 3):
-                            new_entry_id = self.map_to_new_ids(f"sh{i}")
-                            if new_entry_id is not None:
-                                new_entry["sh"].update(
-                                    {f"sh{new_entry_id}": {
-                                        "imported": row[self.DAILY_LOG_SH_TEMP_ROW_IDS[i - 1][0]],
-                                        "temp0": row[self.DAILY_LOG_SH_TEMP_ROW_IDS[i - 1][1]],
-                                        "temp1": row[self.DAILY_LOG_SH_TEMP_ROW_IDS[i - 1][2]],
-                                        "temp2": row[self.DAILY_LOG_SH_TEMP_ROW_IDS[i - 1][3]],
-                                        "exported": 0
-                                    }})
-                        for i in range(3, 11):
-                            new_entry_id = self.map_to_new_ids(f"sh{i}")
-                            if new_entry_id is not None:
-                                new_entry["sh"].update(
-                                    {f"sh{new_entry_id}": {
-                                        "imported": row[25 + i],  # Row starts at 28 for device 3
-                                        "exported": 0
-                                    }})
-                        for i in range(1, 3):
-                            new_entry_id = self.map_to_new_ids(f"consumer{i}")
-                            if new_entry_id is not None:
-                                new_entry["counter"].update(
-                                    {f"counter{new_entry_id}": {
-                                        "imported": row[self.DAILY_LOG_CONSUMER_ROW_IDS[i - 1][0]],
-                                        "exported": row[self.DAILY_LOG_CONSUMER_ROW_IDS[i - 1][1]]
-                                    }})
-                        if self.id_map.consumer3 is not None:
-                            new_entry["counter"].update({f"counter{self.map_to_new_ids('consumer3')}":
-                                                        {"imported": row[14], "exported": 0}})
+                        # SmartHome Devices 1+2 with temperatures
+                        for i in range(0, len(DAILY_LOG_SH_TEMP_ROW_IDS)):
+                            if len(row) > DAILY_LOG_SH_TEMP_ROW_IDS[i][0]:
+                                new_entry_id = self.map_to_new_ids(f"sh{i+1}")
+                                if new_entry_id is not None:
+                                    new_entry["sh"].update(
+                                        {f"sh{new_entry_id}": {
+                                            "imported": string_to_float(row[DAILY_LOG_SH_TEMP_ROW_IDS[i][0]]),
+                                            "temp0": string_to_float(row[DAILY_LOG_SH_TEMP_ROW_IDS[i][1]]),
+                                            "temp1": string_to_float(row[DAILY_LOG_SH_TEMP_ROW_IDS[i][2]]),
+                                            "temp2": string_to_float(row[DAILY_LOG_SH_TEMP_ROW_IDS[i][3]]),
+                                            "exported": 0
+                                        }})
+                        # SmartHome 2.0 Devices 3-10 without temperatures
+                        for i in range(0, len(DAILY_LOG_SH_ROW_IDS)):
+                            if len(row) > DAILY_LOG_SH_ROW_IDS[i]:
+                                new_entry_id = self.map_to_new_ids(f"sh{i+3}")  # we start with device 3!
+                                if new_entry_id is not None:
+                                    new_entry["sh"].update(
+                                        {f"sh{new_entry_id}": {
+                                            "imported": string_to_float(row[DAILY_LOG_SH_ROW_IDS[i]]),
+                                            "exported": 0
+                                        }})
+                        # old SmartHome "Verbraucher"
+                        for i in range(0, len(DAILY_LOG_CONSUMER_ROW_IDS)):
+                            if len(row) > DAILY_LOG_CONSUMER_ROW_IDS[i][0]:
+                                new_entry_id = self.map_to_new_ids(f"consumer{i+1}")
+                                if new_entry_id is not None:
+                                    new_entry["counter"].update(
+                                        {f"counter{new_entry_id}": {
+                                            "imported": string_to_float(row[DAILY_LOG_CONSUMER_ROW_IDS[i][0]]),
+                                            "exported": string_to_float(row[
+                                                DAILY_LOG_CONSUMER_ROW_IDS[i][1]
+                                            ]) if DAILY_LOG_CONSUMER_ROW_IDS[i][1] is not None else 0
+                                        }})
                         entries.append(new_entry)
                 except Exception:
                     log.exception(f"Fehler beim Konvertieren des Tages-Logs vom {file}, Reihe {row}")
         return entries
 
-    MONTHLY_LOG_CP_ROW_IDS = [4, 5, 6, 12, 13, 14, 15, 16]
-    MONTHLY_LOG_CONSUMER_ROW_IDS = [(8, 9), (10, 11)]
-
-    def _monthlylog_entry(self, file: str):
-        """ Generator-Funktion, die einen Eintrag aus dem Tageslog konvertiert.
-        alte Spaltenbelegung: date,$bezug,$einspeisung,$pv,$ll1,$ll2,$ll3,$llg,$verbraucher1iwh,$verbraucher1ewh,
-        $verbraucher2iwh,$verbraucher2ewh,$ll4,$ll5,$ll6,$ll7,$ll8,$speicherikwh,$speicherekwh,$d1,$d2,$d3,$d4,
-        $d5,$d6,$d7,$d8,$d9,$d10
+    def _monthly_log_entry(self, file: str):
+        """ Generator-Funktion, die einen Eintrag aus dem Tages-Log konvertiert.
+        alte Spaltenbelegung:
+            12, 19 oder 29 Felder! Wurde in 1.9 nicht vereinheitlicht!
+        Allgemein:
+            0: Datum "YYYMMDD"
+        EVU:
+            1-2: Bezug, Einspeisung
+        PV:
+            3: PV Gesamt
+        LP:
+            4-6: LP1, LP2, LP3
+            7: Gesamt
+            12-16: LP4, LP5, LP6, LP7, LP8
+        Verbraucher:
+            8-11: VB1 Import, VB1 Export, VB2 Import, VB2 Export
+        Speicher:
+            17-18: Ladung, Entladung
+        SmartHome 2.0:
+            19-28: Gerät1, Gerät2, Gerät3, Gerät4, Gerät5, Gerät6, Gerät7, Gerät8, Gerät9, Gerät10
         """
+        MONTHLY_LOG_CP_ROW_IDS = [4, 5, 6, 12, 13, 14, 15, 16]
+        MONTHLY_LOG_SH_ROW_IDS = [19, 20, 21, 22, 23, 24, 25, 26, 27, 28]
+        MONTHLY_LOG_CONSUMER_ROW_IDS = [(8, 9), (10, 11)]
+
         entries = []
         with open(f"{self.BACKUP_DATA_PATH}/monthly/{file}") as csv_file:
             csv_reader = csv.reader(csv_file, delimiter=',')
@@ -384,50 +431,57 @@ class MigrateData:
                             "sh": {}
                         }
                         cp_detail_entry = False
-                        for i in range(1, 9):
-                            new_entry_id = self.map_to_new_ids(f"cp{i}")
-                            if new_entry_id is not None:
-                                cp_detail_entry = True
-                                new_entry["cp"].update(
-                                    {f"cp{new_entry_id}": {"imported": row[self.MONTHLY_LOG_CP_ROW_IDS[i - 1]],
-                                                           "exported": 0}})
+                        for i in range(0, len(MONTHLY_LOG_CP_ROW_IDS)):
+                            if len(row) > MONTHLY_LOG_CP_ROW_IDS[i]:
+                                new_entry_id = self.map_to_new_ids(f"cp{i+1}")
+                                if new_entry_id is not None:
+                                    cp_detail_entry = True
+                                    new_entry["cp"].update(
+                                        {f"cp{new_entry_id}": {
+                                            "imported": string_to_float(row[MONTHLY_LOG_CP_ROW_IDS[i]]),
+                                            "exported": 0
+                                        }})
                         if cp_detail_entry:
-                            new_entry["cp"].update({"all": {"imported": row[7], }})
+                            new_entry["cp"].update({"all": {"imported": string_to_float(row[7]), }})
                         if self.id_map.evu is not None:
                             new_entry["counter"].update({f"counter{self.map_to_new_ids('evu')}": {
-                                "imported": row[1],
-                                "exported": row[2]
+                                "imported": string_to_float(row[1]),
+                                "exported": string_to_float(row[2])
                             }})
                         if self.id_map.pvAll is not None:
-                            new_entry["pv"].update({"all": {"exported": row[3]},
-                                                    f"pv{self.map_to_new_ids('pvAll')}": {"exported": row[3]}})
+                            new_entry["pv"].update(
+                                {"all": {"exported": string_to_float(row[3])},
+                                 f"pv{self.map_to_new_ids('pvAll')}": {"exported": string_to_float(row[3])}})
                         if self.id_map.bat is not None:
-                            new_entry["bat"].update({
-                                "all": {
-                                    "imported": row[17],
-                                    "exported": row[18],
-                                },
-                                f"bat{self.map_to_new_ids('bat')}": {
-                                    "imported": row[17],
-                                    "exported": row[18],
-                                }
-                            })
-                        for i in range(1, 11):
-                            new_entry_id = self.map_to_new_ids(f"sh{i}")
-                            if new_entry_id is not None:
-                                new_entry["sh"].update(
-                                    {f"sh{new_entry_id}": {
-                                        "imported": row[18 + i],  # Row starts at 19 for device 1
-                                        "exported": 0
-                                    }})
-                        for i in range(1, 3):
-                            new_entry_id = self.map_to_new_ids(f"consumer{i}")
-                            if new_entry_id is not None:
-                                new_entry["counter"].update(
-                                    {f"counter{new_entry_id}": {
-                                        "imported": row[self.MONTHLY_LOG_CONSUMER_ROW_IDS[i - 1][0]],
-                                        "exported": row[self.MONTHLY_LOG_CONSUMER_ROW_IDS[i - 1][1]]
-                                    }})
+                            if len(row) >= 19:
+                                new_entry["bat"].update({
+                                    "all": {
+                                        "imported": string_to_float(row[17]),
+                                        "exported": string_to_float(row[18]),
+                                    },
+                                    f"bat{self.map_to_new_ids('bat')}": {
+                                        "imported": string_to_float(row[17]),
+                                        "exported": string_to_float(row[18]),
+                                    }
+                                })
+                        for i in range(0, len(MONTHLY_LOG_SH_ROW_IDS)):
+                            if len(row) > MONTHLY_LOG_SH_ROW_IDS[i]:
+                                new_entry_id = self.map_to_new_ids(f"sh{i+1}")
+                                if new_entry_id is not None:
+                                    new_entry["sh"].update(
+                                        {f"sh{new_entry_id}": {
+                                            "imported": string_to_float(row[MONTHLY_LOG_SH_ROW_IDS[i]]),
+                                            "exported": 0
+                                        }})
+                        for i in range(0, len(MONTHLY_LOG_CONSUMER_ROW_IDS)):
+                            if len(row) > MONTHLY_LOG_CONSUMER_ROW_IDS[i][1]:
+                                new_entry_id = self.map_to_new_ids(f"consumer{i+1}")
+                                if new_entry_id is not None:
+                                    new_entry["counter"].update(
+                                        {f"counter{new_entry_id}": {
+                                            "imported": string_to_float(row[MONTHLY_LOG_CONSUMER_ROW_IDS[i][0]]),
+                                            "exported": string_to_float(row[MONTHLY_LOG_CONSUMER_ROW_IDS[i][1]])
+                                        }})
                         entries.append(new_entry)
                 except Exception:
                     log.exception(f"Fehler beim Konvertieren des Monats-Logs vom {file}, Reihe {row}")
