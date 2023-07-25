@@ -30,7 +30,7 @@ class PowerdogCounter:
     def update(self, inverter_power: float):
         with self.__tcp_client:
             if self.component_config.configuration.position_evu:
-                home_consumption = self.__tcp_client.read_input_registers(40000, ModbusDataType.INT_32, unit=1) * -1
+                power = self.__tcp_client.read_input_registers(40000, ModbusDataType.INT_32, unit=1) * -1
             else:
                 home_consumption = self.__tcp_client.read_input_registers(40026, ModbusDataType.INT_32, unit=1)
                 power = home_consumption + inverter_power
