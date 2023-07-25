@@ -173,17 +173,21 @@ class MigrateData:
                         else:
                             raise ValueError(str(duration_list) +
                                              " hat kein bekanntes Format.")
-                        rfid = row[8]
-                        vehicle_id = ev.get_ev_to_rfid(rfid)
-                        if vehicle_id is not None:
-                            vehicle_name = data.data.ev_data[f"ev{vehicle_id}"].data.name
-                        else:
-                            vehicle_name = None
                         old_cp = row[6].strip()  # sometimes we have trailing spaces
                         if data.data.cp_data.get(f"cp{self.map_to_new_ids(f'cp{old_cp}')}") is not None:
                             cp_name = data.data.cp_data[f"cp{self.map_to_new_ids(f'cp{old_cp}')}"].data.config.name
                         else:
                             cp_name = None
+                        rfid = row[8]
+                        vehicle_id = ev.get_ev_to_rfid(rfid)
+                        if vehicle_id is not None:
+                            vehicle_name = data.data.ev_data[f"ev{vehicle_id}"].data.name
+                        else:
+                            if int(old_cp) == 1 or int(old_cp) == 2:
+                                vehicle_id = self.map_to_new_ids(f"ev{old_cp}")
+                                vehicle_name = data.data.ev_data[f"ev{vehicle_id}"].data.name
+                            else:
+                                vehicle_name = None
                         new_entry = {
                             "chargepoint":
                             {
