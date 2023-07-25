@@ -99,30 +99,27 @@ class MigrateData:
         """
         def convert(old_file_name: str) -> None:
             try:
-                new_entries = self._chargelogfile_entries(old_file_name)
-
-                pathlib.Path('./data/charge_log').mkdir(mode=0o755, parents=True, exist_ok=True)
+                new_entries = self._charge_log_file_entries(old_file_name)
                 filepath = f"./data/charge_log/{old_file_name[:-4]}.json"
+                content = []
                 try:
                     with open(filepath, "r") as jsonFile:
                         content = json.load(jsonFile)
                 except FileNotFoundError:
-                    with open(filepath, "w+") as jsonFile:
-                        json.dump([], jsonFile)
-                    with open(filepath, "r") as jsonFile:
-                        content = json.load(jsonFile)
+                    pass
                 new_entries.extend(content)
                 with open(filepath, "w") as jsonFile:
                     json.dump(new_entries, jsonFile)
             except Exception:
                 log.exception(f"Fehler beim Konvertieren des Ladelogs vom {old_file_name}")
 
+        pathlib.Path('./data/charge_log').mkdir(mode=0o755, parents=True, exist_ok=True)
         threads: List[Thread] = []
         for old_file_name in os.listdir(f"{self.BACKUP_DATA_PATH}/ladelog"):
             threads.append(Thread(target=convert, args=[old_file_name, ], name=f"chargelog {old_file_name}"))
         return threads
 
-    def _chargelogfile_entries(self, file: str):
+    def _charge_log_file_entries(self, file: str):
         """ alte Spaltenbelegung
         $start,$jetzt,$gelr,$bishergeladen,$ladegeschw,$ladedauertext,$chargePointNumber,$lademoduslogvalue,$rfid,$kosten
         """
