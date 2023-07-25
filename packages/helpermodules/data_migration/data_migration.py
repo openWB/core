@@ -18,7 +18,7 @@ import tarfile
 from threading import Thread
 from typing import Callable, Dict, List, Union
 
-from control import data
+from control import data, ev
 from dataclass_utils import dataclass_from_dict
 from helpermodules.data_migration.id_mapping import MapId
 from helpermodules.measurement_log import LegacySmarthomeLogdata, get_names, get_totals
@@ -156,28 +156,37 @@ class MigrateData:
                         duration_list = row[5].split(" ")
                         if len(duration_list) == 2:
                             duration_list.pop(1)  # "Min"
-                            duration = duration_list[0] + ":00"
+                            duration = f"00:{int(duration_list[0]):02d}"
                         elif len(duration_list) == 4:
                             duration_list.pop(1)  # "H"
                             duration_list.pop(2)  # "Min"
-                            duration = duration_list[0] + \
-                                ":" + duration_list[1] + ":00"
+                            duration = f"{int(duration_list[0]):02d}:{int(duration_list[1]):02d}"
                         else:
                             raise ValueError(str(duration_list) +
                                              " hat kein bekanntes Format.")
+                        rfid = row[8]
+                        vehicle_id = ev.get_ev_to_rfid(rfid)
+                        if vehicle_id is not None:
+                            vehicle_name = data.data.ev_data[f"ev{vehicle_id}"].data.name
+                        else:
+                            vehicle_name = None
+                        if data.data.cp_data.get(f"cp{self.map_to_new_ids(f'cp{row[6]}')}") is not None:
+                            cp_name = data.data.cp_data[f"cp{self.map_to_new_ids(f'cp{row[6]}')}"].data.config.name
+                        else:
+                            cp_name = None
                         new_entry = {
                             "chargepoint":
                             {
-                                "id": int(row[6]),
-                                "name": "-",
+                                "id": self.map_to_new_ids(f"cp{row[6]}"),
+                                "name": cp_name,
                             },
                             "vehicle":
                             {
-                                "id": "-",
-                                "name": "-",
+                                "id": vehicle_id,
+                                "name": vehicle_name,
                                 "chargemode": chargemode,
-                                "prio": "-",
-                                "rfid": row[8]
+                                "prio": False,
+                                "rfid": rfid
                             },
                             "time":
                             {
