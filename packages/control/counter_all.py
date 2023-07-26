@@ -11,7 +11,6 @@ from control.counter import Counter
 from dataclass_utils.factories import empty_list_factory
 from helpermodules.messaging import MessageType, pub_system_message
 from helpermodules.pub import Pub
-from helpermodules.subdata import SubData
 from modules.common.component_type import ComponentType, component_type_to_readable_text
 from modules.common.fault_state import FaultStateLevel
 
@@ -398,7 +397,6 @@ class CounterAll:
     def validate_hierarchy(self):
         self._delete_obsolete_entries()
         self._add_missing_entries()
-        Pub().pub("openWB/set/counter/get/hierarchy", self.data.get.hierarchy)
 
     def _delete_obsolete_entries(self):
         def check_and_remove(name, type_name: ComponentType, data_structure):
@@ -406,15 +404,15 @@ class CounterAll:
                 if f"{name}{element['id']}" not in data_structure:
                     self.hierarchy_remove_item(element["id"])
                     pub_system_message({}, f"{component_type_to_readable_text(type_name)} mit ID {element['id']} wurde"
-                                       " aus der Hierachie entfernt, da keine gültige Konfiguration gefunden wurde.",
+                                       " aus der Hierarchie entfernt, da keine gültige Konfiguration gefunden wurde.",
                                        MessageType.WARNING)
 
         for level in self.get_list_of_elements_per_level():
             for element in level:
-                check_and_remove("bat", ComponentType.BAT, SubData.bat_data)
-                check_and_remove("counter", ComponentType.COUNTER, SubData.counter_data)
-                check_and_remove("cp", ComponentType.CHARGEPOINT, SubData.cp_data)
-                check_and_remove("pv", ComponentType.INVERTER, SubData.pv_data)
+                check_and_remove("bat", ComponentType.BAT, data.data.bat_data)
+                check_and_remove("counter", ComponentType.COUNTER, data.data.counter_data)
+                check_and_remove("cp", ComponentType.CHARGEPOINT, data.data.cp_data)
+                check_and_remove("pv", ComponentType.INVERTER, data.data.pv_data)
 
     def _add_missing_entries(self):
         def check_and_add(type_name: ComponentType, data_structure):
@@ -431,16 +429,16 @@ class CounterAll:
                     if break_flag:
                         break
                 else:
-                    self.hierarchy_add_item_below(entry_num, type_name, self.get_evu_counter())
+                    self.hierarchy_add_item_below(entry_num, type_name, self.get_evu_counter().num)
                     pub_system_message({}, f"{component_type_to_readable_text(type_name)} mit ID {element['id']} wurde"
-                                       " in der Hierachie hinzugefügt, da kein Eintrag in der Hierachie gefunden "
-                                       "wurde. Bitte prüfe die Anordnung der Komponenten in der Hierachie.",
+                                       " in der Hierarchie hinzugefügt, da kein Eintrag in der Hierarchie gefunden "
+                                       "wurde. Bitte prüfe die Anordnung der Komponenten in der Hierarchie.",
                                        MessageType.WARNING)
 
-        check_and_add(ComponentType.BAT, SubData.bat_data)
-        check_and_add(ComponentType.COUNTER, SubData.counter_data)
-        check_and_add(ComponentType.CHARGEPOINT, SubData.cp_data)
-        check_and_add(ComponentType.INVERTER, SubData.pv_data)
+        check_and_add(ComponentType.BAT, data.data.bat_data)
+        check_and_add(ComponentType.COUNTER, data.data.counter_data)
+        check_and_add(ComponentType.CHARGEPOINT, data.data.cp_data)
+        check_and_add(ComponentType.INVERTER, data.data.pv_data)
 
 
 def get_max_id_in_hierarchy(current_entry: List, max_id: int) -> int:

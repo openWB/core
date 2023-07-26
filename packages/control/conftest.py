@@ -14,7 +14,6 @@ from control.counter import Set as CounterSet
 from control.counter_all import CounterAll
 from control.pv import Pv, PvData
 from control.pv import Get as PvGet
-from helpermodules.subdata import SubData
 
 
 def hierarchy_standard() -> CounterAll:
@@ -114,16 +113,3 @@ def data_() -> None:
             spec=CounterGet, currents=[25, 10, 25], power=13800, daily_imported=20000, daily_exported=0),
             config=Mock(spec=CounterConfig, max_currents=[32]*3),
             set=Mock(spec=CounterSet, raw_currents_left=[31]*3)))})
-
-
-@pytest.fixture()
-def subdata_() -> None:
-    SubData.cp_data = {
-        "cp3": Mock(spec=Chargepoint),
-        "cp4": Mock(spec=Chargepoint),
-        "cp5": Mock(spec=Chargepoint)}
-    SubData.bat_data.update({"bat2": Mock(spec=Bat)})
-    SubData.pv_data.update({"pv1": Mock(spec=Pv)})
-    SubData.counter_data.update({
-        "counter0": Mock(spec=Counter),
-        "counter6": Mock(spec=Counter)})
