@@ -17,6 +17,7 @@ from modules.backup_clouds.onedrive.api import generateMSALAuthCode, retrieveMSA
 
 from helpermodules import measurement_log
 from helpermodules.broker import InternalBrokerClient
+from helpermodules.data_migration.data_migration import MigrateData
 from helpermodules.messaging import MessageType, pub_user_message, pub_error_global
 from helpermodules.parse_send_debug import parse_send_debug_data
 from helpermodules.pub import Pub
@@ -185,7 +186,7 @@ class Command:
         if check_num_msg is not None:
             pub_user_message(
                 payload, connection_id, f"{check_num_msg} Wenn Sie weitere Ladepunkte anbinden wollen, müssen Sie "
-                "diese als externe Ladepunkte anbinden. Die externen Ladepunkte in den Betriebsmodus 'NurLadepunkt'"
+                "diese als externe Ladepunkte anbinden. Die externen Ladepunkte in den Steuerungsmodus 'secondary'"
                 " versetzen.", MessageType.ERROR)
             return
         chargepoint_config["id"] = new_id
@@ -208,7 +209,7 @@ class Command:
                 setup_added_chargepoint()
             else:
                 pub_user_message(payload, connection_id,
-                                 "Bitte zuerst einen EVU-Zähler konfigurieren oder in den NurLadepunkt-Modus "
+                                 "Bitte zuerst einen EVU-Zähler konfigurieren oder in den Steuerungsmodus 'secondary' "
                                  "umschalten, wenn die openWB als externer Ladepunkt betrieben werden soll.",
                                  MessageType.ERROR)
 
@@ -594,11 +595,16 @@ class Command:
 
     def addMqttBridge(self, connection_id: str, payload: dict,
                       bridge_default: dict = bridge.get_default_config()) -> None:
-        new_id = self.max_id_mqtt_bridge + 1
-        Pub().pub(f'openWB/set/system/mqtt/bridge/{new_id}', bridge_default)
-        self.max_id_mqtt_bridge = self.max_id_mqtt_bridge + 1
-        Pub().pub("openWB/set/command/max_id/mqtt_bridge", self.max_id_mqtt_bridge)
-        pub_user_message(payload, connection_id, f'Neue Bridge mit ID \'{new_id}\' hinzugefügt.', MessageType.SUCCESS)
+        if ProcessBrokerBranch("system/mqtt/bridge/").check_mqtt_bridge_exists(bridge_default["name"]):
+            pub_user_message(payload, connection_id, ('Es existiert bereits eine Brücke mit dem Namen '
+                             f'{bridge_default["name"]}.'), MessageType.ERROR)
+        else:
+            new_id = self.max_id_mqtt_bridge + 1
+            Pub().pub(f'openWB/set/system/mqtt/bridge/{new_id}', bridge_default)
+            self.max_id_mqtt_bridge = self.max_id_mqtt_bridge + 1
+            Pub().pub("openWB/set/command/max_id/mqtt_bridge", self.max_id_mqtt_bridge)
+            pub_user_message(payload, connection_id,
+                             f'Neue Brücke mit ID \'{new_id}\' hinzugefügt.', MessageType.SUCCESS)
 
     def removeMqttBridge(self, connection_id: str, payload: dict) -> None:
         if self.max_id_mqtt_bridge >= payload["data"]["bridge"]:
@@ -724,6 +730,13 @@ class Command:
                          MessageType.INFO)
         self.systemReboot(connection_id, payload)
 
+    def dataMigration(self, connection_id: str, payload: dict) -> None:
+        pub_user_message(payload, connection_id, "Datenübernahme gestartet.", MessageType.INFO)
+        migrate_data = MigrateData(payload["data"])
+        migrate_data.validate_ids()
+        migrate_data.migrate()
+        pub_user_message(payload, connection_id, "Datenübernahme abgeschlossen.", MessageType.SUCCESS)
+
 
 class ErrorHandlingContext:
     def __init__(self, payload: dict, connection_id: str):
@@ -782,6 +795,17 @@ class ProcessBrokerBranch:
             log.exception("Fehler im Command-Modul")
             return []
 
+    def check_mqtt_bridge_exists(self, name: str) -> bool:
+        try:
+            self.name = name
+            self.mqtt_bridge_exists = False
+            InternalBrokerClient("processBrokerBranch", self.on_connect,
+                                 self.__on_message_mqtt_bridge_exists).start_finite_loop()
+            return self.mqtt_bridge_exists
+        except Exception:
+            log.exception("Fehler im Command-Modul")
+            return self.mqtt_bridge_exists
+
     def on_connect(self, client, userdata, flags, rc):
         """ connect to broker and subscribe to set topics
         """
@@ -803,3 +827,7 @@ class ProcessBrokerBranch:
 
     def __get_payload(self, client, userdata, msg):
         self.payload = msg.payload
+
+    def __on_message_mqtt_bridge_exists(self, client, userdata, msg):
+        if decode_payload(msg.payload)["name"] == self.name:
+            self.mqtt_bridge_exists = True

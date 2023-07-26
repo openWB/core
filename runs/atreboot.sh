@@ -112,6 +112,7 @@ chmod 666 "$LOGFILE"
 		echo "unable to check required packages and add virtual network!"
 	fi
 
+	# tune apt configuration and install required packages
 	if [ -d "/etc/apt/apt.conf.d" ]; then
 		if versionMatch "${OPENWBBASEDIR}/data/config/apt/99openwb" "/etc/apt/apt.conf.d/99openwb"; then
 			echo "apt configuration already up to date"
@@ -124,6 +125,7 @@ chmod 666 "$LOGFILE"
 	fi
 	"${OPENWBBASEDIR}/runs/install_packages.sh"
 
+	# check for openwb cron jobs
 	if versionMatch "${OPENWBBASEDIR}/data/config/openwb.cron" "/etc/cron.d/openwb"; then
 		echo "openwb.cron already up to date"
 	else
@@ -131,6 +133,7 @@ chmod 666 "$LOGFILE"
 		sudo cp "${OPENWBBASEDIR}/data/config/openwb.cron" "/etc/cron.d/openwb"
 	fi
 
+	# check for openwb2 service definition
 	if versionMatch "${OPENWBBASEDIR}/data/config/openwb2.service" "/etc/systemd/system/openwb2.service"; then
 		echo "openwb2.service already up to date"
 	else
@@ -139,6 +142,7 @@ chmod 666 "$LOGFILE"
 		sudo reboot now &
 	fi
 
+	# check for remote support service definition
 	if [ ! -f "/etc/systemd/system/openwbRemoteSupport.service" ]; then
 		echo "openwbRemoteSupport service missing, installing service"
 		sudo cp "${OPENWBBASEDIR}/data/config/openwbRemoteSupport.service" "/etc/systemd/system/openwbRemoteSupport.service"
@@ -174,6 +178,7 @@ chmod 666 "$LOGFILE"
 
 	# display setup
 	echo "display setup..."
+	displaySetupModified=0
 	if [ ! -d "/home/openwb/.config/lxsession/LXDE" ]; then
 		mkdir --parents "/home/openwb/.config/lxsession/LXDE"
 	fi
@@ -182,20 +187,25 @@ chmod 666 "$LOGFILE"
 	else
 		echo "updating autologin"
 		sudo cp "${OPENWBBASEDIR}/data/config/display/lightdm-autologin-greeter.conf" "/etc/lightdm/lightdm.conf.d/lightdm-autologin-greeter.conf"
+		displaySetupModified=1
 	fi
 	if versionMatch "${OPENWBBASEDIR}/data/config/display/lightdm-hide-mouse-cursor.conf" "/etc/lightdm/lightdm.conf.d/lightdm-hide-mouse-cursor.conf"; then
 		echo "mouse cursor configured"
 	else
 		echo "updating mouse cursor configuration"
 		sudo cp "${OPENWBBASEDIR}/data/config/display/lightdm-hide-mouse-cursor.conf" "/etc/lightdm/lightdm.conf.d/lightdm-hide-mouse-cursor.conf"
+		displaySetupModified=1
 	fi
 	if versionMatch "${OPENWBBASEDIR}/data/config/display/lxdeautostart" "/home/openwb/.config/lxsession/LXDE/autostart"; then
 		echo "lxde session autostart already configured"
 	else
 		echo "updating lxde session autostart"
 		cp "${OPENWBBASEDIR}/data/config/display/lxdeautostart" "/home/openwb/.config/lxsession/LXDE/autostart"
+		displaySetupModified=1
 	fi
-	"${OPENWBBASEDIR}/runs/update_local_display.sh"
+	if ((displaySetupModified == 1)); then
+		"${OPENWBBASEDIR}/runs/update_local_display.sh"
+	fi
 
 	# check for apache configuration
 	echo "apache default site..."
@@ -245,7 +255,6 @@ chmod 666 "$LOGFILE"
 	# check for mosquitto configuration
 	echo "check mosquitto installation..."
 	restartService=0
-	# check for mosquitto configuration
 	if versionMatch "${OPENWBBASEDIR}/data/config/mosquitto.conf" "/etc/mosquitto/mosquitto.conf"; then
 		echo "mosquitto.conf already up to date"
 	else
@@ -309,47 +318,6 @@ chmod 666 "$LOGFILE"
 	# collect some hardware info
 	"${OPENWBBASEDIR}/runs/uuid.sh"
 
-	# check for slave config and start handler
-	# alpha image restricted to standalone installation!
-	# if (( isss == 1 )); then
-	# 	echo "isss..."
-	# 	echo $lastmanagement > ${OPENWBBASEDIR}/ramdisk/issslp2act
-	# 	if ps ax |grep -v grep |grep "python3 ${OPENWBBASEDIR}/runs/isss.py" > /dev/null
-	# 	then
-	# 		sudo kill $(ps aux |grep '[i]sss.py' | awk '{print $2}')
-	# 	fi
-	# 	python3 ${OPENWBBASEDIR}/runs/isss.py &
-	# 	# second IP already set up !
-	# 	# ethstate=$(</sys/class/net/eth0/carrier)
-	# 	# if (( ethstate == 1 )); then
-	# 	# 	sudo ifconfig eth0:0 $virtual_ip_eth0 netmask 255.255.255.0 down
-	# 	# else
-	# 	# 	sudo ifconfig wlan0:0 $virtual_ip_wlan0 netmask 255.255.255.0 down
-	# 	# fi
-	# fi
-
-	# check for socket system and start handler
-	# alpha image restricted to standalone installation!
-	# if [[ "$evsecon" == "buchse" ]] && [[ "$isss" == "0" ]]; then
-	# 	echo "socket..."
-	# 	# ppbuchse is used in issss.py to detect "openWB Buchse"
-	# 	if [ ! -f /home/pi/ppbuchse ]; then
-	# 		echo "32" > /home/pi/ppbuchse
-	# 	fi
-	# 	if ps ax |grep -v grep |grep "python3 ${OPENWBBASEDIR}/runs/buchse.py" > /dev/null
-	# 	then
-	# 		sudo kill $(ps aux |grep '[b]uchse.py' | awk '{print $2}')
-	# 	fi
-	# 	python3 ${OPENWBBASEDIR}/runs/buchse.py &
-	# fi
-
-	# update display configuration
-	# echo "display update..."
-	# if grep -Fq "@chromium-browser --incognito --disable-pinch --kiosk http://localhost/openWB/web/display/" /home/pi/.config/lxsession/LXDE-pi/autostart
-	# then
-	# 	sed -i "s,@chromium-browser --incognito --disable-pinch --kiosk http://localhost/openWB/web/display/,@chromium-browser --incognito --disable-pinch --overscroll-history-navigation=0 --kiosk http://localhost/openWB/web/display/,g" /home/pi/.config/lxsession/LXDE-pi/autostart
-	# fi
-
 	# update current published versions
 	echo "load versions..."
 	"$OPENWBBASEDIR/runs/update_available_versions.sh"
@@ -359,22 +327,11 @@ chmod 666 "$LOGFILE"
 	# git -C "${OPENWBBASEDIR}/" branch -a --contains "$commitId" | perl -nle 'm|.*origin/(.+).*|; print $1' | uniq | xargs > "${OPENWBBASEDIR}/ramdisk/currentCommitBranches"
 
 	# set restore dir permissions to allow file upload for apache
-	sudo chgrp www-data "${OPENWBBASEDIR}/data/restore" "${OPENWBBASEDIR}/data/restore/"*
-	sudo chmod g+w "${OPENWBBASEDIR}/data/restore" "${OPENWBBASEDIR}/data/restore/"*
-
-	# set upload limit in php
-	# echo -n "fix upload limit..."
-	# if [ -d "/etc/php/7.3/" ]; then
-	# 	echo "OS Buster"
-	# 	sudo /bin/su -c "echo 'upload_max_filesize = 300M' > /etc/php/7.3/apache2/conf.d/20-uploadlimit.ini"
-	# 	sudo /bin/su -c "echo 'post_max_size = 300M' >> /etc/php/7.3/apache2/conf.d/20-uploadlimit.ini"
-	# fi
-	# sudo /usr/sbin/apachectl -k graceful
+	sudo chgrp www-data "${OPENWBBASEDIR}/data/restore" "${OPENWBBASEDIR}/data/restore/"* "${OPENWBBASEDIR}/data/data_migration" "${OPENWBBASEDIR}/data/data_migration/"*
+	sudo chmod g+w "${OPENWBBASEDIR}/data/restore" "${OPENWBBASEDIR}/data/restore/"* "${OPENWBBASEDIR}/data/data_migration" "${OPENWBBASEDIR}/data/data_migration/"*
 
 	# all done, remove boot and update status
 	echo "$(date +"%Y-%m-%d %H:%M:%S:")" "boot done :-)"
 	mosquitto_pub -p 1886 -t "openWB/system/update_in_progress" -r -m 'false'
-	mosquitto_pub -p 1886 -t "openWB/system/boot_done" -r -m 'true'
 	mosquitto_pub -p 1886 -t "openWB/system/reloadDisplay" -m "1"
-	touch "${OPENWBBASEDIR}/ramdisk/bootdone"
 } >>"$LOGFILE" 2>&1

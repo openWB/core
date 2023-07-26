@@ -6,4 +6,4 @@ Beim Hinzufügen eines Ladepunkts muss zunächst dessen Typ ausgewählt werden. 
 
 In der Ladepunkte-Vorlage sind die Einstellungen zum automatischen Sperren (Autolock) und für RFID von Ladepunkten enthalten. Eine Ladepunkt-Vorlage kann vom Benutzer mehreren Ladepunkte zugewiesen werden, sodass die Einstellungen für jeden Ladepunkte einzeln oder für eine Gruppe zugewiesen werden können.
 
-Das Vorhalten eines RFID-Tags (verbauter RFID-Leser erforderlich) oder die Pin-Eingabe (Display erforderlich, Eingabefeld muss im NurLadepunkt-Modus aktiviert werden) werden gleich verarbeitet.
+Das Vorhalten eines RFID-Tags (verbauter RFID-Leser erforderlich) oder die Pin-Eingabe (Display erforderlich, Eingabefeld muss im Steuerungsmodus 'secondary' aktiviert werden) werden gleich verarbeitet.

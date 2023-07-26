@@ -25,7 +25,7 @@ class JsonCounter:
 
         power = float(jq.compile(config.jq_power).input(response).first())
         # ToDo: add current or power per phase
-        if config.jq_exported is None or config.jq_exported is None:
+        if config.jq_imported is None or config.jq_exported is None:
             imported, exported = self.sim_counter.sim_count(power)
         else:
             imported = float(jq.compile(config.jq_imported).input(response).first())

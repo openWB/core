@@ -27,13 +27,15 @@ class PowerdogCounter:
         self.store = get_counter_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
 
-    def update(self):
+    def update(self, inverter_power: float):
         with self.__tcp_client:
-            home_consumption = self.__tcp_client.read_input_registers(40026, ModbusDataType.INT_32, unit=1)
-        log.debug("Powerdog Hausverbrauch[W]: " + str(home_consumption))
-        return home_consumption
+            if self.component_config.configuration.position_evu:
+                power = self.__tcp_client.read_input_registers(40000, ModbusDataType.INT_32, unit=1) * -1
+            else:
+                home_consumption = self.__tcp_client.read_input_registers(40026, ModbusDataType.INT_32, unit=1)
+                power = home_consumption + inverter_power
+                log.debug("Powerdog Hausverbrauch[W]: " + str(home_consumption))
 
-    def set_counter_state(self, power: float) -> None:
         imported, exported = self.sim_counter.sim_count(power)
         counter_state = CounterState(
             imported=imported,

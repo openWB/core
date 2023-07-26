@@ -42,9 +42,9 @@ def get_cloud_config() -> Dict:
             "try_private": True
         },
         "data_transfer": {
-            "status": True,
-            "graph": True,
-            "configuration": True
+            "status": False,
+            "graph": False,
+            "configuration": False
         },
         "access": {
             "partner": False
