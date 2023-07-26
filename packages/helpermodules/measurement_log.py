@@ -105,7 +105,9 @@ def save_log(folder):
                     'cp4': {'exported': 0, 'imported': 85},
                     'cp5': {'exported': 0, 'imported': 0},
                     'cp6': {'exported': 0, 'imported': 64}},
-            'pv': {'all': {'imported': 251}, 'pv1': {'imported': 247}}}
+            'ev': {'ev1': {}},
+            'pv': {'all': {'imported': 251}, 'pv1': {'imported': 247}}},
+            'sh': { 'sh1': {'exported': 123, 'imported': 123}}
         },
         "names": {
             "counter0": "Mein EVU-Zähler",
@@ -208,7 +210,7 @@ def save_log(folder):
             content = json.load(jsonFile)
     except FileNotFoundError:
         with open(filepath, "w") as jsonFile:
-            json.dump({"entries": [], "totals": {}}, jsonFile)
+            json.dump({"entries": [], "totals": {}, "names": {}}, jsonFile)
         with open(filepath, "r") as jsonFile:
             content = json.load(jsonFile)
     entries = content["entries"]
@@ -297,7 +299,16 @@ def get_names(totals: Dict, sh_names: Dict) -> Dict:
 def get_daily_log(date: str):
     try:
         with open(str(Path(__file__).resolve().parents[2] / "data"/"daily_log"/(date+".json")), "r") as jsonFile:
-            return json.load(jsonFile)
+            log_data = json.load(jsonFile)
+            try:
+                next_date = timecheck.get_relative_date_string(date, day_offset=1)
+                with open(str(Path(__file__).resolve().parents[2] / "data"/"daily_log"/(next_date+".json")),
+                          "r") as nextJsonFile:
+                    next_log_data = json.load(nextJsonFile)
+                    log_data["entries"].append(next_log_data["entries"][0])
+            except FileNotFoundError:
+                pass
+            return log_data
     except FileNotFoundError:
         pass
     return []
@@ -306,24 +317,37 @@ def get_daily_log(date: str):
 def get_monthly_log(date: str):
     try:
         with open(str(Path(__file__).resolve().parents[2] / "data"/"monthly_log"/(date+".json")), "r") as jsonFile:
-            return json.load(jsonFile)
+            log_data = json.load(jsonFile)
+            try:
+                next_date = timecheck.get_relative_date_string(date, month_offset=1)
+                with open(str(Path(__file__).resolve().parents[2] / "data"/"monthly_log"/(next_date+".json")),
+                          "r") as nextJsonFile:
+                    next_log_data = json.load(nextJsonFile)
+                    log_data["entries"].append(next_log_data["entries"][0])
+            except FileNotFoundError:
+                pass
+            return log_data
     except FileNotFoundError:
         pass
     return []
 
 
-def get_yearly_log(date: str):
+def get_yearly_log(year: str):
     entries = []
+    dates = []
     for month in range(1, 13):
+        dates.append(f"{year}{month:02}")
+    dates.append(f"{int(year)+1}01")
+    for date in dates:
         try:
-            with open(Path(__file__).resolve().parents[2]/"data"/"monthly_log"/f"{date}{month:02}.json",
+            with open(Path(__file__).resolve().parents[2]/"data"/"monthly_log"/f"{date}.json",
                       "r") as jsonFile:
                 content = json.load(jsonFile)
                 content = content["totals"]
-                content.update({"date": f"{date}{month:02}"})
+                content.update({"date": date, "timestamp": timecheck.convert_YYYYMM_to_unix_timestamp(date)})
                 entries.append(content)
         except FileNotFoundError:
-            log.debug(f"Kein Monats-Log für Monat {month} gefunden.")
+            log.debug(f"Kein Log für Monat {date} gefunden.")
     return {"entries": entries, "totals": get_totals(entries, sum_up_diffs=True)}
 
 
