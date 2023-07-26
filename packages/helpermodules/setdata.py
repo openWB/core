@@ -797,7 +797,7 @@ class SetData:
             elif "openWB/set/optional/int_display/pin_code" in msg.topic:
                 self._validate_value(msg, str)
             elif "openWB/set/optional/int_display/standby" in msg.topic:
-                self._validate_value(msg, int, [(0, 300)])
+                self._validate_value(msg, int, [(0, 600)])
             elif "openWB/set/optional/int_display/theme" in msg.topic:
                 self._validate_value(msg, "json")
             elif "openWB/set/optional/led/active" in msg.topic:
