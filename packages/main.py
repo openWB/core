@@ -9,9 +9,10 @@ import time
 import threading
 import traceback
 from threading import Thread
+
+from helpermodules.changed_values_handler import ChangedValuesHandler
 from helpermodules.measurement_logging.update_daily_yields import update_daily_yields
 from helpermodules.measurement_logging.write_log import save_log
-
 from modules import loadvars
 from modules import configuration
 from helpermodules import timecheck, update_config
@@ -50,6 +51,7 @@ class HandlerAlgorithm:
                     data.data.copy_data()
                     loadvars_.get_values()
                     data.data.copy_data()
+                    changed_values_handler.store_inital_values()
                     self.heartbeat = True
                     if data.data.system_data["system"].data["perform_update"]:
                         data.data.system_data["system"].perform_update()
@@ -61,6 +63,7 @@ class HandlerAlgorithm:
                     control.calc_current()
                     proc.process_algorithm_results()
                     data.data.graph_data.pub_graph_data()
+                    changed_values_handler.pub_changed_values()
                     self.interval_counter = 1
                 else:
                     self.interval_counter = self.interval_counter + 1
@@ -170,6 +173,7 @@ try:
     general_internal_chargepoint_handler = GeneralInternalChargepointHandler()
     rfid0 = RfidReader("event0")
     rfid1 = RfidReader("event1")
+    changed_values_handler = ChangedValuesHandler(loadvars_.event_module_update_completed)
     event_ev_template = threading.Event()
     event_ev_template.set()
     event_charge_template = threading.Event()
