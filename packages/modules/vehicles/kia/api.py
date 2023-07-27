@@ -83,7 +83,7 @@ def getBrand(vin: str) -> str:
             log.error("kia.getBrand: Vehicle WMI unknown")
             raise RuntimeError
     except Exception:
-        log.error("kia.getBrand: VIN error", exc_info=True)
+        log.exception("kia.getBrand: VIN error")
         raise
 
     return brand
@@ -112,7 +112,7 @@ def getStamp(brand: str) -> str:
         stamp = stamp_b64_ba.decode()
 
     except Exception:
-        log.error("kia.getStamp: stamp error", exc_info=True)
+        log.exception("kia.getStamp: stamp error")
         raise
 
     return stamp
@@ -134,7 +134,7 @@ def getHTTP(url: str = "", headers: str = "", cookies: str = "",
                                 cookies=cookies, timeout=timeout,
                                 allow_redirects=allow_redirects)
     except Exception:
-        log.error("kia.getHTTP: HTTP error", exc_info=True)
+        log.exception("kia.getHTTP: HTTP error")
         raise
 
     if response.status_code == 200 or response.status_code == 204:
@@ -155,8 +155,9 @@ def getHTTP(url: str = "", headers: str = "", cookies: str = "",
                                response_dict['errMsg']
         except Exception:
             error_string = "[XXXX] Unidentified Error" + " " + response.text
+            log.exception("kia.getHTTP:Request failed")
 
-        log.debug("kia.getHTTP:Request failed, StatusCode: " +
+        log.error("kia.getHTTP:Request failed, StatusCode: " +
                   str(response.status_code) + ', Error: ' + error_string)
         raise RuntimeError
 
@@ -173,7 +174,7 @@ def putHTTP(url: str = "", data: Union[str, dict] = "",
             response = requests.put(url, data=data, headers=headers,
                                     cookies=cookies, timeout=timeout)
     except Exception:
-        log.error("kia.putHTTP: HTTP error", exc_info=True)
+        log.exception("kia.putHTTP: HTTP error")
         raise
 
     if response.status_code == 200 or response.status_code == 204:
@@ -189,8 +190,9 @@ def putHTTP(url: str = "", data: Union[str, dict] = "",
                                response_dict['errMsg']
         except Exception:
             error_string = "[XXXX] Unidentified Error"
+            log.exception("kia.putHTTP:Request failed")
 
-        log.debug("kia.putHTTP:Request failed, StatusCode: " +
+        log.error("kia.putHTTP:Request failed, StatusCode: " +
                   str(response.status_code) + ', Error: ' + error_string)
         raise RuntimeError
 
@@ -203,7 +205,7 @@ def deleteHTTP(url: str = "", headers: str = "", cookies: str = "",
         response = requests.delete(url, headers=headers, cookies=cookies,
                                    timeout=timeout)
     except Exception:
-        log.error("kia.putHTTP: HTTP error: " + response, exc_info=True)
+        log.exception("kia.deleteHTTP: HTTP error: " + response)
         raise
 
     return
@@ -225,7 +227,7 @@ def postHTTP(url: str = "", data: Union[str, dict] = "",
                                      cookies=cookies, timeout=timeout,
                                      allow_redirects=allow_redirects)
     except Exception:
-        log.error("kia.postHTTP: HTTP error", exc_info=True)
+        log.exception("kia.postHTTP: HTTP error")
         raise
 
     if response.status_code == 200 or response.status_code == 204:
@@ -244,8 +246,9 @@ def postHTTP(url: str = "", data: Union[str, dict] = "",
                     response_dict['errMsg']
         except Exception:
             error_string = "[XXXX] Unidentified Error"
+            log.exception("kia.postHTTP:Request failed")
 
-        log.debug("kia.postHTTP:Request failed, StatusCode: " +
+        log.error("kia.postHTTP:Request failed, StatusCode: " +
                   str(response.status_code) + ', Error: ' + error_string)
         raise RuntimeError
 
@@ -257,13 +260,13 @@ def getHTTPCookies(url: str = "") -> dict:
         session = requests.Session()
         response = session.get(url)
     except Exception:
-        log.error("kia.getHTTPCookies: HTTP error", exc_info=True)
+        log.exception("kia.getHTTPCookies: HTTP error")
         raise
 
     if response.status_code == 200:
         cookies = session.cookies.get_dict()
     else:
-        log.debug("kia.getHTTPCookies: Receiving cookies failed, StatusCode:" +
+        log.error("kia.getHTTPCookies: Receiving cookies failed, StatusCode:" +
                   " " + str(response.status_code))
         raise RuntimeError
 
@@ -277,7 +280,7 @@ def getUserHash(user_id: str, password: str) -> str:
         account = user_id + ':' + password
         hash = hashlib.md5(account.encode()).hexdigest()
     except Exception:
-        log.error("kia.getUserHash: hash error", exc_info=True)
+        log.exception("kia.getUserHash: hash error")
         raise
 
     return hash
@@ -290,7 +293,7 @@ def loadToken(user_id: str, password: str, vehicle: int) -> dict:
         with open(token_file, 'r', encoding='utf-8') as f:
             token = json.loads(f.read())
     except Exception:
-        log.debug("kia.loadToken: token file error: ", exc_info=True)
+        log.exception("kia.loadToken: token file error: ")
         token = {
             "userHash": ""
             }
@@ -309,7 +312,7 @@ def loadToken(user_id: str, password: str, vehicle: int) -> dict:
                 "tokenType": ""
                 }
     except Exception:
-        log.error("kia.loadToken: token error", exc_info=True)
+        log.exception("kia.loadToken: token error")
         raise
 
     return token
@@ -323,7 +326,7 @@ def saveToken(user_id: str, password: str, vehicle: int, token: dict) -> None:
         with open(token_file, 'w', encoding='utf-8') as f:
             f.write(json.dumps(token))
     except Exception:
-        log.debug("kia.saveToken: token could not be saved", exc_info=True)
+        log.exception("kia.saveToken: token could not be saved")
         raise
 
 # ---------- authentication ----------
@@ -352,7 +355,7 @@ def getCookies(brand: str) -> dict:
         url = getString("base_url", brand) + '/api/v1/user/session'
         deleteHTTP(url=url, cookies=cookies)
     except Exception:
-        log.debug("kia.getCookies: " + response, exc_info=True)
+        log.exception("kia.getCookies: " + response)
         raise
 
     return cookies
@@ -398,9 +401,8 @@ def getDeviceId(brand: str) -> dict:
 
         log.debug("Kia/Hyundai: DeviceId = " + token["deviceId"][:8] + "[...]")
     except Exception:
-        log.error("kia.getDeviceId: Request device id failed")
-        log.debug("kia.getDeviceId: Request device id failed: " +
-                  response, exc_info=True)
+        log.exception("kia.getDeviceId: Request device id failed: " +
+                      response)
         raise
 
     log.info("Sending VersionInfo")
@@ -433,9 +435,8 @@ def getDeviceId(brand: str) -> dict:
             }
         response = postHTTP(url=url, data=data, headers=headers)
     except Exception:
-        log.error("kia.getDeviceId: Set version info failed")
-        log.debug("kia.getDeviceId: Set version info failed: " +
-                  response, exc_info=True)
+        log.exception("kia.getDeviceId: Set version info failed: " +
+                      response)
         raise
 
     token["userHash"] = ""
@@ -503,8 +504,7 @@ def getAuthCode(username: str, password: str, brand: str,
         parsed = urlparse.urlparse(response_url)
         auth_code = ''.join(parse_qs(parsed.query)['code'])
     except Exception:
-        log.error("kia.getAuthCode: Login failed")
-        log.debug("kia.getAuthCode: Login failed: " + response, exc_info=True)
+        log.exception("kia.getAuthCode: Login failed: " + response)
         raise
 
     log.debug("Kia/Hyundai: AuthCode = " + auth_code[:8] + "[...]")
@@ -546,8 +546,7 @@ def getAuthToken(auth_code: str, token: dict, brand: str) -> dict:
         token["refreshToken"] = access_token["refresh_token"]
 
     except Exception:
-        log.error("kia.getAuthToken: Login failed")
-        log.debug("kia.getAuthToken: Login failed: " + response, exc_info=True)
+        log.exception("kia.getAuthToken: Login failed: " + response)
         raise
 
     log.debug("Kia/Hyundai: AuthToken = " + token["accessToken"][:8] + "[...]")
@@ -580,8 +579,7 @@ def registerDevice(token: dict, brand: str) -> None:
             }
         response = postHTTP(url=url, data=data, headers=headers)
     except Exception:
-        log.error("kia.getAuthToken: Login failed")
-        log.debug("kia.getAuthToken: Login failed: " + response, exc_info=True)
+        log.exception("kia.getAuthToken: Login failed: " + response)
         raise
 
     return
@@ -598,8 +596,7 @@ def requestToken(user_id: str, password: str, brand: str) -> dict:
         token["userHash"] = getUserHash(user_id, password)
         registerDevice(token, brand)
     except Exception:
-        log.error("kia.requestToken: Login failed")
-        log.debug("kia.requestToken: ", exc_info=True)
+        log.exception("kia.requestToken: ")
         raise
 
     return token
@@ -640,9 +637,8 @@ def refreshToken(token: dict, brand: str) -> dict:
         token["accessToken"] = token_new["access_token"]
 
     except Exception:
-        log.error("kia.refreshToken: refresh token failed")
-        log.debug("kia.refreshToken: refresh token error: " +
-                  response, exc_info=True)
+        log.exception("kia.refreshToken: refresh token error: " +
+                      response)
         raise
 
     log.debug("kia.refreshToken: New access token = " +
@@ -671,9 +667,8 @@ def getControlToken(pin: str, token: dict, brand: str) -> str:
         response_dict = json.loads(response)
         control_token = 'Bearer ' + response_dict['controlToken']
     except Exception:
-        log.error("kia.getControlToken: Sending PIN failed")
-        log.debug("kia.getControlToken: Sending PIN error: " +
-                  response, exc_info=True)
+        log.exception("kia.getControlToken: Sending PIN error: " +
+                      response)
         raise
 
     log.debug("kia.refreshToken: control token = " +
@@ -718,8 +713,7 @@ def getVehicleId(vin: str, token: dict, brand: str) -> str:
             raise
 
     except Exception:
-        log.error("kia.getVehicleId: failed")
-        log.debug("kia.getVehicleId: error: " + response, exc_info=True)
+        log.exception("kia.getVehicleId: error: " + response)
         raise
 
     log.debug("kia.getVehicleId: VehicleId = " + vehicle_id[:8] +
@@ -751,8 +745,7 @@ def doPrewakeup(vehicle_id: str, token: dict, brand: str) -> None:
             }
         response = postHTTP(url=url, data=data, headers=headers, timeout=125)
     except Exception:
-        log.error("kia.doPrewakeup: failed")
-        log.debug("kia.doPrewakeup: error: " + response, exc_info=True)
+        log.exception("kia.doPrewakeup: error: " + response)
         raise
 
     return
@@ -782,9 +775,8 @@ def getStatusFull(vehicle_id: str, control_token: str,
             }
         response = getHTTP(url=url, headers=headers, timeout=125)
     except Exception:
-        log.error("kia.getStatusFull: triggering update failed")
-        log.debug("kia.getStatusFull: triggering update error: " +
-                  response, exc_info=True)
+        log.exception("kia.getStatusFull: triggering update error: " +
+                      response)
         raise
 
     log.info("Kia/Hyundai: Waiting 130 seconds")
@@ -819,9 +811,8 @@ def getStatusFull(vehicle_id: str, control_token: str,
                                    ['FuelSystem']['DTE']['Total'])
 
     except Exception:
-        log.error("kia.getStatusFull: receiving update failed")
-        log.debug("kia.getStatusFull: receiving update error: " +
-                  response, exc_info=True)
+        log.exception("kia.getStatusFull: receiving update error: " +
+                      response)
         raise
 
     return CarState(soc, range)
@@ -843,8 +834,7 @@ def fetch_soc(user_id: str, password: str, pin: str,
             token = refreshToken(token, brand)
         saveToken(user_id, password, vehicle, token)
     except Exception:
-        log.error("kia.fetch_soc: login error, vehicle: " + str(vehicle))
-        log.debug("kia.fetch_soc: ", exc_info=True)
+        log.exception("kia.fetch_soc: ")
         raise
 
     try:
@@ -853,8 +843,7 @@ def fetch_soc(user_id: str, password: str, pin: str,
         control_token = getControlToken(pin, token, brand)
         soc_state = getStatusFull(vehicle_id, control_token, token, brand)
     except Exception:
-        log.error("kia.fetch_soc: API error, vehicle: " + str(vehicle))
-        log.debug("kia.fetch_soc: ", exc_info=True)
+        log.exception("kia.fetch_soc: ")
         raise
 
     return soc_state
