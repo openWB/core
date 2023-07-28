@@ -49,8 +49,8 @@ def get_totals(entries: List, sum_up_diffs: bool = False) -> Dict:
                                 else:
                                     try:
                                         prev_value = prev_entry[group][module][key]
-                                    # Wenn ein Modul neu hinzugefügt wurde, das es mit dieser ID schonmal gab, werden die
-                                    # Werte zusammen addiert.
+                                    # Wenn ein Modul neu hinzugefügt wurde, das es mit dieser ID schonmal gab, werden
+                                    # die Werte zusammen addiert.
                                     except KeyError:
                                         prev_value = entry[group][module][key]
                                     if prev_value == "":
