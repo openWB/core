@@ -9,6 +9,8 @@ import time
 import threading
 import traceback
 from threading import Thread
+from helpermodules.measurement_logging.update_daily_yields import update_daily_yields
+from helpermodules.measurement_logging.write_log import save_log
 from helpermodules.pub import Pub
 
 from modules import loadvars
@@ -16,7 +18,6 @@ from modules import configuration
 from helpermodules import timecheck, update_config
 from helpermodules import subdata
 from helpermodules import setdata
-from helpermodules import measurement_log
 from helpermodules import logger
 from helpermodules import command
 from control import prepare
@@ -76,7 +77,8 @@ class HandlerAlgorithm:
         ausführt, die nur alle 5 Minuten ausgeführt werden müssen.
         """
         try:
-            measurement_log.measurement_log_daily()
+            totals = save_log("daily")
+            update_daily_yields(totals)
             data.data.general_data.grid_protection()
             data.data.optional_data.et_get_prices()
             data.data.counter_all_data.validate_hierarchy()
