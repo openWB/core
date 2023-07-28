@@ -443,6 +443,7 @@ class UpdateConfig:
             self.__remove_outdated_topics()
             self._remove_invalid_topics()
             self.__pub_missing_defaults()
+            time.sleep(2)
             self.__update_version()
             self.__solve_breaking_changes()
         except Exception:
