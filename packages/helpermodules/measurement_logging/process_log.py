@@ -140,11 +140,11 @@ def get_daily_log(date: str):
 
 def _collect_daily_log_data(date: str):
     try:
-        with open(str(Path(__file__).resolve().parents[2] / "data"/"daily_log"/(date+".json")), "r") as jsonFile:
+        with open(str(Path(__file__).resolve().parents[3] / "data"/"daily_log"/(date+".json")), "r") as jsonFile:
             log_data = json.load(jsonFile)
             try:
                 next_date = timecheck.get_relative_date_string(date, day_offset=1)
-                with open(str(Path(__file__).resolve().parents[2] / "data"/"daily_log"/(next_date+".json")),
+                with open(str(Path(__file__).resolve().parents[3] / "data"/"daily_log"/(next_date+".json")),
                           "r") as nextJsonFile:
                     next_log_data = json.load(nextJsonFile)
                     log_data["entries"].append(next_log_data["entries"][0])
@@ -164,11 +164,11 @@ def get_monthly_log(date: str):
 
 def _collect_monthly_log_data(date: str):
     try:
-        with open(str(Path(__file__).resolve().parents[2] / "data"/"monthly_log"/(date+".json")), "r") as jsonFile:
+        with open(str(Path(__file__).resolve().parents[3] / "data"/"monthly_log"/(date+".json")), "r") as jsonFile:
             log_data = json.load(jsonFile)
             try:
                 next_date = timecheck.get_relative_date_string(date, month_offset=1)
-                with open(str(Path(__file__).resolve().parents[2] / "data"/"monthly_log"/(next_date+".json")),
+                with open(str(Path(__file__).resolve().parents[3] / "data"/"monthly_log"/(next_date+".json")),
                           "r") as nextJsonFile:
                     next_log_data = json.load(nextJsonFile)
                     log_data["entries"].append(next_log_data["entries"][0])
@@ -194,7 +194,7 @@ def _collect_yearly_log_data(year: str):
     dates.append(f"{int(year)+1}01")
     for date in dates:
         try:
-            with open(Path(__file__).resolve().parents[2]/"data"/"monthly_log"/f"{date}.json",
+            with open(Path(__file__).resolve().parents[3]/"data"/"monthly_log"/f"{date}.json",
                       "r") as jsonFile:
                 content = json.load(jsonFile)
                 content = content["totals"]
@@ -202,7 +202,7 @@ def _collect_yearly_log_data(year: str):
                 entries.append(content)
                 try:
                     next_date = timecheck.get_relative_date_string(date, month_offset=1)
-                    with open(str(Path(__file__).resolve().parents[2] / "data"/"monthly_log"/(next_date+".json")),
+                    with open(str(Path(__file__).resolve().parents[3] / "data"/"monthly_log"/(next_date+".json")),
                               "r") as nextJsonFile:
                         next_log_data = json.load(nextJsonFile)
                         next_log_data = next_log_data["totals"]

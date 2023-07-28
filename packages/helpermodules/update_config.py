@@ -12,9 +12,10 @@ import dataclass_utils
 from control.chargepoint.chargepoint_template import get_chargepoint_template_default
 
 from helpermodules.broker import InternalBrokerClient
+from helpermodules.measurement_logging.process_log import get_totals
+from helpermodules.measurement_logging.write_log import get_names
 from helpermodules.pub import Pub
 from helpermodules.utils.topic_parser import decode_payload, get_index, get_second_index
-from helpermodules import measurement_log
 from control import counter_all
 from control import ev
 from modules.common.configurable_vehicle import IntervalConfig
@@ -532,7 +533,7 @@ class UpdateConfig:
                     content = json.load(jsonFile)
                     if isinstance(content, List):
                         try:
-                            new_content = {"entries": content, "totals": measurement_log.get_totals(content)}
+                            new_content = {"entries": content, "totals": get_totals(content)}
                             jsonFile.seek(0)
                             json.dump(new_content, jsonFile)
                             jsonFile.truncate()
@@ -771,7 +772,7 @@ class UpdateConfig:
                     for e in content["entries"]:
                         e.update({"sh": {}})
                     content["totals"].update({"sh": {}})
-                    content["names"] = measurement_log.get_names(content["totals"], {})
+                    content["names"] = get_names(content["totals"], {})
                     jsonFile.seek(0)
                     json.dump(content, jsonFile)
                     jsonFile.truncate()

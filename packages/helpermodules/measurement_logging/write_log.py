@@ -79,7 +79,8 @@ log = logging.getLogger(__name__)
 #                 },
 #                 ... (dynamisch, je nach Anzahl konfigurierter Geräte)
 #             }
-#         }]
+#         }],
+#      "names": "names": {"sh1": "", "cp1": "", "counter2": "", "pv3": ""}
 #      }
 
 
@@ -122,13 +123,15 @@ def save_log(folder):
     for counter in data.data.counter_data:
         try:
             if "counter" in counter:
-                counter_dict.update({counter:
-                                     {"imported": data.data.counter_data[counter].data.get.imported,
-                                         "exported": data.data.counter_data[counter].data.get.exported}})
+                counter_dict.update(
+                    {counter: {
+                        "imported": data.data.counter_data[counter].data.get.imported,
+                        "exported": data.data.counter_data[counter].data.get.exported,
+                        "grid": True if data.data.counter_all_data.get_evu_counter_str() == counter else False}})
         except Exception:
             log.exception("Fehler im Werte-Logging-Modul für Zähler "+str(counter))
 
-    pv_dict = {}
+    pv_dict = {"all": {"exported": data.data.pv_all_data.data.get.exported}}
     if data.data.pv_all_data.data.config.configured:
         for pv in data.data.pv_data:
             try:
@@ -137,7 +140,9 @@ def save_log(folder):
             except Exception:
                 log.exception("Fehler im Werte-Logging-Modul für Wechselrichter "+str(pv))
 
-    bat_dict = {}
+    bat_dict = {"all": {"imported": data.data.bat_all_data.data.get.imported,
+                        "exported": data.data.bat_all_data.data.get.exported,
+                        "soc": data.data.bat_all_data.data.get.soc}}
     if data.data.bat_all_data.data.config.configured:
         for bat in data.data.bat_data:
             try:
@@ -162,28 +167,28 @@ def save_log(folder):
 
     # json-Objekt in Datei einfügen
     if folder == "daily":
-        (pathlib.Path(__file__).resolve().parents[2] / "data"/"daily_log").mkdir(mode=0o755,
+        (pathlib.Path(__file__).resolve().parents[3] / "data"/"daily_log").mkdir(mode=0o755,
                                                                                  parents=True, exist_ok=True)
         filepath = str(
-            Path(__file__).resolve().parents[2] / "data" / "daily_log" /
+            Path(__file__).resolve().parents[3] / "data" / "daily_log" /
             (timecheck.create_timestamp_YYYYMMDD() + ".json"))
     else:
-        (pathlib.Path(__file__).resolve().parents[2] / "data"/"monthly_log").mkdir(mode=0o755,
+        (pathlib.Path(__file__).resolve().parents[3] / "data"/"monthly_log").mkdir(mode=0o755,
                                                                                    parents=True, exist_ok=True)
         filepath = str(
-            Path(__file__).resolve().parents[2] / "data" / "monthly_log" /
+            Path(__file__).resolve().parents[3] / "data" / "monthly_log" /
             (timecheck.create_timestamp_YYYYMM() + ".json"))
     try:
         with open(filepath, "r") as jsonFile:
             content = json.load(jsonFile)
     except FileNotFoundError:
         with open(filepath, "w") as jsonFile:
-            json.dump({"entries": [], "totals": {}, "names": {}}, jsonFile)
+            json.dump({"entries": [], "names": {}}, jsonFile)
         with open(filepath, "r") as jsonFile:
             content = json.load(jsonFile)
     entries = content["entries"]
     entries.append(new_entry)
-    content["names"] = get_names(content["totals"], sh_names)
+    content["names"] = get_names(content["entries"][-1], sh_names)
     with open(filepath, "w") as jsonFile:
         json.dump(content, jsonFile)
     return content["entries"]
