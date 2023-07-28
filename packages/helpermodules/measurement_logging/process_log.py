@@ -31,38 +31,41 @@ def get_totals(entries: List, sum_up_diffs: bool = False) -> Dict:
     for group in totals.keys():
         for entry in entries:
             for module in entry[group]:
-                if not prev_entry or module not in totals[group]:
-                    if sum_up_diffs:
-                        totals[group][module] = entry[group][module]
+                try:
+                    if not prev_entry or module not in totals[group]:
+                        if sum_up_diffs:
+                            totals[group][module] = entry[group][module]
+                        else:
+                            totals[group][module] = {"exported": 0} if group == "pv" else {"imported": 0, "exported": 0}
                     else:
-                        totals[group][module] = {"exported": 0} if group == "pv" else {"imported": 0, "exported": 0}
-                else:
-                    for key, value in entry[group][module].items():
-                        if key != "soc" and "temp" not in key:
-                            if value == "":
-                                # Manchmal fehlen Werte im alten Log
-                                value = 0
-                            if sum_up_diffs:
-                                value = (Decimal(str(value))
-                                         + Decimal(str(totals[group][module][key])))
-                            else:
-                                try:
-                                    prev_value = prev_entry[group][module][key]
-                                # Wenn ein Modul neu hinzugefügt wurde, das es mit dieser ID schonmal gab, werden die
-                                # Werte zusammen addiert.
-                                except KeyError:
-                                    prev_value = entry[group][module][key]
-                                if prev_value == "":
+                        for key, value in entry[group][module].items():
+                            if key != "soc" and key != "grid" and "temp" not in key:
+                                if value == "":
                                     # Manchmal fehlen Werte im alten Log
-                                    prev_value = 0
-                                # avoid floating point issues with using Decimal
-                                value = (Decimal(str(value))
-                                         - Decimal(str(prev_value))
-                                         + Decimal(str(totals[group][module][key])))
-                            value = f'{value: f}'
-                            # remove trailing zeros
-                            totals[group][module][key] = string_to_float(
-                                value) if "." in value else string_to_int(value)
+                                    value = 0
+                                if sum_up_diffs:
+                                    value = (Decimal(str(value))
+                                             + Decimal(str(totals[group][module][key])))
+                                else:
+                                    try:
+                                        prev_value = prev_entry[group][module][key]
+                                    # Wenn ein Modul neu hinzugefügt wurde, das es mit dieser ID schonmal gab, werden die
+                                    # Werte zusammen addiert.
+                                    except KeyError:
+                                        prev_value = entry[group][module][key]
+                                    if prev_value == "":
+                                        # Manchmal fehlen Werte im alten Log
+                                        prev_value = 0
+                                    # avoid floating point issues with using Decimal
+                                    value = (Decimal(str(value))
+                                             - Decimal(str(prev_value))
+                                             + Decimal(str(totals[group][module][key])))
+                                value = f'{value: f}'
+                                # remove trailing zeros
+                                totals[group][module][key] = string_to_float(
+                                    value) if "." in value else string_to_int(value)
+                except Exception:
+                    log.exception(f"Fehler beim Berechnen der Summe von {module}")
             prev_entry = entry
     return totals
 
@@ -133,8 +136,8 @@ def get_totals(entries: List, sum_up_diffs: bool = False) -> Dict:
 
 def get_daily_log(date: str):
     data = _collect_daily_log_data(date)
-    data = _analyse_power_source(data)
     data = _convert_data_to_kW(data)
+    data = _analyse_power_source(data)
     return data
 
 
@@ -150,7 +153,8 @@ def _collect_daily_log_data(date: str):
                     log_data["entries"].append(next_log_data["entries"][0])
             except FileNotFoundError:
                 pass
-            return {"entries": log_data, "totals": get_totals(log_data)}
+            log_data["totals"] = get_totals(log_data["entries"])
+            return log_data
     except FileNotFoundError:
         pass
     return []
@@ -174,7 +178,8 @@ def _collect_monthly_log_data(date: str):
                     log_data["entries"].append(next_log_data["entries"][0])
             except FileNotFoundError:
                 pass
-            return {"entries": log_data, "totals": get_totals(log_data)}
+            log_data["totals"] = get_totals(log_data["entries"])
+            return log_data
     except FileNotFoundError:
         pass
     return []
@@ -213,51 +218,71 @@ def _collect_yearly_log_data(year: str):
                     pass
         except FileNotFoundError:
             log.debug(f"Kein Log für Monat {date} gefunden.")
+        except Exception:
+            log.exception(f"Fehler beim Zusammenstellen der Jahresdaten für Monat {date}")
     return {"entries": entries, "totals": get_totals(entries, sum_up_diffs=True)}
 
 
-def _analyse_power_source(data):
-    for entry in data["entries"]:
-        entry = _analyse_percentage(entry)
-    _analyse_percentage(data["totals"])
+def _analyse_power_source(data) -> Dict:
+    if data:
+        for i in range(0, len(data["entries"])):
+            data["entries"][i] = _analyse_percentage(data["entries"][i])
+        data["totals"] = _analyse_percentage(data["totals"])
+    return data
 
 
 def _analyse_percentage(entry):
     def format(value):
-        return round(value/100, 2)
-    bat_imported = entry["bat"]["all"]["imported"]
-    bat_exported = entry["bat"]["all"]["exported"]
-    cp_exported = entry["cp"]["all"]["exported"]
-    pv = entry["pv"]["all"]["exported"]
-    for counter in entry["counter"]:
-        if counter.get("grid") is None:
-            return
-        if counter["grid"]:
-            grid_imported = counter["imported"]
-            grid_exported = counter["exported"]
-    consumption = grid_imported - grid_exported + pv + bat_exported - bat_imported + cp_exported
-    entry["power_source"] = {"grid": format(grid_imported / consumption),
-                             "pv": format((pv - grid_exported - bat_imported) / consumption),
-                             "bat": format(bat_exported/consumption),
-                             "cp": format(cp_exported/consumption)}
-    return entry
+        return round(value*100, 2)
+    try:
+        bat_imported = entry["bat"]["all"]["imported"]
+        bat_exported = entry["bat"]["all"]["exported"]
+        cp_exported = entry["cp"]["all"]["exported"]
+        pv = entry["pv"]["all"]["exported"]
+        for counter in entry["counter"].values():
+            if counter.get("grid") is None:
+                return
+            if counter["grid"]:
+                grid_imported = counter["imported"]
+                grid_exported = counter["exported"]
+        consumption = grid_imported - grid_exported + pv + bat_exported - bat_imported + cp_exported
+        try:
+            entry["power_source"] = {"grid": format(grid_imported / consumption),
+                                     "pv": format((pv - grid_exported - bat_imported) / consumption),
+                                     "bat": format(bat_exported/consumption),
+                                     "cp": format(cp_exported/consumption)}
+        except ZeroDivisionError:
+            entry["power_source"] = {"power_source": {"grid": 0, "pv": 0, "bat": 0, "cp": 0}}
+    except Exception:
+        log.exception(f"Fehler beim Berechenen des Strom-Mix von {entry['timestamp']}")
+    finally:
+        return entry
 
 
 def _convert_data_to_kW(data):
-    for i in range(0, len(data["entries"])-1):
-        entry = data["entries"][0]
-        next_entry = data["entries"][1]
-        entry = _convert(entry, next_entry)
+    if data:
+        for i in range(0, len(data["entries"])-1):
+            entry = data["entries"][i]
+            next_entry = data["entries"][i+1]
+            data["entries"][i] = _convert(entry, next_entry)
+    return data
 
 
 def _convert(entry, next_entry):
-    time_diff = entry["timestamp"] - next_entry["timestamp"]
+    time_diff = next_entry["timestamp"] - entry["timestamp"]
     for type in ("bat", "counter", "cp", "pv", "sh"):
-        for key in entry[type].keys():
-            if key == "imported" or key == "exported":
-                value = entry[type][key]
-                next_value = next_entry[type][key]
-                entry[type][key] = _convert_value_to_kW(value, next_value, time_diff)
+        for module in entry[type].keys():
+            try:
+                for key in entry[type][module]:
+                    try:
+                        if key == "imported" or key == "exported":
+                            value = entry[type][module][key]
+                            next_value = next_entry[type][module][key]
+                            entry[type][module][key] = _convert_value_to_kW(value, next_value, time_diff)
+                    except Exception:
+                        log.exception("Fehler beim Berechnen der Leistung")
+            except Exception:
+                log.exception("Fehler beim Berechnen der Leistung")
     return entry
 
 

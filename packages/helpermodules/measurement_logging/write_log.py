@@ -197,7 +197,7 @@ def save_log(folder):
 def get_names(totals: Dict, sh_names: Dict) -> Dict:
     names = sh_names
     for group in totals.items():
-        if group[0] == "sh":
+        if group[0] not in ("bat", "counter", "cp", "pv"):
             continue
         for entry in group[1]:
             try:

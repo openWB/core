@@ -124,7 +124,7 @@ class HandlerAlgorithm:
     @exit_after(10)
     def handler_midnight(self):
         try:
-            measurement_log.save_log("monthly")
+            save_log("monthly")
         except KeyboardInterrupt:
             log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())
         except Exception:
