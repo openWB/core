@@ -56,7 +56,7 @@ def read_legacy_bat(ip_address: str, jq_power: str, jq_soc: str):
     read_legacy(ip_address, bat.component_descriptor.configuration_factory(id=None, configuration=config))
 
 
-def read_legacy_counter(ip_address: str, jq_power: str, jq_imported: str, jq_exported: str, 
+def read_legacy_counter(ip_address: str, jq_power: str, jq_imported: str, jq_exported: str,
                         jq_power_l1: str, jq_power_l2: str, jq_power_l3: str):
     config = JsonCounterConfiguration(jq_power=jq_power,
                                       jq_imported=None if jq_imported == "" else jq_imported,

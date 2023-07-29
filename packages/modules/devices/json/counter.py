@@ -32,7 +32,7 @@ class JsonCounter:
                       float(jq.compile(config.jq_power_l2).input(response).first()),
                       float(jq.compile(config.jq_power_l3).input(response).first())
                       ]
-            
+
         if config.jq_imported is None or config.jq_exported is None:
             imported, exported = self.sim_counter.sim_count(power)
         else:

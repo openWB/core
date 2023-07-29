@@ -45,7 +45,8 @@ def test_device(monkeypatch, mock_value_store: Mock, requests_mock: requests_moc
 def test_counter_powers(monkeypatch, mock_value_store: Mock, requests_mock: requests_mock.Mocker):
     # setup
     monkeypatch.setattr(FaultState, "store_error", Mock())
-    requests_mock.get("http://sample_host/sample_path", json={"power": 42, "power_l1": 11, "power_l2": 12, "power_l3": 13})
+    requests_mock.get("http://sample_host/sample_path",
+                      json={"power": 42, "power_l1": 11, "power_l2": 12, "power_l3": 13})
     device_config = Json(configuration=JsonConfiguration("http://sample_host/sample_path"))
 
     # execution
