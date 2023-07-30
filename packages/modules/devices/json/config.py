@@ -48,9 +48,7 @@ class JsonCounterConfiguration:
         self.jq_power = jq_power
         self.jq_exported = jq_exported
         self.jq_imported = jq_imported
-        self.jq_power_l1 = jq_power_l1
-        self.jq_power_l2 = jq_power_l2
-        self.jq_power_l3 = jq_power_l3
+        self.jq_powers = (jq_power_l1, jq_power_l2, jq_power_l3)
 
 
 class JsonCounterSetup(ComponentSetup[JsonCounterConfiguration]):

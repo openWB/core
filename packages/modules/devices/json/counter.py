@@ -25,13 +25,10 @@ class JsonCounter:
 
         power = float(jq.compile(config.jq_power).input(response).first())
 
-        if config.jq_power_l1 is None or config.jq_power_l2 is None or config.jq_power_l3 is None:
-            powers = None
+        if all(config.jq_powers):
+            powers = [float(jq.compile(p).input(response).first()) for p in config.jq_powers]
         else:
-            powers = [float(jq.compile(config.jq_power_l1).input(response).first()),
-                      float(jq.compile(config.jq_power_l2).input(response).first()),
-                      float(jq.compile(config.jq_power_l3).input(response).first())
-                      ]
+            powers = None
 
         if config.jq_imported is None or config.jq_exported is None:
             imported, exported = self.sim_counter.sim_count(power)
