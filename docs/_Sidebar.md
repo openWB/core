@@ -15,4 +15,4 @@
 * Konfiguration
   * [Cloud-Sicherung](https://github.com/openWB/core/wiki/Cloud-Sicherung)
     * [Nextcloud](https://github.com/openWB/core/wiki/Nextcloud-als-Sicherungs-Cloud-einrichten)
-  * [Hierarchie mit Solar-Log Zähler](https://github.com/openWB/core/wiki/Solar-Log)
+  * [Hierarchie mit Hausverbrauchs-Zähler](https://github.com/openWB/core/wiki/Hausverbrauchs-Zähler)
