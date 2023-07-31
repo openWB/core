@@ -54,7 +54,7 @@ class ChargepointStateUpdate:
                     try:
                         ev_list[vehicle].charge_template = copy.deepcopy(self.ev_charge_template_data["ct" + str(
                             ev_list[vehicle].data.charge_template)])
-                        # zuerst das aktuelle Template laden
+                        # zuerst das aktuelle Profil laden
                         ev_list[vehicle].ev_template = copy.deepcopy(self.ev_template_data["et" + str(
                             ev_list[vehicle].data.ev_template)])
                     except Exception:
