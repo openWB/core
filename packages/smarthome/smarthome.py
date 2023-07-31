@@ -1,5 +1,4 @@
 #!/usr/bin/python3
-from pickle import TRUE
 import threading
 from smarthome.smartcommon import mainloop, initparam
 import logging
