@@ -231,7 +231,7 @@ class UpdateConfig:
         "^openWB/vehicle/[0-9]+/control_parameter/timestamp_auto_phase_switch$",
         "^openWB/vehicle/[0-9]+/control_parameter/timestamp_perform_phase_switch$",
         "^openWB/vehicle/[0-9]+/control_parameter/timestamp_switch_on_off$",
-        "^openWB/vehicle/[0-9]+/control_parameter/used_amount_instant_charging$",
+        "^openWB/vehicle/[0-9]+/control_parameter/imported_instant_charging$",
         "^openWB/vehicle/[0-9]+/control_parameter/phases$",
         "^openWB/vehicle/[0-9]+/control_parameter/state$",
         "^openWB/vehicle/[0-9]+/set/ev_template$",

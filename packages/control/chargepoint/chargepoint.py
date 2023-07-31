@@ -807,7 +807,7 @@ class Chargepoint:
                     charging_ev.data.control_parameter.phases = min(
                         self.get_phases_by_selected_chargemode(), max_phase_hw)
                     state, message_ev, submode, required_current, phases = charging_ev.get_required_current(
-                        self.data.set.log.imported_since_mode_switch,
+                        self.data.get.imported,
                         max_phase_hw,
                         self.cp_ev_support_phase_switch())
                     phases = self.set_phases(phases)
