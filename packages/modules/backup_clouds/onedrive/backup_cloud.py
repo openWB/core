@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 import logging
 import os
-from msdrive import OneDrive
 import pathlib
 
+from modules.backup_clouds.onedrive.msdrive.onedrive import OneDrive
 from modules.backup_clouds.onedrive.api import get_tokens
 from modules.backup_clouds.onedrive.config import OneDriveBackupCloud, OneDriveBackupCloudConfiguration
 from modules.common.abstract_device import DeviceDescriptor

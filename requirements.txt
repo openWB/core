@@ -14,5 +14,4 @@ pkce==1.0.3
 evdev==1.5.0
 #telnetlib3==2.0.2
 msal==1.22.0
-onedrive-sharepoint-python-sdk==0.0.2
 python-dateutil==2.8.2
