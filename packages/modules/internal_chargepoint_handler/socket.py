@@ -3,7 +3,7 @@ import functools
 import logging
 import time
 from typing import Callable, Tuple
-from helpermodules.home_configuration import get_home_configuration_setting
+from helpermodules.hardware_configuration import get_hardware_configuration_setting
 
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.component_state import ChargepointState
@@ -49,7 +49,7 @@ class Socket(ChargepointModule):
                  local_charge_point_num: int,
                  client_handler: ClientHandler,
                  parent_hostname: str) -> None:
-        self.socket_max_current = get_home_configuration_setting("max_c_socket")
+        self.socket_max_current = get_hardware_configuration_setting("max_c_socket")
         log.debug(f"Konfiguration als Buchse mit maximal {self.socket_max_current}A Ladestrom je Phase.")
         super().__init__(local_charge_point_num, client_handler, parent_hostname)
 

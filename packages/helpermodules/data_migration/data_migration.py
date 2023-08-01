@@ -16,12 +16,12 @@ import pathlib
 import shutil
 import tarfile
 from threading import Thread
-from typing import Callable, Dict, List, Union
+from typing import Callable, Dict, List, Optional, Union
 
 from control import data, ev
 from dataclass_utils import dataclass_from_dict
 from helpermodules.data_migration.id_mapping import MapId
-from helpermodules.home_configuration import update_home_configuration
+from helpermodules.hardware_configuration import update_hardware_configuration
 from helpermodules.measurement_log import LegacySmartHomeLogData, get_names, get_totals, string_to_float, string_to_int
 from helpermodules.utils import thread_handler
 from helpermodules.pub import Pub
@@ -80,11 +80,8 @@ class MigrateData:
         thread_handler(self.convert_csv_to_json_chargelog(), None)
         thread_handler(self.convert_csv_to_json_measurement_log("daily"), None)
         thread_handler(self.convert_csv_to_json_measurement_log("monthly"), None)
-        self.move_serial_number()
-        self.move_cloud_data()
-        self.move_rse()
-        self.move_max_c_socket()
-        self.move_pddate()
+        self._migrate_settings_from_openwb_conf()
+        # self._move_uuids()
         self._remove_migration_data()
 
     def _check_version(self):
@@ -92,7 +89,7 @@ class MigrateData:
             version = f.read().replace("\n", "")
             sub_version = version.split(".")
         if not (int(sub_version[0]) == self.MAJOR_VERSION and
-                int(sub_version[1]) == self.MINOR_VERSION and
+                int(sub_version[1]) >= self.MINOR_VERSION and
                 int(sub_version[2]) >= self.PATCH_VERSION):
             self._remove_migration_data()
             raise ValueError(f"Das Backup für die Datenübernahme muss mindestens mit Version {self.MAJOR_VERSION}."
@@ -122,7 +119,6 @@ class MigrateData:
         self._extract_files("monthly")
         with tarfile.open('./data/data_migration/data_migration.tar.gz') as tar:
             tar.extract(member="var/www/html/openWB/openwb.conf", path="./data/data_migration")
-        with tarfile.open('./data/data_migration/data_migration.tar.gz') as tar:
             tar.extract(member="var/www/html/openWB/web/version", path="./data/data_migration")
 
     def convert_csv_to_json_chargelog(self) -> List[Thread]:
@@ -518,76 +514,61 @@ class MigrateData:
                     log.exception(f"Fehler beim Konvertieren des Monats-Logs vom {file}, Reihe {row}")
         return entries
 
-    def _strip_openwb_conf_entry(self, entry: str, key: str) -> str:
-        value = entry.replace(f"{key}=", "")
-        return value.rstrip("\n")
+    def _get_openwb_conf_value(self, key: str) -> Optional[str]:
+        value = None
+        for line in self.openwb_conf:
+            if "snnumber" in line:
+                raw_value = line.replace(f"{key}=", "")
+                value = raw_value.rstrip("\n")
+        return value
 
-    def move_serial_number(self) -> None:
+    def _migrate_settings_from_openwb_conf(self):
         with open("./data/data_migration/var/www/html/openWB/openwb.conf", "r") as file:
-            serial_number = ""
-            openwb_conf = file.readlines()
-            for line in openwb_conf:
-                if "snnumber" in line:
-                    serial_number = self._strip_openwb_conf_entry(line, "snnumber")
-                    break
-            else:
-                log.debug("Keine Seriennummer gefunden.")
-        with open("/home/openwb/snnumber", "w") as file:
-            file.write(f"snnumber={serial_number}")
+            self.openwb_conf = file.readlines()
+        self._move_serial_number()
+        self._move_cloud_data()
+        self._move_rse()
+        self._move_max_c_socket()
+        self._move_pddate()
 
-    def move_cloud_data(self) -> None:
-        with open("./data/data_migration/var/www/html/openWB/openwb.conf", "r") as file:
-            cloud_user = ""
-            cloud_pw = ""
-            openwb_conf = file.readlines()
-            for line in openwb_conf:
-                if "clouduser" in line:
-                    cloud_user = self._strip_openwb_conf_entry(line, "clouduser")
-                elif "cloudpw" in line:
-                    cloud_pw = self._strip_openwb_conf_entry(line, "cloudpw")
-            if cloud_user == "":
-                log.debug("Keine Cloud-Zugangsdaten gefunden.")
-        Pub().pub("openWB/set/command/data_migration/todo",
-                  {"command": "connectCloud", "data": {"username": cloud_user, "password": cloud_pw, "partner": 0}})
+    def _move_serial_number(self) -> None:
+        serial_number = self._get_openwb_conf_value("snnumber")
+        if serial_number:
+            with open("/home/openwb/snnumber", "w") as file:
+                file.write(f"snnumber={serial_number}")
+        else:
+            log.debug("Keine Seriennummer gefunden.")
 
-    def move_rse(self) -> None:
-        with open("./data/data_migration/var/www/html/openWB/openwb.conf", "r") as file:
-            rse = None
-            openwb_conf = file.readlines()
-            for line in openwb_conf:
-                if "rseenabled" in line:
-                    rse = bool(self._strip_openwb_conf_entry(line, "rseenabled"))
-                    break
-            else:
-                log.debug("Keine Rundsteuerempfänger-Konfiguration gefunden. Setze auf False.")
-                rse = False
-        update_home_configuration({"ripple_control_receiver_configured": rse})
+    def _move_cloud_data(self) -> None:
+        cloud_user = self._get_openwb_conf_value("clouduser")
+        cloud_pw = self._get_openwb_conf_value("cloudpw")
+        if cloud_user is not None and cloud_pw is not None:
+            Pub().pub("openWB/set/command/data_migration/todo",
+                      {"command": "connectCloud", "data": {"username": cloud_user, "password": cloud_pw, "partner": 0}})
+        else:
+            log.debug("Keine Cloud-Zugangsdaten gefunden.")
 
-    def move_max_c_socket(self):
-        with open("./data/data_migration/var/www/html/openWB/openwb.conf", "r") as file:
-            max_c_socket = None
-            openwb_conf = file.readlines()
-            for line in openwb_conf:
-                if "ppbuchse" in line:
-                    max_c_socket = int(self._strip_openwb_conf_entry(line, "ppbuchse"))
-                    break
-            else:
-                log.debug("Keine max_c_socket-Konfiguration gefunden. Setze auf False.")
-                max_c_socket = 16
-        update_home_configuration({"max_c_socket": max_c_socket})
+    def _move_rse(self) -> None:
+        rse = bool(self._get_openwb_conf_value("rseenabled"))
+        if rse is None:
+            log.debug("Keine Rundsteuerempfänger-Konfiguration gefunden. Setze auf False.")
+            rse = False
+        update_hardware_configuration({"ripple_control_receiver_configured": rse})
 
-    def move_pddate(self) -> None:
-        with open("./data/data_migration/var/www/html/openWB/openwb.conf", "r") as file:
-            pddate = ""
-            openwb_conf = file.readlines()
-            for line in openwb_conf:
-                if "pddate" in line:
-                    pddate = self._strip_openwb_conf_entry(line, "pddate")
-                    break
-            else:
-                log.debug("Kein Produktionsdatum gefunden.")
-        with open("/home/openwb/pddate", "w") as file:
-            file.write(f"pddate={pddate}")
+    def _move_max_c_socket(self):
+        max_c_socket = self._get_openwb_conf_value("ppbuchse")
+        if max_c_socket is None:
+            log.debug("Keine max_c_socket-Konfiguration gefunden. Setze auf False.")
+            max_c_socket = 32
+        update_hardware_configuration({"max_c_socket": max_c_socket})
+
+    def _move_pddate(self) -> None:
+        pddate = self._get_openwb_conf_value("pddate")
+        if pddate is not None:
+            with open("/home/openwb/pddate", "w") as file:
+                file.write(f"pddate={pddate}")
+        else:
+            log.debug("Kein Produktionsdatum gefunden.")
 
     NOT_CONFIGURED = " wurde in openWB software2 nicht konfiguriert."
 

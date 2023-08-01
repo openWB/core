@@ -6,7 +6,7 @@ import random
 from typing import List, Optional
 
 from control import data
-from helpermodules import home_configuration
+from helpermodules import hardware_configuration
 from helpermodules.pub import Pub
 from helpermodules import timecheck
 from modules import ripple_control_receiver
@@ -183,7 +183,7 @@ class General:
             log.exception("Fehler im General-Modul")
 
     def check_ripple_control_receiver(self):
-        configured = home_configuration.get_home_configuration_setting(
+        configured = hardware_configuration.get_hardware_configuration_setting(
             "ripple_control_receiver_configured")
         if configured != self.data.ripple_control_receiver.configured:
             self.data.ripple_control_receiver.configured = configured

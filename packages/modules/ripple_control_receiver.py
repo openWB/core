@@ -22,8 +22,8 @@ def read() -> Tuple[bool, bool]:
         GPIO.setup(21, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
         try:
-            rse1 = not GPIO.input(24)
-            rse2 = not GPIO.input(21)
+            rse1 = GPIO.input(24) == GPIO.LOW
+            rse2 = GPIO.input(21) == GPIO.LOW
         except Exception:
             GPIO.cleanup()
             log.exception("Fehler beim Auslesen der Rundsteuer-Kontakte.")
