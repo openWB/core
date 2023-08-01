@@ -3,6 +3,7 @@ import functools
 import logging
 import time
 from typing import Callable, Tuple
+from helpermodules.home_configuration import get_home_configuration_setting
 
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.component_state import ChargepointState
@@ -45,12 +46,11 @@ class ActorState(IntEnum):
 
 class Socket(ChargepointModule):
     def __init__(self,
-                 socket_max_current: int,
                  local_charge_point_num: int,
                  client_handler: ClientHandler,
                  parent_hostname: str) -> None:
         log.debug("Konfiguration als Buchse.")
-        self.socket_max_current = socket_max_current
+        self.socket_max_current = get_home_configuration_setting("max_c_socket")
         super().__init__(local_charge_point_num, client_handler, parent_hostname)
 
     def set_current(self, current: float) -> None:
