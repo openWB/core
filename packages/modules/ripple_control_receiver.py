@@ -26,7 +26,7 @@ def read() -> Tuple[bool, bool]:
             button1_state = GPIO.input(24)
             button2_state = GPIO.input(21)
 
-            time.sleep(10.2)
+            # time.sleep(10.2)
 
             rse1 = not button1_state
             rse2 = not button2_state
