@@ -23,8 +23,8 @@ def read() -> Tuple[bool, bool]:
         GPIO.setup(21, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
         try:
-            button1_state = GPIO.input(8)
-            button2_state = GPIO.input(9)
+            button1_state = GPIO.input(24)
+            button2_state = GPIO.input(21)
 
             time.sleep(10.2)
 
