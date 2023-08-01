@@ -18,9 +18,9 @@ def read() -> Tuple[bool, bool]:
     rse2: bool = False
 
     if has_gpio:
-        GPIO.setmode(GPIO.BCM)
-        GPIO.setup(8, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        GPIO.setup(9, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        GPIO.setmode(GPIO.BOARD)
+        GPIO.setup(24, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        GPIO.setup(21, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
         try:
             button1_state = GPIO.input(8)
