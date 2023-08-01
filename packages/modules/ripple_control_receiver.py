@@ -1,5 +1,4 @@
 import logging
-import time
 from typing import Tuple
 
 log = logging.getLogger(__name__)
