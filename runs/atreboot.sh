@@ -290,6 +290,11 @@ chmod 666 "$LOGFILE"
 	fi
 	echo "mosquitto done"
 
+	# check for home configuration
+	if [[ ! -f "/home/openwb/configuration.json" ]]; then
+		sudo cp -a "${OPENWBBASEDIR}/data/config/configuration.json" "/home/openwb/configuration.json"
+	fi
+
 	# check for python dependencies
 	echo "install required python packages with 'pip3'..."
 	pip3 install -r "${OPENWBBASEDIR}/requirements.txt"

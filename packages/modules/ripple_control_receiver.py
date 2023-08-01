@@ -1,6 +1,6 @@
 import logging
 import time
-from helpermodules.pub import Pub
+from typing import Tuple
 
 log = logging.getLogger(__name__)
 has_gpio = True
@@ -13,7 +13,7 @@ except ImportError:
     log.warning("RSE disabled!")
 
 
-def read():
+def read() -> Tuple[bool, bool]:
     rse1: bool = False
     rse2: bool = False
 
@@ -32,6 +32,5 @@ def read():
             rse2 = not button2_state
         except Exception:
             GPIO.cleanup()
-            log.exception()
-    Pub().pub("openWB/set/general/ripple_control_receiver/r1_active", rse1)
-    Pub().pub("openWB/set/general/ripple_control_receiver/r2_active", rse2)
+            log.exception("Fehler beim Auslesen der Rundsteuer-Kontakte.")
+    return rse1, rse2
