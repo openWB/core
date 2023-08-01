@@ -563,6 +563,9 @@ class SubData:
                         # 5 Min Handler bis auf Heartbeat, Cleanup, ... beenden
                         self.event_jobs_running.clear()
                     self.set_json_payload_class(var.data, msg)
+                    subprocess.run([
+                        str(Path(__file__).resolve().parents[2] / "runs" / "setup_network.sh")
+                    ])
                 else:
                     self.set_json_payload_class(var.data, msg)
         except Exception:

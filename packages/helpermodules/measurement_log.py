@@ -105,7 +105,9 @@ def save_log(folder):
                     'cp4': {'exported': 0, 'imported': 85},
                     'cp5': {'exported': 0, 'imported': 0},
                     'cp6': {'exported': 0, 'imported': 64}},
-            'pv': {'all': {'imported': 251}, 'pv1': {'imported': 247}}}
+            'ev': {'ev1': {}},
+            'pv': {'all': {'imported': 251}, 'pv1': {'imported': 247}}},
+            'sh': { 'sh1': {'exported': 123, 'imported': 123}}
         },
         "names": {
             "counter0": "Mein EVU-Zähler",
@@ -117,7 +119,7 @@ def save_log(folder):
     Parameter
     ---------
     folder: str
-        gibt an, ob ein Tages-oder Monatslogeintrag erstellt werden soll.
+        gibt an, ob ein Tages-oder Monats-Log-Eintrag erstellt werden soll.
     """
     if folder == "daily":
         date = timecheck.create_timestamp_time()
@@ -177,7 +179,7 @@ def save_log(folder):
             except Exception:
                 log.exception("Fehler im Werte-Logging-Modul für Speicher "+str(bat))
 
-    sh_dict, sh_names = LegacySmarthomeLogdata().update()
+    sh_dict, sh_names = LegacySmartHomeLogData().update()
 
     new_entry = {
         "timestamp": current_timestamp,
@@ -208,7 +210,7 @@ def save_log(folder):
             content = json.load(jsonFile)
     except FileNotFoundError:
         with open(filepath, "w") as jsonFile:
-            json.dump({"entries": [], "totals": {}}, jsonFile)
+            json.dump({"entries": [], "totals": {}, "names": {}}, jsonFile)
         with open(filepath, "r") as jsonFile:
             content = json.load(jsonFile)
     entries = content["entries"]
@@ -220,8 +222,22 @@ def save_log(folder):
     return content["totals"]
 
 
+def string_to_float(value: str, default: float = 0) -> float:
+    try:
+        return float(value)
+    except ValueError:
+        return default
+
+
+def string_to_int(value: str, default: int = 0) -> int:
+    try:
+        return int(value)
+    except ValueError:
+        return default
+
+
 def get_totals(entries: List, sum_up_diffs: bool = False) -> Dict:
-    # beim Jahreslog werden die Summen aus den Monatssummen berechnet, bei allen anderen aus den absoluten Zählerwerten
+    # beim Jahres-Log werden die Summen aus den Monatssummen berechnet, bei allen anderen aus den absoluten Zählerwerten
     totals: Dict[str, Dict] = {"cp": {}, "counter": {}, "pv": {}, "bat": {}, "sh": {}}
     prev_entry: Dict = {}
     for group in totals.keys():
@@ -235,6 +251,9 @@ def get_totals(entries: List, sum_up_diffs: bool = False) -> Dict:
                 else:
                     for key, value in entry[group][module].items():
                         if key != "soc" and "temp" not in key:
+                            if value == "":
+                                # Manchmal fehlen Werte im alten Log
+                                value = 0
                             if sum_up_diffs:
                                 value = (Decimal(str(value))
                                          + Decimal(str(totals[group][module][key])))
@@ -245,13 +264,17 @@ def get_totals(entries: List, sum_up_diffs: bool = False) -> Dict:
                                 # Werte zusammen addiert.
                                 except KeyError:
                                     prev_value = entry[group][module][key]
+                                if prev_value == "":
+                                    # Manchmal fehlen Werte im alten Log
+                                    prev_value = 0
                                 # avoid floating point issues with using Decimal
                                 value = (Decimal(str(value))
                                          - Decimal(str(prev_value))
                                          + Decimal(str(totals[group][module][key])))
                             value = f'{value: f}'
                             # remove trailing zeros
-                            totals[group][module][key] = float(value) if "." in value else int(value)
+                            totals[group][module][key] = string_to_float(
+                                value) if "." in value else string_to_int(value)
             prev_entry = entry
     return totals
 
@@ -268,7 +291,7 @@ def get_names(totals: Dict, sh_names: Dict) -> Dict:
                 elif "all" != entry:
                     id = entry.strip(string.ascii_letters)
                     names.update({entry: get_component_name_by_id(int(id))})
-            except (ValueError, KeyError):
+            except (ValueError, KeyError, AttributeError):
                 names.update({entry: entry})
     return names
 
@@ -276,7 +299,16 @@ def get_names(totals: Dict, sh_names: Dict) -> Dict:
 def get_daily_log(date: str):
     try:
         with open(str(Path(__file__).resolve().parents[2] / "data"/"daily_log"/(date+".json")), "r") as jsonFile:
-            return json.load(jsonFile)
+            log_data = json.load(jsonFile)
+            try:
+                next_date = timecheck.get_relative_date_string(date, day_offset=1)
+                with open(str(Path(__file__).resolve().parents[2] / "data"/"daily_log"/(next_date+".json")),
+                          "r") as nextJsonFile:
+                    next_log_data = json.load(nextJsonFile)
+                    log_data["entries"].append(next_log_data["entries"][0])
+            except FileNotFoundError:
+                pass
+            return log_data
     except FileNotFoundError:
         pass
     return []
@@ -285,24 +317,37 @@ def get_daily_log(date: str):
 def get_monthly_log(date: str):
     try:
         with open(str(Path(__file__).resolve().parents[2] / "data"/"monthly_log"/(date+".json")), "r") as jsonFile:
-            return json.load(jsonFile)
+            log_data = json.load(jsonFile)
+            try:
+                next_date = timecheck.get_relative_date_string(date, month_offset=1)
+                with open(str(Path(__file__).resolve().parents[2] / "data"/"monthly_log"/(next_date+".json")),
+                          "r") as nextJsonFile:
+                    next_log_data = json.load(nextJsonFile)
+                    log_data["entries"].append(next_log_data["entries"][0])
+            except FileNotFoundError:
+                pass
+            return log_data
     except FileNotFoundError:
         pass
     return []
 
 
-def get_yearly_log(date: str):
+def get_yearly_log(year: str):
     entries = []
+    dates = []
     for month in range(1, 13):
+        dates.append(f"{year}{month:02}")
+    dates.append(f"{int(year)+1}01")
+    for date in dates:
         try:
-            with open(Path(__file__).resolve().parents[2]/"data"/"monthly_log"/f"{date}{month:02}.json",
+            with open(Path(__file__).resolve().parents[2]/"data"/"monthly_log"/f"{date}.json",
                       "r") as jsonFile:
                 content = json.load(jsonFile)
                 content = content["totals"]
-                content.update({"date": f"{date}{month:02}"})
+                content.update({"date": date, "timestamp": timecheck.convert_YYYYMM_to_unix_timestamp(date)})
                 entries.append(content)
         except FileNotFoundError:
-            log.debug(f"Kein Monatslog für Monat {month} gefunden.")
+            log.debug(f"Kein Log für Monat {date} gefunden.")
     return {"entries": entries, "totals": get_totals(entries, sum_up_diffs=True)}
 
 
@@ -349,7 +394,7 @@ def update_module_yields(module: str, totals: Dict) -> None:
             update_imported_exported(totals[module][m]["imported"], totals[module][m]["exported"])
 
 
-class LegacySmarthomeLogdata:
+class LegacySmartHomeLogData:
     def __init__(self) -> None:
         self.all_received_topics: Dict = {}
 
@@ -357,7 +402,7 @@ class LegacySmarthomeLogdata:
         sh_dict: Dict = {}
         sh_names: Dict = {}
         try:
-            InternalBrokerClient("smarthome-logging", self.on_connect, self.on_message).start_finite_loop()
+            InternalBrokerClient("smart-home-logging", self.on_connect, self.on_message).start_finite_loop()
             for topic, payload in self.all_received_topics.items():
                 if re.search("openWB/LegacySmartHome/config/get/Devices/[1-9]/device_configured", topic) is not None:
                     if decode_payload(payload) == 1:
@@ -373,7 +418,7 @@ class LegacySmarthomeLogdata:
                             if f"openWB/LegacySmartHome/config/get/Devices/{index}/device_name" == topic:
                                 sh_names.update({f"sh{index}": decode_payload(payload)})
         except Exception:
-            log.exception("Fehler im Werte-Logging-Modul für Smarthome")
+            log.exception("Fehler im Werte-Logging-Modul für SmartHome")
         finally:
             return sh_dict, sh_names
 
