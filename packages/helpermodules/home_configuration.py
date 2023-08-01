@@ -11,5 +11,5 @@ def update_home_configuration(new_setting: Dict) -> None:
 
 
 def get_home_configuration_setting(name: str):
-    with open("home/openwb/configuration.json", "r") as f:
+    with open("/home/openwb/configuration.json", "r") as f:
         return json.loads(f.read())[name]
