@@ -312,7 +312,7 @@ class SubData:
                             var["ct"+index].data.chargemode.scheduled_charging.plans.pop(index_second)
                         except KeyError:
                             log.error("Es konnte kein Zielladen-Plan mit der ID " +
-                                      str(index_second)+" in der Ladevorlage "+str(index)+" gefunden werden.")
+                                      str(index_second)+" in dem Lade-Profil "+str(index)+" gefunden werden.")
                     else:
                         var["ct"+index].data.chargemode.scheduled_charging.plans[
                             index_second] = dataclass_from_dict(ev.ScheduledChargingPlan, decode_payload(msg.payload))
@@ -325,7 +325,7 @@ class SubData:
                             var["ct"+index].data.time_charging.plans.pop(index_second)
                         except KeyError:
                             log.error("Es konnte kein Zeitladen-Plan mit der ID " +
-                                      str(index_second)+" in der Ladevorlage "+str(index)+" gefunden werden.")
+                                      str(index_second)+" in dem Lade-Profil "+str(index)+" gefunden werden.")
                     else:
                         var["ct"+index].data.time_charging.plans[
                             index_second] = dataclass_from_dict(ev.TimeChargingPlan, decode_payload(msg.payload))

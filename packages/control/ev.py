@@ -100,7 +100,7 @@ def chargemode_factory() -> Chargemode:
 
 @dataclass
 class ChargeTemplateData:
-    name: str = "Standard-Ladeprofil-Vorlage"
+    name: str = "Standard-Lade-Profil"
     disable_after_unplug: bool = False
     prio: bool = False
     load_default: bool = False
@@ -110,7 +110,7 @@ class ChargeTemplateData:
 
 @dataclass
 class EvTemplateData:
-    name: str = "Standard-Fahrzeug-Vorlage"
+    name: str = "Standard-Fahrzeug-Profil"
     max_current_multi_phases: int = 16
     max_phases: int = 3
     phase_switch_pause: int = 2
@@ -427,7 +427,7 @@ class Ev:
                     min_current = self.data.control_parameter.required_current
                 if required_current < min_current:
                     required_current = min_current
-                    msg = ("Die Einstellungen in der Fahrzeug-Vorlage beschränken den Strom auf "
+                    msg = ("Die Einstellungen in dem Fahrzeug-Profil beschränken den Strom auf "
                            f"mindestens {required_current} A.")
                 else:
                     if phases == 1:
@@ -436,12 +436,12 @@ class Ev:
                         max_current = self.ev_template.data.max_current_multi_phases
                     if required_current > max_current:
                         required_current = max_current
-                        msg = ("Die Einstellungen in der Fahrzeug-Vorlage beschränken den Strom auf "
+                        msg = ("Die Einstellungen in dem Fahrzeug-Profil beschränken den Strom auf "
                                f"maximal {required_current} A.")
         return required_current, msg
 
     CURRENT_OUT_OF_NOMINAL_DIFFERENCE = (", da das Fahrzeug nicht mit der vorgegebenen Stromstärke +/- der erlaubten "
-                                         + "Stromabweichung aus der Fahrzeug-Vorlage lädt.")
+                                         + "Stromabweichung aus dem Fahrzeug-Profil lädt.")
     ENOUGH_POWER = ", da ausreichend Leistung für mehrphasiges Laden zur Verfügung steht."
     NOT_ENOUGH_POWER = ", da nicht ausreichend Leistung für mehrphasiges Laden zur Verfügung steht."
 
@@ -606,7 +606,7 @@ class SelectedPlan:
 
 
 class ChargeTemplate:
-    """ Klasse der Lademodus-Vorlage
+    """ Klasse der Lade-Profile
     """
     BUFFER = -1200  # nach mehr als 20 Min Überschreitung wird der Termin als verpasst angesehen
 

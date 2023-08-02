@@ -311,7 +311,7 @@ class Counter:
 
     SWITCH_OFF_STOP = "Ladevorgang nach Ablauf der Abschaltverzögerung gestoppt."
     SWITCH_OFF_WAITING = "Ladevorgang wird nach Ablauf der Abschaltverzögerung {}s gestoppt."
-    SWITCH_OFF_NO_STOP = ("Stoppen des Ladevorgangs verhindert, da in der Fahrzeug-Vorlage die Einstellung"
+    SWITCH_OFF_NO_STOP = ("Stoppen des Ladevorgangs verhindert, da in dem Fahrzeug-Profil die Einstellung"
                           " 'Ladung aktiv halten' aktiviert ist.")
     SWITCH_OFF_EXCEEDED = "Abschaltschwelle während der Verzögerung überschritten."
     SWITCH_OFF_NOT_CHARGING = ("Da das EV nicht lädt und die Abschaltschwelle erreicht wird, "

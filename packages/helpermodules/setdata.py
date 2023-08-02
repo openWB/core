@@ -169,7 +169,7 @@ class SetData:
                         if "ct"+str(index) in subdata.SubData.ev_charge_template_data:
                             template = dataclass_utils.asdict(copy.deepcopy(
                                 subdata.SubData.ev_charge_template_data["ct"+str(index)].data))
-                            # Wenn eine Einzeleinstellung empfangen wird, muss das gesamte Template veröffentlicht
+                            # Wenn eine Einzeleinstellung empfangen wird, muss das gesamte Profil veröffentlicht
                             # werden (pub_json=True), allerdings ohne Pläne. Diese sind in einem Extra-Topic.
                             try:
                                 template["chargemode"]["scheduled_charging"].pop("plans")
@@ -443,7 +443,7 @@ class SetData:
             log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 
     def _subprocess_vehicle_chargemode_topic(self, msg: mqtt.MQTTMessage):
-        """ Handler für die EV-Chargemode-Template-Topics
+        """ Handler für die Lade-Profil-Topics
         Parameters
         ----------
         msg:
