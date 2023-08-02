@@ -185,9 +185,8 @@ class General:
     def check_ripple_control_receiver(self):
         configured = hardware_configuration.get_hardware_configuration_setting(
             "ripple_control_receiver_configured")
-        if configured != self.data.ripple_control_receiver.configured:
-            self.data.ripple_control_receiver.configured = configured
-            Pub().pub("openWB/set/general/ripple_control_receiver/configured", configured)
+        Pub().pub("openWB/set/general/ripple_control_receiver/configured", configured)
         if self.data.ripple_control_receiver.configured:
-            (self.data.ripple_control_receiver.r1_active,
-             self.data.ripple_control_receiver.r2_active) = ripple_control_receiver.read()
+            r1_active, r2_active = ripple_control_receiver.read()
+            Pub().pub("openWB/set/general/ripple_control_receiver/r1_active", r1_active)
+            Pub().pub("openWB/set/general/ripple_control_receiver/r2_active", r2_active)

@@ -75,14 +75,17 @@ class MigrateData:
         self.id_map = dataclass_from_dict(MapId, id_map)
 
     def migrate(self):
-        self._extract()
-        self._check_version()
-        thread_handler(self.convert_csv_to_json_chargelog(), None)
-        thread_handler(self.convert_csv_to_json_measurement_log("daily"), None)
-        thread_handler(self.convert_csv_to_json_measurement_log("monthly"), None)
-        self._migrate_settings_from_openwb_conf()
-        # self._move_uuids()
-        self._remove_migration_data()
+        try:
+            self._extract()
+            self._check_version()
+            thread_handler(self.convert_csv_to_json_chargelog(), None)
+            thread_handler(self.convert_csv_to_json_measurement_log("daily"), None)
+            thread_handler(self.convert_csv_to_json_measurement_log("monthly"), None)
+            self._migrate_settings_from_openwb_conf()
+        except Exception as e:
+            raise e
+        finally:
+            self._remove_migration_data()
 
     def _check_version(self):
         with open("./data/data_migration/var/www/html/openWB/web/version") as f:
@@ -524,6 +527,7 @@ class MigrateData:
             if key in line:
                 raw_value = line.replace(f"{key}=", "")
                 value = raw_value.rstrip("\n")
+                break
         return value
 
     def _migrate_settings_from_openwb_conf(self):

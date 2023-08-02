@@ -541,10 +541,8 @@ class SubData:
         """
         try:
             if re.search("/general/", msg.topic) is not None:
-                if "openWB/general/ripple_control_receiver/configured" == msg.topic:
+                if re.search("/general/ripple_control_receiver/", msg.topic) is not None:
                     return
-                elif re.search("/general/ripple_control_receiver/", msg.topic) is not None:
-                    self.set_json_payload_class(var.data.ripple_control_receiver, msg)
                 elif re.search("/general/chargemode_config/", msg.topic) is not None:
                     if re.search("/general/chargemode_config/pv_charging/", msg.topic) is not None:
                         self.set_json_payload_class(var.data.chargemode_config.pv_charging, msg)
