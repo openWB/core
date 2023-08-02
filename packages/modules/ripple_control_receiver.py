@@ -27,4 +27,5 @@ def read() -> Tuple[bool, bool]:
         except Exception:
             GPIO.cleanup()
             log.exception("Fehler beim Auslesen der Rundsteuer-Kontakte.")
+    log.debug(f"RSE1-Status: {rse1}, RSE2-Satus: {rse2}")
     return rse1, rse2

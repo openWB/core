@@ -186,7 +186,10 @@ class General:
         configured = hardware_configuration.get_hardware_configuration_setting(
             "ripple_control_receiver_configured")
         Pub().pub("openWB/set/general/ripple_control_receiver/configured", configured)
-        if self.data.ripple_control_receiver.configured:
+        self.data.ripple_control_receiver.configured = configured
+        if configured:
             r1_active, r2_active = ripple_control_receiver.read()
+            self.data.ripple_control_receiver.r1_active = r1_active
             Pub().pub("openWB/set/general/ripple_control_receiver/r1_active", r1_active)
+            self.data.ripple_control_receiver.r2_active = r2_active
             Pub().pub("openWB/set/general/ripple_control_receiver/r2_active", r2_active)
