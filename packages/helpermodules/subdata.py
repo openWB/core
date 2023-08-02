@@ -79,6 +79,7 @@ class SubData:
                  event_time_charging_plan: threading.Event,
                  event_start_internal_chargepoint: threading.Event,
                  event_stop_internal_chargepoint: threading.Event,
+                 event_update_config_completed: threading.Event,
                  event_soc: threading.Event,
                  event_jobs_running: threading.Event):
         self.event_ev_template = event_ev_template
@@ -94,6 +95,7 @@ class SubData:
         self.event_time_charging_plan = event_time_charging_plan
         self.event_start_internal_chargepoint = event_start_internal_chargepoint
         self.event_stop_internal_chargepoint = event_stop_internal_chargepoint
+        self.event_update_config_completed = event_update_config_completed
         self.event_soc = event_soc
         self.event_jobs_running = event_jobs_running
         self.heartbeat = False
@@ -739,6 +741,10 @@ class SubData:
                     if decode_payload(msg.payload) != "":
                         Pub().pub("openWB/system/subdata_initialized", "")
                         self.event_subdata_initialized.set()
+                elif "openWB/system/update_config_completed" == msg.topic:
+                    if decode_payload(msg.payload) != "":
+                        Pub().pub("openWB/system/update_config_completed", "")
+                        self.event_update_config_completed.set()
                 elif "openWB/system/debug_level" == msg.topic:
                     logging.getLogger().setLevel(decode_payload(msg.payload))
                 self.set_json_payload(var["system"].data, msg)
