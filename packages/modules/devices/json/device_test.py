@@ -82,4 +82,3 @@ def test_counter_currents(monkeypatch, mock_value_store: Mock, requests_mock: re
     assert len(mock_value_store.set.mock_calls) == 1
     assert mock_value_store.set.call_args[0][0].power == 42
     assert mock_value_store.set.call_args[0][0].currents == [11, 12, 13]
-    
