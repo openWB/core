@@ -88,9 +88,13 @@ class MigrateData:
         with open("./data/data_migration/var/www/html/openWB/web/version") as f:
             version = f.read().replace("\n", "")
             sub_version = version.split(".")
-        if not (int(sub_version[0]) == self.MAJOR_VERSION and
-                int(sub_version[1]) >= self.MINOR_VERSION and
-                int(sub_version[2]) >= self.PATCH_VERSION):
+        if not (int(sub_version[0]) > self.MAJOR_VERSION or (
+            (int(sub_version[0]) == self.MAJOR_VERSION) and (
+                (int(sub_version[1]) > self.MINOR_VERSION) or
+                ((int(sub_version[1]) == self.MINOR_VERSION) and
+                 (int(sub_version[2]) >= self.PATCH_VERSION))
+            )
+        )):
             self._remove_migration_data()
             raise ValueError(f"Das Backup für die Datenübernahme muss mindestens mit Version {self.MAJOR_VERSION}."
                              f"{self.MINOR_VERSION}.{self.PATCH_VERSION} erstellt worden sein. "
