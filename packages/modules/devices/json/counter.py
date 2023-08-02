@@ -30,6 +30,11 @@ class JsonCounter:
         else:
             powers = None
 
+        if all(config.jq_currents):
+            currents = [float(jq.compile(c).input(response).first()) for c in config.jq_currents]
+        else:
+            currents = None
+
         if config.jq_imported is None or config.jq_exported is None:
             imported, exported = self.sim_counter.sim_count(power)
         else:
@@ -40,7 +45,8 @@ class JsonCounter:
             imported=imported,
             exported=exported,
             power=power,
-            powers=powers
+            powers=powers,
+            currents=currents
         )
         self.store.set(counter_state)
 
