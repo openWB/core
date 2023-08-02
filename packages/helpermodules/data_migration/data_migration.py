@@ -521,7 +521,7 @@ class MigrateData:
     def _get_openwb_conf_value(self, key: str) -> Optional[str]:
         value = None
         for line in self.openwb_conf:
-            if "snnumber" in line:
+            if key in line:
                 raw_value = line.replace(f"{key}=", "")
                 value = raw_value.rstrip("\n")
         return value
