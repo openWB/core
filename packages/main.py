@@ -185,6 +185,7 @@ try:
     event_command_completed = threading.Event()
     event_command_completed.set()
     event_subdata_initialized = threading.Event()
+    event_update_config_completed = threading.Event()
     event_jobs_running = threading.Event()
     event_jobs_running.set()
     prep = prepare.Prepare()
@@ -199,6 +200,7 @@ try:
                           event_scheduled_charging_plan, event_time_charging_plan,
                           general_internal_chargepoint_handler.event_start,
                           general_internal_chargepoint_handler.event_stop,
+                          event_update_config_completed,
                           event_soc,
                           event_jobs_running)
     comm = command.Command(event_command_completed)
@@ -219,7 +221,7 @@ try:
     t_comm.start()
     t_internal_chargepoint.start()
     # Warten, damit subdata Zeit hat, alle Topics auf dem Broker zu empfangen.
-    time.sleep(5)
+    event_update_config_completed.wait(300)
     Pub().pub("openWB/set/system/boot_done", True)
     Path(Path(__file__).resolve().parents[1]/"ramdisk"/"bootdone").touch()
     schedule_jobs()

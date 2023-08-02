@@ -445,6 +445,7 @@ class UpdateConfig:
             self.__pub_missing_defaults()
             self.__update_version()
             self.__solve_breaking_changes()
+            Pub().pub("openWB/set/system/update_config_completed", True)
         except Exception:
             log.exception("Fehler beim Prüfen des Brokers.")
 
