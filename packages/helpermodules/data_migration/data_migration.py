@@ -16,11 +16,12 @@ import pathlib
 import shutil
 import tarfile
 from threading import Thread
-from typing import Callable, Dict, List, Union
+from typing import Callable, Dict, List, Optional, Union
 
 from control import data, ev
 from dataclass_utils import dataclass_from_dict
 from helpermodules.data_migration.id_mapping import MapId
+from helpermodules.hardware_configuration import update_hardware_configuration
 from helpermodules.measurement_log import LegacySmartHomeLogData, get_names, get_totals, string_to_float, string_to_int
 from helpermodules.utils import thread_handler
 from helpermodules.pub import Pub
@@ -65,19 +66,44 @@ class StreamArray(list):
 
 
 class MigrateData:
+    MAJOR_VERSION = 1
+    MINOR_VERSION = 9
+    PATCH_VERSION = 303
     BACKUP_DATA_PATH = "./data/data_migration/var/www/html/openWB/web/logging/data"
 
     def __init__(self, id_map: Dict) -> None:
         self.id_map = dataclass_from_dict(MapId, id_map)
 
     def migrate(self):
-        self.extract_files("ladelog")
-        self.extract_files("daily")
-        self.extract_files("monthly")
-        thread_handler(self.convert_csv_to_json_chargelog(), None)
-        thread_handler(self.convert_csv_to_json_measurement_log("daily"), None)
-        thread_handler(self.convert_csv_to_json_measurement_log("monthly"), None)
-        self.move_serial_number_cloud_data()
+        try:
+            self._extract()
+            self._check_version()
+            thread_handler(self.convert_csv_to_json_chargelog(), None)
+            thread_handler(self.convert_csv_to_json_measurement_log("daily"), None)
+            thread_handler(self.convert_csv_to_json_measurement_log("monthly"), None)
+            self._migrate_settings_from_openwb_conf()
+        except Exception as e:
+            raise e
+        finally:
+            self._remove_migration_data()
+
+    def _check_version(self):
+        with open("./data/data_migration/var/www/html/openWB/web/version") as f:
+            version = f.read().replace("\n", "")
+            sub_version = version.split(".")
+        if not (int(sub_version[0]) > self.MAJOR_VERSION or (
+            (int(sub_version[0]) == self.MAJOR_VERSION) and (
+                (int(sub_version[1]) > self.MINOR_VERSION) or
+                ((int(sub_version[1]) == self.MINOR_VERSION) and
+                 (int(sub_version[2]) >= self.PATCH_VERSION))
+            )
+        )):
+            self._remove_migration_data()
+            raise ValueError(f"Das Backup für die Datenübernahme muss mindestens mit Version {self.MAJOR_VERSION}."
+                             f"{self.MINOR_VERSION}.{self.PATCH_VERSION} erstellt worden sein. "
+                             f"Backup-Version ist {version}.")
+
+    def _remove_migration_data(self):
         shutil.rmtree("./data/data_migration/var")
         os.remove("./data/data_migration/data_migration.tar.gz")
 
@@ -89,10 +115,18 @@ class MigrateData:
             if tarinfo.name.startswith(f"var/www/html/openWB/web/logging/data/{log_folder_name}"):
                 yield tarinfo
 
-    def extract_files(self, log_folder_name: str):
+    def _extract_files(self, log_folder_name: str):
         with tarfile.open('./data/data_migration/data_migration.tar.gz') as tar:
             tar.extractall(members=self._file_to_extract_generator(
                 tar, log_folder_name), path="./data/data_migration")
+
+    def _extract(self):
+        self._extract_files("ladelog")
+        self._extract_files("daily")
+        self._extract_files("monthly")
+        with tarfile.open('./data/data_migration/data_migration.tar.gz') as tar:
+            tar.extract(member="var/www/html/openWB/openwb.conf", path="./data/data_migration")
+            tar.extract(member="var/www/html/openWB/web/version", path="./data/data_migration")
 
     def convert_csv_to_json_chargelog(self) -> List[Thread]:
         """ konvertiert die alten Lade-Log-Dateien in das neue Format für 2.x.
@@ -487,37 +521,62 @@ class MigrateData:
                     log.exception(f"Fehler beim Konvertieren des Monats-Logs vom {file}, Reihe {row}")
         return entries
 
-    def move_serial_number_cloud_data(self) -> None:
-        def strip_openwb_conf_entry(entry: str, key: str) -> str:
-            value = entry.replace(f"{key}=", "")
-            return value.rstrip("\n")
-        with tarfile.open('./data/data_migration/data_migration.tar.gz') as tar:
-            tar.extract(member="var/www/html/openWB/openwb.conf", path="./data/data_migration")
-        with open("./data/data_migration/var/www/html/openWB/openwb.conf", "r") as file:
-            serial_number = ""
-            openwb_conf = file.readlines()
-            for line in openwb_conf:
-                if "snnumber" in line:
-                    serial_number = strip_openwb_conf_entry(line, "snnumber")
-                    break
-            else:
-                log.debug("Keine Seriennummer gefunden.")
-        with open("/home/openwb/snnumber", "w") as file:
-            file.write(f"snnumber={serial_number}")
+    def _get_openwb_conf_value(self, key: str) -> Optional[str]:
+        value = None
+        for line in self.openwb_conf:
+            if key in line:
+                raw_value = line.replace(f"{key}=", "")
+                value = raw_value.rstrip("\n")
+                break
+        return value
 
+    def _migrate_settings_from_openwb_conf(self):
         with open("./data/data_migration/var/www/html/openWB/openwb.conf", "r") as file:
-            cloud_user = ""
-            cloud_pw = ""
-            openwb_conf = file.readlines()
-            for line in openwb_conf:
-                if "clouduser" in line:
-                    cloud_user = strip_openwb_conf_entry(line, "clouduser")
-                elif "cloudpw" in line:
-                    cloud_pw = strip_openwb_conf_entry(line, "cloudpw")
-            if cloud_user == "":
-                log.debug("Keine Cloud-Zugangsdaten gefunden.")
-        Pub().pub("openWB/set/command/data_migration/todo",
-                  {"command": "connectCloud", "data": {"username": cloud_user, "password": cloud_pw, "partner": 0}})
+            self.openwb_conf = file.readlines()
+        self._move_serial_number()
+        self._move_cloud_data()
+        self._move_rse()
+        self._move_max_c_socket()
+        self._move_pddate()
+
+    def _move_serial_number(self) -> None:
+        serial_number = self._get_openwb_conf_value("snnumber")
+        if serial_number:
+            with open("/home/openwb/snnumber", "w") as file:
+                file.write(f"snnumber={serial_number}")
+        else:
+            log.debug("Keine Seriennummer gefunden.")
+
+    def _move_cloud_data(self) -> None:
+        cloud_user = self._get_openwb_conf_value("clouduser")
+        cloud_pw = self._get_openwb_conf_value("cloudpw")
+        if cloud_user is not None and cloud_pw is not None:
+            Pub().pub("openWB/set/command/data_migration/todo",
+                      {"command": "connectCloud", "data": {"username": cloud_user, "password": cloud_pw, "partner": 0}})
+        else:
+            log.debug("Keine Cloud-Zugangsdaten gefunden.")
+
+    def _move_rse(self) -> None:
+        rse = bool(self._get_openwb_conf_value("rseenabled"))
+        if rse is None:
+            log.debug("Keine Rundsteuerempfänger-Konfiguration gefunden. Setze auf False.")
+            rse = False
+        update_hardware_configuration({"ripple_control_receiver_configured": rse})
+
+    def _move_max_c_socket(self):
+        max_c_socket = self._get_openwb_conf_value("ppbuchse")
+        if max_c_socket is None:
+            log.debug("Keine max_c_socket-Konfiguration gefunden. Setze auf False.")
+            max_c_socket = 32
+        update_hardware_configuration({"max_c_socket": max_c_socket})
+
+    def _move_pddate(self) -> None:
+        pddate = self._get_openwb_conf_value("pddate")
+        if pddate is not None:
+            with open("/home/openwb/pddate", "w") as file:
+                file.write(f"pddate={pddate}")
+        else:
+            log.debug("Kein Produktionsdatum gefunden.")
 
     NOT_CONFIGURED = " wurde in openWB software2 nicht konfiguriert."
 
