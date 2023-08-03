@@ -29,7 +29,7 @@ class Loadvars:
                     self._update_values_of_level(level, not_finished_threads)
                 data.data.copy_module_data()
             with ModuleUpdateCompletedContext(self.event_module_update_completed, topic):
-                thread_handler(self._get_general())
+                thread_handler(self._get_general(), data.data.general_data.data.control_interval/3)
             with ModuleUpdateCompletedContext(self.event_module_update_completed, topic):
                 data.data.pv_all_data.calc_power_for_all_components()
                 data.data.bat_all_data.calc_power_for_all_components()
@@ -54,7 +54,7 @@ class Loadvars:
                                        args=(), name=f"cp{cp.chargepoint_module.config.id}"))
             except Exception:
                 log.exception(f"Fehler im loadvars-Modul bei Element {cp.num}")
-        return thread_handler(modules_threads)
+        return thread_handler(modules_threads, data.data.general_data.data.control_interval/3)
 
     def _update_values_of_level(self, elements, not_finished_threads: List[str]) -> None:
         """Threads, um von der niedrigsten Ebene der Hierarchie Werte ggf. miteinander zu verrechnen und zu
@@ -77,7 +77,7 @@ class Loadvars:
                         component,), name=f"component{component.component_config.id}"))
             except Exception:
                 log.exception(f"Fehler im loadvars-Modul bei Element {element}")
-        thread_handler(modules_threads)
+        thread_handler(modules_threads, data.data.general_data.data.control_interval/3)
 
     def thread_without_set_value(self,
                                  modules_threads: List[threading.Thread],

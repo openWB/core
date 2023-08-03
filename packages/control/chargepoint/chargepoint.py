@@ -696,7 +696,7 @@ class Chargepoint:
         else:
             required_current = min(required_current, self.template.data.max_current_multi_phases)
         if required_current != required_current_prev and msg is None:
-            msg = ("Die Einstellungen in der Ladepunkt-Vorlage beschränken den Strom auf "
+            msg = ("Die Einstellungen in dem Ladepunkt-Profil beschränken den Strom auf "
                    f"maximal {required_current} A.")
         self.set_state_and_log(msg)
         return required_current
@@ -775,9 +775,8 @@ class Chargepoint:
                 control_parameter.required_currents[evu_phase] = required_current
         except KeyError:
             control_parameter.required_currents = [required_current]*3
-            self.set_state_and_log("Für eine korrekte Funktion des Lastmanagements muss der Anschluss der " +
-                                   "Phasen für diesen Ladepunkt an die Phasen der EVU angegeben werden." +
-                                   " Andernfalls wird der benötigte Strom auf allen 3 Phasen vorgehalten, " +
+            self.set_state_and_log("Bitte in den Ladepunkt-Einstellungen die Einstellung 'Phase 1 des Ladekabels'" +
+                                   " angeben. Andernfalls wird der benötigte Strom auf allen 3 Phasen vorgehalten, " +
                                    "was ggf eine unnötige Reduktion der Ladeleistung zur Folge hat.")
         self.data.set.required_power = sum(control_parameter.required_currents) * 230
 

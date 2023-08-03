@@ -14,6 +14,7 @@ data/daily_log/*
 data/monthly_log/*
 data/backup/*.tar.gz
 data/restore/*.tar.gz
+data/data_migration/*.tar.gz
 ramdisk/*
 web/lastcommit
 !.gitignore 

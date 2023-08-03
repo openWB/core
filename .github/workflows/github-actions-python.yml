@@ -14,7 +14,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install flake8 pytest paho-mqtt requests-mock jq pyjwt==2.6.0 bs4 pkce typing_extensions
+          pip install flake8 pytest paho-mqtt requests-mock jq pyjwt==2.6.0 bs4 pkce typing_extensions python-dateutil==2.8.2
       - name: Flake8 with annotations in packages folder
         uses: TrueBrain/actions-flake8@v2.1
         with:

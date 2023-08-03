@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import time
 from typing import List, Tuple
 
 from modules.common import modbus
@@ -11,19 +12,24 @@ class B23:
         self.id = modbus_id
 
     def get_imported(self) -> float:
+        time.sleep(0.1)
         return self.client.read_holding_registers(0x5000, ModbusDataType.UINT_64, unit=self.id) * 10
 
     def get_frequency(self) -> float:
+        time.sleep(0.1)
         return self.client.read_holding_registers(0x5B2C, ModbusDataType.INT_16, unit=self.id) / 100
 
     def get_currents(self) -> List[float]:
+        time.sleep(0.1)
         return [val / 100 for val in self.client.read_holding_registers(
             0x5B0C, [ModbusDataType.UINT_32]*3, unit=self.id)]
 
     def get_power(self) -> Tuple[List[float], float]:
+        time.sleep(0.1)
         power = self.client.read_holding_registers(0x5B14, ModbusDataType.INT_32, unit=self.id) / 100
         return [0]*3, power
 
     def get_voltages(self) -> List[float]:
+        time.sleep(0.1)
         return [val / 10 for val in self.client.read_holding_registers(
             0x5B00, [ModbusDataType.UINT_32]*3, unit=self.id)]

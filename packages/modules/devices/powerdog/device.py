@@ -47,34 +47,31 @@ class Device(AbstractDevice):
 
     def update(self) -> None:
         log.debug("Start device reading " + str(self.components))
-        if len(self.components) == 1:
-            for component in self.components:
-                if isinstance(self.components[component], inverter.PowerdogInverter):
-                    with SingleComponentUpdateContext(self.components[component].component_info):
-                        self.components[component].update()
-                else:
-                    raise Exception(
-                        "Wenn ein EVU-Zähler konfiguriert wurde, muss immer auch ein WR konfiguriert sein.")
-        elif len(self.components) == 2:
-            with MultiComponentUpdateContext(self.components):
+        with MultiComponentUpdateContext(self.components):
+            if len(self.components) == 1:
                 for component in self.components:
-                    if isinstance(self.components[component], counter.PowerdogCounter):
-                        home_consumption = self.components[component].update()
-                    elif isinstance(self.components[component], inverter.PowerdogInverter):
-                        inverter_power = self.components[component].update()
+                    if isinstance(self.components[component], inverter.PowerdogInverter):
+                        with SingleComponentUpdateContext(self.components[component].component_info):
+                            self.components[component].update()
                     else:
                         raise Exception(
-                            "illegal component type " + self.components[component].component_config.type +
-                            ". Allowed values: " + ','.join(COMPONENT_TYPE_TO_MODULE.keys()))
-                counter_power = home_consumption + inverter_power
+                            "Wenn ein EVU-Zähler konfiguriert wurde, muss immer auch ein WR konfiguriert sein.")
+            elif len(self.components) == 2:
+                for component in self.components:
+                    if isinstance(self.components[component], inverter.PowerdogInverter):
+                        inverter_power = self.components[component].update()
+                        break
+                else:
+                    inverter_power = 0
                 for component in self.components:
                     if isinstance(self.components[component], counter.PowerdogCounter):
-                        self.components[component].set_counter_state(counter_power)
-        else:
-            log.warning(
-                self.device_config.name +
-                ": Es konnten keine Werte gelesen werden, da noch keine oder zu viele Komponenten konfiguriert wurden."
-            )
+                        self.components[component].update(inverter_power)
+            else:
+                log.warning(
+                    self.device_config.name +
+                    ": Es konnten keine Werte gelesen werden, da noch keine oder zu viele Komponenten konfiguriert "
+                    + "wurden."
+                )
 
 
 COMPONENT_TYPE_TO_MODULE = {
