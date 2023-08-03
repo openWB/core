@@ -26,8 +26,6 @@ try:
 except ImportError:
     log.info("failed to import RPi.GPIO! maybe we are not running on a pi")
 
-SOCKET_MAX_CURRENT: int = 16
-
 
 class UpdateValues:
     def __init__(self, local_charge_point_num: int, parent_ip: str, parent_cp: str) -> None:
@@ -198,7 +196,7 @@ class HandlerChargepoint:
         self.local_charge_point_num = local_charge_point_num
         if local_charge_point_num == 0:
             if mode == InternalChargepointMode.SOCKET.value:
-                self.module = Socket(SOCKET_MAX_CURRENT, local_charge_point_num, client_handler, global_data.parent_ip)
+                self.module = Socket(local_charge_point_num, client_handler, global_data.parent_ip)
             else:
                 self.module = chargepoint_module.ChargepointModule(
                     local_charge_point_num, client_handler, global_data.parent_ip)
