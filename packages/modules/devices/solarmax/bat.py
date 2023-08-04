@@ -18,8 +18,9 @@ class SolarmaxBat:
         self.component_info = ComponentInfo.from_component_config(self.component_config)
 
     def update(self, client: ModbusTcpClient_) -> None:
-        power = client.read_holding_registers(114, ModbusDataType.INT_32, unit=1)
-        soc = client.read_holding_registers(122, ModbusDataType.INT_16, unit=1)
+        unit = self.component_config.configuration.modbus_id
+        power = client.read_holding_registers(114, ModbusDataType.INT_32, unit=unit)
+        soc = client.read_holding_registers(122, ModbusDataType.INT_16, unit=unit)
         imported, exported = self.sim_counter.sim_count(power)
 
         bat_state = BatState(

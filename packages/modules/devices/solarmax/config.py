@@ -21,8 +21,8 @@ class Solarmax:
 
 
 class SolarmaxBatConfiguration:
-    def __init__(self):
-        pass
+    def __init__(self, modbus_id: int = 1):
+        self.modbus_id = modbus_id
 
 
 class SolarmaxBatSetup(ComponentSetup[SolarmaxBatConfiguration]):

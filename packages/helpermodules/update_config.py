@@ -445,9 +445,10 @@ class UpdateConfig:
             self.__pub_missing_defaults()
             self.__update_version()
             self.__solve_breaking_changes()
-            Pub().pub("openWB/set/system/update_config_completed", True)
         except Exception:
             log.exception("Fehler beim Prüfen des Brokers.")
+        finally:
+            Pub().pub("openWB/set/system/update_config_completed", True)
 
     def on_connect(self, client: MqttClient, userdata, flags: dict, rc: int):
         """ connect to broker and subscribe to set topics
