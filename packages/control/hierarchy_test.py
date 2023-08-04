@@ -1,6 +1,8 @@
 from typing import Dict, List, Optional, Union
+from unittest.mock import Mock
 import pytest
-from control.conftest import hierarchy_hybrid
+from control.conftest import hierarchy_hybrid, hierarchy_nested
+from control.counter import Counter
 
 
 from control.counter_all import CounterAll, get_max_id_in_hierarchy
@@ -289,3 +291,95 @@ def test_list_of_elements_per_level(params: ParamsItem):
 
     # evaluation
     assert actual == params.expected_return
+
+
+@pytest.mark.parametrize("hierarchy",
+                         [pytest.param(hierarchy_nested().data.get.hierarchy, id="nothing to delete"),
+                          pytest.param([{"id": 0, "type": "counter",
+                                         "children": [
+                                             {"id": 3, "type": "cp", "children": []},
+                                             {"id": 6, "type": "counter",
+                                              "children": [
+                                                  {"id": 4, "type": "cp", "children": []},
+                                                  {"id": 5, "type": "cp", "children": []},
+                                                  {"id": 8, "type": "cp", "children": []}]},
+                                             {"id": 1, "type": "inverter", "children": []},
+                                             {"id": 2, "type": "bat", "children": []}]}], id="delete cp 8"),
+                          pytest.param([{"id": 0, "type": "counter",
+                                         "children": [
+                                             {"id": 3, "type": "cp", "children": []},
+                                             {"id": 6, "type": "counter",
+                                              "children": [
+                                                  {"id": 4, "type": "cp", "children": []},
+                                                  {"id": 5, "type": "cp", "children": []},
+                                                  {"id": 8, "type": "inverter", "children": []}]},
+                                             {"id": 1, "type": "inverter", "children": []},
+                                             {"id": 2, "type": "bat", "children": []}]}], id="delete inverter 8")
+                          ]
+                         )
+def test_delete_obsolete_entries(hierarchy, data_):
+    # setup
+    counter_all = CounterAll()
+    counter_all.data.get.hierarchy = hierarchy
+
+    # execution
+    counter_all._delete_obsolete_entries()
+
+    # evaluation
+    assert counter_all.data.get.hierarchy == hierarchy_nested().data.get.hierarchy
+
+
+@pytest.mark.parametrize("hierarchy, expected_hierarchy",
+                         [pytest.param(hierarchy_nested().data.get.hierarchy, hierarchy_nested().data.get.hierarchy,
+                                       id="nothing to add"),
+                          pytest.param([{"id": 0, "type": "counter",
+                                         "children": [
+                                             {"id": 6, "type": "counter",
+                                              "children": [
+                                                  {"id": 4, "type": "cp", "children": []},
+                                                  {"id": 5, "type": "cp", "children": []}]},
+                                             {"id": 1, "type": "inverter", "children": []},
+                                             {"id": 2, "type": "bat", "children": []}]}],
+                                       [{"id": 0, "type": "counter",
+                                         "children": [
+                                             {"id": 6, "type": "counter",
+                                              "children": [
+                                                  {"id": 4, "type": "cp", "children": []},
+                                                  {"id": 5, "type": "cp", "children": []}]},
+                                             {"id": 1, "type": "inverter", "children": []},
+                                             {"id": 2, "type": "bat", "children": []},
+                                             {"id": 3, "type": "cp", "children": []},
+                                         ]}], id="add cp3"),
+                          pytest.param([{"id": 0, "type": "counter",
+                                         "children": [
+                                             {"id": 3, "type": "cp", "children": []},
+                                             {"id": 6, "type": "counter",
+                                              "children": [
+                                                  {"id": 4, "type": "cp", "children": []},
+                                                  {"id": 5, "type": "cp", "children": []}]},
+                                             {"id": 2, "type": "bat", "children": []}]}],
+                                       [{"id": 0, "type": "counter",
+                                         "children": [
+                                             {"id": 3, "type": "cp", "children": []},
+                                             {"id": 6, "type": "counter",
+                                              "children": [
+                                                  {"id": 4, "type": "cp", "children": []},
+                                                  {"id": 5, "type": "cp", "children": []}]},
+                                             {"id": 2, "type": "bat", "children": []},
+                                             {"id": 1, "type": "inverter", "children": []}
+                                         ]}], id="add inverter 1")
+                          ]
+                         )
+def test_add_missing_entries(hierarchy, expected_hierarchy, data_, monkeypatch):
+    # setup
+    counter_all = CounterAll()
+    counter_all.data.get.hierarchy = hierarchy
+    c = Mock(spec=Counter, num=0)
+    mock_get_evu_counter = Mock(return_value=c)
+    monkeypatch.setattr(CounterAll, "get_evu_counter", mock_get_evu_counter)
+
+    # execution
+    counter_all._add_missing_entries()
+
+    # evaluation
+    assert counter_all.data.get.hierarchy == expected_hierarchy
