@@ -134,7 +134,7 @@ class SetData:
                 else:
                     log.error(f"Payload ungültig: Topic {msg.topic}, Payload {value} sollte ein String sein.")
             elif data_type == int or data_type == float:
-                if self._validate_min_max_value(value, msg, data_type, ranges):
+                if self._validate_min_max_value(value, msg, data_type, ranges) or isinstance(value, type(None)):
                     valid = True
             elif data_type == bool:
                 valid, value = self._validate_bool_value(value, msg)
@@ -432,7 +432,7 @@ class SetData:
                     "/control_parameter/timestamp_perform_phase_switch" in msg.topic or
                     "/control_parameter/current_plan" in msg.topic):
                 self._validate_value(msg, str)
-            elif ("/control_parameter/used_amount_instant_charging" in msg.topic or
+            elif ("/control_parameter/imported_instant_charging" in msg.topic or
                     "/control_parameter/imported_at_plan_start" in msg.topic):
                 self._validate_value(msg, float, [(0, float("inf"))])
             elif "/control_parameter/state" in msg.topic:
