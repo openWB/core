@@ -42,7 +42,13 @@ def smarthome_handler() -> None:
                 speichersoc = 100
             watt = SubData.counter_data[f"counter{SubData.counter_all_data.get_id_evu_counter()}"].data.get.power * -1
             wattint = int(watt)
-            mainloop(wattint, speicherleistung, speichersoc)
+            pvwatt = int(SubData.pv_all_data.data.get.power) * -1
+            testwatt = int(SubData.cp_all_data.data.get.power)
+            if (testwatt <= 1000):
+                chargestatus = False
+            else:
+                chargestatus = True
+            mainloop(wattint, speicherleistung, speichersoc, pvwatt, chargestatus)
         except Exception:
             log.exception("Fehler im Smarthome-Handler")
     # run as thread for logging reasons
