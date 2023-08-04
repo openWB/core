@@ -95,14 +95,14 @@ class HandlerAlgorithm:
             if not sub.heartbeat:
                 log.error("Heartbeat für Subdata nicht zurückgesetzt.")
                 sub.disconnect()
-                Thread(target=sub.sub_topics, args=()).start()
+                Thread(target=sub.sub_topics, args=(), name="Subdata").start()
             else:
                 sub.heartbeat = False
 
             if not set.heartbeat:
                 log.error("Heartbeat für Setdata nicht zurückgesetzt.")
                 set.disconnect()
-                Thread(target=set.set_data, args=()).start()
+                Thread(target=set.set_data, args=(), name="Setdata").start()
             else:
                 set.heartbeat = False
 
@@ -205,9 +205,9 @@ try:
                           event_soc,
                           event_jobs_running)
     comm = command.Command(event_command_completed)
-    t_sub = Thread(target=sub.sub_topics, args=())
-    t_set = Thread(target=set.set_data, args=())
-    t_comm = Thread(target=comm.sub_commands, args=())
+    t_sub = Thread(target=sub.sub_topics, args=(), name="Subdata")
+    t_set = Thread(target=set.set_data, args=(), name="Setdata")
+    t_comm = Thread(target=comm.sub_commands, args=(), name="Commands")
     t_internal_chargepoint = Thread(target=general_internal_chargepoint_handler.handler,
                                     args=(), name="Internal Chargepoint")
     if hasattr(rfid0, "input_device"):
