@@ -10,10 +10,8 @@ import re
 import traceback
 from pathlib import Path
 import paho.mqtt.client as mqtt
-
 from control.chargepoint import chargepoint
 from control.chargepoint.chargepoint_template import get_autolock_plan_default, get_chargepoint_template_default
-from modules.backup_clouds.onedrive.api import generateMSALAuthCode, retrieveMSALTokens
 
 from helpermodules import measurement_log
 from helpermodules.broker import InternalBrokerClient
@@ -29,7 +27,6 @@ from modules.chargepoints.internal_openwb.config import InternalChargepointMode
 from modules.common.component_type import ComponentType, special_to_general_type_mapping, type_to_topic_mapping
 import dataclass_utils
 from modules.common.configurable_vehicle import IntervalConfig
-
 
 log = logging.getLogger(__name__)
 
@@ -697,30 +694,6 @@ class Command:
             pub_user_message(payload, connection_id,
                              f'Restore-Status: {result.returncode}<br />Meldung: {result.stdout.decode("utf-8")}',
                              MessageType.ERROR)
-
-    def requestMSALAuthCode(self, connection_id: str, payload: dict) -> None:
-        ''' fordert einen Authentifizierungscode für MSAL (Microsoft Authentication Library)
-        an um Onedrive Backup zu ermöglichen'''
-        cloudbackupconfig = SubData.system_data["system"].backup_cloud
-        if cloudbackupconfig is None:
-            pub_user_message(payload, connection_id,
-                             "Es ist keine Backup-Cloud konfiguriert. Bitte Konfiguration speichern "
-                             "und erneut versuchen.<br />", MessageType.WARNING)
-            return
-        result = generateMSALAuthCode(cloudbackupconfig.config)
-        pub_user_message(payload, connection_id, result["message"], result["MessageType"])
-
-    def retrieveMSALTokens(self, connection_id: str, payload: dict) -> None:
-        """ holt die Tokens für MSAL (Microsoft Authentication Library) um Onedrive Backup zu ermöglichen
-        """
-        cloudbackupconfig = SubData.system_data["system"].backup_cloud
-        if cloudbackupconfig is None:
-            pub_user_message(payload, connection_id,
-                             "Es ist keine Backup-Cloud konfiguriert. Bitte Konfiguration speichern "
-                             "und erneut versuchen.<br />", MessageType.WARNING)
-            return
-        result = retrieveMSALTokens(cloudbackupconfig.config)
-        pub_user_message(payload, connection_id, result["message"], result["MessageType"])
 
     def factoryReset(self, connection_id: str, payload: dict) -> None:
         Path(Path(__file__).resolve().parents[2] / 'data' / 'restore' / 'factory_reset').touch()
