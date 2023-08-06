@@ -28,18 +28,28 @@ def readmq() -> None:
 def smarthome_handler() -> None:
     def handler() -> None:
         try:
+#            try:
+#                if len(SubData.bat_data) > 1:
+#                    speicherleistung = int(SubData.bat_all_data.data.get.power)
+#                    speichersoc = int(SubData.bat_all_data.data.get.soc)
+#                else:
+#                    speicherleistung = 0
+#                    speichersoc = 100
+#            except Exception:
+#                log.exception("Fehler beim Auslesen der Ramdisk " +
+#                              "(speichervorhanden,speicherleistung,speichersoc): ")
+#                speicherleistung = 0
+#                speichersoc = 100
             try:
-                if len(SubData.bat_data) > 1:
-                    speicherleistung = int(SubData.bat_all_data.data.get.power)
-                    speichersoc = int(SubData.bat_all_data.data.get.soc)
-                else:
-                    speicherleistung = 0
-                    speichersoc = 100
+                speicherleistung = int(SubData.bat_all_data.data.get.power)
             except Exception:
-                log.exception("Fehler beim Auslesen der Ramdisk " +
-                              "(speichervorhanden,speicherleistung,speichersoc): ")
+                log.exception("Fehler beim Auslesen der Ramdisk  (Speicherleistung)")
                 speicherleistung = 0
-                speichersoc = 100
+            try:
+                speichersoc = int(SubData.bat_all_data.data.get.soc)
+            except Exception:
+                log.exception("Fehler beim Auslesen der Ramdisk  (Speichersoc)")
+                speichersoc = 0
             watt = SubData.counter_data[f"counter{SubData.counter_all_data.get_id_evu_counter()}"].data.get.power * -1
             wattint = int(watt)
             pvwatt = int(SubData.pv_all_data.data.get.power) * -1
