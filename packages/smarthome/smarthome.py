@@ -28,18 +28,6 @@ def readmq() -> None:
 def smarthome_handler() -> None:
     def handler() -> None:
         try:
-#            try:
-#                if len(SubData.bat_data) > 1:
-#                    speicherleistung = int(SubData.bat_all_data.data.get.power)
-#                    speichersoc = int(SubData.bat_all_data.data.get.soc)
-#                else:
-#                    speicherleistung = 0
-#                    speichersoc = 100
-#            except Exception:
-#                log.exception("Fehler beim Auslesen der Ramdisk " +
-#                              "(speichervorhanden,speicherleistung,speichersoc): ")
-#                speicherleistung = 0
-#                speichersoc = 100
             try:
                 speicherleistung = int(SubData.bat_all_data.data.get.power)
             except Exception:
