@@ -139,7 +139,7 @@ def test_auto_phase_switch(monkeypatch, vehicle: Ev, params: Params):
     vehicle.data.control_parameter.state = params.state
 
     # execution
-    phases_to_use, current, message = vehicle.auto_phase_switch(0, params.get_currents, params.get_power, 32)
+    phases_to_use, current, message = vehicle.auto_phase_switch(0, params.get_currents, params.get_power, 32, 3)
 
     # evaluation
     assert phases_to_use == params.expected_phases_to_use
