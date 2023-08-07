@@ -88,29 +88,9 @@ chmod 666 "$LOGFILE"
 	echo -n "Final group membership: "
 	groups openwb
 
-	# check for LAN/WLAN connection
-	echo "LAN/WLAN..."
-	connectCounter=0
-	while [[ ! $(ip route get 1) ]] && ((connectCounter < 30)); do
-		((connectCounter += 1))
-		sleep 1
-	done
-	if ((connectCounter <30)); then
-		# alpha image restricted to LAN only
-		myNetDevice=$(ip route get 1 | awk '{print $5;exit}')
-		echo "my primary interface: $myNetDevice"
-		sudo ifconfig "${myNetDevice}:0" 192.168.193.250 netmask 255.255.255.0 up
-		# get local ip
-		ip="\"$(ip route get 1 | awk '{print $7;exit}')\""
-		if [[ $ip == "\"\"" ]]; then
-			ip="\"unknown\""
-		fi
-		echo "my primary IP: $ip"
-		mosquitto_pub -t "openWB/system/ip_address" -p 1886 -r -m "$ip"
-	else
-		echo "ERROR: network not up after $connectCounter seconds!"
-		echo "unable to check required packages and add virtual network!"
-	fi
+	# network setup
+	echo "Network..."
+	"${OPENWBBASEDIR}/runs/setup_network.sh"
 
 	# tune apt configuration and install required packages
 	if [ -d "/etc/apt/apt.conf.d" ]; then
@@ -309,6 +289,11 @@ chmod 666 "$LOGFILE"
 		echo "done"
 	fi
 	echo "mosquitto done"
+
+	# check for home configuration
+	if [[ ! -f "/home/openwb/configuration.json" ]]; then
+		sudo cp -a "${OPENWBBASEDIR}/data/config/configuration.json" "/home/openwb/configuration.json"
+	fi
 
 	# check for python dependencies
 	echo "install required python packages with 'pip3'..."

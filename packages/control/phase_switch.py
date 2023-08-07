@@ -31,7 +31,7 @@ def thread_phase_switch(cp) -> None:
                 args=(cp.chargepoint_module,
                       cp.data.set.charging_ev_data,
                       cp.data.get.charge_state),
-                name=f"cp{cp.chargepoint_module.config.id}")
+                name=f"phase switch cp{cp.chargepoint_module.config.id}")
             phase_switch_threads["thread_cp"+str(cp.num)].start()
             log.debug("Thread zur Phasenumschaltung an LP"+str(cp.num)+" gestartet.")
     except Exception:

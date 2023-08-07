@@ -40,13 +40,13 @@ class CpTemplateData:
     id: int = 0
     max_current_multi_phases: int = 32
     max_current_single_phase: int = 32
-    name: str = "Standard Ladepunkt-Vorlage"
+    name: str = "Standard Ladepunkt-Profil"
     rfid_enabling: bool = False
     valid_tags: List = field(default_factory=empty_list_factory)
 
 
 class CpTemplate:
-    """ Vorlage für einen Ladepunkt.
+    """ Profil für einen Ladepunkt.
     """
 
     def __init__(self):
@@ -101,5 +101,5 @@ class CpTemplate:
             return num, message
         except Exception:
             log.exception(
-                "Fehler in der Ladepunkt-Template Klasse")
+                "Fehler in der Ladepunkt-Profil Klasse")
             return num, "Keine Ladung, da ein interner Fehler aufgetreten ist: " + traceback.format_exc()

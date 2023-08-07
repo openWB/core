@@ -696,7 +696,7 @@ class Chargepoint:
         else:
             required_current = min(required_current, self.template.data.max_current_multi_phases)
         if required_current != required_current_prev and msg is None:
-            msg = ("Die Einstellungen in der Ladepunkt-Vorlage beschränken den Strom auf "
+            msg = ("Die Einstellungen in dem Ladepunkt-Profil beschränken den Strom auf "
                    f"maximal {required_current} A.")
         self.set_state_and_log(msg)
         return required_current
@@ -807,7 +807,7 @@ class Chargepoint:
                     charging_ev.data.control_parameter.phases = min(
                         self.get_phases_by_selected_chargemode(), max_phase_hw)
                     state, message_ev, submode, required_current, phases = charging_ev.get_required_current(
-                        self.data.set.log.imported_since_mode_switch,
+                        self.data.get.imported,
                         max_phase_hw,
                         self.cp_ev_support_phase_switch())
                     phases = self.set_phases(phases)

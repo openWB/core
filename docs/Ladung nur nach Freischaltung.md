@@ -8,4 +8,4 @@ Wenn die Freischaltung mittels RFID oder Pin erfolgen soll:
 
 * _Einstellungen -> Optional_: RFID aktivieren
 * im Fahrzeug: Tag zuweisen
-* in der Ladepunkt-Vorlage: Freischaltung mit RFID aktivieren und die gültigen Tags eintragen
+* in dem Ladepunkt-Profil: Freischaltung mit RFID aktivieren und die gültigen Tags eintragen

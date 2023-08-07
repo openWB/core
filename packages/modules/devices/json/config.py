@@ -41,10 +41,18 @@ class JsonBatSetup(ComponentSetup[JsonBatConfiguration]):
 
 
 class JsonCounterConfiguration:
-    def __init__(self, jq_power: str = "", jq_exported: Optional[str] = None, jq_imported: Optional[str] = None):
+    def __init__(self, jq_power: str = "", jq_exported: Optional[str] = None, jq_imported: Optional[str] = None,
+                 jq_power_l1: Optional[str] = None,
+                 jq_power_l2: Optional[str] = None,
+                 jq_power_l3: Optional[str] = None,
+                 jq_current_l1: Optional[str] = None,
+                 jq_current_l2: Optional[str] = None,
+                 jq_current_l3: Optional[str] = None):
         self.jq_power = jq_power
         self.jq_exported = jq_exported
         self.jq_imported = jq_imported
+        self.jq_powers = (jq_power_l1, jq_power_l2, jq_power_l3)
+        self.jq_currents = (jq_current_l1, jq_current_l2, jq_current_l3)
 
 
 class JsonCounterSetup(ComponentSetup[JsonCounterConfiguration]):
