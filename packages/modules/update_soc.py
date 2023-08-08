@@ -28,7 +28,7 @@ class UpdateSoc:
             threads_update, threads_store = self._get_threads()
             with ModuleUpdateCompletedContext(self.event_vehicle_update_completed, topic):
                 threads_update, threads_store = self._get_threads()
-                thread_handler(threads_update, data.data.general_data.data.control_interval/3)
+                thread_handler(threads_update, 300)
             with ModuleUpdateCompletedContext(self.event_vehicle_update_completed, topic):
                 # threads_store = self._filter_failed_store_threads(threads_store)
                 thread_handler(threads_store, data.data.general_data.data.control_interval/3)
