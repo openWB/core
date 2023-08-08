@@ -3,6 +3,7 @@ from modules.common.abstract_device import DeviceDescriptor
 from modules.common.abstract_soc import SocUpdateData
 from modules.common.configurable_vehicle import ConfigurableVehicle
 from modules.common.component_state import CarState
+
 from modules.vehicles.mercedeseq.config import MercedesEQSoc
 import modules.vehicles.mercedeseq.api as api
 
