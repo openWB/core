@@ -28,7 +28,7 @@ def pub_user_message(payload: dict, connection_id: str, message: str,
 
 def pub_system_message(payload: dict, message: str,
                        message_type: MessageType = MessageType.INFO) -> None:
-    """ sendet eine Meldung an den Benutzer
+    """ sendet eine Meldung an alle Benutzer
     """
     _pub_message(payload, None, message, message_type, MessageTarget.SYSTEM)
 
@@ -57,11 +57,11 @@ def _pub_message(payload: dict, connection_id: Optional[str], message: str,
                 log.warning('Benutzerbenachrichtigung ohne \'connection_id\'')
         Pub().pub(topic, message_payload)
         if message_type == MessageType.ERROR:
-            log.error(f'Befehl konnte nicht ausgeführt werden: {message_payload}')
+            log.error(f'Messaging: Fehlermeldung: {message_payload}')
         else:
-            log.debug(f'Befehl erfolgreich ausgeführt: {message}')
+            log.debug(f'Messaging: Meldung: {message}')
     except Exception:
-        log.exception("Fehler im Command-Modul")
+        log.exception("Fehler im Messaging-Modul")
 
 
 def pub_error_global(payload: dict, connection_id: str, error_str: str) -> None:
@@ -76,4 +76,4 @@ def pub_error_global(payload: dict, connection_id: str, error_str: str) -> None:
         Pub().pub(f'openWB/set/command/{connection_id}/error', error_payload)
         log.error(f'Befehl konnte nicht ausgeführt werden: {error_payload}')
     except Exception:
-        log.exception("Fehler im Command-Modul")
+        log.exception("Fehler im Messaging-Modul")
