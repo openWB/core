@@ -64,9 +64,9 @@ def mock_data() -> None:
                              pytest.param(None, False, None, None, "1234", id="no duo"),
                              pytest.param(1, False, None, None, "1234", id="second cp not plugged"),
                              pytest.param(1, True, "08/08/2023, 11:36:00",
-                                          "08/08/2023, 11:37:00", "1234", id="self first plugged"),
+                                          "08/08/2023, 11:37:00", None, id="self first plugged"),
                              pytest.param(1, True, "08/08/2023, 11:37:00",
-                                          "08/08/2023, 11:36:00", None, id="second first plugged"),
+                                          "08/08/2023, 11:36:00", "1234", id="second first plugged"),
                          ])
 def test_link_rfid_to_cp(partner_id: Optional[int],
                          cp1_plug_state: bool,

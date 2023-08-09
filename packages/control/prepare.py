@@ -20,7 +20,7 @@ class Prepare:
         try:
             data.data.general_data.check_ripple_control_receiver()
             for cp in data.data.cp_data.values():
-                cp.reset_values_at_start()
+                cp.setup_values_at_start()
             data.data.bat_all_data.setup_bat()
             levels = data.data.counter_all_data.get_list_of_elements_per_level()
             for level in reversed(levels):
