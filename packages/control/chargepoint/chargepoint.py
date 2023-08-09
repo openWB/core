@@ -765,7 +765,7 @@ class Chargepoint:
             if self.data.config.type == "external_openwb" or self.data.config.type == "internal_openwb":
                 for cp2 in data.data.cp_data.values():
                     if (cp2.num != self.num and
-                            self.data.config.configuration.ip_address == cp2.data.config.configuration.ip_address):
+                            self.data.config.configuration["ip_address"] == cp2.data.config.configuration["ip_address"]):
                         return cp2.num
             return None
         except Exception:
