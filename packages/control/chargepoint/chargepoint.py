@@ -510,6 +510,8 @@ class Chargepoint:
             return True
         return False
 
+    STOP_CHARGING = ", dafür wird die Ladung unterbrochen."
+
     def initiate_phase_switch(self):
         """prüft, ob eine Phasenumschaltung erforderlich ist und führt diese durch.
         """
@@ -549,9 +551,9 @@ class Chargepoint:
                 else:
                     # Wenn eine Umschaltung im Gange ist, muss erst gewartet werden, bis diese fertig ist.
                     if self.data.set.phases_to_use == 1:
-                        message = f"Umschaltung von {self.get_max_phase_hw()} auf 1 Phase."
+                        message = f"Umschaltung von {self.get_max_phase_hw()} auf 1 Phase{self.STOP_CHARGING}"
                     else:
-                        message = f"Umschaltung von 1 auf {self.get_max_phase_hw()} Phasen."
+                        message = f"Umschaltung von 1 auf {self.get_max_phase_hw()} Phasen{self.STOP_CHARGING}"
                     self.set_state_and_log(message)
                 return
             if charging_ev.data.control_parameter.state == ChargepointState.WAIT_FOR_USING_PHASES:
@@ -580,12 +582,12 @@ class Chargepoint:
                                       "control_parameter phases " +
                                       str(charging_ev.data.control_parameter.phases))
                             if charging_ev.data.control_parameter.phases == 1:
-                                message = f"Umschaltung von {self.get_max_phase_hw()} auf 1 Phase."
+                                message = f"Umschaltung von {self.get_max_phase_hw()} auf 1 Phase{self.STOP_CHARGING}"
                                 # Ladeleistung reservieren, da während der Umschaltung die Ladung pausiert wird.
                                 evu_counter.data.set.reserved_surplus += charging_ev. \
                                     ev_template.data.max_current_single_phase * 230
                             else:
-                                message = f"Umschaltung von 1 auf {self.get_max_phase_hw()} Phasen."
+                                message = f"Umschaltung von 1 auf {self.get_max_phase_hw()} Phasen{self.STOP_CHARGING}"
                                 # Ladeleistung reservieren, da während der Umschaltung die Ladung pausiert wird.
                                 evu_counter.data.set.reserved_surplus += charging_ev. \
                                     ev_template.data.max_current_single_phase * 3 * 230
