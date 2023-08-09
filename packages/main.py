@@ -140,7 +140,7 @@ class HandlerAlgorithm:
 
 def schedule_jobs():
     [schedule.every().minute.at(f":{i:02d}").do(handler.handler10Sec).tag("algorithm") for i in range(0, 60, 10)]
-    [schedule.every().minute.at(f":{i:02d}").do(soc.update).tag("algorithm") for i in range(0, 60, 10)]
+    [schedule.every().minute.at(f":{i:02d}").do(soc.update).tag("algorithm") for i in range(0, 60, 5)]
     [schedule.every().minute.at(f":{i:02d}").do(smarthome_handler).tag("algorithm") for i in range(0, 60, 5)]
     [schedule.every().hour.at(f":{i:02d}").do(handler.handler5Min) for i in range(0, 60, 5)]
     [schedule.every().hour.at(f":{i:02d}").do(handler.handler5MinAlgorithm).tag("algorithm") for i in range(0, 60, 5)]
