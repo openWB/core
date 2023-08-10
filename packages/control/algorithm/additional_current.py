@@ -51,6 +51,6 @@ class AdditionalCurrent:
         if (current != max(chargepoint.data.set.target_current, chargepoint.data.set.current or 0) and
                 # Strom erreicht nicht die vorgegebene Stromstärke
                 current != max(
-                    chargepoint.data.set.charging_ev_data.data.control_parameter.required_currents)):
+                    chargepoint.data.control_parameter.required_currents)):
             chargepoint.set_state_and_log(f"Es kann nicht mit der vorgegebenen Stromstärke geladen werden"
                                           f"{limit.value.format(get_component_name_by_id(counter.num))}")

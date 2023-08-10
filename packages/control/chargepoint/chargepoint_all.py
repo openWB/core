@@ -45,7 +45,7 @@ class AllChargepoints:
                 try:
                     chargepoint = data.data.cp_data[cp]
                     # Kein EV angesteckt
-                    control_parameter = chargepoint.data.set.charging_ev_data.data.control_parameter
+                    control_parameter = chargepoint.data.control_parameter
                     if (not chargepoint.data.get.plug_state or
                             # Kein EV, das Laden soll
                             chargepoint.data.set.charging_ev == -1 or

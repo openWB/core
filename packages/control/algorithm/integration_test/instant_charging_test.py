@@ -15,7 +15,7 @@ from dataclass_utils.factories import currents_list_factory
 @pytest.fixture()
 def all_cp_instant_charging_1p():
     for i in range(3, 6):
-        control_parameter = data.data.cp_data[f"cp{i}"].data.set.charging_ev_data.data.control_parameter
+        control_parameter = data.data.cp_data[f"cp{i}"].data.control_parameter
         control_parameter.required_currents = [0]*3
         control_parameter.required_currents[i-3] = 16
         control_parameter.required_current = 16
@@ -33,7 +33,7 @@ def all_cp_charging_1p():
 @pytest.fixture()
 def all_cp_instant_charging_3p():
     for i in range(3, 6):
-        control_parameter = data.data.cp_data[f"cp{i}"].data.set.charging_ev_data.data.control_parameter
+        control_parameter = data.data.cp_data[f"cp{i}"].data.control_parameter
         control_parameter.required_currents = [16]*3
         control_parameter.required_current = 16
         control_parameter.chargemode = Chargemode.INSTANT_CHARGING
@@ -185,12 +185,12 @@ cases_control_parameter = [
 @pytest.mark.parametrize("params", cases_control_parameter, ids=[c.name for c in cases_control_parameter])
 def test_control_parameter_instant_charging(params: ParamsControlParameter, all_cp_instant_charging_3p, monkeypatch):
     # setup
-    data.data.cp_data["cp3"].data.set.charging_ev_data.data.control_parameter.prio = params.prio_cp3
-    data.data.cp_data["cp3"].data.set.charging_ev_data.data.control_parameter.submode = params.submode_cp3
-    data.data.cp_data["cp4"].data.set.charging_ev_data.data.control_parameter.prio = params.prio_cp4
-    data.data.cp_data["cp4"].data.set.charging_ev_data.data.control_parameter.submode = params.submode_cp4
-    data.data.cp_data["cp5"].data.set.charging_ev_data.data.control_parameter.prio = params.prio_cp5
-    data.data.cp_data["cp5"].data.set.charging_ev_data.data.control_parameter.submode = params.submode_cp5
+    data.data.cp_data["cp3"].data.control_parameter.prio = params.prio_cp3
+    data.data.cp_data["cp3"].data.control_parameter.submode = params.submode_cp3
+    data.data.cp_data["cp4"].data.control_parameter.prio = params.prio_cp4
+    data.data.cp_data["cp4"].data.control_parameter.submode = params.submode_cp4
+    data.data.cp_data["cp5"].data.control_parameter.prio = params.prio_cp5
+    data.data.cp_data["cp5"].data.control_parameter.submode = params.submode_cp5
     data.data.counter_data["counter0"].data.set.raw_power_left = 22080
     data.data.counter_data["counter0"].data.set.raw_currents_left = [32]*3
     data.data.counter_data["counter6"].data.set.raw_currents_left = [16]*3
