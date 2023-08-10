@@ -465,7 +465,7 @@ class Chargepoint:
         except Exception:
             log.exception("Fehler im LP-Modul "+str(self.num))
 
-    def _reset_values_at_start(self):
+    def reset_values_at_start(self):
         self.data.set.loadmanagement_available = True
 
     def _set_values_at_start(self):
