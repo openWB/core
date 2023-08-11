@@ -25,7 +25,7 @@ SAMPLE_IP = "1.1.1.1"
 
 @pytest.mark.parametrize(
     "old_chargepoint_state, published_topics",
-    [(None, 18),
+    [(None, 20),
      (OLD_CHARGEPOINT_STATE, 2)]
 
 )
