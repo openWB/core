@@ -20,6 +20,8 @@ from helpermodules import subdata
 from helpermodules import setdata
 from helpermodules import logger
 from helpermodules import command
+from helpermodules.modbusserver import start_modbus_server
+from helpermodules.pub import Pub
 from control import prepare
 from control import data
 from control import process
@@ -189,6 +191,7 @@ try:
     event_command_completed.set()
     event_subdata_initialized = threading.Event()
     event_update_config_completed = threading.Event()
+    event_modbus_server = threading.Event()
     event_jobs_running = threading.Event()
     event_jobs_running.set()
     prep = prepare.Prepare()
@@ -205,7 +208,7 @@ try:
                           general_internal_chargepoint_handler.event_stop,
                           event_update_config_completed,
                           event_soc,
-                          event_jobs_running)
+                          event_jobs_running, event_modbus_server)
     comm = command.Command(event_command_completed)
     t_sub = Thread(target=sub.sub_topics, args=(), name="Subdata")
     t_set = Thread(target=set.set_data, args=(), name="Setdata")
@@ -223,6 +226,7 @@ try:
     t_set.start()
     t_comm.start()
     t_internal_chargepoint.start()
+    threading.Thread(target=start_modbus_server, args=(event_modbus_server,), name="Modbus Control Server").start()
     # Warten, damit subdata Zeit hat, alle Topics auf dem Broker zu empfangen.
     event_update_config_completed.wait(300)
     Pub().pub("openWB/set/system/boot_done", True)

@@ -28,7 +28,7 @@ except ImportError:
 
 
 class UpdateValues:
-    def __init__(self, local_charge_point_num: int, parent_ip: str, parent_cp: str) -> None:
+    def __init__(self, local_charge_point_num: int, parent_ip: Optional[str], parent_cp: str) -> None:
         self.local_charge_point_num_str = str(local_charge_point_num)
         self.old_chargepoint_state = None
         self.parent_ip = parent_ip
@@ -61,11 +61,17 @@ class UpdateValues:
         else:
             # qos 2 reicht nicht, da die Daten zwar auf dem Broker ankommen, aber nicht verarbeitet werden.
             if isinstance(value, list):
-                pub_single("openWB/set/chargepoint/" + self.parent_cp+"/get/"+topic,
-                           payload=[rounding(v) for v in value], hostname=self.parent_ip)
+                if self.parent_ip is not None:
+                    pub_single("openWB/set/chargepoint/" + self.parent_cp+"/get/"+topic,
+                               payload=[rounding(v) for v in value], hostname=self.parent_ip)
+                pub_single("openWB/set/chargepoint/" + self.local_charge_point_num_str+"/get/"+topic,
+                           payload=[rounding(v) for v in value])
             else:
-                pub_single("openWB/set/chargepoint/" + self.parent_cp+"/get/"+topic,
-                           payload=rounding(value), hostname=self.parent_ip)
+                if self.parent_ip is not None:
+                    pub_single("openWB/set/chargepoint/" + self.parent_cp+"/get/"+topic,
+                               payload=rounding(value), hostname=self.parent_ip)
+                pub_single("openWB/set/chargepoint/" + self.local_charge_point_num_str+"/get/"+topic,
+                           payload=rounding(value))
 
 
 class UpdateState:

@@ -8,7 +8,8 @@ log = logging.getLogger(__name__)
 
 def _calculate_powers_and_currents(currents: Optional[List[float]],
                                    powers: Optional[List[float]],
-                                   voltages: Optional[List[float]]) -> Tuple[List[float]]:
+                                   voltages: Optional[List[float]]) -> Tuple[
+                                        Optional[List[float]], List[float], List[float]]:
     if voltages is None:
         voltages = [230.0]*3
     if powers is None:
@@ -130,7 +131,8 @@ class ChargepointState:
                  charge_state: bool = False,
                  plug_state: bool = False,
                  rfid: Optional[str] = None,
-                 frequency: float = 50):
+                 frequency: float = 50,
+                 evse_current: float = 0):
         self.currents, self.powers, self.voltages = _calculate_powers_and_currents(currents, powers, voltages)
         self.frequency = frequency
         self.imported = imported
@@ -143,3 +145,4 @@ class ChargepointState:
         if power_factors is None:
             power_factors = [0.0]*3
         self.power_factors = power_factors
+        self.evse_current = evse_current

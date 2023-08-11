@@ -418,6 +418,7 @@ class UpdateConfig:
         ("openWB/system/debug_level", 30),
         ("openWB/system/device/module_update_completed", True),
         ("openWB/system/ip_address", "unknown"),
+        ("openWB/general/modbus_control", False),
         ("openWB/system/release_train", "master"),
     )
     invalid_topic = (

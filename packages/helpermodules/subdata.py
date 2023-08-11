@@ -81,7 +81,8 @@ class SubData:
                  event_stop_internal_chargepoint: threading.Event,
                  event_update_config_completed: threading.Event,
                  event_soc: threading.Event,
-                 event_jobs_running: threading.Event):
+                 event_jobs_running: threading.Event,
+                 event_modbus_server: threading.Event,):
         self.event_ev_template = event_ev_template
         self.event_charge_template = event_charge_template
         self.event_cp_config = event_cp_config
@@ -98,6 +99,7 @@ class SubData:
         self.event_update_config_completed = event_update_config_completed
         self.event_soc = event_soc
         self.event_jobs_running = event_jobs_running
+        self.event_modbus_server = event_modbus_server
         self.heartbeat = False
 
     def sub_topics(self):
@@ -568,6 +570,9 @@ class SubData:
                     subprocess.run([
                         str(Path(__file__).resolve().parents[2] / "runs" / "setup_network.sh")
                     ])
+                elif "openWB/general/modbus_control" == msg.topic:
+                    if decode_payload(msg.payload):
+                        self.event_modbus_server.set()
                 else:
                     self.set_json_payload_class(var.data, msg)
         except Exception:
