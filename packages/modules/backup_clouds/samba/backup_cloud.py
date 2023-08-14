@@ -1,11 +1,8 @@
 #!/usr/bin/env python3
 import logging
-import re
 from smb.SMBConnection import SMBConnection
-from io import BytesIO
 
 from modules.backup_clouds.samba.config import SambaBackupCloud, SambaBackupCloudConfiguration
-from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.configurable_backup_cloud import ConfigurableBackupCloud
 
