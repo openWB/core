@@ -291,6 +291,7 @@ def _process_entry(entry: dict, next_entry: dict, calculation: CalculationType):
                 entry[type][module].update(new_data)
             except Exception:
                 log.exception("Fehler beim Berechnen der Leistung")
+    # ToDo: add home consumption
     return entry
 
 
