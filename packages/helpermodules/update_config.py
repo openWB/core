@@ -24,7 +24,7 @@ log = logging.getLogger(__name__)
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 17
+    DATASTORE_VERSION = 18
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -231,7 +231,7 @@ class UpdateConfig:
         "^openWB/vehicle/[0-9]+/control_parameter/timestamp_auto_phase_switch$",
         "^openWB/vehicle/[0-9]+/control_parameter/timestamp_perform_phase_switch$",
         "^openWB/vehicle/[0-9]+/control_parameter/timestamp_switch_on_off$",
-        "^openWB/vehicle/[0-9]+/control_parameter/used_amount_instant_charging$",
+        "^openWB/vehicle/[0-9]+/control_parameter/imported_instant_charging$",
         "^openWB/vehicle/[0-9]+/control_parameter/phases$",
         "^openWB/vehicle/[0-9]+/control_parameter/state$",
         "^openWB/vehicle/[0-9]+/set/ev_template$",
@@ -318,37 +318,38 @@ class UpdateConfig:
         "^openWB/LegacySmartHome/Devices/[0-9]+/OnCntStandby$",
         "^openWB/LegacySmartHome/Devices/[1-2]+/TemperatureSensor[0-2]$",
 
-        "^openWB/system/boot_done$",
+        "^openWB/system/available_branches",
         "^openWB/system/backup_cloud/config$",
-        "^openWB/system/dataprotection_acknowledged$",
-        "^openWB/system/usage_terms_acknowledged$",
-        "^openWB/system/debug_level$",
-        "^openWB/system/lastlivevaluesJson$",
-        "^openWB/system/ip_address$",
-        "^openWB/system/version$",
-        "^openWB/system/release_train$",
-        "^openWB/system/update_in_progress$",
-        "^openWB/system/device/[0-9]+/config$",
-        "^openWB/system/device/[0-9]+/component/[0-9]+/config$",
-        "^openWB/system/device/[0-9]+/component/[0-9]+/simulation$",
-        "^openWB/system/device/[0-9]+/component/[0-9]+/simulation/timestamp_present$",
-        "^openWB/system/device/[0-9]+/component/[0-9]+/simulation/power_present$",
-        "^openWB/system/device/[0-9]+/component/[0-9]+/simulation/present_imported$",
-        "^openWB/system/device/[0-9]+/component/[0-9]+/simulation/present_exported$",
-        "^openWB/system/device/module_update_completed$",
+        "^openWB/system/boot_done$",
         "^openWB/system/configurable/backup_clouds$",
         "^openWB/system/configurable/chargepoints$",
         "^openWB/system/configurable/chargepoints_internal$",
         "^openWB/system/configurable/devices_components$",
         "^openWB/system/configurable/display_themes$",
         "^openWB/system/configurable/soc_modules$",
-        "^openWB/system/mqtt/bridge/[0-9]+$",
         "^openWB/system/current_branch",
-        "^openWB/system/current_commit",
-        "^openWB/system/available_branches",
         "^openWB/system/current_branch_commit",
+        "^openWB/system/current_commit",
         "^openWB/system/current_missing_commits",
+        "^openWB/system/dataprotection_acknowledged$",
         "^openWB/system/datastore_version"
+        "^openWB/system/debug_level$",
+        "^openWB/system/device/[0-9]+/component/[0-9]+/config$",
+        "^openWB/system/device/[0-9]+/component/[0-9]+/simulation$",
+        "^openWB/system/device/[0-9]+/component/[0-9]+/simulation/power_present$",
+        "^openWB/system/device/[0-9]+/component/[0-9]+/simulation/present_exported$",
+        "^openWB/system/device/[0-9]+/component/[0-9]+/simulation/present_imported$",
+        "^openWB/system/device/[0-9]+/component/[0-9]+/simulation/timestamp_present$",
+        "^openWB/system/device/[0-9]+/config$",
+        "^openWB/system/device/module_update_completed$",
+        "^openWB/system/ip_address$",
+        "^openWB/system/lastlivevaluesJson$",
+        "^openWB/system/messages/[0-9]+$",
+        "^openWB/system/mqtt/bridge/[0-9]+$",
+        "^openWB/system/release_train$",
+        "^openWB/system/update_in_progress$",
+        "^openWB/system/usage_terms_acknowledged$",
+        "^openWB/system/version$",
     ]
     default_topic = (
         ("openWB/chargepoint/get/power", 0),
@@ -447,6 +448,8 @@ class UpdateConfig:
             self.__solve_breaking_changes()
         except Exception:
             log.exception("Fehler beim Prüfen des Brokers.")
+        finally:
+            Pub().pub("openWB/set/system/update_config_completed", True)
 
     def on_connect(self, client: MqttClient, userdata, flags: dict, rc: int):
         """ connect to broker and subscribe to set topics
@@ -792,3 +795,21 @@ class UpdateConfig:
                                 payload["configuration"].update({"position_evu": False})
                             Pub().pub(topic.replace("openWB/", "openWB/set/"), payload)
         Pub().pub("openWB/system/datastore_version", 17)
+
+    def upgrade_datastore_17(self) -> None:
+        for topic_device, payload in self.all_received_topics.items():
+            if re.search("openWB/system/device/[0-9]+/config", topic_device) is not None:
+                payload_device = decode_payload(payload)
+                index = get_index(topic_device)
+                if payload_device["type"] == "solarmax":
+                    for topic_component, payload_component in self.all_received_topics.items():
+                        if re.search(f"^openWB/system/device/{index}/component/[0-9]+/config$",
+                                     topic_component) is not None:
+                            payload_inverter = decode_payload(payload_component)
+                            if payload_inverter["type"] == "inverter":
+                                payload_inverter["configuration"]["modbus_id"] = payload_device["configuration"][
+                                    "modbus_id"]
+                                payload_device["configuration"].pop("modbus_id")
+                            Pub().pub(topic_device.replace("openWB/", "openWB/set/"), payload_device)
+                            Pub().pub(topic_component.replace("openWB/", "openWB/set/"), payload_inverter)
+        Pub().pub("openWB/system/datastore_version", 18)

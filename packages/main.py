@@ -79,6 +79,7 @@ class HandlerAlgorithm:
             measurement_log.measurement_log_daily()
             data.data.general_data.grid_protection()
             data.data.optional_data.et_get_prices()
+            data.data.counter_all_data.validate_hierarchy()
         except KeyboardInterrupt:
             log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())
         except Exception:
@@ -94,14 +95,14 @@ class HandlerAlgorithm:
             if not sub.heartbeat:
                 log.error("Heartbeat für Subdata nicht zurückgesetzt.")
                 sub.disconnect()
-                Thread(target=sub.sub_topics, args=()).start()
+                Thread(target=sub.sub_topics, args=(), name="Subdata").start()
             else:
                 sub.heartbeat = False
 
             if not set.heartbeat:
                 log.error("Heartbeat für Setdata nicht zurückgesetzt.")
                 set.disconnect()
-                Thread(target=set.set_data, args=()).start()
+                Thread(target=set.set_data, args=(), name="Setdata").start()
             else:
                 set.heartbeat = False
 
@@ -142,7 +143,7 @@ def schedule_jobs():
     [schedule.every().minute.at(f":{i:02d}").do(soc.update).tag("algorithm") for i in range(0, 60, 10)]
     [schedule.every().minute.at(f":{i:02d}").do(smarthome_handler).tag("algorithm") for i in range(0, 60, 5)]
     [schedule.every().hour.at(f":{i:02d}").do(handler.handler5Min) for i in range(0, 60, 5)]
-    [schedule.every().hour.at(f":{i:02d}").do(handler.handler5MinAlgorithm).tag("algorithm") for i in range(1, 60, 5)]
+    [schedule.every().hour.at(f":{i:02d}").do(handler.handler5MinAlgorithm).tag("algorithm") for i in range(0, 60, 5)]
     schedule.every().day.at("00:00:00").do(handler.handler_midnight).tag("algorithm")
     schedule.every().day.at(f"0{randrange(0, 5)}:{randrange(0, 59):02d}:{randrange(0, 59):02d}").do(
         handler.handler_random_nightly)
@@ -185,6 +186,7 @@ try:
     event_command_completed = threading.Event()
     event_command_completed.set()
     event_subdata_initialized = threading.Event()
+    event_update_config_completed = threading.Event()
     event_jobs_running = threading.Event()
     event_jobs_running.set()
     prep = prepare.Prepare()
@@ -199,12 +201,13 @@ try:
                           event_scheduled_charging_plan, event_time_charging_plan,
                           general_internal_chargepoint_handler.event_start,
                           general_internal_chargepoint_handler.event_stop,
+                          event_update_config_completed,
                           event_soc,
                           event_jobs_running)
     comm = command.Command(event_command_completed)
-    t_sub = Thread(target=sub.sub_topics, args=())
-    t_set = Thread(target=set.set_data, args=())
-    t_comm = Thread(target=comm.sub_commands, args=())
+    t_sub = Thread(target=sub.sub_topics, args=(), name="Subdata")
+    t_set = Thread(target=set.set_data, args=(), name="Setdata")
+    t_comm = Thread(target=comm.sub_commands, args=(), name="Commands")
     t_internal_chargepoint = Thread(target=general_internal_chargepoint_handler.handler,
                                     args=(), name="Internal Chargepoint")
     if hasattr(rfid0, "input_device"):
@@ -219,7 +222,7 @@ try:
     t_comm.start()
     t_internal_chargepoint.start()
     # Warten, damit subdata Zeit hat, alle Topics auf dem Broker zu empfangen.
-    time.sleep(5)
+    event_update_config_completed.wait(300)
     Pub().pub("openWB/set/system/boot_done", True)
     Path(Path(__file__).resolve().parents[1]/"ramdisk"/"bootdone").touch()
     schedule_jobs()

@@ -40,3 +40,45 @@ def test_device(monkeypatch, mock_value_store: Mock, requests_mock: requests_moc
     # evaluation
     assert len(mock_value_store.set.mock_calls) == 1
     assert mock_value_store.set.call_args[0][0].power == expected_power
+
+
+def test_counter_powers(monkeypatch, mock_value_store: Mock, requests_mock: requests_mock.Mocker):
+    # setup
+    monkeypatch.setattr(FaultState, "store_error", Mock())
+    requests_mock.get("http://sample_host/sample_path",
+                      json={"power": 42, "power_l1": 11, "power_l2": 12, "power_l3": 13})
+    device_config = Json(configuration=JsonConfiguration("http://sample_host/sample_path"))
+
+    # execution
+    device = create_device(device_config)
+    device.add_component(JsonCounterSetup(configuration=JsonCounterConfiguration(jq_power=".power",
+                                                                                 jq_power_l1=".power_l1",
+                                                                                 jq_power_l2=".power_l2",
+                                                                                 jq_power_l3=".power_l3")))
+    device.update()
+
+    # evaluation
+    assert len(mock_value_store.set.mock_calls) == 1
+    assert mock_value_store.set.call_args[0][0].power == 42
+    assert mock_value_store.set.call_args[0][0].powers == [11, 12, 13]
+
+
+def test_counter_currents(monkeypatch, mock_value_store: Mock, requests_mock: requests_mock.Mocker):
+    # setup
+    monkeypatch.setattr(FaultState, "store_error", Mock())
+    requests_mock.get("http://sample_host/sample_path",
+                      json={"power": 42, "current_l1": 11, "current_l2": 12, "current_l3": 13})
+    device_config = Json(configuration=JsonConfiguration("http://sample_host/sample_path"))
+
+    # execution
+    device = create_device(device_config)
+    device.add_component(JsonCounterSetup(configuration=JsonCounterConfiguration(jq_power=".power",
+                                                                                 jq_current_l1=".current_l1",
+                                                                                 jq_current_l2=".current_l2",
+                                                                                 jq_current_l3=".current_l3")))
+    device.update()
+
+    # evaluation
+    assert len(mock_value_store.set.mock_calls) == 1
+    assert mock_value_store.set.call_args[0][0].power == 42
+    assert mock_value_store.set.call_args[0][0].currents == [11, 12, 13]

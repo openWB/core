@@ -6,8 +6,10 @@ import random
 from typing import List, Optional
 
 from control import data
+from helpermodules import hardware_configuration
 from helpermodules.pub import Pub
 from helpermodules import timecheck
+from modules import ripple_control_receiver
 
 log = logging.getLogger(__name__)
 
@@ -179,3 +181,15 @@ class General:
                             "openWB/set/general/grid_protection_random_stop", 0)
         except Exception:
             log.exception("Fehler im General-Modul")
+
+    def check_ripple_control_receiver(self):
+        configured = hardware_configuration.get_hardware_configuration_setting(
+            "ripple_control_receiver_configured")
+        Pub().pub("openWB/set/general/ripple_control_receiver/configured", configured)
+        self.data.ripple_control_receiver.configured = configured
+        if configured:
+            r1_active, r2_active = ripple_control_receiver.read()
+            self.data.ripple_control_receiver.r1_active = r1_active
+            Pub().pub("openWB/set/general/ripple_control_receiver/r1_active", r1_active)
+            self.data.ripple_control_receiver.r2_active = r2_active
+            Pub().pub("openWB/set/general/ripple_control_receiver/r2_active", r2_active)

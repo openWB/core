@@ -257,7 +257,7 @@ class Command:
                          f'Ladepunkt mit ID \'{payload["data"]["id"]}\' gelöscht.', MessageType.SUCCESS)
 
     def addChargepointTemplate(self, connection_id: str, payload: dict) -> None:
-        """ sendet das Topic, zu dem eine neue Ladepunkt-Vorlage erstellt werden soll.
+        """ sendet das Topic, zu dem ein neues Ladepunkt-Profil erstellt werden soll.
         """
         new_id = self.max_id_chargepoint_template + 1
         default = get_chargepoint_template_default()
@@ -268,11 +268,11 @@ class Command:
                   self.max_id_chargepoint_template)
         pub_user_message(
             payload, connection_id,
-            f'Neue Ladepunkt-Vorlage mit ID \'{new_id}\' hinzugefügt.',
+            f'Neues Ladepunkt-Profil mit ID \'{new_id}\' hinzugefügt.',
             MessageType.SUCCESS)
 
     def removeChargepointTemplate(self, connection_id: str, payload: dict) -> None:
-        """ löscht eine Ladepunkt-Vorlage.
+        """ löscht ein Ladepunkt-Profil.
         """
         if self.max_id_chargepoint_template < payload["data"]["id"]:
             pub_user_message(
@@ -282,10 +282,10 @@ class Command:
         if payload["data"]["id"] > 0:
             ProcessBrokerBranch(f'chargepoint/template/{payload["data"]["id"]}/').remove_topics()
             pub_user_message(payload, connection_id,
-                             f'Ladepunkt-Vorlage mit ID \'{payload["data"]["id"]}\' gelöscht.',
+                             f'Ladepunkt-Profil mit ID \'{payload["data"]["id"]}\' gelöscht.',
                              MessageType.SUCCESS)
         else:
-            pub_user_message(payload, connection_id, "Ladepunkt-Vorlage mit ID 0 darf nicht gelöscht werden.",
+            pub_user_message(payload, connection_id, "Ladepunkt-Profil mit ID 0 darf nicht gelöscht werden.",
                              MessageType.ERROR)
 
     def addAutolockPlan(self, connection_id: str, payload: dict) -> None:
@@ -299,7 +299,7 @@ class Command:
         Pub().pub("openWB/set/command/max_id/autolock_plan", new_id)
         pub_user_message(
             payload, connection_id,
-            f'Neuer Autolock-Plan mit ID \'{new_id}\' zu Template '
+            f'Neuer Autolock-Plan mit ID \'{new_id}\' zu Profil '
             f'\'{payload["data"]["template"]}\' hinzugefügt.',
             MessageType.SUCCESS)
 
@@ -317,12 +317,12 @@ class Command:
             "")
         pub_user_message(
             payload, connection_id,
-            f'Autolock-Plan mit ID \'{payload["data"]["plan"]}\' zu Template '
+            f'Autolock-Plan mit ID \'{payload["data"]["plan"]}\' vom Profil '
             f'\'{payload["data"]["template"]}\' gelöscht.',
             MessageType.SUCCESS)
 
     def addChargeTemplate(self, connection_id: str, payload: dict) -> None:
-        """ sendet das Topic, zu dem eine neue Lade-Vorlage erstellt werden soll.
+        """ sendet das Topic, zu dem ein neues Lade-Profil erstellt werden soll.
         """
         new_id = self.max_id_charge_template + 1
         charge_template_default = ev.get_charge_template_default()
@@ -331,11 +331,11 @@ class Command:
         self.max_id_charge_template = new_id
         Pub().pub("openWB/set/command/max_id/charge_template", new_id)
         pub_user_message(payload, connection_id,
-                         f'Neues Lade-Template mit ID \'{new_id}\' hinzugefügt.',
+                         f'Neues Lade-Profil mit ID \'{new_id}\' hinzugefügt.',
                          MessageType.SUCCESS)
 
     def removeChargeTemplate(self, connection_id: str, payload: dict) -> None:
-        """ löscht eine Lade-Vorlage.
+        """ löscht ein Lade-Profil.
         """
         if self.max_id_charge_template < payload["data"]["id"]:
             pub_user_message(payload, connection_id, "Die ID ist größer als die maximal vergebene ID.",
@@ -344,10 +344,10 @@ class Command:
             Pub().pub(f'openWB/vehicle/template/charge_template/{payload["data"]["id"]}', "")
             pub_user_message(
                 payload, connection_id,
-                f'Lade-Template mit ID \'{payload["data"]["id"]}\' gelöscht.',
+                f'Lade-Profil mit ID \'{payload["data"]["id"]}\' gelöscht.',
                 MessageType.SUCCESS)
         else:
-            pub_user_message(payload, connection_id, "Ladevorlage mit ID 0 darf nicht gelöscht werden.",
+            pub_user_message(payload, connection_id, "Lade-Profil mit ID 0 darf nicht gelöscht werden.",
                              MessageType.ERROR)
 
     def addChargeTemplateSchedulePlan(self, connection_id: str, payload: dict) -> None:
@@ -364,7 +364,7 @@ class Command:
             "openWB/set/command/max_id/charge_template_scheduled_plan", new_id)
         pub_user_message(
             payload, connection_id,
-            f'Neues Zielladen-Template mit ID \'{new_id}\' zu Template '
+            f'Neuer Zielladen-Plan mit ID \'{new_id}\' zu Profil '
             f'\'{payload["data"]["template"]}\' hinzugefügt.',
             MessageType.SUCCESS)
 
@@ -382,7 +382,7 @@ class Command:
             "")
         pub_user_message(
             payload, connection_id,
-            f'Zielladen-Template mit ID \'{payload["data"]["plan"]}\' zu Template '
+            f'Zielladen-Plan mit ID \'{payload["data"]["plan"]}\' von Profil '
             f'{payload["data"]["template"]}\' gelöscht.',
             MessageType.SUCCESS)
 
@@ -400,7 +400,7 @@ class Command:
             "openWB/set/command/max_id/charge_template_time_charging_plan", new_id)
         pub_user_message(
             payload, connection_id,
-            f'Neues Zeitladen-Template mit ID \'{new_id}\' zu Template '
+            f'Neuer Zeitladen-Plan mit ID \'{new_id}\' zu Profil '
             f'{payload["data"]["template"]}\' hinzugefügt.', MessageType.SUCCESS)
 
     def removeChargeTemplateTimeChargingPlan(self, connection_id: str, payload: dict) -> None:
@@ -415,7 +415,7 @@ class Command:
             "")
         pub_user_message(
             payload, connection_id,
-            f'Zeitladen-Template mit ID \'{payload["data"]["plan"]}\' zu Template '
+            f'Zeitladen-Plan mit ID \'{payload["data"]["plan"]}\' zu Profil '
             f'\'{payload["data"]["template"]}\' gelöscht.', MessageType.SUCCESS)
 
     def addComponent(self, connection_id: str, payload: dict) -> None:
@@ -482,7 +482,7 @@ class Command:
             f'Komponente mit ID \'{payload["data"]["id"]}\' gelöscht.', MessageType.SUCCESS)
 
     def addEvTemplate(self, connection_id: str, payload: dict) -> None:
-        """ sendet das Topic, zu dem ein neues EV-Template erstellt werden soll.
+        """ sendet das Topic, zu dem ein neues Fahrzeug-Profil erstellt werden soll.
         """
         new_id = self.max_id_ev_template + 1
         ev_template_default = dataclass_utils.asdict(ev.EvTemplateData())
@@ -491,10 +491,10 @@ class Command:
         Pub().pub("openWB/set/command/max_id/ev_template", new_id)
         pub_user_message(
             payload, connection_id,
-            f'Neues EV-Template mit ID \'{new_id}\' hinzugefügt.', MessageType.SUCCESS)
+            f'Neues Fahrzeug-Profil mit ID \'{new_id}\' hinzugefügt.', MessageType.SUCCESS)
 
     def removeEvTemplate(self, connection_id: str, payload: dict) -> None:
-        """ löscht ein EV-Template.
+        """ löscht ein Fahrzeug-Profil.
         """
         if self.max_id_ev_template < payload["data"]["id"]:
             pub_user_message(payload, connection_id,
@@ -503,10 +503,10 @@ class Command:
             Pub().pub(f'openWB/vehicle/template/ev_template/{payload["data"]["id"]}', "")
             pub_user_message(
                 payload, connection_id,
-                f'EV-Template mit ID \'{payload["data"]["id"]}\' gelöscht.', MessageType.SUCCESS)
+                f'Fahrzeug-Profil mit ID \'{payload["data"]["id"]}\' gelöscht.', MessageType.SUCCESS)
         else:
             pub_user_message(payload, connection_id,
-                             "EV-Vorlage mit ID 0 darf nicht gelöscht werden.", MessageType.ERROR)
+                             "Fahrzeug-Profil mit ID 0 darf nicht gelöscht werden.", MessageType.ERROR)
 
     def addVehicle(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem ein neues Vehicle erstellt werden soll.
@@ -519,7 +519,7 @@ class Command:
         Pub().pub(f"openWB/set/vehicle/{new_id}/soc_module/interval_config", dataclass_utils.asdict(IntervalConfig()))
         self.max_id_vehicle = self.max_id_vehicle + 1
         Pub().pub("openWB/set/command/max_id/vehicle", self.max_id_vehicle)
-        # Default-Mäßig werden die Templates 0 zugewiesen, wenn diese noch nicht existieren -> anlegen
+        # Default-Mäßig werden die Profile 0 zugewiesen, wenn diese noch nicht existieren -> anlegen
         if self.max_id_charge_template == -1:
             self.addChargeTemplate("addVehicle", {})
         if self.max_id_ev_template == -1:
