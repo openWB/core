@@ -44,6 +44,9 @@ if rotation=$(mosquitto_sub -p 1886 -t "openWB/optional/int_display/rotation" -C
 	if ((current_rotation != rotationValue)); then
 		echo "updating..."
 		sudo sed -i "s/^lcd_rotate=[0-3]$/lcd_rotate=${rotationValue}/" "/boot/config.txt"
+		message="Es ist ein Neustart notwendig, um die geänderte Orientierung des Displays zu übernehmen."
+		payload=$(printf '{"source": "system", "type": "warning", "message": "%s", "timestamp": %d}' "$message" "$(date +"%s")")
+		mosquitto_pub -p 1886 -t "openWB/system/messages/$(date +"%s%3N")" -r -m "$payload"
 	else
 		echo "no update necessary"
 	fi
