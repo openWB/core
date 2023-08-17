@@ -29,7 +29,8 @@ def create_session(client_id: str, client_secret: str) -> req.Session:
     )
 
     if response.status_code != 201:
-        raise Exception("Error requesting Tronity access token, please check client_id and client_secret: %s" % response.status_code)
+        raise Exception("Error requesting Tronity access token, please check client_id and client_secret: %s"
+                        % response.status_code)
 
     access_token = response.json()['access_token']
     session.headers = {
