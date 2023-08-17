@@ -78,22 +78,114 @@ def daily_log_totals():
 
 @pytest.fixture()
 def daily_log_entry_kw():
-    return {'bat': {'all': {'exported': 3.316262207357859, 'imported': 0.0, 'soc': 15},
-                    'bat2': {'exported': 3.316262207357859, 'imported': 0.0, 'soc': 15}},
-            'counter': {'counter0': {'exported': 0.0,
-                                     'grid': True,
-                                     'imported': 8.983420735785948}},
-            'cp': {'all': {'exported': 0.0, 'imported': 11.556276923076913},
-                   'cp3': {'exported': 0.0, 'imported': 6.932299665551841},
-                   'cp4': {'exported': 0.0, 'imported': 2.3131384615384603},
-                   'cp5': {'exported': 0.0, 'imported': 2.3108387959866237}},
-            'date': '09:35',
-            'ev': {'ev0': {'soc': 0}},
-            'pv': {'all': {'exported': 1.517056856187291},
-                   'pv1': {'exported': 1.517056856187291}},
-            'sh': {'sh1': {'exported': 0.0,
-                           'imported': 0.0012040133779264216,
-                           'temp0': 300,
-                           'temp1': 300,
-                           'temp2': 300}},
-            'timestamp': 1690529761}
+    return {"timestamp": 1690529761,
+            "date": "09:35",
+            "cp": {
+                "cp3": {
+                    "imported": 3620.971,
+                    "exported": 0,
+                    "power_average": 6.932299665551841,
+                    "power_imported": 6.932299665551841,
+                    "power_exported": 0,
+                    "energy_imported": 0.5757660000000001,
+                    "energy_exported": 0
+                },
+                "cp5": {
+                    "imported": 1208.646,
+                    "exported": 0,
+                    "power_average": 2.3108387959866237,
+                    "power_imported": 2.3108387959866237,
+                    "power_exported": 0,
+                    "energy_imported": 0.1919280000000001,
+                    "energy_exported": 0
+                },
+                "cp4": {
+                    "imported": 1198.566,
+                    "exported": 0,
+                    "power_average": 2.3131384615384603,
+                    "power_imported": 2.3131384615384603,
+                    "power_exported": 0,
+                    "energy_imported": 0.1921189999999999,
+                    "energy_exported": 0
+                },
+                "all": {
+                    "imported": 6028.183,
+                    "exported": 0,
+                    "power_average": 11.556276923076913,
+                    "power_imported": 11.556276923076913,
+                    "power_exported": 0,
+                    "energy_imported": 0.9598129999999991,
+                    "energy_exported": 0
+                }
+            },
+            "ev": {
+                "ev0": {
+                    "soc": 0
+                }
+            },
+            "counter": {
+                "counter0": {
+                    "imported": 4686.054,
+                    "exported": 2.396,
+                    "grid": True,
+                    "power_average": 8.983420735785948,
+                    "power_imported": 8.983420735785948,
+                    "power_exported": 0,
+                    "energy_imported": 0.7461229999999996,
+                    "energy_exported": 0
+                }
+            },
+            "pv": {
+                "pv1": {
+                    "exported": 804,
+                    "power_average": -1.517056856187291,
+                    "power_imported": 0,
+                    "power_exported": 1.517056856187291,
+                    "energy_imported": 0,
+                    "energy_exported": 0.126
+                },
+                "all": {
+                    "exported": 804,
+                    "power_average": -1.517056856187291,
+                    "power_imported": 0,
+                    "power_exported": 1.517056856187291,
+                    "energy_imported": 0,
+                    "energy_exported": 0.126
+                }
+            },
+            "bat": {
+                "bat2": {
+                    "imported": 2.42,
+                    "exported": 1742.135,
+                    "soc": 15,
+                    "power_average": -3.316262207357859,
+                    "power_imported": 0,
+                    "power_exported": 3.316262207357859,
+                    "energy_imported": 0,
+                    "energy_exported": 0.27543399999999996
+                },
+                "all": {
+                    "imported": 2.42,
+                    "exported": 1742.135,
+                    "soc": 15,
+                    "power_average": -3.316262207357859,
+                    "power_imported": 0,
+                    "power_exported": 3.316262207357859,
+                    "energy_imported": 0,
+                    "energy_exported": 0.27543399999999996
+                }
+            },
+            "sh": {
+                "sh1": {
+                    "temp0": 300,
+                    "temp1": 300,
+                    "temp2": 300,
+                    "imported": 0.1,
+                    "exported": 0,
+                    "power_average": 0.0012040133779264216,
+                    "power_imported": 0.0012040133779264216,
+                    "power_exported": 0,
+                    "energy_imported": 0.0001,
+                    "energy_exported": 0
+                }
+            }}

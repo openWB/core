@@ -160,7 +160,7 @@ def _collect_daily_log_data(date: str):
 def get_monthly_log(date: str):
     data = _collect_monthly_log_data(date)
     data = _process_entries(data, CalculationType.ENERGY)
-    data = _analyse_power_source(data)
+    # data = _analyse_power_source(data)
     return data
 
 
@@ -185,7 +185,7 @@ def _collect_monthly_log_data(date: str):
 def get_yearly_log(year: str):
     data = _collect_yearly_log_data(year)
     data = _process_entries(data, CalculationType.ENERGY)
-    data = _analyse_power_source(data)
+    # data = _analyse_power_source(data)
     return data
 
 
@@ -218,7 +218,7 @@ def _collect_yearly_log_data(year: str):
 
 def _analyse_power_source(data) -> Dict:
     if data:
-        for i in range(0, len(data["entries"])-1):
+        for i in range(0, len(data["entries"])):
             data["entries"][i] = _analyse_percentage(data["entries"][i])
         data["totals"] = _analyse_percentage(data["totals"])
     return data
@@ -235,6 +235,7 @@ def _analyse_percentage(entry):
         for counter in entry["counter"].values():
             if counter.get("grid") is None:
                 return
+            # ToDo: add "grid" to old data in update_config.py
             if counter["grid"]:
                 grid_imported = counter["energy_imported"]
                 grid_exported = counter["energy_exported"]
@@ -253,11 +254,12 @@ def _analyse_percentage(entry):
 
 
 def _process_entries(data, calculation):
-    if data:
+    if data and len(data["entries"]) > 0:
         for i in range(0, len(data["entries"])-1):
             entry = data["entries"][i]
             next_entry = data["entries"][i+1]
             data["entries"][i] = _process_entry(entry, next_entry, calculation)
+        data["entries"].pop()
     return data
 
 
@@ -268,14 +270,22 @@ def _process_entry(entry: dict, next_entry: dict, calculation: CalculationType):
             try:
                 new_data = {}
                 if "imported" in entry[type][module].keys() or "exported" in entry[type][module].keys():
-                    value_imported = entry[type][module]["imported"] if (
-                        "imported" in entry[type][module].keys()) else 0
-                    next_value_imported = next_entry[type][module]["imported"] if (
-                        "imported" in next_entry[type][module].keys()) else 0
-                    value_exported = entry[type][module]["exported"] if (
-                        "exported" in entry[type][module].keys()) else 0
-                    next_value_exported = next_entry[type][module]["exported"] if (
-                        "exported" in next_entry[type][module].keys()) else 0
+                    try:
+                        value_imported = entry[type][module]["imported"]
+                    except KeyError:
+                        value_imported = 0
+                    try:
+                        next_value_imported = next_entry[type][module]["imported"]
+                    except KeyError:
+                        next_value_imported = value_imported
+                    try:
+                        value_exported = entry[type][module]["exported"]
+                    except KeyError:
+                        value_exported = 0
+                    try:
+                        next_value_exported = next_entry[type][module]["exported"]
+                    except KeyError:
+                        next_value_exported = value_exported
                     average_power = _calculate_average_power(time_diff, value_imported, next_value_imported,
                                                              value_exported, next_value_exported)
                     if calculation in [CalculationType.POWER, CalculationType.ALL]:
@@ -284,10 +294,11 @@ def _process_entry(entry: dict, next_entry: dict, calculation: CalculationType):
                             "power_imported": average_power if average_power >= 0 else 0,
                             "power_exported": average_power * -1 if average_power < 0 else 0
                         })
-                    new_data.update({
-                        "energy_imported": _calculate_energy_difference(value_imported, next_value_imported),
-                        "energy_exported": _calculate_energy_difference(value_exported, next_value_exported)
-                    })
+                    if calculation in [CalculationType.ENERGY, CalculationType.ALL]:
+                        new_data.update({
+                            "energy_imported": _calculate_energy_difference(value_imported, next_value_imported),
+                            "energy_exported": _calculate_energy_difference(value_exported, next_value_exported)
+                        })
                 entry[type][module].update(new_data)
             except Exception:
                 log.exception("Fehler beim Berechnen der Leistung")
