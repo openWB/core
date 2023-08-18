@@ -5,10 +5,12 @@ class TronityVehicleSocConfiguration:
     def __init__(self,
                  vehicle_id: Optional[str] = None,
                  client_id: Optional[str] = None,
-                 client_secret: Optional[str] = None) -> None:
+                 client_secret: Optional[str] = None,
+                 access_token: Optional[str] = None) -> None:
         self.vehicle_id = vehicle_id
         self.client_id = client_id
         self.client_secret = client_secret
+        self.access_token = access_token
 
 
 class TronityVehicleSoc:

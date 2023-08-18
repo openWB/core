@@ -13,7 +13,7 @@ log = logging.getLogger(__name__)
 
 def create_vehicle(vehicle_config: TronityVehicleSoc, vehicle: int):
     def updater(soc_update_data: SocUpdateData) -> CarState:
-        return fetch_soc(vehicle_config.configuration, soc_update_data)
+        return fetch_soc(vehicle_config.configuration, soc_update_data, vehicle)
     return ConfigurableVehicle(vehicle_config=vehicle_config, component_updater=updater, vehicle=vehicle)
 
 

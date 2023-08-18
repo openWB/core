@@ -1,38 +1,76 @@
 #!/usr/bin/env python3
 import logging
+import jwt
+import paho.mqtt.publish as publish
+import json
 
 from modules.common import req
-from modules.vehicles.tronity.config import TronityVehicleSocConfiguration
+from modules.vehicles.tronity.config import TronityVehicleSocConfiguration, TronityVehicleSoc
 from modules.common.abstract_soc import SocUpdateData
 from modules.common.component_state import CarState
+from datetime import datetime
 
 log = logging.getLogger(__name__)
 
 
-def fetch_soc(config: TronityVehicleSocConfiguration, soc_update_data: SocUpdateData) -> CarState:
+def fetch_soc(config: TronityVehicleSocConfiguration, soc_update_data: SocUpdateData, vehicle: int) -> CarState:
     log.debug("Fetching Tronity SOC")
-    session = create_session(str(config.client_id), str(config.client_secret))
-    vehicle_id = str(config.vehicle_id)
-    tronity_data = fetch_soc_for_vehicle(vehicle_id, session)
+    session = create_session(config, vehicle)
+    tronity_vehicle_id = str(config.vehicle_id)
+    tronity_data = fetch_soc_for_vehicle(tronity_vehicle_id, session)
     return CarState(soc=tronity_data['level'], range=tronity_data['range'], soc_timestamp=tronity_data['lastUpdate'])
 
 
-def create_session(client_id: str, client_secret: str) -> req.Session:
+def is_token_valid(access_token: str) -> bool:
+    if not access_token:
+        log.debug("No token found")
+        return False
+
+    decoded_data = jwt.decode(jwt=access_token, verify=False, algorithms=['HS256'], options={"verify_signature": False})
+    if datetime.utcfromtimestamp(decoded_data['exp']) < datetime.utcnow():
+        log.debug("Token expired: %s", decoded_data)
+        return False
+    else:
+        log.debug("Token still valid: %s", decoded_data)
+        return True
+
+
+def write_token_mqtt(topic: str, token: str, config: TronityVehicleSocConfiguration):
+    try:
+        config.access_token = token
+        value: TronityVehicleSoc = TronityVehicleSoc(configuration=config)
+        value_to_mqtt = json.dumps(value.__dict__, default=lambda o: o.__dict__)
+        publish.single(topic, value_to_mqtt, hostname="localhost", port=1883, retain=True)
+    except Exception as e:
+        log.exception('Token mqtt write exception ' + str(e))
+
+
+def create_session(config: TronityVehicleSocConfiguration, vehicle: int) -> req.Session:
     session = req.Session()
     data = {'grant_type': 'app',
-            'client_id': str(client_id),
-            'client_secret': str(client_secret)}
+            'client_id': str(config.client_id),
+            'client_secret': str(config.client_secret)}
 
-    response = session.post(
-        "https://api.tronity.tech/authentication",
-        data=data,
-    )
+    if not is_token_valid(str(config.access_token)):
+        log.debug("Requesting new Tronity Access Token")
+        response = session.post(
+            "https://api.tronity.tech/authentication",
+            data=data,
+        )
 
-    if response.status_code != 201:
-        raise Exception("Error requesting Tronity access token, please check client_id and client_secret: %s"
-                        % response.status_code)
+        if response.status_code != 201:
+            raise Exception("Error requesting Tronity access token, please check client_id and client_secret: %s"
+                            % response.status_code)
 
-    access_token = response.json()['access_token']
+        access_token = response.json()['access_token']
+        log.debug("Retrieved Tronity Access Token: %s", access_token)
+        write_token_mqtt(
+                        "openWB/set/vehicle/" + str(vehicle) + "/soc_module/config",
+                        access_token,
+                        config)
+    else:
+        access_token = config.access_token
+
     session.headers = {
         'Accept': 'application/hal+json', 'Authorization': 'Bearer %s' % access_token
     }
