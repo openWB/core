@@ -42,18 +42,19 @@ def create_session(client_id: str, client_secret: str) -> req.Session:
 
 def fetch_vehicles(session: req.Session) -> dict:
     url = 'https://api.tronity.tech/tronity/vehicles'
-    vehicles = session.get(url).json()
-    if vehicles.status_code != 200:
-        raise Exception("Error requesting vehicles from Tronity: %s" % vehicles.status_code)
-
+    response = session.get(url)
+    if response.status_code != 200:
+        raise Exception("Error requesting vehicles from Tronity: %s" % response.status_code)
+    vehicles = response.json()
     log.debug("Retrieved Tronity vehicles: %s", vehicles["data"])
     return vehicles["data"]
 
 
 def fetch_soc_for_vehicle(vehicle_id: str, session: req.Session) -> dict:
     url = 'https://api.tronity.tech/tronity/vehicles/' + str(vehicle_id) + '/last_record'
-    response = session.get(url).json()
+    response = session.get(url)
     if response.status_code != 200:
         raise Exception("Error requesting vehicle from Tronity: %s" % response.status_code)
-    log.debug("Retrieved Tronity data: %s", response)
-    return response
+    data = response.json()
+    log.debug("Retrieved Tronity data: %s", data)
+    return data
