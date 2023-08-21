@@ -332,7 +332,7 @@ class UpdateConfig:
         "^openWB/system/current_commit",
         "^openWB/system/current_missing_commits",
         "^openWB/system/dataprotection_acknowledged$",
-        "^openWB/system/datastore_version"
+        "^openWB/system/datastore_version",
         "^openWB/system/debug_level$",
         "^openWB/system/device/[0-9]+/component/[0-9]+/config$",
         "^openWB/system/device/[0-9]+/component/[0-9]+/simulation$",
