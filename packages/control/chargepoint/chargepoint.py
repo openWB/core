@@ -363,10 +363,6 @@ class Chargepoint:
         if not state:
             message = "Keine Ladung, da kein Auto angesteckt ist."
         else:
-            if self.data.set.plug_time is None:
-                self.data.set.plug_time = timecheck.create_timestamp()
-                Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/plug_time",
-                          self.data.set.plug_time)
             message = None
         return state, message
 
@@ -431,8 +427,18 @@ class Chargepoint:
         self.data.set.energy_to_charge = 0
         Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/energy_to_charge", 0)
 
-    def reset_values_at_start(self):
+    def setup_values_at_start(self):
+        self._reset_values_at_start()
+        self._set_values_at_start()
+
+    def _reset_values_at_start(self):
         self.data.set.loadmanagement_available = True
+
+    def _set_values_at_start(self):
+        if self.data.get.plug_state and self.data.set.plug_time is None:
+            self.data.set.plug_time = timecheck.create_timestamp()
+            Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/plug_time",
+                      self.data.set.plug_time)
 
     def remember_previous_values(self):
         self.data.set.plug_state_prev = self.data.get.plug_state
@@ -445,12 +451,12 @@ class Chargepoint:
             self.__validate_rfid()
             charging_possible, message = self.is_charging_possible()
             if charging_possible:
-                num, message_ev = self.template.get_ev(self.data.get.rfid or self.data.set.rfid, self.data.config.ev)
+                if self.data.get.rfid is not None:
+                    self._link_rfid_to_cp()
+                num, message_ev = self.template.get_ev(self.data.set.rfid, self.data.config.ev)
                 if message_ev:
                     message = message_ev
                 if num != -1:
-                    if self.data.get.rfid is not None:
-                        self.__link_rfid_to_cp()
                     return num, message
                 else:
                     self.data.get.state_str = message
@@ -703,18 +709,22 @@ class Chargepoint:
         self.set_state_and_log(msg)
         return required_current
 
-    def __link_rfid_to_cp(self) -> None:
+    def _link_rfid_to_cp(self) -> None:
         """ Wenn der Tag einem EV zugeordnet worden ist, wird der Tag unter set/rfid abgelegt und muss der Timer
         zurückgesetzt werden.
         """
         rfid = self.data.get.rfid
         cp2_num = self.find_duo_partner()
         # Tag wird diesem LP der Duo zugewiesen oder es ist keine Duo
-        if not (cp2_num is not None and
-                self.data.get.rfid == data.data.cp_data[f"cp{cp2_num}"].data.get.rfid and
-                data.data.cp_data[f"cp{cp2_num}"].data.get.plug_state and
-                timecheck.get_difference(self.data.set.plug_time,
-                                         data.data.cp_data[f"cp{cp2_num}"].data.set.plug_time) < 0):
+        if ((cp2_num is not None and
+                # EV am anderen Ladepunkt, am eigenen wurde zuerst angesteckt
+             ((data.data.cp_data[f"cp{cp2_num}"].data.get.plug_state and
+               timecheck.get_difference(self.data.set.plug_time,
+                                        data.data.cp_data[f"cp{cp2_num}"].data.set.plug_time) > 0) or
+              # kein EV am anderen Duo-Ladepunkt
+              data.data.cp_data[f"cp{cp2_num  }"].data.get.plug_state is False)) or
+                # keine Duo
+                cp2_num is None):
             self.data.set.rfid = rfid
             Pub().pub("openWB/chargepoint/"+str(self.num)+"/set/rfid", rfid)
             self.chargepoint_module.clear_rfid()
@@ -762,7 +772,8 @@ class Chargepoint:
             if self.data.config.type == "external_openwb" or self.data.config.type == "internal_openwb":
                 for cp2 in data.data.cp_data.values():
                     if (cp2.num != self.num and
-                            self.data.config.configuration.ip_address == cp2.data.config.configuration.ip_address):
+                            self.data.config.configuration["ip_address"] == cp2.data.config.configuration[
+                                "ip_address"]):
                         return cp2.num
             return None
         except Exception:
