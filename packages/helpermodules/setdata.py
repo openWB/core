@@ -134,7 +134,7 @@ class SetData:
                 else:
                     log.error(f"Payload ungültig: Topic {msg.topic}, Payload {value} sollte ein String sein.")
             elif data_type == int or data_type == float:
-                if self._validate_min_max_value(value, msg, data_type, ranges):
+                if self._validate_min_max_value(value, msg, data_type, ranges) or isinstance(value, type(None)):
                     valid = True
             elif data_type == bool:
                 valid, value = self._validate_bool_value(value, msg)
@@ -169,7 +169,7 @@ class SetData:
                         if "ct"+str(index) in subdata.SubData.ev_charge_template_data:
                             template = dataclass_utils.asdict(copy.deepcopy(
                                 subdata.SubData.ev_charge_template_data["ct"+str(index)].data))
-                            # Wenn eine Einzeleinstellung empfangen wird, muss das gesamte Template veröffentlicht
+                            # Wenn eine Einzeleinstellung empfangen wird, muss das gesamte Profil veröffentlicht
                             # werden (pub_json=True), allerdings ohne Pläne. Diese sind in einem Extra-Topic.
                             try:
                                 template["chargemode"]["scheduled_charging"].pop("plans")
@@ -199,7 +199,7 @@ class SetData:
                         event = self.event_soc
                         if "ev"+str(index) in subdata.SubData.ev_data:
                             template = dataclass_utils.asdict(
-                                subdata.SubData.ev_data["ev"+str(index)].soc_module.soc_config)
+                                subdata.SubData.ev_data["ev"+str(index)].soc_module.vehicle_config)
                         else:
                             template = {}
                     else:
@@ -432,7 +432,7 @@ class SetData:
                     "/control_parameter/timestamp_perform_phase_switch" in msg.topic or
                     "/control_parameter/current_plan" in msg.topic):
                 self._validate_value(msg, str)
-            elif ("/control_parameter/used_amount_instant_charging" in msg.topic or
+            elif ("/control_parameter/imported_instant_charging" in msg.topic or
                     "/control_parameter/imported_at_plan_start" in msg.topic):
                 self._validate_value(msg, float, [(0, float("inf"))])
             elif "/control_parameter/state" in msg.topic:
@@ -443,7 +443,7 @@ class SetData:
             log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 
     def _subprocess_vehicle_chargemode_topic(self, msg: mqtt.MQTTMessage):
-        """ Handler für die EV-Chargemode-Template-Topics
+        """ Handler für die Lade-Profil-Topics
         Parameters
         ----------
         msg:
@@ -797,7 +797,7 @@ class SetData:
             elif "openWB/set/optional/int_display/pin_code" in msg.topic:
                 self._validate_value(msg, str)
             elif "openWB/set/optional/int_display/standby" in msg.topic:
-                self._validate_value(msg, int, [(0, 300)])
+                self._validate_value(msg, int, [(0, 600)])
             elif "openWB/set/optional/int_display/theme" in msg.topic:
                 self._validate_value(msg, "json")
             elif "openWB/set/optional/led/active" in msg.topic:
@@ -930,11 +930,13 @@ class SetData:
             if ("openWB/set/system/lastlivevaluesJson" in msg.topic or
                     "openWB/set/system/backup_cloud/config" in msg.topic):
                 self._validate_value(msg, "json")
-            elif ("openWB/set/system/perform_update" in msg.topic or
+            elif ("openWB/set/system/boot_done" in msg.topic or
+                    "openWB/set/system/perform_update" in msg.topic or
                     "openWB/set/system/wizard_done" in msg.topic or
                     "openWB/set/system/update_in_progress" in msg.topic or
                     "openWB/set/system/dataprotection_acknowledged" in msg.topic or
-                    "openWB/set/system/usage_terms_acknowledged" in msg.topic):
+                    "openWB/set/system/usage_terms_acknowledged" in msg.topic or
+                    "openWB/set/system/update_config_completed" in msg.topic):
                 self._validate_value(msg, bool)
             elif "openWB/set/system/version" in msg.topic:
                 self._validate_value(msg, str)

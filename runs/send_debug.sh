@@ -29,6 +29,8 @@ touch "$debugFile"
 	echo "############################ system ###############"
 	uptime
 	free
+	echo "############################ uuids ##############"
+	cat "${OPENWBBASEDIR}/data/log/uuid.log"
 	echo "############################ retained log ##############"
 	merge_log_files "main" 500
 	echo "############################ info log ##############"
@@ -57,8 +59,6 @@ touch "$debugFile"
 	df -h
 	echo "############################ network ##############"
 	ifconfig
-	echo "############################ uuids ##############"
-	cat "${OPENWBBASEDIR}/data/log/uuid.log"
 	# echo "############################ smarthome.log ##############"
 	# merge_log_files "smarthome" 200
 } >>"$debugFile"

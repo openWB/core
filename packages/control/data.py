@@ -362,7 +362,7 @@ class Data:
         """
         try:
             # Workaround, da mit Python3.9/pymodbus2.5 eine pymodbus-Instanz nicht mehr kopiert werden kann.
-            # Bei einer Neukonfiguration eines Device/Komponente wird dieses Neuinitialisiert. Nur bei Komponenten
+            # Bei einer Neukonfiguration eines Device/Komponente wird dieses neu initialisiert. Nur bei Komponenten
             # mit simcount werden Werte aktualisiert, diese sollten jedoch nur einmal nach dem Auslesen aktualisiert
             # werden, sodass die Nutzung einer Referenz vorerst funktioniert.
             self.system_data = {
@@ -395,7 +395,7 @@ class Data:
         self.cp_data.clear()
         for cp in SubData.cp_data:
             # Workaround, da mit Python3.9/pymodbus2.5 eine pymodbus-Instanz nicht mehr kopiert werden kann.
-            # Bei einer Neukonfiguration eines Device/Komponente wird dieses Neuinitialisiert. Nur bei Komponenten
+            # Bei einer Neukonfiguration eines Device/Komponente wird dieses neu initialisiert. Nur bei Komponenten
             # mit simcount werden Werte aktualisiert, diese sollten jedoch nur einmal nach dem Auslesen aktualisiert
             # werden, sodass die Nutzung einer Referenz vorerst funktioniert.
             # Verwendung der Referenz führt bei der Pro zu Instabilität.
@@ -483,7 +483,7 @@ class Data:
             try:
                 self.ev_data[vehicle].charge_template = self.ev_charge_template_data["ct" + str(
                     self.ev_data[vehicle].data.charge_template)]
-                # zuerst das aktuelle Template laden
+                # zuerst das aktuelle Profil laden
                 self.ev_data[vehicle].ev_template = self.ev_template_data["et" + str(
                     self.ev_data[vehicle].data.ev_template)]
             except Exception:

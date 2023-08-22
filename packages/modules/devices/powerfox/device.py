@@ -39,7 +39,7 @@ def read_legacy(component_type: str, user: str, password: str, id: str) -> None:
         device.add_component(PowerfoxCounterSetup(id=None, configuration=PowerfoxCounterConfiguration(id=id)))
     else:
         device.add_component(PowerfoxInverterSetup(id=1, configuration=PowerfoxInverterConfiguration(id=id)))
-    log.debug('Smartfox user: ' + user + ", password: " + password + ", id: " + id)
+    log.debug('Powerfox user: ' + user + ", password: " + password + ", id: " + id)
     device.update()
 
 

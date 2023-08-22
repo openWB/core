@@ -11,7 +11,7 @@ ALL_RECEIVED_TOPICS = {
                                     b'"power_module": {}}'),
     'openWB/chargepoint/get/power': b'0',
     'openWB/chargepoint/template/0': (b'{"autolock": {"active": false, "plans": {}, "wait_for_charging_end": false}, '
-                                      b'"name": "Standard Ladepunkt-Vorlage", "rfid_enabling": false, '
+                                      b'"name": "Standard Ladepunkt-Profil", "rfid_enabling": false, '
                                       b'"valid_tags": [], "id": 0}'),
     'openWB/optional/int_display/theme': b'"cards"'}
 

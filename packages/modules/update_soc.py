@@ -28,10 +28,10 @@ class UpdateSoc:
             threads_update, threads_store = self._get_threads()
             with ModuleUpdateCompletedContext(self.event_vehicle_update_completed, topic):
                 threads_update, threads_store = self._get_threads()
-                thread_handler(threads_update)
+                thread_handler(threads_update, data.data.general_data.data.control_interval/3)
             with ModuleUpdateCompletedContext(self.event_vehicle_update_completed, topic):
                 # threads_store = self._filter_failed_store_threads(threads_store)
-                thread_handler(threads_store)
+                thread_handler(threads_store, data.data.general_data.data.control_interval/3)
         except Exception:
             log.exception("Fehler im update_soc-Modul")
 
@@ -59,10 +59,10 @@ class UpdateSoc:
                         # Hersteller bei zu häufigen Abfragen Accounts sperren.
                         Pub().pub(f"openWB/set/vehicle/{ev.num}/get/soc_timestamp", timecheck.create_timestamp())
                         threads_update.append(Thread(target=ev.soc_module.update,
-                                                     args=(soc_update_data,), name=f"soc_ev{ev.num}"))
+                                                     args=(soc_update_data,), name=f"fetch soc_ev{ev.num}"))
                         if hasattr(ev.soc_module, "store"):
                             threads_store.append(Thread(target=ev.soc_module.store.update,
-                                                        args=(), name=f"soc_ev{ev.num}"))
+                                                        args=(), name=f"store soc_ev{ev.num}"))
             except Exception:
                 log.exception("Fehler im update_soc-Modul")
         return threads_update, threads_store
@@ -85,7 +85,7 @@ class UpdateSoc:
             plug_state = False
             charge_state = False
             imported_since_plugged = 0
-            battery_capacity = 0
+            battery_capacity = data.data.ev_data[f"ev{ev_num}"].ev_template.data.battery_capacity
         return SocUpdateData(plug_state=plug_state,
                              charge_state=charge_state,
                              imported_since_plugged=imported_since_plugged,

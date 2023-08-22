@@ -24,8 +24,18 @@ class JsonCounter:
         config = self.component_config.configuration
 
         power = float(jq.compile(config.jq_power).input(response).first())
-        # ToDo: add current or power per phase
-        if config.jq_exported is None or config.jq_exported is None:
+
+        if all(config.jq_powers):
+            powers = [float(jq.compile(p).input(response).first()) for p in config.jq_powers]
+        else:
+            powers = None
+
+        if all(config.jq_currents):
+            currents = [float(jq.compile(c).input(response).first()) for c in config.jq_currents]
+        else:
+            currents = None
+
+        if config.jq_imported is None or config.jq_exported is None:
             imported, exported = self.sim_counter.sim_count(power)
         else:
             imported = float(jq.compile(config.jq_imported).input(response).first())
@@ -34,7 +44,9 @@ class JsonCounter:
         counter_state = CounterState(
             imported=imported,
             exported=exported,
-            power=power
+            power=power,
+            powers=powers,
+            currents=currents
         )
         self.store.set(counter_state)
 

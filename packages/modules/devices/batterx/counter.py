@@ -31,7 +31,7 @@ class BatterXCounter:
             power_factors = self.__parse_list_values(resp, 2881)
         except KeyError:
             log.debug(
-                "Powerfaktor sollte laut Doku enthalten sein, ID 2881 kann aber nicht ermittelt werden.")
+                "Leistungsfaktor sollte laut Doku enthalten sein, ID 2881 kann aber nicht ermittelt werden.")
             power_factors = None
         imported, exported = self.sim_counter.sim_count(power)
 

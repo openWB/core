@@ -26,8 +26,6 @@ try:
 except ImportError:
     log.info("failed to import RPi.GPIO! maybe we are not running on a pi")
 
-SOCKET_MAX_CURRENT: int = 16
-
 
 class UpdateValues:
     def __init__(self, local_charge_point_num: int, parent_ip: str, parent_cp: str) -> None:
@@ -38,18 +36,18 @@ class UpdateValues:
 
     def update_values(self, chargepoint_state: ChargepointState, heartbeat_expired: bool) -> None:
         if self.old_chargepoint_state:
-            # iterate over counterstate
+            # iterate over counter state
             vars_old_counter_state = vars(self.old_chargepoint_state)
             for key, value in vars(chargepoint_state).items():
-                # Zählerstatus immer publishen für Ladelog-Einträge
+                # Zählerstatus immer veröffentlichen für Ladelog-Einträge
                 if value != vars_old_counter_state[key] or key == "imported":
                     self._pub_values_to_2(key, value)
         else:
-            # Bei Neustart alles publishen
+            # Bei Neustart alles veröffentlichen
             for key, value in vars(chargepoint_state).items():
                 self._pub_values_to_2(key, value)
         if heartbeat_expired is False:
-            # Nur wenn eine Verbindung zum Master besteht, die gepublishden Werte speichern.
+            # Nur wenn eine Verbindung zum Master besteht, die veröffentlichten Werte speichern.
             self.old_chargepoint_state = chargepoint_state
 
     def _pub_values_to_2(self, topic: str, value) -> None:
@@ -107,13 +105,15 @@ class UpdateState:
 
     def __thread_phase_switch(self, phases_to_use: int) -> None:
         self.phase_switch_thread = threading.Thread(
-            target=self.cp_module.perform_phase_switch, args=(phases_to_use, 5))
+            target=self.cp_module.perform_phase_switch, args=(phases_to_use, 5),
+            name=f"perform phase switch {self.cp_module.local_charge_point_num}")
         self.phase_switch_thread.start()
         log.debug("Thread zur Phasenumschaltung an LP"+str(self.cp_module.local_charge_point_num)+" gestartet.")
 
     def __thread_cp_interruption(self, duration: int) -> None:
         self.cp_interruption_thread = threading.Thread(
-            target=self.cp_module.perform_cp_interruption, args=(duration,))
+            target=self.cp_module.perform_cp_interruption, args=(duration,),
+            name=f"perform cp interruption cp{self.cp_module.local_charge_point_num}")
         self.cp_interruption_thread.start()
         log.debug("Thread zur CP-Unterbrechung an LP"+str(self.cp_module.local_charge_point_num)+" gestartet.")
         Pub().pub(
@@ -183,7 +183,7 @@ class InternalChargepointHandler:
                 with self.cp0_client_handler.client:
                     _loop()
             else:
-                with self.cp0_client_handler:
+                with self.cp0_client_handler.client:
                     with self.cp1_client_handler.client:
                         _loop()
 
@@ -198,7 +198,7 @@ class HandlerChargepoint:
         self.local_charge_point_num = local_charge_point_num
         if local_charge_point_num == 0:
             if mode == InternalChargepointMode.SOCKET.value:
-                self.module = Socket(SOCKET_MAX_CURRENT, local_charge_point_num, client_handler, global_data.parent_ip)
+                self.module = Socket(local_charge_point_num, client_handler, global_data.parent_ip)
             else:
                 self.module = chargepoint_module.ChargepointModule(
                     local_charge_point_num, client_handler, global_data.parent_ip)

@@ -21,8 +21,8 @@ class Powerdog:
 
 
 class PowerdogCounterConfiguration:
-    def __init__(self):
-        pass
+    def __init__(self, position_evu: bool = False):
+        self.position_evu = position_evu
 
 
 class PowerdogCounterSetup(ComponentSetup[PowerdogCounterConfiguration]):

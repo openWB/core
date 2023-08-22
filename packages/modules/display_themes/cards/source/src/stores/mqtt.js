@@ -611,6 +611,11 @@ export const useMqttStore = defineStore("mqtt", {
     getVehicleList(state) {
       return state.getWildcardTopics("openWB/vehicle/+/name");
     },
+    getVehicleName(state) {
+      return (vehicleId) => {
+        return state.topics[`openWB/vehicle/${vehicleId}/name`];
+      };
+    },
     getVehicleSocConfigured(state) {
       return (vehicleId) => {
         return (
