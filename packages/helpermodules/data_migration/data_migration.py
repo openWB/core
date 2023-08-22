@@ -22,7 +22,8 @@ from control import data, ev
 from dataclass_utils import dataclass_from_dict
 from helpermodules.data_migration.id_mapping import MapId
 from helpermodules.hardware_configuration import update_hardware_configuration
-from helpermodules.measurement_log import LegacySmartHomeLogData, get_names, get_totals, string_to_float, string_to_int
+from helpermodules.measurement_logging.process_log import get_totals, string_to_float, string_to_int
+from helpermodules.measurement_logging.write_log import LegacySmartHomeLogData, get_names
 from helpermodules.utils import thread_handler
 from helpermodules.pub import Pub
 

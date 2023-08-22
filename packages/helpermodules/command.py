@@ -13,9 +13,9 @@ import paho.mqtt.client as mqtt
 from control.chargepoint import chargepoint
 from control.chargepoint.chargepoint_template import get_autolock_plan_default, get_chargepoint_template_default
 
-from helpermodules import measurement_log
 from helpermodules.broker import InternalBrokerClient
 from helpermodules.data_migration.data_migration import MigrateData
+from helpermodules.measurement_logging.process_log import get_daily_log, get_monthly_log, get_yearly_log
 from helpermodules.messaging import MessageType, pub_user_message, pub_error_global
 from helpermodules.parse_send_debug import parse_send_debug_data
 from helpermodules.pub import Pub
@@ -553,15 +553,15 @@ class Command:
 
     def getDailyLog(self, connection_id: str, payload: dict) -> None:
         Pub().pub(f'openWB/set/log/daily/{payload["data"]["day"]}',
-                  measurement_log.get_daily_log(payload["data"]["day"]))
+                  get_daily_log(payload["data"]["day"]))
 
     def getMonthlyLog(self, connection_id: str, payload: dict) -> None:
         Pub().pub(f'openWB/set/log/monthly/{payload["data"]["month"]}',
-                  measurement_log.get_monthly_log(payload["data"]["month"]))
+                  get_monthly_log(payload["data"]["month"]))
 
     def getYearlyLog(self, connection_id: str, payload: dict) -> None:
         Pub().pub(f'openWB/set/log/yearly/{payload["data"]["year"]}',
-                  measurement_log.get_yearly_log(payload["data"]["year"]))
+                  get_yearly_log(payload["data"]["year"]))
 
     def initCloud(self, connection_id: str, payload: dict) -> None:
         parent_file = Path(__file__).resolve().parents[2]
