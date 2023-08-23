@@ -17,7 +17,14 @@ class PubSingleton:
         if payload == "":
             self.publisher.client.publish(topic, payload, qos=qos, retain=retain)
         else:
-            self.publisher.client.publish(topic, payload=json.dumps(payload), qos=qos, retain=retain)
+            try:
+                json_payload = json.dumps(payload)
+            except TypeError:
+                # Couldn't serialize payload to json, try to serialize it manually. Most likely a class instance.
+                json_payload = json.dumps(payload.__dict__, default=lambda o: o.__dict__)
+            except Exception as e:
+                raise e
+            self.publisher.client.publish(topic, payload=json_payload, qos=qos, retain=retain)
 
 
 class Pub:
