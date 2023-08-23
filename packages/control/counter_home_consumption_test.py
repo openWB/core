@@ -61,7 +61,7 @@ def testcalc_daily_yield_home_consumption(counter_all: Callable[[], CounterAll],
     c = counter_all()
 
     # execution
-    c.calc_daily_yield_home_consumption()
+    c.calc_home_consumption_imported()
 
     # evaluation
     assert c.data.set.daily_yield_home_consumption == 14000

@@ -25,7 +25,7 @@ log = logging.getLogger(__name__)
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 18
+    DATASTORE_VERSION = 19
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -98,9 +98,11 @@ class UpdateConfig:
         "^openWB/counter/config/reserve_for_not_charging$",
         "^openWB/counter/get/hierarchy$",
         "^openWB/counter/set/disengageable_smarthome_power$",
+        "^openWB/counter/set/imported_home_consumption$",
         "^openWB/counter/set/invalid_home_consumption$",
         "^openWB/counter/set/home_consumption$",
         "^openWB/counter/set/daily_yield_home_consumption$",
+        "^openWB/counter/set/simulation$",
         "^openWB/counter/[0-9]+/get/voltages$",
         "^openWB/counter/[0-9]+/get/power$",
         "^openWB/counter/[0-9]+/get/currents$",
@@ -816,3 +818,22 @@ class UpdateConfig:
                             Pub().pub(topic_device.replace("openWB/", "openWB/set/"), payload_device)
                             Pub().pub(topic_component.replace("openWB/", "openWB/set/"), payload_inverter)
         Pub().pub("openWB/system/datastore_version", 18)
+
+    def upgrade_datastore_18(self) -> None:
+        files = glob.glob("/var/www/html/openWB/data/daily_log/*")
+        files.extend(glob.glob("/var/www/html/openWB/data/monthly_log/*"))
+        for file in files:
+            with open(file, "r+") as jsonFile:
+                try:
+                    content = json.load(jsonFile)
+                    for e in content["entries"]:
+                        e.update({"hc": {}})
+                    content["totals"].update({"hc": {}})
+                    content["names"] = get_names(content["totals"], {})
+                    jsonFile.seek(0)
+                    json.dump(content, jsonFile)
+                    jsonFile.truncate()
+                    log.debug(f"Format der Logdatei {file} aktualisiert.")
+                except Exception:
+                    log.exception(f"Logfile {file} konnte nicht konvertiert werden.")
+        # Pub().pub("openWB/system/datastore_version", 19)

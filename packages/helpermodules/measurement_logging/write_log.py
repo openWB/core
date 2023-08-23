@@ -78,7 +78,8 @@ log = logging.getLogger(__name__)
 #                     "temp3": int in °C
 #                 },
 #                 ... (dynamisch, je nach Anzahl konfigurierter Geräte)
-#             }
+#             },
+#             "hc": Wh # Hausverbrauch
 #         }],
 #      "names": "names": {"sh1": "", "cp1": "", "counter2": "", "pv3": ""}
 #      }
@@ -162,7 +163,8 @@ def save_log(folder):
         "counter": counter_dict,
         "pv": pv_dict,
         "bat": bat_dict,
-        "sh": sh_dict
+        "sh": sh_dict,
+        "hc": data.data.counter_all_data.data.set.imported_home_consumption
     }
 
     # json-Objekt in Datei einfügen
