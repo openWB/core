@@ -31,14 +31,19 @@ def string_to_int(value: str, default: int = 0) -> int:
 
 
 def get_totals(entries: List) -> Dict:
-    totals: Dict[str, Dict] = {"cp": {}, "counter": {}, "pv": {}, "bat": {}, "sh": {}}
+    totals: Dict[str, Dict] = {"cp": {}, "counter": {}, "pv": {}, "bat": {}, "sh": {}, "hc": {}}
     prev_entry: Dict = {}
     for group in totals.keys():
         for entry in entries:
             for module in entry[group]:
                 try:
                     if not prev_entry or module not in totals[group]:
-                        totals[group][module] = {"exported": 0} if group == "pv" else {"imported": 0, "exported": 0}
+                        if group == "hc":
+                            totals[group][module] = {"imported": 0}
+                        elif group == "pv":
+                            totals[group][module] = {"exported": 0}
+                        else:
+                            totals[group][module] = {"imported": 0, "exported": 0}
                     else:
                         for key, value in entry[group][module].items():
                             if key != "soc" and key != "grid" and "temp" not in key:

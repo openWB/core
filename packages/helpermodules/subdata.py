@@ -638,6 +638,10 @@ class SubData:
                     self.set_json_payload_class(self.counter_all_data.data.config, msg)
                 elif re.search("/counter/get", msg.topic) is not None:
                     self.set_json_payload_class(self.counter_all_data.data.get, msg)
+                elif re.search("/counter/set/simulation", msg.topic) is not None:
+                    self.counter_all_data.sim_counter.data = dataclass_from_dict(
+                        SimCounterState,
+                        decode_payload(msg.payload))
                 elif re.search("/counter/set", msg.topic) is not None:
                     self.set_json_payload_class(self.counter_all_data.data.set, msg)
         except Exception:
