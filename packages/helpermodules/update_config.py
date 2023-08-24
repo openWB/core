@@ -9,8 +9,9 @@ import time
 from typing import List
 from paho.mqtt.client import Client as MqttClient, MQTTMessage
 import dataclass_utils
-from control.chargepoint.chargepoint_template import get_chargepoint_template_default
 
+from control.chargepoint.chargepoint_template import get_chargepoint_template_default
+from helpermodules import timecheck
 from helpermodules.broker import InternalBrokerClient
 from helpermodules.measurement_logging.process_log import get_totals
 from helpermodules.measurement_logging.write_log import get_names
@@ -820,9 +821,7 @@ class UpdateConfig:
         Pub().pub("openWB/system/datastore_version", 18)
 
     def upgrade_datastore_18(self) -> None:
-        files = glob.glob("/var/www/html/openWB/data/daily_log/*")
-        files.extend(glob.glob("/var/www/html/openWB/data/monthly_log/*"))
-        for file in files:
+        def convert_file(file):
             with open(file, "r+") as jsonFile:
                 try:
                     content = json.load(jsonFile)
@@ -836,4 +835,6 @@ class UpdateConfig:
                     log.debug(f"Format der Logdatei {file} aktualisiert.")
                 except Exception:
                     log.exception(f"Logfile {file} konnte nicht konvertiert werden.")
+        convert_file(f"/var/www/html/openWB/data/daily_log/{timecheck.create_timestamp_YYYYMMDD()}.json")
+        convert_file(f"/var/www/html/openWB/data/monthly_log/{timecheck.create_timestamp_YYYYMM()}.json")
         Pub().pub("openWB/system/datastore_version", 19)
