@@ -836,4 +836,4 @@ class UpdateConfig:
                     log.debug(f"Format der Logdatei {file} aktualisiert.")
                 except Exception:
                     log.exception(f"Logfile {file} konnte nicht konvertiert werden.")
-        # Pub().pub("openWB/system/datastore_version", 19)
+        Pub().pub("openWB/system/datastore_version", 19)
