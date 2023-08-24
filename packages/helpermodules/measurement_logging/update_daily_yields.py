@@ -18,7 +18,8 @@ def update_daily_yields(entries):
     """
     totals = get_totals(entries)
     [update_module_yields(type, totals) for type in ("bat", "counter", "cp", "pv")]
-    data.data.counter_all_data.data.set.daily_yield_home_consumption = totals["hc"]["imported"]
+    data.data.counter_all_data.data.set.daily_yield_home_consumption = totals["hc"]["all"]["imported"]
+    Pub().pub("openWB/set/counter/set/daily_yield_home_consumption", totals["hc"]["all"]["imported"])
 
 
 def update_module_yields(module: str, totals: Dict) -> None:

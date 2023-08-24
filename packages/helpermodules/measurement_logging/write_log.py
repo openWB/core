@@ -79,7 +79,7 @@ log = logging.getLogger(__name__)
 #                 },
 #                 ... (dynamisch, je nach Anzahl konfigurierter Geräte)
 #             },
-#             "hc": Wh # Hausverbrauch
+#             "hc": {"all": "imported": Wh # Hausverbrauch}
 #         }],
 #      "names": "names": {"sh1": "", "cp1": "", "counter2": "", "pv3": ""}
 #      }
@@ -155,6 +155,8 @@ def save_log(folder):
 
     sh_dict, sh_names = LegacySmartHomeLogData().update()
 
+    hc_dict = {"all": {"imported": data.data.counter_all_data.data.set.imported_home_consumption}}
+
     new_entry = {
         "timestamp": current_timestamp,
         "date": date,
@@ -164,7 +166,7 @@ def save_log(folder):
         "pv": pv_dict,
         "bat": bat_dict,
         "sh": sh_dict,
-        "hc": data.data.counter_all_data.data.set.imported_home_consumption
+        "hc": hc_dict
     }
 
     # json-Objekt in Datei einfügen
