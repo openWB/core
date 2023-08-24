@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 import logging
 import jwt
-from helpermodules.pub import Pub
+import paho.mqtt.publish as publish
+import json
 
 from modules.common import req
 from modules.vehicles.tronity.config import TronityVehicleSocConfiguration, TronityVehicleSoc
@@ -21,7 +22,7 @@ def fetch_soc(config: TronityVehicleSocConfiguration, soc_update_data: SocUpdate
 
 
 def is_token_valid(access_token: str) -> bool:
-    if not access_token or access_token == "None":
+    if not access_token:
         log.debug("No token found")
         return False
 
@@ -37,7 +38,9 @@ def is_token_valid(access_token: str) -> bool:
 def write_token_mqtt(topic: str, token: str, config: TronityVehicleSocConfiguration):
     try:
         config.access_token = token
-        Pub().pub(topic, TronityVehicleSoc(configuration=config))
+        value: TronityVehicleSoc = TronityVehicleSoc(configuration=config)
+        value_to_mqtt = json.dumps(value.__dict__, default=lambda o: o.__dict__)
+        publish.single(topic, value_to_mqtt, hostname="localhost", port=1883, retain=True)
     except Exception as e:
         log.exception('Token mqtt write exception ' + str(e))
 
