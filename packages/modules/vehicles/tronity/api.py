@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 import logging
 import jwt
-import paho.mqtt.publish as publish
-import json
 
+from dataclass_utils import asdict
+from helpermodules.pub import Pub
 from modules.common import req
 from modules.vehicles.tronity.config import TronityVehicleSocConfiguration, TronityVehicleSoc
 from modules.common.abstract_soc import SocUpdateData
@@ -39,8 +39,8 @@ def write_token_mqtt(topic: str, token: str, config: TronityVehicleSocConfigurat
     try:
         config.access_token = token
         value: TronityVehicleSoc = TronityVehicleSoc(configuration=config)
-        value_to_mqtt = json.dumps(value.__dict__, default=lambda o: o.__dict__)
-        publish.single(topic, value_to_mqtt, hostname="localhost", port=1883, retain=True)
+        log.debug("saving new access token")
+        Pub().pub(topic, asdict(value))
     except Exception as e:
         log.exception('Token mqtt write exception ' + str(e))
 
@@ -63,18 +63,19 @@ def create_session(config: TronityVehicleSocConfiguration, vehicle: int) -> req.
                             % response.status_code)
 
         access_token = response.json()['access_token']
-        log.debug("Retrieved Tronity Access Token: %s", access_token)
+        log.debug("Retrieved new Tronity Access Token: %s", access_token)
         write_token_mqtt(
                         "openWB/set/vehicle/" + str(vehicle) + "/soc_module/config",
                         access_token,
                         config)
     else:
+        log.debug("Using existing Tronity Access Token")
         access_token = config.access_token
 
     session.headers = {
         'Accept': 'application/hal+json', 'Authorization': 'Bearer %s' % access_token
     }
-    log.debug("Retrieved Tronity Access Token.")
+    
     return session
 
 
