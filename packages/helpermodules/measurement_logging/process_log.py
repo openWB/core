@@ -270,7 +270,7 @@ def _process_entries(data, calculation):
 
 def _process_entry(entry: dict, next_entry: dict, calculation: CalculationType):
     time_diff = next_entry["timestamp"] - entry["timestamp"]
-    for type in ("bat", "counter", "cp", "pv", "sh"):
+    for type in ("bat", "counter", "cp", "pv", "sh", "hc"):
         for module in entry[type].keys():
             try:
                 new_data = {}
