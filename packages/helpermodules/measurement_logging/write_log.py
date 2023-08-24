@@ -79,7 +79,7 @@ log = logging.getLogger(__name__)
 #                 },
 #                 ... (dynamisch, je nach Anzahl konfigurierter Geräte)
 #             },
-#             "hc": {"all": "imported": Wh # Hausverbrauch}
+#             "hc": {"all": {"imported": Wh # Hausverbrauch}}
 #         }],
 #      "names": "names": {"sh1": "", "cp1": "", "counter2": "", "pv3": ""}
 #      }

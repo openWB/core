@@ -32,7 +32,8 @@ def daily_log_sample():
              "pv": {"pv1": {"exported": 804}, "all": {"exported": 804}},
              "bat": {"bat2": {"imported": 2.42, "exported": 1742.135, "soc": 15},
                      "all": {"imported": 2.42, "exported": 1742.135, "soc": 15}},
-             "sh": {"sh1": {"temp0": 300, "temp1": 300, "temp2": 300, "imported": 0.1, "exported": 0}}},
+             "sh": {"sh1": {"temp0": 300, "temp1": 300, "temp2": 300, "imported": 0.1, "exported": 0}},
+             "hc": {"all": {"imported": 100}}},
             {"timestamp": 1690530060,
              "date": "09:40",
              "cp": {
@@ -45,7 +46,8 @@ def daily_log_sample():
              "pv": {"pv1": {"exported": 930}, "all": {"exported": 930}},
              "bat": {"bat2": {"imported": 2.42, "exported": 2017.569, "soc": 10},
                      "all": {"imported": 2.42, "exported": 2017.569, "soc": 10}},
-             "sh": {"sh1": {"temp0": 300, "temp1": 300, "temp2": 300, "imported": 0.2, "exported": 0}}},
+             "sh": {"sh1": {"temp0": 300, "temp1": 300, "temp2": 300, "imported": 0.2, "exported": 0}},
+             "hc": {"all": {"imported": 110}}},
             {"timestamp": 1690530360,
              "date": "09:45",
              "cp": {
@@ -58,7 +60,8 @@ def daily_log_sample():
              "pv": {"pv1": {"exported": 1055}, "all": {"exported": 1055}},
              "bat": {"bat2": {"imported": 2.42, "exported": 2292.992, "soc": 4},
                      "all": {"imported": 2.42, "exported": 2292.992, "soc": 4}},
-             "sh": {"sh1": {"temp0": 300, "temp1": 300, "temp2": 300, "imported": 0.4, "exported": 0}}}
+             "sh": {"sh1": {"temp0": 300, "temp1": 300, "temp2": 300, "imported": 0.4, "exported": 0}},
+             "hc": {"all": {"imported": 120}}}
             ]
 
 
@@ -73,7 +76,8 @@ def daily_log_totals():
                    'cp5': {'exported': 0, 'imported': 191.928},
                    'cp6': {'exported': 0, 'imported': 0}},
             'pv': {'all': {'exported': 251}, 'pv1': {'exported': 251}},
-            "sh": {"sh1": {"imported": 0.3, "exported": 0}}}
+            "sh": {"sh1": {"imported": 0.3, "exported": 0}},
+            "hc": {"all": {"imported": 20}}}
 
 
 @pytest.fixture()
@@ -188,4 +192,10 @@ def daily_log_entry_kw():
                     "energy_imported": 0.0001,
                     "energy_exported": 0
                 }
-            }}
+            },
+            'hc': {'all': {'energy_exported': 0.0,
+                           'energy_imported': 0.01,
+                           'imported': 100,
+                           'power_average': 0.12040133779264214,
+                           'power_exported': 0,
+                           'power_imported': 0.12040133779264214}}}
