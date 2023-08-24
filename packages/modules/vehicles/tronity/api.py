@@ -75,7 +75,6 @@ def create_session(config: TronityVehicleSocConfiguration, vehicle: int) -> req.
     session.headers = {
         'Accept': 'application/hal+json', 'Authorization': 'Bearer %s' % access_token
     }
-    
     return session
 
 
