@@ -558,14 +558,14 @@ class SetData:
 
     def process_chargepoint_get_topics(self, msg):
         if ("/get/voltages" in msg.topic):
-            self._validate_value(
-                msg, float, [(0, 500)], collection=list)
-        elif ("/get/currents" in msg.topic):
-            self._validate_value(
-                msg, float, collection=list)
+            self._validate_value(msg, float, [(0, 500)], collection=list)
+        elif ("/get/currents" in msg.topic or
+              "/get/powers" in msg.topic):
+            self._validate_value(msg, float, collection=list)
         elif ("/get/power_factors" in msg.topic):
-            self._validate_value(
-                msg, float, [(-1, 1)], collection=list)
+            self._validate_value(msg, float, [(-1, 1)], collection=list)
+        elif ("/get/frequency" in msg.topic):
+            self._validate_value(msg, float, [(40, 60)])
         elif ("/get/daily_imported" in msg.topic or
                 "/get/daily_exported" in msg.topic or
                 "/get/power" in msg.topic or
