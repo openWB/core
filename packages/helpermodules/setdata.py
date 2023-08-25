@@ -792,6 +792,8 @@ class SetData:
                 self._validate_value(msg, bool)
             elif "openWB/set/optional/int_display/on_if_plugged_in" in msg.topic:
                 self._validate_value(msg, bool)
+            elif "openWB/set/optional/int_display/only_local_charge_points" in msg.topic:
+                self._validate_value(msg, bool)
             elif "openWB/set/optional/int_display/pin_active" in msg.topic:
                 self._validate_value(msg, bool)
             elif "openWB/set/optional/int_display/pin_code" in msg.topic:
