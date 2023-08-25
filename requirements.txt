@@ -14,3 +14,4 @@ pkce==1.0.3
 evdev==1.5.0
 #telnetlib3==2.0.2
 python-dateutil==2.8.2
+pysmb==1.2.9.1
