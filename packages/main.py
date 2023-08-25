@@ -11,7 +11,6 @@ import traceback
 from threading import Thread
 from helpermodules.measurement_logging.update_daily_yields import update_daily_yields
 from helpermodules.measurement_logging.write_log import save_log
-from helpermodules.pub import Pub
 
 from modules import loadvars
 from modules import configuration
