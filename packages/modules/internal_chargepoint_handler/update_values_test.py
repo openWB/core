@@ -20,7 +20,7 @@ CHARGEPOINT_STATE = ChargepointState(
 OLD_CHARGEPOINT_STATE = copy.deepcopy(CHARGEPOINT_STATE)
 OLD_CHARGEPOINT_STATE.imported = 80
 
-SAMPLE_IP = None
+SAMPLE_IP = "1.1.1.1"
 
 
 @pytest.mark.parametrize(
