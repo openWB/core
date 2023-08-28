@@ -3,6 +3,7 @@ from typing import List, Optional
 
 from control.chargepoint.chargepoint_state import ChargepointState
 from control.chargemode import Chargemode as Chargemode_enum
+from control.limiting_value import LimitingValue
 from dataclass_utils.factories import currents_list_factory
 
 
@@ -20,6 +21,9 @@ class ControlParameter:
     imported_instant_charging: Optional[float] = field(
         default=None,
         metadata={"topic": "control_parameter/imported_instant_charging", "mutable_by_algorithm": True})
+    limit: Optional[LimitingValue] = field(
+        default=None,
+        metadata={"topic": "control_parameter/limit", "mutable_by_algorithm": True})
     phases: int = field(
         default=0,
         metadata={"topic": "control_parameter/phases", "mutable_by_algorithm": True})

@@ -536,6 +536,7 @@ class SetData:
                 elif "/control_parameter/phases" in msg.topic:
                     self._validate_value(msg, int, [(0, 3)])
                 elif ("/control_parameter/submode" in msg.topic or
+                        "/control_parameter/limit" in msg.topic or
                         "/control_parameter/chargemode" in msg.topic):
                     self._validate_value(msg, str)
                 elif "/control_parameter/prio" in msg.topic:

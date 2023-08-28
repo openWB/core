@@ -15,6 +15,7 @@ from control import data
 from control.bat_all import SwitchOnBatState
 from control.chargepoint.chargepoint_state import ChargepointState, PHASE_SWITCH_STATES
 from control.chargepoint.control_parameter import ControlParameter
+from control.limiting_value import LimitingValue
 from dataclass_utils.factories import empty_dict_factory, empty_list_factory
 from helpermodules.abstract_plans import Limit, limit_factory, ScheduledChargingPlan, TimeChargingPlan
 from helpermodules import timecheck
@@ -365,7 +366,8 @@ class Ev:
                                        control_parameter: ControlParameter,
                                        get_currents: List[float],
                                        get_power: float,
-                                       max_current_cp: int) -> Tuple[bool, Optional[str]]:
+                                       max_current_cp: int,
+                                       limit: LimitingValue) -> Tuple[bool, Optional[str]]:
         # Manche EV laden mit 6.1A bei 6A Sollstrom
         min_current = self.ev_template.data.min_current + self.ev_template.data.nominal_difference
         max_current = (min(self.ev_template.data.max_current_single_phase, max_current_cp)
@@ -381,9 +383,9 @@ class Ev:
         # verbleibender EVU-Überschuss unter Berücksichtigung der Einspeisegrenze und Speicherleistung
         all_surplus = (-evu_counter.calc_surplus() - evu_counter.data.set.released_surplus +
                        evu_counter.data.set.reserved_surplus - feed_in_yield)
-        condition_1_to_3 = (max(get_currents) > max_current and
+        condition_1_to_3 = (((max(get_currents) > max_current and
                             all_surplus > self.ev_template.data.min_current * max_phases_ev * 230
-                            - get_power and
+                            - get_power) or limit == LimitingValue.UNBALANCED_LOAD.value) and
                             phases_in_use == 1)
         condition_3_to_1 = max(get_currents) < min_current and all_surplus <= 0 and phases_in_use > 1
         if condition_1_to_3 or condition_3_to_1:
@@ -404,7 +406,8 @@ class Ev:
                           get_currents: List[float],
                           get_power: float,
                           max_current_cp: int,
-                          max_phases: int) -> Tuple[int, float, Optional[str]]:
+                          max_phases: int,
+                          limit: LimitingValue) -> Tuple[int, float, Optional[str]]:
         message = None
         current = control_parameter.required_current
         timestamp_auto_phase_switch = control_parameter.timestamp_auto_phase_switch
@@ -442,7 +445,8 @@ class Ev:
             condition, condition_msg = self._check_phase_switch_conditions(control_parameter,
                                                                            get_currents,
                                                                            get_power,
-                                                                           max_current_cp)
+                                                                           max_current_cp,
+                                                                           limit)
             if control_parameter.state not in PHASE_SWITCH_STATES:
                 if condition:
                     # Umschaltverzögerung starten

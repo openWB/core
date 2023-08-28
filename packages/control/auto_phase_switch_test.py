@@ -146,7 +146,8 @@ def test_auto_phase_switch(monkeypatch, vehicle: Ev, params: Params):
                                                                 params.get_currents,
                                                                 params.get_power,
                                                                 32,
-                                                                3)
+                                                                3,
+                                                                None)
 
     # evaluation
     assert phases_to_use == params.expected_phases_to_use

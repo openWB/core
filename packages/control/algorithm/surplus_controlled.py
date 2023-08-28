@@ -47,6 +47,7 @@ class SurplusControlled:
             available_currents, limit = Loadmanagement().get_available_currents_surplus(missing_currents,
                                                                                         counter,
                                                                                         feed_in_yield)
+            cp.data.control_parameter.limit = limit
             available_for_cp = common.available_current_for_cp(cp, counts, available_currents, missing_currents)
             current = common.get_current_to_set(cp.data.set.current, available_for_cp, cp.data.set.target_current)
             self._set_loadmangement_message(current, limit, cp, counter)

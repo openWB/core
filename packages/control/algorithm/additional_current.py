@@ -28,6 +28,7 @@ class AdditionalCurrent:
                     cp = preferenced_chargepoints[0]
                     missing_currents, counts = common.get_missing_currents_left(preferenced_chargepoints)
                     available_currents, limit = Loadmanagement().get_available_currents(missing_currents, counter)
+                    cp.data.control_parameter.limit = limit
                     available_for_cp = common.available_current_for_cp(cp, counts, available_currents, missing_currents)
                     current = common.get_current_to_set(
                         cp.data.set.current, available_for_cp, cp.data.set.target_current)
