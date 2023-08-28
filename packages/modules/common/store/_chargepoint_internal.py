@@ -25,7 +25,8 @@ class InternalChargepointValueStore(ValueStore[ChargepointState]):
                       "/get/charge_state", self.state.charge_state, 2)
         pub_to_broker("openWB/set/internal_chargepoint/" + str(self.num) + "/get/plug_state", self.state.plug_state, 2)
         pub_to_broker("openWB/set/internal_chargepoint/" + str(self.num) + "/get/rfid", self.state.rfid)
-        pub_to_broker("openWB/set/internal_chargepoint/" + str(self.num) + "/get/evse_current", self.state.evse_current, 2)
+        pub_to_broker("openWB/set/internal_chargepoint/" + str(self.num) +
+                      "/get/evse_current", self.state.evse_current, 2)
 
 
 def get_internal_chargepoint_value_store(id: int) -> ValueStore[ChargepointState]:

@@ -11,6 +11,7 @@ class GlobalHandlerData:
     parent_ip: Optional[str] = None
     configured: bool = False
 
+
 @dataclass
 class InternalChargepointData:
     cp_interruption_duration: int = 0
@@ -19,8 +20,10 @@ class InternalChargepointData:
     set_current: float = 0
     trigger_phase_switch: bool = False
 
+
 def internal_chargepoint_data_factory() -> InternalChargepointData:
     return InternalChargepointData()
+
 
 @dataclass
 class Get:
@@ -38,8 +41,10 @@ class Get:
     rfid: Optional[str] = None
     voltages: List[float] = field(default_factory=voltages_list_factory)
 
+
 def get_factory() -> Get:
     return Get()
+
 
 @dataclass
 class InternalChargepoint:

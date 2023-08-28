@@ -63,10 +63,10 @@ class UpdateValues:
             # qos 2 reicht nicht, da die Daten zwar auf dem Broker ankommen, aber nicht verarbeitet werden.
             if isinstance(value, list):
                 pub_single("openWB/set/chargepoint/" + self.parent_cp+"/get/"+topic,
-                            payload=[rounding(v) for v in value], hostname=self.parent_ip)
+                           payload=[rounding(v) for v in value], hostname=self.parent_ip)
             else:
                 pub_single("openWB/set/chargepoint/" + self.parent_cp+"/get/"+topic,
-                            payload=rounding(value), hostname=self.parent_ip)
+                           payload=rounding(value), hostname=self.parent_ip)
 
 
 class UpdateState:

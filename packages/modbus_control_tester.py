@@ -8,6 +8,7 @@ from modules.common import modbus
 
 log = logging.getLogger()
 
+
 class Actions(Enum):
     READ_NUMBER = 0
     READ_STR = 1
@@ -17,6 +18,7 @@ class Actions(Enum):
 class ReadMode(Enum):
     READ_INPUT_REG = 0
     READ_HOLDING_REG = 1
+
 
 # Don't modify
 host = "localhost"
@@ -65,5 +67,5 @@ try:
     elif action == Actions.WRITE_VALUE:
         client = ModbusTcpClient(host, port=port)
         rq = client.write_registers(start, write_value, unit=slave_id)
-except Exception as e:
+except Exception:
     log.exception("Fehler")
