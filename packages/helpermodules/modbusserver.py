@@ -114,16 +114,16 @@ def read_data_store(slave_id, function_code, address):
 def write_data_store(slave_id, function_code, address, value):
     """" Set value for address. """
     if 10170 < address:
-        cp_num = _get_pos(address, 2)
+        cp_topic = f"openWB/set/internal_chargepoint/{_get_pos(address, 2)}/data/"
         askedvalue = int(str(address)[-2:])
         if askedvalue == 71:
-            Pub().pub(f"openWB/set/internal_chargepoint/{cp_num}/data/set_current", value/100)
+            Pub().pub(f"{cp_topic}set_current", value/100)
         elif askedvalue == 80:
-            Pub().pub(f"openWB/set/internal_chargepoint/{cp_num}/data/phases_to_use", value)
+            Pub().pub(f"{cp_topic}phases_to_use", value)
         elif askedvalue == 81:
-            Pub().pub(f"openWB/set/internal_chargepoint/{cp_num}/data/trigger_phase_switch", value)
+            Pub().pub(f"{cp_topic}trigger_phase_switch", value)
         elif askedvalue == 98:
-            Pub().pub(f"openWB/set/internal_chargepoint/{cp_num}/data/cp_interruption_duration", value)
+            Pub().pub(f"{cp_topic}cp_interruption_duration", value)
 
 
 def start_modbus_server(event_modbus_server):
