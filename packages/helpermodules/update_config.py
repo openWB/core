@@ -124,6 +124,7 @@ class UpdateConfig:
         "^openWB/general/external_buttons_hw$",
         "^openWB/general/grid_protection_configured$",
         "^openWB/general/grid_protection_active$",
+        "^openWB/general/modbus_control$",
         "^openWB/general/mqtt_bridge$",
         "^openWB/general/grid_protection_timestamp$",
         "^openWB/general/grid_protection_random_stop$",

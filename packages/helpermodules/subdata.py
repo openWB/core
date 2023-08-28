@@ -30,7 +30,7 @@ from control import pv
 from dataclass_utils import dataclass_from_dict
 from modules.common.simcount.simcounter_state import SimCounterState
 from modules.internal_chargepoint_handler.internal_chargepoint_handler_config import (
-    GlobalHandlerData, InternalChargepointHandlerData, RfidData)
+    GlobalHandlerData, InternalChargepoint, RfidData)
 from modules.vehicles.manual.config import ManualSoc
 
 log = logging.getLogger(__name__)
@@ -56,9 +56,9 @@ class SubData:
     bat_all_data = bat_all.BatAll()
     bat_data: Dict[str, bat.Bat] = {}
     general_data = general.General()
-    internal_chargepoint_data: Dict[str, InternalChargepointHandlerData] = {
-        "cp0": InternalChargepointHandlerData(),
-        "cp1": InternalChargepointHandlerData(),
+    internal_chargepoint_data: Dict[str, InternalChargepoint] = {
+        "cp0": InternalChargepoint(),
+        "cp1": InternalChargepoint(),
         "global_data": GlobalHandlerData(),
         "rfid_data": RfidData()}
     optional_data = optional.Optional()
@@ -776,14 +776,17 @@ class SubData:
         try:
             if re.search("/internal_chargepoint/[0-1]/data/parent_cp", msg.topic) is not None:
                 index = get_index(msg.topic)
-                if decode_payload(msg.payload) != var[f"cp{index}"].parent_cp:
+                if decode_payload(msg.payload) != var[f"cp{index}"].data.parent_cp:
                     log.debug("Neustart des Handlers für den internen Ladepunkt.")
                     self.event_stop_internal_chargepoint.set()
                     self.event_start_internal_chargepoint.set()
                 self.set_json_payload_class(var[f"cp{index}"], msg)
             elif re.search("/internal_chargepoint/[0-1]/", msg.topic) is not None:
                 index = get_index(msg.topic)
-                self.set_json_payload_class(var[f"cp{index}"], msg)
+                if re.search("/internal_chargepoint/[0-1]/data/", msg.topic) is not None:
+                    self.set_json_payload_class(var[f"cp{index}"].data, msg)
+                elif re.search("/internal_chargepoint/[0-1]/get/", msg.topic) is not None:
+                    self.set_json_payload_class(var[f"cp{index}"].get, msg)
             elif "internal_chargepoint/global_data" in msg.topic:
                 self.set_json_payload_class(var["global_data"], msg)
                 if decode_payload(msg.payload)["parent_ip"] != var["global_data"].parent_ip:

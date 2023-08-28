@@ -1,3 +1,4 @@
+import io
 import json
 import sys
 from typing import Dict
@@ -17,8 +18,11 @@ def get_hardware_configuration_setting(name: str):
 
 
 def get_serial_number() -> str:
-    with open("/home/openwb/snnumber", "w") as file:
-        return file.read().replace("\n", "")
+    try:
+        with open("/home/openwb/snnumber", "w") as file:
+            return file.read().replace("\n", "")
+    except io.UnsupportedOperation:
+        return "noSerialNumber"
 
 
 if __name__ == "__main__":

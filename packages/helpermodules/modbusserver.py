@@ -22,6 +22,8 @@ conf.SIGNED_VALUES = True
 TCPServer.allow_reuse_address = True
 app = get_server(TCPServer, ('0.0.0.0', 1502), RequestHandler)
 
+serial_number=get_serial_number().replace("snnumber=", "")
+
 
 def _form_int32(value, startreg):
     secondreg = startreg + 1
@@ -78,32 +80,32 @@ def read_data_store(slave_id, function_code, address):
     if address > 10099:
         Pub().pub("openWB/set/internal_chargepoint/global_data",
                   {"heartbeat": timecheck.create_timestamp_unix(), "parent_ip": None})
-        chargepoint = SubData.cp_data[f"cp{_get_pos(address, 2)}"].chargepoint
+        chargepoint = SubData.internal_chargepoint_data[f"cp{_get_pos(address, 2)}"]
         askedvalue = int(str(address)[-2:])
         if askedvalue == 00:
-            _form_int32(chargepoint.data.get.power, address)
+            _form_int32(chargepoint.get.power, address)
         elif askedvalue == 2:
-            _form_int32(chargepoint.data.get.imported, address)
-        elif 4 <= askedvalue == 6:
-            _form_int16(chargepoint.data.get.voltages[askedvalue-4]/100, address)
+            _form_int32(chargepoint.get.imported, address)
+        elif 4 <= askedvalue <= 6:
+            _form_int16(chargepoint.get.voltages[askedvalue-4]*100, address)
         elif 7 <= askedvalue <= 9:
-            _form_int16(chargepoint.data.get.currents[askedvalue-7]/100, address)
+            _form_int16(chargepoint.get.currents[askedvalue-7]*100, address)
         elif askedvalue == 14:
-            _form_int16(chargepoint.data.get.plug_state, address)
+            _form_int16(chargepoint.get.plug_state, address)
         elif askedvalue == 15:
-            _form_int16(chargepoint.data.get.charge_state, address)
+            _form_int16(chargepoint.get.charge_state, address)
         elif askedvalue == 16:
-            _form_int16(chargepoint.data.get.evse_current, address)
-        # elif 30 <= askedvalue <= 32:
-        #     _form_int16(chargepoint.data.get.powers[askedvalue-7], address)
+            _form_int16(chargepoint.get.evse_current, address)
+        elif 30 <= askedvalue <= 32:
+            _form_int16(chargepoint.get.powers[askedvalue-7], address)
         elif askedvalue == 41:
-            _form_int32(chargepoint.data.get.exported, address)
+            _form_int32(chargepoint.get.exported, address)
         elif askedvalue == 42:
             _form_int16(1, address)
         elif askedvalue == 50:
-            _form_str(get_serial_number(), address)
+            _form_str(serial_number, address)
         elif askedvalue == 60:
-            _form_str(chargepoint.data.get.rfid, address)
+            _form_str(chargepoint.get.rfid, address)
 
     return data_store[address]
 
@@ -115,7 +117,7 @@ def write_data_store(slave_id, function_code, address, value):
         cp_num = _get_pos(address, 2)
         askedvalue = int(str(address)[-2:])
         if askedvalue == 71:
-            Pub().pub(f"openWB/set/internal_chargepoint/{cp_num}/data/set_current", bool(value))
+            Pub().pub(f"openWB/set/internal_chargepoint/{cp_num}/data/set_current", value/100)
         elif askedvalue == 80:
             Pub().pub(f"openWB/set/internal_chargepoint/{cp_num}/data/phases_to_use", value)
         elif askedvalue == 81:

@@ -86,7 +86,8 @@ class ChargepointModule(AbstractChargepoint):
                 charge_state=charge_state,
                 phases_in_use=phases_in_use,
                 power_factors=power_factors,
-                rfid=last_tag
+                rfid=last_tag,
+                evse_current=self.set_current_evse
             )
         except Exception as e:
             self.__client.read_error += 1
