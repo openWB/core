@@ -74,14 +74,14 @@ class CounterAll:
 
     def get_id_evu_counter(self) -> int:
         try:
-            for item in self.data.get.hierarchy:
-                if ComponentType.COUNTER.value == item["type"]:
-                    return item['id']
+            if ComponentType.COUNTER.value == self.data.get.hierarchy[0]["type"]:
+                return self.data.get.hierarchy[0]['id']
             else:
                 raise TypeError
         except Exception:
             log.error(
-                "Ohne Konfiguration eines EVU-Zählers an der Spitze der Hierarchie ist keine Regelung möglich.")
+                "Ohne Konfiguration eines EVU-Zählers an der Spitze der Hierarchie ist keine Regelung und keine Ladung "
+                "möglich.")
             raise
 
     def put_stats(self) -> None:
