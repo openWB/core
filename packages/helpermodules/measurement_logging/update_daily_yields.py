@@ -45,14 +45,14 @@ def update_module_yields(module: str, totals: Dict) -> None:
             Pub().pub("openWB/set/pv/get/daily_exported", daily_exported)
 
     for m in totals[module]:
-        if m in getattr(data.data, f"{module}_data"):
-            module_data = getattr(data.data, f"{module}_data")[m]
+        if m in getattr(data.data, f"{module}_data") or m == "all":
+            if m == "all":
+                module_data = getattr(data.data, f"{module}_all_data")
+            else:
+                module_data = getattr(data.data, f"{module}_data")[m]
             if module == "pv":
                 update_exported(totals[module][m]["exported"])
             else:
                 update_imported_exported(totals[module][m]["imported"], totals[module][m]["exported"])
         else:
             log.info(f"Modul {m} wurde zwischenzeitlich gelöscht und wird daher nicht mehr aufgeführt.")
-        if module == "cp" and m == "all":
-            module_data = data.data.cp_all_data
-            update_imported_exported(totals[module][m]["imported"], totals[module][m]["exported"])
