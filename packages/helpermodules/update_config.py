@@ -414,7 +414,7 @@ class UpdateConfig:
         ("openWB/optional/rfid/active", False),
         ("openWB/system/backup_cloud/config", {"type": None, "configuration": {}}),
         ("openWB/system/dataprotection_acknowledged", False),
-        ("openWB/system/datastore", DATASTORE_VERSION),
+        ("openWB/system/datastore_version", DATASTORE_VERSION),
         ("openWB/system/usage_terms_acknowledged", False),
         ("openWB/system/debug_level", 30),
         ("openWB/system/device/module_update_completed", True),
