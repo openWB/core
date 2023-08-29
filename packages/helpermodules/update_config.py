@@ -822,19 +822,17 @@ class UpdateConfig:
 
     def upgrade_datastore_18(self) -> None:
         def convert_file(file):
-            with open(file, "r+") as jsonFile:
-                try:
+            try:
+                with open(file, "r+") as jsonFile:
                     content = json.load(jsonFile)
                     for e in content["entries"]:
                         e.update({"hc": {}})
-                    content["totals"].update({"hc": {}})
-                    content["names"] = get_names(content["totals"], {})
                     jsonFile.seek(0)
                     json.dump(content, jsonFile)
                     jsonFile.truncate()
                     log.debug(f"Format der Logdatei {file} aktualisiert.")
-                except Exception:
-                    log.exception(f"Logfile {file} konnte nicht konvertiert werden.")
+            except Exception:
+                log.exception(f"Logfile {file} konnte nicht konvertiert werden.")
         convert_file(f"/var/www/html/openWB/data/daily_log/{timecheck.create_timestamp_YYYYMMDD()}.json")
         convert_file(f"/var/www/html/openWB/data/monthly_log/{timecheck.create_timestamp_YYYYMM()}.json")
         Pub().pub("openWB/system/datastore_version", 19)
