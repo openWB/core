@@ -140,7 +140,6 @@ class HandlerAlgorithm:
 
 def schedule_jobs():
     [schedule.every().minute.at(f":{i:02d}").do(handler.handler10Sec).tag("algorithm") for i in range(0, 60, 10)]
-    [schedule.every().minute.at(f":{i:02d}").do(soc.update).tag("algorithm") for i in range(0, 60, 5)]
     [schedule.every().minute.at(f":{i:02d}").do(smarthome_handler).tag("algorithm") for i in range(0, 60, 5)]
     [schedule.every().hour.at(f":{i:02d}").do(handler.handler5Min) for i in range(0, 60, 5)]
     [schedule.every().hour.at(f":{i:02d}").do(handler.handler5MinAlgorithm).tag("algorithm") for i in range(0, 60, 5)]
@@ -208,6 +207,7 @@ try:
     t_sub = Thread(target=sub.sub_topics, args=(), name="Subdata")
     t_set = Thread(target=set.set_data, args=(), name="Setdata")
     t_comm = Thread(target=comm.sub_commands, args=(), name="Commands")
+    t_soc = Thread(target=soc.update, args=(), name="SoC")
     t_internal_chargepoint = Thread(target=general_internal_chargepoint_handler.handler,
                                     args=(), name="Internal Chargepoint")
     if hasattr(rfid0, "input_device"):
@@ -220,6 +220,7 @@ try:
     t_sub.start()
     t_set.start()
     t_comm.start()
+    t_soc.start()
     t_internal_chargepoint.start()
     # Warten, damit subdata Zeit hat, alle Topics auf dem Broker zu empfangen.
     event_update_config_completed.wait(300)
