@@ -98,16 +98,16 @@ cases_limit = [
                 expected_raw_currents_left_counter6=[16, 0, 0]),
     ParamsLimit(name="limit by power",
                 raw_power_left=5520,
-                raw_currents_left_counter0=[14, 30, 31],
-                raw_currents_left_counter6=[16, 12, 14],
+                raw_currents_left_counter0=[32]*3,
+                raw_currents_left_counter6=[16]*3,
                 expected_state_str=(f"Es kann nicht mit der vorgegebenen Stromstärke geladen werden"
                                     f"{LimitingValue.POWER.value.format('Garage')}"),
-                expected_current_cp3=10.333333333333334,
-                expected_current_cp4=6.833333333333333,
-                expected_current_cp5=6.833333333333333,
+                expected_current_cp3=10.461538461538462,
+                expected_current_cp4=6.769230769230769,
+                expected_current_cp5=6.769230769230769,
                 expected_raw_power_left=0,
-                expected_raw_currents_left_counter0=[3.666666666666666, 23.166666666666668, 24.166666666666668],
-                expected_raw_currents_left_counter6=[16, 5.166666666666667, 7.166666666666667]),
+                expected_raw_currents_left_counter0=[21.53846153846154, 25.23076923076923, 25.23076923076923],
+                expected_raw_currents_left_counter6=[16, 9.23076923076923, 9.23076923076923]),
     # limit by unbalanced load
 ]
 
