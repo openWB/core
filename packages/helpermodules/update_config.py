@@ -831,6 +831,8 @@ class UpdateConfig:
                     json.dump(content, jsonFile)
                     jsonFile.truncate()
                     log.debug(f"Format der Logdatei {file} aktualisiert.")
+            except FileNotFoundError:
+                pass
             except Exception:
                 log.exception(f"Logfile {file} konnte nicht konvertiert werden.")
         convert_file(f"/var/www/html/openWB/data/daily_log/{timecheck.create_timestamp_YYYYMMDD()}.json")
