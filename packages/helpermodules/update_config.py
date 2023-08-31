@@ -9,8 +9,9 @@ import time
 from typing import List
 from paho.mqtt.client import Client as MqttClient, MQTTMessage
 import dataclass_utils
-from control.chargepoint.chargepoint_template import get_chargepoint_template_default
 
+from control.chargepoint.chargepoint_template import get_chargepoint_template_default
+from helpermodules import timecheck
 from helpermodules.broker import InternalBrokerClient
 from helpermodules.measurement_logging.process_log import get_totals
 from helpermodules.measurement_logging.write_log import get_names
@@ -25,7 +26,7 @@ log = logging.getLogger(__name__)
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 18
+    DATASTORE_VERSION = 19
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -98,9 +99,11 @@ class UpdateConfig:
         "^openWB/counter/config/reserve_for_not_charging$",
         "^openWB/counter/get/hierarchy$",
         "^openWB/counter/set/disengageable_smarthome_power$",
+        "^openWB/counter/set/imported_home_consumption$",
         "^openWB/counter/set/invalid_home_consumption$",
         "^openWB/counter/set/home_consumption$",
         "^openWB/counter/set/daily_yield_home_consumption$",
+        "^openWB/counter/set/simulation$",
         "^openWB/counter/[0-9]+/get/voltages$",
         "^openWB/counter/[0-9]+/get/power$",
         "^openWB/counter/[0-9]+/get/currents$",
@@ -816,3 +819,22 @@ class UpdateConfig:
                             Pub().pub(topic_device.replace("openWB/", "openWB/set/"), payload_device)
                             Pub().pub(topic_component.replace("openWB/", "openWB/set/"), payload_inverter)
         Pub().pub("openWB/system/datastore_version", 18)
+
+    def upgrade_datastore_18(self) -> None:
+        def convert_file(file):
+            try:
+                with open(file, "r+") as jsonFile:
+                    content = json.load(jsonFile)
+                    for e in content["entries"]:
+                        e.update({"hc": {}})
+                    jsonFile.seek(0)
+                    json.dump(content, jsonFile)
+                    jsonFile.truncate()
+                    log.debug(f"Format der Logdatei {file} aktualisiert.")
+            except FileNotFoundError:
+                pass
+            except Exception:
+                log.exception(f"Logfile {file} konnte nicht konvertiert werden.")
+        convert_file(f"/var/www/html/openWB/data/daily_log/{timecheck.create_timestamp_YYYYMMDD()}.json")
+        convert_file(f"/var/www/html/openWB/data/monthly_log/{timecheck.create_timestamp_YYYYMM()}.json")
+        Pub().pub("openWB/system/datastore_version", 19)
