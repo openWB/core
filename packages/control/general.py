@@ -96,7 +96,7 @@ def ripple_control_receiver_factory() -> RippleControlReceiver:
 class GeneralData:
     chargemode_config: ChargemodeConfig = field(default_factory=chargemode_config_factory)
     control_interval: int = 10
-    extern_display_mode: str = "local"
+    extern_display_mode: str = "primary"
     extern: bool = False
     external_buttons_hw: bool = False
     grid_protection_active: bool = False
