@@ -193,7 +193,7 @@ class Counter:
         # eingeschaltet werden. Es darf bloß nicht für zu viele zB die Einschaltverzögerung gestartet werden.
         evu_counter = data.data.counter_all_data.get_evu_counter()
         bat_surplus = data.data.bat_all_data.power_for_bat_charging()
-        surplus = - evu_counter.data.get.power + bat_surplus
+        surplus = evu_counter.data.get.power - bat_surplus
         ranged_surplus = self._control_range(surplus)
         log.info(f"Überschuss zur PV-geführten Ladung: {ranged_surplus}W")
         return ranged_surplus
@@ -311,7 +311,7 @@ class Counter:
 
     SWITCH_OFF_STOP = "Ladevorgang nach Ablauf der Abschaltverzögerung gestoppt."
     SWITCH_OFF_WAITING = "Ladevorgang wird nach Ablauf der Abschaltverzögerung {}s gestoppt."
-    SWITCH_OFF_NO_STOP = ("Stoppen des Ladevorgangs verhindert, da in der Fahrzeug-Vorlage die Einstellung"
+    SWITCH_OFF_NO_STOP = ("Stoppen des Ladevorgangs verhindert, da in dem Fahrzeug-Profil die Einstellung"
                           " 'Ladung aktiv halten' aktiviert ist.")
     SWITCH_OFF_EXCEEDED = "Abschaltschwelle während der Verzögerung überschritten."
     SWITCH_OFF_NOT_CHARGING = ("Da das EV nicht lädt und die Abschaltschwelle erreicht wird, "
@@ -356,7 +356,7 @@ class Counter:
         return threshold, feed_in_yield
 
     def calc_switch_off(self, chargepoint: Chargepoint) -> Tuple[float, float]:
-        switch_off_power = - self.calc_surplus() - self.data.set.released_surplus
+        switch_off_power = self.calc_surplus() - self.data.set.released_surplus
         threshold, feed_in_yield = self.calc_switch_off_threshold(chargepoint)
         log.debug(f'LP{chargepoint.num} Switch-Off-Threshold prüfen: {switch_off_power}W, Schwelle: {threshold}W, '
                   f'freigegebener Überschuss {self.data.set.released_surplus}W, Einspeisegrenze {feed_in_yield}W')

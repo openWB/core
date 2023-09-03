@@ -79,6 +79,7 @@ class SubData:
                  event_time_charging_plan: threading.Event,
                  event_start_internal_chargepoint: threading.Event,
                  event_stop_internal_chargepoint: threading.Event,
+                 event_update_config_completed: threading.Event,
                  event_soc: threading.Event,
                  event_jobs_running: threading.Event):
         self.event_ev_template = event_ev_template
@@ -94,6 +95,7 @@ class SubData:
         self.event_time_charging_plan = event_time_charging_plan
         self.event_start_internal_chargepoint = event_start_internal_chargepoint
         self.event_stop_internal_chargepoint = event_stop_internal_chargepoint
+        self.event_update_config_completed = event_update_config_completed
         self.event_soc = event_soc
         self.event_jobs_running = event_jobs_running
         self.heartbeat = False
@@ -312,7 +314,7 @@ class SubData:
                             var["ct"+index].data.chargemode.scheduled_charging.plans.pop(index_second)
                         except KeyError:
                             log.error("Es konnte kein Zielladen-Plan mit der ID " +
-                                      str(index_second)+" in der Ladevorlage "+str(index)+" gefunden werden.")
+                                      str(index_second)+" in dem Lade-Profil "+str(index)+" gefunden werden.")
                     else:
                         var["ct"+index].data.chargemode.scheduled_charging.plans[
                             index_second] = dataclass_from_dict(ev.ScheduledChargingPlan, decode_payload(msg.payload))
@@ -325,7 +327,7 @@ class SubData:
                             var["ct"+index].data.time_charging.plans.pop(index_second)
                         except KeyError:
                             log.error("Es konnte kein Zeitladen-Plan mit der ID " +
-                                      str(index_second)+" in der Ladevorlage "+str(index)+" gefunden werden.")
+                                      str(index_second)+" in dem Lade-Profil "+str(index)+" gefunden werden.")
                     else:
                         var["ct"+index].data.time_charging.plans[
                             index_second] = dataclass_from_dict(ev.TimeChargingPlan, decode_payload(msg.payload))
@@ -542,7 +544,7 @@ class SubData:
         try:
             if re.search("/general/", msg.topic) is not None:
                 if re.search("/general/ripple_control_receiver/", msg.topic) is not None:
-                    self.set_json_payload_class(var.data.ripple_control_receiver, msg)
+                    return
                 elif re.search("/general/chargemode_config/", msg.topic) is not None:
                     if re.search("/general/chargemode_config/pv_charging/", msg.topic) is not None:
                         self.set_json_payload_class(var.data.chargemode_config.pv_charging, msg)
@@ -636,6 +638,10 @@ class SubData:
                     self.set_json_payload_class(self.counter_all_data.data.config, msg)
                 elif re.search("/counter/get", msg.topic) is not None:
                     self.set_json_payload_class(self.counter_all_data.data.get, msg)
+                elif re.search("/counter/set/simulation", msg.topic) is not None:
+                    self.counter_all_data.sim_counter.data = dataclass_from_dict(
+                        SimCounterState,
+                        decode_payload(msg.payload))
                 elif re.search("/counter/set", msg.topic) is not None:
                     self.set_json_payload_class(self.counter_all_data.data.set, msg)
         except Exception:
@@ -739,6 +745,10 @@ class SubData:
                     if decode_payload(msg.payload) != "":
                         Pub().pub("openWB/system/subdata_initialized", "")
                         self.event_subdata_initialized.set()
+                elif "openWB/system/update_config_completed" == msg.topic:
+                    if decode_payload(msg.payload) != "":
+                        Pub().pub("openWB/system/update_config_completed", "")
+                        self.event_update_config_completed.set()
                 elif "openWB/system/debug_level" == msg.topic:
                     logging.getLogger().setLevel(decode_payload(msg.payload))
                 self.set_json_payload(var["system"].data, msg)

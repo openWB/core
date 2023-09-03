@@ -27,7 +27,7 @@ class ChargepointStateUpdate:
         self.ev_data = ev_data
         self.ev_charge_template_data = ev_charge_template_data
         self.ev_template_data = ev_template_data
-        Thread(target=self.update, args=()).start()
+        Thread(target=self.update, args=(), name=f"ChargepointStateUpdate cp {index}").start()
 
     def update(self):
         self.event_global_data_initialized.wait()
@@ -54,7 +54,7 @@ class ChargepointStateUpdate:
                     try:
                         ev_list[vehicle].charge_template = copy.deepcopy(self.ev_charge_template_data["ct" + str(
                             ev_list[vehicle].data.charge_template)])
-                        # zuerst das aktuelle Template laden
+                        # zuerst das aktuelle Profil laden
                         ev_list[vehicle].ev_template = copy.deepcopy(self.ev_template_data["et" + str(
                             ev_list[vehicle].data.ev_template)])
                     except Exception:

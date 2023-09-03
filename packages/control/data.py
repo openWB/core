@@ -483,7 +483,7 @@ class Data:
             try:
                 self.ev_data[vehicle].charge_template = self.ev_charge_template_data["ct" + str(
                     self.ev_data[vehicle].data.charge_template)]
-                # zuerst das aktuelle Template laden
+                # zuerst das aktuelle Profil laden
                 self.ev_data[vehicle].ev_template = self.ev_template_data["et" + str(
                     self.ev_data[vehicle].data.ev_template)]
             except Exception:

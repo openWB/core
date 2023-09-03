@@ -290,10 +290,21 @@ chmod 666 "$LOGFILE"
 	fi
 	echo "mosquitto done"
 
+	# check for home configuration
+	if [[ ! -f "/home/openwb/configuration.json" ]]; then
+		sudo cp -a "${OPENWBBASEDIR}/data/config/configuration.json" "/home/openwb/configuration.json"
+	fi
+
 	# check for python dependencies
 	echo "install required python packages with 'pip3'..."
-	pip3 install -r "${OPENWBBASEDIR}/requirements.txt"
-	echo "done"
+	if pip3 install -r "${OPENWBBASEDIR}/requirements.txt"; then
+		echo "done"
+	else
+		echo "failed!"
+		message="Bei der Installation der benötigten Python-Bibliotheken ist ein Fehler aufgetreten! Bitte die Logdateien prüfen."
+		payload=$(printf '{"source": "system", "type": "danger", "message": "%s", "timestamp": %d}' "$message" "$(date +"%s")")
+		mosquitto_pub -p 1886 -t "openWB/system/messages/$(date +"%s%3N")" -r -m "$payload"
+	fi
 
 	# collect some hardware info
 	"${OPENWBBASEDIR}/runs/uuid.sh"
