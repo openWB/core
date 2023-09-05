@@ -558,14 +558,14 @@ class SetData:
 
     def process_chargepoint_get_topics(self, msg):
         if ("/get/voltages" in msg.topic):
-            self._validate_value(
-                msg, float, [(0, 500)], collection=list)
-        elif ("/get/currents" in msg.topic):
-            self._validate_value(
-                msg, float, collection=list)
+            self._validate_value(msg, float, [(0, 500)], collection=list)
+        elif ("/get/currents" in msg.topic or
+              "/get/powers" in msg.topic):
+            self._validate_value(msg, float, collection=list)
         elif ("/get/power_factors" in msg.topic):
-            self._validate_value(
-                msg, float, [(-1, 1)], collection=list)
+            self._validate_value(msg, float, [(-1, 1)], collection=list)
+        elif ("/get/frequency" in msg.topic):
+            self._validate_value(msg, float, [(40, 60)])
         elif ("/get/daily_imported" in msg.topic or
                 "/get/daily_exported" in msg.topic or
                 "/get/power" in msg.topic or
@@ -792,6 +792,8 @@ class SetData:
                 self._validate_value(msg, bool)
             elif "openWB/set/optional/int_display/on_if_plugged_in" in msg.topic:
                 self._validate_value(msg, bool)
+            elif "openWB/set/optional/int_display/only_local_charge_points" in msg.topic:
+                self._validate_value(msg, bool)
             elif "openWB/set/optional/int_display/pin_active" in msg.topic:
                 self._validate_value(msg, bool)
             elif "openWB/set/optional/int_display/pin_code" in msg.topic:
@@ -823,11 +825,14 @@ class SetData:
             elif "openWB/set/counter/set/invalid_home_consumption" in msg.topic:
                 self._validate_value(msg, int, [(0, 3)])
             elif ("openWB/set/counter/set/home_consumption" in msg.topic or
+                  "openWB/set/counter/set/imported_home_consumption" in msg.topic or
                   "openWB/set/counter/set/daily_yield_home_consumption" in msg.topic or
                   "openWB/set/counter/set/disengageable_smarthome_power" in msg.topic):
                 self._validate_value(msg, float, [(0, float("inf"))])
             elif "openWB/set/counter/get/hierarchy" in msg.topic:
                 self._validate_value(msg, None)
+            elif "openWB/set/counter/set/simulation" in msg.topic:
+                self._validate_value(msg, "json")
             elif "/set/consumption_left" in msg.topic:
                 self._validate_value(msg, float)
             elif "/config/selected" in msg.topic:

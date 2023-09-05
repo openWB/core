@@ -1,4 +1,5 @@
 import logging
+import time
 from typing import List, Tuple
 import copy
 from threading import Event, Thread
@@ -23,17 +24,19 @@ class UpdateSoc:
         self.event_vehicle_update_completed.set()
 
     def update(self) -> None:
-        topic = "openWB/set/vehicle/set/vehicle_update_completed"
-        try:
-            threads_update, threads_store = self._get_threads()
-            with ModuleUpdateCompletedContext(self.event_vehicle_update_completed, topic):
+        while True:
+            topic = "openWB/set/vehicle/set/vehicle_update_completed"
+            try:
                 threads_update, threads_store = self._get_threads()
-                thread_handler(threads_update, data.data.general_data.data.control_interval/3)
-            with ModuleUpdateCompletedContext(self.event_vehicle_update_completed, topic):
-                # threads_store = self._filter_failed_store_threads(threads_store)
-                thread_handler(threads_store, data.data.general_data.data.control_interval/3)
-        except Exception:
-            log.exception("Fehler im update_soc-Modul")
+                with ModuleUpdateCompletedContext(self.event_vehicle_update_completed, topic):
+                    threads_update, threads_store = self._get_threads()
+                    thread_handler(threads_update, 300)
+                with ModuleUpdateCompletedContext(self.event_vehicle_update_completed, topic):
+                    # threads_store = self._filter_failed_store_threads(threads_store)
+                    thread_handler(threads_store, data.data.general_data.data.control_interval/3)
+            except Exception:
+                log.exception("Fehler im update_soc-Modul")
+            time.sleep(5)
 
     def _get_threads(self) -> Tuple[List[Thread], List[Thread]]:
         threads_update, threads_store = [], []

@@ -475,7 +475,7 @@ class Ev:
             feed_in_yield = 0
         evu_counter = data.data.counter_all_data.get_evu_counter()
         # verbleibender EVU-Überschuss unter Berücksichtigung der Einspeisegrenze und Speicherleistung
-        all_surplus = (evu_counter.calc_surplus() - evu_counter.data.set.released_surplus +
+        all_surplus = (-evu_counter.calc_surplus() - evu_counter.data.set.released_surplus +
                        evu_counter.data.set.reserved_surplus - feed_in_yield)
         condition_1_to_3 = (max(get_currents) > max_current and
                             all_surplus > self.ev_template.data.min_current * max_phases_ev * 230
@@ -512,7 +512,7 @@ class Ev:
             feed_in_yield = 0
         evu_counter = data.data.counter_all_data.get_evu_counter()
         # verbleibender EVU-Überschuss unter Berücksichtigung der Einspeisegrenze und Speicherleistung
-        all_surplus = (evu_counter.calc_surplus() - evu_counter.data.set.released_surplus +
+        all_surplus = (-evu_counter.calc_surplus() - evu_counter.data.set.released_surplus +
                        evu_counter.data.set.reserved_surplus - feed_in_yield)
         if phases_in_use == 1:
             direction_str = f"Umschaltverzögerung von 1 auf {max_phases}"

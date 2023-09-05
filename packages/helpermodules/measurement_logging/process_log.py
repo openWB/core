@@ -31,39 +31,45 @@ def string_to_int(value: str, default: int = 0) -> int:
 
 
 def get_totals(entries: List) -> Dict:
-    totals: Dict[str, Dict] = {"cp": {}, "counter": {}, "pv": {}, "bat": {}, "sh": {}}
+    totals: Dict[str, Dict] = {"cp": {}, "counter": {}, "pv": {}, "bat": {}, "sh": {}, "hc": {}}
     prev_entry: Dict = {}
     for group in totals.keys():
         for entry in entries:
-            for module in entry[group]:
-                try:
-                    if not prev_entry or module not in totals[group]:
-                        totals[group][module] = {"exported": 0} if group == "pv" else {"imported": 0, "exported": 0}
-                    else:
-                        for key, value in entry[group][module].items():
-                            if key != "soc" and key != "grid" and "temp" not in key:
-                                if value == "":
-                                    # Manchmal fehlen Werte im alten Log
-                                    value = 0
-                                try:
-                                    prev_value = prev_entry[group][module][key]
-                                # Wenn ein Modul neu hinzugefügt wurde, das es mit dieser ID schonmal gab, werden
-                                # die Werte zusammen addiert.
-                                except KeyError:
-                                    prev_value = entry[group][module][key]
-                                if prev_value == "":
-                                    # Manchmal fehlen Werte im alten Log
-                                    prev_value = 0
-                                # avoid floating point issues with using Decimal
-                                value = (Decimal(str(value))
-                                         - Decimal(str(prev_value))
-                                         + Decimal(str(totals[group][module][key])))
-                                value = f'{value: f}'
-                                # remove trailing zeros
-                                totals[group][module][key] = string_to_float(
-                                    value) if "." in value else string_to_int(value)
-                except Exception:
-                    log.exception(f"Fehler beim Berechnen der Summe von {module}")
+            if group in entry:
+                for module in entry[group]:
+                    try:
+                        if not prev_entry or module not in totals[group]:
+                            if group == "hc":
+                                totals[group][module] = {"imported": 0}
+                            elif group == "pv":
+                                totals[group][module] = {"exported": 0}
+                            else:
+                                totals[group][module] = {"imported": 0, "exported": 0}
+                        else:
+                            for key, value in entry[group][module].items():
+                                if key != "soc" and key != "grid" and "temp" not in key:
+                                    if value == "":
+                                        # Manchmal fehlen Werte im alten Log
+                                        value = 0
+                                    try:
+                                        prev_value = prev_entry[group][module][key]
+                                    # Wenn ein Modul neu hinzugefügt wurde, das es mit dieser ID schonmal gab, werden
+                                    # die Werte zusammen addiert.
+                                    except KeyError:
+                                        prev_value = entry[group][module][key]
+                                    if prev_value == "":
+                                        # Manchmal fehlen Werte im alten Log
+                                        prev_value = 0
+                                    # avoid floating point issues with using Decimal
+                                    value = (Decimal(str(value))
+                                             - Decimal(str(prev_value))
+                                             + Decimal(str(totals[group][module][key])))
+                                    value = f'{value: f}'
+                                    # remove trailing zeros
+                                    totals[group][module][key] = string_to_float(
+                                        value) if "." in value else string_to_int(value)
+                    except Exception:
+                        log.exception(f"Fehler beim Berechnen der Summe von {module}")
             prev_entry = entry
     return totals
 
@@ -265,44 +271,44 @@ def _process_entries(data, calculation):
 
 def _process_entry(entry: dict, next_entry: dict, calculation: CalculationType):
     time_diff = next_entry["timestamp"] - entry["timestamp"]
-    for type in ("bat", "counter", "cp", "pv", "sh"):
-        for module in entry[type].keys():
-            try:
-                new_data = {}
-                if "imported" in entry[type][module].keys() or "exported" in entry[type][module].keys():
-                    try:
-                        value_imported = entry[type][module]["imported"]
-                    except KeyError:
-                        value_imported = 0
-                    try:
-                        next_value_imported = next_entry[type][module]["imported"]
-                    except KeyError:
-                        next_value_imported = value_imported
-                    try:
-                        value_exported = entry[type][module]["exported"]
-                    except KeyError:
-                        value_exported = 0
-                    try:
-                        next_value_exported = next_entry[type][module]["exported"]
-                    except KeyError:
-                        next_value_exported = value_exported
-                    average_power = _calculate_average_power(time_diff, value_imported, next_value_imported,
-                                                             value_exported, next_value_exported)
-                    if calculation in [CalculationType.POWER, CalculationType.ALL]:
-                        new_data.update({
-                            "power_average": average_power,
-                            "power_imported": average_power if average_power >= 0 else 0,
-                            "power_exported": average_power * -1 if average_power < 0 else 0
-                        })
-                    if calculation in [CalculationType.ENERGY, CalculationType.ALL]:
-                        new_data.update({
-                            "energy_imported": _calculate_energy_difference(value_imported, next_value_imported),
-                            "energy_exported": _calculate_energy_difference(value_exported, next_value_exported)
-                        })
-                entry[type][module].update(new_data)
-            except Exception:
-                log.exception("Fehler beim Berechnen der Leistung")
-    # ToDo: add home consumption
+    for type in ("bat", "counter", "cp", "pv", "sh", "hc"):
+        if type in entry:
+            for module in entry[type].keys():
+                try:
+                    new_data = {}
+                    if "imported" in entry[type][module].keys() or "exported" in entry[type][module].keys():
+                        try:
+                            value_imported = entry[type][module]["imported"]
+                        except KeyError:
+                            value_imported = 0
+                        try:
+                            next_value_imported = next_entry[type][module]["imported"]
+                        except KeyError:
+                            next_value_imported = value_imported
+                        try:
+                            value_exported = entry[type][module]["exported"]
+                        except KeyError:
+                            value_exported = 0
+                        try:
+                            next_value_exported = next_entry[type][module]["exported"]
+                        except KeyError:
+                            next_value_exported = value_exported
+                        average_power = _calculate_average_power(time_diff, value_imported, next_value_imported,
+                                                                 value_exported, next_value_exported)
+                        if calculation in [CalculationType.POWER, CalculationType.ALL]:
+                            new_data.update({
+                                "power_average": average_power,
+                                "power_imported": average_power if average_power >= 0 else 0,
+                                "power_exported": average_power * -1 if average_power < 0 else 0
+                            })
+                        if calculation in [CalculationType.ENERGY, CalculationType.ALL]:
+                            new_data.update({
+                                "energy_imported": _calculate_energy_difference(value_imported, next_value_imported),
+                                "energy_exported": _calculate_energy_difference(value_exported, next_value_exported)
+                            })
+                    entry[type][module].update(new_data)
+                except Exception:
+                    log.exception("Fehler beim Berechnen der Leistung")
     return entry
 
 
