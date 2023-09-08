@@ -188,6 +188,7 @@ class UpdateConfig:
         "^openWB/optional/int_display/standby$",
         "^openWB/optional/int_display/rotation$",
         "^openWB/optional/int_display/theme$",
+        "^openWB/optional/int_display/only_local_charge_points",
         "^openWB/optional/led/active$",
         "^openWB/optional/rfid/active$",
 
