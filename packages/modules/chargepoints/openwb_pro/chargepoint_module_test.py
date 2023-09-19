@@ -40,7 +40,7 @@ SAMPLE = {'charge_state': True,
           'v2g_ready': 0,
           'vehicle_id': '98:ED:5C:B4:EE:8D'}
 
-SAMPLE_CHARGEPOINT_STATE_WITH_VOLTAGES = ChargepointState(
+SAMPLE_CHARGEPOINT_STATE_EXTENDED = ChargepointState(
     power=0,
     powers=[0]*3,
     currents=[0]*3,
@@ -50,34 +50,36 @@ SAMPLE_CHARGEPOINT_STATE_WITH_VOLTAGES = ChargepointState(
     plug_state=False,
     charge_state=False,
     phases_in_use=1,
-    rfid=None
+    rfid=None,
+    frequency=50.2
 )
 
-SAMPLE_WITH_VOLTAGES = {"date": "2023:09:18-15:13:41",
-                        "timestamp": 1695042821,
-                        "powers": [0, 0, 0],
-                        "power_all": 0,
-                        "currents": [0, 0, 0],
-                        "voltages": [230.67, 0, 0],
-                        "imported": 6827330,
-                        "exported": 0,
-                        "plug_state": False,
-                        "charge_state": False,
-                        "phases_actual": 0,
-                        "phases_target": 3,
-                        "phases_in_use": 1,
-                        "offered_current": 6,
-                        "evse_signaling": "unclear\n",
-                        "v2g_ready": 0,
-                        "soc_value": 0,
-                        "soc_timestamp": "0",
-                        "vehicle_id": None,
-                        "serial": "493826"}
+SAMPLE_EXTENDED = {"date": "2023:09:18-15:13:41",
+                   "timestamp": 1695042821,
+                   "powers": [0, 0, 0],
+                   "power_all": 0,
+                   "currents": [0, 0, 0],
+                   "voltages": [230.67, 0, 0],
+                   "imported": 6827330,
+                   "exported": 0,
+                   "plug_state": False,
+                   "charge_state": False,
+                   "phases_actual": 0,
+                   "phases_target": 3,
+                   "phases_in_use": 1,
+                   "offered_current": 6,
+                   "evse_signaling": "unclear\n",
+                   "v2g_ready": 0,
+                   "soc_value": 0,
+                   "soc_timestamp": "0",
+                   "vehicle_id": None,
+                   "serial": "493826",
+                   "frequency": 50.2}
 
 
 @pytest.mark.parametrize("sample_state, expected_state",
                          [pytest.param(SAMPLE, SAMPLE_CHARGEPOINT_STATE),
-                          pytest.param(SAMPLE_WITH_VOLTAGES, SAMPLE_CHARGEPOINT_STATE_WITH_VOLTAGES)
+                          pytest.param(SAMPLE_EXTENDED, SAMPLE_CHARGEPOINT_STATE_EXTENDED)
                           ])
 def test_openwb_pro(sample_state: Dict, expected_state: Dict, monkeypatch, requests_mock: requests_mock.mock):
     # setup

@@ -61,6 +61,9 @@ class ChargepointModule(AbstractChargepoint):
                 if json_rsp.get("voltages") is not None:
                     chargepoint_state.voltages = json_rsp["voltages"]
 
+                if json_rsp.get("frequency") is not None:
+                    chargepoint_state.frequency = json_rsp["frequency"]
+
                 self.store.set(chargepoint_state)
                 self.__client_error_context.reset_error_counter()
 
