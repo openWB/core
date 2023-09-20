@@ -5,15 +5,15 @@ import jwt
 from dataclass_utils import asdict
 from helpermodules.pub import Pub
 from modules.common import req
+from modules.common.abstract_vehicle import VehicleUpdateData
 from modules.vehicles.tronity.config import TronityVehicleSocConfiguration, TronityVehicleSoc
-from modules.common.abstract_soc import SocUpdateData
 from modules.common.component_state import CarState
 from datetime import datetime
 
 log = logging.getLogger(__name__)
 
 
-def fetch_soc(config: TronityVehicleSocConfiguration, soc_update_data: SocUpdateData, vehicle: int) -> CarState:
+def fetch_soc(config: TronityVehicleSocConfiguration, vehicle_update_data: VehicleUpdateData, vehicle: int) -> CarState:
     log.debug("Fetching Tronity SOC")
     session = create_session(config, vehicle)
     tronity_vehicle_id = str(config.vehicle_id)
@@ -67,9 +67,9 @@ def create_session(config: TronityVehicleSocConfiguration, vehicle: int) -> req.
         access_token = response.json()['access_token']
         log.debug("Retrieved new Tronity Access Token: %s", access_token)
         write_token_mqtt(
-                        "openWB/set/vehicle/" + str(vehicle) + "/soc_module/config",
-                        access_token,
-                        config)
+            "openWB/set/vehicle/" + str(vehicle) + "/soc_module/config",
+            access_token,
+            config)
     else:
         log.debug("Using existing Tronity Access Token")
         access_token = config.access_token

@@ -49,7 +49,7 @@ export default {
     },
     updateManualSoc() {
       this.$root.sendTopicToBroker(
-        `openWB/vehicle/${this.vehicleId}/soc_module/configuration/soc_start`,
+        `openWB/vehicle/${this.vehicleId}/soc_module/general_config/soc_start`,
         this.newSoc
       );
       this.close();

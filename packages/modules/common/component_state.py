@@ -130,7 +130,9 @@ class ChargepointState:
                  charge_state: bool = False,
                  plug_state: bool = False,
                  rfid: Optional[str] = None,
-                 frequency: float = 50):
+                 frequency: float = 50,
+                 soc: Optional[float] = None,
+                 soc_timestamp: Optional[int] = None):
         self.currents, self.powers, self.voltages = _calculate_powers_and_currents(currents, powers, voltages)
         self.frequency = frequency
         self.imported = imported
@@ -143,3 +145,5 @@ class ChargepointState:
         if power_factors is None:
             power_factors = [0.0]*3
         self.power_factors = power_factors
+        self.soc = soc
+        self.soc_timestamp = soc_timestamp

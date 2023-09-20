@@ -195,17 +195,17 @@ class SetData:
                                 subdata.SubData.cp_data["cp"+str(index)].chargepoint.data.config)
                         else:
                             template = {}
-                    elif "soc_module/configuration/soc_start" in msg.topic:
+                    elif "soc_module/general_config/manual_soc" in msg.topic:
                         event = self.event_soc
                         if "ev"+str(index) in subdata.SubData.ev_data:
                             template = dataclass_utils.asdict(
-                                subdata.SubData.ev_data["ev"+str(index)].soc_module.vehicle_config)
+                                subdata.SubData.ev_data["ev"+str(index)].soc_module.general_config)
                         else:
                             template = {}
                     else:
                         raise ValueError("Zu "+msg.topic+" konnte kein passendes json-Objekt gefunden werden.")
                     # Wert, der aktualisiert werden soll, erstellen/finden und updaten
-                    if event == self.event_cp_config or event == self.event_soc:
+                    if event == self.event_cp_config:
                         key_list = msg.topic.split("/")[5:]
                     elif (event == self.event_scheduled_charging_plan or
                           event == self.event_time_charging_plan):
@@ -220,7 +220,7 @@ class SetData:
                     elif event == self.event_scheduled_charging_plan or event == self.event_time_charging_plan:
                         topic = msg.topic[:get_second_index_position(msg.topic)]
                     elif event == self.event_soc:
-                        topic = msg.topic[:index_pos]+"/soc_module/config"
+                        topic = msg.topic[:index_pos]+"/soc_module/general_config"
                     else:
                         topic = msg.topic[:index_pos]
                     topic = topic.replace('set/', '', 1)
@@ -394,10 +394,10 @@ class SetData:
                 self._validate_value(msg, bool)
             elif "/set/soc_error_counter" in msg.topic:
                 self._validate_value(msg, int, [(0, float("inf"))])
-            elif "/soc_module/configuration/soc_start" in msg.topic:
+            elif "/soc_module/general_config/manual_soc" in msg.topic:
                 self._validate_value(msg, float, [(0, 100)], pub_json=True)
             elif ("/soc_module/config" in msg.topic or
-                  "/soc_module/interval_config" in msg.topic):
+                  "/soc_module/general_config" in msg.topic):
                 self._validate_value(msg, "json")
             elif "/get/fault_state" in msg.topic:
                 self._validate_value(msg, int, [(0, 2)])
@@ -570,7 +570,8 @@ class SetData:
                 "/get/daily_exported" in msg.topic or
                 "/get/power" in msg.topic or
                 "/get/imported" in msg.topic or
-                "/get/exported" in msg.topic):
+                "/get/exported" in msg.topic or
+                "/get/soc_timestamp" in msg.topic):
             self._validate_value(msg, float, [(0, float("inf"))])
         elif "/get/phases_in_use" in msg.topic:
             self._validate_value(msg, int, [(0, 3)])
@@ -586,6 +587,8 @@ class SetData:
         elif ("/get/rfid" in msg.topic or
                 "/get/rfid_timestamp" in msg.topic):
             self._validate_value(msg, str)
+        elif ("/get/soc" in msg.topic):
+            self._validate_value(msg, float, [(0, 100)])
         else:
             self.__unknown_topic(msg)
 
@@ -875,6 +878,8 @@ class SetData:
                 elif "/get/power" in msg.topic:
                     self._validate_value(
                         msg, float, [(float("-inf"), float("inf"))])
+                elif "/get/soc" in msg.topic:
+                    self._validate_value(msg, float, [(0, 100)])
                 elif ("/set/reserved_surplus" in msg.topic or
                       "set/released_surplus" in msg.topic):
                     self._validate_value(msg, float)

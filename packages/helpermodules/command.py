@@ -26,7 +26,7 @@ from modules.chargepoints.internal_openwb.chargepoint_module import ChargepointM
 from modules.chargepoints.internal_openwb.config import InternalChargepointMode
 from modules.common.component_type import ComponentType, special_to_general_type_mapping, type_to_topic_mapping
 import dataclass_utils
-from modules.common.configurable_vehicle import IntervalConfig
+from modules.common.configurable_vehicle import GeneralVehicleConfig
 
 log = logging.getLogger(__name__)
 
@@ -513,7 +513,8 @@ class Command:
         for default in vehicle_default:
             Pub().pub(f"openWB/set/vehicle/{new_id}/{default}", vehicle_default[default])
         Pub().pub(f"openWB/set/vehicle/{new_id}/soc_module/config", {"type": None, "configuration": {}})
-        Pub().pub(f"openWB/set/vehicle/{new_id}/soc_module/interval_config", dataclass_utils.asdict(IntervalConfig()))
+        Pub().pub(f"openWB/set/vehicle/{new_id}/soc_module/general_config",
+                  dataclass_utils.asdict(GeneralVehicleConfig()))
         self.max_id_vehicle = self.max_id_vehicle + 1
         Pub().pub("openWB/set/command/max_id/vehicle", self.max_id_vehicle)
         # Default-Mäßig werden die Profile 0 zugewiesen, wenn diese noch nicht existieren -> anlegen

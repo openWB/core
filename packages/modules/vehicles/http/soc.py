@@ -5,7 +5,7 @@ from helpermodules.cli import run_using_positional_cli_args
 from modules.common import req
 from modules.common import store
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.abstract_soc import SocUpdateData
+from modules.common.abstract_vehicle import VehicleUpdateData
 from modules.common.component_state import CarState
 from modules.common.configurable_vehicle import ConfigurableVehicle
 from modules.vehicles.http.config import HttpSocSetup, HttpSocConfiguration
@@ -33,7 +33,7 @@ def fetch_soc(config: HttpSocSetup) -> CarState:
 
 
 def create_vehicle(vehicle_config: HttpSocSetup, vehicle: int):
-    def updater(soc_update_data: SocUpdateData) -> CarState:
+    def updater(vehicle_update_data: VehicleUpdateData) -> CarState:
         return fetch_soc(vehicle_config)
     return ConfigurableVehicle(vehicle_config=vehicle_config, component_updater=updater, vehicle=vehicle)
 
