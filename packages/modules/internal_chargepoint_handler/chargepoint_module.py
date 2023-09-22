@@ -7,7 +7,7 @@ from modules.common.abstract_chargepoint import AbstractChargepoint
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.component_state import ChargepointState
 from modules.common.fault_state import ComponentInfo, FaultState
-from modules.common.store import get_internal_chargepoint_value_store
+from modules.common.store import get_internal_chargepoint_value_store, get_chargepoint_value_store
 from modules.internal_chargepoint_handler.clients import ClientHandler
 
 log = logging.getLogger(__name__)
@@ -33,7 +33,8 @@ class ChargepointModule(AbstractChargepoint):
             "internal_chargepoint",
             parent_id=parent_cp,
             parent_hostname=parent_hostname)
-        self.store = get_internal_chargepoint_value_store(local_charge_point_num)
+        self.store_internal = get_internal_chargepoint_value_store(local_charge_point_num)
+        self.store = get_chargepoint_value_store(hierarchy_id)
         self.old_plug_state = False
         self.old_phases_in_use = 0
         self.__client = client_handler
@@ -114,6 +115,8 @@ class ChargepointModule(AbstractChargepoint):
 
         self.store.set(chargepoint_state)
         self.store.update()
+        self.store_internal.set(chargepoint_state)
+        self.store_internal.update()
         return chargepoint_state, self.set_current_evse
 
     def perform_phase_switch(self, phases_to_use: int, duration: int) -> None:

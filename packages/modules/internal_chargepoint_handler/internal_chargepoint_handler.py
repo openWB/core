@@ -64,20 +64,20 @@ class UpdateValues:
                 payload = [rounding(v) for v in value]
             else:
                 payload = rounding(value)
-            pub_single("openWB/set/chargepoint/" + self.parent_cp+"/get/"+topic,
-                       payload=payload, hostname=self.parent_ip)
-            pub_single("openWB/set/chargepoint/" + self.hierarchy_id+"/get/"+topic,
-                       payload=payload)
+            pub_single(f"openWB/set/chargepoint/{self.parent_cp}/get/{topic}", payload=payload, hostname=self.parent_ip)
+            pub_single(f"openWB/set/chargepoint/{self.hierarchy_id}/get/state_str",
+                       payload="Statusmeldungen bitte auf der Primary-openWB einsehen.")
 
 
 class UpdateState:
-    def __init__(self, cp_module: chargepoint_module.ChargepointModule) -> None:
+    def __init__(self, cp_module: chargepoint_module.ChargepointModule, hierarchy_id: int) -> None:
         self.old_phases_to_use = 0
         self.old_set_current = 0
         self.phase_switch_thread = None  # type: Optional[threading.Thread]
         self.cp_interruption_thread = None  # type: Optional[threading.Thread]
         self.actor_cooldown_thread = None  # type: Optional[threading.Thread]
         self.cp_module = cp_module
+        self.hierarchy_id = hierarchy_id
 
     def update_state(self, data: InternalChargepointHandlerData, heartbeat_expired: bool) -> None:
         if heartbeat_expired:
@@ -97,10 +97,13 @@ class UpdateState:
                           " noch aktiv. Es muss erst gewartet werden, bis die CP-Unterbrechung abgeschlossen ist.")
                 return
         self.cp_module.set_current(set_current)
+        pub_single(f"openWB/set/chargepoint/{self.hierarchy_id}/set/current", payload=set_current)
         if data.trigger_phase_switch:
             log.debug("Switch Phases from "+str(self.old_phases_to_use) + " to " + str(data.phases_to_use))
             self.__thread_phase_switch(data.phases_to_use)
             pub.pub_single("openWB/set/internal_chargepoint/0/data/trigger_phase_switch", False)
+            pub_single(f"openWB/set/chargepoint/{self.hierarchy_id}/set/current", payload=data.phases_to_use)
+
 
         if data.cp_interruption_duration > 0:
             self.__thread_cp_interruption(data.cp_interruption_duration)
@@ -214,7 +217,7 @@ class HandlerChargepoint:
                 local_charge_point_num, client_handler, global_data.parent_ip, parent_cp, hierarchy_id)
         with SingleComponentUpdateContext(self.module.component_info):
             self.update_values = UpdateValues(local_charge_point_num, global_data.parent_ip, parent_cp, hierarchy_id)
-            self.update_state = UpdateState(self.module)
+            self.update_state = UpdateState(self.module, hierarchy_id)
             self.old_plug_state = False
 
     def update(self, global_data: GlobalHandlerData, data: InternalChargepointHandlerData, rfid_data: RfidData) -> None:
@@ -231,7 +234,7 @@ class HandlerChargepoint:
             state = self.module.get_values(phase_switch_cp_active, rfid_data.last_tag)[0]
             log.debug("Published plug state "+str(state.plug_state))
             heartbeat_expired = self._check_heartbeat_expired(global_data.heartbeat)
-            if self.update_values is not None:
+            if global_data.parent_ip is not None:
                 self.update_values.update_values(state, heartbeat_expired)
             self.update_state.update_state(data, heartbeat_expired)
 
