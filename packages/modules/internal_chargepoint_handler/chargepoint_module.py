@@ -30,7 +30,7 @@ class ChargepointModule(AbstractChargepoint):
         self.component_info = ComponentInfo(
             hierarchy_id,
             "Ladepunkt "+str(local_charge_point_num),
-            "internal_chargepoint",
+            "chargepoint",
             parent_id=parent_cp,
             parent_hostname=parent_hostname)
         self.store_internal = get_internal_chargepoint_value_store(local_charge_point_num)
@@ -53,6 +53,11 @@ class ChargepointModule(AbstractChargepoint):
                 self.__client.evse_client.set_current(formatted_current)
 
     def get_values(self, phase_switch_cp_active: bool, last_tag: str) -> Tuple[ChargepointState, float]:
+        def store_state(chargepoint_state: ChargepointState) -> None:
+            self.store.set(chargepoint_state)
+            self.store.update()
+            self.store_internal.set(chargepoint_state)
+            self.store_internal.update()
         try:
             powers, power = self.__client.meter_client.get_power()
             if power < self.PLUG_STANDBY_POWER_THRESHOLD:
@@ -99,8 +104,9 @@ class ChargepointModule(AbstractChargepoint):
         except Exception as e:
             self.__client.read_error += 1
             if self.__client.read_error > 5:
-                log.exception(
-                    "Anhaltender Fehler beim Auslesen der EVSE. Lade- und Stecker-Status werden zurückgesetzt.")
+                msg = ("Anhaltender Fehler beim Auslesen von EVSE und/oder Zähler. " +
+                       "Lade- und Stecker-Status werden zurückgesetzt.")
+                log.exception(msg)
                 plug_state = False
                 charge_state = False
                 chargepoint_state = ChargepointState(
@@ -108,15 +114,13 @@ class ChargepointModule(AbstractChargepoint):
                     charge_state=charge_state,
                     phases_in_use=0
                 )
-                FaultState.error(__name__ + " " + str(type(e)) + " " + str(e)).store_error(self.component_info)
+                store_state(chargepoint_state)
+                raise FaultState.error(msg)
             else:
                 self.__client.check_hardware()
                 raise FaultState.error(__name__ + " " + str(type(e)) + " " + str(e)) from e
 
-        self.store.set(chargepoint_state)
-        self.store.update()
-        self.store_internal.set(chargepoint_state)
-        self.store_internal.update()
+        store_state(chargepoint_state)
         return chargepoint_state, self.set_current_evse
 
     def perform_phase_switch(self, phases_to_use: int, duration: int) -> None:

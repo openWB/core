@@ -104,7 +104,6 @@ class UpdateState:
             pub.pub_single("openWB/set/internal_chargepoint/0/data/trigger_phase_switch", False)
             pub_single(f"openWB/set/chargepoint/{self.hierarchy_id}/set/current", payload=data.phases_to_use)
 
-
         if data.cp_interruption_duration > 0:
             self.__thread_cp_interruption(data.cp_interruption_duration)
 
@@ -139,8 +138,9 @@ class InternalChargepointHandler:
         self.event_start = event_start
         self.event_stop = event_stop
         self.heartbeat = False
-        with SingleComponentUpdateContext(ComponentInfo(hierarchy_id_cp0, "Interner Ladepunkt 0", "chargepoint", parent_id=parent_cp0,
-                                                        parent_hostname=global_data.parent_ip)):
+        with SingleComponentUpdateContext(
+            ComponentInfo(hierarchy_id_cp0, "Interner Ladepunkt 0", "chargepoint", parent_id=parent_cp0,
+                          parent_hostname=global_data.parent_ip)):
             # Allgemeine Fehlermeldungen an LP 1:
             self.cp0_client_handler = client_factory(0)
             self.cp0 = HandlerChargepoint(self.cp0_client_handler, 0, mode, global_data, parent_cp0, hierarchy_id_cp0)
