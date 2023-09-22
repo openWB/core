@@ -28,11 +28,12 @@ except ImportError:
 
 
 class UpdateValues:
-    def __init__(self, local_charge_point_num: int, parent_ip: str, parent_cp: str) -> None:
+    def __init__(self, local_charge_point_num: int, parent_ip: str, parent_cp: str, hierarchy_id: int) -> None:
         self.local_charge_point_num_str = str(local_charge_point_num)
         self.old_chargepoint_state = None
         self.parent_ip = parent_ip
         self.parent_cp = parent_cp
+        self.hierarchy_id = hierarchy_id
 
     def update_values(self, chargepoint_state: ChargepointState, heartbeat_expired: bool) -> None:
         if self.old_chargepoint_state:
@@ -56,16 +57,17 @@ class UpdateValues:
         if topic == "rfid" and value == "0":
             value = None
         if isinstance(value, (str, bool, type(None))):
-            pub_single("openWB/set/chargepoint/" + self.parent_cp +
-                       "/get/"+topic, payload=value, hostname=self.parent_ip)
+            payload = value
         else:
             # qos 2 reicht nicht, da die Daten zwar auf dem Broker ankommen, aber nicht verarbeitet werden.
             if isinstance(value, list):
-                pub_single("openWB/set/chargepoint/" + self.parent_cp+"/get/"+topic,
-                           payload=[rounding(v) for v in value], hostname=self.parent_ip)
+                payload = [rounding(v) for v in value]
             else:
-                pub_single("openWB/set/chargepoint/" + self.parent_cp+"/get/"+topic,
-                           payload=rounding(value), hostname=self.parent_ip)
+                payload = rounding(value)
+            pub_single("openWB/set/chargepoint/" + self.parent_cp+"/get/"+topic,
+                       payload=payload, hostname=self.parent_ip)
+            pub_single("openWB/set/chargepoint/" + self.hierarchy_id+"/get/"+topic,
+                       payload=payload)
 
 
 class UpdateState:
@@ -124,23 +126,26 @@ class InternalChargepointHandler:
     def __init__(self,
                  mode: InternalChargepointMode,
                  global_data: GlobalHandlerData,
-                 parent_cp0: int,
-                 parent_cp1: Optional[int],
+                 parent_cp0: str,
+                 hierarchy_id_cp0: int,
+                 parent_cp1: Optional[str],
+                 hierarchy_id_cp1: Optional[int],
                  event_start: threading.Event,
                  event_stop: threading.Event) -> None:
         log.debug(f"Init internal chargepoint as {mode}")
         self.event_start = event_start
         self.event_stop = event_stop
         self.heartbeat = False
-        with SingleComponentUpdateContext(ComponentInfo(parent_cp0, "Interner Ladepunkt 0", "chargepoint",
+        with SingleComponentUpdateContext(ComponentInfo(hierarchy_id_cp0, "Interner Ladepunkt 0", "chargepoint", parent_id=parent_cp0,
                                                         parent_hostname=global_data.parent_ip)):
             # Allgemeine Fehlermeldungen an LP 1:
             self.cp0_client_handler = client_factory(0)
-            self.cp0 = HandlerChargepoint(self.cp0_client_handler, 0, mode, global_data, parent_cp0)
+            self.cp0 = HandlerChargepoint(self.cp0_client_handler, 0, mode, global_data, parent_cp0, hierarchy_id_cp0)
             if mode == InternalChargepointMode.DUO.value:
                 log.debug("Zweiter Ladepunkt für Duo konfiguriert.")
                 self.cp1_client_handler = client_factory(1, self.cp0_client_handler)
-                self.cp1 = HandlerChargepoint(self.cp1_client_handler, 1, mode, global_data, parent_cp1)
+                self.cp1 = HandlerChargepoint(self.cp1_client_handler, 1, mode,
+                                              global_data, parent_cp1, hierarchy_id_cp1)
             else:
                 self.cp1 = None
                 self.cp1_client_handler = None
@@ -194,19 +199,21 @@ class HandlerChargepoint:
                  local_charge_point_num: int,
                  mode: InternalChargepointMode,
                  global_data: GlobalHandlerData,
-                 parent_cp: int) -> None:
+                 parent_cp: str,
+                 hierarchy_id: int) -> None:
         self.local_charge_point_num = local_charge_point_num
         if local_charge_point_num == 0:
             if mode == InternalChargepointMode.SOCKET.value:
-                self.module = Socket(local_charge_point_num, client_handler, global_data.parent_ip)
+                self.module = Socket(local_charge_point_num, client_handler,
+                                     global_data.parent_ip, parent_cp, hierarchy_id)
             else:
                 self.module = chargepoint_module.ChargepointModule(
-                    local_charge_point_num, client_handler, global_data.parent_ip)
+                    local_charge_point_num, client_handler, global_data.parent_ip, parent_cp, hierarchy_id)
         else:
             self.module = chargepoint_module.ChargepointModule(
-                local_charge_point_num, client_handler, global_data.parent_ip)
+                local_charge_point_num, client_handler, global_data.parent_ip, parent_cp, hierarchy_id)
         with SingleComponentUpdateContext(self.module.component_info):
-            self.update_values = UpdateValues(local_charge_point_num, global_data.parent_ip, parent_cp)
+            self.update_values = UpdateValues(local_charge_point_num, global_data.parent_ip, parent_cp, hierarchy_id)
             self.update_state = UpdateState(self.module)
             self.old_plug_state = False
 
@@ -251,16 +258,24 @@ class GeneralInternalChargepointHandler:
                 # wait a moment to subscribe all data
                 time.sleep(2)
                 data = copy.deepcopy(SubData.internal_chargepoint_data)
+                hierarchy_id_cp0 = None
+                hierarchy_id_cp1 = None
                 for cp in SubData.cp_data.values():
                     if cp.chargepoint.chargepoint_module.config.type == "internal_openwb":
                         mode = cp.chargepoint.chargepoint_module.config.configuration.mode
+                        if cp.chargepoint.chargepoint_module.config.id == 0:
+                            hierarchy_id_cp0 = cp.chargepoint.num
+                        else:
+                            hierarchy_id_cp1 = cp.chargepoint.num
 
                 try:
                     self.internal_chargepoint_handler = InternalChargepointHandler(
                         mode,
                         data["global_data"],
                         data["cp0"].parent_cp,
+                        hierarchy_id_cp0,
                         data["cp1"].parent_cp,
+                        hierarchy_id_cp1,
                         self.event_start,
                         self.event_stop)
                     self.internal_chargepoint_handler.loop()
