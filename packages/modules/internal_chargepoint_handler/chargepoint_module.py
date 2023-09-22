@@ -25,7 +25,7 @@ class ChargepointModule(AbstractChargepoint):
         self.local_charge_point_num = local_charge_point_num
         self.component_info = ComponentInfo(
             local_charge_point_num,
-            "Ladepunkt "+str(local_charge_point_num), "internal_chargepoint", parent_hostname)
+            "Ladepunkt "+str(local_charge_point_num), "internal_chargepoint", parent_hostname=parent_hostname)
         self.store = get_internal_chargepoint_value_store(local_charge_point_num)
         self.old_plug_state = False
         self.old_phases_in_use = 0

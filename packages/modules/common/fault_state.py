@@ -76,7 +76,7 @@ class FaultState(Exception):
                 pub.Pub().pub("openWB/set/" + topic + "/" + str(component_info.id) + "/get/fault_str", self.fault_str)
                 pub.Pub().pub(
                     "openWB/set/" + topic + "/" + str(component_info.id) + "/get/fault_state", self.fault_state.value)
-                if component_info.parent_hostname:
+                if component_info.parent_hostname and component_info.parent_hostname != component_info.hostname:
                     pub.pub_single("openWB/set/" + topic + "/" + str(component_info.id) +
                                    "/get/fault_str", self.fault_str, hostname=component_info.parent_hostname)
                     pub.pub_single(
