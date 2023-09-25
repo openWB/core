@@ -1024,7 +1024,7 @@ class SetData:
             elif "data/parent_cp" in msg.topic:
                 for cp in subdata.SubData.cp_data.values():
                     if cp.chargepoint.data.config.type == "internal_openwb":
-                        if get_index(msg.topic) == cp.chargepoint.data.config.configuration.duo_num:
+                        if int(get_index(msg.topic)) == cp.chargepoint.data.config.configuration["duo_num"]:
                             self._validate_value(msg, str)
             elif "data/set_current" in msg.topic:
                 self._validate_value(msg, float, [(0, 0), (6, 32)])
