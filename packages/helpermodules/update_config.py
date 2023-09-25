@@ -13,6 +13,7 @@ import dataclass_utils
 from control.chargepoint.chargepoint_template import get_chargepoint_template_default
 from helpermodules import timecheck
 from helpermodules.broker import InternalBrokerClient
+from helpermodules.hardware_configuration import get_hardware_configuration_setting, update_hardware_configuration
 from helpermodules.measurement_logging.process_log import get_totals
 from helpermodules.measurement_logging.write_log import get_names
 from helpermodules.pub import Pub
@@ -26,7 +27,7 @@ log = logging.getLogger(__name__)
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 20
+    DATASTORE_VERSION = 21
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -856,3 +857,9 @@ class UpdateConfig:
                 else:
                     Pub().pub(topic, None)
         Pub().pub("openWB/system/datastore_version", 20)
+
+    def upgrade_datastore_20(self) -> None:
+        max_c_socket = get_hardware_configuration_setting("max_c_socket")
+        if isinstance(max_c_socket, str):
+            update_hardware_configuration({"max_c_socket": int(max_c_socket)})
+        Pub().pub("openWB/system/datastore_version", 21)
