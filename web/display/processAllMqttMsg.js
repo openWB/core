@@ -56,11 +56,12 @@ function setIframeSource() {
 			destination = `${location.protocol}//${host}/openWB/web/display/?${query.toString()}`;
 			if (destination != iframe.src) {
 				addLog(`all done, loading theme from primary`);
-				iframe.src = destination;
+				// iframe.src = destination;
 			}
 			setTimeout(() => {
-				startup.classList.add("hide");
-				iframe.classList.remove("hide");
+				// startup.classList.add("hide");
+				// iframe.classList.remove("hide");
+				location.href = destination;
 			}, 2000);
 		} else {
 			host = location.host;
