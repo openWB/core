@@ -1022,7 +1022,10 @@ class SetData:
             if "data/cp_interruption_duration" in msg.topic:
                 self._validate_value(msg, int, [(0, float("inf"))])
             elif "data/parent_cp" in msg.topic:
-                self._validate_value(msg, str)
+                for cp in subdata.SubData.cp_data.values():
+                    if cp.chargepoint.data.config.type == "internal_openwb":
+                        if get_index(msg.topic) == cp.chargepoint.data.config.configuration.duo_num:
+                            self._validate_value(msg, str)
             elif "data/set_current" in msg.topic:
                 self._validate_value(msg, float, [(0, 0), (6, 32)])
             elif "data/phases_to_use" in msg.topic:
