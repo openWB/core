@@ -794,7 +794,7 @@ class ProcessBrokerBranch:
                 topic = type_to_topic_mapping(payload["type"])
                 data.data.counter_all_data.hierarchy_remove_item(payload["id"])
                 client.subscribe(f'openWB/{topic}/{payload["id"]}/#', 2)
-            elif "openWB/chargepoint/" in msg.topic and "/config" in msg.topic:
+            elif re.search("openWB/chargepoint/[0-9]+/config$", msg.topic) is not None:
                 payload = decode_payload(msg.payload)
                 if payload["type"] == "external_openwb":
                     pub_single(
