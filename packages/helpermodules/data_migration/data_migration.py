@@ -565,7 +565,7 @@ class MigrateData:
         update_hardware_configuration({"ripple_control_receiver_configured": rse})
 
     def _move_max_c_socket(self):
-        max_c_socket = self._get_openwb_conf_value("ppbuchse")
+        max_c_socket = int(self._get_openwb_conf_value("ppbuchse"))
         if max_c_socket is None:
             log.debug("Keine max_c_socket-Konfiguration gefunden. Setze auf False.")
             max_c_socket = 32
