@@ -11,10 +11,10 @@ var topicsToSubscribe = {
 	"openWB/general/extern": false,
 	"openWB/general/web_theme": false,
 }
-var isssTopicsToSubscribe = {
-	"openWB/isss/parentWB": false,
-	"openWB/isss/parentCPlp1": false,
-	"openWB/isss/parentCPlp2": false,
+var secondaryTopicsToSubscribe = {
+	"openWB/internal_chargepoint/global_data": false,
+	"openWB/internal_chargepoint/0/data/parent_cp": false,
+	"openWB/internal_chargepoint/1/data/parent_cp": false,
 };
 
 var data = {};
@@ -35,7 +35,7 @@ var options = {
 		Object.keys(topicsToSubscribe).forEach((topic) => {
 			client.subscribe(topic, { qos: 0 });
 		});
-		Object.keys(isssTopicsToSubscribe).forEach((topic) => {
+		Object.keys(secondaryTopicsToSubscribe).forEach((topic) => {
 			client.subscribe(topic, { qos: 0 });
 		});
 	},
@@ -62,13 +62,13 @@ client.onConnectionLost = function (responseObject) {
 
 // Gets called whenever you receive a message
 client.onMessageArrived = function (message) {
-	updateProgress();
-	if (message.destinationName.includes("/isss/")) {
-		isssTopicsToSubscribe[message.destinationName] = true;
+	if (message.destinationName.includes("/internal_chargepoint/")) {
+		secondaryTopicsToSubscribe[message.destinationName] = true;
 	} else {
 		topicsToSubscribe[message.destinationName] = true;
 	}
 	data[message.destinationName] = JSON.parse(message.payloadString);
+	updateProgress();
 	handleMessage(message.destinationName, message.payloadString);
 };
 
@@ -93,7 +93,7 @@ function publish(payload, topic) {
 function totalTopicCount() {
 	var counter = Object.keys(topicsToSubscribe).length;
 	if (data["openWB/general/extern"]) {
-		counter += Object.keys(isssTopicsToSubscribe).length;
+		counter += Object.keys(secondaryTopicsToSubscribe).length;
 	}
 	return counter;
 }
@@ -106,8 +106,8 @@ function missingTopics() {
 		};
 	});
 	if (data["openWB/general/extern"]) {
-		Object.keys(isssTopicsToSubscribe).forEach((topic) => {
-			if (!isssTopicsToSubscribe[topic]) {
+		Object.keys(secondaryTopicsToSubscribe).forEach((topic) => {
+			if (!secondaryTopicsToSubscribe[topic]) {
 				counter++;
 			};
 		});
