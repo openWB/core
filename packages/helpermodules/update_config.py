@@ -127,7 +127,6 @@ class UpdateConfig:
         "^openWB/general/extern_display_mode$",
         "^openWB/general/control_interval$",
         "^openWB/general/external_buttons_hw$",
-        "^openWB/general/web_theme$",
         "^openWB/general/grid_protection_configured$",
         "^openWB/general/grid_protection_active$",
         "^openWB/general/mqtt_bridge$",
@@ -144,7 +143,6 @@ class UpdateConfig:
         "^openWB/general/ripple_control_receiver/configured$",
         "^openWB/general/ripple_control_receiver/r1_active$",
         "^openWB/general/ripple_control_receiver/r2_active$",
-        "^openWB/general/web_theme$",
         "^openWB/general/chargemode_config/unbalanced_load_limit$",
         "^openWB/general/chargemode_config/unbalanced_load$",
         "^openWB/general/chargemode_config/pv_charging/feed_in_yield$",
@@ -164,6 +162,7 @@ class UpdateConfig:
         "^openWB/general/chargemode_config/scheduled_charging/phases_to_use$",
         "^openWB/general/chargemode_config/instant_charging/phases_to_use$",
         "^openWB/general/chargemode_config/time_charging/phases_to_use$",
+        "^openWB/general/web_theme$",
 
         "^openWB/graph/config/duration$",
         "^openWB/graph/alllivevaluesJson",
