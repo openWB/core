@@ -1,8 +1,0 @@
-body {
-  font-family: var(--font-family);
-  color: var(--text-color);
-  background: var(--surface-ground);
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
