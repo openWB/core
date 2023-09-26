@@ -19,10 +19,8 @@ function setIframeSource() {
 			iframe.classList.add("hide");
 			return;
 		}
-		let host = location.host;
-		var query = "";
 		const theme = data["openWB/general/web_theme"].type;
-		let destination = `${location.protocol}//${host}/openWB/web/themes/${theme}/${query}`;
+		let destination = `themes/${theme}/`;
 		if (data["openWB/general/extern"]) {
 			console.log("openWB is configured as external charge point");
 			startup.classList.remove("hide");
@@ -86,6 +84,9 @@ function handleMessage(topic, payload) {
 		document.getElementById("update").classList.remove("hide");
 	} else {
 		document.getElementById("update").classList.add("hide");
+	}
+	if (data["openWB/internal_chargepoint/global_data"]) {
+		document.getElementById("primary-link").setAttribute("href", `https://${data["openWB/internal_chargepoint/global_data"].parent_ip}/`);
 	}
 	setIframeSource();
 }  // end handleMessage
