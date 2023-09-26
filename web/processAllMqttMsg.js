@@ -6,6 +6,7 @@ function setIframeSource() {
 	if (allTopicsReceived()) {
 		const startup = document.getElementById("notReady");
 		const iframe = document.getElementById("themeTarget");
+		const logMessages = document.getElementById("log");
 		if (!data["openWB/system/boot_done"]) {
 			addLog("backend still booting");
 			startup.classList.remove("hide");
@@ -26,7 +27,10 @@ function setIframeSource() {
 			console.log("openWB is configured as external charge point");
 			startup.classList.remove("hide");
 			iframe.classList.add("hide");
+			logMessages.classList.add("hide");
 			return;
+		} else {
+			logMessages.classList.remove("hide");
 		}
 
 		var request = new XMLHttpRequest();
@@ -69,9 +73,9 @@ function addLog(message) {
 function handleMessage(topic, payload) {
 	addLog(`Topic: ${topic} Payload: ${payload}`);
 	if (data["openWB/general/extern"]) {
-		document.getElementById("isss").classList.remove("hide");
+		document.getElementById("secondary-mode").classList.remove("hide");
 	} else {
-		document.getElementById("isss").classList.add("hide");
+		document.getElementById("secondary-mode").classList.add("hide");
 	}
 	if (!data["openWB/system/boot_done"]) {
 		document.getElementById("boot").classList.remove("hide");

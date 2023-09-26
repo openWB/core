@@ -70,10 +70,10 @@ a {
 
 #progress-value {
 	border-radius: 0.25em;
-	background: #fff;
+	background: #00ff0a;
 	height: 0.5em;
 	width: 0;
-	box-shadow: 0px 0px 12px 2px white;
+	box-shadow: 0px 0px 12px 2px #00ff0a;
 }
 
 #log {
@@ -94,7 +94,6 @@ a {
 
 #info p::before {
 	display: inline-block;
-	content: '\2139';
 	border: 1px solid #fff;
 	border-radius: 0.75em;
 	width: 1.5em;
@@ -102,4 +101,18 @@ a {
 	text-align: center;
 	background: #fff;
 	color: #000;
+}
+
+#info p:not(.warning)::before {
+	content: '\2139';
+}
+
+#info p.warning::before {
+	content: '!';
+	font-weight: bolder;
+}
+
+#info p.warning {
+	background-color: #ffca284d;
+	border-color: #ffca28;
 }
