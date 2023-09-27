@@ -11,7 +11,7 @@ class SmaSunnyBoyConfiguration:
 
 class SmaSunnyBoy:
     def __init__(self,
-                 name: str = "SMA Sunny Boy",
+                 name: str = "SMA Sunny Boy/Tripower",
                  type: str = "sma_sunny_boy",
                  id: int = 0,
                  configuration: SmaSunnyBoyConfiguration = None) -> None:
@@ -28,7 +28,7 @@ class SmaSunnyBoyBatConfiguration:
 
 class SmaSunnyBoyBatSetup(ComponentSetup[SmaSunnyBoyBatConfiguration]):
     def __init__(self,
-                 name: str = "Sma Sunny Boy Speicher",
+                 name: str = "Sma Sunny Boy/Tripower Speicher",
                  type: str = "bat",
                  id: int = 0,
                  configuration: SmaSunnyBoyBatConfiguration = None) -> None:
@@ -56,7 +56,7 @@ class SmaSunnyBoyCounterConfiguration:
 
 class SmaSunnyBoyCounterSetup(ComponentSetup[SmaSunnyBoyCounterConfiguration]):
     def __init__(self,
-                 name: str = "Sma Sunny Boy Zähler",
+                 name: str = "Sma Sunny Boy/Tripower Zähler",
                  type: str = "counter",
                  id: int = 0,
                  configuration: SmaSunnyBoyCounterConfiguration = None) -> None:

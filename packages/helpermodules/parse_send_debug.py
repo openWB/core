@@ -58,7 +58,7 @@ def parse_send_debug_data():
     for cp in data.data.cp_data.values():
         try:
             parsed_data += (f"LP{cp.num}: Typ: {cp.chargepoint_module.config.type}; IP: "
-                            f"{cp.chargepoint_module.config.configuration.ip_address};, Stecker-Status: "
+                            f"{cp.chargepoint_module.config.configuration.ip_address}; Stecker-Status: "
                             f"{cp.data.get.plug_state}, Leistung: "
                             f"{cp.data.get.power/1000}kW, {cp.data.get.currents}A, {cp.data.get.voltages}V, Lademodus: "
                             f"{cp.data.set.charging_ev_data.data.control_parameter.chargemode}, Submode: "

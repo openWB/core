@@ -5,8 +5,8 @@ from helpermodules.auto_str import auto_str
 
 @auto_str
 class ShellyConfiguration:
-    def __init__(self, address: str = None, generation: Optional[int] = None):
-        self.address = address
+    def __init__(self, ip_address: Optional[str] = None, generation: Optional[int] = None):
+        self.ip_address = ip_address
         self.generation = generation
 
 

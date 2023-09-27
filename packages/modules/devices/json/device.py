@@ -56,10 +56,19 @@ def read_legacy_bat(ip_address: str, jq_power: str, jq_soc: str):
     read_legacy(ip_address, bat.component_descriptor.configuration_factory(id=None, configuration=config))
 
 
-def read_legacy_counter(ip_address: str, jq_power: str, jq_imported: str, jq_exported: str):
+def read_legacy_counter(ip_address: str, jq_power: str, jq_imported: str, jq_exported: str,
+                        jq_power_l1: str, jq_power_l2: str, jq_power_l3: str,
+                        jq_current_l1: str, jq_current_l2: str, jq_current_l3: str):
     config = JsonCounterConfiguration(jq_power=jq_power,
                                       jq_imported=None if jq_imported == "" else jq_imported,
-                                      jq_exported=None if jq_exported == "" else jq_exported)
+                                      jq_exported=None if jq_exported == "" else jq_exported,
+                                      jq_power_l1=None if jq_power_l1 == "" else jq_power_l1,
+                                      jq_power_l2=None if jq_power_l2 == "" else jq_power_l2,
+                                      jq_power_l3=None if jq_power_l3 == "" else jq_power_l3,
+                                      jq_current_l1=None if jq_current_l1 == "" else jq_current_l1,
+                                      jq_current_l2=None if jq_current_l2 == "" else jq_current_l2,
+                                      jq_current_l3=None if jq_current_l3 == "" else jq_current_l3
+                                      )
     read_legacy(
         ip_address,
         counter.component_descriptor.configuration_factory(id=None, configuration=config))
