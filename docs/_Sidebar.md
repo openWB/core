@@ -12,6 +12,7 @@
   * [Entwicklungsumgebung](https://github.com/openWB/core/wiki/Entwicklungsumgebung)
   * [Neues Gerät programmieren](https://github.com/openWB/core/wiki/Neues-Gerät-programmieren)
   * [Neues SoC-Modul programmieren](https://github.com/openWB/core/wiki/Neues-Soc-Modul-programmieren)
+  * [Einstellungs-Seite erstellen](https://github.com/openWB/core/wiki/Einstellungs-Seite-erstellen)
 * Konfiguration
   * [Cloud-Sicherung](https://github.com/openWB/core/wiki/Cloud-Sicherung)
     * [NextCloud](https://github.com/openWB/core/wiki/NextCloud-als-Sicherungs-Cloud-einrichten)
