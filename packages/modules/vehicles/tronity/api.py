@@ -22,7 +22,7 @@ def fetch_soc(config: TronityVehicleSocConfiguration, soc_update_data: SocUpdate
 
 
 def is_token_valid(access_token: str) -> bool:
-    if not access_token:
+    if not access_token or access_token == 'None':
         log.debug("No token found")
         return False
 
