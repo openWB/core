@@ -20,7 +20,10 @@ def fetch(vehicle_config: SampleVehicleSoc, vehicle_update_data: VehicleUpdateDa
 def create_vehicle(vehicle_config: SampleVehicleSoc, vehicle: int):
     def updater(vehicle_update_data: VehicleUpdateData) -> CarState:
         return fetch(vehicle_config, vehicle_update_data)
-    return ConfigurableVehicle(vehicle_config=vehicle_config, component_updater=updater, vehicle=vehicle)
+    return ConfigurableVehicle(vehicle_config=vehicle_config,
+                               component_updater=updater,
+                               vehicle=vehicle,
+                               calc_while_charging=False)
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=SampleVehicleSoc)
