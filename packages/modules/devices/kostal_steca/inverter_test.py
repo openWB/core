@@ -10,6 +10,7 @@ SAMPLE_IP = "1.1.1.1"
                          [
                              pytest.param("measurements_production.xml", -132.8, id="WR produziert"),
                              pytest.param("measurements_no_production.xml", 0, id="WR produziert nicht"),
+                             pytest.param("measurements_no_production_piko3p6mp.xml", 0, id="WR produziert nicht, Piko 3.6 MP"),
                          ])
 def test_get_values(measurements_file, expected_power, requests_mock):
     # setup
