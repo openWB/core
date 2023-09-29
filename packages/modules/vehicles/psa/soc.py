@@ -18,7 +18,10 @@ log = logging.getLogger(__name__)
 def create_vehicle(vehicle_config: PSA, vehicle: int):
     def updater(vehicle_update_data: VehicleUpdateData) -> CarState:
         return api.fetch_soc(vehicle_config.configuration, vehicle)
-    return ConfigurableVehicle(vehicle_config=vehicle_config, component_updater=updater, vehicle=vehicle)
+    return ConfigurableVehicle(vehicle_config=vehicle_config,
+                               component_updater=updater,
+                               vehicle=vehicle,
+                               calc_while_charging=True)
 
 
 def psa_update(user_id: str,
