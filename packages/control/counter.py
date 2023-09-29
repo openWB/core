@@ -193,7 +193,7 @@ class Counter:
         # eingeschaltet werden. Es darf bloß nicht für zu viele zB die Einschaltverzögerung gestartet werden.
         evu_counter = data.data.counter_all_data.get_evu_counter()
         bat_surplus = data.data.bat_all_data.power_for_bat_charging()
-        surplus = - evu_counter.data.get.power + bat_surplus
+        surplus = evu_counter.data.get.power - bat_surplus
         ranged_surplus = self._control_range(surplus)
         log.info(f"Überschuss zur PV-geführten Ladung: {ranged_surplus}W")
         return ranged_surplus
@@ -222,11 +222,11 @@ class Counter:
             available_power = surplus + control_range_center
         return available_power
 
-    SWITCH_ON_FALLEN_BELOW = "Einschaltschwelle von {}W während der Einschaltverzögerung unterschritten."
+    SWITCH_ON_FALLEN_BELOW = "Einschaltschwelle während der Einschaltverzögerung unterschritten."
     SWITCH_ON_WAITING = "Die Ladung wird gestartet, sobald nach {}s die Einschaltverzögerung abgelaufen ist."
-    SWITCH_ON_NOT_EXCEEDED = ("Die Ladung kann nicht gestartet werden, da die Einschaltschwelle {}W nicht erreicht "
+    SWITCH_ON_NOT_EXCEEDED = ("Die Ladung kann nicht gestartet werden, da die Einschaltschwelle nicht erreicht "
                               "wird.")
-    SWITCH_ON_EXPIRED = "Einschaltschwelle von {}W für die Dauer der Einschaltverzögerung überschritten."
+    SWITCH_ON_EXPIRED = "Einschaltschwelle für die Dauer der Einschaltverzögerung überschritten."
 
     def calc_switch_on_power(self, chargepoint: Chargepoint) -> Tuple[float, float]:
         surplus = self.data.set.surplus_power_left - self.data.set.reserved_surplus
@@ -251,7 +251,7 @@ class Counter:
             surplus, threshold = self.calc_switch_on_power(chargepoint)
             power_to_reserve = pv_config.switch_on_threshold*control_parameter.phases
             if control_parameter.state == ChargepointState.SWITCH_ON_DELAY:
-                # Wurde die Einschaltschwelle erreicht? Reservierte Leistung aus all_surplus rausrechnen,
+                # Wurde die Einschaltschwelle erreicht? Reservierte Leistung aus all_surplus herausrechnen,
                 # da diese Leistung ja schon reserviert wurde, als die Einschaltschwelle erreicht wurde.
                 if surplus + power_to_reserve <= threshold:
                     # Einschaltschwelle wurde unterschritten, Timer zurücksetzen
@@ -311,7 +311,7 @@ class Counter:
 
     SWITCH_OFF_STOP = "Ladevorgang nach Ablauf der Abschaltverzögerung gestoppt."
     SWITCH_OFF_WAITING = "Ladevorgang wird nach Ablauf der Abschaltverzögerung {}s gestoppt."
-    SWITCH_OFF_NO_STOP = ("Stoppen des Ladevorgangs verhindert, da in der Fahrzeug-Vorlage die Einstellung"
+    SWITCH_OFF_NO_STOP = ("Stoppen des Ladevorgangs verhindert, da in dem Fahrzeug-Profil die Einstellung"
                           " 'Ladung aktiv halten' aktiviert ist.")
     SWITCH_OFF_EXCEEDED = "Abschaltschwelle während der Verzögerung überschritten."
     SWITCH_OFF_NOT_CHARGING = ("Da das EV nicht lädt und die Abschaltschwelle erreicht wird, "
@@ -356,7 +356,7 @@ class Counter:
         return threshold, feed_in_yield
 
     def calc_switch_off(self, chargepoint: Chargepoint) -> Tuple[float, float]:
-        switch_off_power = - self.calc_surplus() - self.data.set.released_surplus
+        switch_off_power = self.calc_surplus() - self.data.set.released_surplus
         threshold, feed_in_yield = self.calc_switch_off_threshold(chargepoint)
         log.debug(f'LP{chargepoint.num} Switch-Off-Threshold prüfen: {switch_off_power}W, Schwelle: {threshold}W, '
                   f'freigegebener Überschuss {self.data.set.released_surplus}W, Einspeisegrenze {feed_in_yield}W')
@@ -383,7 +383,7 @@ class Counter:
                 log.info("Abschaltverzögerung gestoppt, da die Verzögerung für die Phasenumschaltung aktiv ist. " +
                          "Diese wird abgewartet, bevor die Abschaltverzögerung gestartet wird.")
             # Wurde die Abschaltschwelle erreicht?
-            # Eigene Leistung aus der freigegebenen Leistung rausrechnen.
+            # Eigene Leistung aus der freigegebenen Leistung herausrechnen.
             if power_in_use + chargepoint.data.set.required_power < threshold:
                 timestamp_switch_on_off = None
                 self.data.set.released_surplus -= chargepoint.data.set.required_power
@@ -397,7 +397,7 @@ class Counter:
                 if not charging_ev_data.ev_template.data.prevent_charge_stop:
                     # EV, die ohnehin nicht laden, wird direkt die Ladefreigabe entzogen.
                     # Würde man required_power vom released_evu_surplus subtrahieren, würden keine anderen EVs
-                    # abgeschaltet werden und nach der Abschaltverzögerung des nicht-ladeden EVs wäre die
+                    # abgeschaltet werden und nach der Abschaltverzögerung des nicht ladenden EVs wäre die
                     # Abschaltschwelle immer noch überschritten. Würde man die tatsächliche Leistung von
                     # released_evu_surplus subtrahieren, würde released_evu_surplus nach Ablauf der Verzögerung
                     # nicht 0 sein, wenn sich die Ladeleistung zwischendurch verändert hat.

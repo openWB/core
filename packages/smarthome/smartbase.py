@@ -5,7 +5,7 @@ from typing import Dict, Tuple, Any
 from smarthome.smartbase0 import Sbase0
 from smarthome.smartmeas import Slsdm630, Sllovato, Slsdm120, Slwe514, Slfronius
 from smarthome.smartmeas import Sljson, Slsmaem, Slshelly, Sltasmota, Slmqtt
-from smarthome.smartmeas import Slhttp, Slavm, Slmystrom
+from smarthome.smartmeas import Slhttp, Slavm, Slmystrom, Slb23
 from smarthome.smartbut import Sbshelly
 from datetime import datetime, timezone
 import logging
@@ -37,12 +37,14 @@ class Sbase(Sbase0):
         #  30 = gestartet um fertig bis zu erreichen
         # default 10
         self._first_run = 1
+        self.chargestatus = False
         self.device_nummer = 0
         self.temp0 = '300'
         self.temp1 = '300'
         self.temp2 = '300'
         self.newwatt = 0
         self.newwattk = 0
+        self.pvwatt = 0
         self.relais = 0
         self.devuberschuss = 0
         self.device_temperatur_configured = 0
@@ -456,6 +458,8 @@ class Sbase(Sbase0):
                     self._mydevicemeasure = Slsdm630()
                 elif (self._device_measuretype == 'lovato'):
                     self._mydevicemeasure = Sllovato()
+                elif (self._device_measuretype == 'b23'):
+                    self._mydevicemeasure = Slb23()
                 elif (self._device_measuretype == 'sdm120'):
                     self._mydevicemeasure = Slsdm120()
                 elif (self._device_measuretype == 'we514'):
@@ -540,18 +544,6 @@ class Sbase(Sbase0):
         if ((self.device_canswitch == 0) or
            (self.device_manual == 1)):
             return
-        file_charge = '/var/www/html/openWB/ramdisk/llkombiniert'
-        testcharge = 0.0
-        try:
-            if os.path.isfile(file_charge):
-                with open(file_charge, 'r') as f:
-                    testcharge = float(f.read())
-        except Exception:
-            pass
-        if testcharge <= 1000:
-            chargestatus = 0
-        else:
-            chargestatus = 1
         work_ausschaltschwelle = self._device_ausschaltschwelle
         work_ausschaltverzoegerung = self._device_ausschaltverzoegerung
         local_time = datetime.now(timezone.utc).astimezone()
@@ -776,8 +768,8 @@ class Sbase(Sbase0):
                 log.info("(" + str(self.device_nummer) + ") " +
                          self.device_name +
                          " Soll reduziert/abgeschaltet werden" +
-                         " bei Ladung, pruefe " + str(testcharge))
-                if chargestatus == 1:
+                         " bei Ladung, pruefe " + str(self.chargestatus))
+                if self.chargestatus:
                     log.info("(" + str(self.device_nummer) + ") " +
                              self.device_name +
                              " Ladung läuft, pruefe Mindestlaufzeit")
@@ -849,8 +841,8 @@ class Sbase(Sbase0):
                     log.info("(" + str(self.device_nummer) + ") " +
                              self.device_name +
                              " Soll nicht eingeschaltet werden bei" +
-                             " Ladung, pruefe " + str(testcharge))
-                    if chargestatus == 1:
+                             " Ladung, pruefe " + str(self.chargestatus))
+                    if self.chargestatus:
                         log.info("(" + str(self.device_nummer) + ") "
                                  + self.device_name + " Ladung läuft, " +
                                  "wird nicht eingeschaltet")

@@ -2,7 +2,7 @@ from typing import Optional
 
 
 class OpenWBProConfiguration:
-    def __init__(self, ip_address: Optional[str] = None, duo_num: int = 1):
+    def __init__(self, ip_address: Optional[str] = None, duo_num: int = 0):
         self.ip_address = ip_address
         self.duo_num = duo_num
 

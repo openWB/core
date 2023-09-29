@@ -31,6 +31,7 @@ from dataclass_utils import dataclass_from_dict
 from modules.common.simcount.simcounter_state import SimCounterState
 from modules.internal_chargepoint_handler.internal_chargepoint_handler_config import (
     GlobalHandlerData, InternalChargepointHandlerData, RfidData)
+from modules.vehicles.manual.config import ManualSoc
 
 log = logging.getLogger(__name__)
 mqtt_log = logging.getLogger("mqtt")
@@ -78,6 +79,7 @@ class SubData:
                  event_time_charging_plan: threading.Event,
                  event_start_internal_chargepoint: threading.Event,
                  event_stop_internal_chargepoint: threading.Event,
+                 event_update_config_completed: threading.Event,
                  event_soc: threading.Event,
                  event_jobs_running: threading.Event):
         self.event_ev_template = event_ev_template
@@ -93,6 +95,7 @@ class SubData:
         self.event_time_charging_plan = event_time_charging_plan
         self.event_start_internal_chargepoint = event_start_internal_chargepoint
         self.event_stop_internal_chargepoint = event_stop_internal_chargepoint
+        self.event_update_config_completed = event_update_config_completed
         self.event_soc = event_soc
         self.event_jobs_running = event_jobs_running
         self.heartbeat = False
@@ -258,7 +261,8 @@ class SubData:
                     elif re.search("/vehicle/[0-9]+/set", msg.topic) is not None:
                         self.set_json_payload_class(var["ev"+index].data.set, msg)
                     elif re.search("/vehicle/[0-9]+/soc_module/interval_config", msg.topic) is not None:
-                        self.set_json_payload_class(var["ev"+index].soc_module.interval_config, msg)
+                        if var["ev"+index].soc_module is not None:
+                            self.set_json_payload_class(var["ev"+index].soc_module.interval_config, msg)
                     elif re.search("/vehicle/[0-9]+/soc_module/config$", msg.topic) is not None:
                         config = decode_payload(msg.payload)
                         if config["type"] is None:
@@ -266,6 +270,12 @@ class SubData:
                         else:
                             mod = importlib.import_module(".vehicles."+config["type"]+".soc", "modules")
                             config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config)
+                            if var["ev"+index].soc_module:
+                                if (isinstance(config, ManualSoc) and
+                                        (isinstance(var["ev"+index].soc_module.vehicle_config, ManualSoc))):
+                                    if (config.configuration.soc_start !=
+                                            var["ev"+index].soc_module.vehicle_config.configuration.soc_start):
+                                        Pub().pub(f"openWB/vehicle/{index}/get/force_soc_update", True)
                             var["ev"+index].soc_module = mod.create_vehicle(config, index)
                             client.subscribe(f"/vehicle/{index}/soc_module/interval_config", 2)
                         self.event_soc.set()
@@ -304,7 +314,7 @@ class SubData:
                             var["ct"+index].data.chargemode.scheduled_charging.plans.pop(index_second)
                         except KeyError:
                             log.error("Es konnte kein Zielladen-Plan mit der ID " +
-                                      str(index_second)+" in der Ladevorlage "+str(index)+" gefunden werden.")
+                                      str(index_second)+" in dem Lade-Profil "+str(index)+" gefunden werden.")
                     else:
                         var["ct"+index].data.chargemode.scheduled_charging.plans[
                             index_second] = dataclass_from_dict(ev.ScheduledChargingPlan, decode_payload(msg.payload))
@@ -317,7 +327,7 @@ class SubData:
                             var["ct"+index].data.time_charging.plans.pop(index_second)
                         except KeyError:
                             log.error("Es konnte kein Zeitladen-Plan mit der ID " +
-                                      str(index_second)+" in der Ladevorlage "+str(index)+" gefunden werden.")
+                                      str(index_second)+" in dem Lade-Profil "+str(index)+" gefunden werden.")
                     else:
                         var["ct"+index].data.time_charging.plans[
                             index_second] = dataclass_from_dict(ev.TimeChargingPlan, decode_payload(msg.payload))
@@ -534,7 +544,7 @@ class SubData:
         try:
             if re.search("/general/", msg.topic) is not None:
                 if re.search("/general/ripple_control_receiver/", msg.topic) is not None:
-                    self.set_json_payload_class(var.data.ripple_control_receiver, msg)
+                    return
                 elif re.search("/general/chargemode_config/", msg.topic) is not None:
                     if re.search("/general/chargemode_config/pv_charging/", msg.topic) is not None:
                         self.set_json_payload_class(var.data.chargemode_config.pv_charging, msg)
@@ -555,6 +565,9 @@ class SubData:
                         # 5 Min Handler bis auf Heartbeat, Cleanup, ... beenden
                         self.event_jobs_running.clear()
                     self.set_json_payload_class(var.data, msg)
+                    subprocess.run([
+                        str(Path(__file__).resolve().parents[2] / "runs" / "setup_network.sh")
+                    ])
                 else:
                     self.set_json_payload_class(var.data, msg)
         except Exception:
@@ -625,6 +638,10 @@ class SubData:
                     self.set_json_payload_class(self.counter_all_data.data.config, msg)
                 elif re.search("/counter/get", msg.topic) is not None:
                     self.set_json_payload_class(self.counter_all_data.data.get, msg)
+                elif re.search("/counter/set/simulation", msg.topic) is not None:
+                    self.counter_all_data.sim_counter.data = dataclass_from_dict(
+                        SimCounterState,
+                        decode_payload(msg.payload))
                 elif re.search("/counter/set", msg.topic) is not None:
                     self.set_json_payload_class(self.counter_all_data.data.set, msg)
         except Exception:
@@ -728,6 +745,12 @@ class SubData:
                     if decode_payload(msg.payload) != "":
                         Pub().pub("openWB/system/subdata_initialized", "")
                         self.event_subdata_initialized.set()
+                elif "openWB/system/update_config_completed" == msg.topic:
+                    if decode_payload(msg.payload) != "":
+                        Pub().pub("openWB/system/update_config_completed", "")
+                        self.event_update_config_completed.set()
+                elif "openWB/system/debug_level" == msg.topic:
+                    logging.getLogger().setLevel(decode_payload(msg.payload))
                 self.set_json_payload(var["system"].data, msg)
         except Exception:
             log.exception("Fehler im subdata-Modul")

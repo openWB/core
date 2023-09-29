@@ -39,7 +39,7 @@ class InverterValueStoreBroker(ValueStore[InverterState]):
         if self.state.exported is not None:
             pub_to_broker("openWB/set/pv/" + str(self.num) + "/get/exported", self.state.exported, 3)
         else:
-            log.debug("Kein gültiger Zäherstand. Wert wird nicht aktualisiert.")
+            log.debug("Kein gültiger Zählerstand. Wert wird nicht aktualisiert.")
         if self.state.currents:
             pub_to_broker("openWB/set/pv/" + str(self.num) + "/get/currents", self.state.currents, 1)
 

@@ -172,91 +172,91 @@ if ($configuration == "" || $configuration->active != true) {
 
 
 	// Keine Daten außer Uhrzeit an den Server senden, solange die Cloud nicht implementiert ist.
-	// allow partner access
+	// always allow triggering remote support
 	fwrite($configFile, <<<EOS
 		topic openWB/system/time out 2 "" {$configuration->remote->prefix}
-		topic openWB-remote/partner both 2 "" {$configuration->remote->prefix}
+		topic openWB-remote/support both 2 "" {$configuration->remote->prefix}
+		
 		EOS
 	);
-	// if ($configuration->data_transfer->status) {
-	// 	fwrite(
-	// 		$configFile,
-	// 		<<<EOS
-	// # export general data to remote
-	// topic openWB/general/# out 2 "" {$configuration->remote->prefix}
 
-	// # export system data to remote
-	// topic openWB/system/# out 2 "" {$configuration->remote->prefix}
+	// allow partner access
+	if ($configuration->access->partner) {
+		fwrite(
+			$configFile,
+			<<<EOS
+			topic openWB-remote/partner both 2 "" {$configuration->remote->prefix}
+			
+			EOS
+		);
+	}
+	if ($configuration->data_transfer->status) {
+		fwrite(
+			$configFile,
+			<<<EOS
+			# export general data to remote
+			topic openWB/general/# out 2 "" {$configuration->remote->prefix}
 
-	// # export all counter data to remote
-	// topic openWB/counter/# out 2 "" {$configuration->remote->prefix}
+			# export system data to remote
+			topic openWB/system/# out 2 "" {$configuration->remote->prefix}
 
-	// # export all charge point data to remote
-	// topic openWB/chargepoint/# out 2 "" {$configuration->remote->prefix}
+			# export all counter data to remote
+			topic openWB/counter/# out 2 "" {$configuration->remote->prefix}
 
-	// # export all battery data to remote
-	// topic openWB/bat/# out 2 "" {$configuration->remote->prefix}
+			# export all charge point data to remote
+			topic openWB/chargepoint/# out 2 "" {$configuration->remote->prefix}
 
-	// # export all pv data to remote
-	// topic openWB/pv/# out 2 "" {$configuration->remote->prefix}
+			# export all battery data to remote
+			topic openWB/bat/# out 2 "" {$configuration->remote->prefix}
 
-	// # export all vehicle data to remote
-	// topic openWB/vehicle/# out 2 "" {$configuration->remote->prefix}
+			# export all pv data to remote
+			topic openWB/pv/# out 2 "" {$configuration->remote->prefix}
 
-	// # export all optional data to remote
-	// topic openWB/optional/# out 2 "" {$configuration->remote->prefix}
+			# export all vehicle data to remote
+			topic openWB/vehicle/# out 2 "" {$configuration->remote->prefix}
 
-	// EOS
-	// 	);
-	// }
+			# export all optional data to remote
+			topic openWB/optional/# out 2 "" {$configuration->remote->prefix}
 
-	// if ($configuration->data_transfer->graph) {
-	// 	fwrite(
-	// 		$configFile,
-	// 		<<<EOS
+			EOS
+		);
+	}
 
-	// # export graph data to remote
-	// topic openWB/graph/# out 2 "" {$configuration->remote->prefix}
+	if ($configuration->data_transfer->graph) {
+		fwrite(
+			$configFile,
+			<<<EOS
 
-	// EOS
-	// 	);
-	// }
+			# export graph data to remote
+			topic openWB/graph/# out 2 "" {$configuration->remote->prefix}
 
-	// fwrite(
-	// 	$configFile,
-	// 	<<<EOS
+			EOS
+		);
+	}
 
-	// ##################################################################################################
-	// ## Below choose what to subscribe on  the remote MQTT server in order to receive setting data   ##
-	// ## You may comment everything in order to not allow any MQTT remote configuration of the openWB ##
-	// ##################################################################################################
+	fwrite(
+		$configFile,
+		<<<EOS
 
-	// # always allow triggering remote support
-	// topic openWB-remote/support both 2 "" {$configuration->remote->prefix}
+	##################################################################################################
+	## Below choose what to subscribe on  the remote MQTT server in order to receive setting data   ##
+	## You may comment everything in order to not allow any MQTT remote configuration of the openWB ##
+	##################################################################################################
 
-	// EOS
-	// );
+	EOS
+	);
 
-	// if ($configuration->access->partner) {
-	// 	fwrite(
-	// 		$configFile,
-	// 		<<<EOS
+	if ($configuration->data_transfer->configuration) {
+		fwrite(
+			$configFile,
+			<<<EOS
 
-	// EOS
-	// 	);
-	// }
+			# allow configuration
+			topic openWB/set/# both 2 "" {$configuration->remote->prefix}
 
-	// if ($configuration->data_transfer->configuration) {
-	// 	fwrite(
-	// 		$configFile,
-	// 		<<<EOS
-
-	// # allow configuration
-	// topic openWB/set/# both 2 "" {$configuration->remote->prefix}
-
-	// EOS
-	// 	);
-	// }
+			EOS
+		);
+	}
 
 	fwrite(
 		$configFile,

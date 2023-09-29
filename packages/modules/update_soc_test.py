@@ -24,6 +24,10 @@ def mock_data() -> None:
                      log=Mock(spec=Log),
                      charging_ev_data=Mock(spec=Ev,
                                            ev_template=Mock(spec=EvTemplate, data=Mock(spec=EvTemplateData))))))
+    data.data.ev_data["ev0"] = Mock(
+        spec=Ev,
+        ev_template=Mock(
+            spec=EvTemplate, data=Mock(spec=EvTemplateData, battery_capacity=82000)))
 
 
 @pytest.mark.parametrize(
@@ -51,8 +55,8 @@ def test_get_ev_state(ev_num: int,
     "soc_module, force_soc_update, soc_interval_expired, expected_threads_update",
     [
         pytest.param(None, False, False, [], id="soc module none"),
-        pytest.param(Mock(spec=create_vehicle, update=Mock()), False, True, ["soc_ev0"], id="interval expired"),
-        pytest.param(Mock(spec=create_vehicle, update=Mock()), True, False, ["soc_ev0"], id="force soc update"),
+        pytest.param(Mock(spec=create_vehicle, update=Mock()), False, True, ["fetch soc_ev0"], id="interval expired"),
+        pytest.param(Mock(spec=create_vehicle, update=Mock()), True, False, ["fetch soc_ev0"], id="force soc update"),
         pytest.param(Mock(spec=create_vehicle, update=Mock()), False, False, [], id="no soc request needed"),
     ]
 )

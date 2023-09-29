@@ -6,8 +6,10 @@ import random
 from typing import List, Optional
 
 from control import data
+from helpermodules import hardware_configuration
 from helpermodules.pub import Pub
 from helpermodules import timecheck
+from modules import ripple_control_receiver
 
 log = logging.getLogger(__name__)
 
@@ -57,24 +59,6 @@ def scheduled_charging_factory() -> ScheduledCharging:
 
 
 @dataclass
-class Standby:
-    phases_to_use: int = 1
-
-
-def standby_factory() -> Standby:
-    return Standby()
-
-
-@dataclass
-class Stop:
-    phases_to_use: int = 1
-
-
-def stop_factory() -> Stop:
-    return Stop()
-
-
-@dataclass
 class TimeCharging:
     phases_to_use: int = 1
 
@@ -88,8 +72,6 @@ class ChargemodeConfig:
     instant_charging: InstantCharging = field(default_factory=instant_charging_factory)
     pv_charging: PvCharging = field(default_factory=pv_charging_factory)
     scheduled_charging: ScheduledCharging = field(default_factory=scheduled_charging_factory)
-    standby: Standby = field(default_factory=standby_factory)
-    stop: Stop = field(default_factory=stop_factory)
     time_charging: TimeCharging = field(default_factory=time_charging_factory)
     unbalanced_load_limit: int = 18
     unbalanced_load: bool = False
@@ -114,7 +96,7 @@ def ripple_control_receiver_factory() -> RippleControlReceiver:
 class GeneralData:
     chargemode_config: ChargemodeConfig = field(default_factory=chargemode_config_factory)
     control_interval: int = 10
-    extern_display_mode: str = "local"
+    extern_display_mode: str = "primary"
     extern: bool = False
     external_buttons_hw: bool = False
     grid_protection_active: bool = False
@@ -134,24 +116,15 @@ class General:
     def __init__(self):
         self.data: GeneralData = GeneralData()
 
-    def get_phases_chargemode(self, chargemode: str) -> int:
+    def get_phases_chargemode(self, chargemode: str) -> Optional[int]:
         """ gibt die Anzahl Phasen zurück, mit denen im jeweiligen Lademodus geladen wird.
         Wenn der Lademodus Stop oder Standby ist, wird 0 zurückgegeben, da in diesem Fall
         die bisher genutzte Phasenzahl weiter genutzt wird, bis der Algorithmus eine Umschaltung vorgibt.
-
-        Parameter
-        ---------
-        chargemode: str
-            Lademodus
-
-        Return
-        ------
-        int: Anzahl Phasen
         """
         try:
-            if chargemode == "stop":
-                # von maximaler Phasenzahl ausgehen.
-                return 3
+            if chargemode == "stop" or chargemode == "standby":
+                # bei diesen Lademodi kann die bisherige Phasenzahl beibehalten werden.
+                return None
             else:
                 return getattr(self.data.chargemode_config, chargemode).phases_to_use
         except Exception:
@@ -208,3 +181,15 @@ class General:
                             "openWB/set/general/grid_protection_random_stop", 0)
         except Exception:
             log.exception("Fehler im General-Modul")
+
+    def check_ripple_control_receiver(self):
+        configured = hardware_configuration.get_hardware_configuration_setting(
+            "ripple_control_receiver_configured")
+        Pub().pub("openWB/set/general/ripple_control_receiver/configured", configured)
+        self.data.ripple_control_receiver.configured = configured
+        if configured:
+            r1_active, r2_active = ripple_control_receiver.read()
+            self.data.ripple_control_receiver.r1_active = r1_active
+            Pub().pub("openWB/set/general/ripple_control_receiver/r1_active", r1_active)
+            self.data.ripple_control_receiver.r2_active = r2_active
+            Pub().pub("openWB/set/general/ripple_control_receiver/r2_active", r2_active)

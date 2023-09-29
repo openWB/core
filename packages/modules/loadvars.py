@@ -29,7 +29,7 @@ class Loadvars:
                     self._update_values_of_level(level, not_finished_threads)
                 data.data.copy_module_data()
             with ModuleUpdateCompletedContext(self.event_module_update_completed, topic):
-                thread_handler(self._get_general())
+                thread_handler(self._get_general(), data.data.general_data.data.control_interval/3)
             with ModuleUpdateCompletedContext(self.event_module_update_completed, topic):
                 data.data.pv_all_data.calc_power_for_all_components()
                 data.data.bat_all_data.calc_power_for_all_components()
@@ -51,13 +51,14 @@ class Loadvars:
         for cp in data.data.cp_data.values():
             try:
                 modules_threads.append(threading.Thread(target=cp.chargepoint_module.get_values,
-                                       args=(), name=f"cp{cp.chargepoint_module.config.id}"))
+                                       args=(), name=f"set values cp{cp.chargepoint_module.config.id}"))
             except Exception:
                 log.exception(f"Fehler im loadvars-Modul bei Element {cp.num}")
-        return thread_handler(modules_threads)
+        return thread_handler(modules_threads, data.data.general_data.data.control_interval/3)
 
     def _update_values_of_level(self, elements, not_finished_threads: List[str]) -> None:
-        """Threads, um von der niedrigsten Ebene der Hierarchie Werte ggf. miteinander zu verrechnen und zu publishen"""
+        """Threads, um von der niedrigsten Ebene der Hierarchie Werte ggf. miteinander zu verrechnen und zu
+        veröffentlichen"""
         modules_threads: List[threading.Thread] = []
         for element in elements:
             try:
@@ -67,7 +68,7 @@ class Loadvars:
                         modules_threads.append(threading.Thread(
                             target=update_values,
                             args=(chargepoint.chargepoint_module,),
-                            name=f"cp{chargepoint.chargepoint_module.config.id}"))
+                            name=f"update values cp{chargepoint.chargepoint_module.config.id}"))
                 else:
                     component = get_component_obj_by_id(element["id"], not_finished_threads)
                     if component is None:
@@ -76,7 +77,7 @@ class Loadvars:
                         component,), name=f"component{component.component_config.id}"))
             except Exception:
                 log.exception(f"Fehler im loadvars-Modul bei Element {element}")
-        thread_handler(modules_threads)
+        thread_handler(modules_threads, data.data.general_data.data.control_interval/3)
 
     def thread_without_set_value(self,
                                  modules_threads: List[threading.Thread],
@@ -93,7 +94,7 @@ class Loadvars:
             # Beim ersten Durchlauf wird in jedem Fall eine Exception geworfen,
             # da die Daten erstmalig ins data-Modul kopiert werden müssen.
             if data.data.general_data.data.ripple_control_receiver.configured:
-                threads.append(threading.Thread(target=ripple_control_receiver.read, args=()))
+                threads.append(threading.Thread(target=ripple_control_receiver.read, args=(), name="get general"))
         except Exception:
             log.exception("Fehler im loadvars-Modul")
         finally:

@@ -10,7 +10,7 @@ from modules.common import b23
 log = logging.getLogger(__name__)
 
 
-BUS_SOURCES = ["/dev/ttyUSB0", "/dev/ttyUSB1", "/dev/ttyACM0", "/dev/serial0"]
+BUS_SOURCES = ("/dev/ttyUSB0", "/dev/ttyUSB1", "/dev/ttyACM0", "/dev/serial0")
 
 METERS = Union[mpm3pm.Mpm3pm, sdm.Sdm630, b23.B23]
 meter_config = NamedTuple("meter_config", [('type', METERS), ('modbus_id', int)])
@@ -39,32 +39,32 @@ class ClientHandler:
         self.check_hardware()
         self.read_error = 0
 
-    def __evse_factory(self, serial_client: ModbusSerialClient_, evse_ids: List[int]) -> evse.Evse:
+    def __evse_factory(self, client: Union[ModbusSerialClient_, ModbusTcpClient_], evse_ids: List[int]) -> evse.Evse:
         for modbus_id in evse_ids:
-            try:
-                evse_client = evse.Evse(modbus_id, serial_client)
-                with serial_client:
+            evse_client = evse.Evse(modbus_id, client)
+            with client:
+                try:
                     if evse_client.get_firmware_version() > EVSE_MIN_FIRMWARE:
-                        log.debug(serial_client)
+                        log.debug(client)
                         log.error("Modbus-ID der EVSE an LP"+str(self.local_charge_point_num)+": "+str(modbus_id))
                         return evse_client
-            except Exception:
-                pass
+                except Exception:
+                    pass
         else:
             return None
 
     @staticmethod
-    def find_meter_client(meters: List[meter_config], serial_client: ModbusSerialClient_) -> METERS:
+    def find_meter_client(meters: List[meter_config], client: Union[ModbusSerialClient_, ModbusTcpClient_]) -> METERS:
         for meter_type, modbus_id in meters:
-            try:
-                meter_client = meter_type(modbus_id, serial_client)
-                with serial_client:
+            meter_client = meter_type(modbus_id, client)
+            with client:
+                try:
                     if meter_client.get_voltages()[0] > 200:
                         log.error("Verbauter Zähler: "+str(meter_type)+" mit Modbus-ID: "+str(modbus_id))
                         return meter_client
-            except Exception:
-                log.debug(serial_client)
-                log.debug(f"Zähler {meter_type} mit Modbus-ID:{modbus_id} antwortet nicht.")
+                except Exception:
+                    log.debug(client)
+                    log.debug(f"Zähler {meter_type} mit Modbus-ID:{modbus_id} antwortet nicht.")
         else:
             return None
     OPEN_TICKET = " Bitte nehme über die Support-Funktion in den Einstellungen Kontakt mit uns auf."
@@ -90,8 +90,8 @@ class ClientHandler:
                                 self.OPEN_TICKET)
             else:
                 raise Exception(
-                    "Auslesen von Zähler UND Evse nicht möglich. Vermutlich ist der Protoss defekt oder falsch " +
-                    "konfiguiert." + self.OPEN_TICKET)
+                    "Auslesen von Zähler UND Evse nicht möglich. Vermutlich ist der Protos defekt oder falsch " +
+                    "konfiguriert." + self.OPEN_TICKET)
         if meter_check is False:
             raise Exception("Der Zähler antwortet nicht. Vermutlich ist der Zähler falsch konfiguriert oder defekt."
                             + self.OPEN_TICKET)
@@ -122,7 +122,14 @@ def client_factory(local_charge_point_num: int,
     resolved_devices = [str(file.resolve()) for file in tty_devices]
     log.debug("resolved_devices"+str(resolved_devices))
     counter = len(resolved_devices)
-    if counter == 1 and resolved_devices[0] in BUS_SOURCES:
+    if counter == 0:
+        # Wenn kein USB-Gerät gefunden wird, wird der Modbus-Anschluss der AddOn-Platine genutzt (/dev/serial0)
+        serial_client = ModbusSerialClient_("/dev/serial0")
+        if local_charge_point_num == 0:
+            evse_ids = EVSE_ID_CP0
+        else:
+            evse_ids = EVSE_ID_ONE_BUS_CP1
+    elif counter == 1 and resolved_devices[0] in BUS_SOURCES:
         if local_charge_point_num == 0:
             log.error("LP0 Device: "+str(resolved_devices[0]))
             serial_client = ModbusSerialClient_(resolved_devices[0])
