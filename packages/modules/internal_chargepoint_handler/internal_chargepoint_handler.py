@@ -266,7 +266,7 @@ class GeneralInternalChargepointHandler:
                 for cp in SubData.cp_data.values():
                     if cp.chargepoint.chargepoint_module.config.type == "internal_openwb":
                         mode = cp.chargepoint.chargepoint_module.config.configuration.mode
-                        if cp.chargepoint.chargepoint_module.config.id == 0:
+                        if cp.chargepoint.chargepoint_module.config.configuration.duo_num == 0:
                             hierarchy_id_cp0 = cp.chargepoint.num
                         else:
                             hierarchy_id_cp1 = cp.chargepoint.num
