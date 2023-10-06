@@ -753,6 +753,8 @@ class SetData:
                     "openWB/set/general/ripple_control_receiver/r1_active" in msg.topic or
                     "openWB/set/general/ripple_control_receiver/r2_active" in msg.topic):
                 self._validate_value(msg, bool)
+            elif "openWB/set/general/web_theme" in msg.topic:
+                self._validate_value(msg, "json")
             else:
                 self.__unknown_topic(msg)
         except Exception:
