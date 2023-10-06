@@ -38,11 +38,12 @@ function setIframeSource() {
 					addLog(`theme '${theme}' is valid`)
 					if (destination != iframe.src) {
 						addLog(`all done, starting theme '${theme}' with url '${destination}'`);
-						iframe.src = destination;
+						// iframe.src = destination;
 					}
 					setTimeout(() => {
-						startup.classList.add("hide");
-						iframe.classList.remove("hide");
+						// startup.classList.add("hide");
+						// iframe.classList.remove("hide");
+						location.href = destination
 					}, 250);
 				} else {
 					addLog(`theme '${theme}' not found on server!`);
