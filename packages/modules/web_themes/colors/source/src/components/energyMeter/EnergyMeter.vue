@@ -5,11 +5,11 @@
       <PgSelector widgetid="graphsettings" @shiftLeft="shiftLeft" @shiftRight="shiftRight" @shiftUp="shiftUp"
         @shiftDown="shiftDown" :show-left-button="true" :show-right-button="true"></PgSelector>
     </template>
-    <div class="collapse" id="graphsettings2">
+  <!--   <div class="collapse" id="graphsettings2">
       <PGMenu @shiftLeft="shiftLeft" @shiftRight="shiftRight" :show-left-button="globalConfig.showLeftButton"
         :show-right-button="globalConfig.showRightButton" widgetid="graphsettings2">
       </PGMenu>
-    </div>
+    </div> -->
     <figure id="energymeter" class="p-0 m-0">
       <svg viewBox="0 0 500 500">
         <g :transform="'translate(' + margin.left + ',' + margin.top + ')'">
@@ -33,7 +33,7 @@ import * as d3 from 'd3'
 import type { PowerItem } from '@/assets/js/types'
 import { sourceSummary, historicSummary } from '@/assets/js/model'
 import { formatMonth } from '@/assets/js/helpers'
-import PGMenu from '../powerGraph/PGMenu.vue'
+//import PGMenu from '../powerGraph/PGMenu.vue'
 import EMBarGraph from './EMBarGraph.vue'
 import EMYAxis from './EMYAxis.vue'
 import EMLabels from './EMLabels.vue'

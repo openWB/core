@@ -22,10 +22,10 @@
 					<a class="nav-link" href="#" id="settingsDropdown" role="button" data-bs-toggle="dropdown"
 						aria-expanded="false">Einstellungen <i class="fa-solid fa-caret-down"></i></a>
 					<div class="dropdown-menu" aria-labelledby="settingsDropdown">
-						<a class="nav-link" id="navSettings" href="../../settings/index.html" target="_parent">Wallbox</a>
+						<a class="nav-link" id="navSettings" href="../../settings/index.html" target="_parent">openWB</a>
 						<a class="nav-link" data-bs-toggle="collapse" data-bs-target="#themesettings" aria-expanded="false"
 							aria-controls="themeSettings">
-							<span>Theme <span class="fa-solid fa-caret-down"></span></span>
+							<span>Look&ampFeel<span class="fa-solid fa-caret-down"></span></span>
 						</a>
 					</div>
 				</div>

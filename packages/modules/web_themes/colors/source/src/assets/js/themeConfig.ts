@@ -20,7 +20,7 @@ export class Config {
   private _showRelativeArcs: boolean = false
   showTodayGraph: boolean = true
   private _graphPreference: string = 'today'
-  usageStackOrder: number = 0
+  private _usageStackOrder: number = 0
   private _displayMode: string = 'dark'
   private _showGrid: boolean = false
   private _smartHomeColors: string = 'normal'
@@ -54,6 +54,16 @@ export class Config {
   }
   setGraphPreference(mode: string) {
     this._graphPreference = mode
+  }
+  setUsageStackOrder(mode: number) {
+    this._usageStackOrder = mode
+  }
+  get usageStackOrder() {
+    return this._usageStackOrder
+  }
+  set usageStackOrder(mode: number) {
+    this._usageStackOrder = mode
+    savePrefs()
   }
   get displayMode() {
     return this._displayMode
@@ -310,7 +320,7 @@ function readCookie() {
       globalConfig.displayMode = prefs.displayM
     }
     if (prefs.stackO !== undefined) {
-      globalConfig.usageStackOrder = prefs.stackO
+      globalConfig.setUsageStackOrder(prefs.stackO)
     }
     if (prefs.showGr !== undefined) {
       globalConfig.showGrid = prefs.showGr
