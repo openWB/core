@@ -2,12 +2,12 @@
   <span class="d-flex align-self-top justify-content-center align-items-center">
     <div class="input-group input-group-xs">
       <!-- day -->
-      <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown">{{ targetDate.getDate() }}</button>
+      <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown">{{ day }}</button>
       <div class="dropdown-menu">
         <table class="table optiontable">
           <tr v-for="line in days" class="">
             <td v-for="myday in line" >
-              <span type="button" class="btn optionbutton" v-if="day != 0" @click="targetDate.setDate(myday)">{{ myday }}</span> </td>
+              <span type="button" class="btn optionbutton" v-if="day != 0" @click="day=myday">{{ myday }}</span> </td>
           </tr>
         </table>
       </div>
@@ -16,8 +16,8 @@
       <div class="dropdown-menu">
         <table class="table optiontable">
           <tr v-for="line in months" class="">
-            <td v-for="month in line" class="p-0 m-0"> 
-              <span type="button" class="btn btn-sm optionbutton" @click="monthClicked(month)">{{ month+1 }}</span> </td>
+            <td v-for="mymonth in line" class="p-0 m-0"> 
+              <span type="button" class="btn btn-sm optionbutton" @click="month=mymonth">{{ mymonth+1 }}</span> </td>
           </tr>
         </table>
       </div>
@@ -27,7 +27,7 @@
         <table class="table optiontable">
           <tr v-for="myyear in years" class="">
             <td >
-              <span type="button" class="btn optionbutton" @click="yearClicked(myyear)">{{ myyear }}</span> </td>
+              <span type="button" class="btn optionbutton" @click="year = myyear">{{ myyear }}</span> </td>
           </tr>
         </table>
       </div>
@@ -38,7 +38,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 const props = defineProps({
   modelValue: {
     type: Date,
@@ -57,6 +57,9 @@ const emit = defineEmits(['update:modelValue'])
 
 // const days = Array.from({ length: 31 }, (_, i) => i + 1)
 const months = [[0,1,2,3],[4,5,6,7],[8,9,10,11]]
+const day = ref(props.modelValue.getDate())
+const month = ref(props.modelValue.getMonth())
+const year = ref(props.modelValue.getFullYear())
 
 const days = computed(() => {
   const newDate = new Date(year.value,month.value, 1)
@@ -104,33 +107,8 @@ const days = computed(() => {
   return result
 })
 
-  
-const day = computed({
-  get() {
-    return targetDate.value.getDate()
-  },
-  set(value: number) {
-    targetDate.value.setDate (value)
-  },
-})
-const month = computed({
-  get() {
-    return targetDate.value.getMonth()
-  },
-  set(value: number) {
-    targetDate.value.setMonth(value)
-  },
-})
-const year = computed({
-  get() {
-    return targetDate.value.getFullYear()
-  },
-  set(value: number) {
-    targetDate.value.setFullYear(value)
-  },
-})
 function updateDate() {
-  emit('update:modelValue', targetDate)
+  emit('update:modelValue', new Date(year.value,month.value,day.value))
   editMode.value = false
 }
 function dayClicked (d: number) {

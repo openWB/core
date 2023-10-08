@@ -1,52 +1,43 @@
 <template>
-  <WbWidgetFlex :variable-width="true" v-if="!configmode" v-for="group, index in devices">
-    <template v-slot:title>
-      <span @click="toggleconfig">
-        <span class="fas fa-plug me-2" style="color: var(--color-devices)">&nbsp;</span>
-        <span class="sh-title py-4">{{ title(index) }}</span>
-      </span>
-    </template>
-    <template #buttons>
-      <span class="ms-2 pt-1" @click="toggleconfig">
-        <span class="fa-solid fa-lg ps-1 fa-ellipsis-vertical"></span>
-      </span>
-    </template>
-    <SHListItem :device="device" v-for="device in group" />
-  </WbWidgetFlex>
+    <WbWidgetFlex :variable-width="true" v-if="devices.length > 0 && !configmode" v-for="group, index in devices">
+      <template v-slot:title>
+        <span @click="toggleconfig">
+          <span class="fas fa-plug me-2" style="color: var(--color-devices)">&nbsp;</span>
+          <span class="sh-title py-4">{{ title(index) }}</span>
+        </span>
+      </template>
+      <template #buttons>
+        <span class="ms-2 pt-1" @click="toggleconfig">
+          <span class="fa-solid fa-lg ps-1 fa-ellipsis-vertical"></span>
+        </span>
+      </template>
+      <SHListItem :device="device" v-for="device in group" />
+    </WbWidgetFlex>
 
-  <WbWidgetFlex v-if="configmode">
-    <template #title> <span class="smarthome" @click="toggleconfig"> <span class="fas fa-gear">&nbsp;</span>
-        Einstellungen</span></template>
-    <template #buttons>
-      <span class="ms-2 pt-1" @click="toggleconfig">
-        <span class="fa-solid fa-lg ps-1 fa-circle-check"></span>
-      </span>
-    </template>
-    <ConfigItem title="Im Energie-Graph anzeigen:" icon="fa-chart-column" :fullwidth="true">
-<div v-for="(element, index) in activeDevices">
-    <input
-      class="form-check-input"
-      type="checkbox"
-      :value="element"
-      v-model="element.showInGraph"
-      :id="'check' + index"
-    />
-    <label
-      class="form-check-label px-2"
-      :for="'check' + index"
-      
-      >{{ element.name }}</label
-    >
-  </div>
-    </ConfigItem>
-    <div class="row p-0 m-0" @click="toggleconfig">
-      <div class="col-12 mb-3 pe-3  mt-0">
-        <button class="btn btn-sm btn-secondary float-end">
-          Schließen
-        </button>
+    <WbWidgetFlex v-if=" devices.length > 0 && configmode">
+      <template #title> <span class="smarthome" @click="toggleconfig"> <span class="fas fa-gear">&nbsp;</span>
+          Einstellungen</span></template>
+      <template #buttons>
+        <span class="ms-2 pt-1" @click="toggleconfig">
+          <span class="fa-solid fa-lg ps-1 fa-circle-check"></span>
+        </span>
+      </template>
+      <ConfigItem title="Im Energie-Graph anzeigen:" icon="fa-chart-column" :fullwidth="true">
+        <div v-for="(element, index) in activeDevices">
+          <input class="form-check-input" type="checkbox" :value="element" v-model="element.showInGraph"
+            :id="'check' + index" />
+          <label class="form-check-label px-2" :for="'check' + index">{{ element.name }}</label>
+        </div>
+      </ConfigItem>
+      <div class="row p-0 m-0" @click="toggleconfig">
+        <div class="col-12 mb-3 pe-3  mt-0">
+          <button class="btn btn-sm btn-secondary float-end">
+            Schließen
+          </button>
+        </div>
       </div>
-    </div>
-  </WbWidgetFlex>
+    </WbWidgetFlex>
+  
 </template>
 
 <script setup lang="ts">
@@ -81,7 +72,7 @@ const activeDevices = computed(() => {
   return Object.values(shDevices).filter(dev => dev.configured)
 })
 function title(index: number) {
-  return ("Geräte" + ((widescreen.value && devices.value.length > 1) ? "(" + (index + 1)  + ")" : ""))
+  return ("Geräte" + ((widescreen.value && devices.value.length > 1) ? "(" + (index + 1) + ")" : ""))
 }
 function toggleconfig() {
   configmode.value = !configmode.value
