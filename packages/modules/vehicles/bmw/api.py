@@ -34,11 +34,11 @@ def dump_json(data: dict, fout: str):
     json.dump(data, f, ensure_ascii=False, indent=4)
     f.close()
     try:
-        os.chmod(replyFile, 0o777)
+        os.chmod(replyFile, 0o666)
     except Exception as e:
         log.debug("bmw.dump_json: chmod replyFile " + replyFile + ", exception, e=" + str(e))
         log.debug("bmw.dump_json: use sudo, user: " + getpass.getuser())
-        os.system("sudo chmod 0777 " + replyFile)
+        os.system("sudo chmod 0666 " + replyFile)
 
 
 # ---------------Helper Function-------------------------------------------

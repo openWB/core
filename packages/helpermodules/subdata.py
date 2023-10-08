@@ -4,7 +4,7 @@ import importlib
 import logging
 from pathlib import Path
 import threading
-from typing import Dict
+from typing import Dict, Union
 import re
 import subprocess
 import paho.mqtt.client as mqtt
@@ -56,7 +56,7 @@ class SubData:
     bat_all_data = bat_all.BatAll()
     bat_data: Dict[str, bat.Bat] = {}
     general_data = general.General()
-    internal_chargepoint_data: Dict[str, InternalChargepointHandlerData] = {
+    internal_chargepoint_data: Dict[str, Union[InternalChargepointHandlerData, GlobalHandlerData, RfidData]] = {
         "cp0": InternalChargepointHandlerData(),
         "cp1": InternalChargepointHandlerData(),
         "global_data": GlobalHandlerData(),
@@ -719,6 +719,7 @@ class SubData:
                     log.debug("skipping mqtt bridge message on startup")
             # will be moved to separate handler!
             elif "GetRemoteSupport" in msg.topic:
+                log.warning("deprecated topic for remote support received!")
                 payload = decode_payload(msg.payload)
                 splitted = payload.split(";")
                 token = splitted[0]

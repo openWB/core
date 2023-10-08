@@ -18,7 +18,7 @@ from helpermodules.data_migration.data_migration import MigrateData
 from helpermodules.measurement_logging.process_log import get_daily_log, get_monthly_log, get_yearly_log
 from helpermodules.messaging import MessageType, pub_user_message, pub_error_global
 from helpermodules.parse_send_debug import parse_send_debug_data
-from helpermodules.pub import Pub
+from helpermodules.pub import Pub, pub_single
 from helpermodules.subdata import SubData
 from helpermodules.utils.topic_parser import decode_payload
 from control import bat, bridge, chargelog, data, ev, counter, counter_all, pv
@@ -794,6 +794,13 @@ class ProcessBrokerBranch:
                 topic = type_to_topic_mapping(payload["type"])
                 data.data.counter_all_data.hierarchy_remove_item(payload["id"])
                 client.subscribe(f'openWB/{topic}/{payload["id"]}/#', 2)
+            elif re.search("openWB/chargepoint/[0-9]+/config$", msg.topic) is not None:
+                payload = decode_payload(msg.payload)
+                if payload["type"] == "external_openwb":
+                    pub_single(
+                        f'openWB/set/internal_chargepoint/{payload["configuration"]["duo_num"]}/data/parent_cp',
+                        None,
+                        hostname=payload["configuration"]["ip_address"])
 
     def __on_message_max_id(self, client, userdata, msg):
         self.received_topics.append(msg.topic)

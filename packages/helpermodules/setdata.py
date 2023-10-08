@@ -753,6 +753,8 @@ class SetData:
                     "openWB/set/general/ripple_control_receiver/r1_active" in msg.topic or
                     "openWB/set/general/ripple_control_receiver/r2_active" in msg.topic):
                 self._validate_value(msg, bool)
+            elif "openWB/set/general/web_theme" in msg.topic:
+                self._validate_value(msg, "json")
             else:
                 self.__unknown_topic(msg)
         except Exception:
@@ -1022,7 +1024,16 @@ class SetData:
             if "data/cp_interruption_duration" in msg.topic:
                 self._validate_value(msg, int, [(0, float("inf"))])
             elif "data/parent_cp" in msg.topic:
-                self._validate_value(msg, str)
+                if decode_payload(msg.payload) is None:
+                    self._validate_value(msg, str)
+                else:
+                    for cp in subdata.SubData.cp_data.values():
+                        if cp.chargepoint.data.config.type == "internal_openwb":
+                            if int(get_index(msg.topic)) == cp.chargepoint.data.config.configuration["duo_num"]:
+                                self._validate_value(msg, str)
+                                break
+                    else:
+                        log.error("Kein interner Ladepunkt konfiguriert, dem ein parent_cp zugeordnet werden kann.")
             elif "data/set_current" in msg.topic:
                 self._validate_value(msg, float, [(0, 0), (6, 32)])
             elif "data/phases_to_use" in msg.topic:

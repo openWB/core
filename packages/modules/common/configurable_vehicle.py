@@ -1,4 +1,4 @@
-from typing import TypeVar, Generic, Callable
+from typing import Optional, TypeVar, Generic, Callable
 
 from modules.common import store
 from modules.common.abstract_soc import SocUpdateData
@@ -24,10 +24,13 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
                  vehicle_config: T_VEHICLE_CONFIG,
                  component_updater: Callable[[T_VEHICLE_CONFIG, SocUpdateData], CarState],
                  vehicle: int,
-                 interval_config: IntervalConfig = IntervalConfig()) -> None:
+                 interval_config: Optional[IntervalConfig] = None) -> None:
         self.__component_updater = component_updater
         self.vehicle_config = vehicle_config
-        self.interval_config = interval_config
+        if interval_config is None:
+            self.interval_config = IntervalConfig()
+        else:
+            self.interval_config = interval_config
         self.vehicle = vehicle
         self.store = store.get_car_value_store(self.vehicle)
         self.component_info = ComponentInfo(self.vehicle, self.vehicle_config.name, "vehicle")
