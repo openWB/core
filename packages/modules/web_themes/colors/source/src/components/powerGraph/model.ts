@@ -70,6 +70,7 @@ export const liveGraph = {
   rawDataPacks: [] as RawGraphDataItem[][],
 
   activate() {
+    graphData.data=[]
     this.unsubscribeUpdates()
     this.subscribeRefresh()
     this.initialized = false
@@ -216,6 +217,7 @@ export function initGraph() {
   switch (graphData.graphMode) {
     case 'live':
       dayGraph.deactivate()
+      monthGraph.deactivate()
       yearGraph.deactivate()
       liveGraph.activate()
       break
