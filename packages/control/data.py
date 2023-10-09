@@ -173,8 +173,9 @@ class Data:
         self._ev_charge_template_data = value
 
     @property
+    @locked(ev_data_lock)
     def ev_data(self) -> Dict[str, Ev]:
-        return self._ev_data
+        return copy.deepcopy(self._ev_data)
 
     @ev_data.setter
     @locked(ev_data_lock)

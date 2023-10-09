@@ -40,7 +40,7 @@ class UpdateSoc:
 
     def _get_threads(self) -> Tuple[List[Thread], List[Thread]]:
         threads_update, threads_store = [], []
-        ev_data = copy.deepcopy(data.data.ev_data)
+        ev_data = data.data.ev_data  # returns a deep copy!
         # Alle Autos durchgehen
         for ev in ev_data.values():
             try:
