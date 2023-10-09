@@ -175,7 +175,7 @@ class Data:
     @property
     @locked(ev_data_lock)
     def ev_data(self) -> Dict[str, Ev]:
-        return copy.deepcopy(self._ev_data)
+        return self._ev_data
 
     @ev_data.setter
     @locked(ev_data_lock)
