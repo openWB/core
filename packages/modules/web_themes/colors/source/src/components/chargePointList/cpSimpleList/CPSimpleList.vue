@@ -1,32 +1,44 @@
 <template>
-  <WBWidget>
-    <template v-slot:title> Ladepunkte </template>
-    <table class="table table-borderless px-0">
-      <thead>
-        <tr>
-          <th class="tableheader alignleft"><i class="fa-solid fa-lg fa-charging-station ps-2"></i></th>
-          <th class="tableheader alignleft"><i class="fa-solid fa-lg fa-car ps-2"></i></th>
-          <th class="tableheader alignleft"><i class="fa-solid fa-lg fa-bolt ps-2"></i></th>
-          <th class="tableheader alignleft"><i class="fa-solid fa-lg fa-car-battery ps-2"></i></th>
-          <th class="tableheader alignright"></th>
-        </tr>
-      </thead>
-      <tbody>
-        <CPSListItem
-          :chargepoint="chargepoint"
-          v-for="chargepoint in chargepointsToDisplay"
-        ></CPSListItem>
-      </tbody>
-    </table>
-    <ModalComponent v-for="chargepoint in chargepointsToDisplay"
-      :modal-id="'cpsconfig-' + chargepoint.id">
-      <template v-slot:title>Konfiguration: {{ chargepoint.name }} </template>
-      <CPChargeConfigPanel
-        :chargepoint="chargepoint"
-        v-if="chargepoint != undefined"
-      ></CPChargeConfigPanel>
-    </ModalComponent>
-  </WBWidget>
+	<WBWidget>
+		<template #title> Ladepunkte </template>
+		<table class="table table-borderless px-0">
+			<thead>
+				<tr>
+					<th class="tableheader alignleft">
+						<i class="fa-solid fa-lg fa-charging-station ps-2" />
+					</th>
+					<th class="tableheader alignleft">
+						<i class="fa-solid fa-lg fa-car ps-2" />
+					</th>
+					<th class="tableheader alignleft">
+						<i class="fa-solid fa-lg fa-bolt ps-2" />
+					</th>
+					<th class="tableheader alignleft">
+						<i class="fa-solid fa-lg fa-car-battery ps-2" />
+					</th>
+					<th class="tableheader alignright" />
+				</tr>
+			</thead>
+			<tbody>
+				<CPSListItem
+					v-for="chargepoint in chargepointsToDisplay"
+					:key="chargepoint.id"
+					:chargepoint="chargepoint"
+				/>
+			</tbody>
+		</table>
+		<ModalComponent
+			v-for="chargepoint in chargepointsToDisplay"
+			:key="chargepoint.id"
+			:modal-id="'cpsconfig-' + chargepoint.id"
+		>
+			<template #title> Konfiguration: {{ chargepoint.name }} </template>
+			<CPChargeConfigPanel
+				v-if="chargepoint != undefined"
+				:chargepoint="chargepoint"
+			/>
+		</ModalComponent>
+	</WBWidget>
 </template>
 
 <script setup lang="ts">
@@ -37,28 +49,28 @@ import CPSListItem from './CPSListItem.vue'
 import ModalComponent from '@/components/shared/ModalComponent.vue'
 import CPChargeConfigPanel from '../cpConfig/CPChargeConfigPanel.vue'
 const chargepointsToDisplay = computed(() => {
-  return Object.values(chargePoints)
+	return Object.values(chargePoints)
 })
 </script>
 
 <style scoped>
 .tableheader {
-  margin: 0;
-  padding-left: 0;
-  background-color: var(--color-bg);
-  color: var(--color-menu);
+	margin: 0;
+	padding-left: 0;
+	background-color: var(--color-bg);
+	color: var(--color-menu);
 }
 .alignleft {
-  text-align: left;
+	text-align: left;
 }
 .aligncenter {
-  text-align: center;
+	text-align: center;
 }
 .alignright {
-  text-align: right;
+	text-align: right;
 }
 .table {
-  border-spacing: 1rem;
-  background-color: var(--color-bg);
+	border-spacing: 1rem;
+	background-color: var(--color-bg);
 }
 </style>

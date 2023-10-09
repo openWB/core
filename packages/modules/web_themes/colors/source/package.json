@@ -8,7 +8,7 @@
     "preview": "vite preview --port 5050 --host",
     "typecheck": "vue-tsc --noEmit",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore",
-    "prettier-format": "prettier --config .prettierrc 'src/**/*.ts' --write"
+    "prettier-format": "prettier 'src/' --write"
   },
   "dependencies": {
     "@popperjs/core": "^2.11.8",
@@ -27,6 +27,8 @@
     "@types/bootstrap": "^5.2.6",
     "@types/d3": "^7.1.0",
     "@types/node": "^20.3.1",
+    "@typescript-eslint/eslint-plugin": "^6.7.4",
+    "@typescript-eslint/parser": "^6.7.4",
     "@vitejs/plugin-vue": "^4.4.0",
     "@vue/eslint-config-prettier": "^8.0.0",
     "@vue/eslint-config-typescript": "^12.0.0",

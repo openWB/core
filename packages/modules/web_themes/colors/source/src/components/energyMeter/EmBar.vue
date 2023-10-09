@@ -1,19 +1,34 @@
 <template>
 	<g :id="'bar-' + props.item.name" transform="scale(1,-1) translate (0,-445)">
 		<!-- Main bar -->
-		<rect class="bar" :x="props.xScale(item.name)" y="0" :width="props.xScale.bandwidth()" :height="barheight"
-			:fill="item.color">
-		
-		</rect>
+		<rect
+			class="bar"
+			:x="props.xScale(item.name)"
+			y="0"
+			:width="props.xScale.bandwidth()"
+			:height="barheight"
+			:fill="item.color"
+		/>
 		<!-- Pv fraction inner bar -->
-		<rect class="bar" :x="(props.xScale(item.name) as number) + props.xScale.bandwidth() / 6" y="0"
-			:width="props.xScale.bandwidth() * 2 / 3" :height="pvBarheight" fill="var(--color-pv)" fill-opacity="66%">
-		</rect>
+		<rect
+			class="bar"
+			:x="(props.xScale(item.name) as number) + props.xScale.bandwidth() / 6"
+			y="0"
+			:width="(props.xScale.bandwidth() * 2) / 3"
+			:height="pvBarheight"
+			fill="var(--color-pv)"
+			fill-opacity="66%"
+		/>
 		<!-- Battery fraction inner bar  -->
-		<rect class="bar" :x="(props.xScale(item.name) as number) + props.xScale.bandwidth() / 6" y="0"
-			:width="props.xScale.bandwidth() * 2 / 3" :height="batBarheight" fill="var(--color-pv)" fill-opacity="66%">
-		</rect>
-		
+		<rect
+			class="bar"
+			:x="(props.xScale(item.name) as number) + props.xScale.bandwidth() / 6"
+			y="0"
+			:width="(props.xScale.bandwidth() * 2) / 3"
+			:height="batBarheight"
+			fill="var(--color-pv)"
+			fill-opacity="66%"
+		/>
 	</g>
 </template>
 
@@ -32,17 +47,28 @@ const props = defineProps<{
 	autarchy?: number
 	autText?: string
 }>()
-const animationDuration = "0.5s"
-const barheight = computed(() => props.height - props.yScale(props.item.energy) - props.margin.top - props.margin.bottom)
+const barheight = computed(
+	() =>
+		props.height -
+		props.yScale(props.item.energy) -
+		props.margin.top -
+		props.margin.bottom,
+)
 
 const pvBarheight = computed(() => {
-	return (props.item.energyPv > 0) ?
-		(props.height - props.yScale(props.item.energyPv) - props.margin.top - props.margin.bottom)
+	return props.item.energyPv > 0
+		? props.height -
+				props.yScale(props.item.energyPv) -
+				props.margin.top -
+				props.margin.bottom
 		: 0
 })
 const batBarheight = computed(() => {
-	return (props.item.energyPv > 0) ?
-		(props.height - props.yScale(props.item.energyBat) - props.margin.top - props.margin.bottom)
+	return props.item.energyPv > 0
+		? props.height -
+				props.yScale(props.item.energyBat) -
+				props.margin.top -
+				props.margin.bottom
 		: 0
 })
 </script>

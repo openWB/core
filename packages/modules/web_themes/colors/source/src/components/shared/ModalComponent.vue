@@ -1,52 +1,48 @@
 <template>
-  <div class="modal fade" :id="modalId">
-    <div class="modal-dialog modal-lg modal-fullscreen-lg-down">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 class="modal-title">
-            <slot name="title"></slot>
-          </h3>
-          <button
-            type="button"
-            class="btn-close buttonTextSize d-flex justify-content-center pt-3 pb-0"
-            data-bs-dismiss="modal"
-          >
-            <i class="fa-solid fa-lg fa-rectangle-xmark m-0 p-0"></i>
-          </button>
-        </div>
-        <div class="modal-body" style="background-color: var(--color-bg)">
-          <slot></slot>
-          <button
-          class="btn btn-secondary float-end mt-3 ms-1"
-          data-bs-dismiss="modal"
-        >
-          Schließen
-        </button>
-          
-        </div>
-      </div>
-    </div>
-  </div>
+	<div :id="props.modalId" class="modal fade">
+		<div class="modal-dialog modal-lg modal-fullscreen-lg-down">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h3 class="modal-title">
+						<slot name="title" />
+					</h3>
+					<button
+						type="button"
+						class="btn-close buttonTextSize d-flex justify-content-center pt-3 pb-0"
+						data-bs-dismiss="modal"
+					>
+						<i class="fa-solid fa-lg fa-rectangle-xmark m-0 p-0" />
+					</button>
+				</div>
+				<div class="modal-body" style="background-color: var(--color-bg)">
+					<slot />
+					<button
+						class="btn btn-secondary float-end mt-3 ms-1"
+						data-bs-dismiss="modal"
+					>
+						Schließen
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
 </template>
 <script setup lang="ts">
 import { onMounted } from 'vue'
-import { Modal } from 'bootstrap'
+// import { Modal } from 'bootstrap'
 
 const props = defineProps<{
-  modalId: string
+	modalId: string
 }>()
 // state
-let target = document.getElementById(props.modalId)
-var mod: Modal
-if (target) {
-  mod = new Modal(target)
-}
+//let mod: Modal
+
 // lifecycle
 onMounted(() => {
-  let target = document.getElementById(props.modalId)
-  if (target) {
-    mod = new Modal(target, {})
-  }
+	/* let target = document.getElementById(props.modalId)
+	if (target) {
+		mod = new Modal(target, {})
+	} */
 })
 </script>
 
@@ -54,18 +50,18 @@ onMounted(() => {
 .modal-footer,
 .modal-header,
 .modal-body {
-  background: var(--color-bg);
+	background: var(--color-bg);
 }
 .btn-close {
-  color: var(--color-fg);
+	color: var(--color-fg);
 }
 .modal-footer {
-  text-align: right;
+	text-align: right;
 }
 .modal-header .btn-close {
-  color: var(--color-fg);
-  background: var(--color-bg);
-  border: 0px;
+	color: var(--color-fg);
+	background: var(--color-bg);
+	border: 0px;
 }
 
 /*.modal.fade .modal-dialog {
@@ -90,16 +86,16 @@ onMounted(() => {
     opacity: 1;
  
  }*/
- 
- .modal.fade .modal-dialog {
-  transition: transform 1s ease-out;
-  transform: none;
-  scale: 0.6;
+
+.modal.fade .modal-dialog {
+	transition: transform 1s ease-out;
+	transform: none;
+	scale: 0.6;
 }
 .modal.show .modal-dialog {
-  transition: transform 0.3s ease-in;
-  transform: none;
-  scale: 1.0;
+	transition: transform 0.3s ease-in;
+	transform: none;
+	scale: 1;
 }
 </style>
 >
