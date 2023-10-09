@@ -22,6 +22,7 @@ from control import counter_all
 from control import ev
 from modules.common.configurable_vehicle import IntervalConfig
 from modules.display_themes.cards.config import CardsDisplayTheme
+from modules.web_themes.standard_legacy.config import StandardLegacyWebTheme
 
 log = logging.getLogger(__name__)
 
@@ -164,6 +165,7 @@ class UpdateConfig:
         "^openWB/general/chargemode_config/scheduled_charging/phases_to_use$",
         "^openWB/general/chargemode_config/instant_charging/phases_to_use$",
         "^openWB/general/chargemode_config/time_charging/phases_to_use$",
+        "^openWB/general/web_theme$",
 
         "^openWB/graph/config/duration$",
         "^openWB/graph/alllivevaluesJson",
@@ -407,6 +409,7 @@ class UpdateConfig:
         ("openWB/general/price_kwh", 0.3),
         ("openWB/general/range_unit", "km"),
         ("openWB/general/ripple_control_receiver/configured", False),
+        ("openWB/general/web_theme", dataclass_utils.asdict(StandardLegacyWebTheme())),
         ("openWB/graph/config/duration", 120),
         ("openWB/internal_chargepoint/0/data/parent_cp", None),
         ("openWB/internal_chargepoint/1/data/parent_cp", None),
