@@ -1158,14 +1158,14 @@
 				event.stopPropagation();
 				var parentChargePoint = $(this).closest('[data-cp]');
 				var chargeTemplate = parseInt(parentChargePoint.data('charge-template'));
-				window.location.href = "settings/#/VehicleConfiguration/charge_template/" + chargeTemplate;
+				window.location.href = "../../settings/#/VehicleConfiguration/charge_template/" + chargeTemplate;
 			});
 
 			$('.container').on('click', '.time_charging-settings-link', function (event) {
 				event.stopPropagation();
 				var parentChargePoint = $(this).closest('[data-cp]');
 				var chargeTemplate = parseInt(parentChargePoint.data('charge-template'));
-				window.location.href = "settings/#/VehicleConfiguration/charge_template/" + chargeTemplate;
+				window.location.href = "../../settings/#/VehicleConfiguration/charge_template/" + chargeTemplate;
 			});
 
 			// $('.btn[value="Reset"]').click(function(event){
