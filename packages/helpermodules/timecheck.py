@@ -313,10 +313,9 @@ def get_difference_to_now(timestamp_begin: str) -> Tuple[str, int]:
         int: Differenz in Sekunden
     """
     try:
-        begin = datetime.datetime.strptime(timestamp_begin[:-3], "%m/%d/%Y, %H:%M")
-        now = datetime.datetime.today()
-        diff = (now - begin)
-        return [__convert_timedelta_to_time_string(diff), int(diff.total_seconds())]
+        diff = datetime.timedelta(
+            seconds=get_difference(timestamp_begin, datetime.datetime.today().strftime("%m/%d/%Y, %H:%M")))
+        return [convert_timedelta_to_time_string(diff), int(diff.total_seconds())]
     except Exception:
         log.exception("Fehler im System-Modul")
         return ["00:00", 0]
@@ -330,7 +329,7 @@ def get_difference(timestamp_begin: str, timestamp_end: str) -> Optional[int]:
     timestamp_begin: str %m/%d/%Y, %H:%M:%S
         Anfangszeitpunkt
     timestamp_end: str %m/%d/%Y, %H:%M:%S
-        Anfangszeitpunkt
+        Endzeitpunkt
 
     Return
     ------
@@ -361,7 +360,7 @@ def duration_sum(first: str, second: str) -> str:
     """
     try:
         sum = __get_timedelta_obj(first) + __get_timedelta_obj(second)
-        return __convert_timedelta_to_time_string(sum)
+        return convert_timedelta_to_time_string(sum)
     except Exception:
         log.exception("Fehler im System-Modul")
         return "00:00"
@@ -388,7 +387,7 @@ def __get_timedelta_obj(time: str) -> datetime.timedelta:
     return delta
 
 
-def __convert_timedelta_to_time_string(timedelta_obj: datetime.timedelta) -> str:
+def convert_timedelta_to_time_string(timedelta_obj: datetime.timedelta) -> str:
     diff_hours = int(timedelta_obj.total_seconds() / 3600)
     diff_minutes = int((timedelta_obj.total_seconds() % 3600) / 60)
     return f"{diff_hours}:{diff_minutes:02d}"
