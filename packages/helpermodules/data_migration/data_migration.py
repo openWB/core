@@ -522,13 +522,17 @@ class MigrateData:
                     log.exception(f"Fehler beim Konvertieren des Monats-Logs vom {file}, Reihe {row}")
         return entries
 
-    def _get_openwb_conf_value(self, key: str) -> Optional[str]:
-        value = None
+    def _get_openwb_conf_value(self, key: str, default: Optional[str] = None) -> Optional[str]:
+        value = default
+        found = False
         for line in self.openwb_conf:
             if key in line:
                 raw_value = line.replace(f"{key}=", "")
                 value = raw_value.rstrip("\n")
+                found = True
                 break
+        if not found:
+            log.debug(f"Keine Konfiguration für '{key}' gefunden. Verwende Standardwert '{default}'.")
         return value
 
     def _migrate_settings_from_openwb_conf(self):
@@ -542,11 +546,9 @@ class MigrateData:
 
     def _move_serial_number(self) -> None:
         serial_number = self._get_openwb_conf_value("snnumber")
-        if serial_number:
+        if serial_number is not None:
             with open("/home/openwb/snnumber", "w") as file:
                 file.write(f"snnumber={serial_number}")
-        else:
-            log.debug("Keine Seriennummer gefunden.")
 
     def _move_cloud_data(self) -> None:
         cloud_user = self._get_openwb_conf_value("clouduser")
@@ -554,21 +556,13 @@ class MigrateData:
         if cloud_user is not None and cloud_pw is not None:
             Pub().pub("openWB/set/command/data_migration/todo",
                       {"command": "connectCloud", "data": {"username": cloud_user, "password": cloud_pw, "partner": 0}})
-        else:
-            log.debug("Keine Cloud-Zugangsdaten gefunden.")
 
     def _move_rse(self) -> None:
-        rse = bool(self._get_openwb_conf_value("rseenabled"))
-        if rse is None:
-            log.debug("Keine Rundsteuerempfänger-Konfiguration gefunden. Setze auf False.")
-            rse = False
+        rse = bool(self._get_openwb_conf_value("rseenabled", "0"))
         update_hardware_configuration({"ripple_control_receiver_configured": rse})
 
     def _move_max_c_socket(self):
-        max_c_socket = int(self._get_openwb_conf_value("ppbuchse"))
-        if max_c_socket is None:
-            log.debug("Keine max_c_socket-Konfiguration gefunden. Setze auf False.")
-            max_c_socket = 32
+        max_c_socket = int(self._get_openwb_conf_value("ppbuchse", "32"))
         update_hardware_configuration({"max_c_socket": max_c_socket})
 
     def _move_pddate(self) -> None:
@@ -576,8 +570,6 @@ class MigrateData:
         if pddate is not None:
             with open("/home/openwb/pddate", "w") as file:
                 file.write(f"pddate={pddate}")
-        else:
-            log.debug("Kein Produktionsdatum gefunden.")
 
     NOT_CONFIGURED = " wurde in openWB software2 nicht konfiguriert."
 
