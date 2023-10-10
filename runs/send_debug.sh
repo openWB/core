@@ -30,7 +30,7 @@ touch "$debugFile"
 	uptime
 	free
 	echo "############################ uuids ##############"
-	cat "${OPENWBBASEDIR}/data/log/uuid.log"
+	cat "${OPENWBBASEDIR}/data/log/uuid"
 	echo "############################ retained log ##############"
 	merge_log_files "main" 500
 	echo "############################ info log ##############"
