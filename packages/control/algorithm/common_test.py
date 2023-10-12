@@ -18,8 +18,8 @@ def cp() -> None:
 
 
 @pytest.mark.parametrize("set_current, expected_current",
-                         [pytest.param(6, 0),
-                          pytest.param(0, 0)])
+                         [pytest.param(6, None),
+                          pytest.param(0, None)])
 def test_reset_current(set_current: int, expected_current: int):
     # setup
     data.data.cp_data["cp0"].data.set.current = set_current
@@ -87,7 +87,7 @@ def test_get_min_current(required_currents: List[float], expected_mins_counts: T
 @pytest.mark.parametrize(
     "set_current, diff, expected_current",
     [
-        pytest.param(0, 2, 8, id="min current is set, no current has been set on this iteration"),
+        pytest.param(None, 2, 8, id="min current is set, no current has been set on this iteration"),
         pytest.param(6, 2, 6, id="min current is set, current has been set on this iteration"),
         pytest.param(7, 2, 7, id="new current is higher, current has been set on this iteration"),
         pytest.param(9, 2, 8, id="new current is lower, current has been set on this iteration"),
