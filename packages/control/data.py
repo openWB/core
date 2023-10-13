@@ -49,15 +49,11 @@ def locked(lock: threading.Lock):
     def decorate(method):
         @wraps(method)
         def inner(*args, **kwargs):
-            start = time()
             # context handler may be used if no logging of lock duration required: "with lock:..."
             try:
                 lock.acquire()
-                log.debug(f"{__name__}: lock acquired for {method.__name__}")
                 return method(*args, **kwargs)
             finally:
-                lock_duration = (time() - start)*1000
-                log.debug(f"{__name__}: lock released for {method.__name__} after {lock_duration:.3f}ms")
                 lock.release()
         return inner
     return decorate
