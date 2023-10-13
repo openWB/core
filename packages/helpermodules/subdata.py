@@ -28,7 +28,7 @@ from helpermodules.pub import Pub
 from helpermodules import system
 from control import pv
 from dataclass_utils import dataclass_from_dict
-from modules.common.abstract_vehicle import GeneralVehicleConfig
+from modules.common.abstract_vehicle import CalculatedSocState, GeneralVehicleConfig
 from modules.common.simcount.simcounter_state import SimCounterState
 from modules.internal_chargepoint_handler.internal_chargepoint_handler_config import (
     GlobalHandlerData, InternalChargepointHandlerData, RfidData)
@@ -262,14 +262,17 @@ class SubData:
                     elif re.search("/vehicle/[0-9]+/set", msg.topic) is not None:
                         self.set_json_payload_class(var["ev"+index].data.set, msg)
                     elif re.search("/vehicle/[0-9]+/soc_module/general_config", msg.topic) is not None:
-                        general_config = dataclass_from_dict(GeneralVehicleConfig, decode_payload(msg.payload))
+                        var["ev"+index].soc_module.general_config = dataclass_from_dict(
+                            GeneralVehicleConfig, decode_payload(msg.payload))
+                    elif re.search("/vehicle/[0-9]+/soc_module/calculated_soc_state", msg.topic) is not None:
+                        calculated_soc_state = dataclass_from_dict(CalculatedSocState, decode_payload(msg.payload))
                         if var["ev"+index].soc_module is not None:
                             if isinstance(var["ev"+index].soc_module.vehicle_config, ManualSoc):
-                                if (general_config.manual_soc and general_config.manual_soc !=
-                                        var["ev"+index].soc_module.general_config.manual_soc):
-                                    general_config.request_start_soc = True
+                                if (calculated_soc_state.manual_soc and calculated_soc_state.manual_soc !=
+                                        var["ev"+index].soc_module.calculated_soc_state.manual_soc):
+                                    calculated_soc_state.request_start_soc = True
                                     Pub().pub(f"openWB/vehicle/{index}/get/force_soc_update", True)
-                            var["ev"+index].soc_module.general_config = general_config
+                            var["ev"+index].soc_module.calculated_soc_state = calculated_soc_state
                     elif re.search("/vehicle/[0-9]+/soc_module/config$", msg.topic) is not None:
                         config = decode_payload(msg.payload)
                         if config["type"] is None:
@@ -278,6 +281,7 @@ class SubData:
                             mod = importlib.import_module(".vehicles."+config["type"]+".soc", "modules")
                             config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config)
                             var["ev"+index].soc_module = mod.create_vehicle(config, index)
+                            client.subscribe(f"/vehicle/{index}/soc_module/calculated_soc_state", 2)
                             client.subscribe(f"/vehicle/{index}/soc_module/general_config", 2)
                         self.event_soc.set()
                     elif re.search("/vehicle/[0-9]+/control_parameter/", msg.topic) is not None:

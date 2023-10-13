@@ -195,11 +195,11 @@ class SetData:
                                 subdata.SubData.cp_data["cp"+str(index)].chargepoint.data.config)
                         else:
                             template = {}
-                    elif "soc_module/general_config/manual_soc" in msg.topic:
+                    elif "soc_module/calculated_soc_state/manual_soc" in msg.topic:
                         event = self.event_soc
                         if "ev"+str(index) in subdata.SubData.ev_data:
                             template = dataclass_utils.asdict(
-                                subdata.SubData.ev_data["ev"+str(index)].soc_module.general_config)
+                                subdata.SubData.ev_data["ev"+str(index)].soc_module.calculated_soc_state)
                         else:
                             template = {}
                     else:
@@ -220,7 +220,7 @@ class SetData:
                     elif event == self.event_scheduled_charging_plan or event == self.event_time_charging_plan:
                         topic = msg.topic[:get_second_index_position(msg.topic)]
                     elif event == self.event_soc:
-                        topic = msg.topic[:index_pos]+"/soc_module/general_config"
+                        topic = msg.topic[:index_pos]+"/soc_module/calculated_soc_state"
                     else:
                         topic = msg.topic[:index_pos]
                     topic = topic.replace('set/', '', 1)
@@ -394,9 +394,10 @@ class SetData:
                 self._validate_value(msg, bool)
             elif "/set/soc_error_counter" in msg.topic:
                 self._validate_value(msg, int, [(0, float("inf"))])
-            elif "/soc_module/general_config/manual_soc" in msg.topic:
+            elif "/soc_module/calculated_soc_state/manual_soc" in msg.topic:
                 self._validate_value(msg, float, [(0, 100)], pub_json=True)
-            elif ("/soc_module/config" in msg.topic or
+            elif ("/soc_module/calculated_soc_state" in msg.topic or
+                  "/soc_module/config" in msg.topic or
                   "/soc_module/general_config" in msg.topic):
                 self._validate_value(msg, "json")
             elif "/get/fault_state" in msg.topic:

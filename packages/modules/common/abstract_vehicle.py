@@ -18,6 +18,10 @@ class GeneralVehicleConfig:
     request_interval_charging: int = 5
     request_interval_not_charging: int = 720
     request_only_plugged: bool = False
+
+
+@dataclass
+class CalculatedSocState:
     imported_start: Optional[float] = 0  # don't show in UI
     manual_soc: Optional[int] = None  # don't show in UI
     request_start_soc: bool = True  # don't show in UI

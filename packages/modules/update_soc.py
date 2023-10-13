@@ -93,7 +93,7 @@ class UpdateSoc:
         else:
             plug_state = False
             charge_state = False
-            imported = 0
+            imported = None
             battery_capacity = data.data.ev_data[f"ev{ev_num}"].ev_template.data.battery_capacity
             soc_from_cp = None
         return VehicleUpdateData(plug_state=plug_state,
