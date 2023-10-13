@@ -6,7 +6,6 @@ import copy
 import logging
 import threading
 from functools import wraps
-from time import time
 from typing import Dict
 from control.bat import Bat
 from control.bat_all import BatAll
