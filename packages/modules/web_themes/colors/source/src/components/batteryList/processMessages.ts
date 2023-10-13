@@ -19,8 +19,8 @@ export function processBatteryMessages(topic: string, message: string) {
 			usageSummary.batIn.power = +message
 			sourceSummary.batOut.power = 0
 		} else {
-			usageSummary.batOut.power = 0
-			sourceSummary.batIn.power = -message
+			usageSummary.batIn.power = 0
+			sourceSummary.batOut.power = -message
 		}
 	} else if (topic == 'openWB/bat/get/soc') {
 		globalData.batterySoc = +message
