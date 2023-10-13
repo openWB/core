@@ -19,15 +19,15 @@ export function processBatteryMessages(topic: string, message: string) {
 			usageSummary.batIn.power = +message
 			sourceSummary.batOut.power = 0
 		} else {
-			usageSummary.batIn.power = 0
-			sourceSummary.batOut.power = -message
+			usageSummary.batOut.power = 0
+			sourceSummary.batIn.power = -message
 		}
 	} else if (topic == 'openWB/bat/get/soc') {
 		globalData.batterySoc = +message
 	} else if (topic == 'openWB/bat/get/daily_exported') {
-		sourceSummary.batOut.energy = +message / 1000
+		sourceSummary.batOut.energy = +message
 	} else if (topic == 'openWB/bat/get/daily_imported') {
-		usageSummary.batIn.energy = +message / 1000
+		usageSummary.batIn.energy = +message
 	} else if (index) {
 		if (topic.match(/^openwb\/bat\/[0-9]+\/get\/daily_yield_export$/i)) {
 			batteries[index].dailyYieldExport = +message

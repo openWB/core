@@ -1,4 +1,4 @@
-<template v-if="device.length > 0">
+<template v-if="devices.length > 0">
 	<WbWidgetFlex
 		v-for="(group, index) in devices"
 		:key="index"
