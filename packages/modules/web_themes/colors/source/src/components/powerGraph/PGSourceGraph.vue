@@ -12,7 +12,7 @@ import * as d3 from 'd3'
 import { globalConfig } from '@/assets/js/themeConfig'
 import {
 	graphData,
-	initializeSourceGraph,
+	animateSourceGraph,
 	sourceGraphIsInitialized,
 } from './model'
 const props = defineProps<{
@@ -139,7 +139,7 @@ function drawGraph(
 		.x((d, i) => iScale.value(i))
 		.y0((d) => yScale.value(d[0]))
 		.y1((d) => yScale.value(d[1]))
-	if (initializeSourceGraph) {
+	if (animateSourceGraph) {
 		graph.selectAll('*').remove()
 		paths = graph
 			.selectAll('.sourceareas')
@@ -167,7 +167,7 @@ function drawGraph(
 function drawMonthGraph(
 	graph: d3.Selection<d3.BaseType, unknown, HTMLElement, never>,
 ) {
-	if (initializeSourceGraph) {
+	if (animateSourceGraph) {
 		graph.selectAll('*').remove()
 		rects = graph
 			.selectAll('.sourcebar')

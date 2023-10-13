@@ -28,7 +28,7 @@
 					<!-- Show the values for the different categories -->
 					<PMLabel
 						:x="0"
-						:y="-height / 5"
+						:y="-height/10*2"
 						:data="sourceSummary.pv"
 						:props="masterData.pv"
 						:anchor="'middle'"
@@ -36,18 +36,18 @@
 					/>
 					<PMLabel
 						:x="0"
-						:y="((-height / 2) * 3) / 5"
+						:y="-height/10*3"
 						:data="sourceSummary.evuIn"
 						:props="masterData.evuIn"
 						:anchor="'middle'"
 						:config="globalConfig"
 					/>
 					<PMLabel
-						:x="-height / 2 / 5"
-						:y="height / 2 - margin + 15"
+						:x="0"
+						:y="-height/10"
 						:data="sourceSummary.batOut"
 						:props="masterData.batOut"
-						:anchor="'end'"
+						:anchor="'middle'"
 						:config="globalConfig"
 					/>
 					<!-- iterate over all usage items-->

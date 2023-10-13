@@ -12,7 +12,7 @@ import * as d3 from 'd3'
 import { globalConfig } from '@/assets/js/themeConfig'
 import {
 	graphData,
-	initializeUsageGraph,
+	animateUsageGraph,
 	usageGraphIsInitialized,
 } from './model'
 const props = defineProps<{
@@ -152,7 +152,7 @@ function drawGraph(
 		.y0((d) => yScale.value(d[0]))
 		.y1((d) => yScale.value(d[1]))
 	if (globalConfig.showAnimations) {
-		if (initializeUsageGraph) {
+		if (animateUsageGraph) {
 			graph.selectAll('*').remove()
 			paths = graph
 				.selectAll('.usageareas')
@@ -190,7 +190,7 @@ function drawGraph(
 function drawMonthGraph(
 	graph: d3.Selection<d3.BaseType, unknown, HTMLElement, never>,
 ) {
-	if (initializeUsageGraph) {
+	if (animateUsageGraph) {
 		graph.selectAll('*').remove()
 		rects = graph
 			.selectAll('.usagebar')

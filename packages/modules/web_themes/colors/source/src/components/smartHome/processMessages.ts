@@ -14,7 +14,7 @@ export function processSmarthomeMessages(topic: string, message: string) {
 function processSmarthomeConfigMessages(topic: string, message: string) {
 	const index = getIndex(topic)
 	if (index == undefined) {
-		console.warn('Smarthome: Missing index in ' + topic)
+		// console.warn('Smarthome: Missing index in ' + topic)
 		return
 	}
 	if (!(index in shDevices)) {

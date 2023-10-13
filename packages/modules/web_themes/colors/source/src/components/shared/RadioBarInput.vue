@@ -1,6 +1,6 @@
 <template>
 	<div>
-		<div class="btn-group" role="group" aria-label="radiobar">
+		<div class="btn-group m-0" role="group" aria-label="radiobar">
 			<button
 				v-for="(element, index) in options"
 				:id="'radio-' + element.value"

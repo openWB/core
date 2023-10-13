@@ -22,7 +22,7 @@ export interface RawDayGraphDataItem {
 
 export class GraphData {
 	data: GraphDataItem[] = []
-	private _graphMode = 'today'
+	private _graphMode = ''
 
 	get graphMode() {
 		return this._graphMode
@@ -33,52 +33,52 @@ export class GraphData {
 }
 
 export const graphData = reactive(new GraphData())
-export let initializeSourceGraph = true
-export let initializeUsageGraph = true
+export let animateSourceGraph = true
+export let animateUsageGraph = true
 export function sourceGraphIsInitialized() {
-	initializeSourceGraph = false
+	animateSourceGraph = false
 }
 export function sourceGraphIsNotInitialized() {
-	initializeSourceGraph = true
+	animateSourceGraph = true
 }
 
 export function usageGraphIsInitialized() {
-	initializeUsageGraph = false
+	animateUsageGraph = false
 }
 export function usageGraphIsNotInitialized() {
-	initializeUsageGraph = true
+	animateUsageGraph = true
 }
 export function setInitializeUsageGraph(val: boolean) {
-	initializeUsageGraph = val
-}
-export function setInitializeSourceGraph(val: boolean) {
-	initializeSourceGraph = val
+	animateUsageGraph = val
 }
 export function setGraphData(d: GraphDataItem[]) {
 	graphData.data = d
 	// graphData.graphMode = graphData.graphMode
 }
-export const liveGraph = {
+export const liveGraph = reactive ({
 	refreshTopicPrefix: 'openWB/graph/' + 'alllivevaluesJson',
 	updateTopic: 'openWB/graph/lastlivevaluesJson',
+	configTopic: 'openWB/graph/config/#',
 	initialized: false,
 	initCounter: 0,
 	graphRefreshCounter: 0,
 	rawDataPacks: [] as RawGraphDataItem[][],
+	duration: 0,
 
 	activate() {
 		graphData.data = []
 		this.unsubscribeUpdates()
 		this.subscribeRefresh()
+		mqttSubscribe(this.configTopic)
 		this.initialized = false
 		this.initCounter = 0
 		this.graphRefreshCounter = 0
-		this.subscribeRefresh()
 		this.rawDataPacks = []
 	},
 	deactivate() {
 		this.unsubscribeRefresh()
 		this.unsubscribeUpdates()
+		mqttUnsubscribe(this.configTopic)
 	},
 	subscribeRefresh() {
 		for (let segment = 1; segment < 17; segment++) {
@@ -96,7 +96,7 @@ export const liveGraph = {
 	unsubscribeUpdates() {
 		mqttUnsubscribe(this.updateTopic)
 	},
-}
+})
 export const dayGraph = reactive({
 	topic: 'openWB/log/daily/#',
 	date: new Date(),
@@ -209,9 +209,13 @@ export const yearGraph = reactive({
 export function initGraph() {
 	if (graphData.graphMode == '') {
 		setGraphMode(globalConfig.graphPreference)
+	} else if (graphData.graphMode == 'live') {
+		globalConfig.graphPreference='live'
+	} else {
+		globalConfig.graphPreference='today'
 	}
-	initializeSourceGraph = true
-	initializeUsageGraph = true
+	animateSourceGraph = true
+	animateUsageGraph = true
 	switch (graphData.graphMode) {
 		case 'live':
 			dayGraph.deactivate()

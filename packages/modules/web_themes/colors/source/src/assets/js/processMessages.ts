@@ -84,7 +84,7 @@ function processCounterMessages(topic: string, message: string) {
 	if (+elements[2] == globalData.evuId) {
 		processEvuMessages(topic, message)
 	} else if (elements[3] == 'config') {
-		console.warn('Ignored counter config message')
+		// console.warn('Ignored counter config message')
 	} else {
 		switch (elements[4]) {
 			case 'power':
@@ -113,7 +113,7 @@ function processGlobalCounterMessages(topic: string, message: string) {
 			for (const element of hierarchy) {
 				if (element.type == 'counter') {
 					globalData.evuId = element.id
-					console.info('EVU counter is ' + globalData.evuId)
+					// console.info('EVU counter is ' + globalData.evuId)
 				}
 			}
 			processHierarchy(hierarchy[0])
@@ -131,7 +131,7 @@ function processGlobalCounterMessages(topic: string, message: string) {
 function processHierarchy(hierarchy: Hierarchy) {
 	switch (hierarchy.type) {
 		case 'counter':
-			console.info('counter in hierachy: ' + hierarchy.id)
+			// console.info('counter in hierachy: ' + hierarchy.id)
 			break
 		case 'cp':
 			addChargePoint(hierarchy.id)
@@ -141,10 +141,10 @@ function processHierarchy(hierarchy: Hierarchy) {
 			break
 		case 'inverter':
 			// addInverter (todo)
-			console.info('inverter id ' + hierarchy.id)
+			// console.info('inverter id ' + hierarchy.id)
 			break
 		default:
-			console.warn('Ignored Hierarchy type: ' + hierarchy.type)
+			// console.warn('Ignored Hierarchy type: ' + hierarchy.type)
 	}
 	// recursively process the hierarchy
 	hierarchy.children.forEach((element) => processHierarchy(element))

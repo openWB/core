@@ -11,55 +11,37 @@ Hagen */
 				data-bs-toggle="modal"
 				:data-bs-target="'#' + modalId"
 			>
-				<div class="m-0 p-0">
-					<div class="m-0 p-0 d-flex justify-content-between">
-						<!-- Status indicator -->
-						<div class="m-0 p-0 d-flex flex-column left">
-							<span
-								v-if="chargepoint.isPluggedIn"
-								class="mx-1 badge rounded-pill smallTextSize plugIndicator"
-							>
-								<i :class="plugPillClass" />
-								<span v-if="chargepoint.isCharging" class="ms-2">
-									{{ formatWatt(chargepoint.power) }}
-								</span>
-							</span>
-							<span
-								v-if="!chargepoint.isPluggedIn"
-								class="mx-1 badge rounded-pill smallTextSize plugIndicator"
-							>
-								<i :class="plugPillClass" />
-								<span v-if="chargepoint.isCharging" class="ms-2">
-									{{ formatWatt(chargepoint.power) }}
-								</span>
-							</span>
-						</div>
-						<!-- Chargepoint name -->
-						<div class="m-0 p-0 d-flex flex-column center">
-							{{ chargepoint.name }}
-						</div>
-						<!-- Mode indicator -->
-						<div class="m-0 p-0 d-flex flex-column right">
-							<span
-								class="mx-2 badge rounded-pill smallTextSize modeIndicator"
-								:style="modePillStyle"
-							>
-								<i class="fa me-1" :class="modeIcon" />
-								{{ modeString }}
-								<!-- PV priority -->
-								<span
-									v-if="
-										chargepoint.chargeMode == ChargeMode.pv_charging &&
-										globalData.isBatteryConfigured
-									"
-									class="ps-1"
-								>
-									(
-									<i class="fa m-0" :class="priorityIcon" />)
-								</span>
-							</span>
-						</div>
-					</div>
+				<div class="m-0 p-0 d-flex justify-content-between align-items-center">
+					<!-- Status indicator -->
+					<span class="mx-1 badge rounded-pill smallTextSize plugIndicator">
+						<i :class="plugPillClass" />
+						<span v-if="chargepoint.isCharging" class="ms-2">
+							{{ formatWatt(chargepoint.power) }}
+						</span>
+					</span>
+					<!-- Chargepoint name -->
+					<span class="m-0 p-0">
+						{{ chargepoint.name }}
+					</span>
+					<!-- Mode indicator -->
+					<span
+						class="mx-2 m-0 badge rounded-pill smallTextSize modeIndicator"
+						:style="modePillStyle"
+					>
+						<i class="fa me-1" :class="modeIcon" />
+						{{ modeString }}
+						<!-- PV priority -->
+						<span
+							v-if="
+								chargepoint.chargeMode == ChargeMode.pv_charging &&
+								globalData.isBatteryConfigured
+							"
+							class="ps-1"
+						>
+							(
+							<i class="fa m-0" :class="priorityIcon" />)
+						</span>
+					</span>
 				</div>
 			</button>
 		</div>
@@ -119,9 +101,11 @@ const modePillStyle = computed(() => {
 				break
 			case ChargeMode.standby:
 			case ChargeMode.stop:
-				if (!props.chargepoint.isPluggedIn) {
+				style.background = 'darkgrey'
+				style.color = 'black'
+				/* if (!props.chargepoint.isPluggedIn) {
 					style = swapcolors(style)
-				}
+				} */
 				break
 			case ChargeMode.scheduled_charging:
 				if (

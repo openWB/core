@@ -14,10 +14,12 @@ export function processLiveGraphMessages(topic: string, message: string) {
 		globalData.displayLiveGraph = +message == 1
 	} else if (topic.match(/^openwb\/graph\/alllivevaluesJson[1-9][0-9]*$/i)) {
 		reloadLiveGraph(topic, message)
+		console.info('live graph full load')
 	} else if (topic == 'openWB/graph/lastlivevaluesJson') {
+		console.info ('live graph update')
 		updateLiveGraph(topic, message)
 	} else if (topic == 'openWB/graph/config/duration') {
-		//  updateGlobal("liveGraphDuration", JSON.parse(message));
+		  liveGraph.duration = JSON.parse(message);
 	} else {
 		console.warn('Ignored GRAPH message: [' + topic + '](' + message + ')')
 	}

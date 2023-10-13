@@ -60,8 +60,8 @@
 				</div>
 			</div>
 			<!-- Chargemode buttons -->
-			<div class="row m-0 p-1 mt-3 mb-0">
-				<div class="col d-flex justify-content-center">
+			<div class="row m-0 p-0 mt-3 mb-0">
+				<div class="col d-flex justify-content-center p-0 m-0">
 					<RadioBarInput
 						:id="'chargemode-' + chargepoint.name"
 						v-model="chargeMode"
@@ -124,13 +124,6 @@
 								:style="{ color: 'var(--color-menu)' }"
 							/>
 						</InfoItem>
-						<!--  <InfoItem heading="Priorität:">
-            <span
-              v-if="chargepoint.hasPriority"
-              class="me-1 fa-solid fa-xs fa-star ps-1"
-            ></span>
-            {{ props.chargepoint.hasPriority ? 'Ja' : 'Nein' }}
-          </InfoItem> -->
 						<InfoItem heading="Reichweite:">
 							{{
 								vehicles[props.chargepoint.connectedVehicle]
@@ -192,8 +185,6 @@ const props = defineProps<{
 	chargepoint: ChargePoint
 	fullWidth?: boolean
 }>()
-// state
-
 // computed
 const chargeMode = computed({
 	get() {
