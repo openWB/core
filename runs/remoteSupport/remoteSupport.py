@@ -7,13 +7,14 @@ import paho.mqtt.client as mqtt
 
 BASE_PATH = Path(__file__).resolve().parents[2]
 RAMDISK_PATH = BASE_PATH / "ramdisk"
+LT_PATH = BASE_PATH / "runs/lt"
 BASE_TOPIC = "openWB-remote/"
 REMOTE_SUPPORT_TOPIC = BASE_TOPIC + "support"
 REMOTE_PARTNER_TOPIC = BASE_TOPIC + "partner"
 CLOUD_TOPIC = BASE_TOPIC + "cloud"
 support_tunnel: Popen = None
 partner_tunnel: Popen = None
-
+cloud_tunnel: Popen = None
 logging.basicConfig(
     filename=str(RAMDISK_PATH / "remote_support.log"),
     level=logging.INFO, format='%(asctime)s: %(message)s'
@@ -77,6 +78,7 @@ def on_message(client: mqtt.Client, userdata, msg: mqtt.MQTTMessage):
                                             f"{port}:localhost:22", f"{user}@remotesupport.openwb.de"])
                     log.info(f"tunnel running with pid {support_tunnel.pid}")
             else:
+                log.info("unknown message: " + payload)
         elif msg.topic == REMOTE_PARTNER_TOPIC:
             if payload == 'stop':
                 if partner_tunnel is None:
@@ -103,7 +105,6 @@ def on_message(client: mqtt.Client, userdata, msg: mqtt.MQTTMessage):
             else:
                 log.info("unknown message: " + payload)
         elif msg.topic == CLOUD_TOPIC:
-            log.info("1")
             if payload == 'stop':
                 if cloud_tunnel is None:
                     log.error("received stop cloud message but tunnel is not running")
@@ -113,8 +114,7 @@ def on_message(client: mqtt.Client, userdata, msg: mqtt.MQTTMessage):
                     cloud_tunnel.wait(timeout=3)
                     cloud_tunnel = None
             elif re.match(r'^([^;]+)(?:;([a-zA-Z0-9]+)(?:;([a-zA-Z0-9]+))?)?$', payload):
-            #elif payload != 'stio':
-                if is_tunnel_closed(partner_tunnel):
+                if is_tunnel_closed(cloud_tunnel):
                     splitted = payload.split(";")
                     if len(splitted) != 3:
                         log.error("invalid number of settings received!")
@@ -123,7 +123,7 @@ def on_message(client: mqtt.Client, userdata, msg: mqtt.MQTTMessage):
                         cloudnode = splitted[1]
                         user = splitted[2]
                         log.info("start cloud tunnel" + token + cloudnode)
-                        cloud_tunnel = Popen(["/var/www/html/openWB/runs/lt", "-h", "https://" + cloudnode + ".openwb.de/", "-p", "80", "-s", token])
+                        cloud_tunnel = Popen([LT_PATH, "-h", "https://" + cloudnode + ".openwb.de/", "-p", "80", "-s", token])
                         log.info(f"cloud tunnel running with pid {cloud_tunnel.pid}")
             else:
                 log.info("unknown message: " + payload)
