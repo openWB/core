@@ -5,7 +5,7 @@
  */
 
 import { computed, reactive } from 'vue'
-import * as d3 from 'd3'
+import { select }  from 'd3'
 import type { ChargeModeInfo } from './types'
 import { addShDevice, shDevices } from '@/components/smartHome/model'
 import { ChargeMode } from '@/components/chargePointList/model'
@@ -159,7 +159,7 @@ export const globalConfig = reactive(new Config())
 export function initConfig() {
 	readCookie()
 	// set the background
-	const doc = d3.select('html')
+	const doc = select('html')
 	doc.classed('theme-dark', globalConfig.displayMode == 'dark')
 	doc.classed('theme-light', globalConfig.displayMode == 'light')
 	doc.classed('theme-blue', globalConfig.displayMode == 'blue')
@@ -231,7 +231,7 @@ export function savePrefs() {
 	writeCookie()
 }
 export function switchTheme(mode: string) {
-	const doc = d3.select('html')
+	const doc = select('html')
 
 	doc.classed('theme-dark', mode == 'dark')
 	doc.classed('theme-light', mode == 'light')
@@ -260,7 +260,7 @@ export function switchDecimalPlaces() {
 	savePrefs()
 }
 export function switchSmarthomeColors(setting: string) {
-	const doc = d3.select('html')
+	const doc = select('html')
 	doc.classed('shcolors-normal', setting == 'normal')
 	doc.classed('shcolors-standard', setting == 'standard')
 	doc.classed('shcolors-advanced', setting == 'advanced')
@@ -322,7 +322,7 @@ function readCookie() {
 	if (myCookie.length > 0) {
 		const prefs = JSON.parse(myCookie[0].split('=')[1]) as Preferences
 		if (prefs.decimalP !== undefined) {
-			globalConfig.setDecimalPlaces(prefs.decimalP)
+			globalConfig.setDecimalPlaces(+prefs.decimalP)
 		}
 		if (prefs.smartHomeC !== undefined) {
 			globalConfig.setSmartHomeColors(prefs.smartHomeC)

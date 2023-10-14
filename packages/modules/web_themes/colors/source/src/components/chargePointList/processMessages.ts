@@ -24,7 +24,7 @@ export function processChargepointMessages(topic: string, message: string) {
 	if (topic == 'openWB/chargepoint/get/power') {
 		usageSummary.charging.power = +message
 	} else if (topic == 'openWB/chargepoint/get/daily_imported') {
-		usageSummary.charging.energy = +message / 1000
+		usageSummary.charging.energy = +message
 	}
 	if (topic == 'openWB/chargepoint/get/daily_exported') {
 		globalData.cpDailyExported = +message

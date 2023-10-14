@@ -22,4 +22,4 @@ import NavigationBar from './components/NavigationBar.vue'
 @import './assets/css/style.css';
 @import './assets/fonts/fontawesome-free-6.0.0-web/css/fontawesome.min.css';
 @import './assets/fonts/fontawesome-free-6.0.0-web/css/solid.min.css';
-</style>
+ </style>

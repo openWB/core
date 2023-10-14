@@ -38,7 +38,8 @@
 </template>
 
 <script setup lang="ts">
-import * as d3 from 'd3'
+import type { AxisContainerElement, ScaleTime } from 'd3'
+import { axisBottom,  extent, scaleBand, scaleTime,  select, timeFormat } from 'd3'
 import { globalConfig } from '@/assets/js/themeConfig'
 import { graphData } from './model'
 import { computed } from 'vue'
@@ -53,16 +54,14 @@ const fontsize = 12
 
 // computed
 const xAxisGenerator = computed(() => {
-	return d3
-		.axisBottom<Date>(xScale.value as d3.ScaleTime<number, number, never>)
+	return axisBottom<Date>(xScale.value as ScaleTime<number, number, never>)
 		.ticks(4)
 		.tickSizeInner(ticksize.value)
-		.tickFormat(d3.timeFormat('%H:%M'))
+		.tickFormat(timeFormat('%H:%M'))
 })
 
 const xAxisGeneratorMonth = computed(() =>
-	d3
-		.axisBottom<number>(xScaleMonth.value)
+	axisBottom<number>(xScaleMonth.value)
 		.ticks(4)
 		.tickSizeInner(ticksize.value)
 		.tickFormat((d, i) => (i + 1).toString()),
@@ -75,36 +74,24 @@ const ticksize = computed(() => {
 		return 0
 	}
 })
-/* const xAxisGenerator2 = computed(() => {
-	const ticksize2 = -(props.height / 2 - 10)
-	if (graphData.graphMode == 'month') {
-		return
-	} else {
-		return d3
-			.axisTop<Date>(xScale.value as d3.ScaleTime<number, number, never>)
-			.ticks(4)
-			.tickSizeInner(ticksize2)
-			.tickFormat((d) => '')
-	}
-})
- */ const xScale = computed(() => {
-	let e = d3.extent(graphData.data, (d) => d.date)
+
+ const xScale = computed(() => {
+	let e = extent(graphData.data, (d) => d.date)
 	if (e[0] && e[1]) {
-		return d3.scaleTime<number>().domain(e).range([0, props.width])
+		return scaleTime<number>().domain(e).range([0, props.width])
 	} else {
-		return d3.scaleTime().range([0, 0])
+		return scaleTime().range([0, 0])
 	}
 })
 const xScaleMonth = computed(() => {
-	return d3
-		.scaleBand<number>()
+	return scaleBand<number>()
 		.domain(Array.from({ length: graphData.data.length }, (v, k) => k))
 		.paddingInner(0.4)
 		.range([0, props.width + props.margin.right])
 })
 
 const drawAxis1 = computed(() => {
-	let axis = d3.select<d3.AxisContainerElement, number>('g#PGXAxis')
+	let axis = select<AxisContainerElement, number>('g#PGXAxis')
 	axis.selectAll('*').remove()
 	if (graphData.graphMode == 'month' || graphData.graphMode == 'year') {
 		axis.call(xAxisGeneratorMonth.value)
@@ -137,7 +124,7 @@ const drawAxis1 = computed(() => {
 	return 'PGXAxis.vue'
 })
 const drawAxis2 = computed(() => {
-	let axis = d3.select<d3.AxisContainerElement, Date>('g#PGXAxis2')
+	let axis = select<AxisContainerElement, Date>('g#PGXAxis2')
 	axis.selectAll('*').remove()
 	if (globalConfig.showGrid) {
 		//axis.call(xAxisGenerator2.value)

@@ -4,26 +4,24 @@ import {
 	type GraphDataItem,
 	type RawDayGraphDataItem,
 	setGraphData,
-	initGraph,
 	dayGraph,
+	calculateAutarchy,
+	consumerCategories
 } from './model'
 import { historicSummary, usageSummary } from '@/assets/js/model'
 import { vehicles } from '../chargePointList/model'
 let startValues: GraphDataItem = {}
 let endValues: GraphDataItem = {}
-const consumerCategories = ['charging', 'house', 'batIn', 'devices']
 let evSocs: string[] = []
 // methods:
 
 export function processDayGraphMessages(topic: string, message: string) {
 	const inputTable: RawDayGraphDataItem[] = JSON.parse(message).entries
 	evSocs = Object.values(vehicles).map((v) => 'soc-ev' + v.id.toString())
-
 	consumerCategories.map((cat) => {
 		historicSummary[cat].energyPv = 0
 		historicSummary[cat].energyBat = 0
 	})
-
 	const transformedTable = transformDatatable(inputTable)
 	setGraphData(transformedTable)
 	consumerCategories.map((cat) => {
@@ -34,7 +32,7 @@ export function processDayGraphMessages(topic: string, message: string) {
 	})
 	updateEnergyValues(startValues, endValues)
 	if (graphData.graphMode == 'today') {
-		setTimeout(() => initGraph(), 300000)
+		setTimeout(() => dayGraph.activate(), 300000)
 	}
 }
 
@@ -211,14 +209,7 @@ function calculatePower(
 		return 0
 	}
 }
-function calculateAutarchy(cat: string, values: GraphDataItem) {
-	values[cat + 'Pv'] =
-		(values[cat] * (values.solarPower - values.gridPush)) /
-		(values.solarPower - values.gridPush + values.gridPull + values.batOut)
-	values[cat + 'Bat'] =
-		(values[cat] * values.batOut) /
-		(values.solarPower - values.gridPush + values.gridPull + values.batOut)
-}
+
 function updateEnergyValues(
 	startValues: GraphDataItem,
 	endValues: GraphDataItem,
@@ -226,19 +217,19 @@ function updateEnergyValues(
 	//const startValues = extractCounters (rawData[0]);
 	//const endValues = extractCounters(rawData[rawData.length - 1]);
 	historicSummary.pv.energy =
-		(endValues.solarPower - startValues.solarPower) / 1000
+		(endValues.solarPower - startValues.solarPower)
 	historicSummary.evuIn.energy =
-		(endValues.gridPull - startValues.gridPull) / 1000
-	historicSummary.batOut.energy = (endValues.batOut - startValues.batOut) / 1000
+		(endValues.gridPull - startValues.gridPull)
+	historicSummary.batOut.energy = (endValues.batOut - startValues.batOut)
 	historicSummary.evuOut.energy =
-		(endValues.gridPush - startValues.gridPush) / 1000
-	historicSummary.batIn.energy = (endValues.batIn - startValues.batIn) / 1000
+		(endValues.gridPush - startValues.gridPush)
+	historicSummary.batIn.energy = (endValues.batIn - startValues.batIn)
 	historicSummary.charging.energy =
-		(endValues.charging - startValues.charging) / 1000
+		(endValues.charging - startValues.charging)
 	historicSummary.devices.energy =
-		(endValues.devices - startValues.devices) / 1000
-	// historicSummary.charging.energyPv = (endValues.chargingPv - startValues.chargingPv) / 1000
-	// historicSummary.charging.energyBat = (endValues.chargingBat - startValues.chargingBat) / 1000
+		(endValues.devices - startValues.devices)
+	// historicSummary.charging.energyPv = (endValues.chargingPv - startValues.chargingPv)
+	// historicSummary.charging.energyBat = (endValues.chargingBat - startValues.chargingBat)
 	historicSummary.charging.pvPercentage = Math.round(
 		((historicSummary.charging.energyPv + historicSummary.charging.energyBat) /
 			historicSummary.charging.energy) *

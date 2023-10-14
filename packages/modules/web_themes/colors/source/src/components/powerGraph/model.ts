@@ -2,6 +2,9 @@ import { reactive } from 'vue'
 import { mqttSubscribe, mqttUnsubscribe } from '../../assets/js/mqttClient'
 import { sendCommand } from '@/assets/js/sendMessages'
 import { globalConfig, setInitializeEnergyGraph } from '@/assets/js/themeConfig'
+import { historicSummary } from '@/assets/js/model'
+
+export const consumerCategories = ['charging', 'house', 'batIn', 'devices']
 
 export interface GraphDataItem {
 	[key: string]: number
@@ -55,7 +58,7 @@ export function setGraphData(d: GraphDataItem[]) {
 	graphData.data = d
 	// graphData.graphMode = graphData.graphMode
 }
-export const liveGraph = reactive ({
+export const liveGraph = reactive({
 	refreshTopicPrefix: 'openWB/graph/' + 'alllivevaluesJson',
 	updateTopic: 'openWB/graph/lastlivevaluesJson',
 	configTopic: 'openWB/graph/config/#',
@@ -101,16 +104,19 @@ export const dayGraph = reactive({
 	topic: 'openWB/log/daily/#',
 	date: new Date(),
 	activate() {
-		const dateString =
-			this.date.getFullYear().toString() +
-			(this.date.getMonth() + 1).toString().padStart(2, '0') +
-			this.date.getDate().toString().padStart(2, '0')
-		graphData.data = []
-		mqttSubscribe(this.topic)
-		sendCommand({
-			command: 'getDailyLog',
-			data: { day: dateString },
-		})
+		if (graphData.graphMode == 'day' || graphData.graphMode == 'today') {
+			this.date = new Date()
+			const dateString =
+				this.date.getFullYear().toString() +
+				(this.date.getMonth() + 1).toString().padStart(2, '0') +
+				this.date.getDate().toString().padStart(2, '0')
+			graphData.data = []
+			mqttSubscribe(this.topic)
+			sendCommand({
+				command: 'getDailyLog',
+				data: { day: dateString },
+			})
+		}
 	},
 	deactivate() {
 		mqttUnsubscribe(this.topic)
@@ -173,7 +179,6 @@ export const yearGraph = reactive({
 	year: new Date().getFullYear(),
 	activate() {
 		const dateString = this.year.toString()
-
 		graphData.data = []
 		mqttSubscribe(this.topic)
 		sendCommand({
@@ -206,16 +211,18 @@ export const yearGraph = reactive({
 		return new Date(this.year, this.month)
 	},
 })
-export function initGraph() {
+export function initGraph(reloadOnly = false) {
 	if (graphData.graphMode == '') {
 		setGraphMode(globalConfig.graphPreference)
 	} else if (graphData.graphMode == 'live') {
-		globalConfig.graphPreference='live'
+		globalConfig.graphPreference = 'live'
 	} else {
-		globalConfig.graphPreference='today'
+		globalConfig.graphPreference = 'today'
 	}
-	animateSourceGraph = true
-	animateUsageGraph = true
+	if (!reloadOnly) {
+		animateSourceGraph = true
+		animateUsageGraph = true
+	}
 	switch (graphData.graphMode) {
 		case 'live':
 			dayGraph.deactivate()
@@ -255,13 +262,38 @@ export function setGraphMode(mode: string) {
 }
 export function calculateAutarchy(cat: string, values: GraphDataItem) {
 	values[cat + 'Pv'] =
-		(values[cat] * (values.solarPower - values.gridPush)) /
+		1000 * (values[cat] * (values.solarPower - values.gridPush)) /
 		(values.solarPower - values.gridPush + values.gridPull + values.batOut)
 	values[cat + 'Bat'] =
-		(values[cat] * values.batOut) /
+		1000 * (values[cat] * values.batOut) /
 		(values.solarPower - values.gridPush + values.gridPull + values.batOut)
 }
+export function updateEnergyValues(powerValues: { [key: string]: number }) {
+	historicSummary.pv.energy = powerValues.solarPower * 1000
+	historicSummary.evuIn.energy = powerValues.gridPull * 1000
+	historicSummary.batOut.energy = powerValues.batOut * 1000
+	historicSummary.evuOut.energy = powerValues.gridPush * 1000
+	historicSummary.batIn.energy = powerValues.batIn * 1000
+	historicSummary.charging.energy = powerValues.charging * 1000
+	historicSummary.devices.energy = powerValues.devices * 1000
 
+	historicSummary.house.energy =
+		historicSummary.evuIn.energy +
+		historicSummary.pv.energy +
+		historicSummary.batOut.energy -
+		historicSummary.evuOut.energy -
+		historicSummary.batIn.energy -
+		historicSummary.charging.energy -
+		historicSummary.devices.energy
+
+	consumerCategories.map((cat) => {
+		historicSummary[cat].pvPercentage = Math.round(
+			((historicSummary[cat].energyPv + historicSummary[cat].energyBat) /
+				historicSummary[cat].energy) *
+			100,
+		)
+	})
+}
 export function shiftLeft() {
 	switch (graphData.graphMode) {
 		case 'live':

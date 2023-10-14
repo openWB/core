@@ -34,9 +34,9 @@ export function formatWatt(watt: number, decimalPlaces = 1) {
 	}
 }
 
-export function formatWattH(wattH: number, decimalPlaces = 1, useMWh = false) {
+export function formatWattH(wattH: number, decimalPlaces :number = 1, useMWh = false) {
 	let wattResult
-	if (wattH >= 1000 && decimalPlaces < 4) {
+	if ((wattH >= 1000) && (decimalPlaces < 4)) {
 		switch (decimalPlaces) {
 			case 0:
 				wattResult = Math.round(wattH / 1000)

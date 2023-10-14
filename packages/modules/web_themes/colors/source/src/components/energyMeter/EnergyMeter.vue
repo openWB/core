@@ -54,7 +54,8 @@
 	</WBWidget>
 </template>
 <script setup lang="ts">
-import * as d3 from 'd3'
+import { scaleBand, scaleLinear } from 'd3'
+import { max } from 'd3'
 import type { PowerItem } from '@/assets/js/types'
 import { sourceSummary, historicSummary } from '@/assets/js/model'
 import EMBarGraph from './EMBarGraph.vue'
@@ -106,17 +107,15 @@ const plotdata = computed(() => {
 	return result
 })
 const xScale = computed(() => {
-	return d3
-		.scaleBand()
+	return scaleBand()
 		.range([0, width - margin.left - margin.right])
 		.domain(plotdata.value.map((d) => d.name))
 		.padding(0.4)
 })
 const yScale = computed(() => {
-	return d3
-		.scaleLinear()
+	return scaleLinear()
 		.range([height - margin.bottom - margin.top, 15])
-		.domain([0, d3.max(plotdata.value, (d: PowerItem) => d.energy) as number])
+		.domain([0, max(plotdata.value, (d: PowerItem) => d.energy) as number])
 })
 const heading = 'Energie'
 </script>

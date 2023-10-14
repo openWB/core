@@ -123,7 +123,7 @@ function processGlobalCounterMessages(topic: string, message: string) {
 	} else if (
 		topic.match(/^openwb\/counter\/set\/daily_yield_home_consumption$/i)
 	) {
-		usageSummary.house.energy = +message / 1000
+		usageSummary.house.energy = +message
 	} else {
 		// console.warn('Ignored GLOBAL COUNTER message: ' + topic)
 	}
@@ -156,7 +156,7 @@ function processPvMessages(topic: string, message: string) {
 			sourceSummary.pv.power = -message
 			break
 		case 'openWB/pv/get/daily_exported':
-			sourceSummary.pv.energy = +message / 1000
+			sourceSummary.pv.energy = +message
 			break
 		default:
 		// console.warn('Ignored PV msg: [' + topic + '] ' + message)
@@ -189,10 +189,10 @@ function processEvuMessages(topic: string, message: string) {
 			}
 			break
 		case 'daily_imported':
-			sourceSummary.evuIn.energy = +message / 1000
+			sourceSummary.evuIn.energy = +message
 			break
 		case 'daily_exported':
-			usageSummary.evuOut.energy = +message / 1000
+			usageSummary.evuOut.energy = +message
 			break
 		default:
 	}

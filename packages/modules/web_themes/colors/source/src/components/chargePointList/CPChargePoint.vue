@@ -6,7 +6,7 @@
 	>
 		<template #title>
 			<span :style="cpNameStyle" @click="configmode = !configmode">
-				<span class="fas fa-charging-station">&nbsp;</span>
+				<span class="fa-solid fa-charging-station">&nbsp;</span>
 				{{ props.chargepoint.name }}</span
 			>
 		</template>

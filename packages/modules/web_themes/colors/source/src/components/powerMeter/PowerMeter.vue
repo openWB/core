@@ -1,11 +1,6 @@
 <template>
 	<WBWidget :full-width="true">
 		<template #title> Aktuelle Leistung </template>
-		<!-- <template v-slot:buttons>
-      <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#themeconfig">
-      <span class="fa-solid fa-bars px-0"></span>
-    </button>
-      </template> -->
 		<figure id="powermeter" class="p-0 m-0">
 			<svg :viewBox="'0 0 ' + width + ' ' + height">
 				<g :transform="'translate(' + width / 2 + ',' + height / 2 + ')'">
