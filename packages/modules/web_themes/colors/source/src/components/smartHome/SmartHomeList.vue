@@ -1,14 +1,8 @@
-<template v-if="devices.length > 0">
-	<WbWidgetFlex
-		v-for="(group, index) in devices"
-		:key="index"
-		:variable-width="true"
-	>
+<template>
+	<WbWidgetFlex v-for="(group, index) in devices" :key="index" :variable-width="true">
 		<template #title>
 			<span @click="toggleconfig">
-				<span class="fas fa-plug me-2" style="color: var(--color-devices)"
-					>&nbsp;</span
-				>
+				<span class="fas fa-plug me-2" style="color: var(--color-devices)">&nbsp;</span>
 				<span class="sh-title py-4">{{ title(index) }}</span>
 			</span>
 		</template>
@@ -23,27 +17,18 @@
 	<WbWidgetFlex v-if="configmode">
 		<template #title>
 			<span class="smarthome" @click="toggleconfig">
-				<span class="fas fa-gear">&nbsp;</span> Einstellungen</span
-			>
+				<span class="fas fa-gear">&nbsp;</span> Einstellungen</span>
 		</template>
 		<template #buttons>
 			<span class="ms-2 pt-1" @click="toggleconfig">
 				<span class="fa-solid fa-lg ps-1 fa-circle-check" />
 			</span>
 		</template>
-		<ConfigItem
-			title="Im Energie-Graph anzeigen:"
-			icon="fa-chart-column"
-			:fullwidth="true"
-		>
+		<ConfigItem title="Im Energie-Graph anzeigen:" icon="fa-chart-column" :fullwidth="true">
 			<div v-for="(element, idx) in activeDevices" :key="idx">
-				<input
-					:id="'check' + idx"
-					v-model="element.showInGraph"
-					class="form-check-input"
-					type="checkbox"
-					:value="element"
-				/>
+				<input 
+					:id="'check' + idx" v-model="element.showInGraph" class="form-check-input" type="checkbox"
+					:value="element" />
 				<label class="form-check-label px-2" :for="'check' + idx">{{
 					element.name
 				}}</label>
@@ -70,23 +55,24 @@ const devicesPerWidget = 3 // max number of devices to be displayed in one box
 const devices = computed(() =>
 	widescreen.value
 		? activeDevices.value.reduce(
-				(grouping: [[ShDevice]], device: ShDevice) => {
-					const result = grouping
-					let lastGroup = grouping[grouping.length - 1]
-					if (lastGroup.length >= devicesPerWidget) {
-						grouping.push([device])
-					} else {
-						lastGroup.push(device)
-					}
-					return result
-				},
-				[[]] as unknown as [[ShDevice]],
-		  )
+			(grouping: [[ShDevice]], device: ShDevice) => {
+				const result = grouping
+				let lastGroup = grouping[grouping.length - 1]
+				if (lastGroup.length >= devicesPerWidget) {
+					grouping.push([device])
+				} else {
+					lastGroup.push(device)
+				}
+				return result
+			},
+			[[]] as unknown as [[ShDevice]],
+		)
 		: [activeDevices.value],
 )
 const activeDevices = computed(() => {
 	return Object.values(shDevices).filter((dev) => dev.configured)
 })
+
 function title(index: number) {
 	return (
 		'Geräte' +

@@ -8,7 +8,8 @@
 // Components have their local model
 
 import { reactive, ref } from 'vue'
-import { ShDevice, GlobalData } from './types'
+import { GlobalData } from './types'
+// import { ShDevice, shDevices } from '@/components/smartHome/model'
 import type { PowerItem, ItemProps } from './types'
 
 export const masterData: { [key: string]: ItemProps } = reactive({
@@ -53,16 +54,16 @@ export const usageSummary: { [key: string]: PowerItem } = reactive({
 	batIn: createPowerItem('batIn'),
 	house: createPowerItem('house'),
 })
-export const shDevices: { [key: number]: ShDevice } = reactive([])
+// export const shDevices: { [key: number]: ShDevice } = reactive([])
 export const globalData = reactive(new GlobalData())
 export const etPriceList = ref('')
 // Initiate the model
-Array.from({ length: 9 }, (v, i) => (shDevices[i] = new ShDevice(i)))
+// Array.from({ length: 9 }, (v, i) => (shDevices[i] = new ShDevice(i)))
 // init colors
 
-Object.values(shDevices).forEach((device) => {
+/* Object.values(shDevices).forEach((device) => {
 	device.color = 'var(--color-sh' + (device.id + 1) + ')'
-})
+}) */
 
 function createPowerItem(key: string): PowerItem {
 	const p: PowerItem = {

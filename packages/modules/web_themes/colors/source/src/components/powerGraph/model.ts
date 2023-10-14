@@ -105,7 +105,9 @@ export const dayGraph = reactive({
 	date: new Date(),
 	activate() {
 		if (graphData.graphMode == 'day' || graphData.graphMode == 'today') {
+			if (graphData.graphMode == 'today') {
 			this.date = new Date()
+			}
 			const dateString =
 				this.date.getFullYear().toString() +
 				(this.date.getMonth() + 1).toString().padStart(2, '0') +

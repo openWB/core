@@ -126,11 +126,11 @@ import { computed } from 'vue'
 import { globalConfig } from '@/assets/js/themeConfig'
 import {
 	globalData,
-	shDevices,
 	sourceSummary,
 	usageSummary,
 	masterData,
 } from '@/assets/js/model'
+import { shDevices } from '../smartHome/model'
 import { chargePoints } from '@/components/chargePointList/model'
 import PMSourceArc from './PMSourceArc.vue'
 import PMUsageArc from './PMUsageArc.vue'

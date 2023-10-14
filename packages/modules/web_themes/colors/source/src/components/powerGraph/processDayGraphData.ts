@@ -10,9 +10,12 @@ import {
 } from './model'
 import { historicSummary, usageSummary } from '@/assets/js/model'
 import { vehicles } from '../chargePointList/model'
+
 let startValues: GraphDataItem = {}
 let endValues: GraphDataItem = {}
 let evSocs: string[] = []
+let shs: string[] = []
+let cps: string[] = []
 // methods:
 
 export function processDayGraphMessages(topic: string, message: string) {
@@ -22,6 +25,8 @@ export function processDayGraphMessages(topic: string, message: string) {
 		historicSummary[cat].energyPv = 0
 		historicSummary[cat].energyBat = 0
 	})
+	shs=[]
+	cps=[]
 	const transformedTable = transformDatatable(inputTable)
 	setGraphData(transformedTable)
 	consumerCategories.map((cat) => {
@@ -45,14 +50,11 @@ function transformDatatable(
 	let transformedRow: GraphDataItem = {}
 
 	inputTable.map((inputRow, index) => {
-		//for (let index = 0; index < inputTable.length; index++) {
 		transformedRow = transformRow(inputRow)
 		if (index == 0) {
 			startValues = transformedRow
 			startValues.chargingPv = 0
 			startValues.chargingBat = 0
-			// pvChargeCounter = 0
-			// batChargeCounter = 0
 		} else {
 			const values = calculatePowerValues(transformedRow, previousRow)
 			outputTable.push(values)
@@ -71,7 +73,6 @@ function transformDatatable(
 // transform one row of the incoming graph data table
 function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 	const currentItem: GraphDataItem = {}
-	currentItem.devices = 0
 	if (graphData.graphMode == 'day' || graphData.graphMode == 'today') {
 		const d = timeParse('%H:%M')(currentRow.date)
 		if (d) {
@@ -111,6 +112,9 @@ function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 		if (id != 'all') {
 			currentItem[id] = values.imported
 			currentItem['soc' + id] = values.soc
+			if (!(id in cps)) {
+				cps.push(id)
+			}
 		} else {
 			currentItem['charging'] = values.imported
 		}
@@ -120,33 +124,21 @@ function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 			currentItem['soc-' + id] = values.soc
 		}
 	})
+	currentItem.devices = 0
 	Object.entries(currentRow.sh).forEach(([id, values]) => {
 		if (id != 'all') {
 			currentItem[id] = values.imported
+			currentItem.devices += values.imported
+			if (!(id in shs)) {
+				shs.push(id)
+			}
+		} /* else {
 			currentItem['devices'] += values.imported
-		} else {
-			currentItem['devices'] += values.imported
-		}
+		} */
 	})
 	//currentItem['devices']=0
 	return currentItem
 }
-
-// list of chargepoints we have
-const cps = [
-	'cp0',
-	'cp1',
-	'cp2',
-	'cp3',
-	'cp4',
-	'cp5',
-	'cp6',
-	'cp7',
-	'cp8',
-	'cp9',
-]
-
-const shs = ['sh0', 'sh1', 'sh2', 'sh3', 'sh4']
 // calculate the graph values for one row based on the delta between two input rows
 function calculatePowerValues(
 	currentRow: GraphDataItem,
@@ -164,12 +156,10 @@ function calculatePowerValues(
 		'devices',
 	]
 
-	cats.concat(cps).forEach((category) => {
+	cats.concat(cps).concat(shs).forEach((category) => {
 		result[category] = calculatePower(currentRow, previousRow, category)
 	})
-	cats.concat(shs).forEach((category) => {
-		result[category] = calculatePower(currentRow, previousRow, category)
-	})
+
 	result.soc0 = evSocs[0] ? currentRow[evSocs[0]] : 0
 	result.soc1 = evSocs[1] ? currentRow[evSocs[1]] : 0
 	result.selfUsage = result.solarPower - result.gridPush
@@ -202,10 +192,12 @@ function calculatePower(
 ) {
 	if (
 		currentRow[category] !== undefined &&
-		previousRow[category] !== undefined
+		previousRow[category] !== undefined && 
+		currentRow[category] > previousRow[category]
 	) {
 		return (12 * (currentRow[category] - previousRow[category])) / 1000
 	} else {
+		currentRow[category]=previousRow[category]
 		return 0
 	}
 }
@@ -214,8 +206,6 @@ function updateEnergyValues(
 	startValues: GraphDataItem,
 	endValues: GraphDataItem,
 ) {
-	//const startValues = extractCounters (rawData[0]);
-	//const endValues = extractCounters(rawData[rawData.length - 1]);
 	historicSummary.pv.energy =
 		(endValues.solarPower - startValues.solarPower)
 	historicSummary.evuIn.energy =
