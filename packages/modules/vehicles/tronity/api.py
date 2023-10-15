@@ -22,9 +22,11 @@ def fetch_soc(config: TronityVehicleSocConfiguration, soc_update_data: SocUpdate
 
 
 def is_token_valid(access_token: str) -> bool:
-    if not access_token:
+    if not access_token or access_token == 'None':
         log.debug("No token found")
         return False
+    else:
+        log.debug("Found Token: %s", access_token)
 
     decoded_data = jwt.decode(jwt=access_token, verify=False, algorithms=['HS256'], options={"verify_signature": False})
     if datetime.utcfromtimestamp(decoded_data['exp']) < datetime.utcnow():
