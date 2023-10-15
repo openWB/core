@@ -106,7 +106,7 @@ export const dayGraph = reactive({
 	activate() {
 		if (graphData.graphMode == 'day' || graphData.graphMode == 'today') {
 			if (graphData.graphMode == 'today') {
-			this.date = new Date()
+				this.date = new Date()
 			}
 			const dateString =
 				this.date.getFullYear().toString() +
@@ -264,10 +264,10 @@ export function setGraphMode(mode: string) {
 }
 export function calculateAutarchy(cat: string, values: GraphDataItem) {
 	values[cat + 'Pv'] =
-		1000 * (values[cat] * (values.solarPower - values.gridPush)) /
+		(1000 * (values[cat] * (values.solarPower - values.gridPush))) /
 		(values.solarPower - values.gridPush + values.gridPull + values.batOut)
 	values[cat + 'Bat'] =
-		1000 * (values[cat] * values.batOut) /
+		(1000 * (values[cat] * values.batOut)) /
 		(values.solarPower - values.gridPush + values.gridPull + values.batOut)
 }
 export function updateEnergyValues(powerValues: { [key: string]: number }) {
@@ -292,7 +292,7 @@ export function updateEnergyValues(powerValues: { [key: string]: number }) {
 		historicSummary[cat].pvPercentage = Math.round(
 			((historicSummary[cat].energyPv + historicSummary[cat].energyBat) /
 				historicSummary[cat].energy) *
-			100,
+				100,
 		)
 	})
 }

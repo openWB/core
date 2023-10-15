@@ -127,7 +127,9 @@
 						<InfoItem heading="Reichweite:">
 							{{
 								vehicles[props.chargepoint.connectedVehicle]
-									? Math.round(vehicles[props.chargepoint.connectedVehicle].range)
+									? Math.round(
+											vehicles[props.chargepoint.connectedVehicle].range,
+									  )
 									: 0
 							}}
 							km

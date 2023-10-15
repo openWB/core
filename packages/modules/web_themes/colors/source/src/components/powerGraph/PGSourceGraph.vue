@@ -8,8 +8,17 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { Selection,  BaseType } from 'd3'
-import { select, scaleLinear, scaleBand, stack, extent, axisLeft, area, easeLinear } from 'd3'
+import type { Selection, BaseType } from 'd3'
+import {
+	select,
+	scaleLinear,
+	scaleBand,
+	stack,
+	extent,
+	axisLeft,
+	area,
+	easeLinear,
+} from 'd3'
 import { globalConfig } from '@/assets/js/themeConfig'
 import {
 	graphData,
@@ -124,9 +133,7 @@ const ticklineColor = computed(() => {
 	return globalConfig.showGrid ? 'var(--color-grid)' : 'var(--color-bg)'
 })
 
-function drawGraph(
-	graph: Selection<BaseType, unknown, HTMLElement, never>,
-) {
+function drawGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {
 	const area0 = area()
 		.x((d, i) => iScale.value(i))
 		.y(yScale.value(0))

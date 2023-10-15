@@ -23,7 +23,7 @@
 					<!-- Show the values for the different categories -->
 					<PMLabel
 						:x="0"
-						:y="-height/10*2"
+						:y="(-height / 10) * 2"
 						:data="sourceSummary.pv"
 						:props="masterData.pv"
 						:anchor="'middle'"
@@ -31,7 +31,7 @@
 					/>
 					<PMLabel
 						:x="0"
-						:y="-height/10*3"
+						:y="(-height / 10) * 3"
 						:data="sourceSummary.evuIn"
 						:props="masterData.evuIn"
 						:anchor="'middle'"
@@ -39,7 +39,7 @@
 					/>
 					<PMLabel
 						:x="0"
-						:y="-height/10"
+						:y="-height / 10"
 						:data="sourceSummary.batOut"
 						:props="masterData.batOut"
 						:anchor="'middle'"
@@ -60,23 +60,23 @@
 
 					<!-- Show the SoC for the first two cars -->
 					<PMLabel
-						v-if="Object.keys(vehicles).length > 0 && Object.values(vehicles)[0].soc"
+						v-if="
+							Object.keys(vehicles).length > 0 && Object.values(vehicles)[0].soc
+						"
 						:x="-width / 2 - margin / 4 + 10"
 						:y="-height / 2 + margin + 5"
-						:labeltext="
-							trimName(vehicles[0].name) + ': ' + soc(0) + '%'
-						"
+						:labeltext="trimName(vehicles[0].name) + ': ' + soc(0) + '%'"
 						:labelcolor="chargepoints[0].color"
 						:anchor="'start'"
 						:config="globalConfig"
 					/>
 					<PMLabel
-						v-if="Object.keys(vehicles).length > 1 && Object.values(vehicles)[1].soc"
+						v-if="
+							Object.keys(vehicles).length > 1 && Object.values(vehicles)[1].soc
+						"
 						:x="width / 2 + margin / 4 - 10"
 						:y="-height / 2 + margin + 5"
-						:labeltext="
-							trimName(vehicles[1].name) + ': ' + soc(1) + '%'
-						"
+						:labeltext="trimName(vehicles[1].name) + ': ' + soc(1) + '%'"
 						:labelcolor="chargepoints[1].color"
 						:anchor="'end'"
 						:config="globalConfig"
@@ -212,7 +212,6 @@ const valuesToDisplay = computed(() => {
 		usageSummary.batIn,
 		usageSummary.house,
 	].filter((x) => x.power > 0)
-	
 })
 const scheme = computed(() => schemes[valuesToDisplay.value.length - 1])
 function labelCoordinates(item: number) {

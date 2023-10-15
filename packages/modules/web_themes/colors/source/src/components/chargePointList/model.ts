@@ -334,8 +334,11 @@ export interface EvTemplate {
 export const chargePoints: { [key: number]: ChargePoint } = reactive({})
 export const vehicles: { [key: number]: Vehicle } = reactive({}) // the list of vehicles, key is the vehicle ID
 export const chargeTemplates: { [key: number]: ChargeTemplate } = reactive({})
-export const scheduledChargingPlans: { [key: number]: ChargeSchedule[] } = reactive({})
-export const timeChargingPlans: { [key: number]: ChargeTimePlan[] } = reactive({})
+export const scheduledChargingPlans: { [key: number]: ChargeSchedule[] } =
+	reactive({})
+export const timeChargingPlans: { [key: number]: ChargeTimePlan[] } = reactive(
+	{},
+)
 
 export const evTemplates: { [key: number]: EvTemplate } = reactive({})
 

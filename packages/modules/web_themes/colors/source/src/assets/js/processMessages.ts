@@ -1,6 +1,11 @@
 import { mqttRegister, mqttSubscribe } from './mqttClient'
 import type { Hierarchy } from './types'
-import { correctHouseConsumption, globalData, sourceSummary, usageSummary } from './model'
+import {
+	correctHouseConsumption,
+	globalData,
+	sourceSummary,
+	usageSummary,
+} from './model'
 import { processLiveGraphMessages } from '../../components/powerGraph/processLiveGraphData'
 import { processDayGraphMessages } from '../../components/powerGraph/processDayGraphData'
 import { processMonthGraphMessages } from '../../components/powerGraph/processMonthGraphData'
@@ -121,11 +126,10 @@ function processGlobalCounterMessages(topic: string, message: string) {
 	} else if (topic.match(/^openwb\/counter\/set\/home_consumption$/i)) {
 		usageSummary.house.power = +message
 		correctHouseConsumption()
-		} else if (
+	} else if (
 		topic.match(/^openwb\/counter\/set\/daily_yield_home_consumption$/i)
 	) {
 		usageSummary.house.energy = +message
-		
 	} else {
 		// console.warn('Ignored GLOBAL COUNTER message: ' + topic)
 	}
@@ -146,7 +150,7 @@ function processHierarchy(hierarchy: Hierarchy) {
 			// console.info('inverter id ' + hierarchy.id)
 			break
 		default:
-			// console.warn('Ignored Hierarchy type: ' + hierarchy.type)
+		// console.warn('Ignored Hierarchy type: ' + hierarchy.type)
 	}
 	// recursively process the hierarchy
 	hierarchy.children.forEach((element) => processHierarchy(element))

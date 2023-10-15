@@ -116,7 +116,7 @@ const editmode = ref(0)
 const displayDate = computed(() => {
 	switch (graphData.graphMode) {
 		case 'live':
-		/* 	if (graphData.data.length) {
+			/* 	if (graphData.data.length) {
 				const startTime = graphData.data[0].date
 				const endTime = graphData.data[graphData.data.length - 1].date
 				const liveGraphMinutes = Math.round((endTime - startTime) / 60000)

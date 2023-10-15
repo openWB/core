@@ -3,7 +3,7 @@
 		<div class="input-group input-group-xs">
 			<!-- day -->
 			<button
-			v-if="props.mode=='day' || props.mode=='today'"
+				v-if="props.mode == 'day' || props.mode == 'today'"
 				class="btn dropdown-toggle"
 				type="button"
 				data-bs-toggle="dropdown"
@@ -27,7 +27,7 @@
 			</div>
 			<!-- month -->
 			<button
-			v-if="props.mode!='year' && props.mode!='live'"
+				v-if="props.mode != 'year' && props.mode != 'live'"
 				class="btn dropdown-toggle"
 				type="button"
 				data-bs-toggle="dropdown"
@@ -50,7 +50,7 @@
 			</div>
 			<!-- year -->
 			<button
-			v-if="props.mode!='live'"
+				v-if="props.mode != 'live'"
 				class="btn dropdown-toggle"
 				type="button"
 				data-bs-toggle="dropdown"
@@ -72,7 +72,7 @@
 				</table>
 			</div>
 			<button
-			v-if="props.mode!='live'"
+				v-if="props.mode != 'live'"
 				class="button-outline-secondary"
 				type="button"
 				@click="updateDate"

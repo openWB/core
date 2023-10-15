@@ -5,9 +5,7 @@
  */
 
 import { mqttPublish, mqttClientId } from './mqttClient'
-import {
-	chargePoints,
-	} from '@/components/chargePointList/model'
+import { chargePoints } from '@/components/chargePointList/model'
 
 const topics: { [topic: string]: string } = {
 	cpLock: 'openWB/set/chargepoint/%/set/manual_lock',
@@ -84,7 +82,6 @@ export function updateServer(
 			mqttPublish(topic, JSON.stringify(value))
 	}
 }
-
 
 export function sendCommand(event: object) {
 	// console.log ("SENDCOMMAND " + JSON.stringify(event))

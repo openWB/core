@@ -34,9 +34,13 @@ export function formatWatt(watt: number, decimalPlaces = 1) {
 	}
 }
 
-export function formatWattH(wattH: number, decimalPlaces :number = 1, useMWh = false) {
+export function formatWattH(
+	wattH: number,
+	decimalPlaces: number = 1,
+	useMWh = false,
+) {
 	let wattResult
-	if ((wattH >= 1000) && (decimalPlaces < 4)) {
+	if (wattH >= 1000 && decimalPlaces < 4) {
 		switch (decimalPlaces) {
 			case 0:
 				wattResult = Math.round(wattH / 1000)
@@ -105,12 +109,9 @@ export function formatMonth(month: number, year: number) {
 }
 
 export function formatTemp(t: number) {
-	return (
-		(t != 999) ?
-		(Math.round(t * 10) / 10).toLocaleString(undefined, {
-			minimumFractionDigits: 1,
-		}) + '°'
+	return t != 999
+		? (Math.round(t * 10) / 10).toLocaleString(undefined, {
+				minimumFractionDigits: 1,
+		  }) + '°'
 		: '-'
-	)
 }
-

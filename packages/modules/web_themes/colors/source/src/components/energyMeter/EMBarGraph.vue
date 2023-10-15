@@ -25,7 +25,7 @@
 </template>
 
 <script setup lang="ts">
-import * as d3  from 'd3'
+import * as d3 from 'd3'
 import type { MarginType, PowerItem } from '@/assets/js/types'
 import EmBar from './EmBar.vue'
 import { sourceSummary, historicSummary, usageSummary } from '@/assets/js/model'

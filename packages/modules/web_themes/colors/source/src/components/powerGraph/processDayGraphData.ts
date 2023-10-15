@@ -6,7 +6,7 @@ import {
 	setGraphData,
 	dayGraph,
 	calculateAutarchy,
-	consumerCategories
+	consumerCategories,
 } from './model'
 import { historicSummary, usageSummary } from '@/assets/js/model'
 import { vehicles } from '../chargePointList/model'
@@ -25,8 +25,8 @@ export function processDayGraphMessages(topic: string, message: string) {
 		historicSummary[cat].energyPv = 0
 		historicSummary[cat].energyBat = 0
 	})
-	shs=[]
-	cps=[]
+	shs = []
+	cps = []
 	const transformedTable = transformDatatable(inputTable)
 	setGraphData(transformedTable)
 	consumerCategories.map((cat) => {
@@ -156,9 +156,12 @@ function calculatePowerValues(
 		'devices',
 	]
 
-	cats.concat(cps).concat(shs).forEach((category) => {
-		result[category] = calculatePower(currentRow, previousRow, category)
-	})
+	cats
+		.concat(cps)
+		.concat(shs)
+		.forEach((category) => {
+			result[category] = calculatePower(currentRow, previousRow, category)
+		})
 
 	result.soc0 = evSocs[0] ? currentRow[evSocs[0]] : 0
 	result.soc1 = evSocs[1] ? currentRow[evSocs[1]] : 0
@@ -192,12 +195,12 @@ function calculatePower(
 ) {
 	if (
 		currentRow[category] !== undefined &&
-		previousRow[category] !== undefined && 
+		previousRow[category] !== undefined &&
 		currentRow[category] > previousRow[category]
 	) {
 		return (12 * (currentRow[category] - previousRow[category])) / 1000
 	} else {
-		currentRow[category]=previousRow[category]
+		currentRow[category] = previousRow[category]
 		return 0
 	}
 }
@@ -206,18 +209,13 @@ function updateEnergyValues(
 	startValues: GraphDataItem,
 	endValues: GraphDataItem,
 ) {
-	historicSummary.pv.energy =
-		(endValues.solarPower - startValues.solarPower)
-	historicSummary.evuIn.energy =
-		(endValues.gridPull - startValues.gridPull)
-	historicSummary.batOut.energy = (endValues.batOut - startValues.batOut)
-	historicSummary.evuOut.energy =
-		(endValues.gridPush - startValues.gridPush)
-	historicSummary.batIn.energy = (endValues.batIn - startValues.batIn)
-	historicSummary.charging.energy =
-		(endValues.charging - startValues.charging)
-	historicSummary.devices.energy =
-		(endValues.devices - startValues.devices)
+	historicSummary.pv.energy = endValues.solarPower - startValues.solarPower
+	historicSummary.evuIn.energy = endValues.gridPull - startValues.gridPull
+	historicSummary.batOut.energy = endValues.batOut - startValues.batOut
+	historicSummary.evuOut.energy = endValues.gridPush - startValues.gridPush
+	historicSummary.batIn.energy = endValues.batIn - startValues.batIn
+	historicSummary.charging.energy = endValues.charging - startValues.charging
+	historicSummary.devices.energy = endValues.devices - startValues.devices
 	// historicSummary.charging.energyPv = (endValues.chargingPv - startValues.chargingPv)
 	// historicSummary.charging.energyBat = (endValues.chargingBat - startValues.chargingBat)
 	historicSummary.charging.pvPercentage = Math.round(

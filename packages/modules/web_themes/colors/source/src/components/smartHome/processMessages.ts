@@ -45,9 +45,12 @@ function processSmarthomeConfigMessages(topic: string, message: string) {
 		)
 	) {
 		shDevices[index].canSwitch = message == '1'
-	} else if (topic.match(/^openWB\/LegacySmarthome\/config\/get\/Devices\/[0-9]+\/device_homeConsumtion$/i,))
-	{
-		shDevices[index].countAsHouse = (message == '1')
+	} else if (
+		topic.match(
+			/^openWB\/LegacySmarthome\/config\/get\/Devices\/[0-9]+\/device_homeConsumtion$/i,
+		)
+	) {
+		shDevices[index].countAsHouse = message == '1'
 	} else if (
 		topic.match(
 			/^openWB\/LegacySmarthome\/config\/get\/Devices\/[0-9]+\/device_temperatur_configured$/i,
@@ -126,12 +129,12 @@ function updateShSummary(cat: string) {
 	switch (cat) {
 		case 'power':
 			usageSummary['devices'].power = Object.values(shDevices)
-				.filter((dev) => (dev.configured && !dev.countAsHouse))
+				.filter((dev) => dev.configured && !dev.countAsHouse)
 				.reduce((sum, consumer) => sum + consumer.power, 0)
 			break
 		case 'energy':
 			usageSummary['devices'].energy = Object.values(shDevices)
-				.filter((dev) => (dev.configured && !dev.countAsHouse))
+				.filter((dev) => dev.configured && !dev.countAsHouse)
 				.reduce((sum, consumer) => sum + consumer.energy, 0)
 			break
 		default:

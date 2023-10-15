@@ -11,7 +11,7 @@
 			</tr>
 		</thead>
 		<tbody>
-			<tr v-for="plan,i in plans" :key="i" :style="cellStyle(i)">
+			<tr v-for="(plan, i) in plans" :key="i" :style="cellStyle(i)">
 				<td class="tablecell">
 					{{ plan.time[0] }}
 				</td>
@@ -23,20 +23,24 @@
 					{{ freqNames[plan.frequency.selected] }}
 				</td>
 				<td class="tablecell left">
-					<a :href="'../../settings/#/VehicleConfiguration/charge_template/'+ props.chargeTemplateId">
-					<span
-							:class="plan.active? 'fa-toggle-on':'fa-toggle-off'"
-						:style="switchStyle(i)"
-					class="fa"
-					type="button"
+					<a
+						:href="
+							'../../settings/#/VehicleConfiguration/charge_template/' +
+							props.chargeTemplateId
+						"
 					>
-				</span></a>
-			</td>
+						<span
+							:class="plan.active ? 'fa-toggle-on' : 'fa-toggle-off'"
+							:style="switchStyle(i)"
+							class="fa"
+							type="button"
+						>
+						</span
+					></a>
+				</td>
 			</tr>
-			</tbody>
+		</tbody>
 	</table>
-
-
 </template>
 
 <script setup lang="ts">
@@ -55,13 +59,15 @@ const plans = computed(() => {
 	let result = timeChargingPlans[props.chargeTemplateId]
 	return result ?? []
 })
-function switchStyle(key:number) {
-	const style = (plans.value[key].active ? 'var(--color-switchGreen)' : 'var(--color-switchRed)')
-	return {color: style}
+function switchStyle(key: number) {
+	const style = plans.value[key].active
+		? 'var(--color-switchGreen)'
+		: 'var(--color-switchRed)'
+	return { color: style }
 }
-function cellStyle(key:number) {
-	const style = (plans.value[key].active ? 'bold' : 'regular')
-	return {'font-weight': style}
+function cellStyle(key: number) {
+	const style = plans.value[key].active ? 'bold' : 'regular'
+	return { 'font-weight': style }
 }
 </script>
 

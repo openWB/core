@@ -1,4 +1,4 @@
-import {timeParse } from 'd3'
+import { timeParse } from 'd3'
 import {
 	type GraphDataItem,
 	type RawDayGraphDataItem,
@@ -137,7 +137,7 @@ function transformRow(inputRow: RawDayGraphDataItem): GraphDataItem {
 		outputRow.gridPull + outputRow.batOut + outputRow.solarPower
 	if (usedEnergy > 0) {
 		consumerCategories.map((cat) => calculateAutarchy(cat, outputRow))
-		} else {
+	} else {
 		consumerCategories.map((cat) => {
 			outputRow[cat + 'Pv'] = 0
 			outputRow[cat + 'Bat'] = 0
@@ -145,4 +145,3 @@ function transformRow(inputRow: RawDayGraphDataItem): GraphDataItem {
 	}
 	return outputRow
 }
-

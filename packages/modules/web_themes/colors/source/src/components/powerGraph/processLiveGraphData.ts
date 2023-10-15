@@ -1,4 +1,4 @@
-import {timeParse } from 'd3'
+import { timeParse } from 'd3'
 import { globalData } from '../../assets/js/model'
 import {
 	type GraphDataItem,
@@ -14,10 +14,10 @@ export function processLiveGraphMessages(topic: string, message: string) {
 		globalData.displayLiveGraph = +message == 1
 	} else if (topic.match(/^openwb\/graph\/alllivevaluesJson[1-9][0-9]*$/i)) {
 		reloadLiveGraph(topic, message)
-		} else if (topic == 'openWB/graph/lastlivevaluesJson') {
+	} else if (topic == 'openWB/graph/lastlivevaluesJson') {
 		updateLiveGraph(topic, message)
 	} else if (topic == 'openWB/graph/config/duration') {
-		  liveGraph.duration = JSON.parse(message);
+		liveGraph.duration = JSON.parse(message)
 	} else {
 		//console.warn('Ignored GRAPH message: [' + topic + '](' + message + ')')
 	}

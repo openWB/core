@@ -34,7 +34,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import * as d3  from 'd3'
+import * as d3 from 'd3'
 import type { MarginType, PowerItem } from '@/assets/js/types'
 
 const props = defineProps<{

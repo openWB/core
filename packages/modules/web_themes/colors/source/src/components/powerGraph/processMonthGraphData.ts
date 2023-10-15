@@ -137,4 +137,3 @@ function transformRow(inputRow: RawDayGraphDataItem): GraphDataItem {
 
 	return outputRow
 }
-

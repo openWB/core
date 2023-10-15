@@ -6,7 +6,7 @@
 import type { PowerItem } from '@/assets/js/types'
 import { usageSummary } from '@/assets/js/model'
 import { shDevices } from '../smartHome/model'
-import { type PieArcDatum, select, arc, pie }  from 'd3'
+import { type PieArcDatum, select, arc, pie } from 'd3'
 import { computed } from 'vue'
 // props
 const props = defineProps<{

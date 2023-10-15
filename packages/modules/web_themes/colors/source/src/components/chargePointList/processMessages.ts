@@ -185,9 +185,13 @@ export function processVehicleTemplateMessages(topic: string, message: string) {
 			if (!(tId in timeChargingPlans)) {
 				timeChargingPlans[tId] = []
 			}
-			timeChargingPlans[tId][pId]=plan
+			timeChargingPlans[tId][pId] = plan
 		}
-	} else if (topic.match(/^openwb\/vehicle\/template\/charge_template\/[0-9]+\/chargemode\/scheduled_charging\/plans\/[0-9]+$/i,)) {
+	} else if (
+		topic.match(
+			/^openwb\/vehicle\/template\/charge_template\/[0-9]+\/chargemode\/scheduled_charging\/plans\/[0-9]+$/i,
+		)
+	) {
 		const tidMatch = topic.match(/(?:\/)([0-9]+)(?:\/)/g)
 		const pidMatch = topic.match(/[0-9]+$/i)
 		if (tidMatch && pidMatch) {
@@ -199,8 +203,7 @@ export function processVehicleTemplateMessages(topic: string, message: string) {
 			}
 			scheduledChargingPlans[tId][pId] = plan
 		}
-	}
-	else if (topic.match(/^openwb\/vehicle\/template\/ev_template\/[0-9]+$/i)) {
+	} else if (topic.match(/^openwb\/vehicle\/template\/ev_template\/[0-9]+$/i)) {
 		const match = topic.match(/[0-9]+$/i)
 		if (match) {
 			const index = +match[0]

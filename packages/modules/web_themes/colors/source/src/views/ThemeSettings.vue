@@ -146,8 +146,9 @@ const shSchemes: [string, string][] = [
 ]
 </script>
 <style scoped>
-.fa-circle-check{
+.fa-circle-check {
 	font-size: var(--font-extralarge);
 	background-color: var(--color-bg);
 	color: var(--color-menu);
-}</style>
+}
+</style>

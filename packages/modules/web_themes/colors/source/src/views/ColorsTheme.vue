@@ -67,7 +67,12 @@ Hagen */
 				<i class="fa-solid fa-lg fa-car-battery" />
 				<span class="d-none d-md-inline ms-2">Speicher</span>
 			</a>
-			<a v-if="showSH" class="nav-link" data-bs-toggle="tab" data-bs-target="#smarthomelist">
+			<a
+				v-if="showSH"
+				class="nav-link"
+				data-bs-toggle="tab"
+				data-bs-target="#smarthomelist"
+			>
 				<i class="fa-solid fa-lg fa-plug" />
 				<span class="d-none d-md-inline ms-2">Smart Home</span>
 			</a>
@@ -96,7 +101,7 @@ Hagen */
 				<div class="row py-0 m-0 d-flex justify-content-center">
 					<ChargePointList />
 					<BatteryList />
-					<SmartHomeList v-if="showSH"/>
+					<SmartHomeList v-if="showSH" />
 					<PriceChart />
 				</div>
 			</div>
@@ -126,14 +131,11 @@ Hagen */
 				role="tabpanel"
 				aria-labelledby="smarthome-tab"
 			>
-				<div
-					v-if="showSH"
-					class="row py-0 m-0 d-flex justify-content-center"
-				>
+				<div v-if="showSH" class="row py-0 m-0 d-flex justify-content-center">
 					<SmartHomeList />
 				</div>
 			</div>
-	<!-- 		<div
+			<!-- 		<div
 				id="etPricing"
 				class="tab-pane"
 				role="tabpanel"
@@ -158,9 +160,6 @@ Hagen */
 					MQ Viewer
 				</button>
 			</div>
-			<!--   <hr v-if="showSetup" />
-      <Setup v-if="showSetup"></Setup> -->
-
 			<hr v-if="showMQ" />
 			<MQTTViewer v-if="showMQ" />
 		</div>
@@ -204,8 +203,8 @@ const usageDetails = computed(() => {
 		.concat([usageSummary.batIn, usageSummary.house])
 })
 const showMQ = ref(false)
-const showSH = computed(()=> {
-	return (Object.values(shDevices).filter(dev=>dev.configured).length > 0)
+const showSH = computed(() => {
+	return Object.values(shDevices).filter((dev) => dev.configured).length > 0
 })
 // methods
 function init() {

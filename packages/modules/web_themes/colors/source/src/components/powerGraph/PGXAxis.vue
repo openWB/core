@@ -39,7 +39,14 @@
 
 <script setup lang="ts">
 import type { AxisContainerElement, ScaleTime } from 'd3'
-import { axisBottom,  extent, scaleBand, scaleTime,  select, timeFormat } from 'd3'
+import {
+	axisBottom,
+	extent,
+	scaleBand,
+	scaleTime,
+	select,
+	timeFormat,
+} from 'd3'
 import { globalConfig } from '@/assets/js/themeConfig'
 import { graphData } from './model'
 import { computed } from 'vue'
@@ -75,7 +82,7 @@ const ticksize = computed(() => {
 	}
 })
 
- const xScale = computed(() => {
+const xScale = computed(() => {
 	let e = extent(graphData.data, (d) => d.date)
 	if (e[0] && e[1]) {
 		return scaleTime<number>().domain(e).range([0, props.width])

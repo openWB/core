@@ -79,6 +79,7 @@ function createPowerItem(key: string): PowerItem {
 	return p
 }
 export function correctHouseConsumption() {
-	usageSummary.house.power = usageSummary.house.power - usageSummary.devices.power
+	usageSummary.house.power =
+		usageSummary.house.power - usageSummary.devices.power
 	// usageSummary.house.energy = usageSummary.house.energy - usageSummary.devices.energy
 }

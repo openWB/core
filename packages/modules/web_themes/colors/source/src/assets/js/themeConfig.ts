@@ -5,7 +5,7 @@
  */
 
 import { computed, reactive } from 'vue'
-import { select }  from 'd3'
+import { select } from 'd3'
 import type { ChargeModeInfo } from './types'
 import { addShDevice, shDevices } from '@/components/smartHome/model'
 import { ChargeMode } from '@/components/chargePointList/model'
@@ -153,7 +153,6 @@ export class Config {
 	setMaxPower(max: number) {
 		this._maxPower = max
 	}
-
 }
 export const globalConfig = reactive(new Config())
 export function initConfig() {
@@ -298,7 +297,7 @@ function writeCookie() {
 	prefs.hideSH = Object.values(shDevices)
 		.filter((device) => !device.showInGraph)
 		.map((device) => device.id)
-	prefs.showLG = (globalConfig.graphPreference == 'live')
+	prefs.showLG = globalConfig.graphPreference == 'live'
 	prefs.displayM = globalConfig.displayMode
 	prefs.stackO = globalConfig.usageStackOrder
 	prefs.showGr = globalConfig.showGrid
@@ -339,7 +338,7 @@ function readCookie() {
 			globalConfig.setGraphPreference(prefs.showLG ? 'live' : 'today')
 		}
 		if (prefs.maxPow !== undefined) {
-			globalConfig.setMaxPower (+prefs.maxPow)
+			globalConfig.setMaxPower(+prefs.maxPow)
 		}
 		if (prefs.relPM !== undefined) {
 			globalConfig.setShowRelativeArcs(prefs.relPM)
