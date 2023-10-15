@@ -60,22 +60,22 @@
 
 					<!-- Show the SoC for the first two cars -->
 					<PMLabel
-						v-if="chargepoints.length > 0 && chargepoints[0].isSocConfigured"
+						v-if="Object.keys(vehicles).length > 0 && Object.values(vehicles)[0].soc"
 						:x="-width / 2 - margin / 4 + 10"
 						:y="-height / 2 + margin + 5"
 						:labeltext="
-							trimName(chargepoints[0].vehicleName) + ': ' + soc(0) + '%'
+							trimName(vehicles[0].name) + ': ' + soc(0) + '%'
 						"
 						:labelcolor="chargepoints[0].color"
 						:anchor="'start'"
 						:config="globalConfig"
 					/>
 					<PMLabel
-						v-if="chargepoints.length > 1 && chargepoints[1].isSocConfigured"
+						v-if="Object.keys(vehicles).length > 1 && Object.values(vehicles)[1].soc"
 						:x="width / 2 + margin / 4 - 10"
 						:y="-height / 2 + margin + 5"
 						:labeltext="
-							trimName(chargepoints[1].vehicleName) + ': ' + soc(1) + '%'
+							trimName(vehicles[1].name) + ': ' + soc(1) + '%'
 						"
 						:labelcolor="chargepoints[1].color"
 						:anchor="'end'"
@@ -131,7 +131,7 @@ import {
 	masterData,
 } from '@/assets/js/model'
 import { shDevices } from '../smartHome/model'
-import { chargePoints } from '@/components/chargePointList/model'
+import { chargePoints, vehicles } from '@/components/chargePointList/model'
 import PMSourceArc from './PMSourceArc.vue'
 import PMUsageArc from './PMUsageArc.vue'
 import PMLabel from './PMLabel.vue'
@@ -212,6 +212,7 @@ const valuesToDisplay = computed(() => {
 		usageSummary.batIn,
 		usageSummary.house,
 	].filter((x) => x.power > 0)
+	
 })
 const scheme = computed(() => schemes[valuesToDisplay.value.length - 1])
 function labelCoordinates(item: number) {
@@ -221,7 +222,7 @@ function labelCoordinates(item: number) {
 // methods
 
 function soc(i: number) {
-	return chargepoints.value[i].soc
+	return vehicles[i].soc
 }
 function trimName(name: string) {
 	const maxlen = 12

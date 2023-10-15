@@ -1,6 +1,6 @@
 import { mqttRegister, mqttSubscribe } from './mqttClient'
 import type { Hierarchy } from './types'
-import { globalData, sourceSummary, usageSummary } from './model'
+import { correctHouseConsumption, globalData, sourceSummary, usageSummary } from './model'
 import { processLiveGraphMessages } from '../../components/powerGraph/processLiveGraphData'
 import { processDayGraphMessages } from '../../components/powerGraph/processDayGraphData'
 import { processMonthGraphMessages } from '../../components/powerGraph/processMonthGraphData'
@@ -120,10 +120,12 @@ function processGlobalCounterMessages(topic: string, message: string) {
 		}
 	} else if (topic.match(/^openwb\/counter\/set\/home_consumption$/i)) {
 		usageSummary.house.power = +message
-	} else if (
+		correctHouseConsumption()
+		} else if (
 		topic.match(/^openwb\/counter\/set\/daily_yield_home_consumption$/i)
 	) {
 		usageSummary.house.energy = +message
+		
 	} else {
 		// console.warn('Ignored GLOBAL COUNTER message: ' + topic)
 	}

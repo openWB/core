@@ -12,7 +12,7 @@
 				<span
 					><i v-if="chargepoint.hasPriority" class="fa-solid fa-xs fa-star" />
 					<i
-						v-if="chargepoint.scheduledCharging"
+						v-if="chargepoint.timedCharging"
 						class="fa-solid fa-xs fa-clock"
 					/>
 				</span>

@@ -7,11 +7,14 @@ import {
 	Vehicle,
 	ChargeMode,
 	type ChargeTimePlan,
+	scheduledChargingPlans,
+	timeChargingPlans,
 } from './model'
 import type {
 	ConnectedVehicleConfig,
 	ChargeTemplate,
 	EvTemplate,
+	ChargeSchedule,
 } from './model'
 
 export function processChargepointMessages(topic: string, message: string) {
@@ -165,12 +168,6 @@ export function processVehicleTemplateMessages(topic: string, message: string) {
 		if (match) {
 			const index = +match[0]
 			const template: ChargeTemplate = JSON.parse(message) as ChargeTemplate
-			if (!template.chargemode.scheduled_charging.plans) {
-				template.chargemode.scheduled_charging.plans = {}
-			}
-			if (!template.time_charging.plans) {
-				template.time_charging.plans = {}
-			}
 			chargeTemplates[index] = template
 			updateCpFromChargeTemplate(index, template)
 		}
@@ -185,9 +182,25 @@ export function processVehicleTemplateMessages(topic: string, message: string) {
 			const tId = +tidMatch[0].replace(/[^0-9]+/g, '')
 			const pId = +pidMatch[0]
 			const plan: ChargeTimePlan = JSON.parse(message)
-			chargeTemplates[tId].time_charging.plans[pId] = plan
+			if (!(tId in timeChargingPlans)) {
+				timeChargingPlans[tId] = []
+			}
+			timeChargingPlans[tId][pId]=plan
 		}
-	} else if (topic.match(/^openwb\/vehicle\/template\/ev_template\/[0-9]+$/i)) {
+	} else if (topic.match(/^openwb\/vehicle\/template\/charge_template\/[0-9]+\/chargemode\/scheduled_charging\/plans\/[0-9]+$/i,)) {
+		const tidMatch = topic.match(/(?:\/)([0-9]+)(?:\/)/g)
+		const pidMatch = topic.match(/[0-9]+$/i)
+		if (tidMatch && pidMatch) {
+			const tId = +tidMatch[0].replace(/[^0-9]+/g, '')
+			const pId = +pidMatch[0]
+			const plan: ChargeSchedule = JSON.parse(message)
+			if (!(tId in scheduledChargingPlans)) {
+				scheduledChargingPlans[tId] = []
+			}
+			scheduledChargingPlans[tId][pId] = plan
+		}
+	}
+	else if (topic.match(/^openwb\/vehicle\/template\/ev_template\/[0-9]+$/i)) {
 		const match = topic.match(/[0-9]+$/i)
 		if (match) {
 			const index = +match[0]
@@ -214,7 +227,6 @@ function updateCpFromChargeTemplate(index: number, template: ChargeTemplate) {
 			cp.updateInstantMaxEnergy(
 				template.chargemode.instant_charging.limit.amount,
 			)
-			cp.updateScheduledCharging(template.time_charging.active)
 			cp.updatePvFeedInLimit(template.chargemode.pv_charging.feed_in_limit)
 			cp.updatePvMinCurrent(template.chargemode.pv_charging.min_current)
 			cp.updatePvMaxSoc(template.chargemode.pv_charging.max_soc)

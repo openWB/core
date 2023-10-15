@@ -127,17 +127,17 @@
 						<InfoItem heading="Reichweite:">
 							{{
 								vehicles[props.chargepoint.connectedVehicle]
-									? Math.round(vehicles[1].range)
+									? Math.round(vehicles[props.chargepoint.connectedVehicle].range)
 									: 0
 							}}
 							km
 						</InfoItem>
 						<InfoItem heading="Zeitplan:">
 							<span
-								v-if="chargepoint.scheduledCharging"
+								v-if="chargepoint.timedCharging"
 								class="me-1 fa-solid fa-xs fa-clock ps-1"
 							/>
-							{{ props.chargepoint.scheduledCharging ? 'Ja' : 'Nein' }}
+							{{ props.chargepoint.timedCharging ? 'Ja' : 'Nein' }}
 						</InfoItem>
 					</div>
 				</div>
