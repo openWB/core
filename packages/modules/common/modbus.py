@@ -49,7 +49,12 @@ class ModbusClient:
         self.port = port
 
     def __enter__(self):
-        self.delegate.__enter__()
+        try:
+            self.delegate.__enter__()
+        except pymodbus.exceptions.ConnectionException as e:
+            raise FaultState.error(
+                "Modbus-Client konnte keine Verbindung zu " + str(self.address) + ":" + str(self.port) +
+                " aufbauen. Bitte Einstellungen (IP-Adresse, Ladepunkt-Typ, ..) und Hardware-Anschluss prüfen.") from e
         return self
 
     def __exit__(self, exc_type, exc_value, exc_traceback):

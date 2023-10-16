@@ -15,12 +15,12 @@ from control.chargepoint import chargepoint
 from control.chargepoint.chargepoint_template import get_autolock_plan_default, get_chargepoint_template_default
 from modules.backup_clouds.onedrive.api import generateMSALAuthCode, retrieveMSALTokens
 
-from helpermodules import measurement_log
 from helpermodules.broker import InternalBrokerClient
 from helpermodules.data_migration.data_migration import MigrateData
+from helpermodules.measurement_logging.process_log import get_daily_log, get_monthly_log, get_yearly_log
 from helpermodules.messaging import MessageType, pub_user_message, pub_error_global
 from helpermodules.parse_send_debug import parse_send_debug_data
-from helpermodules.pub import Pub
+from helpermodules.pub import Pub, pub_single
 from helpermodules.subdata import SubData
 from helpermodules.utils.topic_parser import decode_payload
 from control import bat, bridge, chargelog, data, ev, counter, counter_all, pv
@@ -28,7 +28,7 @@ from modules.chargepoints.internal_openwb.chargepoint_module import ChargepointM
 from modules.chargepoints.internal_openwb.config import InternalChargepointMode
 from modules.common.component_type import ComponentType, special_to_general_type_mapping, type_to_topic_mapping
 import dataclass_utils
-from modules.common.configurable_vehicle import IntervalConfig
+from modules.common.configurable_vehicle import GeneralVehicleConfig
 
 
 log = logging.getLogger(__name__)
@@ -516,7 +516,8 @@ class Command:
         for default in vehicle_default:
             Pub().pub(f"openWB/set/vehicle/{new_id}/{default}", vehicle_default[default])
         Pub().pub(f"openWB/set/vehicle/{new_id}/soc_module/config", {"type": None, "configuration": {}})
-        Pub().pub(f"openWB/set/vehicle/{new_id}/soc_module/interval_config", dataclass_utils.asdict(IntervalConfig()))
+        Pub().pub(f"openWB/set/vehicle/{new_id}/soc_module/general_config",
+                  dataclass_utils.asdict(GeneralVehicleConfig()))
         self.max_id_vehicle = self.max_id_vehicle + 1
         Pub().pub("openWB/set/command/max_id/vehicle", self.max_id_vehicle)
         # Default-Mäßig werden die Profile 0 zugewiesen, wenn diese noch nicht existieren -> anlegen
@@ -556,15 +557,15 @@ class Command:
 
     def getDailyLog(self, connection_id: str, payload: dict) -> None:
         Pub().pub(f'openWB/set/log/daily/{payload["data"]["day"]}',
-                  measurement_log.get_daily_log(payload["data"]["day"]))
+                  get_daily_log(payload["data"]["day"]))
 
     def getMonthlyLog(self, connection_id: str, payload: dict) -> None:
         Pub().pub(f'openWB/set/log/monthly/{payload["data"]["month"]}',
-                  measurement_log.get_monthly_log(payload["data"]["month"]))
+                  get_monthly_log(payload["data"]["month"]))
 
     def getYearlyLog(self, connection_id: str, payload: dict) -> None:
         Pub().pub(f'openWB/set/log/yearly/{payload["data"]["year"]}',
-                  measurement_log.get_yearly_log(payload["data"]["year"]))
+                  get_yearly_log(payload["data"]["year"]))
 
     def initCloud(self, connection_id: str, payload: dict) -> None:
         parent_file = Path(__file__).resolve().parents[2]
@@ -821,6 +822,13 @@ class ProcessBrokerBranch:
                 topic = type_to_topic_mapping(payload["type"])
                 data.data.counter_all_data.hierarchy_remove_item(payload["id"])
                 client.subscribe(f'openWB/{topic}/{payload["id"]}/#', 2)
+            elif re.search("openWB/chargepoint/[0-9]+/config$", msg.topic) is not None:
+                payload = decode_payload(msg.payload)
+                if payload["type"] == "external_openwb":
+                    pub_single(
+                        f'openWB/set/internal_chargepoint/{payload["configuration"]["duo_num"]}/data/parent_cp',
+                        None,
+                        hostname=payload["configuration"]["ip_address"])
 
     def __on_message_max_id(self, client, userdata, msg):
         self.received_topics.append(msg.topic)

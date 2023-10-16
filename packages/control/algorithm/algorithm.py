@@ -27,7 +27,6 @@ class Algorithm:
             self._check_auto_phase_switch_delay()
             self.surplus_controlled.check_submode_pv_charging()
             common.reset_current()
-            common.reset_current_to_target_current()
             log.info("**Mindestrom setzen**")
             self.min_current.set_min_current()
             log.info("**Sollstrom setzen**")
@@ -43,6 +42,7 @@ class Algorithm:
             else:
                 log.info("**Keine Leistung für PV-geführtes Laden übrig.**")
             self.no_current.set_no_current()
+            self.no_current.set_none_current()
         except Exception:
             log.exception("Fehler im Algorithmus-Modul")
 

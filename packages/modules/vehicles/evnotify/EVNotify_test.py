@@ -3,7 +3,7 @@ from unittest.mock import Mock
 import pytest
 
 from modules.common import store
-from modules.common.abstract_soc import SocUpdateData
+from modules.common.abstract_vehicle import VehicleUpdateData
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.vehicles.evnotify import api
 from modules.vehicles.evnotify.soc import EVNotify, EVNotifyConfiguration, create_vehicle
@@ -22,7 +22,7 @@ class TestEVNotify:
     def test_update_updates_value_store(self, monkeypatch):
         # execution
         create_vehicle(EVNotify(configuration=EVNotifyConfiguration(
-            1, "someKey", "someToken")), 0).update(SocUpdateData())
+            1, "someKey", "someToken")), 0).update(VehicleUpdateData())
 
         # evaluation
         self.assert_context_manager_called_with(None)
@@ -37,7 +37,7 @@ class TestEVNotify:
 
         # execution
         create_vehicle(EVNotify(configuration=EVNotifyConfiguration(
-            1, "someKey", "someToken")), 0).update(SocUpdateData())
+            1, "someKey", "someToken")), 0).update(VehicleUpdateData())
 
         # evaluation
         self.assert_context_manager_called_with(dummy_error)

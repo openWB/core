@@ -7,7 +7,7 @@ from modules.common.abstract_chargepoint import AbstractChargepoint
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.component_state import ChargepointState
 from modules.common.fault_state import ComponentInfo, FaultState
-from modules.common.store import get_internal_chargepoint_value_store
+from modules.common.store import get_internal_chargepoint_value_store, get_chargepoint_value_store
 from modules.internal_chargepoint_handler.clients import ClientHandler
 
 log = logging.getLogger(__name__)
@@ -21,12 +21,20 @@ except ImportError:
 class ChargepointModule(AbstractChargepoint):
     PLUG_STANDBY_POWER_THRESHOLD = 10
 
-    def __init__(self, local_charge_point_num: int, client_handler: ClientHandler, parent_hostname: str) -> None:
+    def __init__(self, local_charge_point_num: int,
+                 client_handler: ClientHandler,
+                 parent_hostname: str,
+                 parent_cp: int,
+                 hierarchy_id: int) -> None:
         self.local_charge_point_num = local_charge_point_num
         self.component_info = ComponentInfo(
-            local_charge_point_num,
-            "Ladepunkt "+str(local_charge_point_num), "internal_chargepoint", parent_hostname)
-        self.store = get_internal_chargepoint_value_store(local_charge_point_num)
+            hierarchy_id,
+            "Ladepunkt "+str(local_charge_point_num),
+            "chargepoint",
+            parent_id=parent_cp,
+            parent_hostname=parent_hostname)
+        self.store_internal = get_internal_chargepoint_value_store(local_charge_point_num)
+        self.store = get_chargepoint_value_store(hierarchy_id)
         self.old_plug_state = False
         self.old_phases_in_use = 0
         self.__client = client_handler
@@ -45,13 +53,20 @@ class ChargepointModule(AbstractChargepoint):
                 self.__client.evse_client.set_current(formatted_current)
 
     def get_values(self, phase_switch_cp_active: bool, last_tag: str) -> Tuple[ChargepointState, float]:
+        def store_state(chargepoint_state: ChargepointState) -> None:
+            self.store.set(chargepoint_state)
+            self.store.update()
+            self.store_internal.set(chargepoint_state)
+            self.store_internal.update()
         try:
-            _, power = self.__client.meter_client.get_power()
+            powers, power = self.__client.meter_client.get_power()
             if power < self.PLUG_STANDBY_POWER_THRESHOLD:
                 power = 0
             voltages = self.__client.meter_client.get_voltages()
             currents = self.__client.meter_client.get_currents()
             imported = self.__client.meter_client.get_imported()
+            power_factors = self.__client.meter_client.get_power_factors()
+            frequency = self.__client.meter_client.get_frequency()
             phases_in_use = sum(1 for current in currents if current > 3)
             if phases_in_use == 0:
                 phases_in_use = self.old_phases_in_use
@@ -77,19 +92,22 @@ class ChargepointModule(AbstractChargepoint):
                 currents=currents,
                 imported=imported,
                 exported=0,
-                # powers=powers,
+                powers=powers,
                 voltages=voltages,
-                # frequency=frequency,
+                frequency=frequency,
                 plug_state=plug_state,
                 charge_state=charge_state,
                 phases_in_use=phases_in_use,
-                rfid=last_tag
+                power_factors=power_factors,
+                rfid=last_tag,
+                evse_current=self.set_current_evse
             )
         except Exception as e:
             self.__client.read_error += 1
             if self.__client.read_error > 5:
-                log.exception(
-                    "Anhaltender Fehler beim Auslesen der EVSE. Lade- und Stecker-Status werden zurückgesetzt.")
+                msg = ("Anhaltender Fehler beim Auslesen von EVSE und/oder Zähler. " +
+                       "Lade- und Stecker-Status werden zurückgesetzt.")
+                log.exception(msg)
                 plug_state = False
                 charge_state = False
                 chargepoint_state = ChargepointState(
@@ -97,13 +115,13 @@ class ChargepointModule(AbstractChargepoint):
                     charge_state=charge_state,
                     phases_in_use=0
                 )
-                FaultState.error(__name__ + " " + str(type(e)) + " " + str(e)).store_error(self.component_info)
+                store_state(chargepoint_state)
+                raise FaultState.error(msg)
             else:
                 self.__client.check_hardware()
                 raise FaultState.error(__name__ + " " + str(type(e)) + " " + str(e)) from e
 
-        self.store.set(chargepoint_state)
-        self.store.update()
+        store_state(chargepoint_state)
         return chargepoint_state, self.set_current_evse
 
     def perform_phase_switch(self, phases_to_use: int, duration: int) -> None:

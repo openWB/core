@@ -1,16 +1,16 @@
 import logging
+import time
 from typing import List, Tuple
 import copy
 from threading import Event, Thread
 
 from control import data
-from control.chargepoint.chargepoint_all import AllChargepoints
 from control.ev import Ev
 from helpermodules import subdata
 from helpermodules import timecheck
 from helpermodules.pub import Pub
 from helpermodules.utils import thread_handler
-from modules.common.abstract_soc import SocUpdateData
+from modules.common.abstract_vehicle import VehicleUpdateData
 from modules.utils import ModuleUpdateCompletedContext
 
 log = logging.getLogger(__name__)
@@ -23,17 +23,22 @@ class UpdateSoc:
         self.event_vehicle_update_completed.set()
 
     def update(self) -> None:
-        topic = "openWB/set/vehicle/set/vehicle_update_completed"
-        try:
-            threads_update, threads_store = self._get_threads()
-            with ModuleUpdateCompletedContext(self.event_vehicle_update_completed, topic):
+        while True:
+            topic = "openWB/set/vehicle/set/vehicle_update_completed"
+            try:
                 threads_update, threads_store = self._get_threads()
-                thread_handler(threads_update, data.data.general_data.data.control_interval/3)
-            with ModuleUpdateCompletedContext(self.event_vehicle_update_completed, topic):
-                # threads_store = self._filter_failed_store_threads(threads_store)
-                thread_handler(threads_store, data.data.general_data.data.control_interval/3)
-        except Exception:
-            log.exception("Fehler im update_soc-Modul")
+                with ModuleUpdateCompletedContext(self.event_vehicle_update_completed, topic):
+                    threads_update, threads_store = self._get_threads()
+                    thread_handler(threads_update, 300)
+                with ModuleUpdateCompletedContext(self.event_vehicle_update_completed, topic):
+                    # threads_store = self._filter_failed_store_threads(threads_store)
+                    thread_handler(threads_store, data.data.general_data.data.control_interval/3)
+                # Don't request faster than control interval
+                if len(threads_update) > 0:
+                    time.sleep(5)
+            except Exception:
+                log.exception("Fehler im update_soc-Modul")
+            time.sleep(5)
 
     def _get_threads(self) -> Tuple[List[Thread], List[Thread]]:
         threads_update, threads_store = [], []
@@ -42,8 +47,8 @@ class UpdateSoc:
         for ev in ev_data.values():
             try:
                 if ev.soc_module is not None:
-                    soc_update_data = self._get_soc_update_data(ev.num)
-                    if (ev.soc_interval_expired(soc_update_data) or ev.data.get.force_soc_update):
+                    vehicle_update_data = self._get_vehicle_update_data(ev.num)
+                    if (ev.soc_interval_expired(vehicle_update_data) or ev.data.get.force_soc_update):
                         self._reset_force_soc_update(ev)
                         if ev.data.get.fault_state == 2:
                             ev.data.set.soc_error_counter += 1
@@ -59,7 +64,7 @@ class UpdateSoc:
                         # Hersteller bei zu häufigen Abfragen Accounts sperren.
                         Pub().pub(f"openWB/set/vehicle/{ev.num}/get/soc_timestamp", timecheck.create_timestamp())
                         threads_update.append(Thread(target=ev.soc_module.update,
-                                                     args=(soc_update_data,), name=f"fetch soc_ev{ev.num}"))
+                                                     args=(vehicle_update_data,), name=f"fetch soc_ev{ev.num}"))
                         if hasattr(ev.soc_module, "store"):
                             threads_store.append(Thread(target=ev.soc_module.store.update,
                                                         args=(), name=f"store soc_ev{ev.num}"))
@@ -72,24 +77,30 @@ class UpdateSoc:
             ev.data.get.force_soc_update = False
             Pub().pub(f"openWB/set/vehicle/{ev.num}/get/force_soc_update", False)
 
-    def _get_soc_update_data(self, ev_num: int) -> SocUpdateData:
-        for cp in list(data.data.cp_data.values()):
-            if not isinstance(cp, AllChargepoints):
-                if cp.data.set.charging_ev == ev_num:
-                    plug_state = cp.data.get.plug_state
-                    charge_state = cp.data.get.charge_state
-                    imported_since_plugged = cp.data.set.log.imported_since_plugged
-                    battery_capacity = cp.data.set.charging_ev_data.ev_template.data.battery_capacity
-                    break
+    def _get_vehicle_update_data(self, ev_num: int) -> VehicleUpdateData:
+        for cp_state_update in list(subdata.SubData.cp_data.values()):
+            cp = cp_state_update.chargepoint
+            if cp.data.set.charging_ev == ev_num or cp.data.set.charging_ev_prev == ev_num:
+                plug_state = cp.data.get.plug_state
+                charge_state = cp.data.get.charge_state
+                imported = cp.data.get.imported
+                battery_capacity = data.data.ev_data[f"ev{ev_num}"].ev_template.data.battery_capacity
+                if data.data.ev_data[f"ev{ev_num}"].soc_module.general_config.use_soc_from_cp:
+                    soc_from_cp = cp.data.get.soc
+                else:
+                    soc_from_cp = None
+                break
         else:
             plug_state = False
             charge_state = False
-            imported_since_plugged = 0
+            imported = None
             battery_capacity = data.data.ev_data[f"ev{ev_num}"].ev_template.data.battery_capacity
-        return SocUpdateData(plug_state=plug_state,
-                             charge_state=charge_state,
-                             imported_since_plugged=imported_since_plugged,
-                             battery_capacity=battery_capacity)
+            soc_from_cp = None
+        return VehicleUpdateData(plug_state=plug_state,
+                                 charge_state=charge_state,
+                                 imported=imported,
+                                 battery_capacity=battery_capacity,
+                                 soc_from_cp=soc_from_cp)
 
     def _filter_failed_store_threads(self, threads_store: List[Thread]) -> List[Thread]:
         ev_data = copy.deepcopy(subdata.SubData.ev_data)

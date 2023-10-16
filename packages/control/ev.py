@@ -19,7 +19,7 @@ from dataclass_utils.factories import currents_list_factory, empty_dict_factory,
 from helpermodules.abstract_plans import Limit, limit_factory, ScheduledChargingPlan, TimeChargingPlan
 from helpermodules.pub import Pub
 from helpermodules import timecheck
-from modules.common.abstract_soc import SocUpdateData
+from modules.common.abstract_vehicle import VehicleUpdateData
 from modules.common.configurable_vehicle import ConfigurableVehicle
 
 log = logging.getLogger(__name__)
@@ -249,18 +249,18 @@ class Ev:
         except Exception:
             log.exception("Fehler im ev-Modul "+str(self.num))
 
-    def soc_interval_expired(self, soc_update_data: SocUpdateData) -> bool:
+    def soc_interval_expired(self, vehicle_update_data: VehicleUpdateData) -> bool:
         request_soc = False
         if self.data.get.soc_timestamp == "":
             # Initiale Abfrage
             request_soc = True
         else:
-            if soc_update_data.plug_state is True or self.soc_module.interval_config.request_only_plugged is False:
-                if (soc_update_data.charge_state is True or
+            if vehicle_update_data.plug_state is True or self.soc_module.general_config.request_only_plugged is False:
+                if (vehicle_update_data.charge_state is True or
                         (self.data.set.soc_error_counter < 3 and self.data.get.fault_state == 2)):
-                    interval = self.soc_module.interval_config.request_interval_charging
+                    interval = self.soc_module.general_config.request_interval_charging
                 else:
-                    interval = self.soc_module.interval_config.request_interval_not_charging
+                    interval = self.soc_module.general_config.request_interval_not_charging
                 # Zeitstempel prüfen, ob wieder abgefragt werden muss.
                 if timecheck.check_timestamp(self.data.get.soc_timestamp, interval*60-5) is False:
                     # Zeit ist abgelaufen
@@ -475,7 +475,7 @@ class Ev:
             feed_in_yield = 0
         evu_counter = data.data.counter_all_data.get_evu_counter()
         # verbleibender EVU-Überschuss unter Berücksichtigung der Einspeisegrenze und Speicherleistung
-        all_surplus = (evu_counter.calc_surplus() - evu_counter.data.set.released_surplus +
+        all_surplus = (-evu_counter.calc_surplus() - evu_counter.data.set.released_surplus +
                        evu_counter.data.set.reserved_surplus - feed_in_yield)
         condition_1_to_3 = (max(get_currents) > max_current and
                             all_surplus > self.ev_template.data.min_current * max_phases_ev * 230
@@ -512,7 +512,7 @@ class Ev:
             feed_in_yield = 0
         evu_counter = data.data.counter_all_data.get_evu_counter()
         # verbleibender EVU-Überschuss unter Berücksichtigung der Einspeisegrenze und Speicherleistung
-        all_surplus = (evu_counter.calc_surplus() - evu_counter.data.set.released_surplus +
+        all_surplus = (-evu_counter.calc_surplus() - evu_counter.data.set.released_surplus +
                        evu_counter.data.set.reserved_surplus - feed_in_yield)
         if phases_in_use == 1:
             direction_str = f"Umschaltverzögerung von 1 auf {max_phases}"

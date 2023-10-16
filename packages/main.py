@@ -9,16 +9,18 @@ import time
 import threading
 import traceback
 from threading import Thread
-from helpermodules.pub import Pub
+from helpermodules.measurement_logging.update_daily_yields import update_daily_yields
+from helpermodules.measurement_logging.write_log import save_log
 
 from modules import loadvars
 from modules import configuration
 from helpermodules import timecheck, update_config
 from helpermodules import subdata
 from helpermodules import setdata
-from helpermodules import measurement_log
 from helpermodules import logger
 from helpermodules import command
+from helpermodules.modbusserver import start_modbus_server
+from helpermodules.pub import Pub
 from control import prepare
 from control import data
 from control import process
@@ -76,7 +78,8 @@ class HandlerAlgorithm:
         ausführt, die nur alle 5 Minuten ausgeführt werden müssen.
         """
         try:
-            measurement_log.measurement_log_daily()
+            totals = save_log("daily")
+            update_daily_yields(totals)
             data.data.general_data.grid_protection()
             data.data.optional_data.et_get_prices()
             data.data.counter_all_data.validate_hierarchy()
@@ -122,7 +125,7 @@ class HandlerAlgorithm:
     @exit_after(10)
     def handler_midnight(self):
         try:
-            measurement_log.save_log("monthly")
+            save_log("monthly")
         except KeyboardInterrupt:
             log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())
         except Exception:
@@ -140,7 +143,6 @@ class HandlerAlgorithm:
 
 def schedule_jobs():
     [schedule.every().minute.at(f":{i:02d}").do(handler.handler10Sec).tag("algorithm") for i in range(0, 60, 10)]
-    [schedule.every().minute.at(f":{i:02d}").do(soc.update).tag("algorithm") for i in range(0, 60, 10)]
     [schedule.every().minute.at(f":{i:02d}").do(smarthome_handler).tag("algorithm") for i in range(0, 60, 5)]
     [schedule.every().hour.at(f":{i:02d}").do(handler.handler5Min) for i in range(0, 60, 5)]
     [schedule.every().hour.at(f":{i:02d}").do(handler.handler5MinAlgorithm).tag("algorithm") for i in range(0, 60, 5)]
@@ -187,6 +189,7 @@ try:
     event_command_completed.set()
     event_subdata_initialized = threading.Event()
     event_update_config_completed = threading.Event()
+    event_modbus_server = threading.Event()
     event_jobs_running = threading.Event()
     event_jobs_running.set()
     prep = prepare.Prepare()
@@ -203,11 +206,12 @@ try:
                           general_internal_chargepoint_handler.event_stop,
                           event_update_config_completed,
                           event_soc,
-                          event_jobs_running)
+                          event_jobs_running, event_modbus_server)
     comm = command.Command(event_command_completed)
     t_sub = Thread(target=sub.sub_topics, args=(), name="Subdata")
     t_set = Thread(target=set.set_data, args=(), name="Setdata")
     t_comm = Thread(target=comm.sub_commands, args=(), name="Commands")
+    t_soc = Thread(target=soc.update, args=(), name="SoC")
     t_internal_chargepoint = Thread(target=general_internal_chargepoint_handler.handler,
                                     args=(), name="Internal Chargepoint")
     if hasattr(rfid0, "input_device"):
@@ -220,7 +224,9 @@ try:
     t_sub.start()
     t_set.start()
     t_comm.start()
+    t_soc.start()
     t_internal_chargepoint.start()
+    threading.Thread(target=start_modbus_server, args=(event_modbus_server,), name="Modbus Control Server").start()
     # Warten, damit subdata Zeit hat, alle Topics auf dem Broker zu empfangen.
     event_update_config_completed.wait(300)
     Pub().pub("openWB/set/system/boot_done", True)

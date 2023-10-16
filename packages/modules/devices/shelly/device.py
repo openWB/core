@@ -26,11 +26,11 @@ def get_device_generation(address: str) -> int:
 
 def create_device(device_config: Shelly) -> ConfigurableDevice:
     def create_inverter_component(component_config: ShellyInverterSetup) -> ShellyInverter:
-        return ShellyInverter(device_config.id, component_config, device_config.configuration.address,
+        return ShellyInverter(device_config.id, component_config, device_config.configuration.ip_address,
                               device_config.configuration.generation)
 
-    if device_config.configuration.generation is None and device_config.configuration.address is not None:
-        device_config.configuration.generation = get_device_generation(device_config.configuration.address)
+    if device_config.configuration.generation is None and device_config.configuration.ip_address is not None:
+        device_config.configuration.generation = get_device_generation(device_config.configuration.ip_address)
 
     return ConfigurableDevice(
         device_config=device_config,
@@ -51,7 +51,7 @@ def run_device_legacy(device_config: Shelly,
 
 def create_legacy_device_config(address: str, generation: int,
                                 num: int) -> Shelly:
-    device_config = Shelly(configuration=ShellyConfiguration(address=address, generation=generation), id=num)
+    device_config = Shelly(configuration=ShellyConfiguration(ip_address=address, generation=generation), id=num)
     log.debug("Config: %s", device_config.configuration)
     return device_config
 
