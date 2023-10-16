@@ -8,7 +8,7 @@ import platform
 
 BASE_PATH = Path(__file__).resolve().parents[2]
 RAMDISK_PATH = BASE_PATH / "ramdisk"
-LT_PATH = BASE_PATH / "runs/lt"
+RUNS_PATH = BASE_PATH / "runs"
 BASE_TOPIC = "openWB-remote/"
 REMOTE_SUPPORT_TOPIC = BASE_TOPIC + "support"
 REMOTE_PARTNER_TOPIC = BASE_TOPIC + "partner"
