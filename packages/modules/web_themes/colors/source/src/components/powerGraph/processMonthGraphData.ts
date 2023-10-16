@@ -67,24 +67,19 @@ function transformRow(inputRow: RawDayGraphDataItem): GraphDataItem {
 		outputRow.date = d.getDate()
 	}
 	// counters
+	outputRow.gridPush = 0
+	outputRow.gridPull = 0
 	Object.entries(inputRow.counter).forEach((item) => {
-		outputRow.gridPush = item[1].energy_exported
-		outputRow.gridPull = item[1].energy_imported
+		outputRow.gridPush += item[1].energy_exported
+		outputRow.gridPull += item[1].energy_imported
 	})
 	// PV
-	Object.entries(inputRow.pv).forEach(([id, values]) => {
-		if (id == 'all') {
-			outputRow.solarPower = values.energy_exported
-		}
-	})
+	outputRow.solarPower = inputRow.pv.all.energy_exported
+
 	// Battery
 	if (Object.entries(inputRow.bat).length > 0) {
-		Object.entries(inputRow.bat).forEach(([id, values]) => {
-			if (id == 'all') {
-				outputRow.batIn = values.energy_imported
-				outputRow.batOut = values.energy_exported
-			}
-		})
+		outputRow.batIn = inputRow.bat.all.energy_imported
+		outputRow.batOut = inputRow.bat.all.energy_exported
 	} else {
 		outputRow.batIn = 0
 		outputRow.batOut = 0
@@ -112,8 +107,6 @@ function transformRow(inputRow: RawDayGraphDataItem): GraphDataItem {
 		},
 		0,
 	)
-
-	outputRow.selfUsage = outputRow.solarPower - outputRow.gridPush
 	outputRow.house =
 		outputRow.solarPower +
 		outputRow.gridPull +
@@ -121,6 +114,7 @@ function transformRow(inputRow: RawDayGraphDataItem): GraphDataItem {
 		outputRow.gridPush -
 		outputRow.batIn -
 		outputRow.charging
+	outputRow.selfUsage = outputRow.solarPower - outputRow.gridPush
 	outputRow.inverter = 0
 	const usedEnergy =
 		outputRow.gridPull + outputRow.batOut + outputRow.solarPower

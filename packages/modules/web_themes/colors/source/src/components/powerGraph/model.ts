@@ -16,8 +16,16 @@ export interface RawDayGraphDataItem {
 	timestamp: number
 	date: string
 	counter: object
-	pv: object
-	bat: object
+	pv: { all: { energy_exported: number; exported: number } }
+	hc: { all: { energy_imported: number; imported: number } }
+	bat: {
+		all: {
+			energy_imported: number
+			energy_exported: number
+			imported: number
+			exported: number
+		}
+	}
 	cp: object
 	ev: object
 	sh: object

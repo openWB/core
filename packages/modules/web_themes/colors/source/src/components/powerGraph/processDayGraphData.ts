@@ -18,7 +18,7 @@ let shs: string[] = []
 let cps: string[] = []
 // methods:
 
-export function processDayGraphMessages(topic: string, message: string) {
+export function processDayGraphMessages(_: string, message: string) {
 	const inputTable: RawDayGraphDataItem[] = JSON.parse(message).entries
 	evSocs = Object.values(vehicles).map((v) => 'soc-ev' + v.id.toString())
 	consumerCategories.map((cat) => {
@@ -83,27 +83,21 @@ function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 		}
 	} else {
 		const d = timeParse('%Y%m%d')(currentRow.date)
-
 		if (d) {
 			currentItem.date = d.getDate()
 		}
 	}
+	currentItem.gridPush = 0
+	currentItem.gridPull = 0
 	Object.entries(currentRow.counter).forEach((item) => {
-		currentItem.gridPush = item[1].exported
-		currentItem.gridPull = item[1].imported
+		currentItem.gridPush += item[1].exported
+		currentItem.gridPull += item[1].imported
 	})
-	Object.entries(currentRow.pv).forEach(([id, values]) => {
-		if (id == 'pv1') {
-			currentItem.solarPower = values.exported
-		}
-	})
+	currentItem.solarPower = currentRow.pv.all.exported
+
 	if (Object.entries(currentRow.bat).length > 0) {
-		Object.entries(currentRow.bat).forEach(([id, values]) => {
-			if (id == 'all') {
-				currentItem.batIn = values.imported
-				currentItem.batOut = values.exported
-			}
-		})
+		currentItem.batIn = currentRow.bat.all.imported
+		currentItem.batOut = currentRow.bat.all.exported
 	} else {
 		currentItem.batIn = 0
 		currentItem.batOut = 0
@@ -162,7 +156,6 @@ function calculatePowerValues(
 		.forEach((category) => {
 			result[category] = calculatePower(currentRow, previousRow, category)
 		})
-
 	result.soc0 = evSocs[0] ? currentRow[evSocs[0]] : 0
 	result.soc1 = evSocs[1] ? currentRow[evSocs[1]] : 0
 	result.selfUsage = result.solarPower - result.gridPush
@@ -174,6 +167,7 @@ function calculatePowerValues(
 		result.batIn -
 		result.charging -
 		result.devices
+
 	result.inverter = 0
 
 	const usedEnergy = result.gridPull + result.batOut + result.solarPower

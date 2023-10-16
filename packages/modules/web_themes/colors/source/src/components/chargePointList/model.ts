@@ -202,7 +202,7 @@ export class ChargePoint {
 		return {
 			name: this.name,
 			power: this.power,
-			energy: this.dailyYield,
+			energy: this.chargedSincePlugged,
 			energyPv: this.energyPv,
 			energyBat: this.energyBat,
 			pvPercentage: this.pvPercentage,
