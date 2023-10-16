@@ -121,11 +121,29 @@ def on_message(client: mqtt.Client, userdata, msg: mqtt.MQTTMessage):
                         log.error("invalid number of settings received!")
                     else:
                         token = splitted[0]
-                        cloudnode = splitted[1]
+                        cloud_node = splitted[1]
                         user = splitted[2]
-                        log.info("start cloud tunnel" + token + cloudnode)
-                        cloud_tunnel = Popen([LT_PATH, "-h", "https://" + cloudnode + ".openwb.de/", "-p", "80", "-s", token])
-                        log.info(f"cloud tunnel running with pid {cloud_tunnel.pid}")
+
+                        machine = platform.machine()
+                        bits, linkage = platform.architecture()
+                        lt_executable = f"lt-{machine}_{linkage}"
+
+                        log.info("System Info:")
+                        log.info(f"Architecture: ({(bits, linkage)})")
+                        log.info(f"Machine: {machine}")
+                        log.info(f"Node: {platform.node()}")
+                        log.info(f"Platform: {platform.platform()}")
+                        log.info(f"System: {platform.system()}")
+                        log.info(f"Release: {platform.release()}")
+                        log.info(f"using binary: '{lt_executable}'")
+
+                        log.info("start cloud tunnel" + token + cloud_node)
+                        try:
+                            cloud_tunnel = Popen([f"{RUNS_PATH}/{lt_executable}", "-h",
+                                                  "https://" + cloud_node + ".openwb.de/", "-p", "80", "-s", token])
+                            log.info(f"cloud tunnel running with pid {cloud_tunnel.pid}")
+                        except FileNotFoundError:
+                            log.exception(f"executable '{lt_executable}' does not exist!")
             else:
                 log.info("unknown message: " + payload)
         # clear topic
