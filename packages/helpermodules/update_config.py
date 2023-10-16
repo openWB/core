@@ -890,4 +890,4 @@ class UpdateConfig:
                 Pub().pub(topic.replace("config", "general_config").replace("openWB/", "openWB/set/"),
                           asdict(general_config))
                 Pub().pub(topic.replace("openWB/", "openWB/set/"), config_payload)
-        # Pub().pub("openWB/system/datastore_version", 22)
+        Pub().pub("openWB/system/datastore_version", 22)
