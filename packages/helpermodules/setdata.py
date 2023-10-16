@@ -581,6 +581,8 @@ class SetData:
             self._validate_value(msg, bool)
         elif "/get/fault_state" in msg.topic:
             self._validate_value(msg, int, [(0, 2)])
+        elif "/get/evse_current" in msg.topic:
+            self._validate_value(msg, int, [(0, 0), (6, 32), (600, 3200)])
         elif ("/get/fault_str" in msg.topic or
                 "/get/state_str" in msg.topic or
                 "/get/heartbeat" in msg.topic):
@@ -698,7 +700,8 @@ class SetData:
         try:
             if "openWB/set/general/extern_display_mode" in msg.topic:
                 self._validate_value(msg, str)
-            elif "openWB/set/general/extern" in msg.topic:
+            elif ("openWB/set/general/modbus_control" in msg.topic or
+                  "openWB/set/general/extern" in msg.topic):
                 self._validate_value(msg, bool)
             elif "openWB/set/general/control_interval" in msg.topic:
                 self._validate_value(msg, int, [(10, 10), (20, 20), (60, 60)])

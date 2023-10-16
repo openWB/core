@@ -42,6 +42,7 @@ class ChargepointValueStoreBroker(ValueStore[ChargepointState]):
         pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/rfid", self.state.rfid)
         pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/soc", self.state.soc)
         pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/soc_timestamp", self.state.soc_timestamp)
+        pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/evse_current", self.state.evse_current)
 
 
 def get_chargepoint_value_store(id: int) -> ValueStore[ChargepointState]:

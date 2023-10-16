@@ -24,7 +24,7 @@ def mock_data() -> None:
         soc_module=Mock(spec=ConfigurableVehicle,
                         general_config=Mock(spec=GeneralVehicleConfig, use_soc_from_cp=False)))
 
-    SubData(*([Mock()]*16))
+    SubData(*([Mock()]*17))
     SubData.cp_data = {"cp0":  Mock(spec=ChargepointStateUpdate, chargepoint=Mock(
         spec=Chargepoint,
         id=id,
