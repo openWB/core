@@ -1,4 +1,4 @@
-import io
+from io import UnsupportedOperation
 import json
 import sys
 from typing import Dict
@@ -19,9 +19,9 @@ def get_hardware_configuration_setting(name: str):
 
 def get_serial_number() -> str:
     try:
-        with open("/home/openwb/snnumber", "w") as file:
+        with open("/home/openwb/snnumber", "r") as file:
             return file.read().replace("\n", "")
-    except io.UnsupportedOperation:
+    except UnsupportedOperation:
         return "noSerialNumber"
 
 
