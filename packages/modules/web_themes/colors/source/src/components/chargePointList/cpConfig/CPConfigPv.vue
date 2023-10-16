@@ -35,7 +35,7 @@
 		<hr />
 		<!-- Min-PV-Laden -->
 		<ConfigItem
-			title="Min-SoC-Laden"
+			title="Minimaler Ladestand"
 			icon="fa-battery-half"
 			:infotext="infotext['minsoc']"
 			:fullwidth="true"
@@ -72,7 +72,7 @@
 
 		<!-- Min+PV-Laden -->
 		<ConfigItem
-			title="Min+PV-Laden"
+			title="Minimaler Ladestrom"
 			icon="fa-bolt"
 			:infotext="infotext['minpv']"
 			:fullwidth="true"

@@ -55,7 +55,7 @@
 		:infotext="infotext['timeplan']"
 		:fullwidth="true"
 	>
-		<SwitchInput v-model="cp.scheduledCharging" />
+		<SwitchInput v-model="cp.timedCharging" />
 	</ConfigItem>
 </template>
 

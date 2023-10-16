@@ -35,8 +35,6 @@ let client: MqttClient
 // export function MqttConnect(callback: (t: string, m: string) => void, topiclist: string[]) {
 const { host, port, endpoint, ...options } = mqttConnection
 const connectUrl = `${options.protocol}://${host}:${port}${endpoint}`
-console.log(connectUrl)
-console.log(options)
 try {
 	client = connect(connectUrl, options)
 	client.on('connect', () => {

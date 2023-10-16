@@ -4,15 +4,16 @@
 			<WbWidgetFlex :full-width="true">
 				<template #title> Look & Feel </template>
 				<template #buttons>
-					<button
-						class="btn btn-secondary float-end mt-0 ms-1"
+					<span
+						type="button"
+						class="float-end mt-0 ms-1"
 						data-bs-toggle="collapse"
 						data-bs-target="#themesettings"
 					>
 						<span>
-							<i class="fa-solid fa-rectangle-xmark" />
+							<i class="fa-solid fa-circle-check" />
 						</span>
-					</button>
+					</span>
 				</template>
 				<div class="row m-0 p-0">
 					<ConfigItem
@@ -144,3 +145,10 @@ const shSchemes: [string, string][] = [
 	['Bunt', 'advanced'],
 ]
 </script>
+<style scoped>
+.fa-circle-check {
+	font-size: var(--font-extralarge);
+	background-color: var(--color-bg);
+	color: var(--color-menu);
+}
+</style>

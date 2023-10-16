@@ -37,8 +37,8 @@ Hagen */
 		>
 			<ChargePointList />
 			<BatteryList />
-			<SmartHomeList />
-			<PriceChart />
+			<SmartHomeList v-if="showSH"></SmartHomeList>
+			<!-- <PriceChart /> -->
 		</div>
 		<!-- Tabbed area -->
 		<nav
@@ -67,11 +67,16 @@ Hagen */
 				<i class="fa-solid fa-lg fa-car-battery" />
 				<span class="d-none d-md-inline ms-2">Speicher</span>
 			</a>
-			<a class="nav-link" data-bs-toggle="tab" data-bs-target="#smarthomelist">
+			<a
+				v-if="showSH"
+				class="nav-link"
+				data-bs-toggle="tab"
+				data-bs-target="#smarthomelist"
+			>
 				<i class="fa-solid fa-lg fa-plug" />
 				<span class="d-none d-md-inline ms-2">Smart Home</span>
 			</a>
-			<a
+			<!-- <a
 				v-if="etData.isEtEnabled"
 				class="nav-link"
 				data-bs-toggle="tab"
@@ -79,7 +84,7 @@ Hagen */
 			>
 				<i class="fa-solid fa-lg fa-money-bill-1-wave" />
 				<span class="d-none d-md-inline ms-2">Strompreis</span>
-			</a>
+			</a> -->
 		</nav>
 		<!-- Tab panes -->
 		<div
@@ -96,7 +101,7 @@ Hagen */
 				<div class="row py-0 m-0 d-flex justify-content-center">
 					<ChargePointList />
 					<BatteryList />
-					<SmartHomeList />
+					<SmartHomeList v-if="showSH" />
 					<PriceChart />
 				</div>
 			</div>
@@ -126,14 +131,11 @@ Hagen */
 				role="tabpanel"
 				aria-labelledby="smarthome-tab"
 			>
-				<div
-					v-if="Object.keys(shDevices).length > 0"
-					class="row py-0 m-0 d-flex justify-content-center"
-				>
+				<div v-if="showSH" class="row py-0 m-0 d-flex justify-content-center">
 					<SmartHomeList />
 				</div>
 			</div>
-			<div
+			<!-- 		<div
 				id="etPricing"
 				class="tab-pane"
 				role="tabpanel"
@@ -142,7 +144,7 @@ Hagen */
 				<div class="row py-0 m-0 d-flex justify-content-center">
 					<PriceChart />
 				</div>
-			</div>
+			</div> -->
 		</div>
 	</div>
 	<!-- Footer -->
@@ -158,9 +160,6 @@ Hagen */
 					MQ Viewer
 				</button>
 			</div>
-			<!--   <hr v-if="showSetup" />
-      <Setup v-if="showSetup"></Setup> -->
-
 			<hr v-if="showMQ" />
 			<MQTTViewer v-if="showMQ" />
 		</div>
@@ -169,9 +168,10 @@ Hagen */
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { usageSummary, shDevices, globalData } from '../assets/js/model'
+import { usageSummary, globalData } from '../assets/js/model'
+import { shDevices } from '@/components/smartHome/model'
 import { chargePoints } from '@/components/chargePointList/model'
-import { etData } from '@/components/priceChart/model'
+// import { etData } from '@/components/priceChart/model'
 import { initConfig } from '@/assets/js/themeConfig'
 import PowerMeter from '@/components/powerMeter/PowerMeter.vue'
 import PowerGraph from '@/components/powerGraph/PowerGraph.vue'
@@ -203,6 +203,9 @@ const usageDetails = computed(() => {
 		.concat([usageSummary.batIn, usageSummary.house])
 })
 const showMQ = ref(false)
+const showSH = computed(() => {
+	return Object.values(shDevices).filter((dev) => dev.configured).length > 0
+})
 // methods
 function init() {
 	initConfig()

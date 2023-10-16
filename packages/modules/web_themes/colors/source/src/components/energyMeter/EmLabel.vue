@@ -10,7 +10,7 @@
 		>
 			{{
 				formatWattH(
-					item.energy * 1000,
+					item.energy,
 					globalConfig.decimalPlaces,
 					graphData.graphMode == 'year',
 				)

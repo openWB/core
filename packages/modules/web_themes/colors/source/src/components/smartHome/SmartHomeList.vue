@@ -1,4 +1,4 @@
-<template v-if="device.length > 0">
+<template>
 	<WbWidgetFlex
 		v-for="(group, index) in devices"
 		:key="index"
@@ -87,6 +87,7 @@ const devices = computed(() =>
 const activeDevices = computed(() => {
 	return Object.values(shDevices).filter((dev) => dev.configured)
 })
+
 function title(index: number) {
 	return (
 		'Geräte' +
