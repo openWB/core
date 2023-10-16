@@ -15,14 +15,16 @@ from helpermodules.subdata import SubData
 
 log = logging.getLogger(__name__)
 
+try:
+    log_to_stream(level=logging.DEBUG)
+    data_store = defaultdict(int)
+    conf.SIGNED_VALUES = True
+    TCPServer.allow_reuse_address = True
+    app = get_server(TCPServer, ('0.0.0.0', 1502), RequestHandler)
 
-log_to_stream(level=logging.DEBUG)
-data_store = defaultdict(int)
-conf.SIGNED_VALUES = True
-TCPServer.allow_reuse_address = True
-app = get_server(TCPServer, ('0.0.0.0', 1502), RequestHandler)
-
-serial_number = get_serial_number().replace("snnumber=", "")
+    serial_number = get_serial_number().replace("snnumber=", "")
+except (Exception, OSError):
+    log.exception("Fehler im Modbus-Server")
 
 
 def _form_int32(value, startreg):
@@ -74,58 +76,63 @@ def _get_pos(number, n):
     return number // 10**n % 10 - 1
 
 
-@app.route(slave_ids=[1], function_codes=[3, 4], addresses=list(range(0, 32000)))
-def read_data_store(slave_id, function_code, address):
-    """" Return value of address. """
-    if address > 10099:
-        Pub().pub("openWB/set/internal_chargepoint/global_data",
-                  {"heartbeat": timecheck.create_timestamp_unix(), "parent_ip": None})
-        chargepoint = SubData.internal_chargepoint_data[f"cp{_get_pos(address, 2)}"]
-        askedvalue = int(str(address)[-2:])
-        if askedvalue == 00:
-            _form_int32(chargepoint.get.power, address)
-        elif askedvalue == 2:
-            _form_int32(chargepoint.get.imported, address)
-        elif 4 <= askedvalue <= 6:
-            _form_int16(chargepoint.get.voltages[askedvalue-4]*100, address)
-        elif 7 <= askedvalue <= 9:
-            _form_int16(chargepoint.get.currents[askedvalue-7]*100, address)
-        elif askedvalue == 14:
-            _form_int16(chargepoint.get.plug_state, address)
-        elif askedvalue == 15:
-            _form_int16(chargepoint.get.charge_state, address)
-        elif askedvalue == 16:
-            _form_int16(chargepoint.get.evse_current, address)
-        elif 30 <= askedvalue <= 32:
-            _form_int16(chargepoint.get.powers[askedvalue-30], address)
-        elif askedvalue == 41:
-            _form_int32(chargepoint.get.exported, address)
-        elif askedvalue == 43:
-            _form_int16(1, address)
-        elif askedvalue == 50:
-            _form_str(serial_number, address)
-        elif askedvalue == 60:
-            _form_str(chargepoint.get.rfid, address)
+try:
+    @app.route(slave_ids=[1], function_codes=[3, 4], addresses=list(range(0, 32000)))
+    def read_data_store(slave_id, function_code, address):
+        """" Return value of address. """
+        if address > 10099:
+            Pub().pub("openWB/set/internal_chargepoint/global_data",
+                      {"heartbeat": timecheck.create_timestamp_unix(), "parent_ip": None})
+            chargepoint = SubData.internal_chargepoint_data[f"cp{_get_pos(address, 2)}"]
+            askedvalue = int(str(address)[-2:])
+            if askedvalue == 00:
+                _form_int32(chargepoint.get.power, address)
+            elif askedvalue == 2:
+                _form_int32(chargepoint.get.imported, address)
+            elif 4 <= askedvalue <= 6:
+                _form_int16(chargepoint.get.voltages[askedvalue-4]*100, address)
+            elif 7 <= askedvalue <= 9:
+                _form_int16(chargepoint.get.currents[askedvalue-7]*100, address)
+            elif askedvalue == 14:
+                _form_int16(chargepoint.get.plug_state, address)
+            elif askedvalue == 15:
+                _form_int16(chargepoint.get.charge_state, address)
+            elif askedvalue == 16:
+                _form_int16(chargepoint.get.evse_current, address)
+            elif 30 <= askedvalue <= 32:
+                _form_int16(chargepoint.get.powers[askedvalue-30], address)
+            elif askedvalue == 41:
+                _form_int32(chargepoint.get.exported, address)
+            elif askedvalue == 43:
+                _form_int16(1, address)
+            elif askedvalue == 50:
+                _form_str(serial_number, address)
+            elif askedvalue == 60:
+                _form_str(chargepoint.get.rfid, address)
 
-    return data_store[address]
+        return data_store[address]
+except Exception:
+    log.exception("Fehler im Modbus-Server")
 
-
-@app.route(slave_ids=[1], function_codes=[6, 16], addresses=list(range(0, 32000)))
-def write_data_store(slave_id, function_code, address, value):
-    """" Set value for address. """
-    if 10170 < address:
-        cp_topic = f"openWB/set/internal_chargepoint/{_get_pos(address, 2)}/data/"
-        askedvalue = int(str(address)[-2:])
-        if askedvalue == 71:
-            Pub().pub(f"{cp_topic}set_current", value/100)
-        elif askedvalue == 80:
-            Pub().pub(f"{cp_topic}phases_to_use", value)
-        elif askedvalue == 81:
-            Pub().pub(f"{cp_topic}trigger_phase_switch", value)
-        elif askedvalue == 98:
-            Pub().pub(f"{cp_topic}cp_interruption_duration", value)
-        elif askedvalue == 99:
-            Pub().pub("openWB/set/command/modbus_server/todo", {"command": "systemUpdate", "data": {}})
+try:
+    @app.route(slave_ids=[1], function_codes=[6, 16], addresses=list(range(0, 32000)))
+    def write_data_store(slave_id, function_code, address, value):
+        """" Set value for address. """
+        if 10170 < address:
+            cp_topic = f"openWB/set/internal_chargepoint/{_get_pos(address, 2)}/data/"
+            askedvalue = int(str(address)[-2:])
+            if askedvalue == 71:
+                Pub().pub(f"{cp_topic}set_current", value/100)
+            elif askedvalue == 80:
+                Pub().pub(f"{cp_topic}phases_to_use", value)
+            elif askedvalue == 81:
+                Pub().pub(f"{cp_topic}trigger_phase_switch", value)
+            elif askedvalue == 98:
+                Pub().pub(f"{cp_topic}cp_interruption_duration", value)
+            elif askedvalue == 99:
+                Pub().pub("openWB/set/command/modbus_server/todo", {"command": "systemUpdate", "data": {}})
+except Exception:
+    log.exception("Fehler im Modbus-Server")
 
 
 def start_modbus_server(event_modbus_server):
@@ -134,7 +141,11 @@ def start_modbus_server(event_modbus_server):
         # circular Import.
         event_modbus_server.wait()
         event_modbus_server.clear()
+        log.debug("Starte Modbus-Server")
         app.serve_forever()
     finally:
-        app.shutdown()
-        app.server_close()
+        try:
+            app.shutdown()
+            app.server_close()
+        except Exception:
+            log.exception("Fehler im Modbus-Server")

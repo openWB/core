@@ -1,4 +1,3 @@
-from io import UnsupportedOperation
 import json
 import sys
 from typing import Dict
@@ -21,7 +20,7 @@ def get_serial_number() -> str:
     try:
         with open("/home/openwb/snnumber", "r") as file:
             return file.read().replace("\n", "")
-    except UnsupportedOperation:
+    except FileNotFoundError:
         return "noSerialNumber"
 
 
