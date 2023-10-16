@@ -5,8 +5,11 @@ import pytest
 
 from control import data
 from control.chargepoint.chargepoint import Chargepoint, Get, Log, Set
+from control.chargepoint.chargepoint_state_update import ChargepointStateUpdate
 from control.ev import Ev, EvTemplate, EvTemplateData
-from modules.common.abstract_soc import SocUpdateData
+from helpermodules.subdata import SubData
+from modules.common.abstract_vehicle import GeneralVehicleConfig, VehicleUpdateData
+from modules.common.configurable_vehicle import ConfigurableVehicle
 from modules.vehicles.tesla.soc import create_vehicle
 from modules.update_soc import UpdateSoc
 
@@ -14,7 +17,15 @@ from modules.update_soc import UpdateSoc
 @pytest.fixture(autouse=True)
 def mock_data() -> None:
     data.data_init(Mock())
-    data.data.cp_data["cp0"] = Mock(
+    data.data.ev_data["ev0"] = Mock(
+        spec=Ev,
+        ev_template=Mock(
+            spec=EvTemplate, data=Mock(spec=EvTemplateData, battery_capacity=82000)),
+        soc_module=Mock(spec=ConfigurableVehicle,
+                        general_config=Mock(spec=GeneralVehicleConfig, use_soc_from_cp=False)))
+
+    SubData(*([Mock()]*16))
+    SubData.cp_data = {"cp0":  Mock(spec=ChargepointStateUpdate, chargepoint=Mock(
         spec=Chargepoint,
         id=id,
         chargepoint_module=Mock(),
@@ -23,11 +34,7 @@ def mock_data() -> None:
             set=Mock(spec=Set,
                      log=Mock(spec=Log),
                      charging_ev_data=Mock(spec=Ev,
-                                           ev_template=Mock(spec=EvTemplate, data=Mock(spec=EvTemplateData))))))
-    data.data.ev_data["ev0"] = Mock(
-        spec=Ev,
-        ev_template=Mock(
-            spec=EvTemplate, data=Mock(spec=EvTemplateData, battery_capacity=82000)))
+                                           ev_template=Mock(spec=EvTemplate, data=Mock(spec=EvTemplateData)))))))}
 
 
 @pytest.mark.parametrize(
@@ -41,14 +48,14 @@ def test_get_ev_state(ev_num: int,
                       set_charge_state: bool,
                       expected_charge_state: bool):
     # setup
-    data.data.cp_data["cp0"].data.set.charging_ev = ev_num
-    data.data.cp_data["cp0"].data.get.charge_state = set_charge_state
+    SubData.cp_data["cp0"].chargepoint.data.set.charging_ev = ev_num
+    SubData.cp_data["cp0"].chargepoint.data.get.charge_state = set_charge_state
 
     # execution
-    soc_update_data = UpdateSoc()._get_soc_update_data(0)
+    vehicle_update_data = UpdateSoc()._get_vehicle_update_data(0)
 
     # evaluation
-    assert soc_update_data.charge_state == expected_charge_state
+    assert vehicle_update_data.charge_state == expected_charge_state
 
 
 @pytest.mark.parametrize(
@@ -72,8 +79,8 @@ def test_get_threads(soc_module: Optional[create_vehicle],
     data.data.ev_data["ev0"] = ev
     soc_interval_expired_mock = Mock(return_value=soc_interval_expired)
     monkeypatch.setattr(Ev, "soc_interval_expired", soc_interval_expired_mock)
-    get_soc_update_data_mock = Mock(return_value=SocUpdateData())
-    monkeypatch.setattr(UpdateSoc, "_get_soc_update_data", get_soc_update_data_mock)
+    get_vehicle_update_data_mock = Mock(return_value=VehicleUpdateData())
+    monkeypatch.setattr(UpdateSoc, "_get_vehicle_update_data", get_vehicle_update_data_mock)
     monkeypatch.setattr(UpdateSoc, "_reset_force_soc_update", Mock())
 
     # execution

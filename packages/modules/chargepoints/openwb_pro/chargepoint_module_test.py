@@ -71,7 +71,7 @@ SAMPLE_EXTENDED = {"date": "2023:09:18-15:13:41",
                    "evse_signaling": "unclear\n",
                    "v2g_ready": 0,
                    "soc_value": 0,
-                   "soc_timestamp": "0",
+                   "soc_timestamp": 0,
                    "vehicle_id": None,
                    "serial": "493826",
                    "frequency": 50.2}

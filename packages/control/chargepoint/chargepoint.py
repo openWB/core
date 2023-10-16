@@ -141,6 +141,8 @@ class Get:
     power: float = 0
     rfid_timestamp: Optional[str] = None
     rfid: Optional[str] = None
+    soc: Optional[float] = None
+    soc_timestamp: Optional[int] = None
     state_str: Optional[str] = None
     voltages: List[float] = field(default_factory=voltages_list_factory)
 
@@ -812,10 +814,6 @@ class Chargepoint:
 
     def update(self, ev_list: Dict[str, Ev]) -> None:
         try:
-            # SoC nach Anstecken aktualisieren
-            if self.data.get.plug_state is True and self.data.set.plug_state_prev is False:
-                Pub().pub(f"openWB/set/vehicle/{self.data.config.ev}/get/force_soc_update", True)
-                log.debug("SoC nach Anstecken")
             vehicle, message = self.prepare_cp()
             if vehicle != -1:
                 try:
@@ -879,6 +877,11 @@ class Chargepoint:
                     ev_list[f"ev{vehicle}"].data.control_parameter.submode = "stop"
             else:
                 self._pub_configured_ev(ev_list)
+            # SoC nach Anstecken aktualisieren
+            if ((self.data.get.plug_state and self.data.set.plug_state_prev is False) or
+                    (self.data.get.plug_state is False and self.data.set.plug_state_prev)):
+                Pub().pub(f"openWB/set/vehicle/{self.data.config.ev}/get/force_soc_update", True)
+                log.debug("SoC nach Anstecken")
             if message is not None and self.data.get.state_str is None:
                 self.set_state_and_log(message)
         except Exception:

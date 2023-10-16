@@ -58,10 +58,13 @@ class ChargepointModule(AbstractChargepoint):
                     rfid=json_rsp["vehicle_id"]
                 )
 
-                if json_rsp.get("voltages") is not None:
+                if json_rsp.get("voltages"):
                     chargepoint_state.voltages = json_rsp["voltages"]
-
-                if json_rsp.get("frequency") is not None:
+                if json_rsp.get("soc_value"):
+                    chargepoint_state.soc = json_rsp["soc_value"]
+                if json_rsp.get("soc_timestamp"):
+                    chargepoint_state.soc_timestamp = json_rsp["soc_timestamp"]
+                if json_rsp.get("frequency"):
                     chargepoint_state.frequency = json_rsp["frequency"]
 
                 self.store.set(chargepoint_state)
