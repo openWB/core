@@ -20,7 +20,7 @@ from helpermodules.pub import Pub
 from helpermodules.utils.topic_parser import decode_payload, get_index, get_second_index
 from control import counter_all
 from control import ev
-from modules.common.configurable_vehicle import GeneralVehicleConfig
+from modules.common.abstract_vehicle import GeneralVehicleConfig
 from modules.display_themes.cards.config import CardsDisplayTheme
 from modules.web_themes.standard_legacy.config import StandardLegacyWebTheme
 
@@ -28,7 +28,7 @@ log = logging.getLogger(__name__)
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 21
+    DATASTORE_VERSION = 22
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -870,3 +870,24 @@ class UpdateConfig:
         if isinstance(max_c_socket, str):
             update_hardware_configuration({"max_c_socket": int(max_c_socket)})
         Pub().pub("openWB/system/datastore_version", 21)
+
+    def upgrade_datastore_21(self) -> None:
+        for topic, payload in self.all_received_topics.items():
+            if re.search("openWB/vehicle/[0-9]+/soc_module/config", topic) is not None:
+                config_payload = decode_payload(payload)
+                index = get_index(topic)
+                for interval_topic, interval_payload in self.all_received_topics.items():
+                    if f"openWB/vehicle/{index}/soc_module/interval_config" == interval_topic:
+                        interval_config_payload = decode_payload(interval_payload)
+                        break
+                general_config = GeneralVehicleConfig(
+                    request_interval_charging=interval_config_payload["request_interval_charging"],
+                    request_interval_not_charging=interval_config_payload["request_interval_not_charging"],
+                    request_only_plugged=interval_config_payload["request_only_plugged"])
+                if config_payload["type"] == "manual":
+                    general_config.efficiency = config_payload["configuration"]["efficiency"]*100
+                    config_payload["configuration"] = {}
+                Pub().pub(topic.replace("config", "general_config").replace("openWB/", "openWB/set/"),
+                          asdict(general_config))
+                Pub().pub(topic.replace("openWB/", "openWB/set/"), config_payload)
+        # Pub().pub("openWB/system/datastore_version", 22)
