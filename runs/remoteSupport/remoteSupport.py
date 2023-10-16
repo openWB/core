@@ -4,6 +4,7 @@ import re
 from subprocess import Popen
 from pathlib import Path
 import paho.mqtt.client as mqtt
+import platform
 
 BASE_PATH = Path(__file__).resolve().parents[2]
 RAMDISK_PATH = BASE_PATH / "ramdisk"
