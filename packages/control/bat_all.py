@@ -101,15 +101,15 @@ class BatAll:
                         self.data.get.power += battery.data.get.power
                         self.data.get.imported += battery.data.get.imported
                         self.data.get.exported += battery.data.get.exported
-                        self.data.get.daily_exported += battery.data.get.daily_exported
-                        self.data.get.daily_imported += battery.data.get.daily_imported
                         soc_sum += battery.data.get.soc
                         soc_count += 1
                     except Exception:
                         log.exception(f"Fehler im Bat-Modul {battery.num}")
                 self.data.get.soc = int(soc_sum / soc_count)
-                # Alle Summen-Topics im Dict veröffentlichen
-                {Pub().pub("openWB/set/bat/get/"+k, v) for (k, v) in asdict(self.data.get).items()}
+                Pub().pub("openWB/set/bat/get/power", self.data.get.power)
+                Pub().pub("openWB/set/bat/get/exported", self.data.get.exported)
+                Pub().pub("openWB/set/bat/get/imported", self.data.get.imported)
+                Pub().pub("openWB/set/bat/get/soc", self.data.get.soc)
             else:
                 self.data.config.configured = False
                 Pub().pub("openWB/set/bat/config/configured", self.data.config.configured)

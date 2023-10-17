@@ -4,7 +4,7 @@ import importlib
 import logging
 from pathlib import Path
 import threading
-from typing import Dict
+from typing import Dict, Union
 import re
 import subprocess
 import paho.mqtt.client as mqtt
@@ -28,9 +28,10 @@ from helpermodules.pub import Pub
 from helpermodules import system
 from control import pv
 from dataclass_utils import dataclass_from_dict
+from modules.common.abstract_vehicle import CalculatedSocState, GeneralVehicleConfig
 from modules.common.simcount.simcounter_state import SimCounterState
 from modules.internal_chargepoint_handler.internal_chargepoint_handler_config import (
-    GlobalHandlerData, InternalChargepointHandlerData, RfidData)
+    GlobalHandlerData, InternalChargepoint, RfidData)
 from modules.vehicles.manual.config import ManualSoc
 
 log = logging.getLogger(__name__)
@@ -56,9 +57,9 @@ class SubData:
     bat_all_data = bat_all.BatAll()
     bat_data: Dict[str, bat.Bat] = {}
     general_data = general.General()
-    internal_chargepoint_data: Dict[str, InternalChargepointHandlerData] = {
-        "cp0": InternalChargepointHandlerData(),
-        "cp1": InternalChargepointHandlerData(),
+    internal_chargepoint_data: Dict[str, Union[InternalChargepoint, GlobalHandlerData, RfidData]] = {
+        "cp0": InternalChargepoint(),
+        "cp1": InternalChargepoint(),
         "global_data": GlobalHandlerData(),
         "rfid_data": RfidData()}
     optional_data = optional.Optional()
@@ -81,7 +82,8 @@ class SubData:
                  event_stop_internal_chargepoint: threading.Event,
                  event_update_config_completed: threading.Event,
                  event_soc: threading.Event,
-                 event_jobs_running: threading.Event):
+                 event_jobs_running: threading.Event,
+                 event_modbus_server: threading.Event,):
         self.event_ev_template = event_ev_template
         self.event_charge_template = event_charge_template
         self.event_cp_config = event_cp_config
@@ -98,6 +100,7 @@ class SubData:
         self.event_update_config_completed = event_update_config_completed
         self.event_soc = event_soc
         self.event_jobs_running = event_jobs_running
+        self.event_modbus_server = event_modbus_server
         self.heartbeat = False
 
     def sub_topics(self):
@@ -260,9 +263,18 @@ class SubData:
                             decode_payload(msg.payload))
                     elif re.search("/vehicle/[0-9]+/set", msg.topic) is not None:
                         self.set_json_payload_class(var["ev"+index].data.set, msg)
-                    elif re.search("/vehicle/[0-9]+/soc_module/interval_config", msg.topic) is not None:
+                    elif re.search("/vehicle/[0-9]+/soc_module/general_config", msg.topic) is not None:
+                        var["ev"+index].soc_module.general_config = dataclass_from_dict(
+                            GeneralVehicleConfig, decode_payload(msg.payload))
+                    elif re.search("/vehicle/[0-9]+/soc_module/calculated_soc_state", msg.topic) is not None:
+                        calculated_soc_state = dataclass_from_dict(CalculatedSocState, decode_payload(msg.payload))
                         if var["ev"+index].soc_module is not None:
-                            self.set_json_payload_class(var["ev"+index].soc_module.interval_config, msg)
+                            if isinstance(var["ev"+index].soc_module.vehicle_config, ManualSoc):
+                                if (calculated_soc_state.manual_soc and calculated_soc_state.manual_soc !=
+                                        var["ev"+index].soc_module.calculated_soc_state.manual_soc):
+                                    calculated_soc_state.request_start_soc = True
+                                    Pub().pub(f"openWB/vehicle/{index}/get/force_soc_update", True)
+                            var["ev"+index].soc_module.calculated_soc_state = calculated_soc_state
                     elif re.search("/vehicle/[0-9]+/soc_module/config$", msg.topic) is not None:
                         config = decode_payload(msg.payload)
                         if config["type"] is None:
@@ -270,14 +282,9 @@ class SubData:
                         else:
                             mod = importlib.import_module(".vehicles."+config["type"]+".soc", "modules")
                             config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config)
-                            if var["ev"+index].soc_module:
-                                if (isinstance(config, ManualSoc) and
-                                        (isinstance(var["ev"+index].soc_module.vehicle_config, ManualSoc))):
-                                    if (config.configuration.soc_start !=
-                                            var["ev"+index].soc_module.vehicle_config.configuration.soc_start):
-                                        Pub().pub(f"openWB/vehicle/{index}/get/force_soc_update", True)
                             var["ev"+index].soc_module = mod.create_vehicle(config, index)
-                            client.subscribe(f"/vehicle/{index}/soc_module/interval_config", 2)
+                            client.subscribe(f"/vehicle/{index}/soc_module/calculated_soc_state", 2)
+                            client.subscribe(f"/vehicle/{index}/soc_module/general_config", 2)
                         self.event_soc.set()
                     elif re.search("/vehicle/[0-9]+/control_parameter/", msg.topic) is not None:
                         self.set_json_payload_class(
@@ -568,6 +575,9 @@ class SubData:
                     subprocess.run([
                         str(Path(__file__).resolve().parents[2] / "runs" / "setup_network.sh")
                     ])
+                elif "openWB/general/modbus_control" == msg.topic:
+                    if decode_payload(msg.payload) and self.general_data.data.extern:
+                        self.event_modbus_server.set()
                 else:
                     self.set_json_payload_class(var.data, msg)
         except Exception:
@@ -638,6 +648,10 @@ class SubData:
                     self.set_json_payload_class(self.counter_all_data.data.config, msg)
                 elif re.search("/counter/get", msg.topic) is not None:
                     self.set_json_payload_class(self.counter_all_data.data.get, msg)
+                elif re.search("/counter/set/simulation", msg.topic) is not None:
+                    self.counter_all_data.sim_counter.data = dataclass_from_dict(
+                        SimCounterState,
+                        decode_payload(msg.payload))
                 elif re.search("/counter/set", msg.topic) is not None:
                     self.set_json_payload_class(self.counter_all_data.data.set, msg)
         except Exception:
@@ -715,6 +729,7 @@ class SubData:
                     log.debug("skipping mqtt bridge message on startup")
             # will be moved to separate handler!
             elif "GetRemoteSupport" in msg.topic:
+                log.warning("deprecated topic for remote support received!")
                 payload = decode_payload(msg.payload)
                 splitted = payload.split(";")
                 token = splitted[0]
@@ -771,14 +786,17 @@ class SubData:
         try:
             if re.search("/internal_chargepoint/[0-1]/data/parent_cp", msg.topic) is not None:
                 index = get_index(msg.topic)
-                if decode_payload(msg.payload) != var[f"cp{index}"].parent_cp:
+                if decode_payload(msg.payload) != var[f"cp{index}"].data.parent_cp:
                     log.debug("Neustart des Handlers für den internen Ladepunkt.")
                     self.event_stop_internal_chargepoint.set()
                     self.event_start_internal_chargepoint.set()
                 self.set_json_payload_class(var[f"cp{index}"], msg)
             elif re.search("/internal_chargepoint/[0-1]/", msg.topic) is not None:
                 index = get_index(msg.topic)
-                self.set_json_payload_class(var[f"cp{index}"], msg)
+                if re.search("/internal_chargepoint/[0-1]/data/", msg.topic) is not None:
+                    self.set_json_payload_class(var[f"cp{index}"].data, msg)
+                elif re.search("/internal_chargepoint/[0-1]/get/", msg.topic) is not None:
+                    self.set_json_payload_class(var[f"cp{index}"].get, msg)
             elif "internal_chargepoint/global_data" in msg.topic:
                 self.set_json_payload_class(var["global_data"], msg)
                 if decode_payload(msg.payload)["parent_ip"] != var["global_data"].parent_ip:

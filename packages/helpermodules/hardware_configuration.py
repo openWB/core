@@ -16,5 +16,13 @@ def get_hardware_configuration_setting(name: str):
         return json.loads(f.read())[name]
 
 
+def get_serial_number() -> str:
+    try:
+        with open("/home/openwb/snnumber", "r") as file:
+            return file.read().replace("\n", "")
+    except FileNotFoundError:
+        return "noSerialNumber"
+
+
 if __name__ == "__main__":
     update_hardware_configuration(json.loads(sys.argv[1]))

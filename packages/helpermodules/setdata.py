@@ -195,17 +195,17 @@ class SetData:
                                 subdata.SubData.cp_data["cp"+str(index)].chargepoint.data.config)
                         else:
                             template = {}
-                    elif "soc_module/configuration/soc_start" in msg.topic:
+                    elif "soc_module/calculated_soc_state/manual_soc" in msg.topic:
                         event = self.event_soc
                         if "ev"+str(index) in subdata.SubData.ev_data:
                             template = dataclass_utils.asdict(
-                                subdata.SubData.ev_data["ev"+str(index)].soc_module.vehicle_config)
+                                subdata.SubData.ev_data["ev"+str(index)].soc_module.calculated_soc_state)
                         else:
                             template = {}
                     else:
                         raise ValueError("Zu "+msg.topic+" konnte kein passendes json-Objekt gefunden werden.")
                     # Wert, der aktualisiert werden soll, erstellen/finden und updaten
-                    if event == self.event_cp_config or event == self.event_soc:
+                    if event == self.event_cp_config:
                         key_list = msg.topic.split("/")[5:]
                     elif (event == self.event_scheduled_charging_plan or
                           event == self.event_time_charging_plan):
@@ -220,7 +220,7 @@ class SetData:
                     elif event == self.event_scheduled_charging_plan or event == self.event_time_charging_plan:
                         topic = msg.topic[:get_second_index_position(msg.topic)]
                     elif event == self.event_soc:
-                        topic = msg.topic[:index_pos]+"/soc_module/config"
+                        topic = msg.topic[:index_pos]+"/soc_module/calculated_soc_state"
                     else:
                         topic = msg.topic[:index_pos]
                     topic = topic.replace('set/', '', 1)
@@ -394,10 +394,11 @@ class SetData:
                 self._validate_value(msg, bool)
             elif "/set/soc_error_counter" in msg.topic:
                 self._validate_value(msg, int, [(0, float("inf"))])
-            elif "/soc_module/configuration/soc_start" in msg.topic:
+            elif "/soc_module/calculated_soc_state/manual_soc" in msg.topic:
                 self._validate_value(msg, float, [(0, 100)], pub_json=True)
-            elif ("/soc_module/config" in msg.topic or
-                  "/soc_module/interval_config" in msg.topic):
+            elif ("/soc_module/calculated_soc_state" in msg.topic or
+                  "/soc_module/config" in msg.topic or
+                  "/soc_module/general_config" in msg.topic):
                 self._validate_value(msg, "json")
             elif "/get/fault_state" in msg.topic:
                 self._validate_value(msg, int, [(0, 2)])
@@ -558,19 +559,20 @@ class SetData:
 
     def process_chargepoint_get_topics(self, msg):
         if ("/get/voltages" in msg.topic):
-            self._validate_value(
-                msg, float, [(0, 500)], collection=list)
-        elif ("/get/currents" in msg.topic):
-            self._validate_value(
-                msg, float, collection=list)
+            self._validate_value(msg, float, [(0, 500)], collection=list)
+        elif ("/get/currents" in msg.topic or
+              "/get/powers" in msg.topic):
+            self._validate_value(msg, float, collection=list)
         elif ("/get/power_factors" in msg.topic):
-            self._validate_value(
-                msg, float, [(-1, 1)], collection=list)
+            self._validate_value(msg, float, [(-1, 1)], collection=list)
+        elif ("/get/frequency" in msg.topic):
+            self._validate_value(msg, float, [(40, 60)])
         elif ("/get/daily_imported" in msg.topic or
                 "/get/daily_exported" in msg.topic or
                 "/get/power" in msg.topic or
                 "/get/imported" in msg.topic or
-                "/get/exported" in msg.topic):
+                "/get/exported" in msg.topic or
+                "/get/soc_timestamp" in msg.topic):
             self._validate_value(msg, float, [(0, float("inf"))])
         elif "/get/phases_in_use" in msg.topic:
             self._validate_value(msg, int, [(0, 3)])
@@ -579,6 +581,8 @@ class SetData:
             self._validate_value(msg, bool)
         elif "/get/fault_state" in msg.topic:
             self._validate_value(msg, int, [(0, 2)])
+        elif "/get/evse_current" in msg.topic:
+            self._validate_value(msg, int, [(0, 0), (6, 32), (600, 3200)])
         elif ("/get/fault_str" in msg.topic or
                 "/get/state_str" in msg.topic or
                 "/get/heartbeat" in msg.topic):
@@ -586,6 +590,8 @@ class SetData:
         elif ("/get/rfid" in msg.topic or
                 "/get/rfid_timestamp" in msg.topic):
             self._validate_value(msg, str)
+        elif ("/get/soc" in msg.topic):
+            self._validate_value(msg, float, [(0, 100)])
         else:
             self.__unknown_topic(msg)
 
@@ -694,7 +700,8 @@ class SetData:
         try:
             if "openWB/set/general/extern_display_mode" in msg.topic:
                 self._validate_value(msg, str)
-            elif "openWB/set/general/extern" in msg.topic:
+            elif ("openWB/set/general/modbus_control" in msg.topic or
+                  "openWB/set/general/extern" in msg.topic):
                 self._validate_value(msg, bool)
             elif "openWB/set/general/control_interval" in msg.topic:
                 self._validate_value(msg, int, [(10, 10), (20, 20), (60, 60)])
@@ -753,6 +760,8 @@ class SetData:
                     "openWB/set/general/ripple_control_receiver/r1_active" in msg.topic or
                     "openWB/set/general/ripple_control_receiver/r2_active" in msg.topic):
                 self._validate_value(msg, bool)
+            elif "openWB/set/general/web_theme" in msg.topic:
+                self._validate_value(msg, "json")
             else:
                 self.__unknown_topic(msg)
         except Exception:
@@ -792,6 +801,8 @@ class SetData:
                 self._validate_value(msg, bool)
             elif "openWB/set/optional/int_display/on_if_plugged_in" in msg.topic:
                 self._validate_value(msg, bool)
+            elif "openWB/set/optional/int_display/only_local_charge_points" in msg.topic:
+                self._validate_value(msg, bool)
             elif "openWB/set/optional/int_display/pin_active" in msg.topic:
                 self._validate_value(msg, bool)
             elif "openWB/set/optional/int_display/pin_code" in msg.topic:
@@ -823,11 +834,14 @@ class SetData:
             elif "openWB/set/counter/set/invalid_home_consumption" in msg.topic:
                 self._validate_value(msg, int, [(0, 3)])
             elif ("openWB/set/counter/set/home_consumption" in msg.topic or
+                  "openWB/set/counter/set/imported_home_consumption" in msg.topic or
                   "openWB/set/counter/set/daily_yield_home_consumption" in msg.topic or
                   "openWB/set/counter/set/disengageable_smarthome_power" in msg.topic):
                 self._validate_value(msg, float, [(0, float("inf"))])
             elif "openWB/set/counter/get/hierarchy" in msg.topic:
                 self._validate_value(msg, None)
+            elif "openWB/set/counter/set/simulation" in msg.topic:
+                self._validate_value(msg, "json")
             elif "/set/consumption_left" in msg.topic:
                 self._validate_value(msg, float)
             elif "/config/selected" in msg.topic:
@@ -868,6 +882,8 @@ class SetData:
                 elif "/get/power" in msg.topic:
                     self._validate_value(
                         msg, float, [(float("-inf"), float("inf"))])
+                elif "/get/soc" in msg.topic:
+                    self._validate_value(msg, float, [(0, 100)])
                 elif ("/set/reserved_surplus" in msg.topic or
                       "set/released_surplus" in msg.topic):
                     self._validate_value(msg, float)
@@ -1017,7 +1033,16 @@ class SetData:
             if "data/cp_interruption_duration" in msg.topic:
                 self._validate_value(msg, int, [(0, float("inf"))])
             elif "data/parent_cp" in msg.topic:
-                self._validate_value(msg, str)
+                if decode_payload(msg.payload) is None:
+                    self._validate_value(msg, str)
+                else:
+                    for cp in subdata.SubData.cp_data.values():
+                        if cp.chargepoint.data.config.type == "internal_openwb":
+                            if int(get_index(msg.topic)) == cp.chargepoint.data.config.configuration["duo_num"]:
+                                self._validate_value(msg, str)
+                                break
+                    else:
+                        log.error("Kein interner Ladepunkt konfiguriert, dem ein parent_cp zugeordnet werden kann.")
             elif "data/set_current" in msg.topic:
                 self._validate_value(msg, float, [(0, 0), (6, 32)])
             elif "data/phases_to_use" in msg.topic:

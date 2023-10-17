@@ -9,13 +9,16 @@ var topicsToSubscribe = {
 	"openWB/system/boot_done": false,
 	"openWB/system/update_in_progress": false,
 	"openWB/general/extern": false,
-	"openWB/optional/int_display/theme": false,
 }
-var isssTopicsToSubscribe = {
+var primaryTopicsToSubscribe = {
+	"openWB/optional/int_display/theme": false,
+	"openWB/optional/int_display/only_local_charge_points": false,
+}
+var secondaryTopicsToSubscribe = {
 	"openWB/general/extern_display_mode": false,
-	"openWB/isss/parentWB": false,
-	"openWB/isss/parentCPlp1": false,
-	"openWB/isss/parentCPlp2": false,
+	"openWB/internal_chargepoint/global_data": false,
+	"openWB/internal_chargepoint/0/data/parent_cp": false,
+	"openWB/internal_chargepoint/1/data/parent_cp": false,
 };
 
 var data = {};
@@ -35,7 +38,10 @@ var options = {
 		Object.keys(topicsToSubscribe).forEach((topic) => {
 			client.subscribe(topic, { qos: 0 });
 		});
-		Object.keys(isssTopicsToSubscribe).forEach((topic) => {
+		Object.keys(primaryTopicsToSubscribe).forEach((topic) => {
+			client.subscribe(topic, { qos: 0 });
+		});
+		Object.keys(secondaryTopicsToSubscribe).forEach((topic) => {
 			client.subscribe(topic, { qos: 0 });
 		});
 	},
@@ -65,13 +71,12 @@ client.onConnectionLost = function (responseObject) {
 };
 // Gets called whenever you receive a message
 client.onMessageArrived = function (message) {
-	if (
-		message.destinationName.includes("/isss/") ||
-		message.destinationName.includes("/general/extern_display_mode")
-	){
-		isssTopicsToSubscribe[message.destinationName] = true;
-	} else {
+	if (Object.keys(topicsToSubscribe).includes(message.destinationName)) {
 		topicsToSubscribe[message.destinationName] = true;
+	} else if (Object.keys(primaryTopicsToSubscribe).includes(message.destinationName)) {
+		primaryTopicsToSubscribe[message.destinationName] = true;
+	} else if (Object.keys(secondaryTopicsToSubscribe).includes(message.destinationName)) {
+		secondaryTopicsToSubscribe[message.destinationName] = true;
 	}
 	data[message.destinationName] = JSON.parse(message.payloadString);
 	handleMessage(message.destinationName, message.payloadString);
@@ -97,8 +102,12 @@ function allTopicsReceived() {
 		ready &= topicsToSubscribe[topic];
 	});
 	if (data["openWB/general/extern"]) {
-		Object.keys(isssTopicsToSubscribe).forEach((topic) => {
-			ready &= isssTopicsToSubscribe[topic];
+		Object.keys(secondaryTopicsToSubscribe).forEach((topic) => {
+			ready &= secondaryTopicsToSubscribe[topic];
+		});
+	} else {
+		Object.keys(primaryTopicsToSubscribe).forEach((topic) => {
+			ready &= primaryTopicsToSubscribe[topic];
 		});
 	}
 	return ready;

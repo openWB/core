@@ -6,7 +6,7 @@ from control.algorithm import common
 from control.loadmanagement import LimitingValue, Loadmanagement
 from control.counter import Counter
 from control.chargepoint.chargepoint import Chargepoint
-from control.algorithm.filter_chargepoints import (get_chargepoints_by_mode, get_chargepoints_by_mode_and_counter,
+from control.algorithm.filter_chargepoints import (get_chargepoints_by_mode_and_counter,
                                                    get_preferenced_chargepoint_charging, get_chargepoints_pv_charging,
                                                    get_chargepoints_surplus_controlled)
 from control.chargepoint.chargepoint_state import ChargepointState, CHARGING_STATES
@@ -20,7 +20,7 @@ class SurplusControlled:
         pass
 
     def set_surplus_current(self, mode_range) -> None:
-        self._reset_current()
+        common.reset_current_by_chargemode(common.CHARGEMODES[6:12])
         for mode_tuple, counter in common.mode_and_counter_generator(mode_range):
             preferenced_chargepoints, preferenced_cps_without_set_current = get_preferenced_chargepoint_charging(
                 get_chargepoints_by_mode_and_counter(mode_tuple, f"counter{counter.num}"))
@@ -57,11 +57,6 @@ class SurplusControlled:
                 cp,
                 surplus=True)
             chargepoints.pop(0)
-
-    def _reset_current(self) -> None:
-        for mode in common.CHARGEMODES[6:12]:
-            for cp in get_chargepoints_by_mode(mode):
-                cp.data.set.current = 0
 
     def _set_loadmangement_message(self,
                                    current: float,

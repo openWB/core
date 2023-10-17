@@ -25,15 +25,15 @@ SAMPLE_IP = "1.1.1.1"
 
 @pytest.mark.parametrize(
     "old_chargepoint_state, published_topics",
-    [(None, 10),
-     (OLD_CHARGEPOINT_STATE, 1)]
+    [(None, 18),
+     (OLD_CHARGEPOINT_STATE, 2)]
 
 )
 def test_update_values(old_chargepoint_state, published_topics, monkeypatch):
     # setup
     mock_pub_single = Mock()
     monkeypatch.setattr(internal_chargepoint_handler, "pub_single", mock_pub_single)
-    u = UpdateValues(0, SAMPLE_IP, "1")
+    u = UpdateValues(0, SAMPLE_IP, "1", 1)
     u.old_chargepoint_state = old_chargepoint_state
 
     # execution

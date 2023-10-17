@@ -62,6 +62,7 @@ def setup_logging() -> None:
     urllib3_log.addHandler(urllib3_file_handler)
 
     logging.getLogger("pymodbus").setLevel(logging.WARNING)
+    logging.getLogger("uModbus").setLevel(logging.WARNING)
 
 
 log = logging.getLogger(__name__)
