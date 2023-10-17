@@ -5,7 +5,6 @@ import paho.mqtt.publish as publish
 import msal
 import base64
 
-from msal import PublicClientApplication
 from helpermodules.messaging import MessageType
 from modules.backup_clouds.onedrive.config import OneDriveBackupCloud, OneDriveBackupCloudConfiguration
 
@@ -85,7 +84,7 @@ def generateMSALAuthCode(cloudbackup: OneDriveBackupCloud) -> dict:
         return result
 
     # Create a public client application with msal
-    app = PublicClientApplication(
+    app = msal.PublicClientApplication(
         client_id=cloudbackup.configuration.clientID,
         authority=cloudbackup.configuration.authority
         )
@@ -129,8 +128,8 @@ def retrieveMSALTokens(cloudbackup: OneDriveBackupCloud) -> dict:
     # Create a public client application with msal
     tokens = None
     cache = msal.SerializableTokenCache()
-    app = PublicClientApplication(client_id=cloudbackup.configuration.clientID,
-                                  authority=cloudbackup.configuration.authority, token_cache=cache)
+    app = msal.PublicClientApplication(client_id=cloudbackup.configuration.clientID,
+                                       authority=cloudbackup.configuration.authority, token_cache=cache)
 
     f = cloudbackup.configuration.flow
     if f is None:
