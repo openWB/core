@@ -440,18 +440,10 @@ class Chargepoint:
         """ setzt alle Werte zurück, die während des Algorithmus gesetzt werden.
         """
         try:
-            log.debug("EV "+str(self.num)+" zurückgesetzt.")
-            self.data.control_parameter.required_current = 0
-            self.data.control_parameter.timestamp_auto_phase_switch = None
-            self.data.control_parameter.timestamp_perform_phase_switch = None
-            self.data.control_parameter.submode = "stop"
-            self.data.control_parameter.chargemode = "stop"
-            self.data.control_parameter.imported_instant_charging = None
-            self.data.control_parameter.imported_at_plan_start = None
-            self.data.control_parameter.current_plan = None
-            self.data.control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
+            log.debug(f"ControlParameter an LP {self.num} zurückgesetzt.")
+            self.data.control_parameter = ControlParameter()
         except Exception:
-            log.exception("Fehler im ev-Modul "+str(self.num))
+            log.exception("Fehler im LP-Modul "+str(self.num))
 
     def set_control_parameter(self, submode: str, required_current: float):
         """ setzt die Regel-Parameter, die der Algorithmus verwendet.
@@ -471,7 +463,7 @@ class Chargepoint:
             self.data.control_parameter.prio = self.data.set.charging_ev_data.charge_template.data.prio
             self.data.control_parameter.required_current = required_current
         except Exception:
-            log.exception("Fehler im ev-Modul "+str(self.num))
+            log.exception("Fehler im LP-Modul "+str(self.num))
 
     def _reset_values_at_start(self):
         self.data.set.loadmanagement_available = True
