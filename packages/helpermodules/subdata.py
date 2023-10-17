@@ -789,7 +789,7 @@ class SubData:
                     log.debug("Neustart des Handlers für den internen Ladepunkt.")
                     self.event_stop_internal_chargepoint.set()
                     self.event_start_internal_chargepoint.set()
-                self.set_json_payload_class(var[f"cp{index}"], msg)
+                self.set_json_payload_class(var[f"cp{index}"].data, msg)
             elif re.search("/internal_chargepoint/[0-1]/", msg.topic) is not None:
                 index = get_index(msg.topic)
                 if re.search("/internal_chargepoint/[0-1]/data/", msg.topic) is not None:
