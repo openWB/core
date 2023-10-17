@@ -8,7 +8,7 @@ from control.algorithm.integration_test.conftest import ParamsExpectedSetCurrent
 from control.chargemode import Chargemode
 from control import data
 from control.algorithm.algorithm import Algorithm
-from control.loadmanagement import LimitingValue
+from control.limiting_value import LimitingValue
 from dataclass_utils.factories import currents_list_factory
 
 
@@ -88,7 +88,8 @@ cases_limit = [
                 raw_power_left=21310,
                 raw_currents_left_counter0=[14, 30, 31],
                 raw_currents_left_counter6=[16, 12, 14],
-                expected_state_str=LimitingValue.CURRENT,
+                expected_state_str=(f"Es kann nicht mit der vorgegebenen Stromstärke geladen werden"
+                                    f"{LimitingValue.CURRENT.value.format('Garage')}"),
                 expected_current_cp3=14,
                 expected_current_cp4=12,
                 expected_current_cp5=14,
@@ -97,15 +98,16 @@ cases_limit = [
                 expected_raw_currents_left_counter6=[16, 0, 0]),
     ParamsLimit(name="limit by power",
                 raw_power_left=5520,
-                raw_currents_left_counter0=[14, 30, 31],
-                raw_currents_left_counter6=[16, 12, 14],
-                expected_state_str=LimitingValue.POWER,
-                expected_current_cp3=10.333333333333334,
-                expected_current_cp4=6.833333333333333,
-                expected_current_cp5=6.833333333333333,
+                raw_currents_left_counter0=[32]*3,
+                raw_currents_left_counter6=[16]*3,
+                expected_state_str=(f"Es kann nicht mit der vorgegebenen Stromstärke geladen werden"
+                                    f"{LimitingValue.POWER.value.format('Garage')}"),
+                expected_current_cp3=10.461538461538462,
+                expected_current_cp4=6.769230769230769,
+                expected_current_cp5=6.769230769230769,
                 expected_raw_power_left=0,
-                expected_raw_currents_left_counter0=[3.666666666666666, 23.166666666666668, 24.166666666666668],
-                expected_raw_currents_left_counter6=[16, 5.166666666666667, 7.166666666666667]),
+                expected_raw_currents_left_counter0=[21.53846153846154, 25.23076923076923, 25.23076923076923],
+                expected_raw_currents_left_counter6=[16, 9.23076923076923, 9.23076923076923]),
     # limit by unbalanced load
 ]
 
@@ -125,8 +127,7 @@ def test_instant_charging_limit(params: ParamsLimit, all_cp_instant_charging_1p,
     assert_expected_current(params)
     for i in range(3, 6):
         assert data.data.cp_data[
-            f"cp{i}"].data.get.state_str == (f"Es kann nicht mit der vorgegebenen Stromstärke geladen werden"
-                                             f"{params.expected_state_str.value.format('Garage')}")
+            f"cp{i}"].data.get.state_str.replace("\n", "") == params.expected_state_str.replace("\n", "")
     assert_counter_set(params)
 
 

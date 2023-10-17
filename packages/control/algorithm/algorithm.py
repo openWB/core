@@ -67,7 +67,8 @@ class Algorithm:
                             cp.data.get.currents,
                             cp.data.get.power,
                             cp.template.data.max_current_single_phase,
-                            cp.get_max_phase_hw())
+                            cp.get_max_phase_hw(),
+                            cp.data.control_parameter.limit)
                         if message is not None:
                             cp.data.get.state_str = message
                         # Nachdem im Automatikmodus die Anzahl Phasen bekannt ist, Einhaltung des Maximalstroms

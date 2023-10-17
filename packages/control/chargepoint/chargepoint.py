@@ -274,7 +274,10 @@ class Chargepoint:
     def set_state_and_log(self, message: str) -> None:
         if message:
             log.info(f"LP {self.num}: {message}")
-            self.data.get.state_str = message
+            if self.data.get.state_str is None:
+                self.data.get.state_str = message
+            elif message not in self.data.get.state_str:
+                self.data.get.state_str += f" {message}"
 
     def _is_grid_protection_inactive(self) -> Tuple[bool, Optional[str]]:
         """ prüft, ob der Netzschutz inaktiv ist oder ob alle Ladepunkt gestoppt werden müssen.
