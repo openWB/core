@@ -32,45 +32,80 @@ function setIframeSource() {
 			iframe.classList.add("hide");
 			return;
 		}
-		let host = location.host;
-		var query = "";
+		var host = "";
+		var query = new URLSearchParams();
+		var destination = "";
 		if (data["openWB/general/extern"]) {
-			if (data["openWB/general/extern_display_mode"] == "local") {
-				addLog("Local display in extern mode not yet supported! fallback to main");
+			switch (data["openWB/general/extern_display_mode"]) {
+				case "local":
+					// host = location.host;
+					// ...
+					// break;
+					// ToDo, fallback to primary
+					addLog("Local display in secondary mode not yet supported! fallback to primary display");
+				case "primary":
+				default:
+					// retrieve display theme from primary
+					host = data["openWB/internal_chargepoint/global_data"]["parent_ip"];
+					// we need to know how to map local charge points to primary
+					query.append("parentChargePoint1", data["openWB/internal_chargepoint/0/data/parent_cp"]);
+					query.append("parentChargePoint2", data["openWB/internal_chargepoint/1/data/parent_cp"]);
+					break;
 			}
-			host = data["openWB/isss/parentWB"];
-			query += `?parentChargePoint1=${data["openWB/isss/parentCPlp1"]}`;
-			query += `&parentChargePoint2=${data["openWB/isss/parentCPlp2"]}`;
-		}
-		const theme = data["openWB/optional/int_display/theme"].type;
-		const destination = `${location.protocol}//${host}/openWB/web/display/themes/${theme}/${query}`;
+			// load display from primary or local
+			destination = `${location.protocol}//${host}/openWB/web/display/?${query.toString()}`;
+			if (destination != iframe.src) {
+				addLog(`all done, loading theme from primary`);
+				// iframe.src = destination;
+			}
+			setTimeout(() => {
+				// startup.classList.add("hide");
+				// iframe.classList.remove("hide");
+				location.href = destination;
+			}, 2000);
+		} else {
+			host = location.host;
+			const theme = data["openWB/optional/int_display/theme"].type;
 
-		var request = new XMLHttpRequest();
-		request.onload = function () {
-			if (this.readyState == 4) {
-				if (this.status == 200) {
-					addLog(`theme '${theme}' is valid`)
-					if (destination != iframe.src) {
-						addLog(`all done, starting theme '${theme}' with url '${destination}'`);
-						iframe.src = destination;
-					}
-					setTimeout(() => {
-						startup.classList.add("hide");
-						iframe.classList.remove("hide");
-					}, 2000);
-				} else {
-					addLog(`theme '${theme}' not found on server!`);
+			if (data["openWB/optional/int_display/only_local_charge_points"]) {
+				const searchParams = new URLSearchParams(location.search);
+
+				if (searchParams.has("parentChargePoint1")) {
+					query.append("parentChargePoint1", searchParams.get("parentChargePoint1"));
+				}
+				if (searchParams.has("parentChargePoint2")) {
+					query.append("parentChargePoint2", searchParams.get("parentChargePoint2"));
 				}
 			}
-		};
-		request.ontimeout = function () {
-			console.warn("onTimeout", this.readyState, this.status);
-			addLog(`check for theme '${theme}' timed out!`);
-		};
-		request.timeout = 2000;
-		console.debug("checking url:", destination);
-		request.open("GET", destination, true);
-		request.send();
+			destination = `${location.protocol}//${host}/openWB/web/display/themes/${theme}/?${query.toString()}`;
+
+			var request = new XMLHttpRequest();
+			request.onload = function () {
+				if (this.readyState == 4) {
+					if (this.status == 200) {
+						addLog(`theme '${theme}' is valid`)
+						if (destination != iframe.src) {
+							addLog(`all done, starting theme '${theme}' with url '${destination}'`);
+							iframe.src = destination;
+						}
+						setTimeout(() => {
+							startup.classList.add("hide");
+							iframe.classList.remove("hide");
+						}, 2000);
+					} else {
+						addLog(`theme '${theme}' not found on server!`);
+					}
+				}
+			};
+			request.ontimeout = function () {
+				console.warn("onTimeout", this.readyState, this.status);
+				addLog(`check for theme '${theme}' timed out!`);
+			};
+			request.timeout = 2000;
+			console.debug("checking url:", destination);
+			request.open("GET", destination, true);
+			request.send();
+		}
 	} else {
 		console.debug("some topics still missing");
 	}

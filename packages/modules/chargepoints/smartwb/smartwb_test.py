@@ -51,7 +51,8 @@ class TestSmartWb:
     }
     SAMPLE_CP_STATE_V2 = ChargepointState(
         phases_in_use=1,
-        power=2251,
+        power=2251.0,
+        powers=[2232.5784, 0, 0],
         currents=[9.78, 0, 0],
         voltages=[228.28, 231.85, 232.07],
         imported=54350.0,
@@ -134,11 +135,13 @@ class TestSmartWb:
     def cp(self) -> chargepoint_module.ChargepointModule:
         return chargepoint_module.ChargepointModule(SmartWB(configuration=SmartWBConfiguration(ip_address="1.1.1.1")))
 
-    @pytest.mark.parametrize("params", [
+    cases = [
         Params("smartWB V1", SAMPLE_V1, SAMPLE_CP_STATE_V1),
         Params("smartWB V2", SAMPLE_V2, SAMPLE_CP_STATE_V2),
         Params("smartWB V2 not charging", SAMPLE_NOT_CHARGING_V2, SAMPLE_CP_STATE_NOT_CHARGING_V2),
-    ])
+    ]
+
+    @pytest.mark.parametrize("params", cases, ids=[c.name for c in cases])
     def test_get_values_v2(self, cp, requests_mock: requests_mock.mock, params: Params):
         # setup
         requests_mock.get("http://1.1.1.1/getParameters", json=params.sample_data)

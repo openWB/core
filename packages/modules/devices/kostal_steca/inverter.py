@@ -38,8 +38,8 @@ class KostalStecaInverter:
 
         # call for XML file and parse it for current PV power
         measurements = req.get_http_session().get("http://" + self.ip_address + "/measurements.xml", timeout=2).text
-        power = float(ET.fromstring(measurements).find(
-            ".//Measurement[@Type='AC_Power']").get("Value")) * -1
+        power_raw = ET.fromstring(measurements).find(".//Measurement[@Type='AC_Power']").get("Value")
+        power = 0 if power_raw is None else float(power_raw) * -1
         power = 0 if isnan(power) else power
 
         if self.component_config.configuration.variant_steca:

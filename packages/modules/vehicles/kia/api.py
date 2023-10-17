@@ -47,20 +47,23 @@ def getString(param_id: str, brand: str) -> str:
 
     if brand == 'hyundai':
         if param_id == "app_id":
-            paramStr = "1eba27d2-9a5b-4eba-8ec7-97eb6c62fb51"
+            paramStr = "014d2225-8495-4735-812d-2616334fd15d"
         elif param_id == "client_id":
             paramStr = "6d477c38-3ca4-4cf3-9557-2a1929a94654"
         elif param_id == "auth_client_id":
             paramStr = "64621b96-0f0d-11ec-82a8-0242ac130003"
         elif param_id == "gcm_sender_id":
-            paramStr = "414998006775"
+            paramStr = "dQtCqr7gRjy31Ao4nPiLVy:APA91bF_tv9yPOTFa-sW9-vCxO" + \
+                       "VpzD_iLjRopN_zaKgPKdwS7OYTWFN626-ObhZyzka5kYFKG0K" + \
+                       "fCsuMOUD5aw9Gyrdh-IeBQZHIcfb5YNUrQBvfqQxbggk9kO6g" + \
+                       "ZeFbCpCLHZB6wITC"
         elif param_id == "basic_token":
             paramStr = "Basic NmQ0NzdjMzgtM2NhNC00Y2YzLTk1NTctMmExOTI5YTk" + \
                        "0NjU0OktVeTQ5WHhQekxwTHVvSzB4aEJDNzdXNlZYaG10UVI5" + \
                        "aVFobUlGampvWTRJcHhzVg=="
         elif param_id == "stamp_pad":
-            paramStr = "445B6846AFEF0D726646776865A650C9AEF98E51A474DCB7E" + \
-                       "C9B1B67D29C66EAAEF621CA02522A0B80A8087F7A3A7BB0F71B"
+            paramStr = "445B6846AFEF0D726646776865A650C9F3A8B7B3AB22A1951" + \
+                       "63F7A898D962F7CB21F967FA54BE5521AA60B10F6B7E0FADC3B"
         elif param_id == "host":
             paramStr = "prd.eu-ccapi.hyundai.com:8080"
         elif param_id == "base_url":

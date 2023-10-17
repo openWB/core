@@ -42,12 +42,14 @@ export default {
   },
   methods: {
     toggleChargePointManualLock() {
-      this.$root.sendTopicToBroker(
-        `openWB/chargepoint/${this.chargePointId}/set/manual_lock`,
-        !this.mqttStore.getValueBool(
-          `openWB/chargepoint/${this.chargePointId}/set/manual_lock`
-        )
-      );
+      if (!this.changesLocked) {
+        this.$root.sendTopicToBroker(
+          `openWB/chargepoint/${this.chargePointId}/set/manual_lock`,
+          !this.mqttStore.getValueBool(
+            `openWB/chargepoint/${this.chargePointId}/set/manual_lock`
+          )
+        );
+      }
     },
   },
 };
