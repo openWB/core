@@ -5,6 +5,7 @@ import pytest
 from control.algorithm import surplus_controlled
 from control.algorithm.surplus_controlled import SurplusControlled
 from control.chargepoint.chargepoint import Chargepoint, ChargepointData, Get, Set
+from control.chargepoint.control_parameter import ControlParameter
 from control.ev import ChargeTemplate, Ev
 
 
@@ -78,9 +79,9 @@ def test_set_required_current_to_max(phases: int,
                                      monkeypatch):
     # setup
     ev = Ev(0)
-    ev.data.control_parameter.phases = phases
-    ev.data.control_parameter.required_currents = required_currents
-    mock_cp1.data = ChargepointData(set=Set(charging_ev_data=ev))
+    mock_cp1.data = ChargepointData(set=Set(charging_ev_data=ev),
+                                    control_parameter=ControlParameter(phases=phases,
+                                                                       required_currents=required_currents))
     mock_get_chargepoints_surplus_controlled = Mock(return_value=[mock_cp1])
     monkeypatch.setattr(surplus_controlled, "get_chargepoints_surplus_controlled",
                         mock_get_chargepoints_surplus_controlled)
@@ -89,4 +90,4 @@ def test_set_required_current_to_max(phases: int,
     SurplusControlled().set_required_current_to_max()
 
     # evaluation
-    assert mock_cp1.data.set.charging_ev_data.data.control_parameter.required_currents == expected_currents
+    assert mock_cp1.data.control_parameter.required_currents == expected_currents
