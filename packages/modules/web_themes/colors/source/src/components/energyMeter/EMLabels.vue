@@ -18,10 +18,10 @@
 
 <script setup lang="ts">
 import * as d3 from 'd3'
-import type { PowerItem, MarginType } from '@/assets/js/types'
 import { graphData } from '../powerGraph/model'
 import { historicSummary, sourceSummary, usageSummary } from '@/assets/js/model'
 import EmLabel from './EmLabel.vue'
+import type { MarginType, PowerItem } from '@/assets/js/types'
 const props = defineProps<{
 	plotdata: PowerItem[]
 	xScale: d3.ScaleBand<string>

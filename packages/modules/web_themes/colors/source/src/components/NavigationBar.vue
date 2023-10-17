@@ -12,7 +12,7 @@
 				aria-expanded="false"
 				aria-label="Toggle navigation"
 			>
-				<span class="fa fa-ellipsis-vertical" />
+				<span class="fa-solid fa-ellipsis-vertical" />
 			</button>
 			<div id="mainNavbar" class="collapse navbar-collapse justify-content-end">
 				<div class="nav navbar-nav">
@@ -31,8 +31,8 @@
 							role="button"
 							data-bs-toggle="dropdown"
 							aria-expanded="false"
-							>Auswertungen <i class="fa-solid fa-caret-down"
-						/></a>
+							>Auswertungen <i class="fa-solid fa-caret-down" />
+						</a>
 						<div class="dropdown-menu" aria-labelledby="loggingDropdown">
 							<a
 								href="../../settings/#/Logging/ChargeLog"
@@ -56,8 +56,8 @@
 							role="button"
 							data-bs-toggle="dropdown"
 							aria-expanded="false"
-							>Einstellungen <i class="fa-solid fa-caret-down"
-						/></a>
+							>Einstellungen <span class="fa-solid fa-caret-down" />
+						</a>
 						<div class="dropdown-menu" aria-labelledby="settingsDropdown">
 							<a
 								id="navSettings"
@@ -74,8 +74,8 @@
 								aria-controls="themeSettings"
 							>
 								<span
-									>Look&amp;Feel<span class="fa-solid fa-caret-down"
-								/></span>
+									>Look&amp;Feel<span class="fa-solid fa-caret-down" />
+								</span>
 							</a>
 						</div>
 					</div>

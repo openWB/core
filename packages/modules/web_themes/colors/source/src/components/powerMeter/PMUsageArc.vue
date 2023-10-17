@@ -6,7 +6,7 @@
 import type { PowerItem } from '@/assets/js/types'
 import { usageSummary } from '@/assets/js/model'
 import { shDevices } from '../smartHome/model'
-import * as d3 from 'd3'
+import { type PieArcDatum, select, arc, pie } from 'd3'
 import { computed } from 'vue'
 // props
 const props = defineProps<{
@@ -39,18 +39,16 @@ const draw = computed(() => {
 		.concat([usageSummary.batIn, usageSummary.house])
 		.concat(emptyPowerItem)
 	const arcCount = plotdata.length - 1
-	const pieGenerator = d3
-		.pie<PowerItem>()
+	const pieGenerator = pie<PowerItem>()
 		.value((record: PowerItem) => record.power)
 		.startAngle(Math.PI * 1.5 - props.circleGapSize)
 		.endAngle(Math.PI / 2 + props.circleGapSize)
 		.sort(null)
-	const path = d3
-		.arc<d3.PieArcDatum<PowerItem>>()
+	const path = arc<PieArcDatum<PowerItem>>()
 		.innerRadius((props.radius / 6) * 5)
 		.outerRadius(props.radius)
 		.cornerRadius(props.cornerRadius)
-	const graph = d3.select('g#pmUsageArc')
+	const graph = select('g#pmUsageArc')
 	graph.selectAll('*').remove()
 	graph
 		.selectAll('consumers')

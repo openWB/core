@@ -25,7 +25,7 @@
 						<a class="nav-link" id="navSettings" href="../../settings/index.html" target="_parent">openWB</a>
 						<a class="nav-link" data-bs-toggle="collapse" data-bs-target="#themesettings" aria-expanded="false"
 							aria-controls="themeSettings">
-							<span>Look&ampFeel<span class="fa-solid fa-caret-down"></span></span>
+							<span>Look&amp;Feel<span class="fa-solid fa-caret-down"></span></span>
 						</a>
 					</div>
 				</div>

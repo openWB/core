@@ -24,6 +24,7 @@ from helpermodules.data_migration.id_mapping import MapId
 from helpermodules.hardware_configuration import update_hardware_configuration
 from helpermodules.measurement_logging.process_log import get_totals, string_to_float, string_to_int
 from helpermodules.measurement_logging.write_log import LegacySmartHomeLogData, get_names
+from helpermodules.timecheck import convert_timedelta_to_time_string, get_difference
 from helpermodules.utils import thread_handler
 from helpermodules.pub import Pub
 
@@ -196,18 +197,9 @@ class MigrateData:
                         # Format Datum-Uhrzeit anpassen
                         begin = conv_1_9_datetimes(row[0])
                         end = conv_1_9_datetimes(row[1])
-                        # Dauer formatieren
-                        duration_list = row[5].split(" ")
-                        if len(duration_list) == 2:
-                            duration_list.pop(1)  # "Min"
-                            duration = f"00:{int(duration_list[0]):02d}"
-                        elif len(duration_list) == 4:
-                            duration_list.pop(1)  # "H"
-                            duration_list.pop(2)  # "Min"
-                            duration = f"{int(duration_list[0]):02d}:{int(duration_list[1]):02d}"
-                        else:
-                            raise ValueError(str(duration_list) +
-                                             " hat kein bekanntes Format.")
+                        # Dauer neu berechnen, da die Dauer unter 1.9 falsch ausgegeben sein kann
+                        duration = convert_timedelta_to_time_string(
+                            datetime.timedelta(seconds=get_difference(begin, end)))
                         old_cp = row[6].strip()  # sometimes we have trailing spaces
                         if data.data.cp_data.get(f"cp{self.map_to_new_ids(f'cp{old_cp}')}") is not None:
                             cp_name = data.data.cp_data[f"cp{self.map_to_new_ids(f'cp{old_cp}')}"].data.config.name

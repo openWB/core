@@ -53,6 +53,7 @@ import BatterySymbol from '../shared/BatterySymbol.vue'
 import { globalData, sourceSummary, usageSummary } from '@/assets/js/model'
 import { computed } from 'vue'
 import { formatWatt, formatWattH } from '@/assets/js/helpers'
+
 const batteryState = computed(() => {
 	if (sourceSummary.batOut.power > 0) {
 		return 'Liefert'

@@ -10,7 +10,7 @@ export function processEtProviderMessages(topic: string, message: string) {
 	} else if (topic == 'openWB/optional/et/provider') {
 		etData.etProvider = JSON.parse(message)
 	} else {
-		console.warn('Ignored ET Provider message: ' + topic)
+		// console.warn('Ignored ET Provider message: ' + topic)
 	}
 	// else if ( mqttTopic == 'openWB/global/ETProvider/modulePath' ) {
 	// 	$('.etproviderLink').attr("href", "/openWB/modules/"+mqttPayload+"/stromtarifinfo/infopagephp");

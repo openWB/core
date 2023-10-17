@@ -1,14 +1,14 @@
 <template>
 	<path
 		class="soc-baseline"
-		:d="line"
+		:d="myline"
 		stroke="var(--color-bg)"
 		stroke-width="1"
 		fill="none"
 	/>
 	<path
 		class="soc-dashes"
-		:d="line"
+		:d="myline"
 		:stroke="cpColor"
 		stroke-width="1"
 		:style="{ strokeDasharray: '3,3' }"
@@ -27,7 +27,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import * as d3 from 'd3'
+import { extent, scaleLinear, scaleTime, line } from 'd3'
 import { vehicles } from '../chargePointList/model'
 import { graphData, type GraphDataItem } from './model'
 
@@ -39,22 +39,20 @@ const props = defineProps<{
 }>()
 const evs = computed(() => Object.values(vehicles))
 const xScale = computed(() => {
-	let e = d3.extent(graphData.data, (d) => d.date)
+	let e = extent(graphData.data, (d) => d.date)
 	if (e[0] && e[1]) {
-		return d3.scaleTime<number>().domain(e).range([0, props.width])
+		return scaleTime<number>().domain(e).range([0, props.width])
 	} else {
-		return d3.scaleTime().range([0, 0])
+		return scaleTime().range([0, 0])
 	}
 })
 const yScale = computed(() => {
-	return d3
-		.scaleLinear()
+	return scaleLinear()
 		.range([props.height - 10, 0])
 		.domain([0, 100])
 })
-const line = computed(() => {
-	const path = d3
-		.line<GraphDataItem>()
+const myline = computed(() => {
+	const path = line<GraphDataItem>()
 		.x((d) => xScale.value(d.date))
 		.y((d) =>
 			yScale.value(d['soc' + props.order]) != undefined

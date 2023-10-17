@@ -8,13 +8,19 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import * as d3 from 'd3'
-import { globalConfig } from '@/assets/js/themeConfig'
+import type { Selection, BaseType } from 'd3'
 import {
-	graphData,
-	initializeUsageGraph,
-	usageGraphIsInitialized,
-} from './model'
+	select,
+	stack,
+	scaleBand,
+	scaleLinear,
+	extent,
+	axisLeft,
+	area,
+	easeLinear,
+} from 'd3'
+import { globalConfig } from '@/assets/js/themeConfig'
+import { graphData, animateUsageGraph, usageGraphIsInitialized } from './model'
 const props = defineProps<{
 	width: number
 	height: number
@@ -47,8 +53,8 @@ const colors: { [key: string]: string } = {
 	sh4: 'var(--color-sh4)',
 	devices: 'var(--color-devices)',
 }
-var paths: d3.Selection<SVGPathElement, [number, number][], d3.BaseType, never>
-var rects: d3.Selection<SVGRectElement, [number, number], d3.BaseType, never>
+var paths: Selection<SVGPathElement, [number, number][], BaseType, never>
+var rects: Selection<SVGRectElement, [number, number], BaseType, never>
 const duration = globalConfig.showAnimations
 	? globalConfig.animationDuration
 	: 0
@@ -57,7 +63,7 @@ const delay = globalConfig.showAnimations ? globalConfig.animationDelay : 0
 // computed:
 const draw = computed(() => {
 	if (graphData.data.length > 0) {
-		const graph = d3.select('g#pgUsageGraph')
+		const graph = select('g#pgUsageGraph')
 
 		if (graphData.graphMode == 'month' || graphData.graphMode == 'year') {
 			drawMonthGraph(graph)
@@ -83,37 +89,34 @@ const draw = computed(() => {
 	}
 	return 'pgUsageGraph.vue'
 })
-const stackGen = computed(() => d3.stack().keys(keys[props.stackOrder]))
+const stackGen = computed(() => stack().keys(keys[props.stackOrder]))
 const stackedSeries = computed(() => stackGen.value(graphData.data))
 
 const iScale = computed(() => {
-	return d3
-		.scaleLinear()
+	return scaleLinear()
 		.domain([0, graphData.data.length - 1])
 		.range([0, props.width])
 })
 
 const iScaleMonth = computed(() =>
-	d3
-		.scaleBand<number>()
+	scaleBand<number>()
 		.domain(Array.from({ length: graphData.data.length }, (v, k) => k))
 		.range([0, props.width + props.margin.right])
 		.paddingInner(0.4),
 )
 
 const yScale = computed(() => {
-	return d3
-		.scaleLinear()
+	return scaleLinear()
 		.range([props.height + 10, 2 * props.height])
 		.domain(
 			graphData.graphMode == 'year'
-				? [0, Math.ceil(extent.value[1] * 10) / 10]
-				: [0, Math.ceil(extent.value[1])],
+				? [0, Math.ceil(vrange.value[1] * 10) / 10]
+				: [0, Math.ceil(vrange.value[1])],
 		)
 })
 
-const extent = computed(() => {
-	let result = d3.extent(
+const vrange = computed(() => {
+	let result = extent(
 		graphData.data,
 		(d) => d.house + d.charging + d.batIn + d.inverter + d.devices,
 	)
@@ -131,28 +134,23 @@ const ticklength = computed(
 	: -props.width
 
 const yAxisGenerator = computed(() => {
-	return d3
-		.axisLeft<number>(yScale.value)
+	return axisLeft<number>(yScale.value)
 		.tickSizeInner(ticklength)
 		.ticks(4)
 		.tickFormat((d: number) =>
 			(d == 0 ? '' : Math.round(d * 10) / 10).toLocaleString(undefined),
 		)
 })
-function drawGraph(
-	graph: d3.Selection<d3.BaseType, unknown, HTMLElement, never>,
-) {
-	const area0 = d3
-		.area()
+function drawGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {
+	const area0 = area()
 		.x((d, i) => iScale.value(i))
 		.y(yScale.value(0))
-	const area = d3
-		.area()
+	const area1 = area()
 		.x((d, i) => iScale.value(i))
 		.y0((d) => yScale.value(d[0]))
 		.y1((d) => yScale.value(d[1]))
 	if (globalConfig.showAnimations) {
-		if (initializeUsageGraph) {
+		if (animateUsageGraph) {
 			graph.selectAll('*').remove()
 			paths = graph
 				.selectAll('.usageareas')
@@ -165,16 +163,16 @@ function drawGraph(
 				.transition()
 				.duration(300)
 				.delay(100)
-				.ease(d3.easeLinear)
-				.attr('d', (series) => area(series))
+				.ease(easeLinear)
+				.attr('d', (series) => area1(series))
 			usageGraphIsInitialized()
 		} else {
 			paths
 				.data(stackedSeries.value as [number, number][][])
 				.transition()
 				.duration(100)
-				.ease(d3.easeLinear)
-				.attr('d', (series) => area(series))
+				.ease(easeLinear)
+				.attr('d', (series) => area1(series))
 		}
 	} else {
 		graph.selectAll('*').remove()
@@ -183,14 +181,14 @@ function drawGraph(
 			.data(stackedSeries.value as [number, number][][])
 			.enter()
 			.append('path')
-			.attr('d', (series) => area(series))
+			.attr('d', (series) => area1(series))
 			.attr('fill', (d, i: number) => colors[keys[props.stackOrder][i]])
 	}
 }
 function drawMonthGraph(
-	graph: d3.Selection<d3.BaseType, unknown, HTMLElement, never>,
+	graph: Selection<BaseType, unknown, HTMLElement, never>,
 ) {
-	if (initializeUsageGraph) {
+	if (animateUsageGraph) {
 		graph.selectAll('*').remove()
 		rects = graph
 			.selectAll('.usagebar')
@@ -212,7 +210,7 @@ function drawMonthGraph(
 			.transition()
 			.duration(duration)
 			.delay(delay)
-			.ease(d3.easeLinear)
+			.ease(easeLinear)
 			.attr('y', (d) => yScale.value(d[0]))
 			.attr('height', (d) => yScale.value(d[1]) - yScale.value(d[0]))
 		usageGraphIsInitialized()
