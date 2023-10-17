@@ -278,8 +278,8 @@ class Ev:
                 if tmp_current > 0:
                     control_parameter.current_plan = name
                     # Wenn mit einem neuen Plan geladen wird, muss auch die Energiemenge von neuem gezählt werden.
-                    if name != self.data.control_parameter.current_plan:
-                        self.data.control_parameter.imported_at_plan_start = imported
+                    if name != control_parameter.current_plan:
+                        control_parameter.imported_at_plan_start = imported
                     required_current = tmp_current
                     submode = tmp_submode
                     message = tmp_message
