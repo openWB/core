@@ -28,7 +28,7 @@ log = logging.getLogger(__name__)
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 22
+    DATASTORE_VERSION = 23
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -893,3 +893,23 @@ class UpdateConfig:
                           asdict(general_config))
                 Pub().pub(topic.replace("openWB/", "openWB/set/"), config_payload)
         Pub().pub("openWB/system/datastore_version", 22)
+
+    def upgrade_datastore_22(self) -> None:
+        files = glob.glob("/var/www/html/openWB/data/charge_log/*")
+        for file in files:
+            modified = False
+            with open(file, "r+") as jsonFile:
+                try:
+                    content = json.load(jsonFile)
+                    for entry in content:
+                        if entry.time.time_charged.endswith(":60"):
+                            entry.time.time_charged = "1:00"
+                            modified = True
+                    if modified:
+                        jsonFile.seek(0)
+                        json.dump(content, jsonFile)
+                        jsonFile.truncate()
+                        log.debug(f"Format des Ladeprotokolls '{file}' aktualisiert.")
+                except Exception:
+                    log.exception(f"Ladeprotokoll '{file}' konnte nicht aktualisiert werden.")
+        Pub().pub("openWB/system/datastore_version", 23)
