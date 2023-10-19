@@ -17,3 +17,4 @@ cryptography==40.0.1
 msal==1.22.0
 python-dateutil==2.8.2
 umodbus==1.0.4
+pysmb==1.2.9.1
