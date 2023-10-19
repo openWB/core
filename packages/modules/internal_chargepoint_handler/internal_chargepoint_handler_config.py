@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 from typing import List, Optional
 
 from dataclass_utils.factories import currents_list_factory, voltages_list_factory
+from helpermodules.constants import NO_ERROR
 
 
 @dataclass
@@ -31,7 +32,7 @@ class Get:
     currents: List[float] = field(default_factory=currents_list_factory)
     evse_current: float = 0
     exported: float = 0
-    fault_str: str = "Kein Fehler."
+    fault_str: str = NO_ERROR
     fault_state: int = 0
     imported: float = 0
     phases_in_use: int = 0

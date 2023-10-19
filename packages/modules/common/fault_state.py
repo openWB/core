@@ -5,6 +5,7 @@ from enum import IntEnum
 from typing import Optional, Callable, TypeVar
 
 from helpermodules import compatibility, exceptions, pub
+from helpermodules.constants import NO_ERROR
 from modules.common import component_type
 from modules.common.component_setup import ComponentSetup
 
@@ -97,7 +98,7 @@ class FaultState(Exception):
 
     @staticmethod
     def no_error() -> "FaultState":
-        return FaultState("Kein Fehler.", FaultStateLevel.NO_ERROR)
+        return FaultState(NO_ERROR, FaultStateLevel.NO_ERROR)
 
     @staticmethod
     def from_exception(exception: Optional[Exception] = None) -> "FaultState":

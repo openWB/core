@@ -31,6 +31,7 @@ from control.ev import Ev
 from control import phase_switch
 from control.chargepoint.chargepoint_state import ChargepointState
 from dataclass_utils.factories import empty_dict_factory, currents_list_factory, voltages_list_factory
+from helpermodules.constants import NO_ERROR
 from helpermodules.phase_mapping import convert_single_evu_phase_to_cp_phase
 from helpermodules.pub import Pub
 from helpermodules import timecheck
@@ -60,7 +61,7 @@ log = logging.getLogger(__name__)
 
 @dataclass
 class ConnectedSoc:
-    fault_str: str = "Kein Fehler."
+    fault_str: str = NO_ERROR
     fault_state: int = 0
     range_charged: float = 0
     range_unit: str = "km"
@@ -135,7 +136,7 @@ class Get:
     daily_exported: float = 0
     evse_current: float = 0
     exported: float = 0
-    fault_str: str = "Kein Fehler."
+    fault_str: str = NO_ERROR
     fault_state: int = 0
     imported: float = 0
     phases_in_use: int = 0

@@ -106,7 +106,7 @@ class InverterState:
 
 @auto_str
 class CarState:
-    def __init__(self, soc: float, range: Optional[float] = None, soc_timestamp: str = ""):
+    def __init__(self, soc: float, range: Optional[float] = None, soc_timestamp: Optional[str] = None):
         """Args:
             soc: actual state of charge in percent
             range: actual range in km
