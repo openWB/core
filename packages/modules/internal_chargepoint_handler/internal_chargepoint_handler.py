@@ -69,10 +69,10 @@ class UpdateValues:
                 payload = [rounding(v) for v in value]
             else:
                 payload = rounding(value)
-            pub_single(f"openWB/set/chargepoint/{self.parent_cp}/get/{topic}", payload=payload, hostname=self.parent_ip)
-            if self.parent_ip != "localhost":
-                pub_single(f"openWB/set/chargepoint/{self.hierarchy_id}/get/state_str",
-                           payload="Statusmeldungen bitte auf der Primary-openWB einsehen.")
+        pub_single(f"openWB/set/chargepoint/{self.parent_cp}/get/{topic}", payload=payload, hostname=self.parent_ip)
+        if self.parent_ip != "localhost":
+            pub_single(f"openWB/set/chargepoint/{self.hierarchy_id}/get/state_str",
+                       payload="Statusmeldungen bitte auf der Primary-openWB einsehen.")
 
 
 class UpdateState:
