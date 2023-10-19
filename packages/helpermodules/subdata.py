@@ -124,11 +124,13 @@ class SubData:
             ("openWB/counter/#", 2),
             ("openWB/command/command_completed", 2),
             ("openWB/internal_chargepoint/#", 2),
+            # MQTT Bridge Topics vor "openWB/system/+" abonnieren, damit sie auch vor
+            # "openWB/system/subdata_initialized" empfangen werden!
+            ("openWB/system/mqtt/bridge/+", 2),
             # Nicht mit hash # abonnieren, damit nicht die Komponenten vor den Devices empfangen werden!
             ("openWB/system/+", 2),
             ("openWB/system/backup_cloud/#", 2),
             ("openWB/system/device/module_update_completed", 2),
-            ("openWB/system/mqtt/bridge/+", 2),
             ("openWB/system/device/+/config", 2),
         ])
         Pub().pub("openWB/system/subdata_initialized", True)
