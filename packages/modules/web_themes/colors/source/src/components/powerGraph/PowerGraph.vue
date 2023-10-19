@@ -40,7 +40,7 @@
 						v-if="
 							(graphData.graphMode == 'day' ||
 								graphData.graphMode == 'today') &&
-							Object.values(vehicles).length > 0
+							Object.values(chargePoints).length > 0
 						"
 						:width="width - margin.left - 2 * margin.right"
 						:height="(height - margin.top - margin.bottom) / 2"
@@ -51,7 +51,7 @@
 						v-if="
 							(graphData.graphMode == 'day' ||
 								graphData.graphMode == 'today') &&
-							Object.values(vehicles).length > 1
+							Object.values(chargePoints).length > 1
 						"
 						:width="width - margin.left - 2 * margin.right"
 						:height="(height - margin.top - margin.bottom) / 2"
@@ -100,7 +100,7 @@ import {
 import { globalConfig } from '@/assets/js/themeConfig'
 import PgSoc from './PgSoc.vue'
 import PgSocAxis from './PgSocAxis.vue'
-import { vehicles } from '../chargePointList/model'
+import { chargePoints } from '../chargePointList/model'
 import PgSelector from './PgSelector.vue'
 
 // state
