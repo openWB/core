@@ -314,7 +314,7 @@ def get_difference_to_now(timestamp_begin: str) -> Tuple[str, int]:
     """
     try:
         diff = datetime.timedelta(
-            seconds=get_difference(timestamp_begin, datetime.datetime.today().strftime("%m/%d/%Y, %H:%M")))
+            seconds=get_difference(timestamp_begin, datetime.datetime.today().strftime("%m/%d/%Y, %H:%M:%S")))
         return [convert_timedelta_to_time_string(diff), int(diff.total_seconds())]
     except Exception:
         log.exception("Fehler im System-Modul")
