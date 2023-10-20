@@ -28,6 +28,7 @@ class AdditionalCurrent:
                     cp = preferenced_chargepoints[0]
                     missing_currents, counts = common.get_missing_currents_left(preferenced_chargepoints)
                     available_currents, limit = Loadmanagement().get_available_currents(missing_currents, counter)
+                    cp.data.control_parameter.limit = limit
                     available_for_cp = common.available_current_for_cp(cp, counts, available_currents, missing_currents)
                     current = common.get_current_to_set(
                         cp.data.set.current, available_for_cp, cp.data.set.target_current)
@@ -51,6 +52,6 @@ class AdditionalCurrent:
         if (current != max(chargepoint.data.set.target_current, chargepoint.data.set.current or 0) and
                 # Strom erreicht nicht die vorgegebene Stromstärke
                 current != max(
-                    chargepoint.data.set.charging_ev_data.data.control_parameter.required_currents)):
+                    chargepoint.data.control_parameter.required_currents)):
             chargepoint.set_state_and_log(f"Es kann nicht mit der vorgegebenen Stromstärke geladen werden"
                                           f"{limit.value.format(get_component_name_by_id(counter.num))}")

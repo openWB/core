@@ -3,6 +3,7 @@ import pytest
 
 from control.algorithm import additional_current
 from control.chargepoint.chargepoint import Chargepoint, ChargepointData, Set
+from control.chargepoint.control_parameter import ControlParameter
 from control.ev import ChargeTemplate, Ev
 from control.loadmanagement import LimitingValue
 
@@ -28,9 +29,9 @@ def test_set_loadmangement_message(set_current, limit, expected_msg, monkeypatch
     # setup
     ev = Ev(0)
     ev.charge_template = ChargeTemplate(0)
-    ev.data.control_parameter.required_currents = [7]*3
     cp1 = Chargepoint(1, None)
-    cp1.data = ChargepointData(set=Set(current=set_current))
+    cp1.data = ChargepointData(set=Set(current=set_current),
+                               control_parameter=ControlParameter(required_currents=[8]*3))
     mockget_component_name_by_id = Mock(return_value="Garage")
     monkeypatch.setattr(additional_current, "get_component_name_by_id", mockget_component_name_by_id)
 

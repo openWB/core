@@ -171,8 +171,7 @@ try:
     handler = HandlerAlgorithm()
     prep = prepare.Prepare()
     general_internal_chargepoint_handler = GeneralInternalChargepointHandler()
-    rfid0 = RfidReader("event0")
-    rfid1 = RfidReader("event1")
+    rfid = RfidReader()
     changed_values_handler = ChangedValuesHandler(loadvars_.event_module_update_completed)
     event_ev_template = threading.Event()
     event_ev_template.set()
@@ -218,12 +217,9 @@ try:
     t_soc = Thread(target=soc.update, args=(), name="SoC")
     t_internal_chargepoint = Thread(target=general_internal_chargepoint_handler.handler,
                                     args=(), name="Internal Chargepoint")
-    if hasattr(rfid0, "input_device"):
-        t_rfid0 = Thread(target=rfid0.loop, args=(), name="Internal Chargepoint")
-        t_rfid0.start()
-    if hasattr(rfid1, "input_device"):
-        t_rfid1 = Thread(target=rfid1.loop, args=(), name="Internal Chargepoint")
-        t_rfid1.start()
+    if rfid.keyboards_detected:
+        t_rfid = Thread(target=rfid.run, args=(), name="Internal Chargepoint")
+        t_rfid.start()
 
     t_sub.start()
     t_set.start()

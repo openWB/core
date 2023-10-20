@@ -419,25 +419,6 @@ class SetData:
                 self._validate_value(msg, float, [(0, 1000)])
             elif "/get/force_soc_update" in msg.topic:
                 self._validate_value(msg, bool)
-            elif "/control_parameter/required_current" in msg.topic:
-                self._validate_value(msg, float, [(6, 32), (0, 0)])
-            elif "/control_parameter/phases" in msg.topic:
-                self._validate_value(msg, int, [(0, 3)])
-            elif ("/control_parameter/submode" in msg.topic or
-                    "/control_parameter/chargemode" in msg.topic):
-                self._validate_value(msg, str)
-            elif "/control_parameter/prio" in msg.topic:
-                self._validate_value(msg, bool)
-            elif ("/control_parameter/timestamp_switch_on_off" in msg.topic or
-                    "/control_parameter/timestamp_auto_phase_switch" in msg.topic or
-                    "/control_parameter/timestamp_perform_phase_switch" in msg.topic or
-                    "/control_parameter/current_plan" in msg.topic):
-                self._validate_value(msg, str)
-            elif ("/control_parameter/imported_instant_charging" in msg.topic or
-                    "/control_parameter/imported_at_plan_start" in msg.topic):
-                self._validate_value(msg, float, [(0, float("inf"))])
-            elif "/control_parameter/state" in msg.topic:
-                self._validate_value(msg, int, [(0, 7)])
             else:
                 self.__unknown_topic(msg)
         except Exception:
@@ -550,6 +531,26 @@ class SetData:
                         msg, int, [(0, float("inf"))], pub_json=True)
                 elif "get" in msg.topic:
                     self.process_chargepoint_get_topics(msg)
+                elif "/control_parameter/required_current" in msg.topic:
+                    self._validate_value(msg, float, [(6, 32), (0, 0)])
+                elif "/control_parameter/phases" in msg.topic:
+                    self._validate_value(msg, int, [(0, 3)])
+                elif ("/control_parameter/submode" in msg.topic or
+                        "/control_parameter/limit" in msg.topic or
+                        "/control_parameter/chargemode" in msg.topic):
+                    self._validate_value(msg, str)
+                elif "/control_parameter/prio" in msg.topic:
+                    self._validate_value(msg, bool)
+                elif ("/control_parameter/timestamp_switch_on_off" in msg.topic or
+                        "/control_parameter/timestamp_auto_phase_switch" in msg.topic or
+                        "/control_parameter/timestamp_perform_phase_switch" in msg.topic or
+                        "/control_parameter/current_plan" in msg.topic):
+                    self._validate_value(msg, str)
+                elif ("/control_parameter/imported_instant_charging" in msg.topic or
+                        "/control_parameter/imported_at_plan_start" in msg.topic):
+                    self._validate_value(msg, float, [(0, float("inf"))])
+                elif "/control_parameter/state" in msg.topic:
+                    self._validate_value(msg, int, [(0, 7)])
                 else:
                     self.__unknown_topic(msg)
             else:

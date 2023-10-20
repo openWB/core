@@ -47,6 +47,7 @@ class SurplusControlled:
             available_currents, limit = Loadmanagement().get_available_currents_surplus(missing_currents,
                                                                                         counter,
                                                                                         feed_in_yield)
+            cp.data.control_parameter.limit = limit
             available_for_cp = common.available_current_for_cp(cp, counts, available_currents, missing_currents)
             current = common.get_current_to_set(cp.data.set.current, available_for_cp, cp.data.set.target_current)
             self._set_loadmangement_message(current, limit, cp, counter)
@@ -66,7 +67,7 @@ class SurplusControlled:
         # Strom muss an diesem Zähler geändert werden
         if (current != chargepoint.data.set.current and
                 # Strom erreicht nicht die vorgegebene Stromstärke
-                current != max(chargepoint.data.set.charging_ev_data.data.control_parameter.required_currents) and
+                current != max(chargepoint.data.control_parameter.required_currents) and
                 # im PV-Laden wird der Strom immer durch die Leistung begrenzt
                 limit != LimitingValue.POWER):
             chargepoint.set_state_and_log(f"Es kann nicht mit der vorgegebenen Stromstärke geladen werden"
@@ -110,7 +111,7 @@ class SurplusControlled:
         for cp in get_chargepoints_pv_charging():
             def phase_switch_necessary() -> bool:
                 return cp.cp_ev_chargemode_support_phase_switch() and cp.data.get.phases_in_use != 1
-            control_parameter = cp.data.set.charging_ev_data.data.control_parameter
+            control_parameter = cp.data.control_parameter
             if cp.data.set.charging_ev_data.chargemode_changed:
                 if control_parameter.state == ChargepointState.CHARGING_ALLOWED:
                     if (cp.data.set.charging_ev_data.ev_template.data.prevent_charge_stop is False and
@@ -135,15 +136,15 @@ class SurplusControlled:
 
     def check_switch_on(self) -> None:
         for cp in get_chargepoints_pv_charging():
-            if (cp.data.set.charging_ev_data.data.control_parameter.state == ChargepointState.NO_CHARGING_ALLOWED or
-                    cp.data.set.charging_ev_data.data.control_parameter.state == ChargepointState.SWITCH_ON_DELAY):
+            if (cp.data.control_parameter.state == ChargepointState.NO_CHARGING_ALLOWED or
+                    cp.data.control_parameter.state == ChargepointState.SWITCH_ON_DELAY):
                 data.data.counter_all_data.get_evu_counter().switch_on_threshold_reached(cp)
 
     def set_required_current_to_max(self) -> None:
         for cp in get_chargepoints_surplus_controlled():
             charging_ev_data = cp.data.set.charging_ev_data
-            required_currents = charging_ev_data.data.control_parameter.required_currents
-            control_parameter = charging_ev_data.data.control_parameter
+            required_currents = cp.data.control_parameter.required_currents
+            control_parameter = cp.data.control_parameter
 
             if control_parameter.phases == 1:
                 max_current = charging_ev_data.ev_template.data.max_current_single_phase

@@ -286,9 +286,6 @@ class SubData:
                             client.subscribe(f"/vehicle/{index}/soc_module/calculated_soc_state", 2)
                             client.subscribe(f"/vehicle/{index}/soc_module/general_config", 2)
                         self.event_soc.set()
-                    elif re.search("/vehicle/[0-9]+/control_parameter/", msg.topic) is not None:
-                        self.set_json_payload_class(
-                            var["ev"+index].data.control_parameter, msg)
                     else:
                         self.set_json_payload_class(var["ev"+index].data, msg)
         except Exception:
@@ -416,6 +413,8 @@ class SubData:
                             self.set_json_payload_class(var["cp"+index].chargepoint.data.get, msg)
                     elif re.search("/chargepoint/[0-9]+/config$", msg.topic) is not None:
                         self.process_chargepoint_config_topic(var, msg)
+                    elif re.search("/chargepoint/[0-9]+/control_parameter/", msg.topic) is not None:
+                        self.set_json_payload_class(var["cp"+index].chargepoint.data.control_parameter, msg)
             elif re.search("/chargepoint/get/", msg.topic) is not None:
                 self.set_json_payload_class(self.cp_all_data.data.get, msg)
         except Exception:
@@ -790,7 +789,7 @@ class SubData:
                     log.debug("Neustart des Handlers für den internen Ladepunkt.")
                     self.event_stop_internal_chargepoint.set()
                     self.event_start_internal_chargepoint.set()
-                self.set_json_payload_class(var[f"cp{index}"], msg)
+                self.set_json_payload_class(var[f"cp{index}"].data, msg)
             elif re.search("/internal_chargepoint/[0-1]/", msg.topic) is not None:
                 index = get_index(msg.topic)
                 if re.search("/internal_chargepoint/[0-1]/data/", msg.topic) is not None:

@@ -47,7 +47,7 @@ def test_set_current_counterdiff(diff: float,
     # setup
     cp = Chargepoint(4, None)
     ev = Ev(0)
-    ev.data.control_parameter.required_currents = required_currents
+    cp.data.control_parameter.required_currents = required_currents
     cp.data.set.charging_ev_data = ev
     cp.data.set.current = 6
     get_counters_to_check_mock = Mock(return_value=["cp0", "cp6"])
@@ -74,7 +74,7 @@ def test_get_min_current(required_currents: List[float], expected_mins_counts: T
     # setup
     cp = Chargepoint(4, None)
     ev = Ev(0)
-    ev.data.control_parameter.required_currents = required_currents
+    cp.data.control_parameter.required_currents = required_currents
     cp.data.set.charging_ev_data = ev
 
     # evaluation
@@ -114,8 +114,8 @@ def test_available_currents_for_cp(counts: List[int],
     # setup
     cp = Chargepoint(4, None)
     ev = Ev(0)
-    ev.data.control_parameter.required_currents = [16]*3
-    ev.data.control_parameter.required_current = 16
+    cp.data.control_parameter.required_currents = [16]*3
+    cp.data.control_parameter.required_current = 16
     cp.data.set.charging_ev_data = ev
     cp.data.set.target_current = 10
 
@@ -139,7 +139,7 @@ def test_get_missing_currents_left(required_currents_1: List[float],
     def setup_cp(num: int, required_currents) -> Chargepoint:
         ev = Ev(0)
         cp = Chargepoint(num, None)
-        ev.data.control_parameter.required_currents = required_currents
+        cp.data.control_parameter.required_currents = required_currents
         cp.data.set.charging_ev_data = ev
         return cp
 

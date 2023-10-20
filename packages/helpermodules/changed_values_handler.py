@@ -3,6 +3,7 @@ from enum import Enum
 import logging
 import threading
 from typing import Dict, List, Tuple
+from control import data
 
 from control.data import Data
 from helpermodules.pub import Pub
@@ -73,7 +74,8 @@ class ChangedValuesHandler:
 
     def pub_changed_values(self):
         # publishen der geänderten Werte
-        pass
+        for key, value in data.data.cp_data.items():
+            self._update_value(f"openWB/set/chargepoint/{value.num}/", self.prev_data.cp_data[key].data, value.data)
 
     def _update_value(self, topic_prefix, data_inst_previous, data_inst):
         for f in fields(data_inst):
