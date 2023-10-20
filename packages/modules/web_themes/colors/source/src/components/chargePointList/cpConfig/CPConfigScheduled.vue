@@ -54,7 +54,7 @@ const props = defineProps<{
 
 //computed
 const plans = computed(() => {
-	let result = scheduledChargingPlans[props.chargeTemplateId]
+	let result = Object.values(scheduledChargingPlans[props.chargeTemplateId])
 	return result ?? []
 })
 //methods
