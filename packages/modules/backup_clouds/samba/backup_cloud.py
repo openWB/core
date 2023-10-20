@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 import logging
+import os
+import io
 from smb.SMBConnection import SMBConnection
 
 from modules.backup_clouds.samba.config import SambaBackupCloud, SambaBackupCloudConfiguration
@@ -10,11 +12,19 @@ log = logging.getLogger(__name__)
 
 
 def upload_backup(config: SambaBackupCloudConfiguration, backup_filename: str, backup_file: bytes) -> None:
-    conn = SMBConnection(config.smb_user, config.smb_password, 'client', 'server', use_ntlm_v2=True)
-    conn.connect(config.smb_path, 445)
-
-    with conn.openFile(backup_filename, 'w') as file:
-        file.write(backup_file)
+    smb_path = config.smb_path.split('/')
+    conn = SMBConnection(config.smb_user, config.smb_password, os.uname()[1], smb_path[0], use_ntlm_v2=True)
+    conn.connect(smb_path[0],139)
+    if len(smb_path) <= 2:
+        conn.storeFile(smb_path[1], backup_filename.replace(':',''), io.BytesIO(backup_file))
+    else:
+        foldercount = len(smb_path) - 2
+        i = 0
+        folder= ""
+        while i < foldercount:
+            folder = folder + smb_path[(i + foldercount)] + '/'
+            i = i + 1
+        conn.storeFile(smb_path[1], folder + backup_filename.replace(':',''), io.BytesIO(backup_file))
 
     conn.close()
 
