@@ -134,7 +134,7 @@ class Get:
     currents: List[float] = field(default_factory=currents_list_factory)
     daily_imported: float = 0
     daily_exported: float = 0
-    evse_current: float = 0
+    evse_current: Optional[float] = None
     exported: float = 0
     fault_str: str = NO_ERROR
     fault_state: int = 0
