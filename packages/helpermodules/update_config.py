@@ -16,6 +16,7 @@ from helpermodules.broker import InternalBrokerClient
 from helpermodules.hardware_configuration import get_hardware_configuration_setting, update_hardware_configuration
 from helpermodules.measurement_logging.process_log import get_totals
 from helpermodules.measurement_logging.write_log import get_names
+from helpermodules.messaging import MessageType, pub_system_message
 from helpermodules.pub import Pub
 from helpermodules.utils.topic_parser import decode_payload, get_index, get_second_index
 from control import counter_all
@@ -28,7 +29,7 @@ log = logging.getLogger(__name__)
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 23
+    DATASTORE_VERSION = 24
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -913,3 +914,21 @@ class UpdateConfig:
                 except Exception:
                     log.exception(f"Ladeprotokoll '{file}' konnte nicht aktualisiert werden.")
         Pub().pub("openWB/system/datastore_version", 23)
+
+    def upgrade_datastore_23(self) -> None:
+        for topic, payload in self.all_received_topics.items():
+            if re.search("openWB/system/mqtt/bridge/[0-9]+", topic) is not None:
+                bridge_configuration = decode_payload(payload)
+                if bridge_configuration["remote"]["is_openwb_cloud"]:
+                    index = get_index(topic)
+                    result = subprocess.run(
+                        ["php", "-f", str(self.base_path / "runs" / "save_mqtt.php"), index, payload],
+                        stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+                    if result.returncode == 0:
+                        log.info("successfully updated configuration of bridge "
+                                 f"'{bridge_configuration['name']}' ({index})")
+                        pub_system_message(payload, result.stdout, MessageType.SUCCESS)
+                    else:
+                        log.error("update of configuration for bridge "
+                                  f"'{bridge_configuration['name']}' {index} failed! {result.stdout}")
+        Pub().pub("openWB/system/datastore_version", 24)
