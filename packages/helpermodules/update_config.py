@@ -455,6 +455,7 @@ class UpdateConfig:
 
     def __init__(self) -> None:
         self.all_received_topics = {}
+        self.base_path = Path(__file__).resolve().parents[2]
 
     def update(self):
         log.debug("Broker-Konfiguration aktualisieren")
@@ -512,7 +513,7 @@ class UpdateConfig:
                 Pub().pub(topic.replace("openWB/", "openWB/set/"), default_payload)
 
     def __update_version(self):
-        with open("/var/www/html/openWB/web/version", "r") as f:
+        with open(self.base_path / "web" / "version", "r") as f:
             version = f.read().splitlines()[0]
         Pub().pub("openWB/set/system/version", version)
 
@@ -546,8 +547,8 @@ class UpdateConfig:
 
         # Alpha 3
         # Summen in Tages- und Monats-Log hinzufügen
-        files = glob.glob("/var/www/html/openWB/data/daily_log/*")
-        files.extend(glob.glob("/var/www/html/openWB/data/monthly_log/*"))
+        files = glob.glob(str(self.base_path / "data" / "daily_log") + "/*")
+        files.extend(glob.glob(str(self.base_path / "data" / "monthly_log") + "/*"))
         for file in files:
             with open(file, "r+") as jsonFile:
                 try:
@@ -677,8 +678,7 @@ class UpdateConfig:
         Pub().pub("openWB/set/system/datastore_version", 5)
         if moved_file:
             time.sleep(1)
-            parent_file = Path(__file__).resolve().parents[2]
-            subprocess.run([str(parent_file / "runs" / "reboot.sh")])
+            subprocess.run([str(self.base_path / "runs" / "reboot.sh")])
 
     def upgrade_datastore_5(self) -> None:
         for topic, payload in self.all_received_topics.items():
@@ -784,8 +784,8 @@ class UpdateConfig:
         Pub().pub("openWB/system/datastore_version", 15)
 
     def upgrade_datastore_15(self) -> None:
-        files = glob.glob("/var/www/html/openWB/data/daily_log/*")
-        files.extend(glob.glob("/var/www/html/openWB/data/monthly_log/*"))
+        files = glob.glob(str(self.base_path / "data" / "daily_log") + "/*")
+        files.extend(glob.glob(str(self.base_path / "data" / "monthly_log") + "/*"))
         for file in files:
             with open(file, "r+") as jsonFile:
                 try:
@@ -849,8 +849,8 @@ class UpdateConfig:
                 pass
             except Exception:
                 log.exception(f"Logfile {file} konnte nicht konvertiert werden.")
-        convert_file(f"/var/www/html/openWB/data/daily_log/{timecheck.create_timestamp_YYYYMMDD()}.json")
-        convert_file(f"/var/www/html/openWB/data/monthly_log/{timecheck.create_timestamp_YYYYMM()}.json")
+        convert_file(f"{str(self.base_path / 'data' / 'daily_log')}/{timecheck.create_timestamp_YYYYMMDD()}.json")
+        convert_file(f"{str(self.base_path / 'data' / 'monthly_log')}/{timecheck.create_timestamp_YYYYMM()}.json")
         Pub().pub("openWB/system/datastore_version", 19)
 
     def upgrade_datastore_19(self) -> None:
@@ -895,7 +895,7 @@ class UpdateConfig:
         Pub().pub("openWB/system/datastore_version", 22)
 
     def upgrade_datastore_22(self) -> None:
-        files = glob.glob("/var/www/html/openWB/data/charge_log/*")
+        files = glob.glob(str(self.base_path / "data" / "charge_log") + "/*")
         for file in files:
             modified = False
             with open(file, "r+") as jsonFile:
