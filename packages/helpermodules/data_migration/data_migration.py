@@ -554,8 +554,11 @@ class MigrateData:
         update_hardware_configuration({"ripple_control_receiver_configured": rse})
 
     def _move_max_c_socket(self):
-        max_c_socket = int(self._get_openwb_conf_value("ppbuchse", "32"))
-        update_hardware_configuration({"max_c_socket": max_c_socket})
+        try:
+            max_c_socket = int(self._get_openwb_conf_value("ppbuchse", "32"))
+            update_hardware_configuration({"max_c_socket": max_c_socket})
+        except TypeError:
+            log.warning("Keine Konfiguration für die Buchse in den zu portierenden Daten gefunden.")
 
     def _move_pddate(self) -> None:
         pddate = self._get_openwb_conf_value("pddate")

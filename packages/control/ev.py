@@ -156,7 +156,7 @@ def set_factory() -> Set:
 @dataclass
 class Get:
     soc: int = 0
-    soc_timestamp: str = ""
+    soc_timestamp: Optional[str] = None
     force_soc_update: bool = False
     range: float = 0
     fault_state: int = 0
@@ -194,7 +194,7 @@ class Ev:
 
     def soc_interval_expired(self, vehicle_update_data: VehicleUpdateData) -> bool:
         request_soc = False
-        if self.data.get.soc_timestamp == "":
+        if self.data.get.soc_timestamp is None:
             # Initiale Abfrage
             request_soc = True
         else:

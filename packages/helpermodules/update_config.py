@@ -881,12 +881,14 @@ class UpdateConfig:
                 for interval_topic, interval_payload in self.all_received_topics.items():
                     if f"openWB/vehicle/{index}/soc_module/interval_config" == interval_topic:
                         interval_config_payload = decode_payload(interval_payload)
+                        general_config = GeneralVehicleConfig(
+                            request_interval_charging=interval_config_payload["request_interval_charging"],
+                            request_interval_not_charging=interval_config_payload["request_interval_not_charging"],
+                            request_only_plugged=interval_config_payload["request_only_plugged"])
                         break
-                general_config = GeneralVehicleConfig(
-                    request_interval_charging=interval_config_payload["request_interval_charging"],
-                    request_interval_not_charging=interval_config_payload["request_interval_not_charging"],
-                    request_only_plugged=interval_config_payload["request_only_plugged"])
-                if config_payload["type"] == "manual":
+                else:
+                    general_config = GeneralVehicleConfig()
+                if config_payload["type"] == "manual" and config_payload["configuration"].get("efficiency"):
                     general_config.efficiency = config_payload["configuration"]["efficiency"]*100
                     config_payload["configuration"] = {}
                 Pub().pub(topic.replace("config", "general_config").replace("openWB/", "openWB/set/"),

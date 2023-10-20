@@ -8,6 +8,7 @@ from control import data
 from control.ev import Ev
 from helpermodules import subdata
 from helpermodules import timecheck
+from helpermodules.constants import NO_ERROR
 from helpermodules.pub import Pub
 from helpermodules.utils import thread_handler
 from modules.common.abstract_vehicle import VehicleUpdateData
@@ -68,6 +69,11 @@ class UpdateSoc:
                         if hasattr(ev.soc_module, "store"):
                             threads_store.append(Thread(target=ev.soc_module.store.update,
                                                         args=(), name=f"store soc_ev{ev.num}"))
+                else:
+                    # Wenn kein Modul konfiguriert ist, Fehlerstatus zurücksetzen.
+                    if ev.data.get.fault_state != 0 or ev.data.get.fault_str != NO_ERROR:
+                        Pub().pub(f"openWB/set/vehicle/{ev.num}/get/fault_state", 0)
+                        Pub().pub(f"openWB/set/vehicle/{ev.num}/get/fault_str", NO_ERROR)
             except Exception:
                 log.exception("Fehler im update_soc-Modul")
         return threads_update, threads_store
