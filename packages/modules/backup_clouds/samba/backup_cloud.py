@@ -12,19 +12,16 @@ log = logging.getLogger(__name__)
 
 
 def upload_backup(config: SambaBackupCloudConfiguration, backup_filename: str, backup_file: bytes) -> None:
-    smb_path = config.smb_path.split('/')
-    conn = SMBConnection(config.smb_user, config.smb_password, os.uname()[1], smb_path[0], use_ntlm_v2=True)
-    conn.connect(smb_path[0],139)
-    if len(smb_path) <= 2:
-        conn.storeFile(smb_path[1], backup_filename.replace(':',''), io.BytesIO(backup_file))
+    conn = SMBConnection(config.smb_user, config.smb_password, os.uname()[1], config.smb_server, use_ntlm_v2=True)
+    log.info("SMB Verbindungsaufbau")
+    conn.connect(config.smb_server,139)
+
+    if config.smb_path is None:
+        log.info("Backup auf //" + config.smb_server + '/' + config.smb_share )
+        conn.storeFile(config.smb_share, backup_filename.replace(':',''), io.BytesIO(backup_file))
     else:
-        foldercount = len(smb_path) - 2
-        i = 0
-        folder= ""
-        while i < foldercount:
-            folder = folder + smb_path[(i + foldercount)] + '/'
-            i = i + 1
-        conn.storeFile(smb_path[1], folder + backup_filename.replace(':',''), io.BytesIO(backup_file))
+        log.info("Backup auf //" + config.smb_server + '/' + config.smb_share + '/' + config.smb_path )
+        conn.storeFile(config.smb_share, config.smb_path + backup_filename.replace(':',''), io.BytesIO(backup_file))
 
     conn.close()
 
