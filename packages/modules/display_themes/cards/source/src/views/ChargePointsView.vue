@@ -331,6 +331,14 @@ export default {
                 {{ mqttStore.getChargePointSetCurrent(id) }}
               </i-column>
             </i-row>
+            <i-row>
+              <i-column class="_padding-left:0 _padding-right:0">
+                Gesamtverbrauch
+              </i-column>
+              <i-column class="_text-align:right _padding-left:0">
+                {{ mqttStore.getChargePointTotalConsumtion(id) }}
+              </i-column>
+            </i-row>
             <i-row class="_padding-top:1">
               <i-column class="_padding-left:0">
                 <spark-line

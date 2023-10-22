@@ -41,6 +41,7 @@ export default {
         "openWB/chargepoint/get/power",
         "openWB/pv/config/configured",
         "openWB/pv/get/power",
+        "openWB/chargepoint/+/get/imported",
         "openWB/chargepoint/+/get/power",
         "openWB/chargepoint/+/get/plug_state",
         "openWB/chargepoint/+/get/charge_state",

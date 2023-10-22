@@ -317,6 +317,13 @@ export const useMqttStore = defineStore("mqtt", {
         return "---";
       };
     },
+    getChargePointTotalConsumtion(state) {
+      return (chargePointId) => {
+        return state.getValueString(
+          `openWB/chargepoint/${chargePointId}/get/imported`,"Wh"
+        );
+      };
+    },
     getChargePointPower(state) {
       return (chargePointId) => {
         return state.getValueString(
