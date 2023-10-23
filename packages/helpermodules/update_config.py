@@ -29,7 +29,7 @@ log = logging.getLogger(__name__)
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 24
+    DATASTORE_VERSION = 25
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -934,3 +934,23 @@ class UpdateConfig:
                         log.error("update of configuration for bridge "
                                   f"'{bridge_configuration['name']}' {index} failed! {result.stdout}")
         Pub().pub("openWB/system/datastore_version", 24)
+
+    def upgrade_datastore_24(self) -> None:
+        # Wenn mehrere EV eine Fahrzeug-Vorlage nutzen, wird die Effizienz des letzten für alle in der Vorlage gesetzt.
+        for topic, payload in self.all_received_topics.items():
+            if re.search("openWB/vehicle/[0-9]+/soc_module/general_config", topic) is not None:
+                payload = decode_payload(payload)
+                index = get_index(topic)
+                for ev_template_id_topic, ev_template_id_payload in self.all_received_topics.items():
+                    if f"openWB/vehicle/{index}/ev_template" == ev_template_id_topic:
+                        ev_template_id = decode_payload(ev_template_id_payload)
+                        break
+                for ev_template_topic, ev_template_payload in self.all_received_topics.items():
+                    if f"openWB/vehicle/template/ev_template/{ev_template_id}" == ev_template_topic:
+                        ev_template = decode_payload(ev_template_payload)
+                        break
+                ev_template.update({"efficiency": payload["efficiency"]})
+                payload.pop("efficiency")
+                Pub().pub(topic.replace("openWB/", "openWB/set/"), payload)
+                Pub().pub(ev_template_topic.replace("openWB/", "openWB/set/"), ev_template)
+        Pub().pub("openWB/system/datastore_version", 25)

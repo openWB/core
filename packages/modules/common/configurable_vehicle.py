@@ -76,7 +76,7 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
                               asdict(self.calculated_soc_state))
                 else:
                     soc = calc_soc(vehicle_update_data,
-                                   self.general_config.efficiency,
+                                   vehicle_update_data.efficiency,
                                    self.calculated_soc_state.imported_start,
                                    self.calculated_soc_state.soc_start,
                                    vehicle_update_data.battery_capacity)
