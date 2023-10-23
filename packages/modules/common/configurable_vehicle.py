@@ -53,7 +53,7 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
                             soc = self.calculated_soc_state.manual_soc
                             source_str = "manual"
                         else:
-                            soc = self.__component_updater(vehicle_update_data)
+                            soc = self.__component_updater(vehicle_update_data).soc
                             source_str = "api"
                     else:
                         soc = vehicle_update_data.soc_from_cp

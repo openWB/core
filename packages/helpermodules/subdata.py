@@ -290,8 +290,8 @@ class SubData:
                             mod = importlib.import_module(".vehicles."+config["type"]+".soc", "modules")
                             config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config)
                             var["ev"+index].soc_module = mod.create_vehicle(config, index)
-                            client.subscribe(f"/vehicle/{index}/soc_module/calculated_soc_state", 2)
-                            client.subscribe(f"/vehicle/{index}/soc_module/general_config", 2)
+                            client.subscribe(f"openWB/vehicle/{index}/soc_module/calculated_soc_state", 2)
+                            client.subscribe(f"openWB/vehicle/{index}/soc_module/general_config", 2)
                         self.event_soc.set()
                     else:
                         self.set_json_payload_class(var["ev"+index].data, msg)
