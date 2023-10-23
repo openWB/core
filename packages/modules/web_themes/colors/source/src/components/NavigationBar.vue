@@ -20,7 +20,6 @@
 						id="navStatus"
 						class="nav-link"
 						href="../../settings/#/Status"
-						target="_parent"
 						>Status</a
 					>
 					<div class="nav-item dropdown">
@@ -37,13 +36,11 @@
 							<a
 								href="../../settings/#/Logging/ChargeLog"
 								class="dropdown-item"
-								target="_parent"
 								>Ladeprotokoll</a
 							>
 							<a
 								href="../../settings/#/Logging/Chart"
 								class="dropdown-item"
-								target="_parent"
 								>Diagramme</a
 							>
 						</div>
@@ -63,7 +60,6 @@
 								id="navSettings"
 								class="nav-link"
 								href="../../settings/index.html"
-								target="_parent"
 								>openWB</a
 							>
 							<a

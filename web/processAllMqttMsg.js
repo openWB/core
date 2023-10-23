@@ -2,29 +2,29 @@
  * Functions to update graph and gui values via MQTT-messages
  */
 
-function setIframeSource() {
+function loadTarget() {
 	if (allTopicsReceived()) {
-		const startup = document.getElementById("notReady");
-		const iframe = document.getElementById("themeTarget");
+		// const startup = document.getElementById("notReady");
+		// const iframe = document.getElementById("themeTarget");
 		const logMessages = document.getElementById("log");
 		if (!data["openWB/system/boot_done"]) {
 			addLog("backend still booting");
-			startup.classList.remove("hide");
-			iframe.classList.add("hide");
+			// startup.classList.remove("hide");
+			// iframe.classList.add("hide");
 			return;
 		}
 		if (data["openWB/system/update_in_progress"]) {
 			addLog("update in progress");
-			startup.classList.remove("hide");
-			iframe.classList.add("hide");
+			// startup.classList.remove("hide");
+			// iframe.classList.add("hide");
 			return;
 		}
 		const theme = data["openWB/general/web_theme"].type;
 		let destination = `themes/${theme}/`;
 		if (data["openWB/general/extern"]) {
 			console.log("openWB is configured as external charge point");
-			startup.classList.remove("hide");
-			iframe.classList.add("hide");
+			// startup.classList.remove("hide");
+			// iframe.classList.add("hide");
 			logMessages.classList.add("hide");
 			return;
 		} else {
@@ -36,10 +36,10 @@ function setIframeSource() {
 			if (this.readyState == 4) {
 				if (this.status == 200) {
 					addLog(`theme '${theme}' is valid`)
-					if (destination != iframe.src) {
-						addLog(`all done, starting theme '${theme}' with url '${destination}'`);
-						// iframe.src = destination;
-					}
+					addLog(`all done, starting theme '${theme}' with url '${destination}'`);
+					// if (destination != iframe.src) {
+					// 	iframe.src = destination;
+					// }
 					setTimeout(() => {
 						// startup.classList.add("hide");
 						// iframe.classList.remove("hide");
@@ -89,5 +89,5 @@ function handleMessage(topic, payload) {
 	if (data["openWB/internal_chargepoint/global_data"]) {
 		document.getElementById("primary-link").setAttribute("href", `https://${data["openWB/internal_chargepoint/global_data"].parent_ip}/`);
 	}
-	setIframeSource();
+	loadTarget();
 }  // end handleMessage
