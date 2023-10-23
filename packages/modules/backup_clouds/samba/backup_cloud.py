@@ -14,14 +14,15 @@ log = logging.getLogger(__name__)
 def upload_backup(config: SambaBackupCloudConfiguration, backup_filename: str, backup_file: bytes) -> None:
     conn = SMBConnection(config.smb_user, config.smb_password, os.uname()[1], config.smb_server, use_ntlm_v2=True)
     log.info("SMB Verbindungsaufbau")
-    conn.connect(config.smb_server,139)
-
-    smb_filename = backup_filename.replace(':', '_')
-    full_file_path = config.smb_path + smb_filename if config.smb_path is not None else smb_filename
-    log.info("Backup nach //" + config.smb_server + '/' + config.smb_share + full_file_path)
-    conn.storeFile(config.smb_share, full_file_path, io.BytesIO(backup_file))
-
-    conn.close()
+    if conn.connect(config.smb_server,139) == True:
+        log.warn("SMB Verbindungsaufbau erfolgreich")
+        smb_filename = backup_filename.replace(':', '_')
+        full_file_path = config.smb_path + smb_filename if config.smb_path is not None else smb_filename
+        log.info("Backup nach //" + config.smb_server + '/' + config.smb_share + full_file_path)
+        conn.storeFile(config.smb_share, full_file_path, io.BytesIO(backup_file))
+        conn.close()
+    else:
+        log.warn("SMB Verbindungsaufbau fehlgeschlagen")
 
 
 def create_backup_cloud(config: SambaBackupCloud):
