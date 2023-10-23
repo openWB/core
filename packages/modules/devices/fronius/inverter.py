@@ -33,10 +33,10 @@ class FroniusInverter:
 
         _, exported = self.sim_counter.sim_count(power)
 
-        return InverterState(
+        self.store.set(InverterState(
             power=power,
             exported=exported
-        )
+        ))
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=FroniusInverterSetup)

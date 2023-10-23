@@ -55,7 +55,8 @@ def create_device(device_config: Fronius):
                 component.update(inverter_response)
 
         for component in components:
-            if component.component_config.type != "inverter" and component.component_config.type != "inverter_secondary":
+            if (component.component_config.type != "inverter" and
+                    component.component_config.type != "inverter_secondary"):
                 component.update()
 
     return ConfigurableDevice(

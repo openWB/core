@@ -2,12 +2,12 @@ from unittest.mock import Mock
 
 
 from modules.common.store._api import LoggingValueStore
-from modules.devices.fronius import inverter
-from modules.devices.fronius.config import FroniusInverterSetup
+from modules.devices.fronius.config import FroniusSecondaryInverterConfiguration, FroniusSecondaryInverterSetup
+from modules.devices.fronius.inverter_secondary import FroniusSecondaryInverter
 
 
 def test_update(monkeypatch, mock_simcount):
-    wr = inverter.FroniusInverter(0, FroniusInverterSetup())
+    wr = FroniusSecondaryInverter(0, FroniusSecondaryInverterSetup(FroniusSecondaryInverterConfiguration(id=1)))
 
     mock = Mock(return_value=None)
     monkeypatch.setattr(LoggingValueStore, "set", mock)
@@ -19,7 +19,7 @@ def test_update(monkeypatch, mock_simcount):
     inverter_state = mock.call_args[0][0]
     assert inverter_state.exported == 0
     assert inverter_state.currents == [0, 0, 0]
-    assert inverter_state.power == -196.08712768554688
+    assert inverter_state.power == -4470.0
 
 
 json_wr1 = {
@@ -30,26 +30,34 @@ json_wr1 = {
                     "Battery_Mode": "normal",
                     "DT": 1,
                     "E_Day": None,
-                    "E_Total": 9824871.8336111102,
+                    "E_Total": 148955.258055555,
                     "E_Year": None,
-                    "P": 1263.8095703125,
-                    "SOC": 41.100000000000001
+                    "P": 20.819091796875,
+                    "SOC": 95.299999999999997
+                }
+            },
+            "SecondaryMeters": {
+                "1": {
+                    "Category": "METER_CAT_WR",
+                    "Label": "PV- 1",
+                    "MLoc": 3.0,
+                    "P": 4470.0
                 }
             },
             "Site": {
-                "BackupMode": "false",
-                "BatteryStandby": "true",
+                "BackupMode": False,
+                "BatteryStandby": False,
                 "E_Day": None,
-                "E_Total": 9824871.8336111102,
+                "E_Total": 148955.258055555,
                 "E_Year": None,
                 "Meter_Location": "grid",
                 "Mode": "bidirectional",
-                "P_Akku": 1126.365966796875,
-                "P_Grid": -107.8,
-                "P_Load": -1143.5296386718751,
-                "P_PV": 196.08712768554688,
+                "P_Akku": -11.142402648926,
+                "P_Grid": -2631.999999999,
+                "P_Load": -3933.5058593751,
+                "P_PV": 2173.672851562,
                 "rel_Autonomy": 100.0,
-                "rel_SelfConsumption": 91.385163695601761
+                "rel_SelfConsumption": 59.4570229924
             },
             "Smartloads": {
                 "Ohmpilots": {}
@@ -64,7 +72,7 @@ json_wr1 = {
             "Reason": "",
             "UserMessage": ""
         },
-        "Timestamp": "2022-01-04T09:45:59+00:00"
+        "Timestamp": "2023-09-25Txx:xx:xx+00:00"
     }
 }
 

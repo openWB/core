@@ -26,17 +26,18 @@ class FroniusSecondaryInverter:
             power = 0.0
         else:
             try:
-                power = float(response["Body"]["Data"]["SecondaryMeters"][str(self.component_config.id)]["P"]) * -1
+                power = float(response["Body"]["Data"]["SecondaryMeters"]
+                              [str(self.component_config.configuration.id)]["P"]) * -1
             except TypeError:
                 # Ohne PV Produktion liefert der WR 'null', ersetze durch Zahl 0
                 power = 0
 
         _, exported = self.sim_counter.sim_count(power)
 
-        return InverterState(
+        self.store.set(InverterState(
             power=power,
             exported=exported
-        )
+        ))
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=FroniusSecondaryInverterSetup)
