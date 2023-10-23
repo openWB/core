@@ -8,7 +8,7 @@ LOGFILE="$OPENWBBASEDIR/data/log/backup.log"
 
 useExtendedFilename=$1
 if ((useExtendedFilename == 1)); then
-	FILENAME="openWB_backup_$(date +"%Y-%m-%d_%H:%M:%S").tar"
+	FILENAME="openWB_backup_$(date +"%Y-%m-%d_%H%M%S").tar"
 else
 	FILENAME="backup.tar"
 fi
