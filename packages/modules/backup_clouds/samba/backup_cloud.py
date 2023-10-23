@@ -17,8 +17,12 @@ def upload_backup(config: SambaBackupCloudConfiguration, backup_filename: str, b
     if conn.connect(config.smb_server, 139):
         log.info("SMB Verbindungsaufbau erfolgreich")
         full_file_path = config.smb_path + backup_filename if config.smb_path is not None else backup_filename
-        log.info("Backup nach //" + config.smb_server + '/' + config.smb_share + full_file_path)
-        conn.storeFile(config.smb_share, full_file_path, io.BytesIO(backup_file))
+        log.info("Backup nach //" + config.smb_server + '/' + config.smb_share + '/' + full_file_path)
+        try:
+            conn.storeFile(config.smb_share, full_file_path, io.BytesIO(backup_file))
+        except Exception as error:
+            log.error(error.__str__().split('\n')[0])
+            log.error("Möglicherweise ist die Freigabe oder ein Unterordner nicht vorhanden")
         conn.close()
     else:
         log.warn("SMB Verbindungsaufbau fehlgeschlagen")
