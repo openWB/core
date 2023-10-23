@@ -45,4 +45,6 @@ class MinCurrent:
                                      - cp.data.set.target_current),
                                     cp.data.set.charging_ev_data.ev_template.data.min_current,
                                     cp)
+                    else:
+                        cp.data.set.current = 0
                     preferenced_chargepoints.pop(0)
