@@ -24,11 +24,8 @@ def test_update(monkeypatch, requests_mock: requests_mock.Mocker, mock_ramdisk, 
     mock = Mock(return_value=None)
     monkeypatch.setattr(LoggingValueStore, "set", mock)
     mock_simcount.return_value = 0, 0
-    requests_mock.get(
-        "http://" + SAMPLE_IP + "/solar_api/v1/GetPowerFlowRealtimeData.fcgi",
-        json=json_wr1)
 
-    wr.update()
+    wr.update(json_wr1)
 
     # mock.assert_called_once()
     inverter_state = mock.call_args[0][0]

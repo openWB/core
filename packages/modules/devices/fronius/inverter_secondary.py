@@ -7,15 +7,15 @@ from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo
 from modules.common.simcount import SimCounter
 from modules.common.store import get_inverter_value_store
-from modules.devices.fronius.config import FroniusInverterSetup
+from modules.devices.fronius.config import FroniusSecondaryInverterSetup
 
 
-class FroniusInverter:
+class FroniusSecondaryInverter:
     def __init__(self,
                  device_id: int,
-                 component_config: Union[Dict, FroniusInverterSetup]) -> None:
+                 component_config: Union[Dict, FroniusSecondaryInverterSetup]) -> None:
         self.__device_id = device_id
-        self.component_config = dataclass_from_dict(FroniusInverterSetup, component_config)
+        self.component_config = dataclass_from_dict(FroniusSecondaryInverterSetup, component_config)
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
         self.store = get_inverter_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
@@ -26,7 +26,7 @@ class FroniusInverter:
             power = 0.0
         else:
             try:
-                power = float(response["Body"]["Data"]["Site"]["P_PV"]) * -1
+                power = float(response["Body"]["Data"]["SecondaryMeters"][str(self.component_config.id)]["P"]) * -1
             except TypeError:
                 # Ohne PV Produktion liefert der WR 'null', ersetze durch Zahl 0
                 power = 0
@@ -39,4 +39,4 @@ class FroniusInverter:
         )
 
 
-component_descriptor = ComponentDescriptor(configuration_factory=FroniusInverterSetup)
+component_descriptor = ComponentDescriptor(configuration_factory=FroniusSecondaryInverterSetup)
