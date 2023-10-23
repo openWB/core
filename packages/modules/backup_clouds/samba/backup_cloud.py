@@ -16,12 +16,10 @@ def upload_backup(config: SambaBackupCloudConfiguration, backup_filename: str, b
     log.info("SMB Verbindungsaufbau")
     conn.connect(config.smb_server,139)
 
-    if config.smb_path is None:
-        log.info("Backup auf //" + config.smb_server + '/' + config.smb_share )
-        conn.storeFile(config.smb_share, backup_filename.replace(':',''), io.BytesIO(backup_file))
-    else:
-        log.info("Backup auf //" + config.smb_server + '/' + config.smb_share + '/' + config.smb_path )
-        conn.storeFile(config.smb_share, config.smb_path + backup_filename.replace(':',''), io.BytesIO(backup_file))
+    smb_filename = backup_filename.replace(':', '_')
+    full_file_path = config.smb_path + smb_filename if config.smb_path is not None else smb_filename
+    log.info("Backup nach //" + config.smb_server + '/' + config.smb_share + full_file_path)
+    conn.storeFile(config.smb_share, full_file_path, io.BytesIO(backup_file))
 
     conn.close()
 
