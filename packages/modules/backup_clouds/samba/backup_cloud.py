@@ -15,7 +15,7 @@ def upload_backup(config: SambaBackupCloudConfiguration, backup_filename: str, b
     conn = SMBConnection(config.smb_user, config.smb_password, os.uname()[1], config.smb_server, use_ntlm_v2=True)
     log.info("SMB Verbindungsaufbau")
     if conn.connect(config.smb_server,139) == True:
-        log.warn("SMB Verbindungsaufbau erfolgreich")
+        log.info("SMB Verbindungsaufbau erfolgreich")
         smb_filename = backup_filename.replace(':', '_')
         full_file_path = config.smb_path + smb_filename if config.smb_path is not None else smb_filename
         log.info("Backup nach //" + config.smb_server + '/' + config.smb_share + full_file_path)
