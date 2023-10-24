@@ -52,7 +52,7 @@ class SurplusControlled:
             current = common.get_current_to_set(cp.data.set.current, available_for_cp, cp.data.set.target_current)
             self._set_loadmangement_message(current, limit, cp, counter)
             limited_current = self._limit_adjust_current(cp, current)
-            self._add_unused_evse_current(limited_current, cp)
+            limited_current = self._add_unused_evse_current(limited_current, cp)
             common.set_current_counterdiff(
                 limited_current - cp.data.set.charging_ev_data.ev_template.data.min_current,
                 limited_current,
@@ -112,7 +112,10 @@ class SurplusControlled:
         if chargepoint.data.get.evse_current:
             current_with_offset = limited_current + \
                 max(chargepoint.data.get.evse_current - max(chargepoint.data.get.currents), 0)
-            return min(current_with_offset, chargepoint.data.control_parameter.required_current)
+            current = min(current_with_offset, chargepoint.data.control_parameter.required_current)
+            if current != limited_current:
+                log.debug(f"Ungenutzten Sollstrom aufschlagen ergibt {current}A.")
+            return current
         else:
             return limited_current
 
