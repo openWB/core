@@ -45,7 +45,7 @@ class Evse:
         state = EvseState(state_number)
         if state == EvseState.FAILURE:
             raise FaultState.error("Unbekannter Zustand der EVSE: State " +
-                                   str(state)+", Sollstromstärke: "+str(set_current))
+                                   str(state)+", Soll-Stromstärke: "+str(set_current))
         plugged = state.plugged
         charging = set_current > 0 if state.charge_enabled else False
         return plugged, charging, set_current
