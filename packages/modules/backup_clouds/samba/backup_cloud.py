@@ -15,7 +15,7 @@ log = logging.getLogger(__name__)
 def upload_backup(config: SambaBackupCloudConfiguration, backup_filename: str, backup_file: bytes) -> None:
     conn = SMBConnection(config.smb_user, config.smb_password, os.uname()[1], config.smb_server, use_ntlm_v2=True)
     foundedChars = re.search(r'[\\\:\*\?\"\<\>\|]+', config.smb_path)
-    
+
     if foundedChars:
         log.warn("Folgenden ungültige Zeichen im Pfad gefunden: {}".format(foundedChars.group()))
         log.warn("Sicherung nicht erfolgreich.")
@@ -33,8 +33,7 @@ def upload_backup(config: SambaBackupCloudConfiguration, backup_filename: str, b
             log.error(error.__str__().split('\n')[0])
             log.error("Möglicherweise ist die Freigabe oder ein Unterordner nicht vorhanden.")
         conn.close()
-    else:
-        if sendFile:
+    elif sendFile:
             log.warn("SMB Verbindungsaufbau fehlgeschlagen.")
 
 
