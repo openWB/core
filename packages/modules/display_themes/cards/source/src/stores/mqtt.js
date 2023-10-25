@@ -663,7 +663,9 @@ export const useMqttStore = defineStore("mqtt", {
     },
     getSystemTime(state) {
       if (state.topics["openWB/system/time"]) {
-        return new Date(state.topics["openWB/system/time"] * 1000).toLocaleString();
+        return new Date(
+          state.topics["openWB/system/time"] * 1000
+        ).toLocaleString();
       }
       return undefined;
     },
