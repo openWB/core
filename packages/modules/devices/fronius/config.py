@@ -101,7 +101,7 @@ class FroniusSecondaryInverterConfiguration:
 
 class FroniusSecondaryInverterSetup(ComponentSetup[FroniusSecondaryInverterConfiguration]):
     def __init__(self,
-                 name: str = "Fronius zusätzlicher Wechselrichter",
+                 name: str = "Sekundärer Wechselrichter",
                  type: str = "inverter_secondary",
                  id: int = 0,
                  configuration: FroniusSecondaryInverterConfiguration = None) -> None:

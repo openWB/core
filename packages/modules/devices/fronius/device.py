@@ -7,33 +7,33 @@ import requests
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
-from modules.devices.fronius import bat
-from modules.devices.fronius import counter_s0
-from modules.devices.fronius import counter_sm
-from modules.devices.fronius import inverter
+from modules.devices.fronius.bat import FroniusBat
 from modules.devices.fronius.config import (Fronius, FroniusBatSetup, FroniusSecondaryInverterSetup,
                                             FroniusSmCounterSetup, FroniusS0CounterSetup,
                                             FroniusInverterSetup)
+from modules.devices.fronius.counter_s0 import FroniusS0Counter
+from modules.devices.fronius.counter_sm import FroniusSmCounter
+from modules.devices.fronius.inverter import FroniusInverter
 from modules.devices.fronius.inverter_secondary import FroniusSecondaryInverter
 
 log = logging.getLogger(__name__)
 
-fronius_component_classes = Union[bat.FroniusBat, counter_sm.FroniusSmCounter,
-                                  counter_s0.FroniusS0Counter, inverter.FroniusInverter, FroniusSecondaryInverter]
+fronius_component_classes = Union[FroniusBat, FroniusSmCounter,
+                                  FroniusS0Counter, FroniusInverter, FroniusSecondaryInverter]
 
 
 def create_device(device_config: Fronius):
     def create_bat_component(component_config: FroniusBatSetup):
-        return bat.FroniusBat(device_config.id, component_config, device_config.configuration)
+        return FroniusBat(device_config.id, component_config, device_config.configuration)
 
     def create_counter_sm_component(component_config: FroniusSmCounterSetup):
-        return counter_sm.FroniusSmCounter(device_config.id, component_config, device_config.configuration)
+        return FroniusSmCounter(device_config.id, component_config, device_config.configuration)
 
     def create_counter_s0_component(component_config: FroniusS0CounterSetup):
-        return counter_s0.FroniusS0Counter(device_config.id, component_config, device_config.configuration)
+        return FroniusS0Counter(device_config.id, component_config, device_config.configuration)
 
     def create_inverter_component(component_config: FroniusInverterSetup):
-        return inverter.FroniusInverter(device_config.id, component_config)
+        return FroniusInverter(device_config.id, component_config)
 
     def create_inverter_secondary_component(component_config: FroniusSecondaryInverterSetup):
         return FroniusSecondaryInverter(device_config.id, component_config)
