@@ -189,7 +189,10 @@ class CounterAll:
                 self.data.get.hierarchy[0],
                 int(counter[7:]),
                 self.__get_entry_of_element)
-        self._get_all_cp_connected_to_counter(counter_object)
+        try:
+            self._get_all_cp_connected_to_counter(counter_object)
+        except KeyError:
+            log.debug(f"Kein Ladepunkt unter Zähler {counter}.")
         return self.connected_chargepoints
 
     def _get_all_cp_connected_to_counter(self, child: Dict) -> None:
