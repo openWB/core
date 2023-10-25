@@ -20,7 +20,7 @@ let cps: string[] = []
 
 export function processDayGraphMessages(_: string, message: string) {
 	const inputTable: RawDayGraphDataItem[] = JSON.parse(message).entries
-	evSocs = Object.values(vehicles).map((v) => 'soc-ev' + v.id.toString())
+	evSocs = Object.values(vehicles).map((v) => 'soc' + v.id.toString())
 	consumerCategories.map((cat) => {
 		historicSummary[cat].energyPv = 0
 		historicSummary[cat].energyBat = 0
@@ -105,7 +105,7 @@ function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 	Object.entries(currentRow.cp).forEach(([id, values]) => {
 		if (id != 'all') {
 			currentItem[id] = values.imported
-			currentItem['soc' + id] = values.soc
+			// currentItem['soc' + id] = values.soc
 			if (!(id in cps)) {
 				cps.push(id)
 			}
@@ -115,7 +115,7 @@ function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 	})
 	Object.entries(currentRow.ev).forEach(([id, values]) => {
 		if (id != 'all') {
-			currentItem['soc-' + id] = values.soc
+			currentItem['soc' + id.substring(2)] = values.soc
 		}
 	})
 	currentItem.devices = 0
@@ -149,15 +149,15 @@ function calculatePowerValues(
 		'charging',
 		'devices',
 	]
-
 	cats
 		.concat(cps)
 		.concat(shs)
 		.forEach((category) => {
 			result[category] = calculatePower(currentRow, previousRow, category)
 		})
-	result.soc0 = evSocs[0] ? currentRow[evSocs[0]] : 0
-	result.soc1 = evSocs[1] ? currentRow[evSocs[1]] : 0
+	evSocs.map((id) => {
+		result[id] = currentRow[id]
+	})
 	result.selfUsage = result.solarPower - result.gridPush
 	result.house =
 		result.solarPower +

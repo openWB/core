@@ -18,7 +18,6 @@ const props = defineProps<{
 //  computed:
 const draw = computed(() => {
 	// Draw the arc using d3
-	const arcCount = Object.values(sourceSummary).length
 	let emptyPowerItem: PowerItem = {
 		name: '',
 		power: props.emptyPower,
@@ -31,6 +30,7 @@ const draw = computed(() => {
 	}
 	let plotdata = sourceSummary
 	plotdata['zz-empty'] = emptyPowerItem
+	const arcCount = Object.values(sourceSummary).length - 1
 
 	const pieGenerator = pie<PowerItem>()
 		.value((record: PowerItem) => record.power)
