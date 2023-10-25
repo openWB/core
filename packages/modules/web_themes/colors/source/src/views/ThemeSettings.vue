@@ -102,6 +102,13 @@
 					>
 						<SwitchInput v-model="globalConfig.preferWideBoxes" />
 					</ConfigItem>
+					<ConfigItem
+						title="Debug-Modus"
+						icon="fa-bug-slash"
+						infotext="Kontrollausgaben in der Console sowie Anzeige von Bildschirmbreite und MQ-Viewer"
+						>
+						<SwitchInput v-model="globalConfig.debug" />
+					</ConfigItem>
 				</div>
 				<div class="row p-0 m-0">
 					<div class="col-12 mb-3 pe-3 mt-0">

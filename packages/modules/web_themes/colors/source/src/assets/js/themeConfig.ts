@@ -23,6 +23,7 @@ export class Config {
 	private _showAnimations = true
 	private _preferWideBoxes = false
 	private _maxPower: number = 4000
+	private _debug: boolean = false
 	isEtEnabled: boolean = false
 	etPrice: number = 20.5
 	showRightButton = true
@@ -152,6 +153,16 @@ export class Config {
 	}
 	setMaxPower(max: number) {
 		this._maxPower = max
+	}
+	get debug() {
+		return this._debug
+	}
+	set debug(on: boolean) {
+		this._debug = on
+		savePrefs()
+	}
+	setDebug(on: boolean) {
+		this._debug = on
 	}
 }
 export const globalConfig = reactive(new Config())

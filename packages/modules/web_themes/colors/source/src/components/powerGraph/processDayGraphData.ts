@@ -10,6 +10,7 @@ import {
 } from './model'
 import { historicSummary, usageSummary } from '@/assets/js/model'
 import { vehicles } from '../chargePointList/model'
+import { globalConfig } from '@/assets/js/themeConfig'
 
 let startValues: GraphDataItem = {}
 let endValues: GraphDataItem = {}
@@ -36,6 +37,14 @@ export function processDayGraphMessages(_: string, message: string) {
 			Math.round(historicSummary[cat].energyBat * 100) / 100
 	})
 	updateEnergyValues(startValues, endValues)
+	if (globalConfig.debug) {
+		console.debug('---------------------------------------- Graph Data ---------------------------')
+		console.debug('--- Incoming graph data:')
+		console.debug(inputTable)
+		console.debug('data to be displayed:')
+		console.debug(transformedTable)
+		console.debug('-------------------------------------------------------------------------------')
+	}
 	if (graphData.graphMode == 'today') {
 		setTimeout(() => dayGraph.activate(), 300000)
 	}

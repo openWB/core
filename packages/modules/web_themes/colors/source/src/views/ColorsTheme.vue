@@ -148,7 +148,7 @@ Hagen */
 		</div>
 	</div>
 	<!-- Footer -->
-	<div class="row p-2 mt-5">
+	<div v-if="globalConfig.debug" class="row p-2 mt-5" >
 		<div class="col p-2">
 			<hr />
 			<div class="d-flex justify-content-between">

@@ -92,6 +92,17 @@ const plotdata = computed(() => {
 	let usage = props.usageDetails
 	let historic = Object.values(historicSummary)
 	let result: PowerItem[] = []
+	if (globalConfig.debug) {
+		console.debug("----------------------- source summary -----------------")
+		console.debug(sourceSummary)
+		console.debug("----------------------- usage details ------------------")
+		console.debug(props.usageDetails)
+		console.debug("----------------------- historic summary ---------------")
+		console.debug(historicSummary)
+		console.debug("--------------------------------------------------------")
+		
+		
+	}
 	setInitializeEnergyGraph(true)
 	switch (graphData.graphMode) {
 		default:
