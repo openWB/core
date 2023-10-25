@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 import logging
-from typing import Iterable, Optional, Union, List
+from typing import Callable, Optional, List
 
 from helpermodules.cli import run_using_positional_cli_args
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, MultiComponentUpdater
+from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, IndependentComponentUpdater
 from modules.devices.rct import bat, counter, inverter, rct_lib
 from modules.devices.rct.bat import RctBat
 from modules.devices.rct.config import Rct, RctConfiguration, RctBatSetup, RctCounterSetup, RctInverterSetup
@@ -24,12 +24,11 @@ def create_device(device_config: Rct):
     def create_inverter_component(component_config: RctInverterSetup):
         return RctInverter(component_config)
 
-    def update_components(components: Iterable[Union[RctBat, RctCounter, RctInverter]]):
+    def update_component(update_func: Callable[[rct_lib.RCT], None]):
         try:
             rct = rct_lib.RCT(device_config.configuration.ip_address)
             if rct.connect_to_server():
-                for component in components:
-                    component.update(rct)
+                update_func(rct)
         except Exception:
             raise
         finally:
@@ -42,7 +41,7 @@ def create_device(device_config: Rct):
             counter=create_counter_component,
             inverter=create_inverter_component,
         ),
-        component_updater=MultiComponentUpdater(update_components)
+        component_updater=IndependentComponentUpdater(lambda component: update_component(component.update)),
     )
 
 
