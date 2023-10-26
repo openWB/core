@@ -49,7 +49,7 @@
 						<button
 							v-if="globalConfig.showRelativeArcs"
 							class="btn btn-secondary"
-							@click="emit('resetArcs')"
+							@click="emit('reset-arcs')"
 						>
 							Reset
 						</button>
@@ -140,7 +140,7 @@ import ConfigItem from '@/components/shared/ConfigItem.vue'
 import SwitchInput from '@/components/shared/SwitchInput.vue'
 import RadioInput from '@/components/shared/RadioInput.vue'
 import WbWidgetFlex from '@/components/shared/WbWidgetFlex.vue'
-const emit = defineEmits(['resetArcs'])
+const emit = defineEmits(['reset-arcs'])
 const colorschemes: [string, string][] = [
 	['Dunkel', 'dark'],
 	['Hell', 'light'],

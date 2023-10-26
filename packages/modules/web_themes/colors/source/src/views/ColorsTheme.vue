@@ -5,7 +5,7 @@ Hagen */
 	<div class="container-fluid px-2 m-0 theme-colors">
 		<!-- Theme settings -->
 		<div id="themesettings" class="collapse">
-			<ThemeSettings />
+			<ThemeSettings @reset-arcs="resetArcs"></ThemeSettings>
 		</div>
 		<!-- Button Bar -->
 		<ButtonBar />
@@ -185,6 +185,7 @@ import CarouselFix from '@/components/shared/CarouselFix.vue'
 import { msgInit } from '@/assets/js/processMessages'
 import MQTTViewer from '@/components/mqttViewer/MQTTViewer.vue'
 import ThemeSettings from '@/views/ThemeSettings.vue'
+import { resetArcs } from '@/assets/js/themeConfig'
 import {
 	globalConfig,
 	updateDimensions,

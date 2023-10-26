@@ -9,6 +9,7 @@ import { select } from 'd3'
 import type { ChargeModeInfo } from './types'
 import { addShDevice, shDevices } from '@/components/smartHome/model'
 import { ChargeMode } from '@/components/chargePointList/model'
+import { sourceSummary } from './model'
 export class Config {
 	private _showRelativeArcs: boolean = false
 	showTodayGraph: boolean = true
@@ -267,8 +268,11 @@ export function toggleFixArcs() {
 	globalConfig.showRelativeArcs = !globalConfig.showRelativeArcs
 	savePrefs()
 }
-export function resetArcs(maxp: number = 4000) {
-	globalConfig.maxPower = maxp
+export function resetArcs() {
+	globalConfig.maxPower =
+		sourceSummary.evuIn.power +
+		sourceSummary.pv.power +
+		sourceSummary.batOut.power
 	savePrefs()
 }
 export function switchDecimalPlaces() {
