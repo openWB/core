@@ -53,7 +53,7 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
                             soc = self.calculated_soc_state.manual_soc
                             source_str = "manual"
                         else:
-                            soc = self.__component_updater(vehicle_update_data)
+                            soc = self.__component_updater(vehicle_update_data).soc
                             source_str = "api"
                     else:
                         soc = vehicle_update_data.soc_from_cp
@@ -76,7 +76,7 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
                               asdict(self.calculated_soc_state))
                 else:
                     soc = calc_soc(vehicle_update_data,
-                                   self.general_config.efficiency,
+                                   vehicle_update_data.efficiency,
                                    self.calculated_soc_state.imported_start,
                                    self.calculated_soc_state.soc_start,
                                    vehicle_update_data.battery_capacity)

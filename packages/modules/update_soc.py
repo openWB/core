@@ -8,6 +8,7 @@ from control import data
 from control.ev import Ev
 from helpermodules import subdata
 from helpermodules import timecheck
+from helpermodules.constants import NO_ERROR
 from helpermodules.pub import Pub
 from helpermodules.utils import thread_handler
 from modules.common.abstract_vehicle import VehicleUpdateData
@@ -68,6 +69,11 @@ class UpdateSoc:
                         if hasattr(ev.soc_module, "store"):
                             threads_store.append(Thread(target=ev.soc_module.store.update,
                                                         args=(), name=f"store soc_ev{ev.num}"))
+                else:
+                    # Wenn kein Modul konfiguriert ist, Fehlerstatus zurücksetzen.
+                    if ev.data.get.fault_state != 0 or ev.data.get.fault_str != NO_ERROR:
+                        Pub().pub(f"openWB/set/vehicle/{ev.num}/get/fault_state", 0)
+                        Pub().pub(f"openWB/set/vehicle/{ev.num}/get/fault_str", NO_ERROR)
             except Exception:
                 log.exception("Fehler im update_soc-Modul")
         return threads_update, threads_store
@@ -85,6 +91,7 @@ class UpdateSoc:
                 charge_state = cp.data.get.charge_state
                 imported = cp.data.get.imported
                 battery_capacity = data.data.ev_data[f"ev{ev_num}"].ev_template.data.battery_capacity
+                efficiency = data.data.ev_data[f"ev{ev_num}"].ev_template.data.efficiency
                 if data.data.ev_data[f"ev{ev_num}"].soc_module.general_config.use_soc_from_cp:
                     soc_from_cp = cp.data.get.soc
                 else:
@@ -95,9 +102,11 @@ class UpdateSoc:
             charge_state = False
             imported = None
             battery_capacity = data.data.ev_data[f"ev{ev_num}"].ev_template.data.battery_capacity
+            efficiency = data.data.ev_data[f"ev{ev_num}"].ev_template.data.efficiency
             soc_from_cp = None
         return VehicleUpdateData(plug_state=plug_state,
                                  charge_state=charge_state,
+                                 efficiency=efficiency,
                                  imported=imported,
                                  battery_capacity=battery_capacity,
                                  soc_from_cp=soc_from_cp)

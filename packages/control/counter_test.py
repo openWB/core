@@ -143,7 +143,7 @@ def test_switch_on_threshold_reached(params: Params, caplog, general_data_fixtur
 
     # evaluation
     assert c.data.set.reserved_surplus == params.expected_reserved_surplus
-    assert params.expected_msg is None or params.expected_msg in caplog.text
+    assert cp.data.get.state_str is None or cp.data.get.state_str == params.expected_msg
     assert (cp.data.control_parameter.timestamp_switch_on_off ==
             params.expected_timestamp_switch_on_off)
 

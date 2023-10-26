@@ -640,6 +640,41 @@ export const useMqttStore = defineStore("mqtt", {
         return 0;
       };
     },
+
+    /* system getters */
+
+    getSystemCurrentCommit(state) {
+      if (state.topics["openWB/system/current_commit"]) {
+        return state.topics["openWB/system/current_commit"];
+      }
+      return undefined;
+    },
+    getSystemIp(state) {
+      if (state.topics["openWB/system/ip_address"]) {
+        return state.topics["openWB/system/ip_address"];
+      }
+      return undefined;
+    },
+    getSystemBranch(state) {
+      if (state.topics["openWB/system/current_branch"]) {
+        return state.topics["openWB/system/current_branch"];
+      }
+      return undefined;
+    },
+    getSystemTime(state) {
+      if (state.topics["openWB/system/time"]) {
+        return new Date(
+          state.topics["openWB/system/time"] * 1000
+        ).toLocaleString();
+      }
+      return undefined;
+    },
+    getSystemVersion(state) {
+      if (state.topics["openWB/system/version"]) {
+        return state.topics["openWB/system/version"];
+      }
+      return undefined;
+    },
   },
   actions: {
     updateSetting(setting, value) {

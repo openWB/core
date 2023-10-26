@@ -167,7 +167,9 @@ function calculatePowerValues(
 		result.batIn -
 		result.charging -
 		result.devices
-
+	if (result.house < 0) {
+		result.house = 0
+	}
 	result.inverter = 0
 
 	const usedEnergy = result.gridPull + result.batOut + result.solarPower

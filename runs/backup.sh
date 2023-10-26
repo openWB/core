@@ -8,7 +8,9 @@ LOGFILE="$OPENWBBASEDIR/data/log/backup.log"
 
 useExtendedFilename=$1
 if ((useExtendedFilename == 1)); then
-	FILENAME="openWB_backup_$(date +"%Y-%m-%d_%H:%M:%S").tar"
+	# only use characters supported in most OS!
+	# for Win see https://learn.microsoft.com/en-us/rest/api/storageservices/naming-and-referencing-shares--directories--files--and-metadata
+	FILENAME="openWB_backup_$(date +"%Y-%m-%d_%H-%M-%S").tar"
 else
 	FILENAME="backup.tar"
 fi
@@ -38,6 +40,11 @@ fi
 		--exclude "__pycache__" \
 		--exclude "$OPENWBDIRNAME/.pytest_cache" \
 		"$OPENWBDIRNAME"
+	echo "adding configuration file"
+	sudo tar --verbose --append \
+		--file="$BACKUPFILE" \
+		--directory="/home/openwb/" \
+		"configuration.json"
 	echo "adding mosquitto files"
 	sudo tar --verbose --append \
 		--file="$BACKUPFILE" \
@@ -51,6 +58,7 @@ fi
 		--file="$BACKUPFILE" \
 		--directory="$OPENWBBASEDIR/ramdisk/" \
 		"GIT_BRANCH" "GIT_HASH"
+
 	echo "calculating checksums"
 	# openwb directory
 	find "$OPENWBBASEDIR" \( \
@@ -63,6 +71,8 @@ fi
 		-name "backup.log" \
 		\) -prune -o \
 		-type f -print0 | xargs -0 sha256sum | sed -n "s|$TARBASEDIR/||p" >"$OPENWBBASEDIR/ramdisk/SHA256SUM"
+	# configuration file
+	echo -n "/home/openwb/configuration.json" | xargs -0 sha256sum | sed -n "s|/home/openwb/||p" >>"$OPENWBBASEDIR/ramdisk/SHA256SUM"
 	# git info files
 	find "$OPENWBBASEDIR/ramdisk/GIT_"* \
 		-type f -print0 | xargs -0 sha256sum | sed -n "s|$OPENWBBASEDIR/ramdisk/||p" >>"$OPENWBBASEDIR/ramdisk/SHA256SUM"
@@ -73,10 +83,11 @@ fi
 		--file="$BACKUPFILE" \
 		--directory="$OPENWBBASEDIR/ramdisk/" \
 		"SHA256SUM"
+
 	# cleanup
 	echo "removing temporary files"
 	rm -v "$OPENWBBASEDIR/ramdisk/GIT_BRANCH" "$OPENWBBASEDIR/ramdisk/GIT_HASH" "$OPENWBBASEDIR/ramdisk/SHA256SUM"
-	tar --verbose --append \
+	tar --append \
 		--file="$BACKUPFILE" \
 		--directory="$OPENWBBASEDIR/data/log/" \
 		"backup.log"

@@ -114,7 +114,12 @@ class SubData:
         """ subscribe topics
         """
         client.subscribe([
-            ("openWB/vehicle/#", 2),
+            ("openWB/vehicle/set/#", 2),
+            ("openWB/vehicle/template/#", 2),
+            ("openWB/vehicle/+/+", 2),
+            ("openWB/vehicle/+/get/#", 2),
+            ("openWB/vehicle/+/soc_module/config", 2),
+            ("openWB/vehicle/+/set/#", 2),
             ("openWB/chargepoint/#", 2),
             ("openWB/pv/#", 2),
             ("openWB/bat/#", 2),
@@ -124,11 +129,13 @@ class SubData:
             ("openWB/counter/#", 2),
             ("openWB/command/command_completed", 2),
             ("openWB/internal_chargepoint/#", 2),
+            # MQTT Bridge Topics vor "openWB/system/+" abonnieren, damit sie auch vor
+            # "openWB/system/subdata_initialized" empfangen werden!
+            ("openWB/system/mqtt/bridge/+", 2),
             # Nicht mit hash # abonnieren, damit nicht die Komponenten vor den Devices empfangen werden!
             ("openWB/system/+", 2),
             ("openWB/system/backup_cloud/#", 2),
             ("openWB/system/device/module_update_completed", 2),
-            ("openWB/system/mqtt/bridge/+", 2),
             ("openWB/system/device/+/config", 2),
         ])
         Pub().pub("openWB/system/subdata_initialized", True)
@@ -283,8 +290,8 @@ class SubData:
                             mod = importlib.import_module(".vehicles."+config["type"]+".soc", "modules")
                             config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config)
                             var["ev"+index].soc_module = mod.create_vehicle(config, index)
-                            client.subscribe(f"/vehicle/{index}/soc_module/calculated_soc_state", 2)
-                            client.subscribe(f"/vehicle/{index}/soc_module/general_config", 2)
+                            client.subscribe(f"openWB/vehicle/{index}/soc_module/calculated_soc_state", 2)
+                            client.subscribe(f"openWB/vehicle/{index}/soc_module/general_config", 2)
                         self.event_soc.set()
                     else:
                         self.set_json_payload_class(var["ev"+index].data, msg)

@@ -18,7 +18,7 @@ partner_tunnel: Popen = None
 cloud_tunnel: Popen = None
 logging.basicConfig(
     filename=str(RAMDISK_PATH / "remote_support.log"),
-    level=logging.INFO, format='%(asctime)s: %(message)s'
+    level=logging.DEBUG, format='%(asctime)s: %(message)s'
 )
 log = logging.getLogger("RemoteSupport")
 
@@ -41,16 +41,17 @@ def on_connect(client: mqtt.Client, userdata, flags: dict, rc: int):
 def on_message(client: mqtt.Client, userdata, msg: mqtt.MQTTMessage):
     """handle incoming messages"""
     def is_tunnel_closed(tunnel: Popen) -> bool:
-        start = False
+        log.debug(str(tunnel))
+        is_closed = False
         if tunnel is not None:
             if tunnel.poll() is None:
-                start = True
-                log.info("tunnel was closed by server")
-            else:
                 log.error("received start tunnel message but tunnel is already running")
+            else:
+                is_closed = True
+                log.info("tunnel was closed by server")
         else:
-            start = True
-        return start
+            is_closed = True
+        return is_closed
 
     global support_tunnel
     global partner_tunnel
@@ -128,16 +129,16 @@ def on_message(client: mqtt.Client, userdata, msg: mqtt.MQTTMessage):
                         bits, linkage = platform.architecture()
                         lt_executable = f"lt-{machine}_{linkage}"
 
-                        log.info("System Info:")
-                        log.info(f"Architecture: ({(bits, linkage)})")
-                        log.info(f"Machine: {machine}")
-                        log.info(f"Node: {platform.node()}")
-                        log.info(f"Platform: {platform.platform()}")
-                        log.info(f"System: {platform.system()}")
-                        log.info(f"Release: {platform.release()}")
-                        log.info(f"using binary: '{lt_executable}'")
+                        log.debug("System Info:")
+                        log.debug(f"Architecture: ({(bits, linkage)})")
+                        log.debug(f"Machine: {machine}")
+                        log.debug(f"Node: {platform.node()}")
+                        log.debug(f"Platform: {platform.platform()}")
+                        log.debug(f"System: {platform.system()}")
+                        log.debug(f"Release: {platform.release()}")
+                        log.debug(f"using binary: '{lt_executable}'")
 
-                        log.info("start cloud tunnel" + token + cloud_node)
+                        log.info(f"start cloud tunnel '{token[:4]}...{token[-4:]}' on '{cloud_node}'")
                         try:
                             cloud_tunnel = Popen([f"{RUNS_PATH}/{lt_executable}", "-h",
                                                   "https://" + cloud_node + ".openwb.de/", "-p", "80", "-s", token])

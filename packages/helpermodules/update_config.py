@@ -16,6 +16,7 @@ from helpermodules.broker import InternalBrokerClient
 from helpermodules.hardware_configuration import get_hardware_configuration_setting, update_hardware_configuration
 from helpermodules.measurement_logging.process_log import get_totals
 from helpermodules.measurement_logging.write_log import get_names
+from helpermodules.messaging import MessageType, pub_system_message
 from helpermodules.pub import Pub
 from helpermodules.utils.topic_parser import decode_payload, get_index, get_second_index
 from control import counter_all
@@ -28,7 +29,7 @@ log = logging.getLogger(__name__)
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 23
+    DATASTORE_VERSION = 25
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -455,6 +456,7 @@ class UpdateConfig:
 
     def __init__(self) -> None:
         self.all_received_topics = {}
+        self.base_path = Path(__file__).resolve().parents[2]
 
     def update(self):
         log.debug("Broker-Konfiguration aktualisieren")
@@ -512,7 +514,7 @@ class UpdateConfig:
                 Pub().pub(topic.replace("openWB/", "openWB/set/"), default_payload)
 
     def __update_version(self):
-        with open("/var/www/html/openWB/web/version", "r") as f:
+        with open(self.base_path / "web" / "version", "r") as f:
             version = f.read().splitlines()[0]
         Pub().pub("openWB/set/system/version", version)
 
@@ -546,8 +548,8 @@ class UpdateConfig:
 
         # Alpha 3
         # Summen in Tages- und Monats-Log hinzufügen
-        files = glob.glob("/var/www/html/openWB/data/daily_log/*")
-        files.extend(glob.glob("/var/www/html/openWB/data/monthly_log/*"))
+        files = glob.glob(str(self.base_path / "data" / "daily_log") + "/*")
+        files.extend(glob.glob(str(self.base_path / "data" / "monthly_log") + "/*"))
         for file in files:
             with open(file, "r+") as jsonFile:
                 try:
@@ -677,8 +679,7 @@ class UpdateConfig:
         Pub().pub("openWB/set/system/datastore_version", 5)
         if moved_file:
             time.sleep(1)
-            parent_file = Path(__file__).resolve().parents[2]
-            subprocess.run([str(parent_file / "runs" / "reboot.sh")])
+            subprocess.run([str(self.base_path / "runs" / "reboot.sh")])
 
     def upgrade_datastore_5(self) -> None:
         for topic, payload in self.all_received_topics.items():
@@ -784,8 +785,8 @@ class UpdateConfig:
         Pub().pub("openWB/system/datastore_version", 15)
 
     def upgrade_datastore_15(self) -> None:
-        files = glob.glob("/var/www/html/openWB/data/daily_log/*")
-        files.extend(glob.glob("/var/www/html/openWB/data/monthly_log/*"))
+        files = glob.glob(str(self.base_path / "data" / "daily_log") + "/*")
+        files.extend(glob.glob(str(self.base_path / "data" / "monthly_log") + "/*"))
         for file in files:
             with open(file, "r+") as jsonFile:
                 try:
@@ -849,8 +850,8 @@ class UpdateConfig:
                 pass
             except Exception:
                 log.exception(f"Logfile {file} konnte nicht konvertiert werden.")
-        convert_file(f"/var/www/html/openWB/data/daily_log/{timecheck.create_timestamp_YYYYMMDD()}.json")
-        convert_file(f"/var/www/html/openWB/data/monthly_log/{timecheck.create_timestamp_YYYYMM()}.json")
+        convert_file(f"{str(self.base_path / 'data' / 'daily_log')}/{timecheck.create_timestamp_YYYYMMDD()}.json")
+        convert_file(f"{str(self.base_path / 'data' / 'monthly_log')}/{timecheck.create_timestamp_YYYYMM()}.json")
         Pub().pub("openWB/system/datastore_version", 19)
 
     def upgrade_datastore_19(self) -> None:
@@ -881,12 +882,14 @@ class UpdateConfig:
                 for interval_topic, interval_payload in self.all_received_topics.items():
                     if f"openWB/vehicle/{index}/soc_module/interval_config" == interval_topic:
                         interval_config_payload = decode_payload(interval_payload)
+                        general_config = GeneralVehicleConfig(
+                            request_interval_charging=interval_config_payload["request_interval_charging"],
+                            request_interval_not_charging=interval_config_payload["request_interval_not_charging"],
+                            request_only_plugged=interval_config_payload["request_only_plugged"])
                         break
-                general_config = GeneralVehicleConfig(
-                    request_interval_charging=interval_config_payload["request_interval_charging"],
-                    request_interval_not_charging=interval_config_payload["request_interval_not_charging"],
-                    request_only_plugged=interval_config_payload["request_only_plugged"])
-                if config_payload["type"] == "manual":
+                else:
+                    general_config = GeneralVehicleConfig()
+                if config_payload["type"] == "manual" and config_payload["configuration"].get("efficiency"):
                     general_config.efficiency = config_payload["configuration"]["efficiency"]*100
                     config_payload["configuration"] = {}
                 Pub().pub(topic.replace("config", "general_config").replace("openWB/", "openWB/set/"),
@@ -895,7 +898,7 @@ class UpdateConfig:
         Pub().pub("openWB/system/datastore_version", 22)
 
     def upgrade_datastore_22(self) -> None:
-        files = glob.glob("/var/www/html/openWB/data/charge_log/*")
+        files = glob.glob(str(self.base_path / "data" / "charge_log") + "/*")
         for file in files:
             modified = False
             with open(file, "r+") as jsonFile:
@@ -913,3 +916,41 @@ class UpdateConfig:
                 except Exception:
                     log.exception(f"Ladeprotokoll '{file}' konnte nicht aktualisiert werden.")
         Pub().pub("openWB/system/datastore_version", 23)
+
+    def upgrade_datastore_23(self) -> None:
+        for topic, payload in self.all_received_topics.items():
+            if re.search("openWB/system/mqtt/bridge/[0-9]+", topic) is not None:
+                bridge_configuration = decode_payload(payload)
+                if bridge_configuration["remote"]["is_openwb_cloud"]:
+                    index = get_index(topic)
+                    result = subprocess.run(
+                        ["php", "-f", str(self.base_path / "runs" / "save_mqtt.php"), index, payload],
+                        stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+                    if result.returncode == 0:
+                        log.info("successfully updated configuration of bridge "
+                                 f"'{bridge_configuration['name']}' ({index})")
+                        pub_system_message(payload, result.stdout, MessageType.SUCCESS)
+                    else:
+                        log.error("update of configuration for bridge "
+                                  f"'{bridge_configuration['name']}' {index} failed! {result.stdout}")
+        Pub().pub("openWB/system/datastore_version", 24)
+
+    def upgrade_datastore_24(self) -> None:
+        # Wenn mehrere EV eine Fahrzeug-Vorlage nutzen, wird die Effizienz des letzten für alle in der Vorlage gesetzt.
+        for topic, payload in self.all_received_topics.items():
+            if re.search("openWB/vehicle/[0-9]+/soc_module/general_config", topic) is not None:
+                payload = decode_payload(payload)
+                index = get_index(topic)
+                for ev_template_id_topic, ev_template_id_payload in self.all_received_topics.items():
+                    if f"openWB/vehicle/{index}/ev_template" == ev_template_id_topic:
+                        ev_template_id = decode_payload(ev_template_id_payload)
+                        break
+                for ev_template_topic, ev_template_payload in self.all_received_topics.items():
+                    if f"openWB/vehicle/template/ev_template/{ev_template_id}" == ev_template_topic:
+                        ev_template = decode_payload(ev_template_payload)
+                        break
+                ev_template.update({"efficiency": payload["efficiency"]})
+                payload.pop("efficiency")
+                Pub().pub(topic.replace("openWB/", "openWB/set/"), payload)
+                Pub().pub(ev_template_topic.replace("openWB/", "openWB/set/"), ev_template)
+        Pub().pub("openWB/system/datastore_version", 25)

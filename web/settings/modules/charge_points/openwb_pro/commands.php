@@ -34,9 +34,12 @@ if (!array_key_exists("ip_address", $request_data)) {
 	exit(1);
 }
 if (!filter_var($request_data["ip_address"], FILTER_VALIDATE_IP)) {
-	print("invalid ip");
-	http_response_code(400);
-	exit(1);
+	# "ip_address" may contain a hostname! try to resolve and validate
+	if (!filter_var(gethostbyname($request_data["ip_address"]), FILTER_VALIDATE_IP)) {
+		print("invalid ip or hostname");
+		http_response_code(400);
+		exit(1);
+	}
 }
 
 print("executing command '" . $_REQUEST["command"] . "' with ip '" . $request_data["ip_address"] . "'\n");

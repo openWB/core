@@ -8,12 +8,12 @@ class VehicleUpdateData:
     charge_state: bool = False
     imported: float = 0
     battery_capacity: float = 82
+    efficiency: float = 90
     soc_from_cp: float = 0
 
 
 @dataclass
 class GeneralVehicleConfig:
-    efficiency: float = 90
     use_soc_from_cp: bool = False
     request_interval_charging: int = 5
     request_interval_not_charging: int = 720
