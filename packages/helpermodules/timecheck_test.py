@@ -76,7 +76,7 @@ def test_get_remaining_time(begin_hour: int, begin_min: int, end_hour: int, end_
     begin = datetime.datetime(2022, 9, 26, begin_hour, begin_min)
 
     # execution
-    diff = timecheck._get_remaining_time(begin, 2.5, end)
+    diff = timecheck._get_remaining_time(begin, 9000, end)
 
     # evaluation
     assert expected == diff
@@ -104,7 +104,7 @@ def test_check_duration(time: str, selected: str, date: List, expected: float):
         setattr(plan.frequency, selected, date)
 
     # execution
-    remaining_time, missed_date_today = timecheck.check_duration(plan, 2.5, ChargeTemplate.BUFFER)
+    remaining_time, missed_date_today = timecheck.check_duration(plan, 9000, ChargeTemplate.BUFFER)
 
     # evaluation
     assert (remaining_time, missed_date_today) == expected

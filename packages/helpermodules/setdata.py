@@ -786,17 +786,13 @@ class SetData:
             enthält Topic und Payload
         """
         try:
-            if "openWB/set/optional/load_sharing/active" in msg.topic:
-                self._validate_value(msg, bool)
-            elif "openWB/set/optional/load_sharing/max_current" in msg.topic:
-                self._validate_value(msg, int, [(16, 32)])
-            elif "openWB/set/optional/et/active" in msg.topic:
-                self._validate_value(msg, bool)
-            elif "openWB/set/optional/et/get/price_list" in msg.topic:
+            if "openWB/set/optional/et/get/prices" in msg.topic:
                 self._validate_value(msg, "json")
             elif "openWB/set/optional/et/get/price" in msg.topic:
                 self._validate_value(msg, float)
-            elif "openWB/set/optional/et/get/source" in msg.topic:
+            elif "openWB/set/optional/et/get/fault_state" in msg.topic:
+                self._validate_value(msg, int, [(0, 2)])
+            elif "openWB/set/optional/et/get/fault_str" in msg.topic:
                 self._validate_value(msg, str)
             elif "openWB/set/optional/et/config/max_price" in msg.topic:
                 self._validate_value(msg, float)

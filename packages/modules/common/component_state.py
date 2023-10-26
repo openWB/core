@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from helpermodules.auto_str import auto_str
 
@@ -150,3 +150,10 @@ class ChargepointState:
         self.soc = soc
         self.soc_timestamp = soc_timestamp
         self.evse_current = evse_current
+
+
+@auto_str
+class TariffState:
+    def __init__(self,
+                 prices: Optional[Dict[int, float]] = None) -> None:
+        self.prices = prices

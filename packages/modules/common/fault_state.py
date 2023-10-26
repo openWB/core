@@ -20,7 +20,7 @@ class FaultStateLevel(IntEnum):
 
 class ComponentInfo:
     def __init__(self,
-                 id: int,
+                 id: Optional[int],
                  name: str,
                  type: str,
                  hostname: str = "localhost",
@@ -76,15 +76,18 @@ class FaultState(Exception):
                                    "/get/fault_state", self.fault_state.value, hostname=component_info.hostname)
             else:
                 topic = component_type.type_to_topic_mapping(component_info.type)
-                pub.Pub().pub("openWB/set/" + topic + "/" + str(component_info.id) + "/get/fault_str", self.fault_str)
-                pub.Pub().pub(
-                    "openWB/set/" + topic + "/" + str(component_info.id) + "/get/fault_state", self.fault_state.value)
+                if component_info.type == component_type.ComponentType.ELECTRICITY_TARIFF.value:
+                    fault_str_topic = f"openWB/set/{topic}/get/fault_str"
+                    fault_state_topic = f"openWB/set/{topic}/get/fault_state"
+                else:
+                    fault_str_topic = f"openWB/set/{topic}/{component_info.id}/get/fault_str"
+                    fault_state_topic = f"openWB/set/{topic}/{component_info.id}/get/fault_state"
+                pub.Pub().pub(fault_str_topic, self.fault_str)
+                pub.Pub().pub(fault_state_topic, self.fault_state.value)
                 if component_info.parent_hostname and component_info.parent_hostname != component_info.hostname:
-                    pub.pub_single("openWB/set/" + topic + "/" + str(component_info.parent_id) +
-                                   "/get/fault_str", self.fault_str, hostname=component_info.parent_hostname)
-                    pub.pub_single(
-                        "openWB/set/" + topic + "/" + str(component_info.parent_id) + "/get/fault_state",
-                        self.fault_state.value, hostname=component_info.parent_hostname)
+                    pub.pub_single(fault_str_topic, self.fault_str, hostname=component_info.parent_hostname)
+                    pub.pub_single(fault_state_topic,
+                                   self.fault_state.value, hostname=component_info.parent_hostname)
         except Exception:
             log.exception("Fehler im Modul fault_state")
 
