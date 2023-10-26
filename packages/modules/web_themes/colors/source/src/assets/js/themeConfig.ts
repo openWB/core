@@ -23,6 +23,7 @@ export class Config {
 	private _showAnimations = true
 	private _preferWideBoxes = false
 	private _maxPower: number = 4000
+	private _fluidDisplay: boolean = false
 	private _debug: boolean = false
 	isEtEnabled: boolean = false
 	etPrice: number = 20.5
@@ -154,12 +155,21 @@ export class Config {
 	setMaxPower(max: number) {
 		this._maxPower = max
 	}
+	get fluidDisplay() {
+		return this._fluidDisplay
+	}
+	set fluidDisplay(on: boolean) {
+		this._fluidDisplay = on
+		savePrefs()
+	}
+	setFluidDisplay(on: boolean) {
+		this._fluidDisplay = on
+	}
 	get debug() {
 		return this._debug
 	}
 	set debug(on: boolean) {
 		this._debug = on
-		savePrefs()
 	}
 	setDebug(on: boolean) {
 		this._debug = on
@@ -301,6 +311,7 @@ interface Preferences {
 	simpleCP?: boolean
 	animation?: boolean
 	wideB?: boolean
+	fluidD?: boolean
 }
 
 function writeCookie() {
@@ -320,6 +331,7 @@ function writeCookie() {
 	prefs.simpleCP = globalConfig.simpleCpList
 	prefs.animation = globalConfig.showAnimations
 	prefs.wideB = globalConfig.preferWideBoxes
+	prefs.fluidD = globalConfig.fluidDisplay
 	document.cookie =
 		'openWBColorTheme=' + JSON.stringify(prefs) + '; max-age=16000000'
 }
@@ -374,6 +386,9 @@ function readCookie() {
 		}
 		if (prefs.wideB != undefined) {
 			globalConfig.setPreferWideBoxes(prefs.wideB)
+		}
+		if (prefs.fluidD != undefined) {
+			globalConfig.setFluidDisplay(prefs.fluidD)
 		}
 	}
 }

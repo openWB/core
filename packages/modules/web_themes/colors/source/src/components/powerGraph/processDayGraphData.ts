@@ -38,12 +38,16 @@ export function processDayGraphMessages(_: string, message: string) {
 	})
 	updateEnergyValues(startValues, endValues)
 	if (globalConfig.debug) {
-		console.debug('---------------------------------------- Graph Data ---------------------------')
+		console.debug(
+			'---------------------------------------- Graph Data ---------------------------',
+		)
 		console.debug('--- Incoming graph data:')
 		console.debug(inputTable)
 		console.debug('data to be displayed:')
 		console.debug(transformedTable)
-		console.debug('-------------------------------------------------------------------------------')
+		console.debug(
+			'-------------------------------------------------------------------------------',
+		)
 	}
 	if (graphData.graphMode == 'today') {
 		setTimeout(() => dayGraph.activate(), 300000)

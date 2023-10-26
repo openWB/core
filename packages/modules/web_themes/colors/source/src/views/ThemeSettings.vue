@@ -103,10 +103,17 @@
 						<SwitchInput v-model="globalConfig.preferWideBoxes" />
 					</ConfigItem>
 					<ConfigItem
+						title="Stufenlose Displaybreite"
+						icon="fa-maximize"
+						infotext="Die Breite des Displays wird immer voll ausgenutzt. Dies kann in einigen Fällen zu inkorrekter Darstellung führen."
+					>
+						<SwitchInput v-model="globalConfig.fluidDisplay" />
+					</ConfigItem>
+					<ConfigItem
 						title="Debug-Modus"
 						icon="fa-bug-slash"
 						infotext="Kontrollausgaben in der Console sowie Anzeige von Bildschirmbreite und MQ-Viewer"
-						>
+					>
 						<SwitchInput v-model="globalConfig.debug" />
 					</ConfigItem>
 				</div>
