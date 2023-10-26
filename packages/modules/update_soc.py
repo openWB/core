@@ -91,6 +91,7 @@ class UpdateSoc:
                 charge_state = cp.data.get.charge_state
                 imported = cp.data.get.imported
                 battery_capacity = data.data.ev_data[f"ev{ev_num}"].ev_template.data.battery_capacity
+                efficiency = data.data.ev_data[f"ev{ev_num}"].ev_template.data.efficiency
                 if data.data.ev_data[f"ev{ev_num}"].soc_module.general_config.use_soc_from_cp:
                     soc_from_cp = cp.data.get.soc
                 else:
@@ -101,9 +102,11 @@ class UpdateSoc:
             charge_state = False
             imported = None
             battery_capacity = data.data.ev_data[f"ev{ev_num}"].ev_template.data.battery_capacity
+            efficiency = data.data.ev_data[f"ev{ev_num}"].ev_template.data.efficiency
             soc_from_cp = None
         return VehicleUpdateData(plug_state=plug_state,
                                  charge_state=charge_state,
+                                 efficiency=efficiency,
                                  imported=imported,
                                  battery_capacity=battery_capacity,
                                  soc_from_cp=soc_from_cp)

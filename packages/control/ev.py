@@ -122,6 +122,7 @@ class EvTemplateData:
     min_current: int = 6
     max_current_single_phase: int = 32
     battery_capacity: float = 82000
+    efficiency: float = 90
     nominal_difference: float = 1
     keep_charge_active_duration: int = 40
 
