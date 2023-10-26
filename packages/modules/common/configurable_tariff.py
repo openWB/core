@@ -1,0 +1,32 @@
+from typing import TypeVar, Generic, Callable
+from helpermodules.timecheck import create_unix_timestamp_current_full_hour
+
+from modules.common import store
+from modules.common.component_context import SingleComponentUpdateContext
+from modules.common.fault_state import ComponentInfo, FaultState
+
+
+T_TARIFF_CONFIG = TypeVar("T_TARIFF_CONFIG")
+
+
+class ConfigurableElectricityTariff(Generic[T_TARIFF_CONFIG]):
+    def __init__(self,
+                 config: T_TARIFF_CONFIG,
+                 component_updater: Callable[[], None]) -> None:
+        self.__component_updater = component_updater
+        self.config = config
+        self.store = store.get_electricity_tariff_value_store()
+        self.component_info = ComponentInfo(None, self.config.name, "electricity_tariff")
+
+    def update(self):
+        with SingleComponentUpdateContext(self.component_info):
+            tariff_state = self.__component_updater()
+            current_hour = create_unix_timestamp_current_full_hour()
+            self.store.set(tariff_state)
+            self.store.update()
+            for timestamp in tariff_state.prices.keys():
+                if timestamp < current_hour:
+                    raise FaultState.warning('Die Preisliste startet nicht mit der aktuellen Stunde.')
+            if len(tariff_state.prices) != 24:
+                raise FaultState.warning(f'Die Preisliste hat nicht 24, sondern {len(tariff_state.prices)} Einträge. '
+                                         'Die Strompreise werden erst um 14:00 für den Folgetag aktualisiert.')

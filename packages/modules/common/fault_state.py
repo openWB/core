@@ -13,7 +13,7 @@ log = logging.getLogger(__name__)
 
 class ComponentInfo:
     def __init__(self,
-                 id: int,
+                 id: Optional[int],
                  name: str,
                  type: str,
                  hostname: str = "localhost",
@@ -51,6 +51,10 @@ class FaultState(Exception):
                           self.fault_str + ", Traceback: \n" +
                           traceback.format_exc())
             topic = component_type.type_to_topic_mapping(self.component_info.type)
+            if self.component_info.type == component_type.ComponentType.ELECTRICITY_TARIFF.value:
+                topic_prefix = f"openWB/set/{topic}"
+            else:
+                topic_prefix = f"openWB/set/{topic}/{self.component_info.id}"
             topic_prefix = f"openWB/set/{topic}/{self.component_info.id}"
             pub.Pub().pub(f"{topic_prefix}/get/fault_str", self.fault_str)
             pub.Pub().pub(f"{topic_prefix}/get/fault_state", self.fault_state.value)

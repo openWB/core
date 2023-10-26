@@ -10,6 +10,7 @@ from control.ev import ChargeTemplate, EvTemplate, EvTemplateData, SelectedPlan
 from control.general import General
 from helpermodules import timecheck
 from helpermodules.abstract_plans import ScheduledChargingPlan, TimeChargingPlan
+from modules.common.configurable_tariff import ConfigurableElectricityTariff
 
 
 @pytest.fixture(autouse=True)
@@ -128,7 +129,7 @@ def test_scheduled_charging_recent_plan(params: Params, monkeypatch):
     ct = ChargeTemplate(0)
     get_phases_chargemode_mock = Mock(return_value=params.chargemode_phases)
     monkeypatch.setattr(data.data.general_data, "get_phases_chargemode", get_phases_chargemode_mock)
-    search_plan_mock = Mock(return_value=params.search_plan)
+    search_plan_mock = Mock(return_value=(params.search_plan, 0))
     monkeypatch.setattr(ChargeTemplate, "search_plan", search_plan_mock)
     evt_data = Mock(spec=EvTemplateData, max_current_multi_phases=16, max_current_single_phase=32)
     evt = Mock(spec=EvTemplate, data=evt_data)
@@ -182,11 +183,12 @@ def test_search_plan(check_duration_return1: Tuple[Optional[float], bool],
     plan_mock = Mock(spec=ScheduledChargingPlan, active=True, current=14)
     ct.data.chargemode.scheduled_charging.plans = {0: plan_mock, 1: plan_mock}
     # execution
-    plan_data = ct.search_plan(14, 60, EvTemplate(), 3, 200)
+    plan_data, duration = ct.search_plan(14, 60, EvTemplate(), 3, 200)
 
     # evaluation
     assert plan_data is not None
     assert plan_data.num == expected_plan_num
+    assert duration == 100
 
 
 @pytest.mark.parametrize(
@@ -221,7 +223,6 @@ def test_scheduled_charging_calc_current(plan_data: SelectedPlan,
                                          selected: str,
                                          expected: Tuple[float, str, str, int]):
     # setup
-    data.data.optional_data.data.et.active = False
     ct = ChargeTemplate(0)
     plan = ScheduledChargingPlan(active=True)
     plan.limit.selected = selected
@@ -229,6 +230,31 @@ def test_scheduled_charging_calc_current(plan_data: SelectedPlan,
 
     # execution
     ret = ct.scheduled_charging_calc_current(plan_data, soc, used_amount, 3, 6, 0)
+
+    # evaluation
+    assert ret == expected
+
+
+@pytest.mark.parametrize(
+    "loading_hour, expected",
+    [
+        pytest.param(True, (14, "instant_charging", ChargeTemplate.SCHEDULED_CHARGING_CHEAP_HOUR, 3)),
+        pytest.param(False, (6, "pv_charging", ChargeTemplate.SCHEDULED_CHARGING_EXPENSIVE_HOUR, 3)),
+    ])
+def test_scheduled_charging_calc_current_electricity_tariff(loading_hour, expected, monkeypatch):
+    # setup
+    ct = ChargeTemplate(0)
+    plan = ScheduledChargingPlan(active=True)
+    plan.limit.selected = "soc"
+    ct.data.chargemode.scheduled_charging.plans = {0: plan}
+    data.data.optional_data.et_module = ConfigurableElectricityTariff(Mock(), Mock())
+    mock_et_get_loading_hours = Mock(return_value=[])
+    monkeypatch.setattr(data.data.optional_data, "et_get_loading_hours", mock_et_get_loading_hours)
+    mock_is_list_valid = Mock(return_value=loading_hour)
+    monkeypatch.setattr(timecheck, "is_list_valid", mock_is_list_valid)
+
+    # execution
+    ret = ct.scheduled_charging_calc_current(SelectedPlan(remaining_time=301), 3600, 79, 0, 3, 3, 6)
 
     # evaluation
     assert ret == expected
