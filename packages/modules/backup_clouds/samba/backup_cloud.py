@@ -16,7 +16,7 @@ def is_port_open(host: str, port: int):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.settimeout(3)
         try:
-                s.connect((host, int(port)))
+                s.connect(host, port)
                 s.shutdown(socket.SHUT_RDWR)
                 return True
         except:
