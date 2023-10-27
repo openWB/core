@@ -46,13 +46,11 @@ class RctCounter:
             powers=[power1.value, power2.value, power3.value],
             voltages=[volt1.value, volt2.value, volt3.value]
         )
+        self.store.set(counter_state)
         if (stat1.value + stat2.value + stat3.value + stat4.value) > 0:
-            log.debug(f"CounterState: {counter_state}")
-            raise FaultState.error(
+            raise FaultState.warning(
                 f"Alarm Status Speicher ist ungleich 0. Status 1: {stat1.value}, Status 2: {stat2.value}, "
                 f"Status 3: {stat3.value}, Status 4: {stat4.value},")
-
-        self.store.set(counter_state)
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=RctCounterSetup)
