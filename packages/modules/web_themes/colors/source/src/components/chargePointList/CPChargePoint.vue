@@ -13,7 +13,8 @@
 
 		<template #buttons>
 			<span
-				class="ms-2 pt-1"
+				type="button"
+				class="ms-2 ps-5 pt-1"
 				:style="modePillStyle"
 				@click="configmode = !configmode"
 			>

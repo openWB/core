@@ -1,7 +1,7 @@
 <template>
 	<!-- Fixed navbar -->
 	<nav class="navbar navbar-expand-lg px-3 mb-0">
-		<div class="container-lg">
+		<div :class="containerclass">
 			<a href="/" class="navbar-brand"><span>openWB</span></a>
 			<button
 				class="navbar-toggler togglebutton ps-5"
@@ -16,10 +16,7 @@
 			</button>
 			<div id="mainNavbar" class="collapse navbar-collapse justify-content-end">
 				<div class="nav navbar-nav">
-					<a
-						id="navStatus"
-						class="nav-link"
-						href="../../settings/#/Status"
+					<a id="navStatus" class="nav-link" href="../../settings/#/Status"
 						>Status</a
 					>
 					<div class="nav-item dropdown">
@@ -33,14 +30,10 @@
 							>Auswertungen <i class="fa-solid fa-caret-down" />
 						</a>
 						<div class="dropdown-menu" aria-labelledby="loggingDropdown">
-							<a
-								href="../../settings/#/Logging/ChargeLog"
-								class="dropdown-item"
+							<a href="../../settings/#/Logging/ChargeLog" class="dropdown-item"
 								>Ladeprotokoll</a
 							>
-							<a
-								href="../../settings/#/Logging/Chart"
-								class="dropdown-item"
+							<a href="../../settings/#/Logging/Chart" class="dropdown-item"
 								>Diagramme</a
 							>
 						</div>
@@ -82,7 +75,14 @@
 	<hr class="m-0 p-0 mb-2" />
 </template>
 
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { globalConfig } from '@/assets/js/themeConfig'
+import { computed } from 'vue'
+
+const containerclass = computed(() => {
+	return globalConfig.fluidDisplay ? 'container-fluid' : 'container-lg'
+})
+</script>
 
 <style scoped>
 .navbar {

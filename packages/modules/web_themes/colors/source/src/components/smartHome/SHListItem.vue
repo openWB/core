@@ -10,9 +10,7 @@
 					:key="idx"
 					class="p-0 m-0 align-items-center d-flex"
 				>
-					<span
-						v-if="idx < device.tempConfigured"
-						class="my-0 badge rounded-pill tempbadge mx-1"
+					<span v-if="temp < 300" class="my-0 badge rounded-pill tempbadge mx-1"
 						>{{ formatTemp(temp) }}
 					</span>
 				</span>

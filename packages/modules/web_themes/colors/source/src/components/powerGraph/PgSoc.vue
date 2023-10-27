@@ -30,7 +30,6 @@ import { computed } from 'vue'
 import { extent, scaleLinear, scaleTime, line } from 'd3'
 import { chargePoints } from '../chargePointList/model'
 import { graphData, type GraphDataItem } from './model'
-// import { processEtProviderMessages } from '../priceChart/processMessages';
 
 const props = defineProps<{
 	width: number
@@ -81,10 +80,9 @@ const cp = computed(() => {
 
 const nameY = computed(() => {
 	if (graphData.data.length > 0) {
+		const index = props.order == 0 ? graphData.data.length - 1 : 0
 		return yScale.value(
-			graphData.data[graphData.data.length - 1][
-				'soc' + cp.value.connectedVehicle
-			] + 2,
+			graphData.data[index]['soc' + cp.value.connectedVehicle] + 2,
 		)
 	} else {
 		return 0
