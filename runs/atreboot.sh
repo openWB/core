@@ -232,6 +232,25 @@ chmod 666 "$LOGFILE"
 	echo "cleaning obsolete python cache folders..."
 	"$OPENWBBASEDIR/runs/cleanPythonCache.sh"
 
+	# detect connected displays
+	# set default to "true" as fallback if "tvservice" is missing
+	displayDetected="true"
+	if which tvservice >/dev/null; then
+		echo "detected 'tvservice', query for connected displays"
+		output=$(tvservice -l)
+		echo "$output"
+		if [[ ! $output =~ "HDMI" ]] && [[ ! $output =~ "LCD" ]]; then
+			echo "no display detected"
+			displayDetected="false"
+		else
+			echo "detected HDMI or LCD display(s)"
+		fi
+	else
+		echo "'tvservice' not found, assuming a display is present"
+	fi
+	echo "displayDetected: $displayDetected"
+	mosquitto_pub -p 1886 -t "openWB/optional_int_display/detected" -r -m "$displayDetected"
+
 	# display setup
 	echo "display setup..."
 	displaySetupModified=0
