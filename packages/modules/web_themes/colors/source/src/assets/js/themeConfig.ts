@@ -33,6 +33,7 @@ export class Config {
 	// graphMode = ''
 	animationDuration = 300
 	animationDelay = 100
+	zoomGraph = false
 	constructor() {}
 	get showRelativeArcs() {
 		return this._showRelativeArcs

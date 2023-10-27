@@ -4,15 +4,25 @@
 			{{ heading }}
 		</template>
 		<template #buttons>
-			<PgSelector
-				widgetid="graphsettings"
-				:show-left-button="true"
-				:show-right-button="true"
-				@shift-left="shiftLeft"
-				@shift-right="shiftRight"
-				@shift-up="shiftUp"
-				@shift-down="shiftDown"
-			/>
+			<div class="d-flex justify-content-end">
+				<PgSelector
+					widgetid="graphsettings"
+					:show-left-button="true"
+					:show-right-button="true"
+					@shift-left="shiftLeft"
+					@shift-right="shiftRight"
+					@shift-up="shiftUp"
+					@shift-down="shiftDown"
+				/>
+				<span
+					v-if="widescreen"
+					type="button"
+					class="ms-1 p-0 pt-1"
+					@click="zoomGraph"
+				>
+					<span class="fa-solid fa-lg ps-1 fa-magnifying-glass" />
+				</span>
+			</div>
 		</template>
 
 		<figure id="powergraph" class="p-0 m-0" @click="changeStackOrder">
@@ -97,7 +107,7 @@ import {
 	shiftUp,
 	shiftDown,
 } from './model'
-import { globalConfig } from '@/assets/js/themeConfig'
+import { globalConfig, widescreen } from '@/assets/js/themeConfig'
 import PgSoc from './PgSoc.vue'
 import PgSocAxis from './PgSocAxis.vue'
 import { chargePoints } from '../chargePointList/model'
@@ -118,10 +128,13 @@ function changeStackOrder() {
 	globalConfig.usageStackOrder = newOrder
 	setInitializeUsageGraph(true)
 }
+function zoomGraph() {
+	globalConfig.zoomGraph = !globalConfig.zoomGraph
+}
 </script>
 
 <style scoped>
-.fa-ellipsis-vertical {
+.fa-magnifying-glass {
 	color: var(--color-menu);
 }
 
