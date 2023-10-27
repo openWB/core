@@ -13,16 +13,16 @@ from modules.common.configurable_backup_cloud import ConfigurableBackupCloud
 log = logging.getLogger(__name__)
 
 def is_port_open(host: str, port: int):
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.settimeout(3)
-        try:
-                s.connect(host, port)
-                s.shutdown(socket.SHUT_RDWR)
-                return True
-        except:
-                return False
-        finally:
-                s.close()
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.settimeout(3)
+    try:
+        s.connect(host, port)
+        s.shutdown(socket.SHUT_RDWR)
+        return True
+    except:
+        return False
+    finally:
+        s.close()
 
 def upload_backup(config: SambaBackupCloudConfiguration, backup_filename: str, backup_file: bytes) -> None:
     conn = SMBConnection(config.smb_user, config.smb_password, os.uname()[1], config.smb_server, use_ntlm_v2=True)
