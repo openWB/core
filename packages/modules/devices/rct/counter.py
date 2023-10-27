@@ -48,6 +48,7 @@ class RctCounter:
         )
         self.store.set(counter_state)
         if (stat1.value + stat2.value + stat3.value + stat4.value) > 0:
+            # Werte werden trotz Fehlercode übermittelt.
             raise FaultState.warning(
                 f"Alarm Status Speicher ist ungleich 0. Status 1: {stat1.value}, Status 2: {stat2.value}, "
                 f"Status 3: {stat3.value}, Status 4: {stat4.value},")
