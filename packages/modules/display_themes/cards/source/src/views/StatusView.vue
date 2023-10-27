@@ -38,7 +38,7 @@ export default {
         <i-column>
           <i-form-group>
             <i-row class="_margin-top:2">
-              <i-column id="label-column">
+              <i-column class="label-column">
                 <i-form-label> IP-Adresse </i-form-label>
               </i-column>
               <i-column class="_padding-left:0">
@@ -50,7 +50,7 @@ export default {
               </i-column>
             </i-row >
             <i-row class="_margin-top:1">
-              <i-column id="label-column">
+              <i-column class="label-column">
                 <i-form-label> Systemzeit </i-form-label>
               </i-column>
               <i-column class="_padding-left:0">
@@ -62,7 +62,7 @@ export default {
               </i-column>
             </i-row>       
             <i-row class="_margin-top:1">
-              <i-column id="label-column">
+              <i-column class="label-column">
                 <i-form-label> Version </i-form-label>
               </i-column>
               <i-column class="_padding-left:0">
@@ -74,7 +74,7 @@ export default {
               </i-column>
             </i-row>
             <i-row class="_margin-top:1">
-              <i-column id="label-column">
+              <i-column class="label-column">
                 <i-form-label> Installierte Version (Details) </i-form-label>
               </i-column>
               <i-column class="_padding-left:0">
@@ -86,7 +86,7 @@ export default {
               </i-column>
             </i-row>
             <i-row class="_margin-top:1">
-              <i-column id="label-column">
+              <i-column class="label-column">
                 <i-form-label> Entwicklungszweig </i-form-label>
               </i-column>
               <i-column class="_padding-left:0">
@@ -120,8 +120,8 @@ export default {
 </template>
 
 <style scoped>
-#label-column.column{
-  max-width: 230px;;  
+.label-column.column{
+  max-width: 230px; 
 }
 
 .status-card-wrapper {
