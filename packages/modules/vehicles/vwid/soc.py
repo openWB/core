@@ -5,7 +5,7 @@ import logging
 from helpermodules.cli import run_using_positional_cli_args
 from modules.common import store
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.abstract_soc import SocUpdateData
+from modules.common.abstract_vehicle import VehicleUpdateData
 from modules.common.component_state import CarState
 from modules.common.configurable_vehicle import ConfigurableVehicle
 from modules.vehicles.vwid import api
@@ -15,15 +15,15 @@ from modules.vehicles.vwid.config import VWId, VWIdConfiguration
 log = logging.getLogger(__name__)
 
 
-def fetch(soc_update_data: SocUpdateData, config: VWId, vehicle: int) -> CarState:
+def fetch(vehicle_update_data: VehicleUpdateData, config: VWId, vehicle: int) -> CarState:
     soc, range, soc_ts = api.fetch_soc(config, vehicle)
     log.info("Result: soc=" + str(soc)+", range=" + str(range) + "@" + soc_ts)
     return CarState(soc, range)
 
 
 def create_vehicle(vehicle_config: VWId, vehicle: int):
-    def updater(soc_update_data: SocUpdateData) -> CarState:
-        return fetch(soc_update_data, vehicle_config, vehicle)
+    def updater(vehicle_update_data: VehicleUpdateData) -> CarState:
+        return fetch(vehicle_update_data, vehicle_config, vehicle)
     return ConfigurableVehicle(vehicle_config=vehicle_config, component_updater=updater, vehicle=vehicle)
 
 

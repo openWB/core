@@ -129,9 +129,9 @@ def test_switch_on_threshold_reached(params: Params, caplog, general_data_fixtur
     c.data.set.reserved_surplus = params.reserved_surplus
     cp = Chargepoint(0, None)
     ev = Ev(0)
-    ev.data.control_parameter.phases = 1
-    ev.data.control_parameter.state = params.state
-    ev.data.control_parameter.timestamp_switch_on_off = params.timestamp_switch_on_off
+    cp.data.control_parameter.phases = 1
+    cp.data.control_parameter.state = params.state
+    cp.data.control_parameter.timestamp_switch_on_off = params.timestamp_switch_on_off
     ev.data.charge_template = ChargeTemplate(0)
     ev.data.charge_template.data.chargemode.pv_charging.feed_in_limit = params.feed_in_limit
     cp.data.set.charging_ev_data = ev
@@ -143,8 +143,8 @@ def test_switch_on_threshold_reached(params: Params, caplog, general_data_fixtur
 
     # evaluation
     assert c.data.set.reserved_surplus == params.expected_reserved_surplus
-    assert params.expected_msg is None or params.expected_msg in caplog.text
-    assert (cp.data.set.charging_ev_data.data.control_parameter.timestamp_switch_on_off ==
+    assert cp.data.get.state_str is None or cp.data.get.state_str == params.expected_msg
+    assert (cp.data.control_parameter.timestamp_switch_on_off ==
             params.expected_timestamp_switch_on_off)
 
 

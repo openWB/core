@@ -7,7 +7,7 @@ from control.algorithm.additional_current import AdditionalCurrent
 from control.algorithm.min_current import MinCurrent
 from control.algorithm.no_current import NoCurrent
 from control.algorithm.surplus_controlled import SurplusControlled
-from helpermodules.pub import Pub
+
 log = logging.getLogger(__name__)
 
 
@@ -27,7 +27,6 @@ class Algorithm:
             self._check_auto_phase_switch_delay()
             self.surplus_controlled.check_submode_pv_charging()
             common.reset_current()
-            common.reset_current_to_target_current()
             log.info("**Mindestrom setzen**")
             self.min_current.set_min_current()
             log.info("**Sollstrom setzen**")
@@ -43,6 +42,7 @@ class Algorithm:
             else:
                 log.info("**Keine Leistung für PV-geführtes Laden übrig.**")
             self.no_current.set_no_current()
+            self.no_current.set_none_current()
         except Exception:
             log.exception("Fehler im Algorithmus-Modul")
 
@@ -55,29 +55,27 @@ class Algorithm:
             try:
                 if cp.data.set.charging_ev != -1:
                     charging_ev = cp.data.set.charging_ev_data
-                    control_parameter = charging_ev.data.control_parameter
+                    control_parameter = cp.data.control_parameter
                     if cp.cp_ev_chargemode_support_phase_switch():
                         # Gibt die Stromstärke und Phasen zurück, mit denen nach der Umschaltung geladen werden
                         # soll. Falls keine Umschaltung erforderlich ist, werden Strom und Phasen, die übergeben
                         # wurden, wieder zurückgegeben.
                         log.debug(f"Ladepunkt {cp.num}: Prüfen, ob Phasenumschaltung durchgeführt werden soll.")
                         phases, current, message = charging_ev.auto_phase_switch(
+                            cp.data.control_parameter,
                             cp.num,
                             cp.data.get.currents,
                             cp.data.get.power,
                             cp.template.data.max_current_single_phase,
-                            cp.get_max_phase_hw())
+                            cp.get_max_phase_hw(),
+                            cp.data.control_parameter.limit)
                         if message is not None:
                             cp.data.get.state_str = message
                         # Nachdem im Automatikmodus die Anzahl Phasen bekannt ist, Einhaltung des Maximalstroms
                         # prüfen.
                         required_current = cp.check_min_max_current(current, control_parameter.phases)
-                        charging_ev.data.control_parameter.required_current = required_current
-                        Pub().pub("openWB/set/vehicle/"+str(charging_ev.num) +
-                                  "/control_parameter/required_current", required_current)
-                        charging_ev.data.control_parameter.phases = phases
-                        Pub().pub("openWB/set/vehicle/"+str(charging_ev.num) +
-                                  "/control_parameter/phases", phases)
+                        cp.data.control_parameter.required_current = required_current
+                        cp.data.control_parameter.phases = phases
                         cp.set_required_currents(required_current)
             except Exception:
                 log.exception(f"Fehler im Algorithmus-Modul für Ladepunkt{cp.num}")

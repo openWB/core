@@ -23,7 +23,7 @@ class Process:
             log.info("# Ladung starten.")
             for cp in data.data.cp_data.values():
                 try:
-                    control_parameter = cp.data.set.charging_ev_data.data.control_parameter
+                    control_parameter = cp.data.control_parameter
                     cp.remember_previous_values()
                     if cp.data.set.charging_ev != -1:
                         # Ladelog-Daten müssen vor dem Setzen des Stroms gesammelt werden,
@@ -31,9 +31,9 @@ class Process:
                         chargelog.collect_data(cp)
                         cp.initiate_control_pilot_interruption()
                         cp.initiate_phase_switch()
-                        self._update_state(cp)
                         if control_parameter.state == ChargepointState.NO_CHARGING_ALLOWED and cp.data.set.current != 0:
                             control_parameter.state = ChargepointState.CHARGING_ALLOWED
+                        self._update_state(cp)
                     else:
                         # LP, an denen nicht geladen werden darf
                         if cp.data.set.charging_ev_prev != -1:
@@ -55,12 +55,6 @@ class Process:
                     modules_threads.append(self._start_charging(cp))
                 except Exception:
                     log.exception("Fehler im Process-Modul für Ladepunkt "+str(cp))
-            for ev in data.data.ev_data.values():
-                try:
-                    Pub().pub(f"openWB/set/vehicle/{ev.num}/control_parameter/state",
-                              ev.data.control_parameter.state)
-                except Exception:
-                    log.exception("Fehler im Process-Modul für EV "+str(ev.num))
 
             if modules_threads:
                 for thread in modules_threads:
@@ -88,17 +82,17 @@ class Process:
         current = round(chargepoint.data.set.current, 2)
         # Zur Sicherheit - nach dem der Algorithmus abgeschlossen ist - nochmal die Einhaltung der Stromstärken
         # prüfen.
-        current = chargepoint.check_min_max_current(current, charging_ev.data.control_parameter.phases)
+        current = chargepoint.check_min_max_current(current, chargepoint.data.control_parameter.phases)
 
         # Wenn bei einem EV, das keine Umschaltung verträgt, vor dem ersten Laden noch umgeschaltet wird, darf kein
         # Strom gesetzt werden.
         if (charging_ev.ev_template.data.prevent_phase_switch and
                 chargepoint.data.set.log.imported_since_plugged == 0 and
-                charging_ev.data.control_parameter.state == ChargepointState.PERFORMING_PHASE_SWITCH):
+                chargepoint.data.control_parameter.state == ChargepointState.PERFORMING_PHASE_SWITCH):
             current = 0
 
         # Unstimmige Werte loggen
-        if (charging_ev.data.control_parameter.state == ChargepointState.SWITCH_ON_DELAY and
+        if (chargepoint.data.control_parameter.state == ChargepointState.SWITCH_ON_DELAY and
                 data.data.counter_all_data.get_evu_counter().data.set.reserved_surplus == 0):
             log.error("Reservierte Leistung kann am Algorithmus-Ende nicht 0 sein.")
         if (chargepoint.data.set.charging_ev_data.ev_template.data.prevent_phase_switch and
@@ -108,14 +102,14 @@ class Process:
                 "LP"+str(chargepoint.num)+": Ladung wurde trotz verhinderter Unterbrechung gestoppt.")
 
         # Wenn ein EV zugeordnet ist und die Phasenumschaltung aktiv ist, darf kein Strom gesetzt werden.
-        if (charging_ev.data.control_parameter.timestamp_perform_phase_switch is not None or
-                charging_ev.data.control_parameter.state == ChargepointState.PERFORMING_PHASE_SWITCH):
+        if (chargepoint.data.control_parameter.timestamp_perform_phase_switch is not None or
+                chargepoint.data.control_parameter.state == ChargepointState.PERFORMING_PHASE_SWITCH):
             current = 0
 
         chargepoint.data.set.current = current
         Pub().pub("openWB/set/chargepoint/"+str(chargepoint.num)+"/set/current", current)
         log.info(f"LP{chargepoint.num}: set current {current} A, "
-                 f"state {ChargepointState(charging_ev.data.control_parameter.state).name}")
+                 f"state {ChargepointState(chargepoint.data.control_parameter.state).name}")
 
     def _start_charging(self, chargepoint: chargepoint.Chargepoint) -> threading.Thread:
         return threading.Thread(target=chargepoint.chargepoint_module.set_current,

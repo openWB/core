@@ -8,7 +8,8 @@ log = logging.getLogger(__name__)
 
 def _calculate_powers_and_currents(currents: Optional[List[float]],
                                    powers: Optional[List[float]],
-                                   voltages: Optional[List[float]]) -> Tuple[List[float]]:
+                                   voltages: Optional[List[float]]) -> Tuple[
+        Optional[List[float]], List[float], List[float]]:
     if voltages is None:
         voltages = [230.0]*3
     if powers is None:
@@ -105,7 +106,7 @@ class InverterState:
 
 @auto_str
 class CarState:
-    def __init__(self, soc: float, range: Optional[float] = None, soc_timestamp: str = ""):
+    def __init__(self, soc: float, range: Optional[float] = None, soc_timestamp: Optional[str] = None):
         """Args:
             soc: actual state of charge in percent
             range: actual range in km
@@ -130,7 +131,10 @@ class ChargepointState:
                  charge_state: bool = False,
                  plug_state: bool = False,
                  rfid: Optional[str] = None,
-                 frequency: float = 50):
+                 frequency: float = 50,
+                 soc: Optional[float] = None,
+                 soc_timestamp: Optional[int] = None,
+                 evse_current: Optional[float] = None):
         self.currents, self.powers, self.voltages = _calculate_powers_and_currents(currents, powers, voltages)
         self.frequency = frequency
         self.imported = imported
@@ -143,3 +147,6 @@ class ChargepointState:
         if power_factors is None:
             power_factors = [0.0]*3
         self.power_factors = power_factors
+        self.soc = soc
+        self.soc_timestamp = soc_timestamp
+        self.evse_current = evse_current

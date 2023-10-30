@@ -20,13 +20,13 @@ def test_get_raw_currents_left_min_current(phase_1: int, phases: int, expected_r
     # setup
     cp = Chargepoint(0, None)
     cp.data.config.phase_1 = phase_1
-    cp.data.set.charging_ev_data.data.control_parameter.phases = phases
+    cp.data.control_parameter.phases = phases
 
     # evaluation
     cp.set_required_currents(6)
 
     # assertion
-    assert cp.data.set.charging_ev_data.data.control_parameter.required_currents == expected_required_currents
+    assert cp.data.control_parameter.required_currents == expected_required_currents
 
 
 @pytest.mark.parametrize("required_current, phases, expected_required_current",

@@ -4,15 +4,25 @@
 			{{ heading }}
 		</template>
 		<template #buttons>
-			<PgSelector
-				widgetid="graphsettings"
-				:show-left-button="true"
-				:show-right-button="true"
-				@shift-left="shiftLeft"
-				@shift-right="shiftRight"
-				@shift-up="shiftUp"
-				@shift-down="shiftDown"
-			/>
+			<div class="d-flex justify-content-end">
+				<PgSelector
+					widgetid="graphsettings"
+					:show-left-button="true"
+					:show-right-button="true"
+					@shift-left="shiftLeft"
+					@shift-right="shiftRight"
+					@shift-up="shiftUp"
+					@shift-down="shiftDown"
+				/>
+				<span
+					v-if="widescreen"
+					type="button"
+					class="ms-1 p-0 pt-1"
+					@click="zoomGraph"
+				>
+					<span class="fa-solid fa-lg ps-1 fa-magnifying-glass" />
+				</span>
+			</div>
 		</template>
 
 		<figure id="powergraph" class="p-0 m-0" @click="changeStackOrder">
@@ -40,7 +50,7 @@
 						v-if="
 							(graphData.graphMode == 'day' ||
 								graphData.graphMode == 'today') &&
-							Object.values(vehicles).length > 0
+							Object.values(chargePoints).length > 0
 						"
 						:width="width - margin.left - 2 * margin.right"
 						:height="(height - margin.top - margin.bottom) / 2"
@@ -51,7 +61,7 @@
 						v-if="
 							(graphData.graphMode == 'day' ||
 								graphData.graphMode == 'today') &&
-							Object.values(vehicles).length > 1
+							Object.values(chargePoints).length > 1
 						"
 						:width="width - margin.left - 2 * margin.right"
 						:height="(height - margin.top - margin.bottom) / 2"
@@ -97,10 +107,10 @@ import {
 	shiftUp,
 	shiftDown,
 } from './model'
-import { globalConfig } from '@/assets/js/themeConfig'
+import { globalConfig, widescreen } from '@/assets/js/themeConfig'
 import PgSoc from './PgSoc.vue'
 import PgSocAxis from './PgSocAxis.vue'
-import { vehicles } from '../chargePointList/model'
+import { chargePoints } from '../chargePointList/model'
 import PgSelector from './PgSelector.vue'
 
 // state
@@ -118,10 +128,13 @@ function changeStackOrder() {
 	globalConfig.usageStackOrder = newOrder
 	setInitializeUsageGraph(true)
 }
+function zoomGraph() {
+	globalConfig.zoomGraph = !globalConfig.zoomGraph
+}
 </script>
 
 <style scoped>
-.fa-ellipsis-vertical {
+.fa-magnifying-glass {
 	color: var(--color-menu);
 }
 

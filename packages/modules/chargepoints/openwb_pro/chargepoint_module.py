@@ -48,14 +48,25 @@ class ChargepointModule(AbstractChargepoint):
 
                 chargepoint_state = ChargepointState(
                     power=json_rsp["power_all"],
+                    powers=json_rsp["powers"],
                     currents=json_rsp["currents"],
                     imported=json_rsp["imported"],
                     exported=json_rsp["exported"],
                     plug_state=json_rsp["plug_state"],
                     charge_state=json_rsp["charge_state"],
                     phases_in_use=json_rsp["phases_in_use"],
-                    rfid=json_rsp["vehicle_id"]
+                    rfid=json_rsp["vehicle_id"],
+                    evse_current=json_rsp["offered_current"]
                 )
+
+                if json_rsp.get("voltages"):
+                    chargepoint_state.voltages = json_rsp["voltages"]
+                if json_rsp.get("soc_value"):
+                    chargepoint_state.soc = json_rsp["soc_value"]
+                if json_rsp.get("soc_timestamp"):
+                    chargepoint_state.soc_timestamp = json_rsp["soc_timestamp"]
+                if json_rsp.get("frequency"):
+                    chargepoint_state.frequency = json_rsp["frequency"]
 
                 self.store.set(chargepoint_state)
                 self.__client_error_context.reset_error_counter()

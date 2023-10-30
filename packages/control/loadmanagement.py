@@ -1,19 +1,13 @@
-from enum import Enum
 import logging
 import operator
 from typing import List, Optional, Tuple
 
 from control import data
 from control.counter import Counter
+from control.limiting_value import LimitingValue
 
 
 log = logging.getLogger(__name__)
-
-
-class LimitingValue(Enum):
-    CURRENT = ", da der Maximal-Strom an Zähler {} erreicht ist."
-    POWER = ", da die maximale Leistung an Zähler {} erreicht ist."
-    UNBALANCED_LOAD = ", da die maximale Schieflast an Zähler {} erreicht ist."
 
 
 class Loadmanagement:

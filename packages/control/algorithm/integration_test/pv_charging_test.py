@@ -17,14 +17,14 @@ from dataclass_utils.factories import currents_list_factory
 @pytest.fixture()
 def all_cp_pv_charging_3p():
     for i in range(3, 6):
-        charging_ev_data = data.data.cp_data[f"cp{i}"].data.set.charging_ev_data
-        charging_ev_data.data.control_parameter.required_current = data.data.cp_data[
+        control_parameter = data.data.cp_data[f"cp{i}"].data.control_parameter
+        control_parameter.required_current = data.data.cp_data[
             f"cp{i}"].data.set.charging_ev_data.ev_template.data.min_current
-        charging_ev_data.data.control_parameter.required_currents = [
-            charging_ev_data.ev_template.data.min_current]*3
-        charging_ev_data.data.control_parameter.chargemode = Chargemode.PV_CHARGING
-        charging_ev_data.data.control_parameter.submode = Chargemode.PV_CHARGING
-        charging_ev_data.data.control_parameter.phases = 3
+        control_parameter.required_currents = [
+            data.data.cp_data[f"cp{i}"].data.set.charging_ev_data.ev_template.data.min_current]*3
+        control_parameter.chargemode = Chargemode.PV_CHARGING
+        control_parameter.submode = Chargemode.PV_CHARGING
+        control_parameter.phases = 3
 
 
 @pytest.fixture()
@@ -41,28 +41,29 @@ def all_cp_charging_3p():
         data.data.cp_data[f"cp{i}"].data.get.charge_state = True
         data.data.cp_data[f"cp{i}"].data.set.current = charging_ev_data.ev_template.data.min_current
         data.data.cp_data[f"cp{i}"].data.set.required_power = sum(
-            charging_ev_data.data.control_parameter.required_currents) * 230
+            data.data.cp_data[f"cp{i}"].data.control_parameter.required_currents) * 230
         data.data.cp_data[f"cp{i}"].data.config.auto_phase_switch_hw = True
         data.data.cp_data[f"cp{i}"].template = CpTemplate()
-        charging_ev_data.data.control_parameter.state = ChargepointState.CHARGING_ALLOWED
+        data.data.cp_data[f"cp{i}"].data.control_parameter.state = ChargepointState.CHARGING_ALLOWED
 
 
 @pytest.fixture()
 def all_cp_pv_charging_1p():
     for i in range(3, 6):
+        control_parameter = data.data.cp_data[f"cp{i}"].data.control_parameter
         charging_ev_data = data.data.cp_data[f"cp{i}"].data.set.charging_ev_data
-        charging_ev_data.data.control_parameter.required_current = data.data.cp_data[
+        control_parameter.required_current = data.data.cp_data[
             f"cp{i}"].data.set.charging_ev_data.ev_template.data.min_current
-        charging_ev_data.data.control_parameter.required_currents = [0]*3
-        charging_ev_data.data.control_parameter.required_currents[i-3] = charging_ev_data.ev_template.data.min_current
-        charging_ev_data.data.control_parameter.chargemode = Chargemode.PV_CHARGING
-        charging_ev_data.data.control_parameter.submode = Chargemode.PV_CHARGING
-        charging_ev_data.data.control_parameter.phases = 1
-        charging_ev_data.data.control_parameter.state = ChargepointState.CHARGING_ALLOWED
+        control_parameter.required_currents = [0]*3
+        control_parameter.required_currents[i-3] = charging_ev_data.ev_template.data.min_current
+        control_parameter.chargemode = Chargemode.PV_CHARGING
+        control_parameter.submode = Chargemode.PV_CHARGING
+        control_parameter.phases = 1
+        control_parameter.state = ChargepointState.CHARGING_ALLOWED
         data.data.cp_data[f"cp{i}"].data.get.charge_state = True
         data.data.cp_data[f"cp{i}"].data.set.current = charging_ev_data.ev_template.data.min_current
         data.data.cp_data[f"cp{i}"].data.set.required_power = sum(
-            charging_ev_data.data.control_parameter.required_currents) * 230
+            data.data.cp_data[f"cp{i}"].data.control_parameter.required_currents) * 230
         data.data.cp_data[f"cp{i}"].data.config.auto_phase_switch_hw = True
         data.data.cp_data[f"cp{i}"].template = CpTemplate()
     data.data.cp_data["cp3"].data.get.currents = [16, 0, 0]
@@ -126,11 +127,11 @@ def test_start_pv_delay(all_cp_pv_charging_3p, all_cp_not_charging, monkeypatch)
     for i in range(3, 6):
         assert data.data.cp_data[f"cp{i}"].data.set.current == 0
     assert data.data.cp_data[
-        "cp3"].data.set.charging_ev_data.data.control_parameter.timestamp_switch_on_off == "05/16/2022, 08:40:52"
+        "cp3"].data.control_parameter.timestamp_switch_on_off == "05/16/2022, 08:40:52"
     assert data.data.cp_data[
-        "cp4"].data.set.charging_ev_data.data.control_parameter.timestamp_switch_on_off == "05/16/2022, 08:40:52"
+        "cp4"].data.control_parameter.timestamp_switch_on_off == "05/16/2022, 08:40:52"
     assert data.data.cp_data[
-        "cp5"].data.set.charging_ev_data.data.control_parameter.timestamp_switch_on_off is None
+        "cp5"].data.control_parameter.timestamp_switch_on_off is None
     assert data.data.counter_data["counter0"].data.set.raw_power_left == 31200
     assert data.data.counter_data["counter0"].data.set.surplus_power_left == 9315
     assert data.data.counter_data["counter0"].data.set.reserved_surplus == 9000
@@ -144,16 +145,16 @@ def test_pv_delay_expired(all_cp_pv_charging_3p, all_cp_not_charging, monkeypatc
     data.data.counter_data["counter6"].data.set.raw_currents_left = [16, 12, 14]
     data.data.counter_data["counter0"].data.set.reserved_surplus = 9000
     data.data.cp_data[
-        "cp3"].data.set.charging_ev_data.data.control_parameter.timestamp_switch_on_off = "05/16/2022, 08:39:45"
+        "cp3"].data.control_parameter.timestamp_switch_on_off = "05/16/2022, 08:39:45"
     data.data.cp_data[
-        "cp3"].data.set.charging_ev_data.data.control_parameter.state = ChargepointState.SWITCH_ON_DELAY
+        "cp3"].data.control_parameter.state = ChargepointState.SWITCH_ON_DELAY
     # nicht genug Überschuss für beide
     data.data.cp_data[
-        "cp4"].data.set.charging_ev_data.data.control_parameter.timestamp_switch_on_off = "05/16/2022, 08:40:52"
+        "cp4"].data.control_parameter.timestamp_switch_on_off = "05/16/2022, 08:40:52"
     data.data.cp_data[
-        "cp4"].data.set.charging_ev_data.data.control_parameter.state = ChargepointState.SWITCH_ON_DELAY
+        "cp4"].data.control_parameter.state = ChargepointState.SWITCH_ON_DELAY
     data.data.cp_data[
-        "cp5"].data.set.charging_ev_data.data.control_parameter.timestamp_switch_on_off = None
+        "cp5"].data.control_parameter.timestamp_switch_on_off = None
     mockget_component_name_by_id = Mock(return_value="Garage")
     monkeypatch.setattr(additional_current, "get_component_name_by_id", mockget_component_name_by_id)
 
@@ -165,11 +166,11 @@ def test_pv_delay_expired(all_cp_pv_charging_3p, all_cp_not_charging, monkeypatc
     assert data.data.cp_data["cp4"].data.set.current == 0
     assert data.data.cp_data["cp5"].data.set.current == 0
     assert data.data.cp_data[
-        "cp3"].data.set.charging_ev_data.data.control_parameter.timestamp_switch_on_off is None
+        "cp3"].data.control_parameter.timestamp_switch_on_off is None
     assert data.data.cp_data[
-        "cp4"].data.set.charging_ev_data.data.control_parameter.timestamp_switch_on_off is None
+        "cp4"].data.control_parameter.timestamp_switch_on_off is None
     assert data.data.cp_data[
-        "cp5"].data.set.charging_ev_data.data.control_parameter.timestamp_switch_on_off is None
+        "cp5"].data.control_parameter.timestamp_switch_on_off is None
     assert data.data.counter_data["counter0"].data.set.raw_power_left == 24300
     assert data.data.counter_data["counter0"].data.set.surplus_power_left == 2415
     assert data.data.counter_data["counter0"].data.set.reserved_surplus == 0
@@ -275,7 +276,7 @@ def test_phase_switch(all_cp_pv_charging_3p, all_cp_charging_3p, monkeypatch):
     mockget_get_phases_chargemode = Mock(return_value=0)
     monkeypatch.setattr(algorithm_data.data.general_data, "get_phases_chargemode", mockget_get_phases_chargemode)
     data.data.cp_data[
-        "cp3"].data.set.charging_ev_data.data.control_parameter.state = ChargepointState.CHARGING_ALLOWED
+        "cp3"].data.control_parameter.state = ChargepointState.CHARGING_ALLOWED
 
     # execution
     Algorithm().calc_current()
@@ -283,13 +284,13 @@ def test_phase_switch(all_cp_pv_charging_3p, all_cp_charging_3p, monkeypatch):
     # evaluation
     assert_expected_current(cases_phase_switch[0])
     assert data.data.cp_data[
-        "cp3"].data.set.charging_ev_data.data.control_parameter.timestamp_auto_phase_switch == cases_phase_switch[
+        "cp3"].data.control_parameter.timestamp_auto_phase_switch == cases_phase_switch[
             0].expected_timestamp_auto_phase_switch_cp3
     assert data.data.cp_data[
-        "cp4"].data.set.charging_ev_data.data.control_parameter.timestamp_auto_phase_switch == cases_phase_switch[
+        "cp4"].data.control_parameter.timestamp_auto_phase_switch == cases_phase_switch[
             0].expected_timestamp_auto_phase_switch_cp4
     assert data.data.cp_data[
-        "cp5"].data.set.charging_ev_data.data.control_parameter.timestamp_auto_phase_switch == cases_phase_switch[
+        "cp5"].data.control_parameter.timestamp_auto_phase_switch == cases_phase_switch[
             0].expected_timestamp_auto_phase_switch_cp5
     assert_counter_set(cases_phase_switch[0])
 
@@ -315,11 +316,11 @@ def test_phase_switch_1p_3p(all_cp_pv_charging_1p, monkeypatch):
     # evaluation
     assert_counter_set(cases_phase_switch[1])
     assert data.data.cp_data[
-        "cp3"].data.set.charging_ev_data.data.control_parameter.timestamp_auto_phase_switch == cases_phase_switch[
+        "cp3"].data.control_parameter.timestamp_auto_phase_switch == cases_phase_switch[
             1].expected_timestamp_auto_phase_switch_cp3
     assert data.data.cp_data[
-        "cp4"].data.set.charging_ev_data.data.control_parameter.timestamp_auto_phase_switch == cases_phase_switch[
+        "cp4"].data.control_parameter.timestamp_auto_phase_switch == cases_phase_switch[
             1].expected_timestamp_auto_phase_switch_cp4
     assert data.data.cp_data[
-        "cp5"].data.set.charging_ev_data.data.control_parameter.timestamp_auto_phase_switch == cases_phase_switch[
+        "cp5"].data.control_parameter.timestamp_auto_phase_switch == cases_phase_switch[
             1].expected_timestamp_auto_phase_switch_cp5

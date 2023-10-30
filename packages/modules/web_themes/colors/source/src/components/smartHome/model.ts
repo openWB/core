@@ -39,7 +39,7 @@ export function addShDevice(shIndex: number) {
 		shDevices[shIndex] = new ShDevice(shIndex)
 		shDevices[shIndex].color =
 			'var(--color-sh' + Object.values(shDevices).length + ')'
-		console.info('Added sh device ' + shIndex)
+		// console.info('Added sh device ' + shIndex)
 	} else {
 		console.info('Duplicate sh device message: ' + shIndex)
 	}

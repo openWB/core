@@ -2,6 +2,9 @@ import { reactive } from 'vue'
 import { mqttSubscribe, mqttUnsubscribe } from '../../assets/js/mqttClient'
 import { sendCommand } from '@/assets/js/sendMessages'
 import { globalConfig, setInitializeEnergyGraph } from '@/assets/js/themeConfig'
+import { historicSummary } from '@/assets/js/model'
+
+export const consumerCategories = ['charging', 'house', 'batIn', 'devices']
 
 export interface GraphDataItem {
 	[key: string]: number
@@ -13,8 +16,16 @@ export interface RawDayGraphDataItem {
 	timestamp: number
 	date: string
 	counter: object
-	pv: object
-	bat: object
+	pv: { all: { energy_exported: number; exported: number } }
+	hc: { all: { energy_imported: number; imported: number } }
+	bat: {
+		all: {
+			energy_imported: number
+			energy_exported: number
+			imported: number
+			exported: number
+		}
+	}
 	cp: object
 	ev: object
 	sh: object
@@ -22,7 +33,7 @@ export interface RawDayGraphDataItem {
 
 export class GraphData {
 	data: GraphDataItem[] = []
-	private _graphMode = 'today'
+	private _graphMode = ''
 
 	get graphMode() {
 		return this._graphMode
@@ -33,52 +44,52 @@ export class GraphData {
 }
 
 export const graphData = reactive(new GraphData())
-export let initializeSourceGraph = true
-export let initializeUsageGraph = true
+export let animateSourceGraph = true
+export let animateUsageGraph = true
 export function sourceGraphIsInitialized() {
-	initializeSourceGraph = false
+	animateSourceGraph = false
 }
 export function sourceGraphIsNotInitialized() {
-	initializeSourceGraph = true
+	animateSourceGraph = true
 }
 
 export function usageGraphIsInitialized() {
-	initializeUsageGraph = false
+	animateUsageGraph = false
 }
 export function usageGraphIsNotInitialized() {
-	initializeUsageGraph = true
+	animateUsageGraph = true
 }
 export function setInitializeUsageGraph(val: boolean) {
-	initializeUsageGraph = val
-}
-export function setInitializeSourceGraph(val: boolean) {
-	initializeSourceGraph = val
+	animateUsageGraph = val
 }
 export function setGraphData(d: GraphDataItem[]) {
 	graphData.data = d
 	// graphData.graphMode = graphData.graphMode
 }
-export const liveGraph = {
+export const liveGraph = reactive({
 	refreshTopicPrefix: 'openWB/graph/' + 'alllivevaluesJson',
 	updateTopic: 'openWB/graph/lastlivevaluesJson',
+	configTopic: 'openWB/graph/config/#',
 	initialized: false,
 	initCounter: 0,
 	graphRefreshCounter: 0,
 	rawDataPacks: [] as RawGraphDataItem[][],
+	duration: 0,
 
 	activate() {
 		graphData.data = []
 		this.unsubscribeUpdates()
 		this.subscribeRefresh()
+		mqttSubscribe(this.configTopic)
 		this.initialized = false
 		this.initCounter = 0
 		this.graphRefreshCounter = 0
-		this.subscribeRefresh()
 		this.rawDataPacks = []
 	},
 	deactivate() {
 		this.unsubscribeRefresh()
 		this.unsubscribeUpdates()
+		mqttUnsubscribe(this.configTopic)
 	},
 	subscribeRefresh() {
 		for (let segment = 1; segment < 17; segment++) {
@@ -96,21 +107,26 @@ export const liveGraph = {
 	unsubscribeUpdates() {
 		mqttUnsubscribe(this.updateTopic)
 	},
-}
+})
 export const dayGraph = reactive({
 	topic: 'openWB/log/daily/#',
 	date: new Date(),
 	activate() {
-		const dateString =
-			this.date.getFullYear().toString() +
-			(this.date.getMonth() + 1).toString().padStart(2, '0') +
-			this.date.getDate().toString().padStart(2, '0')
-		graphData.data = []
-		mqttSubscribe(this.topic)
-		sendCommand({
-			command: 'getDailyLog',
-			data: { day: dateString },
-		})
+		if (graphData.graphMode == 'day' || graphData.graphMode == 'today') {
+			if (graphData.graphMode == 'today') {
+				this.date = new Date()
+			}
+			const dateString =
+				this.date.getFullYear().toString() +
+				(this.date.getMonth() + 1).toString().padStart(2, '0') +
+				this.date.getDate().toString().padStart(2, '0')
+			graphData.data = []
+			mqttSubscribe(this.topic)
+			sendCommand({
+				command: 'getDailyLog',
+				data: { day: dateString },
+			})
+		}
 	},
 	deactivate() {
 		mqttUnsubscribe(this.topic)
@@ -173,7 +189,6 @@ export const yearGraph = reactive({
 	year: new Date().getFullYear(),
 	activate() {
 		const dateString = this.year.toString()
-
 		graphData.data = []
 		mqttSubscribe(this.topic)
 		sendCommand({
@@ -206,12 +221,18 @@ export const yearGraph = reactive({
 		return new Date(this.year, this.month)
 	},
 })
-export function initGraph() {
+export function initGraph(reloadOnly = false) {
 	if (graphData.graphMode == '') {
 		setGraphMode(globalConfig.graphPreference)
+	} else if (graphData.graphMode == 'live') {
+		globalConfig.graphPreference = 'live'
+	} else {
+		globalConfig.graphPreference = 'today'
 	}
-	initializeSourceGraph = true
-	initializeUsageGraph = true
+	if (!reloadOnly) {
+		animateSourceGraph = true
+		animateUsageGraph = true
+	}
 	switch (graphData.graphMode) {
 		case 'live':
 			dayGraph.deactivate()
@@ -251,13 +272,38 @@ export function setGraphMode(mode: string) {
 }
 export function calculateAutarchy(cat: string, values: GraphDataItem) {
 	values[cat + 'Pv'] =
-		(values[cat] * (values.solarPower - values.gridPush)) /
+		(1000 * (values[cat] * (values.solarPower - values.gridPush))) /
 		(values.solarPower - values.gridPush + values.gridPull + values.batOut)
 	values[cat + 'Bat'] =
-		(values[cat] * values.batOut) /
+		(1000 * (values[cat] * values.batOut)) /
 		(values.solarPower - values.gridPush + values.gridPull + values.batOut)
 }
+export function updateEnergyValues(powerValues: { [key: string]: number }) {
+	historicSummary.pv.energy = powerValues.solarPower * 1000
+	historicSummary.evuIn.energy = powerValues.gridPull * 1000
+	historicSummary.batOut.energy = powerValues.batOut * 1000
+	historicSummary.evuOut.energy = powerValues.gridPush * 1000
+	historicSummary.batIn.energy = powerValues.batIn * 1000
+	historicSummary.charging.energy = powerValues.charging * 1000
+	historicSummary.devices.energy = powerValues.devices * 1000
 
+	historicSummary.house.energy =
+		historicSummary.evuIn.energy +
+		historicSummary.pv.energy +
+		historicSummary.batOut.energy -
+		historicSummary.evuOut.energy -
+		historicSummary.batIn.energy -
+		historicSummary.charging.energy -
+		historicSummary.devices.energy
+
+	consumerCategories.map((cat) => {
+		historicSummary[cat].pvPercentage = Math.round(
+			((historicSummary[cat].energyPv + historicSummary[cat].energyBat) /
+				historicSummary[cat].energy) *
+				100,
+		)
+	})
+}
 export function shiftLeft() {
 	switch (graphData.graphMode) {
 		case 'live':

@@ -23,10 +23,10 @@
 		<rect
 			class="bar"
 			:x="(props.xScale(item.name) as number) + props.xScale.bandwidth() / 6"
-			y="0"
+			:y="pvBarheight"
 			:width="(props.xScale.bandwidth() * 2) / 3"
 			:height="batBarheight"
-			fill="var(--color-pv)"
+			fill="var(--color-battery)"
 			fill-opacity="66%"
 		/>
 	</g>

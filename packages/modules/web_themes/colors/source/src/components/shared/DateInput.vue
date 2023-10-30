@@ -3,6 +3,7 @@
 		<div class="input-group input-group-xs">
 			<!-- day -->
 			<button
+				v-if="props.mode == 'day' || props.mode == 'today'"
 				class="btn dropdown-toggle"
 				type="button"
 				data-bs-toggle="dropdown"
@@ -14,7 +15,7 @@
 					<tr v-for="(line, i) in days" :key="i" class="">
 						<td v-for="(myday, j) in line" :key="j">
 							<span
-								v-if="day != 0"
+								v-if="myday != 0"
 								type="button"
 								class="btn optionbutton"
 								@click="day = myday"
@@ -26,6 +27,7 @@
 			</div>
 			<!-- month -->
 			<button
+				v-if="props.mode != 'year' && props.mode != 'live'"
 				class="btn dropdown-toggle"
 				type="button"
 				data-bs-toggle="dropdown"
@@ -48,6 +50,7 @@
 			</div>
 			<!-- year -->
 			<button
+				v-if="props.mode != 'live'"
 				class="btn dropdown-toggle"
 				type="button"
 				data-bs-toggle="dropdown"
@@ -69,6 +72,7 @@
 				</table>
 			</div>
 			<button
+				v-if="props.mode != 'live'"
 				class="button-outline-secondary"
 				type="button"
 				@click="updateDate"
@@ -188,7 +192,7 @@ option {
 }
 .optionbutton {
 	font-size: var(--font-small);
-	color: var(--color-fg);
+	color: white;
 	background-color: var(--color-menu);
 	font-size: var(--font-verysmall);
 	text-align: center;
@@ -198,7 +202,7 @@ option {
 }
 .dropdown-toggle {
 	background-color: var(--color-menu);
-	color: var(--color-fg);
+	color: white;
 	border: 1px solid var(--color-bg);
 	font-size: var(--font-verysmall);
 }

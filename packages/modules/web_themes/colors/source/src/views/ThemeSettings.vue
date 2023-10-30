@@ -4,15 +4,16 @@
 			<WbWidgetFlex :full-width="true">
 				<template #title> Look & Feel </template>
 				<template #buttons>
-					<button
-						class="btn btn-secondary float-end mt-0 ms-1"
+					<span
+						type="button"
+						class="float-end mt-0 ms-1"
 						data-bs-toggle="collapse"
 						data-bs-target="#themesettings"
 					>
 						<span>
-							<i class="fa-solid fa-rectangle-xmark" />
+							<i class="fa-solid fa-circle-check" />
 						</span>
-					</button>
+					</span>
 				</template>
 				<div class="row m-0 p-0">
 					<ConfigItem
@@ -48,7 +49,7 @@
 						<button
 							v-if="globalConfig.showRelativeArcs"
 							class="btn btn-secondary"
-							@click="emit('resetArcs')"
+							@click="emit('reset-arcs')"
 						>
 							Reset
 						</button>
@@ -101,6 +102,20 @@
 					>
 						<SwitchInput v-model="globalConfig.preferWideBoxes" />
 					</ConfigItem>
+					<ConfigItem
+						title="Stufenlose Displaybreite"
+						icon="fa-maximize"
+						infotext="Die Breite des Displays wird immer voll ausgenutzt. Dies kann in einigen Fällen zu inkorrekter Darstellung führen."
+					>
+						<SwitchInput v-model="globalConfig.fluidDisplay" />
+					</ConfigItem>
+					<ConfigItem
+						title="Debug-Modus"
+						icon="fa-bug-slash"
+						infotext="Kontrollausgaben in der Console sowie Anzeige von Bildschirmbreite und MQ-Viewer"
+					>
+						<SwitchInput v-model="globalConfig.debug" />
+					</ConfigItem>
 				</div>
 				<div class="row p-0 m-0">
 					<div class="col-12 mb-3 pe-3 mt-0">
@@ -125,7 +140,7 @@ import ConfigItem from '@/components/shared/ConfigItem.vue'
 import SwitchInput from '@/components/shared/SwitchInput.vue'
 import RadioInput from '@/components/shared/RadioInput.vue'
 import WbWidgetFlex from '@/components/shared/WbWidgetFlex.vue'
-const emit = defineEmits(['resetArcs'])
+const emit = defineEmits(['reset-arcs'])
 const colorschemes: [string, string][] = [
 	['Dunkel', 'dark'],
 	['Hell', 'light'],
@@ -144,3 +159,10 @@ const shSchemes: [string, string][] = [
 	['Bunt', 'advanced'],
 ]
 </script>
+<style scoped>
+.fa-circle-check {
+	font-size: var(--font-extralarge);
+	background-color: var(--color-bg);
+	color: var(--color-menu);
+}
+</style>

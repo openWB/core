@@ -46,7 +46,7 @@
 			<span
 				v-if="editmode < 2"
 				type="button"
-				class="p-2 px-3 badge rounded-pill datebadge"
+				class="btn-outline-secondary p-2 px-3 badge rounded-pill datebadge"
 				@click="toggleEdit"
 			>
 				{{ displayDate }}
@@ -100,6 +100,7 @@ import {
 	dayGraph,
 	graphData,
 	initGraph,
+	liveGraph,
 	setGraphDate,
 	yearGraph,
 } from './model'
@@ -115,7 +116,7 @@ const editmode = ref(0)
 const displayDate = computed(() => {
 	switch (graphData.graphMode) {
 		case 'live':
-			if (graphData.data.length) {
+			/* 	if (graphData.data.length) {
 				const startTime = graphData.data[0].date
 				const endTime = graphData.data[graphData.data.length - 1].date
 				const liveGraphMinutes = Math.round((endTime - startTime) / 60000)
@@ -123,7 +124,8 @@ const displayDate = computed(() => {
 			} else {
 				console.warn('Graph Data empty.')
 				return '???'
-			}
+			} */
+			return `${liveGraph.duration} min`
 		case 'today':
 			return 'heute'
 		case 'day':
@@ -245,9 +247,10 @@ const row2layout = computed(() => {
 	border: 0;
 }
 .datebadge {
-	background-color: var(--color-menu);
-	color: var(--color-bg);
-	font-size: var(--font-medium);
+	background-color: var(--color-bg);
+	color: var(--color-menu);
+	border: 1px solid var(--color-menu);
+	font-size: var(--font-small);
 	font-weight: normal;
 }
 .arrowButton {

@@ -5,11 +5,11 @@
  */
 
 import { computed, reactive } from 'vue'
-import * as d3 from 'd3'
+import { select } from 'd3'
 import type { ChargeModeInfo } from './types'
 import { addShDevice, shDevices } from '@/components/smartHome/model'
-import { setInitializeSourceGraph } from '@/components/powerGraph/model'
 import { ChargeMode } from '@/components/chargePointList/model'
+import { sourceSummary } from './model'
 export class Config {
 	private _showRelativeArcs: boolean = false
 	showTodayGraph: boolean = true
@@ -23,7 +23,9 @@ export class Config {
 	private _simpleCpList = false
 	private _showAnimations = true
 	private _preferWideBoxes = false
-	maxPower: number = 4000
+	private _maxPower: number = 4000
+	private _fluidDisplay: boolean = false
+	private _debug: boolean = false
 	isEtEnabled: boolean = false
 	etPrice: number = 20.5
 	showRightButton = true
@@ -31,6 +33,7 @@ export class Config {
 	// graphMode = ''
 	animationDuration = 300
 	animationDelay = 100
+	zoomGraph = false
 	constructor() {}
 	get showRelativeArcs() {
 		return this._showRelativeArcs
@@ -38,6 +41,9 @@ export class Config {
 	set showRelativeArcs(setting: boolean) {
 		this._showRelativeArcs = setting
 		savePrefs()
+	}
+	setShowRelativeArcs(setting: boolean) {
+		this._showRelativeArcs = setting
 	}
 	get graphPreference() {
 		return this._graphPreference
@@ -49,15 +55,15 @@ export class Config {
 	setGraphPreference(mode: string) {
 		this._graphPreference = mode
 	}
-	setUsageStackOrder(mode: number) {
-		this._usageStackOrder = mode
-	}
 	get usageStackOrder() {
 		return this._usageStackOrder
 	}
 	set usageStackOrder(mode: number) {
 		this._usageStackOrder = mode
 		savePrefs()
+	}
+	setUsageStackOrder(mode: number) {
+		this._usageStackOrder = mode
 	}
 	get displayMode() {
 		return this._displayMode
@@ -66,6 +72,9 @@ export class Config {
 		this._displayMode = mode
 		switchTheme(mode)
 	}
+	setDisplayMode(mode: string) {
+		this._displayMode = mode
+	}
 	get showGrid() {
 		return this._showGrid
 	}
@@ -73,13 +82,18 @@ export class Config {
 		this._showGrid = setting
 		savePrefs()
 	}
-
+	setShowGrid(setting: boolean) {
+		this._showGrid = setting
+	}
 	get decimalPlaces() {
 		return this._decimalPlaces
 	}
 	set decimalPlaces(setting: number) {
 		this._decimalPlaces = setting
 		savePrefs()
+	}
+	setDecimalPlaces(setting: number) {
+		this._decimalPlaces = setting
 	}
 	get smartHomeColors() {
 		return this._smartHomeColors
@@ -89,12 +103,19 @@ export class Config {
 		switchSmarthomeColors(setting)
 		savePrefs()
 	}
+	setSmartHomeColors(setting: string) {
+		this._smartHomeColors = setting
+		switchSmarthomeColors(setting)
+	}
 	get showQuickAccess() {
 		return this._showQuickAccess
 	}
 	set showQuickAccess(show: boolean) {
 		this._showQuickAccess = show
 		savePrefs()
+	}
+	setShowQuickAccess(show: boolean) {
+		this._showQuickAccess = show
 	}
 	get simpleCpList() {
 		return this._simpleCpList
@@ -103,12 +124,18 @@ export class Config {
 		this._simpleCpList = show
 		savePrefs()
 	}
+	setSimpleCpList(show: boolean) {
+		this._simpleCpList = show
+	}
 	get showAnimations() {
 		return this._showAnimations
 	}
 	set showAnimations(show: boolean) {
 		this._showAnimations = show
 		savePrefs()
+	}
+	setShowAnimations(show: boolean) {
+		this._showAnimations = show
 	}
 	get preferWideBoxes() {
 		return this._preferWideBoxes
@@ -117,12 +144,44 @@ export class Config {
 		this._preferWideBoxes = yes
 		savePrefs()
 	}
+	setPreferWideBoxes(yes: boolean) {
+		this._preferWideBoxes = yes
+	}
+	get maxPower() {
+		return this._maxPower
+	}
+	set maxPower(max: number) {
+		this._maxPower = max
+		savePrefs()
+	}
+	setMaxPower(max: number) {
+		this._maxPower = max
+	}
+	get fluidDisplay() {
+		return this._fluidDisplay
+	}
+	set fluidDisplay(on: boolean) {
+		this._fluidDisplay = on
+		savePrefs()
+	}
+	setFluidDisplay(on: boolean) {
+		this._fluidDisplay = on
+	}
+	get debug() {
+		return this._debug
+	}
+	set debug(on: boolean) {
+		this._debug = on
+	}
+	setDebug(on: boolean) {
+		this._debug = on
+	}
 }
 export const globalConfig = reactive(new Config())
 export function initConfig() {
 	readCookie()
 	// set the background
-	const doc = d3.select('html')
+	const doc = select('html')
 	doc.classed('theme-dark', globalConfig.displayMode == 'dark')
 	doc.classed('theme-light', globalConfig.displayMode == 'light')
 	doc.classed('theme-blue', globalConfig.displayMode == 'blue')
@@ -130,7 +189,6 @@ export function initConfig() {
 	doc.classed('shcolors-standard', globalConfig.smartHomeColors == 'standard')
 	doc.classed('shcolors-advanced', globalConfig.smartHomeColors == 'advanced')
 	doc.classed('shcolors-normal', globalConfig.smartHomeColors == 'normal')
-	setInitializeSourceGraph
 }
 export let initializeEnergyGraph = true
 export function energyGraphInitialized() {
@@ -195,7 +253,7 @@ export function savePrefs() {
 	writeCookie()
 }
 export function switchTheme(mode: string) {
-	const doc = d3.select('html')
+	const doc = select('html')
 
 	doc.classed('theme-dark', mode == 'dark')
 	doc.classed('theme-light', mode == 'light')
@@ -211,8 +269,11 @@ export function toggleFixArcs() {
 	globalConfig.showRelativeArcs = !globalConfig.showRelativeArcs
 	savePrefs()
 }
-export function resetArcs(maxp: number = 4000) {
-	globalConfig.maxPower = maxp
+export function resetArcs() {
+	globalConfig.maxPower =
+		sourceSummary.evuIn.power +
+		sourceSummary.pv.power +
+		sourceSummary.batOut.power
 	savePrefs()
 }
 export function switchDecimalPlaces() {
@@ -224,11 +285,10 @@ export function switchDecimalPlaces() {
 	savePrefs()
 }
 export function switchSmarthomeColors(setting: string) {
-	const doc = d3.select('html')
+	const doc = select('html')
 	doc.classed('shcolors-normal', setting == 'normal')
 	doc.classed('shcolors-standard', setting == 'standard')
 	doc.classed('shcolors-advanced', setting == 'advanced')
-	savePrefs()
 }
 
 export const infotext: { [key: string]: string } = {
@@ -256,6 +316,7 @@ interface Preferences {
 	simpleCP?: boolean
 	animation?: boolean
 	wideB?: boolean
+	fluidD?: boolean
 }
 
 function writeCookie() {
@@ -275,6 +336,7 @@ function writeCookie() {
 	prefs.simpleCP = globalConfig.simpleCpList
 	prefs.animation = globalConfig.showAnimations
 	prefs.wideB = globalConfig.preferWideBoxes
+	prefs.fluidD = globalConfig.fluidDisplay
 	document.cookie =
 		'openWBColorTheme=' + JSON.stringify(prefs) + '; max-age=16000000'
 }
@@ -287,10 +349,10 @@ function readCookie() {
 	if (myCookie.length > 0) {
 		const prefs = JSON.parse(myCookie[0].split('=')[1]) as Preferences
 		if (prefs.decimalP !== undefined) {
-			globalConfig.decimalPlaces = prefs.decimalP
+			globalConfig.setDecimalPlaces(+prefs.decimalP)
 		}
 		if (prefs.smartHomeC !== undefined) {
-			globalConfig.smartHomeColors = prefs.smartHomeC
+			globalConfig.setSmartHomeColors(prefs.smartHomeC)
 		}
 		if (prefs.hideSH !== undefined) {
 			prefs.hideSH.map((i) => {
@@ -304,31 +366,34 @@ function readCookie() {
 			globalConfig.setGraphPreference(prefs.showLG ? 'live' : 'today')
 		}
 		if (prefs.maxPow !== undefined) {
-			globalConfig.maxPower = +prefs.maxPow
+			globalConfig.setMaxPower(+prefs.maxPow)
 		}
 		if (prefs.relPM !== undefined) {
-			globalConfig.showRelativeArcs = prefs.relPM
+			globalConfig.setShowRelativeArcs(prefs.relPM)
 		}
 		if (prefs.displayM !== undefined) {
-			globalConfig.displayMode = prefs.displayM
+			globalConfig.setDisplayMode(prefs.displayM)
 		}
 		if (prefs.stackO !== undefined) {
 			globalConfig.setUsageStackOrder(prefs.stackO)
 		}
 		if (prefs.showGr !== undefined) {
-			globalConfig.showGrid = prefs.showGr
+			globalConfig.setShowGrid(prefs.showGr)
 		}
 		if (prefs.showQA !== undefined) {
-			globalConfig.showQuickAccess = prefs.showQA
+			globalConfig.setShowQuickAccess(prefs.showQA)
 		}
 		if (prefs.simpleCP !== undefined) {
-			globalConfig.simpleCpList = prefs.simpleCP
+			globalConfig.setSimpleCpList(prefs.simpleCP)
 		}
 		if (prefs.animation != undefined) {
-			globalConfig.showAnimations = prefs.animation
+			globalConfig.setShowAnimations(prefs.animation)
 		}
 		if (prefs.wideB != undefined) {
-			globalConfig.preferWideBoxes = prefs.wideB
+			globalConfig.setPreferWideBoxes(prefs.wideB)
+		}
+		if (prefs.fluidD != undefined) {
+			globalConfig.setFluidDisplay(prefs.fluidD)
 		}
 	}
 }

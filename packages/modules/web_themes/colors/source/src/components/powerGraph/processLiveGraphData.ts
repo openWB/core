@@ -1,4 +1,4 @@
-import * as d3 from 'd3'
+import { timeParse } from 'd3'
 import { globalData } from '../../assets/js/model'
 import {
 	type GraphDataItem,
@@ -17,9 +17,9 @@ export function processLiveGraphMessages(topic: string, message: string) {
 	} else if (topic == 'openWB/graph/lastlivevaluesJson') {
 		updateLiveGraph(topic, message)
 	} else if (topic == 'openWB/graph/config/duration') {
-		//  updateGlobal("liveGraphDuration", JSON.parse(message));
+		liveGraph.duration = JSON.parse(message)
 	} else {
-		console.warn('Ignored GRAPH message: [' + topic + '](' + message + ')')
+		//console.warn('Ignored GRAPH message: [' + topic + '](' + message + ')')
 	}
 }
 // initial/refresh delivery of all graph data
@@ -125,7 +125,7 @@ function fullDate(timeString: string) {
 	const now = new Date(Date.now())
 	const mSecondsPerDay = 86400000 // milliseconds in a day
 	let date = new Date()
-	const parsedDate = d3.timeParse('%H:%M:%S')(timeString)
+	const parsedDate = timeParse('%H:%M:%S')(timeString)
 	if (parsedDate) {
 		date = parsedDate
 		date.setDate(now.getDate())

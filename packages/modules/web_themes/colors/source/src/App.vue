@@ -3,7 +3,7 @@
 <template>
 	<div id="app" class="m-0 p-0">
 		<NavigationBar />
-		<div class="container-lg p-0">
+		<div class="p-0" :class="containerclass">
 			<div class="row p-0 m-0">
 				<div class="col-12 p-0 m-0">
 					<ColorsTheme />
@@ -16,6 +16,12 @@
 <script setup lang="ts">
 import ColorsTheme from './views/ColorsTheme.vue'
 import NavigationBar from './components/NavigationBar.vue'
+import { computed } from 'vue'
+import { globalConfig } from './assets/js/themeConfig'
+
+const containerclass = computed(() => {
+	return globalConfig.fluidDisplay ? 'container-fluid' : 'container-lg'
+})
 </script>
 
 <style>

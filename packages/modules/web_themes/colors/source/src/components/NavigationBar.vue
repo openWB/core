@@ -1,7 +1,7 @@
 <template>
 	<!-- Fixed navbar -->
 	<nav class="navbar navbar-expand-lg px-3 mb-0">
-		<div class="container-lg">
+		<div :class="containerclass">
 			<a href="/" class="navbar-brand"><span>openWB</span></a>
 			<button
 				class="navbar-toggler togglebutton ps-5"
@@ -12,15 +12,11 @@
 				aria-expanded="false"
 				aria-label="Toggle navigation"
 			>
-				<span class="fa fa-ellipsis-vertical" />
+				<span class="fa-solid fa-ellipsis-vertical" />
 			</button>
 			<div id="mainNavbar" class="collapse navbar-collapse justify-content-end">
 				<div class="nav navbar-nav">
-					<a
-						id="navStatus"
-						class="nav-link"
-						href="../../settings/#/Status"
-						target="_parent"
+					<a id="navStatus" class="nav-link" href="../../settings/#/Status"
 						>Status</a
 					>
 					<div class="nav-item dropdown">
@@ -31,19 +27,13 @@
 							role="button"
 							data-bs-toggle="dropdown"
 							aria-expanded="false"
-							>Auswertungen <i class="fa-solid fa-caret-down"
-						/></a>
+							>Auswertungen <i class="fa-solid fa-caret-down" />
+						</a>
 						<div class="dropdown-menu" aria-labelledby="loggingDropdown">
-							<a
-								href="../../settings/#/Logging/ChargeLog"
-								class="dropdown-item"
-								target="_parent"
+							<a href="../../settings/#/Logging/ChargeLog" class="dropdown-item"
 								>Ladeprotokoll</a
 							>
-							<a
-								href="../../settings/#/Logging/Chart"
-								class="dropdown-item"
-								target="_parent"
+							<a href="../../settings/#/Logging/Chart" class="dropdown-item"
 								>Diagramme</a
 							>
 						</div>
@@ -56,14 +46,13 @@
 							role="button"
 							data-bs-toggle="dropdown"
 							aria-expanded="false"
-							>Einstellungen <i class="fa-solid fa-caret-down"
-						/></a>
+							>Einstellungen <span class="fa-solid fa-caret-down" />
+						</a>
 						<div class="dropdown-menu" aria-labelledby="settingsDropdown">
 							<a
 								id="navSettings"
 								class="nav-link"
 								href="../../settings/index.html"
-								target="_parent"
 								>openWB</a
 							>
 							<a
@@ -74,8 +63,8 @@
 								aria-controls="themeSettings"
 							>
 								<span
-									>Look&amp;Feel<span class="fa-solid fa-caret-down"
-								/></span>
+									>Look&amp;Feel<span class="fa-solid fa-caret-down" />
+								</span>
 							</a>
 						</div>
 					</div>
@@ -86,7 +75,14 @@
 	<hr class="m-0 p-0 mb-2" />
 </template>
 
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { globalConfig } from '@/assets/js/themeConfig'
+import { computed } from 'vue'
+
+const containerclass = computed(() => {
+	return globalConfig.fluidDisplay ? 'container-fluid' : 'container-lg'
+})
+</script>
 
 <style scoped>
 .navbar {

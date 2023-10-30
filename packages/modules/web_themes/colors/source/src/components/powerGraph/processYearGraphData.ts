@@ -1,9 +1,10 @@
-import * as d3 from 'd3'
+import { timeParse } from 'd3'
 import {
 	type GraphDataItem,
 	type RawDayGraphDataItem,
 	setGraphData,
 	calculateAutarchy,
+	updateEnergyValues,
 } from './model'
 import { historicSummary } from '@/assets/js/model'
 let yearlyValues: { [key: string]: number } = {}
@@ -67,29 +68,25 @@ export function reloadMonthGraph(topic: string, rawMessage: string) {
 function transformRow(inputRow: RawDayGraphDataItem): GraphDataItem {
 	const outputRow: GraphDataItem = {}
 	// date
-	const d = d3.timeParse('%Y%m%d')(inputRow.date)
+	const d = timeParse('%Y%m%d')(inputRow.date)
 	if (d) {
 		outputRow.date = d.getMonth() + 1
 	}
 	// counters
+	outputRow.gridPush = 0
+	outputRow.grdPull = 0
+	outputRow.gridPush = 0
+	outputRow.gridPull = 0
 	Object.entries(inputRow.counter).forEach((item) => {
-		outputRow.gridPush = item[1].energy_exported / 1000
-		outputRow.gridPull = item[1].energy_imported / 1000
+		outputRow.gridPush += item[1].energy_exported / 1000
+		outputRow.gridPull += item[1].energy_imported / 1000
 	})
 	// PV
-	Object.entries(inputRow.pv).forEach(([id, values]) => {
-		if (id == 'all') {
-			outputRow.solarPower = values.energy_exported / 1000
-		}
-	})
+	outputRow.solarPower = inputRow.pv.all.energy_exported / 1000
 	// Battery
 	if (Object.entries(inputRow.bat).length > 0) {
-		Object.entries(inputRow.bat).forEach(([id, values]) => {
-			if (id == 'all') {
-				outputRow.batIn = values.energy_imported / 1000
-				outputRow.batOut = values.energy_exported / 1000
-			}
-		})
+		outputRow.batIn = inputRow.bat.all.energy_imported / 1000
+		outputRow.batOut = inputRow.bat.all.energy_exported / 1000
 	} else {
 		outputRow.batIn = 0
 		outputRow.batOut = 0
@@ -124,6 +121,8 @@ function transformRow(inputRow: RawDayGraphDataItem): GraphDataItem {
 		0,
 	)
 	outputRow.selfUsage = outputRow.solarPower - outputRow.gridPush
+	// House
+
 	outputRow.house =
 		outputRow.solarPower +
 		outputRow.gridPull +
@@ -131,13 +130,12 @@ function transformRow(inputRow: RawDayGraphDataItem): GraphDataItem {
 		outputRow.gridPush -
 		outputRow.batIn -
 		outputRow.charging
+
 	outputRow.inverter = 0
 	const usedEnergy =
 		outputRow.gridPull + outputRow.batOut + outputRow.solarPower
 	if (usedEnergy > 0) {
 		consumerCategories.map((cat) => calculateAutarchy(cat, outputRow))
-		// pvChargeCounter += (result.charging * result.solarPower / usedEnergy / 12 * 1000)
-		// batChargeCounter += (result.charging * result.batOut / usedEnergy / 12 * 1000)
 	} else {
 		consumerCategories.map((cat) => {
 			outputRow[cat + 'Pv'] = 0
@@ -145,31 +143,4 @@ function transformRow(inputRow: RawDayGraphDataItem): GraphDataItem {
 		})
 	}
 	return outputRow
-}
-
-function updateEnergyValues(yearlyValues: { [key: string]: number }) {
-	historicSummary.pv.energy = yearlyValues.solarPower
-	historicSummary.evuIn.energy = yearlyValues.gridPull
-	historicSummary.batOut.energy = yearlyValues.batOut
-	historicSummary.evuOut.energy = yearlyValues.gridPush
-	historicSummary.batIn.energy = yearlyValues.batIn
-	historicSummary.charging.energy = yearlyValues.charging
-	historicSummary.devices.energy = yearlyValues.devices
-
-	historicSummary.house.energy =
-		historicSummary.evuIn.energy +
-		historicSummary.pv.energy +
-		historicSummary.batOut.energy -
-		historicSummary.evuOut.energy -
-		historicSummary.batIn.energy -
-		historicSummary.charging.energy -
-		historicSummary.devices.energy
-
-	consumerCategories.map((cat) => {
-		historicSummary[cat].pvPercentage = Math.round(
-			((historicSummary[cat].energyPv + historicSummary[cat].energyBat) /
-				historicSummary[cat].energy) *
-				100,
-		)
-	})
 }

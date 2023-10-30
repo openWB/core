@@ -90,9 +90,13 @@ class CpTemplate:
             if data.data.optional_data.data.rfid.active and rfid is not None:
                 vehicle = ev_module.get_ev_to_rfid(rfid)
                 if vehicle is None:
-                    num = -1
-                    message = "Keine Ladung, da dem RFID-Tag " + \
-                        str(rfid)+" kein Fahrzeug-Profil zugeordnet werden kann."
+                    if self.data.rfid_enabling:
+                        num = -1
+                        message = (
+                            f"Keine Ladung, da dem RFID-Tag {rfid} kein Fahrzeug-Profil zugeordnet werden kann. Eine "
+                            "Freischaltung ist nur per RFID/Fahrzeugerkennung möglich.")
+                    else:
+                        num = assigned_ev
                 else:
                     num = vehicle
             else:

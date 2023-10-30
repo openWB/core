@@ -6,14 +6,15 @@
 	>
 		<template #title>
 			<span :style="cpNameStyle" @click="configmode = !configmode">
-				<span class="fas fa-charging-station">&nbsp;</span>
+				<span class="fa-solid fa-charging-station">&nbsp;</span>
 				{{ props.chargepoint.name }}</span
 			>
 		</template>
 
 		<template #buttons>
 			<span
-				class="ms-2 pt-1"
+				type="button"
+				class="ms-2 ps-5 pt-1"
 				:style="modePillStyle"
 				@click="configmode = !configmode"
 			>
@@ -60,8 +61,8 @@
 				</div>
 			</div>
 			<!-- Chargemode buttons -->
-			<div class="row m-0 p-1 mt-3 mb-0">
-				<div class="col d-flex justify-content-center">
+			<div class="row m-0 p-0 mt-3 mb-0">
+				<div class="col d-flex justify-content-center p-0 m-0">
 					<RadioBarInput
 						:id="'chargemode-' + chargepoint.name"
 						v-model="chargeMode"
@@ -124,27 +125,22 @@
 								:style="{ color: 'var(--color-menu)' }"
 							/>
 						</InfoItem>
-						<!--  <InfoItem heading="Priorität:">
-            <span
-              v-if="chargepoint.hasPriority"
-              class="me-1 fa-solid fa-xs fa-star ps-1"
-            ></span>
-            {{ props.chargepoint.hasPriority ? 'Ja' : 'Nein' }}
-          </InfoItem> -->
 						<InfoItem heading="Reichweite:">
 							{{
 								vehicles[props.chargepoint.connectedVehicle]
-									? Math.round(vehicles[1].range)
+									? Math.round(
+											vehicles[props.chargepoint.connectedVehicle].range,
+									  )
 									: 0
 							}}
 							km
 						</InfoItem>
 						<InfoItem heading="Zeitplan:">
 							<span
-								v-if="chargepoint.scheduledCharging"
+								v-if="chargepoint.timedCharging"
 								class="me-1 fa-solid fa-xs fa-clock ps-1"
 							/>
-							{{ props.chargepoint.scheduledCharging ? 'Ja' : 'Nein' }}
+							{{ props.chargepoint.timedCharging ? 'Ja' : 'Nein' }}
 						</InfoItem>
 					</div>
 				</div>
@@ -192,8 +188,6 @@ const props = defineProps<{
 	chargepoint: ChargePoint
 	fullWidth?: boolean
 }>()
-// state
-
 // computed
 const chargeMode = computed({
 	get() {
