@@ -74,6 +74,7 @@ class ChangedValuesHandler:
 
     def pub_changed_values(self):
         # publishen der geänderten Werte
+        self._update_value("openWB/set/bat/", self.prev_data.bat_all_data.data.get, data.data.bat_all_data.data.get)
         for key, value in data.data.cp_data.items():
             self._update_value(f"openWB/set/chargepoint/{value.num}/", self.prev_data.cp_data[key].data, value.data)
 

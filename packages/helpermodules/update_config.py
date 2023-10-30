@@ -35,6 +35,8 @@ class UpdateConfig:
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
         "^openWB/bat/set/switch_on_soc_reached$",
+        "^openWB/bat/get/fault_state$",
+        "^openWB/bat/get/fault_str$",
         "^openWB/bat/get/soc$",
         "^openWB/bat/get/power$",
         "^openWB/bat/get/imported$",
