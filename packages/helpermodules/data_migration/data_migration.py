@@ -176,10 +176,12 @@ class MigrateData:
         9: Kosten
         """
         def conv_1_9_datetimes(datetime_str):
-            """ konvertiert Datum-Uhrzeit alt: %d.%m.%y-%H:%M 05.03.21-11:16; neu: %m/%d/%Y, %H:%M 08/04/2021, 15:50
+            """ konvertiert Datum-Uhrzeit
+                alt: %d.%m.%y-%H:%M 05.03.21-11:16
+                neu: %m/%d/%Y, %H:%M:%S 08/04/2021, 15:50:00
             """
             str_date = datetime.datetime.strptime(datetime_str, '%d.%m.%y-%H:%M')
-            return datetime.datetime.strftime(str_date, "%m/%d/%Y, %H:%M")
+            return datetime.datetime.strftime(str_date, "%m/%d/%Y, %H:%M:%S")
 
         entries = []
         with open(f"{self.BACKUP_DATA_PATH}/ladelog/{file}") as csv_file:
