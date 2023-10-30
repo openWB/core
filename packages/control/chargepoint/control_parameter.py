@@ -15,6 +15,9 @@ class ControlParameter:
     current_plan: Optional[str] = field(
         default=None,
         metadata={"topic": "control_parameter/current_plan", "mutable_by_algorithm": True})
+    failed_phase_switches: int = field(
+        default=0,
+        metadata={"topic": "control_parameter/failed_phase_switches", "mutable_by_algorithm": True})
     imported_at_plan_start: Optional[float] = field(
         default=None,
         metadata={"topic": "control_parameter/imported_at_plan_start", "mutable_by_algorithm": True})
