@@ -666,6 +666,10 @@ class SetData:
                     "openWB/set/bat/get/daily_exported" in msg.topic or
                     "openWB/set/bat/get/daily_imported" in msg.topic):
                 self._validate_value(msg, float, [(0, float("inf"))])
+            elif "openWB/set/bat/get/fault_state" in msg.topic:
+                self._validate_value(msg, int, [(0, 2)])
+            elif "openWB/set/bat/get/fault_str" in msg.topic:
+                self._validate_value(msg, str)
             elif "/config" in msg.topic:
                 self._validate_value(msg, "json")
             elif "/get/power" in msg.topic:

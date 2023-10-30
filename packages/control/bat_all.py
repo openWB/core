@@ -17,12 +17,13 @@ Wechselrichter nur 15kW abgeben kann.
 __Wie schnell regelt ein Speicher?
 Je nach Speicher 1-4 Sekunden.
 """
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from enum import Enum
 import logging
 
 from control import data
 from control.bat import Bat
+from helpermodules.constants import NO_ERROR
 from helpermodules.pub import Pub
 from modules.common.fault_state import FaultStateLevel
 
@@ -49,12 +50,14 @@ def config_factory() -> Config:
 
 @dataclass
 class Get:
-    soc: float = 0
-    daily_exported: float = 0
-    daily_imported: float = 0
-    imported: float = 0
-    exported: float = 0
-    power: float = 0
+    soc: float = field(default=0, metadata={"topic": "get/soc", "mutable_by_algorithm": True})
+    daily_exported: float = field(default=0, metadata={"topic": "get/daily_exported", "mutable_by_algorithm": True})
+    daily_imported: float = field(default=0, metadata={"topic": "get/daily_imported", "mutable_by_algorithm": True})
+    fault_str: str = field(default=NO_ERROR, metadata={"topic": "get/fault_str", "mutable_by_algorithm": True})
+    fault_state: int = field(default=0, metadata={"topic": "get/fault_state", "mutable_by_algorithm": True})
+    imported: float = field(default=0, metadata={"topic": "get/imported", "mutable_by_algorithm": True})
+    exported: float = field(default=0, metadata={"topic": "get/exported", "mutable_by_algorithm": True})
+    power: float = field(default=0, metadata={"topic": "get/power", "mutable_by_algorithm": True})
 
 
 def get_factory() -> Get:
@@ -91,11 +94,7 @@ class BatAll:
                 # Summe für alle konfigurierten Speicher bilden
                 soc_sum = 0
                 soc_count = 0
-                self.data.get.power = 0
-                self.data.get.imported = 0
-                self.data.get.exported = 0
-                self.data.get.daily_exported = 0
-                self.data.get.daily_imported = 0
+                self.data.get = Get()
                 for battery in data.data.bat_data.values():
                     try:
                         self.data.get.power += battery.data.get.power
@@ -103,17 +102,18 @@ class BatAll:
                         self.data.get.exported += battery.data.get.exported
                         soc_sum += battery.data.get.soc
                         soc_count += 1
+                        if self.data.get.fault_state < battery.data.get.fault_state:
+                            self.data.get.fault_state = battery.data.get.fault_state
+                            self.data.get.fault_str = ("Speicher-Leistung wird nicht in der Regelung berücksichtigt, da"
+                                                       " in einer der Batterie-Komponenten eine Warnung oder ein Fehler"
+                                                       " aufgetreten ist. Bitte die Status-Meldungen der "
+                                                       "Batterie-Komponenten prüfen.")
                     except Exception:
                         log.exception(f"Fehler im Bat-Modul {battery.num}")
                 self.data.get.soc = int(soc_sum / soc_count)
-                Pub().pub("openWB/set/bat/get/power", self.data.get.power)
-                Pub().pub("openWB/set/bat/get/exported", self.data.get.exported)
-                Pub().pub("openWB/set/bat/get/imported", self.data.get.imported)
-                Pub().pub("openWB/set/bat/get/soc", self.data.get.soc)
             else:
                 self.data.config.configured = False
                 Pub().pub("openWB/set/bat/config/configured", self.data.config.configured)
-                {Pub().pub("openWB/bat/get/"+k, 0) for (k, _) in asdict(self.data.get).items()}
         except Exception:
             log.exception("Fehler im Bat-Modul")
 
@@ -159,9 +159,14 @@ class BatAll:
         """
         try:
             if self.data.config.configured is True:
-                self._get_charging_power_left()
-                self._get_switch_on_state()
-                log.info(f"{self.data.set.charging_power_left}W verbleibende Speicher-Leistung")
+                if self.data.get.fault_state == 0:
+                    self._get_charging_power_left()
+                    self._get_switch_on_state()
+                    log.info(f"{self.data.set.charging_power_left}W verbleibende Speicher-Leistung")
+                else:
+                    # Bei Warnung oder Fehlerfall, zB durch Kalibierungs-Meldung, Speicher-Leistung nicht in der
+                    # Regelung berücksichtigen.
+                    self.data.set.charging_power_left = 0
             else:
                 self.data.set.charging_power_left = 0
                 self.data.get.power = 0

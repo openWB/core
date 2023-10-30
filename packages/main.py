@@ -50,6 +50,7 @@ class HandlerAlgorithm:
                 if (data.data.general_data.data.control_interval / 10) == self.interval_counter:
                     data.data.copy_data()
                     loadvars_.get_values()
+                    changed_values_handler.pub_changed_values()
                     data.data.copy_data()
                     changed_values_handler.store_inital_values()
                     self.heartbeat = True
@@ -231,6 +232,7 @@ try:
     event_update_config_completed.wait(300)
     Pub().pub("openWB/set/system/boot_done", True)
     Path(Path(__file__).resolve().parents[1]/"ramdisk"/"bootdone").touch()
+    changed_values_handler.store_inital_values()
     schedule_jobs()
 except Exception:
     log.exception("Fehler im Main-Modul")
