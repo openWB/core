@@ -30,7 +30,7 @@ log = logging.getLogger(__name__)
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 26
+    DATASTORE_VERSION = 27
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -973,3 +973,19 @@ class UpdateConfig:
                 except Exception:
                     log.exception(f"Ladeprotokoll '{file}' konnte nicht aktualisiert werden.")
         Pub().pub("openWB/system/datastore_version", 26)
+
+    def upgrade_datastore_26(self) -> None:
+        # module kostal_pico_old: rename "ip_address" in configuration to "url" as we need a complete url
+        for topic, payload in self.all_received_topics.items():
+            if re.search("openWB/system/device/[0-9]+/component/[0-9]+/config", topic) is not None:
+                configuration_payload = decode_payload(payload)
+                if configuration_payload.get("type") == "kostal_piko_old":
+                    configuration_payload["configuration"].update(
+                        {"url": configuration_payload["configuration"]["ip_address"]})
+                    configuration_payload["configuration"].pop("ip_address")
+                    # add protocol "http://" if not already specified
+                    if not re.search("^https?://", configuration_payload["configuration"]["url"], re.IGNORECASE):
+                        configuration_payload["configuration"]["url"] = (
+                            f"http://{configuration_payload['configuration']['url']}")
+                    Pub().pub(topic.replace("openWB/", "openWB/set/"), configuration_payload)
+        Pub().pub("openWB/system/datastore_version", 27)
