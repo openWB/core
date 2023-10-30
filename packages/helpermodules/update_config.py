@@ -906,8 +906,8 @@ class UpdateConfig:
                 try:
                     content = json.load(jsonFile)
                     for entry in content:
-                        if entry.time.time_charged.endswith(":60"):
-                            entry.time.time_charged = "1:00"
+                        if entry["time"]["time_charged"].endswith(":60"):
+                            entry["time"]["time_charged"] = "1:00"
                             modified = True
                     if modified:
                         jsonFile.seek(0)
@@ -963,8 +963,9 @@ class UpdateConfig:
                 try:
                     content = json.load(jsonFile)
                     for entry in content:
-                        entry.time.time_charged = timecheck.convert_timedelta_to_time_string(
-                            datetime.timedelta(seconds=timecheck.get_difference(entry.time.begin, entry.time.end)))
+                        entry["time"]["time_charged"] = timecheck.convert_timedelta_to_time_string(
+                            datetime.timedelta(seconds=timecheck.get_difference(
+                                entry["time"]["begin"], entry["time"]["end"])))
                     jsonFile.seek(0)
                     json.dump(content, jsonFile)
                     jsonFile.truncate()
