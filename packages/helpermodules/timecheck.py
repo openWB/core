@@ -339,7 +339,7 @@ def get_difference(timestamp_begin: str, timestamp_end: str) -> Optional[int]:
     try:
         begin = datetime.datetime.strptime(timestamp_begin, "%m/%d/%Y, %H:%M:%S")
         end = datetime.datetime.strptime(timestamp_end, "%m/%d/%Y, %H:%M:%S")
-        diff = (begin - end)
+        diff = (end - begin)
         return int(diff.total_seconds())
     except Exception:
         log.exception("Fehler im System-Modul")
