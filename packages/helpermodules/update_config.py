@@ -964,7 +964,7 @@ class UpdateConfig:
 
     def upgrade_datastore_24(self) -> None:
         # Wenn mehrere EV eine Fahrzeug-Vorlage nutzen, wird die Effizienz des letzten für alle in der Vorlage gesetzt.
-        for topic, payload in self.all_received_topics.items():
+        def upgrade(topic: str, payload) -> None:
             if re.search("openWB/vehicle/[0-9]+/soc_module/general_config", topic) is not None:
                 payload = decode_payload(payload)
                 index = get_index(topic)
@@ -980,6 +980,7 @@ class UpdateConfig:
                 payload.pop("efficiency")
                 Pub().pub(topic.replace("openWB/", "openWB/set/"), payload)
                 Pub().pub(ev_template_topic.replace("openWB/", "openWB/set/"), ev_template)
+        self._loop_all_received_topics(upgrade)
         Pub().pub("openWB/system/datastore_version", 25)
 
     def upgrade_datastore_25(self) -> None:
@@ -1002,7 +1003,7 @@ class UpdateConfig:
 
     def upgrade_datastore_26(self) -> None:
         # module kostal_pico_old: rename "ip_address" in configuration to "url" as we need a complete url
-        for topic, payload in self.all_received_topics.items():
+        def upgrade(topic: str, payload) -> None:
             if re.search("openWB/system/device/[0-9]+/component/[0-9]+/config", topic) is not None:
                 configuration_payload = decode_payload(payload)
                 if configuration_payload.get("type") == "kostal_piko_old":
@@ -1014,4 +1015,5 @@ class UpdateConfig:
                         configuration_payload["configuration"]["url"] = (
                             f"http://{configuration_payload['configuration']['url']}")
                     Pub().pub(topic.replace("openWB/", "openWB/set/"), configuration_payload)
+        self._loop_all_received_topics(upgrade)
         Pub().pub("openWB/system/datastore_version", 27)
