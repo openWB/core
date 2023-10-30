@@ -1,4 +1,5 @@
 from dataclasses import asdict
+import datetime
 import glob
 import json
 import logging
@@ -29,7 +30,7 @@ log = logging.getLogger(__name__)
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 25
+    DATASTORE_VERSION = 26
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -954,3 +955,20 @@ class UpdateConfig:
                 Pub().pub(topic.replace("openWB/", "openWB/set/"), payload)
                 Pub().pub(ev_template_topic.replace("openWB/", "openWB/set/"), ev_template)
         Pub().pub("openWB/system/datastore_version", 25)
+
+    def upgrade_datastore_25(self) -> None:
+        files = glob.glob(str(self.base_path / "data" / "charge_log") + "/*")
+        for file in files:
+            with open(file, "r+") as jsonFile:
+                try:
+                    content = json.load(jsonFile)
+                    for entry in content:
+                        entry.time.time_charged = timecheck.convert_timedelta_to_time_string(
+                            datetime.timedelta(seconds=timecheck.get_difference(entry.time.begin, entry.time.end)))
+                    jsonFile.seek(0)
+                    json.dump(content, jsonFile)
+                    jsonFile.truncate()
+                    log.debug(f"Format des Ladeprotokolls '{file}' aktualisiert.")
+                except Exception:
+                    log.exception(f"Ladeprotokoll '{file}' konnte nicht aktualisiert werden.")
+        Pub().pub("openWB/system/datastore_version", 26)
