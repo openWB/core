@@ -78,16 +78,23 @@ class MigrateData:
 
     def migrate(self):
         try:
+            log.info("Datenmigration gestartet")
+            log.info("Sicherungsdatei wird entpackt...")
             self._extract()
+            log.info("Version wird geprüft...")
             self._check_version()
+            log.info("Logdateien werden importiert...")
             thread_handler(self.convert_csv_to_json_chargelog(), None)
             thread_handler(self.convert_csv_to_json_measurement_log("daily"), None)
             thread_handler(self.convert_csv_to_json_measurement_log("monthly"), None)
+            log.info("Seriennummer wird übernommen...")
             self._migrate_settings_from_openwb_conf()
         except Exception as e:
             raise e
         finally:
+            log.info("Temporäre Dateien werden entfernt...")
             self._remove_migration_data()
+        log.info("Datenmigration beendet")
 
     def _check_version(self):
         with open("./data/data_migration/var/www/html/openWB/web/version") as f:
