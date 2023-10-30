@@ -104,10 +104,10 @@ class BatAll:
                         soc_count += 1
                         if self.data.get.fault_state < battery.data.get.fault_state:
                             self.data.get.fault_state = battery.data.get.fault_state
-                            self.data.get.fault_str = ("Speicher-Leistung wird nicht in der Regelung berücksichtigt, da"
-                                                       " in einer der Batterie-Komponenten eine Warnung oder ein Fehler"
-                                                       " aufgetreten ist. Bitte die Status-Meldungen der "
-                                                       "Batterie-Komponenten prüfen.")
+                            self.data.get.fault_str = (
+                                "Speicher-Leistung wird nicht in der Regelung berücksichtigt, da in einer der "
+                                "Batterie-Komponenten eine Warnung (zB während der Kalibrierung) oder ein Fehler "
+                                "aufgetreten ist. Bitte die Status-Meldungen der Batterie-Komponenten prüfen.")
                     except Exception:
                         log.exception(f"Fehler im Bat-Modul {battery.num}")
                 self.data.get.soc = int(soc_sum / soc_count)
