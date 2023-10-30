@@ -752,7 +752,7 @@ class Chargepoint:
                 # EV am anderen Ladepunkt, am eigenen wurde zuerst angesteckt
              ((data.data.cp_data[f"cp{cp2_num}"].data.get.plug_state and
                timecheck.get_difference(self.data.set.plug_time,
-                                        data.data.cp_data[f"cp{cp2_num}"].data.set.plug_time) > 0) or
+                                        data.data.cp_data[f"cp{cp2_num}"].data.set.plug_time) < 0) or
               # kein EV am anderen Duo-Ladepunkt
               data.data.cp_data[f"cp{cp2_num  }"].data.get.plug_state is False)) or
                 # keine Duo
