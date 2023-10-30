@@ -68,6 +68,17 @@
 						:margin="margin"
 						:order="1"
 					/>
+					<PgSoc
+						v-if="
+							(graphData.graphMode == 'day' ||
+								graphData.graphMode == 'today') &&
+							globalData.isBatteryConfigured
+						"
+						:width="width - margin.left - 2 * margin.right"
+						:height="(height - margin.top - margin.bottom) / 2"
+						:margin="margin"
+						:order="2"
+					/>
 					<PgSocAxis
 						v-if="
 							graphData.graphMode == 'day' || graphData.graphMode == 'today'
@@ -99,6 +110,7 @@ import WBWidget from '../shared/WBWidget.vue'
 import PGSourceGraph from './PGSourceGraph.vue'
 import PGUsageGraph from './PGUsageGraph.vue'
 import PGXAxis from './PGXAxis.vue'
+import { globalData } from '@/assets/js/model'
 import {
 	graphData,
 	setInitializeUsageGraph,

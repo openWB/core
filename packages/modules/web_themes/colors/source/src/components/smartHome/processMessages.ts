@@ -1,4 +1,4 @@
-import { usageSummary } from '@/assets/js/model'
+import { masterData, usageSummary } from '@/assets/js/model'
 import { shDevices, addShDevice } from './model'
 
 export function processSmarthomeMessages(topic: string, message: string) {
@@ -33,6 +33,8 @@ function processSmarthomeConfigMessages(topic: string, message: string) {
 		)
 	) {
 		shDevices[index].name = message.toString()
+		masterData['sh' + index].name = message.toString()
+		masterData['sh' + index].icon = message.toString()
 	} else if (
 		topic.match(
 			/^openWB\/LegacySmarthome\/config\/set\/Devices\/[0-9]+\/mode$/i,

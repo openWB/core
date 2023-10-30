@@ -35,7 +35,7 @@ const props = defineProps<{
 	width: number
 	height: number
 	margin: { left: number; top: number; right: number; bottom: number }
-	order: number // 0 or 1
+	order: number // 0, 1 or 2 (2 == battery)
 }>()
 // const evs = computed(() => Object.values(vehicles))
 const xScale = computed(() => {
@@ -56,43 +56,82 @@ const myline = computed(() => {
 		.x((d) => xScale.value(d.date))
 		.y(
 			(d) =>
-				yScale.value(d['soc' + cp.value.connectedVehicle]) ?? yScale.value(0),
+				yScale.value(
+					props.order == 2 ? d.batSoc : d['soc' + cp.value.connectedVehicle],
+				) ?? yScale.value(0),
 		)
 	let p = path(graphData.data)
 	return p ? p : ''
 })
 const cpName = computed(() => {
-	return cp.value.vehicleName
+	if (props.order == 2) {
+		return 'Speicher'
+	} else {
+		return cp.value.vehicleName
+	}
 })
 const cpColor = computed(() => {
-	return props.order == 0 ? 'var(--color-cp1)' : 'var(--color-cp2)'
+	switch (props.order) {
+		case 0:
+			return 'var(--color-cp1)'
+		case 1:
+			return 'var(--color-cp2)'
+		case 2:
+			return 'var(--color-battery)'
+		default:
+			return 'red' // error
+	}
 })
 const nameX = computed(() => {
-	if (props.order == 0) {
-		return props.width - 3
-	} else {
-		return 3
+	switch (props.order) {
+		case 0:
+			return props.width - 3
+		case 1:
+			return 3
+		case 2:
+			return props.width / 2
+		default:
+			return 0 // error
 	}
 })
 const cp = computed(() => {
-	return Object.values(chargePoints)[props.order]
+	const idx = props.order == 2 ? 0 : props.order
+	return Object.values(chargePoints)[idx]
 })
-
 const nameY = computed(() => {
 	if (graphData.data.length > 0) {
-		const index = props.order == 0 ? graphData.data.length - 1 : 0
-		return yScale.value(
-			graphData.data[index]['soc' + cp.value.connectedVehicle] + 2,
-		)
+		let index: number
+		switch (props.order) {
+			case 0:
+				index = graphData.data.length - 1
+				return yScale.value(
+					graphData.data[index]['soc' + cp.value.connectedVehicle] + 2,
+				)
+			case 1:
+				index = 0
+				return yScale.value(
+					graphData.data[index]['soc' + cp.value.connectedVehicle] + 2,
+				)
+			case 2:
+				index = graphData.data.length / 2
+				return yScale.value(graphData.data[index].batSoc + 2)
+			default:
+				return 0
+		}
 	} else {
 		return 0
 	}
 })
 const textPosition = computed(() => {
-	if (props.order == 0) {
-		return 'end'
-	} else {
-		return 'start'
+	switch (props.order) {
+		case 0:
+			return 'end'
+		case 1:
+			return 'start'
+		case 2:
+			return 'middle'
+		default:
+			return 'middle'
 	}
 })
 </script>

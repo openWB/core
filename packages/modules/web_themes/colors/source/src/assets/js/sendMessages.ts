@@ -41,6 +41,8 @@ const topics: { [topic: string]: string } = {
 	shSetManual: 'openWB/set/LegacySmartHome/config/set/Devices/%/mode',
 	shSwitchOn:
 		'openWB/set/LegacySmartHome/config/set/Devices/%/device_manual_control',
+	socUpdate: 'openWB/set/vehicle/%/get/force_soc_update',
+	setSoc: 'openWB/set/vehicle/%/soc_module/calculated_soc_state/manual_soc',
 }
 export function updateServer(
 	item: string,

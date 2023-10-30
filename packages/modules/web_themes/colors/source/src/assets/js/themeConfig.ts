@@ -190,13 +190,6 @@ export function initConfig() {
 	doc.classed('shcolors-advanced', globalConfig.smartHomeColors == 'advanced')
 	doc.classed('shcolors-normal', globalConfig.smartHomeColors == 'normal')
 }
-export let initializeEnergyGraph = true
-export function energyGraphInitialized() {
-	initializeEnergyGraph = false
-}
-export function setInitializeEnergyGraph(val: boolean) {
-	initializeEnergyGraph = val
-}
 export let animateEnergyGraph = true
 export function setAnimateEnergyGraph(val: boolean) {
 	animateEnergyGraph = val
