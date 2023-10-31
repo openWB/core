@@ -794,9 +794,7 @@ class SetData:
                 self._validate_value(msg, int, [(0, 2)])
             elif "openWB/set/optional/et/get/fault_str" in msg.topic:
                 self._validate_value(msg, str)
-            elif "openWB/set/optional/et/config/max_price" in msg.topic:
-                self._validate_value(msg, float)
-            elif "openWB/set/optional/et/config/provider" in msg.topic:
+            elif "openWB/set/optional/et/provider" in msg.topic:
                 self._validate_value(msg, "json")
             elif "openWB/set/optional/rfid/active" in msg.topic:
                 self._validate_value(msg, bool)
