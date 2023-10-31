@@ -530,10 +530,6 @@ class Chargepoint:
         except Exception:
             log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.num))
 
-    def _is_phase_switch_failed(self) -> None:
-        if self.data.set.phases_to_use != self.data.get.phases_in_use:
-            self.data.control_parameter.failed_phase_switches += 1
-
     def _is_phase_switch_required(self) -> bool:
         phase_switch_required = False
         # Manche EVs brauchen nach der Umschaltung mehrere Zyklen, bis sie mit den drei Phasen laden. Dann darf
@@ -559,13 +555,21 @@ class Chargepoint:
                 self.data.set.current != 0):
             phase_switch_required = True
         if phase_switch_required:
-            if data.data.general_data.data.chargemode_config.retry_failed_phase_switches:
-                if self.data.control_parameter.failed_phase_switches <= self.MAX_FAILED_PHASE_SWITCHES:
-                    self._is_phase_switch_failed()
+            # Umschaltung fehlgeschlagen
+            if self.data.set.phases_to_use != self.data.get.phases_in_use:
+                if data.data.general_data.data.chargemode_config.retry_failed_phase_switches:
+                    if self.data.control_parameter.failed_phase_switches <= self.MAX_FAILED_PHASE_SWITCHES:
+                        self.data.control_parameter.failed_phase_switches += 1
+                    else:
+                        phase_switch_required = False
+                        self.set_state_and_log(
+                            "Keine Phasenumschaltung, da die maximale Anzahl an Fehlversuchen erreicht wurde. Die "
+                            "aktuelle Phasenzahl wird bis zum Abstecken beibehalten.")
                 else:
                     phase_switch_required = False
                     self.set_state_and_log(
-                        "Keine Phasenumschaltung, da die maximale Anzahl an Fehlversuchen erreicht wurde. Die aktuelle "
+                        "Keine Phasenumschaltung, da wiederholtes Anstoßen der Umschaltung in den übergreifenden "
+                        "Ladeinstellungen deaktiviert wurde. Die aktuelle "
                         "Phasenzahl wird bis zum Abstecken beibehalten.")
         return phase_switch_required
 
