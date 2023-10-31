@@ -623,7 +623,7 @@ class SubData:
                         var.data.et.get.prices = decode_payload(msg.payload)
                     elif re.search("/optional/et/get/", msg.topic) is not None:
                         self.set_json_payload_class(var.data.et.get, msg)
-                    elif re.search("/optional/et/config/provider$", msg.topic) is not None:
+                    elif re.search("/optional/et/provider$", msg.topic) is not None:
                         payload = decode_payload(msg.payload)
                         if payload["type"] is not None:
                             mod = importlib.import_module(
@@ -631,8 +631,6 @@ class SubData:
                             config = dataclass_from_dict(mod.device_descriptor.configuration_factory, payload)
                             var.et_module = mod.create_electricity_tariff(config)
                             var.et_get_prices()
-                    elif re.search("/optional/et/config/", msg.topic) is not None:
-                        self.set_json_payload_class(var.data.et.config, msg)
                     else:
                         self.set_json_payload_class(var.data.et, msg)
                 else:

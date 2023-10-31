@@ -28,17 +28,7 @@ def get_factory() -> EtGet:
 
 
 @dataclass
-class EtConfig:
-    max_price: float = 0
-
-
-def et_config_factory() -> EtConfig:
-    return EtConfig()
-
-
-@dataclass
 class Et:
-    config: EtConfig = field(default_factory=et_config_factory)
     get: EtGet = field(default_factory=get_factory)
 
 
@@ -94,7 +84,7 @@ class Optional:
         except Exception:
             log.exception("Fehler im Optional-Modul")
 
-    def et_price_lower_than_limit(self):
+    def et_price_lower_than_limit(self, max_price: float):
         """ prüft, ob der aktuelle Strompreis unter der festgelegten Preisgrenze liegt.
 
         Return
@@ -103,7 +93,7 @@ class Optional:
         False: Preis liegt darüber
         """
         try:
-            if self.data.et.get.prices[str(create_unix_timestamp_current_full_hour())] <= self.data.et.config.max_price:
+            if self.data.et.get.prices[str(create_unix_timestamp_current_full_hour())] <= max_price:
                 return True
             else:
                 return False

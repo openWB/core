@@ -99,11 +99,22 @@ def chargemode_factory() -> Chargemode:
 
 
 @dataclass
+class Et:
+    active: bool = False
+    max_price: float = 20
+
+
+def et_factory() -> Et:
+    return Et()
+
+
+@dataclass
 class ChargeTemplateData:
     name: str = "Standard-Lade-Profil"
     disable_after_unplug: bool = False
     prio: bool = False
     load_default: bool = False
+    et: Et = field(default_factory=et_factory)
     time_charging: TimeCharging = field(default_factory=time_charging_factory)
     chargemode: Chargemode = field(default_factory=chargemode_factory)
 
@@ -542,6 +553,7 @@ class ChargeTemplate:
     """ Klasse der Lade-Profile
     """
     BUFFER = -1200  # nach mehr als 20 Min Überschreitung wird der Termin als verpasst angesehen
+    CHARGING_PRICE_EXCEEDED = "Keine Ladung, da der aktuelle Strompreis über dem maximalen Strompreis liegt."
 
     def __init__(self, index):
         self.data: ChargeTemplateData = ChargeTemplateData()
@@ -562,6 +574,9 @@ class ChargeTemplate:
             if self.data.time_charging.plans:
                 plan = timecheck.check_plans_timeframe(self.data.time_charging.plans)
                 if plan is not None:
+                    if self.data.et.active and data.data.optional_data.data.et.get.fault_state != 2:
+                        if not data.data.optional_data.et_price_lower_than_limit(self.data.et.max_price):
+                            return 0, "stop", self.CHARGING_PRICE_EXCEEDED, plan.name
                     if plan.limit.selected == "none":  # kein Limit konfiguriert, mit konfigurierter Stromstärke laden
                         return plan.current, "time_charging", message, plan.name
                     elif plan.limit.selected == "soc":  # SoC Limit konfiguriert
@@ -586,7 +601,6 @@ class ChargeTemplate:
             log.exception("Fehler im ev-Modul "+str(self.ct_num))
             return 0, "stop", "Keine Ladung, da da ein interner Fehler aufgetreten ist: "+traceback.format_exc(), None
 
-    INSTANT_CHARGING_PRICE_EXCEEDED = "Keine Ladung, da der aktuelle Strompreis über dem maximalen Strompreis liegt."
     INSTANT_CHARGING_SOC_REACHED = "Keine Ladung, da der Soc bereits erreicht wurde."
     INSTANT_CHARGING_AMOUNT_REACHED = "Keine Ladung, da die Energiemenge bereits geladen wurde."
 
@@ -598,9 +612,9 @@ class ChargeTemplate:
         message = None
         try:
             instant_charging = self.data.chargemode.instant_charging
-            if data.data.optional_data.et_module is not None and data.data.optional_data.data.et.get.fault_state != 2:
-                if not data.data.optional_data.et_price_lower_than_limit():
-                    return 0, "stop", self.INSTANT_CHARGING_PRICE_EXCEEDED
+            if self.data.et.active and data.data.optional_data.data.et.get.fault_state != 2:
+                if not data.data.optional_data.et_price_lower_than_limit(self.data.et.max_price):
+                    return 0, "stop", self.CHARGING_PRICE_EXCEEDED
             if instant_charging.limit.selected == "none":
                 return instant_charging.current, "instant_charging", message
             elif instant_charging.limit.selected == "soc":
@@ -796,7 +810,7 @@ class ChargeTemplate:
         else:
             # Wenn Elektronische Tarife aktiv sind, prüfen, ob jetzt ein günstiger Zeitpunkt zum Laden
             # ist.
-            if data.data.optional_data.et_module is not None and data.data.optional_data.data.et.get.fault_state != 2:
+            if self.data.et.active and data.data.optional_data.data.et.get.fault_state != 2:
                 hourlist = data.data.optional_data.et_get_loading_hours(duration, plan_data.remaining_time)
                 if timecheck.is_list_valid(hourlist):
                     message = self.SCHEDULED_CHARGING_CHEAP_HOUR
