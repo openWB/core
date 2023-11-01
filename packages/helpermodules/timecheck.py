@@ -238,7 +238,8 @@ def create_timestamp_YYYYMMDD() -> str:
 
 
 def create_unix_timestamp_current_full_hour() -> int:
-    return int(datetime.datetime.combine(datetime.datetime.today(), datetime.time.min).timestamp())
+    full_hour = datetime.datetime.today().strftime("%m/%d/%Y, %H")
+    return int(datetime.datetime.strptime(full_hour, "%m/%d/%Y, %H").timestamp())
 
 
 def get_relative_date_string(date_string: str, day_offset: int = 0, month_offset: int = 0, year_offset: int = 0) -> str:

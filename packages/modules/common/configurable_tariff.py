@@ -29,4 +29,5 @@ class ConfigurableElectricityTariff(Generic[T_TARIFF_CONFIG]):
                     raise FaultState.warning('Die Preisliste startet nicht mit der aktuellen Stunde.')
             if len(tariff_state.prices) != 24:
                 raise FaultState.warning(f'Die Preisliste hat nicht 24, sondern {len(tariff_state.prices)} Einträge. '
-                                         'Die Strompreise werden erst um 14:00 für den Folgetag aktualisiert.')
+                                         'Die Strompreise werden vom Anbieter erst um 14:00 für den Folgetag '
+                                         'aktualisiert.')
