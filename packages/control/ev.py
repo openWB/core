@@ -297,6 +297,7 @@ class Ev:
                     self.data.get.soc,
                     used_amount
                 )
+                message = tmp_message
                 if tmp_current > 0:
                     control_parameter.current_plan = name
                     # Wenn mit einem neuen Plan geladen wird, muss auch die Energiemenge von neuem gezählt werden.
@@ -304,7 +305,6 @@ class Ev:
                         control_parameter.imported_at_plan_start = imported
                     required_current = tmp_current
                     submode = tmp_submode
-                    message = tmp_message
             if (required_current == 0) or (required_current is None):
                 if self.charge_template.data.chargemode.selected == "instant_charging":
                     # Wenn der Submode auf stop gestellt wird, wird auch die Energiemenge seit Wechsel des Modus

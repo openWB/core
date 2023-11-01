@@ -10,7 +10,6 @@ from control.ev import ChargeTemplate, EvTemplate, EvTemplateData, SelectedPlan
 from control.general import General
 from helpermodules import timecheck
 from helpermodules.abstract_plans import ScheduledChargingPlan, TimeChargingPlan
-from modules.common.configurable_tariff import ConfigurableElectricityTariff
 
 
 @pytest.fixture(autouse=True)
@@ -247,7 +246,7 @@ def test_scheduled_charging_calc_current_electricity_tariff(loading_hour, expect
     plan = ScheduledChargingPlan(active=True)
     plan.limit.selected = "soc"
     ct.data.chargemode.scheduled_charging.plans = {0: plan}
-    data.data.optional_data.et_module = ConfigurableElectricityTariff(Mock(), Mock())
+    ct.data.et.active = True
     mock_et_get_loading_hours = Mock(return_value=[])
     monkeypatch.setattr(data.data.optional_data, "et_get_loading_hours", mock_et_get_loading_hours)
     mock_is_list_valid = Mock(return_value=loading_hour)
