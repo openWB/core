@@ -225,14 +225,14 @@ def _collect_yearly_log_data(year: str):
 def _analyse_power_source(data) -> Dict:
     if data:
         for i in range(0, len(data["entries"])):
-            data["entries"][i] = _analyse_percentage(data["entries"][i])
-        data["totals"] = _analyse_percentage(data["totals"])
+            data["entries"][i] = analyse_percentage(data["entries"][i])
+        data["totals"] = analyse_percentage(data["totals"])
     return data
 
 
-def _analyse_percentage(entry):
+def analyse_percentage(entry):
     def format(value):
-        return round(value*100, 2)
+        return round(value, 4)
     try:
         bat_imported = entry["bat"]["all"]["energy_imported"] if "all" in entry["bat"].keys() else 0
         bat_exported = entry["bat"]["all"]["energy_exported"] if "all" in entry["bat"].keys() else 0
@@ -264,12 +264,12 @@ def _process_entries(data, calculation):
         for i in range(0, len(data["entries"])-1):
             entry = data["entries"][i]
             next_entry = data["entries"][i+1]
-            data["entries"][i] = _process_entry(entry, next_entry, calculation)
+            data["entries"][i] = process_entry(entry, next_entry, calculation)
         data["entries"].pop()
     return data
 
 
-def _process_entry(entry: dict, next_entry: dict, calculation: CalculationType):
+def process_entry(entry: dict, next_entry: dict, calculation: CalculationType):
     time_diff = next_entry["timestamp"] - entry["timestamp"]
     for type in ("bat", "counter", "cp", "pv", "sh", "hc"):
         if type in entry:

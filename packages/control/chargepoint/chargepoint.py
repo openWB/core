@@ -21,7 +21,7 @@ import threading
 import traceback
 from typing import Dict, Optional, Tuple
 
-from control import chargelog
+from control.chargelog import chargelog
 from control import cp_interruption
 from control import data
 from control.chargemode import Chargemode

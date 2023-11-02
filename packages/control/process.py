@@ -4,7 +4,7 @@ import logging
 import threading
 from typing import List
 
-from control import chargelog
+from control.chargelog import chargelog
 from control.chargepoint import chargepoint
 from control import data
 from control.chargepoint.chargepoint_state import ChargepointState

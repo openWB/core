@@ -93,13 +93,16 @@ class Optional:
         False: Preis liegt darüber
         """
         try:
-            if self.data.et.get.prices[str(create_unix_timestamp_current_full_hour())] <= max_price:
+            if self.et_get_current_price() <= max_price:
                 return True
             else:
                 return False
         except Exception:
             log.exception("Fehler im Optional-Modul")
             return False
+
+    def et_get_current_price(self):
+        return self.data.et.get.prices[str(create_unix_timestamp_current_full_hour())]
 
     def et_get_loading_hours(self, duration: float, remaining_time: float) -> List[int]:
         """ geht die Preise der nächsten 24h durch und liefert eine Liste der Uhrzeiten, zu denen geladen werden soll
