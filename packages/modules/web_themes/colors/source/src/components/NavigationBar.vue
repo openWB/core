@@ -3,6 +3,12 @@
 	<nav class="navbar navbar-expand-lg px-3 mb-0">
 		<div :class="containerclass">
 			<a href="/" class="navbar-brand"><span>openWB</span></a>
+			<span
+				v-if="globalConfig.showClock"
+				class="position-absolute-50 navbar-text ms-4 navbar-time"
+				:style="{ color: 'var(--color-menu)' }"
+				>{{ formatTime(currentTime) }}</span
+			>
 			<button
 				class="navbar-toggler togglebutton ps-5"
 				type="button"
@@ -72,15 +78,31 @@
 			</div>
 		</div>
 	</nav>
-	<hr class="m-0 p-0 mb-2" />
+	<div :class="containerclass">
+		<hr class="m-0 p-0 mb-2" />
+	</div>
 </template>
 
 <script setup lang="ts">
 import { globalConfig } from '@/assets/js/themeConfig'
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+
+let interval: ReturnType<typeof setInterval>
+const currentTime = ref(new Date())
 
 const containerclass = computed(() => {
 	return globalConfig.fluidDisplay ? 'container-fluid' : 'container-lg'
+})
+function formatTime(d: Date) {
+	return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+}
+onMounted(() => {
+	interval = setInterval(() => {
+		;(currentTime.value = new Date()), 1000
+	})
+	onBeforeUnmount(() => {
+		clearInterval(interval)
+	})
 })
 </script>
 
@@ -122,5 +144,10 @@ const containerclass = computed(() => {
 .navbar-toggler {
 	color: var(--color-fg);
 	border-color: var(--color-bg);
+}
+
+.navbar-time {
+	font-weight: bold;
+	color: var(--color-menu);
 }
 </style>

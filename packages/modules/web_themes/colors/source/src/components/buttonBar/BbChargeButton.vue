@@ -6,7 +6,7 @@ Hagen */
 		<div class="d-grid gap-2">
 			<button
 				type="button"
-				class="btn mx-1 mb-0 p-1 regularTextSize chargeButton shadow"
+				class="btn mx-1 mb-0 p-1 mediumTextSize chargeButton shadow"
 				:style="buttonStyle"
 				data-bs-toggle="modal"
 				:data-bs-target="'#' + modalId"

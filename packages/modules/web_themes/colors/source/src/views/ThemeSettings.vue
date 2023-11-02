@@ -110,6 +110,13 @@
 						<SwitchInput v-model="globalConfig.fluidDisplay" />
 					</ConfigItem>
 					<ConfigItem
+						title="Uhrzeit anzeigen"
+						icon="fa-clock"
+						infotext="Zeige die aktuelle Uhrzeit in der Menuleiste an"
+					>
+						<SwitchInput v-model="globalConfig.showClock" />
+					</ConfigItem>
+					<ConfigItem
 						title="Debug-Modus"
 						icon="fa-bug-slash"
 						infotext="Kontrollausgaben in der Console sowie Anzeige von Bildschirmbreite und MQ-Viewer"
