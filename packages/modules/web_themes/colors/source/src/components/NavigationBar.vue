@@ -133,6 +133,7 @@ onMounted(() => {
 .navbar-brand {
 	font-weight: bold;
 	color: var(--color-fg);
+	font-size: var(--font-normal);
 }
 
 .nav-link {
@@ -149,5 +150,6 @@ onMounted(() => {
 .navbar-time {
 	font-weight: bold;
 	color: var(--color-menu);
+	font-size: var(--font-normal);
 }
 </style>
