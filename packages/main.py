@@ -82,11 +82,13 @@ class HandlerAlgorithm:
         ausführt, die nur alle 5 Minuten ausgeführt werden müssen.
         """
         try:
+            changed_values_handler.store_inital_values()
             totals = save_log("daily")
             update_daily_yields(totals)
             data.data.general_data.grid_protection()
             data.data.optional_data.et_get_prices()
             data.data.counter_all_data.validate_hierarchy()
+            changed_values_handler.pub_changed_values()
         except KeyboardInterrupt:
             log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())
         except Exception:
