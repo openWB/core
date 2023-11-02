@@ -92,24 +92,32 @@ class BatAll:
                 self.data.config.configured = True
                 Pub().pub("openWB/set/bat/config/configured", self.data.config.configured)
                 # Summe für alle konfigurierten Speicher bilden
+                exported = 0
+                fault_state = 0
+                imported = 0
+                power = 0
                 soc_sum = 0
                 soc_count = 0
-                self.data.get = Get()
+                self.data.get.fault_str = NO_ERROR
                 for battery in data.data.bat_data.values():
                     try:
-                        self.data.get.power += battery.data.get.power
-                        self.data.get.imported += battery.data.get.imported
-                        self.data.get.exported += battery.data.get.exported
+                        power += battery.data.get.power
+                        imported += battery.data.get.imported
+                        exported += battery.data.get.exported
                         soc_sum += battery.data.get.soc
                         soc_count += 1
-                        if self.data.get.fault_state < battery.data.get.fault_state:
-                            self.data.get.fault_state = battery.data.get.fault_state
+                        if fault_state < battery.data.get.fault_state:
+                            fault_state = battery.data.get.fault_state
                             self.data.get.fault_str = (
                                 "Speicher-Leistung wird nicht in der Regelung berücksichtigt, da in einer der "
                                 "Batterie-Komponenten eine Warnung (zB während der Kalibrierung) oder ein Fehler "
                                 "aufgetreten ist. Bitte die Status-Meldungen der Batterie-Komponenten prüfen.")
                     except Exception:
                         log.exception(f"Fehler im Bat-Modul {battery.num}")
+                self.data.get.fault_state = 0
+                self.data.get.power = power
+                self.data.get.imported = imported
+                self.data.get.exported = exported
                 self.data.get.soc = int(soc_sum / soc_count)
             else:
                 self.data.config.configured = False

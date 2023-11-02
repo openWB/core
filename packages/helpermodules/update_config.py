@@ -14,6 +14,7 @@ import dataclass_utils
 from control.chargepoint.chargepoint_template import get_chargepoint_template_default
 from helpermodules import timecheck
 from helpermodules.broker import InternalBrokerClient
+from helpermodules.constants import NO_ERROR
 from helpermodules.hardware_configuration import get_hardware_configuration_setting, update_hardware_configuration
 from helpermodules.measurement_logging.process_log import get_totals
 from helpermodules.measurement_logging.write_log import get_names
@@ -369,6 +370,8 @@ class UpdateConfig:
         "^openWB/system/version$",
     ]
     default_topic = (
+        ("openWB/bat/get/fault_state", 0),
+        ("openWB/bat/get/fault_str", NO_ERROR),
         ("openWB/chargepoint/get/power", 0),
         ("openWB/chargepoint/template/0", get_chargepoint_template_default()),
         ("openWB/counter/get/hierarchy", []),
