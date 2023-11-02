@@ -25,6 +25,7 @@ from helpermodules.pub import Pub
 from helpermodules.utils.topic_parser import decode_payload, get_index, get_second_index
 from control import counter_all
 from control import ev
+from control.general import Prices
 from modules.common.abstract_vehicle import GeneralVehicleConfig
 from modules.display_themes.cards.config import CardsDisplayTheme
 from modules.web_themes.standard_legacy.config import StandardLegacyWebTheme
@@ -155,7 +156,6 @@ class UpdateConfig:
         "^openWB/general/mqtt_bridge$",
         "^openWB/general/grid_protection_timestamp$",
         "^openWB/general/grid_protection_random_stop$",
-        "^openWB/general/price_kwh$",
         "^openWB/general/range_unit$",
         "^openWB/general/notifications/selected$",
         "^openWB/general/notifications/configuration$",
@@ -186,6 +186,9 @@ class UpdateConfig:
         "^openWB/general/chargemode_config/scheduled_charging/phases_to_use$",
         "^openWB/general/chargemode_config/instant_charging/phases_to_use$",
         "^openWB/general/chargemode_config/time_charging/phases_to_use$",
+        "^openWB/general/prices/bat$",
+        "^openWB/general/prices/grid$",
+        "^openWB/general/prices/pv$",
         "^openWB/general/web_theme$",
 
         "^openWB/graph/config/duration$",
@@ -420,7 +423,9 @@ class UpdateConfig:
         ("openWB/general/notifications/stop_charging", False),
         ("openWB/general/notifications/smart_home", False),
         ("openWB/general/notifications/configuration", {}),
-        ("openWB/general/price_kwh", 0.3),
+        ("openWB/general/prices/bat", Prices().bat),
+        ("openWB/general/prices/grid", Prices().grid),
+        ("openWB/general/prices/pv", Prices().pv),
         ("openWB/general/range_unit", "km"),
         ("openWB/general/ripple_control_receiver/configured", False),
         ("openWB/general/web_theme", dataclass_utils.asdict(StandardLegacyWebTheme())),

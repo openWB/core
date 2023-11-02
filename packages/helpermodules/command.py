@@ -9,8 +9,9 @@ from typing import Dict, List, Optional
 import re
 import traceback
 from pathlib import Path
-import paho.mqtt.client as mqtt
 
+import paho.mqtt.client as mqtt
+from control.chargelog import chargelog
 from control.chargepoint import chargepoint
 from control.chargepoint.chargepoint_template import get_autolock_plan_default, get_chargepoint_template_default
 from modules.backup_clouds.onedrive.api import generateMSALAuthCode, retrieveMSALTokens
@@ -23,7 +24,7 @@ from helpermodules.parse_send_debug import parse_send_debug_data
 from helpermodules.pub import Pub, pub_single
 from helpermodules.subdata import SubData
 from helpermodules.utils.topic_parser import decode_payload
-from control import bat, bridge, chargelog, data, ev, counter, counter_all, pv
+from control import bat, bridge, data, ev, counter, counter_all, pv
 from modules.chargepoints.internal_openwb.chargepoint_module import ChargepointModule
 from modules.chargepoints.internal_openwb.config import InternalChargepointMode
 from modules.common.component_type import ComponentType, special_to_general_type_mapping, type_to_topic_mapping

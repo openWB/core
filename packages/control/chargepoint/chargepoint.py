@@ -21,7 +21,7 @@ import threading
 import traceback
 from typing import Dict, List, Optional, Tuple
 
-from control import chargelog
+from control.chargelog import chargelog
 from control import cp_interruption
 from control import data
 from control.chargemode import Chargemode
@@ -114,6 +114,7 @@ class ConnectedVehicle:
 @dataclass
 class Log:
     chargemode_log_entry: str = "_"
+    costs: float = 0
     imported_at_mode_switch: float = 0
     imported_at_plugtime: float = 0
     imported_since_mode_switch: float = 0

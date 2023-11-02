@@ -94,6 +94,18 @@ def ripple_control_receiver_factory() -> RippleControlReceiver:
 
 
 @dataclass
+class Prices:
+    bat: float = 0.0002
+    cp: float = 0
+    grid: float = 0.0003
+    pv: float = 0.00015
+
+
+def prices_factory() -> Prices:
+    return Prices()
+
+
+@dataclass
 class GeneralData:
     chargemode_config: ChargemodeConfig = field(default_factory=chargemode_config_factory)
     control_interval: int = 10
@@ -105,7 +117,7 @@ class GeneralData:
     grid_protection_random_stop: int = 0
     grid_protection_timestamp: Optional[str] = ""
     mqtt_bridge: bool = False
-    price_kwh: float = 0.3
+    prices: Prices = field(default_factory=prices_factory)
     range_unit: str = "km"
     ripple_control_receiver: RippleControlReceiver = field(default_factory=ripple_control_receiver_factory)
 

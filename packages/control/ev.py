@@ -101,7 +101,7 @@ def chargemode_factory() -> Chargemode:
 @dataclass
 class Et:
     active: bool = False
-    max_price: float = 20
+    max_price: float = 0.0002
 
 
 def et_factory() -> Et:
