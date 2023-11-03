@@ -20,6 +20,7 @@ import { shDevices } from '../smartHome/model'
 
 const nonPvCategories = ['evuIn', 'pv', 'batIn', 'evuOut']
 let gridCounters: string[] = []
+
 export function processDayGraphMessages(_: string, message: string) {
 	const inputTable: RawDayGraphDataItem[] = JSON.parse(message).entries
 	const energyValues: RawDayGraphDataItem = JSON.parse(message).totals
@@ -165,7 +166,7 @@ function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 }
 function updateEnergyValues(totals: RawDayGraphDataItem) {
 	Object.entries(totals.counter).forEach(([id, values]) => {
-		if (gridCounters.includes(id)) {
+		if (gridCounters.length == 0 || gridCounters.includes(id)) {
 			historicSummary.items.evuIn.energy += values.imported
 			historicSummary.items.evuOut.energy += values.exported
 		}
@@ -190,7 +191,7 @@ function updateEnergyValues(totals: RawDayGraphDataItem) {
 			historicSummary.items.devices.energy += values.imported
 		}
 	})
-	if (totals.hc) {
+	if (totals.hc && totals.hc.all) {
 		historicSummary.setEnergy('house', totals.hc.all.imported)
 	} else {
 		historicSummary.calculateHouseEnergy()
