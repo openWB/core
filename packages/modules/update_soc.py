@@ -12,7 +12,7 @@ from helpermodules.constants import NO_ERROR
 from helpermodules.pub import Pub
 from helpermodules.utils import thread_handler
 from modules.common.abstract_vehicle import VehicleUpdateData
-from modules.utils import ModuleUpdateCompletedContext
+from modules.utils import wait_for_module_update_completed
 
 log = logging.getLogger(__name__)
 
@@ -28,12 +28,12 @@ class UpdateSoc:
             topic = "openWB/set/vehicle/set/vehicle_update_completed"
             try:
                 threads_update, threads_store = self._get_threads()
-                with ModuleUpdateCompletedContext(self.event_vehicle_update_completed, topic):
-                    threads_update, threads_store = self._get_threads()
-                    thread_handler(threads_update, 300)
-                with ModuleUpdateCompletedContext(self.event_vehicle_update_completed, topic):
-                    # threads_store = self._filter_failed_store_threads(threads_store)
-                    thread_handler(threads_store, data.data.general_data.data.control_interval/3)
+                threads_update, threads_store = self._get_threads()
+                thread_handler(threads_update, 300)
+                wait_for_module_update_completed(self.event_vehicle_update_completed, topic)
+                # threads_store = self._filter_failed_store_threads(threads_store)
+                thread_handler(threads_store, data.data.general_data.data.control_interval/3)
+                wait_for_module_update_completed(self.event_vehicle_update_completed, topic)
                 # Don't request faster than control interval
                 if len(threads_update) > 0:
                     time.sleep(5)

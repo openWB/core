@@ -4,7 +4,7 @@ from typing import List
 
 from control import data
 from modules import ripple_control_receiver
-from modules.utils import ModuleUpdateCompletedContext
+from modules.utils import wait_for_module_update_completed
 from modules.common.abstract_device import AbstractDevice
 from modules.common.component_type import ComponentType, type_to_topic_mapping
 from modules.common.store import update_values
@@ -25,16 +25,14 @@ class Loadvars:
             levels = data.data.counter_all_data.get_list_of_elements_per_level()
             levels.reverse()
             for level in levels:
-                with ModuleUpdateCompletedContext(self.event_module_update_completed, topic):
-                    self._update_values_of_level(level, not_finished_threads)
+                self._update_values_of_level(level, not_finished_threads)
+                wait_for_module_update_completed(self.event_module_update_completed, topic)
                 data.data.copy_module_data()
-            with ModuleUpdateCompletedContext(self.event_module_update_completed, topic):
-                thread_handler(self._get_general(), data.data.general_data.data.control_interval/3)
-            with ModuleUpdateCompletedContext(self.event_module_update_completed, topic):
-                data.data.pv_all_data.calc_power_for_all_components()
-                data.data.bat_all_data.calc_power_for_all_components()
-            if self.event_module_update_completed.wait(data.data.general_data.data.control_interval/2) is False:
-                log.error("Daten wurden noch nicht vollständig empfangen. Timeout abgelaufen, fortsetzen der Regelung.")
+            wait_for_module_update_completed(self.event_module_update_completed, topic)
+            thread_handler(self._get_general(), data.data.general_data.data.control_interval/3)
+            wait_for_module_update_completed(self.event_module_update_completed, topic)
+            data.data.pv_all_data.calc_power_for_all_components()
+            data.data.bat_all_data.calc_power_for_all_components()
         except Exception:
             log.exception("Fehler im loadvars-Modul")
 

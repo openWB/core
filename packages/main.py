@@ -30,6 +30,7 @@ from helpermodules.utils import exit_after
 from modules import update_soc
 from modules.internal_chargepoint_handler.internal_chargepoint_handler import GeneralInternalChargepointHandler
 from modules.internal_chargepoint_handler.rfid import RfidReader
+from modules.utils import wait_for_module_update_completed
 from smarthome.smarthome import readmq, smarthome_handler
 
 logger.setup_logging()
@@ -51,6 +52,8 @@ class HandlerAlgorithm:
                     data.data.copy_data()
                     loadvars_.get_values()
                     changed_values_handler.pub_changed_values()
+                    wait_for_module_update_completed(loadvars_.event_module_update_completed,
+                                                     "openWB/set/system/device/module_update_completed")
                     data.data.copy_data()
                     changed_values_handler.store_inital_values()
                     self.heartbeat = True
