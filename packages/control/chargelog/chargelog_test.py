@@ -5,7 +5,8 @@ from unittest.mock import MagicMock, Mock
 import pytest
 from control import data
 from control.chargelog import chargelog
-from control.chargelog.chargelog import _calc, _get_reference_entry, _get_reference_time, calculate_charge_cost
+from control.chargelog.chargelog import (ReferenceTime, _calc, _get_reference_entry, _get_reference_position,
+                                         calculate_charge_cost, get_reference_time)
 from control.chargepoint.chargepoint import Chargepoint
 from control.general import General
 from control.optional import Optional
@@ -60,20 +61,41 @@ EXPECTED_ENTRY_YESTERDAYS_DAILY = {"timestamp": 1698879000, "date": "23:50", "cp
 
 
 @pytest.mark.parametrize(
-    "plug_time, create_log_entry, expected_timestamp",
-    (pytest.param("05/16/2022, 07:42:52", False, 1652679772, id="innerhalb der letzten Stunde angesteckt"),
-     pytest.param("05/16/2022, 06:40:52", False, 1652679652, id="vor mehr als einer Stunde angesteckt"),
-     pytest.param("05/16/2022, 06:40:52", True, 1652680800,
+    "start_charging, create_log_entry, expected_timestamp",
+    (pytest.param("05/16/2022, 07:42:52", False, ReferenceTime.START, id="innerhalb der letzten Stunde angesteckt"),
+     pytest.param("05/16/2022, 06:40:52", False, ReferenceTime.MIDDLE, id="vor mehr als einer Stunde angesteckt"),
+     pytest.param("05/16/2022, 06:40:52", True, ReferenceTime.END,
                   id="vor mehr als einer Stunde angesteckt, Ladevorgang beenden"),
      )
 )
-def test_get_reference_time(plug_time: bool, create_log_entry: bool, expected_timestamp: float):
+def test_get_reference_position(start_charging: str, create_log_entry: bool, expected_timestamp: float):
     # setup
     cp = Chargepoint(0, Mock())
-    cp.data.set.plug_time = plug_time
+    cp.data.set.log.timestamp_start_charging = start_charging
 
     # execution
-    timestamp = _get_reference_time(cp, create_log_entry)
+    timestamp = _get_reference_position(cp, create_log_entry)
+
+    # evaluation
+    assert timestamp == expected_timestamp
+
+
+@pytest.mark.parametrize(
+    "reference_position, start_charging, expected_timestamp",
+    (pytest.param(ReferenceTime.START, "05/16/2022, 07:42:52", 1652679772,
+                  id="innerhalb der letzten Stunde angesteckt"),
+     pytest.param(ReferenceTime.MIDDLE, "05/16/2022, 06:40:52", 1652679652, id="vor mehr als einer Stunde angesteckt"),
+     pytest.param(ReferenceTime.END, "05/16/2022, 06:40:52", 1652680800,
+                  id="vor mehr als einer Stunde angesteckt, Ladevorgang beenden"),
+     )
+)
+def test_get_reference_time(reference_position: ReferenceTime, start_charging: str, expected_timestamp: float):
+    # setup
+    cp = Chargepoint(0, Mock())
+    cp.data.set.log.timestamp_start_charging = start_charging
+
+    # execution
+    timestamp = get_reference_time(cp, reference_position)
 
     # evaluation
     assert timestamp == expected_timestamp
@@ -121,7 +143,7 @@ def test_calc(et_active, expected_costs, monkeypatch):
 def test_calculate_charge_cost(monkeypatch):
     # integration test
     # setup
-    data.data.cp_data["cp3"].data.set.plug_time = "11/01/2023, 08:12:40"
+    data.data.cp_data["cp3"].data.set.log.timestamp_start_charging = "11/01/2023, 08:12:40"
     # Mock today() to values in log-file
     datetime_mock = MagicMock(wraps=datetime.datetime)
     # Thu Nov 02 2023 07:00:51
@@ -135,7 +157,7 @@ def test_calculate_charge_cost(monkeypatch):
     monkeypatch.setattr(chargelog, "get_todays_daily_log", Mock(return_value=content_today))
 
     # execution
-    calculate_charge_cost()
+    calculate_charge_cost(data.data.cp_data["cp3"])
 
     # evaluation
-    assert data.data.cp_data["cp3"].data.set.log.costs == 0.5441
+    assert data.data.cp_data["cp3"].data.set.log.costs == 6.7509
