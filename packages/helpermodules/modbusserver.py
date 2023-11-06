@@ -108,7 +108,7 @@ try:
             elif askedvalue == 50:
                 _form_str(serial_number, address)
             elif askedvalue == 60:
-                _form_str(chargepoint.get.rfid, address)
+                _form_str(str(chargepoint.get.rfid), address)
 
         return data_store[address]
 except Exception:
