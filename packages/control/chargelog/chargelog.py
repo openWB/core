@@ -372,7 +372,9 @@ def _get_reference_position(cp, create_log_entry: bool) -> ReferenceTime:
 
 def get_reference_time(cp, reference_position):
     if reference_position == ReferenceTime.START:
-        return datetime.datetime.strptime(cp.data.set.log.timestamp_start_charging, "%m/%d/%Y, %H:%M:%S").timestamp()
+        return datetime.datetime.strptime(
+            cp.data.set.log.timestamp_start_charging, "%m/%d/%Y, %H:%M:%S").replace(
+                tzinfo=datetime.timezone.utc).timestamp()
     elif reference_position == ReferenceTime.MIDDLE:
         return (datetime.datetime.today()-datetime.timedelta(hours=1)).timestamp()
     elif reference_position == ReferenceTime.END:
