@@ -130,11 +130,9 @@ def save_data(chargepoint, charging_ev, immediately: bool = True, reset: bool = 
         }
 
         # json-Objekt in Datei einfügen
-        (pathlib.Path(__file__).resolve(
-        ).parents[2] / "data"/"charge_log").mkdir(mode=0o755, parents=True, exist_ok=True)
-        filepath = str(
-            pathlib.Path(__file__).resolve().parents[2] / "data" / "charge_log" /
-            (timecheck.create_timestamp_YYYYMM() + ".json"))
+        (_get_parent_file() / "data"/"charge_log").mkdir(mode=0o755, parents=True, exist_ok=True)
+        filepath = str(_get_parent_file() / "data" / "charge_log" /
+                       (timecheck.create_timestamp_YYYYMM() + ".json"))
         try:
             with open(filepath, "r", encoding="utf-8") as json_file:
                 content = json.load(json_file)
@@ -166,9 +164,8 @@ def get_log_data(request: Dict):
     log_data = {"entries": [], "totals": {}}
     try:
         # Datei einlesen
-        filepath = str(
-            pathlib.Path(__file__).resolve().parents[2] / "data" / "charge_log" /
-            (str(request["year"]) + str(request["month"]) + ".json"))
+        filepath = str(_get_parent_file() / "data" / "charge_log" /
+                       (str(request["year"]) + str(request["month"]) + ".json"))
         try:
             with open(filepath, "r", encoding="utf-8") as json_file:
                 charge_log = json.load(json_file)
@@ -407,7 +404,7 @@ def get_todays_daily_log():
 
 
 def get_daily_log(day):
-    filepath = str(pathlib.Path(__file__).resolve().parents[3] / "data" / "daily_log" / f"{day}.json")
+    filepath = str(_get_parent_file() / "data" / "daily_log" / f"{day}.json")
     try:
         with open(filepath, "r", encoding="utf-8") as json_file:
             return json.load(json_file)
@@ -430,3 +427,7 @@ def _calc(power_source: Dict[str, float], charged_energy_last_hour: float, et_ac
         f'Ladepreis für die letzte Stunde: {bat_costs}€ Speicher ({power_source["bat"]}%), {grid_costs}€ Netz '
         '({power_source["grid"]}%), {pv_costs}€ Pv ({power_source["pv"]}%)')
     return round(bat_costs + cp_costs + grid_costs + pv_costs, 4)
+
+
+def _get_parent_file() -> pathlib.Path:
+    return pathlib.Path(__file__).resolve().parents[3]
