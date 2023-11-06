@@ -153,7 +153,8 @@ class HandlerAlgorithm:
     @exit_after(10)
     def handler_hour(self):
         try:
-            calculate_charge_cost()
+            for cp in data.data.cp_data.values():
+                calculate_charge_cost(cp)
         except KeyboardInterrupt:
             log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())
         except Exception:

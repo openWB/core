@@ -1,4 +1,5 @@
 import datetime
+from enum import Enum
 import json
 import logging
 import math
@@ -96,6 +97,7 @@ def save_data(chargepoint, charging_ev, immediately: bool = True, reset: bool = 
         power = 0
         if duration > 0:
             power = log_data.imported_since_mode_switch / duration
+        calculate_charge_cost(chargepoint, True)
         costs = log_data.costs
         new_entry = {
             "chargepoint":
@@ -318,34 +320,68 @@ def truncate(number: Union[int, float], decimals: int = 0):
         log.exception("Fehler im Ladelog-Modul")
 
 
-def calculate_charge_cost(create_log_entry: bool = False):
+def calculate_charge_cost(cp, create_log_entry: bool = False):
     content = get_todays_daily_log()
-    for cp in data.data.cp_data.values():
-        try:
-            reference_time = _get_reference_time(cp, create_log_entry)
-            reference_entry = _get_reference_entry(content["entries"], reference_time)
-            energy_entry = process_entry(reference_entry, content["entries"][-1], CalculationType.ENERGY)
-            power_source_entry = analyse_percentage(energy_entry)
-            cp.data.set.log.costs += _calc(power_source_entry["power_source"],
-                                           # energy_imported in kWh
-                                           power_source_entry["cp"][f"cp{cp.num}"]["energy_imported"]*1000,
-                                           (data.data.optional_data.et_module is not None))
-        except Exception:
-            log.exception(f"Fehler beim Berechnen der Ladekosten für Ladepunkt {cp.num}")
+    try:
+        reference = _get_reference_position(cp, create_log_entry)
+        reference_time = get_reference_time(cp, reference)
+        reference_entry = _get_reference_entry(content["entries"], reference_time)
+        energy_entry = process_entry(reference_entry, content["entries"][-1], CalculationType.ENERGY)
+        power_source_entry = analyse_percentage(energy_entry)
+        if reference == ReferenceTime.START:
+            charged_energy = cp.data.set.log.imported_since_mode_switch
+        elif reference == ReferenceTime.MIDDLE:
+            # energy_imported in kWh
+            charged_energy = (content["entries"][-1]["cp"][f"cp{cp.num}"]["imported"] -
+                              power_source_entry["cp"][f"cp{cp.num}"]["energy_imported"]*1000)
+        elif reference == ReferenceTime.END:
+            reference_start_position = _get_reference_position(cp, False)
+            if reference_start_position == ReferenceTime.START:
+                charged_energy = cp.data.set.log.imported_since_mode_switch
+            else:
+                last_considered_entry = _get_reference_entry(
+                    content["entries"], timecheck.create_unix_timestamp_current_full_hour())
+                charged_energy = cp.data.get.imported - \
+                    last_considered_entry["cp"][f"cp{cp.num}"]["energy_imported"]*1000
+        else:
+            raise TypeError(f"Unbekannter Referenz-Zeitpunkt {reference}")
+        cp.data.set.log.costs += _calc(power_source_entry["power_source"],
+                                       charged_energy,
+                                       (data.data.optional_data.et_module is not None))
+    except Exception:
+        log.exception(f"Fehler beim Berechnen der Ladekosten für Ladepunkt {cp.num}")
 
 
-def _get_reference_time(cp, create_log_entry: bool) -> float:
+class ReferenceTime(Enum):
+    START = 0
+    MIDDLE = 1
+    END = 2
+
+
+def _get_reference_position(cp, create_log_entry: bool) -> ReferenceTime:
     # Referenz-Zeitpunkt ermitteln (angesteckt oder letzte volle Stunde)
     # Wurde innerhalb der letzten Stunde angesteckt?
     if create_log_entry:
         # Ladekosten für angefangene Stunde ermitteln
-        return timecheck.create_unix_timestamp_current_full_hour()
+        return ReferenceTime.END
     else:
         one_hour_back = (datetime.datetime.today()-datetime.timedelta(hours=1))
-        if timecheck.get_difference(cp.data.set.plug_time, one_hour_back.strftime("%m/%d/%Y, %H:%M:%S")) < 0:
-            return datetime.datetime.strptime(cp.data.set.plug_time, "%m/%d/%Y, %H:%M:%S").timestamp()
+        if (timecheck.get_difference(cp.data.set.log.timestamp_start_charging,
+                                     one_hour_back.strftime("%m/%d/%Y, %H:%M:%S")) < 0):
+            return ReferenceTime.START
         else:
-            return one_hour_back.timestamp()
+            return ReferenceTime.MIDDLE
+
+
+def get_reference_time(cp, reference_position):
+    if reference_position == ReferenceTime.START:
+        return datetime.datetime.strptime(cp.data.set.log.timestamp_start_charging, "%m/%d/%Y, %H:%M:%S").timestamp()
+    elif reference_position == ReferenceTime.MIDDLE:
+        return (datetime.datetime.today()-datetime.timedelta(hours=1)).timestamp()
+    elif reference_position == ReferenceTime.END:
+        return timecheck.create_unix_timestamp_current_full_hour()
+    else:
+        raise TypeError(f"Unbekannter Referenz-Zeitpunkt {reference_position}")
 
 
 def _get_reference_entry(entries: List[Dict], reference_time: float) -> Dict:
@@ -371,7 +407,7 @@ def get_todays_daily_log():
 
 
 def get_daily_log(day):
-    filepath = str(pathlib.Path(__file__).resolve().parents[2] / "data" / "daily_log" / f"{day}.json")
+    filepath = str(pathlib.Path(__file__).resolve().parents[3] / "data" / "daily_log" / f"{day}.json")
     try:
         with open(filepath, "r", encoding="utf-8") as json_file:
             return json.load(json_file)
@@ -379,16 +415,16 @@ def get_daily_log(day):
         return []
 
 
-def _calc(power_source: Dict[str, float], charged_power_last_hour: float, et_active: bool) -> float:
+def _calc(power_source: Dict[str, float], charged_energy_last_hour: float, et_active: bool) -> float:
     prices = data.data.general_data.data.prices
 
-    bat_costs = prices.bat * charged_power_last_hour * power_source["bat"]
-    cp_costs = prices.cp * charged_power_last_hour * power_source["cp"]
+    bat_costs = prices.bat * charged_energy_last_hour * power_source["bat"]
+    cp_costs = prices.cp * charged_energy_last_hour * power_source["cp"]
     if et_active:
-        grid_costs = data.data.optional_data.et_get_current_price() * charged_power_last_hour * power_source["grid"]
+        grid_costs = data.data.optional_data.et_get_current_price() * charged_energy_last_hour * power_source["grid"]
     else:
-        grid_costs = prices.grid * charged_power_last_hour * power_source["grid"]
-    pv_costs = prices.pv * charged_power_last_hour * power_source["pv"]
+        grid_costs = prices.grid * charged_energy_last_hour * power_source["grid"]
+    pv_costs = prices.pv * charged_energy_last_hour * power_source["pv"]
 
     log.debug(
         f'Ladepreis für die letzte Stunde: {bat_costs}€ Speicher ({power_source["bat"]}%), {grid_costs}€ Netz '
