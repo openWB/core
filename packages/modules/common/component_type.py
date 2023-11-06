@@ -30,7 +30,7 @@ def type_to_topic_mapping(component_type: str) -> str:
         return "counter"
     elif "inverter" in component_type:
         return "pv"
-    elif "electricity_tariff" in component_type:
+    elif ComponentType.ELECTRICITY_TARIFF.value in component_type:
         return "optional/et"
     else:
         return component_type

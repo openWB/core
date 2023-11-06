@@ -3,6 +3,7 @@ from helpermodules.timecheck import create_unix_timestamp_current_full_hour
 
 from modules.common import store
 from modules.common.component_context import SingleComponentUpdateContext
+from modules.common.component_type import ComponentType
 from modules.common.fault_state import ComponentInfo, FaultState
 
 
@@ -16,7 +17,7 @@ class ConfigurableElectricityTariff(Generic[T_TARIFF_CONFIG]):
         self.__component_updater = component_updater
         self.config = config
         self.store = store.get_electricity_tariff_value_store()
-        self.component_info = ComponentInfo(None, self.config.name, "electricity_tariff")
+        self.component_info = ComponentInfo(None, self.config.name, ComponentType.ELECTRICITY_TARIFF.value)
 
     def update(self):
         with SingleComponentUpdateContext(self.component_info):
