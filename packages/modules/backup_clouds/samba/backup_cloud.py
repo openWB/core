@@ -12,6 +12,7 @@ from modules.common.configurable_backup_cloud import ConfigurableBackupCloud
 
 log = logging.getLogger(__name__)
 
+
 def is_port_open(host: str, port: int):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.settimeout(3)
@@ -19,10 +20,11 @@ def is_port_open(host: str, port: int):
         s.connect(host, port)
         s.shutdown(socket.SHUT_RDWR)
         return True
-    except:
+    except Exception:
         return False
     finally:
         s.close()
+
 
 def upload_backup(config: SambaBackupCloudConfiguration, backup_filename: str, backup_file: bytes) -> None:
     conn = SMBConnection(config.smb_user, config.smb_password, os.uname()[1], config.smb_server, use_ntlm_v2=True)
@@ -48,8 +50,9 @@ def upload_backup(config: SambaBackupCloudConfiguration, backup_filename: str, b
         conn.close()
     elif send_file:
         log.warn("SMB Verbindungsaufbau fehlgeschlagen.")
-    elif host_is_reachable == False:
+    elif not host_is_reachable:
         log.warn("Host {} und/oder Port 139 nicht zu erreichen.".format(config.smb_server))
+
 
 def create_backup_cloud(config: SambaBackupCloud):
     def updater(backup_filename: str, backup_file: bytes):
