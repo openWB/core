@@ -329,7 +329,7 @@ def calculate_charge_cost(create_log_entry: bool = False):
             cp.data.set.log.costs += _calc(power_source_entry["power_source"],
                                            # energy_imported in kWh
                                            power_source_entry["cp"][f"cp{cp.num}"]["energy_imported"]*1000,
-                                           cp.data.set.charging_ev_data.charge_template.data.et.active)
+                                           (data.data.optional_data.et_module is not None))
         except Exception:
             log.exception(f"Fehler beim Berechnen der Ladekosten für Ladepunkt {cp.num}")
 
