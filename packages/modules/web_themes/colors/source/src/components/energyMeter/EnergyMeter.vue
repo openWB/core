@@ -57,13 +57,17 @@
 import { scaleBand, scaleLinear } from 'd3'
 import { max } from 'd3'
 import type { PowerItem } from '@/assets/js/types'
-import { sourceSummary, historicSummary } from '@/assets/js/model'
+import {
+	sourceSummary,
+	historicSummary,
+	energyMeterNeedsRedraw,
+} from '@/assets/js/model'
 import EMBarGraph from './EMBarGraph.vue'
 import EMYAxis from './EMYAxis.vue'
 import EMLabels from './EMLabels.vue'
 import WBWidget from '../shared/WBWidget.vue'
 import PgSelector from '../powerGraph/PgSelector.vue'
-import { globalConfig, setInitializeEnergyGraph } from '@/assets/js/themeConfig'
+import { globalConfig } from '@/assets/js/themeConfig'
 import {
 	shiftLeft,
 	shiftRight,
@@ -90,8 +94,9 @@ const axisFontsize = 12
 const plotdata = computed(() => {
 	let sources = Object.values(sourceSummary)
 	let usage = props.usageDetails
-	let historic = Object.values(historicSummary)
+	let historic = historicSummary.values()
 	let result: PowerItem[] = []
+
 	if (globalConfig.debug) {
 		console.debug('----------------------- source summary -----------------')
 		console.debug(sourceSummary)
@@ -101,7 +106,9 @@ const plotdata = computed(() => {
 		console.debug(historicSummary)
 		console.debug('--------------------------------------------------------')
 	}
-	setInitializeEnergyGraph(true)
+	if (energyMeterNeedsRedraw.value == true) {
+		energyMeterNeedsRedraw.value = false
+	}
 	switch (graphData.graphMode) {
 		default:
 		case 'live':

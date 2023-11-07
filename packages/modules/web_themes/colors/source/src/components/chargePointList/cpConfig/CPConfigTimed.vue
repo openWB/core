@@ -56,10 +56,7 @@ const props = defineProps<{
 	chargeTemplateId: number
 }>()
 const plans = computed(() => {
-	console.log(props.chargeTemplateId)
-
 	let result = Object.values(timeChargingPlans[props.chargeTemplateId])
-	console.log(result)
 	return result ?? []
 })
 function switchStyle(key: number) {

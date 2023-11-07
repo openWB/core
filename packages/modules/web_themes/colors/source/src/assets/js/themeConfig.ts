@@ -11,20 +11,21 @@ import { addShDevice, shDevices } from '@/components/smartHome/model'
 import { ChargeMode } from '@/components/chargePointList/model'
 import { sourceSummary } from './model'
 export class Config {
-	private _showRelativeArcs: boolean = false
-	showTodayGraph: boolean = true
-	private _graphPreference: string = 'today'
-	private _usageStackOrder: number = 0
-	private _displayMode: string = 'dark'
-	private _showGrid: boolean = false
-	private _smartHomeColors: string = 'normal'
-	private _decimalPlaces: number = 1
+	private _showRelativeArcs = false
+	showTodayGraph = true
+	private _graphPreference = 'today'
+	private _usageStackOrder = 0
+	private _displayMode = 'dark'
+	private _showGrid = false
+	private _smartHomeColors = 'normal'
+	private _decimalPlaces = 1
 	private _showQuickAccess = true
 	private _simpleCpList = false
 	private _showAnimations = true
 	private _preferWideBoxes = false
-	private _maxPower: number = 4000
-	private _fluidDisplay: boolean = false
+	private _maxPower = 4000
+	private _fluidDisplay = false
+	private _showClock = false
 	private _debug: boolean = false
 	isEtEnabled: boolean = false
 	etPrice: number = 20.5
@@ -167,6 +168,16 @@ export class Config {
 	setFluidDisplay(on: boolean) {
 		this._fluidDisplay = on
 	}
+	get showClock() {
+		return this._showClock
+	}
+	set showClock(on: boolean) {
+		this._showClock = on
+		savePrefs()
+	}
+	setShowClock(on: boolean) {
+		this._showClock = on
+	}
 	get debug() {
 		return this._debug
 	}
@@ -189,13 +200,6 @@ export function initConfig() {
 	doc.classed('shcolors-standard', globalConfig.smartHomeColors == 'standard')
 	doc.classed('shcolors-advanced', globalConfig.smartHomeColors == 'advanced')
 	doc.classed('shcolors-normal', globalConfig.smartHomeColors == 'normal')
-}
-export let initializeEnergyGraph = true
-export function energyGraphInitialized() {
-	initializeEnergyGraph = false
-}
-export function setInitializeEnergyGraph(val: boolean) {
-	initializeEnergyGraph = val
 }
 export let animateEnergyGraph = true
 export function setAnimateEnergyGraph(val: boolean) {
@@ -317,6 +321,7 @@ interface Preferences {
 	animation?: boolean
 	wideB?: boolean
 	fluidD?: boolean
+	clock?: boolean
 }
 
 function writeCookie() {
@@ -337,6 +342,7 @@ function writeCookie() {
 	prefs.animation = globalConfig.showAnimations
 	prefs.wideB = globalConfig.preferWideBoxes
 	prefs.fluidD = globalConfig.fluidDisplay
+	prefs.clock = globalConfig.showClock
 	document.cookie =
 		'openWBColorTheme=' + JSON.stringify(prefs) + '; max-age=16000000'
 }
@@ -394,6 +400,9 @@ function readCookie() {
 		}
 		if (prefs.fluidD != undefined) {
 			globalConfig.setFluidDisplay(prefs.fluidD)
+		}
+		if (prefs.clock != undefined) {
+			globalConfig.setShowClock(prefs.clock)
 		}
 	}
 }

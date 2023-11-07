@@ -1,8 +1,8 @@
 import { reactive } from 'vue'
 import { mqttSubscribe, mqttUnsubscribe } from '../../assets/js/mqttClient'
 import { sendCommand } from '@/assets/js/sendMessages'
-import { globalConfig, setInitializeEnergyGraph } from '@/assets/js/themeConfig'
-import { historicSummary } from '@/assets/js/model'
+import { globalConfig } from '@/assets/js/themeConfig'
+import { energyMeterNeedsRedraw, historicSummary } from '@/assets/js/model'
 
 export const consumerCategories = ['charging', 'house', 'batIn', 'devices']
 
@@ -16,14 +16,26 @@ export interface RawDayGraphDataItem {
 	timestamp: number
 	date: string
 	counter: object
-	pv: { all: { energy_exported: number; exported: number } }
-	hc: { all: { energy_imported: number; imported: number } }
+	pv: {
+		all: { power_exported: number; energy_exported: number; exported: number }
+	}
+	hc: {
+		all: {
+			power_imported: number
+			energy_imported: number
+			energy_exported: number
+			imported: number
+		}
+	}
 	bat: {
 		all: {
+			power_imported: number
+			power_exported: number
 			energy_imported: number
 			energy_exported: number
 			imported: number
 			exported: number
+			soc: number
 		}
 	}
 	cp: object
@@ -200,20 +212,12 @@ export const yearGraph = reactive({
 		mqttUnsubscribe(this.topic)
 	},
 	back() {
-		this.month -= 1
-		if (this.month < 1) {
-			this.month = 12
-			this.year -= 1
-		}
+		this.year -= 1
 		this.activate()
 	},
 	forward() {
-		if (this.month - 1 < new Date().getMonth()) {
-			this.month = this.month + 1
-			if (this.month > 12) {
-				this.month = 1
-				this.year += 1
-			}
+		if (this.year < new Date().getFullYear()) {
+			this.year = this.year + 1
 			this.activate()
 		}
 	},
@@ -265,44 +269,50 @@ export function initGraph(reloadOnly = false) {
 			yearGraph.activate()
 			break
 	}
-	setInitializeEnergyGraph(true)
 }
 export function setGraphMode(mode: string) {
 	graphData.graphMode = mode
 }
 export function calculateAutarchy(cat: string, values: GraphDataItem) {
-	values[cat + 'Pv'] =
-		(1000 * (values[cat] * (values.solarPower - values.gridPush))) /
-		(values.solarPower - values.gridPush + values.gridPull + values.batOut)
-	values[cat + 'Bat'] =
-		(1000 * (values[cat] * values.batOut)) /
-		(values.solarPower - values.gridPush + values.gridPull + values.batOut)
+	if (values[cat] > 0) {
+		historicSummary.items[cat].energyPv +=
+			((1000 / 12) * (values[cat] * (values.pv - values.evuOut))) /
+			(values.pv - values.evuOut + values.evuIn + values.batOut)
+		historicSummary.items[cat].energyBat +=
+			((1000 / 12) * (values[cat] * values.batOut)) /
+			(values.pv - values.evuOut + values.evuIn + values.batOut)
+	} else {
+		values[cat + 'Pv'] = 0
+		values[cat + 'Bat'] = 0
+	}
 }
 export function updateEnergyValues(powerValues: { [key: string]: number }) {
-	historicSummary.pv.energy = powerValues.solarPower * 1000
-	historicSummary.evuIn.energy = powerValues.gridPull * 1000
-	historicSummary.batOut.energy = powerValues.batOut * 1000
-	historicSummary.evuOut.energy = powerValues.gridPush * 1000
-	historicSummary.batIn.energy = powerValues.batIn * 1000
-	historicSummary.charging.energy = powerValues.charging * 1000
-	historicSummary.devices.energy = powerValues.devices * 1000
+	historicSummary.items.pv.energy = powerValues.pv * 1000
+	historicSummary.items.evuIn.energy = powerValues.evuIn * 1000
+	historicSummary.items.batOut.energy = powerValues.batOut * 1000
+	historicSummary.items.evuOut.energy = powerValues.evuOut * 1000
+	historicSummary.items.batIn.energy = powerValues.batIn * 1000
+	historicSummary.items.charging.energy = powerValues.charging * 1000
+	historicSummary.items.devices.energy = powerValues.devices * 1000
 
-	historicSummary.house.energy =
-		historicSummary.evuIn.energy +
-		historicSummary.pv.energy +
-		historicSummary.batOut.energy -
-		historicSummary.evuOut.energy -
-		historicSummary.batIn.energy -
-		historicSummary.charging.energy -
-		historicSummary.devices.energy
+	historicSummary.items.house.energy =
+		historicSummary.items.evuIn.energy +
+		historicSummary.items.pv.energy +
+		historicSummary.items.batOut.energy -
+		historicSummary.items.evuOut.energy -
+		historicSummary.items.batIn.energy -
+		historicSummary.items.charging.energy -
+		historicSummary.items.devices.energy
 
 	consumerCategories.map((cat) => {
-		historicSummary[cat].pvPercentage = Math.round(
-			((historicSummary[cat].energyPv + historicSummary[cat].energyBat) /
-				historicSummary[cat].energy) *
+		historicSummary.items[cat].pvPercentage = Math.round(
+			((historicSummary.items[cat].energyPv +
+				historicSummary.items[cat].energyBat) /
+				historicSummary.items[cat].energy) *
 				100,
 		)
 	})
+	energyMeterNeedsRedraw.value = true
 }
 export function shiftLeft() {
 	switch (graphData.graphMode) {
@@ -323,7 +333,9 @@ export function shiftLeft() {
 			break
 		case 'month':
 			monthGraph.back()
-
+			break
+		case 'year':
+			yearGraph.back()
 			break
 		default:
 			break
@@ -352,6 +364,9 @@ export function shiftRight() {
 			break
 		case 'month':
 			monthGraph.forward()
+			break
+		case 'year':
+			yearGraph.forward()
 			break
 		default:
 			break
@@ -382,7 +397,7 @@ export function shiftDown() {
 			initGraph()
 			break
 		case 'month':
-			graphData.graphMode = 'day'
+			graphData.graphMode = 'today'
 			initGraph()
 			break
 		case 'today':
