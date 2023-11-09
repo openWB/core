@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import time
 from dataclass_utils import dataclass_from_dict
 from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
@@ -17,9 +18,13 @@ class DeyeBat:
     def update(self, client: ModbusTcpClient_) -> None:
         unit = 1
         power = client.read_holding_registers(40590, ModbusDataType.INT_32, unit=unit)
+        time.sleep(0.05)
         soc = client.read_holding_registers(40588, ModbusDataType.INT_32, unit=unit)
+        time.sleep(0.05)
         imported = client.read_holding_registers(40516, ModbusDataType.INT_32, unit=unit) * 100
+        time.sleep(0.05)
         exported = client.read_holding_registers(40518, ModbusDataType.INT_32, unit=unit) * 100
+        time.sleep(0.05)
 
         bat_state = BatState(
             power=power,
