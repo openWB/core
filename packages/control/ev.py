@@ -752,16 +752,16 @@ class ChargeTemplate:
     SCHEDULED_CHARGING_REACHED_SCHEDULED_SOC = ("Falls vorhanden wird mit EVU-Überschuss geladen, da der Ziel-Soc "
                                                 "bereits erreicht wurde.")
     SCHEDULED_CHARGING_NO_PLANS_CONFIGURED = "Keine Ladung, da keine Ziel-Termine konfiguriert sind."
-    SCHEDULED_CHARGING_USE_PV = ("Kein Sofortladen, da noch Zeit bis zum Zieltermin ist. Falls vorhanden, "
-                                 "wird mit EVU-Überschuss geladen.")
+    SCHEDULED_CHARGING_USE_PV = ("Kein Zielladen, da noch Zeit bis zum Zieltermin ist. Falls vorhanden, "
+                                 "wird mit Überschuss geladen.")
     SCHEDULED_CHARGING_MAX_CURRENT = ("Zielladen mit {}A. Der Ladestrom wurde erhöht, um den Zieltermin zu erreichen. "
                                       "Es wird bis max. 20 Minuten nach dem angegebenen Zieltermin geladen.")
     SCHEDULED_CHARGING_LIMITED_BY_SOC = 'einen SoC von {}%'
     SCHEDULED_CHARGING_LIMITED_BY_AMOUNT = '{}kWh geladene Energie'
     SCHEDULED_CHARGING_IN_TIME = 'Zielladen mit {}A, um {}  um {} zu erreichen.'
-    SCHEDULED_CHARGING_CHEAP_HOUR = "Sofortladen, da ein günstiger Zeitpunkt zum preisbasierten Laden ist."
-    SCHEDULED_CHARGING_EXPENSIVE_HOUR = ("Kein Sofortladen, da kein günstiger Zeitpunkt zum preisbasierten Laden "
-                                         "ist. Falls vorhanden, wird mit EVU-Überschuss geladen.")
+    SCHEDULED_CHARGING_CHEAP_HOUR = "Zielladen, da ein günstiger Zeitpunkt zum preisbasierten Laden ist."
+    SCHEDULED_CHARGING_EXPENSIVE_HOUR = ("Kein Zielladen, da kein günstiger Zeitpunkt zum preisbasierten Laden "
+                                         "ist. Falls vorhanden, wird mit Überschuss geladen.")
 
     def scheduled_charging_calc_current(self,
                                         plan_data: Optional[SelectedPlan],
