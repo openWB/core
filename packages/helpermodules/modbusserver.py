@@ -52,24 +52,27 @@ def _form_int16(value, startreg):
 
 
 def _form_str(value: str, startreg):
-    bytes = value.encode("utf-8")
-    length = len(bytes)
-    if length > 20:
-        raise ValueError("String darf max 20 Zeichen enthalten.")
-    register_offset = 0
-    for i in range(0, length, 2):
-        try:
-            if i < length-1:
-                stream_two_bytes = struct.pack(">bb", bytes[i], bytes[i+1])
-                stream_one_word = struct.unpack(">h", stream_two_bytes)[0]
-            else:
-                stream_two_bytes = struct.pack(">bb", bytes[i], 0)
-                stream_one_word = struct.unpack(">h", stream_two_bytes)[0]
-            data_store[startreg+register_offset] = stream_one_word
-        except Exception:
-            data_store[startreg+register_offset] = -1
-        finally:
-            register_offset += 1
+    if value is None or len(value) == 0:
+        data_store[startreg] = 0
+    else:
+        bytes = value.encode("utf-8")
+        length = len(bytes)
+        if length > 20:
+            raise ValueError("String darf max 20 Zeichen enthalten.")
+        register_offset = 0
+        for i in range(0, length, 2):
+            try:
+                if i < length-1:
+                    stream_two_bytes = struct.pack(">bb", bytes[i], bytes[i+1])
+                    stream_one_word = struct.unpack(">h", stream_two_bytes)[0]
+                else:
+                    stream_two_bytes = struct.pack(">bb", bytes[i], 0)
+                    stream_one_word = struct.unpack(">h", stream_two_bytes)[0]
+                data_store[startreg+register_offset] = stream_one_word
+            except Exception:
+                data_store[startreg+register_offset] = -1
+            finally:
+                register_offset += 1
 
 
 def _get_pos(number, n):
@@ -108,7 +111,7 @@ try:
             elif askedvalue == 50:
                 _form_str(serial_number, address)
             elif askedvalue == 60:
-                _form_str(str(chargepoint.get.rfid), address)
+                _form_str(chargepoint.get.rfid, address)
 
         return data_store[address]
 except Exception:
