@@ -33,13 +33,13 @@ class ClientHandler:
                  evse_ids: List[int]) -> None:
         self.client = client
         self.local_charge_point_num = local_charge_point_num
-        self.evse_client = self.__evse_factory(client, evse_ids)
+        self.evse_client = self._evse_factory(client, evse_ids)
         self.meter_client = self.find_meter_client(CP0_METERS if self.local_charge_point_num == 0 else CP1_METERS,
                                                    client)
         self.check_hardware()
         self.read_error = 0
 
-    def __evse_factory(self, client: Union[ModbusSerialClient_, ModbusTcpClient_], evse_ids: List[int]) -> evse.Evse:
+    def _evse_factory(self, client: Union[ModbusSerialClient_, ModbusTcpClient_], evse_ids: List[int]) -> evse.Evse:
         for modbus_id in evse_ids:
             evse_client = evse.Evse(modbus_id, client)
             with client:
@@ -68,6 +68,14 @@ class ClientHandler:
         else:
             return None
     OPEN_TICKET = " Bitte nehme über die Support-Funktion in den Einstellungen Kontakt mit uns auf."
+    USB_ADAPTER_BROKEN = ("Auslesen von Zähler UND Evse nicht möglich. "
+                          f"Vermutlich ist der USB-Adapter defekt. {OPEN_TICKET}")
+    METER_PROBLEM = ("Der Zähler konnte nicht ausgelesen werden. "
+                     f"Vermutlich ist der Zähler falsch konfiguriert oder defekt. {OPEN_TICKET}")
+    METER_BROKEN = ("Die Spannungen des Zählers konnte nicht korrekt ausgelesen werden. "
+                    f"Vermutlich ist der Zähler falsch konfiguriert oder defekt. {OPEN_TICKET}")
+    EVSE_BROKEN = ("Auslesen der EVSE nicht möglich. "
+                   f"Vermutlich ist die EVSE defekt oder hat eine unbekannte Modbus-ID. {OPEN_TICKET}")
 
     def check_hardware(self):
         try:
@@ -77,28 +85,25 @@ class ClientHandler:
                 evse_check = False
         except Exception:
             evse_check = False
-        try:
-            if self.meter_client.get_voltages()[0] > 200:
-                meter_check = True
-            else:
-                meter_check = False
-        except Exception:
-            meter_check = False
+        meter_check, meter_error_msg = self.check_meter()
         if meter_check is False and evse_check is False:
             if isinstance(self.client, ModbusSerialClient_):
-                raise Exception("Auslesen von Zähler UND Evse nicht möglich. Vermutlich ist der USB-Adapter defekt." +
-                                self.OPEN_TICKET)
+                raise Exception()
             else:
-                raise Exception(
-                    "Auslesen von Zähler UND Evse nicht möglich. Vermutlich ist der Protos defekt oder falsch " +
-                    "konfiguriert." + self.OPEN_TICKET)
+                raise Exception(self.USB_ADAPTER_BROKEN)
         if meter_check is False:
-            raise Exception("Der Zähler antwortet nicht. Vermutlich ist der Zähler falsch konfiguriert oder defekt."
-                            + self.OPEN_TICKET)
+            raise Exception(meter_error_msg)
         if evse_check is False:
-            raise Exception(
-                "Auslesen der EVSE nicht möglich. Vermutlich ist die EVSE defekt oder hat eine unbekannte Modbus-ID."
-                + self.OPEN_TICKET)
+            raise Exception(self.EVSE_BROKEN)
+
+    def check_meter(self):
+        try:
+            if any([v < 200 for v in self.meter_client.get_voltages()]):
+                return False, self.METER_BROKEN
+            else:
+                return True, None
+        except Exception:
+            return False, self.METER_PROBLEM
 
     def get_pins_phase_switch(self, new_phases: int) -> Tuple[int, int]:
         # return gpio_cp, gpio_relay
