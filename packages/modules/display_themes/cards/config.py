@@ -38,9 +38,11 @@ class CardsDisplayTheme:
     def __init__(self,
                  name: str = "Cards",
                  type: str = "cards",
+                 official: bool = True,
                  configuration: CardsDisplayThemeConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.official = official
         self.configuration = configuration or CardsDisplayThemeConfiguration()
 
 
