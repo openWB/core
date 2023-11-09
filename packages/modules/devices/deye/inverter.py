@@ -19,9 +19,9 @@ class DeyeInverter:
 
     def update(self, client: ModbusTcpClient_) -> None:
         unit = self.component_config.configuration.modbus_id
-        power = sum(client.read_holding_registers(40672, [ModbusDataType.INT_32]*2, unit=unit))
+        power = sum(client.read_holding_registers(672, [ModbusDataType.INT_32]*2, unit=unit))
         time.sleep(0.05)
-        exported = client.read_holding_registers(40534, ModbusDataType.INT_32, unit=unit)
+        exported = client.read_holding_registers(534, ModbusDataType.INT_32, unit=unit)
         time.sleep(0.05)
 
         inverter_state = InverterState(

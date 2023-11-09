@@ -17,15 +17,15 @@ class DeyeCounter:
 
     def update(self, client: ModbusTcpClient_):
         unit = 1
-        power = client.read_holding_registers(40618, ModbusDataType.INT_32, unit=unit)
+        power = client.read_holding_registers(618, ModbusDataType.INT_32, unit=unit)
         time.sleep(0.05)
-        currents = [c * 100 for c in client.read_holding_registers(40614, [ModbusDataType.INT_32]*3, unit=unit)]
+        currents = [c * 100 for c in client.read_holding_registers(614, [ModbusDataType.INT_32]*3, unit=unit)]
         time.sleep(0.05)
-        powers = client.read_holding_registers(40617, [ModbusDataType.INT_32]*3, unit=unit)
+        powers = client.read_holding_registers(617, [ModbusDataType.INT_32]*3, unit=unit)
         time.sleep(0.05)
-        imported = client.read_holding_registers(40522, ModbusDataType.INT_32, unit=unit) * 100
+        imported = client.read_holding_registers(522, ModbusDataType.INT_32, unit=unit) * 100
         time.sleep(0.05)
-        exported = client.read_holding_registers(40524, ModbusDataType.INT_32, unit=unit) * 100
+        exported = client.read_holding_registers(524, ModbusDataType.INT_32, unit=unit) * 100
         time.sleep(0.05)
 
         counter_state = CounterState(

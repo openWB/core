@@ -17,13 +17,13 @@ class DeyeBat:
 
     def update(self, client: ModbusTcpClient_) -> None:
         unit = 1
-        power = client.read_holding_registers(40590, ModbusDataType.INT_32, unit=unit)
+        power = client.read_holding_registers(590, ModbusDataType.INT_32, unit=unit)
         time.sleep(0.05)
-        soc = client.read_holding_registers(40588, ModbusDataType.INT_32, unit=unit)
+        soc = client.read_holding_registers(588, ModbusDataType.INT_32, unit=unit)
         time.sleep(0.05)
-        imported = client.read_holding_registers(40516, ModbusDataType.INT_32, unit=unit) * 100
+        imported = client.read_holding_registers(516, ModbusDataType.INT_32, unit=unit) * 100
         time.sleep(0.05)
-        exported = client.read_holding_registers(40518, ModbusDataType.INT_32, unit=unit) * 100
+        exported = client.read_holding_registers(518, ModbusDataType.INT_32, unit=unit) * 100
         time.sleep(0.05)
 
         bat_state = BatState(
