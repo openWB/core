@@ -31,7 +31,7 @@ log = logging.getLogger(__name__)
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 27
+    DATASTORE_VERSION = 28
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -1020,3 +1020,20 @@ class UpdateConfig:
                     Pub().pub(topic.replace("openWB/", "openWB/set/"), configuration_payload)
         self._loop_all_received_topics(upgrade)
         Pub().pub("openWB/system/datastore_version", 27)
+
+    def upgrade_datastore_27(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            # add "official" flag if display theme "card" is selected
+            if re.search("openWB/optional/int_display/theme", topic) is not None:
+                configuration_payload = decode_payload(payload)
+                if configuration_payload.get("type") == "cards":
+                    configuration_payload.update({"official": True})
+                    Pub().pub(topic.replace("openWB/", "openWB/set/"), configuration_payload)
+            # add "official" flag if web theme "standard_legacy" is selected
+            if re.search("openWB/general/web_theme", topic) is not None:
+                configuration_payload = decode_payload(payload)
+                if configuration_payload.get("type") == "standard_legacy":
+                    configuration_payload.update({"official": True})
+                    Pub().pub(topic.replace("openWB/", "openWB/set/"), configuration_payload)
+        self._loop_all_received_topics(upgrade)
+        Pub().pub("openWB/system/datastore_version", 28)
