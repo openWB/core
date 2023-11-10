@@ -3,6 +3,7 @@ import logging
 from socketserver import TCPServer
 from collections import defaultdict
 import struct
+from typing import Optional
 from umodbus import conf
 from umodbus.server.tcp import RequestHandler, get_server
 from umodbus.utils import log_to_stream
