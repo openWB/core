@@ -1,41 +1,35 @@
 #!/usr/bin/env python3
-import time
 from dataclass_utils import dataclass_from_dict
-from modules.common.component_state import CounterState
+from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
-from modules.common.store import get_counter_value_store
-from modules.devices.deye.config import DeyeCounterSetup
+from modules.common.store import get_bat_value_store
+from modules.devices.deye.config import DeyeBatSetup
 
 
-class DeyeCounter:
-    def __init__(self, component_config: DeyeCounterSetup) -> None:
-        self.component_config = dataclass_from_dict(DeyeCounterSetup, component_config)
-        self.store = get_counter_value_store(self.component_config.id)
+class DeyeBat:
+    def __init__(self, component_config: DeyeBatSetup) -> None:
+        self.component_config = dataclass_from_dict(DeyeBatSetup, component_config)
+        self.store = get_bat_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
 
-    def update(self, client: ModbusTcpClient_):
-        unit = 1
-        power = client.read_holding_registers(618, ModbusDataType.INT_32, unit=unit)
-        time.sleep(0.05)
-        currents = [c * 100 for c in client.read_holding_registers(614, [ModbusDataType.INT_32]*3, unit=unit)]
-        time.sleep(0.05)
-        powers = client.read_holding_registers(617, [ModbusDataType.INT_32]*3, unit=unit)
-        time.sleep(0.05)
-        imported = client.read_holding_registers(522, ModbusDataType.INT_32, unit=unit) * 100
-        time.sleep(0.05)
-        exported = client.read_holding_registers(524, ModbusDataType.INT_32, unit=unit) * 100
-        time.sleep(0.05)
+    def update(self, client: ModbusTcpClient_) -> None:
+        unit = 1  # sollte dieser nicht aus der Konfiguration kommen; derWR könnte ja auch ID4 haben
+        power = client.read_holding_registers(590, ModbusDataType.INT_16, unit=unit)
+        soc = client.read_holding_registers(588, ModbusDataType.INT_16, unit=unit)
+        # Geladen in Wh
+        imported = client.read_holding_registers(516, ModbusDataType.INT_16, unit=unit)
+        # Entladen in Wh
+        exported = client.read_holding_registers(518, ModbusDataType.INT_16, unit=unit)
 
-        counter_state = CounterState(
-            currents=currents,
-            imported=imported,
-            exported=exported,
+        bat_state = BatState(
             power=power,
-            powers=powers,
+            soc=soc,
+            imported=imported,
+            exported=exported
         )
-        self.store.set(counter_state)
+        self.store.set(bat_state)
 
 
-component_descriptor = ComponentDescriptor(configuration_factory=DeyeCounterSetup)
+component_descriptor = ComponentDescriptor(configuration_factory=DeyeBatSetup)

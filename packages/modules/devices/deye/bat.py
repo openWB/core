@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import time
 from dataclass_utils import dataclass_from_dict
 from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
@@ -16,15 +15,13 @@ class DeyeBat:
         self.component_info = ComponentInfo.from_component_config(self.component_config)
 
     def update(self, client: ModbusTcpClient_) -> None:
-        unit = 1
-        power = client.read_holding_registers(590, ModbusDataType.INT_32, unit=unit)
-        time.sleep(0.05)
-        soc = client.read_holding_registers(588, ModbusDataType.INT_32, unit=unit)
-        time.sleep(0.05)
-        imported = client.read_holding_registers(516, ModbusDataType.INT_32, unit=unit) * 100
-        time.sleep(0.05)
-        exported = client.read_holding_registers(518, ModbusDataType.INT_32, unit=unit) * 100
-        time.sleep(0.05)
+        unit = 1  # sollte dieser nicht aus der Konfiguration kommen; derWR könnte ja auch ID4 haben
+        power = client.read_holding_registers(590, ModbusDataType.INT_16, unit=unit)
+        soc = client.read_holding_registers(588, ModbusDataType.INT_16, unit=unit)
+        # Geladen in Wh
+        imported = client.read_holding_registers(516, ModbusDataType.INT_16, unit=unit)
+        # Entladen in Wh
+        exported = client.read_holding_registers(518, ModbusDataType.INT_16, unit=unit)
 
         bat_state = BatState(
             power=power,
