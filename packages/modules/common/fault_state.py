@@ -100,8 +100,11 @@ class FaultState(Exception):
         return FaultState(message, FaultStateLevel.WARNING)
 
     @staticmethod
-    def no_error() -> "FaultState":
-        return FaultState(NO_ERROR, FaultStateLevel.NO_ERROR)
+    def no_error(message: Optional[str] = None) -> "FaultState":
+        if message is None:
+            return FaultState(NO_ERROR, FaultStateLevel.NO_ERROR)
+        else:
+            return FaultState(message, FaultStateLevel.NO_ERROR)
 
     @staticmethod
     def from_exception(exception: Optional[Exception] = None) -> "FaultState":
