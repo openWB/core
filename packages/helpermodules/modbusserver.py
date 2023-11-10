@@ -51,7 +51,7 @@ def _form_int16(value, startreg):
         data_store[startreg] = -1
 
 
-def _form_str(value: str, startreg):
+def _form_str(value: Optional[str], startreg):
     if value is None or len(value) == 0:
         data_store[startreg] = 0
     else:
