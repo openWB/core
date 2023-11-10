@@ -80,20 +80,20 @@ class ClientHandler:
     def check_hardware(self):
         try:
             if self.evse_client.get_firmware_version() > EVSE_MIN_FIRMWARE:
-                evse_check = True
+                evse_check_passed = True
             else:
-                evse_check = False
+                evse_check_passed = False
         except Exception:
-            evse_check = False
-        meter_check, meter_error_msg = self.check_meter()
-        if meter_check is False and evse_check is False:
+            evse_check_passed = False
+        meter_check_passed, meter_error_msg = self.check_meter()
+        if meter_check_passed is False and evse_check_passed is False:
             if isinstance(self.client, ModbusSerialClient_):
                 raise Exception()
             else:
                 raise Exception(self.USB_ADAPTER_BROKEN)
-        if meter_check is False:
+        if meter_check_passed is False:
             raise Exception(meter_error_msg)
-        if evse_check is False:
+        if evse_check_passed is False:
             raise Exception(self.EVSE_BROKEN)
 
     def check_meter(self):
