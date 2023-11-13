@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import logging
 from dataclass_utils import dataclass_from_dict
 from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
@@ -6,6 +7,8 @@ from modules.common.fault_state import ComponentInfo
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.store import get_bat_value_store
 from modules.devices.deye.config import DeyeBatSetup
+
+log = logging.getLogger(__name__)
 
 
 class DeyeBat:
@@ -22,6 +25,12 @@ class DeyeBat:
         imported = client.read_holding_registers(516, ModbusDataType.INT_16, unit=unit) * 100
         # 518: Entladen in kWh * 0,1
         exported = client.read_holding_registers(518, ModbusDataType.INT_16, unit=unit) * 100
+
+        log.debug(f"Reg: 514, Value: {client.read_holding_registers(514, ModbusDataType.INT_16, unit=unit) * 100}")
+        log.debug(f"Reg: 515, Value: {client.read_holding_registers(515, ModbusDataType.INT_16, unit=unit) * 100}")
+        log.debug(f"Reg: 517, Value: {client.read_holding_registers(517, ModbusDataType.INT_16, unit=unit) * 100}")
+        log.debug(f"Reg: 519, Value: {client.read_holding_registers(519, ModbusDataType.INT_16, unit=unit) * 100}")
+        log.debug(f"Reg: 520, Value: {client.read_holding_registers(520, ModbusDataType.INT_16, unit=unit) * 100}")
 
         bat_state = BatState(
             power=power,
