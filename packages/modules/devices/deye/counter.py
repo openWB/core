@@ -1,35 +1,37 @@
 #!/usr/bin/env python3
 from dataclass_utils import dataclass_from_dict
-from modules.common.component_state import BatState
+from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
-from modules.common.store import get_bat_value_store
-from modules.devices.deye.config import DeyeBatSetup
+from modules.common.store import get_counter_value_store
+from modules.devices.deye.config import DeyeCounterSetup
 
 
-class DeyeBat:
-    def __init__(self, component_config: DeyeBatSetup) -> None:
-        self.component_config = dataclass_from_dict(DeyeBatSetup, component_config)
-        self.store = get_bat_value_store(self.component_config.id)
+class DeyeCounter:
+    def __init__(self, component_config: DeyeCounterSetup) -> None:
+        self.component_config = dataclass_from_dict(DeyeCounterSetup, component_config)
+        self.store = get_counter_value_store(self.component_config.id)
         self.component_info = ComponentInfo.from_component_config(self.component_config)
 
-    def update(self, client: ModbusTcpClient_) -> None:
+    def update(self, client: ModbusTcpClient_):
         unit = self.component_config.configuration.modbus_id
-        power = client.read_holding_registers(590, ModbusDataType.INT_16, unit=unit)
-        soc = client.read_holding_registers(588, ModbusDataType.INT_16, unit=unit)
-        # 516: Geladen in kWh * 0,1
-        imported = client.read_holding_registers(516, ModbusDataType.INT_16, unit=unit) * 100
-        # 518: Entladen in kWh * 0,1
-        exported = client.read_holding_registers(518, ModbusDataType.INT_16, unit=unit) * 100
+        currents = [c * 100 for c in client.read_holding_registers(613, [ModbusDataType.INT_16]*3, unit=unit)]
+        powers = client.read_holding_registers(616, [ModbusDataType.INT_16]*3, unit=unit)
+        power = sum(powers)
 
-        bat_state = BatState(
-            power=power,
-            soc=soc,
+        # Wenn der Import/export Netz in wh gerechnet wird => *100 !! kommt in kw/h *0.1
+        imported = client.read_holding_registers(522, ModbusDataType.INT_16, unit=unit) * 100
+        exported = client.read_holding_registers(524, ModbusDataType.INT_16, unit=unit) * 100
+
+        counter_state = CounterState(
+            currents=currents,
             imported=imported,
-            exported=exported
+            exported=exported,
+            power=power,
+            powers=powers,
         )
-        self.store.set(bat_state)
+        self.store.set(counter_state)
 
 
-component_descriptor = ComponentDescriptor(configuration_factory=DeyeBatSetup)
+component_descriptor = ComponentDescriptor(configuration_factory=DeyeCounterSetup)
