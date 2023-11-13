@@ -26,8 +26,8 @@ class Deye:
 
 @auto_str
 class DeyeBatConfiguration:
-    def __init__(self):
-        pass
+    def __init__(self, modbus_id: int = 1):
+        self.modbus_id = modbus_id
 
 
 @auto_str
@@ -42,8 +42,8 @@ class DeyeBatSetup(ComponentSetup[DeyeBatConfiguration]):
 
 @auto_str
 class DeyeCounterConfiguration:
-    def __init__(self):
-        pass
+    def __init__(self, modbus_id: int = 1):
+        self.modbus_id = modbus_id
 
 
 @auto_str

@@ -15,13 +15,13 @@ class DeyeBat:
         self.component_info = ComponentInfo.from_component_config(self.component_config)
 
     def update(self, client: ModbusTcpClient_) -> None:
-        unit = 1  # sollte dieser nicht aus der Konfiguration kommen; derWR könnte ja auch ID4 haben
+        unit = self.component_config.configuration.modbus_id
         power = client.read_holding_registers(590, ModbusDataType.INT_16, unit=unit)
         soc = client.read_holding_registers(588, ModbusDataType.INT_16, unit=unit)
-        # Geladen in Wh
-        imported = client.read_holding_registers(516, ModbusDataType.INT_16, unit=unit)
-        # Entladen in Wh
-        exported = client.read_holding_registers(518, ModbusDataType.INT_16, unit=unit)
+        # 516: Geladen in kWh * 0,1
+        imported = client.read_holding_registers(516, ModbusDataType.INT_16, unit=unit) * 100
+        # 518: Entladen in kWh * 0,1
+        exported = client.read_holding_registers(518, ModbusDataType.INT_16, unit=unit) * 100
 
         bat_state = BatState(
             power=power,

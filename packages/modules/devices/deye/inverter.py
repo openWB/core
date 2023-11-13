@@ -17,9 +17,6 @@ class DeyeInverter:
         self.component_info = ComponentInfo.from_component_config(self.component_config)
 
     def update(self, client: ModbusTcpClient_) -> None:
-        # hier wird er aus der Konfiguration übernommen; bei bat.py und counter ist er fix auf 1 gestellt
-        # es können aber bis zu 15 WR in Serie (parallel) geschalten werden
-        # kann diese ID nicht "durchgereicht" werden ?
         unit = self.component_config.configuration.modbus_id
 
         # Wechselrichter hat 2 mppt Tracker
@@ -27,8 +24,8 @@ class DeyeInverter:
         power_in2 = sum(client.read_holding_registers(673, ModbusDataType.INT_16, unit=unit))
         power = power_in1 + power_in2
 
-        # Gesamt Produktion Wechselrichter unsigned integer in Wh
-        exported = client.read_holding_registers(534, ModbusDataType.UINT_16, unit=unit)
+        # 534: Gesamt Produktion Wechselrichter unsigned integer in kWh * 0,1
+        exported = client.read_holding_registers(534, ModbusDataType.UINT_16, unit=unit) * 100
 
         inverter_state = InverterState(
             power=power,
