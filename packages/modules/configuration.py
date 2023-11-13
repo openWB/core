@@ -66,6 +66,7 @@ def _pub_configurable_web_themes() -> None:
                 themes_modules.append({
                     "value": dev_defaults.type,
                     "text": dev_defaults.name,
+                    "official": dev_defaults.official if hasattr(dev_defaults, "official") else False,
                     "defaults": dataclass_utils.asdict(dev_defaults)
                 })
             except Exception:
@@ -90,6 +91,7 @@ def _pub_configurable_display_themes() -> None:
                 themes_modules.append({
                     "value": dev_defaults.type,
                     "text": dev_defaults.name,
+                    "official": dev_defaults.official if hasattr(dev_defaults, "official") else False,
                     "defaults": dataclass_utils.asdict(dev_defaults)
                 })
             except Exception:
