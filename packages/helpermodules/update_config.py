@@ -1048,8 +1048,4 @@ class UpdateConfig:
                         configuration_payload["configuration"].update({"version": "v_1_7"})
                     Pub().pub(topic.replace("openWB/", "openWB/set/"), configuration_payload)
         self._loop_all_received_topics(upgrade)
-<<<<<<< HEAD
         Pub().pub("openWB/system/datastore_version", 29)
-=======
-        Pub().pub("openWB/system/datastore_version", 28)
->>>>>>> fe28fd67f (fix)
