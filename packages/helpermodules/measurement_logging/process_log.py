@@ -174,6 +174,20 @@ def _collect_monthly_log_data(date: str):
     try:
         with open(str(Path(__file__).resolve().parents[3] / "data"/"monthly_log"/(date+".json")), "r") as jsonFile:
             log_data = json.load(jsonFile)
+        this_month = timecheck.create_timestamp_YYYYMM()
+        if date == this_month:
+            # add last entry of current day, if current month is requested
+            try:
+                today = timecheck.create_timestamp_YYYYMMDD()
+                with open(str(Path(__file__).resolve().parents[3] / "data" / "daily_log"/(today+".json")),
+                          "r") as todayJsonFile:
+                    today_log_data = json.load(todayJsonFile)
+                    if len(today_log_data["entries"]) > 0:
+                        log_data["entries"].append(today_log_data["entries"][-1])
+            except FileNotFoundError:
+                pass
+        else:
+            # add first entry of next month
             try:
                 next_date = timecheck.get_relative_date_string(date, month_offset=1)
                 with open(str(Path(__file__).resolve().parents[3] / "data"/"monthly_log"/(next_date+".json")),
@@ -182,7 +196,8 @@ def _collect_monthly_log_data(date: str):
                     log_data["entries"].append(next_log_data["entries"][0])
             except FileNotFoundError:
                 pass
-            log_data["totals"] = get_totals(log_data["entries"])
+        # calculate totals
+        log_data["totals"] = get_totals(log_data["entries"])
     except FileNotFoundError:
         log_data = {"entries": [], "totals": {}, "names": {}}
     return log_data
