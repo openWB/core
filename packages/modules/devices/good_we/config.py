@@ -4,9 +4,10 @@ from modules.common.component_setup import ComponentSetup
 
 
 class GoodWeConfiguration:
-    def __init__(self, ip_address: Optional[str] = None, modbus_id: int = 247):
+    def __init__(self, ip_address: Optional[str] = None, modbus_id: int = 247, version: str = "V1.7"):
         self.ip_address = ip_address
         self.modbus_id = modbus_id
+        self.version = version
 
 
 class GoodWe:
