@@ -31,7 +31,7 @@ log = logging.getLogger(__name__)
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 28
+    DATASTORE_VERSION = 29
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -1037,3 +1037,15 @@ class UpdateConfig:
                     Pub().pub(topic.replace("openWB/", "openWB/set/"), configuration_payload)
         self._loop_all_received_topics(upgrade)
         Pub().pub("openWB/system/datastore_version", 28)
+
+    def upgrade_datastore_28(self) -> None:
+        # module kostal_pico_old: rename "ip_address" in configuration to "url" as we need a complete url
+        def upgrade(topic: str, payload) -> None:
+            if re.search("openWB/system/device/[0-9]+/config", topic) is not None:
+                configuration_payload = decode_payload(payload)
+                if configuration_payload.get("type") == "good_we":
+                    if configuration_payload["configuration"].get("version") is None:
+                        configuration_payload["configuration"].update({"version": "v_1_7"})
+                    Pub().pub(topic.replace("openWB/", "openWB/set/"), configuration_payload)
+        self._loop_all_received_topics(upgrade)
+        Pub().pub("openWB/system/datastore_version", 29)

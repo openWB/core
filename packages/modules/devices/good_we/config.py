@@ -12,7 +12,7 @@ class GoodWeConfiguration:
 
 class GoodWe:
     def __init__(self,
-                 name: str = "GoodWe ET-Serie (5-10kW)",
+                 name: str = "GoodWe",
                  type: str = "good_we",
                  id: int = 0,
                  configuration: GoodWeConfiguration = None) -> None:
