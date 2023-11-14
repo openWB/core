@@ -19,18 +19,12 @@ class DeyeBat:
 
     def update(self, client: ModbusTcpClient_) -> None:
         unit = self.component_config.configuration.modbus_id
-        power = client.read_holding_registers(590, ModbusDataType.INT_16, unit=unit)
+        power = client.read_holding_registers(590, ModbusDataType.INT_16, unit=unit) * -1
         soc = client.read_holding_registers(588, ModbusDataType.INT_16, unit=unit)
         # 516: Geladen in kWh * 0,1
-        imported = client.read_holding_registers(516, ModbusDataType.INT_16, unit=unit) * 100
+        imported = client.read_holding_registers(516, ModbusDataType.UINT_16, unit=unit) * 100
         # 518: Entladen in kWh * 0,1
-        exported = client.read_holding_registers(518, ModbusDataType.INT_16, unit=unit) * 100
-
-        log.debug(f"Reg: 514, Value: {client.read_holding_registers(514, ModbusDataType.INT_16, unit=unit) * 100}")
-        log.debug(f"Reg: 515, Value: {client.read_holding_registers(515, ModbusDataType.INT_16, unit=unit) * 100}")
-        log.debug(f"Reg: 517, Value: {client.read_holding_registers(517, ModbusDataType.INT_16, unit=unit) * 100}")
-        log.debug(f"Reg: 519, Value: {client.read_holding_registers(519, ModbusDataType.INT_16, unit=unit) * 100}")
-        log.debug(f"Reg: 520, Value: {client.read_holding_registers(520, ModbusDataType.INT_16, unit=unit) * 100}")
+        exported = client.read_holding_registers(518, ModbusDataType.UINT_16, unit=unit) * 100
 
         bat_state = BatState(
             power=power,

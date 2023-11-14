@@ -17,7 +17,7 @@ class DeyeCounter:
     def update(self, client: ModbusTcpClient_):
         unit = self.component_config.configuration.modbus_id
         currents = [c / 100 for c in client.read_holding_registers(613, [ModbusDataType.INT_16]*3, unit=unit)]
-        voltages = client.read_holding_registers(644, [ModbusDataType.INT_16]*3, unit=unit)
+        voltages = [v / 10 for v in client.read_holding_registers(644, [ModbusDataType.INT_16]*3, unit=unit)]
         powers = client.read_holding_registers(616, [ModbusDataType.INT_16]*3, unit=unit)
         power = sum(powers)
 
