@@ -45,7 +45,7 @@ class ChargepointModule(AbstractChargepoint):
                 else:
                     my_ip_address = data.data.system_data["system"].data["ip_address"]
                 pub.pub_single("openWB/set/internal_chargepoint/global_data",
-                               {"heartbeat": timecheck.create_timestamp_unix(), "parent_ip": my_ip_address},
+                               {"heartbeat": timecheck.create_timestamp(), "parent_ip": my_ip_address},
                                hostname=ip_address)
                 pub.pub_single("openWB/set/isss/heartbeat", 0, hostname=ip_address)
                 pub.pub_single("openWB/set/isss/parentWB", my_ip_address,
