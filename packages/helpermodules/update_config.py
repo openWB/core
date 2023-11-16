@@ -1039,7 +1039,6 @@ class UpdateConfig:
         Pub().pub("openWB/system/datastore_version", 28)
 
     def upgrade_datastore_28(self) -> None:
-        # Wenn mehrere EV eine Fahrzeug-Vorlage nutzen, wird die Effizienz des letzten für alle in der Vorlage gesetzt.
         def upgrade(topic: str, payload) -> None:
             if re.search("openWB/vehicle/[0-9]+/soc_module/calculated_soc_state", topic) is not None:
                 payload = decode_payload(payload)
