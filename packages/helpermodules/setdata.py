@@ -133,6 +133,15 @@ class SetData:
                     valid = True
                 else:
                     log.error(f"Payload ungültig: Topic {msg.topic}, Payload {value} sollte ein String sein.")
+            elif isinstance(data_type, Tuple):
+                if int in data_type:
+                    if self._validate_min_max_value(value, msg, int, ranges):
+                        valid = True
+                if float in data_type:
+                    if self._validate_min_max_value(value, msg, float, ranges):
+                        valid = True
+                if None in data_type and value is None:
+                    valid = True
             elif data_type == int or data_type == float:
                 if self._validate_min_max_value(value, msg, data_type, ranges) or isinstance(value, type(None)):
                     valid = True
@@ -521,7 +530,7 @@ class SetData:
                     self._validate_value(msg, int, [(0, 4)])
                 elif ("/set/rfid" in msg.topic or
                         "/set/plug_time" in msg.topic):
-                    self._validate_value(msg, str)
+                    self._validate_value(msg, float)
                 elif "/set/log" in msg.topic:
                     self._validate_value(msg, "json")
                 elif "/set/change_ev_permitted" in msg.topic:
@@ -543,13 +552,13 @@ class SetData:
                     self._validate_value(msg, str)
                 elif "/control_parameter/prio" in msg.topic:
                     self._validate_value(msg, bool)
-                elif ("/control_parameter/timestamp_switch_on_off" in msg.topic or
-                        "/control_parameter/timestamp_auto_phase_switch" in msg.topic or
-                        "/control_parameter/timestamp_perform_phase_switch" in msg.topic or
-                        "/control_parameter/current_plan" in msg.topic):
+                elif "/control_parameter/current_plan" in msg.topic:
                     self._validate_value(msg, str)
                 elif ("/control_parameter/imported_instant_charging" in msg.topic or
-                        "/control_parameter/imported_at_plan_start" in msg.topic):
+                        "/control_parameter/imported_at_plan_start" in msg.topic or
+                        "/control_parameter/timestamp_switch_on_off" in msg.topic or
+                        "/control_parameter/timestamp_auto_phase_switch" in msg.topic or
+                        "/control_parameter/timestamp_perform_phase_switch" in msg.topic):
                     self._validate_value(msg, float, [(0, float("inf"))])
                 elif "/control_parameter/state" in msg.topic:
                     self._validate_value(msg, int, [(0, 7)])

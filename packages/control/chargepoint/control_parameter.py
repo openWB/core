@@ -44,13 +44,13 @@ class ControlParameter:
     submode: Chargemode_enum = field(
         default=Chargemode_enum.STOP,
         metadata={"topic": "control_parameter/submode", "mutable_by_algorithm": True})
-    timestamp_auto_phase_switch: Optional[str] = field(
+    timestamp_auto_phase_switch: Optional[float] = field(
         default=None,
         metadata={"topic": "control_parameter/timestamp_auto_phase_switch", "mutable_by_algorithm": True})
-    timestamp_perform_phase_switch: Optional[str] = field(
+    timestamp_perform_phase_switch: Optional[float] = field(
         default=None,
         metadata={"topic": "control_parameter/timestamp_perform_phase_switch", "mutable_by_algorithm": True})
-    timestamp_switch_on_off: Optional[str] = field(
+    timestamp_switch_on_off: Optional[float] = field(
         default=None,
         metadata={"topic": "control_parameter/timestamp_switch_on_off", "mutable_by_algorithm": True})
 

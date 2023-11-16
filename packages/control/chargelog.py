@@ -53,7 +53,7 @@ def collect_data(chargepoint):
                           f"counter {chargepoint.data.get.imported}")
                 log_data.range_charged = log_data.imported_since_mode_switch / \
                     charging_ev.ev_template.data.average_consump * 100
-                log_data.time_charged, _ = timecheck.get_difference_to_now(log_data.timestamp_start_charging)
+                log_data.time_charged = timecheck.get_difference_to_now(log_data.timestamp_start_charging)
             Pub().pub(f"openWB/set/chargepoint/{chargepoint.num}/set/log", asdict(log_data))
     except Exception:
         log.exception("Fehler im Ladelog-Modul")
@@ -235,8 +235,7 @@ def get_log_data(request: Dict):
             power = 0
             costs = 0
             for entry in log_data["entries"]:
-                duration = timecheck.duration_sum(
-                    duration, entry["time"]["time_charged"])
+                duration = duration + entry["time"]["time_charged"]
                 range_charged += entry["data"]["range_charged"]
                 mode += entry["data"]["imported_since_mode_switch"]
                 power += entry["data"]["power"]
