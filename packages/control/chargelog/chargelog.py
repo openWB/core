@@ -427,7 +427,7 @@ def _calc(power_source: Dict[str, float], charged_energy_last_hour: float, et_ac
 
     log.debug(
         f'Ladepreis für die letzte Stunde: {bat_costs}€ Speicher ({power_source["bat"]}%), {grid_costs}€ Netz '
-        '({power_source["grid"]}%), {pv_costs}€ Pv ({power_source["pv"]}%)')
+        f'({power_source["grid"]}%), {pv_costs}€ Pv ({power_source["pv"]}%)')
     return round(bat_costs + cp_costs + grid_costs + pv_costs, 4)
 
 
