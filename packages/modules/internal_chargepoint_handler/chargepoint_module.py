@@ -63,6 +63,9 @@ class ChargepointModule(AbstractChargepoint):
             if power < self.PLUG_STANDBY_POWER_THRESHOLD:
                 power = 0
             voltages = self.__client.meter_client.get_voltages()
+            meter_check_passed, meter_error_msg = self.__client.check_meter()
+            if meter_check_passed is False:
+                raise ValueError(meter_error_msg)
             currents = self.__client.meter_client.get_currents()
             imported = self.__client.meter_client.get_imported()
             power_factors = self.__client.meter_client.get_power_factors()
