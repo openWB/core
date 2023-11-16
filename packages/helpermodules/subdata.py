@@ -279,7 +279,6 @@ class SubData:
                             if isinstance(var["ev"+index].soc_module.vehicle_config, ManualSoc):
                                 if (calculated_soc_state.manual_soc and calculated_soc_state.manual_soc !=
                                         var["ev"+index].soc_module.calculated_soc_state.manual_soc):
-                                    calculated_soc_state.request_start_soc = True
                                     Pub().pub(f"openWB/vehicle/{index}/get/force_soc_update", True)
                             var["ev"+index].soc_module.calculated_soc_state = calculated_soc_state
                     elif re.search("/vehicle/[0-9]+/soc_module/config$", msg.topic) is not None:
@@ -417,6 +416,12 @@ class SubData:
                         if re.search("/chargepoint/[0-9]+/get/connected_vehicle/", msg.topic) is not None:
                             self.set_json_payload_class(var["cp"+index].chargepoint.data.get.connected_vehicle, msg)
                         elif re.search("/chargepoint/[0-9]+/get/", msg.topic) is not None:
+                            if (re.search("/chargepoint/[0-9]+/get/soc$", msg.topic) is not None and
+                                    decode_payload(msg.payload) != var["cp"+index].chargepoint.data.get.soc):
+                                # Wenn das Auto noch nicht zugeordnet ist, wird der SoC nach der Zuordnung aktualisiert
+                                if var["cp"+index].chargepoint.data.set.charging_ev > -1:
+                                    Pub().pub(f'openWB/set/vehicle/{var["cp"+index].chargepoint.data.set.charging_ev}'
+                                              '/get/force_soc_update', True)
                             self.set_json_payload_class(var["cp"+index].chargepoint.data.get, msg)
                     elif re.search("/chargepoint/[0-9]+/config$", msg.topic) is not None:
                         self.process_chargepoint_config_topic(var, msg)

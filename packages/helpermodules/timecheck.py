@@ -255,7 +255,7 @@ def create_timestamp_unix() -> int:
     """ Unix Zeitstempel
     """
     try:
-        return int(datetime.datetime.now().timestamp())
+        return int(datetime.datetime.today().timestamp())
     except Exception:
         raise
 
