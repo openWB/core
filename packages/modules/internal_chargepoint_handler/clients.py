@@ -100,7 +100,6 @@ class ClientHandler:
             return 200 < voltage < 250
         try:
             voltages = self.meter_client.get_voltages()
-            # [1, 0, 0], [1, 1, 0], [1, 1, 1] funktioniert
             if ((valid_voltage(voltages[0]) and voltages[1] == 0 and voltages[2] == 0) or
                     (valid_voltage(voltages[0]) and valid_voltage(voltages[1]) and voltages[2] == 0) or
                     (valid_voltage(voltages[0]) and valid_voltage(voltages[1]) and valid_voltage((voltages[2])))):
