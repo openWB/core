@@ -16,7 +16,7 @@ class DeyeConfiguration:
 
 class Deye:
     def __init__(self,
-                 name: str = "Deye (Anbindung per Modbus)",
+                 name: str = "Deye/Jinko (Anbindung per Modbus)",
                  type: str = "deye",
                  id: int = 0,
                  configuration: DeyeConfiguration = None) -> None:
@@ -35,7 +35,7 @@ class DeyeBatConfiguration:
 @auto_str
 class DeyeBatSetup(ComponentSetup[DeyeBatConfiguration]):
     def __init__(self,
-                 name: str = "Deye Speicher",
+                 name: str = "Deye/Jinko Speicher",
                  type: str = "bat",
                  id: int = 0,
                  configuration: DeyeBatConfiguration = None) -> None:
@@ -51,7 +51,7 @@ class DeyeCounterConfiguration:
 @auto_str
 class DeyeCounterSetup(ComponentSetup[DeyeCounterConfiguration]):
     def __init__(self,
-                 name: str = "Deye Zähler",
+                 name: str = "Deye/Jinko Zähler",
                  type: str = "counter",
                  id: int = 0,
                  configuration: DeyeCounterConfiguration = None) -> None:
@@ -67,7 +67,7 @@ class DeyeInverterConfiguration:
 @auto_str
 class DeyeInverterSetup(ComponentSetup[DeyeInverterConfiguration]):
     def __init__(self,
-                 name: str = "Deye Wechselrichter",
+                 name: str = "Deye/Jinko Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
                  configuration: DeyeInverterConfiguration = None) -> None:
