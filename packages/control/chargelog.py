@@ -113,7 +113,7 @@ def save_data(chargepoint, charging_ev, immediately: bool = True, reset: bool = 
             "time":
             {
                 "begin": datetime.fromtimestamp(log_data.timestamp_start_charging).strftime("%m/%d/%Y, %H:%M:%S"),
-                "end": timecheck.create_timestamp().strftime("%m/%d/%Y, %H:%M:%S"),
+                "end": datetime.fromtimestamp(timecheck.create_timestamp()).strftime("%m/%d/%Y, %H:%M:%S"),
                 "time_charged": log_data.time_charged
             },
             "data":
@@ -236,7 +236,8 @@ def get_log_data(request: Dict):
             power = 0
             costs = 0
             for entry in log_data["entries"]:
-                duration = duration + entry["time"]["time_charged"]
+                duration = timecheck.duration_sum(
+                    duration, entry["time"]["time_charged"])
                 range_charged += entry["data"]["range_charged"]
                 mode += entry["data"]["imported_since_mode_switch"]
                 power += entry["data"]["power"]

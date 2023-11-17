@@ -279,6 +279,45 @@ def get_difference(timestamp_begin: str, timestamp_end: str) -> Optional[int]:
         return None
 
 
+def duration_sum(first: str, second: str) -> str:
+    """ addiert zwei Zeitstrings und gibt das Ergebnis als String zurück.
+    Parameter
+    ---------
+    first, second: str
+        Zeitstrings HH:MM ggf DD:HH:MM
+    Return
+    ------
+    sum: str
+        Summe der Zeitstrings
+    """
+    try:
+        sum = __get_timedelta_obj(first) + __get_timedelta_obj(second)
+        return convert_timedelta_to_time_string(sum)
+    except Exception:
+        log.exception("Fehler im System-Modul")
+        return "00:00"
+
+
+def __get_timedelta_obj(time: str) -> datetime.timedelta:
+    """ erstellt aus einem String ein timedelta-Objekt.
+    Parameter
+    ---------
+    time: str
+        Zeitstrings HH:MM ggf DD:HH:MM
+    """
+    time_charged = time.split(":")
+    if len(time_charged) == 2:
+        delta = datetime.timedelta(hours=int(time_charged[0]),
+                                   minutes=int(time_charged[1]))
+    elif len(time_charged) == 3:
+        delta = datetime.timedelta(days=int(time_charged[0]),
+                                   hours=int(time_charged[1]),
+                                   minutes=int(time_charged[2]))
+    else:
+        raise Exception("Unknown charge duration: "+time)
+    return delta
+
+
 def convert_timedelta_to_time_string(timedelta_obj: datetime.timedelta) -> str:
     diff_hours = int(timedelta_obj.total_seconds() / 3600)
     diff_minutes = int((timedelta_obj.total_seconds() % 3600) / 60)
