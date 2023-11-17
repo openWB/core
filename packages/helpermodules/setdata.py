@@ -421,7 +421,7 @@ class SetData:
                     "/ev_template" in msg.topic):
                 self._validate_value(msg, int, [(0, float("inf"))])
             elif "/get/soc_timestamp" in msg.topic:
-                self._validate_value(msg, str)
+                self._validate_value(msg, float)
             elif "/get/soc" in msg.topic:
                 self._validate_value(msg, float, [(0, 100)])
             elif "/get/range" in msg.topic:
@@ -597,11 +597,11 @@ class SetData:
             self._validate_value(msg, float, [(0, 0), (6, 32), (600, 3200)])
         elif ("/get/fault_str" in msg.topic or
                 "/get/state_str" in msg.topic or
-                "/get/heartbeat" in msg.topic):
+                "/get/heartbeat" in msg.topic or
+                "/get/rfid" in msg.topic):
             self._validate_value(msg, str)
-        elif ("/get/rfid" in msg.topic or
-                "/get/rfid_timestamp" in msg.topic):
-            self._validate_value(msg, str)
+        elif "/get/rfid_timestamp" in msg.topic:
+            self._validate_value(msg, float)
         elif ("/get/soc" in msg.topic):
             self._validate_value(msg, float, [(0, 100)])
         else:
@@ -758,7 +758,7 @@ class SetData:
                     "openWB/set/general/mqtt_bridge" in msg.topic):
                 self._validate_value(msg, bool)
             elif "openWB/set/general/grid_protection_timestamp" in msg.topic:
-                self._validate_value(msg, str)
+                self._validate_value(msg, float)
             elif "openWB/set/general/grid_protection_random_stop" in msg.topic:
                 self._validate_value(msg, int, [(0, 90)])
             elif "openWB/set/general/notifications/selected" in msg.topic:
@@ -975,7 +975,7 @@ class SetData:
             elif "openWB/set/system/version" in msg.topic:
                 self._validate_value(msg, str)
             elif "openWB/set/system/time" in msg.topic:
-                self._validate_value(msg, int)
+                self._validate_value(msg, float)
             elif "openWB/set/system/datastore_version" in msg.topic:
                 self._validate_value(msg, int, [(0, UpdateConfig.DATASTORE_VERSION)])
             elif "openWB/set/system/GetRemoteSupport" in msg.topic:

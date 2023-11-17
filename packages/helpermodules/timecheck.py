@@ -240,6 +240,22 @@ def create_timestamp_YYYYMMDD() -> str:
     return stamp
 
 
+def get_difference_to_now(timestamp_begin: float) -> Tuple[str, int]:
+    """ ermittelt den Abstand zwischen zwei Zeitstempeln.
+    Return
+    ------
+    diff: [str, int]
+        str: Differenz HH:MM, ggf DD days, HH:MM
+        int: Differenz in Sekunden
+    """
+    try:
+        diff = datetime.timedelta(seconds=create_timestamp()-timestamp_begin)
+        return (convert_timedelta_to_time_string(diff), int(diff.total_seconds()))
+    except Exception:
+        log.exception("Fehler im System-Modul")
+        return ("00:00", 0)
+
+
 def get_difference(timestamp_begin: str, timestamp_end: str) -> Optional[int]:
     """ ermittelt den Abstand zwischen zwei Zeitstempeln in absoluten Sekunden.
     Parameter
@@ -267,7 +283,3 @@ def convert_timedelta_to_time_string(timedelta_obj: datetime.timedelta) -> str:
     diff_hours = int(timedelta_obj.total_seconds() / 3600)
     diff_minutes = int((timedelta_obj.total_seconds() % 3600) / 60)
     return f"{diff_hours}:{diff_minutes:02d}"
-
-
-def get_difference_to_now(timestamp_begin: float) -> float:
-    return create_timestamp() - timestamp_begin
