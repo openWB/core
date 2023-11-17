@@ -33,7 +33,7 @@ def test_hardware_check_fails(evse_side_effect,
 
     # execution and evaluation
     with pytest.raises(Exception, match=expected_error_msg):
-        ClientHandler(0, Mock(), [1], Mock())
+        ClientHandler(0, Mock(), [1])
 
 
 def test_hardware_check_succeeds(monkeypatch):
@@ -48,7 +48,7 @@ def test_hardware_check_succeeds(monkeypatch):
 
     # execution and evaluation
     # keine Exception
-    ClientHandler(0, Mock(), [1], Mock())
+    ClientHandler(0, Mock(), [1])
 
 
 @pytest.mark.parametrize(
@@ -74,7 +74,7 @@ def check_meter(voltages, expected_msg, monkeypatch):
     monkeypatch.setattr(ClientHandler, "find_meter_client", mock_find_meter_client)
 
     # execution
-    msg = ClientHandler(0, Mock(), [1], Mock()).check_meter()
+    msg = ClientHandler(0, Mock(), [1]).check_meter()
 
     # assert
     assert msg == expected_msg
