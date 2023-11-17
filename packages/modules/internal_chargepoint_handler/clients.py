@@ -73,7 +73,7 @@ class ClientHandler:
     METER_PROBLEM = ("Der Zähler konnte nicht ausgelesen werden. "
                      f"Vermutlich ist der Zähler falsch konfiguriert oder defekt. {OPEN_TICKET}")
     METER_BROKEN = ("Die Spannungen des Zählers konnten nicht korrekt ausgelesen werden. "
-                    f"Vermutlich ist der Zähler falsch konfiguriert oder defekt. {OPEN_TICKET}")
+                    f"Der Zähler ist defekt. {OPEN_TICKET}")
     EVSE_BROKEN = ("Auslesen der EVSE nicht möglich. "
                    f"Vermutlich ist die EVSE defekt oder hat eine unbekannte Modbus-ID. {OPEN_TICKET}")
 
@@ -90,15 +90,23 @@ class ClientHandler:
             raise Exception(self.USB_ADAPTER_BROKEN)
         if meter_check_passed is False:
             raise Exception(meter_error_msg)
+        if meter_error_msg == self.METER_BROKEN:
+            log.error(self.METER_BROKEN)
         if evse_check_passed is False:
             raise Exception(self.EVSE_BROKEN)
 
     def check_meter(self):
+        def valid_voltage(voltage) -> bool:
+            return 200 < voltage < 250
         try:
-            if any([v < 200 for v in self.meter_client.get_voltages()]):
-                return False, self.METER_BROKEN
-            else:
+            voltages = self.meter_client.get_voltages()
+            # [1, 0, 0], [1, 1, 0], [1, 1, 1] funktioniert
+            if ((valid_voltage(voltages[0]) and voltages[1] == 0 and voltages[2] == 0) or
+                    (valid_voltage(voltages[0]) and valid_voltage(voltages[1]) and voltages[2] == 0) or
+                    (valid_voltage(voltages[0]) and valid_voltage(voltages[1]) and valid_voltage((voltages[2])))):
                 return True, None
+            else:
+                return True, self.METER_BROKEN
         except Exception:
             return False, self.METER_PROBLEM
 
