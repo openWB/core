@@ -72,7 +72,7 @@ class ClientHandler:
                           f"Vermutlich ist der USB-Adapter defekt. {OPEN_TICKET}")
     METER_PROBLEM = ("Der Zähler konnte nicht ausgelesen werden. "
                      f"Vermutlich ist der Zähler falsch konfiguriert oder defekt. {OPEN_TICKET}")
-    METER_BROKEN = ("Die Spannungen des Zählers konnte nicht korrekt ausgelesen werden. "
+    METER_BROKEN = ("Die Spannungen des Zählers konnten nicht korrekt ausgelesen werden. "
                     f"Vermutlich ist der Zähler falsch konfiguriert oder defekt. {OPEN_TICKET}")
     EVSE_BROKEN = ("Auslesen der EVSE nicht möglich. "
                    f"Vermutlich ist die EVSE defekt oder hat eine unbekannte Modbus-ID. {OPEN_TICKET}")
