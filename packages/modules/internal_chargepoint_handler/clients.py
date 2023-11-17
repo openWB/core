@@ -87,10 +87,7 @@ class ClientHandler:
             evse_check_passed = False
         meter_check_passed, meter_error_msg = self.check_meter()
         if meter_check_passed is False and evse_check_passed is False:
-            if isinstance(self.client, ModbusSerialClient_):
-                raise Exception()
-            else:
-                raise Exception(self.USB_ADAPTER_BROKEN)
+            raise Exception(self.USB_ADAPTER_BROKEN)
         if meter_check_passed is False:
             raise Exception(meter_error_msg)
         if evse_check_passed is False:
