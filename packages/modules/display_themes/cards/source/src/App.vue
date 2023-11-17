@@ -49,6 +49,7 @@ export default {
         "openWB/counter/get/hierarchy",
         "openWB/counter/set/home_consumption",
         "openWB/optional/int_display/theme",
+        "openWB/optional/int_display/standby",
         "openWB/pv/config/configured",
         "openWB/pv/get/power",
         "openWB/system/current_branch",

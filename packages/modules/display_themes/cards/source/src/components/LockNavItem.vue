@@ -20,7 +20,11 @@ export default {
     return {
       mqttStore: useMqttStore(),
       modalPinEntryVisible: false,
+      modalPinEntryColor: "warning",
       code: "",
+      countdown: 0,
+      countdownInterval: undefined,
+      events: ["mousemove", "touchmove", "wheel"],
     };
   },
   components: {
@@ -35,17 +39,20 @@ export default {
         this.mqttStore.settings.changesLocked = value;
       },
     },
-    modalPinEntryColor() {
-      return "warning";
+    timer() {
+      return (
+        Math.trunc(this.countdown / 60).toString() +
+        ":" +
+        (this.countdown % 60).toString().padStart(2, "0")
+      );
     },
   },
   methods: {
     toggleChangesLock() {
-      console.log("toggleChangesLock");
       if (this.changesLocked) {
         this.unlockChanges();
       } else {
-        this.changesLocked = true;
+        this.lockChanges();
       }
     },
     unlockChanges() {
@@ -57,10 +64,40 @@ export default {
     },
     checkUnlockCode() {
       if (this.mqttStore.checkChangesLockCode(this.code)) {
-        this.changesLocked = false;
-        this.modalPinEntryVisible = false;
+        this.modalPinEntryColor = "success";
+        setTimeout(() => {
+          this.changesLocked = false;
+          this.modalPinEntryVisible = false;
+          if (this.mqttStore.getDisplayStandby > 0) {
+            this.countdown = this.mqttStore.getDisplayStandby;
+            this.countdownInterval = setInterval(this.updateCountdown, 1000);
+            this.events.forEach((event) => {
+              document.addEventListener(event, this.handleDocumentEvent, {
+                passive: true,
+              });
+            });
+          }
+          this.modalPinEntryColor = "warning";
+        }, 2000);
       } else {
-        console.log("check unlock code failed!");
+        console.warn("check unlock code failed!");
+        this.modalPinEntryColor = "danger";
+        setTimeout(() => {
+          this.code = "";
+          this.modalPinEntryColor = "warning";
+        }, 2000);
+      }
+    },
+    lockChanges() {
+      this.changesLocked = true;
+      this.events.forEach((event) => {
+        document.removeEventListener(event, this.handleDocumentEvent, {
+          passive: true,
+        });
+      });
+      if (this.countdownInterval !== undefined) {
+        clearInterval(this.countdownInterval);
+        this.countdownInterval = undefined;
       }
     },
     addCodeDigit(digit) {
@@ -73,6 +110,16 @@ export default {
     },
     clearCode() {
       this.code = "";
+    },
+    updateCountdown() {
+      this.countdown -= 1;
+      if (this.countdown < 1) {
+        this.lockChanges();
+      }
+    },
+    handleDocumentEvent(event) {
+      console.log("event", event);
+      this.countdown = this.mqttStore.getDisplayStandby;
     },
   },
   mounted() {
@@ -96,6 +143,9 @@ export default {
       :icon="this.changesLocked ? ['fas', 'fa-lock'] : ['fas', 'fa-lock-open']"
       :class="this.changesLocked ? '_color:danger-80' : '_color:success-80'"
     />
+    <span v-if="!changesLocked && countdownInterval" class="_padding-left:1">
+      {{ timer }}
+    </span>
   </i-button>
   <!-- modals -->
   <Teleport to="body">

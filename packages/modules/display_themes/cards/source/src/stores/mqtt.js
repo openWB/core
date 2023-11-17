@@ -163,6 +163,9 @@ export const useMqttStore = defineStore("mqtt", {
         return state.chartData[topic];
       };
     },
+    getDisplayStandby: (state) => {
+      return state.topics["openWB/optional/int_display/standby"];
+    },
 
     /* theme getters */
 
