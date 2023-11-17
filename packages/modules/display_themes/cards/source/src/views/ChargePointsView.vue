@@ -63,6 +63,7 @@ export default {
   data() {
     return {
       mqttStore: useMqttStore(),
+      modalChargeModeSettingVisible: false,
       modalChargePointSettingsVisible: false,
       modalChargePointId: 0,
       modalVehicleId: 0,
@@ -105,6 +106,12 @@ export default {
       this.modalChargePointId = id;
       this.modalChargePointSettingsVisible = true;
     },
+    handleChargeModeClick(chargePointId) {
+      if (!this.changesLocked) {
+        this.modalChargePointId = chargePointId;
+        this.modalChargeModeSettingVisible = true;
+      }
+    },
     handleSocClick(id) {
       let vehicle_id = this.mqttStore.getChargePointConnectedVehicleId(id);
       if (this.mqttStore.getVehicleSocIsManual(vehicle_id)) {
@@ -135,6 +142,10 @@ export default {
           `openWB/vehicle/template/charge_template/${template_id}/chargemode/selected`,
           event
         );
+      }
+      // hide modal charge mode setting if visible
+      if (this.modalChargeModeSettingVisible) {
+        this.modalChargeModeSettingVisible = false;
       }
     },
     setChargePointConnectedVehiclePriority(id, event) {
@@ -424,9 +435,11 @@ export default {
                 <i-badge
                   size="lg"
                   class="full-width"
+                  :class="!changesLocked ? 'clickable' : ''"
                   :color="
                     mqttStore.getChargePointConnectedVehicleChargeMode(id).class
                   "
+                  @click="handleChargeModeClick(id)"
                 >
                   {{
                     mqttStore.getChargePointConnectedVehicleChargeMode(id).label
@@ -486,6 +499,37 @@ export default {
     </dash-board-card>
   </div>
   <!-- modals -->
+  <!-- charge mode only -->
+  <i-modal v-model="modalChargeModeSettingVisible" size="lg">
+    <template #header>
+      Lademodus für "{{
+        mqttStore.getChargePointConnectedVehicleName(modalChargePointId)
+      }}" auswählen
+    </template>
+    <i-button-group block>
+      <i-button
+        v-for="mode in mqttStore.chargeModeList()"
+        :key="mode.id"
+        outline
+        :color="mode.class != 'dark' ? mode.class : 'light'"
+        :active="
+          mqttStore.getChargePointConnectedVehicleChargeMode(
+            modalChargePointId
+          ) != undefined &&
+          mode.id ==
+            mqttStore.getChargePointConnectedVehicleChargeMode(
+              modalChargePointId
+            ).mode
+        "
+        @click="
+          setChargePointConnectedVehicleChargeMode(modalChargePointId, mode.id)
+        "
+      >
+        {{ mode.label }}
+      </i-button>
+    </i-button-group>
+  </i-modal>
+  <!-- end charge mode setting modal-->
   <!-- charge point settings -->
   <i-modal v-model="modalChargePointSettingsVisible" size="lg">
     <template #header>
@@ -1087,6 +1131,10 @@ export default {
 
 .badge.full-width {
   width: 100%;
+}
+
+.clickable {
+  cursor: pointer;
 }
 
 :deep(.tab) {

@@ -43,6 +43,7 @@ export default {
         "openWB/chargepoint/+/set/change_ev_permitted",
         "openWB/chargepoint/+/set/current",
         "openWB/chargepoint/+/set/manual_lock",
+        "openWB/chargepoint/+/set/log",
         "openWB/chargepoint/get/power",
         "openWB/counter/+/get/power",
         "openWB/counter/get/hierarchy",
