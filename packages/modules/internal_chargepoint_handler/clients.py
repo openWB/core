@@ -72,7 +72,7 @@ class ClientHandler:
                           f"Vermutlich ist der USB-Adapter defekt. {OPEN_TICKET}")
     METER_PROBLEM = ("Der Zähler konnte nicht ausgelesen werden. "
                      f"Vermutlich ist der Zähler falsch konfiguriert oder defekt. {OPEN_TICKET}")
-    METER_BROKEN = ("Die Spannungen des Zählers konnte nicht korrekt ausgelesen werden. "
+    METER_BROKEN = ("Die Spannungen des Zählers konnten nicht korrekt ausgelesen werden. "
                     f"Vermutlich ist der Zähler falsch konfiguriert oder defekt. {OPEN_TICKET}")
     EVSE_BROKEN = ("Auslesen der EVSE nicht möglich. "
                    f"Vermutlich ist die EVSE defekt oder hat eine unbekannte Modbus-ID. {OPEN_TICKET}")
@@ -87,10 +87,7 @@ class ClientHandler:
             evse_check_passed = False
         meter_check_passed, meter_error_msg = self.check_meter()
         if meter_check_passed is False and evse_check_passed is False:
-            if isinstance(self.client, ModbusSerialClient_):
-                raise Exception()
-            else:
-                raise Exception(self.USB_ADAPTER_BROKEN)
+            raise Exception(self.USB_ADAPTER_BROKEN)
         if meter_check_passed is False:
             raise Exception(meter_error_msg)
         if evse_check_passed is False:
