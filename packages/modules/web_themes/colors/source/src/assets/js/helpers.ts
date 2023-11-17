@@ -40,6 +40,10 @@ export function formatWattH(
 	useMWh = false,
 ) {
 	let wattResult
+	if (wattH > 1000000) {
+		useMWh = true
+		wattH = wattH / 1000
+	}
 	if (wattH >= 1000 && decimalPlaces < 4) {
 		switch (decimalPlaces) {
 			case 0:

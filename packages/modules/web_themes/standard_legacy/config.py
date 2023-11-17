@@ -12,11 +12,13 @@ class StandardLegacyWebThemeConfiguration:
 @auto_str
 class StandardLegacyWebTheme:
     def __init__(self,
-                 name: str = "Standard (alt)",
+                 name: str = "Standard",
                  type: str = "standard_legacy",
+                 official: bool = True,
                  configuration: StandardLegacyWebThemeConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.official = official
         self.configuration = configuration or StandardLegacyWebThemeConfiguration()
 
 

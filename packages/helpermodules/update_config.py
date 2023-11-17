@@ -14,6 +14,7 @@ import dataclass_utils
 from control.chargepoint.chargepoint_template import get_chargepoint_template_default
 from helpermodules import timecheck
 from helpermodules.broker import InternalBrokerClient
+from helpermodules.constants import NO_ERROR
 from helpermodules.hardware_configuration import get_hardware_configuration_setting, update_hardware_configuration
 from helpermodules.measurement_logging.process_log import get_totals
 from helpermodules.measurement_logging.write_log import get_names
@@ -30,7 +31,7 @@ log = logging.getLogger(__name__)
 
 
 class UpdateConfig:
-    DATASTORE_VERSION = 27
+    DATASTORE_VERSION = 29
     valid_topic = [
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -369,6 +370,8 @@ class UpdateConfig:
         "^openWB/system/version$",
     ]
     default_topic = (
+        ("openWB/bat/get/fault_state", 0),
+        ("openWB/bat/get/fault_str", NO_ERROR),
         ("openWB/chargepoint/get/power", 0),
         ("openWB/chargepoint/template/0", get_chargepoint_template_default()),
         ("openWB/counter/get/hierarchy", []),
@@ -1017,3 +1020,30 @@ class UpdateConfig:
                     Pub().pub(topic.replace("openWB/", "openWB/set/"), configuration_payload)
         self._loop_all_received_topics(upgrade)
         Pub().pub("openWB/system/datastore_version", 27)
+
+    def upgrade_datastore_27(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            # add "official" flag if display theme "card" is selected
+            if re.search("openWB/optional/int_display/theme", topic) is not None:
+                configuration_payload = decode_payload(payload)
+                if configuration_payload.get("type") == "cards":
+                    configuration_payload.update({"official": True})
+                    Pub().pub(topic.replace("openWB/", "openWB/set/"), configuration_payload)
+            # add "official" flag if web theme "standard_legacy" is selected
+            if re.search("openWB/general/web_theme", topic) is not None:
+                configuration_payload = decode_payload(payload)
+                if configuration_payload.get("type") == "standard_legacy":
+                    configuration_payload.update({"official": True})
+                    Pub().pub(topic.replace("openWB/", "openWB/set/"), configuration_payload)
+        self._loop_all_received_topics(upgrade)
+        Pub().pub("openWB/system/datastore_version", 28)
+
+    def upgrade_datastore_28(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if re.search("openWB/vehicle/[0-9]+/soc_module/calculated_soc_state", topic) is not None:
+                payload = decode_payload(payload)
+                if payload.get("request_start_soc"):
+                    payload.pop("request_start_soc")
+                Pub().pub(topic.replace("openWB/", "openWB/set/"), payload)
+        self._loop_all_received_topics(upgrade)
+        Pub().pub("openWB/system/datastore_version", 29)

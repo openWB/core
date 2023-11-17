@@ -69,14 +69,24 @@ class ChangedValuesHandler:
         self.prev_data: Data = Data(event_module_update_completed)
 
     def store_inital_values(self):
-        # speichern der Daten zum Zyklus-Beginn, um später die geänderten Werte zu ermitteln
-        self.prev_data.copy_data()
+        try:
+            # speichern der Daten zum Zyklus-Beginn, um später die geänderten Werte zu ermitteln
+            self.prev_data.copy_data()
+        except Exception as e:
+            log.exception(e)
 
     def pub_changed_values(self):
-        # publishen der geänderten Werte
-        self._update_value("openWB/set/bat/", self.prev_data.bat_all_data.data.get, data.data.bat_all_data.data.get)
-        for key, value in data.data.cp_data.items():
-            self._update_value(f"openWB/set/chargepoint/{value.num}/", self.prev_data.cp_data[key].data, value.data)
+        try:
+            # publishen der geänderten Werte
+            self._update_value("openWB/set/bat/", self.prev_data.bat_all_data.data.get, data.data.bat_all_data.data.get)
+            for key, value in data.data.cp_data.items():
+                try:
+                    self._update_value(f"openWB/set/chargepoint/{value.num}/",
+                                       self.prev_data.cp_data[key].data, value.data)
+                except Exception as e:
+                    log.exception(e)
+        except Exception as e:
+            log.exception(e)
 
     def _update_value(self, topic_prefix, data_inst_previous, data_inst):
         for f in fields(data_inst):

@@ -42,6 +42,7 @@ export class ChargePoint {
 	soc = 0
 	isSocConfigured = true
 	isSocManual = false
+	waitingForSoc = false
 	color = 'white'
 	private _timedCharging = false
 	private _instantChargeLimitMode = ''

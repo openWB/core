@@ -11,7 +11,7 @@ class FemsConfiguration:
 
 class Fems:
     def __init__(self,
-                 name: str = "openEMS, Fenecon FEMS, Kaco Hy-Control",
+                 name: str = "openEMS, Fenecon FEMS, CENTURIO 10, Kaco Hy-Control",
                  type: str = "fems",
                  id: int = 0,
                  configuration: FemsConfiguration = None) -> None:
@@ -28,7 +28,7 @@ class FemsBatConfiguration:
 
 class FemsBatSetup(ComponentSetup[FemsBatConfiguration]):
     def __init__(self,
-                 name: str = "openEMS, Fenecon FEMS, Kaco Hy-Control Speicher",
+                 name: str = "openEMS, Fenecon FEMS, CENTURIO 10, Kaco Hy-Control Speicher",
                  type: str = "bat",
                  id: int = 0,
                  configuration: FemsBatConfiguration = None) -> None:
@@ -42,7 +42,7 @@ class FemsCounterConfiguration:
 
 class FemsCounterSetup(ComponentSetup[FemsCounterConfiguration]):
     def __init__(self,
-                 name: str = "openEMS, Fenecon FEMS, Kaco Hy-Control Zähler",
+                 name: str = "openEMS, Fenecon FEMS, CENTURIO 10, Kaco Hy-Control Zähler",
                  type: str = "counter",
                  id: int = 0,
                  configuration: FemsCounterConfiguration = None) -> None:
@@ -56,7 +56,7 @@ class FemsInverterConfiguration:
 
 class FemsInverterSetup(ComponentSetup[FemsInverterConfiguration]):
     def __init__(self,
-                 name: str = "openEMS, Fenecon FEMS, Kaco Hy-Control Wechselrichter",
+                 name: str = "openEMS, Fenecon FEMS, CENTURIO 10, Kaco Hy-Control Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
                  configuration: FemsInverterConfiguration = None) -> None:

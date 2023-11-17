@@ -45,11 +45,11 @@ function autPct(item: PowerItem) {
 		const src =
 			graphData.graphMode == 'live' || graphData.graphMode == 'day'
 				? sourceSummary
-				: historicSummary
+				: historicSummary.items
 		const usg =
 			graphData.graphMode == 'live' || graphData.graphMode == 'day'
 				? usageSummary
-				: historicSummary
+				: historicSummary.items
 		const exportedEnergy = usg.evuOut.energy
 		const generatedEnergy = src.pv.energy
 		return Math.round(
@@ -59,11 +59,11 @@ function autPct(item: PowerItem) {
 		const src =
 			graphData.graphMode == 'live' || graphData.graphMode == 'day'
 				? sourceSummary
-				: historicSummary
+				: historicSummary.items
 		const usg =
 			graphData.graphMode == 'live' || graphData.graphMode == 'day'
 				? usageSummary
-				: historicSummary
+				: historicSummary.items
 		const exportedEnergy = usg.evuOut.energy
 		const importedEnergy = src.evuIn.energy
 		const generatedEnergy = src.pv.energy

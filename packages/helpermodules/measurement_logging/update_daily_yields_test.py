@@ -9,8 +9,6 @@ def test_update_module_yields(daily_log_totals, mock_pub):
 
     # evaluation
     expected = {
-        "openWB/set/bat/get/daily_imported": 0,
-        "openWB/set/bat/get/daily_exported": 550.857,
         "openWB/set/bat/2/get/daily_imported": 0,
         "openWB/set/bat/2/get/daily_exported": 550.857,
         "openWB/set/counter/0/get/daily_imported": 1492.011,

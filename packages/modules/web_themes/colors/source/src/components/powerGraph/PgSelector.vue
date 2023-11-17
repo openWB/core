@@ -202,6 +202,7 @@ function todayButtonClicked() {
 	if (graphData.graphMode != 'today') {
 		graphData.graphMode = 'today'
 		setGraphDate(new Date())
+		initGraph()
 	}
 }
 function monthButtonClicked() {

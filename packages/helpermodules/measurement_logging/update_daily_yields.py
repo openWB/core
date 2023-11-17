@@ -2,6 +2,7 @@ import logging
 from typing import Dict
 
 from control import data
+from control.bat_all import BatAll
 from helpermodules.measurement_logging.process_log import get_totals
 from helpermodules.pub import Pub
 from control.bat import Bat
@@ -33,7 +34,8 @@ def update_module_yields(module: str, totals: Dict) -> None:
         if isinstance(module_data, (Ev, Chargepoint, Pv, Bat, Counter)):
             Pub().pub(f"openWB/set/{topic}/{module_data.num}/get/daily_imported", daily_imported)
             Pub().pub(f"openWB/set/{topic}/{module_data.num}/get/daily_exported", daily_exported)
-        else:
+        elif not isinstance(module_data, BatAll):
+            # wird im changed_values_handler gepublished
             Pub().pub(f"openWB/set/{topic}/get/daily_imported", daily_imported)
             Pub().pub(f"openWB/set/{topic}/get/daily_exported", daily_exported)
 

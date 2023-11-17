@@ -1,4 +1,4 @@
-import { usageSummary, globalData } from '@/assets/js/model'
+import { usageSummary, globalData, masterData } from '@/assets/js/model'
 import {
 	chargePoints,
 	vehicles,
@@ -37,6 +37,8 @@ export function processChargepointMessages(topic: string, message: string) {
 				const configMessage = JSON.parse(message)
 				chargePoints[index].name = configMessage.name
 				chargePoints[index].icon = configMessage.name
+				masterData['cp' + index].name = configMessage.name
+				masterData['cp' + index].icon = configMessage.name
 			} else {
 				console.warn('invalid chargepoint index: ' + index)
 			}
@@ -149,6 +151,7 @@ export function processVehicleMessages(topic: string, message: string) {
 			Object.values(chargePoints).forEach((cp) => {
 				if (cp.connectedVehicle == index) {
 					cp.soc = JSON.parse(message)
+					cp.waitingForSoc = false
 				}
 			})
 		} else if (topic.match(/^openwb\/vehicle\/[0-9]+\/get\/range$/i)) {
@@ -157,6 +160,13 @@ export function processVehicleMessages(topic: string, message: string) {
 			vehicles[index].updateChargeTemplateId(+message)
 		} else if (topic.match(/^openwb\/vehicle\/[0-9]+\/ev_template$/i)) {
 			vehicles[index].updateEvTemplateId(+message)
+		} else if (topic.match(/^openwb\/vehicle\/[0-9]+\/soc_module\/config$/i)) {
+			const config = JSON.parse(message)
+			Object.values(chargePoints).forEach((cp) => {
+				if (cp.connectedVehicle == index) {
+					cp.isSocManual = config.type == 'manual'
+				}
+			})
 		} else {
 			// console.warn('Ignored vehicle message [' + topic + ']=' + message)
 		}

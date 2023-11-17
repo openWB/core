@@ -38,8 +38,8 @@ const colors: { [key: string]: string } = {
 	inverter: 'var(--color-pv)',
 	batOut: 'var(--color-battery)',
 	selfUsage: 'var(--color-pv)',
-	gridPush: 'var(--color-export)',
-	gridPull: 'var(--color-evu)',
+	evuOut: 'var(--color-export)',
+	evuIn: 'var(--color-evu)',
 }
 var paths: Selection<SVGPathElement, [number, number][], BaseType, never>
 var rects: Selection<SVGRectElement, [number, number], BaseType, never>
@@ -53,7 +53,7 @@ const draw = computed(() => {
 	if (graphData.data.length > 0) {
 		const graph = select('g#pgSourceGraph')
 		if (graphData.graphMode == 'month' || graphData.graphMode == 'year') {
-			drawMonthGraph(graph)
+			drawBarGraph(graph)
 		} else {
 			drawGraph(graph)
 		}
@@ -70,8 +70,8 @@ const draw = computed(() => {
 })
 const keys = computed(() => {
 	return graphData.graphMode == 'month' || graphData.graphMode == 'year'
-		? ['gridPull', 'batOut', 'selfUsage', 'gridPush']
-		: ['selfUsage', 'gridPush', 'batOut', 'gridPull']
+		? ['evuIn', 'batOut', 'selfUsage', 'evuOut']
+		: ['selfUsage', 'evuOut', 'batOut', 'evuIn']
 })
 const iScale = computed(() => {
 	return scaleLinear()
@@ -100,9 +100,13 @@ const yScale = computed(() => {
 
 const vrange = computed(() => {
 	let result = extent(graphData.data, (d) =>
-		Math.max(d.solarPower + d.gridPull + d.batOut, d.selfUsage + d.gridPush),
+		Math.max(d.pv + d.evuIn + d.batOut, d.selfUsage + d.evuOut),
 	)
 	if (result[0] != undefined && result[1] != undefined) {
+		if (graphData.graphMode == 'year') {
+			result[0] = result[0] / 1000
+			result[1] = result[1] / 1000
+		}
 		return result
 	} else {
 		return [0, 0]
@@ -139,8 +143,8 @@ function drawGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {
 		.y(yScale.value(0))
 	const area1 = area()
 		.x((d, i) => iScale.value(i))
-		.y0((d) => yScale.value(d[0]))
-		.y1((d) => yScale.value(d[1]))
+		.y0((d) => yScale.value(graphData.graphMode == 'year' ? d[0] / 1000 : d[0]))
+		.y1((d) => yScale.value(graphData.graphMode == 'year' ? d[1] / 1000 : d[1]))
 	if (animateSourceGraph) {
 		graph.selectAll('*').remove()
 		paths = graph
@@ -166,9 +170,7 @@ function drawGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {
 			.attr('d', (series) => area1(series))
 	}
 }
-function drawMonthGraph(
-	graph: Selection<BaseType, unknown, HTMLElement, never>,
-) {
+function drawBarGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {
 	if (animateSourceGraph) {
 		graph.selectAll('*').remove()
 		rects = graph
@@ -192,8 +194,16 @@ function drawMonthGraph(
 			.duration(duration)
 			.delay(delay)
 			.ease(easeLinear)
-			.attr('height', (d) => yScale.value(d[0]) - yScale.value(d[1]))
-			.attr('y', (d) => yScale.value(d[1])),
+			.attr('height', (d) =>
+				graphData.graphMode == 'year'
+					? yScale.value(d[0] / 1000) - yScale.value(d[1] / 1000)
+					: yScale.value(d[0]) - yScale.value(d[1]),
+			)
+			.attr('y', (d) =>
+				graphData.graphMode == 'year'
+					? yScale.value(d[1] / 1000)
+					: yScale.value(d[1]),
+			),
 			sourceGraphIsInitialized()
 	} else {
 		graph.selectAll('*').remove()
@@ -210,9 +220,17 @@ function drawMonthGraph(
 			.attr('x', (d, i) => {
 				return iScaleMonth.value(i) ?? 0
 			})
-			.attr('y', (d) => yScale.value(d[1]))
+			.attr('y', (d) =>
+				graphData.graphMode == 'year'
+					? yScale.value(d[1] / 1000)
+					: yScale.value(d[1]),
+			)
 			.attr('width', iScaleMonth.value.bandwidth())
-			.attr('height', (d) => yScale.value(d[0]) - yScale.value(d[1]))
+			.attr('height', (d) =>
+				graphData.graphMode == 'year'
+					? yScale.value(d[0] / 1000) - yScale.value(d[1] / 1000)
+					: yScale.value(d[0]) - yScale.value(d[1]),
+			)
 	}
 }
 </script>

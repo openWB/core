@@ -30,19 +30,18 @@ const props = defineProps<{
 
 //state
 const keys = [
-	['house', 'charging', 'devices', 'batIn', 'inverter'],
-	['charging', 'devices', 'house', 'batIn', 'inverter'],
-	['devices', 'house', 'charging', 'batIn', 'inverter'],
+	['house', 'charging', 'devices', 'batIn'],
+	['charging', 'devices', 'house', 'batIn'],
+	['devices', 'house', 'charging', 'batIn'],
 ]
 const colors: { [key: string]: string } = {
 	house: 'var(--color-house)',
 	charging: 'var(--color-charging)',
 	batIn: 'var(--color-battery)',
-	inverter: 'var(--color-pv)',
 	batOut: 'var(--color-battery)',
 	selfUsage: 'var(--color-pv)',
-	gridPush: 'var(--color-export)',
-	gridPull: 'var(--color-evu)',
+	evuOut: 'var(--color-export)',
+	evuIn: 'var(--color-evu)',
 	cp0: 'var(--color-cp0)',
 	cp1: 'var(--color-cp1)',
 	cp2: 'var(--color-cp2)',
@@ -66,7 +65,7 @@ const draw = computed(() => {
 		const graph = select('g#pgUsageGraph')
 
 		if (graphData.graphMode == 'month' || graphData.graphMode == 'year') {
-			drawMonthGraph(graph)
+			drawBarGraph(graph)
 		} else {
 			drawGraph(graph)
 		}
@@ -118,9 +117,13 @@ const yScale = computed(() => {
 const vrange = computed(() => {
 	let result = extent(
 		graphData.data,
-		(d) => d.house + d.charging + d.batIn + d.inverter + d.devices,
+		(d) => d.house + d.charging + d.batIn + d.devices,
 	)
 	if (result[0] != undefined && result[1] != undefined) {
+		if (graphData.graphMode == 'year') {
+			result[0] = result[0] / 1000
+			result[1] = result[1] / 1000
+		}
 		return result
 	} else {
 		return [0, 0]
@@ -185,9 +188,7 @@ function drawGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {
 			.attr('fill', (d, i: number) => colors[keys[props.stackOrder][i]])
 	}
 }
-function drawMonthGraph(
-	graph: Selection<BaseType, unknown, HTMLElement, never>,
-) {
+function drawBarGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {
 	if (animateUsageGraph) {
 		graph.selectAll('*').remove()
 		rects = graph
@@ -211,8 +212,16 @@ function drawMonthGraph(
 			.duration(duration)
 			.delay(delay)
 			.ease(easeLinear)
-			.attr('y', (d) => yScale.value(d[0]))
-			.attr('height', (d) => yScale.value(d[1]) - yScale.value(d[0]))
+			.attr('y', (d) =>
+				graphData.graphMode == 'year'
+					? yScale.value(d[0] / 1000)
+					: yScale.value(d[0]),
+			)
+			.attr('height', (d) =>
+				graphData.graphMode == 'year'
+					? yScale.value(d[1] / 1000) - yScale.value(d[0] / 1000)
+					: yScale.value(d[1]) - yScale.value(d[0]),
+			)
 		usageGraphIsInitialized()
 	} else {
 		graph.selectAll('*').remove()
@@ -229,8 +238,16 @@ function drawMonthGraph(
 			.attr('x', (d, i) => {
 				return iScaleMonth.value(i) ?? 0
 			})
-			.attr('y', (d) => yScale.value(d[0]))
-			.attr('height', (d) => yScale.value(d[1]) - yScale.value(d[0]))
+			.attr('y', (d) =>
+				graphData.graphMode == 'year'
+					? yScale.value(d[0] / 1000)
+					: yScale.value(d[0]),
+			)
+			.attr('height', (d) =>
+				graphData.graphMode == 'year'
+					? yScale.value(d[1] / 1000) - yScale.value(d[0] / 1000)
+					: yScale.value(d[1]) - yScale.value(d[0]),
+			)
 			.attr('width', iScaleMonth.value.bandwidth())
 	}
 }
