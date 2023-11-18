@@ -26,6 +26,7 @@ from control import prepare
 from control import data
 from control import process
 from control.algorithm import algorithm
+from control.algorithm import algorithm_yc
 from helpermodules.utils import exit_after
 from modules import update_soc
 from modules.internal_chargepoint_handler.internal_chargepoint_handler import GeneralInternalChargepointHandler
@@ -173,7 +174,10 @@ try:
     t_smarthome.join()
 
     proc = process.Process()
-    control = algorithm.Algorithm()
+    if data.Data.yc_data.yc_config.active:
+        control = algorithm_yc.AlgorithmYc()
+    else:
+        control = algorithm.Algorithm()
     handler = HandlerAlgorithm()
     prep = prepare.Prepare()
     general_internal_chargepoint_handler = GeneralInternalChargepointHandler()
@@ -240,6 +244,7 @@ try:
     changed_values_handler.store_inital_values()
     schedule_jobs()
 except Exception:
+    traceback.print_exc()
     log.exception("Fehler im Main-Modul")
 
 while True:

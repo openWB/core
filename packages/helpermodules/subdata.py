@@ -8,6 +8,7 @@ from typing import Dict, Union
 import re
 import subprocess
 import paho.mqtt.client as mqtt
+import traceback
 
 from control import bat_all, bat, pv_all
 from control.chargepoint import chargepoint
@@ -15,6 +16,7 @@ from control import counter
 from control import counter_all
 from control import ev
 from control import general
+from control import yourcharge
 from control.chargepoint.chargepoint_all import AllChargepoints
 from control.chargepoint.chargepoint_state_update import ChargepointStateUpdate
 from control.chargepoint.chargepoint_template import CpTemplate, CpTemplateData
@@ -57,6 +59,7 @@ class SubData:
     bat_all_data = bat_all.BatAll()
     bat_data: Dict[str, bat.Bat] = {}
     general_data = general.General()
+    yc_data = yourcharge.YourCharge()
     internal_chargepoint_data: Dict[str, Union[InternalChargepoint, GlobalHandlerData, RfidData]] = {
         "cp0": InternalChargepoint(),
         "cp1": InternalChargepoint(),
@@ -137,6 +140,7 @@ class SubData:
             ("openWB/system/backup_cloud/#", 2),
             ("openWB/system/device/module_update_completed", 2),
             ("openWB/system/device/+/config", 2),
+            ("yourCharge/#", 2),
         ])
         Pub().pub("openWB/system/subdata_initialized", True)
 
@@ -145,6 +149,7 @@ class SubData:
         """
         mqtt_log.debug("Topic: "+str(msg.topic) +
                        ", Payload: "+str(msg.payload.decode("utf-8")))
+
         self.heartbeat = True
         if "openWB/vehicle/template/charge_template/" in msg.topic:
             self.process_vehicle_charge_template_topic(
@@ -175,6 +180,8 @@ class SubData:
             self.process_system_topic(client, self.system_data, msg)
         elif "openWB/command/command_completed" == msg.topic:
             self.event_command_completed.set()
+        elif "yourCharge/" in msg.topic:
+            self.process_yourcharge_topic(self.yc_data, msg)
         else:
             log.warning("unknown subdata-topic: "+str(msg.topic))
 
@@ -593,6 +600,28 @@ class SubData:
                     self.set_json_payload_class(var.data, msg)
         except Exception:
             log.exception("Fehler im subdata-Modul")
+
+    def process_yourcharge_topic(self, var: yourcharge.YourCharge, msg: mqtt.MQTTMessage):
+        """ Handler für die YourCharge-Topics
+
+        Parameter
+        ----------
+        var : Dictionary
+            enthält aktuelle Daten
+        msg :
+            enthält Topic und Payload
+        """
+        try:
+            if re.search("yourCharge/", msg.topic) is not None:
+                if re.search("yourCharge/config/", msg.topic) is not None:
+                    self.set_json_payload_class(var.data.yc_config, msg)
+                    print("var.data.yc_config.active = " + str(var.data.yc_config.active))
+                else:
+                    self.set_json_payload_class(var.data, msg)
+        except Exception:
+            traceback.print_exc()
+            log.exception("Fehler im subdata-Modul")
+
 
     def process_optional_topic(self, var: optional.Optional, msg: mqtt.MQTTMessage):
         """ Handler für die Optionalen-Topics
