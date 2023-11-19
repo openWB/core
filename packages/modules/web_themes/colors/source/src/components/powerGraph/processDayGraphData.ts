@@ -7,15 +7,10 @@ import {
 	dayGraph,
 	calculateAutarchy,
 	consumerCategories,
+	updateEnergyValues,
 } from './model'
-import {
-	energyMeterNeedsRedraw,
-	historicSummary,
-	resetHistoricSummary,
-	usageSummary,
-} from '@/assets/js/model'
+import { historicSummary, resetHistoricSummary } from '@/assets/js/model'
 import { globalConfig } from '@/assets/js/themeConfig'
-import { shDevices } from '../smartHome/model'
 // methods:
 
 const nonPvCategories = ['evuIn', 'pv', 'batIn', 'evuOut']
@@ -32,7 +27,7 @@ export function processDayGraphMessages(_: string, message: string) {
 	})
 	const transformedTable = transformDatatable(inputTable)
 	setGraphData(transformedTable)
-	updateEnergyValues(energyValues)
+	updateEnergyValues(energyValues, gridCounters)
 	if (globalConfig.debug) {
 		console.debug(
 			'---------------------------------------- Graph Data ---------------------------',
@@ -45,6 +40,7 @@ export function processDayGraphMessages(_: string, message: string) {
 			'-------------------------------------------------------------------------------',
 		)
 	}
+
 	if (graphData.graphMode == 'today') {
 		setTimeout(() => dayGraph.activate(), 300000)
 	}
@@ -125,6 +121,7 @@ function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 			currentItem['soc' + id.substring(2)] = values.soc
 		}
 	})
+	// Devices
 	currentItem.devices = 0
 	Object.entries(currentRow.sh).forEach(([id, values]) => {
 		if (id != 'all') {
@@ -135,7 +132,9 @@ function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 			}
 		}
 	})
+	// Self Usage
 	currentItem.selfUsage = currentItem.pv - currentItem.evuOut
+	// House
 	if (currentRow.hc && currentRow.hc.all) {
 		currentItem.house = currentRow.hc.all.power_imported
 	} else {
@@ -148,6 +147,7 @@ function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 			currentItem.devices -
 			currentItem.batOut
 	}
+	// Autarchy
 	const usedEnergy = currentItem.evuIn + currentItem.batOut + currentItem.pv
 	if (usedEnergy > 0) {
 		historicSummary
@@ -164,7 +164,9 @@ function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 	}
 	return currentItem
 }
-function updateEnergyValues(totals: RawDayGraphDataItem) {
+/* function updateEnergyValues(totals: RawDayGraphDataItem) {
+	console.log(totals)
+	if (Object.entries(totals).length > 0) {
 	Object.entries(totals.counter).forEach(([id, values]) => {
 		if (gridCounters.length == 0 || gridCounters.includes(id)) {
 			historicSummary.items.evuIn.energy += values.imported
@@ -204,16 +206,20 @@ function updateEnergyValues(totals: RawDayGraphDataItem) {
 					((historicSummary.items[cat].energyPv +
 						historicSummary.items[cat].energyBat) /
 						historicSummary.items[cat].energy) *
-						100,
+					100,
 				),
 			)
 			if (consumerCategories.includes(cat)) {
+				if (graphData.graphMode != 'today') {
 				usageSummary[cat].energy = historicSummary.items[cat].energy
+				}
 				usageSummary[cat].energyPv = historicSummary.items[cat].energyPv
 				usageSummary[cat].energyBat = historicSummary.items[cat].energyBat
 				usageSummary[cat].pvPercentage = historicSummary.items[cat].pvPercentage
 			}
 		}
 	})
-	energyMeterNeedsRedraw.value = true
 }
+console.log(sourceSummary)
+	energyMeterNeedsRedraw.value = true
+} */

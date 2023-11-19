@@ -25,7 +25,7 @@ export class Config {
 	private _preferWideBoxes = false
 	private _maxPower = 4000
 	private _fluidDisplay = false
-	private _showClock = false
+	private _showClock = 'no'
 	private _debug: boolean = false
 	isEtEnabled: boolean = false
 	etPrice: number = 20.5
@@ -171,12 +171,12 @@ export class Config {
 	get showClock() {
 		return this._showClock
 	}
-	set showClock(on: boolean) {
-		this._showClock = on
+	set showClock(mode: string) {
+		this._showClock = mode
 		savePrefs()
 	}
-	setShowClock(on: boolean) {
-		this._showClock = on
+	setShowClock(mode: string) {
+		this._showClock = mode
 	}
 	get debug() {
 		return this._debug
@@ -321,7 +321,7 @@ interface Preferences {
 	animation?: boolean
 	wideB?: boolean
 	fluidD?: boolean
-	clock?: boolean
+	clock?: string
 }
 
 function writeCookie() {

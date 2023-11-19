@@ -1,8 +1,19 @@
-import { reactive } from 'vue'
+import { computed, reactive, ref } from 'vue'
+import { extent, scaleBand } from 'd3'
 import { mqttSubscribe, mqttUnsubscribe } from '../../assets/js/mqttClient'
 import { sendCommand } from '@/assets/js/sendMessages'
 import { globalConfig } from '@/assets/js/themeConfig'
-import { energyMeterNeedsRedraw, historicSummary } from '@/assets/js/model'
+import {
+	energyMeterNeedsRedraw,
+	historicSummary,
+	usageSummary,
+} from '@/assets/js/model'
+import { shDevices } from '../smartHome/model'
+import { chargePoints } from '../chargePointList/model'
+
+export const width = 500
+export const height = 500
+export const margin = { top: 10, right: 20, bottom: 10, left: 25 }
 
 export const consumerCategories = ['charging', 'house', 'batIn', 'devices']
 
@@ -281,39 +292,101 @@ export function calculateAutarchy(cat: string, values: GraphDataItem) {
 		historicSummary.items[cat].energyBat +=
 			((1000 / 12) * (values[cat] * values.batOut)) /
 			(values.pv - values.evuOut + values.evuIn + values.batOut)
-	} else {
-		values[cat + 'Pv'] = 0
-		values[cat + 'Bat'] = 0
 	}
 }
-export function updateEnergyValues(powerValues: { [key: string]: number }) {
-	historicSummary.items.pv.energy = powerValues.pv * 1000
-	historicSummary.items.evuIn.energy = powerValues.evuIn * 1000
-	historicSummary.items.batOut.energy = powerValues.batOut * 1000
-	historicSummary.items.evuOut.energy = powerValues.evuOut * 1000
-	historicSummary.items.batIn.energy = powerValues.batIn * 1000
-	historicSummary.items.charging.energy = powerValues.charging * 1000
-	historicSummary.items.devices.energy = powerValues.devices * 1000
-
-	historicSummary.items.house.energy =
-		historicSummary.items.evuIn.energy +
-		historicSummary.items.pv.energy +
-		historicSummary.items.batOut.energy -
-		historicSummary.items.evuOut.energy -
-		historicSummary.items.batIn.energy -
-		historicSummary.items.charging.energy -
-		historicSummary.items.devices.energy
-
-	consumerCategories.map((cat) => {
-		historicSummary.items[cat].pvPercentage = Math.round(
-			((historicSummary.items[cat].energyPv +
-				historicSummary.items[cat].energyBat) /
-				historicSummary.items[cat].energy) *
-				100,
-		)
-	})
+const nonPvCategories = ['evuIn', 'pv', 'batIn', 'evuOut']
+export const noData = ref(false)
+export function updateEnergyValues(
+	totals: RawDayGraphDataItem,
+	gridCounters: string[],
+) {
+	if (Object.entries(totals).length > 0) {
+		noData.value = false
+		Object.entries(totals.counter).forEach(([id, values]) => {
+			if (gridCounters.length == 0 || gridCounters.includes(id)) {
+				historicSummary.items.evuIn.energy += values.imported
+				historicSummary.items.evuOut.energy += values.exported
+			}
+		})
+		historicSummary.items.pv.energy = totals.pv.all.exported
+		if (totals.bat.all) {
+			historicSummary.items.batIn.energy = totals.bat.all.imported
+			historicSummary.items.batOut.energy = totals.bat.all.exported
+		}
+		Object.entries(totals.cp).forEach(([id, values]) => {
+			if (id == 'all') {
+				historicSummary.setEnergy('charging', values.imported)
+			} else {
+				historicSummary.setEnergy(id, values.imported)
+			}
+		})
+		historicSummary.setEnergy('devices', 0)
+		Object.entries(totals.sh).forEach(([id, values]) => {
+			historicSummary.setEnergy(id, values.imported)
+			const idNumber = id.substring(2)
+			if (!shDevices[+idNumber].countAsHouse) {
+				historicSummary.items.devices.energy += values.imported
+			}
+		})
+		if (totals.hc && totals.hc.all) {
+			historicSummary.setEnergy('house', totals.hc.all.imported)
+		} else {
+			historicSummary.calculateHouseEnergy()
+		}
+		historicSummary.keys().map((cat) => {
+			if (!nonPvCategories.includes(cat)) {
+				historicSummary.setPvPercentage(
+					cat,
+					Math.round(
+						((historicSummary.items[cat].energyPv +
+							historicSummary.items[cat].energyBat) /
+							historicSummary.items[cat].energy) *
+							100,
+					),
+				)
+				if (consumerCategories.includes(cat)) {
+					usageSummary[cat].energy = historicSummary.items[cat].energy
+					usageSummary[cat].energyPv = historicSummary.items[cat].energyPv
+					usageSummary[cat].energyBat = historicSummary.items[cat].energyBat
+					usageSummary[cat].pvPercentage =
+						historicSummary.items[cat].pvPercentage
+				}
+			}
+		})
+		if (graphData.graphMode == 'today') {
+			Object.values(chargePoints).map((cp) => {
+				const hcp = historicSummary.items['cp' + cp.id]
+				if (hcp) {
+					cp.energyPv = hcp.energyPv
+					cp.energyBat = hcp.energyBat
+					cp.pvPercentage = hcp.pvPercentage
+				}
+			})
+			Object.values(shDevices).map((device) => {
+				const hDevice = historicSummary.items['sh' + device.id]
+				if (hDevice) {
+					device.energyPv = hDevice.energyPv
+					device.energyBat = hDevice.energyBat
+					device.pvPercentage = hDevice.pvPercentage
+				}
+			})
+		}
+	} else {
+		noData.value = true
+	}
 	energyMeterNeedsRedraw.value = true
 }
+export const xScaleMonth = computed(() => {
+	const e = extent(graphData.data, (d) => d.date)
+	if (e[1]) {
+		return scaleBand<number>()
+			.domain(Array.from({ length: e[1] + 1 }, (v, k) => k + 1))
+			.paddingInner(0.4)
+			.range([0, width])
+	} else {
+		return scaleBand<number>().range([0, 0])
+	}
+})
 export function shiftLeft() {
 	switch (graphData.graphMode) {
 		case 'live':

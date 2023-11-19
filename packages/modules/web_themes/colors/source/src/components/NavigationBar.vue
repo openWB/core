@@ -1,13 +1,13 @@
 <template>
 	<!-- Fixed navbar -->
-	<nav class="navbar navbar-expand-lg px-3 mb-0">
+	<nav class="navbar navbar-expand-lg px-0 mb-0">
 		<div :class="containerclass">
 			<a href="/" class="navbar-brand"><span>openWB</span></a>
 			<span
-				v-if="globalConfig.showClock"
+				v-if="globalConfig.showClock == 'navbar'"
 				class="position-absolute-50 navbar-text ms-4 navbar-time"
 				:style="{ color: 'var(--color-menu)' }"
-				>{{ formatTime(currentTime) }}</span
+				>{{ formatCurrentTime(currentTime) }}</span
 			>
 			<button
 				class="navbar-toggler togglebutton ps-5"
@@ -85,17 +85,16 @@
 
 <script setup lang="ts">
 import { globalConfig } from '@/assets/js/themeConfig'
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted } from 'vue'
+import { formatCurrentTime } from '@/assets/js/helpers'
+import { currentTime } from '@/assets/js/model'
 
 let interval: ReturnType<typeof setInterval>
-const currentTime = ref(new Date())
 
 const containerclass = computed(() => {
 	return globalConfig.fluidDisplay ? 'container-fluid' : 'container-lg'
 })
-function formatTime(d: Date) {
-	return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-}
+
 onMounted(() => {
 	interval = setInterval(() => {
 		;(currentTime.value = new Date()), 1000
