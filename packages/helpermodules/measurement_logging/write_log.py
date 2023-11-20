@@ -92,7 +92,7 @@ def save_log(folder):
         gibt an, ob ein Tages-oder Monats-Log-Eintrag erstellt werden soll.
     """
     if folder == "daily":
-        date = timecheck.create_timestamp_time()
+        date = timecheck.create_timestamp()
     else:
         date = timecheck.create_timestamp_YYYYMMDD()
     current_timestamp = timecheck.create_timestamp()

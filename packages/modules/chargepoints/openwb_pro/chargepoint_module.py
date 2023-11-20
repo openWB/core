@@ -55,7 +55,7 @@ class ChargepointModule(AbstractChargepoint):
                     plug_state=json_rsp["plug_state"],
                     charge_state=json_rsp["charge_state"],
                     phases_in_use=json_rsp["phases_in_use"],
-                    rfid=json_rsp["vehicle_id"],
+                    vehicle_id=json_rsp["vehicle_id"],
                     evse_current=json_rsp["offered_current"]
                 )
 
@@ -67,6 +67,10 @@ class ChargepointModule(AbstractChargepoint):
                     chargepoint_state.soc_timestamp = json_rsp["soc_timestamp"]
                 if json_rsp.get("frequency"):
                     chargepoint_state.frequency = json_rsp["frequency"]
+                if json_rsp.get("rfid_tag"):
+                    chargepoint_state.rfid = json_rsp["rfid_tag"]
+                if json_rsp.get("rfid_timestamp"):
+                    chargepoint_state.rfid_timestamp = json_rsp["rfid_timestamp"]
 
                 self.store.set(chargepoint_state)
                 self.__client_error_context.reset_error_counter()
@@ -83,9 +87,7 @@ class ChargepointModule(AbstractChargepoint):
                     time.sleep(duration)
 
     def clear_rfid(self) -> None:
-        with SingleComponentUpdateContext(self.component_info, False):
-            with self.__client_error_context:
-                log.debug("Die openWB-Pro unterstützt keine RFID-Tags.")
+        pass
 
 
 chargepoint_descriptor = DeviceDescriptor(configuration_factory=OpenWBPro)

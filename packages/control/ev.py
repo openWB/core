@@ -818,7 +818,7 @@ class ChargeTemplate:
         return 0, "stop", "Keine Ladung, da der Lademodus Stop aktiv ist."
 
 
-def get_ev_to_rfid(rfid: str):
+def get_ev_to_rfid(rfid: str, vehicle_id: str):
     """ ermittelt zum übergebenen ID-Tag das Fahrzeug
 
     Parameter
@@ -834,7 +834,11 @@ def get_ev_to_rfid(rfid: str):
     for vehicle in data.data.ev_data:
         try:
             if "ev" in vehicle:
+                if vehicle_id in data.data.ev_data[vehicle].data.tag_id:
+                    log.debug(f"MAC {vehicle_id} wird EV {data.data.ev_data[vehicle].num} zugeordnet.")
+                    return data.data.ev_data[vehicle].num
                 if rfid in data.data.ev_data[vehicle].data.tag_id:
+                    log.debug(f"RFID {rfid} wird EV {data.data.ev_data[vehicle].num} zugeordnet.")
                     return data.data.ev_data[vehicle].num
         except Exception:
             log.exception("Fehler im ev-Modul "+vehicle)

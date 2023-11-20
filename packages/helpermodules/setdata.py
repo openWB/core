@@ -129,7 +129,7 @@ class SetData:
                 if self._validate_collection_value(msg, data_type, ranges, collection):
                     valid = True
             elif data_type == str:
-                if isinstance(value, str) or value is None:
+                if isinstance(value, str) or isinstance(value, type(None)):
                     valid = True
                 else:
                     log.error(f"Payload ungültig: Topic {msg.topic}, Payload {value} sollte ein String sein.")
@@ -140,10 +140,10 @@ class SetData:
                 if float in data_type:
                     if self._validate_min_max_value(value, msg, float, ranges):
                         valid = True
-                if None in data_type and value is None:
+                if None in data_type and isinstance(value, type(None)):
                     valid = True
             elif data_type == int or data_type == float:
-                if self._validate_min_max_value(value, msg, data_type, ranges) or isinstance(value, type(None)):
+                if isinstance(value, type(None)) or self._validate_min_max_value(value, msg, data_type, ranges):
                     valid = True
             elif data_type == bool:
                 valid, value = self._validate_bool_value(value, msg)
@@ -595,10 +595,13 @@ class SetData:
             self._validate_value(msg, int, [(0, 2)])
         elif "/get/evse_current" in msg.topic:
             self._validate_value(msg, float, [(0, 0), (6, 32), (600, 3200)])
+        elif "/get/rfid_timestamp" in msg.topic:
+            self._validate_value(msg, float)
         elif ("/get/fault_str" in msg.topic or
                 "/get/state_str" in msg.topic or
                 "/get/heartbeat" in msg.topic or
-                "/get/rfid" in msg.topic):
+                "/get/rfid" in msg.topic or
+                "/get/vehicle_id" in msg.topic):
             self._validate_value(msg, str)
         elif "/get/rfid_timestamp" in msg.topic:
             self._validate_value(msg, float)
