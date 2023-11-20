@@ -52,6 +52,10 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
         self.component_info = ComponentInfo(self.vehicle, self.vehicle_config.name, "vehicle")
 
     def update(self, vehicle_update_data: VehicleUpdateData):
+        log.debug(f"Vehicle Instance {type(self.vehicle_config)}")
+        log.debug(f"Calculated SoC-State {self.calculated_soc_state}")
+        log.debug(f"Vehicle Update Data {vehicle_update_data}")
+        log.debug(f"General Config {self.general_config}")
         with SingleComponentUpdateContext(self.component_info):
             if isinstance(self.vehicle_config, MqttSocSetup):
                 return
