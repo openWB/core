@@ -147,8 +147,8 @@ def save_data(chargepoint, charging_ev, immediately: bool = True, reset: bool = 
             json.dump(content, json_file)
         log.debug(f"Neuer Ladelog-Eintrag: {new_entry}")
 
-        _reset_data_regarding_chargemode(chargepoint, reset)
-        Pub().pub(f"openWB/set/chargepoint/{chargepoint.num}/set/log", asdict(log_data))
+        chargepoint.reset_log_data_regarding_chargemode(reset)
+        Pub().pub(f"openWB/set/chargepoint/{chargepoint.num}/set/log", asdict(chargepoint.data.set.log))
     except Exception:
         log.exception("Fehler im Ladelog-Modul")
 
@@ -269,7 +269,6 @@ def reset_data(chargepoint, charging_ev, immediately: bool = True):
         Soll sofort ein Eintrag erstellt werden oder gewartet werden, bis die Ladung beendet ist.
     """
     try:
-        log_data = chargepoint.data.set.log
         if charging_ev == -1:
             # Es wurde noch nie ein Auto zugeordnet.
             return
@@ -277,26 +276,8 @@ def reset_data(chargepoint, charging_ev, immediately: bool = True):
             if chargepoint.data.get.power != 0:
                 return
         save_data(chargepoint, charging_ev, immediately, reset=True)
-
-        log_data.imported_at_plugtime = 0
-        log_data.imported_since_plugged = 0
-        _reset_data_regarding_chargemode(chargepoint, True)
-        Pub().pub(f"openWB/set/chargepoint/{chargepoint.num}/set/log", asdict(log_data))
     except Exception:
         log.exception("Fehler im Ladelog-Modul")
-
-
-def _reset_data_regarding_chargemode(chargepoint, reset: bool = False) -> None:
-    log_data = chargepoint.data.set.log
-    log_data.timestamp_start_charging = None
-    if reset:
-        log_data.imported_at_mode_switch = 0
-    else:
-        log_data.imported_at_mode_switch = chargepoint.data.get.imported
-    log_data.chargemode_log_entry = "_"
-    log_data.imported_since_mode_switch = 0
-    log_data.range_charged = 0
-    log_data.time_charged = "00:00"
 
 
 def truncate(number: Union[int, float], decimals: int = 0):

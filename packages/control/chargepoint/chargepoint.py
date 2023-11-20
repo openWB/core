@@ -484,6 +484,15 @@ class Chargepoint:
         self.data.set.plug_state_prev = self.data.get.plug_state
         Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/plug_state_prev", self.data.set.plug_state_prev)
 
+    def reset_log_data_regarding_chargemode(self, reset: bool = False) -> None:
+        reset_log = Log()
+        if reset is False:
+            # Wenn ein Zwischeneintrag, zB bei Wechsel des Lademodus, erstellt wird, Zählerstände nicht verwerfen.
+            reset_log.imported_at_mode_switch = self.data.get.imported
+            reset_log.imported_at_plugtime = self.data.set.log.imported_at_plugtime
+            reset_log.imported_since_plugged = self.data.set.log.imported_since_plugged
+        self.data.set.log = reset_log
+
     def prepare_cp(self) -> Tuple[int, Optional[str]]:
         try:
             # Für Control-Pilot-Unterbrechung set current merken.
