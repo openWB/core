@@ -12,6 +12,7 @@ from modules.common.component_state import CarState
 from modules.common.fault_state import ComponentInfo
 from modules.vehicles.common.calc_soc import calc_soc
 from modules.vehicles.manual.config import ManualSoc
+from modules.vehicles.mqtt.config import MqttSocSetup
 
 T_VEHICLE_CONFIG = TypeVar("T_VEHICLE_CONFIG")
 
@@ -52,6 +53,8 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
 
     def update(self, vehicle_update_data: VehicleUpdateData):
         with SingleComponentUpdateContext(self.component_info):
+            if isinstance(self.vehicle_config, MqttSocSetup):
+                return
             source = self._get_carstate_source(vehicle_update_data)
             car_state = self._get_carstate_by_source(vehicle_update_data, source)
             log.debug(f"Requested start soc from {source.value}: {car_state.soc}%")
