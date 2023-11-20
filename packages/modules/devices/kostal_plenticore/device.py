@@ -37,7 +37,9 @@ def update(
     for component in components:
         if isinstance(component, KostalPlenticoreInverter):
             # Fürs erste nur die WR-Werte nutzen ohne Verlustberechnung.
-            inverter_state = component.read_state(reader)    #power=R575(inverter generation power (actual)), exported=R320 (Total yield)
+            # power: R575(inverter generation power (actual))
+            # exported: R320 (Total yield)
+            inverter_state = component.read_state(reader)
             pv_state = inverter_state
             if set_inverter_state:
                 component.update(pv_state)
