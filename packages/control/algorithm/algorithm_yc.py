@@ -14,9 +14,10 @@ log = logging.getLogger(__name__)
 
 class AlgorithmYc(algorithm.Algorithm):
     def __init__(self):
-        super().__init__(self)
+        super().__init__()
 
     def calc_current(self) -> None:
+        print("Active: " + str(data.data.yc_data.data.yc_config.active))
         super().calc_current(self)
 
     # def calc_current(self) -> None:

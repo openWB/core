@@ -315,6 +315,12 @@ class Data:
         except Exception:
             log.exception("Fehler im Prepare-Modul")
 
+    def __copy_yourcharge_data(self) -> None:
+        try:
+            self.yc_data = copy.deepcopy(SubData.yc_data)
+        except Exception:
+            log.exception("Fehler im Prepare-Modul")
+
     def __copy_counter_data(self) -> None:
         self.counter_all_data = copy.deepcopy(SubData.counter_all_data)
         self.counter_data.clear()
@@ -411,6 +417,7 @@ class Data:
                 self.__copy_cp_data()
                 self.__copy_counter_data()
                 self.__copy_system_data()
+                self.__copy_yourcharge_data()
                 self.__copy_mdule_data()
                 self.graph_data = copy.deepcopy(SubData.graph_data)
             except Exception:

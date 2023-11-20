@@ -168,16 +168,15 @@ try:
     update_config.UpdateConfig().update()
     configuration.pub_configurable()
 
+    print("YC active: " + str(data.data.yc_data.data.yc_config.active))
+
     # run as thread for logging reasons
     t_smarthome = Thread(target=readmq, args=(), name="smarthome")
     t_smarthome.start()
     t_smarthome.join()
 
     proc = process.Process()
-    if data.Data.yc_data.yc_config.active:
-        control = algorithm_yc.AlgorithmYc()
-    else:
-        control = algorithm.Algorithm()
+
     handler = HandlerAlgorithm()
     prep = prepare.Prepare()
     general_internal_chargepoint_handler = GeneralInternalChargepointHandler()
@@ -239,6 +238,17 @@ try:
     threading.Thread(target=start_modbus_server, args=(event_modbus_server,), name="Modbus Control Server").start()
     # Warten, damit subdata Zeit hat, alle Topics auf dem Broker zu empfangen.
     event_update_config_completed.wait(300)
+
+    # late instantiation of actual control algorithm to use
+    # reason: to decide we must have initial subdata completed and data copied once from it
+    data.data.copy_data()
+    if data.data.yc_data.data.yc_config.active:
+        print("Using AlgorithmYc")
+        control = algorithm_yc.AlgorithmYc()
+    else:
+        print("Using Algorithm")
+        control = algorithm.Algorithm()
+
     Pub().pub("openWB/set/system/boot_done", True)
     Path(Path(__file__).resolve().parents[1]/"ramdisk"/"bootdone").touch()
     changed_values_handler.store_inital_values()
