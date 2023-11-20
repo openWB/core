@@ -17,8 +17,21 @@ class AlgorithmYc(algorithm.Algorithm):
         super().__init__()
 
     def calc_current(self) -> None:
-        print("Active: " + str(data.data.yc_data.data.yc_config.active))
-        super().calc_current(self)
+
+        log.info("YC algorithm active (but not yet implemented): " + str(data.data.yc_data.data.yc_config.active))
+
+        if data.data.yc_data.data.fixed_charge_current is not None and data.data.yc_data.data.fixed_charge_current <= 0.0:
+            log.info(f"Charging disapproved by fixed_charge_current == {data.data.yc_data.data.fixed_charge_current}")
+            cp = next(iter(data.data.cp_data.values()))
+            cp.data.set.current = None
+            return
+        elif data.data.yc_data.data.fixed_charge_current is not None and data.data.yc_data.data.fixed_charge_current > 0.0:
+            log.info(f"Fixed current requested by fixed_charge_current == {data.data.yc_data.data.fixed_charge_current}")
+            cp = next(iter(data.data.cp_data.values()))
+            cp.data.set.current = data.data.yc_data.data.fixed_charge_current
+            return
+
+        log.info(f"Regular load control requested by fixed_charge_current == {data.data.yc_data.data.fixed_charge_current}")
 
     # def calc_current(self) -> None:
     #     """ Einstiegspunkt in den YourCharge Regel-Algorithmus

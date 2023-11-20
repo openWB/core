@@ -42,6 +42,7 @@ class HandlerAlgorithm:
     def __init__(self):
         self.interval_counter = 1
         self.current_day = None
+        self.control = None
 
     def handler10Sec(self):
         """ führt den Algorithmus durch.
@@ -65,7 +66,8 @@ class HandlerAlgorithm:
                         log.info("Regelung pausiert, da ein Update durchgeführt wird.")
                     event_global_data_initialized.set()
                     prep.setup_algorithm()
-                    control.calc_current()
+                    self.choose_control_algorithm()
+                    self.control.calc_current()
                     proc.process_algorithm_results()
                     data.data.graph_data.pub_graph_data()
                     changed_values_handler.pub_changed_values()
@@ -150,6 +152,18 @@ class HandlerAlgorithm:
         except Exception:
             log.exception("Fehler im Main-Modul")
 
+    def choose_control_algorithm(self):
+        if event_control_algorithm_set.isSet():
+            # late instantiation of actual control algorithm
+            # reason: in order to decide which algo to use, we must have initial subdata completed and data copied once from it
+            event_control_algorithm_set.clear()
+            if data.data.yc_data.data.yc_config.active:
+                log.critical("Switching to YourCharge algorithm")
+                self.control = algorithm_yc.AlgorithmYc()
+            else:
+                log.critical("Switching to openWB algorithm")
+                self.control = algorithm.Algorithm()
+
 
 def schedule_jobs():
     [schedule.every().minute.at(f":{i:02d}").do(handler.handler10Sec).tag("algorithm") for i in range(0, 60, 10)]
@@ -167,8 +181,6 @@ try:
     data.data_init(loadvars_.event_module_update_completed)
     update_config.UpdateConfig().update()
     configuration.pub_configurable()
-
-    print("YC active: " + str(data.data.yc_data.data.yc_config.active))
 
     # run as thread for logging reasons
     t_smarthome = Thread(target=readmq, args=(), name="smarthome")
@@ -188,6 +200,8 @@ try:
     event_charge_template.set()
     event_cp_config = threading.Event()
     event_cp_config.set()
+    event_control_algorithm_set = threading.Event()
+    event_control_algorithm_set.set()
     event_scheduled_charging_plan = threading.Event()
     event_scheduled_charging_plan.set()
     event_time_charging_plan = threading.Event()
@@ -218,7 +232,8 @@ try:
                           general_internal_chargepoint_handler.event_stop,
                           event_update_config_completed,
                           event_soc,
-                          event_jobs_running, event_modbus_server)
+                          event_jobs_running, event_modbus_server,
+                          event_control_algorithm_set)
     comm = command.Command(event_command_completed)
     t_sub = Thread(target=sub.sub_topics, args=(), name="Subdata")
     t_set = Thread(target=set.set_data, args=(), name="Setdata")
@@ -238,16 +253,6 @@ try:
     threading.Thread(target=start_modbus_server, args=(event_modbus_server,), name="Modbus Control Server").start()
     # Warten, damit subdata Zeit hat, alle Topics auf dem Broker zu empfangen.
     event_update_config_completed.wait(300)
-
-    # late instantiation of actual control algorithm to use
-    # reason: to decide we must have initial subdata completed and data copied once from it
-    data.data.copy_data()
-    if data.data.yc_data.data.yc_config.active:
-        print("Using AlgorithmYc")
-        control = algorithm_yc.AlgorithmYc()
-    else:
-        print("Using Algorithm")
-        control = algorithm.Algorithm()
 
     Pub().pub("openWB/set/system/boot_done", True)
     Path(Path(__file__).resolve().parents[1]/"ramdisk"/"bootdone").touch()

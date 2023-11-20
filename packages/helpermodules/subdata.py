@@ -86,10 +86,12 @@ class SubData:
                  event_update_config_completed: threading.Event,
                  event_soc: threading.Event,
                  event_jobs_running: threading.Event,
-                 event_modbus_server: threading.Event,):
+                 event_modbus_server: threading.Event,
+                 event_control_algorithm_set: threading.Event,):
         self.event_ev_template = event_ev_template
         self.event_charge_template = event_charge_template
         self.event_cp_config = event_cp_config
+        self.event_control_algorithm_set = event_control_algorithm_set
         self.event_module_update_completed = event_module_update_completed
         self.event_copy_data = event_copy_data
         self.event_global_data_initialized = event_global_data_initialized
@@ -613,9 +615,20 @@ class SubData:
         """
         try:
             if re.search("yourCharge/", msg.topic) is not None:
-                if re.search("yourCharge/config/", msg.topic) is not None:
+                if re.search("yourCharge/config/active", msg.topic) is not None:
                     self.set_json_payload_class(var.data.yc_config, msg)
-                    print("var.data.yc_config.active = " + str(var.data.yc_config.active))
+                    if var.data.yc_config.active:
+                        self.event_control_algorithm_set.set()
+                        log.info("Setting YC ACTIVE mode = " + str(var.data.yc_config.active) + ": Switching to YourCharge control algorithm")
+                    else:
+                        self.event_control_algorithm_set.set()
+                        log.info("Setting YC ACTIVE mode = " + str(var.data.yc_config.active) + ": Switching to openWB control algorithm")
+                elif re.search("yourCharge/config/", msg.topic) is not None:
+                    self.set_json_payload_class(var.data.yc_config, msg)
+                    log.info("YC config message: " + msg.topic + " = " + str(msg.payload))
+                elif re.search("yourCharge/yc_status/", msg.topic) is not None:
+                    self.set_json_payload_class(var.data.yc_status, msg)
+                    log.info("YC status message: " + msg.topic + " = " + str(msg.payload))
                 else:
                     self.set_json_payload_class(var.data, msg)
         except Exception:

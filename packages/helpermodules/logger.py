@@ -1,5 +1,6 @@
 import functools
 import logging
+import sys
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 import typing_extensions
@@ -22,6 +23,17 @@ def filter_pos(name: str, record) -> bool:
 
 
 def setup_logging() -> None:
+
+    console_handler_detailed = None
+
+    # when attached debugger is found, activate a StreamHandler writing to console such that the output
+    # appears in terminal or debug console (e.g. in VSCode)
+    if sys.gettrace() is not None:
+        console_handler_detailed = logging.StreamHandler()
+        console_handler_detailed.setLevel(level=logging.DEBUG)
+        console_handler_detailed.setFormatter(logging.Formatter(FORMAT_STR_DETAILED))
+        console_handler_detailed.addFilter(functools.partial(filter_neg, "smarthome"))
+
     def mb_to_bytes(megabytes: int) -> int:
         return megabytes * 1000000
     main_file_handler = RotatingFileHandler(RAMDISK_PATH + 'main.log', maxBytes=mb_to_bytes(4), backupCount=1)
@@ -30,12 +42,16 @@ def setup_logging() -> None:
     logging.getLogger().handlers[0].addFilter(functools.partial(filter_neg, "soc"))
     logging.getLogger().handlers[0].addFilter(functools.partial(filter_neg, "Internal Chargepoint"))
     logging.getLogger().handlers[0].addFilter(functools.partial(filter_neg, "smarthome"))
+    if console_handler_detailed is not None:
+        logging.getLogger().addHandler(console_handler_detailed)
 
     mqtt_log = logging.getLogger("mqtt")
     mqtt_log.propagate = False
     mqtt_file_handler = RotatingFileHandler(RAMDISK_PATH + 'mqtt.log', maxBytes=mb_to_bytes(3), backupCount=1)
     mqtt_file_handler.setFormatter(logging.Formatter(FORMAT_STR_SHORT))
     mqtt_log.addHandler(mqtt_file_handler)
+    if console_handler_detailed is not None:
+        mqtt_log.addHandler(console_handler_detailed)
 
     smarthome_log_handler = RotatingFileHandler(RAMDISK_PATH + 'smarthome.log', maxBytes=mb_to_bytes(2), backupCount=1)
     smarthome_log_handler.setFormatter(logging.Formatter(FORMAT_STR_SHORT))
@@ -63,7 +79,6 @@ def setup_logging() -> None:
 
     logging.getLogger("pymodbus").setLevel(logging.WARNING)
     logging.getLogger("uModbus").setLevel(logging.WARNING)
-
 
 log = logging.getLogger(__name__)
 
