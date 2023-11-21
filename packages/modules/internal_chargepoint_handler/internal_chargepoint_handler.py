@@ -107,7 +107,8 @@ class UpdateState:
         if data.trigger_phase_switch:
             log.debug("Switch Phases from "+str(self.old_phases_to_use) + " to " + str(data.phases_to_use))
             self.__thread_phase_switch(data.phases_to_use)
-            pub.pub_single(f"openWB/set/internal_chargepoint/{self.hierarchy_id}/data/trigger_phase_switch", False)
+            pub.pub_single(
+                f"openWB/set/internal_chargepoint/{self.cp_module.local_charge_point_num}/data/trigger_phase_switch", False)
             pub_single(f"openWB/set/chargepoint/{self.hierarchy_id}/set/current", payload=data.phases_to_use)
 
         if data.cp_interruption_duration > 0:
