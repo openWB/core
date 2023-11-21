@@ -8,6 +8,7 @@ from modules.common import store
 from modules.devices.tesla.config import Tesla
 from modules.vehicles.common.calc_soc import calc_soc
 from modules.vehicles.manual.config import ManualSoc
+from modules.vehicles.mqtt.config import MqttSocSetup
 
 TIMESTAMP_SOC_VALID = 1652683202
 TIMESTAMP_SOC_INVALID = 1652682880
@@ -73,13 +74,27 @@ def conf_vehicle_api_while_charging():
                                calculated_soc_state=calculated_soc_state)
 
 
+def conf_vehicle_mqtt():
+    component_updater_mock = Mock()
+    general_config = GeneralVehicleConfig(use_soc_from_cp=False)
+    calculated_soc_state = CalculatedSocState()
+    return ConfigurableVehicle(vehicle_config=MqttSocSetup(),
+                               component_updater=component_updater_mock,
+                               vehicle=0,
+                               calc_while_charging=False,
+                               general_config=general_config,
+                               calculated_soc_state=calculated_soc_state)
+
+
 @pytest.mark.parametrize(
     "conf_vehicle, use_soc_from_cp, vehicle_update_data, calclulated_soc_state, expected_source",
     [
         pytest.param(conf_vehicle_manual(), False, VehicleUpdateData(), CalculatedSocState(
             manual_soc=34), SocSource.MANUAL, id="Manuell, neuer Start-SoC"),
-        pytest.param(conf_vehicle_manual(), False, VehicleUpdateData(), CalculatedSocState(
+        pytest.param(conf_vehicle_manual(), False, VehicleUpdateData(plug_state=True), CalculatedSocState(
             soc_start=34), SocSource.CALCULATION, id="Manuell berechnen"),
+        pytest.param(conf_vehicle_manual(), False, VehicleUpdateData(), CalculatedSocState(
+            soc_start=34), SocSource.NO_UPDATE, id="Manuell nicht aktualisieren, da nicht angesteckt"),
         pytest.param(conf_vehicle_manual_from_cp(), True,
                      VehicleUpdateData(soc_from_cp=45, timestamp_soc_from_cp=TIMESTAMP_SOC_INVALID),
                      CalculatedSocState(manual_soc=34), SocSource.MANUAL, id="Manuell mit SoC vom LP, neuer Start-SoC"),
@@ -104,6 +119,8 @@ def conf_vehicle_api_while_charging():
                      CalculatedSocState(), SocSource.API, id="API mit Berechnung, keine Ladung"),
         pytest.param(conf_vehicle_api_while_charging(), False, VehicleUpdateData(plug_state=True,
                      charge_state=True), CalculatedSocState(), SocSource.CALCULATION, id="API mit Berechnung, Ladung"),
+        pytest.param(conf_vehicle_mqtt(), False, VehicleUpdateData(plug_state=True),
+                     CalculatedSocState(), SocSource.NO_UPDATE, id="Kein Update, da Werte per MQTT"),
     ])
 def test_get_carstate_source(conf_vehicle: ConfigurableVehicle,
                              use_soc_from_cp,
