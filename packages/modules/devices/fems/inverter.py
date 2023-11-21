@@ -25,13 +25,6 @@ class FemsInverter:
             elif address == "_sum/ProductionActiveEnergy":
                 exported = scale_metric(singleValue['value'], singleValue.get('unit'), 'Wh')
 
-
-        # power = scale_metric(response["value"], response.get("unit"), 'W') * -1
-
-        # response = session.get(
-        #     'http://'+self.ip_address+':8084/rest/channel/_sum/ProductionActiveEnergy',
-        #     timeout=2).json()
-        # exported = scale_metric(response["value"], response.get("unit"), 'Wh')
         inverter_state = InverterState(
             power=power,
             exported=exported

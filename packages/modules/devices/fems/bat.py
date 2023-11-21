@@ -37,19 +37,6 @@ class FemsBat:
             elif address == "_sum/ConsumptionActivePower":
                 haus = scale_metric(singleValue['value'], singleValue.get('unit'), 'W')
 
-       # response = session.get(
-       #     "http://" + self.ip_address +
-       #     ":8084/rest/channel/_sum/(GridActivePower|ProductionActivePower|ConsumptionActivePower)",
-       #     timeout=2).json()
-       # for singleValue in response:
-       #     address = singleValue["address"]
-       #     if (address == "_sum/GridActivePower"):
-       #         grid = scale_metric(singleValue['value'], singleValue.get('unit'), 'W')
-       #     elif address == "_sum/ProductionActivePower":
-       #         pv = scale_metric(singleValue['value'], singleValue.get('unit'), 'W')
-       #     elif address == "_sum/ConsumptionActivePower":
-       #         haus = scale_metric(singleValue['value'], singleValue.get('unit'), 'W')
-
         # keine Berechnung im Gerät, da grid nicht der Leistung aus der Zählerkomponente entspricht.
         power = grid + pv - haus
 
