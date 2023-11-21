@@ -45,6 +45,8 @@ touch "$debugFile"
 	merge_log_files "internal_chargepoint" 1000
 	echo "############################ mqtt log ##############"
 	merge_log_files "mqtt" 1000
+	echo "############################ soc log ##############"
+	merge_log_files "soc" 1000
 
 	for currentConfig in /etc/mosquitto/conf.d/99-bridge-*; do
 		if [ -f "$currentConfig" ]; then
