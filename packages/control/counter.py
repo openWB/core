@@ -194,9 +194,8 @@ class Counter:
         evu_counter = data.data.counter_all_data.get_evu_counter()
         bat_surplus = data.data.bat_all_data.power_for_bat_charging()
         surplus = evu_counter.data.get.power - bat_surplus
-        ranged_surplus = self._control_range(surplus)
-        log.info(f"Überschuss zur PV-geführten Ladung: {ranged_surplus}W")
-        return ranged_surplus
+        log.info(f"Überschuss zur PV-geführten Ladung: {surplus}W")
+        return surplus
 
     def calc_raw_surplus(self):
         # reservierte Leistung wird nicht berücksichtigt, weil diese noch verwendet werden kann, bis die EV
@@ -207,20 +206,27 @@ class Counter:
         raw_power_left = evu_counter.data.set.raw_power_left
         max_power = evu_counter.data.config.max_total_power
         surplus = raw_power_left - max_power + bat_surplus + disengageable_smarthome_power
-        ranged_surplus = max(self._control_range(surplus), 0)
+        ranged_surplus = surplus + self._control_range()
         log.info(f"Überschuss zur PV-geführten Ladung: {ranged_surplus}W")
         return ranged_surplus
 
-    def _control_range(self, surplus):
+    def _control_range(self):
+        if data.data.bat_all_data.data.set.regulate_up:
+            # 100(50 reichen auch?) W Überschuss übrig lassen, damit der Speicher bis zur max Ladeleistung hochregeln
+            # kann. Regelmodus ignorieren, denn mit Regelmodus Bezug kann keine Einspeisung für den Speicher erzeugt
+            # werden.
+            return - 100
         control_range_low = data.data.general_data.data.chargemode_config.pv_charging.control_range[0]
         control_range_high = data.data.general_data.data.chargemode_config.pv_charging.control_range[1]
         control_range_center = control_range_high - \
             (control_range_high - control_range_low) / 2
-        if control_range_low < surplus < control_range_high:
-            available_power = 0
+        if control_range_low > data.data.counter_all_data.get_evu_counter().data.get.power:
+            range_offset = control_range_center - data.data.counter_all_data.get_evu_counter().data.get.power
+        elif data.data.counter_all_data.get_evu_counter().data.get.power > control_range_high:
+            range_offset = control_range_center - data.data.counter_all_data.get_evu_counter().data.get.power
         else:
-            available_power = surplus + control_range_center
-        return available_power
+            range_offset = 0
+        return range_offset
 
     SWITCH_ON_FALLEN_BELOW = "Einschaltschwelle während der Einschaltverzögerung unterschritten."
     SWITCH_ON_WAITING = "Die Ladung wird gestartet, sobald nach {}s die Einschaltverzögerung abgelaufen ist."
