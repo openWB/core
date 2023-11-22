@@ -12,6 +12,7 @@ from modules.common.component_state import CarState
 from modules.common.fault_state import ComponentInfo
 from modules.vehicles.common.calc_soc import calc_soc
 from modules.vehicles.manual.config import ManualSoc
+from modules.vehicles.mqtt.config import MqttSocSetup
 
 T_VEHICLE_CONFIG = TypeVar("T_VEHICLE_CONFIG")
 
@@ -23,6 +24,7 @@ class SocSource(Enum):
     CP = "chargepoint"
     MANUAL = "manual"
     CALCULATION = "calculation"
+    NO_UPDATE = "no_update"
 
 
 class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
@@ -51,8 +53,16 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
         self.component_info = ComponentInfo(self.vehicle, self.vehicle_config.name, "vehicle")
 
     def update(self, vehicle_update_data: VehicleUpdateData):
+        log.debug(f"Vehicle Instance {type(self.vehicle_config)}")
+        log.debug(f"Calculated SoC-State {self.calculated_soc_state}")
+        log.debug(f"Vehicle Update Data {vehicle_update_data}")
+        log.debug(f"General Config {self.general_config}")
         with SingleComponentUpdateContext(self.component_info):
+
             source = self._get_carstate_source(vehicle_update_data)
+            if source == SocSource.NO_UPDATE:
+                log.debug("No soc update necessary.")
+                return
             car_state = self._get_carstate_by_source(vehicle_update_data, source)
             log.debug(f"Requested start soc from {source.value}: {car_state.soc}%")
 
@@ -66,6 +76,8 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
             self.store.set(car_state)
 
     def _get_carstate_source(self, vehicle_update_data: VehicleUpdateData) -> SocSource:
+        if isinstance(self.vehicle_config, MqttSocSetup):
+            return SocSource.NO_UPDATE
         # Kein SoC vom LP vorhanden oder erwünscht
         if (vehicle_update_data.soc_from_cp is None or self.general_config.use_soc_from_cp is False or
                 # oder aktueller manueller SoC vorhanden (ausgelesenen SoC während der Ladung korrigieren)
@@ -75,7 +87,11 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
                 if self.calculated_soc_state.manual_soc:
                     return SocSource.MANUAL
                 else:
-                    return SocSource.CALCULATION
+                    if vehicle_update_data.plug_state:
+                        return SocSource.CALCULATION
+                    else:
+                        # Wenn nicht angesteckt ist, nichts berechnen.
+                        return SocSource.NO_UPDATE
             else:
                 if vehicle_update_data.charge_state and self.calc_while_charging:
                     # Wenn während dem Laden berechnet werden soll und gerade geladen wird, berechnen.
