@@ -226,7 +226,7 @@ def test_scheduled_charging_calc_current(plan_data: SelectedPlan,
     ct.data.chargemode.scheduled_charging.plans = {0: plan}
 
     # execution
-    ret = ct.scheduled_charging_calc_current(plan_data, soc, used_amount, 3, 3, 6)
+    ret = ct.scheduled_charging_calc_current(plan_data, soc, used_amount, 3, 3, 6, 0)
 
     # evaluation
     assert ret == expected
