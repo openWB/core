@@ -89,6 +89,7 @@ echo "mosquitto done"
 
 # apache
 echo -n "replacing apache default page..."
+cp "${OPENWBBASEDIR}/data/config/apache/000-default.conf" "/etc/apache2/sites-available/"
 cp "${OPENWBBASEDIR}/index.html" /var/www/html/index.html
 echo "done"
 echo -n "fix upload limit..."
@@ -105,7 +106,7 @@ echo -n "enabling apache ssl module..."
 a2enmod ssl
 a2enmod proxy_wstunnel
 sudo a2dissite default-ssl
-sudo cp "${OPENWBBASEDIR}/data/config/apache-openwb-ssl.conf" /etc/apache2/sites-available/ 
+sudo cp "${OPENWBBASEDIR}/data/config/apache/apache-openwb-ssl.conf" /etc/apache2/sites-available/ 
 sudo a2ensite apache-openwb-ssl
 echo "done"
 echo -n "restarting apache..."
