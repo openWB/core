@@ -61,8 +61,7 @@ fi
 echo "updating mosquitto config file"
 systemctl stop mosquitto
 sleep 2
-cp -a "${OPENWBBASEDIR}/data/config/mosquitto.conf" /etc/mosquitto/mosquitto.conf
-cp "${OPENWBBASEDIR}/data/config/openwb.conf" /etc/mosquitto/conf.d/openwb.conf
+cp -a "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto.conf" /etc/mosquitto/mosquitto.conf
 sudo cp /etc/ssl/certs/ssl-cert-snakeoil.pem /etc/mosquitto/certs/openwb.pem
 sudo cp /etc/ssl/private/ssl-cert-snakeoil.key /etc/mosquitto/certs/openwb.key
 sudo chgrp mosquitto /etc/mosquitto/certs/openwb.key
@@ -73,7 +72,7 @@ if [ ! -f /etc/init.d/mosquitto_local ]; then
 	echo "setting up mosquitto local instance"
 	install -d -m 0755 -o root -g root /etc/mosquitto/conf_local.d/
 	install -d -m 0755 -o mosquitto -g root /var/lib/mosquitto_local
-	cp "${OPENWBBASEDIR}/data/config/mosquitto_local_init" /etc/init.d/mosquitto_local
+	cp "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto_local_init" /etc/init.d/mosquitto_local
 	chown root:root /etc/init.d/mosquitto_local
 	chmod 755 /etc/init.d/mosquitto_local
 	systemctl daemon-reload
@@ -82,7 +81,7 @@ else
 	systemctl stop mosquitto_local
 	sleep 2
 fi
-cp -a "${OPENWBBASEDIR}/data/config/mosquitto_local.conf" /etc/mosquitto/mosquitto_local.conf
+cp -a "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto_local.conf" /etc/mosquitto/mosquitto_local.conf
 cp -a "${OPENWBBASEDIR}/data/config/openwb_local.conf" /etc/mosquitto/conf_local.d/
 systemctl start mosquitto_local
 echo "mosquitto done"
