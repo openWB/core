@@ -270,11 +270,18 @@ chmod 666 "$LOGFILE"
 		sudo cp "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto.conf" "/etc/mosquitto/mosquitto.conf"
 		restartService=1
 	fi
-	if versionMatch "${OPENWBBASEDIR}/data/config/openwb.conf" "/etc/mosquitto/conf.d/openwb.conf"; then
+	if versionMatch "${OPENWBBASEDIR}/data/config/mosquitto/openwb.conf" "/etc/mosquitto/conf.d/openwb.conf"; then
 		echo "mosquitto openwb.conf already up to date"
 	else
 		echo "updating mosquitto openwb.conf"
-		sudo cp "${OPENWBBASEDIR}/data/config/openwb.conf" "/etc/mosquitto/conf.d/openwb.conf"
+		sudo cp "${OPENWBBASEDIR}/data/config/mosquitto/openwb.conf" "/etc/mosquitto/conf.d/openwb.conf"
+		restartService=1
+	fi
+	if versionMatch "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto.acl" "/etc/mosquitto/mosquitto.acl"; then
+		echo "mosquitto acl already up to date"
+	else
+		echo "updating mosquitto acl"
+		sudo cp "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto.acl" "/etc/mosquitto/mosquitto.acl"
 		restartService=1
 	fi
 	if [[ ! -f "/etc/mosquitto/certs/openwb.key" ]]; then
@@ -302,11 +309,11 @@ chmod 666 "$LOGFILE"
 		sudo cp -a "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto_local.conf" "/etc/mosquitto/mosquitto_local.conf"
 		restartService=1
 	fi
-	if versionMatch "${OPENWBBASEDIR}/data/config/openwb_local.conf" "/etc/mosquitto/conf_local.d/openwb_local.conf"; then
+	if versionMatch "${OPENWBBASEDIR}/data/config/mosquitto/openwb_local.conf" "/etc/mosquitto/conf_local.d/openwb_local.conf"; then
 		echo "mosquitto openwb_local.conf already up to date"
 	else
 		echo "updating mosquitto openwb_local.conf"
-		sudo cp -a "${OPENWBBASEDIR}/data/config/openwb_local.conf" "/etc/mosquitto/conf_local.d/"
+		sudo cp -a "${OPENWBBASEDIR}/data/config/mosquitto/openwb_local.conf" "/etc/mosquitto/conf_local.d/"
 		restartService=1
 	fi
 	if ((restartService == 1)); then
