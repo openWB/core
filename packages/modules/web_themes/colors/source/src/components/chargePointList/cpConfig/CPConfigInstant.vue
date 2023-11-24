@@ -15,7 +15,7 @@
 		</ConfigItem>
 		<hr v-if="cp.instantChargeLimitMode != 'none'" />
 		<!-- Limit Mode -->
-		<ConfigItem title="Begrenzung" icon="fa-hand">
+		<ConfigItem title="Begrenzung" icon="fa-hand" :fullwidth="true">
 			<RadioInput
 				v-model="cp.instantChargeLimitMode"
 				:options="instantChargeLimitModes.map((e) => [e.name, e.id])"
@@ -26,6 +26,7 @@
 			v-if="cp.instantChargeLimitMode == 'soc'"
 			title="Maximaler SoC"
 			icon="fa-sliders"
+			:fullwidth="true"
 		>
 			<RangeInput
 				id="maxSoc"
@@ -42,10 +43,11 @@
 			v-if="cp.instantChargeLimitMode == 'amount'"
 			title="Zu ladende Energie"
 			icon="fa-sliders"
+			:fullwidth="true"
 		>
 			<RangeInput
 				id="maxEnergy"
-				v-model="cp.instantMaxEnergy"
+				v-model="energyLimit"
 				:min="0"
 				:max="100"
 				:step="1"
@@ -57,7 +59,7 @@
 
 <script setup lang="ts">
 // import { eventBus } from '@/main.js'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import type { ChargePoint } from '../model'
 import ConfigItem from '../../shared/ConfigItem.vue'
 import RangeInput from '@/components/shared/RangeInput.vue'
@@ -71,6 +73,14 @@ const instantChargeLimitModes = [
 	{ name: 'EV-SoC', id: 'soc' },
 	{ name: 'Energiemenge', id: 'amount' },
 ]
+const energyLimit = computed ({
+	get() {
+		return cp.value.instantMaxEnergy / 1000
+	},
+	set(limit:number) {
+		cp.value.instantMaxEnergy = limit * 1000
+	}
+})
 // methods
 </script>
 

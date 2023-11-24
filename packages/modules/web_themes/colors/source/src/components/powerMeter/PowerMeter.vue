@@ -61,22 +61,34 @@
 					<!-- Show the SoC for the first two cars -->
 					<PMLabel
 						v-if="
-							Object.keys(vehicles).length > 0 && Object.values(vehicles)[0].soc
+							chargepoints.length > 0 &&
+							vehicles[chargepoints[0].connectedVehicle]
 						"
 						:x="-width / 2 - margin / 4 + 10"
 						:y="-height / 2 + margin + 5"
-						:labeltext="trimName(vehicles[0].name) + ': ' + soc(0) + '%'"
+						:labeltext="
+							trimName(vehicles[chargepoints[0].connectedVehicle].name) +
+							': ' +
+							soc(0) +
+							'%'
+						"
 						:labelcolor="chargepoints[0].color"
 						:anchor="'start'"
 						:config="globalConfig"
 					/>
 					<PMLabel
 						v-if="
-							Object.keys(vehicles).length > 1 && Object.values(vehicles)[1].soc
+							chargepoints.length > 1 &&
+							vehicles[chargepoints[1].connectedVehicle]
 						"
 						:x="width / 2 + margin / 4 - 10"
 						:y="-height / 2 + margin + 5"
-						:labeltext="trimName(vehicles[1].name) + ': ' + soc(1) + '%'"
+						:labeltext="
+							trimName(vehicles[chargepoints[1].connectedVehicle].name) +
+							': ' +
+							soc(1) +
+							'%'
+						"
 						:labelcolor="chargepoints[1].color"
 						:anchor="'end'"
 						:config="globalConfig"
@@ -221,7 +233,7 @@ function labelCoordinates(item: number) {
 // methods
 
 function soc(i: number) {
-	return vehicles[i].soc
+	return chargepoints.value[i].soc
 }
 function trimName(name: string) {
 	const maxlen = 12

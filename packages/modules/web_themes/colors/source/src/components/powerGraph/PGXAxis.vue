@@ -6,12 +6,12 @@
 			:origin="drawAxis1"
 			:transform="'translate(0,' + (height / 2 - 6) + ')'"
 		/>
-		<g
+		<!-- 	<g
 			id="PGXAxis2"
 			class="axis"
 			:origin="drawAxis2"
 			:transform="'translate(0,' + (height / 2 + 10) + ')'"
-		/>
+		/> -->
 		<g v-if="globalConfig.showGrid">
 			<rect
 				x="0"
@@ -39,16 +39,9 @@
 
 <script setup lang="ts">
 import type { AxisContainerElement, ScaleTime } from 'd3'
-import {
-	axisBottom,
-	extent,
-	scaleBand,
-	scaleTime,
-	select,
-	timeFormat,
-} from 'd3'
+import { axisBottom, extent, scaleTime, select, timeFormat } from 'd3'
 import { globalConfig } from '@/assets/js/themeConfig'
-import { graphData } from './model'
+import { graphData, xScaleMonth } from './model'
 import { computed } from 'vue'
 
 const props = defineProps<{
@@ -71,7 +64,7 @@ const xAxisGeneratorMonth = computed(() =>
 	axisBottom<number>(xScaleMonth.value)
 		.ticks(4)
 		.tickSizeInner(ticksize.value)
-		.tickFormat((d, i) => (i + 1).toString()),
+		.tickFormat((d) => d.toString()),
 )
 
 const ticksize = computed(() => {
@@ -90,12 +83,19 @@ const xScale = computed(() => {
 		return scaleTime().range([0, 0])
 	}
 })
-const xScaleMonth = computed(() => {
-	return scaleBand<number>()
-		.domain(Array.from({ length: graphData.data.length }, (v, k) => k))
-		.paddingInner(0.4)
-		.range([0, props.width + props.margin.right])
-})
+/* const xScaleMonth = computed(() => {
+	let e = extent(graphData.data, (d) => d.date)
+	console.log(e)
+	if (e[1]) {
+		return scaleBand<number>()
+			.domain([1,e[1]])
+			// .domain(Array.from({ length: graphData.data.length }, (v, k) => k))
+			.paddingInner(0.4)
+			.range([0, props.width + props.margin.right])
+		} else {
+			return scaleBand<number>().range([0,0])
+		}
+}) */
 
 const drawAxis1 = computed(() => {
 	let axis = select<AxisContainerElement, number>('g#PGXAxis')
@@ -107,8 +107,13 @@ const drawAxis1 = computed(() => {
 	}
 
 	axis
-		.selectAll('.tick')
-		.attr('color', 'var(--color-axis)')
+		.selectAll('.tick > text')
+		//.attr('color', 'var(--color-axis)')
+		.attr('fill', (d, i) =>
+			i > 0 || graphData.graphMode == 'month' || graphData.graphMode == 'year'
+				? 'var(--color-axis)'
+				: 'var(--color-bg)',
+		)
 		.attr('font-size', fontsize)
 
 	if (globalConfig.showGrid) {
@@ -130,7 +135,7 @@ const drawAxis1 = computed(() => {
 		.attr('text-anchor', 'start')
 	return 'PGXAxis.vue'
 })
-const drawAxis2 = computed(() => {
+/* const drawAxis2 = computed(() => {
 	let axis = select<AxisContainerElement, Date>('g#PGXAxis2')
 	axis.selectAll('*').remove()
 	if (globalConfig.showGrid) {
@@ -146,7 +151,7 @@ const drawAxis2 = computed(() => {
 		axis.select('.domain').attr('stroke', 'var(--color-bg)')
 	}
 	return 'PGXAxis.vue'
-})
+}) */
 </script>
 
 <style></style>

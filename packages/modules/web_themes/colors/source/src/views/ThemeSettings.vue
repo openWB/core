@@ -112,9 +112,13 @@
 					<ConfigItem
 						title="Uhrzeit anzeigen"
 						icon="fa-clock"
-						infotext="Zeige die aktuelle Uhrzeit in der Menuleiste an"
+						infotext="Zeige die aktuelle Uhrzeit an. In der Menuleiste oder neben den Lade-Buttons."
 					>
-						<SwitchInput v-model="globalConfig.showClock" />
+						<!-- <SwitchInput v-model="globalConfig.showClock" /> -->
+						<RadioInput
+							v-model="globalConfig.showClock"
+							:options="clockModes"
+						></RadioInput>
 					</ConfigItem>
 					<ConfigItem
 						title="Debug-Modus"
@@ -164,6 +168,11 @@ const shSchemes: [string, string][] = [
 	['Orange', 'normal'],
 	['Grün/Violett', 'standard'],
 	['Bunt', 'advanced'],
+]
+const clockModes: [string, string][] = [
+	['Aus', 'off'],
+	['Menu', 'navbar'],
+	['Buttonleiste', 'buttonbar'],
 ]
 </script>
 <style scoped>

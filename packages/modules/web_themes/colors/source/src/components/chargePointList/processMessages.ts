@@ -37,8 +37,16 @@ export function processChargepointMessages(topic: string, message: string) {
 				const configMessage = JSON.parse(message)
 				chargePoints[index].name = configMessage.name
 				chargePoints[index].icon = configMessage.name
-				masterData['cp' + index].name = configMessage.name
-				masterData['cp' + index].icon = configMessage.name
+				if (masterData['cp' + index]) {
+					masterData['cp' + index].name = configMessage.name
+					masterData['cp' + index].icon = configMessage.name
+				} else {
+					masterData['cp' + index] = {
+						name: configMessage.name,
+						icon: configMessage.name,
+						color: 'var(--color-charging)',
+					}
+				}
 			} else {
 				console.warn('invalid chargepoint index: ' + index)
 			}
@@ -74,6 +82,8 @@ export function processChargepointMessages(topic: string, message: string) {
 			chargePoints[index].phasesInUse = +message
 		} else if (topic.match(/^openwb\/chargepoint\/[0-9]+\/set\/current/i)) {
 			chargePoints[index].current = +message
+		} else if (topic.match(/^openwb\/chargepoint\/[0-9]+\/get\/currents/i)) {
+			chargePoints[index].currents = JSON.parse(message)
 		} else if (topic.match(/^openwb\/chargepoint\/[0-9]+\/set\/log/i)) {
 			const obj = JSON.parse(message)
 			chargePoints[index].chargedSincePlugged = obj.imported_since_plugged
