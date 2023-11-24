@@ -530,7 +530,9 @@ class Ev:
 class SelectedPlan:
     remaining_time: float = 0
     available_current: float = 14
+    duration: float = 0
     max_current: int = 16
+    missing_amount: float = 0
     phases: int = 1
     num: int = 0
 
@@ -688,7 +690,7 @@ class ChargeTemplate:
         for num, plan in self.data.chargemode.scheduled_charging.plans.items():
             if plan.active:
                 try:
-                    duration = self.calculate_duration(plan, soc, battery_capacity, used_amount, phases)
+                    duration, missing_amount = self.calculate_duration(plan, soc, battery_capacity, used_amount, phases)
                     remaining_time, missed_date_today = timecheck.check_duration(plan, duration, self.BUFFER)
                     if remaining_time:
                         # Wenn der Zeitpunkt vorüber, aber noch nicht abgelaufen ist oder
@@ -708,7 +710,9 @@ class ChargeTemplate:
                                     available_current=plan.current,
                                     max_current=max_current,
                                     phases=phases,
-                                    num=num)
+                                    num=num,
+                                    missing_amount=missing_amount,
+                                    duration=duration)
                     log.debug(f"Plan-Nr. {num}: Differenz zum Start {remaining_time}s, Dauer {duration}h, "
                               f"Termin heute verpasst: {missed_date_today}")
                 except Exception:
@@ -720,13 +724,13 @@ class ChargeTemplate:
                            soc: float,
                            battery_capacity: float,
                            used_amount: float,
-                           phases: int) -> float:
+                           phases: int) -> Tuple[float, float]:
         if plan.limit.selected == "soc":
             missing_amount = ((plan.limit.soc_scheduled - soc) / 100) * battery_capacity
         else:
             missing_amount = plan.limit.amount - used_amount
         duration = missing_amount/(plan.current * phases*230)
-        return duration
+        return duration, missing_amount
 
     SCHEDULED_CHARGING_REACHED_LIMIT_SOC = "Keine Ladung, da der Ziel-Soc und das SoC-Limit bereits erreicht wurden."
     SCHEDULED_CHARGING_REACHED_AMOUNT = "Keine Ladung, da die Energiemenge bereits erreicht wurde."
@@ -752,6 +756,10 @@ class ChargeTemplate:
                                         soc_request_intervall_offset: int) -> Tuple[float, str, str, int]:
         current = 0
         mode = "stop"
+        phases_to_use = data.data.general_data.data.chargemode_config.scheduled_charging.phases_to_use
+        if phases_to_use != 0:
+            # kein Automatik
+            max_phases = phases_to_use
         if plan_data is None:
             return current, mode, self.SCHEDULED_CHARGING_NO_PLANS_CONFIGURED, max_phases
         current_plan = self.data.chargemode.scheduled_charging.plans[plan_data.num]
@@ -782,8 +790,9 @@ class ChargeTemplate:
         # weniger als die berechnete Zeit verfügbar
         # Ladestart wurde um maximal 20 Min verpasst.
         elif plan_data.remaining_time <= 0 - soc_request_intervall_offset*60:
-            message = self.SCHEDULED_CHARGING_MAX_CURRENT.format(plan_data.max_current)
-            current = plan_data.max_current
+            current = min(plan_data.missing_amount/(plan_data.duration +
+                          plan_data.remaining_time/3600)/(phases*230), plan_data.max_current)
+            message = self.SCHEDULED_CHARGING_MAX_CURRENT.format(round(current, 2))
             mode = "instant_charging"
             phases = max_phases
         else:
