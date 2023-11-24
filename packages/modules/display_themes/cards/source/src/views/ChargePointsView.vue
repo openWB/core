@@ -382,6 +382,7 @@ export default {
                 <i-badge
                   size="lg"
                   class="full-width"
+                  :class="!changesLocked ? 'clickable' : ''"
                   :disabled="
                     !mqttStore.getChargePointVehicleChangePermitted(
                       modalChargePointId
@@ -407,6 +408,7 @@ export default {
                 <i-button
                   size="sm"
                   :disabled="changesLocked"
+                  :class="!changesLocked ? 'clickable' : ''"
                   @click="handleSocClick(id)"
                 >
                   <span
