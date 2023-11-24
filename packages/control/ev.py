@@ -739,9 +739,8 @@ class ChargeTemplate:
     SCHEDULED_CHARGING_NO_PLANS_CONFIGURED = "Keine Ladung, da keine Ziel-Termine konfiguriert sind."
     SCHEDULED_CHARGING_USE_PV = ("Kein Sofortladen, da noch Zeit bis zum Zieltermin ist. Falls vorhanden, "
                                  "wird mit EVU-Überschuss geladen.")
-    SCHEDULED_CHARGING_MAX_CURRENT = ("Zielladen mit {}A. Der verfügbare Ladezeitraum reicht nicht aus, um "
-                                      "das zu erreichen. Daher wird bis max. 20 Minuten nach dem angegebenen "
-                                      "Zieltermin geladen.")
+    SCHEDULED_CHARGING_MAX_CURRENT = ("Zielladen mit {}A. Der Ladestrom wurde erhöht, um den Zieltermin zu erreichen. "
+                                      "Es wird bis max. 20 Minuten nach dem angegebenen Zieltermin geladen.")
     SCHEDULED_CHARGING_LIMITED_BY_SOC = 'einen SoC von {}%'
     SCHEDULED_CHARGING_LIMITED_BY_AMOUNT = '{}kWh geladene Energie'
     SCHEDULED_CHARGING_IN_TIME = 'Zielladen mit {}A, um {}  um {} zu erreichen.'
