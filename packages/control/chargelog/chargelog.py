@@ -301,31 +301,33 @@ def truncate(number: Union[int, float], decimals: int = 0):
 def calculate_charge_cost(cp, create_log_entry: bool = False):
     content = get_todays_daily_log()
     try:
-        reference = _get_reference_position(cp, create_log_entry)
-        reference_time = get_reference_time(cp, reference)
-        reference_entry = _get_reference_entry(content["entries"], reference_time)
-        energy_entry = process_entry(reference_entry, content["entries"][-1], CalculationType.ENERGY)
-        power_source_entry = analyse_percentage(energy_entry)
-        if reference == ReferenceTime.START:
-            charged_energy = cp.data.set.log.imported_since_mode_switch
-        elif reference == ReferenceTime.MIDDLE:
-            # energy_imported in kWh
-            charged_energy = (content["entries"][-1]["cp"][f"cp{cp.num}"]["imported"] -
-                              power_source_entry["cp"][f"cp{cp.num}"]["energy_imported"]*1000)
-        elif reference == ReferenceTime.END:
-            reference_start_position = _get_reference_position(cp, False)
-            if reference_start_position == ReferenceTime.START:
+        if cp.data.set.log.imported_since_plugged != 0:
+            reference = _get_reference_position(cp, create_log_entry)
+            reference_time = get_reference_time(cp, reference)
+            reference_entry = _get_reference_entry(content["entries"], reference_time)
+            energy_entry = process_entry(reference_entry, content["entries"][-1], CalculationType.ENERGY)
+            power_source_entry = analyse_percentage(energy_entry)
+            if reference == ReferenceTime.START:
                 charged_energy = cp.data.set.log.imported_since_mode_switch
+            elif reference == ReferenceTime.MIDDLE:
+                charged_energy = (content["entries"][-1]["cp"][f"cp{cp.num}"]["imported"] -
+                                  power_source_entry["cp"][f"cp{cp.num}"]["imported"])
+            elif reference == ReferenceTime.END:
+                reference_start_position = _get_reference_position(cp, False)
+                if reference_start_position == ReferenceTime.START:
+                    charged_energy = cp.data.set.log.imported_since_mode_switch
+                else:
+                    last_considered_entry = _get_reference_entry(
+                        content["entries"], timecheck.create_unix_timestamp_current_full_hour())
+                    charged_energy = cp.data.get.imported - \
+                        last_considered_entry["cp"][f"cp{cp.num}"]["imported"]
             else:
-                last_considered_entry = _get_reference_entry(
-                    content["entries"], timecheck.create_unix_timestamp_current_full_hour())
-                charged_energy = cp.data.get.imported - \
-                    last_considered_entry["cp"][f"cp{cp.num}"]["energy_imported"]*1000
-        else:
-            raise TypeError(f"Unbekannter Referenz-Zeitpunkt {reference}")
-        cp.data.set.log.costs += _calc(power_source_entry["power_source"],
-                                       charged_energy,
-                                       (data.data.optional_data.et_module is not None))
+                raise TypeError(f"Unbekannter Referenz-Zeitpunkt {reference}")
+            log.debug(f'power source {power_source_entry["power_source"]}')
+            log.debug(f"charged_energy {charged_energy}")
+            cp.data.set.log.costs += _calc(power_source_entry["power_source"],
+                                           charged_energy,
+                                           (data.data.optional_data.et_module is not None))
     except Exception:
         log.exception(f"Fehler beim Berechnen der Ladekosten für Ladepunkt {cp.num}")
 
