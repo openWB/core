@@ -228,7 +228,7 @@ def test_scheduled_charging_calc_current(plan_data: SelectedPlan,
     ct.data.chargemode.scheduled_charging.plans = {0: plan}
 
     # execution
-    ret = ct.scheduled_charging_calc_current(plan_data, soc, used_amount, 3, 6, 0)
+    ret = ct.scheduled_charging_calc_current(plan_data, 3600, soc, used_amount, 3, 6, 0)
 
     # evaluation
     assert ret == expected
@@ -253,7 +253,7 @@ def test_scheduled_charging_calc_current_electricity_tariff(loading_hour, expect
     monkeypatch.setattr(timecheck, "is_list_valid", mock_is_list_valid)
 
     # execution
-    ret = ct.scheduled_charging_calc_current(SelectedPlan(remaining_time=301), 3600, 79, 0, 3, 3, 6)
+    ret = ct.scheduled_charging_calc_current(SelectedPlan(remaining_time=301), 3600, 79, 0, 3, 3, 6, 0)
 
     # evaluation
     assert ret == expected
