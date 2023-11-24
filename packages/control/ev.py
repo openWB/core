@@ -713,7 +713,7 @@ class ChargeTemplate:
                                     num=num,
                                     missing_amount=missing_amount,
                                     duration=duration)
-                    log.debug(f"Plan-Nr. {num}: Differenz zum Start {remaining_time}s, Dauer {duration/3600}h, "
+                    log.debug(f"Plan-Nr. {num}: Differenz zum Start {remaining_time}s, Dauer {duration}h, "
                               f"Termin heute verpasst: {missed_date_today}")
                 except Exception:
                     log.exception("Fehler im ev-Modul "+str(self.ct_num))
@@ -730,7 +730,7 @@ class ChargeTemplate:
         else:
             missing_amount = plan.limit.amount - used_amount
         duration = missing_amount/(plan.current * phases*230)
-        return duration*3600, missing_amount
+        return duration, missing_amount
 
     SCHEDULED_CHARGING_REACHED_LIMIT_SOC = "Keine Ladung, da der Ziel-Soc und das SoC-Limit bereits erreicht wurden."
     SCHEDULED_CHARGING_REACHED_AMOUNT = "Keine Ladung, da die Energiemenge bereits erreicht wurde."
@@ -756,7 +756,10 @@ class ChargeTemplate:
                                         soc_request_intervall_offset: int) -> Tuple[float, str, str, int]:
         current = 0
         mode = "stop"
-        max_phases = min(data.data.general_data.data.chargemode_config.scheduled_charging.phases_to_use, max_phases)
+        phases_to_use = data.data.general_data.data.chargemode_config.scheduled_charging.phases_to_use
+        if phases_to_use != 0:
+            # kein Automatik
+            max_phases = phases_to_use
         if plan_data is None:
             return current, mode, self.SCHEDULED_CHARGING_NO_PLANS_CONFIGURED, max_phases
         current_plan = self.data.chargemode.scheduled_charging.plans[plan_data.num]
@@ -787,8 +790,9 @@ class ChargeTemplate:
         # weniger als die berechnete Zeit verfügbar
         # Ladestart wurde um maximal 20 Min verpasst.
         elif plan_data.remaining_time <= 0 - soc_request_intervall_offset*60:
-            message = self.SCHEDULED_CHARGING_MAX_CURRENT.format(plan_data.max_current)
-            current = min(plan_data.missing_amount/plan_data.duration/(phases*230), plan_data.max_current)
+            current = min(plan_data.missing_amount/(plan_data.duration +
+                          plan_data.remaining_time/3600)/(phases*230), plan_data.max_current)
+            message = self.SCHEDULED_CHARGING_MAX_CURRENT.format(round(current, 2))
             mode = "instant_charging"
             phases = max_phases
         else:

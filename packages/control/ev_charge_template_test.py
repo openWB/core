@@ -144,8 +144,8 @@ def test_scheduled_charging_recent_plan(params: Params, monkeypatch):
 @pytest.mark.parametrize(
     "selected, phases, expected_duration, expected_missing_amount",
     [
-        pytest.param("soc", 1, 10062.111801242236, 9000, id="soc, one phase"),
-        pytest.param("amount", 2, 447.2049689440994, 800, id="amount, two phases"),
+        pytest.param("soc", 1, 2.7950310559006213, 9000, id="soc, one phase"),
+        pytest.param("amount", 2, 0.12422360248447205, 800, id="amount, two phases"),
     ])
 def test_calculate_duration(selected: str, phases: int, expected_duration: float, expected_missing_amount: float):
     # setup
@@ -208,9 +208,9 @@ def test_search_plan(check_duration_return1: Tuple[Optional[float], bool],
                      (14, "instant_charging", ChargeTemplate.SCHEDULED_CHARGING_IN_TIME.format(
                          14, ChargeTemplate.SCHEDULED_CHARGING_LIMITED_BY_SOC.format(80), "07:00"), 1),
                      id="in time, limited by soc"),
-        pytest.param(SelectedPlan(remaining_time=0, duration=3600, missing_amount=5), 79, 0, "soc",
-                     (6.038647342995169e-06, "instant_charging",
-                     ChargeTemplate.SCHEDULED_CHARGING_MAX_CURRENT.format(16), 3),
+        pytest.param(SelectedPlan(remaining_time=-500, duration=1, missing_amount=3000), 79, 0, "soc",
+                     (15.147265077138849, "instant_charging",
+                     ChargeTemplate.SCHEDULED_CHARGING_MAX_CURRENT.format(15.15), 3),
                      id="too late, but didn't miss for today"),
         pytest.param(SelectedPlan(remaining_time=301), 79, 0, "soc",
                      (6, "pv_charging", ChargeTemplate.SCHEDULED_CHARGING_USE_PV, 3), id="too early, use pv"),
