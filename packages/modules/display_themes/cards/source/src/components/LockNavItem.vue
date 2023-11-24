@@ -117,8 +117,7 @@ export default {
         this.lockChanges();
       }
     },
-    handleDocumentEvent(event) {
-      console.log("event", event);
+    handleDocumentEvent() {
       this.countdown = this.mqttStore.getDisplayStandby;
     },
   },

@@ -100,9 +100,18 @@ export default {
   },
   methods: {
     toggleChargePointSettings(id) {
-      // reset selected tab if selecting different charge point
-      if (this.modalChargePointId != id) {
-        this.modalActiveTab = "tab-general";
+      // reset selected tab to active charge mode settings
+      switch (
+        this.mqttStore.getChargePointConnectedVehicleChargeMode(id).mode
+      ) {
+        case "pv_charging":
+          this.modalActiveTab = "tab-pv-charging";
+          break;
+        case "scheduled_charging":
+          this.modalActiveTab = "tab-scheduled-charging";
+          break;
+        default:
+          this.modalActiveTab = "tab-instant-charging";
       }
       this.modalChargePointId = id;
       this.modalChargePointSettingsVisible = true;
@@ -467,22 +476,28 @@ export default {
                   {{
                     mqttStore.getChargePointConnectedVehicleChargeMode(id).label
                   }}
+                  <font-awesome-icon
+                    fixed-width
+                    :icon="
+                      mqttStore.getChargePointConnectedVehiclePriority(id)
+                        ? ['fas', 'fa-star']
+                        : ['far', 'fa-star']
+                    "
+                    :class="
+                      mqttStore.getChargePointConnectedVehiclePriority(id)
+                        ? '_color:warning'
+                        : ''
+                    "
+                  />
                 </i-badge>
               </i-column>
               <i-column
                 v-if="
-                  mqttStore.getChargePointConnectedVehiclePriority(id) ||
                   mqttStore.getChargePointConnectedVehicleTimeChargingActive(id)
                 "
                 class="_flex-grow:0 _padding-right:0 _padding-left:1"
               >
                 <i-badge size="lg">
-                  <font-awesome-icon
-                    v-if="mqttStore.getChargePointConnectedVehiclePriority(id)"
-                    fixed-width
-                    :icon="['fas', 'fa-star']"
-                    class="_color:warning"
-                  />
                   <font-awesome-icon
                     v-if="
                       mqttStore.getChargePointConnectedVehicleTimeChargingActive(
@@ -529,6 +544,71 @@ export default {
         mqttStore.getChargePointConnectedVehicleName(modalChargePointId)
       }}" auswählen
     </template>
+    <i-form>
+      <i-form-group>
+        <i-form-label>Lademodus</i-form-label>
+        <i-button-group block>
+          <i-button
+            v-for="mode in mqttStore.chargeModeList()"
+            :key="mode.id"
+            outline
+            :color="mode.class != 'dark' ? mode.class : 'light'"
+            :active="
+              mqttStore.getChargePointConnectedVehicleChargeMode(
+                modalChargePointId
+              ) != undefined &&
+              mode.id ==
+                mqttStore.getChargePointConnectedVehicleChargeMode(
+                  modalChargePointId
+                ).mode
+            "
+            @click="
+              setChargePointConnectedVehicleChargeMode(
+                modalChargePointId,
+                mode.id
+              )
+            "
+          >
+            {{ mode.label }}
+          </i-button>
+        </i-button-group>
+      </i-form-group>
+      <i-form-group>
+        <i-form-label>Priorität</i-form-label>
+        <i-button-group block>
+          <i-button
+            :color="
+              mqttStore.getChargePointConnectedVehiclePriority(
+                modalChargePointId
+              ) !== true
+                ? 'danger'
+                : ''
+            "
+            @click="
+              setChargePointConnectedVehiclePriority(modalChargePointId, false)
+            "
+          >
+            Nein
+          </i-button>
+          <i-button
+            :color="
+              mqttStore.getChargePointConnectedVehiclePriority(
+                modalChargePointId
+              ) === true
+                ? 'success'
+                : ''
+            "
+            @click="
+              setChargePointConnectedVehiclePriority(modalChargePointId, true)
+            "
+          >
+            Ja
+          </i-button>
+        </i-button-group>
+      </i-form-group>
+    </i-form>
+  </i-modal>
+  <!-- end charge mode only-->
   <!-- vehicle only -->
   <i-modal
     class="modal-vehicle-select"
@@ -564,6 +644,21 @@ export default {
     </i-form>
   </i-modal>
   <!-- end vehicle only-->
+  <!-- charge point settings -->
+  <i-modal v-model="modalChargePointSettingsVisible" size="lg">
+    <template #header>
+      Einstellungen für Ladepunkt "{{
+        mqttStore.getChargePointName(modalChargePointId)
+      }}"
+    </template>
+    <i-tabs v-model="modalActiveTab" stretch>
+      <template #header>
+        <i-tab-title for="tab-instant-charging"> Sofort </i-tab-title>
+        <i-tab-title for="tab-pv-charging"> PV </i-tab-title>
+        <i-tab-title for="tab-scheduled-charging"> Zielladen </i-tab-title>
+        <i-tab-title for="tab-time-charging"> Zeitladen </i-tab-title>
+      </template>
+
       <i-tab name="tab-instant-charging">
         <i-form>
           <i-form-group>
@@ -944,85 +1039,144 @@ export default {
         </i-form>
       </i-tab>
       <i-tab name="tab-time-charging">
-        <i-alert
-          v-if="
-            Object.keys(
-              mqttStore.getChargePointConnectedVehicleTimeChargingPlans(
-                modalChargePointId
-              )
-            ).length === 0
-          "
-        >
-          <template #icon>
-            <font-awesome-icon fixed-width :icon="['fas', 'fa-circle-info']" />
-          </template>
-          Es wurden noch keine Zeitpläne für das Zeitladen eingerichtet.
-        </i-alert>
-        <i-form v-else>
-          <i-form-group
-            v-for="(
-              plan, planKey
-            ) in mqttStore.getChargePointConnectedVehicleTimeChargingPlans(
-              modalChargePointId
-            )"
-            :key="planKey"
-          >
-            <i-container>
-              <i-row>
-                <i-form-label>{{ plan.name }}</i-form-label>
-              </i-row>
-              <i-row>
-                <i-button
-                  size="lg"
-                  block
-                  :color="plan.active ? 'success' : 'danger'"
-                  @click="
-                    setChargePointConnectedVehicleTimeChargingPlanActive(
-                      planKey,
-                      !plan.active
-                    )
-                  "
-                >
-                  <span v-if="plan.frequency.selected == 'once'">
-                    <font-awesome-icon
-                      fixed-width
-                      :icon="['fas', 'calendar-day']"
-                    />
-                    {{ mqttStore.formatDateRange(plan.frequency.once) }}
-                  </span>
-                  <span v-if="plan.frequency.selected == 'daily'">
-                    <font-awesome-icon
-                      fixed-width
-                      :icon="['fas', 'calendar-week']"
-                    />
-                    täglich
-                  </span>
-                  <span v-if="plan.frequency.selected == 'weekly'">
-                    <font-awesome-icon
-                      fixed-width
-                      :icon="['fas', 'calendar-alt']"
-                    />
-                    {{
-                      mqttStore.formatWeeklyScheduleDays(plan.frequency.weekly)
-                    }}
-                  </span>
-                  <font-awesome-icon fixed-width :icon="['fas', 'clock']" />
-                  {{ plan.time.join("-") }}
-                  <span v-if="plan.limit.selected == 'soc'">
-                    <font-awesome-icon
-                      fixed-width
-                      :icon="['fas', 'car-battery']"
-                    />
-                    {{ plan.limit.soc }}&nbsp;%
-                  </span>
-                  <span v-if="plan.limit.selected == 'amount'">
-                    <font-awesome-icon fixed-width :icon="['fas', 'bolt']" />
-                    {{ plan.limit.amount / 1000 }}&nbsp;kWh
-                  </span>
-                </i-button>
-              </i-row>
-            </i-container>
+        <i-form>
+          <i-form-group>
+            <i-form-label>Zeitladen aktivieren</i-form-label>
+            <i-button-group block>
+              <i-button
+                :color="
+                  mqttStore.getChargePointConnectedVehicleTimeChargingActive(
+                    modalChargePointId
+                  ) !== true
+                    ? 'danger'
+                    : ''
+                "
+                @click="
+                  setChargePointConnectedVehicleTimeChargingActive(
+                    modalChargePointId,
+                    false
+                  )
+                "
+              >
+                Nein
+              </i-button>
+              <i-button
+                :color="
+                  mqttStore.getChargePointConnectedVehicleTimeChargingActive(
+                    modalChargePointId
+                  ) === true
+                    ? 'success'
+                    : ''
+                "
+                @click="
+                  setChargePointConnectedVehicleTimeChargingActive(
+                    modalChargePointId,
+                    true
+                  )
+                "
+              >
+                Ja
+              </i-button>
+            </i-button-group>
           </i-form-group>
+          <div
+            v-if="
+              mqttStore.getChargePointConnectedVehicleTimeChargingActive(
+                modalChargePointId
+              ) === true
+            "
+          >
+            <i-alert
+              v-if="
+                Object.keys(
+                  mqttStore.getChargePointConnectedVehicleTimeChargingPlans(
+                    modalChargePointId
+                  )
+                ).length === 0
+              "
+              color="warning"
+              class="_margin-top:2"
+            >
+              <template #icon>
+                <font-awesome-icon
+                  fixed-width
+                  :icon="['fas', 'fa-circle-info']"
+                />
+              </template>
+              Es wurden noch keine Zeitpläne für das Zeitladen eingerichtet.
+            </i-alert>
+            <div v-else>
+              <i-form-group
+                v-for="(
+                  plan, planKey
+                ) in mqttStore.getChargePointConnectedVehicleTimeChargingPlans(
+                  modalChargePointId
+                )"
+                :key="planKey"
+              >
+                <i-container>
+                  <i-row>
+                    <i-form-label>{{ plan.name }}</i-form-label>
+                  </i-row>
+                  <i-row>
+                    <i-button
+                      size="lg"
+                      block
+                      :color="plan.active ? 'success' : 'danger'"
+                      @click="
+                        setChargePointConnectedVehicleTimeChargingPlanActive(
+                          planKey,
+                          !plan.active
+                        )
+                      "
+                    >
+                      <span v-if="plan.frequency.selected == 'once'">
+                        <font-awesome-icon
+                          fixed-width
+                          :icon="['fas', 'calendar-day']"
+                        />
+                        {{ mqttStore.formatDateRange(plan.frequency.once) }}
+                      </span>
+                      <span v-if="plan.frequency.selected == 'daily'">
+                        <font-awesome-icon
+                          fixed-width
+                          :icon="['fas', 'calendar-week']"
+                        />
+                        täglich
+                      </span>
+                      <span v-if="plan.frequency.selected == 'weekly'">
+                        <font-awesome-icon
+                          fixed-width
+                          :icon="['fas', 'calendar-alt']"
+                        />
+                        {{
+                          mqttStore.formatWeeklyScheduleDays(
+                            plan.frequency.weekly
+                          )
+                        }}
+                      </span>
+                      <font-awesome-icon fixed-width :icon="['fas', 'clock']" />
+                      {{ plan.time.join("-") }}
+                      <span v-if="plan.limit.selected == 'soc'">
+                        <font-awesome-icon
+                          fixed-width
+                          :icon="['fas', 'car-battery']"
+                        />
+                        {{ plan.limit.soc }}&nbsp;%
+                      </span>
+                      <span v-if="plan.limit.selected == 'amount'">
+                        <font-awesome-icon
+                          fixed-width
+                          :icon="['fas', 'bolt']"
+                        />
+                        {{ plan.limit.amount / 1000 }}&nbsp;kWh
+                      </span>
+                    </i-button>
+                  </i-row>
+                </i-container>
+              </i-form-group>
+            </div>
+          </div>
         </i-form>
       </i-tab>
     </i-tabs>
