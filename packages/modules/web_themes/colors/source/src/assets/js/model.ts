@@ -129,3 +129,5 @@ export function correctHouseConsumption() {
 	usageSummary.house.power =
 		usageSummary.house.power - usageSummary.devices.power
 }
+
+export const currentTime = ref(new Date())

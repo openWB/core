@@ -38,6 +38,7 @@ export class ChargePoint {
 	chargedSincePlugged = 0
 	stateStr = ''
 	current = 0
+	currents = [0, 0, 0]
 	phasesToUse = 0
 	soc = 0
 	isSocConfigured = true
@@ -199,6 +200,21 @@ export class ChargePoint {
 	updatePvMinSocCurrent(a: number) {
 		this._pvMinSocCurrent = a
 	}
+	get realCurrent() {
+		switch (this.phasesInUse) {
+			case 0:
+				return 0
+			case 1:
+				return this.currents[0]
+			case 2:
+				return (this.currents[0] + this.currents[1]) / 2
+			case 3:
+				return (this.currents[0] + this.currents[1] + this.currents[2]) / 3
+			default:
+				return 0
+		}
+	}
+
 	toPowerItem(): PowerItem {
 		return {
 			name: this.name,

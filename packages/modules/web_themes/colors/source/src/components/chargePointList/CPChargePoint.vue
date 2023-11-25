@@ -52,11 +52,14 @@
 					<InfoItem heading="Leistung:">
 						<FormatWatt :watt="props.chargepoint.power" />
 					</InfoItem>
-					<InfoItem heading="Stromstärke:">
-						{{ chargeAmpereString }}
+					<InfoItem heading="Strom:">
+						{{ realChargeAmpereString }}
 					</InfoItem>
 					<InfoItem heading="Phasen:">
 						{{ props.chargepoint.phasesInUse }}
+					</InfoItem>
+					<InfoItem heading="Sollstrom:">
+						<span class="targetCurrent">{{ chargeAmpereString }}</span>
 					</InfoItem>
 				</div>
 			</div>
@@ -124,7 +127,7 @@
 							<i
 								v-if="chargepoint.isSocConfigured && !chargepoint.isSocManual"
 								type="button"
-								class="fa-solid fa-sm fa-sync"
+								class="fa-solid fa-sm"
 								:class="
 									chargepoint.waitingForSoc ? 'fa-spinner fa-spin' : 'fa-sync'
 								"
@@ -230,6 +233,13 @@ const chargeMode = computed({
 const chargeAmpereString = computed(() => {
 	return (
 		(Math.round(props.chargepoint.current * 10) / 10).toLocaleString(
+			undefined,
+		) + ' A'
+	)
+})
+const realChargeAmpereString = computed(() => {
+	return (
+		(Math.round(props.chargepoint.realCurrent * 10) / 10).toLocaleString(
 			undefined,
 		) + ' A'
 	)
@@ -383,5 +393,9 @@ const manualSoc = computed({
 
 .socEditor {
 	border: 1px solid var(--color-menu);
+}
+
+.targetCurrent {
+	color: var(--color-menu);
 }
 </style>

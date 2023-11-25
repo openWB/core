@@ -12,7 +12,6 @@ import type { Selection, BaseType } from 'd3'
 import {
 	select,
 	stack,
-	scaleBand,
 	scaleLinear,
 	extent,
 	axisLeft,
@@ -20,7 +19,12 @@ import {
 	easeLinear,
 } from 'd3'
 import { globalConfig } from '@/assets/js/themeConfig'
-import { graphData, animateUsageGraph, usageGraphIsInitialized } from './model'
+import {
+	graphData,
+	animateUsageGraph,
+	usageGraphIsInitialized,
+	xScaleMonth,
+} from './model'
 const props = defineProps<{
 	width: number
 	height: number
@@ -61,31 +65,29 @@ const delay = globalConfig.showAnimations ? globalConfig.animationDelay : 0
 
 // computed:
 const draw = computed(() => {
-	if (graphData.data.length > 0) {
-		const graph = select('g#pgUsageGraph')
+	const graph = select('g#pgUsageGraph')
 
-		if (graphData.graphMode == 'month' || graphData.graphMode == 'year') {
-			drawBarGraph(graph)
-		} else {
-			drawGraph(graph)
-		}
-
-		const yAxis = graph.append('g').attr('class', 'axis')
-		yAxis.call(yAxisGenerator.value)
-		yAxis
-			.selectAll('.tick')
-			.attr('font-size', 12)
-			.attr('color', 'var(--color-axis)')
-		if (globalConfig.showGrid) {
-			yAxis
-				.selectAll('.tick line')
-				.attr('stroke', 'var(--color-grid)')
-				.attr('stroke-width', '0.5')
-		} else {
-			yAxis.selectAll('.tick line').attr('stroke', 'var(--color-bg)')
-		}
-		yAxis.select('.domain').attr('stroke', 'var(--color-bg)')
+	if (graphData.graphMode == 'month' || graphData.graphMode == 'year') {
+		drawBarGraph(graph)
+	} else {
+		drawGraph(graph)
 	}
+
+	const yAxis = graph.append('g').attr('class', 'axis')
+	yAxis.call(yAxisGenerator.value)
+	yAxis
+		.selectAll('.tick')
+		.attr('font-size', 12)
+		.attr('color', 'var(--color-axis)')
+	if (globalConfig.showGrid) {
+		yAxis
+			.selectAll('.tick line')
+			.attr('stroke', 'var(--color-grid)')
+			.attr('stroke-width', '0.5')
+	} else {
+		yAxis.selectAll('.tick line').attr('stroke', 'var(--color-bg)')
+	}
+	yAxis.select('.domain').attr('stroke', 'var(--color-bg)')
 	return 'pgUsageGraph.vue'
 })
 const stackGen = computed(() => stack().keys(keys[props.stackOrder]))
@@ -97,12 +99,12 @@ const iScale = computed(() => {
 		.range([0, props.width])
 })
 
-const iScaleMonth = computed(() =>
+/* const iScaleMonth = computed(() =>
 	scaleBand<number>()
 		.domain(Array.from({ length: graphData.data.length }, (v, k) => k))
 		.range([0, props.width + props.margin.right])
 		.paddingInner(0.4),
-)
+) */
 
 const yScale = computed(() => {
 	return scaleLinear()
@@ -202,11 +204,11 @@ function drawBarGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {
 			.enter()
 			.append('rect')
 			.attr('x', (d, i) => {
-				return iScaleMonth.value(i) ?? 0
+				return xScaleMonth.value(graphData.data[i].date) ?? 0
 			})
 			.attr('y', () => yScale.value(0))
 			.attr('height', 0)
-			.attr('width', iScaleMonth.value.bandwidth())
+			.attr('width', xScaleMonth.value.bandwidth())
 		rects
 			.transition()
 			.duration(duration)
@@ -236,7 +238,7 @@ function drawBarGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {
 			.enter()
 			.append('rect')
 			.attr('x', (d, i) => {
-				return iScaleMonth.value(i) ?? 0
+				return xScaleMonth.value(graphData.data[i].date) ?? 0
 			})
 			.attr('y', (d) =>
 				graphData.graphMode == 'year'
@@ -248,7 +250,7 @@ function drawBarGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {
 					? yScale.value(d[1] / 1000) - yScale.value(d[0] / 1000)
 					: yScale.value(d[1]) - yScale.value(d[0]),
 			)
-			.attr('width', iScaleMonth.value.bandwidth())
+			.attr('width', xScaleMonth.value.bandwidth())
 	}
 }
 </script>

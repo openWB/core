@@ -113,7 +113,7 @@ const nameY = computed(() => {
 					graphData.data[index]['soc' + cp.value.connectedVehicle] + 2,
 				)
 			case 2:
-				index = graphData.data.length / 2
+				index = Math.round(graphData.data.length / 2)
 				return yScale.value(graphData.data[index].batSoc + 2)
 			default:
 				return 0

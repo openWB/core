@@ -118,6 +118,9 @@ import {
 	shiftRight,
 	shiftUp,
 	shiftDown,
+	width,
+	height,
+	margin,
 } from './model'
 import { globalConfig, widescreen } from '@/assets/js/themeConfig'
 import PgSoc from './PgSoc.vue'
@@ -126,9 +129,6 @@ import { chargePoints } from '../chargePointList/model'
 import PgSelector from './PgSelector.vue'
 
 // state
-const width = 500
-const height = 500
-const margin = { top: 10, right: 20, bottom: 10, left: 25 }
 const stackOrderMax = 2
 const heading = 'Leistung / Ladestand '
 
