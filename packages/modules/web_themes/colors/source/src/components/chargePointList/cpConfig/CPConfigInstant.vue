@@ -73,13 +73,13 @@ const instantChargeLimitModes = [
 	{ name: 'EV-SoC', id: 'soc' },
 	{ name: 'Energiemenge', id: 'amount' },
 ]
-const energyLimit = computed ({
+const energyLimit = computed({
 	get() {
 		return cp.value.instantMaxEnergy / 1000
 	},
-	set(limit:number) {
+	set(limit: number) {
 		cp.value.instantMaxEnergy = limit * 1000
-	}
+	},
 })
 // methods
 </script>
