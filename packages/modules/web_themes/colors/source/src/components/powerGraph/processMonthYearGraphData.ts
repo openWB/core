@@ -95,7 +95,11 @@ function transformRow(inputRow: RawDayGraphDataItem): GraphDataItem {
 	// counters
 	outputRow.evuOut = 0
 	outputRow.evuIn = 0
+	let evuOutTotal = 0
+	let evuInTotal = 0
 	Object.entries(inputRow.counter).forEach(([id, values]) => {
+		evuOutTotal += values.energy_exported
+		evuInTotal += values.energy_imported
 		if (values.grid) {
 			outputRow.evuOut += values.energy_exported
 			outputRow.evuIn += values.energy_imported
@@ -104,18 +108,22 @@ function transformRow(inputRow: RawDayGraphDataItem): GraphDataItem {
 			}
 		}
 	})
+	if (gridCounters.length == 0) {
+		outputRow.evuOut = evuOutTotal
+		outputRow.evuIn = evuInTotal
+	}
 	// PV
 	outputRow.pv = inputRow.pv.all.energy_exported
 
 	// Battery
 	if (Object.entries(inputRow.bat).length > 0) {
-		if (inputRow.bat.all.energy_imported > 0) {
+		if (inputRow.bat.all.energy_imported >= 0) {
 			outputRow.batIn = inputRow.bat.all.energy_imported
 		} else {
 			console.warn('ignoring negative value for batIn on day ' + outputRow.date)
 			outputRow.batIn = 0
 		}
-		if (inputRow.bat.all.energy_exported > 0) {
+		if (inputRow.bat.all.energy_exported >= 0) {
 			outputRow.batOut = inputRow.bat.all.energy_exported
 		} else {
 			console.warn(
