@@ -392,11 +392,15 @@ class Ev:
         # verbleibender EVU-Überschuss unter Berücksichtigung der Einspeisegrenze und Speicherleistung
         all_surplus = (-evu_counter.calc_surplus() - evu_counter.data.set.released_surplus +
                        evu_counter.data.set.reserved_surplus - feed_in_yield)
-        condition_1_to_3 = (((max(get_currents) > max_current and
+        min_soc = self.charge_template.data.chargemode.pv_charging.min_soc
+        soc = self.data.get.soc
+        log.debug(f'min_soc: {min_soc}%, soc: {soc}%')
+        condition_1_to_3 = ((min_soc != 0 and soc < min_soc) or
+                            ((max(get_currents) > max_current and
                             all_surplus > self.ev_template.data.min_current * max_phases_ev * 230
                             - get_power) or limit == LimitingValue.UNBALANCED_LOAD.value) and
                             phases_in_use == 1)
-        condition_3_to_1 = max(get_currents) < min_current and all_surplus <= 0 and phases_in_use > 1
+        condition_3_to_1 = (min_soc == 0 or (min_soc != 0 and soc >= min_soc)) and max(get_currents) < min_current and all_surplus <= 0 and phases_in_use > 1
         if condition_1_to_3 or condition_3_to_1:
             return True, None
         else:
