@@ -98,4 +98,3 @@ onMounted(() => {
 	scale: 1;
 }
 </style>
->

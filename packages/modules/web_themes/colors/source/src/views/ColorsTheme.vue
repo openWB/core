@@ -8,7 +8,7 @@ Hagen */
 			<ThemeSettings @reset-arcs="resetArcs"></ThemeSettings>
 		</div>
 		<!-- Button Bar -->
-		<ButtonBar />
+		<ButtonBar v-if="globalConfig.showButtonBar" />
 
 		<!-- Main Widgets -->
 		<div v-if="false" class="row py-0 px-0 m-0">
@@ -135,7 +135,7 @@ Hagen */
 					<SmartHomeList />
 				</div>
 			</div>
-			<!-- 		<div
+			<!-- <div
 				id="etPricing"
 				class="tab-pane"
 				role="tabpanel"
@@ -153,9 +153,9 @@ Hagen */
 			<hr />
 			<div class="d-flex justify-content-between">
 				<p class="mx-4">Screen Width: {{ screensize.x }}</p>
-				<!--      <button class="btn btn-sm btn-secondary mx-4" @click="toggleSetup">
-          System Setup
-        </button> -->
+				<!-- <button class="btn btn-sm btn-secondary mx-4" @click="toggleSetup">
+					System Setup
+				</button> -->
 				<button class="btn btn-sm btn-secondary mx-4" @click="toggleMqViewer">
 					MQ Viewer
 				</button>

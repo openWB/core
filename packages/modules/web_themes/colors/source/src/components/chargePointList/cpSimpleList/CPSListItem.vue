@@ -231,6 +231,7 @@ const manualSoc = computed({
 <style scoped>
 .tablerow {
 	margin: 14px;
+	border-top: 0.1px solid var(--color-frame);
 }
 
 .tablecell {

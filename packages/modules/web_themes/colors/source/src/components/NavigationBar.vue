@@ -97,11 +97,11 @@ const containerclass = computed(() => {
 
 onMounted(() => {
 	interval = setInterval(() => {
-		;(currentTime.value = new Date()), 1000
-	})
-	onBeforeUnmount(() => {
-		clearInterval(interval)
-	})
+		currentTime.value = new Date();
+	}, 1000)
+})
+onBeforeUnmount(() => {
+	clearInterval(interval)
 })
 </script>
 
