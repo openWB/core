@@ -161,4 +161,5 @@ def test_calculate_charge_cost(monkeypatch):
     calculate_charge_cost(data.data.cp_data["cp3"])
 
     # evaluation
-    assert data.data.cp_data["cp3"].data.set.log.costs == 6.7509
+    # charged energy 2.3kWh, 45,45% Grid, 54,55% PV, Grid 0,3ct/kWh, Pv 0,15ct/kWh
+    assert data.data.cp_data["cp3"].data.set.log.costs == 0.5023
