@@ -68,8 +68,7 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
 
             if source != SocSource.CALCULATION:
                 # Wenn nicht berechnet wurde, SoC als Start merken.
-                if self.calculated_soc_state.soc_start != car_state.soc:
-                    self.calculated_soc_state.imported_start = vehicle_update_data.imported
+                self.calculated_soc_state.imported_start = vehicle_update_data.imported
                 self.calculated_soc_state.soc_start = car_state.soc
                 Pub().pub(f"openWB/set/vehicle/{self.vehicle}/soc_module/calculated_soc_state",
                           asdict(self.calculated_soc_state))
