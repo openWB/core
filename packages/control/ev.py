@@ -214,7 +214,7 @@ class Ev:
     def get_required_current(self,
                              control_parameter: ControlParameter,
                              imported: float,
-                             max_phases: int,
+                             max_phases_hw: int,
                              phase_switch_supported: bool) -> Tuple[bool, Optional[str], str, float, int]:
         """ ermittelt, ob und mit welchem Strom das EV geladen werden soll (unabhängig vom Lastmanagement)
 
@@ -248,7 +248,7 @@ class Ev:
                     self.ev_template,
                     control_parameter.phases,
                     used_amount,
-                    max_phases,
+                    max_phases_hw,
                     phase_switch_supported)
                 if plan_data:
                     name = self.charge_template.data.chargemode.scheduled_charging.plans[plan_data.num].name
@@ -269,7 +269,7 @@ class Ev:
                 required_current, submode, message, phases = self.charge_template.scheduled_charging_calc_current(
                     plan_data,
                     self.data.get.soc,
-                    used_amount, max_phases,
+                    used_amount,
                     control_parameter.phases,
                     self.ev_template.data.min_current,
                     soc_request_intervall_offset)
@@ -749,18 +749,13 @@ class ChargeTemplate:
                                         plan_data: Optional[SelectedPlan],
                                         soc: int,
                                         used_amount: float,
-                                        max_phases: int,
                                         control_parameter_phases: int,
                                         min_current: int,
                                         soc_request_intervall_offset: int) -> Tuple[float, str, str, int]:
         current = 0
         mode = "stop"
-        phases_to_use = data.data.general_data.data.chargemode_config.scheduled_charging.phases_to_use
-        if phases_to_use != 0:
-            # kein Automatik
-            max_phases = phases_to_use
         if plan_data is None:
-            return current, mode, self.SCHEDULED_CHARGING_NO_PLANS_CONFIGURED, max_phases
+            return current, mode, self.SCHEDULED_CHARGING_NO_PLANS_CONFIGURED, control_parameter_phases
         current_plan = self.data.chargemode.scheduled_charging.plans[plan_data.num]
         limit = current_plan.limit
         phases = plan_data.phases
@@ -793,7 +788,6 @@ class ChargeTemplate:
                           plan_data.remaining_time/3600)/(phases*230), plan_data.max_current)
             message = self.SCHEDULED_CHARGING_MAX_CURRENT.format(round(current, 2))
             mode = "instant_charging"
-            phases = max_phases
         else:
             # Wenn Elektronische Tarife aktiv sind, prüfen, ob jetzt ein günstiger Zeitpunkt zum Laden
             # ist.
@@ -804,7 +798,6 @@ class ChargeTemplate:
                     message = "Sofortladen, da ein günstiger Zeitpunkt zum preisbasierten Laden ist."
                     current = plan_data.available_current
                     mode = "instant_charging"
-                    phases = max_phases
                 else:
                     message = ("Kein Sofortladen, da kein günstiger Zeitpunkt zum preisbasierten Laden "
                                "ist. Falls vorhanden, wird mit EVU-Überschuss geladen.")
