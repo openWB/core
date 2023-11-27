@@ -178,7 +178,7 @@ const shSchemes: [string, string][] = [
 ]
 const clockModes: [string, string][] = [
 	['Aus', 'off'],
-	['Menu', 'navbar'],
+	['Menü', 'navbar'],
 	['Buttonleiste', 'buttonbar'],
 ]
 </script>

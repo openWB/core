@@ -127,9 +127,9 @@
 			</svg>
 		</figure>
 		<!-- <ModalComponent modal-id="themeconfig">
-      <template v-slot:title>Look & Feel</template>
-    <ThemeSettings @resetArcs="resetArcs"></ThemeSettings>
-    </ModalComponent> -->
+			<template v-slot:title>Look & Feel</template>
+			<ThemeSettings @resetArcs="resetArcs"></ThemeSettings>
+		</ModalComponent> -->
 	</WBWidget>
 </template>
 
