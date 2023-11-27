@@ -8,7 +8,7 @@ Hagen */
 			<ThemeSettings @reset-arcs="resetArcs"></ThemeSettings>
 		</div>
 		<!-- Button Bar -->
-		<ButtonBar />
+		<ButtonBar v-if="globalConfig.showButtonBar" />
 
 		<!-- Main Widgets -->
 		<div v-if="false" class="row py-0 px-0 m-0">
