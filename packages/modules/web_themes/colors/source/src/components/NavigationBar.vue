@@ -99,9 +99,9 @@ onMounted(() => {
 	interval = setInterval(() => {
 		currentTime.value = new Date();
 	}, 1000)
-	onBeforeUnmount(() => {
-		clearInterval(interval)
-	})
+})
+onBeforeUnmount(() => {
+	clearInterval(interval)
 })
 </script>
 
