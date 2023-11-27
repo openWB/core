@@ -27,17 +27,6 @@
 				/>
 			</tbody>
 		</table>
-		<ModalComponent
-			v-for="chargepoint in chargepointsToDisplay"
-			:key="chargepoint.id"
-			:modal-id="'cpsconfig-' + chargepoint.id"
-		>
-			<template #title> Konfiguration: {{ chargepoint.name }} </template>
-			<CPChargeConfigPanel
-				v-if="chargepoint != undefined"
-				:chargepoint="chargepoint"
-			/>
-		</ModalComponent>
 	</WBWidget>
 </template>
 
@@ -46,8 +35,6 @@ import { computed } from 'vue'
 import { chargePoints } from '../model'
 import WBWidget from '@/components/shared/WBWidget.vue'
 import CPSListItem from './CPSListItem.vue'
-import ModalComponent from '@/components/shared/ModalComponent.vue'
-import CPChargeConfigPanel from '../cpConfig/CPChargeConfigPanel.vue'
 const chargepointsToDisplay = computed(() => {
 	return Object.values(chargePoints)
 })
