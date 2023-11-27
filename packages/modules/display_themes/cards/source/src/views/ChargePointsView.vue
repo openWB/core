@@ -84,6 +84,17 @@ export default {
     ManualSocInput,
     FontAwesomeIcon,
   },
+  watch: {
+    changesLocked(newValue, oldValue) {
+      // hide all modals if lock is kicking in
+      if(oldValue !== true && newValue === true) {
+        this.modalChargeModeSettingVisible = false;
+        this.modalVehicleSelectVisible = false;
+        this.modalChargePointSettingsVisible = false;
+        this.modalManualSocInputVisible = false;
+      }
+    },
+  },
   computed: {
     vehicleList() {
       let topicList = this.mqttStore.getVehicleList;
@@ -165,10 +176,6 @@ export default {
           `openWB/vehicle/template/charge_template/${template_id}/chargemode/selected`,
           event
         );
-      }
-      // hide modal charge mode setting if visible
-      if (this.modalChargeModeSettingVisible) {
-        this.modalChargeModeSettingVisible = false;
       }
     },
     setChargePointConnectedVehiclePriority(id, event) {
