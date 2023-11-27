@@ -40,7 +40,7 @@ export class ChargePoint {
 	current = 0
 	currents = [0, 0, 0]
 	phasesToUse = 0
-	soc = 0
+	// soc = 0
 	isSocConfigured = true
 	isSocManual = false
 	waitingForSoc = false
@@ -77,6 +77,18 @@ export class ChargePoint {
 	}
 	updateConnectedVehicle(id: number) {
 		this._connectedVehicle = id
+	}
+	get soc() {
+		if (vehicles[this.connectedVehicle]) {
+			return vehicles[this.connectedVehicle].soc
+		} else {
+			return 0
+		}
+	}
+	set soc(newSoc: number) {
+		if (vehicles[this.connectedVehicle]) {
+			vehicles[this.connectedVehicle].soc = newSoc
+		}
 	}
 	get chargeMode() {
 		return this._chargeMode
@@ -234,6 +246,7 @@ export class Vehicle {
 	private _chargeTemplateId = 0
 	private _evTemplateId = 0
 	tags: Array<string> = []
+	config = {}
 	soc = 0
 	range = 0
 	constructor(index: number) {

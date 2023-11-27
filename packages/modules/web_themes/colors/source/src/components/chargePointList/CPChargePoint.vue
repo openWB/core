@@ -36,7 +36,7 @@
 
 					<!-- Ladung -->
 					<InfoItem heading="Geladen:">
-						<FormatWattH :watt-h="chargepoint.chargedSincePlugged" />
+						<FormatWattH :watt-h="chargepoint.dailyYield" />
 					</InfoItem>
 					<InfoItem heading="gel. Reichw.:">
 						{{ chargedRangeString }}

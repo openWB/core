@@ -3,7 +3,8 @@
 	<table class="table table-borderless">
 		<thead>
 			<tr>
-				<th class="tableheader">Ziel-SoC</th>
+				<th class="tableheader">Ziel</th>
+				<th class="tableheader">Limit</th>
 				<th class="tableheader">Zeit</th>
 				<th class="tableheader">Wiederholung</th>
 				<th class="tableheader" />
@@ -11,7 +12,8 @@
 		</thead>
 		<tbody>
 			<tr v-for="(plan, i) in plans" :key="i" :style="cellStyle(i)">
-				<td class="tablecell">{{ plan.limit.soc_limit }} %</td>
+				<td class="tablecell">{{ plan.limit.soc_scheduled }}%</td>
+				<td class="tablecell">{{ plan.limit.soc_limit }}%</td>
 				<td class="tablecell">
 					{{ timeString(i) }}
 				</td>
