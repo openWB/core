@@ -111,14 +111,8 @@
 					<!-- Car info -->
 
 					<div class="m-0 p-0 d-flex justify-content-between">
-						<InfoItem
-							v-if="chargepoint.isSocConfigured"
-							heading="Ladestand:"
-						>
-							<BatterySymbol
-								:soc="soc"
-								class="me-2"
-							/>
+						<InfoItem v-if="chargepoint.isSocConfigured" heading="Ladestand:">
+							<BatterySymbol :soc="soc" class="me-2" />
 							<i
 								v-if="chargepoint.isSocConfigured && chargepoint.isSocManual"
 								class="fa-solid fa-sm fas fa-edit"
@@ -137,10 +131,7 @@
 								@click="loadSoc"
 							/>
 						</InfoItem>
-						<InfoItem
-							v-if="chargepoint.isSocConfigured"
-							heading="Reichweite:"
-						>
+						<InfoItem v-if="chargepoint.isSocConfigured" heading="Reichweite:">
 							{{
 								vehicles[props.chargepoint.connectedVehicle]
 									? Math.round(
