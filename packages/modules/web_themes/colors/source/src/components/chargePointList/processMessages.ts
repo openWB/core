@@ -96,13 +96,7 @@ export function processChargepointMessages(topic: string, message: string) {
 			chargePoints[index].waitingForSoc = false
 			chargePoints[index].rangeCharged = obj.range_charged
 			chargePoints[index].rangeUnit = obj.range_unit
-		} else */ else if (
-			topic.match(
-				/^openwb\/chargepoint\/[0-9]+\/get\/connected_vehicle\/soc_config$/i,
-			)
-		) {
-			chargePoints[index].isSocManual = message == 'manual'
-		} else if (
+		} */ else if (
 			topic.match(
 				/^openwb\/chargepoint\/[0-9]+\/get\/connected_vehicle\/info$/i,
 			)
@@ -171,6 +165,7 @@ export function processVehicleMessages(topic: string, message: string) {
 			const config = JSON.parse(message)
 			Object.values(chargePoints).forEach((cp) => {
 				if (cp.connectedVehicle == index) {
+					cp.isSocConfigured = config.type !== null
 					cp.isSocManual = config.type == 'manual'
 				}
 			})

@@ -35,7 +35,7 @@ const widgetwidth = computed(() => {
 })
 </script>
 <style scoped>
-.wb-subwidget {
+/* .wb-subwidget {
 	border-top: 0.5px solid var(--color-scale);
-}
+} */
 </style>

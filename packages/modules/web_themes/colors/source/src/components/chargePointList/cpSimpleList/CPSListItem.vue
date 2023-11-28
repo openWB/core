@@ -90,7 +90,7 @@
 		</td>
 	</tr>
 	<tr v-if="editSoc" class="socEditRow m-0 p-0">
-		<td colspan="4" class="m-0 p-0">
+		<td colspan="5" class="m-0 p-0 pb-2">
 			<div class="socEditor rounded mt-2 d-flex flex-column align-items-end">
 				<ConfigItem title="Ladestand einstellen:" :fullwidth="true">
 					<RangeInput
@@ -287,7 +287,7 @@ const manualSoc = computed({
 	border: 1px solid var(--color-menu);
 	background-color: var(--color-bg);
 }
-.socEditRow {
+.socEditRow td {
 	background-color: var(--color-bg);
 }
 .fa-circle-check {
