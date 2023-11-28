@@ -109,10 +109,10 @@ class Api:
         pickle.dump(self.store, tf)
         tf.close()
         try:
-            os.chmod(self.storeFile, 0o777)
+            os.chmod(self.storeFile, 0o666)
         except Exception:
             log.exception("chmod_store")
-            os.system("sudo chmod 0777 " + self.storeFile)
+            os.system("sudo chmod 0666 " + self.storeFile)
 
     # ===== get resume string ======
     def get_resume(self) -> str:

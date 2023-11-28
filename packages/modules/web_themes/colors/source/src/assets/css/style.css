@@ -1,0 +1,338 @@
+/*
+ * style.css
+ * colors theme for openwb 2.0
+ * Copyright (c) 2022 Claus Hagen
+ */
+
+html {
+	min-height: 100%;
+	min-width: 100%;
+}
+
+body {
+	color: var(--color-fg);
+	background: var(--color-bg);
+}
+
+body>.container {
+	padding: 55px 15px 0 15px;
+}
+
+/* RESPONSIVE FONT SIZES */
+
+/* Extra small devices (portrait phones, less than 576px) */
+/* No media query since this is the default in Bootstrap */
+html {
+	font-size: 12px;
+}
+@media screen and (min-width: 240px) {
+	html {
+		font-size: 13px;
+	}
+}
+@media screen and (min-width: 330px) {
+	html {
+		font-size: 14px;
+	}
+}
+@media screen and (min-width: 400px) {
+	html {
+		font-size: 15px;
+	}
+}
+@media screen and (min-width: 435px) {
+	html {
+		font-size: 16px;
+	}
+}
+@media screen and (min-width: 470px) {
+	html {
+		font-size: 17px;
+	}
+}
+@media screen and (min-width: 505px) {
+	html {
+		font-size: 18px;
+	}
+}
+@media screen and (min-width: 540px) {
+	html {
+		font-size: 19px;
+	}
+}
+/* Small devices (landscape phones, 576px and up) */
+@media screen and (min-width: 576px) {
+	html {
+		font-size: 20px;
+	}
+}
+@media screen and (min-width: 672px) {
+	html {
+		font-size: 21px;
+	}
+}
+/* Medium devices (tablets, 768px and up) */
+@media screen and (min-width: 768px) {
+	html {
+		font-size: 22px;
+	}
+}
+/* Large devices (desktops, 992px and up) */
+@media screen and (min-width: 992px) {
+	html {
+		font-size: 11px;
+	}
+}
+/* Extra large devices (very large desktops, 1200px and up) */
+@media screen and (min-width: 1200px) {
+	html {
+		font-size: 13px;
+	}
+}
+/* Extra extra large devices (very large desktops, 1400px and up) */
+@media screen and (min-width: 1400px) {
+	html {
+		font-size: 16px;
+	}
+}
+/* Extra extra extra large devices (very large desktops, 2000px and up) */
+@media screen and (min-width: 2000px) {
+	html {
+		font-size: 16px;
+	}
+}
+
+.verySmallTextSize {
+	font-size: var(--font-verysmall);
+}
+.smallTextSize {
+	font-size: var(--font-small);
+}
+.mediumTextSize {
+	font-size: var(--font-medium);
+}
+.regularTextSize {
+	font-size: var(--font-normal);
+}
+.largeTextSize {
+	font-size: var(--font-large);
+}
+.buttonTextSize {
+	font-size: var(--font-large);
+}
+h3 {
+	font-size: var(--font-extralarge);
+	color: var(--color-title);
+	font-weight: bold;
+}
+h4 {
+	color: var(--color-axis);
+}
+
+body>.container-fluid {
+	padding: 55px 15px 0 15px;
+}
+
+.tablecell {
+	font-size: var(--font-normal);
+	line-height: 1rem;
+	vertical-align: middle;
+	padding: 0;
+	background-color: var(--color-bg);
+}
+
+.maxPrice {
+	text-align: center;
+}
+
+/* DEFINITION OF COLOR SCHEMES */
+
+/* Overarching colors and fonts*/
+:root {
+	--fontCol: rgba(160, 160, 160, 0.82);
+	--gridCol: rgba(160, 160, 160, 0.82);
+	--xgridCol: rgba(160, 160, 160, 0.82);
+	--tickCol: rgba(160, 160, 160, 0.82);
+	--evuCol: rgba(178, 34, 34, 1);
+	--color-switchRed: #d12020;
+	--color-switchGreen: #4db662;
+	--color-switchBlue: steelblue;
+	--color-cp1: #6baed6;
+	--color-cp2: #4292c6;
+	--color-cp3: #2171b5;
+	--color-cp4: #9ecae1;
+	--color-cp5: #c6dbef;
+	--color-cp6: #deebf7;
+	--color-cp7: #08519c;
+	--color-cp8: #6baed6;
+	--color-evu: firebrick;
+	--color-pv: #33a02c;
+	--color-house: #7f7f7f;
+	--color-charging: #1f78b4;
+	--color-export: #b2df8a;
+	--color-battery: goldenrod;
+	--color-input: lightgrey;
+	--font-normal: 1.4rem;
+	--font-large: 1.6rem;
+	--font-medium: 1.2rem;
+	--font-small: 1rem;
+	--font-verysmall: 0.7rem;
+	--font-extralarge: 1.6rem;
+	--font-settings: 16px;
+}
+
+/* Theme color sets */
+
+.theme-light {
+	--color-bg: white;
+	--color-axis: gray;
+	--color-grid: #bbbbbb;
+	--color-menu: gray;
+	--color-frame: white;
+	--color-subframe: lightgrey;
+	--color-fg: black;
+	--color-scale: lightgrey;
+	--color-title: black;
+	--padding-widget: 5px;
+	--fontCol: rgba(255, 255, 255, 0.82);
+	--gridCol: rgba(255, 255, 255, 0.82);
+	--xgridCol: rgba(255, 255, 255, 0.1);
+	--tickCol: rgba(255, 255, 255, 0.82);
+	--evuCol: rgba(255, 0, 0, 0.7);
+}
+
+.theme-blue {
+	--color-bg: midnightblue;
+	--color-axis: steelblue;
+	--color-grid: steelblue;
+	--color-menu: lightskyblue;
+	--color-frame: lightskyblue;
+	--color-subframe: midnightblue;
+	--color-fg: white;
+	--color-scale: steelblue;
+	--color-title: lightgrey;
+	--padding-widget: 0px;
+}
+
+.theme-dark {
+	--color-bg: #333333;
+	--color-export: #b2df8a;
+	--color-axis: #666666;
+	--color-grid: black;
+	--color-menu: #999999;
+	--color-frame: #666666;
+	--color-subframe: #333333;
+	--color-fg: white;
+	--color-scale: #999999;
+	--color-title: lightgrey;
+	--padding-widget: 0px;
+}
+
+/* Smart Home Device color sets */
+
+.shcolors-normal {
+	--color-devices: #f16913;
+	--color-sh1: #fd8d3c;
+	--color-sh2: #f16913;
+	--color-sh3: #d94801;
+	--color-sh4: #fdae6b;
+	--color-sh5: #fdd0a2;
+	--color-sh6: #fee6ce;
+	--color-sh7: #a63603;
+	--color-sh8: #fe4b83;
+	--color-sh9: #e4419d;
+}
+
+.shcolors-advanced {
+	--color-devices: #ff4d4d;
+	--color-sh1: #ffffff;
+	--color-sh2: #ff4d4d;
+	--color-sh3: #668cff;
+	--color-sh4: #ff6600;
+	--color-sh5: #00ff00;
+	--color-sh6: #ffff00;
+	--color-sh7: #ff00ff;
+	--color-sh8: #993300;
+	--color-sh9: #a366ff;
+}
+
+.shcolors-standard {
+	--color-devices: rgba(200, 50, 200, 0.7);
+	--color-sh1: rgba(200, 150, 200, 0.7);
+	--color-sh2: rgba(200, 100, 200, 0.7);
+	--color-sh3: rgba(200, 50, 200, 0.7);
+	--color-sh4: rgba(200, 0, 200, 0.7);
+	--color-sh5: rgba(150, 200, 200, 0.7);
+	--color-sh6: rgba(100, 200, 200, 0.7);
+	--color-sh7: rgba(50, 200, 200, 0.7);
+	--color-sh8: rgba(0, 200, 200, 0.7);
+	--color-sh9: rgba(200, 200, 200, 0.7);
+}
+
+.openwb-devices {
+	color: #ccffff;
+	background-color: #009696;
+}
+
+.colormenu {
+	background-color: var(--color-frame);
+}
+
+.wb-widget {
+	background-color: var(--color-bg);
+	border: 0.1px dotted var(--color-frame);
+	align-self: stretch;
+	width: 100%;
+	border-radius: 30px;
+}
+
+.wb-subwidget {
+	border: 0px solid var(--color-subframe);
+	padding: var(--padding-widget);
+}
+
+th {
+	color: var(--color-axis);
+}
+
+.table-borderless td {
+	border: 0;
+}
+
+.popup-header {
+	color: midnightblue;
+}
+
+.axis text {
+	color: var(--color-axis);
+	stroke-width: 0;
+}
+
+.phasesInUse {
+	font-family: monospace;
+	color: white;
+	background: var(--color-menu);
+	font-size: var(--font-verysmall);
+	padding: 0.4rem;
+	padding-bottom: 0.1rem;
+	padding-top: 0.2rem;
+	margin: 0.2rem;
+	margin-top: 0rem;
+	margin-bottom: 0rem;
+}
+
+.swiper-slide-active {
+	display: flex;
+}
+
+.swiper-slide {
+	display: flex;
+}
+
+swiper-slide {
+	display: flex;
+}
+
+option {
+	color: blue;
+}

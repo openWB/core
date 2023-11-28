@@ -10,9 +10,9 @@ from modules.devices.smartfox.config import Smartfox, SmartfoxConfiguration, Sma
 log = logging.getLogger(__name__)
 
 
-def create_device(device_config: SmartfoxConfiguration):
+def create_device(device_config: Smartfox):
     def create_counter_component(component_config: SmartfoxCounterSetup):
-        return SmartfoxCounter(device_config.ip_address, component_config)
+        return SmartfoxCounter(device_config.configuration.ip_address, component_config)
 
     return ConfigurableDevice(
         device_config=device_config,

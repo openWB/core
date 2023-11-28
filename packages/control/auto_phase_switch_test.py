@@ -2,6 +2,7 @@ import threading
 import pytest
 from typing import List, Optional
 from unittest.mock import Mock
+from control.chargepoint.control_parameter import ControlParameter
 from control.counter import Counter, CounterData, Set
 
 from control.pv_all import PvAll
@@ -133,16 +134,23 @@ def test_auto_phase_switch(monkeypatch, vehicle: Ev, params: Params):
     monkeypatch.setattr(mock_evu, "calc_surplus", mock_evu_counter_surplus)
 
     vehicle.ev_template.data.max_current_single_phase = params.max_current_single_phase
-    vehicle.data.control_parameter.timestamp_auto_phase_switch = params.timestamp_auto_phase_switch
-    vehicle.data.control_parameter.phases = params.phases_to_use
-    vehicle.data.control_parameter.required_current = params.required_current
-    vehicle.data.control_parameter.state = params.state
+    control_parameter = ControlParameter()
+    control_parameter.timestamp_auto_phase_switch = params.timestamp_auto_phase_switch
+    control_parameter.phases = params.phases_to_use
+    control_parameter.required_current = params.required_current
+    control_parameter.state = params.state
 
     # execution
-    phases_to_use, current, message = vehicle.auto_phase_switch(0, params.get_currents, params.get_power, 32, 3)
+    phases_to_use, current, message = vehicle.auto_phase_switch(control_parameter,
+                                                                0,
+                                                                params.get_currents,
+                                                                params.get_power,
+                                                                32,
+                                                                3,
+                                                                None)
 
     # evaluation
     assert phases_to_use == params.expected_phases_to_use
     assert current == params.expected_current
     assert message == params.expected_message
-    assert vehicle.data.control_parameter.state == params.expected_state
+    assert control_parameter.state == params.expected_state

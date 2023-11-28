@@ -1,34 +1,19 @@
 from unittest.mock import Mock
 
-import pytest
-import requests_mock
 
-from helpermodules import compatibility
 from modules.common.store._api import LoggingValueStore
 from modules.devices.fronius import inverter
-from modules.devices.fronius.config import FroniusConfiguration, FroniusInverterSetup
-from test_utils.mock_ramdisk import MockRamdisk
-
-SAMPLE_IP = "1.1.1.1"
+from modules.devices.fronius.config import FroniusInverterSetup
 
 
-@pytest.fixture
-def mock_ramdisk(monkeypatch):
-    monkeypatch.setattr(compatibility, "is_ramdisk_in_use", lambda: True)
-    return MockRamdisk(monkeypatch)
-
-
-def test_update(monkeypatch, requests_mock: requests_mock.Mocker, mock_ramdisk, mock_simcount):
-    wr = inverter.FroniusInverter(0, FroniusInverterSetup(), FroniusConfiguration(ip_address=SAMPLE_IP))
+def test_update(monkeypatch, mock_simcount):
+    wr = inverter.FroniusInverter(0, FroniusInverterSetup())
 
     mock = Mock(return_value=None)
     monkeypatch.setattr(LoggingValueStore, "set", mock)
     mock_simcount.return_value = 0, 0
-    requests_mock.get(
-        "http://" + SAMPLE_IP + "/solar_api/v1/GetPowerFlowRealtimeData.fcgi",
-        json=json_wr1)
 
-    wr.update()
+    wr.update(json_wr1)
 
     # mock.assert_called_once()
     inverter_state = mock.call_args[0][0]

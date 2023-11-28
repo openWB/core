@@ -57,12 +57,15 @@ def parse_send_debug_data():
     parsed_data += f"Ladeleistung aller Ladepunkte {data.data.cp_all_data.data.get.power / 1000}kW\n"
     for cp in data.data.cp_data.values():
         try:
+            if hasattr(cp.chargepoint_module.config.configuration, "ip_address"):
+                ip = cp.chargepoint_module.config.configuration.ip_address
+            else:
+                ip = None
             parsed_data += (f"LP{cp.num}: Typ: {cp.chargepoint_module.config.type}; IP: "
-                            f"{cp.chargepoint_module.config.configuration.ip_address}; Stecker-Status: "
-                            f"{cp.data.get.plug_state}, Leistung: "
+                            f"{ip}; Stecker-Status: {cp.data.get.plug_state}, Leistung: "
                             f"{cp.data.get.power/1000}kW, {cp.data.get.currents}A, {cp.data.get.voltages}V, Lademodus: "
-                            f"{cp.data.set.charging_ev_data.data.control_parameter.chargemode}, Submode: "
-                            f"{cp.data.set.charging_ev_data.data.control_parameter.submode}, Sollstrom: "
+                            f"{cp.data.control_parameter.chargemode}, Submode: "
+                            f"{cp.data.control_parameter.submode}, Sollstrom: "
                             f"{cp.data.set.current}A, Status: {cp.data.get.state_str}, "
                             f"Fehlerstatus: {cp.data.get.fault_str}\n")
         except Exception:

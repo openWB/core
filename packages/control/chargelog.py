@@ -44,10 +44,10 @@ def collect_data(chargepoint):
             if chargepoint.data.get.charge_state:
                 if log_data.timestamp_start_charging is None:
                     log_data.timestamp_start_charging = timecheck.create_timestamp()
-                    if charging_ev.data.control_parameter.submode == "time_charging":
+                    if chargepoint.data.control_parameter.submode == "time_charging":
                         log_data.chargemode_log_entry = "time_charging"
                     else:
-                        log_data.chargemode_log_entry = charging_ev.data.control_parameter.chargemode.value
+                        log_data.chargemode_log_entry = chargepoint.data.control_parameter.chargemode.value
                 log_data.imported_since_mode_switch = chargepoint.data.get.imported - log_data.imported_at_mode_switch
                 log.debug(f"imported_since_mode_switch {log_data.imported_since_mode_switch} "
                           f"counter {chargepoint.data.get.imported}")
@@ -106,7 +106,7 @@ def save_data(chargepoint, charging_ev, immediately: bool = True, reset: bool = 
                 "id": charging_ev.num,
                 "name": charging_ev.data.name,
                 "chargemode": log_data.chargemode_log_entry,
-                "prio": charging_ev.data.control_parameter.prio,
+                "prio": chargepoint.data.control_parameter.prio,
                 "rfid": chargepoint.data.set.rfid
             },
             "time":
