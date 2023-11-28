@@ -63,12 +63,18 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
             if source == SocSource.NO_UPDATE:
                 log.debug("No soc update necessary.")
                 return
+            if (source != SocSource.CALCULATION or
+                    (source == SocSource.CALCULATION and self.calculated_soc_state.imported_start is None)):
+                # Wenn nicht berechnet wurde, Energie als Start merken.
+                # Wenn vor dem Zuordnen der SoC gesetzt wurde, war noch keine Energie bekannt.
+                self.calculated_soc_state.imported_start = vehicle_update_data.imported
+                Pub().pub(f"openWB/set/vehicle/{self.vehicle}/soc_module/calculated_soc_state",
+                          asdict(self.calculated_soc_state))
             car_state = self._get_carstate_by_source(vehicle_update_data, source)
             log.debug(f"Requested start soc from {source.value}: {car_state.soc}%")
 
             if source != SocSource.CALCULATION:
                 # Wenn nicht berechnet wurde, SoC als Start merken.
-                self.calculated_soc_state.imported_start = vehicle_update_data.imported
                 self.calculated_soc_state.soc_start = car_state.soc
                 Pub().pub(f"openWB/set/vehicle/{self.vehicle}/soc_module/calculated_soc_state",
                           asdict(self.calculated_soc_state))
