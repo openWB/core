@@ -114,13 +114,28 @@ chmod 666 "$LOGFILE"
 	fi
 
 	# check for openwb2 service definition
-	if versionMatch "${OPENWBBASEDIR}/data/config/openwb2.service" "/etc/systemd/system/openwb2.service"; then
-		echo "openwb2.service already up to date"
+	if find /etc/systemd/system/ -maxdepth 1 -name openwb2.service -type l | grep -q "."; then
+		echo "openwb2.service definition is already a symlink"
 	else
-		echo "updating openwb2.service"
-		sudo cp "${OPENWBBASEDIR}/data/config/openwb2.service" "/etc/systemd/system/openwb2.service"
+		if find /etc/systemd/system/ -maxdepth 1 -name openwb2.service -type f | grep -q "."; then
+			echo "openwb2.service definition is a regular file, deleting file"
+			sudo rm "/etc/systemd/system/openwb2.service"
+		fi
+		sudo ln -s "${OPENWBBASEDIR}/data/config/openwb2.service" /etc/systemd/system/openwb2.service
+		sudo systemctl daemon-reload
+		echo "openwb2.service definition updated. rebooting..."
 		sudo reboot now &
 	fi
+
+	# this check is obsolete as openwb2 service definition is a symlink!
+	# ToDo: remove lines
+	# if versionMatch "${OPENWBBASEDIR}/data/config/openwb2.service" "/etc/systemd/system/openwb2.service"; then
+	# 	echo "openwb2.service already up to date"
+	# else
+	# 	echo "updating openwb2.service"
+	# 	sudo cp "${OPENWBBASEDIR}/data/config/openwb2.service" "/etc/systemd/system/openwb2.service"
+	# 	sudo reboot now &
+	# fi
 
 	# check for remote support service definition
 	if [ ! -f "/etc/systemd/system/openwbRemoteSupport.service" ]; then
