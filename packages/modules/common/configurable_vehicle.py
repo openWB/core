@@ -83,7 +83,7 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
                 self.calculated_soc_state.manual_soc):
             if isinstance(self.vehicle_config, ManualSoc):
                 # Wenn ein manueller SoC gesetzt wurde, diesen als neuen Start merken.
-                if self.calculated_soc_state.manual_soc:
+                if self.calculated_soc_state.manual_soc or self.calculated_soc_state.imported_start is None:
                     return SocSource.MANUAL
                 else:
                     if vehicle_update_data.plug_state:
