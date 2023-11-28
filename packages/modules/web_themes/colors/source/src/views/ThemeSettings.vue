@@ -34,6 +34,13 @@
 						<SwitchInput v-model="globalConfig.showGrid" />
 					</ConfigItem>
 					<ConfigItem
+						title="Buttonleiste für Ladepunkte"
+						icon="fa-window-maximize"
+						infotext="Informationen zu Ladepunkten über den Diagrammen anzeigen."
+					>
+						<SwitchInput v-model="globalConfig.showButtonBar" />
+					</ConfigItem>
+					<ConfigItem
 						title="Variable Bogenlänge"
 						icon="fa-chart-area"
 						infotext="Im Graph 'Aktuelle Leistung' können die Bögen immer die volle Länge haben, oder entsprechend des aktuellen Gesamtleistung verkürzt dargestellt werden."
@@ -112,7 +119,7 @@
 					<ConfigItem
 						title="Uhrzeit anzeigen"
 						icon="fa-clock"
-						infotext="Zeige die aktuelle Uhrzeit an. In der Menuleiste oder neben den Lade-Buttons."
+						infotext="Zeige die aktuelle Uhrzeit an. In der Menüleiste oder neben den Lade-Buttons."
 					>
 						<!-- <SwitchInput v-model="globalConfig.showClock" /> -->
 						<RadioInput
@@ -171,7 +178,7 @@ const shSchemes: [string, string][] = [
 ]
 const clockModes: [string, string][] = [
 	['Aus', 'off'],
-	['Menu', 'navbar'],
+	['Menü', 'navbar'],
 	['Buttonleiste', 'buttonbar'],
 ]
 </script>

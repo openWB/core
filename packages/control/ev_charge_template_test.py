@@ -208,8 +208,8 @@ def test_search_plan(check_duration_return1: Tuple[Optional[float], bool],
                      (14, "instant_charging", ChargeTemplate.SCHEDULED_CHARGING_IN_TIME.format(
                          14, ChargeTemplate.SCHEDULED_CHARGING_LIMITED_BY_SOC.format(80), "07:00"), 1),
                      id="in time, limited by soc"),
-        pytest.param(SelectedPlan(remaining_time=-500, duration=1, missing_amount=3000), 79, 0, "soc",
-                     (15.147265077138849, "instant_charging",
+        pytest.param(SelectedPlan(remaining_time=-500, duration=1, missing_amount=9000, phases=3), 79, 0, "soc",
+                     (15.147265077138847, "instant_charging",
                      ChargeTemplate.SCHEDULED_CHARGING_MAX_CURRENT.format(15.15), 3),
                      id="too late, but didn't miss for today"),
         pytest.param(SelectedPlan(remaining_time=301), 79, 0, "soc",
@@ -228,7 +228,7 @@ def test_scheduled_charging_calc_current(plan_data: SelectedPlan,
     ct.data.chargemode.scheduled_charging.plans = {0: plan}
 
     # execution
-    ret = ct.scheduled_charging_calc_current(plan_data, soc, used_amount, 3, 3, 6, 0)
+    ret = ct.scheduled_charging_calc_current(plan_data, soc, used_amount, 3, 6, 0)
 
     # evaluation
     assert ret == expected

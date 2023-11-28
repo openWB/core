@@ -1,7 +1,11 @@
 <template>
 	<tr class="tablerow">
 		<!-- Column 1: CP Name and flags-->
-		<td class="tablecell left" @click="toggleConfig">
+		<td
+			class="tablecell left"
+			data-bs-toggle="modal"
+			:data-bs-target="'#cpsconfig-' + chargepoint.id"
+		>
 			<div class="d-flex flex-wrap">
 				<span>
 					<i :class="statusIcon" class="me-1" :style="statusColor" />
@@ -85,17 +89,8 @@
 			/>
 		</td>
 	</tr>
-	<tr v-if="showConfig">
-		<td colspan="5" class="px-0">
-			<CPChargeConfigPanel
-				v-if="showConfig"
-				:chargepoint="chargepoint"
-				@close-config="toggleConfig"
-			/>
-		</td>
-	</tr>
 	<tr v-if="editSoc" class="socEditRow m-0 p-0">
-		<td colspan="4" class="m-0 p-0">
+		<td colspan="5" class="m-0 p-0 pb-2">
 			<div class="socEditor rounded mt-2 d-flex flex-column align-items-end">
 				<ConfigItem title="Ladestand einstellen:" :fullwidth="true">
 					<RangeInput
@@ -115,6 +110,18 @@
 			</div>
 		</td>
 	</tr>
+	<Teleport to="body">
+		<ModalComponent
+			:key="chargepoint.id"
+			:modal-id="'cpsconfig-' + chargepoint.id"
+		>
+			<template #title> Konfiguration: {{ chargepoint.name }} </template>
+			<CPChargeConfigPanel
+				v-if="chargepoint != undefined"
+				:chargepoint="chargepoint"
+			/>
+		</ModalComponent>
+	</Teleport>
 </template>
 
 <script setup lang="ts">
@@ -127,10 +134,11 @@ import BatterySymbol from '../../shared/BatterySymbol.vue'
 import ConfigItem from '@/components/shared/ConfigItem.vue'
 import RangeInput from '@/components/shared/RangeInput.vue'
 import { updateServer } from '@/assets/js/sendMessages'
+import ModalComponent from '@/components/shared/ModalComponent.vue'
+
 const props = defineProps<{
 	chargepoint: ChargePoint
 }>()
-const showConfig = ref(false)
 const editSoc = ref(false)
 const modeIcon = computed(() => {
 	return chargemodes[props.chargepoint.chargeMode].icon
@@ -207,9 +215,6 @@ const modeString = computed(() => {
 function nameCellStyle() {
 	return { color: props.chargepoint.color }
 }
-function toggleConfig() {
-	showConfig.value = !showConfig.value
-}
 function loadSoc() {
 	updateServer('socUpdate', 1, props.chargepoint.connectedVehicle)
 	chargePoints[props.chargepoint.id].waitingForSoc = true
@@ -231,6 +236,7 @@ const manualSoc = computed({
 <style scoped>
 .tablerow {
 	margin: 14px;
+	border-top: 0.1px solid var(--color-frame);
 }
 
 .tablecell {
@@ -281,7 +287,7 @@ const manualSoc = computed({
 	border: 1px solid var(--color-menu);
 	background-color: var(--color-bg);
 }
-.socEditRow {
+.socEditRow td {
 	background-color: var(--color-bg);
 }
 .fa-circle-check {

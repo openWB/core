@@ -84,6 +84,17 @@ export default {
     ManualSocInput,
     FontAwesomeIcon,
   },
+  watch: {
+    changesLocked(newValue, oldValue) {
+      // hide all modals if lock is kicking in
+      if(oldValue !== true && newValue === true) {
+        this.modalChargeModeSettingVisible = false;
+        this.modalVehicleSelectVisible = false;
+        this.modalChargePointSettingsVisible = false;
+        this.modalManualSocInputVisible = false;
+      }
+    },
+  },
   computed: {
     vehicleList() {
       let topicList = this.mqttStore.getVehicleList;
@@ -165,10 +176,6 @@ export default {
           `openWB/vehicle/template/charge_template/${template_id}/chargemode/selected`,
           event
         );
-      }
-      // hide modal charge mode setting if visible
-      if (this.modalChargeModeSettingVisible) {
-        this.modalChargeModeSettingVisible = false;
       }
     },
     setChargePointConnectedVehiclePriority(id, event) {
@@ -808,24 +815,38 @@ export default {
       </i-tab>
       <i-tab name="tab-pv-charging">
         <i-form>
-          <i-form-group inline>
-            <i-form-label placement="left" class="_align-items:center">
-              Einspeisegrenze beachten
-            </i-form-label>
-            <i-toggle
-              size="lg"
-              :model-value="
-                mqttStore.getChargePointConnectedVehiclePvChargingFeedInLimit(
-                  modalChargePointId
-                )
-              "
-              @update:model-value="
-                setChargePointConnectedVehiclePvChargingFeedInLimit(
-                  modalChargePointId,
-                  $event
-                )
-              "
-            />
+          <i-form-group>
+            <i-form-label>Einspeisegrenze beachten</i-form-label>
+            <i-button-group block>
+              <i-button
+                :color="
+                  mqttStore.getChargePointConnectedVehiclePvChargingFeedInLimit(
+                    modalChargePointId
+                  ) !== true
+                    ? 'danger'
+                    : ''
+                "
+                @click="
+                  setChargePointConnectedVehiclePvChargingFeedInLimit(modalChargePointId, false)
+                "
+              >
+                Nein
+              </i-button>
+              <i-button
+                :color="
+                  mqttStore.getChargePointConnectedVehiclePvChargingFeedInLimit(
+                    modalChargePointId
+                  ) === true
+                    ? 'success'
+                    : ''
+                "
+                @click="
+                  setChargePointConnectedVehiclePvChargingFeedInLimit(modalChargePointId, true)
+                "
+              >
+                Ja
+              </i-button>
+            </i-button-group>
           </i-form-group>
           <i-form-group>
             <i-form-label>Mindeststrom</i-form-label>
