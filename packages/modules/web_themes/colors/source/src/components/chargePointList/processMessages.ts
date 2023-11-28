@@ -171,6 +171,7 @@ export function processVehicleMessages(topic: string, message: string) {
 			const config = JSON.parse(message)
 			Object.values(chargePoints).forEach((cp) => {
 				if (cp.connectedVehicle == index) {
+					cp.isSocConfigured = config.type !== null
 					cp.isSocManual = config.type == 'manual'
 				}
 			})
