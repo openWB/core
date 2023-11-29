@@ -108,6 +108,8 @@ export const liveGraph = reactive({
 		this.initCounter = 0
 		this.graphRefreshCounter = 0
 		this.rawDataPacks = []
+		resetPvValues()
+		energyMeterNeedsRedraw.value = true
 	},
 	deactivate() {
 		this.unsubscribeRefresh()
@@ -376,6 +378,27 @@ export function updateEnergyValues(
 	}
 	energyMeterNeedsRedraw.value = true
 }
+function resetPvValues() {
+	historicSummary.keys().map((cat) => {
+		if (consumerCategories.includes(cat)) {
+			usageSummary[cat].energy = historicSummary.items[cat].energy
+			usageSummary[cat].energyPv = 0
+			usageSummary[cat].energyBat = 0
+			usageSummary[cat].pvPercentage = 0
+		}
+	})
+	Object.values(chargePoints).map((cp) => {
+		cp.energyPv = 0
+		cp.energyBat = 0
+		cp.pvPercentage = 0
+	})
+	Object.values(shDevices).map((device) => {
+		device.energyPv = 0
+		device.energyBat = 0
+		device.pvPercentage = 0
+	})
+}
+
 export const xScaleMonth = computed(() => {
 	const e = extent(graphData.data, (d) => d.date)
 	if (e[1]) {
