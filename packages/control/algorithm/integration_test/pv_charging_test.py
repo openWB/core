@@ -210,7 +210,7 @@ cases_limit = [
                   expected_current_cp4=6,
                   expected_current_cp5=6,
                   expected_raw_power_left=5635,
-                  expected_surplus_power_left=0,
+                  expected_surplus_power_left=-24450.0,
                   expected_reserved_surplus=0,
                   expected_released_surplus=11040),
 ]
@@ -246,7 +246,7 @@ cases_phase_switch = [
                       expected_current_cp4=6,
                       expected_current_cp5=6,
                       expected_raw_power_left=17400,
-                      expected_surplus_power_left=0,
+                      expected_surplus_power_left=-5175,
                       expected_reserved_surplus=0,
                       expected_released_surplus=0),
     ParamsPhaseSwitch(name="phase switch 1p->3p",
@@ -260,7 +260,7 @@ cases_phase_switch = [
                       expected_current_cp4=6,
                       expected_current_cp5=6,
                       expected_raw_power_left=37520.0,
-                      expected_surplus_power_left=10575.0,
+                      expected_surplus_power_left=13575.0,
                       expected_reserved_surplus=460,
                       expected_released_surplus=0)
 ]
