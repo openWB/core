@@ -151,21 +151,26 @@
 					</div>
 					<div
 						v-if="editSoc"
-						class="socEditor rounded mt-2 d-flex flex-column align-items-end"
+						class="socEditor rounded mt-2 d-flex flex-column align-items-center"
 					>
-						<ConfigItem title="Ladestand einstellen:" :fullwidth="true">
-							<RangeInput
-								id="manualSoc"
-								v-model="manualSoc"
-								:min="0"
-								:max="100"
-								:step="1"
-								unit="%"
-							/>
-						</ConfigItem>
+						<span class="d-flex m-1 p-0 socEditTitle"
+							>Ladestand einstellen:</span
+						>
+						<span class="d-flex justify-content-stretch align-items-center">
+							<span>
+								<RangeInput
+									id="manualSoc"
+									v-model="manualSoc"
+									:min="0"
+									:max="100"
+									:step="1"
+									unit="%"
+								/>
+							</span>
+						</span>
 						<span
 							type="button"
-							class="fa-solid d-flex fa-lg me-2 mb-3 fa-circle-check"
+							class="fa-solid d-flex fa-lg me-2 mb-3 align-self-end fa-circle-check"
 							@click="setSoc"
 						/>
 					</div>
@@ -211,7 +216,6 @@ import RadioBarInput from '@/components/shared/RadioBarInput.vue'
 import WbWidgetFlex from '../shared/WbWidgetFlex.vue'
 import { updateServer } from '@/assets/js/sendMessages'
 import RangeInput from '../shared/RangeInput.vue'
-import ConfigItem from '../shared/ConfigItem.vue'
 
 const props = defineProps<{
 	chargepoint: ChargePoint

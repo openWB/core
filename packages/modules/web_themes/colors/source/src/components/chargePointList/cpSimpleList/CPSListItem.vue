@@ -91,20 +91,23 @@
 	</tr>
 	<tr v-if="editSoc" class="socEditRow m-0 p-0">
 		<td colspan="5" class="m-0 p-0 pb-2">
-			<div class="socEditor rounded mt-2 d-flex flex-column align-items-end">
-				<ConfigItem title="Ladestand einstellen:" :fullwidth="true">
-					<RangeInput
-						id="manualSoc"
-						v-model="manualSoc"
-						:min="0"
-						:max="100"
-						:step="1"
-						unit="%"
-					/>
-				</ConfigItem>
+			<div class="socEditor rounded mt-2 d-flex flex-column align-items-center">
+				<span class="d-flex m-1 p-0 socEditTitle">Ladestand einstellen:</span>
+				<span class="d-flex justify-content-stretch align-items-center">
+					<span>
+						<RangeInput
+							id="manualSoc"
+							v-model="manualSoc"
+							:min="0"
+							:max="100"
+							:step="1"
+							unit="%"
+						/>
+					</span>
+				</span>
 				<span
 					type="button"
-					class="fa-solid d-flex fa-lg me-2 mb-3 fa-circle-check"
+					class="fa-solid d-flex fa-lg me-2 mb-3 align-self-end fa-circle-check"
 					@click="setSoc"
 				/>
 			</div>
@@ -131,7 +134,6 @@ import { chargemodes, globalConfig } from '@/assets/js/themeConfig'
 import { formatWatt, formatWattH } from '@/assets/js/helpers'
 import CPChargeConfigPanel from '../cpConfig/CPChargeConfigPanel.vue'
 import BatterySymbol from '../../shared/BatterySymbol.vue'
-import ConfigItem from '@/components/shared/ConfigItem.vue'
 import RangeInput from '@/components/shared/RangeInput.vue'
 import { updateServer } from '@/assets/js/sendMessages'
 import ModalComponent from '@/components/shared/ModalComponent.vue'
@@ -283,14 +285,21 @@ const manualSoc = computed({
 .fa-clock {
 	color: var(--color-battery);
 }
+
 .socEditor {
 	border: 1px solid var(--color-menu);
 	background-color: var(--color-bg);
 }
+
 .socEditRow td {
 	background-color: var(--color-bg);
 }
+
 .fa-circle-check {
 	color: var(--color-menu);
+}
+
+.socEditTitle {
+	color: white;
 }
 </style>
