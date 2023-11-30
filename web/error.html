@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+	<base href="/openWB/web/">
+	<meta charset="UTF-8">
+	<link rel="shortcut icon" href="img/favicons/favicon.ico">
+	<link rel="stylesheet" type="text/css" href="error.css?ver=20230322">
+	<title>404 - document not found</title>
+</head>
+
+<body>
+	<div class="wrapper">
+		<div id="notReady">
+			<div id="logo">
+				<img src="img/openWB_logo_dark.png" alt="logo image">
+			</div>
+			<div>
+				<h1>Fehler 404: Die aufgerufene Seite wurde nicht gefunden.</h1>
+				<p>Bitte aktualisiere ggf. Deine Lesezeichen.</p>
+				<p>
+					Die Startseite erreichst Du unter
+					<a id="start-url" href="/">http://[meine-openWB]/</a>.
+				</p>
+				<p>
+					Direkter Zugriff auf die Einstellungen:
+					<a id="settings-url" href="/openWB/web/settings/">http://[meine-openWB]/openWB/web/settings/</a>
+				</p>
+			</div>
+		</div>
+	</div>
+	<script>
+		function replaceHostname(elementId) {
+			const placeholder = "[meine-openWB]";
+			let url = document.getElementById(elementId).innerHTML;
+			return url.replace(placeholder, location.hostname);
+		}
+		document.getElementById("start-url").innerHTML = replaceHostname("start-url");
+		document.getElementById("settings-url").innerHTML = replaceHostname("settings-url");
+	</script>
+
+</body>
+
+</html>
