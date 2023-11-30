@@ -1,0 +1,39 @@
+/* prevent scroll gestures */
+body,
+html {
+	overscroll-behavior: none;
+}
+
+body,
+html {
+	border: 0;
+	margin: 0;
+	padding: 0;
+	background-color: black;
+	color: white;
+	font-family: Open Sans;
+}
+
+a {
+	color: inherit;
+	text-decoration: underline;
+	font-weight: bold;
+}
+
+.wrapper {
+	display: flex;
+	justify-content: center;
+}
+
+#notReady {
+	display: flex;
+	flex-direction: column;
+	padding-top: 10vh;
+}
+
+#logo {
+	display: flex;
+	flex-direction: column;
+	align-content: center;
+	flex-wrap: wrap;
+}
