@@ -403,9 +403,9 @@ export const xScaleMonth = computed(() => {
 	const e = extent(graphData.data, (d) => d.date)
 	if (e[1]) {
 		return scaleBand<number>()
-			.domain(Array.from({ length: e[1] + 1 }, (v, k) => k + 1))
+			.domain(Array.from({ length: e[1] }, (v, k) => k + 1))
 			.paddingInner(0.4)
-			.range([0, width])
+			.range([0, width - margin.left])
 	} else {
 		return scaleBand<number>().range([0, 0])
 	}
