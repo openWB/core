@@ -324,9 +324,6 @@ export function updateEnergyValues(
 		})
 		historicSummary.setEnergy('devices', 0)
 		Object.entries(totals.sh).forEach(([id, values]) => {
-			if (!historicSummary.keys().includes(id)) {
-				historicSummary.addItem(id)
-			}
 			historicSummary.setEnergy(id, values.imported)
 			const idNumber = id.substring(2)
 			if (!shDevices[+idNumber].countAsHouse) {
