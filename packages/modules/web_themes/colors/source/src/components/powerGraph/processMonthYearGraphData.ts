@@ -155,11 +155,11 @@ function transformRow(inputRow: RawDayGraphDataItem): GraphDataItem {
 	// Devices
 	outputRow.devices = Object.entries(inputRow.sh).reduce<number>(
 		(sum: number, item) => {
+			if (!historicSummary.keys().includes(item[0])) {
+				historicSummary.addItem(item[0])
+			}
 			if (item[1].energy_imported >= 0) {
 				sum += item[1].energy_imported
-				if (!historicSummary.keys().includes(item[0])) {
-					historicSummary.addItem(item[0])
-				}
 			} else {
 				console.warn(
 					`Negative energy value for device ${item[0]} in row ${outputRow.date}. Ignoring this value`,
