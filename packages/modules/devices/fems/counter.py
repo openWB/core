@@ -18,7 +18,8 @@ class FemsCounter:
         try:
             # Grid meter values and grid total energy sums
             response = session.get('http://' + self.ip_address +
-                                   ':8084/rest/channel/(meter0|_sum)/(ActivePower.*|VoltageL.|Frequency|Grid.+ActiveEnergy)',
+                                   ':8084/rest/channel/(meter0|_sum)/' +
+                                   '(ActivePower.*|VoltageL.|Frequency|Grid.+ActiveEnergy)',
                                    timeout=6).json()
 
             # ATTENTION: Recent FEMS versions started using the "unit" field (see example response below) and

@@ -20,7 +20,8 @@ class FemsBat:
         else:
             data = "ess2"
         response = session.get(
-            "http://" + self.ip_address + ":8084/rest/channel/("+data+"|_sum)/(Soc|DcChargeEnergy|DcDischargeEnergy|GridActivePower|ProductionActivePower|ConsumptionActivePower)",
+            "http://" + self.ip_address + ":8084/rest/channel/(" + data + "|_sum)/" +
+            "(Soc|DcChargeEnergy|DcDischargeEnergy|GridActivePower|ProductionActivePower|ConsumptionActivePower)",
             timeout=2).json()
         for singleValue in response:
             address = singleValue["address"]
