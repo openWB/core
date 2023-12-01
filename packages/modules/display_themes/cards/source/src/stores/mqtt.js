@@ -456,9 +456,9 @@ export const useMqttStore = defineStore("mqtt", {
     },
     getChargePointConnectedVehicleChargeMode(state) {
       return (chargePointId) => {
-        if (state.getChargePointConnectedVehicleConfig(chargePointId)) {
+        if (state.getChargePointConnectedVehicleChargeTemplate(chargePointId)) {
           return state.translateChargeMode(
-            state.getChargePointConnectedVehicleConfig(chargePointId).chargemode
+            state.getChargePointConnectedVehicleChargeTemplate(chargePointId).chargemode.selected
           );
         }
         return undefined;
@@ -466,9 +466,9 @@ export const useMqttStore = defineStore("mqtt", {
     },
     getChargePointConnectedVehiclePriority(state) {
       return (chargePointId) => {
-        if (state.getChargePointConnectedVehicleConfig(chargePointId)) {
-          return state.getChargePointConnectedVehicleConfig(chargePointId)
-            .priority;
+        if (state.getChargePointConnectedVehicleChargeTemplate(chargePointId)) {
+          return state.getChargePointConnectedVehicleChargeTemplate(chargePointId)
+            .prio;
         }
         return undefined;
       };
