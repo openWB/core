@@ -141,7 +141,7 @@ def get_totals(entries: List) -> Dict:
 def get_daily_log(date: str):
     data = _collect_daily_log_data(date)
     data = _process_entries(data, CalculationType.POWER)
-    # data = _analyse_power_source(data)
+    data = _analyse_power_source(data)
     return data
 
 
@@ -166,7 +166,7 @@ def _collect_daily_log_data(date: str):
 def get_monthly_log(date: str):
     data = _collect_monthly_log_data(date)
     data = _process_entries(data, CalculationType.ENERGY)
-    # data = _analyse_power_source(data)
+    data = _analyse_power_source(data)
     return data
 
 
@@ -191,7 +191,7 @@ def _collect_monthly_log_data(date: str):
 def get_yearly_log(year: str):
     data = _collect_yearly_log_data(year)
     data = _process_entries(data, CalculationType.ENERGY)
-    # data = _analyse_power_source(data)
+    data = _analyse_power_source(data)
     return data
 
 
