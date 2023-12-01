@@ -71,6 +71,7 @@ def time_charging_factory() -> TimeCharging:
 class ChargemodeConfig:
     instant_charging: InstantCharging = field(default_factory=instant_charging_factory)
     pv_charging: PvCharging = field(default_factory=pv_charging_factory)
+    retry_failed_phase_switches = False
     scheduled_charging: ScheduledCharging = field(default_factory=scheduled_charging_factory)
     time_charging: TimeCharging = field(default_factory=time_charging_factory)
     unbalanced_load_limit: int = 18

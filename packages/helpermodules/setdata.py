@@ -535,6 +535,8 @@ class SetData:
                     self._validate_value(msg, float, [(6, 32), (0, 0)])
                 elif "/control_parameter/phases" in msg.topic:
                     self._validate_value(msg, int, [(0, 3)])
+                elif "/control_parameter/failed_phase_switches" in msg.topic:
+                    self._validate_value(msg, int, [(0, 4)])
                 elif ("/control_parameter/submode" in msg.topic or
                         "/control_parameter/limit" in msg.topic or
                         "/control_parameter/chargemode" in msg.topic):
@@ -715,7 +717,8 @@ class SetData:
                 self._validate_value(msg, bool)
             elif "openWB/set/general/chargemode_config/unbalanced_load_limit" in msg.topic:
                 self._validate_value(msg, int, [(10, 32)])
-            elif "openWB/set/general/chargemode_config/unbalanced_load" in msg.topic:
+            elif ("openWB/set/general/chargemode_config/unbalanced_load" in msg.topic or
+                  "openWB/set/general/chargemode_config/retry_failed_phase_switches" in msg.topic):
                 self._validate_value(msg, bool)
             elif ("openWB/set/general/chargemode_config/pv_charging/feed_in_yield" in msg.topic or
                     "openWB/set/general/chargemode_config/pv_charging/switch_on_threshold" in msg.topic or
