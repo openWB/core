@@ -119,22 +119,23 @@ class Params:
     power: float
     soc: float
     expected_charging_power_left: float
+    expected_regulate_up: bool
 
 
 cases = [
     Params("lädt, EV-Vorrang ohne Ladeleistungsreserve", PvCharging(bat_prio=False, charging_power_reserve=0), 500,
-           100, 500),
+           100, 500, False),
     Params("lädt, EV-Vorrang mit Ladeleistungsreserve, Speicher voll",
            PvCharging(bat_prio=False, charging_power_reserve=200), 500,
-           100, 500),
+           100, 500, False),
     Params("lädt, EV-Vorrang mit Ladeleistungsreserve", PvCharging(bat_prio=False, charging_power_reserve=200), 500,
-           99, 300),
-    Params("lädt, Speicher-Vorrang mit erlaubter Entladeleistung", PvCharging(bat_prio=True), 500, 51, 500),
+           99, 300, False),
+    Params("lädt, Speicher-Vorrang mit erlaubter Entladeleistung", PvCharging(bat_prio=True), 500, 51, 500, False),
     Params("lädt, Speicher-Vorrang ohne erlaubte Entladeleistung, Minimal-SoC unterschritten",
-           PvCharging(bat_prio=True), 500, 50, -50),
+           PvCharging(bat_prio=True), 500, 50, 0, True),
     Params("entlädt mit mehr als Entladeleistung, Speicher-Vorrang mit erlaubter Entladeleistung",
-           PvCharging(bat_prio=True), -2500, 51, -1500),
-    Params("entlädt, Speicher-Vorrang mit erlaubter Entladeleistung", PvCharging(bat_prio=True), -600, 51, 500),
+           PvCharging(bat_prio=True), -2500, 51, -1500, False),
+    Params("entlädt, Speicher-Vorrang mit erlaubter Entladeleistung", PvCharging(bat_prio=True), -600, 51, 500, False),
 ]
 
 
@@ -156,3 +157,4 @@ def test_get_charging_power_left(params: Params, caplog, data_fixture, monkeypat
 
     # evaluation
     assert b_all.data.set.charging_power_left == params.expected_charging_power_left
+    assert b_all.data.set.regulate_up == params.expected_regulate_up
