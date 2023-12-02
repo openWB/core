@@ -400,8 +400,8 @@ class Ev:
                              all_surplus > self.ev_template.data.min_current * max_phases_ev * 230
                              - get_power) or limit == LimitingValue.UNBALANCED_LOAD.value) and
                             phases_in_use == 1)
-        condition_3_to_1 = (min_soc == 0 or (min_soc != 0 and soc >= min_soc)) and
-                            max(get_currents) < min_current and all_surplus <= 0 and phases_in_use > 1
+        condition_3_to_1 = ((min_soc == 0 or (min_soc != 0 and soc >= min_soc)) and
+                            max(get_currents) < min_current and all_surplus <= 0 and phases_in_use > 1)
         if condition_1_to_3 or condition_3_to_1:
             return True, None
         else:
