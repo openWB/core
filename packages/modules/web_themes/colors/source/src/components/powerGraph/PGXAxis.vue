@@ -83,19 +83,6 @@ const xScale = computed(() => {
 		return scaleTime().range([0, 0])
 	}
 })
-/* const xScaleMonth = computed(() => {
-	let e = extent(graphData.data, (d) => d.date)
-	console.log(e)
-	if (e[1]) {
-		return scaleBand<number>()
-			.domain([1,e[1]])
-			// .domain(Array.from({ length: graphData.data.length }, (v, k) => k))
-			.paddingInner(0.4)
-			.range([0, props.width + props.margin.right])
-		} else {
-			return scaleBand<number>().range([0,0])
-		}
-}) */
 
 const drawAxis1 = computed(() => {
 	let axis = select<AxisContainerElement, number>('g#PGXAxis')
@@ -131,7 +118,7 @@ const drawAxis1 = computed(() => {
 		.attr('y', 12)
 		.attr('fill', 'var(--color-axis)')
 		.attr('font-size', fontsize)
-		.text(graphData.graphMode == 'year' ? 'MWh' : 'kWh')
+		.text(graphData.graphMode == 'year' ? 'MW' : 'kW')
 		.attr('text-anchor', 'start')
 	return 'PGXAxis.vue'
 })

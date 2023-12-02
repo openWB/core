@@ -405,7 +405,7 @@ export const xScaleMonth = computed(() => {
 		return scaleBand<number>()
 			.domain(Array.from({ length: e[1] }, (v, k) => k + 1))
 			.paddingInner(0.4)
-			.range([0, width - margin.left])
+			.range([0, width - margin.left - 2])
 	} else {
 		return scaleBand<number>().range([0, 0])
 	}
