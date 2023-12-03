@@ -218,8 +218,15 @@ function toggleMqViewer() {
 onMounted(() => {
 	init()
 	window.addEventListener('resize', updateDimensions)
+	window.document.addEventListener('visibilitychange', visibilityChange)
 	msgInit()
 })
+
+function visibilityChange() {
+	if (!document.hidden) {
+		msgInit()
+	}
+}
 </script>
 
 <style scoped>
@@ -227,10 +234,12 @@ onMounted(() => {
 	border-bottom: 0.5px solid var(--color-menu);
 	background-color: var(--color-bg);
 }
+
 .nav-tabs .nav-link {
 	color: var(--color-menu);
 	opacity: 0.5;
 }
+
 .nav-tabs .nav-link.disabled {
 	color: var(--color-axis);
 	border: 0.5px solid var(--color-axis);
@@ -244,18 +253,23 @@ onMounted(() => {
 	border-bottom: 0px solid var(--color-menu);
 	box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
 }
+
 .fa-circle-info {
 	color: var(--color-fg);
 }
+
 .fa-charging-station {
 	color: var(--color-charging);
 }
+
 .fa-car-battery {
 	color: var(--color-battery);
 }
+
 .fa-plug {
 	color: var(--color-devices);
 }
+
 .fa-money-bill-1-wave {
 	color: var(--color-pv);
 }
