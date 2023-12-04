@@ -21,15 +21,7 @@ def pub_configurable():
 
 def _pub_configurable_backup_clouds() -> None:
     try:
-        backup_clouds: List[Dict] = [
-            {
-                "value": None,
-                "text": "keine Backup-Cloud",
-                "defaults": {
-                    "type": None,
-                    "configuration": {}
-                }
-            }]
+        backup_clouds: List[Dict] = []
         path_list = Path(_get_packages_path()/"modules"/"backup_clouds").glob('**/backup_cloud.py')
         for path in path_list:
             try:
@@ -47,6 +39,16 @@ def _pub_configurable_backup_clouds() -> None:
             except Exception:
                 log.exception("Fehler im configuration-Modul")
         backup_clouds = sorted(backup_clouds, key=lambda d: d['text'].upper())
+        # "leeren" Eintrag an erster Stelle einfügen
+        backup_clouds.insert(0,
+                             {
+                                 "value": None,
+                                 "text": "- keine Backup-Cloud -",
+                                 "defaults": {
+                                     "type": None,
+                                     "configuration": {}
+                                 }
+                             })
         Pub().pub("openWB/set/system/configurable/backup_clouds", backup_clouds)
     except Exception:
         log.exception("Fehler im configuration-Modul")
@@ -104,15 +106,7 @@ def _pub_configurable_display_themes() -> None:
 
 def _pub_configurable_soc_modules() -> None:
     try:
-        soc_modules: List[Dict] = [
-            {
-                "value": None,
-                "text": "kein Modul",
-                "defaults": {
-                    "type": None,
-                    "configuration": {}
-                }
-            }]
+        soc_modules: List[Dict] = []
         path_list = Path(_get_packages_path()/"modules"/"vehicles").glob('**/soc.py')
         for path in path_list:
             try:
@@ -129,6 +123,16 @@ def _pub_configurable_soc_modules() -> None:
             except Exception:
                 log.exception("Fehler im configuration-Modul")
         soc_modules = sorted(soc_modules, key=lambda d: d['text'].upper())
+        # "leeren" Eintrag an erster Stelle einfügen
+        soc_modules.insert(0,
+                           {
+                               "value": None,
+                               "text": "- kein SoC Modul -",
+                               "defaults": {
+                                   "type": None,
+                                   "configuration": {}
+                               }
+                           })
         Pub().pub("openWB/set/system/configurable/soc_modules", soc_modules)
     except Exception:
         log.exception("Fehler im configuration-Modul")
