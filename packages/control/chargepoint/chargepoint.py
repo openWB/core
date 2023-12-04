@@ -257,6 +257,7 @@ class ChargepointData:
 class Chargepoint:
     """ geht alle Ladepunkte durch, prüft, ob geladen werden darf und ruft die Funktion des angesteckten Autos auf.
     """
+    MAX_FAILED_PHASE_SWITCHES = 3
 
     def __init__(self, index: int, event: Optional[threading.Event]):
         try:
@@ -529,7 +530,8 @@ class Chargepoint:
         except Exception:
             log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.num))
 
-    def _is_phase_switch_required(self, charging_ev: Ev) -> bool:
+    def _is_phase_switch_required(self) -> bool:
+        phase_switch_required = False
         # Manche EVs brauchen nach der Umschaltung mehrere Zyklen, bis sie mit den drei Phasen laden. Dann darf
         # nicht zwischendurch eine neue Umschaltung getriggert werden.
         if (self.data.control_parameter.state == ChargepointState.CHARGING_ALLOWED or
@@ -544,15 +546,32 @@ class Chargepoint:
                     ((self.data.set.current != 0 and self.data.get.power != 0) or
                      (self.data.set.current != 0 and self.set_current_prev == 0) or
                      self.data.set.current == 0)):
-                return True
+                phase_switch_required = True
         if (self.data.control_parameter.state == ChargepointState.NO_CHARGING_ALLOWED and
             (self.data.set.phases_to_use != self.data.get.phases_in_use or
                 # Vorgegebene Phasenzahl hat sich geändert
              self.data.set.phases_to_use != self.data.control_parameter.phases) and
                 # Wenn der Ladevorgang gestartet wird, muss vor dem ersten Laden umgeschaltet werden.
                 self.data.set.current != 0):
-            return True
-        return False
+            phase_switch_required = True
+        if phase_switch_required:
+            # Umschaltung fehlgeschlagen
+            if self.data.set.phases_to_use != self.data.get.phases_in_use:
+                if data.data.general_data.data.chargemode_config.retry_failed_phase_switches:
+                    if self.data.control_parameter.failed_phase_switches <= self.MAX_FAILED_PHASE_SWITCHES:
+                        self.data.control_parameter.failed_phase_switches += 1
+                    else:
+                        phase_switch_required = False
+                        self.set_state_and_log(
+                            "Keine Phasenumschaltung, da die maximale Anzahl an Fehlversuchen erreicht wurde. Die "
+                            "aktuelle Phasenzahl wird bis zum Abstecken beibehalten.")
+                else:
+                    phase_switch_required = False
+                    self.set_state_and_log(
+                        "Keine Phasenumschaltung, da wiederholtes Anstoßen der Umschaltung in den übergreifenden "
+                        "Ladeinstellungen deaktiviert wurde. Die aktuelle "
+                        "Phasenzahl wird bis zum Abstecken beibehalten.")
+        return phase_switch_required
 
     STOP_CHARGING = ", dafür wird die Ladung unterbrochen."
 
@@ -607,7 +626,7 @@ class Chargepoint:
                     Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/phases_to_use",
                               self.data.control_parameter.phases)
                     self.data.set.phases_to_use = self.data.control_parameter.phases
-                if self._is_phase_switch_required(charging_ev):
+                if self._is_phase_switch_required():
                     # Wenn die Umschaltverzögerung aktiv ist, darf nicht umgeschaltet werden.
                     if (self.data.control_parameter.state != ChargepointState.PERFORMING_PHASE_SWITCH and
                             self.data.control_parameter.state != ChargepointState.WAIT_FOR_USING_PHASES):

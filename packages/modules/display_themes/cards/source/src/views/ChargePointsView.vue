@@ -87,7 +87,7 @@ export default {
   watch: {
     changesLocked(newValue, oldValue) {
       // hide all modals if lock is kicking in
-      if(oldValue !== true && newValue === true) {
+      if (oldValue !== true && newValue === true) {
         this.modalChargeModeSettingVisible = false;
         this.modalVehicleSelectVisible = false;
         this.modalChargePointSettingsVisible = false;
@@ -827,7 +827,10 @@ export default {
                     : ''
                 "
                 @click="
-                  setChargePointConnectedVehiclePvChargingFeedInLimit(modalChargePointId, false)
+                  setChargePointConnectedVehiclePvChargingFeedInLimit(
+                    modalChargePointId,
+                    false
+                  )
                 "
               >
                 Nein
@@ -841,7 +844,10 @@ export default {
                     : ''
                 "
                 @click="
-                  setChargePointConnectedVehiclePvChargingFeedInLimit(modalChargePointId, true)
+                  setChargePointConnectedVehiclePvChargingFeedInLimit(
+                    modalChargePointId,
+                    true
+                  )
                 "
               >
                 Ja
@@ -849,7 +855,7 @@ export default {
             </i-button-group>
           </i-form-group>
           <i-form-group>
-            <i-form-label>Mindeststrom</i-form-label>
+            <i-form-label>Minimaler Dauerstrom</i-form-label>
             <extended-number-input
               unit="A"
               :labels="[

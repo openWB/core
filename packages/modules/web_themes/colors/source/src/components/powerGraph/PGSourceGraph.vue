@@ -113,7 +113,7 @@ const vrange = computed(() => {
 const ticklength = computed(
 	() => graphData.graphMode == 'month' || graphData.graphMode == 'year',
 )
-	? -props.width - props.margin.right
+	? -props.width - props.margin.right - 22
 	: -props.width
 
 const yAxisGenerator = computed(() => {
