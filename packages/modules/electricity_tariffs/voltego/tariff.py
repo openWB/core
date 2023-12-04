@@ -46,9 +46,10 @@ def fetch(config: VoltegoTariffConfiguration) -> None:
     response = req.get_http_session().get(
         f"https://api.voltego.de/market_data/day_ahead/DE_LU/60?from={start_date}&tz={timezone}",
         headers={"Content-Type": "application/json;charset=UTF-8",
-                 "Authorization": f'Bearer {config.token.token}'}
+                 "Authorization": f'Bearer {config.token.token}'},
+        params={"from": "2023-12-04T08:00:00+00:00", "tz": "UTC+1:00"}
     ).json()
-
+# /1000000  # €/MWh -> €/Wh
     return TariffState(prices=response["price_list"])
 
 
