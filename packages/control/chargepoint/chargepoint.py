@@ -7,8 +7,8 @@ werden kann.
 charging_ev = -1 zeigt an, dass der LP im Algorithmus nicht berücksichtigt werden soll. Ist das Ev abgesteckt, wird
 auch charging_ev_prev -1 und im nächsten Zyklus kann ein neues Profil geladen werden.
 
-RFID-Tags/Code-Eingabe:
-Mit einem Tag/Code kann optional der Ladepunkt freigeschaltet werden, es wird gleichzeitig immer ein EV damit
+ID-Tag/Code-Eingabe:
+Mit einem ID-Tag/Code kann optional der Ladepunkt freigeschaltet werden, es wird gleichzeitig immer ein EV damit
 zugeordnet, mit dem nach der Freischaltung geladen werden soll. Wenn max 5 Min nach dem Scannen kein Auto
 angesteckt wird, wird der Tag verworfen. Ebenso wenn kein EV gefunden wird.
 Tag-Liste: Tags, mit denen der Ladepunkt freigeschaltet werden kann. Ist diese leer, kann mit jedem Tag der Ladepunkt
@@ -332,7 +332,7 @@ class Chargepoint:
         return state, message
 
     def _is_autolock_inactive(self) -> Tuple[bool, Optional[str]]:
-        """ prüft, ob Autolock nicht aktiv ist oder ob die Sperrung durch einen dem LP zugeordneten RFID-Tag aufgehoben
+        """ prüft, ob Autolock nicht aktiv ist oder ob die Sperrung durch einen dem LP zugeordneten ID-Tag aufgehoben
         werden kann.
         """
         message = None
@@ -345,7 +345,7 @@ class Chargepoint:
                     self.template.data.rfid_enabling):
                 if self.data.get.rfid is None and self.data.set.rfid is None:
                     state = False
-                    message = ("Keine Ladung, da der Ladepunkt durch Autolock gesperrt ist und erst per RFID "
+                    message = ("Keine Ladung, da der Ladepunkt durch Autolock gesperrt ist und erst per ID-Tag "
                                "freigeschaltet werden muss.")
                 else:
                     state = True
@@ -394,9 +394,9 @@ class Chargepoint:
             log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.num))
             return False, "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
         if self.data.get.rfid and message is not None:
-            message += (f"\n RFID-Tag {self.data.get.rfid} kann erst einem EV zugeordnet werden, wenn der Ladepunkt"
+            message += (f"\n ID-Tag {self.data.get.rfid} kann erst einem EV zugeordnet werden, wenn der Ladepunkt"
                         " nicht mehr gesperrt ist. Wenn nach dem Scannen nicht innerhalb von 5 Minuten ein Auto"
-                        " angesteckt wird, wird der RFID-Tag verworfen.")
+                        " angesteckt wird, wird der ID-Tag verworfen.")
         return charging_possible, message
 
     def _process_charge_stop(self) -> None:
@@ -809,13 +809,13 @@ class Chargepoint:
                             if rfid in self.template.data.valid_tags or len(self.template.data.valid_tags) == 0:
                                 Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid_timestamp", None)
                                 msg = "Es ist in den letzten 5 Minuten kein EV angesteckt worden, dem " \
-                                    f"der RFID-Tag/Code {rfid} zugeordnet werden kann. Daher wird dieser verworfen."
+                                    f"der ID-Tag {rfid} zugeordnet werden kann. Daher wird dieser verworfen."
                             else:
-                                msg = f"Der Tag {rfid} ist an diesem Ladepunkt nicht gültig."
+                                msg = f"Der ID-Tag {rfid} ist an diesem Ladepunkt nicht gültig."
                 else:
-                    msg = "Nach Ladestart wird kein anderer RFID-Tag akzeptiert."
+                    msg = "Nach Ladestart wird kein anderer ID-Tag akzeptiert."
             else:
-                msg = "RFID ist nicht aktiviert."
+                msg = "Identifikation von Fahrzeugen ist nicht aktiviert."
             self.data.get.rfid = None
             Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid", None)
             self.chargepoint_module.clear_rfid()
