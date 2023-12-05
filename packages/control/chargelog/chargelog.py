@@ -3,9 +3,8 @@ import datetime
 from enum import Enum
 import json
 import logging
-import math
 import pathlib
-from typing import Dict, List, Union
+from typing import Dict, List
 
 from control import data
 from dataclass_utils import asdict
@@ -52,6 +51,9 @@ def collect_data(chargepoint):
                         log_data.chargemode_log_entry = "time_charging"
                     else:
                         log_data.chargemode_log_entry = chargepoint.data.control_parameter.chargemode.value
+                log_data.ev = chargepoint.data.set.charging_ev_data.num
+                log_data.prio = chargepoint.data.control_parameter.prio
+                log_data.rfid = chargepoint.data.set.rfid
                 log_data.imported_since_mode_switch = chargepoint.data.get.imported - log_data.imported_at_mode_switch
                 log.debug(f"imported_since_mode_switch {log_data.imported_since_mode_switch} "
                           f"counter {chargepoint.data.get.imported}")
@@ -63,7 +65,55 @@ def collect_data(chargepoint):
         log.exception("Fehler im Ladelog-Modul")
 
 
-def save_data(chargepoint, charging_ev, immediately: bool = True, reset: bool = False):
+def save_interim_data(chargepoint, charging_ev, immediately: bool = True):
+    try:
+        log_data = chargepoint.data.set.log
+        # Es wurde noch nie ein Auto zugeordnet
+        if charging_ev == -1:
+            return
+        if log_data.timestamp_start_charging is None:
+            # Die Daten wurden schon erfasst.
+            return
+        if not immediately:
+            if chargepoint.data.get.power != 0:
+                # Das Fahrzeug hat die Ladung noch nicht beendet. Der Logeintrag wird später erstellt.
+                return
+        save_data(chargepoint, charging_ev, immediately)
+        chargepoint.reset_log_data_chargemode_switch()
+    except Exception:
+        log.exception("Fehler im Ladelog-Modul")
+
+
+def save_and_reset_data(chargepoint, charging_ev, immediately: bool = True):
+    """nach dem Abstecken Log-Eintrag erstellen und alle Log-Daten zurücksetzen.
+
+    Parameter
+    ---------
+    chargepoint: class
+        Ladepunkt
+    charging_ev: class
+        EV, das an diesem Ladepunkt lädt. (Wird extra übergeben, da es u.U. noch nicht zugewiesen ist und nur die
+        Nummer aus dem Broker in der LP-Klasse hinterlegt ist.)
+    immediately: bool
+        Soll sofort ein Eintrag erstellt werden oder gewartet werden, bis die Ladung beendet ist.
+    """
+    try:
+        if charging_ev == -1:
+            # Es wurde noch nie ein Auto zugeordnet.
+            return
+        if not immediately:
+            if chargepoint.data.get.power != 0:
+                # Das Fahrzeug hat die Ladung noch nicht beendet. Der Logeintrag wird später erstellt.
+                return
+        if chargepoint.data.set.log.timestamp_start_charging:
+            # Die Daten wurden noch nicht erfasst.
+            save_data(chargepoint, charging_ev, immediately)
+        chargepoint.reset_log_data()
+    except Exception:
+        log.exception("Fehler im Ladelog-Modul")
+
+
+def save_data(chargepoint, charging_ev, immediately: bool = True):
     """ json-Objekt für den Log-Eintrag erstellen, an die Datei anhängen und die Daten, die sich auf den Ladevorgang
     beziehen, löschen.
 
@@ -79,79 +129,71 @@ def save_data(chargepoint, charging_ev, immediately: bool = True, reset: bool = 
         imported_at_mode_switch notiert. Sonst schon, damit zwischen save_data und dem nächsten collect_data keine
         Daten verloren gehen.
     """
-    try:
-        log_data = chargepoint.data.set.log
-        # Es wurde noch nie ein Auto zugeordnet
-        if charging_ev == -1:
-            return
-        if log_data.timestamp_start_charging is None:
-            # Die Daten wurden schon erfasst.
-            return
-        if not immediately:
-            if chargepoint.data.get.power != 0:
-                return
-        # Daten vor dem Speichern nochmal aktualisieren, auch wenn nicht mehr geladen wird.
-        log_data.imported_since_plugged = chargepoint.data.get.imported - log_data.imported_at_plugtime
-        log_data.imported_since_mode_switch = chargepoint.data.get.imported - log_data.imported_at_mode_switch
-        log_data.range_charged = log_data.imported_since_mode_switch / charging_ev.ev_template.data.average_consump*100
-        log_data.time_charged, duration = timecheck.get_difference_to_now(log_data.timestamp_start_charging)
-        power = 0
-        if duration > 0:
-            power = log_data.imported_since_mode_switch / duration
-        calculate_charge_cost(chargepoint, True)
-        costs = log_data.costs
-        new_entry = {
-            "chargepoint":
-            {
-                "id": chargepoint.num,
-                "name": chargepoint.data.config.name,
-            },
-            "vehicle":
-            {
-                "id": charging_ev.num,
-                "name": charging_ev.data.name,
-                "chargemode": log_data.chargemode_log_entry,
-                "prio": chargepoint.data.control_parameter.prio,
-                "rfid": chargepoint.data.set.rfid
-            },
-            "time":
-            {
-                "begin": datetime.fromtimestamp(log_data.timestamp_start_charging).strftime("%m/%d/%Y, %H:%M:%S"),
-                "end": datetime.fromtimestamp(timecheck.create_timestamp()).strftime("%m/%d/%Y, %H:%M:%S"),
-                "time_charged": log_data.time_charged
-            },
-            "data":
-            {
-                "range_charged": truncate(log_data.range_charged, 2),
-                "imported_since_mode_switch": truncate(log_data.imported_since_mode_switch, 2),
-                "imported_since_plugged": truncate(log_data.imported_since_plugged, 2),
-                "power": truncate(power, 2),
-                "costs": truncate(costs, 2)
-            }
+    log_data = chargepoint.data.set.log
+    # Daten vor dem Speichern nochmal aktualisieren, auch wenn nicht mehr geladen wird.
+    log_data.imported_since_plugged = chargepoint.data.get.imported - log_data.imported_at_plugtime
+    log_data.imported_since_mode_switch = chargepoint.data.get.imported - log_data.imported_at_mode_switch
+    log_data.range_charged = log_data.imported_since_mode_switch / charging_ev.ev_template.data.average_consump*100
+    log_data.time_charged, duration = timecheck.get_difference_to_now(log_data.timestamp_start_charging)
+    power = 0
+    if duration > 0:
+        power = log_data.imported_since_mode_switch / duration
+    calculate_charge_cost(chargepoint, True)
+    costs = log_data.costs
+    new_entry = {
+        "chargepoint":
+        {
+            "id": chargepoint.num,
+            "name": chargepoint.data.config.name,
+        },
+        "vehicle":
+        {
+            "id": log_data.ev,
+            "name": _get_ev_name(log_data.ev),
+            "chargemode": log_data.chargemode_log_entry,
+            "prio": log_data.prio,
+            "rfid": log_data.rfid
+        },
+        "time":
+        {
+            "begin": datetime.fromtimestamp(log_data.timestamp_start_charging).strftime("%m/%d/%Y, %H:%M:%S"),
+            "end": datetime.fromtimestamp(timecheck.create_timestamp()).strftime("%m/%d/%Y, %H:%M:%S"),
+            "time_charged": log_data.time_charged
+        },
+        "data":
+        {
+            "range_charged": round(log_data.range_charged, 2),
+            "imported_since_mode_switch": round(log_data.imported_since_mode_switch, 2),
+            "imported_since_plugged": round(log_data.imported_since_plugged, 2),
+            "power": round(power, 2),
+            "costs": round(costs, 2)
         }
+    }
 
-        # json-Objekt in Datei einfügen
-        (_get_parent_file() / "data"/"charge_log").mkdir(mode=0o755, parents=True, exist_ok=True)
-        filepath = str(_get_parent_file() / "data" / "charge_log" /
-                       (timecheck.create_timestamp_YYYYMM() + ".json"))
-        try:
-            with open(filepath, "r", encoding="utf-8") as json_file:
-                content = json.load(json_file)
-        except FileNotFoundError:
-            # with open(filepath, "w", encoding="utf-8") as jsonFile:
-            #     json.dump([], jsonFile)
-            # with open(filepath, "r", encoding="utf-8") as jsonFile:
-            #     content = json.load(jsonFile)
-            content = []
-        content.append(new_entry)
-        with open(filepath, "w", encoding="utf-8") as json_file:
-            json.dump(content, json_file)
-        log.debug(f"Neuer Ladelog-Eintrag: {new_entry}")
+    # json-Objekt in Datei einfügen
+    (_get_parent_file() / "data"/"charge_log").mkdir(mode=0o755, parents=True, exist_ok=True)
+    filepath = str(_get_parent_file() / "data" / "charge_log" /
+                   (timecheck.create_timestamp_YYYYMM() + ".json"))
+    try:
+        with open(filepath, "r", encoding="utf-8") as json_file:
+            content = json.load(json_file)
+    except FileNotFoundError:
+        # with open(filepath, "w", encoding="utf-8") as jsonFile:
+        #     json.dump([], jsonFile)
+        # with open(filepath, "r", encoding="utf-8") as jsonFile:
+        #     content = json.load(jsonFile)
+        content = []
+    content.append(new_entry)
+    with open(filepath, "w", encoding="utf-8") as json_file:
+        json.dump(content, json_file)
+    log.debug(f"Neuer Ladelog-Eintrag: {new_entry}")
 
-        chargepoint.reset_log_data_regarding_chargemode(reset)
-        Pub().pub(f"openWB/set/chargepoint/{chargepoint.num}/set/log", asdict(chargepoint.data.set.log))
+
+def _get_ev_name(ev: int) -> str:
+    try:
+        return data.data.ev_data[f"ev{ev}"].data.name
     except Exception:
-        log.exception("Fehler im Ladelog-Modul")
+        return ""
 
 
 def get_log_data(request: Dict):
@@ -256,53 +298,10 @@ def get_log_data(request: Dict):
     return log_data
 
 
-def reset_data(chargepoint, charging_ev, immediately: bool = True):
-    """nach dem Abstecken Log-Eintrag erstellen und alle Log-Daten zurücksetzen.
-
-    Parameter
-    ---------
-    chargepoint: class
-        Ladepunkt
-    charging_ev: class
-        EV, das an diesem Ladepunkt lädt. (Wird extra übergeben, da es u.U. noch nicht zugewiesen ist und nur die
-        Nummer aus dem Broker in der LP-Klasse hinterlegt ist.)
-    immediately: bool
-        Soll sofort ein Eintrag erstellt werden oder gewartet werden, bis die Ladung beendet ist.
-    """
-    try:
-        if charging_ev == -1:
-            # Es wurde noch nie ein Auto zugeordnet.
-            return
-        if not immediately:
-            if chargepoint.data.get.power != 0:
-                return
-        save_data(chargepoint, charging_ev, immediately, reset=True)
-    except Exception:
-        log.exception("Fehler im Ladelog-Modul")
-
-
-def truncate(number: Union[int, float], decimals: int = 0):
-    """
-    Returns a value truncated to a specific number of decimal places.
-    """
-    try:
-        if not isinstance(decimals, int):
-            raise TypeError("decimal places must be an integer.")
-        elif decimals < 0:
-            raise ValueError("decimal places has to be 0 or more.")
-        elif decimals == 0:
-            return math.trunc(number)
-
-        factor = 10.0 ** decimals
-        return math.trunc(number * factor) / factor
-    except Exception:
-        log.exception("Fehler im Ladelog-Modul")
-
-
 def calculate_charge_cost(cp, create_log_entry: bool = False):
     content = get_todays_daily_log()
     try:
-        if cp.data.set.log.imported_since_plugged != 0:
+        if cp.data.set.log.imported_since_plugged != 0 and cp.data.set.log.imported_since_mode_switch != 0:
             reference = _get_reference_position(cp, create_log_entry)
             reference_time = get_reference_time(cp, reference)
             reference_entry = _get_reference_entry(content["entries"], reference_time)
@@ -329,6 +328,7 @@ def calculate_charge_cost(cp, create_log_entry: bool = False):
             cp.data.set.log.costs += _calc(power_source_entry["power_source"],
                                            charged_energy,
                                            (data.data.optional_data.et_module is not None))
+            Pub().pub(f"openWB/set/chargepoint/{cp.num}/set/log", asdict(cp.data.set.log))
     except Exception:
         log.exception(f"Fehler beim Berechnen der Ladekosten für Ladepunkt {cp.num}")
 

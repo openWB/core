@@ -37,7 +37,7 @@ class Process:
                     else:
                         # LP, an denen nicht geladen werden darf
                         if cp.data.set.charging_ev_prev != -1:
-                            chargelog.save_data(
+                            chargelog.save_interim_data(
                                 cp, data.data.ev_data
                                 ["ev" + str(cp.data.set.charging_ev_prev)],
                                 immediately=False)

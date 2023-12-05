@@ -166,7 +166,9 @@ def schedule_jobs():
     [schedule.every().minute.at(f":{i:02d}").do(smarthome_handler).tag("algorithm") for i in range(0, 60, 5)]
     [schedule.every().hour.at(f":{i:02d}").do(handler.handler5Min) for i in range(0, 60, 5)]
     [schedule.every().hour.at(f":{i:02d}").do(handler.handler5MinAlgorithm).tag("algorithm") for i in range(0, 60, 5)]
-    schedule.every().hour.do(handler.handler_hour).tag("algorithm")
+    [schedule.every().day.at(f"{i:02d}:00").do(handler.handler_hour).tag("algorithm") for i in range(0, 24, 1)]
+    # every().hour ruft nicht jede Stunde den Handler auf.
+    # schedule.every().hour.do(handler.handler_hour).tag("algorithm")
     schedule.every().day.at("00:00:00").do(handler.handler_midnight).tag("algorithm")
     schedule.every().day.at(f"0{randrange(0, 5)}:{randrange(0, 59):02d}:{randrange(0, 59):02d}").do(
         handler.handler_random_nightly)

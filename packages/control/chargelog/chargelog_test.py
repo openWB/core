@@ -145,6 +145,7 @@ def test_calculate_charge_cost(monkeypatch):
     # setup
     data.data.cp_data["cp3"].data.set.log.timestamp_start_charging = "11/01/2023, 08:12:40"
     data.data.cp_data["cp3"].data.set.log.imported_since_plugged = 1000
+    data.data.cp_data["cp3"].data.set.log.imported_since_mode_switch = 1000
     # Mock today() to values in log-file
     datetime_mock = MagicMock(wraps=datetime.datetime)
     # Thu Nov 02 2023 07:00:51
