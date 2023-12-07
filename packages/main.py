@@ -158,11 +158,13 @@ class HandlerAlgorithm:
             # reason: in order to decide which algo to use, we must have initial subdata completed and data copied once from it
             event_control_algorithm_set.clear()
             if data.data.yc_data.data.yc_config.active:
-                log.critical("Switching to YourCharge algorithm")
-                self.control = algorithm_yc.AlgorithmYc()
+                if not isinstance(self.control, algorithm_yc.AlgorithmYc):
+                    log.critical("Switching to YourCharge algorithm")
+                    self.control = algorithm_yc.AlgorithmYc()
             else:
-                log.critical("Switching to openWB algorithm")
-                self.control = algorithm.Algorithm()
+                if not isinstance(self.control, algorithm.Algorithm):
+                    log.critical("Switching to openWB algorithm")
+                    self.control = algorithm.Algorithm()
 
 
 def schedule_jobs():

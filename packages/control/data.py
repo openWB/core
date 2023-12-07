@@ -59,7 +59,6 @@ def locked(lock: threading.Lock):
         return inner
     return decorate
 
-
 class Data:
     def __init__(self, event_module_update_completed: threading.Event):
         self.event_module_update_completed = event_module_update_completed

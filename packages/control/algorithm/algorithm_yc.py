@@ -1,96 +1,122 @@
 import logging
 
-from control import counter
-from control import data
+from datetime import datetime, timedelta
+
+from control import data, yourcharge
 from control.algorithm import algorithm
-from control.algorithm import common
-from control.algorithm.additional_current import AdditionalCurrent
-from control.algorithm.min_current import MinCurrent
-from control.algorithm.no_current import NoCurrent
-from control.algorithm.surplus_controlled import SurplusControlled
+
+from helpermodules.pub import Pub
 
 log = logging.getLogger(__name__)
 
 
 class AlgorithmYc(algorithm.Algorithm):
+
+    yc_root_topic = 'yourCharge'
+    yc_status_topic = yc_root_topic + '/status'
+
     def __init__(self):
         super().__init__()
+        (key, value) = next(((key, value) for i, (key, value) in enumerate(data.data.cp_data.items()) if value.chargepoint_module.config.type == 'internal_openwb'), None)
+        self._internal_cp = value
+        self._internal_cp_key = key
+        self._heartbeat_checker = HeartbeatChecker(timedelta(seconds=25))
+        self._heartbeat_status = None
+        self._previous_heartbeat_status = None
+        self._lm_status = None
+        self._previous_lm_status = None
+        log.info(f"YC algorithm active: Internal CP found with key '{self._internal_cp_key}'")
 
     def calc_current(self) -> None:
 
-        log.info("YC algorithm active (but not yet implemented): " + str(data.data.yc_data.data.yc_config.active))
+        try:
+            self._heartbeat_status = self._heartbeat_checker.is_heartbeat_timeout()
 
-        if data.data.yc_data.data.fixed_charge_current is not None and data.data.yc_data.data.fixed_charge_current <= 0.0:
-            log.info(f"Charging disapproved by fixed_charge_current == {data.data.yc_data.data.fixed_charge_current}")
-            cp = next(iter(data.data.cp_data.values()))
-            cp.data.set.current = None
-            return
-        elif data.data.yc_data.data.fixed_charge_current is not None and data.data.yc_data.data.fixed_charge_current > 0.0:
-            log.info(f"Fixed current requested by fixed_charge_current == {data.data.yc_data.data.fixed_charge_current}")
-            cp = next(iter(data.data.cp_data.values()))
-            cp.data.set.current = data.data.yc_data.data.fixed_charge_current
-            return
+            # super-early exit in case of controller not being seen anymore, charge current --> 0
+            if self._heartbeat_status == False:
+                log.critical(f"Detected controller heartbeat timeout: Disabling charge immediately")
+                self._internal_cp.data.set.current = 0
+                self._lm_status = yourcharge.LmStatus.DownByError
+                return
 
-        log.info(f"Regular load control requested by fixed_charge_current == {data.data.yc_data.data.fixed_charge_current}")
+            # very early exit in case of box being administratively disabled
+            if data.data.yc_data.data.yc_config.active != True:
+                log.info(f"Box is administratively disabled: Disabling charge immediately")
+                self._internal_cp.data.set.current = 0
+                self._lm_status = yourcharge.LmStatus.DownByDisable
+                return
 
-    # def calc_current(self) -> None:
-    #     """ Einstiegspunkt in den YourCharge Regel-Algorithmus
-    #     """
-    #     try:
-    #         log.info("# YC Algorithmus")
-    #         self.evu_counter = data.data.counter_all_data.get_evu_counter()
-    #         self._check_auto_phase_switch_delay()
-    #         self.surplus_controlled.check_submode_pv_charging()
-    #         common.reset_current()
-    #         log.info("**Mindestrom setzen**")
-    #         self.min_current.set_min_current()
-    #         log.info("**Sollstrom setzen**")
-    #         common.reset_current_to_target_current()
-    #         self.additional_current.set_additional_current([0, 8])
-    #         counter.limit_raw_power_left_to_surplus(self.evu_counter.calc_raw_surplus())
-    #         self.surplus_controlled.check_switch_on()
-    #         if self.evu_counter.data.set.surplus_power_left > 0:
-    #             log.info("**PV-geführten Strom setzen**")
-    #             common.reset_current_to_target_current()
-    #             self.surplus_controlled.set_required_current_to_max()
-    #             self.surplus_controlled.set_surplus_current([6, 12])
-    #         else:
-    #             log.info("**Keine Leistung für PV-geführtes Laden übrig.**")
-    #         self.no_current.set_no_current()
-    #         self.no_current.set_none_current()
-    #     except Exception:
-    #         log.exception("Fehler im Algorithmus-Modul")
+            # handle supersede or regular control
+            if data.data.yc_data.data.yc_control.fixed_charge_current is None:
+                log.info(f"Regular load control requested by yc_data.data.yc_control.fixed_charge_current == {data.data.yc_data.datayc_control.fixed_charge_current}")
+                self.do_load_control()
+            else:
+                # handling of superseded, fixed charge current
+                if data.data.yc_data.data.yc_control.fixed_charge_current < 0.0:
+                    # invalid or default value < 0.0
+                    log.info(f"Charging disapproved by yc_data.data.yc_control.fixed_charge_current: Setting CP '{self._internal_cp_key}' to 0 A")
+                    self._internal_cp.data.set.current = 0
+                    self._lm_status = yourcharge.LmStatus.Superseded
+                else:
+                    # fixed value >= 0.0 provided
+                    log.info(f"Fixed current requested by yc_data.data.yc_control.fixed_charge_current: Setting CP '{self._internal_cp_key}' to {data.data.yc_data.data.yc_control.fixed_charge_current} A")
+                    self._internal_cp.data.set.current = data.data.yc_data.data.yc_control.fixed_charge_current
+                    self._lm_status = yourcharge.LmStatus.Superseded
 
-    # def _check_auto_phase_switch_delay(self) -> None:
-    #     """ geht alle LP durch und prüft, ob eine Ladung aktiv ist, ob automatische Phasenumschaltung
-    #     möglich ist und ob ob ein Timer gestartet oder geChargemode.STOPpt werden muss oder ob
-    #     ein Timer abgelaufen ist.
-    #     """
-    #     for cp in data.data.cp_data.values():
-    #         try:
-    #             if cp.data.set.charging_ev != -1:
-    #                 charging_ev = cp.data.set.charging_ev_data
-    #                 control_parameter = cp.data.control_parameter
-    #                 if cp.cp_ev_chargemode_support_phase_switch():
-    #                     # Gibt die Stromstärke und Phasen zurück, mit denen nach der Umschaltung geladen werden
-    #                     # soll. Falls keine Umschaltung erforderlich ist, werden Strom und Phasen, die übergeben
-    #                     # wurden, wieder zurückgegeben.
-    #                     log.debug(f"Ladepunkt {cp.num}: Prüfen, ob Phasenumschaltung durchgeführt werden soll.")
-    #                     phases, current, message = charging_ev.auto_phase_switch(
-    #                         cp.data.control_parameter,
-    #                         cp.num,
-    #                         cp.data.get.currents,
-    #                         cp.data.get.power,
-    #                         cp.template.data.max_current_single_phase,
-    #                         cp.get_max_phase_hw(),
-    #                         cp.data.control_parameter.limit)
-    #                     if message is not None:
-    #                         cp.data.get.state_str = message
-    #                     # Nachdem im Automatikmodus die Anzahl Phasen bekannt ist, Einhaltung des Maximalstroms
-    #                     # prüfen.
-    #                     required_current = cp.check_min_max_current(current, control_parameter.phases)
-    #                     cp.data.control_parameter.required_current = required_current
-    #                     cp.data.control_parameter.phases = phases
-    #                     cp.set_required_currents(required_current)
-    #         except Exception:
-    #             log.exception(f"Fehler im Algorithmus-Modul für Ladepunkt{cp.num}")
+        finally:
+            self.send_status()
+
+
+    def send_status(self):
+        if self._previous_heartbeat_status != self._heartbeat_status:
+            Pub().pub(f"{self.yc_status_topic}/heartbeat", self._heartbeat_status)
+            self._previous_heartbeat_status = self._heartbeat_status
+        if self._previous_lm_status != self._lm_status:
+            Pub().pub(f"{self.yc_status_topic}/lm_status", self._lm_status)
+            self._previous_lm_status = self._lm_status
+
+
+    def do_load_control(self):
+        log.info(f"Regular load control NOT YET IMPLEMENTED")
+        pass
+
+
+class HeartbeatChecker:
+    def __init__(self, timeout: timedelta = timedelta(seconds=30)) -> None:
+        self.heartbeat_timeout = timeout
+        self._timeout_detection_time = None
+        self._previous_lcs_publish = -1
+
+    def is_heartbeat_timeout(self) -> bool:
+
+        now_it_is = datetime.utcnow()
+
+        log.info(f"LCS heartbeat ENTER: now it is {now_it_is}, last_controller_publish={data.data.yc_data.data.last_controller_publish}, _previous_lcs_publish={self._previous_lcs_publish}, _timeout_detection_time={self._timeout_detection_time}")
+
+        if self._previous_lcs_publish == -1:
+            # very first run: just store the last_controller_publish
+            log.info(f"LCS heartbeat initialized to: {data.data.yc_data.data.last_controller_publish}")
+            self._previous_lcs_publish = data.data.yc_data.data.last_controller_publish
+            return True
+
+        if self._previous_lcs_publish == data.data.yc_data.data.last_controller_publish:
+            # no new controller timestamp seen
+            if self._timeout_detection_time == None:
+                # first time no change --> start timeout timer
+                log.warning(f"No LCS heartbeat change (first time): now it is {now_it_is}, last_controller_publish={data.data.yc_data.data.last_controller_publish}")
+                self._timeout_detection_time = now_it_is
+            else:
+                timeout_since = now_it_is - self._timeout_detection_time
+                log.info(f"LCS heartbeat DETECTED: now it is {now_it_is}, last_controller_publish={data.data.yc_data.data.last_controller_publish}, _previous_lcs_publish={self._previous_lcs_publish}, _timeout_detection_time={self._timeout_detection_time}")
+                if timeout_since > self.heartbeat_timeout:
+                    # timeout detected
+                    log.critical(f"LCS heartbeat ERROR: now it is {now_it_is}, timeout_detection_time={self._timeout_detection_time} --> timeout since {timeout_since} > heartbeat_timeout ({self.heartbeat_timeout})")
+                    return False
+
+        elif self._timeout_detection_time != None:
+            log.warning(f"LCS heartbeat returned: now it is {now_it_is}, last_controller_publish={data.data.yc_data.data.last_controller_publish}")
+            self._timeout_detection_time = None
+
+        log.info(f"LCS heartbeat OK: now it is {now_it_is}, last_controller_publish={data.data.yc_data.data.last_controller_publish}, _previous_lcs_publish={self._previous_lcs_publish}, _timeout_detection_time={self._timeout_detection_time}")
+
+        return True
