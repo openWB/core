@@ -2,6 +2,7 @@ import logging
 
 import time
 from typing import Tuple
+from control.algorithm.yourcharge.standard_socket_meter_handler import SocketMeterHandler
 
 from modules.common.abstract_chargepoint import AbstractChargepoint
 from modules.common.component_context import SingleComponentUpdateContext
@@ -38,6 +39,8 @@ class ChargepointModule(AbstractChargepoint):
         self.old_plug_state = False
         self.old_phases_in_use = 0
         self.__client = client_handler
+        log.info(f"Constructing ChargepointModule with ID for CP {local_charge_point_num}: {id(self)}")
+        self.standard_socket_handler = None
         version = self.__client.evse_client.get_firmware_version()
         if version < 17:
             self._precise_current = False
@@ -89,6 +92,11 @@ class ChargepointModule(AbstractChargepoint):
                 plug_state = self.old_plug_state
             else:
                 self.old_plug_state = plug_state
+
+            if self.standard_socket_handler is not None:
+                time.sleep(0.1)
+                log.info(f"ChargepointModule with ID of CP {self.local_charge_point_num}: {id(self)}")
+                self.standard_socket_handler.update()
 
             chargepoint_state = ChargepointState(
                 power=power,

@@ -1,11 +1,15 @@
 import logging
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from control import data, yourcharge
 from control.algorithm import algorithm
+from control.algorithm.yourcharge.heartbeat_checker import HeartbeatChecker
+from control.algorithm.yourcharge.standard_socket_meter_handler import SocketMeterHandler
 
 from helpermodules.pub import Pub
+from modules.common import modbus
+from modules.internal_chargepoint_handler.internal_chargepoint_handler import GeneralInternalChargepointHandler
 
 log = logging.getLogger(__name__)
 
@@ -15,21 +19,28 @@ class AlgorithmYc(algorithm.Algorithm):
     yc_root_topic = 'yourCharge'
     yc_status_topic = yc_root_topic + '/status'
 
-    def __init__(self):
+    def __init__(self, general_chargepoint_handler: GeneralInternalChargepointHandler):
         super().__init__()
         (key, value) = next(((key, value) for i, (key, value) in enumerate(data.data.cp_data.items()) if value.chargepoint_module.config.type == 'internal_openwb'), None)
         self._internal_cp = value
         self._internal_cp_key = key
-        self._heartbeat_checker = HeartbeatChecker(timedelta(seconds=25))
-        self._heartbeat_status = None
-        self._previous_heartbeat_status = None
-        self._lm_status = None
+        self._general_cp_handler = general_chargepoint_handler
+        self._heartbeat_checker: HeartbeatChecker = HeartbeatChecker(timedelta(seconds=25))
+        self._heartbeat_status: bool = None
+        self._previous_heartbeat_status: bool = None
+        self._lm_status: yourcharge.LmStatus = None
         self._previous_lm_status = None
+        self._modbus_client: modbus.ModbusClient = None
+        self._socket_meter_handler: SocketMeterHandler = None
         log.info(f"YC algorithm active: Internal CP found with key '{self._internal_cp_key}'")
 
     def calc_current(self) -> None:
 
         try:
+            # create handler for standard socket if not yet done
+            self.verify_standard_socket_presence()
+
+            # check heartbeat
             self._heartbeat_status = self._heartbeat_checker.is_heartbeat_timeout()
 
             # super-early exit in case of controller not being seen anymore, charge current --> 0
@@ -67,6 +78,25 @@ class AlgorithmYc(algorithm.Algorithm):
             self.send_status()
 
 
+    def verify_standard_socket_presence(self):
+        if data.data.yc_data.data.yc_config.standard_socket_installed:
+            if self._socket_meter_handler == None:
+                self._socket_meter_handler = self.create_socket_meter_handler()
+            if self._general_cp_handler.internal_chargepoint_handler.cp0.module.standard_socket_handler is None:
+                self._general_cp_handler.internal_chargepoint_handler.cp0.module.standard_socket_handler = self._socket_meter_handler
+            log.info(f"Standard-Socket data: {self._socket_meter_handler.data}")
+        else:
+            if self._socket_meter_handler != None:
+                self._socket_meter_handler = None
+            if self._general_cp_handler.internal_chargepoint_handler.cp0.module.standard_socket_handler is not None:
+                self._general_cp_handler.internal_chargepoint_handler.cp0.module.standard_socket_handler = None
+
+
+    def create_socket_meter_handler(self):
+        self._modbus_client = self._internal_cp
+        return SocketMeterHandler(self._general_cp_handler.internal_chargepoint_handler.cp0_client_handler.client)
+
+
     def send_status(self):
         if self._previous_heartbeat_status != self._heartbeat_status:
             Pub().pub(f"{self.yc_status_topic}/heartbeat", self._heartbeat_status)
@@ -78,45 +108,3 @@ class AlgorithmYc(algorithm.Algorithm):
 
     def do_load_control(self):
         log.info(f"Regular load control NOT YET IMPLEMENTED")
-        pass
-
-
-class HeartbeatChecker:
-    def __init__(self, timeout: timedelta = timedelta(seconds=30)) -> None:
-        self.heartbeat_timeout = timeout
-        self._timeout_detection_time = None
-        self._previous_lcs_publish = -1
-
-    def is_heartbeat_timeout(self) -> bool:
-
-        now_it_is = datetime.utcnow()
-
-        log.info(f"LCS heartbeat ENTER: now it is {now_it_is}, last_controller_publish={data.data.yc_data.data.last_controller_publish}, _previous_lcs_publish={self._previous_lcs_publish}, _timeout_detection_time={self._timeout_detection_time}")
-
-        if self._previous_lcs_publish == -1:
-            # very first run: just store the last_controller_publish
-            log.info(f"LCS heartbeat initialized to: {data.data.yc_data.data.last_controller_publish}")
-            self._previous_lcs_publish = data.data.yc_data.data.last_controller_publish
-            return True
-
-        if self._previous_lcs_publish == data.data.yc_data.data.last_controller_publish:
-            # no new controller timestamp seen
-            if self._timeout_detection_time == None:
-                # first time no change --> start timeout timer
-                log.warning(f"No LCS heartbeat change (first time): now it is {now_it_is}, last_controller_publish={data.data.yc_data.data.last_controller_publish}")
-                self._timeout_detection_time = now_it_is
-            else:
-                timeout_since = now_it_is - self._timeout_detection_time
-                log.info(f"LCS heartbeat DETECTED: now it is {now_it_is}, last_controller_publish={data.data.yc_data.data.last_controller_publish}, _previous_lcs_publish={self._previous_lcs_publish}, _timeout_detection_time={self._timeout_detection_time}")
-                if timeout_since > self.heartbeat_timeout:
-                    # timeout detected
-                    log.critical(f"LCS heartbeat ERROR: now it is {now_it_is}, timeout_detection_time={self._timeout_detection_time} --> timeout since {timeout_since} > heartbeat_timeout ({self.heartbeat_timeout})")
-                    return False
-
-        elif self._timeout_detection_time != None:
-            log.warning(f"LCS heartbeat returned: now it is {now_it_is}, last_controller_publish={data.data.yc_data.data.last_controller_publish}")
-            self._timeout_detection_time = None
-
-        log.info(f"LCS heartbeat OK: now it is {now_it_is}, last_controller_publish={data.data.yc_data.data.last_controller_publish}, _previous_lcs_publish={self._previous_lcs_publish}, _timeout_detection_time={self._timeout_detection_time}")
-
-        return True

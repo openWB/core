@@ -26,7 +26,7 @@ from control import prepare
 from control import data
 from control import process
 from control.algorithm import algorithm
-from control.algorithm import algorithm_yc
+from control.algorithm.yourcharge import algorithm_yc
 from helpermodules.utils import exit_after
 from modules import update_soc
 from modules.internal_chargepoint_handler.internal_chargepoint_handler import GeneralInternalChargepointHandler
@@ -160,7 +160,7 @@ class HandlerAlgorithm:
             if data.data.yc_data.data.yc_config.active:
                 if not isinstance(self.control, algorithm_yc.AlgorithmYc):
                     log.critical("Switching to YourCharge algorithm")
-                    self.control = algorithm_yc.AlgorithmYc()
+                    self.control = algorithm_yc.AlgorithmYc(general_internal_chargepoint_handler)
             else:
                 if not isinstance(self.control, algorithm.Algorithm):
                     log.critical("Switching to openWB algorithm")
