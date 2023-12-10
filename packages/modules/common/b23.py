@@ -39,3 +39,9 @@ class B23(AbstractCounter):
         time.sleep(0.1)
         return [val / 10 for val in self.client.read_holding_registers(
             0x5B00, [ModbusDataType.UINT_32]*3, unit=self.id)]
+
+    def get_serial(self) -> str:
+        return "n/a"
+
+    def get_model(self) -> str:
+        return "B23"

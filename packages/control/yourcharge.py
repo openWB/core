@@ -6,7 +6,15 @@ from typing import List
 from enum import Enum
 
 from dataclasses import dataclass, field
-from dataclass_utils.factories import empty_dict_factory, empty_list_factory
+from dataclass_utils.factories import empty_list_factory
+
+
+yc_root_topic = 'yourCharge'
+yc_status_topic = yc_root_topic + '/status'
+yc_control_topic = yc_root_topic + '/control'
+yc_config_topic = yc_root_topic + '/config'
+yc_socket_activated_topic = yc_status_topic + '/socket_activated'
+yc_socket_requested_topic = yc_control_topic + '/socket_request'
 
 
 # load management states that we can be in
@@ -22,6 +30,39 @@ class LmStatus(int, Enum):
     DownByEnergyLimit = 9
 
 
+# standard socket control actions
+class StandardSocketActions(str, Enum):
+    # Uninitialized default value. Don't use.
+    Uninitialized = "Uninitialized"
+
+    # Approve socket usage.
+    Approve = "Approve"
+
+    # Explicitly decline socket usage.
+    # This shall be used only if socket has been requested and cannot be granted.
+    # Once granted and socket needs to be disabled (e.g. for load control reasons), use "TurnOff".
+    Decline = "Decline"
+
+    # Request immediate turn off of the socket.
+    # Use this action if socket use had been granted but socket now needs to be turned off (e.g. for load control reasons).
+    # To reject an activation request, use "Decline" as this allows more detailed feedback to user.
+    TurnOff = "TurnOff"
+
+
+class SocketRequestStates(str, Enum):
+    # Socket request state is uninitialized.
+    Uninitialized = "Uninitialized"
+
+    # No specific socket request.
+    NoRequest = "NoRequest"
+
+    # Turning ON of socket has been requested.
+    OnRequested = "OnRequested"
+
+    # Turning OFF of socket has been requested.
+    OffRequested = "OffRequested"
+
+
 log = logging.getLogger(__name__)
 
 def three_zero_ints_factory() -> List[int]:
@@ -29,7 +70,6 @@ def three_zero_ints_factory() -> List[int]:
 
 def three_zero_floatss_factory() -> List[float]:
     return [ 0.0, 0.0, 0.0 ]
-
 
 @dataclass
 class YcConfig:
@@ -56,6 +96,8 @@ class YcControlData:
     total_current_consumption: List[float] = field(default_factory=three_zero_floatss_factory)
     total_power: float = None
     imbalance_current_consumption: List[float] = field(default_factory=three_zero_floatss_factory)
+    standard_socket_action: StandardSocketActions = StandardSocketActions.Uninitialized
+    socket_request: SocketRequestStates = SocketRequestStates.Uninitialized
 
     @property
     def fixed_charge_current(self) -> float:

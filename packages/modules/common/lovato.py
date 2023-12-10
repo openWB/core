@@ -36,3 +36,9 @@ class Lovato(AbstractCounter):
     def get_currents(self) -> List[float]:
         return [val / 10000 for val in self.client.read_input_registers(
             0x0007, [ModbusDataType.INT_32]*3, unit=self.id)]
+
+    def get_serial(self) -> str:
+        return "n/a"
+
+    def get_model(self) -> str:
+        return "Lovato MPM3PM"

@@ -1,5 +1,6 @@
 import logging
 import time
+import datetime
 from typing import List
 
 from dataclasses import dataclass
@@ -13,12 +14,13 @@ log = logging.getLogger(__name__)
 class SocketMeterData:
     imported_wh: float = None
     exported_wh: float = None
-    currents: List[float] = None
-    voltages: List[float] = None
+    current: float = None
+    voltage: float = None
     power: float = None
-    power_factors: List[float] = None
+    power_factor: float = None
     serial: str = None
     model: str = None
+    last_update: str = None
 
 class SocketMeterHandler:
     def __init__(self, client: modbus.ModbusClient) -> None:
@@ -27,14 +29,18 @@ class SocketMeterHandler:
         self.data = SocketMeterData()
 
     def update(self):
+
+        # NOTE: Standard socket is always assumed single-phase and hence we always take the first element
+        # of 3-phase meter readings (currents, voltages, power-factors)
+
         self.data.imported_wh = self._meter.get_imported()
         # log.info(f"standard-socket: imported: {self.data.imported_wh}")
 
-        self.data.currents = self._meter.get_currents()
+        self.data.current = self._meter.get_currents()[0]
         # log.info(f"standard-socket: currents: {self.data.currents}")
         time.sleep(0.1)
 
-        self.data.voltages = self._meter.get_voltages()
+        self.data.voltage = self._meter.get_voltages()[0]
         # log.info(f"standard-socket: voltages: {self.data.voltages}")
         time.sleep(0.1)
 
@@ -42,7 +48,7 @@ class SocketMeterHandler:
         # log.info(f"standard-socket: power: {self.data.power}")
         time.sleep(0.1)
 
-        self.data.power_factors = self._meter.get_power_factors()
+        self.data.power_factor = self._meter.get_power_factors()[0]
         # log.info(f"standard-socket: power_factors: {self.data.power_factors}")
         time.sleep(0.1)
 
@@ -58,3 +64,5 @@ class SocketMeterHandler:
 
         if self.data.model is None:
             self.data.model = self._meter.get_model()
+
+        self.data.last_update = f"{datetime.datetime.utcnow().isoformat()}Z"
