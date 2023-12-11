@@ -432,29 +432,22 @@ export const useMqttStore = defineStore("mqtt", {
     },
     getChargepointTagState(state) {
       return (chargePointId) => {
-        let tagState = 0;
         if (
-          state.topics[
+          ![undefined, null, ""].includes(state.topics[
             `openWB/chargepoint/${chargePointId}/set/rfid`
-          ] !== null &&
-          state.topics[
-            `openWB/chargepoint/${chargePointId}/set/rfid`
-          ] !== ""
+          ])
         ) {
-          tagState = 2;
+          return 2;
         } else {
           if (
-            state.topics[
+            ![undefined, null, ""].includes(state.topics[
               `openWB/chargepoint/${chargePointId}/get/rfid`
-            ] !== null &&
-            state.topics[
-              `openWB/chargepoint/${chargePointId}/get/rfid`
-            ] !== ""
-          ) {
-            tagState = 1;
+            ])
+            ) {
+            return 1;
           }
         }
-        return tagState;
+        return 0;
       };
     },
     getChargePointVehicleChangePermitted(state) {
