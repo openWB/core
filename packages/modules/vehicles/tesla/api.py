@@ -52,6 +52,8 @@ def request_soc_range(vehicle: int, token: TeslaSocToken) -> Tuple[float, float]
 
 
 def validate_token(token: TeslaSocToken) -> TeslaSocToken:
+    if token.access_token is None and token.refresh_token is None:
+        raise FaultState.error("Konfiguration des Tesla SoC unvollständig! Keine Token vorhanden.")
     expiration = token.created_at + token.expires_in
     log.debug("No need to authenticate. Valid token already present.")
     if time.time() > expiration:
